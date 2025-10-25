@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react";
+import { Suspense } from "react";
 import { supabase } from 'lib/supabaseClient'
 import style from "app/styles/Miembros.module.css"
 import { useSearchParams } from "next/navigation";
@@ -21,7 +22,10 @@ interface MiembrosPadre {
   objetoMiembro: ObjetoResumenPaquete | null;
 }
 
-
+interface Fuente {
+  id: number;
+  Fuente: string;
+}
 
 interface Member {
     id: number;
@@ -108,7 +112,7 @@ const Miembros: React.FC<MiembrosPadre> = ({ selectedMember, setSelectedMember, 
                 console.error('Error al cargar fuentes:', error.message, error.details, error.hint);
             } else if (data) {
                 // Mapear la columna 'Fuente' de Supabase a 'fuente' en React
-                const mappedData = data.map((f: any) => ({
+                const mappedData = data.map((f: Fuente) => ({
                     id: f.id,
                     fuente: f.Fuente
                 }));
@@ -187,4 +191,10 @@ const Miembros: React.FC<MiembrosPadre> = ({ selectedMember, setSelectedMember, 
     );
 };
 
-export default Miembros;
+export default function MiembrosWrapper(props: MiembrosPadre) {
+  return (
+    <Suspense fallback={<p>Cargando miembros...</p>}>
+      <Miembros {...props} />
+    </Suspense>
+  );
+}
