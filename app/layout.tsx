@@ -5,6 +5,9 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Corazones Cruzados",
+  icons: {
+    icon: "/Logo CC.ico",
+  },
   description: "Proyecto en Next.js",
 };
 
