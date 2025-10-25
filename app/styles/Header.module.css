@@ -1,0 +1,104 @@
+.BarraSuperior {
+  animation: gradientMove 2s linear infinite;
+  padding: 17px 10px;
+  color: white;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  height: 60px;
+  background: linear-gradient(180deg, var(--color-negro)  var(--color-rojo), var(--color-negro));
+  color: var(--color-blanco);
+  
+}
+
+.BarraSuperior-Titulo {
+  font-size: 1rem;
+  font-family: Helvetica, Arial, sans-serif;
+  letter-spacing: 2px;
+  margin: 0;
+  margin-left: 10px;
+  color: white;
+}
+
+.Menu {
+  width: 250px;
+  height: calc(100vh - 80px);
+  background: rgba(255, 255, 255, 0);
+  color: #000;
+  position: fixed;
+  left: 0;
+  top: 70px;
+  padding: 20px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 0.9rem;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+  transform: translateX(-100%);
+  border-radius: 0 8px 8px 0;
+}
+
+
+.Menu-Abierto {
+  transform: translateX(0);
+}
+
+.Logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  filter: brightness(1) invert(0);
+  transition: all 0.3s ease;
+}
+
+.Logo-Activo {
+  border: 2px solid #fff;
+  opacity: 0.8;
+}
+
+.Menu-Lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.Menu-Elemento {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+  color: #ffffff;
+}
+
+.Menu-Elemento-Activo {
+  color: #000000;
+  background: #e0e0e0;
+  font-weight: bold;
+}
+
+.Menu-Elemento-Contenido {
+  display: flex;
+  align-items: center;
+}
+
+.Menu-Elemento-Hover {
+  background: #000000;
+}
+
+.Menu-Elemento-Icono {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  filter: brightness(0);
+  filter: invert();
+}
+
+.MenuElementoIconoSeleccionado {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  filter: brightness(0);
+}

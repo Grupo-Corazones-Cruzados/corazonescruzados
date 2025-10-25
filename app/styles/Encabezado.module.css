@@ -1,0 +1,49 @@
+.EncabezadoContenedor {
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    overflow: hidden;
+    color: #fff;
+}
+
+.EncabezadoTexto {
+    padding-top: 20px;
+    text-align: center;
+    width: 100%;
+    font-family: 'Dancing Script', cursive;
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.EncabezadoImagen img {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 250px;
+    transition: transform 0.7s ease;
+    z-index: 10;
+    transform: rotate(0deg);
+    filter: invert(1);
+    opacity: 1;
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.EncabezadoSubtitulo {
+    font-family: 'Dancing Script', cursive;
+    font-size: 1.5rem;
+}

@@ -1,0 +1,273 @@
+.Overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 60px;
+  padding-bottom: 60px; /* mantiene simetría visual */
+  z-index: 2000;
+}
+
+.Modal {
+  background: #111;
+  border-radius: 12px;
+  padding: 30px;
+  width: 70%;
+  max-width: 100%;
+  max-height: 90vh; /* evita que se salga de la pantalla */
+  overflow-y: auto; /* activa scroll vertical */
+  box-shadow: 0 0 5px rgba(255, 0, 100, 0.4);
+  position: relative;
+  color: white;
+  animation: aparecer 0.3s ease;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.Cerrar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.Cerrar:hover {
+  transform: scale(1.2);
+  color: #ff0066;
+}
+
+.InfoSeleccion {
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #ff0066;
+  border-radius: 6px;
+  background: rgba(255, 0, 100, 0.1);
+  font-size: 0.9rem;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.InfoMiembro {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.MiembroFoto {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ff0066;
+}
+
+.Nombre {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.Puesto {
+  color: #ccc;
+  font-size: 0.9rem;
+  
+}
+
+.Contenido {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  height: 100%;
+  
+}
+
+.ColumnaIzquierda {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 20px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding-right: 20px;
+  
+}
+
+.ColumnaDerecha {
+  flex: 2;
+  overflow-y: auto;
+  height: 100%; /* usa toda la altura disponible del modal */
+  display: flex;
+  flex-direction: column;
+}
+
+.CuadroAccion {
+  background: linear-gradient(135deg, rgba(255, 0, 100, 0.15), rgba(255, 0, 150, 0.25));
+  border: 1px solid rgba(255, 0, 100, 0.4);
+  border-radius: 8px;
+  padding: 12px 15px;
+  box-shadow: 0 0 10px rgba(255, 0, 100, 0.2);
+  
+}
+
+.TituloAccion {
+  font-weight: bold;
+  color: #ff0066;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.TextoAccion {
+  color: #fff;
+  font-size: 0.9rem;
+}
+.Modal * {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@media (max-width: 900px) {
+  .Contenido {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .ColumnaIzquierda {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-right: 0;
+    padding-bottom: 20px;
+  }
+
+  .ColumnaDerecha {
+    padding-left: 0;
+    margin-top: 20px;
+  }
+}
+
+/* === FORMULARIO DENTRO DEL MODAL === */
+.ColumnaDerecha form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: linear-gradient(120deg, rgba(106,13,173,0.08), rgba(255,0,64,0.05));
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(106,13,173,0.15);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.ColumnaDerecha label {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  font-weight: 600;
+  color: #f1f1f1;
+  font-size: 1rem;
+}
+
+.ColumnaDerecha input {
+  background-color: rgba(0,0,0,0.6);
+  border: 1px solid rgba(106,13,173,0.25);
+  color: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 6px;
+  font-size: 1rem;
+  transition: all 0.25s ease;
+}
+
+.ColumnaDerecha input:focus {
+  outline: none;
+  border-color: #ff0040;
+  box-shadow: 0 0 10px rgba(255,0,64,0.3);
+}
+
+.ColumnaDerecha button {
+  background: linear-gradient(135deg, #6a0dad, #ff0040);
+  border: none;
+  color: #fff;
+  padding: 14px;
+  border-radius: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 20px rgba(255,0,64,0.3);
+}
+
+.ColumnaDerecha button:hover {
+  background: linear-gradient(135deg, #ff0040, #6a0dad);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(255,0,64,0.4);
+}
+
+.ListaAcciones {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 10px;
+}
+
+.IconoAccion {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.TextoAccion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #f1f1f1;
+  font-size: 0.95rem;
+}
+
+.TextoAccion strong {
+  flex: 1;
+  min-width: 0;
+  margin-right: 8px;
+  color: #fae5ef; /* opcional para distinguirlo */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ValorDerecha {
+  flex: 0 0 220px; /* reserva espacio para valores largos (~20 dígitos) */
+  text-align: right;
+  color: #fff;
+  word-break: keep-all;
+}
+
+.TextoAccionAccion {
+  color: #fff;
+  font-size: 0.9rem;
+  display: block; /* vuelve al estilo anterior */
+  margin-bottom: 8px;
+}
+
+.TextoAccionAccion img {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: middle;
+}

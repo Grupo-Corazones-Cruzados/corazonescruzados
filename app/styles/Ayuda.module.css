@@ -1,0 +1,53 @@
+/* Ayuda.module.css */
+.container {
+  padding: 40px;
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+.title {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.faqItem {
+  border-bottom: 1px solid #ddd;
+  padding: 15px 0;
+}
+
+.faqQuestion {
+  font-weight: bold;
+  cursor: pointer;
+  position: relative;
+  color: #dddddd;
+  padding-right: 25px;
+}
+
+.faqQuestion.active::after {
+  content: "-";
+}
+
+.faqQuestion::after {
+  content: "+";
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+.faqAnswer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  padding-left: 10px;
+  color: #cccccc;
+}
+
+.faqAnswer.open {
+  max-height: 500px;
+  padding-top: 10px;
+}

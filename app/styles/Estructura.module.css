@@ -1,0 +1,106 @@
+.ContenedorTarjeta {
+  padding: 20px;
+  max-width: 800px;
+  margin: 20px auto;
+  font-family: Helvetica, Arial, sans-serif;
+  color: #fff; /* Texto blanco para que contraste sobre fondo oscuro */
+  line-height: 1.6;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 50px;
+}
+
+
+.Tarjeta {
+  background: #1c1c1c; /* Fondo oscuro, se integra con el body */
+  box-shadow: 0 2px 8px rgba(255,255,255,0.05); /* Sombra suave clara */
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  color: #fff; /* Texto blanco */
+  position: relative; /* Contenedor relativo para posicionar imagen banner */
+  overflow: visible; /* Permitir que la imagen se desborde */
+}
+
+.TarjetaHover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(255,255,255,0.1); /* Sombra más visible al pasar */
+}
+
+.TarjetaTitulo {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #fff; /* Texto blanco */
+  z-index: 2;
+  position: relative;
+}
+
+.TarjetaResumen {
+  margin: 0;
+  color: #ddd; /* Texto ligeramente más claro que el título */
+  z-index: 2;
+  position: relative;
+}
+
+.Overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.OverlayContenido {
+  background: #fff;
+  border-radius: 10px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 30px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+  position: relative;
+  font-family: Helvetica, Arial, sans-serif;
+  color: #000;
+}
+
+
+.OverlayTitulo {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #000;
+}
+
+.OverlayDetalles {
+  white-space: pre-line;
+  color: #000;
+}
+
+
+.CerrarBoton {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #000;
+  font-weight: bold;
+  line-height: 1;
+}

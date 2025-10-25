@@ -1,0 +1,14 @@
+.BarraInferior {
+  background-size: 200% 100%;
+  padding: 10px 20px;
+  color: white;
+  border-radius: 10px 10px 0 0; /* Solo redondeado arriba para que quede abajo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: Helvetica, Arial, sans-serif;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+  margin-top: 40px;
+}

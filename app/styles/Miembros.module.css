@@ -1,0 +1,291 @@
+.ContenedorFiltroBusqueda {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 10px 20px 10px;
+    width: 100%;
+}
+
+.BusquedaEntrada {
+    padding: 8px 12px;
+    width: 30%;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #111;
+    color: #fff;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, background 0.3s ease;
+    outline: none;
+}
+
+.BusquedaEntrada:focus {
+    outline: none;
+    border-color: #ff0066;
+    background: #1a1a1a;
+}
+
+.FiltroSeleccionado {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #111;
+    width: 185px;
+    color: #fff;
+    font-size: 1rem;
+    appearance: none;
+    background-image: url("/Icono de Abajo.svg");
+  background-repeat: no-repeat;
+  background-position: right 1.5rem center; 
+  background-size: 12px;
+}
+
+.FiltroSeleccionado:focus {
+    outline: none;
+    border-color: #ff0066;
+   
+}
+
+.GaleriaMiembros {
+    
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    margin: 60px 30px 0px 30px;
+    justify-content: center;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+
+.TarjetaMiembro::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 18px;
+    padding: 2px;
+    background: linear-gradient(45deg, #57067a, #492658, #670000, #000000, #000000, #350060, #830000);
+    background-size: 400% 400%;
+    animation: borderGradient 8s ease infinite;
+    z-index: -1;
+}
+
+@keyframes borderGradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+
+.TarjetaMiembro::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.05), transparent 70%);
+    transform: rotate(45deg);
+    transition: all 0.5s ease;
+    z-index: 0;
+}
+
+.TarjetaMiembro:hover::before {
+    top: -20%;
+    left: -20%;
+}
+
+
+.TarjetaMiembro:hover {
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(145deg, #272727, #3a3a3a);
+}
+
+
+.TarjetaMiembro * {
+    position: relative;
+    z-index: 1;
+    /* Para que el contenido esté por encima del efecto */
+}
+
+.MiembroFoto {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 15px;
+    border: 2px solid #fff;
+    transition: transform 0.3s ease;
+}
+
+
+.TarjetaMiembro:hover .MiembroFoto {
+    transform: scale(1.1);
+    /* Efecto zoom sutil en la foto */
+}
+
+.MiembroNombre {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #fff;
+}
+
+.MiembroPosicion {
+    color: #bbb;
+    font-size: 1rem;
+    margin-bottom: 12px;
+}
+
+.MiembroRecomendacion {
+    font-size: 0.95rem;
+    color: #ddd;
+    line-height: 1.4;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* Animación para el banner */
+@keyframes bannerAnimation {
+    0% {
+        transform: scale(1) translateY(0);
+        background-position: center 55%;
+    }
+
+    50% {
+        transform: scale(1.05) translateY(0%);
+        background-position: center 65%;
+    }
+
+    100% {
+        transform: scale(1) translateY(0);
+        background-position: center 55%;
+    }
+}
+
+
+.MiembroSeleccionado {
+    width: 40%;
+    opacity: 1;
+    transform: translateY(0);
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+
+
+
+.BotonPaginacion:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+}
+
+.BotonPaginacion:disabled {
+    opacity: 0.4;
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+}
+
+.TarjetaMiembro {
+    min-width: 280px;
+    padding: 18px 15px;
+    position: relative;
+    border-radius: 16px;
+    padding: 25px 20px;
+    text-align: center;
+    width: 280px;
+    transition: transform 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
+    cursor: pointer;
+    overflow: hidden;
+    background: linear-gradient(145deg, var(--color-gris-oscuro), #222);
+    border: 1px solid rgba(106, 13, 173, 0.4);
+    box-shadow: 0 0 20px rgba(255, 0, 64, 0.15);
+}
+
+.TarjetaMiembro.Seleccionado {
+    box-shadow: 0 0 25px rgba(255, 0, 100, 0.8), 0 0 50px rgba(255, 0, 100, 0.3);
+    transform: scale(1.00);
+    border: 2px solid #ff0066;
+    transition: all 0.4s ease;
+}
+
+/* ✨ Pequeño brillo animado opcional */
+.TarjetaMiembro.Seleccionado::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 0, 150, 0.2), transparent 70%);
+    animation: pulseGlow 2s infinite;
+    z-index: 0;
+}
+
+@keyframes pulseGlow {
+    0% {
+        opacity: 0.2;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.1);
+    }
+
+    100% {
+        opacity: 0.2;
+        transform: scale(1);
+    }
+}
+
+
+.BotonPaginacion {
+    width: 100%;
+    max-width: 120px;
+    color: var(--color-blanco);
+    background: linear-gradient(135deg, #860000, #000000);
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.5s ease;
+    background-size: 400% 400%;
+    animation: gradientShift 6s ease infinite;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.ControlesPaginacion {
+    
+    gap: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-top: 30px;
+    width: 100%;
+}
+
+.MiembroOculto {
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
