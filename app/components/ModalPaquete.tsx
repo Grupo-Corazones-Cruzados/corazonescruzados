@@ -1,9 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "app/styles/ModalAcciones.module.css";
-import { useEffect } from "react";
 import { supabase } from "lib/supabaseClient";
-
 
 interface ModalPaqueteProps {
   isOpen: boolean;
@@ -17,9 +15,10 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
     nombre: "",
     correo: "",
     telefono: "",
-    costoNegociado: 0, // nuevo campo
+    costoNegociado: 0,
   });
   const [costoBaseMiembro, setCostoBaseMiembro] = useState(0);
+  const [acciones, setAcciones] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchAcciones = async () => {
@@ -37,7 +36,6 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
         setAcciones(data || []);
       }
 
-      // 🔹 Obtener el costo por hora del miembro
       const { data: miembroCosto, error: costoError } = await supabase
         .from("Miembros")
         .select("Costo")
@@ -45,20 +43,16 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
         .single();
 
       if (!costoError && miembroCosto?.Costo) {
-  setCostoBaseMiembro(miembroCosto.Costo);
-  setFormData((prev) => ({
-    ...prev,
-    costoNegociado: miembroCosto.Costo,
-  }));
-}
+        setCostoBaseMiembro(miembroCosto.Costo);
+        setFormData((prev) => ({
+          ...prev,
+          costoNegociado: miembroCosto.Costo,
+        }));
+      }
     };
 
     fetchAcciones();
   }, [miembro]);
-
-  const [acciones, setAcciones] = useState<any[]>([]);
-
-
 
   if (!isOpen || !miembro || !paquete) return null;
 
@@ -75,7 +69,7 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
     if (!paquete || !miembro) return;
 
     try {
-      // 1️⃣ Verificar si el cliente ya existe
+      // Verificar o crear cliente
       const { data: existingClient, error: selectError } = await supabase
         .from("Clientes")
         .select("*")
@@ -88,8 +82,6 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
       }
 
       let clienteId: number;
-
-      // 2️⃣ Crear cliente si no existe
       if (!existingClient) {
         const { data: newClient, error: insertError } = await supabase
           .from("Clientes")
@@ -112,13 +104,13 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
         clienteId = existingClient.id;
       }
 
-      // 3️⃣ Crear registro en TicketsPaquetes
+      // Crear ticket
       const { error: ticketError } = await supabase
         .from("TicketsPaquetes")
         .insert({
           idPaquete: paquete.id,
           idMiembro: miembro.id,
-          idCliente: clienteId
+          idCliente: clienteId,
         });
 
       if (ticketError) {
@@ -126,9 +118,7 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
         return;
       }
 
-
-
-      // 4️⃣ Obtener número de celular del miembro desde la base de datos
+      // Obtener celular del miembro
       const { data: miembroDB, error: miembroError } = await supabase
         .from("Miembros")
         .select("celular")
@@ -142,9 +132,6 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
 
       const numeroDestino = miembroDB?.celular?.replace("+", "") || "593992706933";
 
-
-
-      // ya tenemos numeroDestino desde la base
       const mensaje = `Hola, soy ${formData.nombre}.
 Estoy interesado en el paquete *${paquete.Nombre}*.
 
@@ -154,36 +141,24 @@ Detalles del paquete:
 - Horas: ${paquete.Horas}
 - Descuento: ${paquete.Descuento}%
 - Precio final: $${(
-          miembro?.Costo * paquete.Horas * (1 - paquete.Descuento / 100)
-        ).toFixed(2)}
+        miembro?.Costo * paquete.Horas * (1 - paquete.Descuento / 100)
+      ).toFixed(2)}
 
 Mis datos:
 - Correo: ${formData.correo}
 - Teléfono: ${formData.telefono}`;
 
-      const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(
-        mensaje
-      )}`;
-      // detectar si es móvil
-const esMovil = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensaje)}`;
 
-if (esMovil) {
-  // iOS bloquea window.open, por eso usamos redirección directa
-  const link = document.createElement("a");
-  link.href = url;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  link.click();
-} else {
-  window.open(url, "_blank");
-}
+      // Redirección directa: iOS, Android y escritorio
+      window.location.assign(url);
 
-      // 5️⃣ Limpiar formulario
+      // Limpiar formulario
       setFormData({
         nombre: "",
         correo: "",
         telefono: "",
-        costoNegociado: 0
+        costoNegociado: 0,
       });
 
       alert("Ticket creado correctamente.");
@@ -194,45 +169,35 @@ if (esMovil) {
   };
 
   // Cálculos del beneficio
-  // valores base
-// valores base
-const costoHoraOriginal = miembro?.Costo || 0;
-const costoHoraNegociado = formData.costoNegociado || costoHoraOriginal;
-const horas = paquete?.Horas || 0;
-const descuento = paquete?.Descuento || 0;
+  const costoHoraOriginal = miembro?.Costo || 0;
+  const costoHoraNegociado = formData.costoNegociado || costoHoraOriginal;
+  const horas = paquete?.Horas || 0;
+  const descuento = paquete?.Descuento || 0;
 
-// precios con y sin descuento aplicando cada costo
-const precioTotal = costoHoraNegociado * horas; // precio sin descuento
-const precioOriginalConDescuento = costoHoraOriginal * horas * (1 - descuento / 100);
-const precioNegociadoConDescuento = costoHoraNegociado * horas * (1 - descuento / 100);
-const precioConDescuento = precioNegociadoConDescuento;
+  const precioTotal = costoHoraNegociado * horas;
+  const precioConDescuento = costoHoraNegociado * horas * (1 - descuento / 100);
+  const costoHoraReal = horas ? precioConDescuento / horas : 0;
+  const ahorroHora = formData.costoNegociado - costoHoraReal;
+  const ahorroTotal = precioTotal - precioConDescuento;
 
-// costo promedio por hora luego del descuento
-const costoHoraReal = horas ? precioNegociadoConDescuento / horas : 0;
-
-// ahorro por hora (comparación entre el original y el negociado)
-// nuevo cálculo del ahorro por hora y total
-const ahorroHora = formData.costoNegociado - costoHoraReal;
-const ahorroTotal = precioTotal - precioConDescuento;
-  
   return (
     <div className={styles.Overlay}>
       <div className={styles.Modal}>
         <button
-  className={styles.Cerrar}
-  onClick={() => {
-    setFormData((prev) => ({
-      ...prev,
-      costoNegociado: costoBaseMiembro, // restaura el costo original
-    }));
-    onClose();
-  }}
->
-  ×
-</button>
+          className={styles.Cerrar}
+          onClick={() => {
+            setFormData((prev) => ({
+              ...prev,
+              costoNegociado: costoBaseMiembro,
+            }));
+            onClose();
+          }}
+        >
+          ×
+        </button>
 
         <div className={styles.Contenido}>
-          {/* Columna izquierda: datos del miembro y paquete */}
+          {/* Izquierda: datos */}
           <div className={styles.ColumnaIzquierda}>
             <div className={styles.InfoMiembro}>
               <img
@@ -253,7 +218,6 @@ const ahorroTotal = precioTotal - precioConDescuento;
                 <strong>Horas:</strong>
                 <span className={styles.ValorDerecha}>{paquete.Horas}</span>
               </div>
-
               <div className={styles.TextoAccion}>
                 <strong>Descuento:</strong>
                 <span className={styles.ValorDerecha}>{paquete.Descuento}%</span>
@@ -266,7 +230,6 @@ const ahorroTotal = precioTotal - precioConDescuento;
                 <strong>Precio sin descuento:</strong>
                 <span className={styles.ValorDerecha}>${precioTotal.toFixed(2)}</span>
               </div>
-
               <div className={styles.TextoAccion}>
                 <strong>Precio con descuento:</strong>
                 <span className={styles.ValorDerecha}>${precioConDescuento.toFixed(2)}</span>
@@ -275,22 +238,20 @@ const ahorroTotal = precioTotal - precioConDescuento;
                 <strong>Costo por hora:</strong>
                 <span className={styles.ValorDerecha}>${costoHoraReal.toFixed(2)}</span>
               </div>
-
               <div className={styles.TextoAccion}>
-  <strong>Ahorro por hora:</strong>
-  <span className={styles.ValorDerecha}>${ahorroHora.toFixed(2)}</span>
-</div>
-
-<div className={styles.TextoAccion}>
-  <strong>Ahorro total en el paquete:</strong>
-  <span className={styles.ValorDerecha}>${ahorroTotal.toFixed(2)}</span>
-</div>
+                <strong>Ahorro por hora:</strong>
+                <span className={styles.ValorDerecha}>${ahorroHora.toFixed(2)}</span>
+              </div>
+              <div className={styles.TextoAccion}>
+                <strong>Ahorro total:</strong>
+                <span className={styles.ValorDerecha}>${ahorroTotal.toFixed(2)}</span>
+              </div>
             </div>
+
             <div className={styles.CuadroAccion}>
               <div className={styles.TituloAccion}>Acciones Disponibles</div>
-
               {acciones.length === 0 ? (
-                <div className={styles.TextoAccion}>No hay acciones registradas para este miembro.</div>
+                <div className={styles.TextoAccion}>No hay acciones registradas.</div>
               ) : (
                 <ul className={styles.ListaAcciones}>
                   {acciones.map((accion) => (
@@ -303,60 +264,40 @@ const ahorroTotal = precioTotal - precioConDescuento;
             </div>
           </div>
 
-
-
-          {/* Columna derecha: formulario */}
+          {/* Derecha: formulario */}
           <div className={styles.ColumnaDerecha}>
             <form onSubmit={handleSubmit}>
               <label>
                 Nombre:
-                <input
-                  type="text"
-                  name="nombre"
-                  value={formData.nombre}
-                  onChange={handleChange}
-                  required
-                />
+                <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} required />
               </label>
 
               <label>
                 Correo:
-                <input
-                  type="email"
-                  name="correo"
-                  value={formData.correo}
-                  onChange={handleChange}
-                  required
-                />
+                <input type="email" name="correo" value={formData.correo} onChange={handleChange} required />
               </label>
 
               <label>
                 Teléfono:
-                <input
-                  type="tel"
-                  name="telefono"
-                  value={formData.telefono}
-                  onChange={handleChange}
-                  required
-                />
+                <input type="tel" name="telefono" value={formData.telefono} onChange={handleChange} required />
               </label>
 
               <label>
-  Costo por hora negociable:
-  <input
-    type="number"
-    name="costoNegociado"
-    value={formData.costoNegociado}
-    onChange={(e) =>
-      setFormData({
-        ...formData,
-        costoNegociado: parseFloat(e.target.value) || 0,
-      })
-    }
-    step="0.01"
-    required
-  />
-</label>
+                Costo por hora negociable:
+                <input
+                  type="number"
+                  name="costoNegociado"
+                  value={formData.costoNegociado}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      costoNegociado: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  step="0.01"
+                  required
+                />
+              </label>
 
               <button type="submit">Enviar solicitud</button>
             </form>
