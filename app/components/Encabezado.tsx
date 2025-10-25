@@ -2,6 +2,7 @@
 
 import React from "react";
 import style from "app/styles/Encabezado.module.css"
+import Image from "next/image";
 
 export default function Encabezado() {
     return (
@@ -12,7 +13,7 @@ export default function Encabezado() {
     <p className={style.EncabezadoSubtitulo}>"Proyecto de desarrollo humano"</p>
   </div>
   <div className={style.EncabezadoImagen}>
-    <img src="Animación Corazón.gif" alt="Corazón" />
+    <img src="/animacion-corazon.gif" alt="Corazón" />
   </div>
 </div>
 
