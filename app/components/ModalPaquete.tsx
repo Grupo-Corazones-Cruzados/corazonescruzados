@@ -118,21 +118,17 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
         return;
       }
 
-      // Obtener celular del miembro
-      const { data: miembroDB, error: miembroError } = await supabase
-        .from("Miembros")
-        .select("celular")
-        .eq("id", miembro.id)
-        .single();
+      alert("Ticket creado correctamente.");
+      onClose();
+    } catch (error) {
+      console.error("Error general:", error);
+    }
+  };
 
-      if (miembroError) {
-        console.error("Error al obtener celular del miembro:", miembroError);
-        return;
-      }
+  // Variables para WhatsApp accesibles en todo el componente
+  const numeroDestino = miembro?.celular?.replace("+", "") || "593992706933";
 
-      const numeroDestino = miembroDB?.celular?.replace("+", "") || "593992706933";
-
-      const mensaje = `Hola, soy ${formData.nombre}.
+  const mensaje = `Hola, soy ${formData.nombre}.
 Estoy interesado en el paquete *${paquete.Nombre}*.
 
 He negociado un costo por hora de $${formData.costoNegociado.toFixed(2)}.
@@ -141,32 +137,12 @@ Detalles del paquete:
 - Horas: ${paquete.Horas}
 - Descuento: ${paquete.Descuento}%
 - Precio final: $${(
-        miembro?.Costo * paquete.Horas * (1 - paquete.Descuento / 100)
-      ).toFixed(2)}
+    miembro?.Costo * paquete.Horas * (1 - paquete.Descuento / 100)
+  ).toFixed(2)}
 
 Mis datos:
 - Correo: ${formData.correo}
 - Teléfono: ${formData.telefono}`;
-
-      const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensaje)}`;
-
-      // Redirección directa: iOS, Android y escritorio
-      window.location.assign(url);
-
-      // Limpiar formulario
-      setFormData({
-        nombre: "",
-        correo: "",
-        telefono: "",
-        costoNegociado: 0,
-      });
-
-      alert("Ticket creado correctamente.");
-      onClose();
-    } catch (error) {
-      console.error("Error general:", error);
-    }
-  };
 
   // Cálculos del beneficio
   const costoHoraOriginal = miembro?.Costo || 0;
@@ -300,6 +276,16 @@ Mis datos:
               </label>
 
               <button type="submit">Enviar solicitud</button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensaje)}`;
+                  window.open(url, "_blank");
+                }}
+              >
+                Enviar mensaje por WhatsApp
+              </button>
             </form>
           </div>
         </div>
