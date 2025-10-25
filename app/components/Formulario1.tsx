@@ -2,145 +2,139 @@
 import React, { useEffect, useState } from "react";
 import style from "app/styles/Formulario1.module.css";
 import { supabase } from "lib/supabaseClient";
-import { div } from "framer-motion/client";
 
 interface Formulario1Padre {
-    selectedMember: number | null;
-    setSelectedMember: React.Dispatch<React.SetStateAction<number | null>>;
-    showForm: boolean | null;
-    setShowForm: React.Dispatch<React.SetStateAction<boolean>>;
-    selectedAccion: Accion | null;
-    setSelectedAccion: React.Dispatch<React.SetStateAction<Accion | null>>;
-    onClose: () => void; // <-- agrégala aquí
+  selectedMember: number | null;
+  setSelectedMember: React.Dispatch<React.SetStateAction<number | null>>;
+  showForm: boolean | null;
+  setShowForm: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedAccion: Accion | null;
+  setSelectedAccion: React.Dispatch<React.SetStateAction<Accion | null>>;
+  onClose: () => void;
 }
 
 interface Accion {
-    id: number;
-    Accion: string;
-    idMiembro: number;
-    idFuente: number;
+  id: number;
+  Accion: string;
+  idMiembro: number;
+  idFuente: number;
 }
 
 interface Member {
-    id: number;
-    Nombre: string;
-    Puesto: string;
-    Descripcion: string;
-    Foto: string | null;
-    Correo: string;
-    idFuentes: number;
+  id: number;
+  Nombre: string;
+  Puesto: string;
+  Descripcion: string;
+  Foto: string | null;
+  Correo: string;
+  idFuentes: number;
+  celular?: string;
 }
 
 const Formulario1: React.FC<Formulario1Padre> = ({
-    selectedMember,
-    setSelectedMember,
-    showForm,
-    setShowForm,
-    selectedAccion,
-    setSelectedAccion,
-    onClose, // <-- agrega esta línea
+  selectedMember,
+  setSelectedMember,
+  showForm,
+  setShowForm,
+  selectedAccion,
+  setSelectedAccion,
+  onClose,
 }) => {
-    // ✅ Ahora sí dentro del componente
-    const [formData, setFormData] = useState({
-        clienteNombre: "",
-        clienteContacto: "",
-        clienteCorreo: "",
-        detalle: "",
-        accion: 0,
-    });
+  const [formData, setFormData] = useState({
+    clienteNombre: "",
+    clienteContacto: "",
+    clienteCorreo: "",
+    detalle: "",
+    accion: 0,
+  });
 
-    const [loading, setLoading] = useState(false);
-    const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
 
-    useEffect(() => {
-        const fetchMembers = async () => {
-            const { data, error } = await supabase
-                .from("Miembros")
-                .select("*")
-                .order("created_at", { ascending: true });
-            if (!error && data) setMembers(data);
-        };
-        fetchMembers();
-    }, []);
+  useEffect(() => {
+    const fetchMembers = async () => {
+      const { data, error } = await supabase
+        .from("Miembros")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (!error && data) setMembers(data);
+    };
+    fetchMembers();
+  }, []);
 
-    const submitTicket = async () => {
-        if (!selectedAccion || selectedMember === null) return;
-        if (loading) return;
-        setLoading(true);
+  const submitTicket = async () => {
+    if (!selectedAccion || selectedMember === null) return;
+    if (loading) return;
+    setLoading(true);
 
-        try {
-            // 1️⃣ Verificar cliente
-            const { data: existingClient, error: selectError } = await supabase
-                .from("Clientes")
-                .select("*")
-                .eq("CorreoElectronico", formData.clienteCorreo)
-                .single();
+    try {
+      // 1️⃣ Verificar cliente existente
+      const { data: existingClient, error: selectError } = await supabase
+        .from("Clientes")
+        .select("*")
+        .eq("CorreoElectronico", formData.clienteCorreo)
+        .single();
 
-            if (selectError && selectError.code !== "PGRST116") {
-                console.error("Error al verificar cliente:", selectError);
-            }
+      if (selectError && selectError.code !== "PGRST116") {
+        console.error("Error al verificar cliente:", selectError);
+      }
 
-            let clienteId: number;
+      let clienteId: number;
 
-            // 2️⃣ Crear cliente si no existe
-            if (!existingClient) {
-                const { data: newClient, error: insertClientError } = await supabase
-                    .from("Clientes")
-                    .insert({
-                        Nombre: formData.clienteNombre,
-                        Contacto: formData.clienteContacto,
-                        CorreoElectronico: formData.clienteCorreo,
-                        idMiembro: selectedMember,
-                        idAccion: selectedAccion.id,
-                    })
-                    .select()
-                    .single();
+      // 2️⃣ Crear cliente si no existe
+      if (!existingClient) {
+        const { data: newClient, error: insertClientError } = await supabase
+          .from("Clientes")
+          .insert({
+            Nombre: formData.clienteNombre,
+            Contacto: formData.clienteContacto,
+            CorreoElectronico: formData.clienteCorreo,
+            idMiembro: selectedMember,
+            idAccion: selectedAccion.id,
+          })
+          .select()
+          .single();
 
-                if (insertClientError) {
-                    console.error("Error al crear cliente:", insertClientError);
-                    return;
-                }
+        if (insertClientError) {
+          console.error("Error al crear cliente:", insertClientError);
+          return;
+        }
 
-                clienteId = newClient.id;
-            } else {
-                clienteId = existingClient.id;
-            }
+        clienteId = newClient.id;
+      } else {
+        clienteId = existingClient.id;
+      }
 
-            // 3️⃣ Crear ticket
-            const { data: newTicket, error: ticketError } = await supabase
-                .from("Tickets")
-                .insert({
-                    idCliente: clienteId,
-                    idAccion: selectedAccion.id,
-                    Detalle: formData.detalle,
-                    Estado: "Pendiente",
-                    FechaFin: null,
-                    Consumo: null,
-                })
-                .select()
-                .single();
+      // 3️⃣ Crear ticket
+      const { error: ticketError } = await supabase.from("Tickets").insert({
+        idCliente: clienteId,
+        idAccion: selectedAccion.id,
+        Detalle: formData.detalle,
+        Estado: "Pendiente",
+      });
 
-            if (ticketError) {
-                console.error("Error al crear ticket:", ticketError);
-                return;
-            }
+      if (ticketError) {
+        console.error("Error al crear ticket:", ticketError);
+        return;
+      }
 
-            // 4️⃣ Obtener número del miembro
-            const { data: miembroDB, error: miembroError } = await supabase
-                .from("Miembros")
-                .select("celular, Nombre")
-                .eq("id", selectedMember)
-                .single();
+      // 4️⃣ Obtener número del miembro
+      const { data: miembroDB, error: miembroError } = await supabase
+        .from("Miembros")
+        .select("celular, Nombre")
+        .eq("id", selectedMember)
+        .single();
 
-            if (miembroError) {
-                console.error("Error al obtener número del miembro:", miembroError);
-                return;
-            }
+      if (miembroError) {
+        console.error("Error al obtener número del miembro:", miembroError);
+        return;
+      }
 
-            const numeroDestino = miembroDB?.celular?.replace("+", "") || "593992706933";
+      const numeroDestino =
+        miembroDB?.celular?.replace("+", "") || "593992706933";
 
-            // 5️⃣ Crear mensaje de WhatsApp
-            const mensaje = `Hola, soy ${formData.clienteNombre}.
+      // 5️⃣ Generar mensaje de WhatsApp
+      const mensaje = `Hola, soy ${formData.clienteNombre}.
 He generado un ticket para la acción *${selectedAccion.Accion}* con ${miembroDB?.Nombre}.
 Detalles del requerimiento:
 ${formData.detalle}
@@ -148,101 +142,99 @@ ${formData.detalle}
 Mi correo: ${formData.clienteCorreo}
 Mi contacto: ${formData.clienteContacto}`;
 
-            const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, "_blank");
+      // ✅ Abrir WhatsApp según el dispositivo
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const whatsappURL = isMobile
+        ? `whatsapp://send?phone=${numeroDestino}&text=${encodeURIComponent(
+            mensaje
+          )}`
+        : `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensaje)}`;
 
-            // 6️⃣ Limpiar y cerrar
-            alert("Ticket creado correctamente!");
-            setShowForm(false);
-            setSelectedAccion(null);
-            setSelectedMember(null);
-            setFormData({
-                clienteNombre: "",
-                clienteContacto: "",
-                clienteCorreo: "",
-                detalle: "",
-                accion: 0,
-            });
-            onClose();
+      window.location.href = whatsappURL;
 
-        } catch (error) {
-            console.error("Error general:", error);
-        }
-
-        setLoading(false);
-    };
-
-    return (
-
-        <div className={style.formFloating}>
-            <h2 className="AccionesTitulo">GENERA TU TICKET</h2>
-            <form
-                className={style.FormularioSolicitud}
-                onSubmit={async (e) => {
-                    e.preventDefault();
-                    await submitTicket();
-                    onClose();
-                }}
-            >
-                {/* 
-  <button
-    type="button"
-    className={style.closeButton}
-    onClick={() => {
+      // 6️⃣ Limpiar y cerrar
+      alert("Ticket creado correctamente!");
       setShowForm(false);
-      setSelectedAccion(null); 
-    }}
-  >
-    ✕
-  </button>
-*/}
-                <label>
-                    Nombre:
-                    <input
-                        type="text"
-                        value={formData.clienteNombre}
-                        onChange={(e) => setFormData({ ...formData, clienteNombre: e.target.value })}
-                        required
-                    />
-                </label>
+      setSelectedAccion(null);
+      setSelectedMember(null);
+      setFormData({
+        clienteNombre: "",
+        clienteContacto: "",
+        clienteCorreo: "",
+        detalle: "",
+        accion: 0,
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error general:", error);
+    }
 
-                <label>
-                    Número de contacto:
-                    <input
-                        type="text"
-                        value={formData.clienteContacto}
-                        onChange={(e) => setFormData({ ...formData, clienteContacto: e.target.value })}
-                        required
-                    />
-                </label>
+    setLoading(false);
+  };
 
-                <label>
-                    Correo electrónico:
-                    <input
-                        type="email"
-                        value={formData.clienteCorreo}
-                        onChange={(e) => setFormData({ ...formData, clienteCorreo: e.target.value })}
-                        required
-                    />
-                </label>
+  return (
+    <div className={style.formFloating}>
+      <h2 className="AccionesTitulo">GENERA TU TICKET</h2>
+      <form
+        className={style.FormularioSolicitud}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await submitTicket();
+        }}
+      >
+        <label>
+          Nombre:
+          <input
+            type="text"
+            value={formData.clienteNombre}
+            onChange={(e) =>
+              setFormData({ ...formData, clienteNombre: e.target.value })
+            }
+            required
+          />
+        </label>
 
-                <label>
-                    Detalle del requerimiento:
-                    <textarea
+        <label>
+          Número de contacto:
+          <input
+            type="text"
+            value={formData.clienteContacto}
+            onChange={(e) =>
+              setFormData({ ...formData, clienteContacto: e.target.value })
+            }
+            required
+          />
+        </label>
 
-                        value={formData.detalle}
-                        onChange={(e) => setFormData({ ...formData, detalle: e.target.value })}
-                        required
-                    />
-                </label>
-                <button type="submit" className={style.BotonEnviar} disabled={loading}>
-                    {loading ? "Enviando..." : "Enviar solicitud"}
-                </button>
+        <label>
+          Correo electrónico:
+          <input
+            type="email"
+            value={formData.clienteCorreo}
+            onChange={(e) =>
+              setFormData({ ...formData, clienteCorreo: e.target.value })
+            }
+            required
+          />
+        </label>
 
-            </form>
+        <label>
+          Detalle del requerimiento:
+          <textarea
+            value={formData.detalle}
+            onChange={(e) =>
+              setFormData({ ...formData, detalle: e.target.value })
+            }
+            required
+          />
+        </label>
 
-        </div>
-    );
-
+        <button type="submit" className={style.BotonEnviar} disabled={loading}>
+          {loading ? "Enviando..." : "Enviar solicitud"}
+        </button>
+      </form>
+    </div>
+  );
 };
+
 export default Formulario1;
