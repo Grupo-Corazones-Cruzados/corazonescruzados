@@ -1,3 +1,4 @@
+
 :root {
   --color-negro: #880202;
   --color-blanco: #ffffff;
@@ -12,8 +13,8 @@
   100% { background-position: 200% 0%; }
 }
 
-body {
-  display: flex;
+body{
+   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
@@ -23,50 +24,35 @@ body {
   color: #a79797;
   text-align: center;
   margin-bottom: 20px;
-  padding: 0 10px;
+  padding: 0px 10px 0px 10px;
   font-weight: 800;
   text-shadow: 0 0 10px rgba(255, 0, 102, 0.5);
   letter-spacing: 1px;
 }
 
 main {
-  flex: 1;
+  flex: 1; /* ocupa el espacio restante */
 }
 
-html,
-body {
+html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  color: var(--color-blanco);
-
-  /* Fondo optimizado */
-  background-color: var(--color-negro);
-  background-image: linear-gradient(to bottom, var(--color-negro), #010101, var(--color-gris-oscuro));
+  
+  background: linear-gradient(to bottom, var(--color-negro), #010101,var(--color-gris-oscuro));
   background-repeat: no-repeat;
-  background-size: cover;
-  background-attachment: fixed;
-
-  /* Mejora de rendimiento en navegadores móviles */
-  -webkit-backface-visibility: hidden;
-  -webkit-transform: translateZ(0);
-}
-
-/* En móviles, se desactiva el fondo fijo para evitar parpadeos o cuadros */
-@media (max-width: 900px) {
-  html,
-  body {
-    background-attachment: scroll;
-    background-size: 100% 100%;
-  }
+  background-size: 100% 100%; /* ocupa toda la altura y ancho */
+  background-attachment: fixed; /* se mantiene al hacer scroll */
+  color: var(--color-blanco);
 }
 
 @media (max-width: 480px) {
   body {
-    padding: 0;
+    padding: 0 0px;
     overflow-x: hidden;
   }
 
+ 
   .search-filter-container {
     flex-direction: column;
     gap: 12px;
@@ -79,4 +65,8 @@ body {
     max-width: 320px;
     font-size: 0.9rem;
   }
+
+
 }
+
+
