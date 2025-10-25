@@ -164,11 +164,19 @@ Mis datos:
       const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(
         mensaje
       )}`;
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-  window.location.href = url; // móviles
+      // detectar si es móvil
+const esMovil = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+if (esMovil) {
+  // iOS bloquea window.open, por eso usamos redirección directa
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.click();
 } else {
-  window.open(url, "_blank"); // escritorio
-};
+  window.open(url, "_blank");
+}
 
       // 5️⃣ Limpiar formulario
       setFormData({
