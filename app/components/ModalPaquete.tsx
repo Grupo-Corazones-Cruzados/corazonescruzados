@@ -18,28 +18,18 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
     costoNegociado: 0,
   });
   const [costoBaseMiembro, setCostoBaseMiembro] = useState(0);
-  const [acciones, setAcciones] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchAcciones = async () => {
       if (!miembro?.id) return;
 
-      const { data, error } = await supabase
-        .from("Acciones")
-        .select("id, Accion")
-        .eq("idMiembro", miembro.id)
-        .order("Accion", { ascending: true });
-
-      if (error) console.error("Error al cargar acciones:", error);
-      else setAcciones(data || []);
-
-      const { data: miembroCosto, error: costoError } = await supabase
+      const { data: miembroCosto, error } = await supabase
         .from("Miembros")
         .select("Costo")
         .eq("id", miembro.id)
         .single();
 
-      if (!costoError && miembroCosto?.Costo) {
+      if (!error && miembroCosto?.Costo) {
         setCostoBaseMiembro(miembroCosto.Costo);
         setFormData((prev) => ({
           ...prev,
@@ -64,21 +54,43 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
     e.preventDefault();
     if (!paquete || !miembro) return;
 
+    // construir datos para el mensaje
+    const numeroDestino = miembro?.celular?.replace("+", "") || "593992706933";
+    const mensaje = `Hola, soy ${formData.nombre}.
+Estoy interesado en el paquete *${paquete.Nombre}*.
+
+He negociado un costo por hora de $${formData.costoNegociado.toFixed(2)}.
+
+Detalles del paquete:
+- Horas: ${paquete.Horas}
+- Descuento: ${paquete.Descuento}%
+- Precio final: $${(
+      miembro?.Costo * paquete.Horas * (1 - paquete.Descuento / 100)
+    ).toFixed(2)}
+
+Mis datos:
+- Correo: ${formData.correo}
+- Teléfono: ${formData.telefono}`;
+
+    // abrir WhatsApp exactamente como hacía el botón anterior
+    const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensaje)}`;
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.click();
+
+    // guardar en Supabase
     try {
-      // Verificar o crear cliente
       const { data: existingClient, error: selectError } = await supabase
         .from("Clientes")
         .select("*")
         .eq("CorreoElectronico", formData.correo)
         .single();
 
-      if (selectError && selectError.code !== "PGRST116") {
-        console.error("Error al verificar cliente:", selectError);
-        return;
-      }
-
       let clienteId: number;
-      if (!existingClient) {
+
+      if (selectError && selectError.code === "PGRST116") {
         const { data: newClient, error: insertError } = await supabase
           .from("Clientes")
           .insert({
@@ -90,16 +102,14 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
           .select()
           .single();
 
-        if (insertError) {
-          console.error("Error al crear cliente:", insertError);
-          return;
-        }
+        if (insertError) throw insertError;
         clienteId = newClient.id;
-      } else {
+      } else if (existingClient) {
         clienteId = existingClient.id;
+      } else {
+        throw selectError;
       }
 
-      // Crear ticket
       const { error: ticketError } = await supabase
         .from("TicketsPaquetes")
         .insert({
@@ -108,40 +118,15 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
           idCliente: clienteId,
         });
 
-      if (ticketError) {
-        console.error("Error al crear ticket:", ticketError);
-        return;
-      }
+      if (ticketError) throw ticketError;
 
-      // Enviar mensaje de WhatsApp automáticamente
-      const numeroDestino = miembro?.celular?.replace("+", "") || "593992706933";
-      const mensaje = `Hola, soy ${formData.nombre}.
-Estoy interesado en el paquete *${paquete.Nombre}*.
-
-He negociado un costo por hora de $${formData.costoNegociado.toFixed(2)}.
-
-Detalles del paquete:
-- Horas: ${paquete.Horas}
-- Descuento: ${paquete.Descuento}%
-- Precio final: $${(
-        miembro?.Costo * paquete.Horas * (1 - paquete.Descuento / 100)
-      ).toFixed(2)}
-
-Mis datos:
-- Correo: ${formData.correo}
-- Teléfono: ${formData.telefono}`;
-
-      const url = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensaje)}`;
-      window.open(url, "_blank");
-
-      alert("Ticket creado correctamente. Redirigiendo a WhatsApp...");
       onClose();
     } catch (error) {
-      console.error("Error general:", error);
+      console.error("Error en la solicitud:", error);
     }
   };
 
-  // Cálculos de beneficios
+  // cálculos del paquete
   const costoHoraOriginal = miembro?.Costo || 0;
   const costoHoraNegociado = formData.costoNegociado || costoHoraOriginal;
   const horas = paquete?.Horas || 0;
