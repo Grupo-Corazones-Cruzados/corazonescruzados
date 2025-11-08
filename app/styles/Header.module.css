@@ -116,7 +116,8 @@
 }
 
 .BotonLogin {
-    right: 20px;
+  position: absolute;
+  right: 20px;
   top: 12px;
   padding: 10px 20px;
   background: linear-gradient(135deg, #e53935, #ff1744);
