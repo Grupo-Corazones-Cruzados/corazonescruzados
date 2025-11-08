@@ -116,7 +116,28 @@
 }
 
 .BotonLogin {
-  position: absolute;
-  right: 15px;
-  top: 15px;
-  background: var(--color-rojo)}
+    right: 20px;
+  top: 12px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #e53935, #ff1744);
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: "Helvetica", Arial, sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(229, 57, 53, 0.4);
+}
+
+.BotonLogin:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #ff5252, #f44336);
+  box-shadow: 0 6px 15px rgba(244, 67, 54, 0.5);
+}
+
+.BotonLogin:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(229, 57, 53, 0.3);
+}
