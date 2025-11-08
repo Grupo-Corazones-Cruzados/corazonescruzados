@@ -31,6 +31,17 @@ const Header = () => {
           className={`${styles.Logo} ${menuOpen ? styles["Logo-Activo"] : ""}`}
         />
         <h2 className={styles["BarraSuperior-Titulo"]}>Corazones Cruzados</h2>
+              <button
+          className={styles.BotonLogin}
+          onClick={() =>
+            window.open(
+              "https://apps.powerapps.com/play/e/ecc5f0d6-fde7-ef24-ade9-27ef544fe20d/a/0b621e15-f30c-4e9a-9488-6670107b484e?tenantId=9ce49709-ae4e-4000-be0f-c9f7d1aa98e9&hint=d0412594-0a6a-4ba2-a31e-bed394a822bf&sourcetime=1762026792024&hideNavBar=true#",
+              "_blank"
+            )
+          }
+        >
+          Iniciar Sesión
+        </button>
       </div>
 
       <div className={`${styles.Menu} ${menuOpen ? styles["Menu-Abierto"] : ""}`}>

@@ -114,3 +114,9 @@
   margin-right: 8px;
   filter: brightness(0);
 }
+
+.BotonLogin {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  background: var(--color-rojo)}
