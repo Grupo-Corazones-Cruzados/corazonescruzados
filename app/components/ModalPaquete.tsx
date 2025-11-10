@@ -103,6 +103,18 @@ Mis datos:
           .single();
 
         if (insertError) throw insertError;
+
+        // 🚀 Enviar datos al flujo Power Automate solo si el cliente es nuevo
+        await fetch("https://ecc5f0d6fde7ef24ade927ef544fe2.0d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ad41a7f54b1c4c2f9cc987193a8b5496/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KzX_ss8H8PkgEBKXqBA2R_Up8CFesQrJ08MSs6fwiXM", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nombre: formData.nombre,
+            correo: formData.correo,
+            contacto: formData.telefono
+          })
+        });
+
         clienteId = newClient.id;
       } else if (existingClient) {
         clienteId = existingClient.id;
