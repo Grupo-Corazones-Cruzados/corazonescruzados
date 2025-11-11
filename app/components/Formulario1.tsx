@@ -43,7 +43,6 @@ const Formulario1: React.FC<Formulario1Padre> = ({
   const [formData, setFormData] = useState({
     clienteNombre: "",
     clienteApellido: "",
-    clientePais: "",
     clienteContacto: "",
     clienteCorreo: "",
     detalle: "",
@@ -92,7 +91,6 @@ const Formulario1: React.FC<Formulario1Padre> = ({
           body: JSON.stringify({
             nombre: formData.clienteNombre,
             apellido: formData.clienteApellido,
-            pais: formData.clientePais,
             correo: formData.clienteCorreo,
             contacto: formData.clienteContacto,
             idFuenteMiembro: selectedAccion?.idFuente
@@ -104,7 +102,6 @@ const Formulario1: React.FC<Formulario1Padre> = ({
           .insert({
             Nombre: formData.clienteNombre,
             Apellido: formData.clienteApellido,
-            Pais: formData.clientePais,
             Contacto: formData.clienteContacto,
             CorreoElectronico: formData.clienteCorreo,
             idMiembro: selectedMember,
@@ -178,7 +175,6 @@ Mi contacto: ${formData.clienteContacto}`;
       setFormData({
         clienteNombre: "",
         clienteApellido: "",
-        clientePais: "",
         clienteContacto: "",
         clienteCorreo: "",
         detalle: "",
@@ -245,18 +241,6 @@ Mi contacto: ${formData.clienteContacto}`;
             value={formData.clienteCorreo}
             onChange={(e) =>
               setFormData({ ...formData, clienteCorreo: e.target.value })
-            }
-            required
-          />
-        </label>
-
-        <label>
-          País:
-          <input
-            type="text"
-            value={formData.clientePais}
-            onChange={(e) =>
-              setFormData({ ...formData, clientePais: e.target.value })
             }
             required
           />
