@@ -13,7 +13,6 @@ interface ModalPaqueteProps {
 const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, paquete }) => {
   const [formData, setFormData] = useState({
     nombre: "",
-    apellido: "",
     correo: "",
     telefono: "",
     costoNegociado: 0,
@@ -96,7 +95,6 @@ Mis datos:
           .from("Clientes")
           .insert({
             Nombre: formData.nombre,
-            Apellido: formData.apellido,
             Contacto: formData.telefono,
             CorreoElectronico: formData.correo,
             idMiembro: miembro.id,
@@ -112,10 +110,8 @@ Mis datos:
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             nombre: formData.nombre,
-            apellido: formData.apellido,
             correo: formData.correo,
-            contacto: formData.telefono,
-            idFuenteMiembro: miembro.area
+            contacto: formData.telefono
           })
         });
 
@@ -228,16 +224,6 @@ Mis datos:
               <label>
                 Nombre:
                 <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} required />
-              </label>
-              <label>
-                Apellido:
-                <input
-                  type="text"
-                  name="apellido"
-                  value={formData.apellido}
-                  onChange={handleChange}
-                  required
-                />
               </label>
               <label>
                 Correo:
