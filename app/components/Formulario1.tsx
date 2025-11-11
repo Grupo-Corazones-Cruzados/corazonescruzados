@@ -42,6 +42,7 @@ const Formulario1: React.FC<Formulario1Padre> = ({
 }) => {
   const [formData, setFormData] = useState({
     clienteNombre: "",
+    clienteApellido: "",
     clienteContacto: "",
     clienteCorreo: "",
     detalle: "",
@@ -89,6 +90,7 @@ const Formulario1: React.FC<Formulario1Padre> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             nombre: formData.clienteNombre,
+            apellido: formData.clienteApellido,
             correo: formData.clienteCorreo,
             contacto: formData.clienteContacto
           })
@@ -145,7 +147,7 @@ const Formulario1: React.FC<Formulario1Padre> = ({
         miembroDB?.celular?.replace("+", "") || "593992706933";
 
       // 5️⃣ Generar mensaje de WhatsApp
-      const mensaje = `Hola, soy ${formData.clienteNombre}.
+      const mensaje = `Hola, soy ${formData.clienteNombre} ${formData.clienteApellido}.
 He generado un ticket para la acción *${selectedAccion.Accion}* con ${miembroDB?.Nombre}.
 Detalles del requerimiento:
 ${formData.detalle}
@@ -170,6 +172,7 @@ Mi contacto: ${formData.clienteContacto}`;
       setSelectedMember(null);
       setFormData({
         clienteNombre: "",
+        clienteApellido: "",
         clienteContacto: "",
         clienteCorreo: "",
         detalle: "",
@@ -200,6 +203,18 @@ Mi contacto: ${formData.clienteContacto}`;
             value={formData.clienteNombre}
             onChange={(e) =>
               setFormData({ ...formData, clienteNombre: e.target.value })
+            }
+            required
+          />
+        </label>
+
+        <label>
+          Apellido:
+          <input
+            type="text"
+            value={formData.clienteApellido}
+            onChange={(e) =>
+              setFormData({ ...formData, clienteApellido: e.target.value })
             }
             required
           />
