@@ -8,6 +8,7 @@ import Estructura from "app/components/Estructura"
 import ModalAcciones from "app/components/ModalAcciones";
 import type { ObjetoResumenPaquete } from "app/components/CtPaquetes";
 
+
 interface Accion {
   id: number;
   Accion: string;
@@ -52,6 +53,7 @@ setObjetoMiembro={setObjetoMiembro}
 />
 
 <Estructura />
+
 
     </main>
   );

@@ -75,4 +75,5 @@ const Acciones: React.FC<AccionesPadre> = ({ selectedMember,showForm,setShowForm
         </div>
     );
 };
+
 export default Acciones;
