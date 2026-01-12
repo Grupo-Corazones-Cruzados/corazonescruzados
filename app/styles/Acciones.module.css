@@ -1,98 +1,134 @@
-.ContenedorAcciones {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    border-radius: 50px;
-    animation: fadeInUp 0.4s ease;
-    box-shadow: none;
-    background: transparent;
-    font-family: Arial, Helvetica, sans-serif;
+/* =========================
+   Acciones.module.css (SaaS PRO)
+   ========================= */
+
+.section{
+  width: 100%;
+  background: var(--surface-0);
+  border: 1px solid var(--border-0);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--s-5);
+  color: var(--text-0);
 }
 
-
-.ContenedorAcciones::-webkit-scrollbar {
-    height: 8px;
+.headerRow{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: var(--s-3);
 }
 
-.ContenedorAcciones::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 0, 100, 0.4);
-    border-radius: 10px;
+.kicker{
+  display:inline-flex;
+  align-items:center;
+  width: fit-content;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+
+  color: var(--text-1);
+  border: 1px solid var(--border-0);
+  background: rgba(255,255,255,.03);
 }
 
-
-
-
-.NoAcciones {
-    color: #999;
-    text-align: center;
-    margin-top: 10px;
-    font-size: 1rem;
+.title{
+  margin: 10px 0 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-0);
 }
 
+.subtitle{
+  margin: 8px 0 0;
+  color: var(--text-2);
+  font-size: .95rem;
+  max-width: 76ch;
+}
 
-/* --- CONTENEDOR PRINCIPAL --- */
-.AccionesLista {
+.grid{
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Se ajusta automáticamente */
-  gap: 20px;
-  width: 90%;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 20px;
-  box-sizing: border-box;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
 }
 
-/* --- TARJETAS DE ACCIÓN --- */
-.AccionesElemento {
- 
-  
-  border-radius: 16px; /* Bordes redondeados */
-  padding: 20px;
-  text-align: center;
-  color: var(--color-blanco);
-  font-weight: bold;
-  font-size: 1rem;
+.card{
+  text-align: left;
   cursor: pointer;
-  transition: all 0.3s ease; /* Altura uniforme */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+
+  border-radius: 18px;
+  border: 1px solid var(--border-0);
+  background: var(--surface-1);
+
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+
+  display: grid;
+  gap: 6px;
+
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
 }
 
-/* --- EFECTO AL PASAR EL CURSOR --- */
-.AccionesElemento:hover {
- 
-  transform: translateY(-5px);
-  box-shadow: 0 4px 15px rgba(255, 0, 100, 0.3);
+.card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(179,18,38,.22);
+  box-shadow: var(--shadow-lg);
+  background: var(--surface-2);
 }
 
-/* --- SELECCIÓN ACTIVA --- */
-.AccionSeleccionada {
-  
-  border: 2px solid #ff0066;
-  box-shadow: 0 0 18px rgba(255, 0, 100, 0.6);
+.card:focus-visible{
+  outline: none;
+  box-shadow: var(--ring), var(--shadow-lg);
 }
 
-/* --- RESPONSIVIDAD --- */
-@media (max-width: 768px) {
-  .AccionesLista {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  }
-
-  .AccionesElemento {
-    font-size: 0.9rem;
-    padding: 15px;
-  }
+.cardSelected{
+  border-color: rgba(179,18,38,.35);
+  box-shadow: 0 0 0 4px rgba(179,18,38,.16), var(--shadow-lg);
 }
 
-@media (max-width: 480px) {
-  .AccionesLista {
-    grid-template-columns: 1fr; /* Solo una columna en móvil */
-  }
+.cardTitle{
+  font-size: .98rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--text-0);
+  min-height: 44px;
+}
 
-  .AccionesElemento {
-    font-size: 0.85rem;
-  }
+.state{
+  margin-top: 10px;
+  border: 1px dashed rgba(255,255,255,.14);
+  background: rgba(255,255,255,.02);
+  border-radius: 16px;
+  padding: 16px;
+  color: var(--text-2);
+  text-align: center;
+}
+
+.spinner{
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.20);
+  border-top-color: rgba(179,18,38,.80);
+  animation: spin 1s linear infinite;
+  margin: 0 auto 10px;
+}
+
+@keyframes spin{
+  to{ transform: rotate(360deg); }
+}
+
+@media (max-width: 480px){
+  .section{ padding: 18px; border-radius: 16px; }
+  .grid{ gap: 12px; }
+  .card{ padding: 14px; border-radius: 16px; }
 }

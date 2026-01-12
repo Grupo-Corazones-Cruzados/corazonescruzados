@@ -1,58 +1,109 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import style from "app/styles/Formualrio2.module.css";
 import { supabase } from "lib/supabaseClient";
 
-export default function Formulario2({ visible }: { visible: boolean }) {
+type Props = {
+  visible: boolean;
+  onClose?: () => void;
+  setVisible?: (v: boolean) => void;
+};
+
+export default function Formulario2({ visible, onClose, setVisible }: Props) {
   const [motivo, setMotivo] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const close = () => {
+    setVisible?.(false);
+    onClose?.();
+  };
+
+  const canSubmit = useMemo(() => motivo.trim().length > 0 && !sending, [motivo, sending]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!motivo.trim()) {
+      setSuccessMsg("");
       setErrorMsg("Por favor, escribe tu motivo antes de enviar.");
       return;
     }
 
     setErrorMsg("");
+    setSuccessMsg("");
+    setSending(true);
 
-    const { error } = await supabase
-      .from("Aspirantes")
-      .insert([{ Motivo: motivo }]);
+    const { error } = await supabase.from("Aspirantes").insert([{ Motivo: motivo.trim() }]);
 
-    if (error) console.error("Error al guardar:", error.message);
-    else {
-      setMotivo("");
-      alert("Motivo enviado correctamente");
+    setSending(false);
+
+    if (error) {
+      console.error("Error al guardar:", error.message);
+      setErrorMsg("Ocurrió un error al enviar. Intenta nuevamente.");
+      return;
     }
+
+    setMotivo("");
+    setSuccessMsg("¡Listo! Recibimos tu información. Pronto nos pondremos en contacto.");
   };
 
-  return (
-    <div>
-      {visible && (
-        <div className={style.formWrapper}>
-          <form className={style.formulario} onSubmit={handleSubmit}>
-            <label className={style.etiquetas}>
-              Dinos quién eres
-              <textarea
-                className={style.areaTexto}
-                placeholder="Escribe aquí tus motivos para unirte al proyecto..."
-                value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
-              />
-              {errorMsg && (
-                <p className={style.mensajeError}>{errorMsg}</p>
-              )}
-            </label>
+  if (!visible) return null;
 
-            <button className={style.botones} type="submit">
-              Enviar
-            </button>
-          </form>
+  return (
+    <div className={style.overlay} role="presentation" onClick={close} aria-label="Formulario aspirantes">
+      <div className={style.modal} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className={style.closeButton} aria-label="Cerrar" onClick={close}>
+          ×
+        </button>
+
+        <div className={style.header}>
+          <div className={style.kicker}>Aspirantes</div>
+          <h2 className={style.title}>Cuéntanos quién eres</h2>
+          <p className={style.subtitle}>
+            Escribe brevemente tus motivos para unirte al proyecto. Responderemos por el canal más adecuado.
+          </p>
         </div>
-      )}
+
+        <form className={style.formulario} onSubmit={handleSubmit}>
+          <label className={style.field}>
+            <span className={style.label}>Motivo</span>
+            <textarea
+              className={style.areaTexto}
+              placeholder="Escribe aquí tus motivos para unirte al proyecto..."
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+            />
+          </label>
+
+          {errorMsg && <p className={style.mensajeError}>{errorMsg}</p>}
+          {successMsg && <p className={style.mensajeOk}>{successMsg}</p>}
+
+          <button className={style.botones} type="submit" disabled={!canSubmit}>
+            {sending ? "Enviando…" : "Enviar"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

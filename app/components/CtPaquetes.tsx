@@ -1,5 +1,14 @@
+/* =========================
+   app/components/CtPaquetes.tsx (REDISEÑO PRO SaaS)
+   - Paquetes arriba (cards)
+   - Miembros abajo SOLO cuando hay paquete seleccionado
+   - Mejor UX: botones accesibles, resumen de selección
+   Copia y pega COMPLETO (reemplaza tu archivo actual)
+   ========================= */
+
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import styles from "app/styles/Paquetes.module.css";
 import Miembros from "app/components/Miembros";
@@ -13,6 +22,7 @@ export interface ObjetoResumenPaquete {
   Correo: string;
   idFuentes: number;
   Costo: number;
+  codUsuario?: string;
 }
 
 interface Paquete {
@@ -22,36 +32,39 @@ interface Paquete {
   Horas: number;
   Descripcion: string;
   Descuento: number;
-  precioTotal?: number;
-  precioConDescuento?: number;
-  costoHora?: number;
-  ahorroHora?: number;
 }
 
-interface PaquetesMiembros2 {
+interface Props {
   selectedMember: number | null;
   setSelectedMember: React.Dispatch<React.SetStateAction<number | null>>;
 
-  // ✅ Cambia esta línea
   setObjetoMiembro: (m: ObjetoResumenPaquete | null) => void;
-
   objetoMiembro: ObjetoResumenPaquete | null;
+
   selectedPaquete: Paquete | null;
   setSelectedPaquete: React.Dispatch<React.SetStateAction<Paquete | null>>;
+
+  onOpenSolicitud: () => void;
 }
 
-const CPaquetes: React.FC<PaquetesMiembros2> = ({
+export default function CPaquetes({
   selectedMember,
   setSelectedMember,
   objetoMiembro,
   setObjetoMiembro,
   selectedPaquete,
   setSelectedPaquete,
-}) => {
+  onOpenSolicitud,
+}: Props) {
   const [paquetes, setPaquetes] = useState<Paquete[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPaquetes = async () => {
+      setLoading(true);
+      setError(null);
+
       const { data, error } = await supabase
         .from("Paquetes")
         .select("*")
@@ -59,52 +72,151 @@ const CPaquetes: React.FC<PaquetesMiembros2> = ({
 
       if (error) {
         console.error("Error al cargar paquetes:", error);
-      } else if (data) {
-        setPaquetes(data);
+        setError("No se pudieron cargar los paquetes.");
+        setPaquetes([]);
+      } else {
+        setPaquetes((data as Paquete[]) ?? []);
       }
+
+      setLoading(false);
     };
 
     fetchPaquetes();
   }, []);
 
-  return (
-    <>
-      {/* Componente de miembros */}
-      {selectedPaquete ? <Miembros
-        selectedMember={selectedMember}
-        setSelectedMember={setSelectedMember}
-        objetoMiembro={objetoMiembro}
-        setObjetoMiembro={setObjetoMiembro}
-      />:""}
+  const contenidoList = useMemo(() => {
+    if (!selectedPaquete?.Contenido) return [];
+    return selectedPaquete.Contenido.split(";").map((t) => t.trim()).filter(Boolean);
+  }, [selectedPaquete]);
 
-      {/* Tarjetas de paquetes */}
-      <div className={styles.cardsContainer}>
-        {paquetes.map((p) => (
-          <div
-            key={p.id}
-            className={`${styles.paqueteCard} ${
-              selectedPaquete?.id === p.id ? styles.paqueteSeleccionado : ""
-            }`}
-            onClick={() => setSelectedPaquete(p)} // ← enviamos el objeto completo
-          >
-            <div className={styles.paqueteHeader}>
-              <h3>{p.Nombre}</h3>
+  return (
+    <section className={styles.page}>
+      {/* ===== Header / Resumen ===== */}
+      <div className={styles.sectionHeader}>
+        <div>
+          <div className={styles.kicker}>Paquetes</div>
+          <h1 className={styles.sectionTitle}>Selecciona un paquete</h1>
+          <p className={styles.sectionSubtitle}>
+            Elige el paquete y luego selecciona un miembro para continuar.
+          </p>
+        </div>
+
+        <div className={styles.summaryBar}>
+          <div className={styles.summaryPill}>
+            <span className={styles.summaryLabel}>Paquete</span>
+            <span className={styles.summaryValue}>{selectedPaquete?.Nombre ?? "—"}</span>
+          </div>
+          <div className={styles.summaryPill}>
+            <span className={styles.summaryLabel}>Miembro</span>
+            <span className={styles.summaryValue}>{objetoMiembro?.Nombre ?? "—"}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== Grid de paquetes ===== */}
+      {loading ? (
+        <div className={styles.state}>
+          <div className={styles.spinner} aria-hidden="true" />
+          <p>Cargando paquetes…</p>
+        </div>
+      ) : error ? (
+        <div className={styles.stateError} role="alert">
+          <p className={styles.errorTitle}>Error</p>
+          <p className={styles.errorText}>{error}</p>
+        </div>
+      ) : (
+        <div className={styles.cardsContainer}>
+          {paquetes.map((p) => {
+            const isSelected = selectedPaquete?.id === p.id;
+            const benefits = p.Contenido
+              ? p.Contenido.split(";").map((t) => t.trim()).filter(Boolean).slice(0, 6)
+              : [];
+
+            return (
+              <button
+                key={p.id}
+                type="button"
+                className={`${styles.paqueteCard} ${isSelected ? styles.paqueteSeleccionado : ""}`}
+                onClick={() => {
+                  setSelectedPaquete(p);
+                  // Si cambias de paquete, reset de miembro seleccionado para evitar confusión
+                  setSelectedMember(null);
+                  setObjetoMiembro(null);
+                }}
+              >
+                <div className={styles.paqueteHeader}>
+                  <h3>{p.Nombre}</h3>
+                  <span className={styles.paqueteMeta}>
+                    {p.Horas ? `${p.Horas}h` : "—"} · {p.Descuento ? `${p.Descuento}%` : "0%"}
+                  </span>
+                </div>
+
+                <ul className={styles.paqueteLista}>
+                  {benefits.map((texto, i) => (
+                    <li key={i}>
+                      <img src="/Icono de Corazón.png" alt="icono" /> {texto}
+                    </li>
+                  ))}
+                </ul>
+
+                <p className={styles.paqueteDescripcion}>{p.Descripcion}</p>
+
+                <div className={styles.paqueteCta}>
+                  {isSelected ? "Seleccionado" : "Elegir paquete →"}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ===== Sección miembros (solo si hay paquete seleccionado) ===== */}
+      <div className={styles.membersWrap}>
+        {!selectedPaquete ? (
+          <div className={styles.state}>
+            <p>Selecciona un paquete para ver y elegir miembros disponibles.</p>
+          </div>
+        ) : (
+          <div className={styles.membersCard}>
+            <div className={styles.membersHeader}>
+              <div>
+                <div className={styles.kicker}>Miembros</div>
+              
+              </div>
             </div>
 
-            <ul className={styles.paqueteLista}>
-              {p.Contenido.split(";").map((texto, i) => (
-                <li key={i}>
-                  <img src="/Icono de Corazón.png" alt="icono" /> {texto}
-                </li>
-              ))}
-            </ul>
+            <Miembros
+              selectedMember={selectedMember}
+              setSelectedMember={setSelectedMember}
+              objetoMiembro={objetoMiembro}
+              setObjetoMiembro={setObjetoMiembro}
+            />
 
-            <p className={styles.paqueteDescripcion}>{p.Descripcion}</p>
+            <div className={styles.membersFooterBtns}>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                disabled={!selectedPaquete || !objetoMiembro}
+                onClick={onOpenSolicitud}
+              >
+                Solicitar paquete
+              </button>
+
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                onClick={() => {
+                  setSelectedPaquete(null);
+                  setSelectedMember(null);
+                  setObjetoMiembro(null);
+                }}
+              >
+                Cambiar paquete
+              </button>
+            </div>
           </div>
-        ))}
+        )}
       </div>
-    </>
+    </section>
   );
-};
-
-export default CPaquetes;
+}

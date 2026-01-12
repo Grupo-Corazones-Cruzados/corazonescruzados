@@ -1,14 +1,124 @@
-.BarraInferior {
-  background-size: 200% 100%;
-  padding: 10px 20px;
-  color: white;
-  border-radius: 10px 10px 0 0; /* Solo redondeado arriba para que quede abajo */
+/* =========================
+   Footer.module.css (REDISEÑO PRO)
+   Estilo SaaS moderno, sólido (sin transparencia agresiva)
+   ========================= */
+
+.footer{
+  width: 100%;
+  margin-top: 28px;
+  padding: 18px 0;
+}
+
+.inner{
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+
+  
+
+  padding: 16px 18px;
+
+}
+
+.left{
+  display: grid;
+  gap: 6px;
+}
+
+.brand{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: .86rem;
+  color: var(--text-0);
+}
+
+.dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, var(--accent-500), var(--accent-600));
+  box-shadow: 0 0 0 4px rgba(179,18,38,.14);
+}
+
+.tagline{
+  margin: 0;
+  color: var(--text-2);
+  font-size: .9rem;
+}
+
+.nav{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
-  text-align: center;
-  font-family: Helvetica, Arial, sans-serif;
-  letter-spacing: 1px;
-  font-size: 0.9rem;
-  margin-top: 40px;
+}
+
+.link{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+
+  border: 1px solid var(--border-0);
+  background: rgba(255,255,255,.04);
+
+  color: var(--text-0);
+  text-decoration: none;
+
+  font-weight: 900;
+  font-size: .88rem;
+
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+}
+
+.link:hover{
+  transform: translateY(-1px);
+  border-color: rgba(179,18,38,.22);
+  background: rgba(255,255,255,.06);
+}
+
+.right{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.copy{
+  color: var(--text-1);
+  font-size: .9rem;
+  font-weight: 800;
+}
+
+.sep{
+  color: rgba(246,247,251,.30);
+}
+
+.muted{
+  color: var(--text-3);
+  font-size: .9rem;
+}
+
+@media (max-width: 680px){
+  .inner{
+    padding: 14px;
+  }
+
+  .right{
+    justify-content: flex-start;
+  }
 }

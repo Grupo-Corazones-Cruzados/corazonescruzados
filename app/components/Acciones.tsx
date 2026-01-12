@@ -1,79 +1,96 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { supabase } from 'lib/supabaseClient';
-import style from "app/styles/Acciones.module.css"
-
-interface AccionesPadre {
-    selectedMember: number | null;
-    showForm: boolean | null;
-    setShowForm: React.Dispatch<React.SetStateAction<boolean>>;
-    selectedAccion: Accion | null;
-    setSelectedAccion: React.Dispatch<React.SetStateAction<Accion | null>>;
-}
+import React, { useEffect, useState } from "react";
+import { supabase } from "lib/supabaseClient";
+import styles from "app/styles/Acciones.module.css";
 
 interface Accion {
-    id: number;
-    Accion: string;
-    idMiembro: number;
-    idFuente: number
+  id: number;
+  Accion: string;
+  idMiembro: number;
+  idFuente: number;
 }
 
-const Acciones: React.FC<AccionesPadre> = ({ selectedMember,showForm,setShowForm,selectedAccion,setSelectedAccion}) => {
-    const [acciones, setAcciones] = useState<Accion[]>([]);
+interface Props {
+  selectedMember: number | null;
+  selectedAccion: Accion | null;
+  setSelectedAccion: React.Dispatch<React.SetStateAction<Accion | null>>;
+}
 
+export default function Acciones({
+  selectedMember,
+  selectedAccion,
+  setSelectedAccion,
+}: Props) {
+  const [acciones, setAcciones] = useState<Accion[]>([]);
+  const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const fetchAcciones = async () => {
-            if (!selectedMember) {
-                setAcciones([]);
-                return;
-            }
+  useEffect(() => {
+    const fetchAcciones = async () => {
+      if (!selectedMember) {
+        setAcciones([]);
+        return;
+      }
 
-            const { data, error } = await supabase
-                .from('Acciones')
-                .select('*')
-                .eq('idMiembro', Number(selectedMember))
-                .order('Accion', { ascending: true });
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("Acciones")
+        .select("*")
+        .eq("idMiembro", Number(selectedMember))
+        .order("Accion", { ascending: true });
 
-            if (error) {
-                console.error('Error al cargar acciones:', error);
-            } else {
-                setAcciones(data || []);
-            }
-        };
+      if (error) {
+        console.error("Error al cargar acciones:", error);
+        setAcciones([]);
+      } else {
+        setAcciones((data as Accion[]) || []);
+      }
+      setLoading(false);
+    };
 
-        fetchAcciones();
-    }, [selectedMember]);
+    fetchAcciones();
+  }, [selectedMember]);
 
-    return (
-        <div className={style.ContenedorAcciones}>
-        
-            <h2 className="AccionesTitulo">SELECCIONA LA ACCIÓN REQUERIDA</h2>
-        
-            
-            
-            <div className={style.AccionesLista}>
-                {acciones.length === 0 ? (
-                    <p className={style.NoAcciones}>No hay acciones registradas.</p>
-                ) : (
-                    acciones.map((accion) => (
-                        <div
-                            key={accion.id}
-                            className={`${style.AccionesElemento} ${selectedAccion?.id === accion.id ? style.AccionSeleccionada : ''}`}
-                            onClick={() => {
-                                setSelectedAccion(accion);
-                                setShowForm(true);
-                                
-                            }}
-                        >
-                            {accion.Accion}
-                        </div>
-                    ))
-                )}
-            </div>
+  return (
+    <section className={styles.section} aria-label="Acciones disponibles">
+      <div className={styles.headerRow}>
+        <div>
+          <div className={styles.kicker}>Acciones</div>
+          <h2 className={styles.title}>Selecciona la acción requerida</h2>
+       
         </div>
-    );
-};
+      </div>
 
-export default Acciones;
+      {loading ? (
+        <div className={styles.state}>
+          <div className={styles.spinner} aria-hidden="true" />
+          <p>Cargando acciones…</p>
+        </div>
+      ) : acciones.length === 0 ? (
+        <div className={styles.state}>
+          <p>No hay acciones registradas.</p>
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {acciones.map((accion) => {
+            const selected = selectedAccion?.id === accion.id;
+
+            return (
+              <button
+                key={accion.id}
+                type="button"
+                className={`${styles.card} ${selected ? styles.cardSelected : ""}`}
+                onClick={() => {
+                  setSelectedAccion(accion);
+                }}
+                aria-pressed={selected}
+              >
+                <div className={styles.cardTitle}>{accion.Accion}</div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}

@@ -1,144 +1,311 @@
-.BarraSuperior {
-  animation: gradientMove 2s linear infinite;
-  padding: 17px 10px;
-  color: white;
-  display: flex;
-  align-items: center;
+/* =========================
+   Header.module.css (REDISEÑO PRO)
+   Estilo SaaS moderno (Microsoft/Amazon-like)
+   - Topbar sólido con jerarquía clara
+   - Drawer con overlay real
+   ========================= */
+
+:root{
+  --hdr-surface: #0f121a;
+  --hdr-surface-2: #121625;
+  --hdr-border: rgba(255,255,255,.10);
+  --hdr-border-2: rgba(255,255,255,.14);
+  --hdr-text: rgba(246,247,251,.94);
+  --hdr-muted: rgba(246,247,251,.70);
+  --hdr-accent-1: rgba(122,15,26,.90);
+  --hdr-accent-2: rgba(179,18,38,.70);
+  --hdr-shadow: 0 16px 44px rgba(0,0,0,.40);
+  --hdr-shadow-lg: 0 26px 80px rgba(0,0,0,.55);
+}
+
+/* ===== Overlay real ===== */
+.Overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+
+  opacity: 0;
+  pointer-events: none;
+
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  transition: opacity .18s ease;
+}
+
+.Overlay-Abierto{
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===== Topbar ===== */
+.BarraSuperior{
+  height: 68px;
   width: 100%;
   box-sizing: border-box;
-  justify-content: flex-start;
-  height: 60px;
-  background: linear-gradient(180deg, var(--color-negro)  var(--color-rojo), var(--color-negro));
-  color: var(--color-blanco);
-  
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 14px;
+
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+
+  color: var(--hdr-text);
+
+  border-bottom: 1px solid var(--hdr-border);
+
+  background:
+    radial-gradient(900px 260px at 15% 0%, rgba(179,18,38,.14), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+    var(--hdr-surface);
+
+  box-shadow: var(--hdr-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.BarraSuperior-Titulo {
-  font-size: 1rem;
-  font-family: Helvetica, Arial, sans-serif;
-  letter-spacing: 2px;
+.Spacer{ flex: 1; }
+
+.LogoButton{
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== Logo ===== */
+.Logo{
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.03);
+
+  box-shadow: 0 10px 26px rgba(0,0,0,.35);
+
+  object-fit: cover;
+
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.Logo:hover{
+  transform: translateY(-1px);
+  border-color: rgba(179,18,38,.25);
+  background: rgba(255,255,255,.04);
+  box-shadow: 0 16px 40px rgba(0,0,0,.45);
+}
+
+.Logo-Activo{
+  border: 1px solid rgba(179,18,38,.35);
+  box-shadow:
+    0 0 0 4px rgba(179,18,38,.16),
+    0 18px 46px rgba(0,0,0,.55);
+}
+
+/* ===== Brand title ===== */
+.BarraSuperior-Titulo{
   margin: 0;
-  margin-left: 10px;
-  color: white;
+
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    "Noto Sans", "Liberation Sans", sans-serif;
+
+  font-size: .92rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+
+  color: rgba(246,247,251,.92);
+  text-shadow: 0 0 14px rgba(179,18,38,.12);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.Menu {
-  width: 250px;
-  height: calc(100vh - 80px);
-  background: rgba(255, 255, 255, 0); /* transparente por defecto */
-  color: #000;
+/* ===== CTA: Login ===== */
+.BotonLogin{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  padding: 11px 14px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(179,18,38,.28);
+  background: linear-gradient(90deg, var(--hdr-accent-1), var(--hdr-accent-2));
+  color: rgba(255,255,255,.96);
+
+  font-size: .92rem;
+  font-weight: 900;
+  letter-spacing: .02em;
+
+  cursor: pointer;
+
+  box-shadow: 0 18px 44px rgba(122,15,26,.26);
+  transition: transform .14s ease, box-shadow .14s ease, filter .14s ease, border-color .14s ease;
+}
+
+.BotonLogin:hover{
+  transform: translateY(-1px);
+  filter: saturate(1.06);
+  border-color: rgba(179,18,38,.40);
+  box-shadow: 0 24px 64px rgba(122,15,26,.34);
+}
+
+.BotonLogin:active{
+  transform: translateY(0);
+  box-shadow: 0 14px 34px rgba(122,15,26,.22);
+}
+
+/* =========================
+   Drawer / Sidebar
+   ========================= */
+
+.Menu{
+  width: 320px;
+  height: 100vh;
+
   position: fixed;
   left: 0;
-  top: 70px;
-  padding: 20px;
-  font-family: Helvetica, Arial, sans-serif;
-  font-size: 0.9rem;
-  z-index: 1000;
-  transition: transform 0.3s ease, background 0.3s ease;
-  transform: translateX(-100%);
-  border-radius: 0 8px 8px 0;
+  top: 0;
+
+  z-index: 1300;
+
+  padding: 14px 12px;
+
+  transform: translateX(-105%);
+  transition: transform .22s ease;
+
+  color: var(--hdr-text);
+
+  border-right: 1px solid var(--hdr-border);
+
+  background:
+    radial-gradient(900px 420px at 12% 0%, rgba(179,18,38,.16), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
+    var(--hdr-surface);
+
+  box-shadow: var(--hdr-shadow-lg);
+
+  overflow-y: auto;
 }
 
-/* Cuando el menú está abierto */
-.Menu-Abierto {
-  transform: translateX(0);
+.Menu-Abierto{ transform: translateX(0); }
+
+.MenuHeader{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 8px 10px 12px;
+  margin-bottom: 10px;
+
+  border-bottom: 1px solid rgba(255,255,255,.10);
 }
 
-@media (max-width: 768px) {
-  .Menu {
-    width: 100vw;
-    height: 100dvh; /* altura dinámica real del viewport */
-    background: rgba(0, 0, 0, 0.85);
-    border-radius: 0;
-    top: 0;
-  }
+.MenuTitulo{
+  margin: 0;
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(246,247,251,.88);
 }
 
-.Logo {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+.MenuClose{
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+
+  background: rgba(255,255,255,.04);
+  color: rgba(246,247,251,.92);
+
   cursor: pointer;
-  filter: brightness(1) invert(0);
-  transition: all 0.3s ease;
+
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
 }
 
-
-
-.Logo-Activo {
-  border: 2px solid #fff;
-  opacity: 0.8;
+.MenuClose:hover{
+  transform: translateY(-1px);
+  border-color: rgba(179,18,38,.22);
+  background: rgba(255,255,255,.06);
 }
 
-.Menu-Lista {
+.Menu-Lista{
   list-style: none;
   padding: 0;
   margin: 0;
+
+  display: grid;
+  gap: 8px;
 }
 
-.Menu-Elemento {
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 6px;
+.Menu-Elemento{
+  margin: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+}
+
+.Menu-Elemento:hover{
+  transform: translateY(-1px);
+  border-color: rgba(179,18,38,.22);
+  background: rgba(255,255,255,.05);
+}
+
+.Menu-Elemento-Activo{
+  border-color: rgba(179,18,38,.32);
+  background: linear-gradient(90deg, rgba(122,15,26,.34), rgba(255,255,255,.03));
+}
+
+.Menu-Elemento-Boton{
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 12px 12px;
   cursor: pointer;
-  transition: background 0.3s;
-  color: #ffffff;
+  color: rgba(246,247,251,.92);
+  text-align: left;
 }
 
-.Menu-Elemento-Activo {
-  color: #000000;
-  background: #e0e0e0;
-  font-weight: bold;
-}
-
-.Menu-Elemento-Contenido {
+.Menu-Elemento-Contenido{
   display: flex;
   align-items: center;
+  gap: 10px;
+  font-weight: 900;
 }
 
-.Menu-Elemento-Hover {
-  background: #000000;
+.Menu-Elemento-Icono,
+.MenuElementoIconoSeleccionado{
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  filter: invert(1);
+  opacity: .95;
 }
 
-.Menu-Elemento-Icono {
-  width: 20px;
-  height: 20px;
-  margin-right: 8px;
-  filter: brightness(0);
-  filter: invert();
+@media (max-width: 768px){
+  .Menu{ width: 86vw; max-width: 360px; }
 }
 
-.MenuElementoIconoSeleccionado {
-  width: 20px;
-  height: 20px;
-  margin-right: 8px;
-  filter: brightness(0);
-}
-
-.BotonLogin {
-  position: absolute;
-  right: 20px;
-  top: 12px;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #e53935, #ff1744);
-  color: #fff;
-  border: none;
-  border-radius: 25px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  font-family: "Helvetica", Arial, sans-serif;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(229, 57, 53, 0.4);
-}
-
-.BotonLogin:hover {
-  transform: translateY(-2px);
-  background: linear-gradient(135deg, #ff5252, #f44336);
-  box-shadow: 0 6px 15px rgba(244, 67, 54, 0.5);
-}
-
-.BotonLogin:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(229, 57, 53, 0.3);
+@media (max-width: 480px){
+  .BarraSuperior{ height: 64px; padding: 10px 12px; }
+  .Menu{ width: 90vw; }
+  .Menu-Elemento-Boton{ padding: 12px 10px; }
 }

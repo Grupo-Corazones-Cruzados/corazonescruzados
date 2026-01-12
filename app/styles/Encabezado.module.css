@@ -1,49 +1,214 @@
-.EncabezadoContenedor {
-    width: 100%;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
+/* =========================
+   Encabezado.module.css (REDISEÑO PRO)
+   Header tipo SaaS (Microsoft/Amazon-like): layout, jerarquía, CTAs
+   Copia y pega completo
+   ========================= */
+
+.header{
+  position: relative;
+  overflow: hidden;
+
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 20px;
+
+  background: #0f121a; /* superficie sólida */
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+
+  padding: 22px;
+}
+
+/* glow sutil (no ensucia el contenido) */
+.bgGlow{
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+
+  background:
+    radial-gradient(900px 360px at 12% 0%, rgba(179,18,38,.18), transparent 62%),
+    radial-gradient(700px 280px at 88% 0%, rgba(122,15,26,.12), transparent 62%);
+
+  opacity: .95;
+}
+
+.inner{
+  position: relative;
+  z-index: 1;
+
+  display: grid;
+  grid-template-columns: 1.6fr 0.9fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.left{
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.kicker{
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+
+  color: rgba(246,247,251,.80);
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.03);
+}
+
+.title{
+  margin: 0;
+
+  font-size: clamp(1.6rem, 2.6vw, 2.25rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+
+  color: rgba(246,247,251,.96);
+  text-shadow: 0 0 18px rgba(179,18,38,.12);
+}
+
+.subtitle{
+  margin: 0;
+  font-size: 1rem;
+  color: rgba(246,247,251,.70);
+  max-width: 56ch;
+}
+
+/* CTAs */
+.ctaRow{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.primaryBtn,
+.secondaryBtn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 12px 14px;
+  border-radius: 999px;
+
+  font-weight: 900;
+  font-size: .92rem;
+  letter-spacing: .02em;
+
+  text-decoration: none;
+  cursor: pointer;
+
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+}
+
+.primaryBtn{
+  color: rgba(255,255,255,.96);
+  border: 1px solid rgba(179,18,38,.28);
+  background: linear-gradient(90deg, rgba(122,15,26,.92), rgba(179,18,38,.72));
+  box-shadow: 0 18px 44px rgba(122,15,26,.26);
+}
+
+.primaryBtn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(179,18,38,.40);
+  box-shadow: 0 24px 64px rgba(122,15,26,.34);
+}
+
+.secondaryBtn{
+  color: rgba(246,247,251,.92);
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  box-shadow: 0 12px 26px rgba(0,0,0,.28);
+}
+
+.secondaryBtn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.06);
+}
+
+/* Pills */
+.metaRow{
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.metaPill{
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  color: rgba(246,247,251,.82);
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.03);
+}
+
+/* Right side (logo card) */
+.right{
+  display: grid;
+  place-items: end;
+}
+
+.logoCard{
+  width: min(120px, 100%);
+  aspect-ratio: 1 / 1;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.03);
+
+  box-shadow: 0 16px 44px rgba(0,0,0,.35);
+}
+
+.logo{
+  width: clamp(60px, 18vw, 100px);
+  height: auto;
+
+  filter: invert(1) drop-shadow(0 14px 34px rgba(0,0,0,.45));
+  opacity: .98;
+}
+
+@media (max-width: 900px){
+  .inner{
+    grid-template-columns: 1fr;
+  }
+
+  .right{
+    justify-content: center;
+  }
+
+  .left{
     text-align: center;
-    overflow: hidden;
-    color: #fff;
-}
+    justify-items: center;
+  }
 
-.EncabezadoTexto {
-    padding-top: 20px;
-    text-align: center;
-    width: 100%;
-    font-family: 'Dancing Script', cursive;
-    margin: 0;
-    font-size: 1.8rem;
-}
+  .kicker{
+    justify-self: center;
+  }
 
-.EncabezadoImagen img {
-    position: relative;
-    top: 0;
-    left: 0;
-    width: 250px;
-    transition: transform 0.7s ease;
-    z-index: 10;
-    transform: rotate(0deg);
-    filter: invert(1);
-    opacity: 1;
-}
+  .metaRow{
+    justify-content: center;
+  }
 
-@keyframes fadeInUp {
-    0% {
-        opacity: 0;
-        transform: translateY(40px);
-    }
+  .ctaRow{
+    justify-content: center;
+  }
 
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.EncabezadoSubtitulo {
-    font-family: 'Dancing Script', cursive;
-    font-size: 1.5rem;
+  .logoCard{
+    width: min(260px, 100%);
+  }
 }

@@ -1,7 +1,9 @@
 /* =========================
-   ModalAcciones.module.css (SaaS PRO)
-   - Modal sólido, pro
-   - Left member panel + right actions panel
+   app/styles/ModalAcciones2.module.css (FIX + FORM PRO)
+   (Sí, el archivo se llama así en tu proyecto)
+   - Ajusta grid para que el formulario encaje
+   - Estilo SaaS pro para el formulario de paquetes
+   Copia y pega COMPLETO (reemplaza tu archivo actual)
    ========================= */
 
 .Overlay{
@@ -40,7 +42,6 @@
     radial-gradient(700px 280px at 88% 0%, rgba(122,15,26,.10), transparent 62%);
 }
 
-/* Header */
 .ModalHeader{
   display: flex;
   align-items: flex-start;
@@ -84,7 +85,6 @@
   max-width: 70ch;
 }
 
-/* Close button */
 .Cerrar{
   width: 40px;
   height: 40px;
@@ -110,19 +110,22 @@
   background: rgba(255,255,255,.06);
 }
 
-/* Content layout */
+/* ===== FIX: grid que no rompe el form ===== */
 .Contenido{
   display: grid;
-  grid-template-columns: 0.95fr 1.35fr;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr);
   gap: 14px;
+  align-items: start;
 }
 
 @media (max-width: 980px){
   .Contenido{ grid-template-columns: 1fr; }
 }
 
-/* Left column (member) */
+/* Left column */
 .ColumnaIzquierda{
+  min-width: 0;
+
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 18px;
   background: var(--surface-1);
@@ -148,20 +151,6 @@
   background: rgba(255,255,255,.03);
 }
 
-.MiembroAvatarPlaceholder{
-  width: 62px;
-  height: 62px;
-  border-radius: 999px;
-
-  display: grid;
-  place-items: center;
-
-  border: 1px solid rgba(179,18,38,.22);
-  background: linear-gradient(90deg, rgba(122,15,26,.70), rgba(179,18,38,.35));
-  color: rgba(255,255,255,.96);
-  font-weight: 900;
-}
-
 .Nombre{
   font-weight: 900;
   font-size: 1.05rem;
@@ -176,25 +165,10 @@
   margin: 2px 0 0;
 }
 
-.MemberUser{
-  color: var(--text-3);
-  font-size: .85rem;
-  margin: 2px 0 0;
-}
-
-.MemberDesc{
-  margin: 0;
-  color: var(--text-2);
-  font-size: .93rem;
-  line-height: 1.45;
-}
-
-/* Selected action box */
 .CuadroAccion{
   border: 1px solid rgba(179,18,38,.22);
   border-radius: 16px;
   padding: 12px;
-
   background: rgba(255,255,255,.02);
 }
 
@@ -214,122 +188,154 @@
   line-height: 1.4;
 }
 
-/* Help box */
-.HelpBox{
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 16px;
-  padding: 12px;
-  background: rgba(255,255,255,.02);
+/* key-value rows inside left boxes */
+.TextoAccionKV{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(0,0,0,.18);
+
+  margin-top: 10px;
+
+  color: rgba(246,247,251,.84);
+  font-size: .94rem;
 }
 
-.HelpTitle{
-  font-size: .80rem;
+.TextoAccionKV strong{
+  color: rgba(246,247,251,.92);
   font-weight: 900;
-  letter-spacing: .10em;
-  text-transform: uppercase;
-  color: var(--text-1);
-  margin-bottom: 8px;
+  font-size: .90rem;
 }
 
-.HelpList{
-  margin: 0 0 0 18px;
-  padding: 0;
-  color: var(--text-2);
-  font-size: .92rem;
-  line-height: 1.55;
-}
-
-/* Right column (actions) */
+/* ===== Right column: FORM (SÓLIDO) ===== */
 .ColumnaDerecha{
-  display: grid;
-  align-content: start;
-  gap: 12px;
-}
+  min-width: 0;
 
-/* ===== Footer acciones (CTA único + marketplace) ===== */
-.AccionesFooter{
-  margin-top: 12px;
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 18px;
-  background: rgba(255,255,255,.02);
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+
+  display: grid;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
-.AccionSeleccionInfo{
-  color: var(--text-2);
-  font-size: .92rem;
+.FormHeader{
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
 }
 
-.AccionSeleccionInfo b{
+.FormTitle{
+  font-weight: 900;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
   color: var(--text-0);
 }
 
-.AccionSeleccionMuted{
+.FormSub{
+  margin-top: 6px;
+  color: var(--text-2);
+  font-size: .92rem;
+  line-height: 1.45;
+}
+
+.Form{
+  width: 100%;
+  display: grid;
+  gap: 12px;
+}
+
+.Field{
+  display: grid;
+  gap: 6px;
+
+  font-size: .78rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-1);
+}
+
+.Field input{
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 12px 12px;
+  border-radius: 14px;
+
+  border: 1px solid var(--border-0);
+  background: var(--surface-2);
+  color: var(--text-0);
+
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.Field input::placeholder{
   color: var(--text-3);
 }
 
-.AccionesFooterBtns{
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+.Field input:focus{
+  border-color: rgba(179,18,38,.45);
+  box-shadow: var(--ring);
+  background: var(--surface-2);
 }
 
-.CrearTicketBtn{
+.FormError{
+  color: rgba(255,45,85,.95);
+  font-size: .95rem;
+}
+
+.FormBtn{
+  width: 100%;
+  margin-top: 2px;
+
   border-radius: 999px;
   padding: 12px 14px;
+
   border: 1px solid rgba(179,18,38,.28);
   background: linear-gradient(90deg, rgba(122,15,26,.92), rgba(179,18,38,.70));
   color: rgba(255,255,255,.96);
+
   font-weight: 900;
-  letter-spacing: .02em;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+
   cursor: pointer;
-  box-shadow: 0 18px 44px rgba(122,15,26,.22);
+  box-shadow: 0 18px 44px rgba(122,15,26,.26);
   transition: transform .14s ease, box-shadow .14s ease, filter .14s ease, border-color .14s ease;
 }
 
-.CrearTicketBtn:hover:not(:disabled){
+.FormBtn:hover:not(:disabled){
   transform: translateY(-1px);
   filter: saturate(1.06);
   border-color: rgba(179,18,38,.40);
-  box-shadow: 0 24px 64px rgba(122,15,26,.30);
+  box-shadow: 0 24px 64px rgba(122,15,26,.34);
 }
 
-.CrearTicketBtn:disabled{
+.FormBtn:disabled{
   opacity: .55;
   cursor: default;
   box-shadow: none;
   transform: none;
 }
 
-.MarketBtn{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--border-0);
-  background: rgba(255,255,255,.04);
-  color: var(--text-0);
-  font-weight: 900;
-  letter-spacing: .02em;
-  text-decoration: none;
-  box-shadow: var(--shadow-sm);
-  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+.FormHint{
+  color: var(--text-3);
+  font-size: .9rem;
+  line-height: 1.45;
 }
 
-.MarketBtn:hover{
-  transform: translateY(-1px);
-  border-color: var(--border-1);
-  background: rgba(255,255,255,.06);
-}
-
+/* Mobile */
 @media (max-width: 480px){
-  .AccionesFooter{ border-radius: 16px; }
-  .AccionesFooterBtns{ width: 100%; }
-  .CrearTicketBtn, .MarketBtn{ width: 100%; }
+  .ColumnaDerecha{ padding: 14px; border-radius: 16px; }
+  .ColumnaIzquierda{ padding: 14px; border-radius: 16px; }
 }

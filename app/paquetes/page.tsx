@@ -1,4 +1,12 @@
+/* =========================
+   app/paquetes/page.tsx (CORREGIDO)
+   - Encabezado se renderiza EXACTAMENTE igual que en la página de inicio,
+     porque lo envolvemos con los mismos wrappers: appMain + container + sectionHero.
+   Copia y pega COMPLETO (reemplaza tu archivo actual)
+   ========================= */
+
 "use client";
+
 import React, { useState } from "react";
 import Encabezado from "app/components/Encabezado";
 import CPaquetes, { ObjetoResumenPaquete } from "app/components/CtPaquetes";
@@ -10,46 +18,47 @@ export default function Paquetes() {
   const [selectedPaquete, setSelectedPaquete] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ✅ Manejador para cuando se selecciona un miembro
   const handleSetObjetoMiembro = (m: ObjetoResumenPaquete | null) => {
     setObjetoMiembro(m);
     setSelectedMember(m ? m.id : null);
-
-    // Si ya hay un paquete seleccionado, abrir el modal
-    if (selectedPaquete) {
-      setIsModalOpen(true);
-    }
   };
 
-  // ✅ Manejador para cuando se selecciona un paquete
   const handleSetSelectedPaquete = (p: any | null) => {
     setSelectedPaquete(p);
-
-    // Si ya hay un miembro seleccionado, abrir el modal
-    if (objetoMiembro) {
-      setIsModalOpen(true);
-    }
   };
 
   return (
-    <>
-      <Encabezado />
+    <main className="appMain">
+      <div className="container stack">
+        {/* ✅ Encabezado igual que en Home */}
+        <section className="section sectionHero">
+          <Encabezado />
+        </section>
 
-      <CPaquetes
-        setSelectedPaquete={handleSetSelectedPaquete}
-        selectedPaquete={selectedPaquete}
-        selectedMember={selectedMember}
-        setSelectedMember={setSelectedMember}
-        setObjetoMiembro={handleSetObjetoMiembro}
-        objetoMiembro={objetoMiembro}
-      />
+        {/* Contenido de paquetes */}
+        <section className="section">
+          <CPaquetes
+            setSelectedPaquete={handleSetSelectedPaquete}
+            selectedPaquete={selectedPaquete}
+            selectedMember={selectedMember}
+            setSelectedMember={setSelectedMember}
+            setObjetoMiembro={handleSetObjetoMiembro}
+            objetoMiembro={objetoMiembro}
+            onOpenSolicitud={() => setIsModalOpen(true)}
+          />
+        </section>
 
-      <ModalPaquete
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        miembro={objetoMiembro}
-        paquete={selectedPaquete}
-      />
-    </>
+        <ModalPaquete
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedMember(null);
+            setObjetoMiembro(null);
+          }}
+          miembro={objetoMiembro}
+          paquete={selectedPaquete}
+        />
+      </div>
+    </main>
   );
 }

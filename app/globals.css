@@ -1,72 +1,219 @@
+/* =========================
+   GLOBAL.CSS (REDISEÑO SaaS)
+   - Estilo Microsoft/Amazon-like
+   - Fondo moderno pero sutil
+   - Superficies sólidas (evita que el texto “choque” con el fondo)
+   ========================= */
 
-:root {
-  --color-negro: #880202;
-  --color-blanco: #ffffff;
-  --color-morado: #6a0dad;
-  --color-rojo: #ff0040;
-  --color-gris-oscuro: #1a1a1a;
-  --color-gris-claro: #bfbfbf;
+:root{
+  /* Brand */
+  --accent-700: #7a0f1a;
+  --accent-600: #b31226;
+  --accent-500: #ff2d55;
+
+  /* Dark neutrals */
+  --bg-0: #07070a;
+  --bg-1: #0b0b10;
+  --surface-0: #0f121a; /* sólido */
+  --surface-1: #121625; /* sólido */
+  --surface-2: #161b2d; /* sólido */
+
+  /* Text */
+  --text-0: #f6f7fb;
+  --text-1: rgba(246,247,251,.78);
+  --text-2: rgba(246,247,251,.58);
+  --text-3: rgba(246,247,251,.42);
+
+  /* Borders */
+  --border-0: rgba(255,255,255,.10);
+  --border-1: rgba(255,255,255,.14);
+  --border-2: rgba(255,255,255,.18);
+
+  /* Shadows */
+  --shadow-sm: 0 10px 24px rgba(0,0,0,.28);
+  --shadow-md: 0 16px 44px rgba(0,0,0,.36);
+  --shadow-lg: 0 26px 80px rgba(0,0,0,.48);
+
+  /* Radius */
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
+
+  /* Spacing */
+  --s-1: 6px;
+  --s-2: 10px;
+  --s-3: 14px;
+  --s-4: 18px;
+  --s-5: 24px;
+  --s-6: 30px;
+
+  /* Focus ring */
+  --ring: 0 0 0 4px rgba(179,18,38,.20);
+
+  /* Font */
+  --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial,
+          "Noto Sans", "Liberation Sans", sans-serif;
 }
 
-@keyframes gradientMove {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 200% 0%; }
+*{ box-sizing: border-box; }
+
+html{
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
 }
 
 body{
-   display: flex;
-  flex-direction: column;
   min-height: 100vh;
-}
-
-.AccionesTitulo {
-  font-size: 1.2rem;
-  color: #a79797;
-  text-align: center;
-  margin-bottom: 20px;
-  padding: 0px 10px 0px 10px;
-  font-weight: 800;
-  text-shadow: 0 0 10px rgba(255, 0, 102, 0.5);
-  letter-spacing: 1px;
-}
-
-main {
-  flex: 1; /* ocupa el espacio restante */
-}
-
-html, body {
-  height: 100%;
   margin: 0;
-  padding: 0;
+  font-family: var(--font);
+  color: var(--text-0);
+  line-height: 1.45;
+
+  /* Fondo moderno (suave para no ensuciar cards/forms) */
+  background:
+    radial-gradient(1200px 700px at 10% 0%, rgba(179,18,38,.12), transparent 62%),
+    radial-gradient(900px 600px at 85% 10%, rgba(122,15,26,.10), transparent 62%),
+    radial-gradient(1000px 600px at 50% 100%, rgba(255,45,85,.06), transparent 64%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-0) 100%);
+  background-attachment: fixed;
+
+  display: flex;
+  flex-direction: column;
+}
+
+main{ flex: 1; }
+
+a{ color: var(--text-0); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+:focus-visible{
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 10px;
+}
+
+::selection{ background: rgba(255,45,85,.22); }
+
+/* Scrollbar */
+::-webkit-scrollbar{ width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.12); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover{ background: rgba(255,255,255,.18); }
+::-webkit-scrollbar-track{ background: rgba(0,0,0,.28); }
+
+/* =========================
+   Layout utilities
+   ========================= */
+
+.appMain{ padding: var(--s-5) 0; }
+
+.container{
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.stack > * + *{ margin-top: var(--s-5); }
+
+/* Secciones estilo SaaS */
+.section{
   
-  background: linear-gradient(to bottom, var(--color-negro), #010101,var(--color-gris-oscuro));
-  background-repeat: no-repeat;
-  background-size: 100% 100%; /* ocupa toda la altura y ancho */
-  background-attachment: fixed; /* se mantiene al hacer scroll */
-  color: var(--color-blanco);
+  
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--s-5);
 }
 
-@media (max-width: 480px) {
-  body {
-    padding: 0 0px;
-    overflow-x: hidden;
-  }
-
- 
-  .search-filter-container {
-    flex-direction: column;
-    gap: 12px;
-    margin: 20px 0;
-  }
-
-  .search-input,
-  .filter-select {
-    width: 100%;
-    max-width: 320px;
-    font-size: 0.9rem;
-  }
-
+.sectionHero{
+  padding: var(--s-4);
 
 }
 
+.sectionHeader{
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: var(--s-3);
+}
 
+.sectionTitle{
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--text-0);
+  text-shadow: 0 0 14px rgba(179,18,38,.14);
+}
+
+.sectionSubtitle{
+  margin: 8px 0 0;
+  color: var(--text-2);
+  font-size: .95rem;
+  max-width: 820px;
+}
+
+/* =========================
+   Inputs / Forms (SOLID)
+   Esto ayuda a que formularios no se mezclen con el fondo.
+   ========================= */
+
+input, select, textarea, button{ font: inherit; color: inherit; }
+
+input, select, textarea{
+  background: var(--surface-1);
+  border: 1px solid var(--border-0);
+  border-radius: 14px;
+  padding: 12px 12px;
+  color: var(--text-0);
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+input::placeholder, textarea::placeholder{ color: var(--text-3); }
+
+input:focus, select:focus, textarea:focus{
+  border-color: rgba(179,18,38,.45);
+  box-shadow: var(--ring);
+  background: var(--surface-2);
+}
+
+/* =========================
+   Buttons base
+   ========================= */
+button{
+  border: 1px solid var(--border-0);
+  border-radius: 999px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.04);
+  cursor: pointer;
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+button:hover{
+  transform: translateY(-1px);
+  border-color: var(--border-1);
+  background: rgba(255,255,255,.06);
+}
+
+/* Clase opcional (si la usas): botón primario */
+.btnPrimary{
+  border-color: rgba(179,18,38,.28);
+  background: linear-gradient(90deg, rgba(122,15,26,.92), rgba(179,18,38,.70));
+  box-shadow: 0 18px 44px rgba(122,15,26,.26);
+}
+.btnPrimary:hover{
+  border-color: rgba(179,18,38,.40);
+  box-shadow: 0 24px 64px rgba(122,15,26,.34);
+}
+
+/* =========================
+   Responsive
+   ========================= */
+@media (max-width: 480px){
+  .appMain{ padding: var(--s-4) 0; }
+  .section{ padding: var(--s-4); border-radius: 16px; }
+  .sectionHero{ padding: var(--s-3); }
+}

@@ -1,53 +1,157 @@
-/* Ayuda.module.css */
-.container {
-  padding: 40px;
-  max-width: 800px;
+/* =========================
+   Ayuda.module.css (REDISEÑO PRO SaaS)
+   - FAQ tipo Microsoft/Amazon
+   - Cards sólidas (no transparentes)
+   - Accesible: pregunta como botón
+   ========================= */
+
+.container{
+  width: min(980px, calc(100% - 32px));
   margin: 0 auto;
-  font-family: Arial, sans-serif;
+  padding: 18px 0 28px;
+
+  font-family: var(--font);
+  color: var(--text-0);
 }
 
-.title {
-  font-size: 2rem;
-  color: #fff;
-  margin-bottom: 30px;
+.title{
+  margin: 0 0 14px;
   text-align: center;
+
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+
+  color: var(--text-0);
+  text-shadow: 0 0 16px rgba(179,18,38,.14);
 }
 
-.faqItem {
-  border-bottom: 1px solid #ddd;
-  padding: 15px 0;
+.subtitle{
+  margin: 0 auto 18px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: .95rem;
+  max-width: 78ch;
 }
 
-.faqQuestion {
-  font-weight: bold;
+.faqList{
+  display: grid;
+  gap: 12px;
+}
+
+.faqItem{
+  border: 1px solid var(--border-0);
+  border-radius: var(--r-lg);
+
+  background: var(--surface-0);
+  box-shadow: var(--shadow-md);
+
+  overflow: hidden;
+}
+
+/* Botón pregunta */
+.faqQuestion{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 14px 14px;
+
+  background: transparent;
+  border: 0;
   cursor: pointer;
-  position: relative;
-  color: #dddddd;
-  padding-right: 25px;
+
+  text-align: left;
+  color: var(--text-0);
+
+  font-weight: 900;
+  font-size: .98rem;
+  letter-spacing: -0.01em;
 }
 
-.faqQuestion.active::after {
-  content: "-";
+.faqQuestion:hover{
+  background: rgba(255,255,255,.03);
 }
 
-.faqQuestion::after {
+.faqQuestion:focus-visible{
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* Para que styles.active exista como clase en CSS modules */
+.active{}
+
+/* Icono + / - */
+.faqQuestion::after{
   content: "+";
-  position: absolute;
-  right: 0;
-  top: 0;
-  font-size: 1.2rem;
-  transition: transform 0.3s ease;
+  width: 28px;
+  height: 28px;
+  border-radius: 12px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color: var(--text-0);
+
+  font-weight: 900;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
 }
 
-.faqAnswer {
+.faqQuestion.active::after{
+  content: "–";
+  border-color: rgba(179,18,38,.22);
+  background: linear-gradient(90deg, rgba(122,15,26,.55), rgba(179,18,38,.20));
+}
+
+/* Respuesta */
+.faqAnswer{
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease, padding 0.3s ease;
-  padding-left: 10px;
-  color: #cccccc;
+  opacity: 0;
+
+  transition: max-height .28s ease, opacity .20s ease;
+  border-top: 1px solid rgba(255,255,255,.08);
 }
 
-.faqAnswer.open {
-  max-height: 500px;
-  padding-top: 10px;
+.open{
+  max-height: 1200px;
+  opacity: 1;
+}
+
+.faqAnswerInner{
+  padding: 14px;
+  color: var(--text-1);
+  font-size: .95rem;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+/* Video responsive */
+.videoWrapper{
+  margin-top: 12px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.25);
+  box-shadow: 0 16px 44px rgba(0,0,0,.35);
+
+  aspect-ratio: 16 / 9;
+}
+
+.videoWrapper iframe{
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+@media (max-width: 480px){
+  .container{ width: calc(100% - 24px); }
+  .faqQuestion{ padding: 12px; }
+  .faqAnswerInner{ padding: 12px; }
 }

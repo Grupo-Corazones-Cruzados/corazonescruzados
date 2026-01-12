@@ -1,37 +1,77 @@
 "use client";
-import React, { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import styles from "../styles/Header.module.css";
 
+import React, { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import styles from "../styles/Header.module.css";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
-  const pathname = usePathname(); // ✅ ruta actual
+  const pathname = usePathname();
 
   const menuItems = [
     { label: "Inicio", icon: "/IcInicio.png", href: "/" },
     { label: "Paquetes", icon: "/IcPaquetes.png", href: "/paquetes" },
     { label: "Nosotros", icon: "/IcNosotros.png", href: "/nosotros" },
-    { label: "Ayuda", icon: "/IcAyuda.png", href: "/ayuda" }
+    { label: "Ayuda", icon: "/IcAyuda.png", href: "/ayuda" },
   ];
+
+  const closeMenu = () => setMenuOpen(false);
 
   const handleClick = (href: string) => {
     router.push(href);
-    setMenuOpen(false);
+    closeMenu();
   };
+
+  // ESC + bloquear scroll cuando el menú está abierto
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMenu();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
 
   return (
     <>
-      <div className={styles.BarraSuperior}>
-        <img
-          src="/LogoCC.png"
-          alt=""
-          onClick={() => setMenuOpen(!menuOpen)}
-          className={`${styles.Logo} ${menuOpen ? styles["Logo-Activo"] : ""}`}
-        />
+      {/* Overlay (click para cerrar) */}
+      <div
+        className={`${styles.Overlay} ${menuOpen ? styles["Overlay-Abierto"] : ""}`}
+        onClick={closeMenu}
+        role="presentation"
+      />
+
+      {/* Topbar */}
+      <header className={styles.BarraSuperior} aria-label="Header">
+        <button
+          type="button"
+          className={styles.LogoButton}
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={menuOpen}
+          aria-controls="cc-drawer"
+        >
+          <img
+            src="/LogoCC.png"
+            alt="Logo Corazones Cruzados"
+            className={`${styles.Logo} ${menuOpen ? styles["Logo-Activo"] : ""}`}
+          />
+        </button>
+
         <h2 className={styles["BarraSuperior-Titulo"]}>Corazones Cruzados</h2>
-              <button
+
+        <div className={styles.Spacer} />
+
+        <button
           className={styles.BotonLogin}
           onClick={() =>
             window.open(
@@ -42,43 +82,49 @@ const Header = () => {
         >
           Iniciar Sesión
         </button>
-      </div>
+      </header>
 
-      <div className={`${styles.Menu} ${menuOpen ? styles["Menu-Abierto"] : ""}`}>
+      {/* Drawer / Sidebar */}
+      <aside
+        id="cc-drawer"
+        className={`${styles.Menu} ${menuOpen ? styles["Menu-Abierto"] : ""}`}
+        aria-label="Menú de navegación"
+      >
+        <div className={styles.MenuHeader}>
+          <div className={styles.MenuTitulo}>GCC</div>
+          <button type="button" className={styles.MenuClose} onClick={closeMenu} aria-label="Cerrar menú">
+            ×
+          </button>
+        </div>
+
         <ul className={styles["Menu-Lista"]}>
-          {menuItems.map((opcion) => (
-            <li
-              key={opcion.label}
-              className={`${styles["Menu-Elemento"]} ${
-                opcion.href === pathname ? styles["Menu-Elemento-Activo"] : ""
-              }`}
-              onClick={() => handleClick(opcion.href)}
-              onMouseOver={e => {
-                if (opcion.label !== "Inicio") {
-                  (e.currentTarget as HTMLElement).classList.add(styles["Menu-Elemento-Hover"]);
-                }
-              }}
-              onMouseOut={e => {
-                if (opcion.label !== "Inicio") {
-                  (e.currentTarget as HTMLElement).classList.remove(styles["Menu-Elemento-Hover"]);
-                }
-              }}
-            >
-              <div className={styles["Menu-Elemento-Contenido"]}>
-
-                {opcion.href === pathname ?
-                <img src={opcion.icon} alt={opcion.label} className={styles.MenuElementoIconoSeleccionado} />
-                :
-                <img src={opcion.icon} alt={opcion.label} className={styles["Menu-Elemento-Icono"]} />
-                }
-
-
-                {opcion.label}
-              </div>
-            </li>
-          ))}
+          {menuItems.map((opcion) => {
+            const active = opcion.href === pathname;
+            return (
+              <li
+                key={opcion.label}
+                className={`${styles["Menu-Elemento"]} ${active ? styles["Menu-Elemento-Activo"] : ""}`}
+              >
+                <button
+                  type="button"
+                  className={styles["Menu-Elemento-Boton"]}
+                  onClick={() => handleClick(opcion.href)}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <span className={styles["Menu-Elemento-Contenido"]}>
+                    <img
+                      src={opcion.icon}
+                      alt=""
+                      className={active ? styles.MenuElementoIconoSeleccionado : styles["Menu-Elemento-Icono"]}
+                    />
+                    {opcion.label}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
-      </div>
+      </aside>
     </>
   );
 };
