@@ -1,24 +1,9 @@
-/* =========================
-   Header.module.css (REDISEÑO PRO)
-   Estilo SaaS moderno (Microsoft/Amazon-like)
-   - Topbar sólido con jerarquía clara
-   - Drawer con overlay real
-   ========================= */
+/* app/styles/Header.module.css (COPIA Y PEGA COMPLETO)
+   FIX Vercel: en CSS Modules NO se permite :root (selector “no puro”)
+   - Reemplazado por variables locales dentro de .BarraSuperior y .Menu
+*/
 
-:root{
-  --hdr-surface: #0f121a;
-  --hdr-surface-2: #121625;
-  --hdr-border: rgba(255,255,255,.10);
-  --hdr-border-2: rgba(255,255,255,.14);
-  --hdr-text: rgba(246,247,251,.94);
-  --hdr-muted: rgba(246,247,251,.70);
-  --hdr-accent-1: rgba(122,15,26,.90);
-  --hdr-accent-2: rgba(179,18,38,.70);
-  --hdr-shadow: 0 16px 44px rgba(0,0,0,.40);
-  --hdr-shadow-lg: 0 26px 80px rgba(0,0,0,.55);
-}
-
-/* ===== Overlay real ===== */
+ /* ===== Overlay real ===== */
 .Overlay{
   position: fixed;
   inset: 0;
@@ -41,6 +26,14 @@
 
 /* ===== Topbar ===== */
 .BarraSuperior{
+  /* Variables locales (válidas en CSS Modules) */
+  --hdr-surface: #0f121a;
+  --hdr-border: rgba(255,255,255,.10);
+  --hdr-text: rgba(246,247,251,.94);
+  --hdr-accent-1: rgba(122,15,26,.90);
+  --hdr-accent-2: rgba(179,18,38,.70);
+  --hdr-shadow: 0 16px 44px rgba(0,0,0,.40);
+
   height: 68px;
   width: 100%;
   box-sizing: border-box;
@@ -172,6 +165,11 @@
    ========================= */
 
 .Menu{
+  /* Variables locales para el drawer */
+  --hdr-surface: #0f121a;
+  --hdr-border: rgba(255,255,255,.10);
+  --hdr-shadow-lg: 0 26px 80px rgba(0,0,0,.55);
+
   width: 320px;
   height: 100vh;
 
@@ -186,7 +184,7 @@
   transform: translateX(-105%);
   transition: transform .22s ease;
 
-  color: var(--hdr-text);
+  color: rgba(246,247,251,.94);
 
   border-right: 1px solid var(--hdr-border);
 
