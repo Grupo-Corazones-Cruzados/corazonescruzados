@@ -1,8 +1,11 @@
-/* app/mercado/page.tsx (COPIA Y PEGA COMPLETO) */
+/* app/mercado/page.tsx (COPIA Y PEGA COMPLETO)
+   FIX Vercel/Next 15:
+   useSearchParams() debe estar dentro de un <Suspense>
+*/
 
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useSearchParams } from "next/navigation";
 import styles from "app/styles/Mercado.module.css";
@@ -12,9 +15,9 @@ type ProductoRow = {
   id: number;
   created_at: string;
   nombre: string | null;
-  herramientas: any | null; // JSON (object/array/string)
+  herramientas: any | null;
   descripcion: string | null;
-  imagen: string | null; // TEXT (Data URL completa: data:image/...;base64,...)
+  imagen: string | null; // Data URL completa: data:image/...;base64,...
   costo: number | null;
   idmiembro?: number | null;
 };
@@ -35,11 +38,11 @@ type CvProfile = {
   linkedin: string | null;
   github: string | null;
 
-  languages: any | null; // jsonb
-  certifications: any | null; // jsonb
-  skills: any | null; // jsonb
-  experience: any | null; // jsonb
-  education: any | null; // jsonb
+  languages: any | null;
+  certifications: any | null;
+  skills: any | null;
+  experience: any | null;
+  education: any | null;
 };
 
 type MiembroRow = {
@@ -52,11 +55,8 @@ type MiembroRow = {
   celular?: string | null;
   codUsuario?: string | null;
 
-  // ✅ la columna real (uuid) en Miembros
-  cv_profile?: string | null;
-
-  // ✅ relación (objeto) la traemos con alias para evitar choque de nombre
-  cvProfile?: CvProfile | null;
+  cv_profile?: string | null; // uuid en tabla Miembros
+  cvProfile?: CvProfile | null; // relación traída como objeto (alias)
 };
 
 const PRODUCTS_TABLE = "Productos";
@@ -85,7 +85,6 @@ function formatDateRange(start?: any, end?: any, current?: any) {
   if (s && e) return `${s} – ${e}`;
   return s || e;
 }
-
 function getCategoria(herramientas: any): string {
   if (!herramientas) return "General";
   if (typeof herramientas === "string") return herramientas;
@@ -102,7 +101,6 @@ function getCategoria(herramientas: any): string {
   }
   return "General";
 }
-
 function getTags(herramientas: any): string[] {
   if (!herramientas) return [];
   if (Array.isArray(herramientas)) {
@@ -121,8 +119,9 @@ function getTags(herramientas: any): string[] {
   return [];
 }
 
-export default function MercadoPage() {
+function MercadoInner() {
   const searchParams = useSearchParams();
+
   const miembroParam = searchParams.get("miembro");
   const miembroId = useMemo(() => {
     if (!miembroParam) return null;
@@ -200,11 +199,7 @@ export default function MercadoPage() {
               .select("id, created_at, nombre, herramientas, descripcion, imagen, costo, idmiembro")
               .order("created_at", { ascending: false }),
 
-            supabase
-              .from(CV_TABLE)
-              .select("*")
-              .order("updated_at", { ascending: false })
-              .limit(1),
+            supabase.from(CV_TABLE).select("*").order("updated_at", { ascending: false }).limit(1),
           ]);
 
           if (productsRes.error) throw productsRes.error;
@@ -267,7 +262,7 @@ export default function MercadoPage() {
   }, [items, q, cat]);
 
   const cvTitle = useMemo(() => {
-    if (miembro?.Nombre) return `${miembro.Nombre}`;
+    if (miembro?.Nombre) return `CV · ${miembro.Nombre}`;
     return "Currículum";
   }, [miembro?.Nombre]);
 
@@ -311,17 +306,17 @@ export default function MercadoPage() {
             </div>
 
             <div className={styles.cvRight}>
-  {miembro?.Foto ? (
-    <div className={styles.cvPhotoWrap}>
-      <img className={styles.cvPhoto} src={miembro.Foto} alt={miembro?.Nombre || "Foto"} />
-    </div>
-  ) : null}
+              {miembro?.Foto ? (
+                <div className={styles.cvPhotoWrap}>
+                  <img className={styles.cvPhoto} src={miembro.Foto} alt={miembro?.Nombre || "Foto"} />
+                </div>
+              ) : null}
 
-  <div className={styles.cvPill}>
-    <span className={styles.cvDot} />
-    CV
-  </div>
-</div>
+              <div className={styles.cvPill}>
+                <span className={styles.cvDot} />
+                CV
+              </div>
+            </div>
           </div>
 
           {cvLoading && (
@@ -462,6 +457,11 @@ export default function MercadoPage() {
                 </section>
               </aside>
 
+              <div className={styles.cvFooter}>
+                <a href="#market" className={styles.cvBtn}>
+                  Ver productos ↓
+                </a>
+              </div>
             </div>
           )}
 
@@ -477,15 +477,15 @@ export default function MercadoPage() {
         {/* ===== Marketplace ===== */}
         <header className={styles.header} id="market">
           <div>
-            <h1 className={styles.title}>Portafolio</h1>
+            <h1 className={styles.title}>Mercado</h1>
             <p className={styles.subtitle}>
               {miembroId
-                ? "Estos son los productos que tengo para ofrecerte."
+                ? "Mostrando productos del miembro seleccionado."
                 : "Portafolio en formato marketplace: herramientas y soluciones listas para implementar."}
             </p>
           </div>
 
-          <div className={styles.brandPill} title="Minimal · Dark · Red">
+          <div className={styles.brandPill} title="Portfolio · Marketplace">
             <span className={styles.brandDot} />
             Marketplace
           </div>
@@ -501,12 +501,7 @@ export default function MercadoPage() {
             aria-label="Buscar productos"
           />
 
-          <select
-            className={styles.select}
-            value={cat}
-            onChange={(e) => setCat(e.target.value)}
-            aria-label="Filtrar por categoría"
-          >
+          <select className={styles.select} value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Filtrar por categoría">
             {categorias.map((c) => (
               <option key={c} value={c}>
                 {c === "__all" ? "Todas las categorías" : c}
@@ -562,7 +557,6 @@ export default function MercadoPage() {
                         <div className={styles.placeholderText}>{categoria}</div>
                       </div>
                     )}
-
                     <div className={styles.badge}>{categoria}</div>
                   </div>
 
@@ -586,7 +580,7 @@ export default function MercadoPage() {
                     )}
 
                     <div className={styles.footer}>
-                      <span className={styles.cta}></span>
+                      <span className={styles.cta}>Ver detalles</span>
 
                       {typeof it.costo === "number" ? (
                         <span className={styles.price}>
@@ -608,5 +602,25 @@ export default function MercadoPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function MercadoPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.page}>
+          <div className={styles.bgGlow} aria-hidden="true" />
+          <main className={styles.container}>
+            <div className={styles.state}>
+              <div className={styles.spinner} aria-hidden="true" />
+              <p>Cargando…</p>
+            </div>
+          </main>
+        </div>
+      }
+    >
+      <MercadoInner />
+    </Suspense>
   );
 }
