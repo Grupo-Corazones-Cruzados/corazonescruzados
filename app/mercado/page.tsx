@@ -122,6 +122,9 @@ function getTags(herramientas: any): string[] {
 
 function MercadoInner() {
   const searchParams = useSearchParams();
+  const handlePrintPdf = () => {
+  if (typeof window !== "undefined") window.print();
+};
 
   const miembroParam = searchParams.get("miembro");
   const miembroId = useMemo(() => {
@@ -459,9 +462,10 @@ function MercadoInner() {
               </aside>
 
               <div className={styles.cvFooter}>
-                <a href="#market" className={styles.cvBtn}>
-                  Ver productos ↓
-                </a>
+               
+                <button type="button" className={styles.printBtn} onClick={handlePrintPdf}>
+  Guardar en PDF
+</button>
               </div>
             </div>
           )}
@@ -474,9 +478,9 @@ function MercadoInner() {
         </section>
 
         <div style={{ height: 14 }} />
-
         {/* ===== Marketplace ===== */}
         <header className={styles.header} id="market">
+          
           <div>
             <h1 className={styles.title}>Mercado</h1>
             <p className={styles.subtitle}>

@@ -711,3 +711,90 @@
     align-items: flex-start;
   }
 }
+
+/* ====== Print / PDF ====== */
+.printBtn,
+.printBtnSmall {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.printBtn { padding: 10px 14px; }
+.printBtnSmall { padding: 8px 12px; }
+
+@media print {
+  /* Oculta decoraciones/controles de UI */
+  .bgGlow,
+  .header,
+  .brandPill,
+  .filters,
+  .cvPill,
+  .cvBtn,
+  .printBtn,
+  .printBtnSmall {
+    display: none !important;
+  }
+
+  /* Layout limpio tipo documento */
+  .page { background: #fff !important; }
+  .container { max-width: none !important; padding: 0 !important; }
+
+  /* CV en una sola columna para evitar cortes */
+  .cvLayout { display: block !important; }
+  .cvMain, .cvSide { width: 100% !important; max-width: none !important; }
+
+  /* Evita partir bloques/tarjetas entre páginas */
+  .card,
+  .cvBlock,
+  .cvSideBlock,
+  .cvItem {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* El grid mejor en 1 columna en PDF */
+  .grid {
+    display: block !important;
+    margin-top: 0 !important;
+  }
+  .card { margin: 0 0 14px 0 !important; }
+
+  /* Imágenes controladas */
+  .image { max-height: 220px; object-fit: contain; }
+
+  /* Conserva colores si el navegador lo permite (CSS Modules-safe) */
+  .page * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+@media print {
+  /* Header del propio page.tsx */
+  .header {
+    display: none !important;
+  }
+
+  /* Headers globales (componentes Header / Encabezado fuera del módulo) */
+  :global(header),
+  :global(.Header),
+  :global(.Encabezado),
+  :global(#header),
+  :global(#encabezado),
+  :global(#market) {
+    display: none !important;
+  }
+
+  /* Ajustes de layout para PDF */
+  .page {
+    background: #fff !important;
+  }
+
+  .container {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}
