@@ -773,22 +773,22 @@
   }
 }
 @media print {
-  /* Header del propio page.tsx */
-  .header {
+  /* Header local del page.tsx */
+  .page .header {
     display: none !important;
   }
 
-  /* Headers globales (componentes Header / Encabezado fuera del módulo) */
-  :global(header),
-  :global(.Header),
-  :global(.Encabezado),
-  :global(#header),
-  :global(#encabezado),
-  :global(#market) {
+  /* Headers globales (Header / Encabezado / layouts) */
+  .page :global(header),
+  .page :global(.Header),
+  .page :global(.Encabezado),
+  .page :global(#header),
+  .page :global(#encabezado),
+  .page :global(#market) {
     display: none !important;
   }
 
-  /* Ajustes de layout para PDF */
+  /* Limpieza visual para PDF */
   .page {
     background: #fff !important;
   }
