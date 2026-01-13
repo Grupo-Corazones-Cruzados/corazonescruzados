@@ -18,6 +18,7 @@ type ProductoRow = {
   herramientas: any | null;
   descripcion: string | null;
   imagen: string | null; // Data URL completa: data:image/...;base64,...
+  linkDetalles?: string | null; // URL para ver detalles del producto
   costo: number | null;
   idmiembro?: number | null;
 };
@@ -174,7 +175,7 @@ function MercadoInner() {
 
             supabase
               .from(PRODUCTS_TABLE)
-              .select("id, created_at, nombre, herramientas, descripcion, imagen, costo, idmiembro")
+              .select("id, created_at, nombre, herramientas, descripcion, imagen, linkDetalles, costo, idmiembro")
               .eq("idmiembro", miembroId)
               .order("created_at", { ascending: false }),
           ]);
@@ -196,7 +197,7 @@ function MercadoInner() {
           const [productsRes, cvRes] = await Promise.all([
             supabase
               .from(PRODUCTS_TABLE)
-              .select("id, created_at, nombre, herramientas, descripcion, imagen, costo, idmiembro")
+              .select("id, created_at, nombre, herramientas, descripcion, imagen, linkDetalles, costo, idmiembro")
               .order("created_at", { ascending: false }),
 
             supabase.from(CV_TABLE).select("*").order("updated_at", { ascending: false }).limit(1),
@@ -545,6 +546,7 @@ function MercadoInner() {
               const categoria = getCategoria(it.herramientas);
               const tags = getTags(it.herramientas);
               const img = safeText(it.imagen) ? it.imagen : null;
+              const link = safeLink((it as any).linkDetalles);
 
               return (
                 <article key={it.id} className={styles.card}>
@@ -580,7 +582,21 @@ function MercadoInner() {
                     )}
 
                     <div className={styles.footer}>
-                      <span className={styles.cta}>Ver detalles</span>
+                      {link ? (
+                        <a
+                          className={styles.cta}
+                          href={link}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ textDecoration: "none", color: "inherit" }}
+                        >
+                          Ver detalles
+                        </a>
+                      ) : (
+                        <span className={styles.cta} aria-disabled="true" title="Este producto no tiene enlace de detalles">
+                          Ver detalles
+                        </span>
+                      )}
 
                       {typeof it.costo === "number" ? (
                         <span className={styles.price}>
