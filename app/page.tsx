@@ -1,8 +1,3 @@
-/* app/page.tsx (COPIA Y PEGA COMPLETO)
-   FIX: tenías un typo en el contenedor:
-   "containes" -> "container"
-*/
-
 "use client";
 
 import React, { useState } from "react";
@@ -10,6 +5,7 @@ import Encabezado from "app/components/Encabezado";
 import Miembros from "app/components/Miembros";
 import Estructura from "app/components/Estructura";
 import ModalAcciones from "app/components/ModalAcciones";
+import ScrollReveal from "app/components/ScrollReveal";
 import type { ObjetoResumenPaquete } from "app/components/CtPaquetes";
 
 interface Accion {
@@ -27,12 +23,9 @@ export default function Page() {
 
   return (
     <main className="appMain">
-      {/* ✅ AQUÍ ESTÁ EL FIX */}
       <div className="container stack">
         {/* HERO / HEADER */}
-        <section className="section sectionHero">
-          <Encabezado />
-        </section>
+        <Encabezado />
 
         {/* MODAL (solo cuando hay selección) */}
         {selectedMember && objetoMiembro && (
@@ -53,35 +46,39 @@ export default function Page() {
         )}
 
         {/* SECCIÓN: Miembros */}
-        <section className="section">
-          <div className="sectionHeader">
-            <div>
-              <h2 className="sectionTitle">Miembros</h2>
-              <p className="sectionSubtitle">
-                Selecciona un miembro para ver acciones, solicitar ayuda o iniciar un ticket.
-              </p>
+        <ScrollReveal>
+          <section className="section">
+            <div className="sectionHeader">
+              <div>
+                <h2 className="sectionTitle">Miembros</h2>
+                <p className="sectionSubtitle">
+                  Selecciona un miembro para ver acciones, solicitar ayuda o iniciar un ticket.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <Miembros
-            selectedMember={selectedMember}
-            setSelectedMember={setSelectedMember}
-            objetoMiembro={objetoMiembro}
-            setObjetoMiembro={setObjetoMiembro}
-          />
-        </section>
+            <Miembros
+              selectedMember={selectedMember}
+              setSelectedMember={setSelectedMember}
+              objetoMiembro={objetoMiembro}
+              setObjetoMiembro={setObjetoMiembro}
+            />
+          </section>
+        </ScrollReveal>
 
         {/* SECCIÓN: Estructura / Servicios */}
-        <section className="section">
-          <div className="sectionHeader">
-            <div>
-              <h2 className="sectionTitle">Organización</h2>
-              <p className="sectionSubtitle">Conoce más sobre el proyecto...</p>
+        <ScrollReveal delay={100}>
+          <section className="section">
+            <div className="sectionHeader">
+              <div>
+                <h2 className="sectionTitle">Organización</h2>
+                <p className="sectionSubtitle">Conoce más sobre el proyecto...</p>
+              </div>
             </div>
-          </div>
 
-          <Estructura />
-        </section>
+            <Estructura />
+          </section>
+        </ScrollReveal>
 
         <div style={{ height: 18 }} />
       </div>

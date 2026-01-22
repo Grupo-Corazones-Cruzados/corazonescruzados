@@ -1,16 +1,10 @@
-/* =========================
-   app/paquetes/page.tsx (CORREGIDO)
-   - Encabezado se renderiza EXACTAMENTE igual que en la página de inicio,
-     porque lo envolvemos con los mismos wrappers: appMain + container + sectionHero.
-   Copia y pega COMPLETO (reemplaza tu archivo actual)
-   ========================= */
-
 "use client";
 
 import React, { useState } from "react";
 import Encabezado from "app/components/Encabezado";
 import CPaquetes, { ObjetoResumenPaquete } from "app/components/CtPaquetes";
 import ModalPaquete from "app/components/ModalPaquete";
+import ScrollReveal from "app/components/ScrollReveal";
 
 export default function Paquetes() {
   const [selectedMember, setSelectedMember] = useState<number | null>(null);
@@ -30,23 +24,23 @@ export default function Paquetes() {
   return (
     <main className="appMain">
       <div className="container stack">
-        {/* ✅ Encabezado igual que en Home */}
-        <section className="section sectionHero">
-          <Encabezado />
-        </section>
+        {/* Encabezado (cerrado por defecto en esta página) */}
+        <Encabezado />
 
         {/* Contenido de paquetes */}
-        <section className="section">
-          <CPaquetes
-            setSelectedPaquete={handleSetSelectedPaquete}
-            selectedPaquete={selectedPaquete}
-            selectedMember={selectedMember}
-            setSelectedMember={setSelectedMember}
-            setObjetoMiembro={handleSetObjetoMiembro}
-            objetoMiembro={objetoMiembro}
-            onOpenSolicitud={() => setIsModalOpen(true)}
-          />
-        </section>
+        <ScrollReveal>
+          <section className="section">
+            <CPaquetes
+              setSelectedPaquete={handleSetSelectedPaquete}
+              selectedPaquete={selectedPaquete}
+              selectedMember={selectedMember}
+              setSelectedMember={setSelectedMember}
+              setObjetoMiembro={handleSetObjetoMiembro}
+              objetoMiembro={objetoMiembro}
+              onOpenSolicitud={() => setIsModalOpen(true)}
+            />
+          </section>
+        </ScrollReveal>
 
         <ModalPaquete
           isOpen={isModalOpen}

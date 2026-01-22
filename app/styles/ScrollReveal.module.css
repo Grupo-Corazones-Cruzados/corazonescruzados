@@ -1,0 +1,48 @@
+/* =========================
+   ScrollReveal.module.css
+   Animaciones de aparición al scroll
+   ========================= */
+
+.wrapper {
+  opacity: 0;
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+/* Direcciones iniciales */
+.up {
+  transform: translateY(40px);
+}
+
+.down {
+  transform: translateY(-40px);
+}
+
+.left {
+  transform: translateX(40px);
+}
+
+.right {
+  transform: translateX(-40px);
+}
+
+.fade {
+  transform: translateY(0);
+}
+
+/* Estado visible */
+.wrapper.visible {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+/* Reduce motion para accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  .wrapper {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
