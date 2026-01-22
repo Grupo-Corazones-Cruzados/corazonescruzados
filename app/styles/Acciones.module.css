@@ -1,134 +1,216 @@
 /* =========================
-   Acciones.module.css (SaaS PRO)
+   Acciones.module.css - MODERN NOIR REDESIGN
+   Grid de acciones con cards seleccionables
    ========================= */
 
-.section{
+.section {
   width: 100%;
-  background: var(--surface-0);
-  border: 1px solid var(--border-0);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-md);
-  padding: var(--s-5);
-  color: var(--text-0);
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  padding: 24px;
+  color: #FFFFFF;
+  position: relative;
 }
 
-.headerRow{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap: 14px;
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 206, 209, 0.3), transparent);
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: var(--s-3);
+  margin-bottom: 20px;
 }
 
-.kicker{
-  display:inline-flex;
-  align-items:center;
+.kicker {
+  display: inline-flex;
+  align-items: center;
   width: fit-content;
-
-  padding: 6px 10px;
-  border-radius: 999px;
-
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: .10em;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-
-  color: var(--text-1);
-  border: 1px solid var(--border-0);
-  background: rgba(255,255,255,.03);
+  color: #00CED1;
+  border: 1px solid rgba(0, 206, 209, 0.4);
+  background: rgba(0, 206, 209, 0.1);
 }
 
-.title{
-  margin: 10px 0 0;
-  font-size: 1.05rem;
-  font-weight: 900;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--text-0);
+.kicker::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: #00CED1;
+  box-shadow: 0 0 10px #00CED1;
 }
 
-.subtitle{
+.title {
+  margin: 12px 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #00CED1;
+}
+
+.subtitle {
   margin: 8px 0 0;
-  color: var(--text-2);
-  font-size: .95rem;
-  max-width: 76ch;
+  color: #8A8A8A;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  max-width: 60ch;
 }
 
-.grid{
+/* ===== GRID ===== */
+.grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
 }
 
-.card{
+/* ===== ACTION CARD ===== */
+.card {
   text-align: left;
   cursor: pointer;
-
-  border-radius: 18px;
-  border: 1px solid var(--border-0);
-  background: var(--surface-1);
-
-  box-shadow: var(--shadow-sm);
-  padding: 16px;
-
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #1A1A1A;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 18px;
   display: grid;
-  gap: 6px;
-
-  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms ease,
+    border-color 200ms ease,
+    background 200ms ease;
 }
 
-.card:hover{
-  transform: translateY(-2px);
-  border-color: rgba(179,18,38,.22);
-  box-shadow: var(--shadow-lg);
-  background: var(--surface-2);
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 206, 209, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease;
 }
 
-.card:focus-visible{
+.card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0, 206, 209, 0.3);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(0, 206, 209, 0.1);
+  background: #1E1E1E;
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+.card:focus-visible {
   outline: none;
-  box-shadow: var(--ring), var(--shadow-lg);
+  border-color: rgba(0, 206, 209, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(0, 206, 209, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
-.cardSelected{
-  border-color: rgba(179,18,38,.35);
-  box-shadow: 0 0 0 4px rgba(179,18,38,.16), var(--shadow-lg);
+/* ===== SELECTED STATE ===== */
+.cardSelected {
+  border-color: rgba(227, 24, 55, 0.5) !important;
+  box-shadow:
+    0 0 0 3px rgba(227, 24, 55, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(227, 24, 55, 0.15) !important;
 }
 
-.cardTitle{
-  font-size: .98rem;
-  font-weight: 900;
+.cardSelected::before {
+  background: linear-gradient(90deg, transparent, rgba(227, 24, 55, 0.5), transparent);
+  opacity: 1;
+}
+
+.cardTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--text-0);
+  color: #FFFFFF;
   min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
-.state{
-  margin-top: 10px;
-  border: 1px dashed rgba(255,255,255,.14);
-  background: rgba(255,255,255,.02);
-  border-radius: 16px;
-  padding: 16px;
-  color: var(--text-2);
+/* ===== STATES ===== */
+.state {
+  margin-top: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 14px;
+  padding: 24px;
+  color: #8A8A8A;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
-.spinner{
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: 2px solid rgba(255,255,255,.20);
-  border-top-color: rgba(179,18,38,.80);
-  animation: spin 1s linear infinite;
-  margin: 0 auto 10px;
+.spinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #00CED1;
+  animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin{
-  to{ transform: rotate(360deg); }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-@media (max-width: 480px){
-  .section{ padding: 18px; border-radius: 16px; }
-  .grid{ gap: 12px; }
-  .card{ padding: 14px; border-radius: 16px; }
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .section {
+    padding: 20px;
+  }
+
+  .grid {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 12px;
+  }
 }

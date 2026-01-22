@@ -1,70 +1,54 @@
-/* app/styles/Header.module.css (COPIA Y PEGA COMPLETO)
-   FIX Vercel: en CSS Modules NO se permite :root (selector “no puro”)
-   - Reemplazado por variables locales dentro de .BarraSuperior y .Menu
-*/
+/* =========================
+   Header.module.css - MODERN NOIR REDESIGN
+   Navbar flotante con glassmorphism
+   ========================= */
 
- /* ===== Overlay real ===== */
-.Overlay{
+/* ===== OVERLAY ===== */
+.Overlay {
   position: fixed;
   inset: 0;
   z-index: 1250;
-
   opacity: 0;
   pointer-events: none;
-
-  background: rgba(0,0,0,.65);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-
-  transition: opacity .18s ease;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.Overlay-Abierto{
+.Overlay-Abierto {
   opacity: 1;
   pointer-events: auto;
 }
 
-/* ===== Topbar ===== */
-.BarraSuperior{
-  /* Variables locales (válidas en CSS Modules) */
-  --hdr-surface: #0f121a;
-  --hdr-border: rgba(255,255,255,.10);
-  --hdr-text: rgba(246,247,251,.94);
-  --hdr-accent-1: rgba(122,15,26,.90);
-  --hdr-accent-2: rgba(179,18,38,.70);
-  --hdr-shadow: 0 16px 44px rgba(0,0,0,.40);
-
-  height: 68px;
+/* ===== TOPBAR ===== */
+.BarraSuperior {
+  height: 72px;
   width: 100%;
-  box-sizing: border-box;
-
   display: flex;
   align-items: center;
-  gap: 12px;
-
-  padding: 12px 14px;
-
+  gap: 16px;
+  padding: 0 24px;
   position: sticky;
   top: 0;
   z-index: 1200;
 
-  color: var(--hdr-text);
-
-  border-bottom: 1px solid var(--hdr-border);
-
-  background:
-    radial-gradient(900px 260px at 15% 0%, rgba(179,18,38,.14), transparent 62%),
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
-    var(--hdr-surface);
-
-  box-shadow: var(--hdr-shadow);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  /* Glassmorphism negro */
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.Spacer{ flex: 1; }
+.Spacer {
+  flex: 1;
+}
 
-.LogoButton{
+/* ===== LOGO BUTTON ===== */
+.LogoButton {
   border: 0;
   padding: 0;
   background: transparent;
@@ -72,238 +56,323 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ===== Logo ===== */
-.Logo{
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.03);
-
-  box-shadow: 0 10px 26px rgba(0,0,0,.35);
-
-  object-fit: cover;
-
-  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+.LogoButton:hover {
+  transform: scale(1.05);
 }
 
-.Logo:hover{
-  transform: translateY(-1px);
-  border-color: rgba(179,18,38,.25);
-  background: rgba(255,255,255,.04);
-  box-shadow: 0 16px 40px rgba(0,0,0,.45);
+.LogoButton:active {
+  transform: scale(0.98);
 }
 
-.Logo-Activo{
-  border: 1px solid rgba(179,18,38,.35);
+/* ===== LOGO ===== */
+.Logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(20, 20, 20, 0.8);
   box-shadow:
-    0 0 0 4px rgba(179,18,38,.16),
-    0 18px 46px rgba(0,0,0,.55);
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    0 0 0 0 rgba(0, 206, 209, 0);
+  object-fit: cover;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
-/* ===== Brand title ===== */
-.BarraSuperior-Titulo{
+.Logo:hover {
+  border-color: rgba(0, 206, 209, 0.5);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    0 0 25px rgba(0, 206, 209, 0.3);
+}
+
+.Logo-Activo {
+  border-color: #00CED1;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(0, 206, 209, 0.4),
+    0 0 0 4px rgba(0, 206, 209, 0.15);
+}
+
+/* ===== BRAND TITLE ===== */
+.BarraSuperior-Titulo {
   margin: 0;
-
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    "Noto Sans", "Liberation Sans", sans-serif;
-
-  font-size: .92rem;
-  font-weight: 900;
-  letter-spacing: .14em;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-
-  color: rgba(246,247,251,.92);
-  text-shadow: 0 0 14px rgba(179,18,38,.12);
-
+  color: #FFFFFF;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: linear-gradient(135deg, #FFFFFF 0%, #00CED1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* ===== CTA: Login ===== */
-.BotonLogin{
+/* ===== CTA: LOGIN BUTTON ===== */
+.BotonLogin {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-
-  padding: 11px 14px;
-  border-radius: 999px;
-
-  border: 1px solid rgba(179,18,38,.28);
-  background: linear-gradient(90deg, var(--hdr-accent-1), var(--hdr-accent-2));
-  color: rgba(255,255,255,.96);
-
-  font-size: .92rem;
-  font-weight: 900;
-  letter-spacing: .02em;
-
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  border: none;
+  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  color: #FFFFFF;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   cursor: pointer;
-
-  box-shadow: 0 18px 44px rgba(122,15,26,.26);
-  transition: transform .14s ease, box-shadow .14s ease, filter .14s ease, border-color .14s ease;
+  box-shadow:
+    0 4px 20px rgba(227, 24, 55, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition:
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms ease;
 }
 
-.BotonLogin:hover{
-  transform: translateY(-1px);
-  filter: saturate(1.06);
-  border-color: rgba(179,18,38,.40);
-  box-shadow: 0 24px 64px rgba(122,15,26,.34);
+.BotonLogin:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 30px rgba(227, 24, 55, 0.4),
+    0 0 40px rgba(227, 24, 55, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.BotonLogin:active{
+.BotonLogin:active {
   transform: translateY(0);
-  box-shadow: 0 14px 34px rgba(122,15,26,.22);
+  box-shadow:
+    0 2px 10px rgba(227, 24, 55, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* =========================
-   Drawer / Sidebar
-   ========================= */
-
-.Menu{
-  /* Variables locales para el drawer */
-  --hdr-surface: #0f121a;
-  --hdr-border: rgba(255,255,255,.10);
-  --hdr-shadow-lg: 0 26px 80px rgba(0,0,0,.55);
-
+/* ===== DRAWER / SIDEBAR ===== */
+.Menu {
   width: 320px;
   height: 100vh;
-
   position: fixed;
   left: 0;
   top: 0;
-
   z-index: 1300;
-
-  padding: 14px 12px;
-
+  padding: 20px;
   transform: translateX(-105%);
-  transition: transform .22s ease;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  color: rgba(246,247,251,.94);
-
-  border-right: 1px solid var(--hdr-border);
-
-  background:
-    radial-gradient(900px 420px at 12% 0%, rgba(179,18,38,.16), transparent 62%),
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
-    var(--hdr-surface);
-
-  box-shadow: var(--hdr-shadow-lg);
-
+  /* Glassmorphism negro profundo */
+  background: linear-gradient(180deg, rgba(20, 20, 20, 0.98) 0%, rgba(10, 10, 10, 0.98) 100%);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    20px 0 60px rgba(0, 0, 0, 0.8),
+    inset 1px 0 0 rgba(255, 255, 255, 0.05);
   overflow-y: auto;
 }
 
-.Menu-Abierto{ transform: translateX(0); }
+.Menu-Abierto {
+  transform: translateX(0);
+}
 
-.MenuHeader{
+/* ===== MENU HEADER ===== */
+.MenuHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  padding: 8px 10px 12px;
-  margin-bottom: 10px;
-
-  border-bottom: 1px solid rgba(255,255,255,.10);
+  padding: 8px 4px 20px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.MenuTitulo{
+.MenuTitulo {
   margin: 0;
-  font-size: .82rem;
-  font-weight: 900;
-  letter-spacing: .14em;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(246,247,251,.88);
+  color: #00CED1;
 }
 
-.MenuClose{
-  width: 38px;
-  height: 38px;
-
-  display: grid;
-  place-items: center;
-
+.MenuClose {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.12);
-
-  background: rgba(255,255,255,.04);
-  color: rgba(246,247,251,.92);
-
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: #FFFFFF;
   cursor: pointer;
-
-  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
 }
 
-.MenuClose:hover{
-  transform: translateY(-1px);
-  border-color: rgba(179,18,38,.22);
-  background: rgba(255,255,255,.06);
+.MenuClose svg {
+  display: block;
+  width: 14px;
+  height: 14px;
 }
 
-.Menu-Lista{
+.MenuClose:hover {
+  transform: scale(1.05);
+  border-color: rgba(227, 24, 55, 0.5);
+  background: rgba(227, 24, 55, 0.1);
+}
+
+/* ===== MENU ITEMS ===== */
+.Menu-Lista {
   list-style: none;
   padding: 0;
   margin: 0;
-
   display: grid;
   gap: 8px;
 }
 
-.Menu-Elemento{
+.Menu-Elemento {
+  position: relative;
   margin: 0;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.08);
-  background: rgba(255,255,255,.03);
-  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+  transition:
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 200ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease;
 }
 
-.Menu-Elemento:hover{
-  transform: translateY(-1px);
-  border-color: rgba(179,18,38,.22);
-  background: rgba(255,255,255,.05);
+.Menu-Elemento:hover {
+  transform: translateX(4px);
+  border-color: rgba(0, 206, 209, 0.3);
+  background: rgba(0, 206, 209, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.Menu-Elemento-Activo{
-  border-color: rgba(179,18,38,.32);
-  background: linear-gradient(90deg, rgba(122,15,26,.34), rgba(255,255,255,.03));
+.Menu-Elemento-Activo {
+  border-color: rgba(0, 206, 209, 0.5);
+  background: linear-gradient(135deg, rgba(0, 206, 209, 0.1) 0%, rgba(0, 206, 209, 0.05) 100%);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    inset 0 0 30px rgba(0, 206, 209, 0.05);
 }
 
-.Menu-Elemento-Boton{
+.Menu-Elemento-Activo::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 50%;
+  min-height: 24px;
+  background: linear-gradient(180deg, #00CED1 0%, #00B5B8 100%);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 12px rgba(0, 206, 209, 0.6);
+}
+
+.Menu-Elemento-Boton {
+  position: relative;
   width: 100%;
   border: 0;
   background: transparent;
-  padding: 12px 12px;
+  padding: 16px 20px;
   cursor: pointer;
-  color: rgba(246,247,251,.92);
+  color: rgba(255, 255, 255, 0.9);
   text-align: left;
 }
 
-.Menu-Elemento-Contenido{
+.Menu-Elemento-Contenido {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 900;
+  gap: 14px;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
-.Menu-Elemento-Icono,
-.MenuElementoIconoSeleccionado{
-  width: 18px;
-  height: 18px;
+.Menu-Elemento-Icono {
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
-  filter: invert(1);
-  opacity: .95;
+  filter: invert(1) brightness(0.8);
+  opacity: 0.7;
+  transition: opacity 200ms ease, filter 200ms ease;
 }
 
-@media (max-width: 768px){
-  .Menu{ width: 86vw; max-width: 360px; }
+.MenuElementoIconoSeleccionado {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(155deg) brightness(95%) contrast(101%);
+  opacity: 1;
 }
 
-@media (max-width: 480px){
-  .BarraSuperior{ height: 64px; padding: 10px 12px; }
-  .Menu{ width: 90vw; }
-  .Menu-Elemento-Boton{ padding: 12px 10px; }
+.Menu-Elemento:hover .Menu-Elemento-Icono {
+  opacity: 1;
+  filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(155deg) brightness(95%) contrast(101%);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .BarraSuperior {
+    padding: 0 16px;
+  }
+
+  .Menu {
+    width: 85vw;
+    max-width: 360px;
+  }
+
+  .BarraSuperior-Titulo {
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+  }
+
+  .BotonLogin {
+    padding: 10px 16px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .BarraSuperior {
+    height: 64px;
+    padding: 0 12px;
+    gap: 12px;
+  }
+
+  .Logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .Menu {
+    width: 90vw;
+    padding: 16px;
+  }
+
+  .Menu-Elemento-Boton {
+    padding: 14px 16px;
+  }
+
+  .BotonLogin {
+    padding: 10px 14px;
+    font-size: 0.75rem;
+  }
+
+  .BarraSuperior-Titulo {
+    display: none;
+  }
 }

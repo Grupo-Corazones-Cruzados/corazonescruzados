@@ -8,6 +8,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import style from "app/styles/Estructura.module.css";
 
 type Card = {
@@ -65,11 +66,17 @@ function iconFor(id: number) {
 
 export default function Estructura() {
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const activeCard = useMemo(
     () => (activeId ? CARDS.find((c) => c.id === activeId) ?? null : null),
     [activeId]
   );
+
+  // Para que createPortal funcione en SSR
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Cerrar con ESC + bloquear scroll cuando modal está abierto
   useEffect(() => {
@@ -113,7 +120,7 @@ export default function Estructura() {
         ))}
       </div>
 
-      {activeCard && (
+      {activeCard && mounted && createPortal(
         <div
           className={style.overlay}
           onClick={() => setActiveId(null)}
@@ -140,7 +147,9 @@ export default function Estructura() {
                 onClick={() => setActiveId(null)}
                 aria-label="Cerrar"
               >
-                ×
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1L13 13M1 13L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
               </button>
             </div>
 
@@ -148,7 +157,8 @@ export default function Estructura() {
               <p className={style.details}>{activeCard.details}</p>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );

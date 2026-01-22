@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Acciones from "./Acciones";
 import Formulario1 from "./Formulario1";
 import styles from "app/styles/ModalAcciones.module.css";
@@ -31,11 +32,17 @@ const ModalAcciones: React.FC<ModalAccionesProps> = ({
   onClose,
   objetoMiembro,
 }) => {
-  // No renderiza si no hay miembro
-  if (!selectedMember) return null;
+  const [mounted, setMounted] = useState(false);
+
+  // Para que createPortal funcione en SSR
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Bloquea scroll + ESC para cerrar
   useEffect(() => {
+    if (!selectedMember) return;
+
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -48,7 +55,10 @@ const ModalAcciones: React.FC<ModalAccionesProps> = ({
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, selectedMember]);
+
+  // No renderiza si no hay miembro (después de hooks)
+  if (!selectedMember || !mounted) return null;
 
   const nombre = objetoMiembro?.Nombre || "Miembro";
   const puesto = objetoMiembro?.Puesto || "";
@@ -56,7 +66,7 @@ const ModalAcciones: React.FC<ModalAccionesProps> = ({
   const descripcion = objetoMiembro?.Descripcion || "";
   const foto = objetoMiembro?.Foto || null;
 
-  return (
+  return createPortal(
     <div className={styles.Overlay} role="presentation" onClick={onClose}>
       <div className={styles.Modal} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <header className={styles.ModalHeader}>
@@ -65,7 +75,9 @@ const ModalAcciones: React.FC<ModalAccionesProps> = ({
           </div>
 
           <button className={styles.Cerrar} onClick={onClose} aria-label="Cerrar">
-            ✕
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L13 13M1 13L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
           </button>
         </header>
 
@@ -160,7 +172,8 @@ const ModalAcciones: React.FC<ModalAccionesProps> = ({
           onClose={onClose}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import styles from "app/styles/ModalAcciones2.module.css";
 import { supabase } from "lib/supabaseClient";
 
@@ -22,6 +23,12 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
   const [costoBaseMiembro, setCostoBaseMiembro] = useState(0);
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [mounted, setMounted] = useState(false);
+
+  // Para que createPortal funcione en SSR
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // ESC + lock scroll (solo cuando el modal está abierto)
   useEffect(() => {
@@ -201,13 +208,16 @@ Mis datos:
   };
 
   // ✅ Render condicional DESPUÉS de los hooks (evita error de orden)
-  if (!isOpen || !miembro || !paquete) return null;
+  if (!isOpen || !miembro || !paquete || !mounted) return null;
 
-  return (
+  // Usar Portal para renderizar fuera del contexto de apilamiento del header
+  return createPortal(
     <div className={styles.Overlay} role="presentation" onClick={closeAndReset}>
       <div className={styles.Modal} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <button className={styles.Cerrar} onClick={closeAndReset} aria-label="Cerrar">
-          ×
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1L13 13M1 13L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
         </button>
 
         <div className={styles.ModalHeader}>
@@ -356,7 +366,8 @@ Mis datos:
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
