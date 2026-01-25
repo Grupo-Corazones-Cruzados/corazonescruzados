@@ -65,8 +65,9 @@ export default function AuthPage() {
         });
 
         if (result.success) {
-          setSuccess("Cuenta creada. Revisa tu correo para verificar tu cuenta.");
-          setMode("login");
+          // Redirigir al dashboard - el usuario verá los módulos bloqueados
+          // hasta que confirme su email
+          router.push("/dashboard");
         } else {
           setError(result.error || "Error al crear la cuenta");
         }

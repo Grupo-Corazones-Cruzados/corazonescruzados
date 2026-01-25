@@ -142,16 +142,22 @@ export function useAuth() {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
+      const redirectUrl = typeof window !== "undefined"
+        ? `${window.location.origin}/auth/callback`
+        : undefined;
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: metadata,
+          emailRedirectTo: redirectUrl,
         },
       });
 
       if (error) throw error;
 
+      setState((prev) => ({ ...prev, loading: false }));
       return { success: true, data };
     } catch (err: any) {
       const errorMsg = err?.message || "Error al registrarse";
