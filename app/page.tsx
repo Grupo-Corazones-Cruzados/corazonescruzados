@@ -10,9 +10,9 @@ import type { ObjetoResumenPaquete } from "app/components/CtPaquetes";
 
 interface Accion {
   id: number;
-  Accion: string;
-  idMiembro: number;
-  idFuente: number;
+  nombre: string;
+  id_miembro: number;
+  id_fuente: number;
 }
 
 export default function Page() {

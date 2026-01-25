@@ -6,9 +6,9 @@ import { supabase } from "lib/supabaseClient";
 
 interface Accion {
   id: number;
-  Accion: string;
-  idMiembro: number;
-  idFuente: number;
+  nombre: string;
+  id_miembro: number;
+  id_fuente: number;
 }
 
 interface Formulario1Props {
@@ -43,7 +43,7 @@ export default function Formulario1({
 
   const [loading, setLoading] = useState(false);
 
-  const accionLabel = useMemo(() => selectedAccion?.Accion ?? "", [selectedAccion]);
+  const accionLabel = useMemo(() => selectedAccion?.nombre ?? "", [selectedAccion]);
   const canSubmit = useMemo(
     () => !!selectedAccion && selectedMember !== null && !loading,
     [selectedAccion, selectedMember, loading]
@@ -83,9 +83,9 @@ export default function Formulario1({
     try {
       // 1) Verificar cliente existente
       const { data: existingClient, error: selectError } = await supabase
-        .from("Clientes")
+        .from("clientes")
         .select("*")
-        .eq("CorreoElectronico", formData.clienteCorreo)
+        .eq("correo_electronico", formData.clienteCorreo)
         .single();
 
       if (selectError && selectError.code !== "PGRST116") {
@@ -116,13 +116,13 @@ export default function Formulario1({
         }
 
         const { data: newClient, error: insertClientError } = await supabase
-          .from("Clientes")
+          .from("clientes")
           .insert({
-            Nombre: formData.clienteNombre,
-            Contacto: formData.clienteContacto,
-            CorreoElectronico: formData.clienteCorreo,
-            idMiembro: selectedMember,
-            idAccion: selectedAccion.id,
+            nombre: formData.clienteNombre,
+            contacto: formData.clienteContacto,
+            correo_electronico: formData.clienteCorreo,
+            id_miembro: selectedMember,
+            id_accion: selectedAccion.id,
           })
           .select()
           .single();
@@ -138,11 +138,11 @@ export default function Formulario1({
       }
 
       // 3) Crear ticket
-      const { error: ticketError } = await supabase.from("Tickets").insert({
-        idCliente: clienteId,
-        idAccion: selectedAccion.id,
-        Detalle: formData.detalle,
-        Estado: "Pendiente",
+      const { error: ticketError } = await supabase.from("tickets").insert({
+        id_cliente: clienteId,
+        id_accion: selectedAccion.id,
+        detalle: formData.detalle,
+        estado: "Pendiente",
       });
 
       if (ticketError) {
@@ -152,8 +152,8 @@ export default function Formulario1({
 
       // 4) Obtener número del miembro
       const { data: miembroDB, error: miembroError } = await supabase
-        .from("Miembros")
-        .select("celular, Nombre")
+        .from("miembros")
+        .select("celular, nombre")
         .eq("id", selectedMember)
         .single();
 
@@ -166,7 +166,7 @@ export default function Formulario1({
 
       // 5) Mensaje WhatsApp
       const mensaje = `Hola, soy ${formData.clienteNombre} ${formData.clienteApellido}.
-He generado un ticket para la acción *${selectedAccion.Accion}* con ${(miembroDB as any)?.Nombre}.
+He generado un ticket para la acción *${selectedAccion.nombre}* con ${(miembroDB as any)?.nombre}.
 Detalles del requerimiento:
 ${formData.detalle}
 

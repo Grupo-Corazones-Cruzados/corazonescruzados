@@ -15,23 +15,23 @@ import Miembros from "app/components/Miembros";
 
 export interface ObjetoResumenPaquete {
   id: number;
-  Nombre: string;
-  Puesto: string;
-  Descripcion: string;
-  Foto: string | null;
-  Correo: string;
-  idFuentes: number;
-  Costo: number;
-  codUsuario?: string;
+  nombre: string;
+  puesto: string;
+  descripcion: string;
+  foto: string | null;
+  correo: string;
+  id_fuente: number;
+  costo: number;
+  cod_usuario?: string;
 }
 
 interface Paquete {
   id: number;
-  Nombre: string;
-  Contenido: string;
-  Horas: number;
-  Descripcion: string;
-  Descuento: number;
+  nombre: string;
+  contenido: string;
+  horas: number;
+  descripcion: string;
+  descuento: number;
 }
 
 interface Props {
@@ -66,7 +66,7 @@ export default function CPaquetes({
       setError(null);
 
       const { data, error } = await supabase
-        .from("Paquetes")
+        .from("paquetes")
         .select("*")
         .order("created_at", { ascending: true });
 
@@ -85,8 +85,8 @@ export default function CPaquetes({
   }, []);
 
   const contenidoList = useMemo(() => {
-    if (!selectedPaquete?.Contenido) return [];
-    return selectedPaquete.Contenido.split(";").map((t) => t.trim()).filter(Boolean);
+    if (!selectedPaquete?.contenido) return [];
+    return selectedPaquete.contenido.split(";").map((t) => t.trim()).filter(Boolean);
   }, [selectedPaquete]);
 
   return (
@@ -104,11 +104,11 @@ export default function CPaquetes({
         <div className={styles.summaryBar}>
           <div className={styles.summaryPill}>
             <span className={styles.summaryLabel}>Paquete</span>
-            <span className={styles.summaryValue}>{selectedPaquete?.Nombre ?? "—"}</span>
+            <span className={styles.summaryValue}>{selectedPaquete?.nombre ?? "—"}</span>
           </div>
           <div className={styles.summaryPill}>
             <span className={styles.summaryLabel}>Miembro</span>
-            <span className={styles.summaryValue}>{objetoMiembro?.Nombre ?? "—"}</span>
+            <span className={styles.summaryValue}>{objetoMiembro?.nombre ?? "—"}</span>
           </div>
         </div>
       </div>
@@ -128,8 +128,8 @@ export default function CPaquetes({
         <div className={styles.cardsContainer}>
           {paquetes.map((p) => {
             const isSelected = selectedPaquete?.id === p.id;
-            const benefits = p.Contenido
-              ? p.Contenido.split(";").map((t) => t.trim()).filter(Boolean).slice(0, 6)
+            const benefits = p.contenido
+              ? p.contenido.split(";").map((t) => t.trim()).filter(Boolean).slice(0, 6)
               : [];
 
             return (
@@ -145,9 +145,9 @@ export default function CPaquetes({
                 }}
               >
                 <div className={styles.paqueteHeader}>
-                  <h3>{p.Nombre}</h3>
+                  <h3>{p.nombre}</h3>
                   <span className={styles.paqueteMeta}>
-                    {p.Horas ? `${p.Horas}h` : "—"} · {p.Descuento ? `${p.Descuento}%` : "0%"}
+                    {p.horas ? `${p.horas}h` : "—"} · {p.descuento ? `${p.descuento}%` : "0%"}
                   </span>
                 </div>
 
@@ -159,7 +159,7 @@ export default function CPaquetes({
                   ))}
                 </ul>
 
-                <p className={styles.paqueteDescripcion}>{p.Descripcion}</p>
+                <p className={styles.paqueteDescripcion}>{p.descripcion}</p>
 
                 <div className={styles.paqueteCta}>
                   {isSelected ? "Seleccionado" : "Elegir paquete →"}

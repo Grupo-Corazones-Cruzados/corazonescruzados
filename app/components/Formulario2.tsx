@@ -54,7 +54,7 @@ export default function Formulario2({ visible, onClose, setVisible }: Props) {
     setSuccessMsg("");
     setSending(true);
 
-    const { error } = await supabase.from("Aspirantes").insert([{ Motivo: motivo.trim() }]);
+    const { error } = await supabase.from("aspirantes").insert([{ motivo: motivo.trim() }]);
 
     setSending(false);
 

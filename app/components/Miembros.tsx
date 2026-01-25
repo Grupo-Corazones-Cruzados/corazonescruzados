@@ -15,19 +15,19 @@ interface MiembrosPadre {
 
 interface Fuente {
   id: number;
-  Fuente: string;
+  nombre: string;
 }
 
 interface Member {
   id: number;
-  Nombre: string;
-  Puesto: string;
-  Descripcion: string;
-  Foto: string | null;
-  Correo: string;
-  idFuentes: number;
-  Costo: number;
-  codUsuario: string;
+  nombre: string;
+  puesto: string;
+  descripcion: string;
+  foto: string | null;
+  correo: string;
+  id_fuente: number;
+  costo: number;
+  cod_usuario: string;
 }
 
 const Miembros: React.FC<MiembrosPadre> = ({
@@ -39,7 +39,7 @@ const Miembros: React.FC<MiembrosPadre> = ({
   const router = useRouter();
 
   const [members, setMembers] = useState<Member[]>([]);
-  const [fuentes, setFuentes] = useState<{ id: number; fuente: string }[]>([]);
+  const [fuentes, setFuentes] = useState<{ id: number; nombre: string }[]>([]);
   const [selectedFuente, setSelectedFuente] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -65,7 +65,7 @@ const Miembros: React.FC<MiembrosPadre> = ({
     const fetchMembers = async () => {
       setLoadingMembers(true);
       const { data, error } = await supabase
-        .from("Miembros")
+        .from("miembros")
         .select("*")
         .order("created_at", { ascending: true });
 
@@ -85,9 +85,9 @@ const Miembros: React.FC<MiembrosPadre> = ({
     const fetchFuentes = async () => {
       setLoadingFuentes(true);
       const { data, error } = await supabase
-        .from("Fuentes")
-        .select("id, Fuente")
-        .order("Fuente", { ascending: true });
+        .from("fuentes")
+        .select("id, nombre")
+        .order("nombre", { ascending: true });
 
       if (error) {
         console.error("Error al cargar fuentes:", error.message, error.details, error.hint);
@@ -95,7 +95,7 @@ const Miembros: React.FC<MiembrosPadre> = ({
       } else if (data) {
         const mappedData = (data as Fuente[]).map((f) => ({
           id: f.id,
-          fuente: f.Fuente,
+          nombre: f.nombre,
         }));
         setFuentes(mappedData);
       }
@@ -111,10 +111,10 @@ const Miembros: React.FC<MiembrosPadre> = ({
     return members.filter((member) => {
       const matchesSearch =
         !s ||
-        member.Nombre.toLowerCase().includes(s) ||
-        (member.codUsuario || "").toLowerCase().includes(s);
+        member.nombre.toLowerCase().includes(s) ||
+        (member.cod_usuario || "").toLowerCase().includes(s);
 
-      const matchesFuente = selectedFuente === null || member.idFuentes === selectedFuente;
+      const matchesFuente = selectedFuente === null || member.id_fuente === selectedFuente;
 
       return matchesSearch && matchesFuente;
     });
@@ -145,7 +145,7 @@ const Miembros: React.FC<MiembrosPadre> = ({
 
   const fuenteLabel = useMemo(() => {
     if (selectedFuente == null) return null;
-    return fuentes.find((f) => f.id === selectedFuente)?.fuente ?? null;
+    return fuentes.find((f) => f.id === selectedFuente)?.nombre ?? null;
   }, [fuentes, selectedFuente]);
 
   return (
@@ -193,7 +193,7 @@ const Miembros: React.FC<MiembrosPadre> = ({
           <option value="">Todas las fuentes</option>
           {fuentes.map((f) => (
             <option key={f.id} value={f.id}>
-              {f.fuente}
+              {f.nombre}
             </option>
           ))}
         </select>
@@ -243,25 +243,25 @@ const Miembros: React.FC<MiembrosPadre> = ({
                   }}
                 >
                   <div className={style.cardTop}>
-                    {member.Foto ? (
-                      <img src={member.Foto} alt={member.Nombre} className={style.avatar} />
+                    {member.foto ? (
+                      <img src={member.foto} alt={member.nombre} className={style.avatar} />
                     ) : (
                       <div className={style.avatarPlaceholder} aria-hidden="true">
-                        {member.Nombre?.[0]?.toUpperCase() ?? "?"}
+                        {member.nombre?.[0]?.toUpperCase() ?? "?"}
                       </div>
                     )}
 
                     <div className={style.cardInfo}>
                       <div className={style.nameRow}>
-                        <h4 className={style.name}>{member.Nombre}</h4>
+                        <h4 className={style.name}>{member.nombre}</h4>
                         {selected && <span className={style.badge}>Seleccionado</span>}
                       </div>
-                      <div className={style.role}>{member.Puesto}</div>
-                      <div className={style.user}>{member.codUsuario}</div>
+                      <div className={style.role}>{member.puesto}</div>
+                      <div className={style.user}>{member.cod_usuario}</div>
                     </div>
                   </div>
 
-                  <p className={style.desc}>{member.Descripcion}</p>
+                  <p className={style.desc}>{member.descripcion}</p>
 
                 </button>
               );

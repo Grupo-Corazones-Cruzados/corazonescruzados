@@ -54,14 +54,14 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
       if (!miembro?.id) return;
 
       const { data: miembroCosto, error } = await supabase
-        .from("Miembros")
-        .select("Costo")
+        .from("miembros")
+        .select("costo")
         .eq("id", miembro.id)
         .single();
 
-      if (!error && miembroCosto?.Costo) {
-        setCostoBaseMiembro(miembroCosto.Costo);
-        setFormData((prev) => ({ ...prev, costoNegociado: miembroCosto.Costo }));
+      if (!error && miembroCosto?.costo) {
+        setCostoBaseMiembro(miembroCosto.costo);
+        setFormData((prev) => ({ ...prev, costoNegociado: miembroCosto.costo }));
       }
     };
 
@@ -78,10 +78,10 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
   };
 
   // ===== Cálculos seguros (si aún no hay paquete/miembro, quedan en 0) =====
-  const costoHoraOriginal = Number(miembro?.Costo || 0);
+  const costoHoraOriginal = Number(miembro?.costo || 0);
   const costoHoraNegociado = Number(formData.costoNegociado || costoHoraOriginal);
-  const horas = Number(paquete?.Horas || 0);
-  const descuento = Number(paquete?.Descuento || 0);
+  const horas = Number(paquete?.horas || 0);
+  const descuento = Number(paquete?.descuento || 0);
 
   const precioTotal = costoHoraNegociado * horas;
   const precioConDescuento = precioTotal * (1 - descuento / 100);
@@ -114,7 +114,7 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
 
     const numeroDestino = (miembro?.celular || "").replace("+", "") || "593992706933";
     const mensaje = `Hola, soy ${formData.nombre} ${formData.apellido}.
-Estoy interesado en el paquete *${paquete.Nombre}*.
+Estoy interesado en el paquete *${paquete.nombre}*.
 
 He negociado un costo por hora de $${Number(formData.costoNegociado).toFixed(2)}.
 
@@ -134,22 +134,21 @@ Mis datos:
 
     try {
       const { data: existingClient, error: selectError } = await supabase
-        .from("Clientes")
+        .from("clientes")
         .select("*")
-        .eq("CorreoElectronico", formData.correo)
+        .eq("correo_electronico", formData.correo)
         .single();
 
       let clienteId: number;
 
       if (selectError && selectError.code === "PGRST116") {
         const { data: newClient, error: insertError } = await supabase
-          .from("Clientes")
+          .from("clientes")
           .insert({
-            Nombre: formData.nombre,
-            Apellido: formData.apellido,
-            Contacto: formData.telefono,
-            CorreoElectronico: formData.correo,
-            idMiembro: miembro.id,
+            nombre: formData.nombre,
+            contacto: formData.telefono,
+            correo_electronico: formData.correo,
+            id_miembro: miembro.id,
           })
           .select()
           .single();
@@ -181,10 +180,10 @@ Mis datos:
         throw selectError;
       }
 
-      const { error: ticketError } = await supabase.from("TicketsPaquetes").insert({
-        idPaquete: paquete.id,
-        idMiembro: miembro.id,
-        idCliente: clienteId,
+      const { error: ticketError } = await supabase.from("tickets_paquetes").insert({
+        id_paquete: paquete.id,
+        id_miembro: miembro.id,
+        id_cliente: clienteId,
       });
 
       if (ticketError) throw ticketError;
@@ -235,19 +234,19 @@ Mis datos:
           <div className={styles.ColumnaIzquierda}>
             <div className={styles.InfoMiembro}>
               <img
-                src={miembro.Foto || "/default.png"}
+                src={miembro.foto || "/default.png"}
                 className={styles.MiembroFoto}
-                alt={miembro.Nombre}
+                alt={miembro.nombre}
               />
               <div>
-                <div className={styles.Nombre}>{miembro.Nombre}</div>
-                <div className={styles.Puesto}>{miembro.Puesto}</div>
+                <div className={styles.Nombre}>{miembro.nombre}</div>
+                <div className={styles.Puesto}>{miembro.puesto}</div>
               </div>
             </div>
 
             <div className={styles.CuadroAccion}>
-              <div className={styles.TituloAccion}>{paquete.Nombre}</div>
-              <div className={styles.TextoAccion}>{paquete.Descripcion}</div>
+              <div className={styles.TituloAccion}>{paquete.nombre}</div>
+              <div className={styles.TextoAccion}>{paquete.descripcion}</div>
               <div className={styles.TextoAccionKV}>
                 <strong>Horas</strong>
                 <span>{horas}</span>

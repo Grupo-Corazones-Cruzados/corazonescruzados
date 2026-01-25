@@ -1,13 +1,17 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 import styles from "../styles/Header.module.css";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { user, profile, signOut, isAuthenticated, loading } = useAuth();
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const menuItems = [
     { label: "Inicio", icon: "/IcInicio.png", href: "/" },
@@ -41,6 +45,39 @@ const Header = () => {
     };
   }, [menuOpen]);
 
+  // Cerrar menú de usuario al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [userMenuOpen]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setUserMenuOpen(false);
+    router.push("/");
+  };
+
+  const getInitials = () => {
+    if (profile?.nombre && profile?.apellido) {
+      return `${profile.nombre[0]}${profile.apellido[0]}`.toUpperCase();
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return "U";
+  };
+
   return (
     <>
       {/* Overlay (click para cerrar) */}
@@ -71,17 +108,108 @@ const Header = () => {
 
         <div className={styles.Spacer} />
 
-        <button
-          className={styles.BotonLogin}
-          onClick={() =>
-            window.open(
-              "https://apps.powerapps.com/play/e/ecc5f0d6-fde7-ef24-ade9-27ef544fe20d/a/0b621e15-f30c-4e9a-9488-6670107b484e?tenantId=9ce49709-ae4e-4000-be0f-c9f7d1aa98e9&hint=d0412594-0a6a-4ba2-a31e-bed394a822bf&sourcetime=1762026792024&hideNavBar=true#",
-              "_blank"
-            )
-          }
-        >
-          Iniciar Sesión
-        </button>
+        {/* Auth Button / User Menu */}
+        {loading ? (
+          <div className={styles.AuthLoading}>
+            <div className={styles.AuthSpinner} />
+          </div>
+        ) : isAuthenticated ? (
+          <div className={styles.UserMenu} ref={userMenuRef}>
+            <button
+              className={styles.UserButton}
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              aria-expanded={userMenuOpen}
+              aria-haspopup="true"
+            >
+              <div className={styles.UserAvatar}>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" />
+                ) : (
+                  <span>{getInitials()}</span>
+                )}
+              </div>
+              <span className={styles.UserName}>
+                {profile?.nombre || user?.email?.split("@")[0]}
+              </span>
+              <svg
+                className={`${styles.UserChevron} ${userMenuOpen ? styles.UserChevronOpen : ""}`}
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            {userMenuOpen && (
+              <div className={styles.UserDropdown}>
+                <div className={styles.UserDropdownHeader}>
+                  <p className={styles.UserDropdownName}>
+                    {profile?.nombre} {profile?.apellido}
+                  </p>
+                  <p className={styles.UserDropdownEmail}>{user?.email}</p>
+                </div>
+                <div className={styles.UserDropdownDivider} />
+                <button
+                  className={styles.UserDropdownItem}
+                  onClick={() => {
+                    router.push("/perfil");
+                    setUserMenuOpen(false);
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  Mi perfil
+                </button>
+                <button
+                  className={styles.UserDropdownItem}
+                  onClick={() => {
+                    window.open(
+                      "https://apps.powerapps.com/play/e/ecc5f0d6-fde7-ef24-ade9-27ef544fe20d/a/0b621e15-f30c-4e9a-9488-6670107b484e?tenantId=9ce49709-ae4e-4000-be0f-c9f7d1aa98e9&hint=d0412594-0a6a-4ba2-a31e-bed394a822bf&sourcetime=1762026792024&hideNavBar=true#",
+                      "_blank"
+                    );
+                    setUserMenuOpen(false);
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  Panel de gestión
+                </button>
+                <div className={styles.UserDropdownDivider} />
+                <button
+                  className={`${styles.UserDropdownItem} ${styles.UserDropdownItemDanger}`}
+                  onClick={handleSignOut}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            className={styles.BotonLogin}
+            onClick={() => router.push("/auth")}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 17L15 12L10 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M15 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Ingresar
+          </button>
+        )}
       </header>
 
       {/* Drawer / Sidebar */}

@@ -8,9 +8,9 @@ import ScrollReveal from "app/components/ScrollReveal";
 
 interface Pregunta {
   id: number;
-  Pregunta: string;
-  Respuesta: string;
-  videoUrl?: string;
+  pregunta: string;
+  respuesta: string;
+  video_url?: string;
 }
 
 const AyudaPage: React.FC = () => {
@@ -20,8 +20,8 @@ const AyudaPage: React.FC = () => {
   useEffect(() => {
     const fetchPreguntas = async () => {
       const { data, error } = await supabase
-        .from("PreguntasFrecuentes")
-        .select("id, Pregunta, Respuesta, videoUrl")
+        .from("preguntas_frecuentes")
+        .select("id, pregunta, respuesta, video_url")
         .order("id", { ascending: true });
 
       if (error) {
@@ -63,17 +63,17 @@ const AyudaPage: React.FC = () => {
                         onClick={() => toggleFaq(index)}
                         aria-expanded={isOpen}
                       >
-                        {item.Pregunta}
+                        {item.pregunta}
                       </button>
 
                       <div className={`${styles.faqAnswer} ${isOpen ? styles.open : ""}`}>
                         <div className={styles.faqAnswerInner}>
-                          {item.Respuesta}
+                          {item.respuesta}
 
-                          {item.videoUrl && (
+                          {item.video_url && (
                             <div className={styles.videoWrapper}>
                               <iframe
-                                src={item.videoUrl.replace("watch?v=", "embed/")}
+                                src={item.video_url.replace("watch?v=", "embed/")}
                                 title="YouTube video player"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen

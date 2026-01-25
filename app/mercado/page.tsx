@@ -18,9 +18,9 @@ type ProductoRow = {
   herramientas: any | null;
   descripcion: string | null;
   imagen: string | null; // Data URL completa: data:image/...;base64,...
-  linkDetalles?: string | null; // URL para ver detalles del producto
+  link_detalles?: string | null; // URL para ver detalles del producto
   costo: number | null;
-  idmiembro?: number | null;
+  id_miembro?: number | null;
 };
 
 /** ====== CV ====== */
@@ -48,20 +48,20 @@ type CvProfile = {
 
 type MiembroRow = {
   id: number;
-  Nombre: string | null;
-  Puesto: string | null;
-  Descripcion: string | null;
-  Foto: string | null;
-  Correo: string | null;
+  nombre: string | null;
+  puesto: string | null;
+  descripcion: string | null;
+  foto: string | null;
+  correo: string | null;
   celular?: string | null;
-  codUsuario?: string | null;
+  cod_usuario?: string | null;
 
-  cv_profile?: string | null; // uuid en tabla Miembros
+  cv_profile?: string | null; // uuid en tabla miembros
   cvProfile?: CvProfile | null; // relación traída como objeto (alias)
 };
 
-const PRODUCTS_TABLE = "Productos";
-const MEMBERS_TABLE = "Miembros";
+const PRODUCTS_TABLE = "productos";
+const MEMBERS_TABLE = "miembros";
 const CV_TABLE = "cv_profile";
 
 const supabase = createClient(
@@ -162,13 +162,13 @@ function MercadoInner() {
               .select(
                 `
                 id,
-                Nombre,
-                Puesto,
-                Descripcion,
-                Foto,
-                Correo,
+                nombre,
+                puesto,
+                descripcion,
+                foto,
+                correo,
                 celular,
-                codUsuario,
+                cod_usuario,
                 cv_profile,
                 cvProfile:cv_profile(*)
               `
@@ -178,8 +178,8 @@ function MercadoInner() {
 
             supabase
               .from(PRODUCTS_TABLE)
-              .select("id, created_at, nombre, herramientas, descripcion, imagen, linkDetalles, costo, idmiembro")
-              .eq("idmiembro", miembroId)
+              .select("id, created_at, nombre, herramientas, descripcion, imagen, link_detalles, costo, id_miembro")
+              .eq("id_miembro", miembroId)
               .order("created_at", { ascending: false }),
           ]);
 
@@ -200,7 +200,7 @@ function MercadoInner() {
           const [productsRes, cvRes] = await Promise.all([
             supabase
               .from(PRODUCTS_TABLE)
-              .select("id, created_at, nombre, herramientas, descripcion, imagen, linkDetalles, costo, idmiembro")
+              .select("id, created_at, nombre, herramientas, descripcion, imagen, link_detalles, costo, id_miembro")
               .order("created_at", { ascending: false }),
 
             supabase.from(CV_TABLE).select("*").order("updated_at", { ascending: false }).limit(1),
@@ -266,9 +266,9 @@ function MercadoInner() {
   }, [items, q, cat]);
 
   const cvTitle = useMemo(() => {
-    if (miembro?.Nombre) return `CV · ${miembro.Nombre}`;
+    if (miembro?.nombre) return `CV · ${miembro.nombre}`;
     return "Currículum";
-  }, [miembro?.Nombre]);
+  }, [miembro?.nombre]);
 
   return (
     <div className={styles.page}>
@@ -281,7 +281,7 @@ function MercadoInner() {
             <div>
               <h1 className={styles.cvName}>{cvTitle}</h1>
               <div className={styles.cvHeadline}>
-                {safeText(cv?.headline) || safeText(miembro?.Puesto) || ""}
+                {safeText(cv?.headline) || safeText(miembro?.puesto) || ""}
               </div>
 
               <div className={styles.cvContacts}>
@@ -310,9 +310,9 @@ function MercadoInner() {
             </div>
 
             <div className={styles.cvRight}>
-              {miembro?.Foto ? (
+              {miembro?.foto ? (
                 <div className={styles.cvPhotoWrap}>
-                  <img className={styles.cvPhoto} src={miembro.Foto} alt={miembro?.Nombre || "Foto"} />
+                  <img className={styles.cvPhoto} src={miembro.foto} alt={miembro?.nombre || "Foto"} />
                 </div>
               ) : null}
 
@@ -531,7 +531,7 @@ function MercadoInner() {
             <p className={styles.errorTitle}>Error</p>
             <p className={styles.errorText}>{error}</p>
             <p className={styles.errorHint}>
-              Verifica tabla <b>{PRODUCTS_TABLE}</b> y columna <b>idmiembro</b>.
+              Verifica tabla <b>{PRODUCTS_TABLE}</b> y columna <b>id_miembro</b>.
             </p>
           </div>
         )}
@@ -550,7 +550,7 @@ function MercadoInner() {
               const categoria = getCategoria(it.herramientas);
               const tags = getTags(it.herramientas);
               const img = safeText(it.imagen) ? it.imagen : null;
-              const link = safeLink((it as any).linkDetalles);
+              const link = safeLink((it as any).link_detalles);
 
               return (
                 <article key={it.id} className={styles.card}>

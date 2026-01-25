@@ -8,9 +8,9 @@ import styles from "app/styles/ModalAcciones.module.css";
 
 interface Accion {
   id: number;
-  Accion: string;
-  idMiembro: number;
-  idFuente: number;
+  nombre: string;
+  id_miembro: number;
+  id_fuente: number;
 }
 
 interface ModalAccionesProps {
@@ -60,11 +60,11 @@ const ModalAcciones: React.FC<ModalAccionesProps> = ({
   // No renderiza si no hay miembro (después de hooks)
   if (!selectedMember || !mounted) return null;
 
-  const nombre = objetoMiembro?.Nombre || "Miembro";
-  const puesto = objetoMiembro?.Puesto || "";
-  const usuario = objetoMiembro?.codUsuario || "";
-  const descripcion = objetoMiembro?.Descripcion || "";
-  const foto = objetoMiembro?.Foto || null;
+  const nombre = objetoMiembro?.nombre || "Miembro";
+  const puesto = objetoMiembro?.puesto || "";
+  const usuario = objetoMiembro?.cod_usuario || "";
+  const descripcion = objetoMiembro?.descripcion || "";
+  const foto = objetoMiembro?.foto || null;
 
   return createPortal(
     <div className={styles.Overlay} role="presentation" onClick={onClose}>
@@ -149,7 +149,7 @@ const ModalAcciones: React.FC<ModalAccionesProps> = ({
               <div className={styles.AccionSeleccionInfo}>
                 {selectedAccion ? (
                   <span>
-                    Acción seleccionada: <b>{selectedAccion.Accion}</b>
+                    Acción seleccionada: <b>{selectedAccion.nombre}</b>
                   </span>
                 ) : (
                   <span className={styles.AccionSeleccionMuted}>Selecciona una acción para continuar.</span>

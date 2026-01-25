@@ -6,9 +6,9 @@ import styles from "app/styles/Acciones.module.css";
 
 interface Accion {
   id: number;
-  Accion: string;
-  idMiembro: number;
-  idFuente: number;
+  nombre: string;
+  id_miembro: number;
+  id_fuente: number;
 }
 
 interface Props {
@@ -34,10 +34,10 @@ export default function Acciones({
 
       setLoading(true);
       const { data, error } = await supabase
-        .from("Acciones")
+        .from("acciones")
         .select("*")
-        .eq("idMiembro", Number(selectedMember))
-        .order("Accion", { ascending: true });
+        .eq("id_miembro", Number(selectedMember))
+        .order("nombre", { ascending: true });
 
       if (error) {
         console.error("Error al cargar acciones:", error);
@@ -85,7 +85,7 @@ export default function Acciones({
                 }}
                 aria-pressed={selected}
               >
-                <div className={styles.cardTitle}>{accion.Accion}</div>
+                <div className={styles.cardTitle}>{accion.nombre}</div>
               </button>
             );
           })}
