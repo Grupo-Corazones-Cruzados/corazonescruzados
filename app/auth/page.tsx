@@ -65,9 +65,17 @@ export default function AuthPage() {
         });
 
         if (result.success) {
-          // Redirigir al dashboard - el usuario verá los módulos bloqueados
-          // hasta que confirme su email
-          router.push("/dashboard");
+          setSuccess(
+            `¡Cuenta creada! Enviamos un correo de verificación a ${formData.email}. Revisa tu bandeja de entrada (y spam) para confirmar tu cuenta.`
+          );
+          setFormData({
+            email: "",
+            password: "",
+            confirmPassword: "",
+            nombre: "",
+            apellido: "",
+          });
+          setMode("login");
         } else {
           setError(result.error || "Error al crear la cuenta");
         }
