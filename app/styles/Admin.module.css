@@ -659,161 +659,245 @@
 }
 
 /* ===== TEMA CLARO ===== */
+/* Paleta de colores mejorada para mejor contraste y visibilidad */
+
+/* Page Header */
 :global([data-theme="light"]) .pageTitle {
-  color: #111827;
+  color: #0F172A;
 }
 
 :global([data-theme="light"]) .pageSubtitle {
-  color: #6B7280;
+  color: #475569;
 }
 
 :global([data-theme="light"]) .homeLink {
-  background: #FFFFFF;
-  border-color: #D1D5DB;
-  color: #374151;
+  background: #F1F5F9;
+  border-color: #94A3B8;
+  color: #1E293B;
 }
 
 :global([data-theme="light"]) .homeLink:hover {
-  background: #F9FAFB;
+  background: #E2E8F0;
   border-color: #0891B2;
   color: #0891B2;
 }
 
+/* Stats Cards */
 :global([data-theme="light"]) .statCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #CBD5E1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 :global([data-theme="light"]) .statValue {
-  color: #111827;
+  color: #0F172A;
 }
 
 :global([data-theme="light"]) .statLabel {
-  color: #6B7280;
+  color: #475569;
 }
 
+:global([data-theme="light"]) .statIconUsers {
+  background: rgba(124, 58, 237, 0.12);
+  color: #7C3AED;
+}
+
+:global([data-theme="light"]) .statIconTickets {
+  background: rgba(217, 119, 6, 0.12);
+  color: #B45309;
+}
+
+:global([data-theme="light"]) .statIconProjects {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1D4ED8;
+}
+
+:global([data-theme="light"]) .statIconInvoices {
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+}
+
+:global([data-theme="light"]) .statIconRevenue {
+  background: rgba(8, 145, 178, 0.12);
+  color: #0E7490;
+}
+
+/* Sections */
 :global([data-theme="light"]) .section {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #CBD5E1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 :global([data-theme="light"]) .sectionHeader {
-  border-bottom-color: #E5E7EB;
+  background: #F8FAFC;
+  border-bottom-color: #E2E8F0;
 }
 
 :global([data-theme="light"]) .sectionTitle {
-  color: #111827;
+  color: #0F172A;
 }
 
+/* Filters */
 :global([data-theme="light"]) .searchInput {
-  background: #FFFFFF;
-  border-color: #D1D5DB;
-  color: #111827;
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
 }
 
 :global([data-theme="light"]) .searchInput::placeholder {
-  color: #9CA3AF;
+  color: #64748B;
 }
 
 :global([data-theme="light"]) .searchInput:focus {
   border-color: #0891B2;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
 }
 
 :global([data-theme="light"]) .filterSelect {
-  background: #FFFFFF;
-  border-color: #D1D5DB;
-  color: #111827;
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
 }
 
 :global([data-theme="light"]) .filterSelect:focus {
   border-color: #0891B2;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
 }
 
+/* Users Table */
 :global([data-theme="light"]) .usersTable th {
-  background: #F9FAFB;
-  color: #6B7280;
+  background: #F1F5F9;
+  color: #334155;
+  border-bottom: 2px solid #CBD5E1;
 }
 
 :global([data-theme="light"]) .usersTable td {
-  color: #111827;
-  border-bottom-color: #E5E7EB;
+  color: #1E293B;
+  border-bottom-color: #E2E8F0;
 }
 
 :global([data-theme="light"]) .usersTable tr:hover {
-  background: #F9FAFB;
+  background: #F8FAFC;
 }
 
 :global([data-theme="light"]) .userAvatar {
-  background: #E5E7EB;
-  color: #6B7280;
+  background: #CBD5E1;
+  color: #475569;
 }
 
 :global([data-theme="light"]) .userName {
-  color: #111827;
+  color: #0F172A;
 }
 
 :global([data-theme="light"]) .userEmail {
-  color: #6B7280;
+  color: #475569;
 }
 
+/* Badges - con colores mas oscuros para mejor contraste */
+:global([data-theme="light"]) .badge {
+  font-weight: 600;
+}
+
+:global([data-theme="light"]) .badgeCliente {
+  background: #E2E8F0;
+  color: #334155;
+}
+
+:global([data-theme="light"]) .badgeMiembro {
+  background: rgba(37, 99, 235, 0.15);
+  color: #1D4ED8;
+}
+
+:global([data-theme="light"]) .badgeAdmin {
+  background: rgba(124, 58, 237, 0.15);
+  color: #6D28D9;
+}
+
+:global([data-theme="light"]) .badgeVerified {
+  background: rgba(5, 150, 105, 0.15);
+  color: #047857;
+}
+
+:global([data-theme="light"]) .badgeUnverified {
+  background: rgba(220, 38, 38, 0.12);
+  color: #B91C1C;
+}
+
+/* Buttons */
 :global([data-theme="light"]) .primaryButton {
   background: #0891B2;
   color: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 :global([data-theme="light"]) .primaryButton:hover {
   background: #0E7490;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 :global([data-theme="light"]) .secondaryButton {
-  background: #FFFFFF;
-  border-color: #D1D5DB;
-  color: #374151;
+  background: #F1F5F9;
+  border-color: #94A3B8;
+  color: #1E293B;
 }
 
 :global([data-theme="light"]) .secondaryButton:hover {
-  background: #F9FAFB;
+  background: #E2E8F0;
   border-color: #0891B2;
+  color: #0E7490;
 }
 
 :global([data-theme="light"]) .iconButton {
-  color: #9CA3AF;
+  color: #64748B;
 }
 
 :global([data-theme="light"]) .iconButton:hover {
-  background: #F3F4F6;
+  background: #E2E8F0;
   color: #0891B2;
 }
 
+/* Members */
 :global([data-theme="light"]) .memberCard {
-  background: #F3F4F6;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
 }
 
 :global([data-theme="light"]) .memberAvatar {
-  background: #E5E7EB;
+  background: #CBD5E1;
+  color: #475569;
 }
 
 :global([data-theme="light"]) .memberName {
-  color: #111827;
+  color: #0F172A;
 }
 
 :global([data-theme="light"]) .memberRole {
-  color: #6B7280;
+  color: #475569;
 }
 
 :global([data-theme="light"]) .memberCost {
-  color: #0891B2;
+  color: #0E7490;
+  font-weight: 700;
+}
+
+/* Pagination */
+:global([data-theme="light"]) .pagination {
+  border-top-color: #E2E8F0;
 }
 
 :global([data-theme="light"]) .pageButton {
-  background: #FFFFFF;
-  border-color: #D1D5DB;
-  color: #374151;
+  background: #F1F5F9;
+  border-color: #94A3B8;
+  color: #1E293B;
 }
 
 :global([data-theme="light"]) .pageButton:hover:not(:disabled) {
-  background: #F9FAFB;
+  background: #E2E8F0;
   border-color: #0891B2;
+  color: #0E7490;
 }
 
 :global([data-theme="light"]) .pageButtonActive {
@@ -822,50 +906,78 @@
   border-color: #0891B2;
 }
 
+/* Empty State */
 :global([data-theme="light"]) .emptyState {
-  color: #6B7280;
+  color: #475569;
+  background: #F8FAFC;
+  border-radius: var(--radius-md);
+}
+
+/* Loading */
+:global([data-theme="light"]) .loadingState {
+  color: #475569;
 }
 
 :global([data-theme="light"]) .spinner {
-  border-color: #E5E7EB;
+  border-color: #CBD5E1;
   border-top-color: #0891B2;
 }
 
+/* Modal */
 :global([data-theme="light"]) .modalOverlay {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 23, 42, 0.6);
 }
 
 :global([data-theme="light"]) .modal {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #CBD5E1;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
 }
 
 :global([data-theme="light"]) .modalHeader {
-  border-bottom-color: #E5E7EB;
+  background: #F8FAFC;
+  border-bottom-color: #E2E8F0;
 }
 
 :global([data-theme="light"]) .modalTitle {
-  color: #111827;
+  color: #0F172A;
+}
+
+:global([data-theme="light"]) .modalBody {
+  background: #FFFFFF;
 }
 
 :global([data-theme="light"]) .modalFooter {
-  border-top-color: #E5E7EB;
+  background: #F8FAFC;
+  border-top-color: #E2E8F0;
+}
+
+/* Form Elements */
+:global([data-theme="light"]) .formGroup {
+  color: #1E293B;
 }
 
 :global([data-theme="light"]) .formLabel {
-  color: #374151;
+  color: #334155;
+  font-weight: 600;
 }
 
 :global([data-theme="light"]) .formSelect {
-  background: #FFFFFF;
-  border-color: #D1D5DB;
-  color: #111827;
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
 }
 
 :global([data-theme="light"]) .formSelect:focus {
   border-color: #0891B2;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
 }
 
-:global([data-theme="light"]) .pagination {
-  border-top-color: #E5E7EB;
+:global([data-theme="light"]) .formCheckbox {
+  color: #1E293B;
+}
+
+:global([data-theme="light"]) .formCheckbox input {
+  accent-color: #0891B2;
 }
