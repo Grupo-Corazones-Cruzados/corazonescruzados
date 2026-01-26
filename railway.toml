@@ -1,0 +1,6 @@
+[build]
+builder = "nixpacks"
+
+[build.args]
+# Clear npm cache to ensure clean install
+NIXPACKS_NPM_INSTALL_CMD = "npm cache clean --force && npm ci"
