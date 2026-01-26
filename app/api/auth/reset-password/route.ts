@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  if (!process.env.RESEND_API_KEY) {
+    return null;
+  }
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,7 +52,8 @@ export async function POST(request: NextRequest) {
     // Send email
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset?token=${resetToken}`;
 
-    if (process.env.RESEND_API_KEY) {
+    const resend = getResend();
+    if (resend) {
       await resend.emails.send({
         from: "Corazones Cruzados <noreply@corazonescruzados.com>",
         to: email,
