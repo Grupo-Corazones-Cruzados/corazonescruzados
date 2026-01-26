@@ -51,11 +51,18 @@ const SettingsIcon = () => (
   </svg>
 );
 
+const AdminIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
 const navTabs: NavTab[] = [
   { label: "Inicio", href: "/dashboard", icon: <HomeIcon /> },
   { label: "Tickets", href: "/dashboard/tickets", icon: <TicketIcon /> },
   { label: "Proyectos", href: "/dashboard/projects", icon: <ProjectIcon /> },
   { label: "Facturas", href: "/dashboard/invoices", icon: <InvoiceIcon /> },
+  { label: "Admin", href: "/dashboard/admin", icon: <AdminIcon />, roles: ["admin"] },
   { label: "Ajustes", href: "/dashboard/settings", icon: <SettingsIcon /> },
 ];
 
