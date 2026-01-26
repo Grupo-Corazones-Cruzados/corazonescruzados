@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import style from "app/styles/Formualrio2.module.css";
-import { supabase } from "lib/supabaseClient";
 
 type Props = {
   visible: boolean;
@@ -54,18 +53,29 @@ export default function Formulario2({ visible, onClose, setVisible }: Props) {
     setSuccessMsg("");
     setSending(true);
 
-    const { error } = await supabase.from("aspirantes").insert([{ motivo: motivo.trim() }]);
+    try {
+      const response = await fetch("/api/aspirantes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo: motivo.trim() }),
+      });
 
-    setSending(false);
+      setSending(false);
 
-    if (error) {
-      console.error("Error al guardar:", error.message);
+      if (!response.ok) {
+        const data = await response.json();
+        console.error("Error al guardar:", data.error);
+        setErrorMsg("Ocurrió un error al enviar. Intenta nuevamente.");
+        return;
+      }
+
+      setMotivo("");
+      setSuccessMsg("¡Listo! Recibimos tu información. Pronto nos pondremos en contacto.");
+    } catch (error) {
+      setSending(false);
+      console.error("Error al guardar:", error);
       setErrorMsg("Ocurrió un error al enviar. Intenta nuevamente.");
-      return;
     }
-
-    setMotivo("");
-    setSuccessMsg("¡Listo! Recibimos tu información. Pronto nos pondremos en contacto.");
   };
 
   if (!visible) return null;

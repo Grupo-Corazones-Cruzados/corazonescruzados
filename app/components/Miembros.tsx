@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, Suspense } from "react";
-import { supabase } from "lib/supabaseClient";
 import style from "app/styles/Miembros.module.css";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ObjetoResumenPaquete } from "app/components/CtPaquetes";
@@ -64,16 +63,18 @@ const Miembros: React.FC<MiembrosPadre> = ({
   useEffect(() => {
     const fetchMembers = async () => {
       setLoadingMembers(true);
-      const { data, error } = await supabase
-        .from("miembros")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-      if (error) {
+      try {
+        const response = await fetch("/api/miembros-public");
+        const data = await response.json();
+        if (response.ok) {
+          setMembers(data.members || []);
+        } else {
+          console.error("Error al cargar miembros:", data.error);
+          setMembers([]);
+        }
+      } catch (error) {
         console.error("Error al cargar miembros:", error);
         setMembers([]);
-      } else {
-        setMembers((data as Member[]) ?? []);
       }
       setLoadingMembers(false);
     };
@@ -84,20 +85,18 @@ const Miembros: React.FC<MiembrosPadre> = ({
   useEffect(() => {
     const fetchFuentes = async () => {
       setLoadingFuentes(true);
-      const { data, error } = await supabase
-        .from("fuentes")
-        .select("id, nombre")
-        .order("nombre", { ascending: true });
-
-      if (error) {
-        console.error("Error al cargar fuentes:", error.message, error.details, error.hint);
+      try {
+        const response = await fetch("/api/fuentes");
+        const data = await response.json();
+        if (response.ok) {
+          setFuentes(data.fuentes || []);
+        } else {
+          console.error("Error al cargar fuentes:", data.error);
+          setFuentes([]);
+        }
+      } catch (error) {
+        console.error("Error al cargar fuentes:", error);
         setFuentes([]);
-      } else if (data) {
-        const mappedData = (data as Fuente[]).map((f) => ({
-          id: f.id,
-          nombre: f.nombre,
-        }));
-        setFuentes(mappedData);
       }
       setLoadingFuentes(false);
     };

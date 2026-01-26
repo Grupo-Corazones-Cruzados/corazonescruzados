@@ -1,24 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+// This route is kept for backwards compatibility
+// With the new JWT-based auth, we don't need Supabase email verification callback
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const { origin } = new URL(request.url);
 
-  if (code) {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
-    }
-  }
-
-  // Si hay error, redirigir a la página de auth con mensaje
-  return NextResponse.redirect(`${origin}/auth?error=verification_failed`);
+  // Redirect to dashboard - verification is now handled differently
+  return NextResponse.redirect(`${origin}/dashboard`);
 }

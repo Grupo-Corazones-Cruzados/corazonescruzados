@@ -2,8 +2,23 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/useAuth";
+import { useAuth } from "@/lib/AuthProvider";
+import { useTheme } from "@/lib/ThemeProvider";
 import styles from "../styles/Header.module.css";
+
+// Iconos de tema
+const SunIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5" />
+    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -11,6 +26,7 @@ const Header = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { user, profile, signOut, isAuthenticated, loading } = useAuth();
+  const { theme, toggleTheme, mounted } = useTheme();
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const menuItems = [
@@ -108,6 +124,18 @@ const Header = () => {
 
         <div className={styles.Spacer} />
 
+        {/* Theme Toggle */}
+        {mounted && (
+          <button
+            className={styles.ThemeToggle}
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+            title={theme === "dark" ? "Tema claro" : "Tema oscuro"}
+          >
+            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+          </button>
+        )}
+
         {/* Auth Button / User Menu */}
         {loading ? (
           <div className={styles.AuthLoading}>
@@ -167,10 +195,7 @@ const Header = () => {
                 <button
                   className={styles.UserDropdownItem}
                   onClick={() => {
-                    window.open(
-                      "https://apps.powerapps.com/play/e/ecc5f0d6-fde7-ef24-ade9-27ef544fe20d/a/0b621e15-f30c-4e9a-9488-6670107b484e?tenantId=9ce49709-ae4e-4000-be0f-c9f7d1aa98e9&hint=d0412594-0a6a-4ba2-a31e-bed394a822bf&sourcetime=1762026792024&hideNavBar=true#",
-                      "_blank"
-                    );
+                    router.push("/dashboard");
                     setUserMenuOpen(false);
                   }}
                 >

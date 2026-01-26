@@ -9,7 +9,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import styles from "app/styles/Paquetes.module.css";
 import Miembros from "app/components/Miembros";
 
@@ -65,17 +64,21 @@ export default function CPaquetes({
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
-        .from("paquetes")
-        .select("*")
-        .order("created_at", { ascending: true });
+      try {
+        const response = await fetch("/api/paquetes");
+        const data = await response.json();
 
-      if (error) {
-        console.error("Error al cargar paquetes:", error);
+        if (response.ok) {
+          setPaquetes(data.paquetes || []);
+        } else {
+          console.error("Error al cargar paquetes:", data.error);
+          setError("No se pudieron cargar los paquetes.");
+          setPaquetes([]);
+        }
+      } catch (err) {
+        console.error("Error al cargar paquetes:", err);
         setError("No se pudieron cargar los paquetes.");
         setPaquetes([]);
-      } else {
-        setPaquetes((data as Paquete[]) ?? []);
       }
 
       setLoading(false);

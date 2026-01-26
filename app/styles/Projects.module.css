@@ -1,0 +1,708 @@
+/* Projects Module Styles */
+
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Project Card */
+.projectCard {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.projectCard:hover {
+  border-color: var(--turquoise);
+  background: var(--surface-2);
+}
+
+.projectHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.projectTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.projectStatus {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.statusPublicado {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.statusAsignado {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+}
+
+.statusEnProgreso {
+  background: rgba(0, 206, 209, 0.15);
+  color: var(--turquoise);
+}
+
+.statusCompletado {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.statusCancelado {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.projectDescription {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: var(--space-4);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.projectMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.metaIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+}
+
+.projectBudget {
+  font-weight: 600;
+  color: var(--turquoise);
+}
+
+/* Projects Grid */
+.projectsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--space-4);
+}
+
+/* Project Detail */
+.detailPage {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: var(--space-6);
+}
+
+.detailMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.detailSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.detailCard {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+
+.detailCardTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.detailTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.detailDescription {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Bids Section */
+.bidsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.bidCard {
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.bidHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.bidAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--turquoise);
+  flex-shrink: 0;
+}
+
+.bidAvatarImg {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.bidInfo {
+  flex: 1;
+}
+
+.bidMemberName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bidMemberRole {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.bidStatus {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.bidPendiente {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.bidAceptada {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.bidRechazada {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.bidProposal {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  line-height: 1.5;
+}
+
+.bidDetails {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bidPrice {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--turquoise);
+}
+
+.bidTime {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.bidActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* Requirements */
+.requirementsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.requirementItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+}
+
+.requirementCheckbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all var(--transition-fast);
+}
+
+.requirementCheckbox:hover {
+  border-color: var(--turquoise);
+}
+
+.requirementCompleted .requirementCheckbox {
+  background: var(--turquoise);
+  border-color: var(--turquoise);
+  color: var(--black);
+}
+
+.requirementContent {
+  flex: 1;
+}
+
+.requirementTitle {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.requirementCompleted .requirementTitle {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.requirementDesc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+.requirementCost {
+  font-weight: 600;
+  color: var(--turquoise);
+  flex-shrink: 0;
+}
+
+/* Add Requirement Form */
+.addRequirementForm {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+
+.formRow {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.formGroup {
+  flex: 1;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.formInput {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--turquoise);
+}
+
+/* Bid Form */
+.bidForm {
+  margin-top: var(--space-4);
+}
+
+.bidFormTextarea {
+  width: 100%;
+  min-height: 100px;
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  resize: vertical;
+  margin-bottom: var(--space-3);
+}
+
+.bidFormTextarea:focus {
+  outline: none;
+  border-color: var(--turquoise);
+}
+
+.bidFormRow {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* Progress Bar */
+.progressContainer {
+  margin-bottom: var(--space-4);
+}
+
+.progressLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.progressBar {
+  height: 8px;
+  background: var(--surface-3);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--turquoise);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+/* Responsive - Tablets */
+@media (max-width: 1024px) {
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .projectsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive - Móviles grandes */
+@media (max-width: 640px) {
+  .projectCard {
+    padding: var(--space-4);
+  }
+
+  .projectTitle {
+    font-size: 1.05rem;
+  }
+
+  .projectHeader {
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: flex-start;
+  }
+
+  .projectStatus {
+    align-self: flex-start;
+  }
+
+  .projectDescription {
+    font-size: 0.9rem;
+  }
+
+  .formRow {
+    flex-direction: column;
+  }
+
+  .bidFormRow {
+    flex-direction: column;
+  }
+
+  .projectMeta {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .metaItem {
+    font-size: 0.85rem;
+  }
+
+  .detailCard {
+    padding: var(--space-4);
+  }
+
+  .detailTitle {
+    font-size: 1.25rem;
+  }
+
+  .bidCard {
+    padding: var(--space-3);
+  }
+
+  .bidHeader {
+    flex-wrap: wrap;
+  }
+
+  .bidDetails {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .bidActions {
+    width: 100%;
+  }
+
+  .bidActions button {
+    flex: 1;
+  }
+
+  .requirementItem {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .requirementCost {
+    align-self: flex-start;
+  }
+
+  .addRequirementForm {
+    padding: var(--space-3);
+  }
+}
+
+/* Responsive - Móviles pequeños */
+@media (max-width: 380px) {
+  .projectTitle {
+    font-size: 1rem;
+  }
+
+  .bidAvatar,
+  .bidAvatarImg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .bidMemberName {
+    font-size: 0.9rem;
+  }
+
+  .bidPrice {
+    font-size: 1rem;
+  }
+}
+
+/* ===== TEMA CLARO ===== */
+:global([data-theme="light"]) .projectCard {
+  background: #FFFFFF;
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .projectCard:hover {
+  border-color: #0891B2;
+  background: #F9FAFB;
+}
+
+:global([data-theme="light"]) .projectTitle {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .projectDescription {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .projectMeta {
+  border-top-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .metaItem {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .metaIcon {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .projectBudget {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .detailCard {
+  background: #FFFFFF;
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .detailCardTitle {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .detailTitle {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .detailDescription {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .bidCard {
+  background: #F9FAFB;
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .bidAvatar {
+  background: #E5E7EB;
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .bidMemberName {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .bidMemberRole {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .bidProposal {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .bidPrice {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .bidTime {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .requirementItem {
+  background: #F9FAFB;
+}
+
+:global([data-theme="light"]) .requirementCheckbox {
+  border-color: #D1D5DB;
+}
+
+:global([data-theme="light"]) .requirementCheckbox:hover {
+  border-color: #0891B2;
+}
+
+:global([data-theme="light"]) .requirementCompleted .requirementCheckbox {
+  background: #0891B2;
+  border-color: #0891B2;
+  color: #FFFFFF;
+}
+
+:global([data-theme="light"]) .requirementTitle {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .requirementCompleted .requirementTitle {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .requirementDesc {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .requirementCost {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .addRequirementForm {
+  background: #F3F4F6;
+}
+
+:global([data-theme="light"]) .formLabel {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .formInput {
+  background: #FFFFFF;
+  border-color: #D1D5DB;
+  color: #111827;
+}
+
+:global([data-theme="light"]) .formInput:focus {
+  border-color: #0891B2;
+}
+
+:global([data-theme="light"]) .bidFormTextarea {
+  background: #FFFFFF;
+  border-color: #D1D5DB;
+  color: #111827;
+}
+
+:global([data-theme="light"]) .bidFormTextarea:focus {
+  border-color: #0891B2;
+}
+
+:global([data-theme="light"]) .progressLabel {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .progressBar {
+  background: #E5E7EB;
+}
+
+:global([data-theme="light"]) .progressFill {
+  background: #0891B2;
+}

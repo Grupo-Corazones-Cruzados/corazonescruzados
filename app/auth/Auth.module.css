@@ -486,3 +486,182 @@
     font-size: 1.3rem;
   }
 }
+
+/* ===== TEMA CLARO ===== */
+:global([data-theme="light"]) .bgGlow {
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(220, 38, 38, 0.06), transparent 50%),
+    radial-gradient(ellipse 50% 30% at 80% 80%, rgba(8, 145, 178, 0.05), transparent 50%);
+}
+
+:global([data-theme="light"]) .bgPattern {
+  opacity: 0.02;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+}
+
+:global([data-theme="light"]) .container {
+  background: #FFFFFF;
+  border-color: #E5E7EB;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="light"]) .branding {
+  background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+}
+
+:global([data-theme="light"]) .branding::before {
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.08) 0%, transparent 60%);
+}
+
+:global([data-theme="light"]) .branding::after {
+  background: radial-gradient(circle, rgba(8, 145, 178, 0.06) 0%, transparent 60%);
+}
+
+:global([data-theme="light"]) .brandTitle {
+  background: linear-gradient(135deg, #111827 0%, #374151 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+:global([data-theme="light"]) .brandSubtitle {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .featureIcon {
+  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(8, 145, 178, 0.3);
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .feature h3 {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .feature p {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .formSection {
+  background: #FFFFFF;
+}
+
+:global([data-theme="light"]) .formTitle {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .formSubtitle {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .tabs {
+  background: #F3F4F6;
+}
+
+:global([data-theme="light"]) .tab {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .tab:hover {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .tabActive {
+  background: #FFFFFF;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="light"]) .alert {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: #DC2626;
+}
+
+:global([data-theme="light"]) .alertSuccess {
+  background: rgba(8, 145, 178, 0.08);
+  border-color: rgba(8, 145, 178, 0.2);
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .field span {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .field input {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+  color: #111827;
+}
+
+:global([data-theme="light"]) .field input:hover {
+  border-color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .field input:focus {
+  border-color: #0891B2;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+}
+
+:global([data-theme="light"]) .field input::placeholder {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .forgotLink {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .forgotLink:hover {
+  color: #0E7490;
+}
+
+:global([data-theme="light"]) .submitBtn {
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+:global([data-theme="light"]) .submitBtn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+:global([data-theme="light"]) .backLink {
+  border-color: #D1D5DB;
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .backLink:hover {
+  background: #F9FAFB;
+  color: #111827;
+  border-color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .formFooter {
+  border-top-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .formFooter p {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .switchLink {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .switchLink:hover {
+  color: #0E7490;
+}
+
+:global([data-theme="light"]) .homeLink {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .homeLink:hover {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .spinner {
+  border-color: #E5E7EB;
+  border-top-color: #0891B2;
+}

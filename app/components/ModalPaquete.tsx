@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "app/styles/ModalAcciones2.module.css";
-import { supabase } from "lib/supabaseClient";
 
 interface ModalPaqueteProps {
   isOpen: boolean;
@@ -53,15 +52,16 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
     const fetchCosto = async () => {
       if (!miembro?.id) return;
 
-      const { data: miembroCosto, error } = await supabase
-        .from("miembros")
-        .select("costo")
-        .eq("id", miembro.id)
-        .single();
+      try {
+        const response = await fetch(`/api/members/${miembro.id}`);
+        const data = await response.json();
 
-      if (!error && miembroCosto?.costo) {
-        setCostoBaseMiembro(miembroCosto.costo);
-        setFormData((prev) => ({ ...prev, costoNegociado: miembroCosto.costo }));
+        if (response.ok && data.member?.costo) {
+          setCostoBaseMiembro(data.member.costo);
+          setFormData((prev) => ({ ...prev, costoNegociado: data.member.costo }));
+        }
+      } catch (error) {
+        console.error("Error fetching member cost:", error);
       }
     };
 
@@ -133,60 +133,24 @@ Mis datos:
       : `https://wa.me/${numeroDestino}?text=${encodeURIComponent(mensaje)}`;
 
     try {
-      const { data: existingClient, error: selectError } = await supabase
-        .from("clientes")
-        .select("*")
-        .eq("correo_electronico", formData.correo)
-        .single();
-
-      let clienteId: number;
-
-      if (selectError && selectError.code === "PGRST116") {
-        const { data: newClient, error: insertError } = await supabase
-          .from("clientes")
-          .insert({
-            nombre: formData.nombre,
-            contacto: formData.telefono,
-            correo_electronico: formData.correo,
-            id_miembro: miembro.id,
-          })
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-
-        try {
-          await fetch(
-            "https://ecc5f0d6fde7ef24ade927ef544fe2.0d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ad41a7f54b1c4c2f9cc987193a8b5496/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KzX_ss8H8PkgEBKXqBA2R_Up8CFesQrJ08MSs6fwiXM",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                nombre: formData.nombre,
-                apellido: formData.apellido,
-                correo: formData.correo,
-                contacto: formData.telefono,
-              }),
-            }
-          );
-        } catch (err) {
-          console.warn("Power Automate webhook falló (continuando):", err);
-        }
-
-        clienteId = newClient.id;
-      } else if (existingClient) {
-        clienteId = existingClient.id;
-      } else {
-        throw selectError;
-      }
-
-      const { error: ticketError } = await supabase.from("tickets_paquetes").insert({
-        id_paquete: paquete.id,
-        id_miembro: miembro.id,
-        id_cliente: clienteId,
+      const response = await fetch("/api/paquetes/solicitud", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paqueteId: paquete.id,
+          miembroId: miembro.id,
+          nombre: formData.nombre,
+          apellido: formData.apellido,
+          correo: formData.correo,
+          telefono: formData.telefono,
+        }),
       });
 
-      if (ticketError) throw ticketError;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al crear la solicitud");
+      }
 
       window.location.href = url;
 

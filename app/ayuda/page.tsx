@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import styles from "app/styles/Ayuda.module.css";
-import { supabase } from "@/lib/supabaseClient";
 import Encabezado from "app/components/Encabezado";
 import ScrollReveal from "app/components/ScrollReveal";
 
@@ -19,15 +18,16 @@ const AyudaPage: React.FC = () => {
 
   useEffect(() => {
     const fetchPreguntas = async () => {
-      const { data, error } = await supabase
-        .from("preguntas_frecuentes")
-        .select("id, pregunta, respuesta, video_url")
-        .order("id", { ascending: true });
-
-      if (error) {
+      try {
+        const response = await fetch("/api/faq");
+        const data = await response.json();
+        if (response.ok) {
+          setPreguntas(data.preguntas || []);
+        } else {
+          console.error("Error al cargar preguntas frecuentes:", data.error);
+        }
+      } catch (error) {
         console.error("Error al cargar preguntas frecuentes:", error);
-      } else if (data) {
-        setPreguntas(data as Pregunta[]);
       }
     };
 

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import style from "app/styles/Formulario1.module.css";
-import { supabase } from "lib/supabaseClient";
 
 interface Accion {
   id: number;
@@ -81,92 +80,52 @@ export default function Formulario1({
     setLoading(true);
 
     try {
-      // 1) Verificar cliente existente
-      const { data: existingClient, error: selectError } = await supabase
-        .from("clientes")
-        .select("*")
-        .eq("correo_electronico", formData.clienteCorreo)
-        .single();
-
-      if (selectError && selectError.code !== "PGRST116") {
-        console.error("Error al verificar cliente:", selectError);
+      // (Opcional) Power Automate webhook (no detiene el flujo si falla)
+      try {
+        await fetch(
+          "https://ecc5f0d6fde7ef24ade927ef544fe2.0d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ad41a7f54b1c4c2f9cc987193a8b5496/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KzX_ss8H8PkgEBKXqBA2R_Up8CFesQrJ08MSs6fwiXM",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nombre: formData.clienteNombre,
+              apellido: formData.clienteApellido,
+              correo: formData.clienteCorreo,
+              contacto: formData.clienteContacto,
+            }),
+          }
+        );
+      } catch (e) {
+        console.warn("Power Automate webhook falló (continuando):", e);
       }
 
-      let clienteId: number;
-
-      // 2) Crear cliente si no existe
-      if (!existingClient) {
-        // (Opcional) Power Automate webhook (no detiene el flujo si falla)
-        try {
-          await fetch(
-            "https://ecc5f0d6fde7ef24ade927ef544fe2.0d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ad41a7f54b1c4c2f9cc987193a8b5496/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KzX_ss8H8PkgEBKXqBA2R_Up8CFesQrJ08MSs6fwiXM",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                nombre: formData.clienteNombre,
-                apellido: formData.clienteApellido,
-                correo: formData.clienteCorreo,
-                contacto: formData.clienteContacto,
-              }),
-            }
-          );
-        } catch (e) {
-          console.warn("Power Automate webhook falló (continuando):", e);
-        }
-
-        const { data: newClient, error: insertClientError } = await supabase
-          .from("clientes")
-          .insert({
-            nombre: formData.clienteNombre,
-            contacto: formData.clienteContacto,
-            correo_electronico: formData.clienteCorreo,
-            id_miembro: selectedMember,
-            id_accion: selectedAccion.id,
-          })
-          .select()
-          .single();
-
-        if (insertClientError) {
-          console.error("Error al crear cliente:", insertClientError);
-          return;
-        }
-
-        clienteId = (newClient as any).id;
-      } else {
-        clienteId = (existingClient as any).id;
-      }
-
-      // 3) Crear ticket
-      const { error: ticketError } = await supabase.from("tickets").insert({
-        id_cliente: clienteId,
-        id_accion: selectedAccion.id,
-        detalle: formData.detalle,
-        estado: "Pendiente",
+      // Create ticket via API
+      const response = await fetch("/api/public-tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clienteNombre: formData.clienteNombre,
+          clienteApellido: formData.clienteApellido,
+          clienteContacto: formData.clienteContacto,
+          clienteCorreo: formData.clienteCorreo,
+          detalle: formData.detalle,
+          id_miembro: selectedMember,
+          id_accion: selectedAccion.id,
+        }),
       });
 
-      if (ticketError) {
-        console.error("Error al crear ticket:", ticketError);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Error al crear ticket:", data.error);
         return;
       }
 
-      // 4) Obtener número del miembro
-      const { data: miembroDB, error: miembroError } = await supabase
-        .from("miembros")
-        .select("celular, nombre")
-        .eq("id", selectedMember)
-        .single();
+      const numeroDestino = data.miembro?.celular?.replace("+", "") || "593992706933";
 
-      if (miembroError) {
-        console.error("Error al obtener número del miembro:", miembroError);
-        return;
-      }
-
-      const numeroDestino = (miembroDB as any)?.celular?.replace("+", "") || "593992706933";
-
-      // 5) Mensaje WhatsApp
+      // Mensaje WhatsApp
       const mensaje = `Hola, soy ${formData.clienteNombre} ${formData.clienteApellido}.
-He generado un ticket para la acción *${selectedAccion.nombre}* con ${(miembroDB as any)?.nombre}.
+He generado un ticket para la acción *${selectedAccion.nombre}* con ${data.miembro?.nombre}.
 Detalles del requerimiento:
 ${formData.detalle}
 

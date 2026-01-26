@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/useAuth";
+import { useAuth } from "@/lib/AuthProvider";
 import styles from "./Auth.module.css";
 
 type AuthMode = "login" | "register" | "forgot";

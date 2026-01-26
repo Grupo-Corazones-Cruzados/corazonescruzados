@@ -399,6 +399,60 @@
   to { transform: rotate(360deg); }
 }
 
+/* ===== THEME TOGGLE ===== */
+.ThemeToggle {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition:
+    background 200ms ease,
+    border-color 200ms ease,
+    transform 200ms ease,
+    color 200ms ease;
+}
+
+.ThemeToggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(0, 206, 209, 0.4);
+  color: #00CED1;
+  transform: scale(1.05);
+}
+
+.ThemeToggle:active {
+  transform: scale(0.95);
+}
+
+.ThemeToggle svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 300ms ease;
+}
+
+.ThemeToggle:hover svg {
+  transform: rotate(15deg);
+}
+
+/* Tema claro - estilos del toggle */
+:global([data-theme="light"]) .ThemeToggle {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.03);
+  color: rgba(0, 0, 0, 0.7);
+}
+
+:global([data-theme="light"]) .ThemeToggle:hover {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 160, 163, 0.4);
+  color: #00A0A3;
+}
+
 /* ===== USER MENU ===== */
 .UserMenu {
   position: relative;
@@ -579,7 +633,240 @@
 
 @media (max-width: 480px) {
   .UserDropdown {
-    right: -10px;
-    min-width: 220px;
+    position: fixed;
+    top: 70px;
+    right: var(--space-3);
+    left: var(--space-3);
+    min-width: auto;
+    width: auto;
+    max-width: none;
   }
+
+  .UserAvatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
+
+  .UserDropdownItem {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .UserDropdownHeader {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .UserDropdownName {
+    font-size: 0.9rem;
+  }
+
+  .UserDropdownEmail {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .BarraSuperior-Titulo {
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+  }
+
+  .BotonLogin {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+  }
+
+  .BotonLogin svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .ThemeToggle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ThemeToggle svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ===== TEMA CLARO - HEADER ===== */
+:global([data-theme="light"]) .Overlay {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+:global([data-theme="light"]) .BarraSuperior {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="light"]) .Logo {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .Logo:hover {
+  border-color: #0891B2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 3px rgba(8, 145, 178, 0.15);
+}
+
+:global([data-theme="light"]) .Logo-Activo {
+  border-color: #0891B2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 4px rgba(8, 145, 178, 0.2);
+}
+
+:global([data-theme="light"]) .BarraSuperior-Titulo {
+  background: linear-gradient(135deg, #111827 0%, #0891B2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+:global([data-theme="light"]) .BotonLogin {
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+:global([data-theme="light"]) .BotonLogin:hover {
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+:global([data-theme="light"]) .Menu {
+  background: #FFFFFF;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+}
+
+:global([data-theme="light"]) .MenuHeader {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .MenuTitulo {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .MenuClose {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: #F9FAFB;
+  color: #374151;
+}
+
+:global([data-theme="light"]) .MenuClose:hover {
+  border-color: rgba(220, 38, 38, 0.4);
+  background: rgba(220, 38, 38, 0.1);
+  color: #DC2626;
+}
+
+:global([data-theme="light"]) .Menu-Elemento {
+  border-color: rgba(0, 0, 0, 0.06);
+  background: #F9FAFB;
+}
+
+:global([data-theme="light"]) .Menu-Elemento:hover {
+  border-color: rgba(8, 145, 178, 0.4);
+  background: rgba(8, 145, 178, 0.08);
+}
+
+:global([data-theme="light"]) .Menu-Elemento-Activo {
+  border-color: #0891B2;
+  background: rgba(8, 145, 178, 0.1);
+}
+
+:global([data-theme="light"]) .Menu-Elemento-Activo::before {
+  background: linear-gradient(180deg, #0891B2 0%, #0E7490 100%);
+  box-shadow: 0 0 8px rgba(8, 145, 178, 0.5);
+}
+
+:global([data-theme="light"]) .Menu-Elemento-Boton {
+  color: #374151;
+}
+
+:global([data-theme="light"]) .Menu-Elemento-Icono {
+  filter: brightness(0) opacity(0.5);
+}
+
+:global([data-theme="light"]) .MenuElementoIconoSeleccionado {
+  filter: invert(35%) sepia(98%) saturate(1000%) hue-rotate(165deg) brightness(95%) contrast(101%);
+}
+
+:global([data-theme="light"]) .Menu-Elemento:hover .Menu-Elemento-Icono {
+  filter: invert(35%) sepia(98%) saturate(1000%) hue-rotate(165deg) brightness(95%) contrast(101%);
+}
+
+:global([data-theme="light"]) .UserButton {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: #F9FAFB;
+  color: #374151;
+}
+
+:global([data-theme="light"]) .UserButton:hover {
+  background: #F3F4F6;
+  border-color: #0891B2;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+}
+
+:global([data-theme="light"]) .UserAvatar {
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+}
+
+:global([data-theme="light"]) .UserName {
+  color: #374151;
+}
+
+:global([data-theme="light"]) .UserChevron {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .UserDropdown {
+  background: #FFFFFF;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+:global([data-theme="light"]) .UserDropdownName {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .UserDropdownEmail {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .UserDropdownDivider {
+  background: #E5E7EB;
+}
+
+:global([data-theme="light"]) .UserDropdownItem {
+  color: #374151;
+}
+
+:global([data-theme="light"]) .UserDropdownItem svg {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .UserDropdownItem:hover {
+  background: rgba(8, 145, 178, 0.1);
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .UserDropdownItem:hover svg {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .UserDropdownItemDanger:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: #DC2626;
+}
+
+:global([data-theme="light"]) .UserDropdownItemDanger:hover svg {
+  color: #DC2626;
+}
+
+:global([data-theme="light"]) .AuthSpinner {
+  border-color: #E5E7EB;
+  border-top-color: #0891B2;
 }

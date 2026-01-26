@@ -189,3 +189,52 @@
     display: none;
   }
 }
+
+/* ===== TEMA CLARO ===== */
+:global([data-theme="light"]) .footer::before {
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(220, 38, 38, 0.4),
+    rgba(8, 145, 178, 0.4),
+    transparent
+  );
+}
+
+:global([data-theme="light"]) .brand {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .dot {
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  box-shadow:
+    0 0 8px rgba(220, 38, 38, 0.4),
+    0 0 16px rgba(220, 38, 38, 0.2);
+}
+
+:global([data-theme="light"]) .tagline {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .link {
+  border-color: #E5E7EB;
+  background: #F9FAFB;
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .link:hover {
+  border-color: #0891B2;
+  background: rgba(8, 145, 178, 0.1);
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .copy {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .sep {
+  color: #D1D5DB;
+}
+
+:global([data-theme="light"]) .muted {
+  color: #9CA3AF;
+}

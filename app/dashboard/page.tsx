@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/useAuth";
-import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/AuthProvider";
 import styles from "./Dashboard.module.css";
 
 interface Modulo {
@@ -24,7 +23,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   // Verificar si el email está confirmado
-  const emailVerificado = user?.email_confirmed_at != null;
+  const emailVerificado = user?.verificado === true;
 
   // Redirigir si no está autenticado
   useEffect(() => {
@@ -36,16 +35,16 @@ export default function DashboardPage() {
   // Cargar módulos
   useEffect(() => {
     const fetchModulos = async () => {
-      const { data, error } = await supabase
-        .from("modulos")
-        .select("*")
-        .eq("activo", true)
-        .order("orden", { ascending: true });
-
-      if (error) {
+      try {
+        const response = await fetch("/api/modulos");
+        const data = await response.json();
+        if (response.ok) {
+          setModulos(data.modulos || []);
+        } else {
+          console.error("Error al cargar módulos:", data.error);
+        }
+      } catch (error) {
         console.error("Error al cargar módulos:", error);
-      } else {
-        setModulos(data || []);
       }
       setLoading(false);
     };
@@ -103,15 +102,20 @@ export default function DashboardPage() {
   const resendVerificationEmail = async () => {
     if (!user?.email) return;
 
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: user.email,
-    });
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      });
 
-    if (error) {
+      if (!response.ok) {
+        alert("Error al reenviar el correo. Intenta más tarde.");
+      } else {
+        alert("Correo de verificación enviado. Revisa tu bandeja de entrada.");
+      }
+    } catch {
       alert("Error al reenviar el correo. Intenta más tarde.");
-    } else {
-      alert("Correo de verificación enviado. Revisa tu bandeja de entrada.");
     }
   };
 
@@ -148,7 +152,7 @@ export default function DashboardPage() {
 
           <div className={styles.headerCenter}>
             <img src="/LogoCC.png" alt="Logo" className={styles.logo} />
-            <h1 className={styles.title}>Dashboard</h1>
+            <h1 className={styles.title}>GCC</h1>
           </div>
 
           <div className={styles.headerRight}>
@@ -196,7 +200,9 @@ export default function DashboardPage() {
 
         {/* Módulos */}
         <section className={styles.modulosGrid}>
-          {modulos.map((modulo) => {
+          {modulos
+            .filter((modulo) => !["/dashboard/projects", "/dashboard/invoices", "/dashboard/settings"].includes(modulo.ruta))
+            .map((modulo) => {
             const bloqueado = modulo.requiere_verificacion && !emailVerificado;
 
             return (

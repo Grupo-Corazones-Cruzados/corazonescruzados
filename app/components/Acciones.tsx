@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "lib/supabaseClient";
 import styles from "app/styles/Acciones.module.css";
 
 interface Accion {
@@ -33,17 +32,18 @@ export default function Acciones({
       }
 
       setLoading(true);
-      const { data, error } = await supabase
-        .from("acciones")
-        .select("*")
-        .eq("id_miembro", Number(selectedMember))
-        .order("nombre", { ascending: true });
-
-      if (error) {
+      try {
+        const response = await fetch(`/api/actions?miembro=${selectedMember}`);
+        const data = await response.json();
+        if (response.ok) {
+          setAcciones(data.actions || []);
+        } else {
+          console.error("Error al cargar acciones:", data.error);
+          setAcciones([]);
+        }
+      } catch (error) {
         console.error("Error al cargar acciones:", error);
         setAcciones([]);
-      } else {
-        setAcciones((data as Accion[]) || []);
       }
       setLoading(false);
     };

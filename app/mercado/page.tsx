@@ -1,4 +1,4 @@
-/* app/mercado/page.tsx (COPIA Y PEGA COMPLETO)
+/* app/mercado/page.tsx
    FIX Vercel/Next 15:
    useSearchParams() debe estar dentro de un <Suspense>
 */
@@ -6,7 +6,6 @@
 "use client";
 
 import React, { Suspense, useEffect, useMemo, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { useSearchParams } from "next/navigation";
 import styles from "app/styles/Mercado.module.css";
 
@@ -59,15 +58,6 @@ type MiembroRow = {
   cv_profile?: string | null; // uuid en tabla miembros
   cvProfile?: CvProfile | null; // relación traída como objeto (alias)
 };
-
-const PRODUCTS_TABLE = "productos";
-const MEMBERS_TABLE = "miembros";
-const CV_TABLE = "cv_profile";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
-);
 
 function safeText(v: any) {
   return typeof v === "string" ? v : v == null ? "" : String(v);
@@ -155,68 +145,33 @@ function MercadoInner() {
         setError(null);
         setCvError(null);
 
-        if (miembroId) {
-          const [memberRes, productsRes] = await Promise.all([
-            supabase
-              .from(MEMBERS_TABLE)
-              .select(
-                `
-                id,
-                nombre,
-                puesto,
-                descripcion,
-                foto,
-                correo,
-                celular,
-                cod_usuario,
-                cv_profile,
-                cvProfile:cv_profile(*)
-              `
-              )
-              .eq("id", miembroId)
-              .single(),
+        const url = miembroId
+          ? `/api/mercado?miembroId=${miembroId}`
+          : `/api/mercado`;
 
-            supabase
-              .from(PRODUCTS_TABLE)
-              .select("id, created_at, nombre, herramientas, descripcion, imagen, link_detalles, costo, id_miembro")
-              .eq("id_miembro", miembroId)
-              .order("created_at", { ascending: false }),
-          ]);
+        const response = await fetch(url);
+        const data = await response.json();
 
-          if (memberRes.error) throw memberRes.error;
-          if (productsRes.error) throw productsRes.error;
+        if (!response.ok) {
+          throw new Error(data.error || "Error al cargar datos");
+        }
 
-          if (!cancelled) {
-            const m = memberRes.data as unknown as MiembroRow;
+        if (!cancelled) {
+          if (miembroId) {
+            // Member-specific response
+            const m = data.member as MiembroRow;
             setMiembro(m);
             setCv((m?.cvProfile as CvProfile) ?? null);
-            setItems((productsRes.data as ProductoRow[]) ?? []);
-          }
+            setItems((data.products as ProductoRow[]) ?? []);
 
-          if (!cancelled && !(memberRes.data as any)?.cvProfile) {
-            setCvError("Este miembro no tiene CV asociado aún.");
-          }
-        } else {
-          const [productsRes, cvRes] = await Promise.all([
-            supabase
-              .from(PRODUCTS_TABLE)
-              .select("id, created_at, nombre, herramientas, descripcion, imagen, link_detalles, costo, id_miembro")
-              .order("created_at", { ascending: false }),
-
-            supabase.from(CV_TABLE).select("*").order("updated_at", { ascending: false }).limit(1),
-          ]);
-
-          if (productsRes.error) throw productsRes.error;
-
-          if (!cancelled) {
-            setItems((productsRes.data as ProductoRow[]) ?? []);
-            const row = (cvRes.data as CvProfile[] | null)?.[0] ?? null;
-            setCv(row);
+            if (!m?.cvProfile) {
+              setCvError("Este miembro no tiene CV asociado aún.");
+            }
+          } else {
+            // General response
+            setItems((data.products as ProductoRow[]) ?? []);
+            setCv(data.cv ?? null);
             setMiembro(null);
-          }
-
-          if (cvRes.error && !cancelled) {
-            setCvError(cvRes.error.message);
           }
         }
       } catch (e: any) {

@@ -412,3 +412,140 @@
     padding: var(--space-5);
   }
 }
+
+/* ===== TEMA CLARO ===== */
+:global([data-theme="light"]) .bgGlow {
+  background:
+    radial-gradient(ellipse 50% 30% at 20% 10%, rgba(220, 38, 38, 0.05), transparent 50%),
+    radial-gradient(ellipse 40% 25% at 80% 90%, rgba(8, 145, 178, 0.04), transparent 50%);
+}
+
+:global([data-theme="light"]) .header {
+  border-bottom-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .backLink {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .backLink:hover {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .title {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .userName {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .verified {
+  background: rgba(8, 145, 178, 0.1);
+  color: #0891B2;
+  border-color: rgba(8, 145, 178, 0.3);
+}
+
+:global([data-theme="light"]) .unverified {
+  background: rgba(220, 38, 38, 0.1);
+  color: #DC2626;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+:global([data-theme="light"]) .verificationAlert {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.08) 0%, rgba(220, 38, 38, 0.04) 100%);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+:global([data-theme="light"]) .alertIcon {
+  background: rgba(220, 38, 38, 0.1);
+  color: #DC2626;
+}
+
+:global([data-theme="light"]) .alertContent h3 {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .alertContent p {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .alertContent strong {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .resendBtn {
+  border-color: #DC2626;
+  color: #DC2626;
+}
+
+:global([data-theme="light"]) .resendBtn:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+:global([data-theme="light"]) .welcomeTitle {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .welcomeSubtitle {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .moduloCard {
+  background: #FFFFFF;
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .moduloCard:hover:not(:disabled) {
+  border-color: #0891B2;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(8, 145, 178, 0.2);
+}
+
+:global([data-theme="light"]) .lockOverlay {
+  background: rgba(255, 255, 255, 0.9);
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .lockOverlay svg {
+  color: #DC2626;
+}
+
+:global([data-theme="light"]) .moduloIcon {
+  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(8, 145, 178, 0.3);
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .moduloCard:hover:not(:disabled) .moduloIcon {
+  background: #0891B2;
+  color: #FFFFFF;
+}
+
+:global([data-theme="light"]) .moduloNombre {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .moduloDescripcion {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .moduloArrow {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .moduloCard:hover:not(:disabled) .moduloArrow {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .footer {
+  border-top-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .footer p {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .spinner {
+  border-color: #E5E7EB;
+  border-top-color: #0891B2;
+}
