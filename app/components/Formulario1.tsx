@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import style from "app/styles/Formulario1.module.css";
 
 interface Accion {
@@ -41,6 +42,7 @@ export default function Formulario1({
   });
 
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const accionLabel = useMemo(() => selectedAccion?.nombre ?? "", [selectedAccion]);
   const canSubmit = useMemo(
@@ -52,6 +54,11 @@ export default function Formulario1({
     setShowForm(false);
     onClose();
   };
+
+  // Para que createPortal funcione en SSR
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!showForm) return;
@@ -71,7 +78,7 @@ export default function Formulario1({
     };
   }, [showForm]);
 
-  if (!showForm) return null;
+  if (!showForm || !mounted) return null;
 
   const submitTicket = async () => {
     if (!selectedAccion || selectedMember === null) return;
@@ -159,7 +166,7 @@ Mi contacto: ${formData.clienteContacto}`;
     }
   };
 
-  return (
+  return createPortal(
     <div className={style.overlay} role="presentation" onClick={close}>
       <div
         className={style.modal}
@@ -264,6 +271,7 @@ Mi contacto: ${formData.clienteContacto}`;
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

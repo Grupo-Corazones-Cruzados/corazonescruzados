@@ -1,21 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth/jwt";
 
-// GET /api/actions - List all available actions/services
-export async function GET() {
+// GET /api/actions - List actions, optionally filtered by member
+export async function GET(request: NextRequest) {
   try {
-    const tokenData = await getCurrentUser();
-    if (!tokenData) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    const { searchParams } = new URL(request.url);
+    const miembroId = searchParams.get("miembro");
+
+    let sql = `SELECT id, nombre, id_miembro, id_fuente FROM acciones`;
+    const params: any[] = [];
+
+    if (miembroId) {
+      sql += ` WHERE id_miembro = $1`;
+      params.push(parseInt(miembroId));
     }
 
-    const result = await query(
-      `SELECT id, nombre, descripcion, precio_base, activo
-       FROM acciones
-       WHERE activo = true
-       ORDER BY nombre ASC`
-    );
+    sql += ` ORDER BY nombre ASC`;
+
+    const result = await query(sql, params);
 
     return NextResponse.json({ actions: result.rows });
   } catch (error) {

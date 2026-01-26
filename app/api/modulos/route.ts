@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     const result = await query(
-      `SELECT id, nombre, descripcion, icono, ruta, orden, requiere_verificacion, roles_permitidos
+      `SELECT id, nombre, descripcion, icono, ruta, orden, requiere_verificacion, roles_permitidos, secciones
        FROM modulos
        WHERE activo = true
        ORDER BY orden ASC`

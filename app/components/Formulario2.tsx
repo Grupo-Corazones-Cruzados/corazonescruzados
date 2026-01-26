@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import style from "app/styles/Formualrio2.module.css";
 
 type Props = {
@@ -14,6 +15,7 @@ export default function Formulario2({ visible, onClose, setVisible }: Props) {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [sending, setSending] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const close = () => {
     setVisible?.(false);
@@ -21,6 +23,11 @@ export default function Formulario2({ visible, onClose, setVisible }: Props) {
   };
 
   const canSubmit = useMemo(() => motivo.trim().length > 0 && !sending, [motivo, sending]);
+
+  // Para que createPortal funcione en SSR
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
@@ -78,9 +85,9 @@ export default function Formulario2({ visible, onClose, setVisible }: Props) {
     }
   };
 
-  if (!visible) return null;
+  if (!visible || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className={style.overlay} role="presentation" onClick={close} aria-label="Formulario aspirantes">
       <div className={style.modal} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <button type="button" className={style.closeButton} aria-label="Cerrar" onClick={close}>
@@ -116,6 +123,7 @@ export default function Formulario2({ visible, onClose, setVisible }: Props) {
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

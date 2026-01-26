@@ -207,7 +207,7 @@ export default function DashboardPage() {
         {/* Módulos */}
         <section className={styles.modulosGrid}>
           {modulos
-            .filter((modulo) => !["/dashboard/projects", "/dashboard/invoices", "/dashboard/settings"].includes(modulo.ruta))
+            .filter((modulo) => !["/dashboard/projects", "/dashboard/invoices", "/dashboard/settings", "/dashboard/admin"].includes(modulo.ruta))
             .map((modulo) => {
             const bloqueado = modulo.requiere_verificacion && !emailVerificado;
 

@@ -232,12 +232,7 @@ export default function TicketsPage() {
                 : "Administra los tickets asignados"}
             </p>
           </div>
-          {userRole === "cliente" && (
-            <Link href="/dashboard/tickets/new" className={styles.primaryButton}>
-              <PlusIcon />
-              Nuevo Ticket
-            </Link>
-          )}
+    
         </div>
 
         {/* Stats */}
@@ -344,11 +339,9 @@ export default function TicketsPage() {
             <p className={styles.emptyText}>
               {filters.search || filters.estado !== "todos"
                 ? "Intenta con otros filtros de búsqueda"
-                : userRole === "cliente"
-                ? "Crea tu primer ticket para comenzar"
-                : "No tienes tickets asignados"}
+                : "Crea tu primer ticket para comenzar"}
             </p>
-            {userRole === "cliente" && !filters.search && filters.estado === "todos" && (
+            {!filters.search && filters.estado === "todos" && (
               <Link href="/dashboard/tickets/new" className={styles.primaryButton}>
                 <PlusIcon />
                 Crear Ticket

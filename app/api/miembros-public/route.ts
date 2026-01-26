@@ -7,7 +7,6 @@ export async function GET() {
     const result = await query(
       `SELECT id, nombre, puesto, descripcion, foto, correo, id_fuente, costo, cod_usuario
        FROM miembros
-       WHERE activo = true
        ORDER BY created_at ASC`
     );
 

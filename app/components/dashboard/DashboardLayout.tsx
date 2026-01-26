@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/AuthProvider";
@@ -8,6 +8,21 @@ import styles from "@/app/styles/DashboardLayout.module.css";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+}
+
+interface Seccion {
+  id: string;
+  label: string;
+  href: string;
+  icono: string;
+}
+
+interface Modulo {
+  id: number;
+  nombre: string;
+  ruta: string;
+  secciones: Seccion[];
+  roles_permitidos: string[];
 }
 
 // Icons
@@ -18,60 +33,96 @@ const HomeIcon = () => (
   </svg>
 );
 
-const TicketIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-  </svg>
-);
-
-interface NavTab {
-  label: string;
-  href: string;
-  icon: React.ReactNode;
-  roles?: string[];
-}
-
-const ProjectIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-  </svg>
-);
-
-const InvoiceIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-  </svg>
-);
-
-const SettingsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-  </svg>
-);
-
-const AdminIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-);
-
-const navTabs: NavTab[] = [
-  { label: "Inicio", href: "/dashboard", icon: <HomeIcon /> },
-  { label: "Tickets", href: "/dashboard/tickets", icon: <TicketIcon /> },
-  { label: "Proyectos", href: "/dashboard/projects", icon: <ProjectIcon /> },
-  { label: "Facturas", href: "/dashboard/invoices", icon: <InvoiceIcon /> },
-  { label: "Admin", href: "/dashboard/admin", icon: <AdminIcon />, roles: ["admin"] },
-  { label: "Ajustes", href: "/dashboard/settings", icon: <SettingsIcon /> },
-];
+const getIcono = (icono: string) => {
+  switch (icono) {
+    case "ticket":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+        </svg>
+      );
+    case "plus":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" x2="12" y1="5" y2="19" />
+          <line x1="5" x2="19" y1="12" y2="12" />
+        </svg>
+      );
+    case "users":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    case "user-check":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <polyline points="16 11 18 13 22 9" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      );
+    case "folder":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        </svg>
+      );
+    case "shopping-bag":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+          <line x1="3" x2="21" y1="6" y2="6" />
+          <path d="M16 10a4 4 0 0 1-8 0" />
+        </svg>
+      );
+    default:
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+      );
+  }
+};
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, loading: authLoading, profile } = useAuth();
 
+  const [modulos, setModulos] = useState<Modulo[]>([]);
+  const [loadingModulos, setLoadingModulos] = useState(true);
+
   const userRole = profile?.rol || "cliente";
+
+  // Cargar módulos con secciones
+  useEffect(() => {
+    const fetchModulos = async () => {
+      try {
+        const response = await fetch("/api/modulos");
+        const data = await response.json();
+        if (response.ok) {
+          setModulos(data.modulos || []);
+        }
+      } catch (error) {
+        console.error("Error al cargar módulos:", error);
+      }
+      setLoadingModulos(false);
+    };
+
+    if (isAuthenticated) {
+      fetchModulos();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -79,7 +130,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  if (authLoading) {
+  if (authLoading || loadingModulos) {
     return (
       <div className={styles.layout}>
         <div className={styles.loadingContainer}>
@@ -94,31 +145,51 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return null;
   }
 
+  // Encontrar el módulo actual basado en el pathname
+  const currentModulo = modulos.find((m) => {
+    if (pathname === "/dashboard") return false;
+    return pathname.startsWith(m.ruta);
+  });
+
+  // Filtrar módulos por rol
+  const canAccessModulo = (modulo: Modulo) => {
+    if (!modulo.roles_permitidos || modulo.roles_permitidos.length === 0) return true;
+    return modulo.roles_permitidos.includes(userRole);
+  };
+
   const isActive = (href: string) => {
     if (href === "/dashboard") {
       return pathname === "/dashboard";
     }
-    return pathname.startsWith(href);
+    return pathname === href || pathname.startsWith(href + "/");
   };
 
-  const filteredTabs = navTabs.filter((tab) => {
-    if (!tab.roles) return true;
-    return tab.roles.includes(userRole);
-  });
+  // Obtener secciones del módulo actual
+  const secciones = currentModulo?.secciones || [];
 
   return (
     <div className={styles.layout}>
       {/* Navigation Tabs */}
       <nav className={styles.tabsNav} aria-label="Dashboard navigation">
         <div className={styles.tabsContainer}>
-          {filteredTabs.map((tab) => (
+          {/* Siempre mostrar Inicio */}
+          <Link
+            href="/dashboard"
+            className={`${styles.tab} ${isActive("/dashboard") ? styles.tabActive : ""}`}
+          >
+            <span className={styles.tabIcon}><HomeIcon /></span>
+            <span className={styles.tabLabel}>Inicio</span>
+          </Link>
+
+          {/* Mostrar secciones del módulo actual */}
+          {currentModulo && canAccessModulo(currentModulo) && secciones.map((seccion) => (
             <Link
-              key={tab.href}
-              href={tab.href}
-              className={`${styles.tab} ${isActive(tab.href) ? styles.tabActive : ""}`}
+              key={seccion.id}
+              href={seccion.href}
+              className={`${styles.tab} ${isActive(seccion.href) ? styles.tabActive : ""}`}
             >
-              <span className={styles.tabIcon}>{tab.icon}</span>
-              <span className={styles.tabLabel}>{tab.label}</span>
+              <span className={styles.tabIcon}>{getIcono(seccion.icono)}</span>
+              <span className={styles.tabLabel}>{seccion.label}</span>
             </Link>
           ))}
         </div>

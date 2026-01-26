@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const resend = getResend();
     if (resend) {
       await resend.emails.send({
-        from: "Corazones Cruzados <noreply@corazonescruzados.com>",
+        from: process.env.EMAIL_FROM || "Corazones Cruzados <lfgonzalezm0@grupocc.org>",
         to: email,
         subject: "Restablecer tu contraseña",
         html: `

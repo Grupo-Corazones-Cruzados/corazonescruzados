@@ -80,6 +80,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
+  align-items: start;
 }
 
 /* ===== ACTION CARD ===== */
@@ -213,4 +214,75 @@
     padding: 16px;
     border-radius: 12px;
   }
+}
+
+/* ===== TEMA CLARO ===== */
+:global([data-theme="light"]) .section {
+  background: #F9FAFB;
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  color: #111827;
+}
+
+:global([data-theme="light"]) .section::before {
+  background: linear-gradient(90deg, transparent, rgba(8, 145, 178, 0.2), transparent);
+}
+
+:global([data-theme="light"]) .kicker {
+  color: #0891B2;
+  border-color: rgba(8, 145, 178, 0.35);
+  background: rgba(8, 145, 178, 0.1);
+}
+
+:global([data-theme="light"]) .kicker::before {
+  background: #0891B2;
+  box-shadow: 0 0 10px #0891B2;
+}
+
+:global([data-theme="light"]) .title {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .subtitle {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .card {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: #F3F4F6;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme="light"]) .card::before {
+  background: linear-gradient(90deg, transparent, rgba(8, 145, 178, 0.2), transparent);
+}
+
+:global([data-theme="light"]) .card:hover {
+  border-color: rgba(8, 145, 178, 0.3);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.1),
+    0 0 30px rgba(8, 145, 178, 0.08);
+  background: #FFFFFF;
+}
+
+:global([data-theme="light"]) .card:focus-visible {
+  border-color: rgba(8, 145, 178, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(8, 145, 178, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="light"]) .cardTitle {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .state {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .spinner {
+  border-color: rgba(0, 0, 0, 0.1);
+  border-top-color: #0891B2;
 }

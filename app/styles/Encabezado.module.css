@@ -382,3 +382,66 @@
     animation: none;
   }
 }
+
+/* ===== TEMA CLARO ===== */
+:global([data-theme="light"]) .hero {
+  background: linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%);
+}
+
+:global([data-theme="light"]) .gridPattern {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
+
+:global([data-theme="light"]) .glowOrb1 {
+  background: radial-gradient(ellipse, rgba(227, 24, 55, 0.06) 0%, transparent 70%);
+}
+
+:global([data-theme="light"]) .glowOrb2 {
+  background: radial-gradient(ellipse, rgba(8, 145, 178, 0.05) 0%, transparent 70%);
+}
+
+:global([data-theme="light"]) .badge {
+  color: #0891B2;
+  background: rgba(8, 145, 178, 0.08);
+  border-color: rgba(8, 145, 178, 0.2);
+}
+
+:global([data-theme="light"]) .badgeDot {
+  background: #0891B2;
+  box-shadow: 0 0 8px #0891B2;
+}
+
+:global([data-theme="light"]) .headline {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .tagline {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .heartWrapper {
+  background: rgba(227, 24, 55, 0.06);
+  border-color: rgba(227, 24, 55, 0.15);
+  box-shadow: 0 0 30px rgba(227, 24, 55, 0.1);
+}
+
+:global([data-theme="light"]) .heartButton:hover .heartWrapper {
+  background: rgba(227, 24, 55, 0.1);
+  border-color: rgba(227, 24, 55, 0.3);
+  box-shadow: 0 0 40px rgba(227, 24, 55, 0.15);
+}
+
+:global([data-theme="light"]) .heartButtonOpen .heartWrapper {
+  background: rgba(227, 24, 55, 0.08);
+}
+
+:global([data-theme="light"]) .heartIcon {
+  filter: none;
+  opacity: 1;
+}
+
+:global([data-theme="light"]) .heartHint {
+  color: #9CA3AF;
+}

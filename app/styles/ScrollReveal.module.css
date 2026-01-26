@@ -46,3 +46,7 @@
     transition: none;
   }
 }
+
+/* ===== TEMA CLARO ===== */
+/* ScrollReveal no tiene colores específicos que necesiten ajuste para tema claro.
+   Las animaciones de opacidad y transform funcionan igual en ambos temas. */

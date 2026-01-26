@@ -235,19 +235,14 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow:
-    0 4px 20px rgba(227, 24, 55, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition:
     transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 200ms ease;
+    background 200ms ease;
 }
 
 .submitBtn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow:
-    0 8px 30px rgba(227, 24, 55, 0.4),
-    0 0 30px rgba(227, 24, 55, 0.2);
+  background: linear-gradient(135deg, #C9152F 0%, #A01228 100%);
 }
 
 .submitBtn:disabled {
@@ -291,4 +286,96 @@
     font-size: 1.25rem;
     padding-right: 40px;
   }
+}
+
+/* ===== TEMA CLARO ===== */
+:global([data-theme="light"]) .overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+:global([data-theme="light"]) .modal {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
+  color: #111827;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+:global([data-theme="light"]) .closeButton {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+  color: #111827;
+}
+
+:global([data-theme="light"]) .closeButton:hover {
+  border-color: rgba(227, 24, 55, 0.4);
+  background: rgba(227, 24, 55, 0.1);
+}
+
+:global([data-theme="light"]) .header {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+  background: linear-gradient(90deg, rgba(227, 24, 55, 0.03) 0%, transparent 100%);
+}
+
+:global([data-theme="light"]) .header::after {
+  background: linear-gradient(90deg, rgba(227, 24, 55, 0.2), transparent);
+}
+
+:global([data-theme="light"]) .kicker {
+  color: #0891B2;
+  border-color: rgba(8, 145, 178, 0.35);
+  background: rgba(8, 145, 178, 0.1);
+}
+
+:global([data-theme="light"]) .title {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .subtitle {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .badge {
+  color: #4B5563;
+}
+
+:global([data-theme="light"]) .badge b {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .field span {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .field input,
+:global([data-theme="light"]) .field textarea {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: #F3F4F6;
+  color: #111827;
+}
+
+:global([data-theme="light"]) .field input::placeholder,
+:global([data-theme="light"]) .field textarea::placeholder {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .field input:focus,
+:global([data-theme="light"]) .field textarea:focus {
+  border-color: rgba(8, 145, 178, 0.5);
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+  background: #FFFFFF;
+}
+
+:global([data-theme="light"]) .hint {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .submitBtn {
+  background: #0891B2;
+  color: #FFFFFF;
+}
+
+:global([data-theme="light"]) .submitBtn:hover:not(:disabled) {
+  background: #0E7490;
 }

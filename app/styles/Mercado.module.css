@@ -647,17 +647,14 @@
   background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
   padding: 12px 20px;
   border-radius: 9999px;
-  box-shadow: 0 4px 20px rgba(227, 24, 55, 0.3);
   transition:
     transform 200ms ease,
-    box-shadow 200ms ease;
+    background 200ms ease;
 }
 
 .cvBtn:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 8px 30px rgba(227, 24, 55, 0.4),
-    0 0 30px rgba(227, 24, 55, 0.2);
+  background: linear-gradient(135deg, #C9152F 0%, #A01228 100%);
 }
 
 .cvState {
@@ -860,4 +857,272 @@
   .page :global(#market) {
     display: none !important;
   }
+}
+
+/* ===== TEMA CLARO ===== */
+:global([data-theme="light"]) .page {
+  background: #FFFFFF;
+  color: #111827;
+}
+
+:global([data-theme="light"]) .bgGlow {
+  background:
+    radial-gradient(900px 600px at 10% 0%, rgba(227, 24, 55, 0.04), transparent 60%),
+    radial-gradient(700px 520px at 88% 10%, rgba(185, 20, 48, 0.03), transparent 58%),
+    radial-gradient(900px 700px at 50% 100%, rgba(8, 145, 178, 0.03), transparent 60%);
+}
+
+:global([data-theme="light"]) .header {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: #F9FAFB;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .header::before {
+  background: linear-gradient(90deg, transparent, rgba(227, 24, 55, 0.2), transparent);
+}
+
+:global([data-theme="light"]) .title {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .subtitle {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .brandPill {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .search,
+:global([data-theme="light"]) .select {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: #F3F4F6;
+  color: #111827;
+}
+
+:global([data-theme="light"]) .search::placeholder {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .search:focus,
+:global([data-theme="light"]) .select:focus {
+  border-color: rgba(8, 145, 178, 0.5);
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+  background: #FFFFFF;
+}
+
+:global([data-theme="light"]) .count {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .card {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: #F9FAFB;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .card:hover {
+  border-color: rgba(8, 145, 178, 0.3);
+  box-shadow:
+    0 16px 50px rgba(0, 0, 0, 0.12),
+    0 0 40px rgba(8, 145, 178, 0.08);
+}
+
+:global([data-theme="light"]) .media {
+  background: linear-gradient(135deg, rgba(227, 24, 55, 0.05) 0%, #F3F4F6 100%);
+}
+
+:global([data-theme="light"]) .placeholder {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .placeholderIcon {
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.1) 0%, rgba(8, 145, 178, 0.05) 100%);
+  border-color: rgba(8, 145, 178, 0.25);
+}
+
+:global([data-theme="light"]) .placeholderText {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .cardTitle {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .cardDesc {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .cardDescEmpty {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .tag {
+  border-color: rgba(8, 145, 178, 0.25);
+  background: rgba(8, 145, 178, 0.1);
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .footer {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .cta {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .price {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .priceMuted {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .state {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .spinner {
+  border-color: rgba(0, 0, 0, 0.1);
+  border-top-color: #0891B2;
+}
+
+:global([data-theme="light"]) .errorText {
+  color: #4B5563;
+}
+
+:global([data-theme="light"]) .errorHint {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .cvSection {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: #F9FAFB;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .cvSection::before {
+  background: linear-gradient(90deg, transparent, rgba(8, 145, 178, 0.2), transparent);
+}
+
+:global([data-theme="light"]) .cvName {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .cvHeadline {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .cvContacts {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .cvContacts span:not(:first-child)::before {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme="light"]) .cvLink {
+  color: #111827;
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+:global([data-theme="light"]) .cvLink:hover {
+  border-color: rgba(8, 145, 178, 0.4);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="light"]) .cvPill {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .cvBlock,
+:global([data-theme="light"]) .cvSideBlock {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: #F3F4F6;
+}
+
+:global([data-theme="light"]) .cvH2 {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .cvText {
+  color: #4B5563;
+}
+
+:global([data-theme="light"]) .cvList {
+  color: #4B5563;
+}
+
+:global([data-theme="light"]) .cvMuted {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .cvTag {
+  border-color: rgba(8, 145, 178, 0.25);
+  background: rgba(8, 145, 178, 0.1);
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .cvItem {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+:global([data-theme="light"]) .cvCompany {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .cvRole {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .cvDates {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .cvSub {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .cvBullets {
+  color: #4B5563;
+}
+
+:global([data-theme="light"]) .cvPhotoWrap {
+  border-color: rgba(8, 145, 178, 0.25);
+  background: #F3F4F6;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="light"]) .cvState {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .printBtn,
+:global([data-theme="light"]) .printBtnSmall {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+  color: #111827;
+}
+
+:global([data-theme="light"]) .printBtn:hover,
+:global([data-theme="light"]) .printBtnSmall:hover {
+  border-color: rgba(8, 145, 178, 0.4);
+  background: rgba(8, 145, 178, 0.1);
+}
+
+:global([data-theme="light"]) .cvBtn {
+  background: #0891B2;
+  color: #FFFFFF;
+}
+
+:global([data-theme="light"]) .cvBtn:hover {
+  background: #0E7490;
 }
