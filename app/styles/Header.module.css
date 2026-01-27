@@ -772,6 +772,7 @@
 
 :global([data-theme="light"]) .BotonLogin {
   background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  color: #FFFFFF;
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
 }
 
