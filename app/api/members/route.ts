@@ -11,10 +11,11 @@ export async function GET() {
     }
 
     const result = await query(
-      `SELECT id, nombre, foto, puesto, costo, correo, activo
-       FROM miembros
-       WHERE activo = true
-       ORDER BY nombre ASC`
+      `SELECT m.id, m.nombre, COALESCE(m.foto, up.avatar_url) AS foto,
+              m.puesto, m.costo, m.correo
+       FROM miembros m
+       LEFT JOIN user_profiles up ON up.id_miembro = m.id
+       ORDER BY m.nombre ASC`
     );
 
     return NextResponse.json({ members: result.rows });

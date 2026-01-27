@@ -94,6 +94,9 @@
   /* ===== FOCUS ===== */
   --ring-turquoise: 0 0 0 3px var(--turquoise-glow), 0 0 0 1px var(--turquoise);
   --ring-red: 0 0 0 3px var(--primary-red-glow), 0 0 0 1px var(--primary-red);
+
+  /* ===== HOVER TEXT ===== */
+  --text-hover: #FFFFFF;
 }
 
 /* ===== TEMA CLARO ===== */
@@ -154,6 +157,9 @@
   /* Focus rings */
   --ring-turquoise: 0 0 0 3px rgba(8, 145, 178, 0.3), 0 0 0 1px #0891B2;
   --ring-red: 0 0 0 3px rgba(220, 38, 38, 0.3), 0 0 0 1px #DC2626;
+
+  /* Hover text */
+  --text-hover: #000000;
 }
 
 /* Fondo específico para tema claro */
@@ -272,6 +278,20 @@
 [data-theme="light"] .spinner {
   border-color: #E5E7EB;
   border-top-color: #0891B2;
+}
+
+/* ===== HOVER TEXT GLOBAL ===== */
+/* Modo oscuro: texto blanco al hover | Modo claro: texto negro al hover */
+a:hover,
+button:hover,
+p:hover,
+span:hover,
+label:hover,
+li:hover,
+td:hover,
+th:hover,
+h1:hover, h2:hover, h3:hover, h4:hover, h5:hover, h6:hover {
+  color: var(--text-hover);
 }
 
 /* ===== RESET & BASE ===== */

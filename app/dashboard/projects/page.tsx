@@ -43,35 +43,37 @@ const FolderIcon = () => (
 
 const getStatusClass = (estado: string): string => {
   switch (estado) {
-    case "publicado":
-      return styles.statusPublicado;
-    case "asignado":
-      return styles.statusAsignado;
-    case "en_progreso":
-      return styles.statusEnProgreso;
-    case "completado":
-      return styles.statusCompletado;
-    case "cancelado":
-      return styles.statusCancelado;
-    default:
-      return styles.statusPublicado;
+    case "publicado": return styles.statusPublicado;
+    case "asignado": return styles.statusAsignado;
+    case "planificado": return styles.statusPlanificado;
+    case "en_progreso": return styles.statusEnProgreso;
+    case "completado": return styles.statusCompletado;
+    case "completado_parcial": return styles.statusCompletadoParcial;
+    case "no_completado": return styles.statusNoCompletado;
+    case "cancelado": return styles.statusCancelado;
+    case "cancelado_sin_acuerdo": return styles.statusCancelado;
+    case "cancelado_sin_presupuesto": return styles.statusCancelado;
+    case "no_pagado": return styles.statusNoPagado;
+    case "no_completado_por_miembro": return styles.statusNoCompletado;
+    default: return styles.statusPublicado;
   }
 };
 
 const getStatusLabel = (estado: string): string => {
   switch (estado) {
-    case "publicado":
-      return "Publicado";
-    case "asignado":
-      return "Asignado";
-    case "en_progreso":
-      return "En Progreso";
-    case "completado":
-      return "Completado";
-    case "cancelado":
-      return "Cancelado";
-    default:
-      return estado;
+    case "publicado": return "Publicado";
+    case "asignado": return "Asignado";
+    case "planificado": return "Planificado";
+    case "en_progreso": return "En Progreso";
+    case "completado": return "Completado";
+    case "completado_parcial": return "Completado Parcial";
+    case "no_completado": return "No Completado";
+    case "cancelado": return "Cancelado";
+    case "cancelado_sin_acuerdo": return "Cancelado - Sin Acuerdo";
+    case "cancelado_sin_presupuesto": return "Cancelado - Sin Presupuesto";
+    case "no_pagado": return "No Pagado";
+    case "no_completado_por_miembro": return "No Completado por Miembro";
+    default: return estado;
   }
 };
 
@@ -87,9 +89,9 @@ const formatDate = (dateString: string | null): string => {
 
 const formatCurrency = (amount: number | null): string => {
   if (amount === null || amount === undefined) return "";
-  return new Intl.NumberFormat("es-MX", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "MXN",
+    currency: "USD",
   }).format(amount);
 };
 
@@ -218,9 +220,15 @@ export default function ProjectsPage() {
           >
             <option value="todos">Todos los estados</option>
             <option value="publicado">Publicado</option>
-            <option value="asignado">Asignado</option>
+            <option value="planificado">Planificado</option>
             <option value="en_progreso">En Progreso</option>
             <option value="completado">Completado</option>
+            <option value="completado_parcial">Completado Parcial</option>
+            <option value="no_completado">No Completado</option>
+            <option value="cancelado_sin_acuerdo">Cancelado - Sin Acuerdo</option>
+            <option value="cancelado_sin_presupuesto">Cancelado - Sin Presupuesto</option>
+            <option value="no_pagado">No Pagado</option>
+            <option value="no_completado_por_miembro">No Completado por Miembro</option>
           </select>
         </div>
 

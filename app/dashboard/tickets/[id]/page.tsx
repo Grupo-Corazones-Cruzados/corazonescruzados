@@ -72,11 +72,19 @@ const formatTime = (timeString: string): string => {
   return timeString.slice(0, 5); // HH:MM
 };
 
+const formatHours = (hours: number): string => {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+};
+
 const formatCurrency = (amount: number | null): string => {
   if (amount === null || amount === undefined) return "$0.00";
-  return new Intl.NumberFormat("es-MX", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "MXN",
+    currency: "USD",
   }).format(amount);
 };
 
@@ -100,11 +108,21 @@ export default function TicketDetailPage() {
     setUpdating(false);
   };
 
-  const handleSlotComplete = async (slotId: number, duracionReal: number) => {
+  const handleSlotComplete = async (slotId: number) => {
     setUpdating(true);
     const { error } = await updateSlot(slotId, {
       estado: "completado",
-      duracion_real: duracionReal,
+    });
+    if (error) {
+      alert(error);
+    }
+    setUpdating(false);
+  };
+
+  const handleSlotRevert = async (slotId: number) => {
+    setUpdating(true);
+    const { error } = await updateSlot(slotId, {
+      estado: "pendiente",
     });
     if (error) {
       alert(error);
@@ -142,8 +160,27 @@ export default function TicketDetailPage() {
     );
   }
 
-  // Calculate totals from acciones
-  const totalFromAcciones = acciones.reduce((sum, a) => sum + (a.subtotal || 0), 0);
+  // Calculate hours from slots
+  const calcSlotDuration = (slot: { hora_inicio: string; hora_fin: string }) => {
+    const [sh, sm] = slot.hora_inicio.slice(0, 5).split(":").map(Number);
+    const [eh, em] = slot.hora_fin.slice(0, 5).split(":").map(Number);
+    return (eh * 60 + em - (sh * 60 + sm)) / 60;
+  };
+
+  const totalSlotHours = slots.reduce((sum, s) => sum + calcSlotDuration(s), 0);
+  const completedSlotHours = slots
+    .filter((s) => s.estado === "completado")
+    .reduce((sum, s) => sum + calcSlotDuration(s), 0);
+
+  const completionRatio = totalSlotHours > 0 ? completedSlotHours / totalSlotHours : 0;
+
+  // Calculate cost per action based on completed slots
+  const getActionRealCost = (accion: { horas_asignadas: number; costo_hora: number }) => {
+    return completionRatio * accion.horas_asignadas * accion.costo_hora;
+  };
+
+  const totalEstimado = acciones.reduce((sum, a) => sum + (a.horas_asignadas * a.costo_hora), 0);
+  const totalReal = acciones.reduce((sum, a) => sum + getActionRealCost(a), 0);
 
   return (
     <DashboardLayout>
@@ -201,15 +238,19 @@ export default function TicketDetailPage() {
                         {isMember && slot.estado !== "completado" && (
                           <button
                             className={styles.secondaryButton}
-                            onClick={() => {
-                              const duracion = prompt("Minutos trabajados:");
-                              if (duracion) {
-                                handleSlotComplete(slot.id, parseFloat(duracion));
-                              }
-                            }}
+                            onClick={() => handleSlotComplete(slot.id)}
                             disabled={updating}
                           >
                             Completar
+                          </button>
+                        )}
+                        {slot.estado === "completado" && (
+                          <button
+                            className={styles.secondaryButton}
+                            onClick={() => handleSlotRevert(slot.id)}
+                            disabled={updating}
+                          >
+                            Desmarcar
                           </button>
                         )}
                       </div>
@@ -224,21 +265,30 @@ export default function TicketDetailPage() {
               <div className={styles.detailCard}>
                 <h4 className={styles.detailCardTitle}>Servicios Incluidos</h4>
                 <div className={styles.actionsList}>
-                  {acciones.map((accion) => (
-                    <div key={accion.id} className={styles.actionItem}>
-                      <div>
-                        <div className={styles.actionName}>
-                          {accion.accion?.nombre || "Servicio"}
+                  {acciones.map((accion) => {
+                    const realCost = getActionRealCost(accion);
+                    const estimatedCost = accion.horas_asignadas * accion.costo_hora;
+                    return (
+                      <div key={accion.id} className={styles.actionItem}>
+                        <div>
+                          <div className={styles.actionName}>
+                            {accion.accion?.nombre || "Servicio"}
+                          </div>
+                          <div className={styles.actionHours}>
+                            {formatHours(accion.horas_asignadas)} × {formatCurrency(accion.costo_hora)}/h
+                          </div>
                         </div>
-                        <div className={styles.actionHours}>
-                          {accion.horas_asignadas}h × {formatCurrency(accion.costo_hora)}/h
+                        <div className={styles.actionCost}>
+                          {formatCurrency(realCost)}
+                          {realCost < estimatedCost && (
+                            <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", display: "block" }}>
+                              de {formatCurrency(estimatedCost)}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className={styles.actionCost}>
-                        {formatCurrency(accion.subtotal)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -311,12 +361,14 @@ export default function TicketDetailPage() {
               )}
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Horas Estimadas</span>
-                <span className={styles.infoValue}>{ticket.horas_estimadas || 0}h</span>
+                <span className={styles.infoValue}>{formatHours(ticket.horas_estimadas || 0)}</span>
               </div>
-              {ticket.horas_reales !== null && (
+              {completedSlotHours > 0 && (
                 <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Horas Reales</span>
-                  <span className={styles.infoValue}>{ticket.horas_reales}h</span>
+                  <span className={styles.infoLabel}>Horas Completadas</span>
+                  <span className={styles.infoValue} style={{ color: "var(--turquoise)" }}>
+                    {formatHours(completedSlotHours)} de {formatHours(totalSlotHours)}
+                  </span>
                 </div>
               )}
             </div>
@@ -332,15 +384,29 @@ export default function TicketDetailPage() {
                         <span style={{ color: "var(--text-muted)" }}>
                           {accion.accion?.nombre}
                         </span>
-                        <span>{formatCurrency(accion.subtotal)}</span>
+                        <span>{formatCurrency(getActionRealCost(accion))}</span>
                       </div>
                     ))}
+                    {completedSlotHours > 0 && completedSlotHours < totalSlotHours && (
+                      <div className={styles.costRow}>
+                        <span style={{ color: "var(--text-muted)" }}>Progreso</span>
+                        <span style={{ color: "var(--turquoise)" }}>
+                          {Math.round(completionRatio * 100)}%
+                        </span>
+                      </div>
+                    )}
                     <div className={styles.costTotal}>
-                      <span>Total</span>
+                      <span>{completionRatio >= 1 ? "Total Final" : "Acumulado"}</span>
                       <span className={styles.costTotalValue}>
-                        {formatCurrency(totalFromAcciones || ticket.costo_estimado)}
+                        {formatCurrency(totalReal)}
                       </span>
                     </div>
+                    {completionRatio < 1 && (
+                      <div className={styles.costRow} style={{ marginTop: "var(--space-2)" }}>
+                        <span style={{ color: "var(--text-muted)" }}>Total Estimado</span>
+                        <span>{formatCurrency(totalEstimado || ticket.costo_estimado)}</span>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className={styles.costTotal}>
@@ -350,60 +416,86 @@ export default function TicketDetailPage() {
                     </span>
                   </div>
                 )}
-                {ticket.costo_real !== null && (
-                  <div className={styles.costRow} style={{ marginTop: "var(--space-2)" }}>
-                    <span style={{ color: "var(--text-muted)" }}>Costo Real</span>
-                    <span style={{ color: "var(--turquoise)", fontWeight: 600 }}>
-                      {formatCurrency(ticket.costo_real)}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Actions Card (for members) */}
-            {isMember && ticket.estado !== "completado" && ticket.estado !== "cancelado" && (
+            {/* Timeline Card */}
+            {ticket.estado !== "cancelado" ? (
               <div className={styles.detailCard}>
-                <h4 className={styles.detailCardTitle}>Acciones</h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                  {ticket.estado === "pendiente" && (
-                    <button
-                      className={styles.primaryButton}
-                      onClick={() => handleStatusChange("confirmado")}
-                      disabled={updating}
-                      style={{ width: "100%", justifyContent: "center" }}
-                    >
-                      {updating ? "Actualizando..." : "Confirmar Ticket"}
+                <h4 className={styles.detailCardTitle}>Estado del Ticket</h4>
+                <div className={styles.timeline}>
+                  {[
+                    { key: "pendiente", label: "Pendiente" },
+                    { key: "confirmado", label: "Confirmado" },
+                    { key: "en_progreso", label: "En Progreso" },
+                    { key: "completado", label: "Completado" },
+                  ].map((step, index, arr) => {
+                    const statusOrder = ["pendiente", "confirmado", "en_progreso", "completado"];
+                    const currentIndex = statusOrder.indexOf(ticket.estado || "pendiente");
+                    const stepIndex = statusOrder.indexOf(step.key);
+                    const isCompleted = stepIndex < currentIndex || (stepIndex === currentIndex && step.key === "completado");
+                    const isActive = stepIndex === currentIndex && step.key !== "completado";
+
+                    return (
+                      <div key={step.key} className={styles.timelineItem}>
+                        <div className={`${styles.timelineDot} ${
+                          isCompleted ? styles.timelineDotCompleted : ""
+                        } ${isActive ? styles.timelineDotActive : ""}`}>
+                          {isCompleted && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className={styles.timelineContent}>
+                          <div className={`${styles.timelineLabel} ${
+                            !isCompleted && !isActive ? styles.timelineLabelMuted : ""
+                          }`}>
+                            {step.label}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {isMember && ticket.estado !== "completado" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
+                    {ticket.estado === "pendiente" && (
+                      <button className={styles.primaryButton} onClick={() => handleStatusChange("confirmado")} disabled={updating} style={{ width: "100%", justifyContent: "center" }}>
+                        {updating ? "Actualizando..." : "Confirmar Ticket"}
+                      </button>
+                    )}
+                    {ticket.estado === "confirmado" && (
+                      <button className={styles.primaryButton} onClick={() => handleStatusChange("en_progreso")} disabled={updating} style={{ width: "100%", justifyContent: "center" }}>
+                        {updating ? "Actualizando..." : "Iniciar Trabajo"}
+                      </button>
+                    )}
+                    {ticket.estado === "en_progreso" && (
+                      <button className={styles.primaryButton} onClick={() => handleStatusChange("completado")} disabled={updating} style={{ width: "100%", justifyContent: "center" }}>
+                        {updating ? "Actualizando..." : "Marcar Completado"}
+                      </button>
+                    )}
+                    <button className={styles.secondaryButton} onClick={() => handleStatusChange("cancelado")} disabled={updating} style={{ width: "100%", justifyContent: "center" }}>
+                      Cancelar Ticket
                     </button>
-                  )}
-                  {ticket.estado === "confirmado" && (
-                    <button
-                      className={styles.primaryButton}
-                      onClick={() => handleStatusChange("en_progreso")}
-                      disabled={updating}
-                      style={{ width: "100%", justifyContent: "center" }}
-                    >
-                      {updating ? "Actualizando..." : "Iniciar Trabajo"}
-                    </button>
-                  )}
-                  {ticket.estado === "en_progreso" && (
-                    <button
-                      className={styles.primaryButton}
-                      onClick={() => handleStatusChange("completado")}
-                      disabled={updating}
-                      style={{ width: "100%", justifyContent: "center" }}
-                    >
-                      {updating ? "Actualizando..." : "Marcar Completado"}
-                    </button>
-                  )}
-                  <button
-                    className={styles.secondaryButton}
-                    onClick={() => handleStatusChange("cancelado")}
-                    disabled={updating}
-                    style={{ width: "100%", justifyContent: "center" }}
-                  >
-                    Cancelar Ticket
-                  </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className={styles.detailCard}>
+                <h4 className={styles.detailCardTitle}>Estado del Ticket</h4>
+                <div className={styles.timeline}>
+                  <div className={styles.timelineItem}>
+                    <div className={`${styles.timelineDot} ${styles.timelineDotCancelled}`}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </div>
+                    <div className={styles.timelineContent}>
+                      <div className={styles.timelineLabel}>Cancelado</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

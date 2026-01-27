@@ -99,11 +99,19 @@ const formatDate = (dateString: string | null): string => {
   });
 };
 
+const formatHours = (hours: number): string => {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+};
+
 const formatCurrency = (amount: number | null): string => {
   if (amount === null || amount === undefined) return "$0.00";
-  return new Intl.NumberFormat("es-MX", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "MXN",
+    currency: "USD",
   }).format(amount);
 };
 
@@ -150,7 +158,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
         {ticket.horas_estimadas && (
           <div className={styles.ticketMeta}>
             <ClockIcon />
-            <span>{ticket.horas_estimadas}h estimadas</span>
+            <span>{formatHours(ticket.horas_estimadas)} estimadas</span>
           </div>
         )}
       </div>
@@ -173,16 +181,23 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
 
 export default function TicketsPage() {
   const { profile } = useAuth();
+  const userRole = profile?.rol || "cliente";
+  const isMember = userRole === "miembro";
   const { tickets, loading, error, stats, refetch } = useTickets();
   const [filters, setFilters] = useState<TicketFilters>({
     search: "",
     estado: "todos",
     miembro: null,
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
 
-  const userRole = profile?.rol || "cliente";
+  // For members, fetch tickets they created (view=created)
+  React.useEffect(() => {
+    if (isMember && !initialFetchDone) {
+      refetch({ search: "", estado: "todos", miembro: null, view: "created" });
+      setInitialFetchDone(true);
+    }
+  }, [isMember, initialFetchDone, refetch]);
 
   // Filter tickets
   const filteredTickets = useMemo(() => {
@@ -206,17 +221,23 @@ export default function TicketsPage() {
     });
   }, [tickets, filters]);
 
-  // Pagination
-  const paginatedTickets = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredTickets.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredTickets, currentPage]);
-
-  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
+  // Group tickets by assigned member
+  const groupedTickets = useMemo(() => {
+    const groups = new Map<string, Ticket[]>();
+    for (const ticket of filteredTickets) {
+      const name = ticket.miembro?.nombre || "Sin asignar";
+      if (!groups.has(name)) groups.set(name, []);
+      groups.get(name)!.push(ticket);
+    }
+    return Array.from(groups.entries());
+  }, [filteredTickets]);
 
   const handleFilterChange = (key: keyof TicketFilters, value: string | number | null) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setCurrentPage(1);
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    if (isMember) {
+      refetch({ ...newFilters, view: "created" });
+    }
   };
 
   return (
@@ -227,12 +248,15 @@ export default function TicketsPage() {
           <div>
             <h1 className={styles.pageTitle}>Tickets</h1>
             <p className={styles.pageSubtitle}>
-              {userRole === "cliente"
-                ? "Gestiona tus solicitudes de servicio"
-                : "Administra los tickets asignados"}
+              {isMember
+                ? "Tickets que has creado como cliente"
+                : "Gestiona tus solicitudes de servicio"}
             </p>
           </div>
-    
+          <Link href="/dashboard/tickets/new" className={styles.primaryButton}>
+            <PlusIcon />
+            Nuevo Ticket
+          </Link>
         </div>
 
         {/* Stats */}
@@ -349,56 +373,21 @@ export default function TicketsPage() {
             )}
           </div>
         ) : (
-          <>
-            <div className={styles.ticketsList}>
-              {paginatedTickets.map((ticket) => (
-                <TicketCard key={ticket.id} ticket={ticket} />
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className={styles.pagination}>
-                <button
-                  className={styles.pageButton}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </button>
-
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter((page) => {
-                    return (
-                      page === 1 ||
-                      page === totalPages ||
-                      Math.abs(page - currentPage) <= 1
-                    );
-                  })
-                  .map((page, index, array) => (
-                    <React.Fragment key={page}>
-                      {index > 0 && array[index - 1] !== page - 1 && (
-                        <span style={{ color: "var(--text-muted)" }}>...</span>
-                      )}
-                      <button
-                        className={`${styles.pageButton} ${currentPage === page ? styles.pageButtonActive : ""}`}
-                        onClick={() => setCurrentPage(page)}
-                      >
-                        {page}
-                      </button>
-                    </React.Fragment>
+          <div className={styles.ticketsList}>
+            {groupedTickets.map(([groupName, groupTickets]) => (
+              <div key={groupName} className={styles.ticketGroup}>
+                <div className={styles.ticketGroupHeader}>
+                  <span>{groupName}</span>
+                  <span className={styles.ticketGroupCount}>{groupTickets.length}</span>
+                </div>
+                <div className={styles.ticketGroupBody}>
+                  {groupTickets.map((ticket) => (
+                    <TicketCard key={ticket.id} ticket={ticket} />
                   ))}
-
-                <button
-                  className={styles.pageButton}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Siguiente
-                </button>
+                </div>
               </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
       </div>
     </DashboardLayout>

@@ -321,10 +321,16 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-.nameRow {
+.nameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metaRow {
   display: flex;
   align-items: center;
   justify-content: space-between;

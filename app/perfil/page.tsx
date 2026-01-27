@@ -241,7 +241,18 @@ export default function PerfilPage() {
         <div className={styles.profileCard}>
           {/* Avatar Section */}
           <div className={styles.avatarSection}>
-            <div className={styles.avatarWrapper}>
+            <div
+              className={styles.avatarWrapper}
+              onClick={() => !uploadingAvatar && fileInputRef.current?.click()}
+              style={{ cursor: uploadingAvatar ? 'not-allowed' : 'pointer' }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && !uploadingAvatar) {
+                  fileInputRef.current?.click();
+                }
+              }}
+            >
               {formData.avatar_url ? (
                 <img src={formData.avatar_url} alt="Avatar" className={styles.avatar} />
               ) : (
@@ -258,20 +269,14 @@ export default function PerfilPage() {
                 style={{ display: "none" }}
                 disabled={uploadingAvatar}
               />
-              {/* Upload button - always visible */}
-              <button
-                type="button"
-                className={styles.avatarEditBtn}
-                title="Cambiar foto"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingAvatar}
-              >
+              {/* Upload button */}
+              <div className={styles.avatarEditBtn} title="Cambiar foto de perfil">
                 {uploadingAvatar ? (
                   <div className={styles.miniSpinner} />
                 ) : (
                   <CameraIcon />
                 )}
-              </button>
+              </div>
             </div>
             <div className={styles.avatarInfo}>
               <h2 className={styles.userName}>
@@ -291,7 +296,7 @@ export default function PerfilPage() {
               {/* Upload hint */}
               <p className={styles.uploadHint}>
                 <UploadIcon />
-                Haz clic en el icono de camara para cambiar tu foto
+                Haz clic en tu foto para cambiarla (JPG, PNG, max 5MB)
               </p>
             </div>
           </div>

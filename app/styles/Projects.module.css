@@ -54,6 +54,11 @@
   color: #8b5cf6;
 }
 
+.statusPlanificado {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+}
+
 .statusEnProgreso {
   background: rgba(0, 206, 209, 0.15);
   color: var(--turquoise);
@@ -67,6 +72,22 @@
 .statusCancelado {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
+}
+
+.statusCompletadoParcial {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.statusNoCompletado {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.statusNoPagado {
+  background: rgba(153, 27, 27, 0.2);
+  color: #dc2626;
+  font-weight: 700;
 }
 
 .projectDescription {
@@ -407,6 +428,262 @@
   margin-bottom: var(--space-4);
 }
 
+/* Confirmation Banner */
+.confirmationBanner {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(0, 206, 209, 0.1));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.confirmationContent {
+  text-align: center;
+}
+
+.confirmationTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.confirmationText {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: var(--space-4);
+}
+
+.confirmationActions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.rejectButton {
+  padding: var(--space-2) var(--space-4);
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.rejectButton:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.dangerButton {
+  padding: var(--space-2) var(--space-4);
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.dangerButton:hover {
+  background: #b91c1c;
+}
+
+.dangerButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-4);
+}
+
+.modalContent {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  max-width: 440px;
+  width: 100%;
+}
+
+.modalTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-4);
+}
+
+.formHint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+  display: block;
+}
+
+/* Bid Image Gallery */
+.bidGallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.bidThumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.bidThumbnail:hover {
+  border-color: var(--turquoise);
+  transform: scale(1.05);
+}
+
+.bidThumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Image Upload Area */
+.imageUploadArea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.imagePreview {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.imagePreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageRemoveBtn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: rgba(239, 68, 68, 0.9);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.imageAddBtn {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  border: 2px dashed var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.imageAddBtn:hover {
+  border-color: var(--turquoise);
+  color: var(--turquoise);
+}
+
+/* Creado Por Badge */
+.creadoPorBadge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}
+
+/* Requirement Action Buttons */
+.requirementActions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  margin-left: var(--space-2);
+}
+
+.reqActionBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+
+.reqActionBtn:hover {
+  border-color: var(--turquoise);
+  color: var(--turquoise);
+}
+
+.reqActionBtnDanger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Close Panel Form */
+.closePanelForm {
+  margin-top: var(--space-3);
+}
+
+/* Bid Agreed Amount */
+.bidAgreedAmount {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 /* Progress Bar */
 .progressContainer {
   margin-bottom: var(--space-4);
@@ -432,6 +709,240 @@
   background: var(--turquoise);
   border-radius: var(--radius-full);
   transition: width var(--transition-normal);
+}
+
+/* Team List (Accepted Members) */
+.teamList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.teamMember {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.teamMemberInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.teamMemberAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.teamMemberAvatarPlaceholder {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--turquoise);
+  flex-shrink: 0;
+  font-size: 0.95rem;
+}
+
+.teamMemberName {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.teamMemberRole {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.teamMemberMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.teamMemberMonto {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--turquoise);
+}
+
+.teamMemberStatus {
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.teamStatusConfirmed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.teamStatusRejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.teamStatusPending {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+/* Badge tipo de requerimiento */
+.reqTypeBadge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 500;
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}
+
+.reqTypeInicial {
+  background: rgba(0, 206, 209, 0.15);
+  color: var(--turquoise);
+}
+
+.reqTypeAdicional {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+}
+
+/* Avatar del completador */
+.reqCompletadoPorAvatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.reqCompletadoPorPlaceholder {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--turquoise);
+  flex-shrink: 0;
+}
+
+.reqCompletadoPorInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
+/* Republished badge */
+.republishedBadge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  margin-left: var(--space-2);
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Work finished status in team card */
+.teamWorkStatus {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: var(--space-1);
+}
+
+.teamWorkFinished {
+  color: #22c55e;
+}
+
+.teamWorkInProgress {
+  color: var(--text-muted);
+}
+
+/* Checkbox row for es_adicional */
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.checkboxRow input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--turquoise);
+  cursor: pointer;
+}
+
+.checkboxRow label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+/* Republish form */
+.republishForm {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+
+/* Finish work section */
+.finishWorkSection {
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+}
+
+.finishWorkDone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #22c55e;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.finishWorkDate {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 /* Responsive - Tablets */
@@ -705,4 +1216,149 @@
 
 :global([data-theme="light"]) .progressFill {
   background: #0891B2;
+}
+
+:global([data-theme="light"]) .confirmationBanner {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(8, 145, 178, 0.08));
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+:global([data-theme="light"]) .confirmationTitle {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .confirmationText {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .modalContent {
+  background: #FFFFFF;
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .modalTitle {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .formHint {
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .bidThumbnail {
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .imagePreview {
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .imageAddBtn {
+  border-color: #D1D5DB;
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .imageAddBtn:hover {
+  border-color: #0891B2;
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .creadoPorBadge {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+:global([data-theme="light"]) .reqActionBtn {
+  border-color: #E5E7EB;
+  color: #9CA3AF;
+}
+
+:global([data-theme="light"]) .reqActionBtn:hover {
+  border-color: #0891B2;
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .reqActionBtnDanger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+:global([data-theme="light"]) .bidAgreedAmount {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .teamMember {
+  background: #F9FAFB;
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .teamMemberAvatarPlaceholder {
+  background: #E5E7EB;
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .teamMemberName {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .teamMemberRole {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .teamMemberMeta {
+  border-top-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .teamMemberMonto {
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .reqTypeInicial {
+  background: rgba(8, 145, 178, 0.1);
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .reqTypeAdicional {
+  background: rgba(249, 115, 22, 0.1);
+  color: #ea580c;
+}
+
+:global([data-theme="light"]) .reqCompletadoPorPlaceholder {
+  background: #E5E7EB;
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .reqCompletadoPorInfo {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .republishedBadge {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+:global([data-theme="light"]) .teamWorkFinished {
+  color: #16a34a;
+}
+
+:global([data-theme="light"]) .teamWorkInProgress {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .checkboxRow label {
+  color: #374151;
+}
+
+:global([data-theme="light"]) .republishForm {
+  background: #F3F4F6;
+}
+
+:global([data-theme="light"]) .finishWorkSection {
+  background: #F3F4F6;
+}
+
+:global([data-theme="light"]) .finishWorkDone {
+  color: #16a34a;
+}
+
+:global([data-theme="light"]) .finishWorkDate {
+  color: #6B7280;
 }

@@ -15,15 +15,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const projectId = parseInt(id);
 
-    // Get project with relations
+    // Get project with client info
     const projectResult = await query(
       `SELECT
         p.*,
-        json_build_object('id', c.id, 'nombre', c.nombre, 'correo_electronico', c.correo_electronico) as cliente,
-        json_build_object('id', m.id, 'nombre', m.nombre, 'foto', m.foto) as miembro_asignado
+        json_build_object('id', c.id, 'nombre', c.nombre, 'correo_electronico', c.correo_electronico) as cliente
       FROM projects p
       LEFT JOIN clientes c ON p.id_cliente = c.id
-      LEFT JOIN miembros m ON p.id_miembro_asignado = m.id
       WHERE p.id = $1`,
       [projectId]
     );
@@ -32,7 +30,43 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
     }
 
-    // Get bids
+    const projectData = projectResult.rows[0];
+
+    // Visibility check for non-publicado states:
+    // After planificado, only the client owner and accepted members can see the project
+    const userResult = await query(
+      "SELECT rol, id_miembro FROM user_profiles WHERE id = $1",
+      [tokenData.userId]
+    );
+    const userRol = userResult.rows[0]?.rol;
+    const userMiembroId = userResult.rows[0]?.id_miembro;
+
+    if (["planificado", "en_progreso"].includes(projectData.estado) && userRol === "miembro") {
+      // When republicado, any member can view the project (like publicado)
+      if (!(projectData.estado === "en_progreso" && projectData.republicado === true)) {
+        const memberBid = await query(
+          "SELECT id FROM project_bids WHERE id_project = $1 AND id_miembro = $2 AND estado = 'aceptada'",
+          [projectId, userMiembroId]
+        );
+        if (memberBid.rows.length === 0) {
+          return NextResponse.json({ error: "No tienes acceso a este proyecto" }, { status: 403 });
+        }
+      }
+    }
+
+    // Get all accepted members (the "team")
+    const acceptedMembersResult = await query(
+      `SELECT pb.id as bid_id, pb.monto_acordado, pb.confirmado_por_miembro, pb.fecha_confirmacion,
+              pb.trabajo_finalizado, pb.fecha_trabajo_finalizado,
+              json_build_object('id', m.id, 'nombre', m.nombre, 'foto', m.foto, 'puesto', m.puesto) as miembro
+       FROM project_bids pb
+       LEFT JOIN miembros m ON pb.id_miembro = m.id
+       WHERE pb.id_project = $1 AND pb.estado = 'aceptada'
+       ORDER BY pb.fecha_aceptacion ASC`,
+      [projectId]
+    );
+
+    // Get all bids
     const bidsResult = await query(
       `SELECT pb.*, json_build_object('id', m.id, 'nombre', m.nombre, 'foto', m.foto, 'puesto', m.puesto) as miembro
        FROM project_bids pb
@@ -42,18 +76,24 @@ export async function GET(request: NextRequest, context: RouteContext) {
       [projectId]
     );
 
-    // Get requirements
+    // Get requirements with completado_por member info
     const requirementsResult = await query(
-      `SELECT * FROM project_requirements
-       WHERE id_project = $1
-       ORDER BY created_at ASC`,
+      `SELECT pr.*,
+        CASE WHEN pr.completado_por IS NOT NULL THEN
+          json_build_object('id', m.id, 'nombre', m.nombre, 'foto', m.foto)
+        ELSE NULL END as miembro_completado
+      FROM project_requirements pr
+      LEFT JOIN miembros m ON pr.completado_por = m.id
+      WHERE pr.id_project = $1
+      ORDER BY pr.created_at ASC`,
       [projectId]
     );
 
     return NextResponse.json({
-      project: projectResult.rows[0],
+      project: projectData,
       bids: bidsResult.rows,
       requirements: requirementsResult.rows,
+      accepted_members: acceptedMembersResult.rows,
     });
   } catch (error) {
     console.error("Error fetching project:", error);
@@ -73,6 +113,65 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const projectId = parseInt(id);
     const body = await request.json();
 
+    // Special action: planificar
+    if (body.action === "planificar") {
+      const projectCheck = await query("SELECT estado FROM projects WHERE id = $1", [projectId]);
+      if (projectCheck.rows.length === 0) {
+        return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
+      }
+      if (projectCheck.rows[0].estado !== "publicado") {
+        return NextResponse.json({ error: "Solo se puede planificar un proyecto publicado" }, { status: 400 });
+      }
+
+      // Check there's at least one accepted bid
+      const acceptedBids = await query(
+        "SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE confirmado_por_miembro = true) as confirmados FROM project_bids WHERE id_project = $1 AND estado = 'aceptada'",
+        [projectId]
+      );
+      const totalAccepted = parseInt(acceptedBids.rows[0].total);
+      const totalConfirmed = parseInt(acceptedBids.rows[0].confirmados);
+
+      if (totalAccepted === 0) {
+        return NextResponse.json({ error: "Debes aceptar al menos una postulación antes de planificar" }, { status: 400 });
+      }
+
+      if (totalConfirmed < totalAccepted) {
+        return NextResponse.json({ error: "Todos los miembros aceptados deben confirmar su participación antes de planificar" }, { status: 400 });
+      }
+
+      // Reject all remaining pending bids
+      await query(
+        "UPDATE project_bids SET estado = 'rechazada' WHERE id_project = $1 AND estado = 'pendiente'",
+        [projectId]
+      );
+
+      // Set project to planificado
+      await query(
+        "UPDATE projects SET estado = 'planificado', updated_at = NOW() WHERE id = $1",
+        [projectId]
+      );
+
+      return NextResponse.json({ success: true, message: "Proyecto planificado" });
+    }
+
+    // Special action: iniciar (planificado → en_progreso)
+    if (body.action === "iniciar") {
+      const projectCheck = await query("SELECT estado FROM projects WHERE id = $1", [projectId]);
+      if (projectCheck.rows.length === 0) {
+        return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
+      }
+      if (projectCheck.rows[0].estado !== "planificado") {
+        return NextResponse.json({ error: "Solo se puede iniciar un proyecto planificado" }, { status: 400 });
+      }
+
+      await query(
+        "UPDATE projects SET estado = 'en_progreso', updated_at = NOW() WHERE id = $1",
+        [projectId]
+      );
+
+      return NextResponse.json({ success: true, message: "Proyecto iniciado" });
+    }
+
     // Build dynamic update query
     const updates: string[] = [];
     const values: any[] = [];
@@ -85,7 +184,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       "presupuesto_max",
       "fecha_limite",
       "estado",
-      "id_miembro_asignado",
     ];
 
     for (const field of allowedFields) {

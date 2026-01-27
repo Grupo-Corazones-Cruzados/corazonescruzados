@@ -176,7 +176,7 @@ export default function NewProjectPage() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
               <div className={newTicketStyles.formGroup}>
-                <label className={newTicketStyles.formLabel}>Presupuesto Mínimo (MXN)</label>
+                <label className={newTicketStyles.formLabel}>Presupuesto Mínimo (USD)</label>
                 <input
                   type="number"
                   value={presupuestoMin}
@@ -189,7 +189,7 @@ export default function NewProjectPage() {
               </div>
 
               <div className={newTicketStyles.formGroup}>
-                <label className={newTicketStyles.formLabel}>Presupuesto Máximo (MXN)</label>
+                <label className={newTicketStyles.formLabel}>Presupuesto Máximo (USD)</label>
                 <input
                   type="number"
                   value={presupuestoMax}

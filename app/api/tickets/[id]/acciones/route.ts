@@ -16,7 +16,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const ticketId = parseInt(id);
 
     const result = await query(
-      `SELECT ta.*, json_build_object('id', a.id, 'nombre', a.nombre) as accion
+      `SELECT ta.*,
+              COALESCE(ta.horas_asignadas * ta.costo_hora, 0) as subtotal,
+              json_build_object('id', a.id, 'nombre', a.nombre) as accion
        FROM ticket_acciones ta
        LEFT JOIN acciones a ON ta.id_accion = a.id
        WHERE ta.id_ticket = $1`,

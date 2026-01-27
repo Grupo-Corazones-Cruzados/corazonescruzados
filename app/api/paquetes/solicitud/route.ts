@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
-// POST /api/paquetes/solicitud - Create a package request
+function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
+  return "unknown";
+}
+
+// POST /api/paquetes/solicitud - Create a package request (1 per IP without account)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -12,6 +20,33 @@ export async function POST(request: NextRequest) {
         { error: "Faltan campos requeridos" },
         { status: 400 }
       );
+    }
+
+    const clientIp = getClientIP(request);
+
+    // Check if this IP already has a paquete request
+    if (clientIp !== "unknown") {
+      const existing = await query(
+        "SELECT id FROM tickets_paquetes WHERE ip_address = $1 LIMIT 1",
+        [clientIp]
+      );
+
+      if (existing.rows.length > 0) {
+        const hasAccount = await query(
+          "SELECT id FROM user_profiles WHERE LOWER(email) = LOWER($1) LIMIT 1",
+          [correo]
+        );
+
+        if (hasAccount.rows.length === 0) {
+          return NextResponse.json(
+            {
+              error: "Ya has solicitado un paquete. Para solicitar mas, crea una cuenta primero.",
+              code: "ACCOUNT_REQUIRED",
+            },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // Get or create client
@@ -25,7 +60,6 @@ export async function POST(request: NextRequest) {
     if (existingClient.rows.length > 0) {
       clienteId = existingClient.rows[0].id;
     } else {
-      // Create new client
       const newClient = await query(
         `INSERT INTO clientes (nombre, contacto, correo_electronico, id_miembro)
          VALUES ($1, $2, $3, $4)
@@ -33,33 +67,33 @@ export async function POST(request: NextRequest) {
         [`${nombre} ${apellido}`.trim(), telefono, correo, miembroId]
       );
       clienteId = newClient.rows[0].id;
-
-      // Trigger Power Automate webhook (optional, don't fail if it fails)
-      try {
-        await fetch(
-          "https://ecc5f0d6fde7ef24ade927ef544fe2.0d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ad41a7f54b1c4c2f9cc987193a8b5496/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KzX_ss8H8PkgEBKXqBA2R_Up8CFesQrJ08MSs6fwiXM",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              nombre,
-              apellido,
-              correo,
-              contacto: telefono,
-            }),
-          }
-        );
-      } catch (err) {
-        console.warn("Power Automate webhook falló (continuando):", err);
-      }
     }
 
-    // Create tickets_paquetes record
+    // Create tickets_paquetes record with IP
     await query(
-      `INSERT INTO tickets_paquetes (id_paquete, id_miembro, id_cliente)
-       VALUES ($1, $2, $3)`,
-      [paqueteId, miembroId, clienteId]
+      `INSERT INTO tickets_paquetes (id_paquete, id_miembro, id_cliente, ip_address)
+       VALUES ($1, $2, $3, $4)`,
+      [paqueteId, miembroId, clienteId, clientIp !== "unknown" ? clientIp : null]
     );
+
+    // Power Automate webhook — only after successful creation
+    try {
+      await fetch(
+        "https://ecc5f0d6fde7ef24ade927ef544fe2.0d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ad41a7f54b1c4c2f9cc987193a8b5496/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=KzX_ss8H8PkgEBKXqBA2R_Up8CFesQrJ08MSs6fwiXM",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nombre,
+            apellido,
+            correo,
+            contacto: telefono,
+          }),
+        }
+      );
+    } catch (err) {
+      console.warn("Power Automate webhook fallo (continuando):", err);
+    }
 
     return NextResponse.json({ success: true, clienteId });
   } catch (error) {

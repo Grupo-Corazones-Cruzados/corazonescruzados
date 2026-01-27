@@ -55,8 +55,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ projects: [] });
       }
     } else if (rol === "miembro" && id_miembro) {
-      // Members see published projects or assigned to them
-      sql += ` AND (p.estado = 'publicado' OR p.id_miembro_asignado = $${paramIndex})`;
+      // Members see published projects OR projects where they have an accepted bid
+      sql += ` AND (p.estado = 'publicado' OR EXISTS (SELECT 1 FROM project_bids pb WHERE pb.id_project = p.id AND pb.id_miembro = $${paramIndex} AND pb.estado = 'aceptada'))`;
       params.push(id_miembro);
       paramIndex++;
     }

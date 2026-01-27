@@ -22,6 +22,7 @@ const ModalPaquete: React.FC<ModalPaqueteProps> = ({ isOpen, onClose, miembro, p
   const [costoBaseMiembro, setCostoBaseMiembro] = useState(0);
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [accountRequired, setAccountRequired] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   // Para que createPortal funcione en SSR
@@ -149,6 +150,11 @@ Mis datos:
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.code === "ACCOUNT_REQUIRED") {
+          setAccountRequired(true);
+          setSending(false);
+          return;
+        }
         throw new Error(data.error || "Error al crear la solicitud");
       }
 
@@ -248,84 +254,118 @@ Mis datos:
 
           {/* Derecha */}
           <div className={styles.ColumnaDerecha}>
-            <div className={styles.FormHeader}>
-              <div className={styles.FormTitle}>Tus datos</div>
-              <div className={styles.FormSub}>
-                Completa el formulario para generar la solicitud del paquete.
+            {accountRequired ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", padding: "40px 20px" }}>
+                <div style={{
+                  width: "56px", height: "56px",
+                  background: "rgba(220, 38, 38, 0.1)", borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  marginBottom: "16px",
+                }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="M12 8v4" />
+                    <path d="M12 16h.01" />
+                  </svg>
+                </div>
+                <h3 style={{ fontSize: "1.1rem", marginBottom: "8px" }}>Crea una cuenta para continuar</h3>
+                <p style={{ color: "var(--text-muted, #6b7280)", fontSize: "0.9rem", marginBottom: "20px", lineHeight: 1.5 }}>
+                  Ya solicitaste un paquete anteriormente. Para solicitar mas, necesitas una cuenta registrada.
+                </p>
+                <a href="/auth" className={styles.FormBtn} style={{ display: "inline-block", textDecoration: "none", textAlign: "center" }}>
+                  Crear cuenta
+                </a>
+                <button type="button" onClick={() => { window.location.href = "/auth"; }} style={{
+                  display: "block", width: "100%", marginTop: "10px",
+                  background: "none", border: "none",
+                  color: "var(--text-muted, #6b7280)", fontSize: "0.85rem",
+                  cursor: "pointer", textDecoration: "underline",
+                }}>
+                  Ya tengo cuenta, iniciar sesion
+                </button>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className={styles.FormHeader}>
+                  <div className={styles.FormTitle}>Tus datos</div>
+                  <div className={styles.FormSub}>
+                    Completa el formulario para generar la solicitud del paquete.
+                  </div>
+                </div>
 
-            <form className={styles.Form} onSubmit={handleSubmit}>
-              <label className={styles.Field}>
-                <span>Nombre</span>
-                <input
-                  required
-                  type="text"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  placeholder="Tu nombre"
-                />
-              </label>
+                <form className={styles.Form} onSubmit={handleSubmit}>
+                  <label className={styles.Field}>
+                    <span>Nombre</span>
+                    <input
+                      required
+                      type="text"
+                      value={formData.nombre}
+                      onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                      placeholder="Tu nombre"
+                    />
+                  </label>
 
-              <label className={styles.Field}>
-                <span>Apellido</span>
-                <input
-                  required
-                  type="text"
-                  value={formData.apellido}
-                  onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
-                  placeholder="Tu apellido"
-                />
-              </label>
+                  <label className={styles.Field}>
+                    <span>Apellido</span>
+                    <input
+                      required
+                      type="text"
+                      value={formData.apellido}
+                      onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
+                      placeholder="Tu apellido"
+                    />
+                  </label>
 
-              <label className={styles.Field}>
-                <span>Correo</span>
-                <input
-                  required
-                  type="email"
-                  value={formData.correo}
-                  onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
-                  placeholder="tucorreo@dominio.com"
-                />
-              </label>
+                  <label className={styles.Field}>
+                    <span>Correo</span>
+                    <input
+                      required
+                      type="email"
+                      value={formData.correo}
+                      onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
+                      placeholder="tucorreo@dominio.com"
+                    />
+                  </label>
 
-              <label className={styles.Field}>
-                <span>Teléfono</span>
-                <input
-                  required
-                  type="tel"
-                  value={formData.telefono}
-                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                  placeholder="+593..."
-                />
-              </label>
+                  <label className={styles.Field}>
+                    <span>Telefono</span>
+                    <input
+                      required
+                      type="tel"
+                      value={formData.telefono}
+                      onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                      placeholder="+593..."
+                    />
+                  </label>
 
-              <label className={styles.Field}>
-                <span>Costo por hora negociable</span>
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  value={formData.costoNegociado}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      costoNegociado: Number(e.target.value) || 0,
-                    })
-                  }
-                />
-              </label>
+                  <label className={styles.Field}>
+                    <span>Costo por hora negociable</span>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      value={formData.costoNegociado}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          costoNegociado: Number(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </label>
 
-              {errorMsg && <div className={styles.FormError}>{errorMsg}</div>}
+                  {errorMsg && <div className={styles.FormError}>{errorMsg}</div>}
 
-              <button className={styles.FormBtn} type="submit" disabled={!canSubmit}>
-                {sending ? "Enviando…" : "Enviar solicitud"}
-              </button>
+                  <button className={styles.FormBtn} type="submit" disabled={!canSubmit}>
+                    {sending ? "Enviando..." : "Enviar solicitud"}
+                  </button>
 
-              <div className={styles.FormHint}>
-                Al enviar, se guardará la solicitud y se abrirá WhatsApp con el mensaje listo.
-              </div>
-            </form>
+                  <div className={styles.FormHint}>
+                    Al enviar, se guardara la solicitud y se abrira WhatsApp con el mensaje listo.
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>

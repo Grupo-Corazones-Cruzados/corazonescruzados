@@ -69,6 +69,8 @@ export interface TicketFilters {
   search: string;
   estado: string;
   miembro: number | null;
+  view?: string;
+  cliente?: number | null;
 }
 
 export interface TicketStats {
@@ -101,6 +103,8 @@ export function useTickets() {
       if (filters?.search) params.append("search", filters.search);
       if (filters?.estado && filters.estado !== "todos") params.append("estado", filters.estado);
       if (filters?.miembro) params.append("miembro", filters.miembro.toString());
+      if (filters?.view) params.append("view", filters.view);
+      if (filters?.cliente) params.append("cliente", filters.cliente.toString());
 
       const response = await fetch(`/api/tickets?${params.toString()}`);
       const data = await response.json();

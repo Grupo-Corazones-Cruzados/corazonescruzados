@@ -10,6 +10,12 @@ const AUTH_ROUTES = ["/auth"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Skip blocked page to avoid redirect loop
+  if (pathname === "/blocked") {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get("auth_token")?.value;
 
   // Check if route needs protection
@@ -52,7 +58,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files (public folder)
+     * - blocked page (to avoid redirect loop)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public|blocked).*)",
   ],
 };

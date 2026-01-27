@@ -102,6 +102,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(data.error || "Error al registrarse");
       }
 
+      // If verification is required, don't set the user yet
+      if (data.requiresVerification) {
+        setLoading(false);
+        return { success: true, data, requiresVerification: true };
+      }
+
       setUser(data.user);
       setLoading(false);
       return { success: true, data };

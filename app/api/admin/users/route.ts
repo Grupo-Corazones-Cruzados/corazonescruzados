@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     // Verify user is admin
     const userResult = await query(
-      `SELECT rol FROM user_profiles WHERE user_id = $1`,
+      `SELECT rol FROM user_profiles WHERE id = $1`,
       [tokenData.userId]
     );
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     let paramIndex = 1;
 
     if (search) {
-      whereClause += ` AND (up.email ILIKE $${paramIndex} OR up.nombre ILIKE $${paramIndex})`;
+      whereClause += ` AND (up.email ILIKE $${paramIndex} OR up.nombre ILIKE $${paramIndex} OR up.apellido ILIKE $${paramIndex})`;
       params.push(`%${search}%`);
       paramIndex++;
     }
@@ -49,18 +49,26 @@ export async function GET(request: NextRequest) {
       params
     );
 
-    // Get users
+    // Get users with miembro info
     const usersResult = await query(
       `SELECT
         up.id,
-        up.user_id,
         up.email,
         up.nombre,
+        up.apellido,
+        up.telefono,
+        up.avatar_url,
         up.rol,
         up.verificado,
+        up.id_miembro,
         up.created_at,
-        up.foto_perfil
+        up.bloqueado,
+        up.bloqueado_en,
+        up.motivo_bloqueo,
+        m.nombre as miembro_nombre,
+        m.puesto as miembro_puesto
       FROM user_profiles up
+      LEFT JOIN miembros m ON up.id_miembro = m.id
       ${whereClause}
       ORDER BY up.created_at DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
@@ -85,7 +93,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PATCH /api/admin/users - Update user role or verification
+// PATCH /api/admin/users - Update user data
 export async function PATCH(request: NextRequest) {
   try {
     const tokenData = await getCurrentUser();
@@ -95,7 +103,7 @@ export async function PATCH(request: NextRequest) {
 
     // Verify user is admin
     const adminResult = await query(
-      `SELECT rol FROM user_profiles WHERE user_id = $1`,
+      `SELECT rol FROM user_profiles WHERE id = $1`,
       [tokenData.userId]
     );
 
@@ -104,7 +112,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, rol, verificado } = body;
+    const { userId, rol, verificado, nombre, apellido, telefono, id_miembro } = body;
 
     if (!userId) {
       return NextResponse.json(
@@ -133,6 +141,30 @@ export async function PATCH(request: NextRequest) {
       paramIndex++;
     }
 
+    if (nombre !== undefined) {
+      updates.push(`nombre = $${paramIndex}`);
+      params.push(nombre || null);
+      paramIndex++;
+    }
+
+    if (apellido !== undefined) {
+      updates.push(`apellido = $${paramIndex}`);
+      params.push(apellido || null);
+      paramIndex++;
+    }
+
+    if (telefono !== undefined) {
+      updates.push(`telefono = $${paramIndex}`);
+      params.push(telefono || null);
+      paramIndex++;
+    }
+
+    if (id_miembro !== undefined) {
+      updates.push(`id_miembro = $${paramIndex}`);
+      params.push(id_miembro || null);
+      paramIndex++;
+    }
+
     if (updates.length === 0) {
       return NextResponse.json(
         { error: "Nada que actualizar" },
@@ -143,9 +175,9 @@ export async function PATCH(request: NextRequest) {
     params.push(userId);
     const result = await query(
       `UPDATE user_profiles
-       SET ${updates.join(", ")}, updated_at = NOW()
-       WHERE user_id = $${paramIndex}
-       RETURNING id, user_id, email, nombre, rol, verificado`,
+       SET ${updates.join(", ")}
+       WHERE id = $${paramIndex}
+       RETURNING id, email, nombre, apellido, telefono, avatar_url, rol, verificado, id_miembro, created_at`,
       params
     );
 

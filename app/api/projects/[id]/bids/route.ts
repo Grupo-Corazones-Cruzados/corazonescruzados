@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query, transaction } from "@/lib/db";
+import { query } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/jwt";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -42,12 +42,41 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const projectId = parseInt(id);
     const body = await request.json();
-    const { id_miembro, propuesta, precio_ofertado, tiempo_estimado_dias } = body;
+    const { id_miembro, propuesta, precio_ofertado, tiempo_estimado_dias, imagenes } = body;
 
     if (!id_miembro || !propuesta || !precio_ofertado) {
       return NextResponse.json(
         { error: "Miembro, propuesta y precio ofertado son requeridos" },
         { status: 400 }
+      );
+    }
+
+    // Check project is still accepting bids (publicado or en_progreso+republicado)
+    const projectCheck = await query(
+      "SELECT estado, republicado FROM projects WHERE id = $1",
+      [projectId]
+    );
+    if (projectCheck.rows.length === 0) {
+      return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
+    }
+    const isAcceptingBids = projectCheck.rows[0].estado === "publicado" ||
+      (projectCheck.rows[0].estado === "en_progreso" && projectCheck.rows[0].republicado === true);
+    if (!isAcceptingBids) {
+      return NextResponse.json(
+        { error: "Este proyecto ya no acepta postulaciones" },
+        { status: 400 }
+      );
+    }
+
+    // Check if member is restricted from projects
+    const miembroCheck = await query(
+      "SELECT restringido_proyectos FROM miembros WHERE id = $1",
+      [id_miembro]
+    );
+    if (miembroCheck.rows.length > 0 && miembroCheck.rows[0].restringido_proyectos) {
+      return NextResponse.json(
+        { error: "Tu cuenta está restringida para proyectos. Contacta al administrador." },
+        { status: 403 }
       );
     }
 
@@ -65,10 +94,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const result = await query(
-      `INSERT INTO project_bids (id_project, id_miembro, propuesta, precio_ofertado, tiempo_estimado_dias, estado)
-       VALUES ($1, $2, $3, $4, $5, 'pendiente')
+      `INSERT INTO project_bids (id_project, id_miembro, propuesta, precio_ofertado, tiempo_estimado_dias, estado, imagenes)
+       VALUES ($1, $2, $3, $4, $5, 'pendiente', $6::jsonb)
        RETURNING *`,
-      [projectId, id_miembro, propuesta, precio_ofertado, tiempo_estimado_dias]
+      [projectId, id_miembro, propuesta, precio_ofertado, tiempo_estimado_dias, JSON.stringify(imagenes || [])]
     );
 
     return NextResponse.json({ bid: result.rows[0] });
@@ -89,7 +118,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const projectId = parseInt(id);
     const body = await request.json();
-    const { bidId, action } = body;
+    const { bidId, action, monto_acordado } = body;
 
     if (!bidId || !action) {
       return NextResponse.json(
@@ -99,37 +128,35 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     if (action === "accept") {
-      await transaction(async (client) => {
-        // Get the bid
-        const bidResult = await client.query(
-          "SELECT id_miembro FROM project_bids WHERE id = $1",
-          [bidId]
+      if (monto_acordado === undefined || monto_acordado === null) {
+        return NextResponse.json(
+          { error: "Monto acordado es requerido al aceptar" },
+          { status: 400 }
         );
+      }
 
-        if (bidResult.rows.length === 0) {
-          throw new Error("Postulación no encontrada");
-        }
-
-        const miembroId = bidResult.rows[0].id_miembro;
-
-        // Accept this bid
-        await client.query(
-          "UPDATE project_bids SET estado = 'aceptada' WHERE id = $1",
-          [bidId]
+      // Verify project is still accepting bids (publicado or en_progreso+republicado)
+      const projectCheck = await query(
+        "SELECT estado, republicado FROM projects WHERE id = $1",
+        [projectId]
+      );
+      if (projectCheck.rows.length === 0) {
+        return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
+      }
+      const canAcceptBids = projectCheck.rows[0].estado === "publicado" ||
+        (projectCheck.rows[0].estado === "en_progreso" && projectCheck.rows[0].republicado === true);
+      if (!canAcceptBids) {
+        return NextResponse.json(
+          { error: "El proyecto ya no acepta postulaciones" },
+          { status: 400 }
         );
+      }
 
-        // Reject other bids
-        await client.query(
-          "UPDATE project_bids SET estado = 'rechazada' WHERE id_project = $1 AND id != $2",
-          [projectId, bidId]
-        );
-
-        // Update project
-        await client.query(
-          "UPDATE projects SET estado = 'asignado', id_miembro_asignado = $1, updated_at = NOW() WHERE id = $2",
-          [miembroId, projectId]
-        );
-      });
+      // Accept this bid with monto_acordado — do NOT reject other bids or change project state
+      await query(
+        "UPDATE project_bids SET estado = 'aceptada', monto_acordado = $1, fecha_aceptacion = NOW() WHERE id = $2",
+        [monto_acordado, bidId]
+      );
 
       return NextResponse.json({ success: true });
     } else if (action === "reject") {

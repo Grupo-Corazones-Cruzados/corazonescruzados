@@ -259,27 +259,25 @@
   border-radius: var(--radius-md);
 }
 
-.hoursLabel {
-  display: block;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+.hoursRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
   margin-bottom: var(--space-2);
 }
 
-.hoursInput {
-  width: 100%;
-  max-width: 200px;
-  padding: var(--space-3);
-  background: var(--surface-2);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 1rem;
+.hoursLabel {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
 }
 
-.hoursInput:focus {
-  outline: none;
-  border-color: var(--turquoise);
+.hoursValue {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--turquoise);
 }
 
 /* Form Fields */
@@ -801,18 +799,16 @@
   border-color: #E5E7EB;
 }
 
+:global([data-theme="light"]) .hoursRow {
+  background: #F3F4F6;
+}
+
 :global([data-theme="light"]) .hoursLabel {
   color: #6B7280;
 }
 
-:global([data-theme="light"]) .hoursInput {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
-  color: #111827;
-}
-
-:global([data-theme="light"]) .hoursInput:focus {
-  border-color: #0891B2;
+:global([data-theme="light"]) .hoursValue {
+  color: #0891B2;
 }
 
 :global([data-theme="light"]) .formLabel {

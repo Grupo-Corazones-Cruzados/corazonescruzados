@@ -58,10 +58,18 @@ const STEPS = [
 ];
 
 const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("es-MX", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "MXN",
+    currency: "USD",
   }).format(amount);
+};
+
+const formatHours = (hours: number): string => {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
 };
 
 const formatSlotDate = (dateString: string): string => {
@@ -94,29 +102,22 @@ export default function NewTicketPage() {
   const [titulo, setTitulo] = useState("");
   const [detalle, setDetalle] = useState("");
 
-  // Load initial data
+  // Load initial data (members and client)
   useEffect(() => {
     const loadData = async () => {
       if (!isAuthenticated) return;
 
       try {
-        // Load members, actions, and client in parallel
-        const [membersRes, actionsRes, clientRes] = await Promise.all([
+        const [membersRes, clientRes] = await Promise.all([
           fetch("/api/members"),
-          fetch("/api/actions"),
           fetch("/api/my-client"),
         ]);
 
         const membersData = await membersRes.json();
-        const actionsData = await actionsRes.json();
         const clientData = await clientRes.json();
 
         if (membersRes.ok && membersData.members) {
           setMiembros(membersData.members);
-        }
-
-        if (actionsRes.ok && actionsData.actions) {
-          setAcciones(actionsData.actions);
         }
 
         if (clientRes.ok && clientData.clientId) {
@@ -132,15 +133,61 @@ export default function NewTicketPage() {
     loadData();
   }, [isAuthenticated, profile]);
 
+  // Load actions when a member is selected
+  useEffect(() => {
+    if (!selectedMiembro) {
+      setAcciones([]);
+      return;
+    }
+
+    const loadActions = async () => {
+      try {
+        const res = await fetch(`/api/actions?miembro=${selectedMiembro.id}`);
+        const data = await res.json();
+        if (res.ok && data.actions) {
+          setAcciones(data.actions);
+        }
+      } catch (error) {
+        console.error("Error loading actions:", error);
+      }
+    };
+
+    // Reset selected actions when member changes
+    setSelectedAcciones([]);
+    setHoursPerAction({});
+    loadActions();
+  }, [selectedMiembro]);
+
+  // Calculate total hours from selected time slots
+  const totalSlotHours = selectedSlots.reduce((total, slot) => {
+    const [startH, startM] = slot.hora_inicio.split(":").map(Number);
+    const [endH, endM] = slot.hora_fin.split(":").map(Number);
+    const duration = (endH * 60 + endM - (startH * 60 + startM)) / 60;
+    return total + duration;
+  }, 0);
+
+  // Auto-distribute slot hours equally among selected actions
+  useEffect(() => {
+    if (selectedAcciones.length === 0 || totalSlotHours === 0) {
+      setHoursPerAction({});
+      return;
+    }
+    const hoursEach = Math.round((totalSlotHours / selectedAcciones.length) * 100) / 100;
+    const newHours: Record<number, number> = {};
+    selectedAcciones.forEach((id) => {
+      newHours[id] = hoursEach;
+    });
+    setHoursPerAction(newHours);
+  }, [selectedAcciones, totalSlotHours]);
+
   // Calculate quote
   const calculateQuote = () => {
     if (!selectedMiembro) return { hours: 0, total: 0 };
 
-    const totalHours = Object.values(hoursPerAction).reduce((sum, h) => sum + (h || 0), 0);
     const hourlyRate = selectedMiembro.costo || 0;
-    const total = totalHours * hourlyRate;
+    const total = totalSlotHours * hourlyRate;
 
-    return { hours: totalHours, total };
+    return { hours: totalSlotHours, total };
   };
 
   const quote = calculateQuote();
@@ -153,7 +200,7 @@ export default function NewTicketPage() {
       case 2:
         return selectedSlots.length > 0;
       case 3:
-        return selectedAcciones.length > 0 && quote.hours > 0;
+        return selectedAcciones.length > 0;
       case 4:
         return titulo.trim().length > 0;
       case 5:
@@ -178,12 +225,8 @@ export default function NewTicketPage() {
   const handleAccionToggle = (accionId: number) => {
     if (selectedAcciones.includes(accionId)) {
       setSelectedAcciones(selectedAcciones.filter((id) => id !== accionId));
-      const newHours = { ...hoursPerAction };
-      delete newHours[accionId];
-      setHoursPerAction(newHours);
     } else {
       setSelectedAcciones([...selectedAcciones, accionId]);
-      setHoursPerAction({ ...hoursPerAction, [accionId]: 1 });
     }
   };
 
@@ -376,26 +419,14 @@ export default function NewTicketPage() {
               {selectedAcciones.length > 0 && (
                 <div className={styles.hoursInputGroup}>
                   <p style={{ marginBottom: "var(--space-3)", color: "var(--text-secondary)" }}>
-                    Indica las horas estimadas por servicio:
+                    Horas asignadas según horarios seleccionados ({formatHours(totalSlotHours)} total):
                   </p>
                   {selectedAcciones.map((accionId) => {
                     const accion = acciones.find((a) => a.id === accionId);
                     return (
-                      <div key={accionId} style={{ marginBottom: "var(--space-3)" }}>
-                        <label className={styles.hoursLabel}>{accion?.nombre}</label>
-                        <input
-                          type="number"
-                          min="0.5"
-                          step="0.5"
-                          value={hoursPerAction[accionId] || 1}
-                          onChange={(e) =>
-                            setHoursPerAction({
-                              ...hoursPerAction,
-                              [accionId]: parseFloat(e.target.value) || 0,
-                            })
-                          }
-                          className={styles.hoursInput}
-                        />
+                      <div key={accionId} className={styles.hoursRow}>
+                        <span className={styles.hoursLabel}>{accion?.nombre}</span>
+                        <span className={styles.hoursValue}>{formatHours(hoursPerAction[accionId] || 0)}</span>
                       </div>
                     );
                   })}
@@ -408,7 +439,7 @@ export default function NewTicketPage() {
                   <h3 className={styles.quoteTitle}>Cotización Estimada</h3>
                   <div className={styles.quoteRow}>
                     <span className={styles.quoteLabel}>Horas totales</span>
-                    <span className={styles.quoteValue}>{quote.hours}h</span>
+                    <span className={styles.quoteValue}>{formatHours(quote.hours)}</span>
                   </div>
                   <div className={styles.quoteRow}>
                     <span className={styles.quoteLabel}>Tarifa por hora</span>
@@ -484,7 +515,7 @@ export default function NewTicketPage() {
                       const accion = acciones.find((a) => a.id === id);
                       return (
                         <div key={id}>
-                          {accion?.nombre} - {hoursPerAction[id]}h
+                          {accion?.nombre} - {formatHours(hoursPerAction[id] || 0)}
                         </div>
                       );
                     })}

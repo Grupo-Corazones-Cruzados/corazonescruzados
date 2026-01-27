@@ -39,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <meta name="facebook-domain-verification" content="fpstuupko3u36nano9u9wp1151bvs3" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>

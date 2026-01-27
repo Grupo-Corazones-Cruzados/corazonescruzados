@@ -71,13 +71,18 @@ export default function Formulario2({ visible, onClose, setVisible }: Props) {
 
       if (!response.ok) {
         const data = await response.json();
-        console.error("Error al guardar:", data.error);
-        setErrorMsg("Ocurrió un error al enviar. Intenta nuevamente.");
+        if (data.code === "ALREADY_SUBMITTED") {
+          setSuccessMsg("Ya enviaste una solicitud anteriormente. Pronto nos pondremos en contacto.");
+          setMotivo("");
+        } else {
+          console.error("Error al guardar:", data.error);
+          setErrorMsg("Ocurrio un error al enviar. Intenta nuevamente.");
+        }
         return;
       }
 
       setMotivo("");
-      setSuccessMsg("¡Listo! Recibimos tu información. Pronto nos pondremos en contacto.");
+      setSuccessMsg("Listo! Recibimos tu informacion. Pronto nos pondremos en contacto.");
     } catch (error) {
       setSending(false);
       console.error("Error al guardar:", error);

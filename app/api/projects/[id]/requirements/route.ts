@@ -40,17 +40,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const projectId = parseInt(id);
     const body = await request.json();
-    const { titulo, descripcion, costo } = body;
+    const { titulo, descripcion, costo, es_adicional } = body;
 
     if (!titulo) {
       return NextResponse.json({ error: "Título es requerido" }, { status: 400 });
     }
 
+    // Determine creado_por based on user role
+    const userResult = await query(
+      "SELECT rol FROM user_profiles WHERE id = $1",
+      [tokenData.userId]
+    );
+    const rol = userResult.rows[0]?.rol || "cliente";
+    const creado_por = rol === "miembro" || rol === "admin" ? "miembro" : "cliente";
+
     const result = await query(
-      `INSERT INTO project_requirements (id_project, titulo, descripcion, costo, completado)
-       VALUES ($1, $2, $3, $4, false)
+      `INSERT INTO project_requirements (id_project, titulo, descripcion, costo, completado, creado_por, es_adicional)
+       VALUES ($1, $2, $3, $4, false, $5, $6)
        RETURNING *`,
-      [projectId, titulo, descripcion || null, costo || null]
+      [projectId, titulo, descripcion || null, costo || null, creado_por, es_adicional === true]
     );
 
     return NextResponse.json({ requirement: result.rows[0] });
@@ -75,12 +83,32 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "ID del requerimiento es requerido" }, { status: 400 });
     }
 
+    // Get user role and the requirement's creado_por
+    const userResult = await query(
+      "SELECT rol, id_miembro FROM user_profiles WHERE id = $1",
+      [tokenData.userId]
+    );
+    const rol = userResult.rows[0]?.rol || "cliente";
+
+    const reqResult = await query(
+      "SELECT creado_por FROM project_requirements WHERE id = $1",
+      [requirementId]
+    );
+    if (reqResult.rows.length === 0) {
+      return NextResponse.json({ error: "Requerimiento no encontrado" }, { status: 404 });
+    }
+
+    // Permission check: client can only edit their own requirements
+    if (rol === "cliente" && reqResult.rows[0].creado_por !== "cliente") {
+      return NextResponse.json({ error: "No tienes permiso para editar este requerimiento" }, { status: 403 });
+    }
+
     // Build dynamic update query
     const updateFields: string[] = [];
     const values: any[] = [];
     let paramIndex = 1;
 
-    const allowedFields = ["titulo", "descripcion", "costo", "completado"];
+    const allowedFields = ["titulo", "descripcion", "costo", "completado", "es_adicional"];
 
     for (const field of allowedFields) {
       if (updates[field] !== undefined) {
@@ -90,13 +118,22 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       }
     }
 
-    // If completing, set completion date
+    // If completing, set completion date and completado_por
     if (updates.completado === true) {
       updateFields.push(`fecha_completado = $${paramIndex}`);
       values.push(new Date().toISOString());
       paramIndex++;
+
+      // Set completado_por to the member who completed it
+      const userMiembroId = userResult.rows[0]?.id_miembro;
+      if (userMiembroId) {
+        updateFields.push(`completado_por = $${paramIndex}`);
+        values.push(userMiembroId);
+        paramIndex++;
+      }
     } else if (updates.completado === false) {
       updateFields.push(`fecha_completado = NULL`);
+      updateFields.push(`completado_por = NULL`);
     }
 
     if (updateFields.length === 0) {
@@ -125,6 +162,17 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const tokenData = await getCurrentUser();
     if (!tokenData) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
+
+    // Only members and admins can delete requirements
+    const userResult = await query(
+      "SELECT rol FROM user_profiles WHERE id = $1",
+      [tokenData.userId]
+    );
+    const rol = userResult.rows[0]?.rol || "cliente";
+
+    if (rol === "cliente") {
+      return NextResponse.json({ error: "No tienes permiso para eliminar requerimientos" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);

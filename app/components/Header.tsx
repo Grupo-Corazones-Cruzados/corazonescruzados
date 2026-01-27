@@ -221,6 +221,20 @@ const Header = () => {
                   </svg>
                   Panel de gestión
                 </button>
+                {profile?.rol === "miembro" && (
+                  <button
+                    className={styles.UserDropdownItem}
+                    onClick={() => {
+                      router.push("/dashboard/miembro");
+                      setUserMenuOpen(false);
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Mi Espacio
+                  </button>
+                )}
                 <div className={styles.UserDropdownDivider} />
                 <button
                   className={`${styles.UserDropdownItem} ${styles.UserDropdownItemDanger}`}

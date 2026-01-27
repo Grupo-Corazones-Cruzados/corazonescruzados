@@ -108,21 +108,21 @@ export function useMemberAvailability(miembroId: number | null) {
         ];
       }
 
-      // Si no hay disponibilidad configurada, usar horario por defecto (9:00 - 18:00) de lunes a viernes
+      // Si no hay disponibilidad configurada, usar horario por defecto (7:30 - 22:00) de lunes a viernes
       if (dayAvailability.length === 0 && dayOfWeek >= 1 && dayOfWeek <= 5) {
         dayAvailability = [
           {
             id: 0,
             id_miembro: miembroId || 0,
             dia_semana: dayOfWeek,
-            hora_inicio: "09:00",
-            hora_fin: "18:00",
+            hora_inicio: "07:30",
+            hora_fin: "22:00",
             activo: true,
           },
         ];
       }
 
-      // Generate 1-hour slots from availability
+      // Generate 30-minute slots from availability
       const slots: TimeSlot[] = [];
 
       dayAvailability.forEach((avail) => {
@@ -135,9 +135,13 @@ export function useMemberAvailability(miembroId: number | null) {
         while (currentHour < endHour || (currentHour === endHour && currentMin < endMin)) {
           const slotStart = `${String(currentHour).padStart(2, "0")}:${String(currentMin).padStart(2, "0")}`;
 
-          // Next hour
-          let nextHour = currentHour + 1;
-          let nextMin = currentMin;
+          // Next slot: 30 minutes later
+          let nextMin = currentMin + 30;
+          let nextHour = currentHour;
+          if (nextMin >= 60) {
+            nextMin -= 60;
+            nextHour += 1;
+          }
           if (nextHour > endHour || (nextHour === endHour && nextMin > endMin)) {
             nextHour = endHour;
             nextMin = endMin;

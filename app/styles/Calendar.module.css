@@ -124,13 +124,14 @@
 }
 
 .daySelected {
-  background: var(--turquoise);
-  color: var(--black);
+  background: var(--turquoise) !important;
+  color: #0A0A0A !important;
   font-weight: 600;
 }
 
 .daySelected:hover {
-  background: #00b5b8;
+  background: #00b5b8 !important;
+  color: #0A0A0A !important;
 }
 
 .dayHasAvailability::after {
@@ -196,10 +197,14 @@
 }
 
 .timeSlotSelected {
-  background: var(--turquoise);
-  border-color: var(--turquoise);
-  color: var(--black);
+  background: var(--turquoise) !important;
+  border-color: var(--turquoise) !important;
+  color: #0A0A0A !important;
   font-weight: 600;
+}
+
+.timeSlotSelected:hover {
+  color: #0A0A0A !important;
 }
 
 .timeSlotDisabled {
@@ -608,12 +613,13 @@
 }
 
 :global([data-theme="light"]) .daySelected {
-  background: #0891B2;
-  color: #FFFFFF;
+  background: #0891B2 !important;
+  color: #FFFFFF !important;
 }
 
 :global([data-theme="light"]) .daySelected:hover {
-  background: #0E7490;
+  background: #0E7490 !important;
+  color: #FFFFFF !important;
 }
 
 :global([data-theme="light"]) .dayHasAvailability::after {
@@ -644,9 +650,13 @@
 }
 
 :global([data-theme="light"]) .timeSlotSelected {
-  background: #0891B2;
-  border-color: #0891B2;
-  color: #FFFFFF;
+  background: #0891B2 !important;
+  border-color: #0891B2 !important;
+  color: #FFFFFF !important;
+}
+
+:global([data-theme="light"]) .timeSlotSelected:hover {
+  color: #FFFFFF !important;
 }
 
 :global([data-theme="light"]) .noSlots {

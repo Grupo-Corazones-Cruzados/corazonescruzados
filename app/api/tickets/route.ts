@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const estado = searchParams.get("estado") || "";
     const miembroFilter = searchParams.get("miembro");
+    const view = searchParams.get("view") || "";
+    const clienteFilter = searchParams.get("cliente");
 
     // Get user profile to check role
     const userResult = await query(
@@ -45,9 +47,25 @@ export async function GET(request: NextRequest) {
 
     // Role-based filtering
     if (rol === "miembro" && id_miembro) {
-      sql += ` AND t.id_miembro = $${paramIndex}`;
-      params.push(id_miembro);
-      paramIndex++;
+      if (view === "created") {
+        // Member wants to see tickets they created as a client
+        const clientResult = await query(
+          "SELECT id FROM clientes WHERE correo_electronico = $1",
+          [tokenData.email]
+        );
+        if (clientResult.rows.length > 0) {
+          sql += ` AND t.id_cliente = $${paramIndex}`;
+          params.push(clientResult.rows[0].id);
+          paramIndex++;
+        } else {
+          return NextResponse.json({ tickets: [], stats: { total: 0, pendientes: 0, enProgreso: 0, completados: 0 } });
+        }
+      } else {
+        // Normal view: tickets assigned to the member
+        sql += ` AND t.id_miembro = $${paramIndex}`;
+        params.push(id_miembro);
+        paramIndex++;
+      }
     } else if (rol === "cliente") {
       // Get client ID from email
       const clientResult = await query(
@@ -79,6 +97,12 @@ export async function GET(request: NextRequest) {
     if (miembroFilter) {
       sql += ` AND t.id_miembro = $${paramIndex}`;
       params.push(parseInt(miembroFilter));
+      paramIndex++;
+    }
+
+    if (clienteFilter) {
+      sql += ` AND t.id_cliente = $${paramIndex}`;
+      params.push(parseInt(clienteFilter));
       paramIndex++;
     }
 

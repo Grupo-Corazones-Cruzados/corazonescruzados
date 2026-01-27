@@ -81,7 +81,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const values: any[] = [];
     let paramIndex = 1;
 
-    const allowedFields = ["fecha", "hora_inicio", "hora_fin", "estado", "duracion_real", "notas"];
+    const allowedFields = ["fecha", "hora_inicio", "hora_fin", "estado"];
 
     for (const field of allowedFields) {
       if (updates[field] !== undefined) {

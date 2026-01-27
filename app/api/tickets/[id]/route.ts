@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/jwt";
+import { sendTicketReportEmail } from "@/lib/email";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -20,11 +21,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
       `SELECT
         t.*,
         json_build_object('id', c.id, 'nombre', c.nombre, 'correo_electronico', c.correo_electronico) as cliente,
-        json_build_object('id', m.id, 'nombre', m.nombre, 'foto', m.foto, 'puesto', m.puesto, 'costo', m.costo) as miembro,
+        json_build_object('id', m.id, 'nombre', m.nombre, 'foto', COALESCE(m.foto, up.avatar_url), 'puesto', m.puesto, 'costo', m.costo) as miembro,
         json_build_object('id', a.id, 'nombre', a.nombre) as accion
       FROM tickets t
       LEFT JOIN clientes c ON t.id_cliente = c.id
       LEFT JOIN miembros m ON t.id_miembro = m.id
+      LEFT JOIN user_profiles up ON up.id_miembro = m.id
       LEFT JOIN acciones a ON t.id_accion = a.id
       WHERE t.id = $1`,
       [ticketId]
@@ -113,6 +115,53 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     if (result.rows.length === 0) {
       return NextResponse.json({ error: "Ticket no encontrado" }, { status: 404 });
+    }
+
+    // Enviar reporte por correo cuando el ticket se marca como completado
+    if (body.estado === "completado") {
+      (async () => {
+        try {
+          const ticketData = await query(
+            `SELECT t.*,
+              json_build_object('id', c.id, 'nombre', c.nombre, 'correo_electronico', c.correo_electronico) as cliente,
+              json_build_object('id', m.id, 'nombre', m.nombre, 'puesto', m.puesto) as miembro
+            FROM tickets t
+            LEFT JOIN clientes c ON t.id_cliente = c.id
+            LEFT JOIN miembros m ON t.id_miembro = m.id
+            WHERE t.id = $1`,
+            [ticketId]
+          );
+
+          if (ticketData.rows.length === 0) return;
+
+          const t = ticketData.rows[0];
+          const clienteEmail = t.cliente?.correo_electronico;
+          if (!clienteEmail) return;
+
+          const accionesData = await query(
+            `SELECT ta.horas_asignadas, ta.costo_hora, a.nombre
+             FROM ticket_acciones ta
+             LEFT JOIN acciones a ON ta.id_accion = a.id
+             WHERE ta.id_ticket = $1`,
+            [ticketId]
+          );
+
+          const slotsData = await query(
+            `SELECT fecha, hora_inicio, hora_fin, estado FROM ticket_slots WHERE id_ticket = $1 ORDER BY fecha ASC`,
+            [ticketId]
+          );
+
+          await sendTicketReportEmail(
+            clienteEmail,
+            { id: t.id, titulo: t.titulo, detalle: t.detalle, fecha_creacion: t.fecha_creacion, fecha_fin: t.fecha_fin },
+            { nombre: t.miembro?.nombre || "Equipo", puesto: t.miembro?.puesto },
+            accionesData.rows,
+            slotsData.rows
+          );
+        } catch (err) {
+          console.warn("Error enviando reporte de ticket completado:", err);
+        }
+      })();
     }
 
     return NextResponse.json({ ticket: result.rows[0] });

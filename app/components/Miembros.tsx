@@ -251,12 +251,14 @@ const Miembros: React.FC<MiembrosPadre> = ({
                     )}
 
                     <div className={style.cardInfo}>
-                      <div className={style.nameRow}>
+                      <div className={style.nameBlock}>
                         <h4 className={style.name}>{member.nombre}</h4>
+                        <span className={style.role}>{member.puesto}</span>
+                      </div>
+                      <div className={style.metaRow}>
+                        <span className={style.user}>{member.cod_usuario}</span>
                         {selected && <span className={style.badge}>Seleccionado</span>}
                       </div>
-                      <div className={style.role}>{member.puesto}</div>
-                      <div className={style.user}>{member.cod_usuario}</div>
                     </div>
                   </div>
 
