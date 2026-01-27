@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "../Auth.module.css";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -191,5 +191,33 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className={styles.page}>
+        <div className={styles.bgGlow} aria-hidden="true" />
+        <div className={styles.bgPattern} aria-hidden="true" />
+        <div className={styles.container}>
+          <div className={styles.branding}>
+            <div className={styles.brandingContent}>
+              <img src="/LogoCC.png" alt="Corazones Cruzados" className={styles.logo} />
+              <h1 className={styles.brandTitle}>Corazones Cruzados</h1>
+            </div>
+          </div>
+          <div className={styles.formSection}>
+            <div className={styles.formCard}>
+              <div className={styles.formHeader}>
+                <h2 className={styles.formTitle}>Cargando...</h2>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
