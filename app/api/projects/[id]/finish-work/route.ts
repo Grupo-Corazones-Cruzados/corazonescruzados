@@ -55,8 +55,21 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "No tienes una postulación aceptada en este proyecto" }, { status: 403 });
     }
 
-    if (bidResult.rows[0].trabajo_finalizado) {
-      return NextResponse.json({ error: "Ya has marcado tu trabajo como finalizado" }, { status: 400 });
+    const alreadyFinished = bidResult.rows[0].trabajo_finalizado;
+
+    if (alreadyFinished) {
+      // Unmark work as finished
+      await query(
+        "UPDATE project_bids SET trabajo_finalizado = false, fecha_trabajo_finalizado = NULL WHERE id = $1",
+        [bidResult.rows[0].id]
+      );
+
+      return NextResponse.json({
+        success: true,
+        proyecto_completado: false,
+        undone: true,
+        message: "Trabajo desmarcado como finalizado.",
+      });
     }
 
     // Mark work as finished
@@ -91,6 +104,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({
       success: true,
       proyecto_completado,
+      undone: false,
       message: proyecto_completado
         ? "Proyecto completado automáticamente. Todos los miembros finalizaron su trabajo."
         : "Trabajo marcado como finalizado.",

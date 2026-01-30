@@ -309,28 +309,37 @@
   border-radius: var(--radius-sm);
 }
 
-.requirementCheckbox {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+/* Requirement toggle button (icon-based) */
+.reqToggleBtn {
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--text-muted);
+  transition: color 0.2s ease, transform 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-  transition: all var(--transition-fast);
 }
 
-.requirementCheckbox:hover {
-  border-color: var(--turquoise);
+.reqToggleBtn:not(:disabled):hover {
+  color: var(--turquoise);
+  transform: scale(1.15);
 }
 
-.requirementCompleted .requirementCheckbox {
-  background: var(--turquoise);
-  border-color: var(--turquoise);
-  color: var(--black);
+.reqToggleBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.reqToggleDone {
+  color: #22c55e;
+}
+
+.reqToggleDone:not(:disabled):hover {
+  color: #16a34a;
 }
 
 .requirementContent {
@@ -824,37 +833,89 @@
   color: #f97316;
 }
 
-/* Avatar del completador */
-.reqCompletadoPorAvatar {
-  width: 20px;
-  height: 20px;
+/* Requirement meta row (creator + completador) */
+.reqMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+/* Creator info */
+.reqCreadorInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 2px 10px 2px 4px;
+  background: var(--surface-3);
+  border-radius: var(--radius-full);
+}
+
+.reqCreadorAvatar {
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  border: 2px solid var(--turquoise);
 }
 
-.reqCompletadoPorPlaceholder {
-  width: 20px;
-  height: 20px;
+.reqCreadorPlaceholder {
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--surface-3);
+  background: linear-gradient(135deg, var(--turquoise), #0891B2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: var(--turquoise);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.reqCreadorName {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Avatar del completador */
+.reqCompletadoPorAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid #22c55e;
+}
+
+.reqCompletadoPorPlaceholder {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
   flex-shrink: 0;
 }
 
 .reqCompletadoPorInfo {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-left: var(--space-2);
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  vertical-align: middle;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #22c55e;
+  padding: 2px 10px 2px 4px;
+  background: rgba(34, 197, 94, 0.08);
+  border-radius: var(--radius-full);
 }
 
 /* Republished badge */
@@ -922,27 +983,378 @@
   border-radius: var(--radius-md);
 }
 
-/* Finish work section */
-.finishWorkSection {
-  padding: var(--space-4);
-  background: var(--surface-2);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-3);
-}
-
-.finishWorkDone {
+/* Finish work - main CTA button */
+.finishWorkBtn {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border: 2px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  text-align: left;
+  flex-wrap: wrap;
+}
+
+.finishWorkBtn span:first-of-type {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.finishWorkBtn:not(:disabled):hover {
+  border-color: #22c55e;
+  border-style: solid;
+  background: rgba(34, 197, 94, 0.06);
   color: #22c55e;
-  font-weight: 500;
-  font-size: 0.9rem;
+}
+
+.finishWorkBtn:not(:disabled):hover span:first-of-type {
+  color: #22c55e;
+}
+
+.finishWorkBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Estado marcado como finalizado - botón para deshacer */
+.finishWorkBtnDone {
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  border-style: solid;
+  background: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
+}
+
+.finishWorkBtnDone span:first-of-type {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.finishWorkBtnDone .finishWorkHint {
+  color: var(--text-muted);
+}
+
+.finishWorkBtnDone:not(:disabled):hover {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
+
+.finishWorkBtnDone:not(:disabled):hover span:first-of-type {
+  color: #ef4444;
+}
+
+.finishWorkBtnDone:not(:disabled):hover .finishWorkHint {
+  color: #ef4444;
+}
+
+.finishWorkHint {
+  width: 100%;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* Finish work - done state */
+.finishWorkDoneCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: var(--radius-md);
+}
+
+.finishWorkDoneIcon {
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+.finishWorkDoneText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.finishWorkDoneText strong {
+  font-size: 0.95rem;
+  color: #22c55e;
 }
 
 .finishWorkDate {
   font-size: 0.8rem;
   color: var(--text-muted);
   font-weight: 400;
+}
+
+.finishWorkUndoBtn {
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-full);
+  color: #22c55e;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.finishWorkUndoBtn:hover {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+}
+
+.finishWorkUndoBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tabs Navigation */
+.tabsContainer {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+}
+
+.tabButton {
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tabButton:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+
+.tabButtonActive {
+  background: var(--surface-1);
+  color: var(--turquoise);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Visibility Badge */
+.visibilityBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.visibilityPrivado {
+  background: rgba(107, 114, 128, 0.15);
+  color: #6b7280;
+}
+
+.visibilityPublico {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+/* Owner Badge */
+.ownerBadge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+}
+
+/* Visibility Toggle in Modal */
+.visibilityToggle {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.visibilityOption {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.visibilityOption:hover {
+  border-color: var(--turquoise);
+  color: var(--text-primary);
+}
+
+.visibilityOptionActive {
+  border-color: var(--turquoise);
+  background: rgba(0, 206, 209, 0.1);
+  color: var(--turquoise);
+}
+
+/* Client Search Results */
+.clientSearchResults {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  margin-top: var(--space-1);
+}
+
+.clientSearchItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: var(--space-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.clientSearchItem:last-child {
+  border-bottom: none;
+}
+
+.clientSearchItem:hover {
+  background: var(--surface-2);
+}
+
+.clientName {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.clientEmail {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Selected Client Chip */
+.selectedClient {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.removeClientBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.removeClientBtn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Owner Card in Sidebar */
+.ownerCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ownerAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.ownerAvatarPlaceholder {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--turquoise);
+  font-size: 1.1rem;
+}
+
+.ownerName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ownerRole {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Visibility Toggle Button */
+.visibilityToggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.visibilityToggleBtn:hover {
+  border-color: var(--turquoise);
+  color: var(--turquoise);
+}
+
+.visibilityToggleBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Responsive - Tablets */
@@ -1148,18 +1560,20 @@
   background: #F9FAFB;
 }
 
-:global([data-theme="light"]) .requirementCheckbox {
-  border-color: #D1D5DB;
+:global([data-theme="light"]) .reqToggleBtn {
+  color: #9CA3AF;
 }
 
-:global([data-theme="light"]) .requirementCheckbox:hover {
-  border-color: #0891B2;
+:global([data-theme="light"]) .reqToggleBtn:not(:disabled):hover {
+  color: #0891B2;
 }
 
-:global([data-theme="light"]) .requirementCompleted .requirementCheckbox {
-  background: #0891B2;
-  border-color: #0891B2;
-  color: #FFFFFF;
+:global([data-theme="light"]) .reqToggleDone {
+  color: #16a34a;
+}
+
+:global([data-theme="light"]) .reqToggleDone:not(:disabled):hover {
+  color: #15803d;
 }
 
 :global([data-theme="light"]) .requirementTitle {
@@ -1321,13 +1735,44 @@
   color: #ea580c;
 }
 
-:global([data-theme="light"]) .reqCompletadoPorPlaceholder {
+:global([data-theme="light"]) .reqCreadorPlaceholder {
   background: #E5E7EB;
   color: #0891B2;
 }
 
-:global([data-theme="light"]) .reqCompletadoPorInfo {
+:global([data-theme="light"]) .reqCreadorName {
+  color: #374151;
+}
+
+:global([data-theme="light"]) .reqCreadorInfo {
   color: #6B7280;
+}
+
+:global([data-theme="light"]) .reqCompletadoPorPlaceholder {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+}
+
+:global([data-theme="light"]) .reqCompletadoPorInfo {
+  color: #16a34a;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+:global([data-theme="light"]) .reqCreadorInfo {
+  background: #F3F4F6;
+}
+
+:global([data-theme="light"]) .reqCreadorPlaceholder {
+  background: linear-gradient(135deg, #0891B2, #0e7490);
+  color: #fff;
+}
+
+:global([data-theme="light"]) .reqCreadorAvatar {
+  border-color: #0891B2;
+}
+
+:global([data-theme="light"]) .reqCompletadoPorAvatar {
+  border-color: #16a34a;
 }
 
 :global([data-theme="light"]) .republishedBadge {
@@ -1351,14 +1796,184 @@
   background: #F3F4F6;
 }
 
-:global([data-theme="light"]) .finishWorkSection {
-  background: #F3F4F6;
+:global([data-theme="light"]) .finishWorkBtn {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
 }
 
-:global([data-theme="light"]) .finishWorkDone {
+:global([data-theme="light"]) .finishWorkBtn span:first-of-type {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .finishWorkBtn:not(:disabled):hover {
+  border-color: #16a34a;
+  background: rgba(34, 197, 94, 0.05);
+}
+
+:global([data-theme="light"]) .finishWorkBtn:not(:disabled):hover span:first-of-type {
+  color: #16a34a;
+}
+
+:global([data-theme="light"]) .finishWorkHint {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .finishWorkDoneCard {
+  background: rgba(34, 197, 94, 0.06);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+:global([data-theme="light"]) .finishWorkDoneText strong {
   color: #16a34a;
 }
 
 :global([data-theme="light"]) .finishWorkDate {
   color: #6B7280;
+}
+
+:global([data-theme="light"]) .finishWorkUndoBtn {
+  border-color: rgba(22, 163, 74, 0.3);
+  color: #16a34a;
+}
+
+:global([data-theme="light"]) .finishWorkUndoBtn:hover {
+  background: rgba(22, 163, 74, 0.08);
+  border-color: #16a34a;
+}
+
+:global([data-theme="light"]) .finishWorkBtnDone {
+  background: rgba(22, 163, 74, 0.06);
+  border-color: rgba(22, 163, 74, 0.3);
+  border-style: solid;
+  color: #16a34a;
+}
+
+:global([data-theme="light"]) .finishWorkBtnDone span:first-of-type {
+  color: #16a34a;
+}
+
+:global([data-theme="light"]) .finishWorkBtnDone:not(:disabled):hover {
+  border-color: #dc2626;
+  background: rgba(239, 68, 68, 0.05);
+  color: #dc2626;
+}
+
+:global([data-theme="light"]) .finishWorkBtnDone:not(:disabled):hover span:first-of-type {
+  color: #dc2626;
+}
+
+/* Light theme - Tabs */
+:global([data-theme="light"]) .tabsContainer {
+  background: #F3F4F6;
+}
+
+:global([data-theme="light"]) .tabButton {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .tabButton:hover {
+  background: #E5E7EB;
+  color: #111827;
+}
+
+:global([data-theme="light"]) .tabButtonActive {
+  background: #FFFFFF;
+  color: #0891B2;
+}
+
+/* Light theme - Visibility Badge */
+:global([data-theme="light"]) .visibilityPrivado {
+  background: rgba(107, 114, 128, 0.1);
+  color: #4B5563;
+}
+
+:global([data-theme="light"]) .visibilityPublico {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+/* Light theme - Owner Badge */
+:global([data-theme="light"]) .ownerBadge {
+  background: rgba(139, 92, 246, 0.1);
+  color: #7c3aed;
+}
+
+/* Light theme - Visibility Toggle */
+:global([data-theme="light"]) .visibilityOption {
+  background: #FFFFFF;
+  border-color: #D1D5DB;
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .visibilityOption:hover {
+  border-color: #0891B2;
+  color: #111827;
+}
+
+:global([data-theme="light"]) .visibilityOptionActive {
+  border-color: #0891B2;
+  background: rgba(8, 145, 178, 0.08);
+  color: #0891B2;
+}
+
+/* Light theme - Client Search */
+:global([data-theme="light"]) .clientSearchResults {
+  background: #FFFFFF;
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .clientSearchItem {
+  border-bottom-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .clientSearchItem:hover {
+  background: #F9FAFB;
+}
+
+:global([data-theme="light"]) .clientName {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .clientEmail {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .selectedClient {
+  background: #F9FAFB;
+  border-color: #E5E7EB;
+}
+
+:global([data-theme="light"]) .removeClientBtn {
+  color: #6B7280;
+}
+
+:global([data-theme="light"]) .removeClientBtn:hover {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+}
+
+/* Light theme - Owner Card */
+:global([data-theme="light"]) .ownerAvatarPlaceholder {
+  background: #E5E7EB;
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .ownerName {
+  color: #111827;
+}
+
+:global([data-theme="light"]) .ownerRole {
+  color: #6B7280;
+}
+
+/* Light theme - Visibility Toggle Button */
+:global([data-theme="light"]) .visibilityToggleBtn {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+  color: #374151;
+}
+
+:global([data-theme="light"]) .visibilityToggleBtn:hover {
+  border-color: #0891B2;
+  color: #0891B2;
 }

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthProvider";
 import styles from "@/app/styles/DashboardLayout.module.css";
 
@@ -106,6 +106,31 @@ const getIcono = (icono: string) => {
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       );
+    case "package":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M16.5 9.4 7.55 4.24" />
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          <polyline points="3.29 7 12 12 20.71 7" />
+          <line x1="12" x2="12" y1="22" y2="12" />
+        </svg>
+      );
+    case "cart":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="8" cy="21" r="1" />
+          <circle cx="19" cy="21" r="1" />
+          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+        </svg>
+      );
+    case "mercado":
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+          <line x1="3" x2="21" y1="6" y2="6" />
+          <path d="M16 10a4 4 0 0 1-8 0" />
+        </svg>
+      );
     default:
       return (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -118,6 +143,7 @@ const getIcono = (icono: string) => {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isAuthenticated, loading: authLoading, profile } = useAuth();
 
   const [modulos, setModulos] = useState<Modulo[]>([]);
@@ -167,24 +193,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   // Encontrar el módulo actual basado en el pathname
-  const currentModulo = modulos.find((m) => {
-    if (pathname === "/dashboard") return false;
-    // Check if pathname matches module ruta
-    if (pathname.startsWith(m.ruta)) return true;
-    // Check if pathname matches any section href
-    if (m.secciones?.some((s: Seccion) => pathname === s.href || pathname.startsWith(s.href + "/"))) return true;
-    return false;
-  });
+  const fromParam = searchParams.get("from");
+  const currentModulo = (() => {
+    // Si viene desde "Mi Espacio", usar ese módulo para las tabs
+    if (fromParam === "miembro") {
+      const miEspacio = modulos.find((m) => m.ruta === "/dashboard/miembro");
+      if (miEspacio) return miEspacio;
+    }
+    return modulos.find((m) => {
+      if (pathname === "/dashboard") return false;
+      if (pathname.startsWith(m.ruta)) return true;
+      if (m.secciones?.some((s: Seccion) => pathname === s.href || pathname.startsWith(s.href + "/"))) return true;
+      return false;
+    });
+  })();
 
   // Filtrar módulos por rol
   const canAccessModulo = (modulo: Modulo) => {
     if (!modulo.roles_permitidos || modulo.roles_permitidos.length === 0) return true;
+    // Admin puede acceder al módulo Mi Espacio cuando viene desde ahí
+    if (fromParam === "miembro" && modulo.ruta === "/dashboard/miembro" && userRole === "admin") return true;
     return modulo.roles_permitidos.includes(userRole);
   };
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
       return pathname === "/dashboard";
+    }
+    // Cuando viene desde Mi Espacio y estamos en detalle de proyecto,
+    // marcar "Mis Proyectos" como activo
+    if (fromParam === "miembro" && href === "/dashboard/miembro/proyectos" && pathname.startsWith("/dashboard/projects/")) {
+      return true;
     }
     // Coincidencia exacta
     if (pathname === href) {

@@ -17,3 +17,7 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS republicado BOOLEAN DEFAULT FALSE;
 -- 4. Trabajo finalizado por miembro (flag en cada bid aceptada)
 ALTER TABLE project_bids ADD COLUMN IF NOT EXISTS trabajo_finalizado BOOLEAN DEFAULT FALSE;
 ALTER TABLE project_bids ADD COLUMN IF NOT EXISTS fecha_trabajo_finalizado TIMESTAMPTZ;
+
+-- 5. Quien creo el requerimiento (miembro o cliente)
+ALTER TABLE project_requirements ADD COLUMN IF NOT EXISTS creado_por_miembro_id INTEGER REFERENCES miembros(id);
+ALTER TABLE project_requirements ADD COLUMN IF NOT EXISTS creado_por_cliente_id INTEGER REFERENCES clientes(id);

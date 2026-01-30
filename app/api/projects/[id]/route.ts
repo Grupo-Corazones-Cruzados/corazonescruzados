@@ -15,13 +15,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const projectId = parseInt(id);
 
-    // Get project with client info
+    // Get project with client and member owner info
     const projectResult = await query(
       `SELECT
         p.*,
-        json_build_object('id', c.id, 'nombre', c.nombre, 'correo_electronico', c.correo_electronico) as cliente
+        json_build_object('id', c.id, 'nombre', c.nombre, 'correo_electronico', c.correo_electronico) as cliente,
+        json_build_object('id', mp.id, 'nombre', mp.nombre, 'foto', mp.foto, 'puesto', mp.puesto) as miembro_propietario
       FROM projects p
       LEFT JOIN clientes c ON p.id_cliente = c.id
+      LEFT JOIN miembros mp ON p.id_miembro_propietario = mp.id
       WHERE p.id = $1`,
       [projectId]
     );
@@ -32,8 +34,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     const projectData = projectResult.rows[0];
 
-    // Visibility check for non-publicado states:
-    // After planificado, only the client owner and accepted members can see the project
+    // Get user role and member id
     const userResult = await query(
       "SELECT rol, id_miembro FROM user_profiles WHERE id = $1",
       [tokenData.userId]
@@ -41,15 +42,34 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const userRol = userResult.rows[0]?.rol;
     const userMiembroId = userResult.rows[0]?.id_miembro;
 
-    if (["planificado", "en_progreso"].includes(projectData.estado) && userRol === "miembro") {
-      // When republicado, any member can view the project (like publicado)
-      if (!(projectData.estado === "en_progreso" && projectData.republicado === true)) {
-        const memberBid = await query(
-          "SELECT id FROM project_bids WHERE id_project = $1 AND id_miembro = $2 AND estado = 'aceptada'",
-          [projectId, userMiembroId]
-        );
-        if (memberBid.rows.length === 0) {
-          return NextResponse.json({ error: "No tienes acceso a este proyecto" }, { status: 403 });
+    // Check if user is the member owner of this project
+    const isMemberOwner = projectData.id_miembro_propietario && projectData.id_miembro_propietario === userMiembroId;
+
+    // Visibility check for member-owned projects
+    if (projectData.tipo_proyecto === "miembro") {
+      // Clients cannot see member-owned projects
+      if (userRol === "cliente") {
+        return NextResponse.json({ error: "No tienes acceso a este proyecto" }, { status: 403 });
+      }
+
+      // Private projects: only owner and admin can see
+      if (projectData.visibilidad === "privado" && !isMemberOwner && userRol !== "admin") {
+        return NextResponse.json({ error: "No tienes acceso a este proyecto" }, { status: 403 });
+      }
+
+      // Public projects: any member can see (for bidding/collaboration)
+    } else {
+      // Original visibility check for client-owned projects
+      if (["planificado", "en_progreso"].includes(projectData.estado) && userRol === "miembro") {
+        // When republicado, any member can view the project (like publicado)
+        if (!(projectData.estado === "en_progreso" && projectData.republicado === true)) {
+          const memberBid = await query(
+            "SELECT id FROM project_bids WHERE id_project = $1 AND id_miembro = $2 AND estado = 'aceptada'",
+            [projectId, userMiembroId]
+          );
+          if (memberBid.rows.length === 0) {
+            return NextResponse.json({ error: "No tienes acceso a este proyecto" }, { status: 403 });
+          }
         }
       }
     }
@@ -76,14 +96,23 @@ export async function GET(request: NextRequest, context: RouteContext) {
       [projectId]
     );
 
-    // Get requirements with completado_por member info
+    // Get requirements with completado_por and creador info
     const requirementsResult = await query(
       `SELECT pr.*,
         CASE WHEN pr.completado_por IS NOT NULL THEN
-          json_build_object('id', m.id, 'nombre', m.nombre, 'foto', m.foto)
-        ELSE NULL END as miembro_completado
+          json_build_object('id', mc.id, 'nombre', mc.nombre, 'foto', mc.foto)
+        ELSE NULL END as miembro_completado,
+        CASE
+          WHEN pr.creado_por_miembro_id IS NOT NULL THEN
+            json_build_object('id', mcr.id, 'nombre', mcr.nombre, 'foto', mcr.foto, 'tipo', 'miembro')
+          WHEN pr.creado_por_cliente_id IS NOT NULL THEN
+            json_build_object('id', ccr.id, 'nombre', ccr.nombre, 'foto', null, 'tipo', 'cliente')
+          ELSE NULL
+        END as creador
       FROM project_requirements pr
-      LEFT JOIN miembros m ON pr.completado_por = m.id
+      LEFT JOIN miembros mc ON pr.completado_por = mc.id
+      LEFT JOIN miembros mcr ON pr.creado_por_miembro_id = mcr.id
+      LEFT JOIN clientes ccr ON pr.creado_por_cliente_id = ccr.id
       WHERE pr.id_project = $1
       ORDER BY pr.created_at ASC`,
       [projectId]
@@ -94,6 +123,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       bids: bidsResult.rows,
       requirements: requirementsResult.rows,
       accepted_members: acceptedMembersResult.rows,
+      es_propietario_miembro: isMemberOwner,
     });
   } catch (error) {
     console.error("Error fetching project:", error);
@@ -184,6 +214,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       "presupuesto_max",
       "fecha_limite",
       "estado",
+      "visibilidad",
     ];
 
     for (const field of allowedFields) {

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/app/components/dashboard/DashboardLayout";
 import { useProject, useSubmitBid, ProjectBid, ProjectRequirement, AcceptedMember } from "@/lib/hooks/useProjects";
 import { useAuth } from "@/lib/AuthProvider";
@@ -43,6 +43,21 @@ const XIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="18" x2="6" y1="6" y2="18" />
     <line x1="6" x2="18" y1="6" y2="18" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const GlobeIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="2" x2="22" y1="12" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
   </svg>
 );
 
@@ -100,8 +115,11 @@ const formatCurrency = (amount: number | null): string => {
 
 export default function ProjectDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { profile } = useAuth();
   const projectId = params?.id ? parseInt(params.id as string, 10) : null;
+  const backUrl = searchParams.get("from") === "miembro" ? "/dashboard/miembro/proyectos" : "/dashboard/projects";
+  const backLabel = searchParams.get("from") === "miembro" ? "Volver a mis proyectos" : "Volver a proyectos";
   const {
     project,
     bids,
@@ -129,7 +147,13 @@ export default function ProjectDetailPage() {
 
   // Check if current user already submitted a bid
   const userBid = bids.find((b) => b.id_miembro === userMiembroId);
-  const isProjectOwner = userRole === "cliente";
+  const isClientOwner = userRole === "cliente";
+
+  // Check if current member is the owner of this member project
+  const isMemberOwner = project?.tipo_proyecto === "miembro" && project?.id_miembro_propietario === userMiembroId;
+
+  // Project owner is either client (for client projects) or member (for member projects)
+  const isProjectOwner = (project?.tipo_proyecto === "cliente" && isClientOwner) || isMemberOwner;
 
   // Check if current member has an accepted bid (is part of the team)
   const userAcceptedBid = userBid?.estado === "aceptada" ? userBid : null;
@@ -375,12 +399,29 @@ export default function ProjectDetailPage() {
   };
 
   const handleFinishWork = async () => {
+    if (!userMiembroId) return;
     setUpdating(true);
-    const result = await finishWork();
+    try {
+      const result = await finishWork(userMiembroId);
+      if (result.error) {
+        alert("Error: " + result.error);
+      } else if (result.proyecto_completado) {
+        alert("El proyecto ha sido completado automáticamente. Todos los miembros finalizaron su trabajo.");
+      }
+    } catch (err: any) {
+      alert("Error: " + (err?.message || "Error inesperado"));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleToggleVisibility = async () => {
+    if (!project || !isMemberOwner) return;
+    setUpdating(true);
+    const newVisibility = project.visibilidad === "privado" ? "publico" : "privado";
+    const result = await updateProject({ visibilidad: newVisibility } as any);
     if (result.error) {
       alert(result.error);
-    } else if (result.proyecto_completado) {
-      alert("El proyecto ha sido completado automáticamente. Todos los miembros finalizaron su trabajo.");
     }
     setUpdating(false);
   };
@@ -410,9 +451,12 @@ export default function ProjectDetailPage() {
     "no_pagado", "no_completado_por_miembro"
   ].includes(project?.estado || "");
 
-  // Can member add requirements (team member in planificado or en_progreso)
-  const canManageRequirements = (isTeamMember || isProjectOwner) &&
-    ["planificado", "en_progreso"].includes(project?.estado || "");
+  // Can add requirements (team member, member owner, or client owner in publicado, planificado, or en_progreso)
+  const canManageRequirements = (isTeamMember || isProjectOwner || isMemberOwner) &&
+    ["publicado", "planificado", "en_progreso"].includes(project?.estado || "");
+
+  // Can toggle completado (only in en_progreso, team members or member owner)
+  const canToggleCompletado = (isTeamMember || isMemberOwner) && project?.estado === "en_progreso";
 
   // Check if all accepted members have confirmed
   const allMembersConfirmed = acceptedMembers.length > 0 &&
@@ -420,7 +464,7 @@ export default function ProjectDetailPage() {
 
   // Check if current member already finished their work
   const currentMemberAccepted = acceptedMembers.find(
-    (m) => m.miembro.id === userMiembroId
+    (m) => m.miembro.id == userMiembroId
   );
   const hasFinishedWork = currentMemberAccepted?.trabajo_finalizado === true;
 
@@ -439,9 +483,9 @@ export default function ProjectDetailPage() {
     return (
       <DashboardLayout>
         <div className={styles.detailPage}>
-          <Link href="/dashboard/projects" className={ticketStyles.backButton}>
+          <Link href={backUrl} className={ticketStyles.backButton}>
             <ArrowLeftIcon />
-            Volver a proyectos
+            {backLabel}
           </Link>
           <div className={ticketStyles.emptyState}>
             <h3 className={ticketStyles.emptyTitle}>Proyecto no encontrado</h3>
@@ -458,9 +502,9 @@ export default function ProjectDetailPage() {
     <DashboardLayout>
       <div className={styles.detailPage}>
         {/* Back Button */}
-        <Link href="/dashboard/projects" className={ticketStyles.backButton}>
+        <Link href={backUrl} className={ticketStyles.backButton}>
           <ArrowLeftIcon />
-          Volver a proyectos
+          {backLabel}
         </Link>
 
         {/* Confirmation Banner (for member with accepted bid, not yet confirmed) */}
@@ -541,12 +585,24 @@ export default function ProjectDetailPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <h1 className={styles.detailTitle}>{project.titulo}</h1>
-                  <span className={`${styles.projectStatus} ${getStatusClass(project.estado)}`}>
-                    {getStatusLabel(project.estado)}
-                  </span>
-                  {project.republicado && (
-                    <span className={styles.republishedBadge}>Convocatoria Abierta</span>
-                  )}
+                  <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center", marginTop: "var(--space-2)" }}>
+                    <span className={`${styles.projectStatus} ${getStatusClass(project.estado)}`}>
+                      {getStatusLabel(project.estado)}
+                    </span>
+                    {project.republicado && (
+                      <span className={styles.republishedBadge}>Convocatoria Abierta</span>
+                    )}
+                    {/* Show visibility badge for member projects */}
+                    {project.tipo_proyecto === "miembro" && (
+                      <span className={`${styles.visibilityBadge} ${project.visibilidad === "privado" ? styles.visibilityPrivado : styles.visibilityPublico}`}>
+                        {project.visibilidad === "privado" ? <><LockIcon /> Privado</> : <><GlobeIcon /> Publico</>}
+                      </span>
+                    )}
+                    {/* Show owner badge if member owns this project */}
+                    {isMemberOwner && (
+                      <span className={styles.ownerBadge}>Mi Proyecto</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -670,8 +726,8 @@ export default function ProjectDetailPage() {
               )}
             </div>
 
-            {/* Requirements Card - visible for team members and owner in planificado or en_progreso */}
-            {(isTeamMember || isProjectOwner) && ["planificado", "en_progreso"].includes(project.estado) && (
+            {/* Requirements Card - visible for team members and owner in publicado, planificado or en_progreso */}
+            {(isTeamMember || isProjectOwner) && ["publicado", "planificado", "en_progreso"].includes(project.estado) && (
               <div className={styles.detailCard}>
                 <h4 className={styles.detailCardTitle}>Requerimientos</h4>
 
@@ -744,29 +800,61 @@ export default function ProjectDetailPage() {
                       ) : (
                         <>
                           <button
-                            className={styles.requirementCheckbox}
-                            onClick={() => isTeamMember && handleToggleRequirement(req)}
-                            disabled={!isTeamMember || isClosedState}
+                            className={`${styles.reqToggleBtn} ${req.completado ? styles.reqToggleDone : ""}`}
+                            onClick={() => canToggleCompletado && handleToggleRequirement(req)}
+                            disabled={!canToggleCompletado}
+                            title={req.completado ? "Marcar como pendiente" : canToggleCompletado ? "Marcar como completado" : "Solo disponible en progreso"}
                           >
-                            {req.completado && <CheckIcon />}
+                            {req.completado ? (
+                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="currentColor" />
+                                <path d="M9.5 12.5l2 2 3.5-4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            ) : (
+                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="1.5" />
+                                <path d="M9.5 12.5l2 2 3.5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+                              </svg>
+                            )}
                           </button>
                           <div className={styles.requirementContent}>
                             <div className={styles.requirementTitle}>
                               {req.titulo}
-                              <span className={styles.creadoPorBadge}>
-                                {req.creado_por === "cliente" ? "Cliente" : "Miembro"}
-                              </span>
                               <span className={`${styles.reqTypeBadge} ${req.es_adicional ? styles.reqTypeAdicional : styles.reqTypeInicial}`}>
                                 {req.es_adicional ? "Adicional" : "Inicial"}
                               </span>
+                            </div>
+                            {req.descripcion && (
+                              <div className={styles.requirementDesc}>{req.descripcion}</div>
+                            )}
+                            <div className={styles.reqMetaRow}>
+                              {/* Creador */}
+                              {req.creador ? (
+                                <span className={styles.reqCreadorInfo} title={`Creado por ${req.creador.nombre}`}>
+                                  {req.creador.foto ? (
+                                    <img src={req.creador.foto} alt="" className={styles.reqCreadorAvatar} />
+                                  ) : (
+                                    <span className={styles.reqCreadorPlaceholder}>
+                                      {req.creador.nombre?.charAt(0)?.toUpperCase() || "?"}
+                                    </span>
+                                  )}
+                                  <span className={styles.reqCreadorName}>{req.creador.nombre}</span>
+                                  <span className={styles.creadoPorBadge}>
+                                    {req.creador.tipo === "cliente" ? "Cliente" : "Miembro"}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span className={styles.creadoPorBadge}>
+                                  {req.creado_por === "cliente" ? "Cliente" : "Miembro"}
+                                </span>
+                              )}
+                              {/* Completado por */}
                               {req.completado && req.miembro_completado && (
                                 <span className={styles.reqCompletadoPorInfo} title={`Completado por ${req.miembro_completado.nombre}`}>
+                                  <span style={{ color: "var(--text-muted)", marginRight: "4px" }}>Completado:</span>
                                   {req.miembro_completado.foto ? (
-                                    <img
-                                      src={req.miembro_completado.foto}
-                                      alt=""
-                                      className={styles.reqCompletadoPorAvatar}
-                                    />
+                                    <img src={req.miembro_completado.foto} alt="" className={styles.reqCompletadoPorAvatar} />
                                   ) : (
                                     <span className={styles.reqCompletadoPorPlaceholder}>
                                       {req.miembro_completado.nombre?.charAt(0)?.toUpperCase() || "?"}
@@ -776,9 +864,6 @@ export default function ProjectDetailPage() {
                                 </span>
                               )}
                             </div>
-                            {req.descripcion && (
-                              <div className={styles.requirementDesc}>{req.descripcion}</div>
-                            )}
                           </div>
                           {req.costo != null && req.costo > 0 && (
                             <span className={styles.requirementCost}>{formatCurrency(req.costo)}</span>
@@ -1108,33 +1193,40 @@ export default function ProjectDetailPage() {
               <>
                 {/* Marcar trabajo finalizado */}
                 <div className={styles.detailCard}>
-                  <h4 className={styles.detailCardTitle}>Marcar Trabajo Finalizado</h4>
-                  {hasFinishedWork ? (
-                    <div className={styles.finishWorkSection}>
-                      <div className={styles.finishWorkDone}>
-                        <CheckIcon /> Has marcado tu trabajo como finalizado
-                      </div>
-                      {currentMemberAccepted?.fecha_trabajo_finalizado && (
-                        <span className={styles.finishWorkDate}>
-                          {formatDate(currentMemberAccepted.fecha_trabajo_finalizado)}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <div className={styles.finishWorkSection}>
-                      <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "var(--space-3)" }}>
-                        Cuando hayas terminado tu parte del trabajo, marca tu trabajo como finalizado.
-                        Cuando todos los miembros lo hagan, el proyecto se completará automáticamente.
-                      </p>
-                      <button
-                        className={ticketStyles.primaryButton}
-                        onClick={handleFinishWork}
-                        disabled={updating}
-                      >
-                        {updating ? "Procesando..." : "Marcar Trabajo Finalizado"}
-                      </button>
-                    </div>
-                  )}
+                  <h4 className={styles.detailCardTitle}>Mi Trabajo</h4>
+                  <button
+                    className={`${styles.finishWorkBtn} ${hasFinishedWork ? styles.finishWorkBtnDone : ""}`}
+                    onClick={handleFinishWork}
+                    disabled={updating}
+                  >
+                    {hasFinishedWork ? (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 11l-4 4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M5 15h10a4 4 0 0 0 0-8h-1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M9 12.5l2 2 4-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                    <span>
+                      {updating
+                        ? "Procesando..."
+                        : hasFinishedWork
+                          ? "Desmarcar trabajo finalizado"
+                          : "Marcar trabajo como finalizado"}
+                    </span>
+                    {hasFinishedWork && currentMemberAccepted?.fecha_trabajo_finalizado ? (
+                      <span className={styles.finishWorkHint}>
+                        Finalizado el {formatDate(currentMemberAccepted.fecha_trabajo_finalizado)}
+                      </span>
+                    ) : (
+                      <span className={styles.finishWorkHint}>
+                        Cuando todos los miembros lo hagan, el proyecto se completa automáticamente
+                      </span>
+                    )}
+                  </button>
                 </div>
 
                 {/* Reportar problema */}
@@ -1295,8 +1387,46 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
+            {/* Member Owner Card (for member projects) */}
+            {project.tipo_proyecto === "miembro" && project.miembro_propietario && (
+              <div className={styles.detailCard}>
+                <h4 className={styles.detailCardTitle}>Propietario</h4>
+                <div className={styles.ownerCard}>
+                  {project.miembro_propietario.foto ? (
+                    <img src={project.miembro_propietario.foto} alt="" className={styles.ownerAvatar} />
+                  ) : (
+                    <div className={styles.ownerAvatarPlaceholder}>
+                      {project.miembro_propietario.nombre?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+                  )}
+                  <div>
+                    <div className={styles.ownerName}>{project.miembro_propietario.nombre}</div>
+                    {project.miembro_propietario.puesto && (
+                      <div className={styles.ownerRole}>{project.miembro_propietario.puesto}</div>
+                    )}
+                  </div>
+                </div>
+                {/* Visibility toggle for member owner */}
+                {isMemberOwner && !isClosedState && (
+                  <div style={{ marginTop: "var(--space-3)" }}>
+                    <button
+                      className={styles.visibilityToggleBtn}
+                      onClick={handleToggleVisibility}
+                      disabled={updating}
+                    >
+                      {project.visibilidad === "privado" ? (
+                        <><GlobeIcon /> Hacer Publico</>
+                      ) : (
+                        <><LockIcon /> Hacer Privado</>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Client Card */}
-            {project.cliente && (
+            {project.cliente && project.cliente.id && (
               <div className={styles.detailCard}>
                 <h4 className={styles.detailCardTitle}>Cliente</h4>
                 <div className={ticketStyles.infoRow}>

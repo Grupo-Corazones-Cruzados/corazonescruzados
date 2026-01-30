@@ -46,19 +46,63 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Título es requerido" }, { status: 400 });
     }
 
+    // Verify project state allows adding requirements
+    const projectCheck = await query(
+      "SELECT estado, id_cliente, id_miembro_propietario, tipo_proyecto FROM projects WHERE id = $1",
+      [projectId]
+    );
+    if (projectCheck.rows.length === 0) {
+      return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
+    }
+    if (!["publicado", "planificado", "en_progreso"].includes(projectCheck.rows[0].estado)) {
+      return NextResponse.json({ error: "No se pueden agregar requerimientos en este estado" }, { status: 400 });
+    }
+
     // Determine creado_por based on user role
     const userResult = await query(
-      "SELECT rol FROM user_profiles WHERE id = $1",
+      "SELECT rol, id_miembro, email FROM user_profiles WHERE id = $1",
       [tokenData.userId]
     );
     const rol = userResult.rows[0]?.rol || "cliente";
     const creado_por = rol === "miembro" || rol === "admin" ? "miembro" : "cliente";
 
+    let creado_por_miembro_id: number | null = null;
+    let creado_por_cliente_id: number | null = null;
+
+    if (rol === "miembro" || rol === "admin") {
+      const miembroId = userResult.rows[0].id_miembro;
+
+      // Check if member is the owner of this project
+      const isMemberOwner = projectCheck.rows[0].id_miembro_propietario === miembroId;
+
+      if (!isMemberOwner) {
+        // If not owner, verify member has an accepted bid for this project
+        const bidCheck = await query(
+          "SELECT id FROM project_bids WHERE id_project = $1 AND id_miembro = $2 AND estado = 'aceptada'",
+          [projectId, miembroId]
+        );
+        if (bidCheck.rows.length === 0) {
+          return NextResponse.json({ error: "Solo miembros aceptados o el propietario pueden agregar requerimientos" }, { status: 403 });
+        }
+      }
+      creado_por_miembro_id = miembroId;
+    } else {
+      // Verify client owns the project
+      const clienteResult = await query(
+        "SELECT id FROM clientes WHERE correo_electronico = $1",
+        [userResult.rows[0].email]
+      );
+      if (clienteResult.rows.length === 0 || clienteResult.rows[0].id !== projectCheck.rows[0].id_cliente) {
+        return NextResponse.json({ error: "Solo el dueño del proyecto puede agregar requerimientos" }, { status: 403 });
+      }
+      creado_por_cliente_id = clienteResult.rows[0].id;
+    }
+
     const result = await query(
-      `INSERT INTO project_requirements (id_project, titulo, descripcion, costo, completado, creado_por, es_adicional)
-       VALUES ($1, $2, $3, $4, false, $5, $6)
+      `INSERT INTO project_requirements (id_project, titulo, descripcion, costo, completado, creado_por, es_adicional, creado_por_miembro_id, creado_por_cliente_id)
+       VALUES ($1, $2, $3, $4, false, $5, $6, $7, $8)
        RETURNING *`,
-      [projectId, titulo, descripcion || null, costo || null, creado_por, es_adicional === true]
+      [projectId, titulo, descripcion || null, costo || null, creado_por, es_adicional === true, creado_por_miembro_id, creado_por_cliente_id]
     );
 
     return NextResponse.json({ requirement: result.rows[0] });
@@ -83,6 +127,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "ID del requerimiento es requerido" }, { status: 400 });
     }
 
+    const { id } = await context.params;
+    const projectId = parseInt(id);
+
     // Get user role and the requirement's creado_por
     const userResult = await query(
       "SELECT rol, id_miembro FROM user_profiles WHERE id = $1",
@@ -91,7 +138,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const rol = userResult.rows[0]?.rol || "cliente";
 
     const reqResult = await query(
-      "SELECT creado_por FROM project_requirements WHERE id = $1",
+      "SELECT creado_por, id_project FROM project_requirements WHERE id = $1",
       [requirementId]
     );
     if (reqResult.rows.length === 0) {
@@ -101,6 +148,17 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     // Permission check: client can only edit their own requirements
     if (rol === "cliente" && reqResult.rows[0].creado_por !== "cliente") {
       return NextResponse.json({ error: "No tienes permiso para editar este requerimiento" }, { status: 403 });
+    }
+
+    // If toggling completado, project must be en_progreso
+    if (updates.completado !== undefined) {
+      const projectCheck = await query(
+        "SELECT estado FROM projects WHERE id = $1",
+        [projectId]
+      );
+      if (projectCheck.rows[0]?.estado !== "en_progreso") {
+        return NextResponse.json({ error: "Solo se puede marcar completado cuando el proyecto está en progreso" }, { status: 400 });
+      }
     }
 
     // Build dynamic update query
