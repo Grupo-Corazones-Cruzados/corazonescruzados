@@ -345,13 +345,14 @@
 }
 
 .timeInput {
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   background: var(--surface-2);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 0.9rem;
-  width: 100px;
+  min-width: 130px;
+  width: auto;
 }
 
 .timeInput:focus {
