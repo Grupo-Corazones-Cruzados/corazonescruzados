@@ -457,8 +457,8 @@ function ProjectDetailPageContent() {
     if (userRole === "admin") return true;
     // Team members (miembros) can only edit in planificado state
     if ((isTeamMember || isMemberOwner) && project?.estado === "planificado") return true;
-    // Clients can edit their own requirements
-    if (userRole === "cliente" && req.creado_por === "cliente") return true;
+    // Clients can edit their own requirements, but NOT when project is en_progreso
+    if (userRole === "cliente" && req.creado_por === "cliente" && project?.estado !== "en_progreso") return true;
     return false;
   };
 
