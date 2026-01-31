@@ -22,6 +22,13 @@ export interface Project {
   tipo_proyecto: "cliente" | "miembro";
   visibilidad: "privado" | "publico";
   es_propietario?: boolean;
+  // External client fields
+  cliente_externo_email?: string | null;
+  cliente_externo_nombre?: string | null;
+  // Share token fields
+  share_token?: string | null;
+  share_token_created_at?: string | null;
+  share_token_expires_at?: string | null;
   cliente?: {
     id: number;
     nombre: string;
@@ -55,6 +62,11 @@ export interface ProjectBid {
   fecha_aceptacion: string | null;
   confirmado_por_miembro: boolean | null;
   fecha_confirmacion: string | null;
+  // Removal tracking fields
+  removido?: boolean;
+  fecha_remocion?: string | null;
+  motivo_remocion?: string | null;
+  removido_por_id?: number | null;
   miembro?: {
     id: number;
     nombre: string;
@@ -518,6 +530,299 @@ export function useProject(id: number | null) {
     return { error: null, proyecto_completado: data.proyecto_completado || false };
   };
 
+  // ===== NEW METHODS FOR EXTENDED SYSTEM =====
+
+  // Generate/get share link
+  const generateShareLink = async (expiracion: "7d" | "30d" | "90d" | "permanente" = "30d") => {
+    if (!id) return { error: "No project ID", data: null };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expiracion }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al generar enlace");
+      }
+
+      setProject(prev => prev ? {
+        ...prev,
+        share_token: data.share_token,
+        share_token_created_at: data.created_at,
+        share_token_expires_at: data.expires_at,
+      } : prev);
+
+      return { error: null, data };
+    } catch (err) {
+      console.error("Error generating share link:", err);
+      return { error: "Error al generar enlace compartible", data: null };
+    }
+  };
+
+  // Get current share link info
+  const getShareLink = async () => {
+    if (!id) return { error: "No project ID", data: null };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/share`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al obtener enlace");
+      }
+
+      return { error: null, data };
+    } catch (err) {
+      console.error("Error getting share link:", err);
+      return { error: "Error al obtener enlace", data: null };
+    }
+  };
+
+  // Revoke share link
+  const revokeShareLink = async () => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/share`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al revocar enlace");
+      }
+
+      setProject(prev => prev ? {
+        ...prev,
+        share_token: null,
+        share_token_created_at: null,
+        share_token_expires_at: null,
+      } : prev);
+
+      return { error: null };
+    } catch (err) {
+      console.error("Error revoking share link:", err);
+      return { error: "Error al revocar enlace" };
+    }
+  };
+
+  // Set external client
+  const setExternalClient = async (email: string, nombre: string, enviar_email = true) => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/external-client`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, nombre, enviar_email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al establecer cliente externo");
+      }
+
+      setProject(prev => prev ? {
+        ...prev,
+        cliente_externo_email: data.cliente_externo_email,
+        cliente_externo_nombre: data.cliente_externo_nombre,
+      } : prev);
+
+      return { error: null };
+    } catch (err) {
+      console.error("Error setting external client:", err);
+      return { error: "Error al establecer cliente externo" };
+    }
+  };
+
+  // Remove external client
+  const removeExternalClient = async () => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/external-client`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al remover cliente externo");
+      }
+
+      setProject(prev => prev ? {
+        ...prev,
+        cliente_externo_email: null,
+        cliente_externo_nombre: null,
+      } : prev);
+
+      return { error: null };
+    } catch (err) {
+      console.error("Error removing external client:", err);
+      return { error: "Error al remover cliente externo" };
+    }
+  };
+
+  // Associate registered client (replaces external)
+  const associateRegisteredClient = async (id_cliente: number) => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/external-client`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_cliente }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al asociar cliente");
+      }
+
+      await fetchProject(true);
+      return { error: null };
+    } catch (err) {
+      console.error("Error associating registered client:", err);
+      return { error: "Error al asociar cliente" };
+    }
+  };
+
+  // Change project state manually
+  const changeState = async (estado: string) => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/state`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al cambiar estado");
+      }
+
+      setProject(prev => prev ? { ...prev, estado: data.estado_nuevo } : prev);
+      return { error: null, data };
+    } catch (err) {
+      console.error("Error changing state:", err);
+      return { error: "Error al cambiar estado" };
+    }
+  };
+
+  // Get valid state transitions
+  const getValidStates = async () => {
+    if (!id) return { error: "No project ID", data: null };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/state`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al obtener estados");
+      }
+
+      return { error: null, data };
+    } catch (err) {
+      console.error("Error getting valid states:", err);
+      return { error: "Error al obtener estados validos", data: null };
+    }
+  };
+
+  // Remove participant from project
+  const removeParticipant = async (bidId: number, motivo: string) => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/participants/${bidId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al remover participante");
+      }
+
+      // Update local state
+      setAcceptedMembers(prev => prev.filter(m => m.bid_id !== bidId));
+      setBids(prev => prev.map(b => b.id === bidId ? { ...b, removido: true } : b));
+
+      return { error: null };
+    } catch (err) {
+      console.error("Error removing participant:", err);
+      return { error: "Error al remover participante" };
+    }
+  };
+
+  // Publish private project
+  const publishProject = async () => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/publish`, {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al publicar proyecto");
+      }
+
+      setProject(prev => prev ? {
+        ...prev,
+        visibilidad: "publico",
+        estado: "publicado",
+      } : prev);
+
+      return { error: null };
+    } catch (err) {
+      console.error("Error publishing project:", err);
+      return { error: "Error al publicar proyecto" };
+    }
+  };
+
+  // Download PDF
+  const downloadPdf = async () => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/pdf`);
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Error al generar PDF");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Proyecto_${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      return { error: null };
+    } catch (err) {
+      console.error("Error downloading PDF:", err);
+      return { error: "Error al descargar PDF" };
+    }
+  };
+
   return {
     project,
     bids,
@@ -539,6 +844,18 @@ export function useProject(id: number | null) {
     republishProject,
     closeConvocatoria,
     finishWork,
+    // New methods for extended system
+    generateShareLink,
+    getShareLink,
+    revokeShareLink,
+    setExternalClient,
+    removeExternalClient,
+    associateRegisteredClient,
+    changeState,
+    getValidStates,
+    removeParticipant,
+    publishProject,
+    downloadPdf,
   };
 }
 

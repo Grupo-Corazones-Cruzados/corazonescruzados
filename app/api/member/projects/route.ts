@@ -104,7 +104,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { titulo, descripcion, visibilidad, presupuesto_min, presupuesto_max, fecha_limite, id_cliente } = body;
+    const {
+      titulo,
+      descripcion,
+      visibilidad,
+      presupuesto_min,
+      presupuesto_max,
+      fecha_limite,
+      id_cliente,
+      cliente_externo_email,
+      cliente_externo_nombre
+    } = body;
 
     // Validate required fields
     if (!titulo || titulo.trim() === "") {
@@ -114,6 +124,9 @@ export async function POST(request: NextRequest) {
     // Validate visibility
     const validVisibilidad = visibilidad === "publico" ? "publico" : "privado";
 
+    // Determine initial state: private projects start as "borrador", public as "publicado"
+    const initialEstado = validVisibilidad === "privado" ? "borrador" : "publicado";
+
     // If id_cliente is provided, verify the client exists
     if (id_cliente) {
       const clientCheck = await query("SELECT id FROM clientes WHERE id = $1", [id_cliente]);
@@ -122,12 +135,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate external client if provided
+    if (cliente_externo_email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cliente_externo_email)) {
+        return NextResponse.json({ error: "Formato de email de cliente externo inválido" }, { status: 400 });
+      }
+      if (!cliente_externo_nombre || cliente_externo_nombre.trim() === "") {
+        return NextResponse.json({ error: "Nombre del cliente externo es requerido" }, { status: 400 });
+      }
+    }
+
+    // Cannot have both registered client and external client
+    if (id_cliente && cliente_externo_email) {
+      return NextResponse.json({ error: "No se puede tener cliente registrado y externo al mismo tiempo" }, { status: 400 });
+    }
+
     // Create the project
     const result = await query(
       `INSERT INTO projects (
         titulo, descripcion, visibilidad, presupuesto_min, presupuesto_max,
-        fecha_limite, id_cliente, id_miembro_propietario, tipo_proyecto, estado
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'miembro', 'publicado')
+        fecha_limite, id_cliente, id_miembro_propietario, tipo_proyecto, estado,
+        cliente_externo_email, cliente_externo_nombre
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'miembro', $9, $10, $11)
       RETURNING *`,
       [
         titulo.trim(),
@@ -137,7 +167,10 @@ export async function POST(request: NextRequest) {
         presupuesto_max || null,
         fecha_limite || null,
         id_cliente || null,
-        miembroId
+        miembroId,
+        initialEstado,
+        cliente_externo_email?.toLowerCase().trim() || null,
+        cliente_externo_nombre?.trim() || null
       ]
     );
 

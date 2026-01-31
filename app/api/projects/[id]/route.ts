@@ -74,7 +74,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       }
     }
 
-    // Get all accepted members (the "team")
+    // Get all accepted members (the "team") - excluding removed ones
     const acceptedMembersResult = await query(
       `SELECT pb.id as bid_id, pb.monto_acordado, pb.confirmado_por_miembro, pb.fecha_confirmacion,
               pb.trabajo_finalizado, pb.fecha_trabajo_finalizado,
@@ -82,13 +82,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
        FROM project_bids pb
        LEFT JOIN miembros m ON pb.id_miembro = m.id
        WHERE pb.id_project = $1 AND pb.estado = 'aceptada'
+         AND (pb.removido IS NULL OR pb.removido = FALSE)
        ORDER BY pb.fecha_aceptacion ASC`,
       [projectId]
     );
 
-    // Get all bids
+    // Get all bids (including removal info)
     const bidsResult = await query(
-      `SELECT pb.*, json_build_object('id', m.id, 'nombre', m.nombre, 'foto', m.foto, 'puesto', m.puesto) as miembro
+      `SELECT pb.*, pb.removido, pb.fecha_remocion, pb.motivo_remocion, pb.removido_por_id,
+              json_build_object('id', m.id, 'nombre', m.nombre, 'foto', m.foto, 'puesto', m.puesto) as miembro
        FROM project_bids pb
        LEFT JOIN miembros m ON pb.id_miembro = m.id
        WHERE pb.id_project = $1

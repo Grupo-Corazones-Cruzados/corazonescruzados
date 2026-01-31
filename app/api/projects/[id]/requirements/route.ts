@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/jwt";
+import { sendRequirementCompletedToExternalClient } from "@/lib/email";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -54,7 +55,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (projectCheck.rows.length === 0) {
       return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
     }
-    if (!["publicado", "planificado", "en_progreso"].includes(projectCheck.rows[0].estado)) {
+    // Allow adding requirements in more states including new intermediate states
+    const allowedAddStates = ["borrador", "publicado", "planificado", "iniciado", "en_progreso", "en_implementacion", "en_pruebas"];
+    if (!allowedAddStates.includes(projectCheck.rows[0].estado)) {
       return NextResponse.json({ error: "No se pueden agregar requerimientos en este estado" }, { status: 400 });
     }
 
@@ -150,14 +153,15 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "No tienes permiso para editar este requerimiento" }, { status: 403 });
     }
 
-    // If toggling completado, project must be en_progreso
+    // If toggling completado, project must be in an active working state
     if (updates.completado !== undefined) {
       const projectCheck = await query(
-        "SELECT estado FROM projects WHERE id = $1",
+        "SELECT estado, cliente_externo_email, cliente_externo_nombre, share_token, titulo FROM projects WHERE id = $1",
         [projectId]
       );
-      if (projectCheck.rows[0]?.estado !== "en_progreso") {
-        return NextResponse.json({ error: "Solo se puede marcar completado cuando el proyecto está en progreso" }, { status: 400 });
+      const activeStates = ["iniciado", "en_progreso", "en_implementacion", "en_pruebas"];
+      if (!activeStates.includes(projectCheck.rows[0]?.estado)) {
+        return NextResponse.json({ error: "Solo se puede marcar completado cuando el proyecto está en un estado activo" }, { status: 400 });
       }
     }
 
@@ -205,6 +209,43 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     if (result.rows.length === 0) {
       return NextResponse.json({ error: "Requerimiento no encontrado" }, { status: 404 });
+    }
+
+    // Send email to external client if requirement was completed
+    if (updates.completado === true) {
+      const projectCheck = await query(
+        "SELECT id, titulo, cliente_externo_email, cliente_externo_nombre, share_token FROM projects WHERE id = $1",
+        [projectId]
+      );
+
+      if (projectCheck.rows[0]?.cliente_externo_email && projectCheck.rows[0]?.cliente_externo_nombre) {
+        const project = projectCheck.rows[0];
+
+        // Get member name who completed
+        let completadoPorNombre = "Un miembro del equipo";
+        const userMiembroId = userResult.rows[0]?.id_miembro;
+        if (userMiembroId) {
+          const memberResult = await query("SELECT nombre FROM miembros WHERE id = $1", [userMiembroId]);
+          if (memberResult.rows.length > 0) {
+            completadoPorNombre = memberResult.rows[0].nombre;
+          }
+        }
+
+        const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const shareUrl = project.share_token
+          ? `${APP_URL}/p/${project.share_token}`
+          : `${APP_URL}`;
+
+        // Send email asynchronously (don't wait)
+        sendRequirementCompletedToExternalClient(
+          project.cliente_externo_email,
+          project.cliente_externo_nombre,
+          { id: project.id, titulo: project.titulo },
+          { titulo: result.rows[0].titulo, costo: result.rows[0].costo },
+          completadoPorNombre,
+          shareUrl
+        ).catch(err => console.error("Error sending requirement completed email:", err));
+      }
     }
 
     return NextResponse.json({ requirement: result.rows[0] });

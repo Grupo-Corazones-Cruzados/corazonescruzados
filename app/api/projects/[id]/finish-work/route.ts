@@ -35,21 +35,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "No se encontró el perfil de miembro" }, { status: 400 });
     }
 
-    // Verify project is en_progreso
+    // Verify project is in an active working state
     const projectResult = await query(
-      "SELECT estado FROM projects WHERE id = $1",
+      "SELECT estado, cliente_externo_email, cliente_externo_nombre, share_token FROM projects WHERE id = $1",
       [projectId]
     );
     if (projectResult.rows.length === 0) {
       return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
     }
-    if (projectResult.rows[0].estado !== "en_progreso") {
-      return NextResponse.json({ error: "El proyecto no está en progreso" }, { status: 400 });
+    const activeStates = ["iniciado", "en_progreso", "en_implementacion", "en_pruebas"];
+    if (!activeStates.includes(projectResult.rows[0].estado)) {
+      return NextResponse.json({ error: "El proyecto no está en un estado activo" }, { status: 400 });
     }
 
-    // Verify member has an accepted bid
+    // Verify member has an accepted bid (not removed)
     const bidResult = await query(
-      "SELECT id, trabajo_finalizado FROM project_bids WHERE id_project = $1 AND id_miembro = $2 AND estado = 'aceptada'",
+      "SELECT id, trabajo_finalizado FROM project_bids WHERE id_project = $1 AND id_miembro = $2 AND estado = 'aceptada' AND (removido IS NULL OR removido = FALSE)",
       [projectId, userMiembroId]
     );
     if (bidResult.rows.length === 0) {
@@ -79,13 +80,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
       [bidResult.rows[0].id]
     );
 
-    // Auto-check: did all accepted members finish?
+    // Auto-check: did all accepted members (not removed) finish?
     const countResult = await query(
       `SELECT
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE trabajo_finalizado = true) as finalizados
       FROM project_bids
-      WHERE id_project = $1 AND estado = 'aceptada'`,
+      WHERE id_project = $1 AND estado = 'aceptada' AND (removido IS NULL OR removido = FALSE)`,
       [projectId]
     );
 
@@ -138,12 +139,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
             [projectId]
           );
 
-          // Get team members with amounts
+          // Get team members with amounts (excluding removed)
           const teamResult = await query(
             `SELECT m.nombre, pb.monto_acordado
              FROM project_bids pb
              JOIN miembros m ON pb.id_miembro = m.id
-             WHERE pb.id_project = $1 AND pb.estado = 'aceptada' AND pb.confirmado_por_miembro = true`,
+             WHERE pb.id_project = $1 AND pb.estado = 'aceptada' AND pb.confirmado_por_miembro = true
+               AND (pb.removido IS NULL OR pb.removido = FALSE)`,
             [projectId]
           );
 
@@ -153,6 +155,53 @@ export async function POST(request: NextRequest, context: RouteContext) {
             requirementsResult.rows,
             teamResult.rows,
             proj.cliente_nombre
+          );
+        }
+
+        // Also send to external client if exists
+        if (projectResult.rows[0]?.cliente_externo_email && projectResult.rows[0]?.cliente_externo_nombre) {
+          const proj = projectDetails.rows[0];
+          const externalEmail = projectResult.rows[0].cliente_externo_email;
+          const externalNombre = projectResult.rows[0].cliente_externo_nombre;
+
+          // Get requirements
+          const requirementsResult = await query(
+            `SELECT pr.titulo, pr.descripcion, pr.costo, pr.completado,
+                    CASE
+                      WHEN pr.creado_por_miembro_id IS NOT NULL THEN
+                        json_build_object('nombre', mcr.nombre, 'tipo', 'miembro')
+                      WHEN pr.creado_por_cliente_id IS NOT NULL THEN
+                        json_build_object('nombre', ccr.nombre, 'tipo', 'cliente')
+                      ELSE NULL
+                    END as creador,
+                    CASE WHEN pr.completado_por IS NOT NULL THEN
+                      json_build_object('nombre', mc.nombre)
+                    ELSE NULL END as miembro_completado
+             FROM project_requirements pr
+             LEFT JOIN miembros mcr ON pr.creado_por_miembro_id = mcr.id
+             LEFT JOIN clientes ccr ON pr.creado_por_cliente_id = ccr.id
+             LEFT JOIN miembros mc ON pr.completado_por = mc.id
+             WHERE pr.id_project = $1
+             ORDER BY pr.created_at ASC`,
+            [projectId]
+          );
+
+          // Get team
+          const teamResult = await query(
+            `SELECT m.nombre, pb.monto_acordado
+             FROM project_bids pb
+             JOIN miembros m ON pb.id_miembro = m.id
+             WHERE pb.id_project = $1 AND pb.estado = 'aceptada' AND pb.confirmado_por_miembro = true
+               AND (pb.removido IS NULL OR pb.removido = FALSE)`,
+            [projectId]
+          );
+
+          await sendProjectCompletedEmail(
+            externalEmail,
+            { id: proj.id, titulo: proj.titulo, descripcion: proj.descripcion },
+            requirementsResult.rows,
+            teamResult.rows,
+            externalNombre
           );
         }
       } catch (emailError) {

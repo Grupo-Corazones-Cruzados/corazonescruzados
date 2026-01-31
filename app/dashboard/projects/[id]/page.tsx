@@ -63,10 +63,14 @@ const GlobeIcon = () => (
 
 const getStatusClass = (estado: string): string => {
   switch (estado) {
+    case "borrador": return styles.statusBorrador;
     case "publicado": return styles.statusPublicado;
     case "asignado": return styles.statusAsignado;
     case "planificado": return styles.statusPlanificado;
+    case "iniciado": return styles.statusIniciado;
     case "en_progreso": return styles.statusEnProgreso;
+    case "en_implementacion": return styles.statusEnImplementacion;
+    case "en_pruebas": return styles.statusEnPruebas;
     case "completado": return styles.statusCompletado;
     case "completado_parcial": return styles.statusCompletadoParcial;
     case "no_completado": return styles.statusNoCompletado;
@@ -80,10 +84,14 @@ const getStatusClass = (estado: string): string => {
 
 const getStatusLabel = (estado: string): string => {
   switch (estado) {
+    case "borrador": return "Borrador";
     case "publicado": return "Publicado";
     case "asignado": return "Asignado";
     case "planificado": return "Planificado";
+    case "iniciado": return "Iniciado";
     case "en_progreso": return "En Progreso";
+    case "en_implementacion": return "En Implementacion";
+    case "en_pruebas": return "En Pruebas";
     case "completado": return "Completado";
     case "completado_parcial": return "Completado Parcial";
     case "no_completado": return "No Completado";
@@ -480,12 +488,13 @@ function ProjectDetailPageContent() {
     "no_pagado", "no_completado_por_miembro"
   ].includes(project?.estado || "");
 
-  // Can add requirements (team member, member owner, or client owner in publicado, planificado, or en_progreso)
+  // Can add requirements (team member, member owner, or client owner in allowed states)
   const canManageRequirements = (isTeamMember || isProjectOwner || isMemberOwner) &&
-    ["publicado", "planificado", "en_progreso"].includes(project?.estado || "");
+    ["borrador", "publicado", "planificado", "iniciado", "en_progreso", "en_implementacion", "en_pruebas"].includes(project?.estado || "");
 
-  // Can toggle completado (only in en_progreso, team members or member owner)
-  const canToggleCompletado = (isTeamMember || isMemberOwner) && project?.estado === "en_progreso";
+  // Can toggle completado (only in active working states, team members or member owner)
+  const activeWorkingStates = ["iniciado", "en_progreso", "en_implementacion", "en_pruebas"];
+  const canToggleCompletado = (isTeamMember || isMemberOwner) && activeWorkingStates.includes(project?.estado || "");
 
   // Check if all accepted members have confirmed
   const allMembersConfirmed = acceptedMembers.length > 0 &&
@@ -798,7 +807,7 @@ function ProjectDetailPageContent() {
 
             {/* Requirements Card - visible for team members, owner, or any member viewing publicado projects, or when completed */}
             {(
-              ((isTeamMember || isProjectOwner) && ["publicado", "planificado", "en_progreso", "completado", "completado_parcial"].includes(project.estado)) ||
+              ((isTeamMember || isProjectOwner) && ["borrador", "publicado", "planificado", "iniciado", "en_progreso", "en_implementacion", "en_pruebas", "completado", "completado_parcial"].includes(project.estado)) ||
               ((userRole === "miembro" || userRole === "admin") && project.estado === "publicado")
             ) && (
               <div className={styles.detailCard}>
@@ -1291,8 +1300,8 @@ function ProjectDetailPageContent() {
               </div>
             )}
 
-            {/* Finish Work + Report Problem - for team member (en_progreso) */}
-            {isTeamMember && project.estado === "en_progreso" && (
+            {/* Finish Work + Report Problem - for team member (active working states) */}
+            {isTeamMember && activeWorkingStates.includes(project.estado) && (
               <>
                 {/* Marcar trabajo finalizado */}
                 <div className={styles.detailCard}>
@@ -1393,7 +1402,7 @@ function ProjectDetailPageContent() {
             )}
 
             {/* Close Project Panel - for client (report member) */}
-            {isProjectOwner && project.estado === "en_progreso" && (
+            {isProjectOwner && activeWorkingStates.includes(project.estado) && (
               <div className={styles.detailCard}>
                 <h4 className={styles.detailCardTitle}>Reportar Problema</h4>
                 {!showClosePanel ? (

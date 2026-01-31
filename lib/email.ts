@@ -579,3 +579,382 @@ export async function sendNotificationEmail(
     return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
   }
 }
+
+// Notificar al cliente externo cuando se crea un proyecto
+export async function sendProjectCreatedToExternalClient(
+  email: string,
+  clienteNombre: string,
+  project: {
+    id: number;
+    titulo: string;
+    descripcion?: string;
+  },
+  shareUrl: string,
+  creadorNombre: string
+) {
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(59, 130, 246, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">📋</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Nuevo proyecto creado
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      ${creadorNombre} ha creado un proyecto para ti
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      Se ha creado un nuevo proyecto para ti en <strong style="color: #dc2626;">Corazones Cruzados</strong>. Puedes ver todos los detalles y seguir el progreso usando el enlace a continuacion.
+    </p>
+
+    <!-- Info del proyecto -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+      <h2 style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0 0 8px;">${project.titulo}</h2>
+      ${project.descripcion ? `<p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">${project.descripcion}</p>` : ""}
+      <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Proyecto</span>
+          <div style="color: #e5e7eb; font-size: 14px; font-weight: 600;">#${project.id}</div>
+        </div>
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Creado por</span>
+          <div style="color: #e5e7eb; font-size: 14px;">${creadorNombre}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${shareUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver Proyecto
+      </a>
+    </div>
+
+    <!-- Info adicional -->
+    <div style="background: rgba(59, 130, 246, 0.08); border-radius: 10px; padding: 16px 20px; margin-top: 32px; border: 1px solid rgba(59, 130, 246, 0.2);">
+      <p style="color: #93c5fd; font-size: 13px; margin: 0 0 8px;">
+        <span>💡</span> <strong>Nota:</strong>
+      </p>
+      <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+        Este enlace te permite ver el proyecto sin necesidad de crear una cuenta. Guarda este correo para acceder cuando lo necesites.
+      </p>
+    </div>
+
+    <!-- Link alternativo -->
+    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.05);">
+      <p style="color: #6b7280; font-size: 12px; margin: 0 0 8px;">
+        Si el boton no funciona, copia y pega este enlace:
+      </p>
+      <p style="margin: 0;">
+        <a href="${shareUrl}" style="color: #60a5fa; font-size: 12px; word-break: break-all; text-decoration: none;">${shareUrl}</a>
+      </p>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `📋 Nuevo proyecto: ${project.titulo} — Corazones Cruzados`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending project created email to external client:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending project created email to external client:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Notificar al cliente externo cuando cambia el estado del proyecto
+export async function sendProjectStateChangeEmail(
+  email: string,
+  clienteNombre: string,
+  project: {
+    id: number;
+    titulo: string;
+  },
+  estadoAnterior: string,
+  nuevoEstado: string,
+  shareUrl: string
+) {
+  // Mapeo de estados a labels en español
+  const estadoLabels: Record<string, string> = {
+    borrador: "Borrador",
+    publicado: "Publicado",
+    planificado: "Planificado",
+    iniciado: "Iniciado",
+    en_progreso: "En Progreso",
+    en_implementacion: "En Implementación",
+    en_pruebas: "En Pruebas",
+    completado: "Completado",
+    completado_parcial: "Completado Parcial",
+    no_completado: "No Completado",
+    cancelado: "Cancelado",
+    cancelado_sin_acuerdo: "Cancelado - Sin Acuerdo",
+    cancelado_sin_presupuesto: "Cancelado - Sin Presupuesto",
+  };
+
+  const estadoAnteriorLabel = estadoLabels[estadoAnterior] || estadoAnterior;
+  const nuevoEstadoLabel = estadoLabels[nuevoEstado] || nuevoEstado;
+
+  // Determinar icono y color según el nuevo estado
+  let icon = "🔄";
+  let iconBg = "rgba(59, 130, 246, 0.15)";
+  if (nuevoEstado === "completado") {
+    icon = "✅";
+    iconBg = "rgba(16, 185, 129, 0.15)";
+  } else if (nuevoEstado.startsWith("cancelado") || nuevoEstado === "no_completado") {
+    icon = "⚠️";
+    iconBg = "rgba(251, 191, 36, 0.15)";
+  } else if (nuevoEstado === "en_implementacion" || nuevoEstado === "en_pruebas") {
+    icon = "⚙️";
+    iconBg = "rgba(139, 92, 246, 0.15)";
+  }
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: ${iconBg}; border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">${icon}</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Actualizacion de proyecto
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      El estado de tu proyecto ha cambiado
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      El proyecto <strong style="color: #ffffff;">${project.titulo}</strong> ha cambiado de estado.
+    </p>
+
+    <!-- Cambio de estado -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
+        <div style="text-align: center;">
+          <span style="color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Estado anterior</span>
+          <span style="background: rgba(107, 114, 128, 0.2); color: #9ca3af; padding: 6px 16px; border-radius: 6px; font-size: 14px; font-weight: 500;">${estadoAnteriorLabel}</span>
+        </div>
+        <span style="color: #6b7280; font-size: 20px;">→</span>
+        <div style="text-align: center;">
+          <span style="color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Nuevo estado</span>
+          <span style="background: rgba(220, 38, 38, 0.2); color: #fca5a5; padding: 6px 16px; border-radius: 6px; font-size: 14px; font-weight: 600;">${nuevoEstadoLabel}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${shareUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver Proyecto
+      </a>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `${icon} Proyecto actualizado: ${project.titulo} — ${nuevoEstadoLabel}`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending project state change email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending project state change email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Notificar al cliente externo cuando se completa un requerimiento
+export async function sendRequirementCompletedToExternalClient(
+  email: string,
+  clienteNombre: string,
+  project: {
+    id: number;
+    titulo: string;
+  },
+  requirement: {
+    titulo: string;
+    costo?: number;
+  },
+  completadoPorNombre: string,
+  shareUrl: string
+) {
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">✓</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Requerimiento completado
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Se ha completado un entregable de tu proyecto
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      Se ha completado un requerimiento en tu proyecto <strong style="color: #ffffff;">${project.titulo}</strong>.
+    </p>
+
+    <!-- Detalle del requerimiento -->
+    <div style="background: rgba(16, 185, 129, 0.08); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(16, 185, 129, 0.2);">
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <span style="color: #10b981; font-size: 20px;">✓</span>
+        <div style="flex: 1;">
+          <h3 style="color: #ffffff; font-size: 16px; font-weight: 600; margin: 0 0 8px;">${requirement.titulo}</h3>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <span style="color: #9ca3af; font-size: 13px;">
+              Completado por: <strong style="color: #e5e7eb;">${completadoPorNombre}</strong>
+            </span>
+            ${requirement.costo ? `<span style="color: #9ca3af; font-size: 13px;">Costo: <strong style="color: #10b981;">$${Number(requirement.costo).toFixed(2)}</strong></span>` : ""}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${shareUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver Proyecto
+      </a>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `✓ Requerimiento completado: ${requirement.titulo} — ${project.titulo}`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending requirement completed email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending requirement completed email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Notificar a un miembro que fue removido del proyecto
+export async function sendParticipantRemovedEmail(
+  email: string,
+  miembroNombre: string,
+  project: {
+    id: number;
+    titulo: string;
+  },
+  motivo: string,
+  removidoPorNombre: string
+) {
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(239, 68, 68, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">⚠️</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Remocion de proyecto
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Has sido removido de un proyecto
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${miembroNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      Lamentamos informarte que has sido removido del proyecto <strong style="color: #ffffff;">${project.titulo}</strong>.
+    </p>
+
+    <!-- Detalle -->
+    <div style="background: rgba(239, 68, 68, 0.08); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(239, 68, 68, 0.2);">
+      <div style="margin-bottom: 16px;">
+        <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Proyecto</span>
+        <div style="color: #e5e7eb; font-size: 15px; font-weight: 600;">${project.titulo}</div>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Removido por</span>
+        <div style="color: #e5e7eb; font-size: 14px;">${removidoPorNombre}</div>
+      </div>
+      <div>
+        <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Motivo</span>
+        <div style="color: #fca5a5; font-size: 14px; margin-top: 4px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; line-height: 1.6;">${motivo}</div>
+      </div>
+    </div>
+
+    <!-- Info adicional -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 16px 20px; margin-top: 32px; border: 1px solid rgba(255,255,255,0.05);">
+      <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+        Si crees que esto es un error o tienes alguna pregunta, por favor contacta con el soporte de Corazones Cruzados.
+      </p>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `⚠️ Has sido removido del proyecto: ${project.titulo}`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending participant removed email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending participant removed email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
