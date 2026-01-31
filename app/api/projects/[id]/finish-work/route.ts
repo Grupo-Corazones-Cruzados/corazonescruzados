@@ -102,6 +102,119 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
       proyecto_completado = true;
 
+      // Create portfolio entries for all participating members
+      try {
+        // Get project info for portfolio
+        const projectInfoResult = await query(
+          "SELECT titulo, descripcion FROM projects WHERE id = $1",
+          [projectId]
+        );
+        const projectInfo = projectInfoResult.rows[0];
+
+        // Get all accepted members (not removed) with their bids
+        const acceptedMembersResult = await query(
+          `SELECT pb.id_miembro, pb.monto_acordado
+           FROM project_bids pb
+           WHERE pb.id_project = $1
+             AND pb.estado = 'aceptada'
+             AND pb.confirmado_por_miembro = true
+             AND (pb.removido IS NULL OR pb.removido = FALSE)`,
+          [projectId]
+        );
+
+        // For each member, get the requirements they completed and create portfolio entry
+        for (const member of acceptedMembersResult.rows) {
+          // Get requirements completed by this member
+          const memberReqsResult = await query(
+            `SELECT titulo, descripcion, costo
+             FROM project_requirements
+             WHERE id_project = $1 AND completado = true AND completado_por = $2`,
+            [projectId, member.id_miembro]
+          );
+
+          const funciones = memberReqsResult.rows.map((r: any) => ({
+            titulo: r.titulo,
+            descripcion: r.descripcion,
+            costo: r.costo,
+          }));
+
+          // Insert or update portfolio entry (upsert)
+          await query(
+            `INSERT INTO member_portfolio (
+               id_miembro, id_project, titulo, descripcion, funciones, monto_ganado, fecha_proyecto_completado
+             ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+             ON CONFLICT (id_miembro, id_project) DO UPDATE SET
+               titulo = EXCLUDED.titulo,
+               descripcion = EXCLUDED.descripcion,
+               funciones = EXCLUDED.funciones,
+               monto_ganado = EXCLUDED.monto_ganado,
+               fecha_proyecto_completado = NOW()`,
+            [
+              member.id_miembro,
+              projectId,
+              projectInfo.titulo,
+              projectInfo.descripcion,
+              JSON.stringify(funciones),
+              member.monto_acordado,
+            ]
+          );
+        }
+
+        // Also add portfolio entry for the project owner if they completed any requirements
+        const ownerResult = await query(
+          "SELECT id_miembro_propietario FROM projects WHERE id = $1",
+          [projectId]
+        );
+        const ownerId = ownerResult.rows[0]?.id_miembro_propietario;
+
+        if (ownerId) {
+          // Check if owner already has a portfolio entry (they might be an accepted member too)
+          const ownerHasEntry = acceptedMembersResult.rows.some(
+            (m: any) => m.id_miembro === ownerId
+          );
+
+          if (!ownerHasEntry) {
+            // Check if owner completed any requirements
+            const ownerReqsResult = await query(
+              `SELECT titulo, descripcion, costo
+               FROM project_requirements
+               WHERE id_project = $1 AND completado = true AND completado_por = $2`,
+              [projectId, ownerId]
+            );
+
+            if (ownerReqsResult.rows.length > 0) {
+              const ownerFunciones = ownerReqsResult.rows.map((r: any) => ({
+                titulo: r.titulo,
+                descripcion: r.descripcion,
+                costo: r.costo,
+              }));
+
+              await query(
+                `INSERT INTO member_portfolio (
+                   id_miembro, id_project, titulo, descripcion, funciones, monto_ganado, fecha_proyecto_completado
+                 ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                 ON CONFLICT (id_miembro, id_project) DO UPDATE SET
+                   titulo = EXCLUDED.titulo,
+                   descripcion = EXCLUDED.descripcion,
+                   funciones = EXCLUDED.funciones,
+                   fecha_proyecto_completado = NOW()`,
+                [
+                  ownerId,
+                  projectId,
+                  projectInfo.titulo,
+                  projectInfo.descripcion,
+                  JSON.stringify(ownerFunciones),
+                  null, // Owner doesn't have monto_acordado
+                ]
+              );
+            }
+          }
+        }
+      } catch (portfolioError) {
+        console.error("Error creating portfolio entries:", portfolioError);
+        // Don't fail the request if portfolio creation fails
+      }
+
       // Send completion email to client
       try {
         // Get project details with client info

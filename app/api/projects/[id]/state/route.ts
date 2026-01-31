@@ -33,6 +33,17 @@ export async function PATCH(
       );
     }
 
+    // Get user profile to check role and id_miembro
+    const userResult = await query(
+      "SELECT rol, id_miembro FROM user_profiles WHERE id = $1",
+      [tokenData.userId]
+    );
+    if (userResult.rows.length === 0) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+    const userRole = userResult.rows[0].rol;
+    const userMiembroId = userResult.rows[0].id_miembro;
+
     // Obtener proyecto actual
     const projectResult = await query(
       `SELECT p.*,
@@ -52,9 +63,9 @@ export async function PATCH(
     const nuevoEstado = estado as ProjectState;
 
     // Verificar permisos (solo el propietario puede cambiar estado)
-    const isClientOwner = tokenData.role === "cliente" && project.id_cliente === tokenData.id;
-    const isMemberOwner = tokenData.role === "miembro" && project.id_miembro_propietario === tokenData.id;
-    const isAdmin = tokenData.role === "admin";
+    const isClientOwner = userRole === "cliente" && project.id_cliente === tokenData.userId;
+    const isMemberOwner = (userRole === "miembro" || userRole === "admin") && project.id_miembro_propietario === userMiembroId;
+    const isAdmin = userRole === "admin";
 
     if (!isClientOwner && !isMemberOwner && !isAdmin) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -117,6 +128,106 @@ export async function PATCH(
       [nuevoEstado, id]
     );
 
+    // Si el proyecto se completa, crear entradas de portafolio
+    if (nuevoEstado === 'completado') {
+      try {
+        // Get project info for portfolio
+        const projectInfoResult = await query(
+          "SELECT titulo, descripcion, id_miembro_propietario FROM projects WHERE id = $1",
+          [id]
+        );
+        const projectInfo = projectInfoResult.rows[0];
+
+        // For private projects (no collaborators), add owner to portfolio if they completed requirements
+        if (isPrivateProject && projectInfo.id_miembro_propietario) {
+          const ownerReqsResult = await query(
+            `SELECT titulo, descripcion, costo
+             FROM project_requirements
+             WHERE id_project = $1 AND completado = true AND completado_por = $2`,
+            [id, projectInfo.id_miembro_propietario]
+          );
+
+          // If owner completed requirements, or just add the project anyway
+          const ownerFunciones = ownerReqsResult.rows.map((r: any) => ({
+            titulo: r.titulo,
+            descripcion: r.descripcion,
+            costo: r.costo,
+          }));
+
+          // For private projects, add to portfolio even without requirements
+          // (owner did all the work)
+          await query(
+            `INSERT INTO member_portfolio (
+               id_miembro, id_project, titulo, descripcion, funciones, monto_ganado, fecha_proyecto_completado
+             ) VALUES ($1, $2, $3, $4, $5, NULL, NOW())
+             ON CONFLICT (id_miembro, id_project) DO UPDATE SET
+               titulo = EXCLUDED.titulo,
+               descripcion = EXCLUDED.descripcion,
+               funciones = EXCLUDED.funciones,
+               fecha_proyecto_completado = NOW()`,
+            [
+              projectInfo.id_miembro_propietario,
+              id,
+              projectInfo.titulo,
+              projectInfo.descripcion,
+              JSON.stringify(ownerFunciones),
+            ]
+          );
+        }
+
+        // For collaborative projects, add portfolio entries for all accepted members
+        if (hasCollaborators) {
+          const acceptedMembersResult = await query(
+            `SELECT pb.id_miembro, pb.monto_acordado
+             FROM project_bids pb
+             WHERE pb.id_project = $1
+               AND pb.estado = 'aceptada'
+               AND pb.confirmado_por_miembro = true
+               AND (pb.removido IS NULL OR pb.removido = FALSE)`,
+            [id]
+          );
+
+          for (const member of acceptedMembersResult.rows) {
+            const memberReqsResult = await query(
+              `SELECT titulo, descripcion, costo
+               FROM project_requirements
+               WHERE id_project = $1 AND completado = true AND completado_por = $2`,
+              [id, member.id_miembro]
+            );
+
+            const funciones = memberReqsResult.rows.map((r: any) => ({
+              titulo: r.titulo,
+              descripcion: r.descripcion,
+              costo: r.costo,
+            }));
+
+            await query(
+              `INSERT INTO member_portfolio (
+                 id_miembro, id_project, titulo, descripcion, funciones, monto_ganado, fecha_proyecto_completado
+               ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+               ON CONFLICT (id_miembro, id_project) DO UPDATE SET
+                 titulo = EXCLUDED.titulo,
+                 descripcion = EXCLUDED.descripcion,
+                 funciones = EXCLUDED.funciones,
+                 monto_ganado = EXCLUDED.monto_ganado,
+                 fecha_proyecto_completado = NOW()`,
+              [
+                member.id_miembro,
+                id,
+                projectInfo.titulo,
+                projectInfo.descripcion,
+                JSON.stringify(funciones),
+                member.monto_acordado,
+              ]
+            );
+          }
+        }
+      } catch (portfolioError) {
+        console.error("Error creating portfolio entries:", portfolioError);
+        // Don't fail the request if portfolio creation fails
+      }
+    }
+
     // Enviar email al cliente externo si existe
     if (project.cliente_externo_email && project.cliente_externo_nombre) {
       const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -171,6 +282,17 @@ export async function GET(
 
     const { id } = await context.params;
 
+    // Get user profile to check role and id_miembro
+    const userResult = await query(
+      "SELECT rol, id_miembro FROM user_profiles WHERE id = $1",
+      [tokenData.userId]
+    );
+    if (userResult.rows.length === 0) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+    const userRole = userResult.rows[0].rol;
+    const userMiembroId = userResult.rows[0].id_miembro;
+
     // Obtener proyecto actual
     const projectResult = await query(
       `SELECT estado, visibilidad, id_cliente, id_miembro_propietario
@@ -186,9 +308,9 @@ export async function GET(
     const estadoActual = project.estado as ProjectState;
 
     // Verificar permisos
-    const isClientOwner = tokenData.role === "cliente" && project.id_cliente === tokenData.id;
-    const isMemberOwner = tokenData.role === "miembro" && project.id_miembro_propietario === tokenData.id;
-    const isAdmin = tokenData.role === "admin";
+    const isClientOwner = userRole === "cliente" && project.id_cliente === tokenData.userId;
+    const isMemberOwner = (userRole === "miembro" || userRole === "admin") && project.id_miembro_propietario === userMiembroId;
+    const isAdmin = userRole === "admin";
 
     if (!isClientOwner && !isMemberOwner && !isAdmin) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
@@ -215,7 +337,7 @@ export async function GET(
       estado_actual_label: getStateLabel(estadoActual),
       is_private_project: isPrivateProject,
       has_collaborators: hasCollaborators,
-      valid_transitions: validStates.map(s => ({
+      transitions: validStates.map(s => ({
         estado: s,
         label: getStateLabel(s)
       }))

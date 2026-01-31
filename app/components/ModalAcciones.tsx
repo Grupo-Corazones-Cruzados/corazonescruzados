@@ -13,6 +13,15 @@ interface Accion {
   id_fuente: number;
 }
 
+interface PortfolioEntry {
+  id: number;
+  titulo: string;
+  descripcion: string | null;
+  funciones: { titulo: string; descripcion?: string; costo?: number }[];
+  monto_ganado: number | null;
+  fecha_proyecto_completado: string | null;
+}
+
 interface ModalAccionesProps {
   selectedMember: number | null;
   showForm: boolean;
@@ -33,11 +42,36 @@ const ModalAcciones: React.FC<ModalAccionesProps> = ({
   objetoMiembro,
 }) => {
   const [mounted, setMounted] = useState(false);
+  const [portfolio, setPortfolio] = useState<PortfolioEntry[]>([]);
+  const [loadingPortfolio, setLoadingPortfolio] = useState(false);
+  const [showPortfolio, setShowPortfolio] = useState(false);
 
   // Para que createPortal funcione en SSR
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch portfolio when member is selected
+  useEffect(() => {
+    const fetchPortfolio = async () => {
+      if (!selectedMember) return;
+
+      setLoadingPortfolio(true);
+      try {
+        const res = await fetch(`/api/public/portfolio/${selectedMember}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPortfolio(data.portfolio || []);
+        }
+      } catch (err) {
+        console.error("Error fetching portfolio:", err);
+      } finally {
+        setLoadingPortfolio(false);
+      }
+    };
+
+    fetchPortfolio();
+  }, [selectedMember]);
 
   // Bloquea scroll + ESC para cerrar
   useEffect(() => {
@@ -102,7 +136,59 @@ const ModalAcciones: React.FC<ModalAccionesProps> = ({
 
             {descripcion && <p className={styles.MemberDesc}>{descripcion}</p>}
 
-            
+            {/* Portfolio Section */}
+            {portfolio.length > 0 && (
+              <div className={styles.PortfolioSection}>
+                <button
+                  type="button"
+                  className={styles.PortfolioToggle}
+                  onClick={() => setShowPortfolio(!showPortfolio)}
+                >
+                  <span className={styles.PortfolioToggleTitle}>
+                    Proyectos Completados ({portfolio.length})
+                  </span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    style={{
+                      transform: showPortfolio ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 200ms ease",
+                    }}
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                {showPortfolio && (
+                  <div className={styles.PortfolioList}>
+                    {portfolio.map((entry) => (
+                      <div key={entry.id} className={styles.PortfolioItem}>
+                        <div className={styles.PortfolioItemHeader}>
+                          <span className={styles.PortfolioItemTitle}>{entry.titulo}</span>
+                          {entry.funciones && entry.funciones.length > 0 && (
+                            <span className={styles.PortfolioItemBadge}>
+                              {entry.funciones.length} tarea{entry.funciones.length !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
+                        {entry.funciones && entry.funciones.length > 0 && (
+                          <ul className={styles.PortfolioFunciones}>
+                            {entry.funciones.map((func, idx) => (
+                              <li key={idx}>{func.titulo}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+
 
                        <div className={styles.AccionesFooterBtns}>
                 <button
