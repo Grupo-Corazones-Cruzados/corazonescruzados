@@ -355,6 +355,173 @@ export async function sendTicketReportEmail(
   }
 }
 
+// Reporte de proyecto completado al cliente
+export async function sendProjectCompletedEmail(
+  email: string,
+  project: {
+    id: number;
+    titulo: string;
+    descripcion?: string;
+  },
+  requirements: {
+    titulo: string;
+    descripcion?: string;
+    costo?: number;
+    completado: boolean;
+    creador?: { nombre: string; tipo: string };
+    miembro_completado?: { nombre: string };
+  }[],
+  teamMembers: {
+    nombre: string;
+    monto_acordado?: number;
+  }[],
+  clienteNombre?: string
+) {
+  const projectUrl = `${APP_URL}/dashboard/projects/${project.id}`;
+
+  const totalCosto = requirements.reduce((sum, r) => sum + Number(r.costo || 0), 0);
+  const totalReqs = requirements.length;
+  const completedReqs = requirements.filter(r => r.completado).length;
+
+  const requirementsHtml = requirements.length > 0
+    ? requirements.map((r) => `
+        <tr>
+          <td style="padding: 12px; color: #e5e7eb; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div style="font-weight: 600;">${r.titulo}</div>
+            ${r.descripcion ? `<div style="color: #9ca3af; font-size: 13px; margin-top: 4px;">${r.descripcion}</div>` : ""}
+            <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+              ${r.creador ? `<span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Creado por: ${r.creador.nombre}</span>` : ""}
+              ${r.completado && r.miembro_completado ? `<span style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Completado por: ${r.miembro_completado.nombre}</span>` : ""}
+            </div>
+          </td>
+          <td style="padding: 12px; color: #e5e7eb; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center;">
+            ${r.completado
+              ? '<span style="color: #10b981;">✓ Completado</span>'
+              : '<span style="color: #fbbf24;">Pendiente</span>'}
+          </td>
+          <td style="padding: 12px; color: #e5e7eb; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: right;">
+            ${r.costo ? `$${Number(r.costo).toFixed(2)}` : "—"}
+          </td>
+        </tr>
+      `).join("")
+    : `<tr><td colspan="3" style="padding: 12px; color: #6b7280; font-size: 14px; text-align: center;">Sin requerimientos</td></tr>`;
+
+  const teamHtml = teamMembers.length > 0
+    ? teamMembers.map((m) => `
+        <div style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 8px; margin: 4px;">
+          <span style="color: #e5e7eb; font-size: 14px; font-weight: 500;">${m.nombre}</span>
+          ${m.monto_acordado ? `<span style="color: #10b981; font-size: 13px; margin-left: 8px;">$${Number(m.monto_acordado).toFixed(2)}</span>` : ""}
+        </div>
+      `).join("")
+    : `<span style="color: #6b7280; font-size: 14px;">Sin equipo asignado</span>`;
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">🎉</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      ¡Proyecto Completado!
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Tu proyecto ha sido finalizado exitosamente
+    </p>
+
+    <!-- Saludo -->
+    ${clienteNombre ? `<p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,</p>` : ""}
+
+    <!-- Info del proyecto -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+      <h2 style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0 0 8px;">${project.titulo}</h2>
+      ${project.descripcion ? `<p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">${project.descripcion}</p>` : ""}
+      <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Proyecto</span>
+          <div style="color: #e5e7eb; font-size: 14px; font-weight: 600;">#${project.id}</div>
+        </div>
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Estado</span>
+          <div style="color: #10b981; font-size: 14px; font-weight: 600;">Completado</div>
+        </div>
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Requerimientos</span>
+          <div style="color: #e5e7eb; font-size: 14px;">${completedReqs}/${totalReqs} completados</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equipo -->
+    <div style="margin-bottom: 24px;">
+      <h3 style="color: #ffffff; font-size: 15px; font-weight: 600; margin: 0 0 12px;">Equipo de Trabajo</h3>
+      <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 12px 16px; border: 1px solid rgba(255,255,255,0.05);">
+        ${teamHtml}
+      </div>
+    </div>
+
+    <!-- Requerimientos -->
+    <div style="margin-bottom: 24px;">
+      <h3 style="color: #ffffff; font-size: 15px; font-weight: 600; margin: 0 0 12px;">Requerimientos del Proyecto</h3>
+      <table style="width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.03); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+        <thead>
+          <tr style="background: rgba(255,255,255,0.05);">
+            <th style="padding: 12px; color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left;">Requerimiento</th>
+            <th style="padding: 12px; color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Estado</th>
+            <th style="padding: 12px; color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: right;">Costo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${requirementsHtml}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Total -->
+    ${totalCosto > 0 ? `
+    <div style="background: rgba(16, 185, 129, 0.08); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(16, 185, 129, 0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: #d1d5db; font-size: 14px;">Costo total de requerimientos</span>
+        <span style="color: #ffffff; font-size: 20px; font-weight: 700;">$${totalCosto.toFixed(2)}</span>
+      </div>
+    </div>
+    ` : ""}
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${projectUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver Proyecto Completo
+      </a>
+    </div>
+
+    <!-- Nota final -->
+    <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; text-align: center; margin: 32px 0 0;">
+      Gracias por confiar en <strong style="color: #dc2626;">Corazones Cruzados</strong>. Esperamos volver a trabajar contigo pronto.
+    </p>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `🎉 Proyecto #${project.id} completado — ${project.titulo}`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending project completed email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending project completed email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
 // Función genérica para enviar notificaciones
 export async function sendNotificationEmail(
   email: string,

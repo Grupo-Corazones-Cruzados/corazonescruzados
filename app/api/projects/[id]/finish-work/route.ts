@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/jwt";
+import { sendProjectCompletedEmail } from "@/lib/email";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -99,6 +100,65 @@ export async function POST(request: NextRequest, context: RouteContext) {
         [projectId]
       );
       proyecto_completado = true;
+
+      // Send completion email to client
+      try {
+        // Get project details with client info
+        const projectDetails = await query(
+          `SELECT p.id, p.titulo, p.descripcion, p.id_cliente,
+                  c.correo_electronico as cliente_email, c.nombre as cliente_nombre
+           FROM projects p
+           LEFT JOIN clientes c ON p.id_cliente = c.id
+           WHERE p.id = $1`,
+          [projectId]
+        );
+
+        if (projectDetails.rows.length > 0 && projectDetails.rows[0].cliente_email) {
+          const proj = projectDetails.rows[0];
+
+          // Get requirements with creator and completor info
+          const requirementsResult = await query(
+            `SELECT pr.titulo, pr.descripcion, pr.costo, pr.completado,
+                    CASE
+                      WHEN pr.creado_por_miembro_id IS NOT NULL THEN
+                        json_build_object('nombre', mcr.nombre, 'tipo', 'miembro')
+                      WHEN pr.creado_por_cliente_id IS NOT NULL THEN
+                        json_build_object('nombre', ccr.nombre, 'tipo', 'cliente')
+                      ELSE NULL
+                    END as creador,
+                    CASE WHEN pr.completado_por IS NOT NULL THEN
+                      json_build_object('nombre', mc.nombre)
+                    ELSE NULL END as miembro_completado
+             FROM project_requirements pr
+             LEFT JOIN miembros mcr ON pr.creado_por_miembro_id = mcr.id
+             LEFT JOIN clientes ccr ON pr.creado_por_cliente_id = ccr.id
+             LEFT JOIN miembros mc ON pr.completado_por = mc.id
+             WHERE pr.id_project = $1
+             ORDER BY pr.created_at ASC`,
+            [projectId]
+          );
+
+          // Get team members with amounts
+          const teamResult = await query(
+            `SELECT m.nombre, pb.monto_acordado
+             FROM project_bids pb
+             JOIN miembros m ON pb.id_miembro = m.id
+             WHERE pb.id_project = $1 AND pb.estado = 'aceptada' AND pb.confirmado_por_miembro = true`,
+            [projectId]
+          );
+
+          await sendProjectCompletedEmail(
+            proj.cliente_email,
+            { id: proj.id, titulo: proj.titulo, descripcion: proj.descripcion },
+            requirementsResult.rows,
+            teamResult.rows,
+            proj.cliente_nombre
+          );
+        }
+      } catch (emailError) {
+        console.error("Error sending project completion email:", emailError);
+        // Don't fail the request if email fails
+      }
     }
 
     return NextResponse.json({
