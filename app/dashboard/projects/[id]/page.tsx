@@ -453,7 +453,11 @@ function ProjectDetailPageContent() {
 
   // Check if requirement can be edited by current user
   const canEditRequirement = (req: ProjectRequirement) => {
-    if (userRole === "miembro" || userRole === "admin") return true;
+    // Admin can always edit
+    if (userRole === "admin") return true;
+    // Team members (miembros) can only edit in planificado state
+    if ((isTeamMember || isMemberOwner) && project?.estado === "planificado") return true;
+    // Clients can edit their own requirements
     if (userRole === "cliente" && req.creado_por === "cliente") return true;
     return false;
   };
