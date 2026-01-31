@@ -45,7 +45,7 @@ export default function CalendarPicker({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { getAvailableSlotsForDate, hasAvailabilityOnDate, loading } = useMemberAvailability(miembroId);
+  const { getAvailableSlotsForDate, hasAvailabilityOnDate, hasConfiguredAvailability, loading } = useMemberAvailability(miembroId);
 
   // Get calendar data for current month
   const calendarData = useMemo(() => {
@@ -154,6 +154,32 @@ export default function CalendarPicker({
       <div className={styles.calendarContainer}>
         <div style={{ padding: "var(--space-8)", textAlign: "center" }}>
           <p style={{ color: "var(--text-muted)" }}>Cargando disponibilidad...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasConfiguredAvailability && miembroId) {
+    return (
+      <div className={styles.calendarContainer}>
+        <div style={{
+          padding: "var(--space-6)",
+          textAlign: "center",
+          background: "rgba(251, 191, 36, 0.1)",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid rgba(251, 191, 36, 0.3)"
+        }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="1.5" style={{ margin: "0 auto var(--space-3)" }}>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p style={{ color: "#fbbf24", fontWeight: 600, marginBottom: "var(--space-2)" }}>
+            Sin disponibilidad configurada
+          </p>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+            Este miembro aún no ha configurado sus horarios de disponibilidad.
+          </p>
         </div>
       </div>
     );

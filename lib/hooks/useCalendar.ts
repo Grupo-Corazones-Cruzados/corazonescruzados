@@ -108,18 +108,10 @@ export function useMemberAvailability(miembroId: number | null) {
         ];
       }
 
-      // Si no hay disponibilidad configurada, usar horario por defecto (7:30 - 22:00) de lunes a viernes
-      if (dayAvailability.length === 0 && dayOfWeek >= 1 && dayOfWeek <= 5) {
-        dayAvailability = [
-          {
-            id: 0,
-            id_miembro: miembroId || 0,
-            dia_semana: dayOfWeek,
-            hora_inicio: "07:30",
-            hora_fin: "22:00",
-            activo: true,
-          },
-        ];
+      // Si no hay disponibilidad configurada para este día, no mostrar slots
+      // El miembro debe configurar su disponibilidad explícitamente
+      if (dayAvailability.length === 0) {
+        return [];
       }
 
       // Generate 30-minute slots from availability
@@ -188,6 +180,9 @@ export function useMemberAvailability(miembroId: number | null) {
     [getAvailableSlotsForDate]
   );
 
+  // Check if member has any availability configured
+  const hasConfiguredAvailability = availability.length > 0;
+
   return {
     availability,
     exceptions,
@@ -196,6 +191,7 @@ export function useMemberAvailability(miembroId: number | null) {
     error,
     getAvailableSlotsForDate,
     hasAvailabilityOnDate,
+    hasConfiguredAvailability,
     refetch: fetchAvailability,
     DAYS_OF_WEEK,
   };
