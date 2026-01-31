@@ -1633,9 +1633,9 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-  color: #FFFFFF;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  color: var(--text-primary, #FFFFFF);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1644,14 +1644,22 @@
 }
 
 .navCartBtn:hover {
-  border-color: rgba(0, 206, 209, 0.5);
+  border-color: var(--turquoise, #00CED1);
   background: rgba(0, 206, 209, 0.1);
   transform: translateY(-1px);
 }
 
-.navCartBtn svg {
+.navCartIcon {
   width: 20px;
   height: 20px;
+  display: block;
+  flex-shrink: 0;
+  stroke: var(--text-primary, #FFFFFF) !important;
+}
+
+.navCartIcon path,
+.navCartIcon circle {
+  stroke: inherit;
 }
 
 .navCartBadge {
@@ -1681,6 +1689,10 @@
 :global([data-theme="light"]) .navCartBtn:hover {
   border-color: rgba(8, 145, 178, 0.5);
   background: rgba(8, 145, 178, 0.1);
+}
+
+:global([data-theme="light"]) .navCartIcon {
+  stroke: #111827 !important;
 }
 
 .sidebarClearBtn {
