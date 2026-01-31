@@ -53,7 +53,7 @@ export default function AvailabilitySettingsPage() {
 
   // Initialize schedule from database
   useEffect(() => {
-    if (availability.length > 0) {
+    if (!loading) {
       const schedule: WeeklySchedule = {};
 
       DAYS_OF_WEEK.forEach((day) => {
@@ -65,17 +65,6 @@ export default function AvailabilitySettingsPage() {
         };
       });
 
-      setWeeklySchedule(schedule);
-    } else if (!loading) {
-      // Default schedule
-      const schedule: WeeklySchedule = {};
-      DAYS_OF_WEEK.forEach((day) => {
-        schedule[day.id] = {
-          enabled: day.id >= 1 && day.id <= 5, // Mon-Fri enabled by default
-          hora_inicio: "09:00",
-          hora_fin: "18:00",
-        };
-      });
       setWeeklySchedule(schedule);
     }
   }, [availability, loading]);
@@ -210,6 +199,21 @@ export default function AvailabilitySettingsPage() {
         {/* Weekly Schedule */}
         <section className={styles.availabilitySection}>
           <h2 className={styles.availabilitySectionTitle}>Horario Semanal</h2>
+
+          {availability.length === 0 && (
+            <div style={{
+              padding: "var(--space-4)",
+              marginBottom: "var(--space-4)",
+              background: "rgba(59, 130, 246, 0.1)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid rgba(59, 130, 246, 0.3)"
+            }}>
+              <p style={{ color: "var(--primary)", fontSize: "0.9rem", margin: 0 }}>
+                Aún no has configurado tu disponibilidad. Activa los días en que estés disponible
+                y establece tus horarios. Recuerda guardar los cambios.
+              </p>
+            </div>
+          )}
 
           <div className={styles.weeklySchedule}>
             {DAYS_OF_WEEK.map((day) => {
