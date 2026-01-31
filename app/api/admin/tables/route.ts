@@ -42,9 +42,6 @@ const ALLOWED_TABLES: Record<string, TableDef> = {
     columns: [
       { name: "id", type: "number", editable: false, label: "ID" },
       { name: "nombre", type: "text", editable: true, required: true, label: "Nombre" },
-      { name: "descripcion", type: "text", editable: true, label: "Descripción" },
-      { name: "color", type: "text", editable: true, label: "Color" },
-      { name: "icono", type: "text", editable: true, label: "Icono" },
     ],
     orderBy: "nombre ASC",
   },
@@ -59,22 +56,33 @@ const ALLOWED_TABLES: Record<string, TableDef> = {
     ],
     orderBy: "id_fuente ASC, nombre ASC",
   },
-  secciones_modulo: {
-    name: "Secciones de Módulos",
+  paquetes: {
+    name: "Paquetes",
     primaryKey: "id",
     columns: [
       { name: "id", type: "number", editable: false, label: "ID" },
-      { name: "id_modulo", type: "number", editable: true, required: true, label: "Módulo", foreignKey: "modulos" },
       { name: "nombre", type: "text", editable: true, required: true, label: "Nombre" },
-      { name: "href", type: "text", editable: true, required: true, label: "Href" },
-      { name: "icono", type: "text", editable: true, label: "Icono" },
-      { name: "orden", type: "number", editable: true, label: "Orden" },
+      { name: "contenido", type: "text", editable: true, label: "Contenido" },
+      { name: "horas", type: "number", editable: true, label: "Horas" },
+      { name: "descripcion", type: "text", editable: true, label: "Descripción" },
+      { name: "descuento", type: "number", editable: true, label: "Descuento %" },
     ],
-    orderBy: "id_modulo ASC, orden ASC",
+    orderBy: "id ASC",
+  },
+  preguntas_frecuentes: {
+    name: "Preguntas Frecuentes",
+    primaryKey: "id",
+    columns: [
+      { name: "id", type: "number", editable: false, label: "ID" },
+      { name: "pregunta", type: "text", editable: true, required: true, label: "Pregunta" },
+      { name: "respuesta", type: "text", editable: true, required: true, label: "Respuesta" },
+      { name: "video_url", type: "text", editable: true, label: "URL de Video" },
+    ],
+    orderBy: "id ASC",
   },
 };
 
-type TableName = "modulos" | "fuentes" | "acciones" | "secciones_modulo";
+type TableName = "modulos" | "fuentes" | "acciones" | "paquetes" | "preguntas_frecuentes";
 
 // GET /api/admin/tables - List tables or get table data
 export async function GET(request: NextRequest) {
