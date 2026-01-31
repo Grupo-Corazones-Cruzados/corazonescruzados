@@ -82,7 +82,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const { rol, id_miembro } = userResult.rows[0];
-    if (rol !== "admin" && id_miembro !== miembroId) {
+    // Convert both to numbers for proper comparison
+    const userMiembroId = id_miembro ? Number(id_miembro) : null;
+    if (rol !== "admin" && userMiembroId !== miembroId) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
