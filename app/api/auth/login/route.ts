@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Find user
     const result = await query(
-      `SELECT id, email, password_hash, nombre, apellido, avatar_url, telefono, rol, id_miembro, verificado, bloqueado, motivo_bloqueo
+      `SELECT id, email, password_hash, nombre, apellido, avatar_url, telefono, rol, id_miembro, verificado, estado
        FROM user_profiles WHERE email = $1`,
       [email.toLowerCase()]
     );
@@ -50,10 +50,10 @@ export async function POST(request: NextRequest) {
 
     const user = result.rows[0];
 
-    // Check if user is blocked
-    if (user.bloqueado) {
+    // Check if user is blocked (suspendido or baneado)
+    if (user.estado === "suspendido" || user.estado === "baneado") {
       return NextResponse.json(
-        { error: user.motivo_bloqueo || "Tu cuenta ha sido suspendida. Contacta al administrador." },
+        { error: "Tu cuenta ha sido suspendida. Contacta al administrador." },
         { status: 403 }
       );
     }

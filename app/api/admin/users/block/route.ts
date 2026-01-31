@@ -59,19 +59,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update user block status
+    // Update user block status using 'estado' column
     if (block) {
       await query(
-        `UPDATE user_profiles
-         SET bloqueado = true, bloqueado_en = NOW(), motivo_bloqueo = $1
-         WHERE id = $2`,
-        [motivo || "Bloqueado por administrador", userId]
+        `UPDATE user_profiles SET estado = 'suspendido' WHERE id = $1`,
+        [userId]
       );
     } else {
       await query(
-        `UPDATE user_profiles
-         SET bloqueado = false, bloqueado_en = NULL, motivo_bloqueo = NULL
-         WHERE id = $1`,
+        `UPDATE user_profiles SET estado = 'activo' WHERE id = $1`,
         [userId]
       );
     }
@@ -79,8 +75,7 @@ export async function POST(request: NextRequest) {
     // Get updated user
     const updatedUserResult = await query(
       `SELECT up.id, up.email, up.nombre, up.apellido, up.telefono, up.avatar_url,
-              up.rol, up.verificado, up.id_miembro, up.created_at,
-              up.bloqueado, up.bloqueado_en, up.motivo_bloqueo
+              up.rol, up.verificado, up.id_miembro, up.created_at, up.estado
        FROM user_profiles up
        WHERE up.id = $1`,
       [userId]
@@ -89,7 +84,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: updatedUserResult.rows[0],
-      message: block ? "Usuario bloqueado" : "Usuario desbloqueado",
+      message: block ? "Usuario suspendido" : "Usuario activado",
     });
   } catch (error) {
     console.error("Error blocking/unblocking user:", error);

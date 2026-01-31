@@ -62,9 +62,7 @@ export async function GET(request: NextRequest) {
         up.verificado,
         up.id_miembro,
         up.created_at,
-        up.bloqueado,
-        up.bloqueado_en,
-        up.motivo_bloqueo,
+        up.estado,
         m.nombre as miembro_nombre,
         m.puesto as miembro_puesto
       FROM user_profiles up

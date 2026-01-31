@@ -27,7 +27,7 @@ export async function GET() {
        FROM user_profiles
        WHERE last_login IS NOT NULL
          AND last_login > NOW() - INTERVAL '24 hours'
-         AND bloqueado = false
+         AND estado = 'activo'
        ORDER BY last_login DESC
        LIMIT 10`
     );

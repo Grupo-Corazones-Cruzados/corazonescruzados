@@ -18,35 +18,11 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingUser = await query(
-      "SELECT id, verificado FROM user_profiles WHERE email = $1",
+      "SELECT id FROM user_profiles WHERE email = $1",
       [email.toLowerCase()]
     );
 
     if (existingUser.rows.length > 0) {
-      const user = existingUser.rows[0];
-      // If user exists but not verified, allow re-sending verification
-      if (!user.verificado) {
-        // Generate new verification token
-        const verificationToken = crypto.randomBytes(32).toString("hex");
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-        // Delete old tokens and create new one
-        await query(`DELETE FROM verification_tokens WHERE user_id = $1`, [user.id]);
-        await query(
-          `INSERT INTO verification_tokens (user_id, token, type, expires_at)
-           VALUES ($1, $2, 'email_verification', $3)`,
-          [user.id, verificationToken, expiresAt]
-        );
-
-        // Send verification email
-        await sendVerificationEmail(email.toLowerCase(), verificationToken, nombre);
-
-        return NextResponse.json({
-          success: true,
-          requiresVerification: true,
-          message: "Se ha reenviado el correo de verificacion",
-        });
-      }
       return NextResponse.json(
         { error: "El email ya está registrado" },
         { status: 400 }

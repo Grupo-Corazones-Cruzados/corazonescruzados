@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     // Get updated user
     const updatedUserResult = await query(
       `SELECT up.id, up.email, up.nombre, up.apellido, up.telefono, up.avatar_url,
-              up.rol, up.verificado, up.id_miembro, up.created_at, up.bloqueado
+              up.rol, up.verificado, up.id_miembro, up.created_at, up.estado
        FROM user_profiles up
        WHERE up.id = $1`,
       [userId]

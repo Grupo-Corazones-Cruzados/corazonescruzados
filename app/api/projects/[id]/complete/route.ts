@@ -114,10 +114,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
             const clientUserId = userProfileResult.rows[0].id;
             const clientIp = userProfileResult.rows[0].last_ip;
 
-            // Block user
+            // Block user (set estado to 'baneado')
             await client.query(
-              `UPDATE user_profiles SET bloqueado = true, bloqueado_en = NOW(), motivo_bloqueo = $1 WHERE id = $2`,
-              [`Bloqueado por no pagar proyecto #${projectId}: ${justificacion}`, clientUserId]
+              `UPDATE user_profiles SET estado = 'baneado' WHERE id = $1`,
+              [clientUserId]
             );
 
             // Block IP if available
