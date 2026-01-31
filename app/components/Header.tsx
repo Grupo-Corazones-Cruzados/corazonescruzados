@@ -221,19 +221,36 @@ const Header = () => {
                   </svg>
                   Panel de gestión
                 </button>
-                {profile?.rol === "miembro" && (
-                  <button
-                    className={styles.UserDropdownItem}
-                    onClick={() => {
-                      router.push("/dashboard/miembro");
-                      setUserMenuOpen(false);
-                    }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Mi Espacio
-                  </button>
+                {(profile?.rol === "miembro" || profile?.rol === "admin") && (
+                  <>
+                    <button
+                      className={styles.UserDropdownItem}
+                      onClick={() => {
+                        router.push("/dashboard/miembro");
+                        setUserMenuOpen(false);
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Mi Espacio
+                    </button>
+                    <button
+                      className={styles.UserDropdownItem}
+                      onClick={() => {
+                        router.push("/dashboard/settings/availability");
+                        setUserMenuOpen(false);
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                      Disponibilidad
+                    </button>
+                  </>
                 )}
                 <div className={styles.UserDropdownDivider} />
                 <button
