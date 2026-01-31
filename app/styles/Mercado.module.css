@@ -52,7 +52,7 @@
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 28px 0 48px;
+  padding: 0 0 48px;
   position: relative;
   z-index: 1;
 }
@@ -1607,10 +1607,13 @@
 
 .priceSeparator {
   color: #5A5A5A;
+  flex-shrink: 0;
 }
 
 .sidebarInput {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1622,6 +1625,62 @@
 
 .sidebarInput:focus {
   border-color: rgba(0, 206, 209, 0.5);
+}
+
+/* Nav Cart Button - for DashboardLayout rightContent */
+.navCartBtn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: #FFFFFF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 200ms ease, background 200ms ease, transform 200ms ease;
+}
+
+.navCartBtn:hover {
+  border-color: rgba(0, 206, 209, 0.5);
+  background: rgba(0, 206, 209, 0.1);
+  transform: translateY(-1px);
+}
+
+.navCartBtn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.navCartBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  color: #FFFFFF;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 2px 8px rgba(227, 24, 55, 0.4);
+}
+
+:global([data-theme="light"]) .navCartBtn {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+  color: #111827;
+}
+
+:global([data-theme="light"]) .navCartBtn:hover {
+  border-color: rgba(8, 145, 178, 0.5);
+  background: rgba(8, 145, 178, 0.1);
 }
 
 .sidebarClearBtn {

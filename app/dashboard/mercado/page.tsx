@@ -92,33 +92,22 @@ export default function MercadoPage() {
 
   const hasActiveFilters = searchTerm || selectedCategory || priceRange.min || priceRange.max;
 
+  const navRightContent = (
+    <button
+      className={styles.navCartBtn}
+      onClick={() => router.push("/dashboard/mercado/carrito")}
+      aria-label="Ver carrito"
+    >
+      <CartIcon />
+      {itemCount > 0 && <span className={styles.navCartBadge}>{itemCount}</span>}
+    </button>
+  );
+
   return (
-    <DashboardLayout>
+    <DashboardLayout rightContent={navRightContent}>
       <div className={styles.page}>
         <div className={styles.bgGlow} />
         <div className={styles.container}>
-          {/* Header */}
-          <div className={styles.header}>
-            <div>
-              <h1 className={styles.title}>Mercado</h1>
-              <p className={styles.subtitle}>
-                Explora productos y servicios de nuestra comunidad
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <button
-                className={styles.cartBtn}
-                onClick={() => router.push("/dashboard/mercado/carrito")}
-              >
-                <CartIcon />
-                {itemCount > 0 && <span className={styles.cartBadge}>{itemCount}</span>}
-              </button>
-              <div className={styles.brandPill}>
-                <span className={styles.brandDot} />
-                Marketplace
-              </div>
-            </div>
-          </div>
 
           {/* Browse Layout */}
           <div className={styles.browseLayout}>

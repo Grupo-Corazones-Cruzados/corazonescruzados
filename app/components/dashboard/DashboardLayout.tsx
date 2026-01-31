@@ -8,6 +8,7 @@ import styles from "@/app/styles/DashboardLayout.module.css";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  rightContent?: React.ReactNode;
 }
 
 interface Seccion {
@@ -140,7 +141,7 @@ const getIcono = (icono: string) => {
   }
 };
 
-function DashboardLayoutInner({ children }: DashboardLayoutProps) {
+function DashboardLayoutInner({ children, rightContent }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -245,27 +246,32 @@ function DashboardLayoutInner({ children }: DashboardLayoutProps) {
     <div className={styles.layout}>
       {/* Navigation Tabs */}
       <nav className={styles.tabsNav} aria-label="Dashboard navigation">
-        <div className={styles.tabsContainer}>
-          {/* Siempre mostrar Inicio */}
-          <Link
-            href="/dashboard"
-            className={`${styles.tab} ${isActive("/dashboard") ? styles.tabActive : ""}`}
-          >
-            <span className={styles.tabIcon}><HomeIcon /></span>
-            <span className={styles.tabLabel}>Inicio</span>
-          </Link>
-
-          {/* Mostrar secciones del módulo actual */}
-          {currentModulo && canAccessModulo(currentModulo) && secciones.map((seccion) => (
+        <div className={styles.tabsWrapper}>
+          <div className={styles.tabsContainer}>
+            {/* Siempre mostrar Inicio */}
             <Link
-              key={seccion.id}
-              href={seccion.href}
-              className={`${styles.tab} ${isActive(seccion.href) ? styles.tabActive : ""}`}
+              href="/dashboard"
+              className={`${styles.tab} ${isActive("/dashboard") ? styles.tabActive : ""}`}
             >
-              <span className={styles.tabIcon}>{getIcono(seccion.icono)}</span>
-              <span className={styles.tabLabel}>{seccion.label}</span>
+              <span className={styles.tabIcon}><HomeIcon /></span>
+              <span className={styles.tabLabel}>Inicio</span>
             </Link>
-          ))}
+
+            {/* Mostrar secciones del módulo actual */}
+            {currentModulo && canAccessModulo(currentModulo) && secciones.map((seccion) => (
+              <Link
+                key={seccion.id}
+                href={seccion.href}
+                className={`${styles.tab} ${isActive(seccion.href) ? styles.tabActive : ""}`}
+              >
+                <span className={styles.tabIcon}>{getIcono(seccion.icono)}</span>
+                <span className={styles.tabLabel}>{seccion.label}</span>
+              </Link>
+            ))}
+          </div>
+          {rightContent && (
+            <div className={styles.tabsRight}>{rightContent}</div>
+          )}
         </div>
       </nav>
 
@@ -277,7 +283,7 @@ function DashboardLayoutInner({ children }: DashboardLayoutProps) {
   );
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, rightContent }: DashboardLayoutProps) {
   return (
     <Suspense
       fallback={
@@ -289,7 +295,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       }
     >
-      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+      <DashboardLayoutInner rightContent={rightContent}>{children}</DashboardLayoutInner>
     </Suspense>
   );
 }
