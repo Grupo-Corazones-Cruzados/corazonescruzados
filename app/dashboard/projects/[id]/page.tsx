@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/app/components/dashboard/DashboardLayout";
@@ -148,6 +148,8 @@ function ProjectDetailPageContent() {
     republishProject,
     closeConvocatoria,
     finishWork,
+    changeState,
+    getValidStates,
   } = useProject(projectId);
   const { submitBid, loading: submittingBid } = useSubmitBid();
 
@@ -213,6 +215,10 @@ function ProjectDetailPageContent() {
   const [republishDescripcion, setRepublishDescripcion] = useState("");
 
   const [updating, setUpdating] = useState(false);
+
+  // State control for private projects
+  const [validStates, setValidStates] = useState<{ estado: string; label: string }[]>([]);
+  const [loadingStates, setLoadingStates] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -459,6 +465,22 @@ function ProjectDetailPageContent() {
     setUpdating(false);
   };
 
+  const handleChangeState = async (newEstado: string) => {
+    if (!project || !isMemberOwner) return;
+    setUpdating(true);
+    const result = await changeState(newEstado);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      // Refresh valid states after change
+      const statesResult = await getValidStates();
+      if (!statesResult.error && statesResult.data?.transitions) {
+        setValidStates(statesResult.data.transitions);
+      }
+    }
+    setUpdating(false);
+  };
+
   // Check if requirement can be edited by current user
   const canEditRequirement = (req: ProjectRequirement) => {
     // Admin can always edit
@@ -495,6 +517,22 @@ function ProjectDetailPageContent() {
   // Can toggle completado (only in active working states, team members or member owner)
   const activeWorkingStates = ["iniciado", "en_progreso", "en_implementacion", "en_pruebas"];
   const canToggleCompletado = (isTeamMember || isMemberOwner) && activeWorkingStates.includes(project?.estado || "");
+
+  // Load valid states for private member projects
+  useEffect(() => {
+    const loadValidStates = async () => {
+      if (!project || !isMemberOwner || isClosedState) return;
+
+      setLoadingStates(true);
+      const result = await getValidStates();
+      if (!result.error && result.data?.transitions) {
+        setValidStates(result.data.transitions);
+      }
+      setLoadingStates(false);
+    };
+
+    loadValidStates();
+  }, [project?.id, project?.estado, isMemberOwner, isClosedState, getValidStates]);
 
   // Check if all accepted members have confirmed
   const allMembersConfirmed = acceptedMembers.length > 0 &&
@@ -1533,6 +1571,41 @@ function ProjectDetailPageContent() {
                       )}
                     </button>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* State Control Panel (for member owners of private projects) */}
+            {isMemberOwner && !isClosedState && (
+              <div className={styles.detailCard}>
+                <h4 className={styles.detailCardTitle}>Control de Estado</h4>
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Estado actual:</span>
+                  <div style={{ marginTop: "var(--space-1)" }}>
+                    <span className={`${styles.projectStatus} ${getStatusClass(project.estado)}`}>
+                      {getStatusLabel(project.estado)}
+                    </span>
+                  </div>
+                </div>
+                {loadingStates ? (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Cargando estados...</p>
+                ) : validStates.length > 0 ? (
+                  <div className={styles.stateControlButtons}>
+                    {validStates.map((state) => (
+                      <button
+                        key={state.estado}
+                        className={`${styles.stateChangeBtn} ${getStatusClass(state.estado)}`}
+                        onClick={() => handleChangeState(state.estado)}
+                        disabled={updating}
+                      >
+                        {state.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                    No hay transiciones disponibles desde este estado.
+                  </p>
                 )}
               </div>
             )}
