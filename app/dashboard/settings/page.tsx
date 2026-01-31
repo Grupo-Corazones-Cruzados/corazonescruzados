@@ -347,16 +347,14 @@ function SettingsContent() {
 export default function SettingsPage() {
   return (
     <Suspense fallback={
-      <DashboardLayout>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "400px"
-        }}>
-          <p style={{ color: "var(--text-muted)" }}>Cargando...</p>
-        </div>
-      </DashboardLayout>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "400px"
+      }}>
+        <p style={{ color: "var(--text-muted)" }}>Cargando...</p>
+      </div>
     }>
       <SettingsContent />
     </Suspense>

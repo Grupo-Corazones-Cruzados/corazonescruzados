@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/app/components/dashboard/DashboardLayout";
@@ -113,7 +113,7 @@ const formatCurrency = (amount: number | null): string => {
   }).format(amount);
 };
 
-export default function ProjectDetailPage() {
+function ProjectDetailPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const { profile } = useAuth();
@@ -1496,6 +1496,34 @@ export default function ProjectDetailPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function ProjectDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "400px"
+          }}>
+            <div style={{
+              width: "32px",
+              height: "32px",
+              border: "3px solid rgba(255,255,255,0.1)",
+              borderTopColor: "var(--turquoise)",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite"
+            }} />
+          </div>
+        </DashboardLayout>
+      }
+    >
+      <ProjectDetailPageContent />
+    </Suspense>
   );
 }
 

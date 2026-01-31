@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthProvider";
@@ -140,7 +140,7 @@ const getIcono = (icono: string) => {
   }
 };
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+function DashboardLayoutInner({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -274,5 +274,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className={styles.content}>{children}</div>
       </main>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.layout}>
+          <div className={styles.loadingContainer}>
+            <div className={styles.spinner} />
+            <p>Cargando...</p>
+          </div>
+        </div>
+      }
+    >
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </Suspense>
   );
 }
