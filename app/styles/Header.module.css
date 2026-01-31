@@ -777,7 +777,8 @@
 }
 
 :global([data-theme="light"]) .BotonLogin:hover {
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 4px 12px;
+  color: #1f1f1f;
 }
 
 :global([data-theme="light"]) .Menu {

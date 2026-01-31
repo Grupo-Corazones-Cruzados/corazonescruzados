@@ -620,10 +620,12 @@
 :global([data-theme="light"]) .submitBtn {
   background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  color: #D1D5DB;
 }
 
 :global([data-theme="light"]) .submitBtn:hover:not(:disabled) {
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  color: #1f1f1f;
 }
 
 :global([data-theme="light"]) .backLink {
