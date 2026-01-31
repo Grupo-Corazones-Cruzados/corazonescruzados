@@ -162,6 +162,48 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     } else if (action === "reject") {
       await query("UPDATE project_bids SET estado = 'rechazada' WHERE id = $1", [bidId]);
       return NextResponse.json({ success: true });
+    } else if (action === "resend") {
+      // Resend offer with new amount after member rejected
+      if (monto_acordado === undefined || monto_acordado === null) {
+        return NextResponse.json(
+          { error: "Monto acordado es requerido al reenviar" },
+          { status: 400 }
+        );
+      }
+
+      // Verify the bid was rejected by the member (not by client)
+      const bidCheck = await query(
+        "SELECT estado, confirmado_por_miembro FROM project_bids WHERE id = $1 AND id_project = $2",
+        [bidId, projectId]
+      );
+
+      if (bidCheck.rows.length === 0) {
+        return NextResponse.json({ error: "Postulación no encontrada" }, { status: 404 });
+      }
+
+      const bid = bidCheck.rows[0];
+
+      // Only allow resend if the member rejected (estado = rechazada AND confirmado_por_miembro = false)
+      if (bid.estado !== "rechazada" || bid.confirmado_por_miembro !== false) {
+        return NextResponse.json(
+          { error: "Solo se puede reenviar una oferta que fue rechazada por el miembro" },
+          { status: 400 }
+        );
+      }
+
+      // Resend: update amount, set back to aceptada, reset confirmado_por_miembro to null
+      await query(
+        `UPDATE project_bids
+         SET estado = 'aceptada',
+             monto_acordado = $1,
+             fecha_aceptacion = NOW(),
+             confirmado_por_miembro = NULL,
+             fecha_confirmacion = NULL
+         WHERE id = $2`,
+        [monto_acordado, bidId]
+      );
+
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ error: "Acción no válida" }, { status: 400 });

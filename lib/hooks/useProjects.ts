@@ -245,6 +245,30 @@ export function useProject(id: number | null) {
     }
   };
 
+  const resendBid = async (bidId: number, montoAcordado: number) => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/bids`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bidId, action: "resend", monto_acordado: montoAcordado }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al reenviar la oferta");
+      }
+
+      await fetchProject(true);
+      return { error: null };
+    } catch (err) {
+      console.error("Error resending bid:", err);
+      return { error: "Error al reenviar la oferta" };
+    }
+  };
+
   const confirmParticipation = async (action: "confirm" | "cancel") => {
     if (!id) return { error: "No project ID" };
 
@@ -504,6 +528,7 @@ export function useProject(id: number | null) {
     refetch: fetchProject,
     updateProject,
     acceptBid,
+    resendBid,
     confirmParticipation,
     planifyProject,
     startProject,

@@ -129,6 +129,7 @@ function ProjectDetailPageContent() {
     error,
     updateProject,
     acceptBid,
+    resendBid,
     confirmParticipation,
     planifyProject,
     startProject,
@@ -171,6 +172,11 @@ function ProjectDetailPageContent() {
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [acceptBidId, setAcceptBidId] = useState<number | null>(null);
   const [acceptMonto, setAcceptMonto] = useState("");
+
+  // Resend bid modal state (when member rejected)
+  const [showResendModal, setShowResendModal] = useState(false);
+  const [resendBidId, setResendBidId] = useState<number | null>(null);
+  const [resendMonto, setResendMonto] = useState("");
 
   // Requirement form state
   const [showReqForm, setShowReqForm] = useState(false);
@@ -277,6 +283,25 @@ function ProjectDetailPageContent() {
     setShowAcceptModal(false);
     setAcceptBidId(null);
     setAcceptMonto("");
+    setUpdating(false);
+  };
+
+  const handleOpenResendModal = (bid: ProjectBid) => {
+    setResendBidId(bid.id);
+    setResendMonto(bid.monto_acordado?.toString() || bid.precio_ofertado.toString());
+    setShowResendModal(true);
+  };
+
+  const handleConfirmResend = async () => {
+    if (!resendBidId || !resendMonto) return;
+    setUpdating(true);
+    const result = await resendBid(resendBidId, parseFloat(resendMonto));
+    if (result.error) {
+      alert(result.error);
+    }
+    setShowResendModal(false);
+    setResendBidId(null);
+    setResendMonto("");
     setUpdating(false);
   };
 
@@ -569,6 +594,47 @@ function ProjectDetailPageContent() {
                 <button
                   className={ticketStyles.secondaryButton}
                   onClick={() => setShowAcceptModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Resend Bid Modal */}
+        {showResendModal && (
+          <div className={styles.modalOverlay} onClick={() => setShowResendModal(false)}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <h3 className={styles.modalTitle}>Reenviar Oferta</h3>
+              <p style={{ color: "var(--text-muted)", marginBottom: "var(--space-3)" }}>
+                El miembro rechazó la oferta anterior. Puedes ajustar el monto y reenviar.
+              </p>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Nuevo Monto *</label>
+                <input
+                  type="number"
+                  value={resendMonto}
+                  onChange={(e) => setResendMonto(e.target.value)}
+                  className={styles.formInput}
+                  placeholder="0.00"
+                  step="0.01"
+                />
+                <span className={styles.formHint}>
+                  El miembro recibirá la nueva oferta y podrá aceptarla o rechazarla.
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
+                <button
+                  className={ticketStyles.primaryButton}
+                  onClick={handleConfirmResend}
+                  disabled={updating || !resendMonto}
+                >
+                  {updating ? "Enviando..." : "Reenviar Oferta"}
+                </button>
+                <button
+                  className={ticketStyles.secondaryButton}
+                  onClick={() => setShowResendModal(false)}
                 >
                   Cancelar
                 </button>
@@ -1062,6 +1128,19 @@ function ProjectDetailPageContent() {
                               disabled={updating}
                             >
                               Aceptar
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Resend button - when member rejected the offer */}
+                        {bid.estado === "rechazada" && bid.confirmado_por_miembro === false && (
+                          <div className={styles.bidActions}>
+                            <button
+                              className={ticketStyles.primaryButton}
+                              onClick={() => handleOpenResendModal(bid)}
+                              disabled={updating}
+                            >
+                              Reenviar Oferta
                             </button>
                           </div>
                         )}
