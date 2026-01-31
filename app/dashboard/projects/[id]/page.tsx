@@ -734,7 +734,8 @@ function ProjectDetailPageContent() {
               <div className={styles.detailCard}>
                 <h4 className={styles.detailCardTitle}>Requerimientos</h4>
 
-                {totalReqs > 0 && (
+                {/* Progress bar - only for team members and project owner */}
+                {(isTeamMember || isProjectOwner) && totalReqs > 0 && (
                   <div className={styles.progressContainer}>
                     <div className={styles.progressLabel}>
                       <span>Progreso</span>
@@ -750,9 +751,10 @@ function ProjectDetailPageContent() {
                   {requirements.map((req) => (
                     <div
                       key={req.id}
-                      className={`${styles.requirementItem} ${req.completado ? styles.requirementCompleted : ""}`}
+                      className={`${styles.requirementItem} ${(isTeamMember || isProjectOwner) && req.completado ? styles.requirementCompleted : ""}`}
                     >
-                      {editingReq === req.id ? (
+                      {/* Edit form - only for team members */}
+                      {(isTeamMember || isProjectOwner) && editingReq === req.id ? (
                         <div style={{ flex: 1 }}>
                           <div className={styles.formRow}>
                             <div className={styles.formGroup}>
@@ -800,7 +802,8 @@ function ProjectDetailPageContent() {
                             </button>
                           </div>
                         </div>
-                      ) : (
+                      ) : (isTeamMember || isProjectOwner) ? (
+                        /* Full view for team members and project owner */
                         <>
                           <button
                             className={`${styles.reqToggleBtn} ${req.completado ? styles.reqToggleDone : ""}`}
@@ -894,6 +897,20 @@ function ProjectDetailPageContent() {
                             </div>
                           )}
                         </>
+                      ) : (
+                        /* Read-only view for members viewing to apply */
+                        <div className={styles.requirementContent} style={{ marginLeft: 0 }}>
+                          <div className={styles.requirementTitle}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ marginRight: "8px", flexShrink: 0 }}>
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M12 16v-4M12 8h.01" />
+                            </svg>
+                            {req.titulo}
+                          </div>
+                          {req.descripcion && (
+                            <div className={styles.requirementDesc}>{req.descripcion}</div>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
