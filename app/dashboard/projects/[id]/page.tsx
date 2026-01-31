@@ -726,8 +726,11 @@ function ProjectDetailPageContent() {
               )}
             </div>
 
-            {/* Requirements Card - visible for team members and owner in publicado, planificado or en_progreso */}
-            {(isTeamMember || isProjectOwner) && ["publicado", "planificado", "en_progreso"].includes(project.estado) && (
+            {/* Requirements Card - visible for team members, owner, or any member viewing publicado projects */}
+            {(
+              ((isTeamMember || isProjectOwner) && ["publicado", "planificado", "en_progreso"].includes(project.estado)) ||
+              ((userRole === "miembro" || userRole === "admin") && project.estado === "publicado")
+            ) && (
               <div className={styles.detailCard}>
                 <h4 className={styles.detailCardTitle}>Requerimientos</h4>
 
