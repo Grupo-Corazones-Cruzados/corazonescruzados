@@ -20,12 +20,23 @@ export async function DELETE(
     const body = await request.json();
     const { motivo } = body;
 
-    if (!motivo || motivo.trim().length < 10) {
+    if (!motivo || motivo.trim().length < 5) {
       return NextResponse.json(
-        { error: "Motivo de remocion requerido (minimo 10 caracteres)" },
+        { error: "Motivo de remocion requerido (minimo 5 caracteres)" },
         { status: 400 }
       );
     }
+
+    // Get user profile
+    const userResult = await query(
+      "SELECT rol, id_miembro FROM user_profiles WHERE id = $1",
+      [tokenData.userId]
+    );
+    if (userResult.rows.length === 0) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+    const userRole = userResult.rows[0].rol;
+    const userMiembroId = userResult.rows[0].id_miembro;
 
     // Verificar que el proyecto existe
     const projectResult = await query(
@@ -40,18 +51,30 @@ export async function DELETE(
 
     const project = projectResult.rows[0];
 
-    // Verificar permisos (solo el propietario puede remover participantes)
-    const isClientOwner = tokenData.role === "cliente" && project.id_cliente === tokenData.id;
-    const isMemberOwner = tokenData.role === "miembro" && project.id_miembro_propietario === tokenData.id;
-    const isAdmin = tokenData.role === "admin";
+    // Verificar permisos
+    const isClientOwner = userRole === "cliente" && project.id_cliente === parseInt(tokenData.userId);
+    const projectOwnerId = project.id_miembro_propietario ? Number(project.id_miembro_propietario) : null;
+    const userMemberId = userMiembroId ? Number(userMiembroId) : null;
+    const isMemberOwner = (userRole === "miembro" || userRole === "admin") && projectOwnerId !== null && projectOwnerId === userMemberId;
+    const isAdmin = userRole === "admin";
 
-    if (!isClientOwner && !isMemberOwner && !isAdmin) {
+    // Team members can also report other team members
+    let canReport = isClientOwner || isMemberOwner || isAdmin;
+    if (!canReport && userRole === "miembro" && userMemberId) {
+      const teamCheck = await query(
+        "SELECT id FROM project_bids WHERE id_project = $1 AND id_miembro = $2 AND estado = 'aceptada' AND (removido IS NULL OR removido = FALSE)",
+        [id, userMemberId]
+      );
+      canReport = teamCheck.rows.length > 0;
+    }
+
+    if (!canReport) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     // Verificar que el bid existe y está aceptado
     const bidResult = await query(
-      `SELECT b.*, m.nombre as miembro_nombre, m.email as miembro_email
+      `SELECT b.*, m.nombre as miembro_nombre, m.correo_electronico as miembro_email
        FROM project_bids b
        JOIN miembros m ON b.id_miembro = m.id
        WHERE b.id = $1 AND b.id_project = $2`,
@@ -86,23 +109,25 @@ export async function DELETE(
            motivo_remocion = $1,
            removido_por_id = $2
        WHERE id = $3`,
-      [motivo.trim(), tokenData.id, bidId]
+      [motivo.trim(), userMiembroId || null, bidId]
     );
 
     // Obtener nombre del que remueve
     let removidoPorNombre = "El propietario del proyecto";
-    if (isMemberOwner) {
+    if (userMiembroId) {
       const memberResult = await query(
         `SELECT nombre FROM miembros WHERE id = $1`,
-        [tokenData.id]
+        [userMiembroId]
       );
       if (memberResult.rows.length > 0) {
         removidoPorNombre = memberResult.rows[0].nombre;
       }
-    } else if (isClientOwner) {
+    } else if (userRole === "cliente") {
       const clientResult = await query(
-        `SELECT nombre FROM clientes WHERE id = $1`,
-        [tokenData.id]
+        `SELECT nombre FROM clientes c
+         JOIN user_profiles up ON up.email = c.correo_electronico
+         WHERE up.id = $1`,
+        [tokenData.userId]
       );
       if (clientResult.rows.length > 0) {
         removidoPorNombre = clientResult.rows[0].nombre;

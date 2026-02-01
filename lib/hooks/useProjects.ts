@@ -823,6 +823,31 @@ export function useProject(id: number | null) {
     }
   };
 
+  // Cancel project (for early states: borrador, publicado, planificado)
+  const cancelProject = async (reason?: string) => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo: reason }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al cancelar proyecto");
+      }
+
+      setProject(prev => prev ? { ...prev, estado: "cancelado" } : prev);
+      return { error: null };
+    } catch (err) {
+      console.error("Error canceling project:", err);
+      return { error: "Error al cancelar proyecto" };
+    }
+  };
+
   return {
     project,
     bids,
@@ -856,6 +881,7 @@ export function useProject(id: number | null) {
     removeParticipant,
     publishProject,
     downloadPdf,
+    cancelProject,
   };
 }
 

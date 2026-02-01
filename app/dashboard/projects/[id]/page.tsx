@@ -150,6 +150,8 @@ function ProjectDetailPageContent() {
     finishWork,
     changeState,
     getValidStates,
+    removeParticipant,
+    cancelProject,
   } = useProject(projectId);
   const { submitBid, loading: submittingBid } = useSubmitBid();
 
@@ -209,6 +211,11 @@ function ProjectDetailPageContent() {
   const [showClosePanel, setShowClosePanel] = useState(false);
   const [closeEstado, setCloseEstado] = useState("");
   const [closeJustificacion, setCloseJustificacion] = useState("");
+  const [selectedProblemMember, setSelectedProblemMember] = useState<number | null>(null);
+
+  // Cancel project state (for early stages)
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   // Republish state
   const [showRepublishForm, setShowRepublishForm] = useState(false);
@@ -411,6 +418,37 @@ function ProjectDetailPageContent() {
       setShowClosePanel(false);
       setCloseEstado("");
       setCloseJustificacion("");
+    }
+    setUpdating(false);
+  };
+
+  // Report a specific participant
+  const handleReportParticipant = async () => {
+    if (!selectedProblemMember || !closeJustificacion) return;
+    setUpdating(true);
+    const result = await removeParticipant(selectedProblemMember, closeJustificacion);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setShowClosePanel(false);
+      setCloseEstado("");
+      setCloseJustificacion("");
+      setSelectedProblemMember(null);
+      alert("Participante reportado y removido del proyecto");
+    }
+    setUpdating(false);
+  };
+
+  // Cancel project in early states
+  const handleCancelProject = async () => {
+    setUpdating(true);
+    const result = await cancelProject(cancelReason || undefined);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setShowCancelModal(false);
+      setCancelReason("");
+      alert("Proyecto cancelado exitosamente");
     }
     setUpdating(false);
   };
@@ -1410,18 +1448,38 @@ function ProjectDetailPageContent() {
                         <label className={styles.formLabel}>Tipo de Problema *</label>
                         <select
                           value={closeEstado}
-                          onChange={(e) => setCloseEstado(e.target.value)}
+                          onChange={(e) => { setCloseEstado(e.target.value); setSelectedProblemMember(null); }}
                           className={styles.formInput}
                         >
                           <option value="">Seleccionar...</option>
-                          <option value="completado_parcial">Completado Parcial</option>
-                          <option value="no_completado">No Completado</option>
+                          <option value="participante_no_cumplio">Participante no cumplió</option>
+                          <option value="completado_parcial">Completado Parcial (cerrar proyecto)</option>
+                          <option value="no_completado">No Completado (cerrar proyecto)</option>
                           <option value="cancelado_sin_acuerdo">Cancelado - Sin Acuerdo</option>
                           <option value="cancelado_sin_presupuesto">Cancelado - Sin Presupuesto</option>
                           <option value="no_pagado">No Pagado (Bloquea al cliente)</option>
                         </select>
                       </div>
-                      {["no_completado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto", "no_pagado"].includes(closeEstado) && (
+                      {closeEstado === "participante_no_cumplio" && acceptedMembers.length > 0 && (
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Seleccionar Participante *</label>
+                          <select
+                            value={selectedProblemMember || ""}
+                            onChange={(e) => setSelectedProblemMember(e.target.value ? parseInt(e.target.value) : null)}
+                            className={styles.formInput}
+                          >
+                            <option value="">Seleccionar miembro...</option>
+                            {acceptedMembers
+                              .filter(m => Number(m.miembro.id) !== userMiembroId)
+                              .map((m) => (
+                                <option key={m.bid_id} value={m.bid_id}>
+                                  {m.miembro.nombre} - {m.miembro.puesto || "Miembro"}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      )}
+                      {(closeEstado === "participante_no_cumplio" || ["no_completado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto", "no_pagado"].includes(closeEstado)) && (
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>Justificación *</label>
                           <textarea
@@ -1434,16 +1492,26 @@ function ProjectDetailPageContent() {
                         </div>
                       )}
                       <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
-                        <button
-                          className={closeEstado === "no_pagado" ? styles.dangerButton : ticketStyles.primaryButton}
-                          onClick={handleCloseProject}
-                          disabled={updating || !closeEstado || (["no_completado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto", "no_pagado"].includes(closeEstado) && !closeJustificacion)}
-                        >
-                          {updating ? "Procesando..." : "Confirmar"}
-                        </button>
+                        {closeEstado === "participante_no_cumplio" ? (
+                          <button
+                            className={styles.dangerButton}
+                            onClick={handleReportParticipant}
+                            disabled={updating || !selectedProblemMember || !closeJustificacion}
+                          >
+                            {updating ? "Procesando..." : "Reportar Participante"}
+                          </button>
+                        ) : (
+                          <button
+                            className={closeEstado === "no_pagado" ? styles.dangerButton : ticketStyles.primaryButton}
+                            onClick={handleCloseProject}
+                            disabled={updating || !closeEstado || (["no_completado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto", "no_pagado"].includes(closeEstado) && !closeJustificacion)}
+                          >
+                            {updating ? "Procesando..." : "Confirmar"}
+                          </button>
+                        )}
                         <button
                           className={ticketStyles.secondaryButton}
-                          onClick={() => { setShowClosePanel(false); setCloseEstado(""); setCloseJustificacion(""); }}
+                          onClick={() => { setShowClosePanel(false); setCloseEstado(""); setCloseJustificacion(""); setSelectedProblemMember(null); }}
                         >
                           Cancelar
                         </button>
@@ -1454,19 +1522,34 @@ function ProjectDetailPageContent() {
               </>
             )}
 
-            {/* Close Project Panel - for client (report member) */}
-            {isProjectOwner && activeWorkingStates.includes(project.estado) && (
+            {/* Close Project Panel - for client/owner (report member) */}
+            {isProjectOwner && activeWorkingStates.includes(project.estado) && acceptedMembers.length > 0 && (
               <div className={styles.detailCard}>
-                <h4 className={styles.detailCardTitle}>Reportar Problema</h4>
+                <h4 className={styles.detailCardTitle}>Reportar Participante</h4>
                 {!showClosePanel ? (
                   <button
                     className={styles.rejectButton}
-                    onClick={() => { setShowClosePanel(true); setCloseEstado("no_completado_por_miembro"); }}
+                    onClick={() => { setShowClosePanel(true); setCloseEstado("participante_no_cumplio"); }}
                   >
                     Reportar: Miembro no cumplió
                   </button>
                 ) : (
                   <div className={styles.closePanelForm}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Seleccionar Participante *</label>
+                      <select
+                        value={selectedProblemMember || ""}
+                        onChange={(e) => setSelectedProblemMember(e.target.value ? parseInt(e.target.value) : null)}
+                        className={styles.formInput}
+                      >
+                        <option value="">Seleccionar miembro...</option>
+                        {acceptedMembers.map((m) => (
+                          <option key={m.bid_id} value={m.bid_id}>
+                            {m.miembro.nombre} - {m.miembro.puesto || "Miembro"}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div className={styles.formGroup}>
                       <label className={styles.formLabel}>Justificación *</label>
                       <textarea
@@ -1480,16 +1563,62 @@ function ProjectDetailPageContent() {
                     <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
                       <button
                         className={styles.dangerButton}
-                        onClick={handleCloseProject}
-                        disabled={updating || !closeJustificacion}
+                        onClick={handleReportParticipant}
+                        disabled={updating || !selectedProblemMember || !closeJustificacion}
                       >
-                        {updating ? "Procesando..." : "Enviar Reporte"}
+                        {updating ? "Procesando..." : "Reportar Participante"}
                       </button>
                       <button
                         className={ticketStyles.secondaryButton}
-                        onClick={() => { setShowClosePanel(false); setCloseEstado(""); setCloseJustificacion(""); }}
+                        onClick={() => { setShowClosePanel(false); setCloseEstado(""); setCloseJustificacion(""); setSelectedProblemMember(null); }}
                       >
                         Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cancel Project - for early states */}
+            {isProjectOwner && ["borrador", "publicado", "planificado"].includes(project.estado) && (
+              <div className={styles.detailCard}>
+                <h4 className={styles.detailCardTitle}>Cancelar Proyecto</h4>
+                {!showCancelModal ? (
+                  <button
+                    className={styles.rejectButton}
+                    onClick={() => setShowCancelModal(true)}
+                  >
+                    Cancelar Proyecto
+                  </button>
+                ) : (
+                  <div className={styles.closePanelForm}>
+                    <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "var(--space-3)" }}>
+                      Esta acción cancelará el proyecto permanentemente. Las postulaciones pendientes serán rechazadas.
+                    </p>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Motivo (opcional)</label>
+                      <textarea
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        className={styles.bidFormTextarea}
+                        placeholder="Describe el motivo de la cancelación..."
+                        style={{ minHeight: "60px" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
+                      <button
+                        className={styles.dangerButton}
+                        onClick={handleCancelProject}
+                        disabled={updating}
+                      >
+                        {updating ? "Procesando..." : "Confirmar Cancelación"}
+                      </button>
+                      <button
+                        className={ticketStyles.secondaryButton}
+                        onClick={() => { setShowCancelModal(false); setCancelReason(""); }}
+                      >
+                        Volver
                       </button>
                     </div>
                   </div>
