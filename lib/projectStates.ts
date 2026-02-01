@@ -128,9 +128,9 @@ export function getNextPrivateProjectStates(
     "completado",
   ];
 
-  // Can also cancel at any non-terminal state
+  // Return workflow states (cancelado is handled separately via cancel-request)
   if (!TERMINAL_STATES.includes(currentState)) {
-    return [...workflowStates.filter((s) => s !== currentState), "cancelado"];
+    return workflowStates.filter((s) => s !== currentState);
   }
 
   return [];
@@ -143,10 +143,11 @@ export function getNextPrivateProjectStates(
 export function getNextPublicProjectStates(
   currentState: ProjectState
 ): ProjectState[] {
+  // Cancelado is handled separately via cancel or cancel-request endpoints
   const transitions: Partial<Record<ProjectState, ProjectState[]>> = {
-    publicado: ["planificado", "cancelado"],
-    planificado: ["iniciado", "cancelado"],
-    iniciado: ["en_progreso", "en_implementacion", "cancelado"],
+    publicado: ["planificado"],
+    planificado: ["iniciado"],
+    iniciado: ["en_progreso", "en_implementacion"],
     en_progreso: ["en_implementacion", "en_pruebas", "completado"],
     en_implementacion: ["en_pruebas", "completado"],
     en_pruebas: ["completado", "en_implementacion"],
