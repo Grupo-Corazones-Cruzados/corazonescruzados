@@ -247,7 +247,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 }
 
-// DELETE /api/projects/[id] - Delete a project
+// DELETE /api/projects/[id] - Delete a cancelled project (only owner can delete)
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const tokenData = await getCurrentUser();
@@ -258,9 +258,52 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const projectId = parseInt(id);
 
+    // Get user info
+    const userResult = await query(
+      "SELECT rol, id_miembro FROM user_profiles WHERE id = $1",
+      [tokenData.userId]
+    );
+    if (userResult.rows.length === 0) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+    const userRole = userResult.rows[0].rol;
+    const userMiembroId = userResult.rows[0].id_miembro;
+
+    // Get project
+    const projectResult = await query(
+      "SELECT id, estado, id_cliente, id_miembro_propietario, tipo_proyecto FROM projects WHERE id = $1",
+      [projectId]
+    );
+    if (projectResult.rows.length === 0) {
+      return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
+    }
+
+    const project = projectResult.rows[0];
+
+    // Check permissions - only owner can delete
+    const isClientOwner = userRole === "cliente" && project.id_cliente === parseInt(tokenData.userId);
+    const projectOwnerId = project.id_miembro_propietario ? Number(project.id_miembro_propietario) : null;
+    const userMemberId = userMiembroId ? Number(userMiembroId) : null;
+    const isMemberOwner = (userRole === "miembro" || userRole === "admin") && projectOwnerId !== null && projectOwnerId === userMemberId;
+    const isAdmin = userRole === "admin";
+
+    if (!isClientOwner && !isMemberOwner && !isAdmin) {
+      return NextResponse.json({ error: "No autorizado para eliminar este proyecto" }, { status: 403 });
+    }
+
+    // Only allow deletion of cancelled projects
+    const cancelledStates = ["cancelado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto"];
+    if (!cancelledStates.includes(project.estado) && !isAdmin) {
+      return NextResponse.json(
+        { error: "Solo se pueden eliminar proyectos cancelados" },
+        { status: 400 }
+      );
+    }
+
+    // Delete the project (cascades will handle related records)
     await query("DELETE FROM projects WHERE id = $1", [projectId]);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "Proyecto eliminado" });
   } catch (error) {
     console.error("Error deleting project:", error);
     return NextResponse.json({ error: "Error al eliminar el proyecto" }, { status: 500 });

@@ -945,6 +945,28 @@ export function useProject(id: number | null) {
     }
   };
 
+  // Delete cancelled project (only owner can delete)
+  const deleteProject = async () => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al eliminar proyecto");
+      }
+
+      return { error: null };
+    } catch (err) {
+      console.error("Error deleting project:", err);
+      return { error: "Error al eliminar proyecto" };
+    }
+  };
+
   return {
     project,
     bids,
@@ -984,6 +1006,8 @@ export function useProject(id: number | null) {
     createCancellationRequest,
     voteCancellationRequest,
     withdrawCancellationRequest,
+    // Delete project (only cancelled projects)
+    deleteProject,
   };
 }
 

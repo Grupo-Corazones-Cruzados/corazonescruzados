@@ -157,6 +157,7 @@ function ProjectDetailPageContent() {
     createCancellationRequest,
     voteCancellationRequest,
     withdrawCancellationRequest,
+    deleteProject,
   } = useProject(projectId);
   const { submitBid, loading: submittingBid } = useSubmitBid();
 
@@ -244,6 +245,9 @@ function ProjectDetailPageContent() {
   const [showCancelRequestModal, setShowCancelRequestModal] = useState(false);
   const [cancelRequestReason, setCancelRequestReason] = useState("");
   const [cancelVoteComment, setCancelVoteComment] = useState("");
+
+  // Delete project state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -532,6 +536,21 @@ function ProjectDetailPageContent() {
     } else {
       setCancellationRequest(null);
       alert("Solicitud retirada");
+    }
+    setUpdating(false);
+  };
+
+  // Delete cancelled project
+  const handleDeleteProject = async () => {
+    setUpdating(true);
+    const result = await deleteProject();
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setShowDeleteModal(false);
+      alert("Proyecto eliminado");
+      // Redirect to projects list
+      window.location.href = backUrl;
     }
     setUpdating(false);
   };
@@ -894,8 +913,46 @@ function ProjectDetailPageContent() {
                   <p className={styles.detailDescription}>{project.justificacion_cierre}</p>
                   {project.cerrado_por && (
                     <span className={styles.creadoPorBadge} style={{ marginTop: "var(--space-2)" }}>
-                      Cerrado por: {project.cerrado_por === "cliente" ? "Cliente" : "Miembro"}
+                      Cerrado por: {project.cerrado_por === "cliente" ? "Cliente" : project.cerrado_por === "equipo" ? "Equipo" : "Miembro"}
                     </span>
+                  )}
+                </div>
+              )}
+
+              {/* Delete button for cancelled projects - only owner */}
+              {isProjectOwner && ["cancelado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto"].includes(project.estado) && (
+                <div style={{ marginTop: "var(--space-4)" }}>
+                  {!showDeleteModal ? (
+                    <button
+                      className={styles.dangerButton}
+                      onClick={() => setShowDeleteModal(true)}
+                    >
+                      <TrashIcon /> Eliminar Proyecto
+                    </button>
+                  ) : (
+                    <div className={styles.closePanelForm}>
+                      <p style={{ color: "var(--primary-red)", fontWeight: 600, marginBottom: "var(--space-2)" }}>
+                        ¿Eliminar este proyecto permanentemente?
+                      </p>
+                      <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "var(--space-3)" }}>
+                        Esta acción no se puede deshacer. Se eliminarán todos los datos del proyecto, incluyendo postulaciones y requerimientos.
+                      </p>
+                      <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                        <button
+                          className={styles.dangerButton}
+                          onClick={handleDeleteProject}
+                          disabled={updating}
+                        >
+                          {updating ? "Eliminando..." : "Confirmar Eliminación"}
+                        </button>
+                        <button
+                          className={ticketStyles.secondaryButton}
+                          onClick={() => setShowDeleteModal(false)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
