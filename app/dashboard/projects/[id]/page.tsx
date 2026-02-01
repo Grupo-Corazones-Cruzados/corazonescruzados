@@ -154,14 +154,15 @@ function ProjectDetailPageContent() {
   const { submitBid, loading: submittingBid } = useSubmitBid();
 
   const userRole = profile?.rol || "cliente";
-  const userMiembroId = profile?.id_miembro;
+  const userMiembroId = profile?.id_miembro ? Number(profile.id_miembro) : null;
 
   // Check if current user already submitted a bid
-  const userBid = bids.find((b) => b.id_miembro === userMiembroId);
+  const userBid = bids.find((b) => Number(b.id_miembro) === userMiembroId);
   const isClientOwner = userRole === "cliente";
 
   // Check if current member is the owner of this member project
-  const isMemberOwner = project?.tipo_proyecto === "miembro" && project?.id_miembro_propietario === userMiembroId;
+  const projectOwnerId = project?.id_miembro_propietario ? Number(project.id_miembro_propietario) : null;
+  const isMemberOwner = project?.tipo_proyecto === "miembro" && projectOwnerId !== null && projectOwnerId === userMiembroId;
 
   // Project owner is either client (for client projects) or member (for member projects)
   const isProjectOwner = (project?.tipo_proyecto === "cliente" && isClientOwner) || isMemberOwner;
