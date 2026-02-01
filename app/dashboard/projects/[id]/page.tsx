@@ -467,16 +467,23 @@ function ProjectDetailPageContent() {
   };
 
   const handleChangeState = async (newEstado: string) => {
-    if (!project || !isMemberOwner) return;
+    if (!project?.id || !isMemberOwner) return;
     setUpdating(true);
     const result = await changeState(newEstado);
     if (result.error) {
       alert(result.error);
     } else {
       // Refresh valid states after change
-      const statesResult = await getValidStates();
-      if (!statesResult.error && statesResult.data?.transitions) {
-        setValidStates(statesResult.data.transitions);
+      try {
+        const response = await fetch(`/api/projects/${project.id}/state`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.transitions) {
+            setValidStates(data.transitions);
+          }
+        }
+      } catch (err) {
+        console.error("Error refreshing states:", err);
       }
     }
     setUpdating(false);
@@ -522,18 +529,25 @@ function ProjectDetailPageContent() {
   // Load valid states for private member projects
   useEffect(() => {
     const loadValidStates = async () => {
-      if (!project || !isMemberOwner || isClosedState) return;
+      if (!project?.id || !isMemberOwner || isClosedState) return;
 
       setLoadingStates(true);
-      const result = await getValidStates();
-      if (!result.error && result.data?.transitions) {
-        setValidStates(result.data.transitions);
+      try {
+        const response = await fetch(`/api/projects/${project.id}/state`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.transitions) {
+            setValidStates(data.transitions);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading valid states:", err);
       }
       setLoadingStates(false);
     };
 
     loadValidStates();
-  }, [project?.id, project?.estado, isMemberOwner, isClosedState, getValidStates]);
+  }, [project?.id, project?.estado, isMemberOwner, isClosedState]);
 
   // Check if all accepted members have confirmed
   const allMembersConfirmed = acceptedMembers.length > 0 &&
