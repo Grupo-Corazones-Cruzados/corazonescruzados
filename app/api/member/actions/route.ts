@@ -10,7 +10,7 @@ async function getMemberInfo(userId: string) {
        FROM user_profiles up
        JOIN miembros m ON up.id_miembro = m.id
        LEFT JOIN fuentes f ON m.id_fuente = f.id
-       WHERE up.id = $1 AND up.rol = 'miembro'`,
+       WHERE up.id = $1 AND up.rol IN ('miembro', 'admin')`,
       [userId]
     );
     return result.rows[0] || null;
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Error al obtener perfil", details: String(e) }, { status: 500 });
     }
 
-    if (!userProfile || userProfile.rol !== "miembro") {
+    if (!userProfile || (userProfile.rol !== "miembro" && userProfile.rol !== "admin")) {
       return NextResponse.json({ error: "No eres miembro" }, { status: 403 });
     }
 

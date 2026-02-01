@@ -96,9 +96,9 @@ export default function MisAccionesPage() {
   // Edit form
   const [editForm, setEditForm] = useState({ nombre: "" });
 
-  // Check access
+  // Check access - members and admins can access
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || profile?.rol !== "miembro")) {
+    if (!authLoading && (!isAuthenticated || (profile?.rol !== "miembro" && profile?.rol !== "admin"))) {
       router.push("/dashboard");
     }
   }, [authLoading, isAuthenticated, profile, router]);
