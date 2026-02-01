@@ -919,8 +919,8 @@ function ProjectDetailPageContent() {
                 </div>
               )}
 
-              {/* Delete button for cancelled projects - only owner */}
-              {isProjectOwner && ["cancelado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto"].includes(project.estado) && (
+              {/* Delete button - owner for cancelled projects, admin for any project */}
+              {((isProjectOwner && ["cancelado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto"].includes(project.estado)) || userRole === "admin") && (
                 <div style={{ marginTop: "var(--space-4)" }}>
                   {!showDeleteModal ? (
                     <button
