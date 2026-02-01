@@ -313,6 +313,37 @@
   text-decoration: line-through;
 }
 
+/* Project state badges */
+.badgeDefault {
+  background: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+}
+
+.badgePrimary {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.badgeInfo {
+  background: rgba(6, 182, 212, 0.15);
+  color: #06b6d4;
+}
+
+.badgeWarning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.badgeSuccess {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.badgeDanger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
 /* Buttons */
 .primaryButton {
   display: inline-flex;
@@ -1145,6 +1176,37 @@
 :global([data-theme="light"]) .badgeBlocked {
   background: rgba(75, 85, 99, 0.15);
   color: #4B5563;
+}
+
+/* Project state badges - light theme */
+:global([data-theme="light"]) .badgeDefault {
+  background: #E2E8F0;
+  color: #334155;
+}
+
+:global([data-theme="light"]) .badgePrimary {
+  background: rgba(37, 99, 235, 0.15);
+  color: #1D4ED8;
+}
+
+:global([data-theme="light"]) .badgeInfo {
+  background: rgba(8, 145, 178, 0.15);
+  color: #0E7490;
+}
+
+:global([data-theme="light"]) .badgeWarning {
+  background: rgba(217, 119, 6, 0.15);
+  color: #B45309;
+}
+
+:global([data-theme="light"]) .badgeSuccess {
+  background: rgba(5, 150, 105, 0.15);
+  color: #047857;
+}
+
+:global([data-theme="light"]) .badgeDanger {
+  background: rgba(220, 38, 38, 0.12);
+  color: #B91C1C;
 }
 
 /* Buttons */

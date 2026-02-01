@@ -109,7 +109,10 @@ export function useProjects() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProjects = useCallback(async (filters?: { estado?: string; search?: string }) => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -120,16 +123,18 @@ export function useProjects() {
       if (filters?.search) params.append("search", filters.search);
 
       const response = await fetch(`/api/projects?${params.toString()}`);
-      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Error al cargar los proyectos");
+        const data = await response.json().catch(() => ({}));
+        console.error("API error:", response.status, data.error);
+        throw new Error(data.error || `Error ${response.status}`);
       }
 
-      setProjects(data.projects || []);
+      const data = await response.json();
+      setProjects(Array.isArray(data.projects) ? data.projects : []);
     } catch (err) {
       console.error("Error fetching projects:", err);
-      setError("Error al cargar los proyectos");
+      setError(err instanceof Error ? err.message : "Error al cargar los proyectos");
     } finally {
       setLoading(false);
     }
