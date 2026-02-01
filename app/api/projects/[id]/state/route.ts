@@ -63,8 +63,12 @@ export async function PATCH(
     const nuevoEstado = estado as ProjectState;
 
     // Verificar permisos (solo el propietario puede cambiar estado)
+    // Convert to numbers for comparison
+    const projectOwnerId = project.id_miembro_propietario ? Number(project.id_miembro_propietario) : null;
+    const userMemberId = userMiembroId ? Number(userMiembroId) : null;
+
     const isClientOwner = userRole === "cliente" && project.id_cliente === tokenData.userId;
-    const isMemberOwner = (userRole === "miembro" || userRole === "admin") && project.id_miembro_propietario === userMiembroId;
+    const isMemberOwner = (userRole === "miembro" || userRole === "admin") && projectOwnerId !== null && projectOwnerId === userMemberId;
     const isAdmin = userRole === "admin";
 
     if (!isClientOwner && !isMemberOwner && !isAdmin) {
@@ -307,10 +311,22 @@ export async function GET(
     const project = projectResult.rows[0];
     const estadoActual = project.estado as ProjectState;
 
-    // Verificar permisos
+    // Verificar permisos - convert to numbers for comparison
+    const projectOwnerId = project.id_miembro_propietario ? Number(project.id_miembro_propietario) : null;
+    const userMemberId = userMiembroId ? Number(userMiembroId) : null;
+
     const isClientOwner = userRole === "cliente" && project.id_cliente === tokenData.userId;
-    const isMemberOwner = (userRole === "miembro" || userRole === "admin") && project.id_miembro_propietario === userMiembroId;
+    const isMemberOwner = (userRole === "miembro" || userRole === "admin") && projectOwnerId !== null && projectOwnerId === userMemberId;
     const isAdmin = userRole === "admin";
+
+    console.log("State GET - Auth check:", {
+      userRole,
+      userMemberId,
+      projectOwnerId,
+      isClientOwner,
+      isMemberOwner,
+      isAdmin
+    });
 
     if (!isClientOwner && !isMemberOwner && !isAdmin) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
