@@ -53,9 +53,14 @@ export async function GET(request: NextRequest) {
 
     // Postulaciones: projects where I have a bid
     const postulacionesProjects = projects.filter((p: any) => p.mi_bid_estado === "pendiente");
-    const asignadosProjects = projects.filter((p: any) => p.mi_bid_estado === "aceptada" && ["publicado", "planificado", "en_progreso"].includes(p.estado));
+    const asignadosProjects = projects.filter((p: any) => p.mi_bid_estado === "aceptada" && ["publicado", "planificado", "en_progreso", "iniciado", "en_implementacion", "en_pruebas"].includes(p.estado));
     const completadosProjects = projects.filter((p: any) => p.mi_bid_estado === "aceptada" && ["completado", "completado_parcial"].includes(p.estado));
     const rechazadosProjects = projects.filter((p: any) => p.mi_bid_estado === "rechazada");
+
+    // Proyectos cancelados: any cancelled state
+    const canceladosProjects = projects.filter((p: any) =>
+      ["cancelado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto"].includes(p.estado)
+    );
 
     // Proyectos propios: where I'm the owner
     const propiosProjects = projects.filter((p: any) => p.es_propietario === true);
@@ -68,6 +73,7 @@ export async function GET(request: NextRequest) {
       asignados: asignadosProjects.length,
       completados: completadosProjects.length,
       rechazados: rechazadosProjects.length,
+      cancelados: canceladosProjects.length,
       propios: propiosProjects.length,
       propios_privados: propiosPrivados.length,
       propios_publicos: propiosPublicos.length,

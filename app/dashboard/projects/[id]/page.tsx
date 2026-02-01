@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/app/components/dashboard/DashboardLayout";
-import { useProject, useSubmitBid, ProjectBid, ProjectRequirement, AcceptedMember } from "@/lib/hooks/useProjects";
+import { useProject, useSubmitBid, ProjectBid, ProjectRequirement } from "@/lib/hooks/useProjects";
 import { useAuth } from "@/lib/AuthProvider";
 import ticketStyles from "@/app/styles/Tickets.module.css";
 import styles from "@/app/styles/Projects.module.css";
@@ -74,6 +74,7 @@ const getStatusClass = (estado: string): string => {
     case "completado": return styles.statusCompletado;
     case "completado_parcial": return styles.statusCompletadoParcial;
     case "no_completado": return styles.statusNoCompletado;
+    case "cancelado": return styles.statusCancelado;
     case "cancelado_sin_acuerdo": return styles.statusCancelado;
     case "cancelado_sin_presupuesto": return styles.statusCancelado;
     case "no_pagado": return styles.statusNoPagado;
@@ -95,6 +96,7 @@ const getStatusLabel = (estado: string): string => {
     case "completado": return "Completado";
     case "completado_parcial": return "Completado Parcial";
     case "no_completado": return "No Completado";
+    case "cancelado": return "Cancelado";
     case "cancelado_sin_acuerdo": return "Cancelado - Sin Acuerdo";
     case "cancelado_sin_presupuesto": return "Cancelado - Sin Presupuesto";
     case "no_pagado": return "No Pagado";
@@ -149,9 +151,12 @@ function ProjectDetailPageContent() {
     closeConvocatoria,
     finishWork,
     changeState,
-    getValidStates,
     removeParticipant,
     cancelProject,
+    getCancellationRequest,
+    createCancellationRequest,
+    voteCancellationRequest,
+    withdrawCancellationRequest,
   } = useProject(projectId);
   const { submitBid, loading: submittingBid } = useSubmitBid();
 
@@ -228,6 +233,18 @@ function ProjectDetailPageContent() {
   const [validStates, setValidStates] = useState<{ estado: string; label: string }[]>([]);
   const [loadingStates, setLoadingStates] = useState(false);
 
+  // Cancellation request state (for active projects)
+  const [cancellationRequest, setCancellationRequest] = useState<{
+    hasPendingRequest: boolean;
+    request?: { id: number; motivo: string; creador_nombre: string; created_at: string };
+    votes?: { participante_nombre: string; tipo_participante: string; voto: string; comentario: string | null; created_at: string }[];
+    summary?: { total: number; confirmed: number; rejected: number; pending: number };
+  } | null>(null);
+  const [loadingCancellation, setLoadingCancellation] = useState(false);
+  const [showCancelRequestModal, setShowCancelRequestModal] = useState(false);
+  const [cancelRequestReason, setCancelRequestReason] = useState("");
+  const [cancelVoteComment, setCancelVoteComment] = useState("");
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || bidImages.length >= 5) return;
@@ -256,7 +273,7 @@ function ProjectDetailPageContent() {
   const handleSubmitBid = async () => {
     if (!userMiembroId || !projectId) return;
 
-    let imageUrls: string[] = [];
+    const imageUrls: string[] = [];
 
     const result = await submitBid({
       id_project: projectId,
@@ -392,7 +409,7 @@ function ProjectDetailPageContent() {
       descripcion: editReqDescripcion || undefined,
       costo: editReqCosto ? parseFloat(editReqCosto) : undefined,
       es_adicional: editReqEsAdicional,
-    } as any);
+    } as Partial<ProjectRequirement>);
     if (!result.error) {
       setEditingReq(null);
     } else {
@@ -453,6 +470,72 @@ function ProjectDetailPageContent() {
     setUpdating(false);
   };
 
+  // Create cancellation request (for active projects)
+  const handleCreateCancellationRequest = async () => {
+    if (!cancelRequestReason || cancelRequestReason.trim().length < 5) {
+      alert("El motivo debe tener al menos 5 caracteres");
+      return;
+    }
+    setUpdating(true);
+    const result = await createCancellationRequest(cancelRequestReason);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setShowCancelRequestModal(false);
+      setCancelRequestReason("");
+      if (result.data?.projectCancelled) {
+        alert("Proyecto cancelado - todos confirmaron");
+      } else {
+        // Refresh cancellation request data
+        const refreshResult = await getCancellationRequest();
+        if (!refreshResult.error && refreshResult.data) {
+          setCancellationRequest(refreshResult.data);
+        }
+        alert("Solicitud de cancelacion creada. Esperando confirmacion de los demas participantes.");
+      }
+    }
+    setUpdating(false);
+  };
+
+  // Vote on cancellation request
+  const handleVoteCancellation = async (voto: "confirmar" | "rechazar") => {
+    setUpdating(true);
+    const result = await voteCancellationRequest(voto, cancelVoteComment || undefined);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setCancelVoteComment("");
+      if (result.data?.projectCancelled) {
+        alert("Proyecto cancelado - todos confirmaron");
+      } else if (result.data?.status === "rechazada") {
+        alert("Solicitud de cancelacion rechazada");
+        setCancellationRequest(null);
+      } else {
+        // Refresh cancellation request data
+        const refreshResult = await getCancellationRequest();
+        if (!refreshResult.error && refreshResult.data) {
+          setCancellationRequest(refreshResult.data);
+        }
+        alert("Voto registrado");
+      }
+    }
+    setUpdating(false);
+  };
+
+  // Withdraw cancellation request
+  const handleWithdrawCancellation = async () => {
+    if (!confirm("¿Estas seguro de retirar la solicitud de cancelacion?")) return;
+    setUpdating(true);
+    const result = await withdrawCancellationRequest();
+    if (result.error) {
+      alert(result.error);
+    } else {
+      setCancellationRequest(null);
+      alert("Solicitud retirada");
+    }
+    setUpdating(false);
+  };
+
   const handleRepublish = async () => {
     if (!republishTitulo) return;
     setUpdating(true);
@@ -486,8 +569,8 @@ function ProjectDetailPageContent() {
       } else if (result.proyecto_completado) {
         alert("El proyecto ha sido completado automáticamente. Todos los miembros finalizaron su trabajo.");
       }
-    } catch (err: any) {
-      alert("Error: " + (err?.message || "Error inesperado"));
+    } catch (err) {
+      alert("Error: " + ((err as Error)?.message || "Error inesperado"));
     } finally {
       setUpdating(false);
     }
@@ -497,7 +580,7 @@ function ProjectDetailPageContent() {
     if (!project || !isMemberOwner) return;
     setUpdating(true);
     const newVisibility = project.visibilidad === "privado" ? "publico" : "privado";
-    const result = await updateProject({ visibilidad: newVisibility } as any);
+    const result = await updateProject({ visibilidad: newVisibility } as { visibilidad: "privado" | "publico" });
     if (result.error) {
       alert(result.error);
     }
@@ -552,7 +635,7 @@ function ProjectDetailPageContent() {
   // Is the project in a terminal/closed state
   const isClosedState = [
     "completado", "completado_parcial", "no_completado",
-    "cancelado_sin_acuerdo", "cancelado_sin_presupuesto",
+    "cancelado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto",
     "no_pagado", "no_completado_por_miembro"
   ].includes(project?.estado || "");
 
@@ -586,6 +669,27 @@ function ProjectDetailPageContent() {
 
     loadValidStates();
   }, [project?.id, project?.estado, isMemberOwner, isClosedState]);
+
+  // Load cancellation request for active projects
+  useEffect(() => {
+    const loadCancellationRequest = async () => {
+      if (!project?.id || !activeWorkingStates.includes(project.estado)) return;
+
+      setLoadingCancellation(true);
+      try {
+        const result = await getCancellationRequest();
+        if (!result.error && result.data) {
+          setCancellationRequest(result.data);
+        }
+      } catch (err) {
+        console.error("Error loading cancellation request:", err);
+      }
+      setLoadingCancellation(false);
+    };
+
+    loadCancellationRequest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id, project?.estado]);
 
   // Check if all accepted members have confirmed
   const allMembersConfirmed = acceptedMembers.length > 0 &&
@@ -1622,6 +1726,164 @@ function ProjectDetailPageContent() {
                       </button>
                     </div>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Cancellation Request - for active projects (requires all participants to confirm) */}
+            {(isTeamMember || isProjectOwner) && activeWorkingStates.includes(project.estado) && (
+              <div className={styles.detailCard}>
+                <h4 className={styles.detailCardTitle}>Solicitar Cancelacion</h4>
+
+                {loadingCancellation ? (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Cargando...</p>
+                ) : cancellationRequest?.hasPendingRequest ? (
+                  <div className={styles.cancellationRequestPanel}>
+                    <div style={{ padding: "var(--space-3)", background: "rgba(255,193,7,0.1)", borderRadius: "8px", marginBottom: "var(--space-3)" }}>
+                      <p style={{ color: "var(--warning-color)", fontWeight: 600, marginBottom: "var(--space-2)" }}>
+                        Solicitud de Cancelacion Pendiente
+                      </p>
+                      <p style={{ fontSize: "0.9rem", color: "var(--text-muted)", marginBottom: "var(--space-2)" }}>
+                        <strong>Motivo:</strong> {cancellationRequest.request?.motivo}
+                      </p>
+                      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                        Creada por: {cancellationRequest.request?.creador_nombre} el {formatDate(cancellationRequest.request?.created_at || "")}
+                      </p>
+                    </div>
+
+                    {/* Vote summary */}
+                    {cancellationRequest.summary && (
+                      <div style={{ marginBottom: "var(--space-3)" }}>
+                        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "var(--space-2)" }}>
+                          Votos: {cancellationRequest.summary.confirmed} de {cancellationRequest.summary.total} confirmados
+                        </p>
+                        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                          {cancellationRequest.votes?.map((vote, i) => (
+                            <span
+                              key={i}
+                              style={{
+                                fontSize: "0.8rem",
+                                padding: "4px 8px",
+                                borderRadius: "12px",
+                                background: vote.voto === "confirmar" ? "rgba(76,175,80,0.2)" : "rgba(244,67,54,0.2)",
+                                color: vote.voto === "confirmar" ? "var(--success-color)" : "var(--primary-red)",
+                              }}
+                            >
+                              {vote.participante_nombre}: {vote.voto === "confirmar" ? "Confirmo" : "Rechazo"}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Check if current user has already voted */}
+                    {(() => {
+                      const myVote = cancellationRequest.votes?.find(v => {
+                        if (isClientOwner) return v.tipo_participante === "cliente";
+                        if (isMemberOwner) return v.tipo_participante === "propietario";
+                        return v.tipo_participante === "miembro";
+                      });
+
+                      if (myVote) {
+                        return (
+                          <div>
+                            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "var(--space-2)" }}>
+                              Ya votaste: <strong>{myVote.voto === "confirmar" ? "Confirmar cancelacion" : "Rechazar cancelacion"}</strong>
+                            </p>
+                            {/* Show withdraw button if user is the creator */}
+                            {myVote.voto === "confirmar" && cancellationRequest.summary?.confirmed === 1 && (
+                              <button
+                                className={ticketStyles.secondaryButton}
+                                onClick={handleWithdrawCancellation}
+                                disabled={updating}
+                                style={{ fontSize: "0.85rem" }}
+                              >
+                                Retirar Solicitud
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div>
+                          <div className={styles.formGroup} style={{ marginBottom: "var(--space-3)" }}>
+                            <label className={styles.formLabel}>Comentario (opcional)</label>
+                            <textarea
+                              value={cancelVoteComment}
+                              onChange={(e) => setCancelVoteComment(e.target.value)}
+                              className={styles.bidFormTextarea}
+                              placeholder="Agrega un comentario..."
+                              style={{ minHeight: "60px" }}
+                            />
+                          </div>
+                          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                            <button
+                              className={ticketStyles.primaryButton}
+                              onClick={() => handleVoteCancellation("confirmar")}
+                              disabled={updating}
+                            >
+                              {updating ? "Procesando..." : "Confirmar Cancelacion"}
+                            </button>
+                            <button
+                              className={styles.rejectButton}
+                              onClick={() => handleVoteCancellation("rechazar")}
+                              disabled={updating}
+                            >
+                              Rechazar
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <>
+                    {!showCancelRequestModal ? (
+                      <div>
+                        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "var(--space-3)" }}>
+                          Para cancelar un proyecto en progreso, todos los participantes deben confirmar la cancelacion.
+                        </p>
+                        <button
+                          className={styles.rejectButton}
+                          onClick={() => setShowCancelRequestModal(true)}
+                        >
+                          Solicitar Cancelacion
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={styles.closePanelForm}>
+                        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "var(--space-3)" }}>
+                          Esta solicitud sera enviada a todos los participantes. El proyecto solo sera cancelado si todos confirman.
+                        </p>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Motivo de cancelacion *</label>
+                          <textarea
+                            value={cancelRequestReason}
+                            onChange={(e) => setCancelRequestReason(e.target.value)}
+                            className={styles.bidFormTextarea}
+                            placeholder="Explica por que deseas cancelar el proyecto (minimo 5 caracteres)..."
+                            style={{ minHeight: "80px" }}
+                          />
+                        </div>
+                        <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
+                          <button
+                            className={ticketStyles.primaryButton}
+                            onClick={handleCreateCancellationRequest}
+                            disabled={updating || !cancelRequestReason || cancelRequestReason.trim().length < 5}
+                          >
+                            {updating ? "Procesando..." : "Enviar Solicitud"}
+                          </button>
+                          <button
+                            className={ticketStyles.secondaryButton}
+                            onClick={() => { setShowCancelRequestModal(false); setCancelRequestReason(""); }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

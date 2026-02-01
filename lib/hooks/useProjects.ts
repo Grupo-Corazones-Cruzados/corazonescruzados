@@ -848,6 +848,103 @@ export function useProject(id: number | null) {
     }
   };
 
+  // Get cancellation request status (for active projects)
+  const getCancellationRequest = async () => {
+    if (!id) return { error: "No project ID", data: null };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/cancel-request`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al obtener solicitud de cancelacion");
+      }
+
+      return { error: null, data };
+    } catch (err) {
+      console.error("Error getting cancellation request:", err);
+      return { error: "Error al obtener solicitud de cancelacion", data: null };
+    }
+  };
+
+  // Create cancellation request (for active projects - requires all participants to confirm)
+  const createCancellationRequest = async (motivo: string) => {
+    if (!id) return { error: "No project ID", data: null };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/cancel-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al crear solicitud de cancelacion");
+      }
+
+      if (data.projectCancelled) {
+        setProject(prev => prev ? { ...prev, estado: "cancelado" } : prev);
+      }
+
+      return { error: null, data };
+    } catch (err) {
+      console.error("Error creating cancellation request:", err);
+      return { error: "Error al crear solicitud de cancelacion", data: null };
+    }
+  };
+
+  // Vote on cancellation request
+  const voteCancellationRequest = async (voto: "confirmar" | "rechazar", comentario?: string) => {
+    if (!id) return { error: "No project ID", data: null };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/cancel-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voto, comentario }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al votar en solicitud de cancelacion");
+      }
+
+      if (data.projectCancelled) {
+        setProject(prev => prev ? { ...prev, estado: "cancelado" } : prev);
+      }
+
+      return { error: null, data };
+    } catch (err) {
+      console.error("Error voting on cancellation request:", err);
+      return { error: "Error al votar en solicitud de cancelacion", data: null };
+    }
+  };
+
+  // Withdraw cancellation request (only creator can do this)
+  const withdrawCancellationRequest = async () => {
+    if (!id) return { error: "No project ID" };
+
+    try {
+      const response = await fetch(`/api/projects/${id}/cancel-request`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al retirar solicitud de cancelacion");
+      }
+
+      return { error: null };
+    } catch (err) {
+      console.error("Error withdrawing cancellation request:", err);
+      return { error: "Error al retirar solicitud de cancelacion" };
+    }
+  };
+
   return {
     project,
     bids,
@@ -882,6 +979,11 @@ export function useProject(id: number | null) {
     publishProject,
     downloadPdf,
     cancelProject,
+    // Cancellation request methods (for active projects)
+    getCancellationRequest,
+    createCancellationRequest,
+    voteCancellationRequest,
+    withdrawCancellationRequest,
   };
 }
 

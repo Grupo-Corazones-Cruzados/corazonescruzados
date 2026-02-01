@@ -97,6 +97,7 @@ interface Stats {
   asignados: number;
   completados: number;
   rechazados: number;
+  cancelados: number;
   propios: number;
   propios_privados: number;
   propios_publicos: number;
@@ -109,10 +110,15 @@ const getStatusClass = (estado: string): string => {
     case "publicado": return styles.statusPublicado;
     case "asignado": return styles.statusAsignado;
     case "planificado": return styles.statusPlanificado;
+    case "borrador": return styles.statusBorrador;
+    case "iniciado": return styles.statusIniciado;
     case "en_progreso": return styles.statusEnProgreso;
+    case "en_implementacion": return styles.statusEnImplementacion;
+    case "en_pruebas": return styles.statusEnPruebas;
     case "completado": return styles.statusCompletado;
     case "completado_parcial": return styles.statusCompletadoParcial;
     case "no_completado": return styles.statusNoCompletado;
+    case "cancelado": return styles.statusCancelado;
     case "cancelado_sin_acuerdo": return styles.statusCancelado;
     case "cancelado_sin_presupuesto": return styles.statusCancelado;
     case "no_pagado": return styles.statusNoPagado;
@@ -123,13 +129,18 @@ const getStatusClass = (estado: string): string => {
 
 const getStatusLabel = (estado: string): string => {
   switch (estado) {
+    case "borrador": return "Borrador";
     case "publicado": return "Publicado";
     case "asignado": return "Asignado";
     case "planificado": return "Planificado";
+    case "iniciado": return "Iniciado";
     case "en_progreso": return "En Progreso";
+    case "en_implementacion": return "En Implementacion";
+    case "en_pruebas": return "En Pruebas";
     case "completado": return "Completado";
     case "completado_parcial": return "Completado Parcial";
     case "no_completado": return "No Completado";
+    case "cancelado": return "Cancelado";
     case "cancelado_sin_acuerdo": return "Cancelado - Sin Acuerdo";
     case "cancelado_sin_presupuesto": return "Cancelado - Sin Presupuesto";
     case "no_pagado": return "No Pagado";
@@ -273,7 +284,7 @@ export default function MisProyectosPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<MemberProject[]>([]);
   const [stats, setStats] = useState<Stats>({
-    total: 0, postulados: 0, asignados: 0, completados: 0, rechazados: 0,
+    total: 0, postulados: 0, asignados: 0, completados: 0, rechazados: 0, cancelados: 0,
     propios: 0, propios_privados: 0, propios_publicos: 0
   });
   const [loading, setLoading] = useState(true);
@@ -315,7 +326,7 @@ export default function MisProyectosPage() {
       if (!response.ok) throw new Error(data.error || "Error al cargar");
       setProjects(data.projects || []);
       setStats(data.stats || {
-        total: 0, postulados: 0, asignados: 0, completados: 0, rechazados: 0,
+        total: 0, postulados: 0, asignados: 0, completados: 0, rechazados: 0, cancelados: 0,
         propios: 0, propios_privados: 0, propios_publicos: 0
       });
     } catch (err) {
@@ -379,6 +390,10 @@ export default function MisProyectosPage() {
         filtered = filtered.filter((p) => p.es_propietario && p.visibilidad === "privado");
       } else if (filters.categoria === "publicos") {
         filtered = filtered.filter((p) => p.es_propietario && p.visibilidad === "publico");
+      } else if (filters.categoria === "cancelados") {
+        filtered = filtered.filter((p) =>
+          ["cancelado", "cancelado_sin_acuerdo", "cancelado_sin_presupuesto"].includes(p.estado)
+        );
       }
     }
 
@@ -567,6 +582,12 @@ export default function MisProyectosPage() {
                 <option value="asignados">Activos</option>
                 <option value="completados">Completados</option>
                 <option value="rechazados">Rechazados</option>
+                <option value="cancelados">Cancelados</option>
+              </>
+            )}
+            {activeTab === "todos" && (
+              <>
+                <option value="cancelados">Cancelados</option>
               </>
             )}
           </select>
