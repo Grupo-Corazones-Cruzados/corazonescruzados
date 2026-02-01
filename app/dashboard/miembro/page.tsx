@@ -13,7 +13,8 @@ export default function MiembroPage() {
     if (!loading) {
       if (!isAuthenticated) {
         router.push("/auth");
-      } else if (profile?.rol !== "miembro") {
+      } else if (profile?.rol !== "miembro" && profile?.rol !== "admin") {
+        // Only clients are redirected away - members and admins can access Mi Espacio
         router.push("/dashboard");
       } else {
         // Redirect to mis-acciones by default
