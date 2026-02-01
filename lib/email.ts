@@ -958,3 +958,800 @@ export async function sendParticipantRemovedEmail(
     return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
   }
 }
+
+// ================================================
+// PACKAGE SYSTEM EMAILS
+// ================================================
+
+// Email 1: Confirmacion de compra de paquete al cliente
+export async function sendPackagePurchaseConfirmation(
+  email: string,
+  clienteNombre: string,
+  paquete: {
+    id: number;
+    nombre: string;
+    horas: number;
+    descripcion?: string;
+  },
+  miembroNombre: string
+) {
+  const packageUrl = `${APP_URL}/dashboard/mis-paquetes/${paquete.id}`;
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">📦</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      ¡Compra registrada!
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Tu solicitud de paquete ha sido enviada
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      Hemos recibido tu solicitud de compra del paquete <strong style="color: #ffffff;">${paquete.nombre}</strong> con <strong style="color: #10b981;">${miembroNombre}</strong>.
+    </p>
+
+    <!-- Detalle del paquete -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+      <h3 style="color: #ffffff; font-size: 16px; font-weight: 600; margin: 0 0 12px;">${paquete.nombre}</h3>
+      ${paquete.descripcion ? `<p style="color: #9ca3af; font-size: 14px; margin: 0 0 12px;">${paquete.descripcion}</p>` : ""}
+      <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Horas incluidas</span>
+          <div style="color: #10b981; font-size: 18px; font-weight: 700;">${paquete.horas}h</div>
+        </div>
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Miembro</span>
+          <div style="color: #e5e7eb; font-size: 14px;">${miembroNombre}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proximos pasos -->
+    <div style="background: rgba(251, 191, 36, 0.08); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(251, 191, 36, 0.2);">
+      <p style="color: #fbbf24; font-size: 13px; margin: 0 0 8px;">
+        <span>⏳</span> <strong>Proximos pasos:</strong>
+      </p>
+      <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+        ${miembroNombre} revisara tu solicitud y te confirmara la disponibilidad. Te notificaremos cuando haya una respuesta.
+      </p>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${packageUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver mi paquete
+      </a>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `📦 Compra registrada: ${paquete.nombre} — Corazones Cruzados`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending package purchase confirmation:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending package purchase confirmation:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Email 2: Notificacion de nueva solicitud al miembro
+export async function sendPackageRequestToMember(
+  email: string,
+  miembroNombre: string,
+  paquete: {
+    id: number;
+    nombre: string;
+    horas: number;
+  },
+  clienteNombre: string,
+  notasCliente?: string
+) {
+  const packageUrl = `${APP_URL}/dashboard/miembro/mis-paquetes`;
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(59, 130, 246, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">🔔</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Nueva solicitud de paquete
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Un cliente quiere trabajar contigo
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${miembroNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      <strong style="color: #ffffff;">${clienteNombre}</strong> ha solicitado el paquete <strong style="color: #10b981;">${paquete.nombre}</strong> (${paquete.horas}h).
+    </p>
+
+    ${notasCliente ? `
+    <!-- Notas del cliente -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+      <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Notas del cliente</span>
+      <p style="color: #e5e7eb; font-size: 14px; margin: 8px 0 0; line-height: 1.6;">${notasCliente}</p>
+    </div>
+    ` : ""}
+
+    <!-- Acciones -->
+    <div style="background: rgba(16, 185, 129, 0.08); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(16, 185, 129, 0.2);">
+      <p style="color: #10b981; font-size: 13px; margin: 0 0 8px;">
+        <strong>Responde a la solicitud:</strong>
+      </p>
+      <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+        Ingresa a "Mis Paquetes" para aprobar, rechazar o poner en espera esta solicitud.
+      </p>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${packageUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver Mis Paquetes
+      </a>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `🔔 Nueva solicitud: ${paquete.nombre} de ${clienteNombre}`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending package request to member:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending package request to member:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Email 3: Paquete aprobado - notificacion al cliente
+export async function sendPackageApprovedToClient(
+  email: string,
+  clienteNombre: string,
+  paquete: { id: number; nombre: string },
+  miembroNombre: string
+) {
+  const packageUrl = `${APP_URL}/dashboard/mis-paquetes/${paquete.id}`;
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">✅</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      ¡Paquete aprobado!
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Ya puedes agendar tus sesiones
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      <strong style="color: #10b981;">${miembroNombre}</strong> ha aprobado tu solicitud del paquete <strong style="color: #ffffff;">${paquete.nombre}</strong>.
+    </p>
+
+    <!-- Proximos pasos -->
+    <div style="background: rgba(16, 185, 129, 0.08); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(16, 185, 129, 0.2);">
+      <p style="color: #10b981; font-size: 13px; margin: 0 0 8px;">
+        <strong>¡Ya puedes comenzar!</strong>
+      </p>
+      <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+        Ingresa a tu paquete para ver la disponibilidad del miembro y agendar tus sesiones.
+      </p>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${packageUrl}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
+        Agendar Sesiones
+      </a>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `✅ Paquete aprobado: ${paquete.nombre} — Corazones Cruzados`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending package approved email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending package approved email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Email 4: Paquete rechazado - notificacion al cliente
+export async function sendPackageRejectedToClient(
+  email: string,
+  clienteNombre: string,
+  paquete: { id: number; nombre: string },
+  miembroNombre: string,
+  motivo?: string
+) {
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(239, 68, 68, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">❌</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Solicitud no aprobada
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      El miembro no puede atender tu solicitud en este momento
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      Lamentamos informarte que <strong style="color: #ffffff;">${miembroNombre}</strong> no ha podido aprobar tu solicitud del paquete <strong style="color: #ffffff;">${paquete.nombre}</strong>.
+    </p>
+
+    ${motivo ? `
+    <!-- Motivo -->
+    <div style="background: rgba(239, 68, 68, 0.08); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(239, 68, 68, 0.2);">
+      <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Motivo</span>
+      <p style="color: #fca5a5; font-size: 14px; margin: 8px 0 0; line-height: 1.6;">${motivo}</p>
+    </div>
+    ` : ""}
+
+    <!-- Sugerencia -->
+    <div style="background: rgba(59, 130, 246, 0.08); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(59, 130, 246, 0.2);">
+      <p style="color: #93c5fd; font-size: 13px; margin: 0;">
+        <span>💡</span> Te sugerimos explorar otros miembros disponibles que puedan ayudarte con tu proyecto.
+      </p>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${APP_URL}/dashboard/paquetes/comprar" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver otros miembros
+      </a>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `❌ Solicitud no aprobada: ${paquete.nombre} — Corazones Cruzados`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending package rejected email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending package rejected email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Email 5: Paquete en espera - notificacion al cliente
+export async function sendPackageOnHoldToClient(
+  email: string,
+  clienteNombre: string,
+  paquete: { id: number; nombre: string },
+  miembroNombre: string,
+  motivo?: string
+) {
+  const packageUrl = `${APP_URL}/dashboard/mis-paquetes/${paquete.id}`;
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(251, 191, 36, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">⏸️</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Solicitud en espera
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Tu solicitud esta siendo revisada
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      <strong style="color: #ffffff;">${miembroNombre}</strong> ha puesto en espera tu solicitud del paquete <strong style="color: #ffffff;">${paquete.nombre}</strong>.
+    </p>
+
+    ${motivo ? `
+    <!-- Motivo -->
+    <div style="background: rgba(251, 191, 36, 0.08); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(251, 191, 36, 0.2);">
+      <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Motivo</span>
+      <p style="color: #fbbf24; font-size: 14px; margin: 8px 0 0; line-height: 1.6;">${motivo}</p>
+    </div>
+    ` : ""}
+
+    <!-- Info -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+      <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+        Te notificaremos cuando el miembro actualice el estado de tu solicitud. No necesitas hacer nada por ahora.
+      </p>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${packageUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver mi paquete
+      </a>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `⏸️ Solicitud en espera: ${paquete.nombre} — Corazones Cruzados`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending package on hold email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending package on hold email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Email 6: Sesion agendada - notificacion al miembro
+export async function sendSessionScheduledToMember(
+  email: string,
+  miembroNombre: string,
+  session: {
+    id: number;
+    fecha: string;
+    hora_inicio: string;
+    hora_fin: string;
+    duracion_horas: number;
+  },
+  clienteNombre: string,
+  paqueteNombre: string
+) {
+  const packageUrl = `${APP_URL}/dashboard/miembro/mis-paquetes`;
+  const fechaFormateada = new Date(session.fecha).toLocaleDateString("es-EC", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(59, 130, 246, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">📅</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Nueva sesion agendada
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Un cliente ha programado una sesion contigo
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${miembroNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      <strong style="color: #ffffff;">${clienteNombre}</strong> ha agendado una sesion para el paquete <strong style="color: #10b981;">${paqueteNombre}</strong>.
+    </p>
+
+    <!-- Detalle de sesion -->
+    <div style="background: rgba(59, 130, 246, 0.08); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(59, 130, 246, 0.2);">
+      <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Fecha</span>
+          <div style="color: #e5e7eb; font-size: 15px; font-weight: 600;">${fechaFormateada}</div>
+        </div>
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Horario</span>
+          <div style="color: #e5e7eb; font-size: 15px; font-weight: 600;">${session.hora_inicio.slice(0, 5)} - ${session.hora_fin.slice(0, 5)}</div>
+        </div>
+        <div>
+          <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Duracion</span>
+          <div style="color: #93c5fd; font-size: 15px; font-weight: 600;">${session.duracion_horas}h</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${packageUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver mis paquetes
+      </a>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `📅 Nueva sesion: ${fechaFormateada} — ${clienteNombre}`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending session scheduled email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending session scheduled email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Email 7: Sesion completada - notificacion al cliente
+export async function sendSessionCompletedToClient(
+  email: string,
+  clienteNombre: string,
+  session: {
+    id: number;
+    fecha: string;
+    duracion_horas: number;
+  },
+  miembroNombre: string,
+  paqueteNombre: string,
+  horasRestantes: number,
+  notas?: string
+) {
+  const packageUrl = `${APP_URL}/dashboard/mis-paquetes`;
+  const fechaFormateada = new Date(session.fecha).toLocaleDateString("es-EC", {
+    day: "numeric",
+    month: "long",
+  });
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">✓</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Sesion completada
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Tu trabajo ha sido registrado
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      <strong style="color: #10b981;">${miembroNombre}</strong> ha marcado como completada la sesion del <strong>${fechaFormateada}</strong> del paquete <strong>${paqueteNombre}</strong>.
+    </p>
+
+    <!-- Resumen -->
+    <div style="background: rgba(16, 185, 129, 0.08); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(16, 185, 129, 0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="color: #9ca3af; font-size: 14px;">Horas de esta sesion</span>
+        <span style="color: #10b981; font-size: 16px; font-weight: 700;">${session.duracion_horas}h</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: #9ca3af; font-size: 14px;">Horas restantes del paquete</span>
+        <span style="color: #ffffff; font-size: 18px; font-weight: 700;">${horasRestantes.toFixed(2)}h</span>
+      </div>
+    </div>
+
+    ${notas ? `
+    <!-- Notas del miembro -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+      <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Notas del miembro</span>
+      <p style="color: #e5e7eb; font-size: 14px; margin: 8px 0 0; line-height: 1.6;">${notas}</p>
+    </div>
+    ` : ""}
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${packageUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Ver mi paquete
+      </a>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `✓ Sesion completada: ${paqueteNombre} — ${fechaFormateada}`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending session completed email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending session completed email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Email 8: Solicitud de cambio de fecha - notificacion al cliente
+export async function sendDateChangeRequestToClient(
+  email: string,
+  clienteNombre: string,
+  session: {
+    id: number;
+    fecha_original: string;
+    hora_original: string;
+    nueva_fecha: string;
+    nueva_hora: string;
+  },
+  miembroNombre: string,
+  paqueteNombre: string,
+  motivo: string
+) {
+  const packageUrl = `${APP_URL}/dashboard/mis-paquetes`;
+  const fechaOriginal = new Date(session.fecha_original).toLocaleDateString("es-EC", { day: "numeric", month: "long" });
+  const fechaNueva = new Date(session.nueva_fecha).toLocaleDateString("es-EC", { day: "numeric", month: "long" });
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(251, 191, 36, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">🔄</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      Solicitud de cambio de fecha
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      El miembro necesita reprogramar una sesion
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      <strong style="color: #ffffff;">${miembroNombre}</strong> solicita cambiar la fecha de una sesion del paquete <strong>${paqueteNombre}</strong>.
+    </p>
+
+    <!-- Cambio propuesto -->
+    <div style="background: rgba(251, 191, 36, 0.08); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(251, 191, 36, 0.2);">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
+        <div style="text-align: center;">
+          <span style="color: #6b7280; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 4px;">Fecha original</span>
+          <span style="background: rgba(107, 114, 128, 0.2); color: #9ca3af; padding: 6px 16px; border-radius: 6px; font-size: 14px;">${fechaOriginal} ${session.hora_original.slice(0, 5)}</span>
+        </div>
+        <span style="color: #fbbf24; font-size: 20px;">→</span>
+        <div style="text-align: center;">
+          <span style="color: #6b7280; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 4px;">Nueva fecha propuesta</span>
+          <span style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; padding: 6px 16px; border-radius: 6px; font-size: 14px; font-weight: 600;">${fechaNueva} ${session.nueva_hora.slice(0, 5)}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Motivo -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+      <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Motivo</span>
+      <p style="color: #e5e7eb; font-size: 14px; margin: 8px 0 0; line-height: 1.6;">${motivo}</p>
+    </div>
+
+    <!-- Boton -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${packageUrl}" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">
+        Responder solicitud
+      </a>
+    </div>
+
+    <!-- Info -->
+    <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 0;">
+      Ingresa a tu paquete para aceptar o rechazar el cambio de fecha.
+    </p>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `🔄 Solicitud de cambio: ${paqueteNombre} — ${miembroNombre}`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending date change request email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending date change request email:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
+
+// Email 9: Paquete completado con reporte - notificacion al cliente
+export async function sendPackageCompletedReport(
+  email: string,
+  clienteNombre: string,
+  paquete: {
+    id: number;
+    nombre: string;
+    descripcion?: string;
+    horas_totales: number;
+    horas_consumidas: number;
+  },
+  miembroNombre: string,
+  sessions: {
+    fecha: string;
+    hora_inicio: string;
+    hora_fin: string;
+    duracion_horas: number;
+  }[],
+  reporte?: string
+) {
+  const sessionsHtml = sessions.length > 0
+    ? sessions.map((s) => {
+        const fecha = new Date(s.fecha).toLocaleDateString("es-EC", { day: "numeric", month: "short" });
+        return `<span style="display: inline-block; background: rgba(16, 185, 129, 0.12); color: #6ee7b7; padding: 4px 10px; border-radius: 6px; font-size: 12px; margin: 2px 4px;">${fecha} ${s.hora_inicio.slice(0, 5)}-${s.hora_fin.slice(0, 5)} (${s.duracion_horas}h)</span>`;
+      }).join("")
+    : `<span style="color: #6b7280; font-size: 13px;">Sin sesiones registradas</span>`;
+
+  const content = `
+    <!-- Icono -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; line-height: 64px;">
+        <span style="font-size: 28px;">🎉</span>
+      </div>
+    </div>
+
+    <!-- Titulo -->
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 8px;">
+      ¡Paquete completado!
+    </h1>
+    <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px;">
+      Reporte final de tu paquete
+    </p>
+
+    <!-- Saludo -->
+    <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px;">
+      Hola <strong style="color: #ffffff;">${clienteNombre}</strong>,
+    </p>
+
+    <p style="color: #d1d5db; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+      Tu paquete <strong style="color: #ffffff;">${paquete.nombre}</strong> con <strong style="color: #10b981;">${miembroNombre}</strong> ha sido completado.
+    </p>
+
+    <!-- Resumen de horas -->
+    <div style="background: rgba(16, 185, 129, 0.08); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(16, 185, 129, 0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="color: #9ca3af; font-size: 14px;">Horas contratadas</span>
+        <span style="color: #e5e7eb; font-size: 16px;">${paquete.horas_totales}h</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: #9ca3af; font-size: 14px;">Horas utilizadas</span>
+        <span style="color: #10b981; font-size: 20px; font-weight: 700;">${Number(paquete.horas_consumidas).toFixed(2)}h</span>
+      </div>
+    </div>
+
+    <!-- Sesiones -->
+    <div style="margin-bottom: 24px;">
+      <h3 style="color: #ffffff; font-size: 15px; font-weight: 600; margin: 0 0 12px;">Sesiones realizadas</h3>
+      <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 12px 16px; border: 1px solid rgba(255,255,255,0.05);">
+        ${sessionsHtml}
+      </div>
+    </div>
+
+    ${reporte ? `
+    <!-- Reporte del miembro -->
+    <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);">
+      <h3 style="color: #ffffff; font-size: 15px; font-weight: 600; margin: 0 0 12px;">Reporte del miembro</h3>
+      <p style="color: #d1d5db; font-size: 14px; line-height: 1.7; margin: 0; white-space: pre-wrap;">${reporte}</p>
+    </div>
+    ` : ""}
+
+    <!-- Nota final -->
+    <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; text-align: center; margin: 32px 0 0;">
+      Gracias por confiar en <strong style="color: #dc2626;">Corazones Cruzados</strong>. Esperamos volver a trabajar contigo pronto.
+    </p>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `🎉 Paquete completado: ${paquete.nombre} — Corazones Cruzados`,
+      html: getEmailTemplate(content),
+    });
+
+    if (error) {
+      console.error("Error sending package completed report:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error sending package completed report:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
+  }
+}
