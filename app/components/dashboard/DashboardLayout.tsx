@@ -212,8 +212,6 @@ function DashboardLayoutInner({ children, rightContent }: DashboardLayoutProps) 
   // Filtrar módulos por rol
   const canAccessModulo = (modulo: Modulo) => {
     if (!modulo.roles_permitidos || modulo.roles_permitidos.length === 0) return true;
-    // Admin puede acceder al módulo Mi Espacio cuando viene desde ahí
-    if (fromParam === "miembro" && modulo.ruta === "/dashboard/miembro" && userRole === "admin") return true;
     return modulo.roles_permitidos.includes(userRole);
   };
 
