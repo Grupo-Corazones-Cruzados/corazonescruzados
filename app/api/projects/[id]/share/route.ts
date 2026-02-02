@@ -5,6 +5,45 @@ import crypto from "crypto";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+// Helper function to check if user is project owner
+async function checkProjectOwnership(userId: string, project: { id_cliente: number | null; id_miembro_propietario: number | null }) {
+  // Get user info
+  const userResult = await query(
+    "SELECT rol, id_miembro FROM user_profiles WHERE id = $1",
+    [userId]
+  );
+  if (userResult.rows.length === 0) {
+    return { isOwner: false, isAdmin: false };
+  }
+
+  const userRole = userResult.rows[0].rol;
+  const userMiembroId = userResult.rows[0].id_miembro;
+
+  // Check if admin
+  if (userRole === "admin") {
+    return { isOwner: true, isAdmin: true };
+  }
+
+  // Check client ownership
+  let isClientOwner = false;
+  if (userRole === "cliente" && project.id_cliente) {
+    const clientCheck = await query(
+      `SELECT c.id FROM clientes c
+       JOIN user_profiles up ON LOWER(up.email) = LOWER(c.correo_electronico)
+       WHERE up.id = $1 AND c.id = $2`,
+      [userId, project.id_cliente]
+    );
+    isClientOwner = clientCheck.rows.length > 0;
+  }
+
+  // Check member ownership
+  const projectOwnerId = project.id_miembro_propietario ? Number(project.id_miembro_propietario) : null;
+  const userMemberId = userMiembroId ? Number(userMiembroId) : null;
+  const isMemberOwner = (userRole === "miembro" || userRole === "admin") && projectOwnerId !== null && projectOwnerId === userMemberId;
+
+  return { isOwner: isClientOwner || isMemberOwner, isAdmin: false };
+}
+
 // GET - Obtener información del enlace compartible actual
 export async function GET(
   request: Request,
@@ -33,11 +72,9 @@ export async function GET(
     const project = projectResult.rows[0];
 
     // Verificar permisos (solo propietario puede ver/gestionar el token)
-    const isClientOwner = tokenData.role === "cliente" && project.id_cliente === tokenData.id;
-    const isMemberOwner = tokenData.role === "miembro" && project.id_miembro_propietario === tokenData.id;
-    const isAdmin = tokenData.role === "admin";
+    const { isOwner, isAdmin } = await checkProjectOwnership(tokenData.userId, project);
 
-    if (!isClientOwner && !isMemberOwner && !isAdmin) {
+    if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
@@ -94,11 +131,9 @@ export async function POST(
     const project = projectResult.rows[0];
 
     // Verificar permisos
-    const isClientOwner = tokenData.role === "cliente" && project.id_cliente === tokenData.id;
-    const isMemberOwner = tokenData.role === "miembro" && project.id_miembro_propietario === tokenData.id;
-    const isAdmin = tokenData.role === "admin";
+    const { isOwner, isAdmin } = await checkProjectOwnership(tokenData.userId, project);
 
-    if (!isClientOwner && !isMemberOwner && !isAdmin) {
+    if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
@@ -179,11 +214,9 @@ export async function DELETE(
     const project = projectResult.rows[0];
 
     // Verificar permisos
-    const isClientOwner = tokenData.role === "cliente" && project.id_cliente === tokenData.id;
-    const isMemberOwner = tokenData.role === "miembro" && project.id_miembro_propietario === tokenData.id;
-    const isAdmin = tokenData.role === "admin";
+    const { isOwner, isAdmin } = await checkProjectOwnership(tokenData.userId, project);
 
-    if (!isClientOwner && !isMemberOwner && !isAdmin) {
+    if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 

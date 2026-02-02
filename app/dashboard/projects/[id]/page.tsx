@@ -249,6 +249,9 @@ function ProjectDetailPageContent() {
   // Delete project state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // Completion confirmation for private projects
+  const [showCompletionConfirm, setShowCompletionConfirm] = useState(false);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || bidImages.length >= 5) return;
@@ -608,6 +611,20 @@ function ProjectDetailPageContent() {
 
   const handleChangeState = async (newEstado: string) => {
     if (!project?.id || !isMemberOwner) return;
+
+    // For private projects (visibilidad privado and no accepted collaborators),
+    // require confirmation before marking as completado
+    const isPrivateWithoutCollaborators = project.visibilidad === "privado" && acceptedMembers.length === 0;
+    if (newEstado === "completado" && isPrivateWithoutCollaborators) {
+      setShowCompletionConfirm(true);
+      return;
+    }
+
+    await executeStateChange(newEstado);
+  };
+
+  const executeStateChange = async (newEstado: string) => {
+    if (!project?.id || !isMemberOwner) return;
     setUpdating(true);
     const result = await changeState(newEstado);
     if (result.error) {
@@ -627,6 +644,11 @@ function ProjectDetailPageContent() {
       }
     }
     setUpdating(false);
+  };
+
+  const handleConfirmCompletion = async () => {
+    setShowCompletionConfirm(false);
+    await executeStateChange("completado");
   };
 
   // Check if requirement can be edited by current user
@@ -2143,6 +2165,41 @@ function ProjectDetailPageContent() {
           </div>
         </div>
       </div>
+
+      {/* Completion Confirmation Modal for Private Projects */}
+      {showCompletionConfirm && (
+        <div className={styles.modalOverlay} onClick={() => setShowCompletionConfirm(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Confirmar Completar Proyecto</h3>
+            <div className={styles.modalBody}>
+              <p style={{ marginBottom: "var(--space-3)", color: "var(--text-secondary)" }}>
+                Estas a punto de marcar este proyecto privado como <strong>Completado</strong>.
+              </p>
+              <p style={{ marginBottom: "var(--space-3)", color: "var(--text-secondary)" }}>
+                Esta accion es <strong>irreversible</strong>. Una vez completado, el proyecto se agregara a tu portafolio y no podras modificar su estado.
+              </p>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                Verifica que todos los requerimientos esten completados antes de continuar.
+              </p>
+            </div>
+            <div className={styles.modalActions}>
+              <button
+                className={ticketStyles.secondaryButton}
+                onClick={() => setShowCompletionConfirm(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className={ticketStyles.primaryButton}
+                onClick={handleConfirmCompletion}
+                disabled={updating}
+              >
+                {updating ? "Procesando..." : "Confirmar Completar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

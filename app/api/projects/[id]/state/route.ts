@@ -67,7 +67,17 @@ export async function PATCH(
     const projectOwnerId = project.id_miembro_propietario ? Number(project.id_miembro_propietario) : null;
     const userMemberId = userMiembroId ? Number(userMiembroId) : null;
 
-    const isClientOwner = userRole === "cliente" && project.id_cliente === tokenData.userId;
+    // For client owner check, we need to match via email since id_cliente references clientes table
+    let isClientOwner = false;
+    if (userRole === "cliente" && project.id_cliente) {
+      const clientCheck = await query(
+        `SELECT c.id FROM clientes c
+         JOIN user_profiles up ON LOWER(up.email) = LOWER(c.correo_electronico)
+         WHERE up.id = $1 AND c.id = $2`,
+        [tokenData.userId, project.id_cliente]
+      );
+      isClientOwner = clientCheck.rows.length > 0;
+    }
     const isMemberOwner = (userRole === "miembro" || userRole === "admin") && projectOwnerId !== null && projectOwnerId === userMemberId;
     const isAdmin = userRole === "admin";
 
@@ -315,7 +325,17 @@ export async function GET(
     const projectOwnerId = project.id_miembro_propietario ? Number(project.id_miembro_propietario) : null;
     const userMemberId = userMiembroId ? Number(userMiembroId) : null;
 
-    const isClientOwner = userRole === "cliente" && project.id_cliente === tokenData.userId;
+    // For client owner check, we need to match via email since id_cliente references clientes table
+    let isClientOwner = false;
+    if (userRole === "cliente" && project.id_cliente) {
+      const clientCheck = await query(
+        `SELECT c.id FROM clientes c
+         JOIN user_profiles up ON LOWER(up.email) = LOWER(c.correo_electronico)
+         WHERE up.id = $1 AND c.id = $2`,
+        [tokenData.userId, project.id_cliente]
+      );
+      isClientOwner = clientCheck.rows.length > 0;
+    }
     const isMemberOwner = (userRole === "miembro" || userRole === "admin") && projectOwnerId !== null && projectOwnerId === userMemberId;
     const isAdmin = userRole === "admin";
 

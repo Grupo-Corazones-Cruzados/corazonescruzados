@@ -559,6 +559,16 @@
   margin: 0 0 var(--space-4);
 }
 
+.modalBody {
+  margin-bottom: var(--space-5);
+}
+
+.modalActions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
 .formHint {
   font-size: 0.8rem;
   color: var(--text-muted);
