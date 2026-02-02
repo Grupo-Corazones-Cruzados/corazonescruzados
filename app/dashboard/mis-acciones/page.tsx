@@ -125,7 +125,7 @@ export default function MisAccionesPage() {
   };
 
   useEffect(() => {
-    if (isAuthenticated && profile?.rol === "miembro") {
+    if (isAuthenticated && (profile?.rol === "miembro" || profile?.rol === "admin")) {
       fetchActions();
     }
   }, [isAuthenticated, profile]);
@@ -275,7 +275,7 @@ export default function MisAccionesPage() {
     );
   }
 
-  if (!isAuthenticated || profile?.rol !== "miembro") {
+  if (!isAuthenticated || (profile?.rol !== "miembro" && profile?.rol !== "admin")) {
     return null;
   }
 
