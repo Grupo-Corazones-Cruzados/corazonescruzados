@@ -221,7 +221,7 @@ const Header = () => {
                   </svg>
                   Panel de gestión
                 </button>
-                {(profile?.rol === "miembro" || profile?.rol === "admin") && (
+                {profile?.rol === "miembro" && (
                   <>
                     <button
                       className={styles.UserDropdownItem}
