@@ -49,12 +49,16 @@ export async function GET(request: NextRequest) {
       // Get CV profile if exists
       let cvProfile = null;
       if (member.cv_profile) {
-        const cvResult = await query(
-          `SELECT * FROM cv_profile WHERE id = $1`,
-          [member.cv_profile]
-        );
-        if (cvResult.rows.length > 0) {
-          cvProfile = cvResult.rows[0];
+        try {
+          const cvResult = await query(
+            `SELECT * FROM cv_profile WHERE id = $1`,
+            [member.cv_profile]
+          );
+          if (cvResult.rows.length > 0) {
+            cvProfile = cvResult.rows[0];
+          }
+        } catch {
+          // cv_profile table doesn't exist yet, skip
         }
       }
 

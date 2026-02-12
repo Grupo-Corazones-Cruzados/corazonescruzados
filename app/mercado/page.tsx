@@ -221,9 +221,10 @@ function MercadoInner() {
   }, [items, q, cat]);
 
   const cvTitle = useMemo(() => {
-    if (miembro?.nombre) return `CV · ${miembro.nombre}`;
+    const name = safeText(cv?.full_name) || safeText(miembro?.nombre);
+    if (name) return `${name}`;
     return "Currículum";
-  }, [miembro?.nombre]);
+  }, [cv?.full_name, miembro?.nombre]);
 
   return (
     <div className={styles.page}>
@@ -407,8 +408,8 @@ function MercadoInner() {
                       asArray(cv.certifications).map((c: any, idx: number) => (
                         <li key={idx}>
                           {safeText(c?.name)}
-                          {safeText(c?.level) ? ` (${safeText(c.level)})` : ""}
                           {safeText(c?.issuer) ? ` · ${safeText(c.issuer)}` : ""}
+                          {safeText(c?.year) ? ` (${safeText(c.year)})` : ""}
                         </li>
                       ))
                     )}
@@ -486,7 +487,7 @@ function MercadoInner() {
             <p className={styles.errorTitle}>Error</p>
             <p className={styles.errorText}>{error}</p>
             <p className={styles.errorHint}>
-              Verifica tabla <b>{PRODUCTS_TABLE}</b> y columna <b>id_miembro</b>.
+              Verifica tabla <b>productos</b> y columna <b>id_miembro</b>.
             </p>
           </div>
         )}
