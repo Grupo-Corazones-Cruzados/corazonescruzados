@@ -17,8 +17,8 @@ interface Miembro {
   celular: string | null;
   id_fuente: number | null;
   fuente_nombre?: string;
-  id_pilar: number | null;
-  pilar_nombre?: string;
+  id_paso: number | null;
+  paso_nombre?: string;
   id_piso: number | null;
   piso_nombre?: string;
   created_at: string;
@@ -29,7 +29,7 @@ interface Fuente {
   nombre: string;
 }
 
-interface Pilar {
+interface Paso {
   id: number;
   nombre: string;
 }
@@ -122,7 +122,7 @@ export default function MiembrosPage() {
 
   const [miembros, setMiembros] = useState<Miembro[]>([]);
   const [fuentes, setFuentes] = useState<Fuente[]>([]);
-  const [pilares, setPilares] = useState<Pilar[]>([]);
+  const [pasos, setPasos] = useState<Paso[]>([]);
   const [pisos, setPisos] = useState<Piso[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -144,7 +144,7 @@ export default function MiembrosPage() {
     correo: "",
     celular: "",
     id_fuente: "",
-    id_pilar: "",
+    id_paso: "",
     id_piso: "",
   });
 
@@ -199,22 +199,22 @@ export default function MiembrosPage() {
     }
   }, [isAuthenticated, profile]);
 
-  // Fetch pilares
+  // Fetch pasos
   useEffect(() => {
-    const fetchPilares = async () => {
+    const fetchPasos = async () => {
       try {
-        const response = await fetch("/api/admin/tables?table=pilares");
+        const response = await fetch("/api/admin/tables?table=pasos");
         if (response.ok) {
           const data = await response.json();
-          setPilares(data.rows || []);
+          setPasos(data.rows || []);
         }
       } catch (error) {
-        console.error("Error fetching pilares:", error);
+        console.error("Error fetching pasos:", error);
       }
     };
 
     if (isAuthenticated && profile?.rol === "admin") {
-      fetchPilares();
+      fetchPasos();
     }
   }, [isAuthenticated, profile]);
 
@@ -264,7 +264,7 @@ export default function MiembrosPage() {
         correo: miembro.correo || "",
         celular: miembro.celular || "",
         id_fuente: miembro.id_fuente?.toString() || "",
-        id_pilar: miembro.id_pilar?.toString() || "",
+        id_paso: miembro.id_paso?.toString() || "",
         id_piso: miembro.id_piso?.toString() || "",
       });
     }
@@ -297,7 +297,7 @@ export default function MiembrosPage() {
           correo: form.correo.trim() || null,
           celular: form.celular.trim() || null,
           id_fuente: form.id_fuente ? parseInt(form.id_fuente) : null,
-          id_pilar: form.id_pilar ? parseInt(form.id_pilar) : null,
+          id_paso: form.id_paso ? parseInt(form.id_paso) : null,
           id_piso: form.id_piso ? parseInt(form.id_piso) : null,
         }),
       });
@@ -616,10 +616,10 @@ export default function MiembrosPage() {
                           <span className={styles.detailValue}>{selectedMiembro.fuente_nombre}</span>
                         </div>
                       )}
-                      {selectedMiembro.pilar_nombre && (
+                      {selectedMiembro.paso_nombre && (
                         <div className={styles.detailRow}>
-                          <span className={styles.detailLabel}>Pilar</span>
-                          <span className={styles.detailValue}>{selectedMiembro.pilar_nombre}</span>
+                          <span className={styles.detailLabel}>Paso</span>
+                          <span className={styles.detailValue}>{selectedMiembro.paso_nombre}</span>
                         </div>
                       )}
                       {selectedMiembro.piso_nombre && (
@@ -723,16 +723,16 @@ export default function MiembrosPage() {
 
                     <div className={styles.formRow}>
                       <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>Pilar</label>
+                        <label className={styles.formLabel}>Paso</label>
                         <select
                           className={styles.formSelect}
-                          value={form.id_pilar}
-                          onChange={(e) => setForm({ ...form, id_pilar: e.target.value })}
+                          value={form.id_paso}
+                          onChange={(e) => setForm({ ...form, id_paso: e.target.value })}
                         >
-                          <option value="">Seleccionar pilar...</option>
-                          {pilares.map((pilar) => (
-                            <option key={pilar.id} value={pilar.id}>
-                              {pilar.nombre}
+                          <option value="">Seleccionar paso...</option>
+                          {pasos.map((paso) => (
+                            <option key={paso.id} value={paso.id}>
+                              {paso.nombre}
                             </option>
                           ))}
                         </select>

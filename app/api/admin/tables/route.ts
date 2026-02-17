@@ -45,8 +45,8 @@ const ALLOWED_TABLES: Record<string, TableDef> = {
     ],
     orderBy: "nombre ASC",
   },
-  pilares: {
-    name: "Pilares",
+  pasos: {
+    name: "Pasos",
     primaryKey: "id",
     columns: [
       { name: "id", type: "number", editable: false, label: "ID" },
@@ -100,7 +100,7 @@ const ALLOWED_TABLES: Record<string, TableDef> = {
   },
 };
 
-type TableName = "modulos" | "fuentes" | "acciones" | "paquetes" | "preguntas_frecuentes" | "pilares" | "pisos";
+type TableName = "modulos" | "fuentes" | "acciones" | "paquetes" | "preguntas_frecuentes" | "pasos" | "pisos";
 
 // GET /api/admin/tables - List tables or get table data
 export async function GET(request: NextRequest) {
@@ -177,9 +177,9 @@ export async function GET(request: NextRequest) {
       } else if (col.foreignKey === "modulos") {
         const modulosResult = await query(`SELECT id, nombre FROM modulos ORDER BY orden ASC, nombre ASC`);
         lookups.modulos = modulosResult.rows;
-      } else if (col.foreignKey === "pilares") {
-        const pilaresResult = await query(`SELECT id, nombre FROM pilares ORDER BY nombre ASC`);
-        lookups.pilares = pilaresResult.rows;
+      } else if (col.foreignKey === "pasos") {
+        const pasosResult = await query(`SELECT id, nombre FROM pasos ORDER BY nombre ASC`);
+        lookups.pasos = pasosResult.rows;
       } else if (col.foreignKey === "pisos") {
         const pisosResult = await query(`SELECT id, nombre FROM pisos ORDER BY nombre ASC`);
         lookups.pisos = pisosResult.rows;

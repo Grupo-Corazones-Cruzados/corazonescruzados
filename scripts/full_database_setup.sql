@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS preguntas_frecuentes (
     video_url TEXT
 );
 
--- Tabla: pilares
-CREATE TABLE IF NOT EXISTS pilares (
+-- Tabla: pasos
+CREATE TABLE IF NOT EXISTS pasos (
     id BIGSERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL
 );
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS miembros (
     restringido_proyectos BOOLEAN DEFAULT FALSE,
     motivo_restriccion TEXT,
     restringido_en TIMESTAMPTZ,
-    id_pilar BIGINT REFERENCES pilares(id),
+    id_paso BIGINT REFERENCES pasos(id),
     id_piso BIGINT REFERENCES pisos(id)
 );
 
