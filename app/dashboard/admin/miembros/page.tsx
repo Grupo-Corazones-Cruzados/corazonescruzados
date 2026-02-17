@@ -17,10 +17,24 @@ interface Miembro {
   celular: string | null;
   id_fuente: number | null;
   fuente_nombre?: string;
+  id_pilar: number | null;
+  pilar_nombre?: string;
+  id_piso: number | null;
+  piso_nombre?: string;
   created_at: string;
 }
 
 interface Fuente {
+  id: number;
+  nombre: string;
+}
+
+interface Pilar {
+  id: number;
+  nombre: string;
+}
+
+interface Piso {
   id: number;
   nombre: string;
 }
@@ -108,6 +122,8 @@ export default function MiembrosPage() {
 
   const [miembros, setMiembros] = useState<Miembro[]>([]);
   const [fuentes, setFuentes] = useState<Fuente[]>([]);
+  const [pilares, setPilares] = useState<Pilar[]>([]);
+  const [pisos, setPisos] = useState<Piso[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -128,6 +144,8 @@ export default function MiembrosPage() {
     correo: "",
     celular: "",
     id_fuente: "",
+    id_pilar: "",
+    id_piso: "",
   });
 
   // Remove member form
@@ -181,6 +199,44 @@ export default function MiembrosPage() {
     }
   }, [isAuthenticated, profile]);
 
+  // Fetch pilares
+  useEffect(() => {
+    const fetchPilares = async () => {
+      try {
+        const response = await fetch("/api/admin/tables?table=pilares");
+        if (response.ok) {
+          const data = await response.json();
+          setPilares(data.rows || []);
+        }
+      } catch (error) {
+        console.error("Error fetching pilares:", error);
+      }
+    };
+
+    if (isAuthenticated && profile?.rol === "admin") {
+      fetchPilares();
+    }
+  }, [isAuthenticated, profile]);
+
+  // Fetch pisos
+  useEffect(() => {
+    const fetchPisos = async () => {
+      try {
+        const response = await fetch("/api/admin/tables?table=pisos");
+        if (response.ok) {
+          const data = await response.json();
+          setPisos(data.rows || []);
+        }
+      } catch (error) {
+        console.error("Error fetching pisos:", error);
+      }
+    };
+
+    if (isAuthenticated && profile?.rol === "admin") {
+      fetchPisos();
+    }
+  }, [isAuthenticated, profile]);
+
   const filteredMiembros = miembros.filter((m) => {
     if (!search) return true;
     const searchLower = search.toLowerCase();
@@ -208,6 +264,8 @@ export default function MiembrosPage() {
         correo: miembro.correo || "",
         celular: miembro.celular || "",
         id_fuente: miembro.id_fuente?.toString() || "",
+        id_pilar: miembro.id_pilar?.toString() || "",
+        id_piso: miembro.id_piso?.toString() || "",
       });
     }
   };
@@ -239,6 +297,8 @@ export default function MiembrosPage() {
           correo: form.correo.trim() || null,
           celular: form.celular.trim() || null,
           id_fuente: form.id_fuente ? parseInt(form.id_fuente) : null,
+          id_pilar: form.id_pilar ? parseInt(form.id_pilar) : null,
+          id_piso: form.id_piso ? parseInt(form.id_piso) : null,
         }),
       });
 
@@ -556,6 +616,18 @@ export default function MiembrosPage() {
                           <span className={styles.detailValue}>{selectedMiembro.fuente_nombre}</span>
                         </div>
                       )}
+                      {selectedMiembro.pilar_nombre && (
+                        <div className={styles.detailRow}>
+                          <span className={styles.detailLabel}>Pilar</span>
+                          <span className={styles.detailValue}>{selectedMiembro.pilar_nombre}</span>
+                        </div>
+                      )}
+                      {selectedMiembro.piso_nombre && (
+                        <div className={styles.detailRow}>
+                          <span className={styles.detailLabel}>Piso</span>
+                          <span className={styles.detailValue}>{selectedMiembro.piso_nombre}</span>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -643,6 +715,39 @@ export default function MiembrosPage() {
                           {fuentes.map((fuente) => (
                             <option key={fuente.id} value={fuente.id}>
                               {fuente.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Pilar</label>
+                        <select
+                          className={styles.formSelect}
+                          value={form.id_pilar}
+                          onChange={(e) => setForm({ ...form, id_pilar: e.target.value })}
+                        >
+                          <option value="">Seleccionar pilar...</option>
+                          {pilares.map((pilar) => (
+                            <option key={pilar.id} value={pilar.id}>
+                              {pilar.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Piso</label>
+                        <select
+                          className={styles.formSelect}
+                          value={form.id_piso}
+                          onChange={(e) => setForm({ ...form, id_piso: e.target.value })}
+                        >
+                          <option value="">Seleccionar piso...</option>
+                          {pisos.map((piso) => (
+                            <option key={piso.id} value={piso.id}>
+                              {piso.nombre}
                             </option>
                           ))}
                         </select>

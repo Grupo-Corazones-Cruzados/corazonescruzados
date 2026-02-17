@@ -21,9 +21,11 @@ export async function GET() {
     }
 
     const result = await query(
-      `SELECT m.*, f.nombre as fuente_nombre
+      `SELECT m.*, f.nombre as fuente_nombre, pi.nombre as pilar_nombre, ps.nombre as piso_nombre
        FROM miembros m
        LEFT JOIN fuentes f ON m.id_fuente = f.id
+       LEFT JOIN pilares pi ON m.id_pilar = pi.id
+       LEFT JOIN pisos ps ON m.id_piso = ps.id
        ORDER BY m.nombre ASC`
     );
 
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { nombre, puesto, descripcion, foto, costo, correo, celular, id_fuente } = body;
+    const { nombre, puesto, descripcion, foto, costo, correo, celular, id_fuente, id_pilar, id_piso } = body;
 
     if (!nombre?.trim() || !puesto?.trim()) {
       return NextResponse.json(
@@ -66,8 +68,8 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await query(
-      `INSERT INTO miembros (nombre, puesto, descripcion, foto, costo, correo, celular, id_fuente)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO miembros (nombre, puesto, descripcion, foto, costo, correo, celular, id_fuente, id_pilar, id_piso)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         nombre.trim(),
@@ -78,6 +80,8 @@ export async function POST(request: NextRequest) {
         correo || null,
         celular || null,
         id_fuente || null,
+        id_pilar || null,
+        id_piso || null,
       ]
     );
 

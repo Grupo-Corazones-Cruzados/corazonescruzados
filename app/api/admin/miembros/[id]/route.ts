@@ -26,9 +26,11 @@ export async function GET(
     const { id } = await params;
 
     const result = await query(
-      `SELECT m.*, f.nombre as fuente_nombre
+      `SELECT m.*, f.nombre as fuente_nombre, pi.nombre as pilar_nombre, ps.nombre as piso_nombre
        FROM miembros m
        LEFT JOIN fuentes f ON m.id_fuente = f.id
+       LEFT JOIN pilares pi ON m.id_pilar = pi.id
+       LEFT JOIN pisos ps ON m.id_piso = ps.id
        WHERE m.id = $1`,
       [id]
     );
@@ -73,7 +75,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { nombre, puesto, descripcion, foto, costo, correo, celular, id_fuente } = body;
+    const { nombre, puesto, descripcion, foto, costo, correo, celular, id_fuente, id_pilar, id_piso } = body;
 
     // Build update query dynamically
     const updates: string[] = [];
@@ -125,6 +127,18 @@ export async function PATCH(
     if (id_fuente !== undefined) {
       updates.push(`id_fuente = $${paramIndex}`);
       values.push(id_fuente);
+      paramIndex++;
+    }
+
+    if (id_pilar !== undefined) {
+      updates.push(`id_pilar = $${paramIndex}`);
+      values.push(id_pilar);
+      paramIndex++;
+    }
+
+    if (id_piso !== undefined) {
+      updates.push(`id_piso = $${paramIndex}`);
+      values.push(id_piso);
       paramIndex++;
     }
 
