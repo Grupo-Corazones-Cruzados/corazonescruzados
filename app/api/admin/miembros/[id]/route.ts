@@ -29,7 +29,7 @@ export async function GET(
       `SELECT m.*, f.nombre as fuente_nombre, pa.nombre as paso_nombre, ps.nombre as piso_nombre
        FROM miembros m
        LEFT JOIN fuentes f ON m.id_fuente = f.id
-       LEFT JOIN pasos pa ON m.id_paso = pi.id
+       LEFT JOIN pasos pa ON m.id_paso = pa.id
        LEFT JOIN pisos ps ON m.id_piso = ps.id
        WHERE m.id = $1`,
       [id]
@@ -42,7 +42,22 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ miembro: result.rows[0] });
+    // Fetch sistemas for this miembro
+    const sistemasResult = await query(
+      `SELECT s.id, s.nombre
+       FROM miembros_sistemas ms
+       JOIN sistemas s ON ms.id_sistema = s.id
+       WHERE ms.id_miembro = $1
+       ORDER BY s.secuencia ASC, s.id ASC`,
+      [id]
+    );
+
+    const miembro = {
+      ...result.rows[0],
+      sistemas: sistemasResult.rows,
+    };
+
+    return NextResponse.json({ miembro });
   } catch (error) {
     console.error("Error fetching miembro:", error);
     return NextResponse.json(
@@ -75,7 +90,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { nombre, puesto, descripcion, foto, costo, correo, celular, id_fuente, id_paso, id_piso } = body;
+    const { nombre, puesto, descripcion, foto, costo, correo, celular, id_fuente, id_paso, id_piso, sistemas_ids } = body;
 
     // Build update query dynamically
     const updates: string[] = [];
@@ -164,6 +179,20 @@ export async function PATCH(
         { error: "Miembro no encontrado" },
         { status: 404 }
       );
+    }
+
+    // Sync sistemas (many-to-many)
+    if (sistemas_ids !== undefined) {
+      await query(`DELETE FROM miembros_sistemas WHERE id_miembro = $1`, [id]);
+      if (Array.isArray(sistemas_ids) && sistemas_ids.length > 0) {
+        const insertValues = sistemas_ids
+          .map((_: number, i: number) => `($1, $${i + 2})`)
+          .join(", ");
+        await query(
+          `INSERT INTO miembros_sistemas (id_miembro, id_sistema) VALUES ${insertValues}`,
+          [id, ...sistemas_ids]
+        );
+      }
     }
 
     return NextResponse.json({ miembro: result.rows[0] });

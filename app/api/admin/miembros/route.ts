@@ -24,12 +24,34 @@ export async function GET() {
       `SELECT m.*, f.nombre as fuente_nombre, pa.nombre as paso_nombre, ps.nombre as piso_nombre
        FROM miembros m
        LEFT JOIN fuentes f ON m.id_fuente = f.id
-       LEFT JOIN pasos pa ON m.id_paso = pi.id
+       LEFT JOIN pasos pa ON m.id_paso = pa.id
        LEFT JOIN pisos ps ON m.id_piso = ps.id
        ORDER BY m.nombre ASC`
     );
 
-    return NextResponse.json({ miembros: result.rows });
+    // Fetch sistemas for all miembros
+    const sistemasResult = await query(
+      `SELECT ms.id_miembro, s.id, s.nombre
+       FROM miembros_sistemas ms
+       JOIN sistemas s ON ms.id_sistema = s.id
+       ORDER BY s.secuencia ASC, s.id ASC`
+    );
+
+    // Group sistemas by miembro
+    const sistemasByMiembro: Record<number, { id: number; nombre: string }[]> = {};
+    for (const row of sistemasResult.rows) {
+      if (!sistemasByMiembro[row.id_miembro]) {
+        sistemasByMiembro[row.id_miembro] = [];
+      }
+      sistemasByMiembro[row.id_miembro].push({ id: row.id, nombre: row.nombre });
+    }
+
+    const miembros = result.rows.map((m: any) => ({
+      ...m,
+      sistemas: sistemasByMiembro[m.id] || [],
+    }));
+
+    return NextResponse.json({ miembros });
   } catch (error) {
     console.error("Error fetching miembros:", error);
     return NextResponse.json(

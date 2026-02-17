@@ -65,6 +65,16 @@ const ALLOWED_TABLES: Record<string, TableDef> = {
     ],
     orderBy: "secuencia ASC, id ASC",
   },
+  sistemas: {
+    name: "Sistemas",
+    primaryKey: "id",
+    columns: [
+      { name: "id", type: "number", editable: false, label: "ID" },
+      { name: "nombre", type: "text", editable: true, required: true, label: "Nombre" },
+      { name: "secuencia", type: "number", editable: true, label: "Secuencia" },
+    ],
+    orderBy: "secuencia ASC, id ASC",
+  },
   acciones: {
     name: "Acciones",
     primaryKey: "id",
@@ -102,7 +112,7 @@ const ALLOWED_TABLES: Record<string, TableDef> = {
   },
 };
 
-type TableName = "modulos" | "fuentes" | "acciones" | "paquetes" | "preguntas_frecuentes" | "pasos" | "pisos";
+type TableName = "modulos" | "fuentes" | "acciones" | "paquetes" | "preguntas_frecuentes" | "pasos" | "pisos" | "sistemas";
 
 // GET /api/admin/tables - List tables or get table data
 export async function GET(request: NextRequest) {

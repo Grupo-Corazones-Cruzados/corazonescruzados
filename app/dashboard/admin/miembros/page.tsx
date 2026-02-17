@@ -6,6 +6,11 @@ import { useAuth } from "@/lib/AuthProvider";
 import DashboardLayout from "@/app/components/dashboard/DashboardLayout";
 import styles from "@/app/styles/Admin.module.css";
 
+interface Sistema {
+  id: number;
+  nombre: string;
+}
+
 interface Miembro {
   id: number;
   nombre: string;
@@ -21,6 +26,7 @@ interface Miembro {
   paso_nombre?: string;
   id_piso: number | null;
   piso_nombre?: string;
+  sistemas?: Sistema[];
   created_at: string;
 }
 
@@ -124,6 +130,7 @@ export default function MiembrosPage() {
   const [fuentes, setFuentes] = useState<Fuente[]>([]);
   const [pasos, setPasos] = useState<Paso[]>([]);
   const [pisos, setPisos] = useState<Piso[]>([]);
+  const [sistemas, setSistemas] = useState<Sistema[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -146,6 +153,7 @@ export default function MiembrosPage() {
     id_fuente: "",
     id_paso: "",
     id_piso: "",
+    sistemas_ids: [] as number[],
   });
 
   // Remove member form
@@ -237,6 +245,25 @@ export default function MiembrosPage() {
     }
   }, [isAuthenticated, profile]);
 
+  // Fetch sistemas
+  useEffect(() => {
+    const fetchSistemas = async () => {
+      try {
+        const response = await fetch("/api/admin/tables?table=sistemas");
+        if (response.ok) {
+          const data = await response.json();
+          setSistemas(data.rows || []);
+        }
+      } catch (error) {
+        console.error("Error fetching sistemas:", error);
+      }
+    };
+
+    if (isAuthenticated && profile?.rol === "admin") {
+      fetchSistemas();
+    }
+  }, [isAuthenticated, profile]);
+
   const filteredMiembros = miembros.filter((m) => {
     if (!search) return true;
     const searchLower = search.toLowerCase();
@@ -266,6 +293,7 @@ export default function MiembrosPage() {
         id_fuente: miembro.id_fuente?.toString() || "",
         id_paso: miembro.id_paso?.toString() || "",
         id_piso: miembro.id_piso?.toString() || "",
+        sistemas_ids: miembro.sistemas?.map((s) => s.id) || [],
       });
     }
   };
@@ -299,6 +327,7 @@ export default function MiembrosPage() {
           id_fuente: form.id_fuente ? parseInt(form.id_fuente) : null,
           id_paso: form.id_paso ? parseInt(form.id_paso) : null,
           id_piso: form.id_piso ? parseInt(form.id_piso) : null,
+          sistemas_ids: form.sistemas_ids,
         }),
       });
 
@@ -628,6 +657,14 @@ export default function MiembrosPage() {
                           <span className={styles.detailValue}>{selectedMiembro.piso_nombre}</span>
                         </div>
                       )}
+                      {selectedMiembro.sistemas && selectedMiembro.sistemas.length > 0 && (
+                        <div className={styles.detailRow}>
+                          <span className={styles.detailLabel}>Sistemas</span>
+                          <span className={styles.detailValue}>
+                            {selectedMiembro.sistemas.map((s) => s.nombre).join(", ")}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -751,6 +788,32 @@ export default function MiembrosPage() {
                             </option>
                           ))}
                         </select>
+                      </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Sistemas</label>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {sistemas.length > 0 ? (
+                          sistemas.map((sistema) => (
+                            <label key={sistema.id} className={styles.formCheckbox}>
+                              <input
+                                type="checkbox"
+                                checked={form.sistemas_ids.includes(sistema.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setForm({ ...form, sistemas_ids: [...form.sistemas_ids, sistema.id] });
+                                  } else {
+                                    setForm({ ...form, sistemas_ids: form.sistemas_ids.filter((id) => id !== sistema.id) });
+                                  }
+                                }}
+                              />
+                              {sistema.nombre}
+                            </label>
+                          ))
+                        ) : (
+                          <span className={styles.formHint}>No hay sistemas definidos. Crealos en Tablas → Sistemas.</span>
+                        )}
                       </div>
                     </div>
 
