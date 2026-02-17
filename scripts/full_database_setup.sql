@@ -57,7 +57,10 @@ CREATE TABLE IF NOT EXISTS sistemas (
     nombre VARCHAR(255) NOT NULL,
     id_paso BIGINT REFERENCES pasos(id),
     id_piso BIGINT REFERENCES pisos(id),
-    secuencia INT DEFAULT 0
+    secuencia INT DEFAULT 0,
+    descripcion VARCHAR(500),
+    icono VARCHAR(50),
+    ruta VARCHAR(255)
 );
 
 -- Tabla: aspirantes

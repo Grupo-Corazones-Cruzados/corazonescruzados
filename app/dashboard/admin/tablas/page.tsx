@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthProvider";
+import { getIcono, AVAILABLE_ICONS } from "@/lib/icons";
 import DashboardLayout from "@/app/components/dashboard/DashboardLayout";
 import styles from "@/app/styles/Admin.module.css";
 
@@ -290,6 +291,15 @@ export default function TablasPage() {
       return arr.length > 0 ? arr.join(", ") : "—";
     }
 
+    if (column.type === "icon") {
+      return (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ color: "#00CED1", display: "inline-flex" }}>{getIcono(String(value), 16)}</span>
+          {String(value)}
+        </span>
+      );
+    }
+
     // Handle foreign keys - show name instead of ID
     if (column.foreignKey && lookups[column.foreignKey]) {
       const lookupItems = lookups[column.foreignKey];
@@ -354,6 +364,44 @@ export default function TablasPage() {
             </option>
           ))}
         </select>
+      );
+    }
+
+    if (column.type === "icon") {
+      return (
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))",
+          gap: "8px",
+          maxHeight: "240px",
+          overflowY: "auto",
+          padding: "4px",
+        }}>
+          {AVAILABLE_ICONS.map((iconName) => (
+            <button
+              key={iconName}
+              type="button"
+              onClick={() => setFormData({ ...formData, [column.name]: iconName })}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                padding: "8px 4px",
+                borderRadius: "8px",
+                border: value === iconName ? "2px solid #00CED1" : "1px solid rgba(255,255,255,0.1)",
+                background: value === iconName ? "rgba(0,206,209,0.1)" : "transparent",
+                color: value === iconName ? "#00CED1" : "#8A8A8A",
+                cursor: "pointer",
+                fontSize: "0.7rem",
+                transition: "all 150ms ease",
+              }}
+            >
+              <span style={{ display: "flex" }}>{getIcono(iconName, 20)}</span>
+              <span style={{ lineHeight: 1.2, textAlign: "center" }}>{iconName}</span>
+            </button>
+          ))}
+        </div>
       );
     }
 
