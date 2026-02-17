@@ -72,7 +72,7 @@ export async function POST(
       [
         asigId,
         tokenData.userId,
-        contenido || "Trabajo completado. Pendiente confirmacion del cliente.",
+        contenido || "Trabajo completado. Pendiente confirmación del cliente.",
       ]
     );
 

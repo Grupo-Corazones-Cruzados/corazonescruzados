@@ -178,7 +178,7 @@ export default function AsignacionDetailClientPage() {
           </div>
           {asignacion.estado === "pre_confirmado" && (
             <button className={styles.confirmButton} onClick={() => setConfirmModal(true)}>
-              <CheckIcon /> Confirmar Completacion
+              <CheckIcon /> Confirmar Completación
             </button>
           )}
         </div>
@@ -247,7 +247,7 @@ export default function AsignacionDetailClientPage() {
                         )}
                         {avance.es_pre_confirmacion && (
                           <span className={`${styles.statusBadge} ${styles.statusPreConfirmado}`} style={{ marginTop: "var(--space-2)", display: "inline-block" }}>
-                            Pre-Confirmacion
+                            Pre-Confirmación
                           </span>
                         )}
                       </div>
@@ -347,7 +347,7 @@ export default function AsignacionDetailClientPage() {
         {confirmModal && (
           <div className={styles.modalOverlay} onClick={() => setConfirmModal(false)}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3 className={styles.modalTitle}>Confirmar Completacion</h3>
+              <h3 className={styles.modalTitle}>Confirmar Completación</h3>
               <p className={styles.modalText}>
                 Confirmas que {asignacion.miembro?.nombre} ha completado satisfactoriamente su trabajo?
                 Esta accion no se puede deshacer.

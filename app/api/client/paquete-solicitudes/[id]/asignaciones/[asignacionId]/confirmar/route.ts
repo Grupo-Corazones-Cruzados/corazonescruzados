@@ -55,7 +55,7 @@ export async function POST(
       [asigId]
     );
 
-    // Check if all asignaciones are completed
+    // Check if all asignaciones are completed/rechazado
     const pendingResult = await query(
       `SELECT COUNT(*) as pending
        FROM paquete_asignaciones
@@ -64,19 +64,43 @@ export async function POST(
     );
 
     if (parseInt(pendingResult.rows[0].pending) === 0) {
-      await query(
-        `UPDATE paquete_solicitudes
-         SET estado = 'completado', fecha_completado = NOW()
-         WHERE id = $1`,
+      // All asignaciones are done - check if all hours are assigned
+      const hoursResult = await query(
+        `SELECT ps.horas_totales, COALESCE(SUM(pa.horas_asignadas), 0) as horas_asignadas
+         FROM paquete_solicitudes ps
+         LEFT JOIN paquete_asignaciones pa ON pa.id_solicitud = ps.id AND pa.estado != 'rechazado'
+         WHERE ps.id = $1
+         GROUP BY ps.horas_totales`,
         [solicitudId]
       );
+
+      const horasTotales = Number(hoursResult.rows[0].horas_totales);
+      const horasAsignadas = Number(hoursResult.rows[0].horas_asignadas);
+
+      if (horasAsignadas >= horasTotales) {
+        // All hours assigned and all work done → complete
+        await query(
+          `UPDATE paquete_solicitudes
+           SET estado = 'completado', fecha_completado = NOW()
+           WHERE id = $1`,
+          [solicitudId]
+        );
+      } else {
+        // Hours remaining to assign → keep en_progreso
+        await query(
+          `UPDATE paquete_solicitudes
+           SET estado = 'en_progreso'
+           WHERE id = $1`,
+          [solicitudId]
+        );
+      }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error confirming completion:", error);
     return NextResponse.json(
-      { error: "Error al confirmar completacion" },
+      { error: "Error al confirmar completación" },
       { status: 500 }
     );
   }

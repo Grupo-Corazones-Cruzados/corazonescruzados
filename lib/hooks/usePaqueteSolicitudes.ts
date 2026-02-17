@@ -475,12 +475,12 @@ export function useConfirmCompletion() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Error al confirmar completacion");
+        throw new Error(data.error || "Error al confirmar completación");
       }
 
       return { error: null };
     } catch (err: any) {
-      const errorMsg = err.message || "Error al confirmar completacion";
+      const errorMsg = err.message || "Error al confirmar completación";
       setError(errorMsg);
       return { error: errorMsg };
     } finally {
@@ -489,4 +489,49 @@ export function useConfirmCompletion() {
   };
 
   return { confirmCompletion, loading, error };
+}
+
+export function useAddAsignacion() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const addAsignacion = async (
+    solicitudId: number,
+    data: {
+      id_miembro: number;
+      horas_asignadas: number;
+      descripcion_tarea?: string;
+      dias_semana?: number[];
+    }
+  ) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/client/paquete-solicitudes/${solicitudId}/asignaciones`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Error al agregar asignación");
+      }
+
+      return { data: result.asignacion, error: null };
+    } catch (err: any) {
+      const errorMsg = err.message || "Error al agregar asignación";
+      setError(errorMsg);
+      return { data: null, error: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { addAsignacion, loading, error };
 }

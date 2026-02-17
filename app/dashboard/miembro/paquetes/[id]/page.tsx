@@ -282,7 +282,7 @@ export default function MiembroAsignacionDetailPage() {
                         )}
                         {avance.es_pre_confirmacion && (
                           <span className={`${styles.statusBadge} ${styles.statusPreConfirmado}`} style={{ marginTop: "var(--space-2)", display: "inline-block" }}>
-                            Pre-Confirmacion
+                            Pre-Confirmación
                           </span>
                         )}
                       </div>
@@ -449,16 +449,16 @@ export default function MiembroAsignacionDetailPage() {
         {showPreConfirmModal && (
           <div className={styles.modalOverlay} onClick={() => setShowPreConfirmModal(false)}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3 className={styles.modalTitle}>Pre-Confirmar Completacion</h3>
+              <h3 className={styles.modalTitle}>Pre-Confirmar Completación</h3>
               <p className={styles.modalText}>
-                Al pre-confirmar, las horas restantes se consumiran automaticamente y el cliente debera confirmar la completacion.
+                Al pre-confirmar, las horas restantes se consumiran automaticamente y el cliente debera confirmar la completación.
                 Horas restantes: {Math.max(0, Number(asignacion.horas_asignadas) - Number(asignacion.horas_consumidas)).toFixed(1)}h
               </p>
               <textarea
                 value={preConfirmNote}
                 onChange={(e) => setPreConfirmNote(e.target.value)}
                 className={styles.formTextarea}
-                placeholder="Nota de completacion (opcional)..."
+                placeholder="Nota de completación (opcional)..."
                 rows={3}
               />
               <div className={styles.modalActions}>
