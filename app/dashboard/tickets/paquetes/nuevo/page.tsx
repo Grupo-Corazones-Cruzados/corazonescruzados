@@ -78,7 +78,7 @@ export default function NuevoPaquetePage() {
       try {
         const res = await fetch("/api/miembros-public");
         const data = await res.json();
-        if (res.ok && data.miembros) {
+        if (res.ok && data.members) {
           setMiembros(data.members);
         }
       } catch (error) {
