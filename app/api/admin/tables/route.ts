@@ -71,6 +71,8 @@ const ALLOWED_TABLES: Record<string, TableDef> = {
     columns: [
       { name: "id", type: "number", editable: false, label: "ID" },
       { name: "nombre", type: "text", editable: true, required: true, label: "Nombre" },
+      { name: "id_paso", type: "number", editable: true, label: "Paso", foreignKey: "pasos" },
+      { name: "id_piso", type: "number", editable: true, label: "Piso", foreignKey: "pisos" },
       { name: "secuencia", type: "number", editable: true, label: "Secuencia" },
     ],
     orderBy: "secuencia ASC, id ASC",

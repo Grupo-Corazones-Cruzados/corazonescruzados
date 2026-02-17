@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS pisos (
 CREATE TABLE IF NOT EXISTS sistemas (
     id BIGSERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
+    id_paso BIGINT REFERENCES pasos(id),
+    id_piso BIGINT REFERENCES pisos(id),
     secuencia INT DEFAULT 0
 );
 
