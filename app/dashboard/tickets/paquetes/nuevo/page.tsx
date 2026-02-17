@@ -79,7 +79,7 @@ export default function NuevoPaquetePage() {
         const res = await fetch("/api/miembros-public");
         const data = await res.json();
         if (res.ok && data.miembros) {
-          setMiembros(data.miembros);
+          setMiembros(data.members);
         }
       } catch (error) {
         console.error("Error loading members:", error);
