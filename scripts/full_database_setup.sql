@@ -558,6 +558,133 @@ CREATE TRIGGER trigger_set_invoice_number
     EXECUTE FUNCTION set_invoice_number();
 
 -- =====================================================
+-- PASO 9B: TABLAS PAQUETE SOLICITUDES (MULTI-MIEMBRO)
+-- =====================================================
+
+-- Tabla principal: Solicitud del cliente
+CREATE TABLE IF NOT EXISTS paquete_solicitudes (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    id_cliente UUID REFERENCES user_profiles(id),
+    horas_totales DECIMAL(8,2) NOT NULL,
+    horas_asignadas DECIMAL(8,2) DEFAULT 0,
+    costo_hora DECIMAL(8,2) DEFAULT 10.00,
+    descuento INTEGER DEFAULT 0,
+    id_paquete_tier BIGINT REFERENCES paquetes(id),
+    estado VARCHAR(30) DEFAULT 'borrador' CHECK (estado IN ('borrador', 'pendiente', 'parcial', 'en_progreso', 'completado', 'cancelado')),
+    notas_cliente TEXT,
+    fecha_completado TIMESTAMPTZ
+);
+
+-- Tabla de asignaciones por miembro
+CREATE TABLE IF NOT EXISTS paquete_asignaciones (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    id_solicitud BIGINT REFERENCES paquete_solicitudes(id) ON DELETE CASCADE,
+    id_miembro BIGINT REFERENCES miembros(id),
+    horas_asignadas DECIMAL(8,2) NOT NULL,
+    horas_consumidas DECIMAL(8,2) DEFAULT 0,
+    descripcion_tarea TEXT,
+    dias_semana JSONB DEFAULT '[]',
+    estado VARCHAR(30) DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aprobado', 'rechazado', 'en_progreso', 'pre_confirmado', 'completado')),
+    fecha_respuesta TIMESTAMPTZ,
+    motivo_rechazo TEXT,
+    fecha_pre_confirmacion TIMESTAMPTZ,
+    fecha_completado TIMESTAMPTZ,
+    UNIQUE(id_solicitud, id_miembro)
+);
+
+-- Tabla de avances/comentarios por asignacion
+CREATE TABLE IF NOT EXISTS paquete_avances (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    id_asignacion BIGINT REFERENCES paquete_asignaciones(id) ON DELETE CASCADE,
+    autor_tipo VARCHAR(20) CHECK (autor_tipo IN ('miembro', 'cliente')),
+    id_autor UUID REFERENCES user_profiles(id),
+    contenido TEXT NOT NULL,
+    imagenes JSONB DEFAULT '[]',
+    horas_reportadas DECIMAL(5,2) DEFAULT 0,
+    es_pre_confirmacion BOOLEAN DEFAULT FALSE
+);
+
+-- Indices
+CREATE INDEX IF NOT EXISTS idx_paquete_solicitudes_cliente ON paquete_solicitudes(id_cliente);
+CREATE INDEX IF NOT EXISTS idx_paquete_solicitudes_estado ON paquete_solicitudes(estado);
+CREATE INDEX IF NOT EXISTS idx_paquete_asignaciones_solicitud ON paquete_asignaciones(id_solicitud);
+CREATE INDEX IF NOT EXISTS idx_paquete_asignaciones_miembro ON paquete_asignaciones(id_miembro);
+CREATE INDEX IF NOT EXISTS idx_paquete_asignaciones_estado ON paquete_asignaciones(estado);
+CREATE INDEX IF NOT EXISTS idx_paquete_avances_asignacion ON paquete_avances(id_asignacion);
+
+-- Triggers paquete_solicitudes
+CREATE OR REPLACE FUNCTION update_solicitud_horas_asignadas()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE paquete_solicitudes
+    SET horas_asignadas = COALESCE((
+        SELECT SUM(horas_asignadas) FROM paquete_asignaciones
+        WHERE id_solicitud = COALESCE(NEW.id_solicitud, OLD.id_solicitud)
+        AND estado != 'rechazado'
+    ), 0)
+    WHERE id = COALESCE(NEW.id_solicitud, OLD.id_solicitud);
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_update_solicitud_horas ON paquete_asignaciones;
+CREATE TRIGGER trigger_update_solicitud_horas
+    AFTER INSERT OR UPDATE OR DELETE ON paquete_asignaciones
+    FOR EACH ROW
+    EXECUTE FUNCTION update_solicitud_horas_asignadas();
+
+CREATE OR REPLACE FUNCTION update_asignacion_horas_on_avance()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.horas_reportadas > 0 THEN
+        UPDATE paquete_asignaciones
+        SET horas_consumidas = horas_consumidas + NEW.horas_reportadas
+        WHERE id = NEW.id_asignacion;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_update_horas_on_avance ON paquete_avances;
+CREATE TRIGGER trigger_update_horas_on_avance
+    AFTER INSERT ON paquete_avances
+    FOR EACH ROW
+    EXECUTE FUNCTION update_asignacion_horas_on_avance();
+
+CREATE OR REPLACE FUNCTION update_paquete_solicitudes_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_paquete_solicitudes_updated_at ON paquete_solicitudes;
+CREATE TRIGGER trigger_paquete_solicitudes_updated_at
+    BEFORE UPDATE ON paquete_solicitudes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_paquete_solicitudes_updated_at();
+
+CREATE OR REPLACE FUNCTION update_paquete_asignaciones_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_paquete_asignaciones_updated_at ON paquete_asignaciones;
+CREATE TRIGGER trigger_paquete_asignaciones_updated_at
+    BEFORE UPDATE ON paquete_asignaciones
+    FOR EACH ROW
+    EXECUTE FUNCTION update_paquete_asignaciones_updated_at();
+
+-- =====================================================
 -- PASO 10: DATOS INICIALES
 -- =====================================================
 
@@ -578,7 +705,7 @@ ON CONFLICT DO NOTHING;
 
 -- Modulos del dashboard
 INSERT INTO modulos (nombre, descripcion, icono, ruta, orden, requiere_verificacion, roles_permitidos, secciones) VALUES
-    ('Gestión de Tickets', 'Crea y gestiona tickets de soporte. Realiza seguimiento de tus solicitudes.', 'tickets', '/dashboard/tickets', 1, true, ARRAY['cliente', 'miembro', 'admin'], '[{"id": "tickets", "label": "Mis Tickets", "href": "/dashboard/tickets", "icono": "ticket"}, {"id": "nuevo", "label": "Nuevo Ticket", "href": "/dashboard/tickets/new", "icono": "plus"}, {"id": "proyectos", "label": "Proyectos", "href": "/dashboard/projects", "icono": "folder"}]'::jsonb),
+    ('Gestión de Tickets', 'Crea y gestiona tickets de soporte. Realiza seguimiento de tus solicitudes.', 'tickets', '/dashboard/tickets', 1, true, ARRAY['cliente', 'miembro', 'admin'], '[{"id": "tickets", "label": "Mis Tickets", "href": "/dashboard/tickets", "icono": "ticket"}, {"id": "nuevo", "label": "Nuevo Ticket", "href": "/dashboard/tickets/new", "icono": "plus"}, {"id": "proyectos", "label": "Proyectos", "href": "/dashboard/projects", "icono": "folder"}, {"id": "paquetes", "label": "Paquetes", "href": "/dashboard/tickets/paquetes", "icono": "package"}]'::jsonb),
     ('Proyecto Centralizado', 'Accede al centro de proyectos. Visualiza el progreso y colabora.', 'proyecto', '/dashboard/proyecto', 2, true, ARRAY['cliente', 'miembro', 'admin'], '[{"id": "reclutamiento", "label": "Reclutamiento y Seleccion", "href": "/dashboard/proyecto/reclutamiento", "icono": "users"}]'::jsonb),
     ('Mercado', 'Explora productos y servicios disponibles.', 'mercado', '/dashboard/mercado', 3, false, ARRAY['cliente', 'miembro', 'admin'], '[]'::jsonb),
     ('Administracion', 'Panel de administracion del sistema.', 'admin', '/dashboard/admin', 4, true, ARRAY['admin'], '[{"id": "usuarios", "label": "Usuarios", "href": "/dashboard/admin", "icono": "users"}, {"id": "miembros", "label": "Miembros", "href": "/dashboard/admin/miembros", "icono": "user-check"}]'::jsonb)
