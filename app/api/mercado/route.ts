@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
       // Get member products (with or without extended columns)
       const selectCols = hasExtendedSchema
-        ? "id, created_at, nombre, herramientas, descripcion, imagen, imagenes, link_detalles, costo, categoria, activo, id_miembro"
+        ? "id, created_at, nombre, herramientas, descripcion, imagen, imagenes, link_detalles, costo, categoria, activo, id_miembro, unico"
         : "id, created_at, nombre, herramientas, descripcion, imagen, link_detalles, costo, id_miembro";
 
       const productsResult = await query(
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
       // Build SELECT clause based on schema
       const selectCols = hasExtendedSchema
         ? `p.id, p.created_at, p.nombre, p.herramientas, p.descripcion,
-           p.imagen, p.imagenes, p.link_detalles, p.costo, p.categoria, p.id_miembro`
+           p.imagen, p.imagenes, p.link_detalles, p.costo, p.categoria, p.id_miembro, p.unico`
         : `p.id, p.created_at, p.nombre, p.herramientas, p.descripcion,
            p.imagen, p.link_detalles, p.costo, p.id_miembro`;
 

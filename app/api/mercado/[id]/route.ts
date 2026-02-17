@@ -18,7 +18,7 @@ export async function GET(
     const productResult = await query(
       `SELECT
         p.id, p.created_at, p.updated_at, p.nombre, p.herramientas, p.descripcion,
-        p.imagen, p.imagenes, p.link_detalles, p.costo, p.categoria, p.activo, p.id_miembro,
+        p.imagen, p.imagenes, p.link_detalles, p.costo, p.categoria, p.activo, p.id_miembro, p.unico,
         m.id as vendedor_id,
         m.nombre as vendedor_nombre,
         COALESCE(m.foto, up.avatar_url) as vendedor_foto,

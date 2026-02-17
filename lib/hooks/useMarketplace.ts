@@ -20,6 +20,7 @@ export interface Product {
   costo: number | null;
   categoria: string | null;
   activo: boolean;
+  unico?: boolean;
   id_miembro: number | null;
   vendedor_nombre?: string;
   vendedor_foto?: string;
@@ -163,6 +164,7 @@ export function useMemberProducts() {
     herramientas?: string[];
     imagenes?: string[];
     link_detalles?: string;
+    unico?: boolean;
   }) => {
     try {
       const response = await fetch("/api/member/products", {

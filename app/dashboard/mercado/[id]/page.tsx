@@ -170,6 +170,10 @@ export default function ProductDetailPage() {
                 {product.costo ? formatCurrency(product.costo) : "Precio a consultar"}
               </div>
 
+              {product.unico && (
+                <span className={styles.unicoDetailBadge}>Producto unico</span>
+              )}
+
               {product.descripcion && (
                 <div className={styles.detailDescription}>
                   <h3>Descripción</h3>

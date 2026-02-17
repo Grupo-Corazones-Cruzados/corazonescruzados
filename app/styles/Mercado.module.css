@@ -2761,3 +2761,75 @@
 :global([data-theme="light"]) .orderNotes {
   background: rgba(0, 0, 0, 0.03);
 }
+
+/* =============================
+   Producto Unico
+   ============================= */
+
+/* Form checkbox */
+.formCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #B0B0B0;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.formCheckbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #00CED1;
+  cursor: pointer;
+}
+
+/* Cart badge */
+.unicoBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: rgba(0, 206, 209, 0.1);
+  border: 1px solid rgba(0, 206, 209, 0.3);
+  color: #00CED1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Detail page badge */
+.unicoDetailBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: rgba(0, 206, 209, 0.1);
+  border: 1px solid rgba(0, 206, 209, 0.3);
+  color: #00CED1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+/* Light theme variants */
+:global([data-theme="light"]) .formCheckboxLabel {
+  color: #4B5563;
+}
+
+:global([data-theme="light"]) .formCheckbox {
+  accent-color: #0891B2;
+}
+
+:global([data-theme="light"]) .unicoBadge {
+  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(8, 145, 178, 0.25);
+  color: #0891B2;
+}
+
+:global([data-theme="light"]) .unicoDetailBadge {
+  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(8, 145, 178, 0.25);
+  color: #0891B2;
+}

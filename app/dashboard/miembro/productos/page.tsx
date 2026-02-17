@@ -67,6 +67,7 @@ interface ProductFormData {
   herramientas: string;
   link_detalles: string;
   imagenes: string[];
+  unico: boolean;
 }
 
 const emptyFormData: ProductFormData = {
@@ -77,6 +78,7 @@ const emptyFormData: ProductFormData = {
   herramientas: "",
   link_detalles: "",
   imagenes: [],
+  unico: false,
 };
 
 function ProductForm({
@@ -106,6 +108,7 @@ function ProductForm({
             : "",
           link_detalles: initialData.link_detalles || "",
           imagenes: initialData.imagenes || [],
+          unico: initialData.unico || false,
         }
       : emptyFormData
   );
@@ -217,6 +220,18 @@ function ProductForm({
           onChange={(e) => setFormData({ ...formData, link_detalles: e.target.value })}
           placeholder="https://..."
         />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label className={styles.formCheckboxLabel}>
+          <input
+            type="checkbox"
+            className={styles.formCheckbox}
+            checked={formData.unico}
+            onChange={(e) => setFormData({ ...formData, unico: e.target.checked })}
+          />
+          Producto unico (solo se puede comprar 1 unidad)
+        </label>
       </div>
 
       <div className={styles.formGroup}>
@@ -407,6 +422,7 @@ export default function MisProductosPage() {
       herramientas: herramientas.length > 0 ? herramientas : undefined,
       imagenes: formData.imagenes,
       link_detalles: formData.link_detalles || undefined,
+      unico: formData.unico,
     });
 
     if (error) {
@@ -433,6 +449,7 @@ export default function MisProductosPage() {
       herramientas: herramientas.length > 0 ? herramientas : null,
       imagenes: formData.imagenes,
       link_detalles: formData.link_detalles || null,
+      unico: formData.unico,
     });
 
     if (error) {

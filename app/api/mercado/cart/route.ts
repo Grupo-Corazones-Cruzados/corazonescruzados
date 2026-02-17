@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         p.imagenes as producto_imagenes,
         p.costo as producto_costo,
         p.categoria as producto_categoria,
+        p.unico as producto_unico,
         m.nombre as vendedor_nombre,
         m.foto as vendedor_foto
       FROM cart_items ci
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest) {
         imagenes: row.producto_imagenes || [],
         costo: row.producto_costo,
         categoria: row.producto_categoria,
+        unico: row.producto_unico,
         vendedor_nombre: row.vendedor_nombre,
         vendedor_foto: row.vendedor_foto,
       },
@@ -98,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     // Verify product exists and is active
     const productResult = await query(
-      "SELECT id, activo FROM productos WHERE id = $1",
+      "SELECT id, activo, unico FROM productos WHERE id = $1",
       [id_producto]
     );
     if (productResult.rows.length === 0) {
@@ -106,6 +108,23 @@ export async function POST(request: NextRequest) {
     }
     if (!productResult.rows[0].activo) {
       return NextResponse.json({ error: "Producto no disponible" }, { status: 400 });
+    }
+
+    // Handle unique products: only allow quantity 1, reject if already in cart
+    if (productResult.rows[0].unico) {
+      const result = await query(
+        `INSERT INTO cart_items (id_usuario, id_producto, cantidad)
+        VALUES ($1, $2, 1)
+        ON CONFLICT (id_usuario, id_producto) DO NOTHING
+        RETURNING *`,
+        [tokenData.userId, id_producto]
+      );
+
+      if (result.rows.length === 0) {
+        return NextResponse.json({ error: "Este producto unico ya está en tu carrito" }, { status: 409 });
+      }
+
+      return NextResponse.json({ item: result.rows[0] });
     }
 
     // Upsert: add or increment quantity
@@ -149,13 +168,21 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Cantidad debe ser al menos 1" }, { status: 400 });
     }
 
-    // Verify ownership
+    // Verify ownership and check if product is unique
     const itemResult = await query(
-      "SELECT id FROM cart_items WHERE id = $1 AND id_usuario = $2",
+      `SELECT ci.id, ci.id_producto, p.unico
+      FROM cart_items ci
+      JOIN productos p ON ci.id_producto = p.id
+      WHERE ci.id = $1 AND ci.id_usuario = $2`,
       [id, tokenData.userId]
     );
     if (itemResult.rows.length === 0) {
       return NextResponse.json({ error: "Item no encontrado" }, { status: 404 });
+    }
+
+    // Reject quantity changes for unique products
+    if (itemResult.rows[0].unico && cantidad !== 1) {
+      return NextResponse.json({ error: "Producto unico: solo se permite cantidad 1" }, { status: 400 });
     }
 
     const result = await query(

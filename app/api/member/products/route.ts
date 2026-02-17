@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const productsResult = await query(
       `SELECT
         id, created_at, updated_at, nombre, herramientas, descripcion,
-        imagen, imagenes, link_detalles, costo, categoria, activo
+        imagen, imagenes, link_detalles, costo, categoria, activo, unico
       FROM productos
       WHERE id_miembro = $1
       ORDER BY created_at DESC`,
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { nombre, descripcion, costo, categoria, herramientas, imagenes, link_detalles } = body;
+    const { nombre, descripcion, costo, categoria, herramientas, imagenes, link_detalles, unico } = body;
 
     if (!nombre || nombre.trim() === "") {
       return NextResponse.json({ error: "El nombre es requerido" }, { status: 400 });
@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
 
     const result = await query(
       `INSERT INTO productos (
-        nombre, descripcion, costo, categoria, herramientas, imagenes, imagen, link_detalles, id_miembro, activo, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW())
+        nombre, descripcion, costo, categoria, herramientas, imagenes, imagen, link_detalles, id_miembro, activo, created_at, unico
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW(), $10)
       RETURNING *`,
       [
         nombre.trim(),
@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
         imagenes && imagenes.length > 0 ? imagenes[0] : null, // Keep first image in legacy field
         link_detalles?.trim() || null,
         miembroId,
+        unico || false,
       ]
     );
 
@@ -115,7 +116,7 @@ export async function PUT(request: NextRequest) {
     const miembroId = userResult.rows[0].id_miembro;
 
     const body = await request.json();
-    const { id, nombre, descripcion, costo, categoria, herramientas, imagenes, link_detalles, activo } = body;
+    const { id, nombre, descripcion, costo, categoria, herramientas, imagenes, link_detalles, activo, unico } = body;
 
     if (!id) {
       return NextResponse.json({ error: "ID del producto es requerido" }, { status: 400 });
@@ -143,8 +144,9 @@ export async function PUT(request: NextRequest) {
         imagenes = COALESCE($6, imagenes),
         imagen = COALESCE($7, imagen),
         link_detalles = COALESCE($8, link_detalles),
-        activo = COALESCE($9, activo)
-      WHERE id = $10
+        activo = COALESCE($9, activo),
+        unico = COALESCE($10, unico)
+      WHERE id = $11
       RETURNING *`,
       [
         nombre?.trim() || null,
@@ -156,6 +158,7 @@ export async function PUT(request: NextRequest) {
         imagenes && imagenes.length > 0 ? imagenes[0] : null,
         link_detalles?.trim() || null,
         activo,
+        typeof unico === 'boolean' ? unico : null,
         id,
       ]
     );

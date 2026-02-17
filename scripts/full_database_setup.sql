@@ -379,7 +379,8 @@ CREATE TABLE IF NOT EXISTS productos (
     categoria VARCHAR(100),
     activo BOOLEAN DEFAULT true,
     id_miembro BIGINT REFERENCES miembros(id),
-    link_detalles TEXT
+    link_detalles TEXT,
+    unico BOOLEAN DEFAULT false
 );
 
 CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(categoria);
@@ -577,7 +578,7 @@ ON CONFLICT DO NOTHING;
 
 -- Modulos del dashboard
 INSERT INTO modulos (nombre, descripcion, icono, ruta, orden, requiere_verificacion, roles_permitidos, secciones) VALUES
-    ('Gestion de Tickets', 'Crea y gestiona tickets de soporte. Realiza seguimiento de tus solicitudes.', 'tickets', '/dashboard/tickets', 1, true, ARRAY['cliente', 'miembro', 'admin'], '[{"id": "tickets", "label": "Mis Tickets", "href": "/dashboard/tickets", "icono": "ticket"}, {"id": "nuevo", "label": "Nuevo Ticket", "href": "/dashboard/tickets/new", "icono": "plus"}, {"id": "proyectos", "label": "Proyectos", "href": "/dashboard/projects", "icono": "folder"}]'::jsonb),
+    ('Gestión de Tickets', 'Crea y gestiona tickets de soporte. Realiza seguimiento de tus solicitudes.', 'tickets', '/dashboard/tickets', 1, true, ARRAY['cliente', 'miembro', 'admin'], '[{"id": "tickets", "label": "Mis Tickets", "href": "/dashboard/tickets", "icono": "ticket"}, {"id": "nuevo", "label": "Nuevo Ticket", "href": "/dashboard/tickets/new", "icono": "plus"}, {"id": "proyectos", "label": "Proyectos", "href": "/dashboard/projects", "icono": "folder"}]'::jsonb),
     ('Proyecto Centralizado', 'Accede al centro de proyectos. Visualiza el progreso y colabora.', 'proyecto', '/dashboard/proyecto', 2, true, ARRAY['cliente', 'miembro', 'admin'], '[{"id": "reclutamiento", "label": "Reclutamiento y Seleccion", "href": "/dashboard/proyecto/reclutamiento", "icono": "users"}]'::jsonb),
     ('Mercado', 'Explora productos y servicios disponibles.', 'mercado', '/dashboard/mercado', 3, false, ARRAY['cliente', 'miembro', 'admin'], '[]'::jsonb),
     ('Administracion', 'Panel de administracion del sistema.', 'admin', '/dashboard/admin', 4, true, ARRAY['admin'], '[{"id": "usuarios", "label": "Usuarios", "href": "/dashboard/admin", "icono": "users"}, {"id": "miembros", "label": "Miembros", "href": "/dashboard/admin/miembros", "icono": "user-check"}]'::jsonb)

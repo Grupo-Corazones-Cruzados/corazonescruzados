@@ -195,23 +195,29 @@ export default function CarritoPage() {
                       </div>
 
                       <div className={styles.cartItemQuantity}>
-                        <button
-                          className={styles.quantityBtn}
-                          onClick={() => handleUpdateQuantity(item.id, item.cantidad - 1)}
-                          disabled={item.cantidad <= 1 || isUpdating}
-                        >
-                          <MinusIcon />
-                        </button>
-                        <span className={styles.quantityValue}>
-                          {isUpdating ? "..." : item.cantidad}
-                        </span>
-                        <button
-                          className={styles.quantityBtn}
-                          onClick={() => handleUpdateQuantity(item.id, item.cantidad + 1)}
-                          disabled={isUpdating}
-                        >
-                          <PlusIcon />
-                        </button>
+                        {item.producto?.unico ? (
+                          <span className={styles.unicoBadge}>Producto unico</span>
+                        ) : (
+                          <>
+                            <button
+                              className={styles.quantityBtn}
+                              onClick={() => handleUpdateQuantity(item.id, item.cantidad - 1)}
+                              disabled={item.cantidad <= 1 || isUpdating}
+                            >
+                              <MinusIcon />
+                            </button>
+                            <span className={styles.quantityValue}>
+                              {isUpdating ? "..." : item.cantidad}
+                            </span>
+                            <button
+                              className={styles.quantityBtn}
+                              onClick={() => handleUpdateQuantity(item.id, item.cantidad + 1)}
+                              disabled={isUpdating}
+                            >
+                              <PlusIcon />
+                            </button>
+                          </>
+                        )}
                       </div>
 
                       <div className={styles.cartItemSubtotal}>
