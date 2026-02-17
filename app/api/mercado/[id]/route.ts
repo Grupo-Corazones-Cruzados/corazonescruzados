@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
+// Check if extended columns exist
+let hasExtendedSchema: boolean | null = null;
+let hasUnicoColumn: boolean | null = null;
+
+async function checkExtendedSchema(): Promise<boolean> {
+  if (hasExtendedSchema !== null) return hasExtendedSchema;
+  try {
+    await query("SELECT imagenes, categoria, activo FROM productos LIMIT 0");
+    hasExtendedSchema = true;
+  } catch {
+    hasExtendedSchema = false;
+  }
+  return hasExtendedSchema;
+}
+
+async function checkUnicoColumn(): Promise<boolean> {
+  if (hasUnicoColumn !== null) return hasUnicoColumn;
+  try {
+    await query("SELECT unico FROM productos LIMIT 0");
+    hasUnicoColumn = true;
+  } catch {
+    hasUnicoColumn = false;
+  }
+  return hasUnicoColumn;
+}
+
 // GET /api/mercado/[id] - Get product detail with vendor info and related products
 export async function GET(
   request: NextRequest,
@@ -14,11 +40,19 @@ export async function GET(
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
+    const hasExtended = await checkExtendedSchema();
+    const hasUnico = await checkUnicoColumn();
+
+    // Build SELECT columns based on schema
+    const baseCols = `p.id, p.created_at, p.nombre, p.herramientas, p.descripcion,
+        p.imagen, p.link_detalles, p.costo, p.id_miembro`;
+    const extCols = hasExtended ? `, p.updated_at, p.imagenes, p.categoria, p.activo` : "";
+    const unicoCol = hasUnico ? ", p.unico" : "";
+
     // Get product with vendor info
     const productResult = await query(
       `SELECT
-        p.id, p.created_at, p.updated_at, p.nombre, p.herramientas, p.descripcion,
-        p.imagen, p.imagenes, p.link_detalles, p.costo, p.categoria, p.activo, p.id_miembro, p.unico,
+        ${baseCols}${extCols}${unicoCol},
         m.id as vendedor_id,
         m.nombre as vendedor_nombre,
         COALESCE(m.foto, up.avatar_url) as vendedor_foto,
@@ -36,20 +70,29 @@ export async function GET(
       return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
     }
 
-    const product = productResult.rows[0];
+    const row = productResult.rows[0];
+    const product = {
+      ...row,
+      imagenes: row.imagenes || (row.imagen ? [row.imagen] : []),
+      categoria: row.categoria || null,
+      activo: row.activo !== undefined ? row.activo : true,
+      unico: row.unico || false,
+    };
 
     // Get related products (same category, exclude current)
     let relatedProducts: any[] = [];
+    const activoFilter = hasExtended ? "AND (p.activo = true OR p.activo IS NULL)" : "";
+
     if (product.categoria) {
       const relatedResult = await query(
         `SELECT
-          p.id, p.nombre, p.descripcion, p.imagen, p.imagenes, p.costo, p.categoria,
+          p.id, p.nombre, p.descripcion, p.imagen, ${hasExtended ? "p.imagenes," : ""} p.costo, ${hasExtended ? "p.categoria," : ""}
           m.nombre as vendedor_nombre,
           COALESCE(m.foto, up.avatar_url) as vendedor_foto
         FROM productos p
         LEFT JOIN miembros m ON p.id_miembro = m.id
         LEFT JOIN user_profiles up ON up.id_miembro = m.id
-        WHERE p.categoria = $1 AND p.id != $2 AND p.activo = true
+        WHERE p.categoria = $1 AND p.id != $2 ${activoFilter}
         ORDER BY p.created_at DESC
         LIMIT 4`,
         [product.categoria, productId]
@@ -60,16 +103,16 @@ export async function GET(
     // If not enough related products, fill with random products
     if (relatedProducts.length < 4) {
       const remaining = 4 - relatedProducts.length;
-      const excludeIds = [productId, ...relatedProducts.map((p) => p.id)];
+      const excludeIds = [productId, ...relatedProducts.map((p: any) => p.id)];
       const moreResult = await query(
         `SELECT
-          p.id, p.nombre, p.descripcion, p.imagen, p.imagenes, p.costo, p.categoria,
+          p.id, p.nombre, p.descripcion, p.imagen, ${hasExtended ? "p.imagenes," : ""} p.costo, ${hasExtended ? "p.categoria," : ""}
           m.nombre as vendedor_nombre,
           COALESCE(m.foto, up.avatar_url) as vendedor_foto
         FROM productos p
         LEFT JOIN miembros m ON p.id_miembro = m.id
         LEFT JOIN user_profiles up ON up.id_miembro = m.id
-        WHERE p.id != ALL($1) AND p.activo = true
+        WHERE p.id != ALL($1) ${activoFilter}
         ORDER BY RANDOM()
         LIMIT $2`,
         [excludeIds, remaining]

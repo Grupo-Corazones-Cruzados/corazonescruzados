@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/jwt";
 import { query } from "@/lib/db";
 
+// Check if unico column exists
+let hasUnicoColumn: boolean | null = null;
+
+async function checkUnicoColumn(): Promise<boolean> {
+  if (hasUnicoColumn !== null) return hasUnicoColumn;
+  try {
+    await query("SELECT unico FROM productos LIMIT 0");
+    hasUnicoColumn = true;
+  } catch {
+    hasUnicoColumn = false;
+  }
+  return hasUnicoColumn;
+}
+
 // GET - List member's own products
 export async function GET(request: NextRequest) {
   try {
@@ -26,10 +40,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No tienes un perfil de miembro" }, { status: 400 });
     }
 
+    const hasUnico = await checkUnicoColumn();
     const productsResult = await query(
       `SELECT
         id, created_at, updated_at, nombre, herramientas, descripcion,
-        imagen, imagenes, link_detalles, costo, categoria, activo, unico
+        imagen, imagenes, link_detalles, costo, categoria, activo${hasUnico ? ", unico" : ""}
       FROM productos
       WHERE id_miembro = $1
       ORDER BY created_at DESC`,
@@ -71,23 +86,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "El nombre es requerido" }, { status: 400 });
     }
 
+    const hasUnico = await checkUnicoColumn();
     const result = await query(
-      `INSERT INTO productos (
-        nombre, descripcion, costo, categoria, herramientas, imagenes, imagen, link_detalles, id_miembro, activo, created_at, unico
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW(), $10)
-      RETURNING *`,
-      [
-        nombre.trim(),
-        descripcion?.trim() || null,
-        costo || null,
-        categoria?.trim() || null,
-        herramientas ? JSON.stringify(herramientas) : null,
-        imagenes ? JSON.stringify(imagenes) : "[]",
-        imagenes && imagenes.length > 0 ? imagenes[0] : null, // Keep first image in legacy field
-        link_detalles?.trim() || null,
-        miembroId,
-        unico || false,
-      ]
+      hasUnico
+        ? `INSERT INTO productos (
+            nombre, descripcion, costo, categoria, herramientas, imagenes, imagen, link_detalles, id_miembro, activo, created_at, unico
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW(), $10)
+          RETURNING *`
+        : `INSERT INTO productos (
+            nombre, descripcion, costo, categoria, herramientas, imagenes, imagen, link_detalles, id_miembro, activo, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW())
+          RETURNING *`,
+      hasUnico
+        ? [
+            nombre.trim(),
+            descripcion?.trim() || null,
+            costo || null,
+            categoria?.trim() || null,
+            herramientas ? JSON.stringify(herramientas) : null,
+            imagenes ? JSON.stringify(imagenes) : "[]",
+            imagenes && imagenes.length > 0 ? imagenes[0] : null,
+            link_detalles?.trim() || null,
+            miembroId,
+            unico || false,
+          ]
+        : [
+            nombre.trim(),
+            descripcion?.trim() || null,
+            costo || null,
+            categoria?.trim() || null,
+            herramientas ? JSON.stringify(herramientas) : null,
+            imagenes ? JSON.stringify(imagenes) : "[]",
+            imagenes && imagenes.length > 0 ? imagenes[0] : null,
+            link_detalles?.trim() || null,
+            miembroId,
+          ]
     );
 
     return NextResponse.json({ product: result.rows[0] }, { status: 201 });
@@ -134,33 +167,60 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado para editar este producto" }, { status: 403 });
     }
 
+    const hasUnico = await checkUnicoColumn();
     const result = await query(
-      `UPDATE productos SET
-        nombre = COALESCE($1, nombre),
-        descripcion = COALESCE($2, descripcion),
-        costo = COALESCE($3, costo),
-        categoria = COALESCE($4, categoria),
-        herramientas = COALESCE($5, herramientas),
-        imagenes = COALESCE($6, imagenes),
-        imagen = COALESCE($7, imagen),
-        link_detalles = COALESCE($8, link_detalles),
-        activo = COALESCE($9, activo),
-        unico = COALESCE($10, unico)
-      WHERE id = $11
-      RETURNING *`,
-      [
-        nombre?.trim() || null,
-        descripcion?.trim() || null,
-        costo,
-        categoria?.trim() || null,
-        herramientas ? JSON.stringify(herramientas) : null,
-        imagenes ? JSON.stringify(imagenes) : null,
-        imagenes && imagenes.length > 0 ? imagenes[0] : null,
-        link_detalles?.trim() || null,
-        activo,
-        typeof unico === 'boolean' ? unico : null,
-        id,
-      ]
+      hasUnico
+        ? `UPDATE productos SET
+            nombre = COALESCE($1, nombre),
+            descripcion = COALESCE($2, descripcion),
+            costo = COALESCE($3, costo),
+            categoria = COALESCE($4, categoria),
+            herramientas = COALESCE($5, herramientas),
+            imagenes = COALESCE($6, imagenes),
+            imagen = COALESCE($7, imagen),
+            link_detalles = COALESCE($8, link_detalles),
+            activo = COALESCE($9, activo),
+            unico = COALESCE($10, unico)
+          WHERE id = $11
+          RETURNING *`
+        : `UPDATE productos SET
+            nombre = COALESCE($1, nombre),
+            descripcion = COALESCE($2, descripcion),
+            costo = COALESCE($3, costo),
+            categoria = COALESCE($4, categoria),
+            herramientas = COALESCE($5, herramientas),
+            imagenes = COALESCE($6, imagenes),
+            imagen = COALESCE($7, imagen),
+            link_detalles = COALESCE($8, link_detalles),
+            activo = COALESCE($9, activo)
+          WHERE id = $10
+          RETURNING *`,
+      hasUnico
+        ? [
+            nombre?.trim() || null,
+            descripcion?.trim() || null,
+            costo,
+            categoria?.trim() || null,
+            herramientas ? JSON.stringify(herramientas) : null,
+            imagenes ? JSON.stringify(imagenes) : null,
+            imagenes && imagenes.length > 0 ? imagenes[0] : null,
+            link_detalles?.trim() || null,
+            activo,
+            typeof unico === 'boolean' ? unico : null,
+            id,
+          ]
+        : [
+            nombre?.trim() || null,
+            descripcion?.trim() || null,
+            costo,
+            categoria?.trim() || null,
+            herramientas ? JSON.stringify(herramientas) : null,
+            imagenes ? JSON.stringify(imagenes) : null,
+            imagenes && imagenes.length > 0 ? imagenes[0] : null,
+            link_detalles?.trim() || null,
+            activo,
+            id,
+          ]
     );
 
     return NextResponse.json({ product: result.rows[0] });

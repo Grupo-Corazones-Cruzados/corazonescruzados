@@ -4,6 +4,7 @@ import { query } from "@/lib/db";
 
 // Check if cart_items table exists
 let cartTableExists: boolean | null = null;
+let hasUnicoColumn: boolean | null = null;
 
 async function checkCartTable(): Promise<boolean> {
   if (cartTableExists !== null) return cartTableExists;
@@ -14,6 +15,17 @@ async function checkCartTable(): Promise<boolean> {
     cartTableExists = false;
   }
   return cartTableExists;
+}
+
+async function checkUnicoColumn(): Promise<boolean> {
+  if (hasUnicoColumn !== null) return hasUnicoColumn;
+  try {
+    await query("SELECT unico FROM productos LIMIT 0");
+    hasUnicoColumn = true;
+  } catch {
+    hasUnicoColumn = false;
+  }
+  return hasUnicoColumn;
 }
 
 // GET - Get cart items
@@ -30,6 +42,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ items: [], message: "Cart not available - run migrations" });
     }
 
+    const hasUnico = await checkUnicoColumn();
+
     const result = await query(
       `SELECT
         ci.id, ci.id_usuario, ci.id_producto, ci.cantidad, ci.created_at,
@@ -39,7 +53,7 @@ export async function GET(request: NextRequest) {
         p.imagenes as producto_imagenes,
         p.costo as producto_costo,
         p.categoria as producto_categoria,
-        p.unico as producto_unico,
+        ${hasUnico ? "p.unico as producto_unico," : ""}
         m.nombre as vendedor_nombre,
         m.foto as vendedor_foto
       FROM cart_items ci
@@ -65,7 +79,7 @@ export async function GET(request: NextRequest) {
         imagenes: row.producto_imagenes || [],
         costo: row.producto_costo,
         categoria: row.producto_categoria,
-        unico: row.producto_unico,
+        unico: row.producto_unico || false,
         vendedor_nombre: row.vendedor_nombre,
         vendedor_foto: row.vendedor_foto,
       },
@@ -99,19 +113,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify product exists and is active
+    const hasUnico = await checkUnicoColumn();
     const productResult = await query(
-      "SELECT id, activo, unico FROM productos WHERE id = $1",
+      `SELECT id, activo${hasUnico ? ", unico" : ""} FROM productos WHERE id = $1`,
       [id_producto]
     );
     if (productResult.rows.length === 0) {
       return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
     }
-    if (!productResult.rows[0].activo) {
+    if (productResult.rows[0].activo === false) {
       return NextResponse.json({ error: "Producto no disponible" }, { status: 400 });
     }
 
     // Handle unique products: only allow quantity 1, reject if already in cart
-    if (productResult.rows[0].unico) {
+    if (hasUnico && productResult.rows[0].unico) {
       const result = await query(
         `INSERT INTO cart_items (id_usuario, id_producto, cantidad)
         VALUES ($1, $2, 1)
@@ -169,8 +184,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verify ownership and check if product is unique
+    const hasUnico = await checkUnicoColumn();
     const itemResult = await query(
-      `SELECT ci.id, ci.id_producto, p.unico
+      `SELECT ci.id, ci.id_producto${hasUnico ? ", p.unico" : ""}
       FROM cart_items ci
       JOIN productos p ON ci.id_producto = p.id
       WHERE ci.id = $1 AND ci.id_usuario = $2`,
@@ -181,7 +197,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Reject quantity changes for unique products
-    if (itemResult.rows[0].unico && cantidad !== 1) {
+    if (hasUnico && itemResult.rows[0].unico && cantidad !== 1) {
       return NextResponse.json({ error: "Producto unico: solo se permite cantidad 1" }, { status: 400 });
     }
 

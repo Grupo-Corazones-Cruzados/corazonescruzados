@@ -3,6 +3,7 @@ import { query } from "@/lib/db";
 
 // Check if new marketplace columns exist
 let hasNewColumns: boolean | null = null;
+let hasUnicoColumn: boolean | null = null;
 
 async function checkNewColumns(): Promise<boolean> {
   if (hasNewColumns !== null) return hasNewColumns;
@@ -13,6 +14,17 @@ async function checkNewColumns(): Promise<boolean> {
     hasNewColumns = false;
   }
   return hasNewColumns;
+}
+
+async function checkUnicoColumn(): Promise<boolean> {
+  if (hasUnicoColumn !== null) return hasUnicoColumn;
+  try {
+    await query("SELECT unico FROM productos LIMIT 0");
+    hasUnicoColumn = true;
+  } catch {
+    hasUnicoColumn = false;
+  }
+  return hasUnicoColumn;
 }
 
 // GET /api/mercado - Get marketplace data (products, members, CV)
@@ -29,6 +41,7 @@ export async function GET(request: NextRequest) {
     const vendedorId = searchParams.get("vendedorId");
 
     const hasExtendedSchema = await checkNewColumns();
+    const hasUnico = await checkUnicoColumn();
 
     if (miembroId) {
       // Get specific member data with products
@@ -64,7 +77,7 @@ export async function GET(request: NextRequest) {
 
       // Get member products (with or without extended columns)
       const selectCols = hasExtendedSchema
-        ? "id, created_at, nombre, herramientas, descripcion, imagen, imagenes, link_detalles, costo, categoria, activo, id_miembro, unico"
+        ? `id, created_at, nombre, herramientas, descripcion, imagen, imagenes, link_detalles, costo, categoria, activo, id_miembro${hasUnico ? ", unico" : ""}`
         : "id, created_at, nombre, herramientas, descripcion, imagen, link_detalles, costo, id_miembro";
 
       const productsResult = await query(
@@ -133,7 +146,7 @@ export async function GET(request: NextRequest) {
       // Build SELECT clause based on schema
       const selectCols = hasExtendedSchema
         ? `p.id, p.created_at, p.nombre, p.herramientas, p.descripcion,
-           p.imagen, p.imagenes, p.link_detalles, p.costo, p.categoria, p.id_miembro, p.unico`
+           p.imagen, p.imagenes, p.link_detalles, p.costo, p.categoria, p.id_miembro${hasUnico ? ", p.unico" : ""}`
         : `p.id, p.created_at, p.nombre, p.herramientas, p.descripcion,
            p.imagen, p.link_detalles, p.costo, p.id_miembro`;
 
