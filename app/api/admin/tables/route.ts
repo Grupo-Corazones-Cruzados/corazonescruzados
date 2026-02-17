@@ -51,8 +51,9 @@ const ALLOWED_TABLES: Record<string, TableDef> = {
     columns: [
       { name: "id", type: "number", editable: false, label: "ID" },
       { name: "nombre", type: "text", editable: true, required: true, label: "Nombre" },
+      { name: "secuencia", type: "number", editable: true, label: "Secuencia" },
     ],
-    orderBy: "nombre ASC",
+    orderBy: "secuencia ASC, id ASC",
   },
   pisos: {
     name: "Pisos",
@@ -60,8 +61,9 @@ const ALLOWED_TABLES: Record<string, TableDef> = {
     columns: [
       { name: "id", type: "number", editable: false, label: "ID" },
       { name: "nombre", type: "text", editable: true, required: true, label: "Nombre" },
+      { name: "secuencia", type: "number", editable: true, label: "Secuencia" },
     ],
-    orderBy: "nombre ASC",
+    orderBy: "secuencia ASC, id ASC",
   },
   acciones: {
     name: "Acciones",

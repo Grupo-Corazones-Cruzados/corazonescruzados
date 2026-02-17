@@ -40,13 +40,15 @@ CREATE TABLE IF NOT EXISTS preguntas_frecuentes (
 -- Tabla: pasos
 CREATE TABLE IF NOT EXISTS pasos (
     id BIGSERIAL PRIMARY KEY,
-    nombre VARCHAR(255) NOT NULL
+    nombre VARCHAR(255) NOT NULL,
+    secuencia INT DEFAULT 0
 );
 
 -- Tabla: pisos
 CREATE TABLE IF NOT EXISTS pisos (
     id BIGSERIAL PRIMARY KEY,
-    nombre VARCHAR(255) NOT NULL
+    nombre VARCHAR(255) NOT NULL,
+    secuencia INT DEFAULT 0
 );
 
 -- Tabla: aspirantes
