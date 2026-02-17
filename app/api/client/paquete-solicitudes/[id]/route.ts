@@ -45,12 +45,13 @@ export async function GET(
         json_build_object(
           'id', m.id,
           'nombre', m.nombre,
-          'foto', m.foto,
+          'foto', COALESCE(m.foto, up.avatar_url),
           'puesto', m.puesto
         ) as miembro,
         COALESCE((SELECT COUNT(*) FROM paquete_avances pav WHERE pav.id_asignacion = pa.id), 0) as avances_count
       FROM paquete_asignaciones pa
       JOIN miembros m ON pa.id_miembro = m.id
+      LEFT JOIN user_profiles up ON up.id_miembro = m.id
       WHERE pa.id_solicitud = $1
       ORDER BY pa.created_at ASC`,
       [solicitudId]

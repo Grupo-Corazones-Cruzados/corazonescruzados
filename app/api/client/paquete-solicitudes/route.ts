@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
               'miembro', json_build_object(
                 'id', m.id,
                 'nombre', m.nombre,
-                'foto', m.foto,
+                'foto', COALESCE(m.foto, up_m.avatar_url),
                 'puesto', m.puesto
               )
             )
@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN paquetes p ON ps.id_paquete_tier = p.id
       LEFT JOIN paquete_asignaciones pa ON pa.id_solicitud = ps.id
       LEFT JOIN miembros m ON pa.id_miembro = m.id
+      LEFT JOIN user_profiles up_m ON up_m.id_miembro = m.id
       WHERE ps.id_cliente = $1
       GROUP BY ps.id, p.nombre
       ORDER BY ps.created_at DESC`,

@@ -26,7 +26,7 @@ export async function GET(
         json_build_object(
           'id', m.id,
           'nombre', m.nombre,
-          'foto', m.foto,
+          'foto', COALESCE(m.foto, up_m.avatar_url),
           'puesto', m.puesto
         ) as miembro,
         json_build_object(
@@ -39,6 +39,7 @@ export async function GET(
       FROM paquete_asignaciones pa
       JOIN paquete_solicitudes ps ON pa.id_solicitud = ps.id
       JOIN miembros m ON pa.id_miembro = m.id
+      LEFT JOIN user_profiles up_m ON up_m.id_miembro = m.id
       WHERE pa.id = $1 AND ps.id_cliente = $2`,
       [asigId, tokenData.userId]
     );
@@ -55,7 +56,7 @@ export async function GET(
       `SELECT pav.*,
         COALESCE(up.nombre || ' ' || COALESCE(up.apellido, ''), up.email) as autor_nombre,
         CASE
-          WHEN pav.autor_tipo = 'miembro' THEN m.foto
+          WHEN pav.autor_tipo = 'miembro' THEN COALESCE(m.foto, up.avatar_url)
           ELSE NULL
         END as autor_foto
       FROM paquete_avances pav

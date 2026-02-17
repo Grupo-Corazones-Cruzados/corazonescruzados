@@ -69,7 +69,7 @@ export async function GET(
       `SELECT pav.*,
         COALESCE(up.nombre || ' ' || COALESCE(up.apellido, ''), up.email) as autor_nombre,
         CASE
-          WHEN pav.autor_tipo = 'miembro' THEN m.foto
+          WHEN pav.autor_tipo = 'miembro' THEN COALESCE(m.foto, up.avatar_url)
           ELSE NULL
         END as autor_foto
       FROM paquete_avances pav
