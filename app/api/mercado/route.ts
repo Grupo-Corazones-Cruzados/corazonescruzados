@@ -142,10 +142,11 @@ export async function GET(request: NextRequest) {
         `SELECT
           ${selectCols},
           m.nombre as vendedor_nombre,
-          m.foto as vendedor_foto,
+          COALESCE(m.foto, up.avatar_url) as vendedor_foto,
           m.puesto as vendedor_puesto
         FROM productos p
         LEFT JOIN miembros m ON p.id_miembro = m.id
+        LEFT JOIN user_profiles up ON up.id_miembro = m.id
         ${whereClause}
         ORDER BY p.created_at DESC`,
         params

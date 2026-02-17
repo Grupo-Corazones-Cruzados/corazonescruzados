@@ -21,12 +21,13 @@ export async function GET(
         p.imagen, p.imagenes, p.link_detalles, p.costo, p.categoria, p.activo, p.id_miembro,
         m.id as vendedor_id,
         m.nombre as vendedor_nombre,
-        m.foto as vendedor_foto,
+        COALESCE(m.foto, up.avatar_url) as vendedor_foto,
         m.puesto as vendedor_puesto,
         m.descripcion as vendedor_descripcion,
         m.correo as vendedor_correo
       FROM productos p
       LEFT JOIN miembros m ON p.id_miembro = m.id
+      LEFT JOIN user_profiles up ON up.id_miembro = m.id
       WHERE p.id = $1`,
       [productId]
     );
@@ -44,9 +45,10 @@ export async function GET(
         `SELECT
           p.id, p.nombre, p.descripcion, p.imagen, p.imagenes, p.costo, p.categoria,
           m.nombre as vendedor_nombre,
-          m.foto as vendedor_foto
+          COALESCE(m.foto, up.avatar_url) as vendedor_foto
         FROM productos p
         LEFT JOIN miembros m ON p.id_miembro = m.id
+        LEFT JOIN user_profiles up ON up.id_miembro = m.id
         WHERE p.categoria = $1 AND p.id != $2 AND p.activo = true
         ORDER BY p.created_at DESC
         LIMIT 4`,
@@ -63,9 +65,10 @@ export async function GET(
         `SELECT
           p.id, p.nombre, p.descripcion, p.imagen, p.imagenes, p.costo, p.categoria,
           m.nombre as vendedor_nombre,
-          m.foto as vendedor_foto
+          COALESCE(m.foto, up.avatar_url) as vendedor_foto
         FROM productos p
         LEFT JOIN miembros m ON p.id_miembro = m.id
+        LEFT JOIN user_profiles up ON up.id_miembro = m.id
         WHERE p.id != ALL($1) AND p.activo = true
         ORDER BY RANDOM()
         LIMIT $2`,
