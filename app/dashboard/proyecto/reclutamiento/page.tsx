@@ -14,6 +14,13 @@ const secciones = [
     ruta: "/dashboard/proyecto/reclutamiento/encuadre",
     icono: "clipboard",
   },
+  {
+    id: "eventos",
+    nombre: "Eventos",
+    descripcion: "Crea y gestiona eventos de reclutamiento para evaluar aspirantes con el encuadre cruzado.",
+    ruta: "/dashboard/proyecto/reclutamiento/encuadre/eventos",
+    icono: "calendar",
+  },
 ];
 
 export default function ReclutamientoPage() {
