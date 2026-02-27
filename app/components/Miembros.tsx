@@ -149,31 +149,16 @@ const Miembros: React.FC<MiembrosPadre> = ({
 
   return (
     <section className={style.section} aria-label="Miembros">
-      {/* Header */}
-      <div className={style.headerRow}>
-        <div>
-          <div className={style.kicker}>Directorio</div>
-      
-        </div>
-
-        <div className={style.headerActions}>
-          <div className={style.counter}>
-            {loadingMembers ? "Cargando…" : `${filteredMembers.length} resultado(s)`}
-          </div>
-
-          <button type="button" className={style.clearBtn} onClick={clearFilters}>
-            Limpiar
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className={style.filters}>
+      {/* Toolbar */}
+      <div className={style.toolbar}>
         <div className={style.searchWrap}>
-          <span className={style.searchIcon} aria-hidden="true">⌕</span>
+          <svg className={style.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
           <input
             type="text"
-            placeholder="Buscar miembro por nombre o usuario…"
+            placeholder="Buscar por nombre o usuario..."
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
             className={style.searchInput}
@@ -196,6 +181,22 @@ const Miembros: React.FC<MiembrosPadre> = ({
             </option>
           ))}
         </select>
+
+        <div className={style.toolbarRight}>
+          <span className={style.counter}>
+            {loadingMembers ? "..." : filteredMembers.length}
+          </span>
+
+          {(fuenteLabel || searchTerm.trim()) && (
+            <button type="button" className={style.clearBtn} onClick={clearFilters}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              Limpiar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Active filter chips */}
@@ -203,12 +204,21 @@ const Miembros: React.FC<MiembrosPadre> = ({
         <div className={style.chips}>
           {searchTerm.trim() && (
             <span className={style.chip}>
-              Búsqueda: <b>{searchTerm.trim()}</b>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              {searchTerm.trim()}
             </span>
           )}
           {fuenteLabel && (
             <span className={style.chip}>
-              Fuente: <b>{fuenteLabel}</b>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              {fuenteLabel}
             </span>
           )}
         </div>
@@ -218,7 +228,7 @@ const Miembros: React.FC<MiembrosPadre> = ({
       {loadingMembers ? (
         <div className={style.state}>
           <div className={style.spinner} aria-hidden="true" />
-          <p>Cargando miembros…</p>
+          <p>Cargando miembros...</p>
         </div>
       ) : filteredMembers.length === 0 ? (
         <div className={style.state}>
@@ -226,8 +236,8 @@ const Miembros: React.FC<MiembrosPadre> = ({
         </div>
       ) : (
         <>
-          {/* Grid */}
-          <div className={style.grid}>
+          {/* Member list */}
+          <div className={style.list}>
             {paginatedMembers.map((member) => {
               const selected = selectedMember === member.id;
 
@@ -235,13 +245,15 @@ const Miembros: React.FC<MiembrosPadre> = ({
                 <button
                   key={member.id}
                   type="button"
-                  className={`${style.card} ${selected ? style.cardSelected : ""}`}
+                  className={`${style.row} ${selected ? style.rowSelected : ""}`}
                   onClick={() => {
                     setSelectedMember(member.id);
                     setObjetoMiembro(member as any);
                   }}
                 >
-                  <div className={style.cardTop}>
+                  <div className={style.rowAccent} />
+
+                  <div className={style.rowAvatar}>
                     {member.foto ? (
                       <img src={member.foto} alt={member.nombre} className={style.avatar} />
                     ) : (
@@ -249,21 +261,23 @@ const Miembros: React.FC<MiembrosPadre> = ({
                         {member.nombre?.[0]?.toUpperCase() ?? "?"}
                       </div>
                     )}
-
-                    <div className={style.cardInfo}>
-                      <div className={style.nameBlock}>
-                        <h4 className={style.name}>{member.nombre}</h4>
-                        <span className={style.role}>{member.puesto}</span>
-                      </div>
-                      <div className={style.metaRow}>
-                        <span className={style.user}>{member.cod_usuario}</span>
-                        {selected && <span className={style.badge}>Seleccionado</span>}
-                      </div>
-                    </div>
                   </div>
 
-                  <p className={style.desc}>{member.descripcion}</p>
+                  <div className={style.rowInfo}>
+                    <div className={style.rowNameLine}>
+                      <h4 className={style.name}>{member.nombre}</h4>
+                      <span className={style.rolePill}>{member.puesto}</span>
+                      {selected && <span className={style.selectedBadge}>Activo</span>}
+                    </div>
+                    <p className={style.desc}>{member.descripcion}</p>
+                  </div>
 
+                  <div className={style.rowMeta}>
+                    <span className={style.user}>{member.cod_usuario}</span>
+                    <svg className={style.rowArrow} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </div>
                 </button>
               );
             })}
@@ -276,12 +290,15 @@ const Miembros: React.FC<MiembrosPadre> = ({
               onClick={handlePrev}
               disabled={safePage === 0}
               className={style.pageBtn}
+              aria-label="Página anterior"
             >
-              Anterior
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
             </button>
 
             <div className={style.pageInfo}>
-              Página <b>{safePage + 1}</b> de <b>{totalPages}</b>
+              {safePage + 1} / {totalPages}
             </div>
 
             <button
@@ -289,8 +306,11 @@ const Miembros: React.FC<MiembrosPadre> = ({
               onClick={handleNext}
               disabled={safePage >= totalPages - 1}
               className={style.pageBtn}
+              aria-label="Página siguiente"
             >
-              Siguiente
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </button>
           </div>
         </>

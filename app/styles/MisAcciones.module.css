@@ -397,17 +397,17 @@
 
 .actionCardSelected {
   border-color: var(--turquoise) !important;
-  background: rgba(0, 206, 209, 0.1) !important;
-  box-shadow: 0 0 0 2px rgba(0, 206, 209, 0.25);
+  background: rgba(181, 0, 125, 0.1) !important;
+  box-shadow: 0 0 0 2px rgba(181, 0, 125, 0.25);
 }
 
 .actionCardMine {
-  border-color: rgba(0, 206, 209, 0.3);
-  background: rgba(0, 206, 209, 0.05);
+  border-color: rgba(181, 0, 125, 0.3);
+  background: rgba(181, 0, 125, 0.05);
 }
 
 .actionCardMine:hover {
-  border-color: rgba(0, 206, 209, 0.5);
+  border-color: rgba(181, 0, 125, 0.5);
 }
 
 .actionName {
@@ -576,7 +576,7 @@
 .formInput:focus {
   outline: none;
   border-color: var(--turquoise);
-  box-shadow: 0 0 0 3px rgba(0, 206, 209, 0.15);
+  box-shadow: 0 0 0 3px rgba(181, 0, 125, 0.15);
 }
 
 .formTextarea {
@@ -595,7 +595,7 @@
 .formTextarea:focus {
   outline: none;
   border-color: var(--turquoise);
-  box-shadow: 0 0 0 3px rgba(0, 206, 209, 0.15);
+  box-shadow: 0 0 0 3px rgba(181, 0, 125, 0.15);
 }
 
 .formCheckbox {
@@ -686,14 +686,14 @@
 }
 
 :global([data-theme="light"]) .actionCardMine {
-  background: rgba(8, 145, 178, 0.05);
-  border-color: rgba(8, 145, 178, 0.3);
+  background: rgba(157, 23, 77, 0.05);
+  border-color: rgba(157, 23, 77, 0.3);
 }
 
 :global([data-theme="light"]) .actionCardSelected {
-  border-color: #0891B2 !important;
-  background: rgba(8, 145, 178, 0.1) !important;
-  box-shadow: 0 0 0 2px rgba(8, 145, 178, 0.2);
+  border-color: #9D174D !important;
+  background: rgba(157, 23, 77, 0.1) !important;
+  box-shadow: 0 0 0 2px rgba(157, 23, 77, 0.2);
 }
 
 :global([data-theme="light"]) .toolbar {
@@ -710,8 +710,8 @@
 
 :global([data-theme="light"]) .formInput:focus,
 :global([data-theme="light"]) .formTextarea:focus {
-  border-color: #0891B2;
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+  border-color: #9D174D;
+  box-shadow: 0 0 0 3px rgba(157, 23, 77, 0.15);
 }
 
 :global([data-theme="light"]) .modal {
@@ -749,16 +749,16 @@
 }
 
 :global([data-theme="light"]) .primaryButton {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .primaryButton:hover:not(:disabled) {
-  background: #0E7490;
+  background: #831843;
 }
 
 :global([data-theme="light"]) .badge {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
 }
 

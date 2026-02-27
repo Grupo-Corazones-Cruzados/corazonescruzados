@@ -1,14 +1,6 @@
-/* =========================
-   app/components/Estructura.tsx (REDISEÑO PRO)
-   - Misma funcionalidad: cards + modal
-   - Mejor UX: ESC para cerrar, bloqueo de scroll, ARIA dialog
-   Copia y pega completo
-   ========================= */
-
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useState, useRef, useEffect } from "react";
 import style from "app/styles/Estructura.module.css";
 
 type Card = {
@@ -49,117 +41,156 @@ const CARDS: Card[] = [
   },
 ];
 
-function iconFor(id: number) {
+function IconFor({ id }: { id: number }) {
+  const props = {
+    width: 20,
+    height: 20,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
   switch (id) {
     case 1:
-      return "🧠";
+      return (
+        <svg {...props}>
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+      );
     case 2:
-      return "🏛️";
+      return (
+        <svg {...props}>
+          <path d="M3 21h18" />
+          <path d="M5 21V7l7-4 7 4v14" />
+          <path d="M9 21v-6h6v6" />
+          <path d="M9 9h1" />
+          <path d="M14 9h1" />
+          <path d="M9 13h1" />
+          <path d="M14 13h1" />
+        </svg>
+      );
     case 3:
-      return "🧩";
+      return (
+        <svg {...props}>
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+      );
     case 4:
-      return "🧭";
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 2v4" />
+          <path d="M12 18v4" />
+          <path d="M2 12h4" />
+          <path d="M18 12h4" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
     default:
-      return "📌";
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+      );
   }
 }
 
-export default function Estructura() {
-  const [activeId, setActiveId] = useState<number | null>(null);
-  const [mounted, setMounted] = useState(false);
+function AccordionItem({
+  card,
+  index,
+  isOpen,
+  onToggle,
+}: {
+  card: Card;
+  index: number;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
 
-  const activeCard = useMemo(
-    () => (activeId ? CARDS.find((c) => c.id === activeId) ?? null : null),
-    [activeId]
+  useEffect(() => {
+    if (contentRef.current) {
+      setHeight(contentRef.current.scrollHeight);
+    }
+  }, [isOpen]);
+
+  return (
+    <div className={`${style.item} ${isOpen ? style.itemOpen : ""}`}>
+      <button
+        type="button"
+        className={style.itemHeader}
+        onClick={onToggle}
+        aria-expanded={isOpen}
+      >
+        <div className={style.itemLeft}>
+          <span className={style.itemNumber}>
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <div className={style.itemIcon} aria-hidden="true">
+            <IconFor id={card.id} />
+          </div>
+          <div className={style.itemText}>
+            <h3 className={style.itemTitle}>{card.title}</h3>
+            <p className={style.itemSummary}>{card.summary}</p>
+          </div>
+        </div>
+
+        <div className={style.itemToggle}>
+          <svg
+            className={style.chevron}
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </button>
+
+      <div
+        className={style.itemContent}
+        style={{ maxHeight: isOpen ? `${height}px` : "0px" }}
+      >
+        <div ref={contentRef} className={style.itemBody}>
+          <p className={style.itemDetails}>{card.details}</p>
+        </div>
+      </div>
+    </div>
   );
+}
 
-  // Para que createPortal funcione en SSR
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+export default function Estructura() {
+  const [openId, setOpenId] = useState<number | null>(null);
 
-  // Cerrar con ESC + bloquear scroll cuando modal está abierto
-  useEffect(() => {
-    if (!activeId) return;
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveId(null);
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [activeId]);
+  const handleToggle = (id: number) => {
+    setOpenId((prev) => (prev === id ? null : id));
+  };
 
   return (
     <section className={style.wrapper} aria-label="Estructura">
-      <div className={style.grid}>
-        {CARDS.map((card) => (
-          <button
+      <div className={style.accordion}>
+        {CARDS.map((card, index) => (
+          <AccordionItem
             key={card.id}
-            type="button"
-            className={style.card}
-            onClick={() => setActiveId(card.id)}
-          >
-            <div className={style.cardTop}>
-              <div className={style.icon} aria-hidden="true">
-                {iconFor(card.id)}
-              </div>
-              <div className={style.cardText}>
-                <h3 className={style.title}>{card.title}</h3>
-                <p className={style.summary}>{card.summary}</p>
-              </div>
-            </div>
-            <div className={style.cardCta}>Ver detalle →</div>
-          </button>
+            card={card}
+            index={index}
+            isOpen={openId === card.id}
+            onToggle={() => handleToggle(card.id)}
+          />
         ))}
       </div>
-
-      {activeCard && mounted && createPortal(
-        <div
-          className={style.overlay}
-          onClick={() => setActiveId(null)}
-          role="presentation"
-        >
-          <div
-            className={style.modal}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label={activeCard.title}
-          >
-            <div className={style.modalHeader}>
-              <div className={style.modalHeading}>
-                <div className={style.modalIcon} aria-hidden="true">
-                  {iconFor(activeCard.id)}
-                </div>
-                <h2 className={style.modalTitle}>{activeCard.title}</h2>
-              </div>
-
-              <button
-                type="button"
-                className={style.close}
-                onClick={() => setActiveId(null)}
-                aria-label="Cerrar"
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 1L13 13M1 13L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </button>
-            </div>
-
-            <div className={style.modalBody}>
-              <p className={style.details}>{activeCard.details}</p>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </section>
   );
 }

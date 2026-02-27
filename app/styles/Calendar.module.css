@@ -265,7 +265,7 @@
 
 .removeSlotButton:hover {
   color: var(--primary-red);
-  background: rgba(227, 24, 55, 0.1);
+  background: rgba(230, 0, 18, 0.1);
 }
 
 /* Availability Settings */
@@ -571,11 +571,11 @@
 /* ===== TEMA CLARO ===== */
 :global([data-theme="light"]) .calendarContainer {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .calendarHeader {
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .calendarTitle {
@@ -583,14 +583,14 @@
 }
 
 :global([data-theme="light"]) .navButton {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: #F8F7FC;
+  border-color: #D1CBDF;
   color: #374151;
 }
 
 :global([data-theme="light"]) .navButton:hover {
-  background: #F3F4F6;
-  border-color: #0891B2;
+  background: #F0EEF6;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .weekday {
@@ -602,29 +602,29 @@
 }
 
 :global([data-theme="light"]) .day:hover:not(.dayDisabled):not(.dayEmpty) {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .dayDisabled {
-  color: #D1D5DB;
+  color: #D1CBDF;
 }
 
 :global([data-theme="light"]) .dayToday {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .daySelected {
-  background: #0891B2 !important;
+  background: #9D174D !important;
   color: #FFFFFF !important;
 }
 
 :global([data-theme="light"]) .daySelected:hover {
-  background: #0E7490 !important;
+  background: #831843 !important;
   color: #FFFFFF !important;
 }
 
 :global([data-theme="light"]) .dayHasAvailability::after {
-  background: #0891B2;
+  background: #9D174D;
 }
 
 :global([data-theme="light"]) .daySelected.dayHasAvailability::after {
@@ -640,19 +640,19 @@
 }
 
 :global([data-theme="light"]) .timeSlot {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: #F8F7FC;
+  border-color: #D1CBDF;
   color: #374151;
 }
 
 :global([data-theme="light"]) .timeSlot:hover:not(.timeSlotDisabled) {
-  border-color: #0891B2;
-  background: #F3F4F6;
+  border-color: #9D174D;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .timeSlotSelected {
-  background: #0891B2 !important;
-  border-color: #0891B2 !important;
+  background: #9D174D !important;
+  border-color: #9D174D !important;
   color: #FFFFFF !important;
 }
 
@@ -665,7 +665,7 @@
 }
 
 :global([data-theme="light"]) .selectedSlots {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .selectedSlotsTitle {
@@ -695,7 +695,7 @@
 
 :global([data-theme="light"]) .dayRow {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .dayLabel {
@@ -703,21 +703,21 @@
 }
 
 :global([data-theme="light"]) .toggleSwitch {
-  background: #D1D5DB;
+  background: #D1CBDF;
 }
 
 :global([data-theme="light"]) .toggleSwitch.active {
-  background: #0891B2;
+  background: #9D174D;
 }
 
 :global([data-theme="light"]) .timeInput {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: #F8F7FC;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
 :global([data-theme="light"]) .timeInput:focus {
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .timeSeparator {
@@ -726,7 +726,7 @@
 
 :global([data-theme="light"]) .exceptionItem {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .exceptionDate {
@@ -739,7 +739,7 @@
 
 :global([data-theme="light"]) .addExceptionForm {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .formLabel {
@@ -747,17 +747,17 @@
 }
 
 :global([data-theme="light"]) .formInput {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: #F8F7FC;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
 :global([data-theme="light"]) .formInput:focus {
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .formSelect {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: #F8F7FC;
+  border-color: #D1CBDF;
   color: #111827;
 }

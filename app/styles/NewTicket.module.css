@@ -160,7 +160,7 @@
 
 .memberCardSelected {
   border-color: var(--turquoise);
-  background: rgba(0, 206, 209, 0.1);
+  background: rgba(181, 0, 125, 0.1);
 }
 
 .memberAvatar {
@@ -233,7 +233,7 @@
 
 .actionCardSelected {
   border-color: var(--turquoise);
-  background: rgba(0, 206, 209, 0.1);
+  background: rgba(181, 0, 125, 0.1);
 }
 
 .actionName {
@@ -689,8 +689,8 @@
 }
 
 :global([data-theme="light"]) .backButton:hover {
-  color: #0891B2;
-  background: #F3F4F6;
+  color: #9D174D;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .pageTitle {
@@ -702,20 +702,20 @@
 }
 
 :global([data-theme="light"]) .stepNumber {
-  background: #F3F4F6;
-  border-color: #D1D5DB;
+  background: #F0EEF6;
+  border-color: #D1CBDF;
   color: #6B7280;
 }
 
 :global([data-theme="light"]) .stepActive .stepNumber {
-  background: #0891B2;
-  border-color: #0891B2;
+  background: #9D174D;
+  border-color: #9D174D;
   color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .stepCompleted .stepNumber {
-  background: #0891B2;
-  border-color: #0891B2;
+  background: #9D174D;
+  border-color: #9D174D;
   color: #FFFFFF;
 }
 
@@ -728,11 +728,11 @@
 }
 
 :global([data-theme="light"]) .progressConnector {
-  background: #E5E7EB;
+  background: #E8E5F0;
 }
 
 :global([data-theme="light"]) .progressConnectorActive {
-  background: #0891B2;
+  background: #9D174D;
 }
 
 :global([data-theme="light"]) .sectionTitle {
@@ -741,22 +741,22 @@
 
 :global([data-theme="light"]) .memberCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .memberCard:hover {
-  border-color: #0891B2;
-  background: #F9FAFB;
+  border-color: #9D174D;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .memberCardSelected {
-  border-color: #0891B2;
-  background: rgba(8, 145, 178, 0.08);
+  border-color: #9D174D;
+  background: rgba(157, 23, 77, 0.08);
 }
 
 :global([data-theme="light"]) .memberAvatarPlaceholder {
-  background: #F3F4F6;
-  color: #0891B2;
+  background: #F0EEF6;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .memberName {
@@ -768,22 +768,22 @@
 }
 
 :global([data-theme="light"]) .memberRate {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .actionCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .actionCard:hover {
-  border-color: #0891B2;
-  background: #F9FAFB;
+  border-color: #9D174D;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .actionCardSelected {
-  border-color: #0891B2;
-  background: rgba(8, 145, 178, 0.08);
+  border-color: #9D174D;
+  background: rgba(157, 23, 77, 0.08);
 }
 
 :global([data-theme="light"]) .actionName {
@@ -791,16 +791,16 @@
 }
 
 :global([data-theme="light"]) .actionCheckmark {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .hoursInputGroup {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .hoursRow {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .hoursLabel {
@@ -808,7 +808,7 @@
 }
 
 :global([data-theme="light"]) .hoursValue {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .formLabel {
@@ -817,32 +817,32 @@
 
 :global([data-theme="light"]) .formInput {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
 :global([data-theme="light"]) .formInput:focus {
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .formTextarea {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
 :global([data-theme="light"]) .formTextarea:focus {
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .quoteSummary {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .quoteTitle {
   color: #111827;
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .quoteLabel {
@@ -854,44 +854,44 @@
 }
 
 :global([data-theme="light"]) .quoteTotal {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .quoteTotalValue {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .navigationButtons {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .prevButton {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #374151;
 }
 
 :global([data-theme="light"]) .prevButton:hover {
-  background: #F9FAFB;
-  border-color: #0891B2;
+  background: #F8F7FC;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .nextButton {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .nextButton:hover {
-  background: #0E7490;
+  background: #831843;
 }
 
 :global([data-theme="light"]) .confirmationCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .confirmationSection {
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .confirmationLabel {
@@ -903,7 +903,7 @@
 }
 
 :global([data-theme="light"]) .slotItem {
-  background: #F3F4F6;
+  background: #F0EEF6;
   color: #111827;
 }
 
@@ -920,6 +920,6 @@
 }
 
 :global([data-theme="light"]) .spinner {
-  border-color: #E5E7EB;
-  border-top-color: #0891B2;
+  border-color: #E8E5F0;
+  border-top-color: #9D174D;
 }

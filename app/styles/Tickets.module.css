@@ -64,7 +64,7 @@
 }
 
 .statIconActive {
-  background: rgba(0, 206, 209, 0.15);
+  background: rgba(181, 0, 125, 0.15);
   color: var(--turquoise);
 }
 
@@ -277,7 +277,7 @@
 }
 
 .statusEnProgreso {
-  background: rgba(0, 206, 209, 0.15);
+  background: rgba(181, 0, 125, 0.15);
   color: var(--turquoise);
 }
 
@@ -501,7 +501,7 @@
   min-width: 22px;
   height: 22px;
   padding: 0 var(--space-2);
-  background: rgba(0, 206, 209, 0.15);
+  background: rgba(181, 0, 125, 0.15);
   color: var(--turquoise);
   border-radius: var(--radius-full);
   font-size: 0.75rem;
@@ -950,7 +950,7 @@
 
 :global([data-theme="light"]) .statCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .statValue {
@@ -963,7 +963,7 @@
 
 :global([data-theme="light"]) .searchInput {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
@@ -972,48 +972,48 @@
 }
 
 :global([data-theme="light"]) .searchInput:focus {
-  border-color: #0891B2;
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+  border-color: #9D174D;
+  box-shadow: 0 0 0 3px rgba(157, 23, 77, 0.1);
 }
 
 :global([data-theme="light"]) .filterSelect {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
 :global([data-theme="light"]) .filterSelect:focus {
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .primaryButton {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .primaryButton:hover {
-  background: #0E7490;
+  background: #831843;
 }
 
 :global([data-theme="light"]) .secondaryButton {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #374151;
 }
 
 :global([data-theme="light"]) .secondaryButton:hover {
-  background: #F9FAFB;
-  border-color: #0891B2;
+  background: #F8F7FC;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .ticketCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .ticketCard:hover {
-  border-color: #0891B2;
-  background: #F9FAFB;
+  border-color: #9D174D;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .ticketTitle {
@@ -1037,11 +1037,11 @@
 }
 
 :global([data-theme="light"]) .ticketFooter {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .ticketCost {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .iconButton {
@@ -1049,13 +1049,13 @@
 }
 
 :global([data-theme="light"]) .iconButton:hover {
-  background: #F3F4F6;
-  color: #0891B2;
+  background: #F0EEF6;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .emptyState {
-  background: #F9FAFB;
-  border-color: #E5E7EB;
+  background: #F8F7FC;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .emptyIcon {
@@ -1072,19 +1072,19 @@
 
 :global([data-theme="light"]) .pageButton {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #374151;
 }
 
 :global([data-theme="light"]) .pageButton:hover:not(:disabled) {
-  background: #F9FAFB;
-  border-color: #0891B2;
+  background: #F8F7FC;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .pageButtonActive {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .backButton {
@@ -1092,13 +1092,13 @@
 }
 
 :global([data-theme="light"]) .backButton:hover {
-  color: #0891B2;
-  background: #F3F4F6;
+  color: #9D174D;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .detailCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .detailCardTitle {
@@ -1114,7 +1114,7 @@
 }
 
 :global([data-theme="light"]) .infoRow {
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .infoLabel {
@@ -1126,7 +1126,7 @@
 }
 
 :global([data-theme="light"]) .memberAvatar {
-  background: #E5E7EB;
+  background: #E8E5F0;
 }
 
 :global([data-theme="light"]) .memberName {
@@ -1138,15 +1138,15 @@
 }
 
 :global([data-theme="light"]) .costTotal {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .costTotalValue {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .slotItem {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .slotDate {
@@ -1158,7 +1158,7 @@
 }
 
 :global([data-theme="light"]) .actionItem {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .actionName {
@@ -1170,30 +1170,30 @@
 }
 
 :global([data-theme="light"]) .actionCost {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .spinner {
-  border-color: #E5E7EB;
-  border-top-color: #0891B2;
+  border-color: #E8E5F0;
+  border-top-color: #9D174D;
 }
 
 :global([data-theme="light"]) .timelineItem:not(:last-child)::before {
-  background: #E5E7EB;
+  background: #E8E5F0;
 }
 
 :global([data-theme="light"]) .timelineDot {
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   background: #FFFFFF;
 }
 
 :global([data-theme="light"]) .timelineDotCompleted {
-  background: #0891B2;
-  border-color: #0891B2;
+  background: #9D174D;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .timelineDotActive {
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .timelineDotCancelled {
@@ -1214,28 +1214,28 @@
 }
 
 :global([data-theme="light"]) .ticketGroup {
-  background: #F3F4F6;
-  border-color: #E5E7EB;
+  background: #F0EEF6;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .ticketGroupHeader {
   color: #111827;
-  border-bottom-color: #D1D5DB;
+  border-bottom-color: #D1CBDF;
 }
 
 :global([data-theme="light"]) .ticketGroupCount {
-  background: rgba(8, 145, 178, 0.12);
-  color: #0891B2;
+  background: rgba(157, 23, 77, 0.12);
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .ticketsList::-webkit-scrollbar-track {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .ticketsList::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: #D1CBDF;
 }
 
 :global([data-theme="light"]) .ticketsList::-webkit-scrollbar-thumb:hover {
-  background: #0891B2;
+  background: #9D174D;
 }

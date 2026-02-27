@@ -107,8 +107,8 @@
 }
 
 .statusEnPruebas {
-  background: rgba(6, 182, 212, 0.15);
-  color: #06b6d4;
+  background: rgba(190, 24, 93, 0.15);
+  color: #BE185D;
 }
 
 .projectDescription {
@@ -898,7 +898,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--turquoise), #0891B2);
+  background: linear-gradient(135deg, var(--turquoise), #BE185D);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1588,12 +1588,12 @@
 /* ===== TEMA CLARO ===== */
 :global([data-theme="light"]) .projectCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .projectCard:hover {
-  border-color: #0891B2;
-  background: #F9FAFB;
+  border-color: #9D174D;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .projectTitle {
@@ -1605,7 +1605,7 @@
 }
 
 :global([data-theme="light"]) .projectMeta {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .metaItem {
@@ -1617,12 +1617,12 @@
 }
 
 :global([data-theme="light"]) .projectBudget {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .detailCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .detailCardTitle {
@@ -1638,13 +1638,13 @@
 }
 
 :global([data-theme="light"]) .bidCard {
-  background: #F9FAFB;
-  border-color: #E5E7EB;
+  background: #F8F7FC;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .bidAvatar {
-  background: #E5E7EB;
-  color: #0891B2;
+  background: #E8E5F0;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .bidMemberName {
@@ -1660,7 +1660,7 @@
 }
 
 :global([data-theme="light"]) .bidPrice {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .bidTime {
@@ -1668,7 +1668,7 @@
 }
 
 :global([data-theme="light"]) .requirementItem {
-  background: #F9FAFB;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .reqToggleBtn {
@@ -1676,7 +1676,7 @@
 }
 
 :global([data-theme="light"]) .reqToggleBtn:not(:disabled):hover {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .reqToggleDone {
@@ -1700,11 +1700,11 @@
 }
 
 :global([data-theme="light"]) .requirementCost {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .addRequirementForm {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .formLabel {
@@ -1713,22 +1713,22 @@
 
 :global([data-theme="light"]) .formInput {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
 :global([data-theme="light"]) .formInput:focus {
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .bidFormTextarea {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
 :global([data-theme="light"]) .bidFormTextarea:focus {
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .progressLabel {
@@ -1736,15 +1736,15 @@
 }
 
 :global([data-theme="light"]) .progressBar {
-  background: #E5E7EB;
+  background: #E8E5F0;
 }
 
 :global([data-theme="light"]) .progressFill {
-  background: #0891B2;
+  background: #9D174D;
 }
 
 :global([data-theme="light"]) .confirmationBanner {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(8, 145, 178, 0.08));
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(157, 23, 77, 0.08));
   border-color: rgba(139, 92, 246, 0.2);
 }
 
@@ -1758,7 +1758,7 @@
 
 :global([data-theme="light"]) .modalContent {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .modalTitle {
@@ -1770,21 +1770,21 @@
 }
 
 :global([data-theme="light"]) .bidThumbnail {
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .imagePreview {
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .imageAddBtn {
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #9CA3AF;
 }
 
 :global([data-theme="light"]) .imageAddBtn:hover {
-  border-color: #0891B2;
-  color: #0891B2;
+  border-color: #9D174D;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .creadoPorBadge {
@@ -1792,13 +1792,13 @@
 }
 
 :global([data-theme="light"]) .reqActionBtn {
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
   color: #9CA3AF;
 }
 
 :global([data-theme="light"]) .reqActionBtn:hover {
-  border-color: #0891B2;
-  color: #0891B2;
+  border-color: #9D174D;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .reqActionBtnDanger:hover {
@@ -1811,13 +1811,13 @@
 }
 
 :global([data-theme="light"]) .teamMember {
-  background: #F9FAFB;
-  border-color: #E5E7EB;
+  background: #F8F7FC;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .teamMemberAvatarPlaceholder {
-  background: #E5E7EB;
-  color: #0891B2;
+  background: #E8E5F0;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .teamMemberName {
@@ -1829,16 +1829,16 @@
 }
 
 :global([data-theme="light"]) .teamMemberMeta {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .teamMemberMonto {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .reqTypeInicial {
-  background: rgba(8, 145, 178, 0.1);
-  color: #0891B2;
+  background: rgba(157, 23, 77, 0.1);
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .reqTypeAdicional {
@@ -1847,8 +1847,8 @@
 }
 
 :global([data-theme="light"]) .reqCreadorPlaceholder {
-  background: #E5E7EB;
-  color: #0891B2;
+  background: #E8E5F0;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .reqCreadorName {
@@ -1870,16 +1870,16 @@
 }
 
 :global([data-theme="light"]) .reqCreadorInfo {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .reqCreadorPlaceholder {
-  background: linear-gradient(135deg, #0891B2, #0e7490);
+  background: linear-gradient(135deg, #9D174D, #831843);
   color: #fff;
 }
 
 :global([data-theme="light"]) .reqCreadorAvatar {
-  border-color: #0891B2;
+  border-color: #9D174D;
 }
 
 :global([data-theme="light"]) .reqCompletadoPorAvatar {
@@ -1904,12 +1904,12 @@
 }
 
 :global([data-theme="light"]) .republishForm {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .finishWorkBtn {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: #F8F7FC;
+  border-color: #D1CBDF;
 }
 
 :global([data-theme="light"]) .finishWorkBtn span:first-of-type {
@@ -1975,7 +1975,7 @@
 
 /* Light theme - Tabs */
 :global([data-theme="light"]) .tabsContainer {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .tabButton {
@@ -1983,13 +1983,13 @@
 }
 
 :global([data-theme="light"]) .tabButton:hover {
-  background: #E5E7EB;
+  background: #E8E5F0;
   color: #111827;
 }
 
 :global([data-theme="light"]) .tabButtonActive {
   background: #FFFFFF;
-  color: #0891B2;
+  color: #9D174D;
 }
 
 /* Light theme - Visibility Badge */
@@ -2012,33 +2012,33 @@
 /* Light theme - Visibility Toggle */
 :global([data-theme="light"]) .visibilityOption {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #6B7280;
 }
 
 :global([data-theme="light"]) .visibilityOption:hover {
-  border-color: #0891B2;
+  border-color: #9D174D;
   color: #111827;
 }
 
 :global([data-theme="light"]) .visibilityOptionActive {
-  border-color: #0891B2;
-  background: rgba(8, 145, 178, 0.08);
-  color: #0891B2;
+  border-color: #9D174D;
+  background: rgba(157, 23, 77, 0.08);
+  color: #9D174D;
 }
 
 /* Light theme - Client Search */
 :global([data-theme="light"]) .clientSearchResults {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .clientSearchItem {
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .clientSearchItem:hover {
-  background: #F9FAFB;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .clientName {
@@ -2050,8 +2050,8 @@
 }
 
 :global([data-theme="light"]) .selectedClient {
-  background: #F9FAFB;
-  border-color: #E5E7EB;
+  background: #F8F7FC;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .removeClientBtn {
@@ -2065,8 +2065,8 @@
 
 /* Light theme - Owner Card */
 :global([data-theme="light"]) .ownerAvatarPlaceholder {
-  background: #E5E7EB;
-  color: #0891B2;
+  background: #E8E5F0;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .ownerName {
@@ -2079,12 +2079,12 @@
 
 /* Light theme - Visibility Toggle Button */
 :global([data-theme="light"]) .visibilityToggleBtn {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: #F8F7FC;
+  border-color: #D1CBDF;
   color: #374151;
 }
 
 :global([data-theme="light"]) .visibilityToggleBtn:hover {
-  border-color: #0891B2;
-  color: #0891B2;
+  border-color: #9D174D;
+  color: #9D174D;
 }

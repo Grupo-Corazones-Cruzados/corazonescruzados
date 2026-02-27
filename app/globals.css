@@ -1,38 +1,58 @@
 /* =========================
-   GLOBAL.CSS - MODERN NOIR REDESIGN
-   Corazones Cruzados - Sistema de Diseño
-   Paleta: Rojo, Negro, Blanco, Turquesa
+   GLOBAL.CSS - CORPORATE INDIGO REDESIGN
+   Corazones Cruzados - Sistema de Diseño Corporativo
+   Paleta: Rojo, Indigo Profundo, Magenta, Cyan, Verde
+   Basado en Paleta Oficial GCC
    ========================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  /* ===== COLORES PRIMARIOS ===== */
-  --primary-red: #E31837;
-  --primary-red-dark: #B91430;
-  --primary-red-light: #FF2D4D;
-  --primary-red-glow: rgba(227, 24, 55, 0.25);
+  /* ===== COLORES PRIMARIOS - ROJO GCC ===== */
+  --primary-red: #E60012;
+  --primary-red-dark: #CC0011;
+  --primary-red-light: #FF1A2E;
+  --primary-red-glow: rgba(230, 0, 18, 0.25);
 
-  /* ===== NEUTROS ===== */
-  --black: #0A0A0A;
-  --black-soft: #141414;
-  --black-medium: #1A1A1A;
-  --black-elevated: #202020;
-  --white: #FFFFFF;
-  --white-soft: #F5F5F5;
-  --white-muted: #E0E0E0;
-  --gray: #8A8A8A;
-  --gray-dark: #5A5A5A;
-  --gray-light: #B0B0B0;
+  /* ===== BRAND INDIGO - IDENTIDAD CORPORATIVA ===== */
+  --brand-indigo: #1E0A3C;
+  --brand-indigo-light: #2A0845;
+  --brand-indigo-dark: #150730;
+  --brand-indigo-glow: rgba(30, 10, 60, 0.5);
 
-  /* ===== ACENTO TURQUESA ===== */
+  /* ===== ACENTO MAGENTA ===== */
+  --magenta: #B5007D;
+  --magenta-dark: #9A006B;
+  --magenta-light: #D4009A;
+  --magenta-glow: rgba(181, 0, 125, 0.25);
+  --magenta-subtle: rgba(181, 0, 125, 0.1);
+
+  /* ===== ACENTO CYAN/TURQUESA ===== */
   --turquoise: #00CED1;
   --turquoise-dark: #00B5B8;
-  --turquoise-light: #40E0D0;
+  --turquoise-light: #00BFFF;
   --turquoise-glow: rgba(0, 206, 209, 0.25);
   --turquoise-subtle: rgba(0, 206, 209, 0.1);
 
-  /* ===== SUPERFICIES ===== */
+  /* ===== VERDE EXITO ===== */
+  --success: #00CC00;
+  --success-dark: #00AA00;
+  --success-light: #33DD33;
+  --success-glow: rgba(0, 204, 0, 0.2);
+
+  /* ===== NEUTROS OSCUROS (con tinte indigo) ===== */
+  --black: #0A0612;
+  --black-soft: #120B1F;
+  --black-medium: #1A1230;
+  --black-elevated: #221A3D;
+  --white: #FFFFFF;
+  --white-soft: #F5F5F5;
+  --white-muted: #E0E0E0;
+  --gray: #8A8A9E;
+  --gray-dark: #5A5A72;
+  --gray-light: #B0B0C4;
+
+  /* ===== SUPERFICIES (Deep Indigo) ===== */
   --surface-0: var(--black);
   --surface-1: var(--black-soft);
   --surface-2: var(--black-medium);
@@ -45,20 +65,23 @@
   --text-accent: var(--turquoise);
 
   /* ===== BORDES ===== */
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-default: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.18);
+  --border-subtle: rgba(181, 0, 125, 0.08);
+  --border-default: rgba(181, 0, 125, 0.14);
+  --border-strong: rgba(181, 0, 125, 0.22);
   --border-turquoise: rgba(0, 206, 209, 0.4);
-  --border-red: rgba(227, 24, 55, 0.4);
+  --border-red: rgba(230, 0, 18, 0.4);
+  --border-magenta: rgba(181, 0, 125, 0.4);
 
   /* ===== SOMBRAS ===== */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
-  --shadow-xl: 0 16px 60px rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 2px 8px rgba(10, 6, 18, 0.5);
+  --shadow-md: 0 4px 20px rgba(10, 6, 18, 0.6);
+  --shadow-lg: 0 8px 40px rgba(10, 6, 18, 0.7);
+  --shadow-xl: 0 16px 60px rgba(10, 6, 18, 0.8);
   --shadow-glow-turquoise: 0 0 30px rgba(0, 206, 209, 0.3);
-  --shadow-glow-red: 0 0 30px rgba(227, 24, 55, 0.3);
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-glow-red: 0 0 30px rgba(230, 0, 18, 0.3);
+  --shadow-glow-magenta: 0 0 30px rgba(181, 0, 125, 0.3);
+  --shadow-glow-indigo: 0 0 30px rgba(30, 10, 60, 0.5);
+  --shadow-card: 0 4px 24px rgba(10, 6, 18, 0.5), 0 0 0 1px rgba(181, 0, 125, 0.06);
 
   /* ===== RADIOS ===== */
   --radius-sm: 8px;
@@ -86,7 +109,7 @@
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* ===== TIPOGRAFÍA ===== */
+  /* ===== TIPOGRAFIA ===== */
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
                'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
@@ -94,6 +117,7 @@
   /* ===== FOCUS ===== */
   --ring-turquoise: 0 0 0 3px var(--turquoise-glow), 0 0 0 1px var(--turquoise);
   --ring-red: 0 0 0 3px var(--primary-red-glow), 0 0 0 1px var(--primary-red);
+  --ring-magenta: 0 0 0 3px var(--magenta-glow), 0 0 0 1px var(--magenta);
 
   /* ===== HOVER TEXT ===== */
   --text-hover: #FFFFFF;
@@ -101,11 +125,11 @@
 
 /* ===== TEMA CLARO ===== */
 [data-theme="light"] {
-  /* Colores base - Paleta clara y limpia */
+  /* Colores base con tinte lavanda corporativo */
   --black: #FFFFFF;
-  --black-soft: #F7F8FA;
-  --black-medium: #EEF0F4;
-  --black-elevated: #E4E7EC;
+  --black-soft: #F8F7FC;
+  --black-medium: #F0EEF6;
+  --black-elevated: #E8E5F0;
   --white: #111827;
   --white-soft: #1F2937;
   --white-muted: #374151;
@@ -115,81 +139,104 @@
 
   /* Superficies */
   --surface-0: #FFFFFF;
-  --surface-1: #F9FAFB;
-  --surface-2: #F3F4F6;
-  --surface-3: #E5E7EB;
+  --surface-1: #F8F7FC;
+  --surface-2: #F0EEF6;
+  --surface-3: #E8E5F0;
 
-  /* Texto - Excelente contraste */
+  /* Texto */
   --text-primary: #111827;
   --text-secondary: #374151;
   --text-muted: #6B7280;
   --text-accent: #0891B2;
 
-  /* Bordes más definidos */
-  --border-subtle: rgba(0, 0, 0, 0.08);
-  --border-default: rgba(0, 0, 0, 0.12);
-  --border-strong: rgba(0, 0, 0, 0.2);
+  /* Bordes */
+  --border-subtle: rgba(30, 10, 60, 0.06);
+  --border-default: rgba(30, 10, 60, 0.12);
+  --border-strong: rgba(30, 10, 60, 0.20);
   --border-turquoise: rgba(8, 145, 178, 0.5);
   --border-red: rgba(220, 38, 38, 0.5);
+  --border-magenta: rgba(181, 0, 125, 0.4);
 
   /* Sombras elegantes para tema claro */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px rgba(30, 10, 60, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(30, 10, 60, 0.08), 0 2px 4px -1px rgba(30, 10, 60, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(30, 10, 60, 0.08), 0 4px 6px -2px rgba(30, 10, 60, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(30, 10, 60, 0.1), 0 10px 10px -5px rgba(30, 10, 60, 0.04);
   --shadow-glow-turquoise: 0 0 15px rgba(8, 145, 178, 0.25);
   --shadow-glow-red: 0 0 15px rgba(220, 38, 38, 0.25);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-glow-magenta: 0 0 15px rgba(181, 0, 125, 0.2);
+  --shadow-glow-indigo: 0 0 20px rgba(30, 10, 60, 0.15);
+  --shadow-card: 0 1px 3px rgba(30, 10, 60, 0.06), 0 1px 2px rgba(30, 10, 60, 0.04);
 
-  /* Turquesa ajustado para tema claro (más saturado) */
+  /* Turquesa ajustado */
   --turquoise: #0891B2;
   --turquoise-dark: #0E7490;
   --turquoise-light: #06B6D4;
   --turquoise-glow: rgba(8, 145, 178, 0.2);
   --turquoise-subtle: rgba(8, 145, 178, 0.1);
 
-  /* Rojo ajustado para tema claro */
+  /* Magenta ajustado */
+  --magenta: #9D174D;
+  --magenta-dark: #831843;
+  --magenta-light: #BE185D;
+  --magenta-glow: rgba(157, 23, 77, 0.2);
+  --magenta-subtle: rgba(157, 23, 77, 0.08);
+
+  /* Rojo ajustado */
   --primary-red: #DC2626;
   --primary-red-dark: #B91C1C;
   --primary-red-light: #EF4444;
   --primary-red-glow: rgba(220, 38, 38, 0.2);
 
+  /* Success */
+  --success: #059669;
+  --success-dark: #047857;
+  --success-light: #10B981;
+  --success-glow: rgba(5, 150, 105, 0.15);
+
+  /* Brand indigo ajustado */
+  --brand-indigo: #4C1D95;
+  --brand-indigo-light: #5B21B6;
+  --brand-indigo-dark: #3B0764;
+
   /* Focus rings */
   --ring-turquoise: 0 0 0 3px rgba(8, 145, 178, 0.3), 0 0 0 1px #0891B2;
   --ring-red: 0 0 0 3px rgba(220, 38, 38, 0.3), 0 0 0 1px #DC2626;
+  --ring-magenta: 0 0 0 3px rgba(157, 23, 77, 0.2), 0 0 0 1px #9D174D;
 
   /* Hover text */
   --text-hover: #000000;
 }
 
-/* Fondo específico para tema claro */
+/* Fondo tema claro con tinte lavanda sutil */
 [data-theme="light"] body {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(220, 38, 38, 0.03), transparent),
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(157, 23, 77, 0.03), transparent),
     radial-gradient(ellipse 60% 40% at 100% 0%, rgba(8, 145, 178, 0.03), transparent),
-    linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
+    radial-gradient(ellipse 50% 30% at 0% 100%, rgba(76, 29, 149, 0.02), transparent),
+    linear-gradient(180deg, #FFFFFF 0%, #F8F7FC 100%);
 }
 
-/* Scrollbar para tema claro */
+/* Scrollbar tema claro */
 [data-theme="light"] ::-webkit-scrollbar-track {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 [data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: #D1CBDF;
 }
 
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
+  background: #A89FBE;
 }
 
-/* Selection para tema claro */
+/* Selection tema claro */
 [data-theme="light"] ::selection {
-  background: rgba(8, 145, 178, 0.2);
+  background: rgba(76, 29, 149, 0.15);
   color: #111827;
 }
 
-/* Links en tema claro */
+/* Links tema claro */
 [data-theme="light"] a {
   color: #0891B2;
 }
@@ -198,12 +245,12 @@
   color: #0E7490;
 }
 
-/* Inputs en tema claro */
+/* Inputs tema claro */
 [data-theme="light"] input,
 [data-theme="light"] select,
 [data-theme="light"] textarea {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
@@ -215,7 +262,7 @@
 [data-theme="light"] input:hover,
 [data-theme="light"] select:hover,
 [data-theme="light"] textarea:hover {
-  border-color: #9CA3AF;
+  border-color: #A89FBE;
 }
 
 [data-theme="light"] input:focus,
@@ -225,43 +272,44 @@
   background: #FFFFFF;
 }
 
-/* Botones base en tema claro */
+/* Botones tema claro */
 [data-theme="light"] button {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #374151;
 }
 
 [data-theme="light"] button:hover {
-  background: #F9FAFB;
-  border-color: #9CA3AF;
+  background: #F8F7FC;
+  border-color: #A89FBE;
 }
 
-/* Secciones en tema claro */
+/* Secciones tema claro */
 [data-theme="light"] .section {
   background: #FFFFFF;
-  border-color: rgba(0, 0, 0, 0.08);
+  border-color: rgba(30, 10, 60, 0.06);
 }
 
 [data-theme="light"] .section::before {
   background: linear-gradient(90deg,
     transparent,
-    rgba(8, 145, 178, 0.4),
+    rgba(76, 29, 149, 0.3),
+    rgba(8, 145, 178, 0.3),
     transparent
   );
 }
 
-/* Cards en tema claro */
+/* Cards tema claro */
 [data-theme="light"] .card {
   background: #FFFFFF;
-  border-color: rgba(0, 0, 0, 0.08);
+  border-color: rgba(30, 10, 60, 0.06);
 }
 
 [data-theme="light"] .card:hover {
-  border-color: rgba(8, 145, 178, 0.5);
+  border-color: rgba(76, 29, 149, 0.3);
 }
 
-/* Badges en tema claro */
+/* Badges tema claro */
 [data-theme="light"] .badge {
   background: rgba(8, 145, 178, 0.1);
   color: #0E7490;
@@ -274,14 +322,13 @@
   border-color: rgba(220, 38, 38, 0.3);
 }
 
-/* Spinner en tema claro */
+/* Spinner tema claro */
 [data-theme="light"] .spinner {
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
   border-top-color: #0891B2;
 }
 
 /* ===== HOVER TEXT GLOBAL ===== */
-/* Modo oscuro: texto blanco al hover | Modo claro: texto negro al hover */
 a:hover,
 button:hover,
 p:hover,
@@ -316,11 +363,11 @@ body {
   line-height: 1.6;
   color: var(--text-primary);
 
-  /* Fondo con gradientes sutiles */
+  /* Fondo con gradientes indigo corporativo */
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(227, 24, 55, 0.08), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(0, 206, 209, 0.05), transparent),
-    radial-gradient(ellipse 80% 60% at 0% 100%, rgba(227, 24, 55, 0.04), transparent),
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(181, 0, 125, 0.06), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(0, 206, 209, 0.04), transparent),
+    radial-gradient(ellipse 80% 60% at 0% 100%, rgba(30, 10, 60, 0.15), transparent),
     var(--black);
   background-attachment: fixed;
 
@@ -332,7 +379,7 @@ main {
   flex: 1;
 }
 
-/* ===== TIPOGRAFÍA ===== */
+/* ===== TIPOGRAFIA ===== */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   line-height: 1.2;
@@ -371,7 +418,7 @@ a:hover {
 }
 
 ::selection {
-  background: var(--turquoise-glow);
+  background: var(--magenta-glow);
   color: var(--white);
 }
 
@@ -392,7 +439,7 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gray);
+  background: var(--magenta);
 }
 
 /* ===== LAYOUT UTILITIES ===== */
@@ -430,6 +477,7 @@ a:hover {
   height: 1px;
   background: linear-gradient(90deg,
     transparent,
+    rgba(181, 0, 125, 0.3),
     rgba(0, 206, 209, 0.3),
     transparent
   );
@@ -453,7 +501,7 @@ a:hover {
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--turquoise);
+  color: var(--magenta);
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -463,9 +511,9 @@ a:hover {
   content: '';
   width: 8px;
   height: 8px;
-  background: var(--turquoise);
+  background: var(--magenta);
   border-radius: 50%;
-  box-shadow: var(--shadow-glow-turquoise);
+  box-shadow: var(--shadow-glow-magenta);
 }
 
 .sectionSubtitle {
@@ -540,7 +588,7 @@ button:disabled {
   transform: none;
 }
 
-/* Botón Primario (Rojo) */
+/* Boton Primario (Rojo GCC) */
 .btnPrimary {
   background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-dark) 100%);
   border-color: var(--primary-red-dark);
@@ -553,19 +601,19 @@ button:disabled {
   box-shadow: var(--shadow-md), var(--shadow-glow-red);
 }
 
-/* Botón Secundario (Turquesa outline) */
+/* Boton Secundario (Magenta outline) */
 .btnSecondary {
   background: transparent;
-  border-color: var(--turquoise);
-  color: var(--turquoise);
+  border-color: var(--magenta);
+  color: var(--magenta);
 }
 
 .btnSecondary:hover {
-  background: var(--turquoise-subtle);
-  box-shadow: var(--shadow-glow-turquoise);
+  background: var(--magenta-subtle);
+  box-shadow: var(--shadow-glow-magenta);
 }
 
-/* Botón Ghost */
+/* Boton Ghost */
 .btnGhost {
   background: transparent;
   border-color: transparent;
@@ -591,8 +639,8 @@ button:disabled {
 
 .card:hover {
   transform: translateY(-4px);
-  border-color: var(--border-turquoise);
-  box-shadow: var(--shadow-lg), var(--shadow-glow-turquoise);
+  border-color: var(--border-magenta);
+  box-shadow: var(--shadow-lg), var(--shadow-glow-magenta);
 }
 
 /* ===== BADGES ===== */
@@ -622,7 +670,7 @@ button:disabled {
   width: 24px;
   height: 24px;
   border: 2px solid var(--border-default);
-  border-top-color: var(--turquoise);
+  border-top-color: var(--magenta);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -703,13 +751,12 @@ button:disabled {
 }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px var(--turquoise-glow); }
-  50% { box-shadow: 0 0 40px var(--turquoise-glow), 0 0 60px var(--turquoise-glow); }
+  0%, 100% { box-shadow: 0 0 20px var(--magenta-glow); }
+  50% { box-shadow: 0 0 40px var(--magenta-glow), 0 0 60px var(--magenta-glow); }
 }
 
 /* ===== MOBILE UTILITIES ===== */
 @media (max-width: 640px) {
-  /* Mejor tap targets para móvil */
   button,
   a,
   input[type="checkbox"],
@@ -718,7 +765,6 @@ button:disabled {
     min-width: 44px;
   }
 
-  /* Texto más legible en móvil */
   body {
     font-size: 15px;
   }
@@ -727,13 +773,11 @@ button:disabled {
   h2 { font-size: clamp(1.25rem, 5vw, 1.75rem); }
   h3 { font-size: clamp(1.1rem, 4vw, 1.5rem); }
 
-  /* Inputs más grandes para móvil */
   input, select, textarea {
-    font-size: 16px; /* Previene zoom en iOS */
+    font-size: 16px;
     padding: var(--space-3);
   }
 
-  /* Espaciado reducido */
   .stack > * + * {
     margin-top: var(--space-5);
   }

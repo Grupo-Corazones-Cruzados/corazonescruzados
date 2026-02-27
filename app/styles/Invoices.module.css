@@ -535,17 +535,17 @@
 /* ===== TEMA CLARO ===== */
 :global([data-theme="light"]) .invoiceCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .invoiceCard:hover {
-  border-color: #0891B2;
-  background: #F9FAFB;
+  border-color: #9D174D;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .invoiceIcon {
-  background: #F3F4F6;
-  color: #0891B2;
+  background: #F0EEF6;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .invoiceNumber {
@@ -561,16 +561,16 @@
 }
 
 :global([data-theme="light"]) .invoiceTotal {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .invoiceDocument {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .invoiceHeader {
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .companyName {
@@ -598,22 +598,22 @@
 }
 
 :global([data-theme="light"]) .itemsTable th {
-  background: #F3F4F6;
+  background: #F0EEF6;
   color: #6B7280;
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .itemsTable td {
   color: #111827;
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .itemsTable tr {
-  background: #F9FAFB;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .invoiceTotals {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .totalLabel {
@@ -625,15 +625,15 @@
 }
 
 :global([data-theme="light"]) .grandTotal {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .grandTotal .totalValue {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .invoiceNotes {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .notesLabel {
@@ -645,13 +645,13 @@
 }
 
 :global([data-theme="light"]) .invoiceFooter {
-  background: #F3F4F6;
+  background: #F0EEF6;
   color: #6B7280;
 }
 
 :global([data-theme="light"]) .actionsCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .actionsTitle {
@@ -659,21 +659,21 @@
 }
 
 :global([data-theme="light"]) .primaryAction {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .primaryAction:hover {
-  background: #0E7490;
+  background: #831843;
 }
 
 :global([data-theme="light"]) .secondaryAction {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #374151;
 }
 
 :global([data-theme="light"]) .secondaryAction:hover {
-  background: #F9FAFB;
-  border-color: #0891B2;
+  background: #F8F7FC;
+  border-color: #9D174D;
 }

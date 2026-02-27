@@ -20,7 +20,7 @@
   padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-6);
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.12);
   border-radius: var(--radius-md);
   color: var(--text-muted);
   font-size: 0.9rem;
@@ -29,7 +29,7 @@
 }
 
 .backButton:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(181, 0, 125, 0.05);
   border-color: var(--turquoise);
   color: var(--turquoise);
 }
@@ -139,7 +139,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   border: 3px solid var(--surface-1);
   color: #FFFFFF;
   cursor: pointer;
@@ -147,7 +147,7 @@
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(227, 24, 55, 0.4);
+  box-shadow: 0 4px 12px rgba(230, 0, 18, 0.4);
 }
 
 .avatarEditBtn svg {
@@ -157,7 +157,7 @@
 
 .avatarEditBtn:hover:not(:disabled) {
   transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(227, 24, 55, 0.5);
+  box-shadow: 0 6px 16px rgba(230, 0, 18, 0.5);
 }
 
 .avatarEditBtn:disabled {
@@ -309,7 +309,7 @@
 
 .input:focus {
   border-color: var(--turquoise);
-  box-shadow: 0 0 0 3px rgba(0, 206, 209, 0.15);
+  box-shadow: 0 0 0 3px rgba(181, 0, 125, 0.15);
 }
 
 .value {
@@ -356,7 +356,7 @@
 }
 
 .saveButton {
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   border: none;
   color: #FFFFFF;
 }
@@ -379,7 +379,7 @@
 }
 
 .cancelButton:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(181, 0, 125, 0.05);
   border-color: var(--text-muted);
 }
 
@@ -494,14 +494,14 @@
 
 /* ===== TEMA CLARO ===== */
 :global([data-theme="light"]) .backButton {
-  border-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(76, 29, 149, 0.08);
   color: #6B7280;
 }
 
 :global([data-theme="light"]) .backButton:hover {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: #0891B2;
-  color: #0891B2;
+  background: rgba(30, 10, 60, 0.03);
+  border-color: #9D174D;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .title {
@@ -514,27 +514,27 @@
 
 :global([data-theme="light"]) .profileCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-color: #E8E5F0;
+  box-shadow: 0 1px 3px rgba(76, 29, 149, 0.08);
 }
 
 :global([data-theme="light"]) .avatarSection {
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .avatar,
 :global([data-theme="light"]) .avatarPlaceholder {
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .avatarEditBtn {
-  background: linear-gradient(135deg, #0891B2 0%, #0E7490 100%);
+  background: linear-gradient(135deg, #9D174D 0%, #831843 100%);
   border-color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.4);
+  box-shadow: 0 4px 12px rgba(157, 23, 77, 0.4);
 }
 
 :global([data-theme="light"]) .avatarEditBtn:hover {
-  box-shadow: 0 6px 16px rgba(8, 145, 178, 0.5);
+  box-shadow: 0 6px 16px rgba(157, 23, 77, 0.5);
 }
 
 :global([data-theme="light"]) .miniSpinner {
@@ -555,8 +555,8 @@
 }
 
 :global([data-theme="light"]) .input {
-  background: #F3F4F6;
-  border-color: #D1D5DB;
+  background: #F0EEF6;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
@@ -565,9 +565,9 @@
 }
 
 :global([data-theme="light"]) .input:focus {
-  border-color: #0891B2;
+  border-color: #9D174D;
   background: #FFFFFF;
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+  box-shadow: 0 0 0 3px rgba(157, 23, 77, 0.15);
 }
 
 :global([data-theme="light"]) .value {
@@ -579,40 +579,40 @@
 }
 
 :global([data-theme="light"]) .actions {
-  border-top-color: #E5E7EB;
+  border-top-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .editButton {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .editButton:hover {
-  background: #0E7490;
+  background: #831843;
 }
 
 :global([data-theme="light"]) .saveButton {
-  background: #0891B2;
+  background: #9D174D;
 }
 
 :global([data-theme="light"]) .saveButton:hover:not(:disabled) {
-  background: #0E7490;
+  background: #831843;
 }
 
 :global([data-theme="light"]) .cancelButton {
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #6B7280;
 }
 
 :global([data-theme="light"]) .cancelButton:hover:not(:disabled) {
-  background: #F3F4F6;
+  background: #F0EEF6;
   border-color: #9CA3AF;
 }
 
 :global([data-theme="light"]) .infoCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-color: #E8E5F0;
+  box-shadow: 0 1px 3px rgba(76, 29, 149, 0.08);
 }
 
 :global([data-theme="light"]) .infoTitle {
@@ -620,7 +620,7 @@
 }
 
 :global([data-theme="light"]) .infoItem {
-  border-bottom-color: #E5E7EB;
+  border-bottom-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .infoLabel {
@@ -636,6 +636,6 @@
 }
 
 :global([data-theme="light"]) .spinner {
-  border-color: #E5E7EB;
-  border-top-color: #0891B2;
+  border-color: #E8E5F0;
+  border-top-color: #9D174D;
 }

@@ -1752,80 +1752,80 @@
 
 :global([data-theme="light"]) .solicitudCard {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .solicitudCard:hover {
-  background: #f9fafb;
+  background: #F8F7FC;
   border-color: var(--turquoise);
 }
 
 :global([data-theme="light"]) .detailCard {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .allocationCard {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .allocationCard:hover {
-  background: #f9fafb;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .memberCard {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .memberCard:hover {
-  background: #f9fafb;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .avanceContent {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .avanceForm {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .modal {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .quoteSummary {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .tierIndicator {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .confirmationCard {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .statCard {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .distributionRow {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .memberDetailCard {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .formTextarea,
@@ -1834,15 +1834,15 @@
 :global([data-theme="light"]) .distributionInput,
 :global([data-theme="light"]) .motivoInput,
 :global([data-theme="light"]) .avanceFormHoursInput {
-  background: #f9fafb;
-  border-color: #e5e7eb;
+  background: #F8F7FC;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .emptyState {
   background: #ffffff;
-  border-color: #e5e7eb;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .clientNotes {
-  background: #f9fafb;
+  background: #F8F7FC;
 }

@@ -1,6 +1,6 @@
 .container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #0a0a0f 0%, #111118 100%);
+  background: linear-gradient(180deg, #120B1F 0%, #1A1230 100%);
   display: flex;
   flex-direction: column;
 }
@@ -8,7 +8,7 @@
 /* Header */
 .header {
   padding: 20px 40px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(181, 0, 125, 0.1);
 }
 
 .logo {
@@ -34,8 +34,8 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(220, 38, 38, 0.2);
-  border-top-color: #dc2626;
+  border: 3px solid rgba(230, 0, 18, 0.2);
+  border-top-color: #E60012;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -62,8 +62,8 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background: rgba(255, 26, 46, 0.15);
+  color: #FF1A2E;
   font-size: 32px;
   font-weight: bold;
   display: flex;
@@ -165,12 +165,12 @@
 }
 
 .statusNoCompletado {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(255, 26, 46, 0.2);
   color: #fca5a5;
 }
 
 .statusCancelado {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(255, 26, 46, 0.2);
   color: #fca5a5;
 }
 
@@ -190,8 +190,8 @@
 }
 
 .infoCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(181, 0, 125, 0.05);
+  border: 1px solid rgba(181, 0, 125, 0.1);
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -223,20 +223,20 @@
   font-weight: 600;
   margin: 0 0 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(181, 0, 125, 0.12);
 }
 
 /* Progress */
 .progressCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(181, 0, 125, 0.05);
+  border: 1px solid rgba(181, 0, 125, 0.1);
   border-radius: 12px;
   padding: 20px;
 }
 
 .progressBar {
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(181, 0, 125, 0.12);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 12px;
@@ -244,7 +244,7 @@
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
+  background: linear-gradient(90deg, #E60012 0%, #FF1A2E 100%);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -257,7 +257,7 @@
 }
 
 .progressPercent {
-  color: #dc2626;
+  color: #E60012;
   font-weight: 600;
 }
 
@@ -271,8 +271,8 @@
 .requirementItem {
   display: flex;
   gap: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(181, 0, 125, 0.05);
+  border: 1px solid rgba(181, 0, 125, 0.1);
   border-radius: 12px;
   padding: 16px;
   transition: border-color 0.2s;
@@ -344,8 +344,8 @@
   align-items: center;
   margin-top: 16px;
   padding: 16px 20px;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  background: rgba(230, 0, 18, 0.1);
+  border: 1px solid rgba(230, 0, 18, 0.2);
   border-radius: 12px;
   color: #fca5a5;
   font-size: 14px;
@@ -354,7 +354,7 @@
 .totalAmount {
   font-size: 20px;
   font-weight: 700;
-  color: #dc2626;
+  color: #E60012;
 }
 
 /* Team */
@@ -368,8 +368,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(181, 0, 125, 0.05);
+  border: 1px solid rgba(181, 0, 125, 0.1);
   border-radius: 12px;
   padding: 16px;
 }
@@ -388,7 +388,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #fff;
   display: flex;
   align-items: center;
@@ -408,7 +408,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #0a0a0f;
+  border: 2px solid #120B1F;
 }
 
 .memberInfo {
@@ -444,7 +444,7 @@
   align-items: center;
   gap: 8px;
   padding: 14px 28px;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -456,14 +456,14 @@
 
 .downloadButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 8px 20px rgba(230, 0, 18, 0.4);
 }
 
 /* Footer */
 .footer {
   padding: 24px 40px;
   text-align: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(181, 0, 125, 0.1);
 }
 
 .footer p {
@@ -473,7 +473,7 @@
 }
 
 .footer strong {
-  color: #dc2626;
+  color: #E60012;
 }
 
 .footerNote {

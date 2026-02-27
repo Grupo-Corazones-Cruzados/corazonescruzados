@@ -44,9 +44,9 @@
   pointer-events: none;
   overflow: hidden;
   background:
-    radial-gradient(900px 600px at 10% 0%, rgba(227, 24, 55, 0.08), transparent 60%),
-    radial-gradient(700px 520px at 88% 10%, rgba(185, 20, 48, 0.06), transparent 58%),
-    radial-gradient(900px 700px at 50% 100%, rgba(0, 206, 209, 0.04), transparent 60%);
+    radial-gradient(900px 600px at 10% 0%, rgba(230, 0, 18, 0.08), transparent 60%),
+    radial-gradient(700px 520px at 88% 10%, rgba(204, 0, 17, 0.06), transparent 58%),
+    radial-gradient(900px 700px at 50% 100%, rgba(181, 0, 125, 0.04), transparent 60%);
 }
 
 .container {
@@ -67,9 +67,9 @@
   gap: 16px;
   flex-wrap: wrap;
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(181, 0, 125, 0.08);
   border-radius: 18px;
-  background: #141414;
+  background: #120B1F;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   position: relative;
 }
@@ -81,7 +81,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(227, 24, 55, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(230, 0, 18, 0.3), transparent);
 }
 
 .title {
@@ -95,7 +95,7 @@
 .subtitle {
   margin: 8px 0 0;
   max-width: 60ch;
-  color: #8A8A8A;
+  color: #8A8A9E;
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -106,8 +106,8 @@
   gap: 10px;
   padding: 10px 14px;
   border-radius: 9999px;
-  border: 1px solid rgba(227, 24, 55, 0.3);
-  background: rgba(227, 24, 55, 0.1);
+  border: 1px solid rgba(230, 0, 18, 0.3);
+  background: rgba(230, 0, 18, 0.1);
   font-weight: 700;
   font-size: 0.8rem;
   color: #FFFFFF;
@@ -117,8 +117,8 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #FF2D4D, #E31837);
-  box-shadow: 0 0 10px rgba(227, 24, 55, 0.5);
+  background: radial-gradient(circle at 30% 30%, #FF1A2E, #E60012);
+  box-shadow: 0 0 10px rgba(230, 0, 18, 0.5);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -140,8 +140,8 @@
 
 .search,
 .select {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1A1A1A;
+  border: 1px solid rgba(181, 0, 125, 0.1);
+  background: #1A1230;
   color: #FFFFFF;
   border-radius: 12px;
   padding: 12px 16px;
@@ -159,13 +159,13 @@
 }
 
 .search::placeholder {
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .search:focus,
 .select:focus {
-  border-color: rgba(0, 206, 209, 0.5);
-  box-shadow: 0 0 0 3px rgba(0, 206, 209, 0.15);
+  border-color: rgba(181, 0, 125, 0.5);
+  box-shadow: 0 0 0 3px rgba(181, 0, 125, 0.15);
   background: #202020;
 }
 
@@ -175,7 +175,7 @@
 
 .count {
   margin-left: auto;
-  color: #8A8A8A;
+  color: #8A8A9E;
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -199,10 +199,10 @@
 }
 
 .card {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(181, 0, 125, 0.08);
   border-radius: 16px;
   overflow: hidden;
-  background: #141414;
+  background: #120B1F;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   transition:
     transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -212,16 +212,16 @@
 
 .card:hover {
   transform: translateY(-6px);
-  border-color: rgba(0, 206, 209, 0.3);
+  border-color: rgba(181, 0, 125, 0.3);
   box-shadow:
     0 16px 50px rgba(0, 0, 0, 0.5),
-    0 0 40px rgba(0, 206, 209, 0.1);
+    0 0 40px rgba(181, 0, 125, 0.1);
 }
 
 .media {
   position: relative;
   height: 180px;
-  background: linear-gradient(135deg, rgba(227, 24, 55, 0.1) 0%, #1A1A1A 100%);
+  background: linear-gradient(135deg, rgba(230, 0, 18, 0.1) 0%, #1A1230 100%);
 }
 
 .image {
@@ -238,12 +238,12 @@
   padding: 8px 12px;
   border-radius: 9999px;
   border: none;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   font-weight: 700;
   font-size: 0.75rem;
   letter-spacing: 0.02em;
-  box-shadow: 0 4px 15px rgba(227, 24, 55, 0.4);
+  box-shadow: 0 4px 15px rgba(230, 0, 18, 0.4);
 }
 
 .placeholder {
@@ -254,21 +254,21 @@
   justify-content: center;
   gap: 12px;
   padding: 20px;
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .placeholderIcon {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(0, 206, 209, 0.15) 0%, rgba(0, 206, 209, 0.05) 100%);
-  border: 1px solid rgba(0, 206, 209, 0.3);
+  background: linear-gradient(135deg, rgba(181, 0, 125, 0.15) 0%, rgba(181, 0, 125, 0.05) 100%);
+  border: 1px solid rgba(181, 0, 125, 0.3);
 }
 
 .placeholderText {
   font-size: 0.85rem;
   text-align: center;
-  color: #5A5A5A;
+  color: #5A5A72;
   font-weight: 600;
 }
 
@@ -290,7 +290,7 @@
 .cardDesc {
   margin: 0;
   font-size: 0.9rem;
-  color: #8A8A8A;
+  color: #8A8A9E;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -301,7 +301,7 @@
 .cardDescEmpty {
   margin: 0;
   font-size: 0.9rem;
-  color: #5A5A5A;
+  color: #5A5A72;
   font-style: italic;
 }
 
@@ -315,9 +315,9 @@
   font-size: 0.75rem;
   padding: 6px 10px;
   border-radius: 9999px;
-  border: 1px solid rgba(0, 206, 209, 0.3);
-  background: rgba(0, 206, 209, 0.1);
-  color: #00CED1;
+  border: 1px solid rgba(181, 0, 125, 0.3);
+  background: rgba(181, 0, 125, 0.1);
+  color: #B5007D;
   font-weight: 600;
 }
 
@@ -327,11 +327,11 @@
   align-items: center;
   gap: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .cta {
-  color: #00CED1;
+  color: #B5007D;
   font-weight: 700;
   font-size: 0.85rem;
 }
@@ -345,7 +345,7 @@
 .priceMuted {
   font-weight: 600;
   font-size: 0.9rem;
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 /* =============================
@@ -355,9 +355,9 @@
   margin-top: 20px;
   padding: 32px 24px;
   border-radius: 16px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
-  color: #8A8A8A;
+  border: 1px dashed rgba(181, 0, 125, 0.12);
+  background: rgba(181, 0, 125, 0.03);
+  color: #8A8A9E;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -369,8 +369,8 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #00CED1;
+  border: 3px solid rgba(181, 0, 125, 0.12);
+  border-top-color: #B5007D;
   animation: spin 0.8s linear infinite;
 }
 
@@ -382,8 +382,8 @@
   margin-top: 20px;
   padding: 24px;
   border-radius: 16px;
-  border: 1px solid rgba(227, 24, 55, 0.3);
-  background: linear-gradient(180deg, rgba(227, 24, 55, 0.1) 0%, rgba(227, 24, 55, 0.05) 100%);
+  border: 1px solid rgba(230, 0, 18, 0.3);
+  background: linear-gradient(180deg, rgba(230, 0, 18, 0.1) 0%, rgba(230, 0, 18, 0.05) 100%);
 }
 
 .errorTitle {
@@ -394,12 +394,12 @@
 
 .errorText {
   margin: 8px 0 0;
-  color: #B0B0B0;
+  color: #B0B0C4;
 }
 
 .errorHint {
   margin: 8px 0 0;
-  color: #5A5A5A;
+  color: #5A5A72;
   font-size: 0.85rem;
 }
 
@@ -407,10 +407,10 @@
    CV Section
    ===================== */
 .cvSection {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(181, 0, 125, 0.08);
   border-radius: 18px;
   padding: 24px;
-  background: #141414;
+  background: #120B1F;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   position: relative;
 }
@@ -422,7 +422,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 206, 209, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(181, 0, 125, 0.3), transparent);
 }
 
 .cvTop {
@@ -443,7 +443,7 @@
 
 .cvHeadline {
   margin-top: 8px;
-  color: #00CED1;
+  color: #B5007D;
   font-weight: 700;
   font-size: 0.95rem;
 }
@@ -453,7 +453,7 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  color: #8A8A8A;
+  color: #8A8A9E;
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -469,7 +469,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(181, 0, 125, 0.2);
 }
 
 .cvLinks {
@@ -483,8 +483,8 @@
   font-size: 0.85rem;
   color: #FFFFFF;
   text-decoration: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(181, 0, 125, 0.12);
+  background: rgba(181, 0, 125, 0.04);
   padding: 10px 14px;
   border-radius: 9999px;
   font-weight: 700;
@@ -496,7 +496,7 @@
 
 .cvLink:hover {
   transform: translateY(-2px);
-  border-color: rgba(0, 206, 209, 0.4);
+  border-color: rgba(181, 0, 125, 0.4);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
 }
 
@@ -506,8 +506,8 @@
   gap: 10px;
   padding: 10px 14px;
   border-radius: 9999px;
-  border: 1px solid rgba(227, 24, 55, 0.3);
-  background: rgba(227, 24, 55, 0.1);
+  border: 1px solid rgba(230, 0, 18, 0.3);
+  background: rgba(230, 0, 18, 0.1);
   font-weight: 700;
   font-size: 0.85rem;
   color: #FFFFFF;
@@ -517,8 +517,8 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #FF2D4D, #E31837);
-  box-shadow: 0 0 10px rgba(227, 24, 55, 0.5);
+  background: radial-gradient(circle at 30% 30%, #FF1A2E, #E60012);
+  box-shadow: 0 0 10px rgba(230, 0, 18, 0.5);
 }
 
 .cvLayout {
@@ -546,10 +546,10 @@
 
 .cvBlock,
 .cvSideBlock {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(181, 0, 125, 0.08);
   border-radius: 14px;
   padding: 18px;
-  background: #1A1A1A;
+  background: #1A1230;
 }
 
 .cvH2 {
@@ -557,13 +557,13 @@
   font-size: 0.75rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #00CED1;
+  color: #B5007D;
   font-weight: 700;
 }
 
 .cvText {
   margin-top: 12px;
-  color: #B0B0B0;
+  color: #B0B0C4;
   font-size: 0.9rem;
   line-height: 1.6;
 }
@@ -571,13 +571,13 @@
 .cvList {
   margin: 12px 0 0 20px;
   padding: 0;
-  color: #B0B0B0;
+  color: #B0B0C4;
   font-size: 0.9rem;
   line-height: 1.6;
 }
 
 .cvMuted {
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .cvTags {
@@ -591,9 +591,9 @@
   font-size: 0.75rem;
   padding: 6px 10px;
   border-radius: 9999px;
-  border: 1px solid rgba(0, 206, 209, 0.3);
-  background: rgba(0, 206, 209, 0.1);
-  color: #00CED1;
+  border: 1px solid rgba(181, 0, 125, 0.3);
+  background: rgba(181, 0, 125, 0.1);
+  color: #B5007D;
   font-weight: 600;
 }
 
@@ -605,10 +605,10 @@
 }
 
 .cvItem {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(181, 0, 125, 0.08);
   border-radius: 12px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(181, 0, 125, 0.03);
 }
 
 .cvItemTop {
@@ -626,20 +626,20 @@
 }
 
 .cvRole {
-  color: #00CED1;
+  color: #B5007D;
   font-weight: 700;
   font-size: 0.85rem;
 }
 
 .cvDates {
-  color: #5A5A5A;
+  color: #5A5A72;
   font-size: 0.8rem;
   font-weight: 600;
 }
 
 .cvSub {
   margin-top: 8px;
-  color: #5A5A5A;
+  color: #5A5A72;
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -647,7 +647,7 @@
 .cvBullets {
   margin: 12px 0 0 20px;
   padding: 0;
-  color: #B0B0B0;
+  color: #B0B0C4;
   font-size: 0.9rem;
   line-height: 1.6;
 }
@@ -673,7 +673,7 @@
   font-size: 0.85rem;
   letter-spacing: 0.02em;
   border: none;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   padding: 12px 20px;
   border-radius: 9999px;
   transition:
@@ -690,9 +690,9 @@
   margin-top: 16px;
   padding: 20px;
   border-radius: 14px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
-  color: #8A8A8A;
+  border: 1px dashed rgba(181, 0, 125, 0.12);
+  background: rgba(181, 0, 125, 0.03);
+  color: #8A8A9E;
   text-align: center;
 }
 
@@ -700,8 +700,8 @@
   margin-top: 16px;
   padding: 20px;
   border-radius: 14px;
-  border: 1px solid rgba(227, 24, 55, 0.3);
-  background: rgba(227, 24, 55, 0.1);
+  border: 1px solid rgba(230, 0, 18, 0.3);
+  background: rgba(230, 0, 18, 0.1);
 }
 
 /* ===== CV Photo ===== */
@@ -717,8 +717,8 @@
   height: 100px;
   border-radius: 16px;
   overflow: hidden;
-  border: 2px solid rgba(0, 206, 209, 0.3);
-  background: #1A1A1A;
+  border: 2px solid rgba(181, 0, 125, 0.3);
+  background: #1A1230;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
 }
 
@@ -738,8 +738,8 @@
 /* ====== Print / PDF ====== */
 .printBtn,
 .printBtnSmall {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(181, 0, 125, 0.12);
+  background: rgba(181, 0, 125, 0.04);
   color: #FFFFFF;
   cursor: pointer;
   font-weight: 700;
@@ -761,8 +761,8 @@
 .printBtn:hover,
 .printBtnSmall:hover {
   transform: translateY(-2px);
-  border-color: rgba(0, 206, 209, 0.4);
-  background: rgba(0, 206, 209, 0.1);
+  border-color: rgba(181, 0, 125, 0.4);
+  background: rgba(181, 0, 125, 0.1);
 }
 
 /* ===== Mobile ===== */
@@ -862,7 +862,7 @@
   .cvHeadline,
   .cvRole,
   .cvH2 {
-    color: #0891b2 !important;
+    color: #9D174D !important;
   }
 
   .cvText,
@@ -896,19 +896,19 @@
 
 :global([data-theme="light"]) .bgGlow {
   background:
-    radial-gradient(900px 600px at 10% 0%, rgba(227, 24, 55, 0.04), transparent 60%),
-    radial-gradient(700px 520px at 88% 10%, rgba(185, 20, 48, 0.03), transparent 58%),
-    radial-gradient(900px 700px at 50% 100%, rgba(8, 145, 178, 0.03), transparent 60%);
+    radial-gradient(900px 600px at 10% 0%, rgba(230, 0, 18, 0.04), transparent 60%),
+    radial-gradient(700px 520px at 88% 10%, rgba(204, 0, 17, 0.03), transparent 58%),
+    radial-gradient(900px 700px at 50% 100%, rgba(157, 23, 77, 0.03), transparent 60%);
 }
 
 :global([data-theme="light"]) .header {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: #F9FAFB;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-color: rgba(30, 10, 60, 0.06);
+  background: #F8F7FC;
+  box-shadow: 0 4px 20px rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .header::before {
-  background: linear-gradient(90deg, transparent, rgba(227, 24, 55, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(230, 0, 18, 0.2), transparent);
 }
 
 :global([data-theme="light"]) .title {
@@ -925,8 +925,8 @@
 
 :global([data-theme="light"]) .search,
 :global([data-theme="light"]) .select {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: #F3F4F6;
+  border-color: rgba(76, 29, 149, 0.08);
+  background: #F0EEF6;
   color: #111827;
 }
 
@@ -936,8 +936,8 @@
 
 :global([data-theme="light"]) .search:focus,
 :global([data-theme="light"]) .select:focus {
-  border-color: rgba(8, 145, 178, 0.5);
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+  border-color: rgba(157, 23, 77, 0.5);
+  box-shadow: 0 0 0 3px rgba(157, 23, 77, 0.15);
   background: #FFFFFF;
 }
 
@@ -946,20 +946,20 @@
 }
 
 :global([data-theme="light"]) .card {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: #F9FAFB;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-color: rgba(30, 10, 60, 0.06);
+  background: #F8F7FC;
+  box-shadow: 0 4px 20px rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .card:hover {
-  border-color: rgba(8, 145, 178, 0.3);
+  border-color: rgba(157, 23, 77, 0.3);
   box-shadow:
     0 16px 50px rgba(0, 0, 0, 0.12),
-    0 0 40px rgba(8, 145, 178, 0.08);
+    0 0 40px rgba(157, 23, 77, 0.08);
 }
 
 :global([data-theme="light"]) .media {
-  background: linear-gradient(135deg, rgba(227, 24, 55, 0.05) 0%, #F3F4F6 100%);
+  background: linear-gradient(135deg, rgba(230, 0, 18, 0.05) 0%, #F0EEF6 100%);
 }
 
 :global([data-theme="light"]) .placeholder {
@@ -967,8 +967,8 @@
 }
 
 :global([data-theme="light"]) .placeholderIcon {
-  background: linear-gradient(135deg, rgba(8, 145, 178, 0.1) 0%, rgba(8, 145, 178, 0.05) 100%);
-  border-color: rgba(8, 145, 178, 0.25);
+  background: linear-gradient(135deg, rgba(157, 23, 77, 0.1) 0%, rgba(157, 23, 77, 0.05) 100%);
+  border-color: rgba(157, 23, 77, 0.25);
 }
 
 :global([data-theme="light"]) .placeholderText {
@@ -988,17 +988,17 @@
 }
 
 :global([data-theme="light"]) .tag {
-  border-color: rgba(8, 145, 178, 0.25);
-  background: rgba(8, 145, 178, 0.1);
-  color: #0891B2;
+  border-color: rgba(157, 23, 77, 0.25);
+  background: rgba(157, 23, 77, 0.1);
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .footer {
-  border-top-color: rgba(0, 0, 0, 0.08);
+  border-top-color: rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .cta {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .price {
@@ -1010,14 +1010,14 @@
 }
 
 :global([data-theme="light"]) .state {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(76, 29, 149, 0.08);
+  background: rgba(76, 29, 149, 0.02);
   color: #6B7280;
 }
 
 :global([data-theme="light"]) .spinner {
-  border-color: rgba(0, 0, 0, 0.1);
-  border-top-color: #0891B2;
+  border-color: rgba(76, 29, 149, 0.08);
+  border-top-color: #9D174D;
 }
 
 :global([data-theme="light"]) .errorText {
@@ -1029,13 +1029,13 @@
 }
 
 :global([data-theme="light"]) .cvSection {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: #F9FAFB;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-color: rgba(30, 10, 60, 0.06);
+  background: #F8F7FC;
+  box-shadow: 0 4px 20px rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .cvSection::before {
-  background: linear-gradient(90deg, transparent, rgba(8, 145, 178, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(157, 23, 77, 0.2), transparent);
 }
 
 :global([data-theme="light"]) .cvName {
@@ -1043,7 +1043,7 @@
 }
 
 :global([data-theme="light"]) .cvHeadline {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .cvContacts {
@@ -1056,13 +1056,13 @@
 
 :global([data-theme="light"]) .cvLink {
   color: #111827;
-  border-color: rgba(0, 0, 0, 0.1);
-  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(76, 29, 149, 0.08);
+  background: rgba(76, 29, 149, 0.02);
 }
 
 :global([data-theme="light"]) .cvLink:hover {
-  border-color: rgba(8, 145, 178, 0.4);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: rgba(157, 23, 77, 0.4);
+  box-shadow: 0 8px 25px rgba(76, 29, 149, 0.08);
 }
 
 :global([data-theme="light"]) .cvPill {
@@ -1071,12 +1071,12 @@
 
 :global([data-theme="light"]) .cvBlock,
 :global([data-theme="light"]) .cvSideBlock {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: #F3F4F6;
+  border-color: rgba(30, 10, 60, 0.06);
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .cvH2 {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .cvText {
@@ -1092,14 +1092,14 @@
 }
 
 :global([data-theme="light"]) .cvTag {
-  border-color: rgba(8, 145, 178, 0.25);
-  background: rgba(8, 145, 178, 0.1);
-  color: #0891B2;
+  border-color: rgba(157, 23, 77, 0.25);
+  background: rgba(157, 23, 77, 0.1);
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .cvItem {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(30, 10, 60, 0.06);
+  background: rgba(76, 29, 149, 0.02);
 }
 
 :global([data-theme="light"]) .cvCompany {
@@ -1107,7 +1107,7 @@
 }
 
 :global([data-theme="light"]) .cvRole {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .cvDates {
@@ -1123,37 +1123,37 @@
 }
 
 :global([data-theme="light"]) .cvPhotoWrap {
-  border-color: rgba(8, 145, 178, 0.25);
-  background: #F3F4F6;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: rgba(157, 23, 77, 0.25);
+  background: #F0EEF6;
+  box-shadow: 0 8px 25px rgba(76, 29, 149, 0.08);
 }
 
 :global([data-theme="light"]) .cvState {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(76, 29, 149, 0.08);
+  background: rgba(76, 29, 149, 0.02);
   color: #6B7280;
 }
 
 :global([data-theme="light"]) .printBtn,
 :global([data-theme="light"]) .printBtnSmall {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(76, 29, 149, 0.08);
+  background: rgba(76, 29, 149, 0.02);
   color: #111827;
 }
 
 :global([data-theme="light"]) .printBtn:hover,
 :global([data-theme="light"]) .printBtnSmall:hover {
-  border-color: rgba(8, 145, 178, 0.4);
-  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(157, 23, 77, 0.4);
+  background: rgba(157, 23, 77, 0.1);
 }
 
 :global([data-theme="light"]) .cvBtn {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .cvBtn:hover {
-  background: #0E7490;
+  background: #831843;
 }
 
 /* =====================================================
@@ -1165,10 +1165,10 @@
    ============================= */
 .formCard {
   margin-top: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(181, 0, 125, 0.08);
   border-radius: 18px;
   padding: 24px;
-  background: #141414;
+  background: #120B1F;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -1204,13 +1204,13 @@
 .formLabel {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .formInput,
 .formTextarea {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1A1A1A;
+  border: 1px solid rgba(181, 0, 125, 0.1);
+  background: #1A1230;
   color: #FFFFFF;
   border-radius: 12px;
   padding: 12px 16px;
@@ -1221,8 +1221,8 @@
 
 .formInput:focus,
 .formTextarea:focus {
-  border-color: rgba(0, 206, 209, 0.5);
-  box-shadow: 0 0 0 3px rgba(0, 206, 209, 0.15);
+  border-color: rgba(181, 0, 125, 0.5);
+  box-shadow: 0 0 0 3px rgba(181, 0, 125, 0.15);
 }
 
 .formTextarea {
@@ -1242,7 +1242,7 @@
   height: 100px;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.12);
 }
 
 .imagePreview img {
@@ -1271,7 +1271,7 @@
 }
 
 .removeImageBtn:hover {
-  background: rgba(227, 24, 55, 0.9);
+  background: rgba(230, 0, 18, 0.9);
   color: #FFFFFF;
 }
 
@@ -1279,9 +1279,9 @@
   width: 100px;
   height: 100px;
   border-radius: 12px;
-  border: 2px dashed rgba(0, 206, 209, 0.3);
-  background: rgba(0, 206, 209, 0.05);
-  color: #00CED1;
+  border: 2px dashed rgba(181, 0, 125, 0.3);
+  background: rgba(181, 0, 125, 0.05);
+  color: #B5007D;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -1294,16 +1294,16 @@
 }
 
 .uploadBtn:hover {
-  border-color: rgba(0, 206, 209, 0.5);
-  background: rgba(0, 206, 209, 0.1);
+  border-color: rgba(181, 0, 125, 0.5);
+  background: rgba(181, 0, 125, 0.1);
 }
 
 .uploadingSpinner {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 2px solid rgba(0, 206, 209, 0.3);
-  border-top-color: #00CED1;
+  border: 2px solid rgba(181, 0, 125, 0.3);
+  border-top-color: #B5007D;
   animation: spin 0.8s linear infinite;
 }
 
@@ -1312,22 +1312,22 @@
   gap: 12px;
   justify-content: flex-end;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .cancelBtn {
   padding: 12px 20px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.12);
   background: transparent;
-  color: #8A8A8A;
+  color: #8A8A9E;
   font-weight: 600;
   cursor: pointer;
   transition: border-color 200ms ease, color 200ms ease;
 }
 
 .cancelBtn:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(181, 0, 125, 0.2);
   color: #FFFFFF;
 }
 
@@ -1335,7 +1335,7 @@
   padding: 12px 24px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   font-weight: 700;
   cursor: pointer;
@@ -1358,7 +1358,7 @@
   padding: 12px 20px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   font-weight: 700;
   font-size: 0.9rem;
@@ -1374,7 +1374,7 @@
   margin-top: 12px;
   padding: 10px 16px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.12);
   background: transparent;
   color: #FFFFFF;
   font-weight: 600;
@@ -1393,9 +1393,9 @@
   min-width: 34px;
   padding: 0;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-  color: #B0B0B0;
+  border: 1px solid rgba(181, 0, 125, 0.15);
+  background: rgba(181, 0, 125, 0.1);
+  color: #B0B0C4;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1412,9 +1412,9 @@
 }
 
 .iconBtn:hover {
-  border-color: rgba(0, 206, 209, 0.5);
-  color: #00CED1;
-  background: rgba(0, 206, 209, 0.15);
+  border-color: rgba(181, 0, 125, 0.5);
+  color: #B5007D;
+  background: rgba(181, 0, 125, 0.15);
   transform: translateY(-1px);
   box-shadow: none;
 }
@@ -1437,7 +1437,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(181, 0, 125, 0.2);
   border-top-color: #FFFFFF;
   animation: spin 0.8s linear infinite;
 }
@@ -1473,7 +1473,7 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #5A5A5A;
+  color: #5A5A72;
   pointer-events: none;
 }
 
@@ -1487,9 +1487,9 @@
   gap: 8px;
   padding: 12px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1A1A1A;
-  color: #8A8A8A;
+  border: 1px solid rgba(181, 0, 125, 0.1);
+  background: #1A1230;
+  color: #8A8A9E;
   font-weight: 600;
   cursor: pointer;
   transition: border-color 200ms ease, color 200ms ease;
@@ -1497,31 +1497,31 @@
 
 .filterToggle:hover,
 .filterToggleActive {
-  border-color: rgba(0, 206, 209, 0.5);
-  color: #00CED1;
+  border-color: rgba(181, 0, 125, 0.5);
+  color: #B5007D;
 }
 
 .clearFilters {
   padding: 12px 16px;
   border-radius: 12px;
   border: none;
-  background: rgba(227, 24, 55, 0.1);
-  color: #E31837;
+  background: rgba(230, 0, 18, 0.1);
+  color: #E60012;
   font-weight: 600;
   cursor: pointer;
   transition: background 200ms ease;
 }
 
 .clearFilters:hover {
-  background: rgba(227, 24, 55, 0.2);
+  background: rgba(230, 0, 18, 0.2);
 }
 
 .expandedFilters {
   margin-top: 16px;
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #141414;
+  border: 1px solid rgba(181, 0, 125, 0.08);
+  background: #120B1F;
 }
 
 .filterGroup {
@@ -1533,7 +1533,7 @@
 .filterLabel {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .priceInputs {
@@ -1543,22 +1543,22 @@
 }
 
 .priceInputs span {
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .priceInput {
   flex: 1;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1A1A1A;
+  border: 1px solid rgba(181, 0, 125, 0.1);
+  background: #1A1230;
   color: #FFFFFF;
   font-size: 0.9rem;
   outline: none;
 }
 
 .priceInput:focus {
-  border-color: rgba(0, 206, 209, 0.5);
+  border-color: rgba(181, 0, 125, 0.5);
 }
 
 /* Sidebar */
@@ -1577,8 +1577,8 @@
 .sidebarSection {
   padding: 16px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #141414;
+  border: 1px solid rgba(181, 0, 125, 0.08);
+  background: #120B1F;
 }
 
 .sidebarTitle {
@@ -1587,7 +1587,7 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .categoryList {
@@ -1601,7 +1601,7 @@
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #B0B0B0;
+  color: #B0B0C4;
   font-size: 0.9rem;
   font-weight: 500;
   text-align: left;
@@ -1610,13 +1610,13 @@
 }
 
 .categoryBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(181, 0, 125, 0.05);
   color: #FFFFFF;
 }
 
 .categoryBtnActive {
-  background: rgba(0, 206, 209, 0.1);
-  color: #00CED1;
+  background: rgba(181, 0, 125, 0.1);
+  color: #B5007D;
 }
 
 .priceFilter {
@@ -1626,7 +1626,7 @@
 }
 
 .priceSeparator {
-  color: #5A5A5A;
+  color: #5A5A72;
   flex-shrink: 0;
 }
 
@@ -1636,15 +1636,15 @@
   width: 100%;
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1A1A1A;
+  border: 1px solid rgba(181, 0, 125, 0.1);
+  background: #1A1230;
   color: #FFFFFF;
   font-size: 0.85rem;
   outline: none;
 }
 
 .sidebarInput:focus {
-  border-color: rgba(0, 206, 209, 0.5);
+  border-color: rgba(181, 0, 125, 0.5);
 }
 
 /* Nav Cart Button - for DashboardLayout rightContent */
@@ -1653,8 +1653,8 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
-  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(181, 0, 125, 0.12));
+  background: var(--surface-2, rgba(181, 0, 125, 0.04));
   color: var(--text-primary, #FFFFFF);
   cursor: pointer;
   display: flex;
@@ -1664,8 +1664,8 @@
 }
 
 .navCartBtn:hover {
-  border-color: var(--turquoise, #00CED1);
-  background: rgba(0, 206, 209, 0.1);
+  border-color: var(--turquoise, #B5007D);
+  background: rgba(181, 0, 125, 0.1);
   transform: translateY(-1px);
 }
 
@@ -1689,7 +1689,7 @@
   min-width: 18px;
   height: 18px;
   border-radius: 9px;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   font-size: 0.65rem;
   font-weight: 700;
@@ -1697,18 +1697,18 @@
   align-items: center;
   justify-content: center;
   padding: 0 5px;
-  box-shadow: 0 2px 8px rgba(227, 24, 55, 0.4);
+  box-shadow: 0 2px 8px rgba(230, 0, 18, 0.4);
 }
 
 :global([data-theme="light"]) .navCartBtn {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(76, 29, 149, 0.08);
+  background: rgba(76, 29, 149, 0.02);
   color: #111827;
 }
 
 :global([data-theme="light"]) .navCartBtn:hover {
-  border-color: rgba(8, 145, 178, 0.5);
-  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(157, 23, 77, 0.5);
+  background: rgba(157, 23, 77, 0.1);
 }
 
 :global([data-theme="light"]) .navCartIcon {
@@ -1719,16 +1719,16 @@
   width: 100%;
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid rgba(227, 24, 55, 0.3);
+  border: 1px solid rgba(230, 0, 18, 0.3);
   background: transparent;
-  color: #E31837;
+  color: #E60012;
   font-weight: 600;
   cursor: pointer;
   transition: background 200ms ease;
 }
 
 .sidebarClearBtn:hover {
-  background: rgba(227, 24, 55, 0.1);
+  background: rgba(230, 0, 18, 0.1);
 }
 
 /* Vendor info in card */
@@ -1747,7 +1747,7 @@
 
 .vendorName {
   font-size: 0.8rem;
-  color: #8A8A8A;
+  color: #8A8A9E;
   font-weight: 500;
 }
 
@@ -1757,8 +1757,8 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(181, 0, 125, 0.12);
+  background: rgba(181, 0, 125, 0.04);
   color: #FFFFFF;
   cursor: pointer;
   display: flex;
@@ -1768,8 +1768,8 @@
 }
 
 .cartBtn:hover {
-  border-color: rgba(0, 206, 209, 0.5);
-  background: rgba(0, 206, 209, 0.1);
+  border-color: rgba(181, 0, 125, 0.5);
+  background: rgba(181, 0, 125, 0.1);
 }
 
 .cartBadge {
@@ -1779,7 +1779,7 @@
   min-width: 20px;
   height: 20px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   font-size: 0.7rem;
   font-weight: 700;
@@ -1798,9 +1798,9 @@
   gap: 8px;
   padding: 10px 16px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.12);
   background: transparent;
-  color: #8A8A8A;
+  color: #8A8A9E;
   font-weight: 600;
   cursor: pointer;
   margin-bottom: 20px;
@@ -1808,7 +1808,7 @@
 }
 
 .backBtn:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(181, 0, 125, 0.2);
   color: #FFFFFF;
 }
 
@@ -1835,8 +1835,8 @@
   aspect-ratio: 1;
   border-radius: 16px;
   overflow: hidden;
-  background: #141414;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #120B1F;
+  border: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .galleryImage {
@@ -1853,7 +1853,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .galleryThumbs {
@@ -1882,7 +1882,7 @@
 }
 
 .thumbActive {
-  border-color: #00CED1;
+  border-color: #B5007D;
 }
 
 .detailInfo {
@@ -1895,7 +1895,7 @@
   display: inline-block;
   padding: 6px 12px;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   font-size: 0.75rem;
   font-weight: 700;
@@ -1913,12 +1913,12 @@
 .detailPrice {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #00CED1;
+  color: #B5007D;
 }
 
 .detailDescription {
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .detailDescription h3 {
@@ -1927,18 +1927,18 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .detailDescription p {
   margin: 0;
-  color: #B0B0B0;
+  color: #B0B0C4;
   line-height: 1.6;
 }
 
 .detailTags {
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .detailTags h3 {
@@ -1947,14 +1947,14 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .detailLink {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #00CED1;
+  color: #B5007D;
   font-weight: 600;
   text-decoration: none;
   transition: opacity 200ms ease;
@@ -1969,7 +1969,7 @@
   flex-direction: column;
   gap: 12px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .addToCartBtn {
@@ -1980,7 +1980,7 @@
   padding: 16px 24px;
   border-radius: 14px;
   border: none;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   font-size: 1rem;
   font-weight: 700;
@@ -2012,7 +2012,7 @@
 .viewCartBtn {
   padding: 14px 24px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.12);
   background: transparent;
   color: #FFFFFF;
   font-weight: 600;
@@ -2021,8 +2021,8 @@
 }
 
 .viewCartBtn:hover {
-  border-color: rgba(0, 206, 209, 0.5);
-  background: rgba(0, 206, 209, 0.1);
+  border-color: rgba(181, 0, 125, 0.5);
+  background: rgba(181, 0, 125, 0.1);
 }
 
 .sellerCard {
@@ -2031,8 +2031,8 @@
   gap: 16px;
   padding: 16px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #141414;
+  border: 1px solid rgba(181, 0, 125, 0.08);
+  background: #120B1F;
   margin-top: 8px;
 }
 
@@ -2041,11 +2041,11 @@
   height: 56px;
   border-radius: 12px;
   overflow: hidden;
-  background: #1A1A1A;
+  background: #1A1230;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .sellerAvatar img {
@@ -2060,7 +2060,7 @@
 
 .sellerLabel {
   font-size: 0.8rem;
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .sellerName {
@@ -2074,7 +2074,7 @@
   display: block;
   margin-top: 2px;
   font-size: 0.85rem;
-  color: #00CED1;
+  color: #B5007D;
   font-weight: 600;
 }
 
@@ -2082,7 +2082,7 @@
 .relatedSection {
   margin-top: 48px;
   padding-top: 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .relatedTitle {
@@ -2115,16 +2115,16 @@
   gap: 8px;
   padding: 10px 16px;
   border-radius: 10px;
-  border: 1px solid rgba(227, 24, 55, 0.3);
+  border: 1px solid rgba(230, 0, 18, 0.3);
   background: transparent;
-  color: #E31837;
+  color: #E60012;
   font-weight: 600;
   cursor: pointer;
   transition: background 200ms ease;
 }
 
 .clearCartBtn:hover {
-  background: rgba(227, 24, 55, 0.1);
+  background: rgba(230, 0, 18, 0.1);
 }
 
 .cartLayout {
@@ -2152,8 +2152,8 @@
   gap: 16px;
   padding: 16px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #141414;
+  border: 1px solid rgba(181, 0, 125, 0.08);
+  background: #120B1F;
 }
 
 @media (max-width: 640px) {
@@ -2167,7 +2167,7 @@
   height: 80px;
   border-radius: 10px;
   overflow: hidden;
-  background: #1A1A1A;
+  background: #1A1230;
   flex-shrink: 0;
 }
 
@@ -2180,7 +2180,7 @@
 .cartItemPlaceholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(0, 206, 209, 0.1) 0%, rgba(0, 206, 209, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(181, 0, 125, 0.1) 0%, rgba(181, 0, 125, 0.05) 100%);
 }
 
 .cartItemInfo {
@@ -2198,21 +2198,21 @@
 }
 
 .cartItemName:hover {
-  color: #00CED1;
+  color: #B5007D;
 }
 
 .cartItemVendor {
   display: block;
   margin-top: 4px;
   font-size: 0.85rem;
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .cartItemPrice {
   display: block;
   margin-top: 8px;
   font-size: 0.9rem;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .cartItemQuantity {
@@ -2226,9 +2226,9 @@
   height: 32px;
   padding: 0;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.12);
   background: transparent;
-  color: #8A8A8A;
+  color: #8A8A9E;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2237,8 +2237,8 @@
 }
 
 .quantityBtn:hover:not(:disabled) {
-  border-color: rgba(0, 206, 209, 0.5);
-  color: #00CED1;
+  border-color: rgba(181, 0, 125, 0.5);
+  color: #B5007D;
 }
 
 .quantityBtn:disabled {
@@ -2266,8 +2266,8 @@
   padding: 0;
   border-radius: 8px;
   border: none;
-  background: rgba(227, 24, 55, 0.1);
-  color: #E31837;
+  background: rgba(230, 0, 18, 0.1);
+  color: #E60012;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2277,7 +2277,7 @@
 }
 
 .cartItemRemove:hover:not(:disabled) {
-  background: rgba(227, 24, 55, 0.2);
+  background: rgba(230, 0, 18, 0.2);
 }
 
 .cartItemRemove:disabled {
@@ -2288,8 +2288,8 @@
 .cartSummary {
   padding: 24px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #141414;
+  border: 1px solid rgba(181, 0, 125, 0.08);
+  background: #120B1F;
   height: fit-content;
   position: sticky;
   top: 20px;
@@ -2307,14 +2307,14 @@
   flex-direction: column;
   gap: 12px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .summaryRow {
   display: flex;
   justify-content: space-between;
   font-size: 0.9rem;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .freeShipping {
@@ -2334,7 +2334,7 @@
 .notasSection {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .notasLabel {
@@ -2342,15 +2342,15 @@
   margin-bottom: 8px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .notasInput {
   width: 100%;
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1A1A1A;
+  border: 1px solid rgba(181, 0, 125, 0.1);
+  background: #1A1230;
   color: #FFFFFF;
   font-size: 0.9rem;
   resize: vertical;
@@ -2358,7 +2358,7 @@
 }
 
 .notasInput:focus {
-  border-color: rgba(0, 206, 209, 0.5);
+  border-color: rgba(181, 0, 125, 0.5);
 }
 
 .checkoutBtn {
@@ -2371,7 +2371,7 @@
   margin-top: 20px;
   border-radius: 14px;
   border: none;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   font-size: 1rem;
   font-weight: 700;
@@ -2392,7 +2392,7 @@
   margin: 12px 0 0;
   text-align: center;
   font-size: 0.8rem;
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 /* =============================
@@ -2407,8 +2407,8 @@
 
 .orderCard {
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #141414;
+  border: 1px solid rgba(181, 0, 125, 0.08);
+  background: #120B1F;
   overflow: hidden;
 }
 
@@ -2423,7 +2423,7 @@
 }
 
 .orderHeader:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(181, 0, 125, 0.03);
 }
 
 .orderHeaderLeft {
@@ -2439,7 +2439,7 @@
 
 .orderDate {
   font-size: 0.85rem;
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .orderHeaderRight {
@@ -2487,16 +2487,16 @@
 
 .orderDetails {
   padding: 0 20px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .orderNotes {
   padding: 12px;
   margin-top: 16px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(181, 0, 125, 0.04);
   font-size: 0.9rem;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .orderNotes strong {
@@ -2513,7 +2513,7 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .orderItem {
@@ -2533,7 +2533,7 @@
   height: 48px;
   border-radius: 8px;
   overflow: hidden;
-  background: #1A1A1A;
+  background: #1A1230;
   flex-shrink: 0;
 }
 
@@ -2546,7 +2546,7 @@
 .orderItemPlaceholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(0, 206, 209, 0.1) 0%, rgba(0, 206, 209, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(181, 0, 125, 0.1) 0%, rgba(181, 0, 125, 0.05) 100%);
 }
 
 .orderItemInfo {
@@ -2562,26 +2562,26 @@
 }
 
 .orderItemName:hover {
-  color: #00CED1;
+  color: #B5007D;
 }
 
 .orderItemVendor {
   display: block;
   margin-top: 2px;
   font-size: 0.8rem;
-  color: #5A5A5A;
+  color: #5A5A72;
 }
 
 .orderItemQuantity {
   font-size: 0.9rem;
-  color: #8A8A8A;
+  color: #8A8A9E;
   min-width: 40px;
   text-align: center;
 }
 
 .orderItemPrice {
   font-size: 0.9rem;
-  color: #8A8A8A;
+  color: #8A8A9E;
   min-width: 70px;
   text-align: right;
 }
@@ -2596,7 +2596,7 @@
 .orderSummary {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .orderSummaryRow {
@@ -2604,7 +2604,7 @@
   justify-content: space-between;
   padding: 8px 0;
   font-size: 0.9rem;
-  color: #8A8A8A;
+  color: #8A8A9E;
 }
 
 .orderSummaryTotal {
@@ -2614,14 +2614,14 @@
   font-size: 1rem;
   font-weight: 700;
   color: #FFFFFF;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
   margin-top: 8px;
 }
 
 .orderActions {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .paymentNote {
@@ -2642,8 +2642,8 @@
 :global([data-theme="light"]) .cartSummary,
 :global([data-theme="light"]) .orderCard,
 :global([data-theme="light"]) .sellerCard {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: #F9FAFB;
+  border-color: rgba(30, 10, 60, 0.06);
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .formTitle,
@@ -2665,8 +2665,8 @@
 :global([data-theme="light"]) .sidebarInput,
 :global([data-theme="light"]) .notasInput,
 :global([data-theme="light"]) .priceInput {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: #F3F4F6;
+  border-color: rgba(76, 29, 149, 0.08);
+  background: #F0EEF6;
   color: #111827;
 }
 
@@ -2682,7 +2682,7 @@
 :global([data-theme="light"]) .cancelBtn,
 :global([data-theme="light"]) .filterToggle,
 :global([data-theme="light"]) .quantityBtn {
-  border-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(76, 29, 149, 0.08);
   color: #6B7280;
 }
 
@@ -2694,9 +2694,9 @@
 }
 
 :global([data-theme="light"]) .iconBtn:hover {
-  border-color: rgba(8, 145, 178, 0.5);
-  color: #0891B2;
-  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(157, 23, 77, 0.5);
+  color: #9D174D;
+  background: rgba(157, 23, 77, 0.1);
   box-shadow: none;
 }
 
@@ -2723,16 +2723,16 @@
 }
 
 :global([data-theme="light"]) .categoryBtnActive {
-  background: rgba(8, 145, 178, 0.1);
-  color: #0891B2;
+  background: rgba(157, 23, 77, 0.1);
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .detailPrice {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .sellerRole {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .vendorName,
@@ -2746,16 +2746,16 @@
 :global([data-theme="light"]) .cartItem,
 :global([data-theme="light"]) .expandedFilters,
 :global([data-theme="light"]) .galleryMain {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: #F9FAFB;
+  border-color: rgba(30, 10, 60, 0.06);
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .orderDetails {
-  border-top-color: rgba(0, 0, 0, 0.08);
+  border-top-color: rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .orderHeader:hover {
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(76, 29, 149, 0.02);
 }
 
 :global([data-theme="light"]) .orderNotes {
@@ -2773,7 +2773,7 @@
   gap: 10px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #B0B0B0;
+  color: #B0B0C4;
   cursor: pointer;
   padding: 8px 0;
 }
@@ -2781,7 +2781,7 @@
 .formCheckbox {
   width: 18px;
   height: 18px;
-  accent-color: #00CED1;
+  accent-color: #B5007D;
   cursor: pointer;
 }
 
@@ -2791,9 +2791,9 @@
   align-items: center;
   padding: 6px 12px;
   border-radius: 9999px;
-  background: rgba(0, 206, 209, 0.1);
-  border: 1px solid rgba(0, 206, 209, 0.3);
-  color: #00CED1;
+  background: rgba(181, 0, 125, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.3);
+  color: #B5007D;
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
@@ -2805,9 +2805,9 @@
   align-items: center;
   padding: 8px 16px;
   border-radius: 9999px;
-  background: rgba(0, 206, 209, 0.1);
-  border: 1px solid rgba(0, 206, 209, 0.3);
-  color: #00CED1;
+  background: rgba(181, 0, 125, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.3);
+  color: #B5007D;
   font-size: 0.85rem;
   font-weight: 700;
   width: fit-content;
@@ -2819,17 +2819,17 @@
 }
 
 :global([data-theme="light"]) .formCheckbox {
-  accent-color: #0891B2;
+  accent-color: #9D174D;
 }
 
 :global([data-theme="light"]) .unicoBadge {
-  background: rgba(8, 145, 178, 0.1);
-  border-color: rgba(8, 145, 178, 0.25);
-  color: #0891B2;
+  background: rgba(157, 23, 77, 0.1);
+  border-color: rgba(157, 23, 77, 0.25);
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .unicoDetailBadge {
-  background: rgba(8, 145, 178, 0.1);
-  border-color: rgba(8, 145, 178, 0.25);
-  color: #0891B2;
+  background: rgba(157, 23, 77, 0.1);
+  border-color: rgba(157, 23, 77, 0.25);
+  color: #9D174D;
 }

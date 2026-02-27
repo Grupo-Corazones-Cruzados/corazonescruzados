@@ -1,5 +1,5 @@
 /* =========================
-   Paquetes.module.css - MODERN NOIR REDESIGN
+   Paquetes.module.css - CORPORATE INDIGO REDESIGN
    Página de paquetes con cards de pricing
    ========================= */
 
@@ -30,9 +30,9 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #00CED1;
-  border: 1px solid rgba(0, 206, 209, 0.4);
-  background: rgba(0, 206, 209, 0.1);
+  color: #B5007D;
+  border: 1px solid rgba(181, 0, 125, 0.4);
+  background: rgba(181, 0, 125, 0.1);
 }
 
 .kicker::before {
@@ -41,8 +41,8 @@
   height: 6px;
   margin-right: 10px;
   border-radius: 50%;
-  background: #00CED1;
-  box-shadow: 0 0 10px #00CED1;
+  background: #B5007D;
+  box-shadow: 0 0 10px #B5007D;
 }
 
 .sectionTitle {
@@ -55,7 +55,7 @@
 
 .sectionSubtitle {
   margin: 8px 0 0;
-  color: #8A8A8A;
+  color: #8A8A9E;
   font-size: 0.95rem;
   line-height: 1.5;
   max-width: 60ch;
@@ -70,8 +70,8 @@
 }
 
 .summaryPill {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #141414;
+  border: 1px solid rgba(181, 0, 125, 0.1);
+  background: #120B1F;
   border-radius: 12px;
   padding: 14px 18px;
   min-width: 200px;
@@ -79,7 +79,7 @@
 
 .summaryLabel {
   display: block;
-  color: #5A5A5A;
+  color: #5A5A72;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -100,11 +100,11 @@
 /* ===== STATES ===== */
 .state {
   margin-top: 24px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(181, 0, 125, 0.12);
+  background: rgba(181, 0, 125, 0.03);
   border-radius: 16px;
   padding: 48px 24px;
-  color: #8A8A8A;
+  color: #8A8A9E;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -114,8 +114,8 @@
 
 .stateError {
   margin-top: 24px;
-  border: 1px solid rgba(227, 24, 55, 0.3);
-  background: linear-gradient(180deg, rgba(227, 24, 55, 0.1) 0%, rgba(227, 24, 55, 0.05) 100%);
+  border: 1px solid rgba(230, 0, 18, 0.3);
+  background: linear-gradient(180deg, rgba(230, 0, 18, 0.1) 0%, rgba(230, 0, 18, 0.05) 100%);
   border-radius: 16px;
   padding: 24px;
 }
@@ -128,14 +128,14 @@
 
 .errorText {
   margin: 8px 0 0;
-  color: #B0B0B0;
+  color: #B0B0C4;
 }
 
 .spinner {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid rgba(181, 0, 125, 0.12);
   border-top-color: #00CED1;
   animation: spin 0.8s linear infinite;
 }
@@ -172,8 +172,8 @@
   height: 100%;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #141414;
+  border: 1px solid rgba(181, 0, 125, 0.08);
+  background: #120B1F;
   color: #FFFFFF;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   cursor: pointer;
@@ -195,17 +195,17 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 206, 209, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(181, 0, 125, 0.3), transparent);
   opacity: 0;
   transition: opacity 250ms ease;
 }
 
 .paqueteCard:hover {
   transform: translateY(-6px);
-  border-color: rgba(0, 206, 209, 0.3);
+  border-color: rgba(181, 0, 125, 0.3);
   box-shadow:
     0 16px 50px rgba(0, 0, 0, 0.5),
-    0 0 40px rgba(0, 206, 209, 0.1);
+    0 0 40px rgba(181, 0, 125, 0.1);
 }
 
 .paqueteCard:hover::before {
@@ -213,22 +213,22 @@
 }
 
 .paqueteSeleccionado {
-  border-color: rgba(227, 24, 55, 0.5) !important;
+  border-color: rgba(230, 0, 18, 0.5) !important;
   box-shadow:
-    0 0 0 3px rgba(227, 24, 55, 0.2),
+    0 0 0 3px rgba(230, 0, 18, 0.2),
     0 16px 50px rgba(0, 0, 0, 0.5),
-    0 0 40px rgba(227, 24, 55, 0.15) !important;
+    0 0 40px rgba(230, 0, 18, 0.15) !important;
 }
 
 .paqueteSeleccionado::before {
-  background: linear-gradient(90deg, transparent, rgba(227, 24, 55, 0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(230, 0, 18, 0.5), transparent);
   opacity: 1;
 }
 
 /* ===== PAQUETE HEADER ===== */
 .paqueteHeader {
   padding: 20px;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   position: relative;
 }
 
@@ -269,7 +269,7 @@
   flex-direction: column;
   gap: 12px;
   text-align: left;
-  color: #B0B0B0;
+  color: #B0B0C4;
   flex: 1;
 }
 
@@ -288,8 +288,8 @@
   margin-top: 6px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #00CED1;
-  box-shadow: 0 0 8px rgba(0, 206, 209, 0.5);
+  background: #B5007D;
+  box-shadow: 0 0 8px rgba(181, 0, 125, 0.5);
 }
 
 .paqueteLista img {
@@ -305,16 +305,16 @@
   margin: 0;
   padding: 16px 20px;
   text-align: left;
-  color: #8A8A8A;
+  color: #8A8A9E;
   font-size: 0.9rem;
   line-height: 1.5;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .paqueteCta {
   padding: 16px 20px 20px;
   font-weight: 700;
-  color: #00CED1;
+  color: #B5007D;
   font-size: 0.85rem;
   display: flex;
   align-items: center;
@@ -336,8 +336,8 @@
 }
 
 .membersCard {
-  background: #141414;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #120B1F;
+  border: 1px solid rgba(181, 0, 125, 0.08);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   padding: 24px;
@@ -351,7 +351,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 206, 209, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(181, 0, 125, 0.3), transparent);
 }
 
 .membersHeader {
@@ -369,20 +369,20 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #00CED1;
+  color: #B5007D;
 }
 
 .membersSubtitle {
   margin: 8px 0 0;
-  color: #8A8A8A;
+  color: #8A8A9E;
   font-size: 0.9rem;
   max-width: 60ch;
 }
 
 /* ===== BUTTONS ===== */
 .secondaryBtn {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(181, 0, 125, 0.12);
+  background: rgba(181, 0, 125, 0.04);
   color: #FFFFFF;
   padding: 12px 20px;
   border-radius: 9999px;
@@ -397,8 +397,8 @@
 
 .secondaryBtn:hover {
   transform: translateY(-2px);
-  border-color: rgba(0, 206, 209, 0.4);
-  background: rgba(0, 206, 209, 0.1);
+  border-color: rgba(181, 0, 125, 0.4);
+  background: rgba(181, 0, 125, 0.1);
 }
 
 .membersFooterBtns {
@@ -409,12 +409,12 @@
   justify-content: flex-end;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(181, 0, 125, 0.08);
 }
 
 .primaryBtn {
   border: none;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   padding: 14px 28px;
   border-radius: 9999px;
@@ -493,14 +493,14 @@
 }
 
 :global([data-theme="light"]) .kicker {
-  color: #0891B2;
-  border-color: rgba(8, 145, 178, 0.35);
-  background: rgba(8, 145, 178, 0.1);
+  color: #9D174D;
+  border-color: rgba(157, 23, 77, 0.35);
+  background: rgba(157, 23, 77, 0.1);
 }
 
 :global([data-theme="light"]) .kicker::before {
-  background: #0891B2;
-  box-shadow: 0 0 10px #0891B2;
+  background: #9D174D;
+  box-shadow: 0 0 10px #9D174D;
 }
 
 :global([data-theme="light"]) .sectionTitle {
@@ -512,8 +512,8 @@
 }
 
 :global([data-theme="light"]) .summaryPill {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: #F9FAFB;
+  border-color: rgba(76, 29, 149, 0.08);
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .summaryLabel {
@@ -525,7 +525,7 @@
 }
 
 :global([data-theme="light"]) .state {
-  border-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(76, 29, 149, 0.08);
   background: rgba(0, 0, 0, 0.02);
   color: #6B7280;
 }
@@ -535,26 +535,26 @@
 }
 
 :global([data-theme="light"]) .spinner {
-  border-color: rgba(0, 0, 0, 0.1);
-  border-top-color: #0891B2;
+  border-color: rgba(76, 29, 149, 0.08);
+  border-top-color: #9D174D;
 }
 
 :global([data-theme="light"]) .paqueteCard {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: #F9FAFB;
+  border-color: rgba(30, 10, 60, 0.06);
+  background: #F8F7FC;
   color: #111827;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .paqueteCard::before {
-  background: linear-gradient(90deg, transparent, rgba(8, 145, 178, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(157, 23, 77, 0.2), transparent);
 }
 
 :global([data-theme="light"]) .paqueteCard:hover {
-  border-color: rgba(8, 145, 178, 0.3);
+  border-color: rgba(157, 23, 77, 0.3);
   box-shadow:
-    0 16px 50px rgba(0, 0, 0, 0.12),
-    0 0 40px rgba(8, 145, 178, 0.08);
+    0 16px 50px rgba(30, 10, 60, 0.1),
+    0 0 40px rgba(157, 23, 77, 0.08);
 }
 
 :global([data-theme="light"]) .paqueteSeleccionado {
@@ -566,7 +566,7 @@
 }
 
 :global([data-theme="light"]) .paqueteHeader {
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
 }
 
 :global([data-theme="light"]) .paqueteLista {
@@ -574,31 +574,31 @@
 }
 
 :global([data-theme="light"]) .paqueteLista li::before {
-  background: #0891B2;
-  box-shadow: 0 0 8px rgba(8, 145, 178, 0.5);
+  background: #9D174D;
+  box-shadow: 0 0 8px rgba(157, 23, 77, 0.5);
 }
 
 :global([data-theme="light"]) .paqueteDescripcion {
   color: #6B7280;
-  border-top-color: rgba(0, 0, 0, 0.08);
+  border-top-color: rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .paqueteCta {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .membersCard {
-  background: #F9FAFB;
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background: #F8F7FC;
+  border-color: rgba(30, 10, 60, 0.06);
+  box-shadow: 0 4px 20px rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .membersCard::before {
-  background: linear-gradient(90deg, transparent, rgba(8, 145, 178, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(157, 23, 77, 0.2), transparent);
 }
 
 :global([data-theme="light"]) .membersTitle {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .membersSubtitle {
@@ -606,25 +606,25 @@
 }
 
 :global([data-theme="light"]) .secondaryBtn {
-  border-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(76, 29, 149, 0.08);
   background: rgba(0, 0, 0, 0.02);
   color: #111827;
 }
 
 :global([data-theme="light"]) .secondaryBtn:hover {
-  border-color: rgba(8, 145, 178, 0.4);
-  background: rgba(8, 145, 178, 0.1);
+  border-color: rgba(157, 23, 77, 0.4);
+  background: rgba(157, 23, 77, 0.1);
 }
 
 :global([data-theme="light"]) .membersFooterBtns {
-  border-top-color: rgba(0, 0, 0, 0.08);
+  border-top-color: rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .primaryBtn {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .primaryBtn:hover:not(:disabled) {
-  background: #0E7490;
+  background: #831843;
 }

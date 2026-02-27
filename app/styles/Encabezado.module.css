@@ -1,20 +1,19 @@
 /* =========================
-   Encabezado.module.css - SLEEK PROFESSIONAL BANNER
-   Diseño minimalista con toggle colapsable
+   Encabezado.module.css - CORPORATE INDIGO BANNER
+   Banner profesional con gradientes corporativos
    ========================= */
 
 .hero {
   position: relative;
   overflow: hidden;
   text-align: center;
-  background: linear-gradient(180deg, #0D0D0D 0%, #141414 100%);
+  background: linear-gradient(180deg, #0A0612 0%, #120B1F 100%);
 
   /* Full-bleed */
   width: 100vw;
   margin-left: calc(-50vw + 50%);
   margin-top: -32px;
 
-  /* Transición suave para altura */
   transition: padding 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -47,14 +46,14 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(181, 0, 125, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(181, 0, 125, 0.03) 1px, transparent 1px);
   background-size: 60px 60px;
   mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 70%);
   -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 70%);
 }
 
-/* Orbes de luz */
+/* Orbes de luz corporativos */
 .glowOrb1 {
   position: absolute;
   top: -30%;
@@ -62,7 +61,7 @@
   transform: translateX(-50%);
   width: 600px;
   height: 400px;
-  background: radial-gradient(ellipse, rgba(227, 24, 55, 0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(181, 0, 125, 0.12) 0%, transparent 70%);
   filter: blur(60px);
   animation: pulseOrb 8s ease-in-out infinite;
 }
@@ -127,9 +126,9 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #00CED1;
-  background: rgba(0, 206, 209, 0.08);
-  border: 1px solid rgba(0, 206, 209, 0.25);
+  color: #B5007D;
+  background: rgba(181, 0, 125, 0.08);
+  border: 1px solid rgba(181, 0, 125, 0.25);
   backdrop-filter: blur(10px);
 }
 
@@ -137,8 +136,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00CED1;
-  box-shadow: 0 0 8px #00CED1;
+  background: #B5007D;
+  box-shadow: 0 0 8px #B5007D;
   animation: blink 2s ease-in-out infinite;
 }
 
@@ -159,7 +158,7 @@
 
 .headlineAccent {
   display: inline-block;
-  background: linear-gradient(135deg, #E31837 0%, #FF4D6A 50%, #E31837 100%);
+  background: linear-gradient(135deg, #E60012 0%, #B5007D 50%, #E60012 100%);
   background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -177,7 +176,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 400;
-  color: #8A8A8A;
+  color: #8A8A9E;
   letter-spacing: 0.02em;
 }
 
@@ -189,7 +188,7 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  margin: 0 auto; /* Centra horizontalmente */
+  margin: 0 auto;
   background: none;
   border: none;
   cursor: pointer;
@@ -212,9 +211,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(227, 24, 55, 0.08);
-  border: 1px solid rgba(227, 24, 55, 0.2);
-  box-shadow: 0 0 30px rgba(227, 24, 55, 0.15);
+  background: rgba(181, 0, 125, 0.08);
+  border: 1px solid rgba(181, 0, 125, 0.2);
+  box-shadow: 0 0 30px rgba(181, 0, 125, 0.15);
   transition:
     background 0.3s ease,
     border-color 0.3s ease,
@@ -222,13 +221,13 @@
 }
 
 .heartButton:hover .heartWrapper {
-  background: rgba(227, 24, 55, 0.15);
-  border-color: rgba(227, 24, 55, 0.4);
-  box-shadow: 0 0 40px rgba(227, 24, 55, 0.25);
+  background: rgba(181, 0, 125, 0.15);
+  border-color: rgba(181, 0, 125, 0.4);
+  box-shadow: 0 0 40px rgba(181, 0, 125, 0.25);
 }
 
 .heartButtonOpen .heartWrapper {
-  background: rgba(227, 24, 55, 0.12);
+  background: rgba(181, 0, 125, 0.12);
 }
 
 .heartIcon {
@@ -248,7 +247,7 @@
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #5A5A5A;
+  color: #5A5A72;
   opacity: 0;
   transform: translateY(-5px);
   transition:
@@ -272,7 +271,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(227, 24, 55, 0.5) 30%,
+    rgba(181, 0, 125, 0.5) 30%,
     rgba(0, 206, 209, 0.5) 70%,
     transparent 100%
   );
@@ -362,7 +361,7 @@
   }
 }
 
-/* Reduce motion para accesibilidad */
+/* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
   .hero,
   .content,
@@ -385,17 +384,17 @@
 
 /* ===== TEMA CLARO ===== */
 :global([data-theme="light"]) .hero {
-  background: linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%);
+  background: linear-gradient(180deg, #F8F7FC 0%, #FFFFFF 100%);
 }
 
 :global([data-theme="light"]) .gridPattern {
   background-image:
-    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(76, 29, 149, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(76, 29, 149, 0.04) 1px, transparent 1px);
 }
 
 :global([data-theme="light"]) .glowOrb1 {
-  background: radial-gradient(ellipse, rgba(227, 24, 55, 0.06) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(157, 23, 77, 0.06) 0%, transparent 70%);
 }
 
 :global([data-theme="light"]) .glowOrb2 {
@@ -403,14 +402,14 @@
 }
 
 :global([data-theme="light"]) .badge {
-  color: #0891B2;
-  background: rgba(8, 145, 178, 0.08);
-  border-color: rgba(8, 145, 178, 0.2);
+  color: #9D174D;
+  background: rgba(157, 23, 77, 0.06);
+  border-color: rgba(157, 23, 77, 0.2);
 }
 
 :global([data-theme="light"]) .badgeDot {
-  background: #0891B2;
-  box-shadow: 0 0 8px #0891B2;
+  background: #9D174D;
+  box-shadow: 0 0 8px #9D174D;
 }
 
 :global([data-theme="light"]) .headline {
@@ -422,19 +421,19 @@
 }
 
 :global([data-theme="light"]) .heartWrapper {
-  background: rgba(227, 24, 55, 0.06);
-  border-color: rgba(227, 24, 55, 0.15);
-  box-shadow: 0 0 30px rgba(227, 24, 55, 0.1);
+  background: rgba(157, 23, 77, 0.05);
+  border-color: rgba(157, 23, 77, 0.15);
+  box-shadow: 0 0 30px rgba(157, 23, 77, 0.08);
 }
 
 :global([data-theme="light"]) .heartButton:hover .heartWrapper {
-  background: rgba(227, 24, 55, 0.1);
-  border-color: rgba(227, 24, 55, 0.3);
-  box-shadow: 0 0 40px rgba(227, 24, 55, 0.15);
+  background: rgba(157, 23, 77, 0.08);
+  border-color: rgba(157, 23, 77, 0.3);
+  box-shadow: 0 0 40px rgba(157, 23, 77, 0.12);
 }
 
 :global([data-theme="light"]) .heartButtonOpen .heartWrapper {
-  background: rgba(227, 24, 55, 0.08);
+  background: rgba(157, 23, 77, 0.06);
 }
 
 :global([data-theme="light"]) .heartIcon {

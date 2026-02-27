@@ -1,9 +1,9 @@
-/* Dashboard Layout with Horizontal Tabs */
+/* Dashboard Layout - CORPORATE INDIGO REDESIGN */
 
 .layout {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 72px - 80px); /* viewport - header - footer */
+  min-height: calc(100vh - 72px - 80px);
   background: var(--surface-0);
 }
 
@@ -22,7 +22,7 @@
   width: 40px;
   height: 40px;
   border: 3px solid var(--border-subtle);
-  border-top-color: var(--turquoise);
+  border-top-color: var(--magenta);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -95,12 +95,12 @@
 }
 
 .tabActive {
-  color: var(--turquoise);
-  border-bottom-color: var(--turquoise);
+  color: var(--magenta);
+  border-bottom-color: var(--magenta);
 }
 
 .tabActive:hover {
-  color: var(--turquoise);
+  color: var(--magenta);
   background: transparent;
 }
 
@@ -153,7 +153,7 @@
   }
 }
 
-/* Responsive - Móviles */
+/* Responsive - Moviles */
 @media (max-width: 640px) {
   .layout {
     min-height: calc(100vh - 64px - 80px);
@@ -199,7 +199,7 @@
   }
 }
 
-/* Responsive - Móviles pequeños */
+/* Responsive - Moviles pequenos */
 @media (max-width: 380px) {
   .tab {
     padding: var(--space-2);
@@ -212,13 +212,13 @@
 
 /* ===== TEMA CLARO ===== */
 :global([data-theme="light"]) .layout {
-  background: #F9FAFB;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .tabsNav {
   background: #FFFFFF;
-  border-bottom-color: #E5E7EB;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-bottom-color: #E8E5F0;
+  box-shadow: 0 1px 3px rgba(30, 10, 60, 0.04);
 }
 
 :global([data-theme="light"]) .tab {
@@ -227,16 +227,16 @@
 
 :global([data-theme="light"]) .tab:hover {
   color: #111827;
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .tabActive {
-  color: #0891B2;
-  border-bottom-color: #0891B2;
+  color: #9D174D;
+  border-bottom-color: #9D174D;
 }
 
 :global([data-theme="light"]) .tabActive:hover {
-  color: #0891B2;
+  color: #9D174D;
   background: transparent;
 }
 
@@ -245,6 +245,6 @@
 }
 
 :global([data-theme="light"]) .spinner {
-  border-color: #E5E7EB;
-  border-top-color: #0891B2;
+  border-color: #E8E5F0;
+  border-top-color: #9D174D;
 }

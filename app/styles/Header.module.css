@@ -1,6 +1,6 @@
 /* =========================
-   Header.module.css - MODERN NOIR REDESIGN
-   Navbar flotante con glassmorphism
+   Header.module.css - CORPORATE INDIGO REDESIGN
+   Navbar con glassmorphism indigo profundo
    ========================= */
 
 /* ===== OVERLAY ===== */
@@ -10,7 +10,7 @@
   z-index: 1250;
   opacity: 0;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(10, 6, 18, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -33,14 +33,14 @@
   top: 0;
   z-index: 1200;
 
-  /* Glassmorphism negro */
-  background: rgba(10, 10, 10, 0.85);
+  /* Glassmorphism indigo corporativo */
+  background: rgba(10, 6, 18, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(181, 0, 125, 0.1);
   box-shadow:
-    0 4px 30px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 4px 30px rgba(10, 6, 18, 0.6),
+    inset 0 1px 0 rgba(181, 0, 125, 0.05);
 }
 
 .Spacer {
@@ -73,11 +73,11 @@
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  background: rgba(20, 20, 20, 0.8);
+  border: 2px solid rgba(181, 0, 125, 0.15);
+  background: rgba(18, 11, 31, 0.8);
   box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.4),
-    0 0 0 0 rgba(0, 206, 209, 0);
+    0 4px 20px rgba(10, 6, 18, 0.5),
+    0 0 0 0 rgba(181, 0, 125, 0);
   object-fit: cover;
   transition:
     border-color 200ms ease,
@@ -85,18 +85,18 @@
 }
 
 .Logo:hover {
-  border-color: rgba(0, 206, 209, 0.5);
+  border-color: rgba(181, 0, 125, 0.5);
   box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.4),
-    0 0 25px rgba(0, 206, 209, 0.3);
+    0 4px 20px rgba(10, 6, 18, 0.5),
+    0 0 25px rgba(181, 0, 125, 0.3);
 }
 
 .Logo-Activo {
-  border-color: #00CED1;
+  border-color: #B5007D;
   box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(0, 206, 209, 0.4),
-    0 0 0 4px rgba(0, 206, 209, 0.15);
+    0 4px 20px rgba(10, 6, 18, 0.5),
+    0 0 30px rgba(181, 0, 125, 0.4),
+    0 0 0 4px rgba(181, 0, 125, 0.15);
 }
 
 /* ===== BRAND TITLE ===== */
@@ -111,7 +111,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: linear-gradient(135deg, #FFFFFF 0%, #00CED1 100%);
+  background: linear-gradient(135deg, #FFFFFF 0%, #B5007D 50%, #00CED1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -126,14 +126,14 @@
   padding: 12px 24px;
   border-radius: 9999px;
   border: none;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #CC0011 100%);
   color: #FFFFFF;
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
   box-shadow:
-    0 4px 20px rgba(227, 24, 55, 0.3),
+    0 4px 20px rgba(230, 0, 18, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transition:
     transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -143,15 +143,15 @@
 .BotonLogin:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 8px 30px rgba(227, 24, 55, 0.4),
-    0 0 40px rgba(227, 24, 55, 0.2),
+    0 8px 30px rgba(230, 0, 18, 0.4),
+    0 0 40px rgba(230, 0, 18, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .BotonLogin:active {
   transform: translateY(0);
   box-shadow:
-    0 2px 10px rgba(227, 24, 55, 0.3),
+    0 2px 10px rgba(230, 0, 18, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
@@ -167,14 +167,14 @@
   transform: translateX(-105%);
   transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Glassmorphism negro profundo */
-  background: linear-gradient(180deg, rgba(20, 20, 20, 0.98) 0%, rgba(10, 10, 10, 0.98) 100%);
+  /* Glassmorphism indigo profundo */
+  background: linear-gradient(180deg, rgba(18, 11, 31, 0.98) 0%, rgba(10, 6, 18, 0.98) 100%);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(181, 0, 125, 0.1);
   box-shadow:
-    20px 0 60px rgba(0, 0, 0, 0.8),
-    inset 1px 0 0 rgba(255, 255, 255, 0.05);
+    20px 0 60px rgba(10, 6, 18, 0.8),
+    inset 1px 0 0 rgba(181, 0, 125, 0.05);
   overflow-y: auto;
 }
 
@@ -189,7 +189,7 @@
   justify-content: space-between;
   padding: 8px 4px 20px;
   margin-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(181, 0, 125, 0.1);
 }
 
 .MenuTitulo {
@@ -198,7 +198,7 @@
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #00CED1;
+  color: #B5007D;
 }
 
 .MenuClose {
@@ -209,8 +209,8 @@
   justify-content: center;
   padding: 0;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(181, 0, 125, 0.15);
+  background: rgba(181, 0, 125, 0.05);
   color: #FFFFFF;
   cursor: pointer;
   transition:
@@ -227,8 +227,8 @@
 
 .MenuClose:hover {
   transform: scale(1.05);
-  border-color: rgba(227, 24, 55, 0.5);
-  background: rgba(227, 24, 55, 0.1);
+  border-color: rgba(230, 0, 18, 0.5);
+  background: rgba(230, 0, 18, 0.1);
 }
 
 /* ===== MENU ITEMS ===== */
@@ -250,7 +250,7 @@
 }
 
 .Menu-Elemento:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(181, 0, 125, 0.06);
 }
 
 .Menu-Elemento-Activo {
@@ -258,9 +258,9 @@
 }
 
 .Menu-Elemento-Activo .Menu-Elemento-Boton {
-  background: rgba(0, 206, 209, 0.1);
+  background: rgba(181, 0, 125, 0.12);
   border-radius: 10px;
-  color: #00CED1;
+  color: #B5007D;
 }
 
 .Menu-Elemento-Boton {
@@ -301,7 +301,7 @@
   width: 20px;
   height: 20px;
   flex: 0 0 auto;
-  filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(155deg) brightness(95%) contrast(101%);
+  filter: invert(25%) sepia(100%) saturate(3000%) hue-rotate(300deg) brightness(80%) contrast(110%);
   opacity: 1;
 }
 
@@ -374,8 +374,8 @@
 .AuthSpinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #00CED1;
+  border: 2px solid rgba(181, 0, 125, 0.2);
+  border-top-color: #B5007D;
   border-radius: 50%;
   animation: headerSpin 0.8s linear infinite;
 }
@@ -393,8 +393,8 @@
   justify-content: center;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(181, 0, 125, 0.15);
+  background: rgba(181, 0, 125, 0.05);
   color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   transition:
@@ -405,9 +405,9 @@
 }
 
 .ThemeToggle:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(0, 206, 209, 0.4);
-  color: #00CED1;
+  background: rgba(181, 0, 125, 0.12);
+  border-color: rgba(181, 0, 125, 0.4);
+  color: #B5007D;
   transform: scale(1.05);
 }
 
@@ -425,17 +425,17 @@
   transform: rotate(15deg);
 }
 
-/* Tema claro - estilos del toggle */
+/* Tema claro - toggle */
 :global([data-theme="light"]) .ThemeToggle {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(76, 29, 149, 0.12);
+  background: rgba(76, 29, 149, 0.04);
   color: rgba(0, 0, 0, 0.7);
 }
 
 :global([data-theme="light"]) .ThemeToggle:hover {
-  background: rgba(0, 0, 0, 0.06);
-  border-color: rgba(0, 160, 163, 0.4);
-  color: #00A0A3;
+  background: rgba(76, 29, 149, 0.08);
+  border-color: rgba(76, 29, 149, 0.3);
+  color: #4C1D95;
 }
 
 /* ===== ADMIN BUTTON ===== */
@@ -447,9 +447,9 @@
   justify-content: center;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  background: rgba(139, 92, 246, 0.1);
-  color: #8B5CF6;
+  border: 1px solid rgba(0, 206, 209, 0.3);
+  background: rgba(0, 206, 209, 0.1);
+  color: #00CED1;
   cursor: pointer;
   transition:
     background 200ms ease,
@@ -459,9 +459,9 @@
 }
 
 .AdminButton:hover {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.5);
-  color: #A78BFA;
+  background: rgba(0, 206, 209, 0.2);
+  border-color: rgba(0, 206, 209, 0.5);
+  color: #00BFFF;
   transform: scale(1.05);
 }
 
@@ -475,15 +475,15 @@
 }
 
 :global([data-theme="light"]) .AdminButton {
-  border-color: rgba(124, 58, 237, 0.3);
-  background: rgba(124, 58, 237, 0.1);
-  color: #7C3AED;
+  border-color: rgba(8, 145, 178, 0.3);
+  background: rgba(8, 145, 178, 0.1);
+  color: #0891B2;
 }
 
 :global([data-theme="light"]) .AdminButton:hover {
-  background: rgba(124, 58, 237, 0.15);
-  border-color: rgba(124, 58, 237, 0.4);
-  color: #6D28D9;
+  background: rgba(8, 145, 178, 0.15);
+  border-color: rgba(8, 145, 178, 0.4);
+  color: #0E7490;
 }
 
 /* ===== USER MENU ===== */
@@ -497,8 +497,8 @@
   gap: 10px;
   padding: 6px 14px 6px 6px;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(181, 0, 125, 0.15);
+  background: rgba(181, 0, 125, 0.05);
   color: #FFFFFF;
   cursor: pointer;
   transition:
@@ -508,9 +508,9 @@
 }
 
 .UserButton:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(0, 206, 209, 0.4);
-  box-shadow: 0 0 20px rgba(0, 206, 209, 0.15);
+  background: rgba(181, 0, 125, 0.1);
+  border-color: rgba(181, 0, 125, 0.4);
+  box-shadow: 0 0 20px rgba(181, 0, 125, 0.15);
   transform: none;
 }
 
@@ -518,7 +518,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #E31837 0%, #B91430 100%);
+  background: linear-gradient(135deg, #E60012 0%, #B5007D 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -559,14 +559,14 @@
   top: calc(100% + 8px);
   right: 0;
   min-width: 240px;
-  background: rgba(20, 20, 20, 0.98);
+  background: rgba(18, 11, 31, 0.98);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(181, 0, 125, 0.15);
   border-radius: 16px;
   box-shadow:
-    0 10px 40px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+    0 10px 40px rgba(10, 6, 18, 0.7),
+    0 0 0 1px rgba(181, 0, 125, 0.05);
   overflow: hidden;
   z-index: 1400;
   animation: dropdownFadeIn 200ms ease;
@@ -602,7 +602,7 @@
 
 .UserDropdownDivider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(181, 0, 125, 0.1);
   margin: 0;
 }
 
@@ -630,23 +630,23 @@
 }
 
 .UserDropdownItem:hover {
-  background: rgba(0, 206, 209, 0.1);
-  color: #00CED1;
+  background: rgba(181, 0, 125, 0.1);
+  color: #B5007D;
   transform: none;
   box-shadow: none;
 }
 
 .UserDropdownItem:hover svg {
-  color: #00CED1;
+  color: #B5007D;
 }
 
 .UserDropdownItemDanger:hover {
-  background: rgba(227, 24, 55, 0.1);
-  color: #E31837;
+  background: rgba(230, 0, 18, 0.1);
+  color: #E60012;
 }
 
 .UserDropdownItemDanger:hover svg {
-  color: #E31837;
+  color: #E60012;
 }
 
 /* ===== USER MENU RESPONSIVE ===== */
@@ -737,35 +737,35 @@
 
 /* ===== TEMA CLARO - HEADER ===== */
 :global([data-theme="light"]) .Overlay {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(30, 10, 60, 0.4);
   backdrop-filter: blur(8px);
 }
 
 :global([data-theme="light"]) .BarraSuperior {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(76, 29, 149, 0.08);
+  box-shadow: 0 1px 3px rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .Logo {
-  border-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(76, 29, 149, 0.1);
   background: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(30, 10, 60, 0.06);
 }
 
 :global([data-theme="light"]) .Logo:hover {
-  border-color: #0891B2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 3px rgba(8, 145, 178, 0.15);
+  border-color: #9D174D;
+  box-shadow: 0 2px 8px rgba(30, 10, 60, 0.06), 0 0 0 3px rgba(157, 23, 77, 0.12);
 }
 
 :global([data-theme="light"]) .Logo-Activo {
-  border-color: #0891B2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 4px rgba(8, 145, 178, 0.2);
+  border-color: #9D174D;
+  box-shadow: 0 2px 8px rgba(30, 10, 60, 0.06), 0 0 0 4px rgba(157, 23, 77, 0.15);
 }
 
 :global([data-theme="light"]) .BarraSuperior-Titulo {
-  background: linear-gradient(135deg, #111827 0%, #0891B2 100%);
+  background: linear-gradient(135deg, #1E0A3C 0%, #9D174D 50%, #0891B2 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -777,27 +777,27 @@
 }
 
 :global([data-theme="light"]) .BotonLogin:hover {
-  box-shadow: 0 4px 12px;
-  color: #1f1f1f;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .Menu {
   background: #FFFFFF;
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+  border-right: 1px solid rgba(76, 29, 149, 0.08);
+  box-shadow: 4px 0 24px rgba(30, 10, 60, 0.1);
 }
 
 :global([data-theme="light"]) .MenuHeader {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(76, 29, 149, 0.08);
 }
 
 :global([data-theme="light"]) .MenuTitulo {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .MenuClose {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: #F9FAFB;
+  border-color: rgba(76, 29, 149, 0.1);
+  background: #F8F7FC;
   color: #374151;
 }
 
@@ -812,7 +812,7 @@
 }
 
 :global([data-theme="light"]) .Menu-Elemento:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(76, 29, 149, 0.04);
 }
 
 :global([data-theme="light"]) .Menu-Elemento-Activo {
@@ -820,9 +820,9 @@
 }
 
 :global([data-theme="light"]) .Menu-Elemento-Activo .Menu-Elemento-Boton {
-  background: rgba(8, 145, 178, 0.1);
+  background: rgba(157, 23, 77, 0.08);
   border-radius: 10px;
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .Menu-Elemento-Boton {
@@ -839,7 +839,7 @@
 }
 
 :global([data-theme="light"]) .MenuElementoIconoSeleccionado {
-  filter: invert(35%) sepia(98%) saturate(1000%) hue-rotate(165deg) brightness(95%) contrast(101%);
+  filter: invert(15%) sepia(100%) saturate(4000%) hue-rotate(310deg) brightness(80%) contrast(110%);
 }
 
 :global([data-theme="light"]) .Menu-Elemento:hover .Menu-Elemento-Icono {
@@ -847,19 +847,19 @@
 }
 
 :global([data-theme="light"]) .UserButton {
-  border-color: rgba(0, 0, 0, 0.1);
-  background: #F9FAFB;
+  border-color: rgba(76, 29, 149, 0.1);
+  background: #F8F7FC;
   color: #374151;
 }
 
 :global([data-theme="light"]) .UserButton:hover {
-  background: #F3F4F6;
-  border-color: #0891B2;
-  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+  background: #F0EEF6;
+  border-color: #9D174D;
+  box-shadow: 0 0 0 3px rgba(157, 23, 77, 0.08);
 }
 
 :global([data-theme="light"]) .UserAvatar {
-  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  background: linear-gradient(135deg, #DC2626 0%, #9D174D 100%);
 }
 
 :global([data-theme="light"]) .UserName {
@@ -872,8 +872,8 @@
 
 :global([data-theme="light"]) .UserDropdown {
   background: #FFFFFF;
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border-color: rgba(76, 29, 149, 0.1);
+  box-shadow: 0 10px 40px rgba(30, 10, 60, 0.12), 0 0 0 1px rgba(76, 29, 149, 0.05);
 }
 
 :global([data-theme="light"]) .UserDropdownName {
@@ -885,7 +885,7 @@
 }
 
 :global([data-theme="light"]) .UserDropdownDivider {
-  background: #E5E7EB;
+  background: #E8E5F0;
 }
 
 :global([data-theme="light"]) .UserDropdownItem {
@@ -897,12 +897,12 @@
 }
 
 :global([data-theme="light"]) .UserDropdownItem:hover {
-  background: rgba(8, 145, 178, 0.1);
-  color: #0891B2;
+  background: rgba(157, 23, 77, 0.06);
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .UserDropdownItem:hover svg {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .UserDropdownItemDanger:hover {
@@ -915,6 +915,6 @@
 }
 
 :global([data-theme="light"]) .AuthSpinner {
-  border-color: #E5E7EB;
-  border-top-color: #0891B2;
+  border-color: #E8E5F0;
+  border-top-color: #9D174D;
 }

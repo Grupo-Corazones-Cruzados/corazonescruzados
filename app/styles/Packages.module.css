@@ -1617,7 +1617,7 @@
 
 :global([data-theme="light"]) .statCard {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .statValue {
@@ -1630,12 +1630,12 @@
 
 :global([data-theme="light"]) .tab:hover {
   color: #111827;
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .tabActive {
-  color: #0891B2;
-  background: rgba(8, 145, 178, 0.1);
+  color: #9D174D;
+  background: rgba(157, 23, 77, 0.1);
 }
 
 :global([data-theme="light"]) .packageCard,
@@ -1643,12 +1643,12 @@
 :global([data-theme="light"]) .sidebarCard,
 :global([data-theme="light"]) .purchaseSection {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .packageCard:hover {
-  border-color: #0891B2;
-  background: #F9FAFB;
+  border-color: #9D174D;
+  background: #F8F7FC;
 }
 
 :global([data-theme="light"]) .packageCardTitle,
@@ -1657,16 +1657,16 @@
 }
 
 :global([data-theme="light"]) .memberCard {
-  background: #F3F4F6;
+  background: #F0EEF6;
 }
 
 :global([data-theme="light"]) .memberCard:hover {
-  background: #E5E7EB;
+  background: #E8E5F0;
 }
 
 :global([data-theme="light"]) .memberCardSelected {
-  border-color: #0891B2;
-  background: rgba(8, 145, 178, 0.1);
+  border-color: #9D174D;
+  background: rgba(157, 23, 77, 0.1);
 }
 
 :global([data-theme="light"]) .memberName,
@@ -1675,53 +1675,53 @@
 }
 
 :global([data-theme="light"]) .selectedCheck {
-  background: #0891B2;
+  background: #9D174D;
 }
 
 :global([data-theme="light"]) .packageHours {
-  color: #0891B2;
+  color: #9D174D;
 }
 
 :global([data-theme="light"]) .progressBarLarge,
 :global([data-theme="light"]) .progressBar {
-  background: #E5E7EB;
+  background: #E8E5F0;
 }
 
 :global([data-theme="light"]) .progressFillLarge,
 :global([data-theme="light"]) .progressFill {
-  background: #0891B2;
+  background: #9D174D;
 }
 
 :global([data-theme="light"]) .primaryButton {
-  background: #0891B2;
+  background: #9D174D;
   color: #FFFFFF;
 }
 
 :global([data-theme="light"]) .primaryButton:hover:not(:disabled) {
-  background: #0E7490;
+  background: #831843;
 }
 
 :global([data-theme="light"]) .secondaryButton {
   background: #FFFFFF;
-  border-color: #D1D5DB;
+  border-color: #D1CBDF;
   color: #374151;
 }
 
 :global([data-theme="light"]) .modal {
   background: #FFFFFF;
-  border-color: #E5E7EB;
+  border-color: #E8E5F0;
 }
 
 :global([data-theme="light"]) .formInput,
 :global([data-theme="light"]) .formSelect,
 :global([data-theme="light"]) .formTextarea,
 :global([data-theme="light"]) .notesTextarea {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+  background: #F8F7FC;
+  border-color: #D1CBDF;
   color: #111827;
 }
 
 :global([data-theme="light"]) .spinner {
-  border-color: #E5E7EB;
-  border-top-color: #0891B2;
+  border-color: #E8E5F0;
+  border-top-color: #9D174D;
 }
