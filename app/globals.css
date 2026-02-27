@@ -448,9 +448,9 @@ a:hover {
 }
 
 .container {
-  width: min(1200px, calc(100% - var(--space-8)));
+  width: min(1600px, calc(100% - var(--space-8)));
   margin: 0 auto;
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-6);
 }
 
 .stack > * + * {
