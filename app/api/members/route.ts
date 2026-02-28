@@ -1,26 +1,32 @@
-import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth/jwt";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, requireRole, isErrorResponse } from "@/lib/auth/guards";
+import { listMembers, createMember } from "@/lib/services/member-service";
 
-// GET /api/members - List all members
-export async function GET() {
-  try {
-    const tokenData = await getCurrentUser();
-    if (!tokenData) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (isErrorResponse(auth)) return auth;
 
-    const result = await query(
-      `SELECT m.id, m.nombre, COALESCE(m.foto, up.avatar_url) AS foto,
-              m.puesto, m.costo, m.correo
-       FROM miembros m
-       LEFT JOIN user_profiles up ON up.id_miembro = m.id
-       ORDER BY m.nombre ASC`
-    );
+  const url = req.nextUrl.searchParams;
+  const data = await listMembers({
+    page: Number(url.get("page")) || 1,
+    per_page: Number(url.get("per_page")) || 20,
+    active_only: url.get("active_only") !== "false",
+    search: url.get("search") || undefined,
+  });
 
-    return NextResponse.json({ members: result.rows });
-  } catch (error) {
-    console.error("Error fetching members:", error);
-    return NextResponse.json({ error: "Error al cargar los miembros" }, { status: 500 });
+  return NextResponse.json(data);
+}
+
+export async function POST(req: NextRequest) {
+  const auth = await requireRole(req, "admin");
+  if (isErrorResponse(auth)) return auth;
+
+  const body = await req.json();
+
+  if (!body.name) {
+    return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
+
+  const member = await createMember(body);
+  return NextResponse.json({ data: member }, { status: 201 });
 }

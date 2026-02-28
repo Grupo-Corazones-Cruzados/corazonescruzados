@@ -1,39 +1,44 @@
-import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth/jwt";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, requireRole, isErrorResponse } from "@/lib/auth/guards";
+import { listClients, createClient } from "@/lib/services/client-service";
 
-// GET /api/clients - List all clients
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (isErrorResponse(auth)) return auth;
+
+  const url = req.nextUrl.searchParams;
+  const data = await listClients({
+    page: Number(url.get("page")) || 1,
+    per_page: Number(url.get("per_page")) || 20,
+    search: url.get("search") || undefined,
+  });
+
+  return NextResponse.json(data);
+}
+
+export async function POST(req: NextRequest) {
+  const auth = await requireRole(req, "admin", "member");
+  if (isErrorResponse(auth)) return auth;
+
+  const body = await req.json();
+
+  if (!body.name || !body.email) {
+    return NextResponse.json(
+      { error: "name and email are required" },
+      { status: 400 }
+    );
+  }
+
   try {
-    const tokenData = await getCurrentUser();
-    if (!tokenData) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    const client = await createClient(body);
+    return NextResponse.json({ data: client }, { status: 201 });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes("unique")) {
+      return NextResponse.json(
+        { error: "A client with this email already exists" },
+        { status: 409 }
+      );
     }
-
-    // Check if user has permission (admin or miembro)
-    const userResult = await query(
-      "SELECT rol FROM user_profiles WHERE id = $1",
-      [tokenData.userId]
-    );
-
-    if (userResult.rows.length === 0) {
-      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
-    }
-
-    const { rol } = userResult.rows[0];
-    if (rol !== "admin" && rol !== "miembro") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
-
-    const result = await query(
-      `SELECT id, nombre, correo_electronico, telefono, empresa
-       FROM clientes
-       ORDER BY nombre ASC`
-    );
-
-    return NextResponse.json({ clients: result.rows });
-  } catch (error) {
-    console.error("Error fetching clients:", error);
-    return NextResponse.json({ error: "Error al cargar los clientes" }, { status: 500 });
+    throw err;
   }
 }

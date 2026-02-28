@@ -1,0 +1,120 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+}
+
+.search {
+  max-width: 320px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-12);
+}
+
+.invoiceNumber {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: var(--text-sm);
+}
+
+/* Create invoice form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.itemsSection {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+}
+
+.itemsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.itemsTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.addItemBtn {
+  font-size: var(--text-sm);
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.addItemBtn:hover {
+  text-decoration: underline;
+}
+
+.itemRow {
+  display: grid;
+  grid-template-columns: 1fr 80px 100px 30px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  align-items: end;
+}
+
+.qtyInput {
+  width: 80px;
+}
+
+.priceInput {
+  width: 100px;
+}
+
+.removeItemBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.removeItemBtn:hover {
+  color: var(--error);
+}
+
+.totalsRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.taxInput {
+  max-width: 140px;
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .itemRow {
+    grid-template-columns: 1fr;
+  }
+}

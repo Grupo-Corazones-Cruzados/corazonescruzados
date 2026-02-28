@@ -3,10 +3,9 @@ import { query } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
 import { createToken, setAuthCookie } from "@/lib/auth/jwt";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -15,29 +14,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract IP address
-    const forwarded = request.headers.get("x-forwarded-for");
-    const realIp = request.headers.get("x-real-ip");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : realIp || "unknown";
-
-    // Check if IP is blocked
-    if (ip !== "unknown") {
-      const blockedIp = await query(
-        "SELECT id FROM blocked_ips WHERE ip_address = $1 LIMIT 1",
-        [ip]
-      );
-      if (blockedIp.rows.length > 0) {
-        return NextResponse.json(
-          { error: "Acceso bloqueado. Contacta al administrador." },
-          { status: 403 }
-        );
-      }
-    }
-
-    // Find user
     const result = await query(
-      `SELECT id, email, password_hash, nombre, apellido, avatar_url, telefono, rol, id_miembro, verificado, estado
-       FROM user_profiles WHERE email = $1`,
+      `SELECT id, email, password_hash, first_name, last_name,
+              avatar_url, phone, role, member_id, is_verified
+       FROM users WHERE email = $1`,
       [email.toLowerCase()]
     );
 
@@ -50,49 +30,27 @@ export async function POST(request: NextRequest) {
 
     const user = result.rows[0];
 
-    // Check if user is blocked (suspendido or baneado)
-    if (user.estado === "suspendido" || user.estado === "baneado") {
-      return NextResponse.json(
-        { error: "Tu cuenta ha sido suspendida. Contacta al administrador." },
-        { status: 403 }
-      );
-    }
-
-    // Verify password
-    const isValid = await verifyPassword(password, user.password_hash);
-    if (!isValid) {
+    const passwordMatch = await verifyPassword(password, user.password_hash);
+    if (!passwordMatch) {
       return NextResponse.json(
         { error: "Credenciales inválidas" },
         { status: 401 }
       );
     }
 
-    // Update last login and IP
-    await query(
-      `UPDATE user_profiles SET last_login = NOW(), last_ip = $1 WHERE id = $2`,
-      [ip, user.id]
-    );
+    const token = await createToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
 
-    // Create JWT token
-    const token = await createToken({ userId: user.id, email: user.email });
     await setAuthCookie(token);
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        nombre: user.nombre,
-        apellido: user.apellido,
-        avatar_url: user.avatar_url,
-        telefono: user.telefono,
-        rol: user.rol,
-        id_miembro: user.id_miembro,
-        verificado: user.verificado,
-      },
-    });
+    const { password_hash: _, ...safeUser } = user;
+
+    return NextResponse.json({ user: safeUser });
   } catch (error) {
-    console.error("Error en login:", error);
+    console.error("Login error:", error);
     return NextResponse.json(
       { error: "Error al iniciar sesión" },
       { status: 500 }

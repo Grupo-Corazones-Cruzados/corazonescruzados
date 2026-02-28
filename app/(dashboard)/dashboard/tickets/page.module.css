@@ -1,0 +1,22 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+}
+
+.search {
+  max-width: 320px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-12);
+}
+
+.ticketId {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: var(--text-xs);
+}

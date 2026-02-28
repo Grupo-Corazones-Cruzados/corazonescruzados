@@ -5,44 +5,41 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "your-secret-key-change-in-production"
 );
 
-const PROTECTED_ROUTES = ["/dashboard"];
+const PROTECTED = ["/dashboard"];
 const AUTH_ROUTES = ["/auth"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip blocked page to avoid redirect loop
-  if (pathname === "/blocked") {
-    return NextResponse.next();
-  }
+  if (pathname === "/blocked") return NextResponse.next();
 
   const token = request.cookies.get("auth_token")?.value;
+  let valid = false;
 
-  // Check if route needs protection
-  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  );
-  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
-
-  // Verify token if exists
-  let isValidToken = false;
   if (token) {
     try {
       await jwtVerify(token, JWT_SECRET);
-      isValidToken = true;
+      valid = true;
     } catch {
-      isValidToken = false;
+      valid = false;
     }
   }
 
-  // Redirect logic
-  if (isProtectedRoute && !isValidToken) {
-    const loginUrl = new URL("/auth", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+  const isProtected = PROTECTED.some((r) => pathname.startsWith(r));
+  const isAuth = AUTH_ROUTES.some((r) => pathname.startsWith(r));
+
+  if (isProtected && !valid) {
+    const url = new URL("/auth", request.url);
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
   }
 
-  if (isAuthRoute && isValidToken && !pathname.includes("/callback") && !pathname.includes("/reset")) {
+  if (
+    isAuth &&
+    valid &&
+    !pathname.includes("/verify") &&
+    !pathname.includes("/reset")
+  ) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -51,15 +48,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for:
-     * - api routes (they handle their own auth)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
-     * - blocked page (to avoid redirect loop)
-     */
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public|blocked).*)",
   ],
 };
