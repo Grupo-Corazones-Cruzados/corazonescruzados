@@ -2,19 +2,26 @@ import { Pool, PoolClient, QueryResult } from "pg";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false,
 });
 
-export async function query<T = any>(
+export async function query<T = Record<string, unknown>>(
   text: string,
-  params?: any[]
+  params?: unknown[]
 ): Promise<QueryResult<T>> {
   const start = Date.now();
   const result = await pool.query<T>(text, params);
   const duration = Date.now() - start;
 
   if (process.env.NODE_ENV === "development") {
-    console.log("Executed query", { text: text.slice(0, 100), duration, rows: result.rowCount });
+    console.log("query", {
+      text: text.slice(0, 100),
+      duration,
+      rows: result.rowCount,
+    });
   }
 
   return result;

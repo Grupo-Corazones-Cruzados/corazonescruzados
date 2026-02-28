@@ -1,0 +1,310 @@
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-12);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.cardTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.description {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.empty {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: var(--space-6) 0;
+}
+
+.statusRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.statusRow > :first-child {
+  flex: 1;
+}
+
+/* Requirements */
+.reqList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.reqItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.reqItem:hover {
+  background: var(--gray-50);
+}
+
+.reqDone .reqTitle {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+
+.reqCheck {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.reqCheck input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.reqTitle {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.reqMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.reqCost {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--border-light);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  gap: var(--space-2);
+}
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease);
+}
+
+.deleteBtn:hover {
+  background: var(--error-light, #FEE2E2);
+  color: var(--error);
+}
+
+/* Bids */
+.bidList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.bidItem {
+  padding: var(--space-4);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.bidHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.bidProposal {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-2);
+}
+
+.bidMeta {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.bidActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* Cancel */
+.cancelList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.cancelItem {
+  padding: var(--space-4);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.cancelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-2);
+}
+
+.cancelReason {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Sidebar details */
+.detailList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detailLabel {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detailValue {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.actionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* Modals */
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.modalRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.textareaBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.textareaLabel {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.textareaField {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg);
+  resize: vertical;
+  transition: border-color var(--duration-fast) var(--ease);
+}
+
+.textareaField:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modalRow {
+    grid-template-columns: 1fr;
+  }
+}

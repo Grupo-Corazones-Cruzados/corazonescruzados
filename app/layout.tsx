@@ -1,49 +1,30 @@
-import ClientLayout from "./components/ClientLayout";
-import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+import { ToastProvider } from "@/components/ui/Toast";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "Corazones Cruzados",
+  description: "Plataforma de gestión de servicios profesionales",
+  icons: { icon: "/Logo CC.ico" },
+};
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
-export const metadata: Metadata = {
-  title: "Corazones Cruzados",
-  icons: {
-    icon: "/Logo CC.ico",
-  },
-  description: "Proyecto en Next.js",
-};
-
-// Script para prevenir flash de tema incorrecto
-const themeScript = `
-  (function() {
-    try {
-      var theme = localStorage.getItem('theme');
-      if (theme === 'light' || theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', theme);
-      } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-        document.documentElement.setAttribute('data-theme', 'light');
-      } else {
-        document.documentElement.setAttribute('data-theme', 'dark');
-      }
-    } catch (e) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
-  })();
-`;
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <head>
-        <meta name="facebook-domain-verification" content="bmoze6gt5lp68c99dy0oy8i9mpqyq7" />
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+    <html lang="es">
       <body>
-        <ClientLayout>{children}</ClientLayout>
+        <AuthProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );

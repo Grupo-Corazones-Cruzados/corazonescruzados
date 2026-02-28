@@ -1,0 +1,91 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.cardTitle {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin-bottom: var(--space-6);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sideLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sideLinkIcon {
+  font-size: 24px;
+}
+
+.sideLinkTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sideLinkDesc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.infoTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+
+.infoList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.infoItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.infoLabel {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.infoValue {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

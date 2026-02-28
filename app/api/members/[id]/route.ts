@@ -1,30 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { requireAuth, requireRole, isErrorResponse } from "@/lib/auth/guards";
+import { getMemberById, updateMember } from "@/lib/services/member-service";
 
-// GET /api/members/[id] - Get a specific member
 export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const params = await context.params;
-    const memberId = params.id;
+  const auth = await requireAuth(req);
+  if (isErrorResponse(auth)) return auth;
 
-    const result = await query(
-      `SELECT
-        id, nombre, puesto, descripcion, foto, correo, celular, costo, cod_usuario
-      FROM miembros
-      WHERE id = $1`,
-      [memberId]
-    );
-
-    if (result.rows.length === 0) {
-      return NextResponse.json({ error: "Miembro no encontrado" }, { status: 404 });
-    }
-
-    return NextResponse.json({ member: result.rows[0] });
-  } catch (error) {
-    console.error("Error fetching member:", error);
-    return NextResponse.json({ error: "Error al obtener miembro" }, { status: 500 });
+  const { id } = await params;
+  const member = await getMemberById(Number(id));
+  if (!member) {
+    return NextResponse.json({ error: "Member not found" }, { status: 404 });
   }
+
+  return NextResponse.json({ data: member });
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireRole(req, "admin");
+  if (isErrorResponse(auth)) return auth;
+
+  const { id } = await params;
+  const body = await req.json();
+  const member = await updateMember(Number(id), body);
+
+  if (!member) {
+    return NextResponse.json({ error: "Member not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ data: member });
 }

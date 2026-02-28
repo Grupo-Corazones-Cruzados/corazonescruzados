@@ -1,0 +1,235 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6);
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  margin-bottom: var(--space-12);
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: var(--space-4);
+}
+
+.name {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.position {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+.bio {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  max-width: 560px;
+  margin: var(--space-4) auto 0;
+  line-height: 1.6;
+}
+
+.links {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.link {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Sections */
+.section {
+  margin-bottom: var(--space-10);
+}
+
+.sectionTitle {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Chips */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  padding: var(--space-1) var(--space-3);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 9999px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.chipSmall {
+  padding: 2px var(--space-2);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 9999px;
+  font-size: var(--text-xs);
+}
+
+/* Timeline */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.timelineItem {
+  padding-left: var(--space-5);
+  border-left: 2px solid var(--border);
+  position: relative;
+}
+
+.timelineItem::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.timelineHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.timelineTitle {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.timelineDate {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.timelineCompany {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.timelineDesc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-2);
+  line-height: 1.5;
+}
+
+/* Portfolio grid */
+.portfolioGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--space-6);
+}
+
+.portfolioCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-primary);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.portfolioCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.portfolioImage {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.portfolioImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portfolioBody {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.portfolioTitle {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.portfolioTitle a {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.portfolioTitle a:hover {
+  color: var(--accent);
+}
+
+.portfolioDesc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .name {
+    font-size: var(--text-2xl);
+  }
+
+  .portfolioGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .timelineHeader {
+    flex-direction: column;
+    gap: 0;
+  }
+}

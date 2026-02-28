@@ -1,0 +1,130 @@
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-right: 1px solid var(--border-light);
+  z-index: 50;
+}
+
+.top {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-5);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.logoImg {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.logoText {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease);
+}
+.link:hover {
+  background: var(--gray-100);
+  color: var(--text-primary);
+}
+
+.active {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.active:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.bottom {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.userName {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userRole {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-transform: capitalize;
+}
+
+.signOut {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease);
+}
+.signOut:hover {
+  color: var(--error);
+  background: var(--error-light);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+}

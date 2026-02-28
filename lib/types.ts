@@ -1,0 +1,391 @@
+// =====================================================
+// SHARED TYPES — Corazones Cruzados v2
+// =====================================================
+
+// ----- Auth & Users -----
+
+export type UserRole = "client" | "member" | "admin";
+
+export interface User {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  phone: string | null;
+  role: UserRole;
+  member_id: number | null;
+  is_verified: boolean;
+  created_at: string;
+}
+
+export interface TokenPayload {
+  userId: string;
+  email: string;
+  role: UserRole;
+}
+
+// ----- Members -----
+
+export interface Member {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  photo_url: string | null;
+  position: string | null;
+  hourly_rate: number | null;
+  department_id: number | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+// ----- Clients -----
+
+export interface Client {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  company: string | null;
+  created_at: string;
+}
+
+// ----- Services -----
+
+export interface Service {
+  id: number;
+  name: string;
+  description: string | null;
+  base_price: number | null;
+  is_active: boolean;
+}
+
+// ----- Tickets -----
+
+export type TicketStatus =
+  | "pending"
+  | "confirmed"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+export interface Ticket {
+  id: number;
+  client_id: number;
+  service_id: number | null;
+  member_id: number | null;
+  title: string | null;
+  description: string | null;
+  status: TicketStatus;
+  scheduled_at: string | null;
+  completed_at: string | null;
+  estimated_hours: number | null;
+  actual_hours: number | null;
+  estimated_cost: number | null;
+  actual_cost: number | null;
+  google_event_id: string | null;
+  google_meet_link: string | null;
+  created_at: string;
+}
+
+export interface TicketTimeSlot {
+  id: number;
+  ticket_id: number;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: "pending" | "confirmed" | "completed" | "cancelled";
+  actual_duration: number | null;
+  notes: string | null;
+}
+
+export interface TicketService {
+  id: number;
+  ticket_id: number;
+  service_id: number | null;
+  assigned_hours: number;
+  hourly_cost: number;
+  subtotal: number;
+}
+
+// ----- Projects -----
+
+export type ProjectStatus =
+  | "draft"
+  | "published"
+  | "planned"
+  | "started"
+  | "in_progress"
+  | "in_development"
+  | "in_testing"
+  | "completed"
+  | "partially_completed"
+  | "not_completed"
+  | "cancelled"
+  | "cancelled_no_agreement"
+  | "cancelled_no_budget"
+  | "unpaid"
+  | "not_completed_by_member";
+
+export interface Project {
+  id: number;
+  client_id: number;
+  assigned_member_id: number | null;
+  title: string;
+  description: string | null;
+  budget_min: number | null;
+  budget_max: number | null;
+  deadline: string | null;
+  status: ProjectStatus;
+  is_private: boolean;
+  share_token: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BidStatus = "pending" | "accepted" | "rejected";
+
+export interface ProjectBid {
+  id: number;
+  project_id: number;
+  member_id: number;
+  proposal: string;
+  bid_amount: number;
+  estimated_days: number | null;
+  status: BidStatus;
+  created_at: string;
+}
+
+export interface ProjectRequirement {
+  id: number;
+  project_id: number;
+  title: string;
+  description: string | null;
+  cost: number | null;
+  is_completed: boolean;
+  completed_at: string | null;
+}
+
+// ----- Packages -----
+
+export interface Package {
+  id: number;
+  name: string;
+  description: string | null;
+  price: number;
+  hours: number;
+  features: string[];
+  is_active: boolean;
+  sort_order: number;
+}
+
+export type PurchaseStatus = "active" | "exhausted" | "expired" | "cancelled";
+
+export interface PackagePurchase {
+  id: number;
+  package_id: number;
+  client_id: number;
+  user_id: string;
+  hours_total: number;
+  hours_used: number;
+  status: PurchaseStatus;
+  expires_at: string | null;
+  payment_ref: string | null;
+  created_at: string;
+}
+
+// ----- Invoices -----
+
+export type InvoiceStatus = "pending" | "sent" | "paid" | "cancelled";
+
+export interface Invoice {
+  id: number;
+  invoice_number: string;
+  client_id: number | null;
+  member_id: number | null;
+  ticket_id: number | null;
+  project_id: number | null;
+  subtotal: number;
+  tax: number;
+  total: number;
+  status: InvoiceStatus;
+  pdf_url: string | null;
+  notes: string | null;
+  sent_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface InvoiceItem {
+  id: number;
+  invoice_id: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+}
+
+// ----- Marketplace -----
+
+export interface Product {
+  id: number;
+  name: string;
+  description: string | null;
+  price: number;
+  image_url: string | null;
+  category: string | null;
+  stock: number;
+  is_active: boolean;
+}
+
+export interface CartItem {
+  id: number;
+  user_id: string;
+  product_id: number;
+  quantity: number;
+  product?: Product;
+}
+
+export type OrderStatus =
+  | "pending"
+  | "paid"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export interface Order {
+  id: number;
+  user_id: string;
+  total: number;
+  status: OrderStatus;
+  paypal_order_id: string | null;
+  paypal_capture_id: string | null;
+  created_at: string;
+}
+
+// ----- Recruitment -----
+
+export type ApplicantStatus =
+  | "applied"
+  | "screening"
+  | "interview"
+  | "evaluation"
+  | "accepted"
+  | "rejected"
+  | "withdrawn";
+
+export interface Applicant {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  resume_url: string | null;
+  status: ApplicantStatus;
+  notes: string | null;
+  source: string | null;
+  created_at: string;
+}
+
+export type EventType = "interview" | "evaluation" | "orientation" | "training";
+
+export interface RecruitmentEvent {
+  id: number;
+  title: string;
+  description: string | null;
+  event_date: string;
+  location: string | null;
+  type: EventType;
+  max_capacity: number | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+// ----- Modules -----
+
+export interface Module {
+  id: number;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  path: string | null;
+  sort_order: number;
+  requires_verification: boolean;
+  allowed_roles: UserRole[];
+}
+
+// ----- Schedules -----
+
+export interface MemberSchedule {
+  id: number;
+  member_id: number;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  is_active: boolean;
+}
+
+export interface ScheduleException {
+  id: number;
+  member_id: number;
+  date: string;
+  type: "blocked" | "available";
+  reason: string | null;
+  start_time: string | null;
+  end_time: string | null;
+}
+
+// ----- CV & Portfolio -----
+
+export interface MemberCvProfile {
+  id: number;
+  member_id: number;
+  bio: string | null;
+  skills: string[];
+  education: Record<string, unknown>[];
+  experience: Record<string, unknown>[];
+  languages: string[];
+  linkedin_url: string | null;
+  website_url: string | null;
+}
+
+export interface PortfolioItem {
+  id: number;
+  member_id: number;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  project_url: string | null;
+  tags: string[];
+  sort_order: number;
+}
+
+// ----- Public Views -----
+
+export interface PublicMember {
+  id: number;
+  name: string;
+  photo_url: string | null;
+  position: string | null;
+  hourly_rate: number | null;
+  phone: string | null;
+  bio: string | null;
+  skills: string[];
+}
+
+// ----- API Helpers -----
+
+export interface ApiResponse<T = unknown> {
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
