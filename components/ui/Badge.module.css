@@ -16,20 +16,20 @@
 
 .success {
   background: var(--success-light);
-  color: #15803D;
+  color: #2E7D32;
 }
 
 .warning {
   background: var(--warning-light);
-  color: #B45309;
+  color: #B8860B;
 }
 
 .error {
   background: var(--error-light);
-  color: #DC2626;
+  color: #B71C1C;
 }
 
 .info {
   background: var(--info-light);
-  color: #2563EB;
+  color: #0369A1;
 }

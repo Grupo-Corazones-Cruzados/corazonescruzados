@@ -23,7 +23,7 @@
 }
 .primary:hover {
   background: var(--accent-hover);
-  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+  box-shadow: 0 4px 12px rgba(75, 45, 142, 0.3);
 }
 .primary:active {
   transform: scale(0.98);
@@ -53,8 +53,8 @@
   color: var(--text-inverse);
 }
 .danger:hover {
-  background: #E63530;
-  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+  background: #BF2B26;
+  box-shadow: 0 4px 12px rgba(212, 50, 44, 0.3);
 }
 
 /* Sizes */

@@ -109,7 +109,7 @@
 }
 
 .todayCell {
-  background: var(--accent-light, rgba(0, 113, 227, 0.04));
+  background: var(--accent-light, rgba(75, 45, 142, 0.04));
 }
 
 .todayCell .dayNumber {

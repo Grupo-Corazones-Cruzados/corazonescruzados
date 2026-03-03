@@ -1,5 +1,5 @@
 -- =====================================================
--- CORAZONES CRUZADOS v2 — COMPLETE DATABASE SCHEMA
+-- CORAZONES CRUZADOS v2 — DATABASE SCHEMA (33 tables)
 -- All tables: English, plural, snake_case
 -- =====================================================
 
@@ -33,7 +33,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- PHASE 1: AUTH & USERS
+-- 1. USERS & AUTH
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS users (
@@ -49,12 +49,13 @@ CREATE TABLE IF NOT EXISTS users (
   role          VARCHAR(20) NOT NULL DEFAULT 'client' CHECK (role IN ('client', 'member', 'admin')),
   member_id     BIGINT,  -- FK added after members table
   is_verified   BOOLEAN NOT NULL DEFAULT FALSE,
-  reset_token       TEXT,
-  reset_token_exp   TIMESTAMPTZ
+  reset_token            TEXT,
+  reset_token_exp        TIMESTAMPTZ,
+  tokens_invalidated_at  TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_member ON users(member_id);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
 CREATE TABLE IF NOT EXISTS verification_tokens (
   id         BIGSERIAL PRIMARY KEY,
@@ -65,37 +66,11 @@ CREATE TABLE IF NOT EXISTS verification_tokens (
   used_at    TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_vt_token ON verification_tokens(token);
-
-CREATE TABLE IF NOT EXISTS blocked_ips (
-  id         BIGSERIAL PRIMARY KEY,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  ip_address VARCHAR(45) NOT NULL,
-  reason     TEXT,
-  expires_at TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS google_tokens (
-  id            UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  access_token  TEXT NOT NULL,
-  refresh_token TEXT,
-  expiry_date   BIGINT,
-  scope         TEXT
-);
+CREATE INDEX IF NOT EXISTS idx_vt_user ON verification_tokens(user_id);
 
 -- =====================================================
--- PHASE 2: CORE ENTITIES
+-- 2. MEMBERS
 -- =====================================================
-
-CREATE TABLE IF NOT EXISTS departments (
-  id         BIGSERIAL PRIMARY KEY,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  name       VARCHAR(255) NOT NULL,
-  description TEXT,
-  is_active  BOOLEAN NOT NULL DEFAULT TRUE
-);
 
 CREATE TABLE IF NOT EXISTS members (
   id         BIGSERIAL PRIMARY KEY,
@@ -107,7 +82,6 @@ CREATE TABLE IF NOT EXISTS members (
   photo_url  TEXT,
   position   VARCHAR(255),
   hourly_rate DECIMAL(10,2),
-  department_id BIGINT REFERENCES departments(id) ON DELETE SET NULL,
   is_active  BOOLEAN NOT NULL DEFAULT TRUE
 );
 
@@ -117,25 +91,39 @@ ALTER TABLE users
 
 CREATE INDEX IF NOT EXISTS idx_members_active ON members(is_active);
 
+-- =====================================================
+-- 3. CLIENTS
+-- =====================================================
+
 CREATE TABLE IF NOT EXISTS clients (
   id         BIGSERIAL PRIMARY KEY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   name       VARCHAR(255) NOT NULL,
   email      VARCHAR(255) UNIQUE NOT NULL,
   phone      VARCHAR(50),
   company    VARCHAR(255)
 );
 
-CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email);
+-- =====================================================
+-- 4. SERVICES
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS services (
   id          BIGSERIAL PRIMARY KEY,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   name        VARCHAR(255) NOT NULL,
   description TEXT,
-  base_price  DECIMAL(10,2),
+  base_price  DECIMAL(10,2) NOT NULL DEFAULT 0,
   is_active   BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+CREATE INDEX IF NOT EXISTS idx_services_active ON services(is_active);
+
+-- =====================================================
+-- 5. MODULES
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS modules (
   id          BIGSERIAL PRIMARY KEY,
@@ -150,7 +138,7 @@ CREATE TABLE IF NOT EXISTS modules (
 );
 
 -- =====================================================
--- PHASE 3: MEMBER SCHEDULES
+-- 6. MEMBER SCHEDULES
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS member_schedules (
@@ -181,7 +169,7 @@ CREATE INDEX IF NOT EXISTS idx_se_member ON schedule_exceptions(member_id);
 CREATE INDEX IF NOT EXISTS idx_se_date ON schedule_exceptions(date);
 
 -- =====================================================
--- PHASE 4: TICKETS
+-- 7. TICKETS
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS tickets (
@@ -191,7 +179,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   client_id       BIGINT REFERENCES clients(id) ON DELETE CASCADE,
   service_id      BIGINT REFERENCES services(id) ON DELETE SET NULL,
   member_id       BIGINT REFERENCES members(id) ON DELETE SET NULL,
-  title           VARCHAR(255),
+  title           VARCHAR(255) NOT NULL,
   description     TEXT,
   status          VARCHAR(30) NOT NULL DEFAULT 'pending'
                   CHECK (status IN ('pending','confirmed','in_progress','completed','cancelled')),
@@ -208,6 +196,7 @@ CREATE TABLE IF NOT EXISTS tickets (
 CREATE INDEX IF NOT EXISTS idx_tickets_client ON tickets(client_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_member ON tickets(member_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
+CREATE INDEX IF NOT EXISTS idx_tickets_scheduled ON tickets(scheduled_at) WHERE scheduled_at IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS ticket_time_slots (
   id          BIGSERIAL PRIMARY KEY,
@@ -238,7 +227,7 @@ CREATE TABLE IF NOT EXISTS ticket_services (
 CREATE INDEX IF NOT EXISTS idx_ts_ticket ON ticket_services(ticket_id);
 
 -- =====================================================
--- PHASE 5: PROJECTS
+-- 8. PROJECTS
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS projects (
@@ -253,26 +242,21 @@ CREATE TABLE IF NOT EXISTS projects (
   budget_max         DECIMAL(10,2),
   deadline           DATE,
   status             VARCHAR(30) NOT NULL DEFAULT 'draft'
-                     CHECK (status IN (
-                       'draft','published','planned','started',
-                       'in_progress','in_development','in_testing',
-                       'completed','partially_completed','not_completed',
-                       'cancelled','cancelled_no_agreement','cancelled_no_budget',
-                       'unpaid','not_completed_by_member'
-                     )),
+                     CHECK (status IN ('draft','open','in_progress','review','completed','cancelled','on_hold')),
   is_private         BOOLEAN NOT NULL DEFAULT FALSE,
   share_token        VARCHAR(64) UNIQUE,
+  cancellation_reason TEXT,
   CONSTRAINT valid_budget CHECK (budget_min IS NULL OR budget_max IS NULL OR budget_min <= budget_max)
 );
 
 CREATE INDEX IF NOT EXISTS idx_projects_client ON projects(client_id);
 CREATE INDEX IF NOT EXISTS idx_projects_member ON projects(assigned_member_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
-CREATE INDEX IF NOT EXISTS idx_projects_token ON projects(share_token);
 
 CREATE TABLE IF NOT EXISTS project_bids (
   id              BIGSERIAL PRIMARY KEY,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   project_id      BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   member_id       BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
   proposal        TEXT NOT NULL,
@@ -283,17 +267,17 @@ CREATE TABLE IF NOT EXISTS project_bids (
   UNIQUE(project_id, member_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_pb_project ON project_bids(project_id);
 CREATE INDEX IF NOT EXISTS idx_pb_member ON project_bids(member_id);
+CREATE INDEX IF NOT EXISTS idx_pb_status ON project_bids(status);
 
 CREATE TABLE IF NOT EXISTS project_requirements (
   id            BIGSERIAL PRIMARY KEY,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   project_id    BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   title         VARCHAR(255) NOT NULL,
   description   TEXT,
   cost          DECIMAL(10,2),
-  is_completed  BOOLEAN NOT NULL DEFAULT FALSE,
   completed_at  TIMESTAMPTZ
 );
 
@@ -311,13 +295,17 @@ CREATE TABLE IF NOT EXISTS project_cancellation_requests (
   resolved_by   UUID REFERENCES users(id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_pcr_project ON project_cancellation_requests(project_id);
+CREATE INDEX IF NOT EXISTS idx_pcr_status ON project_cancellation_requests(status);
+
 -- =====================================================
--- PHASE 6: PACKAGES
+-- 9. PACKAGES
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS packages (
   id          BIGSERIAL PRIMARY KEY,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   name        VARCHAR(255) NOT NULL,
   description TEXT,
   price       DECIMAL(10,2) NOT NULL,
@@ -327,9 +315,12 @@ CREATE TABLE IF NOT EXISTS packages (
   sort_order  INT NOT NULL DEFAULT 0
 );
 
+CREATE INDEX IF NOT EXISTS idx_packages_active ON packages(is_active);
+
 CREATE TABLE IF NOT EXISTS package_purchases (
   id           BIGSERIAL PRIMARY KEY,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   package_id   BIGINT NOT NULL REFERENCES packages(id),
   client_id    BIGINT NOT NULL REFERENCES clients(id),
   user_id      UUID NOT NULL REFERENCES users(id),
@@ -342,10 +333,13 @@ CREATE TABLE IF NOT EXISTS package_purchases (
 );
 
 CREATE INDEX IF NOT EXISTS idx_pp_client ON package_purchases(client_id);
+CREATE INDEX IF NOT EXISTS idx_pp_user ON package_purchases(user_id);
+CREATE INDEX IF NOT EXISTS idx_pp_status ON package_purchases(status);
 
 CREATE TABLE IF NOT EXISTS package_requests (
   id             BIGSERIAL PRIMARY KEY,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   purchase_id    BIGINT NOT NULL REFERENCES package_purchases(id) ON DELETE CASCADE,
   client_id      BIGINT NOT NULL REFERENCES clients(id),
   service_id     BIGINT REFERENCES services(id),
@@ -357,15 +351,24 @@ CREATE TABLE IF NOT EXISTS package_requests (
   resolved_at    TIMESTAMPTZ
 );
 
+CREATE INDEX IF NOT EXISTS idx_preq_purchase ON package_requests(purchase_id);
+CREATE INDEX IF NOT EXISTS idx_preq_client ON package_requests(client_id);
+CREATE INDEX IF NOT EXISTS idx_preq_status ON package_requests(status);
+
 CREATE TABLE IF NOT EXISTS package_assignments (
   id          BIGSERIAL PRIMARY KEY,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   request_id  BIGINT NOT NULL REFERENCES package_requests(id) ON DELETE CASCADE,
   member_id   BIGINT NOT NULL REFERENCES members(id),
   hours_assigned DECIMAL(10,2) NOT NULL,
   status      VARCHAR(20) NOT NULL DEFAULT 'assigned'
               CHECK (status IN ('assigned','in_progress','completed'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_pa_request ON package_assignments(request_id);
+CREATE INDEX IF NOT EXISTS idx_pa_member ON package_assignments(member_id);
+CREATE INDEX IF NOT EXISTS idx_pa_status ON package_assignments(status);
 
 CREATE TABLE IF NOT EXISTS package_progress_updates (
   id            BIGSERIAL PRIMARY KEY,
@@ -376,8 +379,10 @@ CREATE TABLE IF NOT EXISTS package_progress_updates (
   hours_logged  DECIMAL(10,2)
 );
 
+CREATE INDEX IF NOT EXISTS idx_ppu_assignment ON package_progress_updates(assignment_id);
+
 -- =====================================================
--- PHASE 7: INVOICES
+-- 10. INVOICES
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS invoices (
@@ -402,6 +407,9 @@ CREATE TABLE IF NOT EXISTS invoices (
 
 CREATE INDEX IF NOT EXISTS idx_inv_client ON invoices(client_id);
 CREATE INDEX IF NOT EXISTS idx_inv_status ON invoices(status);
+CREATE INDEX IF NOT EXISTS idx_inv_member ON invoices(member_id);
+CREATE INDEX IF NOT EXISTS idx_inv_project ON invoices(project_id);
+CREATE INDEX IF NOT EXISTS idx_inv_ticket ON invoices(ticket_id);
 
 CREATE TABLE IF NOT EXISTS invoice_items (
   id           BIGSERIAL PRIMARY KEY,
@@ -416,27 +424,33 @@ CREATE TABLE IF NOT EXISTS invoice_items (
 CREATE INDEX IF NOT EXISTS idx_ii_invoice ON invoice_items(invoice_id);
 
 -- =====================================================
--- PHASE 8: MARKETPLACE
+-- 11. MARKETPLACE
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS products (
   id          BIGSERIAL PRIMARY KEY,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   name        VARCHAR(255) NOT NULL,
   description TEXT,
   price       DECIMAL(10,2) NOT NULL,
   image_url   TEXT,
   category    VARCHAR(100),
-  stock       INT NOT NULL DEFAULT 0,
-  is_active   BOOLEAN NOT NULL DEFAULT TRUE
+  stock       INT NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+  allow_quantities BOOLEAN NOT NULL DEFAULT TRUE,
+  portfolio_item_id BIGINT UNIQUE REFERENCES member_portfolio_items(id) ON DELETE SET NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);
 
 CREATE TABLE IF NOT EXISTS cart_items (
   id         BIGSERIAL PRIMARY KEY,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  quantity   INT NOT NULL DEFAULT 1,
+  quantity   INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
   UNIQUE(user_id, product_id)
 );
 
@@ -453,18 +467,21 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 
 CREATE TABLE IF NOT EXISTS order_items (
   id         BIGSERIAL PRIMARY KEY,
   order_id   BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id BIGINT NOT NULL REFERENCES products(id),
-  quantity   INT NOT NULL,
+  quantity   INT NOT NULL CHECK (quantity > 0),
   unit_price DECIMAL(10,2) NOT NULL,
   subtotal   DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED
 );
 
+CREATE INDEX IF NOT EXISTS idx_oi_order ON order_items(order_id);
+
 -- =====================================================
--- PHASE 9: RECRUITMENT
+-- 12. RECRUITMENT
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS applicants (
@@ -483,11 +500,11 @@ CREATE TABLE IF NOT EXISTS applicants (
 );
 
 CREATE INDEX IF NOT EXISTS idx_app_status ON applicants(status);
-CREATE INDEX IF NOT EXISTS idx_app_email ON applicants(email);
 
 CREATE TABLE IF NOT EXISTS recruitment_events (
   id           BIGSERIAL PRIMARY KEY,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   title        VARCHAR(255) NOT NULL,
   description  TEXT,
   event_date   TIMESTAMPTZ NOT NULL,
@@ -497,15 +514,21 @@ CREATE TABLE IF NOT EXISTS recruitment_events (
   created_by   UUID REFERENCES users(id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_re_date ON recruitment_events(event_date);
+CREATE INDEX IF NOT EXISTS idx_re_type ON recruitment_events(type);
+
 CREATE TABLE IF NOT EXISTS event_invitations (
   id           BIGSERIAL PRIMARY KEY,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   event_id     BIGINT NOT NULL REFERENCES recruitment_events(id) ON DELETE CASCADE,
   applicant_id BIGINT NOT NULL REFERENCES applicants(id) ON DELETE CASCADE,
   status       VARCHAR(20) NOT NULL DEFAULT 'pending'
                CHECK (status IN ('pending','accepted','declined','attended','no_show')),
   UNIQUE(event_id, applicant_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_ei_applicant ON event_invitations(applicant_id);
 
 CREATE TABLE IF NOT EXISTS event_scores (
   id           BIGSERIAL PRIMARY KEY,
@@ -518,16 +541,10 @@ CREATE TABLE IF NOT EXISTS event_scores (
   UNIQUE(event_id, applicant_id, evaluator_id)
 );
 
-CREATE TABLE IF NOT EXISTS applicant_restrictions (
-  id           BIGSERIAL PRIMARY KEY,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  applicant_id BIGINT NOT NULL REFERENCES applicants(id) ON DELETE CASCADE,
-  restriction  TEXT NOT NULL,
-  is_active    BOOLEAN NOT NULL DEFAULT TRUE
-);
+CREATE INDEX IF NOT EXISTS idx_es_applicant ON event_scores(applicant_id);
 
 -- =====================================================
--- PHASE 10: CV & PORTFOLIO
+-- 13. CV & PORTFOLIO
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS member_cv_profiles (
@@ -547,24 +564,28 @@ CREATE TABLE IF NOT EXISTS member_cv_profiles (
 CREATE TABLE IF NOT EXISTS member_portfolio_items (
   id          BIGSERIAL PRIMARY KEY,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   member_id   BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
   title       VARCHAR(255) NOT NULL,
   description TEXT,
   image_url   TEXT,
   project_url TEXT,
   tags        TEXT[],
+  cost        NUMERIC(12,2),
+  allow_quantities BOOLEAN NOT NULL DEFAULT TRUE,
   sort_order  INT NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_mpi_member ON member_portfolio_items(member_id);
 
 -- =====================================================
--- FAQ
+-- 14. FAQ
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS faq (
   id          BIGSERIAL PRIMARY KEY,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   question    TEXT NOT NULL,
   answer      TEXT NOT NULL,
   category    VARCHAR(100),
@@ -572,10 +593,14 @@ CREATE TABLE IF NOT EXISTS faq (
   is_published BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+CREATE INDEX IF NOT EXISTS idx_faq_category ON faq(category);
+CREATE INDEX IF NOT EXISTS idx_faq_published ON faq(is_published);
+
 -- =====================================================
 -- TRIGGERS
 -- =====================================================
 
+-- Invoice number auto-generation
 CREATE OR REPLACE FUNCTION set_invoice_number()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -597,14 +622,41 @@ CREATE TRIGGER trg_users_updated BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUN
 DROP TRIGGER IF EXISTS trg_members_updated ON members;
 CREATE TRIGGER trg_members_updated BEFORE UPDATE ON members FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_clients_updated ON clients;
+CREATE TRIGGER trg_clients_updated BEFORE UPDATE ON clients FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_services_updated ON services;
+CREATE TRIGGER trg_services_updated BEFORE UPDATE ON services FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 DROP TRIGGER IF EXISTS trg_tickets_updated ON tickets;
 CREATE TRIGGER trg_tickets_updated BEFORE UPDATE ON tickets FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 DROP TRIGGER IF EXISTS trg_projects_updated ON projects;
 CREATE TRIGGER trg_projects_updated BEFORE UPDATE ON projects FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_project_bids_updated ON project_bids;
+CREATE TRIGGER trg_project_bids_updated BEFORE UPDATE ON project_bids FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_project_requirements_updated ON project_requirements;
+CREATE TRIGGER trg_project_requirements_updated BEFORE UPDATE ON project_requirements FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_packages_updated ON packages;
+CREATE TRIGGER trg_packages_updated BEFORE UPDATE ON packages FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_package_purchases_updated ON package_purchases;
+CREATE TRIGGER trg_package_purchases_updated BEFORE UPDATE ON package_purchases FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_package_requests_updated ON package_requests;
+CREATE TRIGGER trg_package_requests_updated BEFORE UPDATE ON package_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_package_assignments_updated ON package_assignments;
+CREATE TRIGGER trg_package_assignments_updated BEFORE UPDATE ON package_assignments FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 DROP TRIGGER IF EXISTS trg_invoices_updated ON invoices;
 CREATE TRIGGER trg_invoices_updated BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_products_updated ON products;
+CREATE TRIGGER trg_products_updated BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 DROP TRIGGER IF EXISTS trg_orders_updated ON orders;
 CREATE TRIGGER trg_orders_updated BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at();
@@ -612,8 +664,17 @@ CREATE TRIGGER trg_orders_updated BEFORE UPDATE ON orders FOR EACH ROW EXECUTE F
 DROP TRIGGER IF EXISTS trg_applicants_updated ON applicants;
 CREATE TRIGGER trg_applicants_updated BEFORE UPDATE ON applicants FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
-DROP TRIGGER IF EXISTS trg_google_tokens_updated ON google_tokens;
-CREATE TRIGGER trg_google_tokens_updated BEFORE UPDATE ON google_tokens FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS trg_recruitment_events_updated ON recruitment_events;
+CREATE TRIGGER trg_recruitment_events_updated BEFORE UPDATE ON recruitment_events FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_event_invitations_updated ON event_invitations;
+CREATE TRIGGER trg_event_invitations_updated BEFORE UPDATE ON event_invitations FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 DROP TRIGGER IF EXISTS trg_cv_profiles_updated ON member_cv_profiles;
 CREATE TRIGGER trg_cv_profiles_updated BEFORE UPDATE ON member_cv_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_portfolio_items_updated ON member_portfolio_items;
+CREATE TRIGGER trg_portfolio_items_updated BEFORE UPDATE ON member_portfolio_items FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_faq_updated ON faq;
+CREATE TRIGGER trg_faq_updated BEFORE UPDATE ON faq FOR EACH ROW EXECUTE FUNCTION update_updated_at();

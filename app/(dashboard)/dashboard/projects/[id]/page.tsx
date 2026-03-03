@@ -46,7 +46,6 @@ interface Requirement {
   title: string;
   description: string | null;
   cost: number | null;
-  is_completed: boolean;
   completed_at: string | null;
 }
 
@@ -62,20 +61,12 @@ interface CancelRequest {
 
 const BADGE_VARIANT: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
   draft: "default",
-  published: "info",
-  planned: "info",
-  started: "info",
+  open: "info",
   in_progress: "warning",
-  in_development: "warning",
-  in_testing: "warning",
+  review: "warning",
   completed: "success",
-  partially_completed: "warning",
-  not_completed: "error",
   cancelled: "error",
-  cancelled_no_agreement: "error",
-  cancelled_no_budget: "error",
-  unpaid: "error",
-  not_completed_by_member: "error",
+  on_hold: "default",
 };
 
 export default function ProjectDetailPage() {
@@ -227,7 +218,7 @@ export default function ProjectDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           requirement_id: req.id,
-          is_completed: !req.is_completed,
+          completed: !req.completed_at,
         }),
       });
       fetchRequirements();
@@ -372,7 +363,7 @@ export default function ProjectDetailPage() {
   if (!project) return null;
 
   const totalReqCost = requirements.reduce((s, r) => s + (r.cost || 0), 0);
-  const completedReqs = requirements.filter((r) => r.is_completed).length;
+  const completedReqs = requirements.filter((r) => r.completed_at).length;
 
   return (
     <div>
@@ -464,12 +455,12 @@ export default function ProjectDetailPage() {
                   {requirements.map((req) => (
                     <div
                       key={req.id}
-                      className={`${styles.reqItem} ${req.is_completed ? styles.reqDone : ""}`}
+                      className={`${styles.reqItem} ${req.completed_at ? styles.reqDone : ""}`}
                     >
                       <label className={styles.reqCheck}>
                         <input
                           type="checkbox"
-                          checked={req.is_completed}
+                          checked={!!req.completed_at}
                           onChange={() => toggleReq(req)}
                         />
                         <span className={styles.reqTitle}>{req.title}</span>

@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify, JWTPayload } from "jose";
 import { cookies } from "next/headers";
+import { query } from "@/lib/db";
 import type { UserRole } from "@/lib/types";
 
 const JWT_SECRET = new TextEncoder().encode(
@@ -38,6 +39,28 @@ export async function verifyToken(
   }
 }
 
+/** Verify token AND check it hasn't been invalidated by the user */
+export async function verifyTokenWithInvalidation(
+  token: string
+): Promise<TokenPayload | null> {
+  const payload = await verifyToken(token);
+  if (!payload) return null;
+
+  const result = await query(
+    "SELECT tokens_invalidated_at FROM users WHERE id = $1",
+    [payload.userId]
+  );
+  if (result.rows.length === 0) return null;
+
+  const { tokens_invalidated_at } = result.rows[0];
+  if (tokens_invalidated_at && payload.iat) {
+    const invalidatedAtSec = Math.floor(new Date(tokens_invalidated_at).getTime() / 1000);
+    if (payload.iat <= invalidatedAtSec) return null;
+  }
+
+  return payload;
+}
+
 export async function setAuthCookie(token: string): Promise<void> {
   const store = await cookies();
   store.set(COOKIE_NAME, token, {
@@ -62,5 +85,5 @@ export async function getAuthToken(): Promise<string | null> {
 export async function getCurrentUser(): Promise<TokenPayload | null> {
   const token = await getAuthToken();
   if (!token) return null;
-  return verifyToken(token);
+  return verifyTokenWithInvalidation(token);
 }

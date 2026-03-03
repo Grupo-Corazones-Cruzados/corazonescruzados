@@ -10,7 +10,7 @@ export async function getDashboardStats(role: string) {
         query("SELECT COUNT(*) FROM members WHERE is_active = true"),
         query("SELECT COUNT(*) FROM clients"),
         query("SELECT COUNT(*) FROM tickets WHERE status NOT IN ('completed', 'cancelled')"),
-        query("SELECT COUNT(*) FROM projects WHERE status NOT IN ('completed', 'cancelled', 'partially_completed', 'not_completed')"),
+        query("SELECT COUNT(*) FROM projects WHERE status NOT IN ('completed', 'cancelled')"),
         query("SELECT COUNT(*) FROM invoices WHERE status = 'pending'"),
       ]);
 
@@ -29,7 +29,7 @@ export async function getDashboardStats(role: string) {
       ),
       query(
         `SELECT COUNT(*) FROM projects
-         WHERE status NOT IN ('completed', 'cancelled', 'partially_completed', 'not_completed')`
+         WHERE status NOT IN ('completed', 'cancelled')`
       ),
     ]);
 
@@ -39,7 +39,7 @@ export async function getDashboardStats(role: string) {
     // client
     const [tickets, projects, invoices] = await Promise.all([
       query("SELECT COUNT(*) FROM tickets WHERE status NOT IN ('completed', 'cancelled')"),
-      query("SELECT COUNT(*) FROM projects WHERE status NOT IN ('completed', 'cancelled', 'partially_completed', 'not_completed')"),
+      query("SELECT COUNT(*) FROM projects WHERE status NOT IN ('completed', 'cancelled')"),
       query("SELECT COUNT(*) FROM invoices WHERE status = 'pending'"),
     ]);
 

@@ -5,34 +5,34 @@
 @import "tailwindcss";
 
 :root {
-  /* --- Neutral scale --- */
-  --gray-50: #F9FAFB;
-  --gray-100: #F3F4F6;
-  --gray-200: #E5E7EB;
-  --gray-300: #D1D5DB;
-  --gray-400: #9CA3AF;
-  --gray-500: #6B7280;
-  --gray-600: #4B5563;
-  --gray-700: #374151;
-  --gray-800: #1F2937;
-  --gray-900: #111827;
-  --gray-950: #030712;
+  /* --- Neutral scale (slate — armoniza con púrpura) --- */
+  --gray-50: #F8FAFC;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #64748B;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1E2A3A;
+  --gray-900: #131923;
+  --gray-950: #0A0E17;
 
-  /* --- Accent (Apple Blue) --- */
-  --accent: #0071E3;
-  --accent-hover: #0077ED;
-  --accent-light: #E8F4FD;
-  --accent-dark: #005BB5;
+  /* --- Accent (Morado profundo — marca CC) --- */
+  --accent: #4B2D8E;
+  --accent-hover: #5A3BA0;
+  --accent-light: #EDEBFA;
+  --accent-dark: #3A1F7A;
 
   /* --- Semantic --- */
-  --success: #34C759;
-  --success-light: #ECFDF5;
-  --warning: #FF9500;
-  --warning-light: #FFFBEB;
-  --error: #FF3B30;
-  --error-light: #FEF2F2;
-  --info: #5AC8FA;
-  --info-light: #EFF6FF;
+  --success: #4DAF50;
+  --success-light: #EDF7ED;
+  --warning: #F5A623;
+  --warning-light: #FFF8E6;
+  --error: #D4322C;
+  --error-light: #FDEEED;
+  --info: #5CC8FA;
+  --info-light: #EBF7FF;
 
   /* --- Surfaces --- */
   --bg: #FFFFFF;
@@ -109,6 +109,7 @@
   /* --- Layout --- */
   --header-height: 64px;
   --sidebar-width: 260px;
+  --sidebar-collapsed-width: 64px;
   --max-width: 1200px;
   --max-width-wide: 1440px;
 }
@@ -305,6 +306,7 @@ input, textarea, select {
   :root {
     --header-height: 56px;
     --sidebar-width: 0px;
+    --sidebar-collapsed-width: 0px;
   }
 
   .heading-1 { font-size: var(--text-3xl); }

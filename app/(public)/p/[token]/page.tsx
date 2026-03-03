@@ -24,7 +24,7 @@ interface PublicProject {
     title: string;
     description: string | null;
     cost: number | null;
-    is_completed: boolean;
+    completed_at: string | null;
   }[];
   bids: {
     id: number;
@@ -38,14 +38,12 @@ interface PublicProject {
 
 const BADGE_VARIANT: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
   draft: "default",
-  published: "info",
-  planned: "info",
-  started: "info",
+  open: "info",
   in_progress: "warning",
-  in_development: "warning",
-  in_testing: "warning",
+  review: "warning",
   completed: "success",
   cancelled: "error",
+  on_hold: "default",
 };
 
 export default function PublicProjectPage() {
@@ -90,7 +88,7 @@ export default function PublicProjectPage() {
     );
   }
 
-  const completedReqs = project.requirements.filter((r) => r.is_completed).length;
+  const completedReqs = project.requirements.filter((r) => r.completed_at).length;
   const totalReqCost = project.requirements.reduce((s, r) => s + (r.cost || 0), 0);
 
   return (
@@ -119,13 +117,13 @@ export default function PublicProjectPage() {
                 {project.requirements.map((req) => (
                   <div
                     key={req.id}
-                    className={`${styles.reqItem} ${req.is_completed ? styles.reqDone : ""}`}
+                    className={`${styles.reqItem} ${req.completed_at ? styles.reqDone : ""}`}
                   >
                     <div className={styles.reqCheck}>
                       <span
-                        className={`${styles.checkIcon} ${req.is_completed ? styles.checked : ""}`}
+                        className={`${styles.checkIcon} ${req.completed_at ? styles.checked : ""}`}
                       >
-                        {req.is_completed ? "✓" : "○"}
+                        {req.completed_at ? "✓" : "○"}
                       </span>
                       <div>
                         <span className={styles.reqTitle}>{req.title}</span>

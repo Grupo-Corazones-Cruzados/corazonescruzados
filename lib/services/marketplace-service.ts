@@ -106,11 +106,27 @@ export async function getCart(userId: string): Promise<(CartItem & { product: Pr
 }
 
 export async function addToCart(userId: string, productId: number, quantity = 1) {
+  // Check allow_quantities
+  const prodRes = await query("SELECT allow_quantities FROM products WHERE id = $1", [productId]);
+  const allowQty = prodRes.rows[0]?.allow_quantities ?? true;
+
+  if (!allowQty) {
+    // Check if already in cart
+    const exists = await query(
+      "SELECT id FROM cart_items WHERE user_id = $1 AND product_id = $2",
+      [userId, productId]
+    );
+    if (exists.rows.length > 0) {
+      throw new Error("Este proyecto ya está en tu carrito");
+    }
+    quantity = 1;
+  }
+
   const result = await query(
     `INSERT INTO cart_items (user_id, product_id, quantity)
      VALUES ($1, $2, $3)
      ON CONFLICT (user_id, product_id)
-     DO UPDATE SET quantity = cart_items.quantity + $3
+     DO UPDATE SET quantity = ${allowQty ? "cart_items.quantity + $3" : "1"}
      RETURNING *`,
     [userId, productId, quantity]
   );
@@ -122,6 +138,18 @@ export async function updateCartItem(id: number, userId: string, quantity: numbe
     await query("DELETE FROM cart_items WHERE id = $1 AND user_id = $2", [id, userId]);
     return null;
   }
+
+  // Check allow_quantities via the linked product
+  const prodRes = await query(
+    `SELECT p.allow_quantities FROM cart_items ci
+     JOIN products p ON p.id = ci.product_id
+     WHERE ci.id = $1 AND ci.user_id = $2`,
+    [id, userId]
+  );
+  if (prodRes.rows[0] && !prodRes.rows[0].allow_quantities && quantity > 1) {
+    throw new Error("Este proyecto no permite cantidades múltiples");
+  }
+
   const result = await query(
     "UPDATE cart_items SET quantity = $1 WHERE id = $2 AND user_id = $3 RETURNING *",
     [quantity, id, userId]
@@ -131,6 +159,53 @@ export async function updateCartItem(id: number, userId: string, quantity: numbe
 
 export async function clearCart(userId: string) {
   await query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+}
+
+export async function addPortfolioItemToCart(userId: string, portfolioItemId: number) {
+  // Find or create a linked product for this portfolio item
+  const existing = await query(
+    "SELECT id FROM products WHERE portfolio_item_id = $1",
+    [portfolioItemId]
+  );
+
+  let productId: number;
+
+  if (existing.rows.length > 0) {
+    productId = existing.rows[0].id;
+    // Sync price/name/allow_quantities from portfolio item
+    await query(
+      `UPDATE products SET
+         name = p.title,
+         description = p.description,
+         price = COALESCE(p.cost, 0),
+         image_url = p.image_url,
+         is_active = true,
+         allow_quantities = p.allow_quantities,
+         stock = GREATEST(products.stock, 1)
+       FROM member_portfolio_items p
+       WHERE products.id = $1 AND p.id = $2`,
+      [productId, portfolioItemId]
+    );
+  } else {
+    // Create product from portfolio item
+    const piRes = await query(
+      "SELECT title, description, image_url, cost, allow_quantities FROM member_portfolio_items WHERE id = $1",
+      [portfolioItemId]
+    );
+    if (piRes.rows.length === 0) throw new Error("Portfolio item not found");
+    const pi = piRes.rows[0];
+    if (!pi.cost) throw new Error("Este proyecto no tiene precio definido");
+
+    const insertRes = await query(
+      `INSERT INTO products (name, description, price, image_url, stock, category, allow_quantities, portfolio_item_id)
+       VALUES ($1, $2, $3, $4, 999, 'proyecto', $5, $6)
+       RETURNING id`,
+      [pi.title, pi.description, pi.cost, pi.image_url, pi.allow_quantities, portfolioItemId]
+    );
+    productId = insertRes.rows[0].id;
+  }
+
+  return addToCart(userId, productId);
 }
 
 // ----- Orders -----

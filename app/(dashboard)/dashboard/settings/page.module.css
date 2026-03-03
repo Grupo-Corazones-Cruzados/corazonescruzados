@@ -1,3 +1,100 @@
+/* Phone banner */
+.phoneBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-6);
+  background: #fef3cd;
+  border: 1px solid #ffc107;
+  border-radius: var(--radius-md);
+  color: #856404;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.phoneBanner svg {
+  flex-shrink: 0;
+}
+
+/* Avatar section */
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--space-6);
+}
+
+.avatarWrapper {
+  all: unset;
+  box-sizing: border-box;
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.avatarWrapper:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-full);
+}
+
+.avatarInitials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+}
+
+.avatarOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: var(--radius-full);
+  color: white;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.avatarWrapper:hover .avatarOverlay,
+.avatarWrapper:focus-visible .avatarOverlay {
+  opacity: 1;
+}
+
+.avatarWrapper:disabled {
+  cursor: default;
+}
+
+.avatarWrapper:disabled .avatarOverlay {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.avatarHint {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+/* Layout */
 .grid {
   display: grid;
   grid-template-columns: 1fr 320px;

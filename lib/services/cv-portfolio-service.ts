@@ -1,5 +1,5 @@
 import { query } from "@/lib/db";
-import type { MemberCvProfile, PortfolioItem } from "@/lib/types";
+import type { MemberCvProfile, PortfolioItem, PortfolioItemWithMember } from "@/lib/types";
 
 // ----- CV Profiles -----
 
@@ -67,11 +67,13 @@ export async function createPortfolioItem(data: {
   image_url?: string;
   project_url?: string;
   tags?: string[];
+  cost?: number;
+  allow_quantities?: boolean;
   sort_order?: number;
 }): Promise<PortfolioItem> {
   const result = await query(
-    `INSERT INTO member_portfolio_items (member_id, title, description, image_url, project_url, tags, sort_order)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
+    `INSERT INTO member_portfolio_items (member_id, title, description, image_url, project_url, tags, cost, allow_quantities, sort_order)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
      RETURNING *`,
     [
       data.member_id,
@@ -80,6 +82,8 @@ export async function createPortfolioItem(data: {
       data.image_url || null,
       data.project_url || null,
       data.tags || [],
+      data.cost ?? null,
+      data.allow_quantities ?? true,
       data.sort_order ?? 0,
     ]
   );
@@ -94,6 +98,8 @@ export async function updatePortfolioItem(
     image_url: string;
     project_url: string;
     tags: string[];
+    cost: number;
+    allow_quantities: boolean;
     sort_order: number;
   }>
 ): Promise<PortfolioItem | null> {
@@ -120,6 +126,32 @@ export async function updatePortfolioItem(
 export async function deletePortfolioItem(id: number): Promise<boolean> {
   const result = await query("DELETE FROM member_portfolio_items WHERE id = $1", [id]);
   return (result.rowCount ?? 0) > 0;
+}
+
+export async function listAllPortfolioItems(params?: {
+  search?: string;
+}): Promise<PortfolioItemWithMember[]> {
+  const conditions: string[] = ["m.is_active = true"];
+  const values: unknown[] = [];
+  let idx = 1;
+
+  if (params?.search) {
+    conditions.push(`(p.title ILIKE $${idx} OR p.tags::text ILIKE $${idx} OR m.name ILIKE $${idx})`);
+    values.push(`%${params.search}%`);
+    idx++;
+  }
+
+  const where = `WHERE ${conditions.join(" AND ")}`;
+
+  const result = await query(
+    `SELECT p.*, m.name AS member_name, m.photo_url AS member_photo_url, m.position AS member_position
+     FROM member_portfolio_items p
+     JOIN members m ON m.id = p.member_id
+     ${where}
+     ORDER BY p.created_at DESC`,
+    values
+  );
+  return result.rows;
 }
 
 // ----- FAQ -----

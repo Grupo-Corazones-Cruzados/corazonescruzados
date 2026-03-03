@@ -35,7 +35,6 @@ export interface Member {
   photo_url: string | null;
   position: string | null;
   hourly_rate: number | null;
-  department_id: number | null;
   is_active: boolean;
   created_at: string;
 }
@@ -49,6 +48,7 @@ export interface Client {
   phone: string | null;
   company: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 // ----- Services -----
@@ -57,8 +57,10 @@ export interface Service {
   id: number;
   name: string;
   description: string | null;
-  base_price: number | null;
+  base_price: number;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 // ----- Tickets -----
@@ -75,7 +77,7 @@ export interface Ticket {
   client_id: number;
   service_id: number | null;
   member_id: number | null;
-  title: string | null;
+  title: string;
   description: string | null;
   status: TicketStatus;
   scheduled_at: string | null;
@@ -87,6 +89,7 @@ export interface Ticket {
   google_event_id: string | null;
   google_meet_link: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface TicketTimeSlot {
@@ -113,20 +116,12 @@ export interface TicketService {
 
 export type ProjectStatus =
   | "draft"
-  | "published"
-  | "planned"
-  | "started"
+  | "open"
   | "in_progress"
-  | "in_development"
-  | "in_testing"
+  | "review"
   | "completed"
-  | "partially_completed"
-  | "not_completed"
   | "cancelled"
-  | "cancelled_no_agreement"
-  | "cancelled_no_budget"
-  | "unpaid"
-  | "not_completed_by_member";
+  | "on_hold";
 
 export interface Project {
   id: number;
@@ -140,6 +135,7 @@ export interface Project {
   status: ProjectStatus;
   is_private: boolean;
   share_token: string | null;
+  cancellation_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -155,6 +151,7 @@ export interface ProjectBid {
   estimated_days: number | null;
   status: BidStatus;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ProjectRequirement {
@@ -163,8 +160,8 @@ export interface ProjectRequirement {
   title: string;
   description: string | null;
   cost: number | null;
-  is_completed: boolean;
   completed_at: string | null;
+  updated_at: string;
 }
 
 // ----- Packages -----
@@ -193,6 +190,7 @@ export interface PackagePurchase {
   expires_at: string | null;
   payment_ref: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 // ----- Invoices -----
@@ -237,6 +235,8 @@ export interface Product {
   category: string | null;
   stock: number;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CartItem {
@@ -262,6 +262,7 @@ export interface Order {
   paypal_order_id: string | null;
   paypal_capture_id: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 // ----- Recruitment -----
@@ -358,7 +359,16 @@ export interface PortfolioItem {
   image_url: string | null;
   project_url: string | null;
   tags: string[];
+  cost: number | null;
+  allow_quantities: boolean;
   sort_order: number;
+  updated_at: string;
+}
+
+export interface PortfolioItemWithMember extends PortfolioItem {
+  member_name: string;
+  member_photo_url: string | null;
+  member_position: string | null;
 }
 
 // ----- Public Views -----

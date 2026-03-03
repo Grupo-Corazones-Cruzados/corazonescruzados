@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import PageHeader from "@/components/layout/PageHeader";
-import { Button, Badge, Card, Input, Tabs, Spinner, DataTable, Modal } from "@/components/ui";
+import { Badge, Button, Card, Input, Tabs, Spinner, DataTable } from "@/components/ui";
 import type { Column } from "@/components/ui/DataTable";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import type { PortfolioItemWithMember } from "@/lib/types";
 import styles from "./page.module.css";
 
 interface Product {
@@ -19,6 +20,7 @@ interface Product {
   category: string | null;
   stock: number;
   is_active: boolean;
+  allow_quantities: boolean;
 }
 
 interface CartItemFull {
@@ -35,7 +37,7 @@ interface OrderRow {
   created_at: string;
 }
 
-type TabValue = "products" | "cart" | "orders";
+type TabValue = "projects" | "products" | "cart" | "orders";
 
 const ORDER_BADGE: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
   pending: "warning",
@@ -48,17 +50,61 @@ const ORDER_BADGE: Record<string, "default" | "success" | "warning" | "error" | 
 export default function MarketplacePage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [tab, setTab] = useState<TabValue>("products");
+  const [tab, setTab] = useState<TabValue>("projects");
+  const [cartItems, setCartItems] = useState<CartItemFull[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const fetchCart = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cart");
+      const json = await res.json();
+      setCartItems(json.data || []);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
+
+  const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
+  const cartTotal = cartItems.reduce((s, i) => s + i.product.price * i.quantity, 0);
+
+  const onCartChange = () => fetchCart();
 
   return (
     <div>
-      <PageHeader
-        title="Marketplace"
-        description="Explora productos y servicios."
-      />
+      {/* Header with cart button */}
+      <div className={styles.headerRow}>
+        <PageHeader
+          title="Marketplace"
+          description="Explora proyectos y productos de nuestro equipo."
+        />
+        <button
+          className={styles.cartButton}
+          onClick={() => {
+            if (window.innerWidth <= 768) {
+              setPreviewOpen((o) => !o);
+            } else {
+              setTab("cart");
+            }
+          }}
+          aria-label="Carrito"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+          </svg>
+          {cartCount > 0 && (
+            <span className={styles.cartBadge}>{cartCount}</span>
+          )}
+        </button>
+      </div>
 
+      {/* Tabs (without cart) */}
       <Tabs
         tabs={[
+          { value: "projects", label: "Proyectos" },
           { value: "products", label: "Productos" },
           { value: "cart", label: "Carrito" },
           { value: "orders", label: "Mis Pedidos" },
@@ -67,16 +113,245 @@ export default function MarketplacePage() {
         onChange={(v) => setTab(v as TabValue)}
       />
 
-      {tab === "products" && <ProductGrid toast={toast} isAdmin={user?.role === "admin"} />}
-      {tab === "cart" && <CartView toast={toast} />}
-      {tab === "orders" && <OrdersView toast={toast} />}
+      <div className={styles.mainLayout}>
+        {/* Content area */}
+        <div className={styles.content}>
+          {tab === "projects" && (
+            <ProjectGallery toast={toast} onCartChange={onCartChange} cartItems={cartItems} />
+          )}
+          {tab === "products" && (
+            <ProductGrid toast={toast} isAdmin={user?.role === "admin"} onCartChange={onCartChange} cartItems={cartItems} />
+          )}
+          {tab === "cart" && (
+            <CartView toast={toast} items={cartItems} onCartChange={onCartChange} />
+          )}
+          {tab === "orders" && <OrdersView toast={toast} />}
+        </div>
+
+        {/* Cart preview sidebar — desktop always, mobile as drawer */}
+        {tab !== "cart" && (
+          <aside className={`${styles.preview} ${previewOpen ? styles.previewOpen : ""}`}>
+            {/* Mobile backdrop */}
+            {previewOpen && (
+              <div className={styles.previewBackdrop} onClick={() => setPreviewOpen(false)} />
+            )}
+            <div className={styles.previewPanel}>
+              <div className={styles.previewHeader}>
+                <h3 className={styles.previewTitle}>Tu pedido</h3>
+                <button
+                  className={styles.previewClose}
+                  onClick={() => setPreviewOpen(false)}
+                  aria-label="Cerrar"
+                >
+                  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+              {cartItems.length === 0 ? (
+                <p className={styles.previewEmpty}>Tu carrito está vacío</p>
+              ) : (
+                <>
+                  <div className={styles.previewItems}>
+                    {cartItems.map((item) => (
+                      <div key={item.id} className={styles.previewItem}>
+                        <div className={styles.previewItemInfo}>
+                          <span className={styles.previewItemName}>{item.product.name}</span>
+                          <span className={styles.previewItemMeta}>
+                            {item.quantity} x {formatCurrency(item.product.price)}
+                          </span>
+                        </div>
+                        <span className={styles.previewItemTotal}>
+                          {formatCurrency(item.product.price * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={styles.previewFooter}>
+                    <div className={styles.previewTotal}>
+                      <span>Total</span>
+                      <strong>{formatCurrency(cartTotal)}</strong>
+                    </div>
+                    <Button
+                      style={{ width: "100%" }}
+                      onClick={() => { setTab("cart"); setPreviewOpen(false); }}
+                    >
+                      Ir al carrito
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </aside>
+        )}
+      </div>
+
+      {/* Mobile floating cart button */}
+      {tab !== "cart" && cartCount > 0 && (
+        <button
+          className={styles.floatingCart}
+          onClick={() => setPreviewOpen(true)}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+          </svg>
+          <span>{cartCount} - {formatCurrency(cartTotal)}</span>
+        </button>
+      )}
     </div>
+  );
+}
+
+// ---- Project Gallery ----
+
+function ProjectGallery({
+  toast,
+  onCartChange,
+  cartItems,
+}: {
+  toast: (m: string, t: "success" | "error") => void;
+  onCartChange: () => void;
+  cartItems: CartItemFull[];
+}) {
+  const [items, setItems] = useState<PortfolioItemWithMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [addingId, setAddingId] = useState<number | null>(null);
+
+  const addToCart = async (portfolioItemId: number) => {
+    setAddingId(portfolioItemId);
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ portfolio_item_id: portfolioItemId }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        let msg = "Error al agregar";
+        try { msg = JSON.parse(text).error || msg; } catch { /* not JSON */ }
+        throw new Error(msg);
+      }
+      toast("Agregado al carrito", "success");
+      onCartChange();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Error al agregar", "error");
+    } finally {
+      setAddingId(null);
+    }
+  };
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/portfolio?${params}`);
+      const json = await res.json();
+      setItems(json.data || []);
+    } catch {
+      toast("Error al cargar proyectos", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [search, toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  if (loading) {
+    return <div className={styles.loading}><Spinner /></div>;
+  }
+
+  return (
+    <>
+      <div className={styles.toolbar}>
+        <Input
+          placeholder="Buscar proyectos..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className={styles.search}
+        />
+      </div>
+      <div className={styles.productGrid}>
+        {items.map((item) => (
+          <Card key={item.id} hover padding="none">
+            {item.image_url && (
+              <div className={styles.productImage}>
+                <img src={item.image_url} alt={item.title} />
+              </div>
+            )}
+            <div className={styles.productBody}>
+              <h3 className={styles.productName}>{item.title}</h3>
+              {item.description && (
+                <p className={styles.productDesc}>{item.description}</p>
+              )}
+              {item.tags && item.tags.length > 0 && (
+                <div className={styles.tags}>
+                  {item.tags.map((tag) => (
+                    <Badge key={tag} variant="default">{tag}</Badge>
+                  ))}
+                </div>
+              )}
+              <div className={styles.memberChip}>
+                {item.member_photo_url ? (
+                  <img src={item.member_photo_url} alt="" className={styles.memberAvatar} />
+                ) : (
+                  <span className={styles.memberAvatarFallback}>
+                    {item.member_name[0]}
+                  </span>
+                )}
+                <span className={styles.memberLabel}>{item.member_name}</span>
+                {item.project_url && (
+                  <a href={item.project_url} target="_blank" rel="noopener noreferrer" className={styles.projectLink}>
+                    Ver proyecto
+                  </a>
+                )}
+              </div>
+              <div className={styles.productFooter}>
+                {item.cost != null ? (
+                  <>
+                    <span className={styles.productPrice}>{formatCurrency(item.cost)}</span>
+                    {!item.allow_quantities && cartItems.some(
+                      (ci) => ci.product.name === item.title
+                    ) ? (
+                      <Badge variant="info">En carrito</Badge>
+                    ) : (
+                      <Button size="sm" onClick={() => addToCart(item.id)} isLoading={addingId === item.id}>
+                        Agregar
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <span className={styles.noPrice}>Sin precio</span>
+                )}
+              </div>
+            </div>
+          </Card>
+        ))}
+        {items.length === 0 && <p className={styles.empty}>No hay proyectos disponibles.</p>}
+      </div>
+    </>
   );
 }
 
 // ---- Product Grid ----
 
-function ProductGrid({ toast, isAdmin }: { toast: (m: string, t: "success" | "error") => void; isAdmin: boolean }) {
+function ProductGrid({
+  toast,
+  isAdmin,
+  onCartChange,
+  cartItems,
+}: {
+  toast: (m: string, t: "success" | "error") => void;
+  isAdmin: boolean;
+  onCartChange: () => void;
+  cartItems: CartItemFull[];
+}) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -110,17 +385,14 @@ function ProductGrid({ toast, isAdmin }: { toast: (m: string, t: "success" | "er
       });
       if (!res.ok) throw new Error();
       toast("Agregado al carrito", "success");
+      onCartChange();
     } catch {
       toast("Error al agregar", "error");
     }
   };
 
   if (loading) {
-    return (
-      <div className={styles.loading}>
-        <Spinner />
-      </div>
-    );
+    return <div className={styles.loading}><Spinner /></div>;
   }
 
   return (
@@ -146,59 +418,50 @@ function ProductGrid({ toast, isAdmin }: { toast: (m: string, t: "success" | "er
               {p.description && <p className={styles.productDesc}>{p.description}</p>}
               <div className={styles.productFooter}>
                 <span className={styles.productPrice}>{formatCurrency(p.price)}</span>
-                {p.stock > 0 ? (
-                  <Button size="sm" onClick={() => addToCart(p.id)}>
-                    Agregar
-                  </Button>
-                ) : (
+                {p.stock <= 0 ? (
                   <Badge variant="error">Agotado</Badge>
+                ) : !p.allow_quantities && cartItems.some((ci) => ci.product_id === p.id) ? (
+                  <Badge variant="info">En carrito</Badge>
+                ) : (
+                  <Button size="sm" onClick={() => addToCart(p.id)}>Agregar</Button>
                 )}
               </div>
             </div>
           </Card>
         ))}
-        {products.length === 0 && (
-          <p className={styles.empty}>No hay productos disponibles.</p>
-        )}
+        {products.length === 0 && <p className={styles.empty}>No hay productos disponibles.</p>}
       </div>
     </>
   );
 }
 
-// ---- Cart View ----
+// ---- Cart View (full) ----
 
-function CartView({ toast }: { toast: (m: string, t: "success" | "error") => void }) {
-  const [items, setItems] = useState<CartItemFull[]>([]);
-  const [loading, setLoading] = useState(true);
+function CartView({
+  toast,
+  items,
+  onCartChange,
+}: {
+  toast: (m: string, t: "success" | "error") => void;
+  items: CartItemFull[];
+  onCartChange: () => void;
+}) {
   const [ordering, setOrdering] = useState(false);
-
-  const fetchCart = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/cart");
-      const json = await res.json();
-      setItems(json.data || []);
-    } catch {
-      toast("Error al cargar carrito", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
 
   const updateQty = async (itemId: number, quantity: number) => {
     try {
-      await fetch("/api/cart", {
+      const res = await fetch("/api/cart", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ item_id: itemId, quantity }),
       });
-      fetchCart();
-    } catch {
-      toast("Error", "error");
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || "Error");
+      }
+      onCartChange();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Error", "error");
     }
   };
 
@@ -211,21 +474,13 @@ function CartView({ toast }: { toast: (m: string, t: "success" | "error") => voi
         throw new Error(json.error);
       }
       toast("Pedido creado", "success");
-      fetchCart();
+      onCartChange();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Error al crear pedido", "error");
     } finally {
       setOrdering(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className={styles.loading}>
-        <Spinner />
-      </div>
-    );
-  }
 
   if (items.length === 0) {
     return <p className={styles.emptyCart}>Tu carrito está vacío.</p>;
@@ -240,36 +495,29 @@ function CartView({ toast }: { toast: (m: string, t: "success" | "error") => voi
           <div key={item.id} className={styles.cartItem}>
             <div className={styles.cartItemInfo}>
               <span className={styles.cartItemName}>{item.product.name}</span>
-              <span className={styles.cartItemPrice}>
-                {formatCurrency(item.product.price)} c/u
-              </span>
+              <span className={styles.cartItemPrice}>{formatCurrency(item.product.price)} c/u</span>
             </div>
             <div className={styles.cartItemActions}>
-              <button
-                className={styles.qtyBtn}
-                onClick={() => updateQty(item.id, item.quantity - 1)}
-              >
-                −
-              </button>
-              <span className={styles.qtyValue}>{item.quantity}</span>
-              <button
-                className={styles.qtyBtn}
-                onClick={() => updateQty(item.id, item.quantity + 1)}
-              >
-                +
-              </button>
-              <span className={styles.cartItemSubtotal}>
-                {formatCurrency(item.product.price * item.quantity)}
-              </span>
+              {item.product.allow_quantities ? (
+                <>
+                  <button className={styles.qtyBtn} onClick={() => updateQty(item.id, item.quantity - 1)}>−</button>
+                  <span className={styles.qtyValue}>{item.quantity}</span>
+                  <button className={styles.qtyBtn} onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
+                </>
+              ) : (
+                <>
+                  <button className={styles.qtyBtn} onClick={() => updateQty(item.id, 0)} title="Eliminar">×</button>
+                  <span className={styles.qtyValue}>1</span>
+                </>
+              )}
+              <span className={styles.cartItemSubtotal}>{formatCurrency(item.product.price * item.quantity)}</span>
             </div>
           </div>
         ))}
       </div>
       <div className={styles.cartTotal}>
         <span>Total: <strong>{formatCurrency(total)}</strong></span>
-        <Button onClick={placeOrder} isLoading={ordering}>
-          Realizar pedido
-        </Button>
+        <Button onClick={placeOrder} isLoading={ordering}>Realizar pedido</Button>
       </div>
     </div>
   );
@@ -318,11 +566,7 @@ function OrdersView({ toast }: { toast: (m: string, t: "success" | "error") => v
   ];
 
   if (loading) {
-    return (
-      <div className={styles.loading}>
-        <Spinner />
-      </div>
-    );
+    return <div className={styles.loading}><Spinner /></div>;
   }
 
   return (

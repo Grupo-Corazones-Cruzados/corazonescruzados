@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken, type TokenPayload } from "./jwt";
+import { verifyTokenWithInvalidation, type TokenPayload } from "./jwt";
 import type { UserRole } from "@/lib/types";
 
 /** Extract and verify the JWT from a request. Returns null if invalid. */
@@ -8,7 +8,7 @@ export async function authenticateRequest(
 ): Promise<TokenPayload | null> {
   const token = req.cookies.get("auth_token")?.value;
   if (!token) return null;
-  return verifyToken(token);
+  return verifyTokenWithInvalidation(token);
 }
 
 /** Require a valid auth token. Returns 401 JSON if missing/invalid. */

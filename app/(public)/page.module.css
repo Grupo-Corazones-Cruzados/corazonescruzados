@@ -25,7 +25,7 @@
 }
 
 .heroAccent {
-  background: linear-gradient(135deg, var(--accent) 0%, #5856D6 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, #A1207D 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -60,6 +60,54 @@
   font-size: var(--text-lg);
 }
 
+/* Services */
+.servicesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+}
+
+.serviceCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-10) var(--space-8);
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  transition: transform var(--duration-fast) var(--ease),
+              box-shadow var(--duration-fast) var(--ease);
+}
+
+.serviceCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.serviceIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background: var(--accent-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-6);
+}
+
+.serviceTitle {
+  font-size: var(--text-lg);
+  font-weight: 500;
+  line-height: var(--leading-relaxed);
+  color: var(--text-primary);
+}
+
+.serviceAccent {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* Members Gallery */
 .galleryLoading {
   display: flex;
@@ -85,6 +133,7 @@
   border-radius: var(--radius-lg);
   background: var(--bg);
   cursor: pointer;
+  text-decoration: none;
   transition: transform var(--duration-fast) var(--ease),
               box-shadow var(--duration-fast) var(--ease);
 }
@@ -168,49 +217,23 @@
   font-weight: 500;
 }
 
-/* Contact form inside modal */
-.contactForm {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.textareaField {
-  display: flex;
-  flex-direction: column;
+/* WhatsApp button on member cards */
+.waButton {
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-2);
-}
-
-.textareaLabel {
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: #25d366;
+  color: white;
   font-size: var(--text-sm);
   font-weight: 500;
-  color: var(--text-primary);
+  transition: background var(--duration-fast) var(--ease);
 }
 
-.textarea {
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-family: inherit;
-  font-size: var(--text-base);
-  color: var(--text-primary);
-  background: var(--bg);
-  resize: vertical;
-  transition: border-color var(--duration-fast) var(--ease);
-}
-
-.textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-light);
-}
-
-.noPhone {
-  text-align: center;
-  padding: var(--space-6);
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
+.memberCard:hover .waButton {
+  background: #1da851;
 }
 
 /* Packages */
@@ -319,12 +342,15 @@
 }
 
 /* Responsive */
+/* (services grid already 2-col, collapses to 1 at 640px) */
+
 @media (max-width: 640px) {
   .heroCta {
     flex-direction: column;
     align-items: center;
   }
 
+  .servicesGrid,
   .membersGrid,
   .packagesGrid {
     grid-template-columns: 1fr;

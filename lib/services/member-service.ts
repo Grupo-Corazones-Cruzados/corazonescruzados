@@ -58,13 +58,12 @@ export async function createMember(data: {
   photo_url?: string;
   position?: string;
   hourly_rate?: number;
-  department_id?: number;
 }): Promise<Member> {
   const result = await query(
-    `INSERT INTO members (name, email, phone, photo_url, position, hourly_rate, department_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO members (name, email, phone, photo_url, position, hourly_rate)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [data.name, data.email, data.phone, data.photo_url, data.position, data.hourly_rate, data.department_id]
+    [data.name, data.email, data.phone, data.photo_url, data.position, data.hourly_rate]
   );
   return result.rows[0];
 }
@@ -78,7 +77,6 @@ export async function updateMember(
     photo_url: string;
     position: string;
     hourly_rate: number;
-    department_id: number;
     is_active: boolean;
   }>
 ): Promise<Member | null> {
@@ -111,7 +109,7 @@ export async function listPublicMembers(): Promise<PublicMember[]> {
             cv.bio, cv.skills
      FROM members m
      LEFT JOIN member_cv_profiles cv ON cv.member_id = m.id
-     WHERE m.is_active = true
+     WHERE m.is_active = true AND m.phone IS NOT NULL AND m.phone != ''
      ORDER BY m.name ASC`
   );
   return result.rows.map((r) => ({

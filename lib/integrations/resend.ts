@@ -16,7 +16,7 @@ function emailShell(content: string): string {
     <img src="${APP_URL}/LogoCC.png" alt="CC" style="width:48px;height:48px;border-radius:12px;" />
   </div>
   <div style="background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #E5E7EB;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
-    <div style="height:3px;background:#0071E3;"></div>
+    <div style="height:3px;background:#4B2D8E;"></div>
     <div style="padding:36px 32px;">${content}</div>
     <div style="padding:20px 32px;background:#F9FAFB;border-top:1px solid #F3F4F6;">
       <p style="color:#9CA3AF;font-size:12px;margin:0;text-align:center;">
@@ -41,11 +41,11 @@ export async function sendVerificationEmail(
     <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">Solo un paso más para comenzar</p>
     <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px;">
       Hola${name ? ` <strong>${name}</strong>` : ""},<br/>
-      Gracias por registrarte en <strong style="color:#0071E3;">Corazones Cruzados</strong>.
+      Gracias por registrarte en <strong style="color:#4B2D8E;">Corazones Cruzados</strong>.
       Haz clic en el botón para activar tu cuenta:
     </p>
     <div style="text-align:center;margin:28px 0;">
-      <a href="${url}" style="display:inline-block;background:#0071E3;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
         Verificar mi cuenta
       </a>
     </div>
@@ -67,7 +67,7 @@ export async function sendPasswordResetEmail(
       Recibimos una solicitud para restablecer tu contraseña.
     </p>
     <div style="text-align:center;margin:28px 0;">
-      <a href="${url}" style="display:inline-block;background:#0071E3;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
         Restablecer contraseña
       </a>
     </div>
@@ -87,7 +87,7 @@ export async function sendInvoiceEmail(
     <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px;text-align:center;">
       Se ha generado la factura <strong>${invoiceNumber}</strong> por un total de <strong>${total}</strong>.
     </p>
-    ${pdfUrl ? `<div style="text-align:center;margin:28px 0;"><a href="${pdfUrl}" style="display:inline-block;background:#0071E3;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">Descargar PDF</a></div>` : ""}
+    ${pdfUrl ? `<div style="text-align:center;margin:28px 0;"><a href="${pdfUrl}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">Descargar PDF</a></div>` : ""}
   `);
   return resend.emails.send({ from: FROM_EMAIL, to: email, subject: `Factura ${invoiceNumber} — Corazones Cruzados`, html });
 }
@@ -113,7 +113,7 @@ export async function sendTicketConfirmationEmail(
       ${memberName ? `<tr><td style="padding:10px 0;color:#6B7280;font-size:14px;">Miembro asignado</td><td style="padding:10px 0;color:#111827;font-size:14px;font-weight:500;text-align:right;">${memberName}</td></tr>` : ""}
     </table>
     <div style="text-align:center;margin:28px 0;">
-      <a href="${APP_URL}/dashboard/tickets" style="display:inline-block;background:#0071E3;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+      <a href="${APP_URL}/dashboard/tickets" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
         Ver mis tickets
       </a>
     </div>
@@ -133,13 +133,13 @@ export async function sendProjectUpdateEmail(
       El proyecto <strong>${projectTitle}</strong> cambió de estado.
     </p>
     <div style="text-align:center;margin:0 0 24px;">
-      <span style="display:inline-block;background:#EFF6FF;color:#0071E3;padding:8px 20px;border-radius:9999px;font-size:14px;font-weight:600;">
+      <span style="display:inline-block;background:#EFF6FF;color:#4B2D8E;padding:8px 20px;border-radius:9999px;font-size:14px;font-weight:600;">
         ${newStatus}
       </span>
     </div>
     ${message ? `<p style="color:#374151;font-size:14px;line-height:1.6;margin:0 0 24px;padding:16px;background:#F9FAFB;border-radius:12px;">${message}</p>` : ""}
     <div style="text-align:center;margin:28px 0;">
-      <a href="${APP_URL}/dashboard/projects" style="display:inline-block;background:#0071E3;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+      <a href="${APP_URL}/dashboard/projects" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
         Ver proyecto
       </a>
     </div>
@@ -171,7 +171,7 @@ export async function sendOrderConfirmationEmail(
       </tr>
     </table>
     <div style="text-align:center;margin:28px 0;">
-      <a href="${APP_URL}/dashboard/marketplace" style="display:inline-block;background:#0071E3;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+      <a href="${APP_URL}/dashboard/marketplace" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
         Ver mis pedidos
       </a>
     </div>

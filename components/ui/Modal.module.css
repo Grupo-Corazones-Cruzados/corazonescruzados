@@ -7,19 +7,19 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
+}
+
+.dialog[open] {
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: fadeIn var(--duration-fast) var(--ease);
 }
 
 .dialog::backdrop {
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-}
-
-.dialog[open] {
-  animation: fadeIn var(--duration-fast) var(--ease);
 }
 
 .dialog[open] .content {

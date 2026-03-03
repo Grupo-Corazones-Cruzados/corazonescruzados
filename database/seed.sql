@@ -14,11 +14,7 @@ INSERT INTO modules (name, description, icon, path, sort_order, requires_verific
   ('Admin',       'System administration panel.',                                             'shield',   '/dashboard/admin',       8, true, ARRAY['admin'])
 ON CONFLICT DO NOTHING;
 
--- Default departments
-INSERT INTO departments (name, description) VALUES
-  ('Engineering',  'Software development and technical services'),
-  ('Design',       'UI/UX design and branding'),
-  ('Marketing',    'Digital marketing and content creation'),
-  ('Consulting',   'Business and strategy consulting'),
-  ('Support',      'Client support and assistance')
-ON CONFLICT DO NOTHING;
+-- Admin user
+INSERT INTO users (email, password_hash, first_name, last_name, role, is_verified) VALUES
+  ('lfgonzalezm0@outlook.com', '$2b$12$AiqpNcugmvmHp8Yz5vIsdujlyF7MoVMYOi9wT/wHfxyzEcGK/yGy6', 'Fernando', 'González', 'admin', true)
+ON CONFLICT (email) DO UPDATE SET role = 'admin', is_verified = true;

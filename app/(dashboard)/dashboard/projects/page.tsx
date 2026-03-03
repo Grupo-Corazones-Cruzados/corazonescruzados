@@ -25,28 +25,22 @@ interface ProjectRow {
 const STATUS_TABS = [
   { value: "all", label: "Todos" },
   { value: "draft", label: "Borrador" },
-  { value: "published", label: "Publicados" },
+  { value: "open", label: "Abiertos" },
   { value: "in_progress", label: "En Progreso" },
+  { value: "review", label: "En Revisión" },
   { value: "completed", label: "Completados" },
   { value: "cancelled", label: "Cancelados" },
+  { value: "on_hold", label: "En Espera" },
 ];
 
 const BADGE_VARIANT: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
   draft: "default",
-  published: "info",
-  planned: "info",
-  started: "info",
+  open: "info",
   in_progress: "warning",
-  in_development: "warning",
-  in_testing: "warning",
+  review: "warning",
   completed: "success",
-  partially_completed: "warning",
-  not_completed: "error",
   cancelled: "error",
-  cancelled_no_agreement: "error",
-  cancelled_no_budget: "error",
-  unpaid: "error",
-  not_completed_by_member: "error",
+  on_hold: "default",
 };
 
 export default function ProjectsPage() {

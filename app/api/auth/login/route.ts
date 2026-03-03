@@ -38,6 +38,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!user.is_verified) {
+      return NextResponse.json(
+        { error: "Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada." },
+        { status: 403 }
+      );
+    }
+
     const token = await createToken({
       userId: user.id,
       email: user.email,

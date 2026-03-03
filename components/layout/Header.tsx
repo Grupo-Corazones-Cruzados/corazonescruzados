@@ -30,6 +30,9 @@ export default function Header() {
           <Link href="/#servicios" className={styles.link} onClick={() => setMenuOpen(false)}>
             Servicios
           </Link>
+          <Link href="/#equipo" className={styles.link} onClick={() => setMenuOpen(false)}>
+            Equipo
+          </Link>
           <Link href="/#paquetes" className={styles.link} onClick={() => setMenuOpen(false)}>
             Paquetes
           </Link>

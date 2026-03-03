@@ -145,6 +145,7 @@ export async function updateProject(
     deadline: string;
     is_private: boolean;
     assigned_member_id: number;
+    cancellation_reason: string;
   }>
 ): Promise<Project | null> {
   const fields: string[] = [];
@@ -255,22 +256,22 @@ export async function createRequirement(data: {
 
 export async function updateRequirement(
   id: number,
-  data: Partial<{ title: string; description: string; cost: number; is_completed: boolean }>
+  data: Partial<{ title: string; description: string; cost: number; completed: boolean }>
 ): Promise<ProjectRequirement | null> {
   const fields: string[] = [];
   const vals: unknown[] = [];
   let idx = 1;
 
   for (const [key, value] of Object.entries(data)) {
-    if (value !== undefined) {
+    if (value !== undefined && key !== "completed") {
       fields.push(`${key} = $${idx++}`);
       vals.push(value);
     }
   }
 
-  if (data.is_completed === true) {
+  if (data.completed === true) {
     fields.push(`completed_at = NOW()`);
-  } else if (data.is_completed === false) {
+  } else if (data.completed === false) {
     fields.push(`completed_at = NULL`);
   }
 
@@ -331,11 +332,11 @@ export async function resolveCancellationRequest(
      RETURNING *`,
     [status, resolvedBy, id]
   );
-  // If approved, cancel the project
+  // If approved, cancel the project and record the reason
   if (status === "approved" && result.rows[0]) {
     await query(
-      "UPDATE projects SET status = 'cancelled' WHERE id = $1",
-      [result.rows[0].project_id]
+      "UPDATE projects SET status = 'cancelled', cancellation_reason = $1 WHERE id = $2",
+      [result.rows[0].reason, result.rows[0].project_id]
     );
   }
   return result.rows[0] || null;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -25,28 +26,47 @@ const ICONS: Record<string, string> = {
   package: "M3 7l7-4 7 4v6l-7 4-7-4V7z",
   receipt: "M5 3h10a2 2 0 012 2v12l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 012-2z",
   store: "M3 3h14l1 7H2L3 3zM4 10v7a1 1 0 001 1h10a1 1 0 001-1v-7",
-  users: "M12 4.5a3 3 0 110 6 3 3 0 010-6zM4 7.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5zM20 7.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5z",
-  settings: "M12 15a3 3 0 100-6 3 3 0 000 6z",
+  users: "M7 10a3 3 0 100-6 3 3 0 000 6zM1 17v-1a4 4 0 014-4h4a4 4 0 014 4v1M13 4.5a3 3 0 010 5.5M17 17v-1a4 4 0 00-3-3.87",
+  settings: "M10 13a3 3 0 100-6 3 3 0 000 6zM16.5 10a6.5 6.5 0 01-.7 2.8l1.5 1.5-1.4 1.4-1.5-1.5A6.5 6.5 0 0110 16.5a6.5 6.5 0 01-4.4-1.8l-1.5 1.5-1.4-1.4 1.5-1.5A6.5 6.5 0 013.5 10a6.5 6.5 0 011.3-3.8L3.3 4.7l1.4-1.4 1.5 1.5A6.5 6.5 0 0110 3.5a6.5 6.5 0 013.8 1.3l1.5-1.5 1.4 1.4-1.5 1.5A6.5 6.5 0 0116.5 10z",
   shield: "M12 2l7 4v4c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z",
 };
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
   if (!user) return null;
 
   const visibleItems = NAV_ITEMS.filter((item) =>
-    item.roles.includes(user.role)
+    (item.roles as readonly string[]).includes(user.role)
   );
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`} data-collapsed={collapsed || undefined}>
       <div className={styles.top}>
         <Link href="/" className={styles.logo}>
-          <img src="/LogoCC.png" alt="CC" className={styles.logoImg} />
-          <span className={styles.logoText}>CC</span>
+          <img src="/LogoCC.png" alt="GCC" className={styles.logoImg} />
+          {!collapsed && <span className={styles.logoText}>GCC</span>}
         </Link>
+        <button
+          className={styles.toggle}
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+        >
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+            <path
+              d={collapsed
+                ? "M7 4l6 6-6 6"   /* chevron right */
+                : "M13 16l-6-6 6-6" /* chevron left */
+              }
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       </div>
 
       <nav className={styles.nav}>
@@ -60,6 +80,7 @@ export default function Sidebar() {
               key={item.path}
               href={item.path}
               className={`${styles.link} ${isActive ? styles.active : ""}`}
+              title={collapsed ? item.label : undefined}
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className={styles.icon}>
                 <path
@@ -70,7 +91,7 @@ export default function Sidebar() {
                   strokeLinejoin="round"
                 />
               </svg>
-              <span>{item.label}</span>
+              {!collapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
@@ -83,16 +104,37 @@ export default function Sidebar() {
             name={`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email}
             size="sm"
           />
-          <div className={styles.userInfo}>
-            <span className={styles.userName}>
-              {user.first_name || user.email.split("@")[0]}
-            </span>
-            <span className={styles.userRole}>{user.role}</span>
-          </div>
+          {!collapsed && (
+            <div className={styles.userInfo}>
+              <span className={styles.userName}>
+                {user.first_name || user.email.split("@")[0]}
+              </span>
+              <span className={styles.userRole}>{user.role}</span>
+            </div>
+          )}
         </div>
-        <button className={styles.signOut} onClick={signOut}>
-          Salir
-        </button>
+        {!collapsed && (
+          <button className={styles.signOut} onClick={signOut}>
+            Salir
+          </button>
+        )}
+        {collapsed && (
+          <button
+            className={styles.signOut}
+            onClick={signOut}
+            title="Salir"
+          >
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <path
+                d="M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3M10 10h7m0 0l-3-3m3 3l-3 3"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
       </div>
     </aside>
   );

@@ -96,6 +96,127 @@
   box-shadow: 0 0 0 3px var(--accent-light);
 }
 
+.fieldLabel {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.imageUploader {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 160px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--duration-fast) var(--ease);
+}
+
+.imageUploader:hover {
+  border-color: var(--accent);
+}
+
+.imageUploader:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.imagePreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageUploaderPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 100%;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.imageUploadingOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-md);
+}
+
+.removeImage {
+  all: unset;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  color: var(--error);
+  margin-top: var(--space-2);
+  display: inline-block;
+}
+
+.removeImage:hover {
+  text-decoration: underline;
+}
+
+.toggleField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.toggleRow {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.toggleOption {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border);
+  transition: background 0.15s, color 0.15s;
+}
+
+.toggleOption:last-child {
+  border-right: none;
+}
+
+.toggleOption:hover {
+  background: var(--bg-secondary);
+}
+
+.toggleActive {
+  background: var(--accent);
+  color: #fff;
+}
+
+.toggleActive:hover {
+  background: var(--accent);
+}
+
+.toggleHint {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
 .modalActions {
   display: flex;
   justify-content: flex-end;

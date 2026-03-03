@@ -24,57 +24,52 @@ export const TICKET_STATUS_LABELS: Record<string, string> = {
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   draft: "Borrador",
-  published: "Publicado",
-  planned: "Planificado",
-  started: "Iniciado",
+  open: "Abierto",
   in_progress: "En Progreso",
-  in_development: "En Desarrollo",
-  in_testing: "En Pruebas",
+  review: "En Revisión",
   completed: "Completado",
-  partially_completed: "Completado Parcial",
-  not_completed: "No Completado",
   cancelled: "Cancelado",
-  cancelled_no_agreement: "Cancelado - Sin Acuerdo",
-  cancelled_no_budget: "Cancelado - Sin Presupuesto",
-  unpaid: "No Pagado",
-  not_completed_by_member: "No Completado por Miembro",
+  on_hold: "En Espera",
 };
 
 export const ACTIVE_PROJECT_STATES: ProjectStatus[] = [
-  "started",
   "in_progress",
-  "in_development",
-  "in_testing",
+  "review",
 ];
 
 export const TERMINAL_PROJECT_STATES: ProjectStatus[] = [
   "completed",
-  "partially_completed",
-  "not_completed",
   "cancelled",
-  "cancelled_no_agreement",
-  "cancelled_no_budget",
-  "unpaid",
-  "not_completed_by_member",
 ];
 
 export const PRIVATE_PROJECT_FLOW: ProjectStatus[] = [
   "draft",
-  "started",
-  "in_development",
-  "in_testing",
+  "in_progress",
+  "review",
   "completed",
 ];
 
 export const PUBLIC_PROJECT_TRANSITIONS: Partial<
   Record<ProjectStatus, ProjectStatus[]>
 > = {
-  published: ["planned"],
-  planned: ["started"],
-  started: ["in_progress", "in_development"],
-  in_progress: ["in_development", "in_testing", "completed"],
-  in_development: ["in_testing", "completed"],
-  in_testing: ["completed", "in_development"],
+  open: ["in_progress"],
+  in_progress: ["review", "completed"],
+  review: ["in_progress", "completed"],
+};
+
+export type CancellationReason =
+  | "no_agreement"
+  | "no_budget"
+  | "member_failure"
+  | "not_completed"
+  | "other";
+
+export const CANCELLATION_REASON_LABELS: Record<CancellationReason, string> = {
+  no_agreement: "Sin Acuerdo",
+  no_budget: "Sin Presupuesto",
+  member_failure: "Fallo del Miembro",
+  not_completed: "No Completado",
+  other: "Otro",
 };
 
 // ----- Invoice statuses -----

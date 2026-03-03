@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import PageHeader from "@/components/layout/PageHeader";
@@ -30,6 +30,10 @@ export default function PortfolioEditorPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [projectUrl, setProjectUrl] = useState("");
   const [tagsText, setTagsText] = useState("");
+  const [cost, setCost] = useState("");
+  const [allowQuantities, setAllowQuantities] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const memberId = user?.member_id;
 
@@ -57,6 +61,8 @@ export default function PortfolioEditorPage() {
     setImageUrl("");
     setProjectUrl("");
     setTagsText("");
+    setCost("");
+    setAllowQuantities(true);
     setEditItem(null);
   };
 
@@ -72,7 +78,38 @@ export default function PortfolioEditorPage() {
     setImageUrl(item.image_url || "");
     setProjectUrl(item.project_url || "");
     setTagsText((item.tags || []).join(", "));
+    setCost(item.cost != null ? String(item.cost) : "");
+    setAllowQuantities(item.allow_quantities ?? true);
     setShowModal(true);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast("Solo se permiten archivos de imagen", "error");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast("La imagen debe ser menor a 5 MB", "error");
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "portfolio");
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error();
+      const { url } = await res.json();
+      setImageUrl(url);
+      toast("Imagen subida", "success");
+    } catch {
+      toast("Error al subir la imagen", "error");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -97,6 +134,8 @@ export default function PortfolioEditorPage() {
             image_url: imageUrl || null,
             project_url: projectUrl || null,
             tags,
+            cost: cost ? parseFloat(cost) : null,
+            allow_quantities: allowQuantities,
           }),
         });
         if (!res.ok) throw new Error();
@@ -111,6 +150,8 @@ export default function PortfolioEditorPage() {
             image_url: imageUrl || null,
             project_url: projectUrl || null,
             tags,
+            cost: cost ? parseFloat(cost) : null,
+            allow_quantities: allowQuantities,
           }),
         });
         if (!res.ok) throw new Error();
@@ -232,7 +273,7 @@ export default function PortfolioEditorPage() {
       )}
 
       <Modal
-        isOpen={showModal}
+        open={showModal}
         onClose={() => setShowModal(false)}
         title={editItem ? "Editar proyecto" : "Nuevo proyecto"}
       >
@@ -250,18 +291,93 @@ export default function PortfolioEditorPage() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Descripción del proyecto..."
           />
-          <Input
-            label="URL de imagen"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://..."
-          />
+          <div>
+            <label className={styles.fieldLabel}>Imagen</label>
+            <button
+              type="button"
+              className={styles.imageUploader}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {imageUrl ? (
+                <img src={imageUrl} alt="Preview" className={styles.imagePreview} />
+              ) : (
+                <span className={styles.imageUploaderPlaceholder}>
+                  {uploading ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <span>Click para subir imagen</span>
+                    </>
+                  )}
+                </span>
+              )}
+              {uploading && imageUrl && (
+                <span className={styles.imageUploadingOverlay}>
+                  <Spinner size="sm" />
+                </span>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              style={{ display: "none" }}
+            />
+            {imageUrl && (
+              <button
+                type="button"
+                className={styles.removeImage}
+                onClick={() => setImageUrl("")}
+              >
+                Quitar imagen
+              </button>
+            )}
+          </div>
           <Input
             label="URL del proyecto"
             value={projectUrl}
             onChange={(e) => setProjectUrl(e.target.value)}
             placeholder="https://..."
           />
+          <Input
+            label="Costo final (USD)"
+            type="number"
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+            placeholder="0.00"
+            hint="Opcional — se muestra en el marketplace"
+          />
+          <div className={styles.toggleField}>
+            <label className={styles.fieldLabel}>¿Permitir venta por cantidades?</label>
+            <div className={styles.toggleRow}>
+              <button
+                type="button"
+                className={`${styles.toggleOption} ${allowQuantities ? styles.toggleActive : ""}`}
+                onClick={() => setAllowQuantities(true)}
+              >
+                Sí
+              </button>
+              <button
+                type="button"
+                className={`${styles.toggleOption} ${!allowQuantities ? styles.toggleActive : ""}`}
+                onClick={() => setAllowQuantities(false)}
+              >
+                No
+              </button>
+            </div>
+            <span className={styles.toggleHint}>
+              {allowQuantities
+                ? "El cliente puede pedir varias unidades de este proyecto."
+                : "El cliente solo puede pedir este proyecto una vez."}
+            </span>
+          </div>
           <Input
             label="Etiquetas"
             value={tagsText}
