@@ -120,7 +120,20 @@ export async function updatePortfolioItem(
     `UPDATE member_portfolio_items SET ${fields.join(", ")} WHERE id = $${idx} RETURNING *`,
     vals
   );
-  return result.rows[0] || null;
+  const item = result.rows[0] || null;
+
+  // Sync relevant fields to the linked product (if any)
+  if (item) {
+    await query(
+      `UPDATE products SET
+         name = $1, description = $2, price = COALESCE($3, 0),
+         image_url = $4, allow_quantities = $5
+       WHERE portfolio_item_id = $6`,
+      [item.title, item.description, item.cost, item.image_url, item.allow_quantities, id]
+    );
+  }
+
+  return item;
 }
 
 export async function deletePortfolioItem(id: number): Promise<boolean> {
