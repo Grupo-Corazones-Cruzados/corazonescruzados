@@ -167,6 +167,7 @@ export default function ProjectsPage() {
           onRowClick={(r) => router.push(`/dashboard/projects/${r.id}`)}
           emptyTitle="Sin proyectos"
           emptyDescription="No hay proyectos que mostrar. Crea uno nuevo para comenzar."
+          emptyAction={<Button onClick={() => setShowCreate(true)}>Nuevo Proyecto</Button>}
         />
       )}
 

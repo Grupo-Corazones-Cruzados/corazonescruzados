@@ -221,7 +221,7 @@ export default function HomePage() {
           <div className={styles.sectionHeader}>
             <h2 className="heading-2">Nuestro Equipo</h2>
             <p className="text-secondary">
-              Conoce a los profesionales que te acompañarán en tu proceso.
+              Conoce a los profesionales que te acompañarán en tus problemas.
             </p>
           </div>
           <MemberGallery />

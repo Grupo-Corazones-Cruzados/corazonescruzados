@@ -1,4 +1,4 @@
-import type { ProjectStatus, UserRole } from "./types";
+import type { OrderStatus, ProjectStatus, UserRole } from "./types";
 
 // ----- Roles -----
 
@@ -83,12 +83,26 @@ export const INVOICE_STATUS_LABELS: Record<string, string> = {
 
 // ----- Order statuses -----
 
-export const ORDER_STATUS_LABELS: Record<string, string> = {
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Pendiente",
+  pending_confirmation: "Pendiente de Confirmación",
+  awaiting_acceptance: "Esperando Aceptación",
+  awaiting_payment: "Pendiente de Pago",
   paid: "Pagado",
   shipped: "Enviado",
   delivered: "Entregado",
   cancelled: "Cancelado",
+};
+
+export const ORDER_STATUS_BADGE: Record<OrderStatus, "default" | "success" | "warning" | "error" | "info"> = {
+  pending: "warning",
+  pending_confirmation: "warning",
+  awaiting_acceptance: "info",
+  awaiting_payment: "warning",
+  paid: "success",
+  shipped: "info",
+  delivered: "success",
+  cancelled: "error",
 };
 
 // ----- Applicant statuses -----
@@ -101,6 +115,22 @@ export const APPLICANT_STATUS_LABELS: Record<string, string> = {
   accepted: "Aceptado",
   rejected: "Rechazado",
   withdrawn: "Retirado",
+};
+
+// ----- Campaign statuses -----
+
+export const CAMPAIGN_STATUS_LABELS: Record<string, string> = {
+  draft: "Borrador",
+  sending: "Enviando",
+  sent: "Enviado",
+  failed: "Fallido",
+};
+
+export const CAMPAIGN_STATUS_BADGE: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
+  draft: "default",
+  sending: "warning",
+  sent: "success",
+  failed: "error",
 };
 
 // ----- Days of week -----

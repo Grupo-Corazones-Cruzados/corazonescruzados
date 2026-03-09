@@ -41,7 +41,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       {isLoading && (
         <span className={styles.spinner} aria-hidden="true" />
       )}
-      <span className={isLoading ? styles.hiddenText : undefined}>
+      <span className={cn(styles.content, isLoading && styles.hiddenText)}>
         {children}
       </span>
     </button>

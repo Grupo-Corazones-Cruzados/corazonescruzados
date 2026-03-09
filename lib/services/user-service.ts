@@ -97,15 +97,15 @@ export async function listUsers(params: {
   let idx = 1;
 
   if (params.roles && params.roles.length > 0) {
-    conditions.push(`role = ANY($${idx++})`);
+    conditions.push(`u.role = ANY($${idx++})`);
     values.push(params.roles);
   } else if (params.role) {
-    conditions.push(`role = $${idx++}`);
+    conditions.push(`u.role = $${idx++}`);
     values.push(params.role);
   }
   if (params.search) {
     conditions.push(
-      `(email ILIKE $${idx} OR first_name ILIKE $${idx} OR last_name ILIKE $${idx})`
+      `(u.email ILIKE $${idx} OR u.first_name ILIKE $${idx} OR u.last_name ILIKE $${idx})`
     );
     values.push(`%${params.search}%`);
     idx++;
@@ -114,17 +114,21 @@ export async function listUsers(params: {
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const countResult = await query(
-    `SELECT COUNT(*) FROM users ${where}`,
+    `SELECT COUNT(*) FROM users u ${where}`,
     values
   );
   const total = parseInt(countResult.rows[0].count, 10);
 
   const dataValues = [...values, perPage, offset];
   const result = await query(
-    `SELECT id, email, first_name, last_name, avatar_url, phone,
-            role, member_id, is_verified, created_at
-     FROM users ${where}
-     ORDER BY created_at DESC
+    `SELECT u.id, u.email, u.first_name, u.last_name, u.avatar_url, u.phone,
+            u.role, u.member_id, u.is_verified, u.created_at,
+            m.hourly_rate, p.name AS position_name
+     FROM users u
+     LEFT JOIN members m ON m.id = u.member_id
+     LEFT JOIN positions p ON p.id = m.position_id
+     ${where}
+     ORDER BY u.created_at DESC
      LIMIT $${idx++} OFFSET $${idx}`,
     dataValues
   );
@@ -156,7 +160,7 @@ export async function invalidateAllSessions(): Promise<number> {
 
 export async function promoteToMember(
   userId: string,
-  data?: { position?: string; hourly_rate?: number }
+  data?: { position_id?: number; hourly_rate?: number }
 ): Promise<User> {
   return transaction(async (client) => {
     // 1. Fetch and validate user
@@ -173,10 +177,10 @@ export async function promoteToMember(
     // 2. Create member record
     const name = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email;
     const memberResult = await client.query(
-      `INSERT INTO members (name, email, phone, position, hourly_rate)
+      `INSERT INTO members (name, email, phone, position_id, hourly_rate)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [name, user.email, user.phone, data?.position || null, data?.hourly_rate || null]
+      [name, user.email, user.phone, data?.position_id || null, data?.hourly_rate || null]
     );
     const memberId = memberResult.rows[0].id;
 

@@ -22,6 +22,7 @@ interface DataTableProps<T> {
   onPageChange?: (page: number) => void;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: ReactNode;
   onRowClick?: (row: T) => void;
 }
 
@@ -34,10 +35,11 @@ export default function DataTable<T>({
   onPageChange,
   emptyTitle = "Sin resultados",
   emptyDescription,
+  emptyAction,
   onRowClick,
 }: DataTableProps<T>) {
   if (data.length === 0) {
-    return <EmptyState title={emptyTitle} description={emptyDescription} />;
+    return <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />;
   }
 
   return (

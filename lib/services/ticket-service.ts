@@ -7,7 +7,7 @@ export async function listTickets(params: {
   page?: number;
   per_page?: number;
   status?: string;
-  client_id?: number;
+  user_id?: string;
   member_id?: number;
   search?: string;
 }) {
@@ -23,9 +23,9 @@ export async function listTickets(params: {
     conds.push(`t.status = $${idx++}`);
     vals.push(params.status);
   }
-  if (params.client_id) {
-    conds.push(`t.client_id = $${idx++}`);
-    vals.push(params.client_id);
+  if (params.user_id) {
+    conds.push(`t.user_id = $${idx++}`);
+    vals.push(params.user_id);
   }
   if (params.member_id) {
     conds.push(`t.member_id = $${idx++}`);
@@ -45,11 +45,11 @@ export async function listTickets(params: {
   const dataVals = [...vals, perPage, offset];
   const result = await query(
     `SELECT t.*,
-            c.name  AS client_name,
+            COALESCE(u.first_name || ' ' || u.last_name, u.email) AS client_name,
             m.name  AS member_name,
             s.name  AS service_name
      FROM tickets t
-     LEFT JOIN clients  c ON c.id = t.client_id
+     LEFT JOIN users    u ON u.id = t.user_id
      LEFT JOIN members  m ON m.id = t.member_id
      LEFT JOIN services s ON s.id = t.service_id
      ${where}
@@ -70,11 +70,12 @@ export async function listTickets(params: {
 export async function getTicketById(id: number) {
   const result = await query(
     `SELECT t.*,
-            c.name  AS client_name,  c.email AS client_email,
+            COALESCE(u.first_name || ' ' || u.last_name, u.email) AS client_name,
+            u.email AS client_email,
             m.name  AS member_name,  m.email AS member_email,
             s.name  AS service_name
      FROM tickets t
-     LEFT JOIN clients  c ON c.id = t.client_id
+     LEFT JOIN users    u ON u.id = t.user_id
      LEFT JOIN members  m ON m.id = t.member_id
      LEFT JOIN services s ON s.id = t.service_id
      WHERE t.id = $1`,
@@ -86,7 +87,7 @@ export async function getTicketById(id: number) {
 // ----- Create -----
 
 export async function createTicket(data: {
-  client_id: number;
+  user_id: string;
   service_id?: number;
   member_id?: number;
   title: string;
@@ -97,12 +98,12 @@ export async function createTicket(data: {
 }): Promise<Ticket> {
   const result = await query(
     `INSERT INTO tickets
-       (client_id, service_id, member_id, title, description,
+       (user_id, service_id, member_id, title, description,
         scheduled_at, estimated_hours, estimated_cost)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
      RETURNING *`,
     [
-      data.client_id,
+      data.user_id,
       data.service_id || null,
       data.member_id || null,
       data.title,
@@ -277,10 +278,11 @@ export async function getTicketsForCalendar(params: {
 
   const result = await query(
     `SELECT tts.*, t.title AS ticket_title, t.status AS ticket_status,
-            c.name AS client_name, m.name AS member_name
+            COALESCE(u.first_name || ' ' || u.last_name, u.email) AS client_name,
+            m.name AS member_name
      FROM ticket_time_slots tts
      JOIN tickets t ON t.id = tts.ticket_id
-     LEFT JOIN clients c ON c.id = t.client_id
+     LEFT JOIN users   u ON u.id = t.user_id
      LEFT JOIN members m ON m.id = t.member_id
      WHERE ${conds.join(" AND ")}
      ORDER BY tts.date, tts.start_time`,

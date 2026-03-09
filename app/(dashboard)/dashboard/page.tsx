@@ -15,7 +15,6 @@ interface Stats {
 const STAT_CONFIG: Record<string, { label: string; href: string; color: string }> = {
   open_tickets: { label: "Tickets Abiertos", href: "/dashboard/tickets", color: "var(--accent)" },
   active_projects: { label: "Proyectos Activos", href: "/dashboard/projects", color: "#5856D6" },
-  pending_invoices: { label: "Facturas Pendientes", href: "/dashboard/invoices", color: "var(--warning)" },
   users: { label: "Usuarios", href: "/dashboard/admin", color: "var(--info)" },
   active_members: { label: "Miembros Activos", href: "/dashboard/admin", color: "var(--success)" },
   clients: { label: "Clientes", href: "/dashboard/admin", color: "#FF2D55" },
@@ -24,7 +23,7 @@ const STAT_CONFIG: Record<string, { label: string; href: string; color: string }
 const QUICK_ACTIONS = [
   { label: "Nuevo Ticket", href: "/dashboard/tickets", icon: "+" },
   { label: "Nuevo Proyecto", href: "/dashboard/projects", icon: "+" },
-  { label: "Ver Facturas", href: "/dashboard/invoices", icon: "→" },
+  { label: "Marketplace", href: "/dashboard/marketplace", icon: "→" },
   { label: "Configuración", href: "/dashboard/settings", icon: "⚙" },
 ];
 

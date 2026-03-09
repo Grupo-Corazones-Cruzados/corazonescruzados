@@ -213,7 +213,15 @@ export default function SettingsPage() {
             <>
               <Card padding="md" hover>
                 <Link href="/dashboard/settings/availability" className={styles.sideLink}>
-                  <span className={styles.sideLinkIcon}>📅</span>
+                  <span className={styles.sideLinkIcon}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                      <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+                    </svg>
+                  </span>
                   <div>
                     <p className={styles.sideLinkTitle}>Disponibilidad</p>
                     <p className={styles.sideLinkDesc}>
@@ -224,7 +232,15 @@ export default function SettingsPage() {
               </Card>
               <Card padding="md" hover>
                 <Link href="/dashboard/settings/cv" className={styles.sideLink}>
-                  <span className={styles.sideLinkIcon}>📄</span>
+                  <span className={styles.sideLinkIcon}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                  </span>
                   <div>
                     <p className={styles.sideLinkTitle}>Mi CV</p>
                     <p className={styles.sideLinkDesc}>
@@ -235,11 +251,34 @@ export default function SettingsPage() {
               </Card>
               <Card padding="md" hover>
                 <Link href="/dashboard/settings/portfolio" className={styles.sideLink}>
-                  <span className={styles.sideLinkIcon}>🎨</span>
+                  <span className={styles.sideLinkIcon}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="3" width="20" height="14" rx="2" />
+                      <line x1="8" y1="21" x2="16" y2="21" />
+                      <line x1="12" y1="17" x2="12" y2="21" />
+                      <circle cx="9" cy="10" r="2" />
+                      <path d="M15 8l2 2-2 2" />
+                    </svg>
+                  </span>
                   <div>
                     <p className={styles.sideLinkTitle}>Portafolio</p>
                     <p className={styles.sideLinkDesc}>
                       Administra tus proyectos destacados
+                    </p>
+                  </div>
+                </Link>
+              </Card>
+              <Card padding="md" hover>
+                <Link href="/dashboard/settings/services" className={styles.sideLink}>
+                  <span className={styles.sideLinkIcon}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                    </svg>
+                  </span>
+                  <div>
+                    <p className={styles.sideLinkTitle}>Servicios</p>
+                    <p className={styles.sideLinkDesc}>
+                      Configura los servicios que ofreces
                     </p>
                   </div>
                 </Link>

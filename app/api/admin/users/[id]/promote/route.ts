@@ -14,7 +14,7 @@ export async function POST(
 
   try {
     const user = await promoteToMember(id, {
-      position: body.position || undefined,
+      position_id: body.position_id ? Number(body.position_id) : undefined,
       hourly_rate: body.hourly_rate ? Number(body.hourly_rate) : undefined,
     });
     return NextResponse.json({ data: user });

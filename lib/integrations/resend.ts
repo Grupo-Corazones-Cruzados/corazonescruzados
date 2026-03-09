@@ -178,3 +178,139 @@ export async function sendOrderConfirmationEmail(
   `);
   return resend.emails.send({ from: FROM_EMAIL, to: email, subject: `Pedido #${orderId} confirmado — Corazones Cruzados`, html });
 }
+
+// ----- Campaign emails -----
+
+export async function sendCampaignEmail(
+  to: string,
+  subject: string,
+  htmlBody: string,
+  signatureHtml?: string | null
+) {
+  const fullBody = signatureHtml ? `${htmlBody}${signatureHtml}` : htmlBody;
+  return resend.emails.send({ from: FROM_EMAIL, to, subject, html: fullBody });
+}
+
+// ----- Order confirmation flow emails -----
+
+export async function sendMemberConfirmationRequestEmail(
+  memberEmail: string,
+  memberName: string,
+  orderId: number,
+  clientName: string,
+  items: { name: string; quantity: number; price: string }[]
+) {
+  const itemRows = items
+    .map(
+      (i) =>
+        `<tr>
+          <td style="padding:8px 0;color:#374151;font-size:14px;border-bottom:1px solid #F3F4F6;">${i.name}</td>
+          <td style="padding:8px 0;color:#374151;font-size:14px;text-align:center;border-bottom:1px solid #F3F4F6;">${i.quantity}</td>
+          <td style="padding:8px 0;color:#111827;font-size:14px;font-weight:500;text-align:right;border-bottom:1px solid #F3F4F6;">${i.price}</td>
+        </tr>`
+    )
+    .join("");
+
+  const html = emailShell(`
+    <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Nuevo Pedido Recibido</h1>
+    <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">Un cliente quiere adquirir tu trabajo</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px;">
+      Hola <strong>${memberName}</strong>,<br/>
+      <strong>${clientName}</strong> ha realizado un pedido que incluye proyectos tuyos. Revisa los detalles y confirma si puedes cumplir con la entrega.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+      <tr>
+        <td style="padding:8px 0;color:#6B7280;font-size:12px;font-weight:600;text-transform:uppercase;border-bottom:2px solid #E5E7EB;">Producto</td>
+        <td style="padding:8px 0;color:#6B7280;font-size:12px;font-weight:600;text-transform:uppercase;text-align:center;border-bottom:2px solid #E5E7EB;">Cant.</td>
+        <td style="padding:8px 0;color:#6B7280;font-size:12px;font-weight:600;text-transform:uppercase;text-align:right;border-bottom:2px solid #E5E7EB;">Precio</td>
+      </tr>
+      ${itemRows}
+    </table>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${APP_URL}/dashboard/marketplace?tab=confirmations" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+        Revisar y Confirmar
+      </a>
+    </div>
+    <p style="color:#9CA3AF;font-size:12px;margin:24px 0 0;">Pedido #${orderId}</p>
+  `);
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: memberEmail,
+    subject: `Nuevo pedido #${orderId} — Confirmación requerida`,
+    html,
+  });
+}
+
+export async function sendClientMemberResponseEmail(
+  clientEmail: string,
+  clientName: string,
+  orderId: number,
+  memberName: string,
+  confirmed: boolean,
+  deliveryDate?: string,
+  message?: string
+) {
+  const statusText = confirmed ? "ha confirmado" : "ha rechazado";
+  const statusColor = confirmed ? "#059669" : "#DC2626";
+  const statusBg = confirmed ? "#ECFDF5" : "#FEF2F2";
+
+  const html = emailShell(`
+    <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Respuesta del Miembro</h1>
+    <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">Actualización sobre tu pedido #${orderId}</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">
+      Hola <strong>${clientName}</strong>,<br/>
+      <strong>${memberName}</strong> ${statusText} tu pedido.
+    </p>
+    <div style="text-align:center;margin:0 0 24px;">
+      <span style="display:inline-block;background:${statusBg};color:${statusColor};padding:8px 20px;border-radius:9999px;font-size:14px;font-weight:600;">
+        ${confirmed ? "Confirmado" : "Rechazado"}
+      </span>
+    </div>
+    ${confirmed && deliveryDate ? `<table style="width:100%;border-collapse:collapse;margin:0 0 24px;"><tr><td style="padding:10px 0;color:#6B7280;font-size:14px;border-bottom:1px solid #F3F4F6;">Fecha de entrega estimada</td><td style="padding:10px 0;color:#111827;font-size:14px;font-weight:500;text-align:right;border-bottom:1px solid #F3F4F6;">${deliveryDate}</td></tr></table>` : ""}
+    ${message ? `<div style="padding:16px;background:#F9FAFB;border-radius:12px;margin:0 0 24px;"><p style="color:#6B7280;font-size:12px;margin:0 0 8px;">Mensaje del miembro:</p><p style="color:#374151;font-size:14px;line-height:1.6;margin:0;">${message}</p></div>` : ""}
+    ${confirmed ? `<div style="text-align:center;margin:28px 0;"><a href="${APP_URL}/dashboard/marketplace/orders/${orderId}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">Revisar y Aceptar</a></div>` : ""}
+  `);
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: clientEmail,
+    subject: `Pedido #${orderId} — ${confirmed ? "Confirmado por miembro" : "Rechazado por miembro"}`,
+    html,
+  });
+}
+
+export async function sendMemberOrderAcceptedEmail(
+  memberEmail: string,
+  memberName: string,
+  orderId: number,
+  clientName: string,
+  accepted: boolean
+) {
+  const statusText = accepted ? "ha aceptado las condiciones" : "ha rechazado las condiciones";
+  const statusColor = accepted ? "#059669" : "#DC2626";
+  const statusBg = accepted ? "#ECFDF5" : "#FEF2F2";
+
+  const html = emailShell(`
+    <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Respuesta del Cliente</h1>
+    <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">Actualización sobre el pedido #${orderId}</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">
+      Hola <strong>${memberName}</strong>,<br/>
+      <strong>${clientName}</strong> ${statusText} de tu pedido.
+    </p>
+    <div style="text-align:center;margin:0 0 24px;">
+      <span style="display:inline-block;background:${statusBg};color:${statusColor};padding:8px 20px;border-radius:9999px;font-size:14px;font-weight:600;">
+        ${accepted ? "Aceptado" : "Rechazado"}
+      </span>
+    </div>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${APP_URL}/dashboard/marketplace" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+        Ver mis pedidos
+      </a>
+    </div>
+  `);
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: memberEmail,
+    subject: `Pedido #${orderId} — ${accepted ? "Cliente aceptó" : "Cliente rechazó"}`,
+    html,
+  });
+}

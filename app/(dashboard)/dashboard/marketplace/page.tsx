@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import PageHeader from "@/components/layout/PageHeader";
 import { Badge, Button, Card, Input, Tabs, Spinner, DataTable } from "@/components/ui";
 import type { Column } from "@/components/ui/DataTable";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ORDER_STATUS_LABELS } from "@/lib/constants";
-import type { PortfolioItemWithMember } from "@/lib/types";
+import { ORDER_STATUS_LABELS, ORDER_STATUS_BADGE } from "@/lib/constants";
+import type { OrderStatus, PortfolioItemWithMember } from "@/lib/types";
 import styles from "./page.module.css";
 
 interface Product {
@@ -37,15 +38,8 @@ interface OrderRow {
   created_at: string;
 }
 
-type TabValue = "projects" | "products" | "cart" | "orders";
-
-const ORDER_BADGE: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
-  pending: "warning",
-  paid: "success",
-  shipped: "info",
-  delivered: "success",
-  cancelled: "error",
-};
+type TabValue = "projects" | "products" | "cart" | "orders" | "confirmations";
+type PortfolioType = "project" | "product";
 
 export default function MarketplacePage() {
   const { user } = useAuth();
@@ -106,8 +100,10 @@ export default function MarketplacePage() {
         tabs={[
           { value: "projects", label: "Proyectos" },
           { value: "products", label: "Productos" },
-          { value: "cart", label: "Carrito" },
           { value: "orders", label: "Mis Pedidos" },
+          ...(user?.role === "member" || user?.role === "admin"
+            ? [{ value: "confirmations", label: "Confirmaciones" }]
+            : []),
         ]}
         active={tab}
         onChange={(v) => setTab(v as TabValue)}
@@ -117,19 +113,20 @@ export default function MarketplacePage() {
         {/* Content area */}
         <div className={styles.content}>
           {tab === "projects" && (
-            <ProjectGallery toast={toast} onCartChange={onCartChange} cartItems={cartItems} />
+            <PortfolioGallery type="project" toast={toast} onCartChange={onCartChange} cartItems={cartItems} />
           )}
           {tab === "products" && (
-            <ProductGrid toast={toast} isAdmin={user?.role === "admin"} onCartChange={onCartChange} cartItems={cartItems} />
+            <PortfolioGallery type="product" toast={toast} onCartChange={onCartChange} cartItems={cartItems} />
           )}
           {tab === "cart" && (
             <CartView toast={toast} items={cartItems} onCartChange={onCartChange} />
           )}
           {tab === "orders" && <OrdersView toast={toast} />}
+          {tab === "confirmations" && <ConfirmationsRedirect />}
         </div>
 
         {/* Cart preview sidebar — desktop always, mobile as drawer */}
-        {tab !== "cart" && (
+        {tab !== "cart" && tab !== "orders" && (
           <aside className={`${styles.preview} ${previewOpen ? styles.previewOpen : ""}`}>
             {/* Mobile backdrop */}
             {previewOpen && (
@@ -188,7 +185,7 @@ export default function MarketplacePage() {
       </div>
 
       {/* Mobile floating cart button */}
-      {tab !== "cart" && cartCount > 0 && (
+      {tab !== "cart" && tab !== "orders" && cartCount > 0 && (
         <button
           className={styles.floatingCart}
           onClick={() => setPreviewOpen(true)}
@@ -205,13 +202,15 @@ export default function MarketplacePage() {
   );
 }
 
-// ---- Project Gallery ----
+// ---- Portfolio Gallery (projects & products) ----
 
-function ProjectGallery({
+function PortfolioGallery({
+  type,
   toast,
   onCartChange,
   cartItems,
 }: {
+  type: PortfolioType;
   toast: (m: string, t: "success" | "error") => void;
   onCartChange: () => void;
   cartItems: CartItemFull[];
@@ -247,17 +246,17 @@ function ProjectGallery({
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams({ type });
       if (search) params.set("search", search);
       const res = await fetch(`/api/portfolio?${params}`);
       const json = await res.json();
       setItems(json.data || []);
     } catch {
-      toast("Error al cargar proyectos", "error");
+      toast(`Error al cargar ${type === "project" ? "proyectos" : "productos"}`, "error");
     } finally {
       setLoading(false);
     }
-  }, [search, toast]);
+  }, [type, search, toast]);
 
   useEffect(() => {
     fetchData();
@@ -267,11 +266,15 @@ function ProjectGallery({
     return <div className={styles.loading}><Spinner /></div>;
   }
 
+  const isProject = type === "project";
+  const placeholder = isProject ? "Buscar proyectos..." : "Buscar productos...";
+  const emptyMsg = isProject ? "No hay proyectos disponibles." : "No hay productos disponibles.";
+
   return (
     <>
       <div className={styles.toolbar}>
         <Input
-          placeholder="Buscar proyectos..."
+          placeholder={placeholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className={styles.search}
@@ -333,103 +336,7 @@ function ProjectGallery({
             </div>
           </Card>
         ))}
-        {items.length === 0 && <p className={styles.empty}>No hay proyectos disponibles.</p>}
-      </div>
-    </>
-  );
-}
-
-// ---- Product Grid ----
-
-function ProductGrid({
-  toast,
-  isAdmin,
-  onCartChange,
-  cartItems,
-}: {
-  toast: (m: string, t: "success" | "error") => void;
-  isAdmin: boolean;
-  onCartChange: () => void;
-  cartItems: CartItemFull[];
-}) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (!isAdmin) params.set("active_only", "true");
-      if (search) params.set("search", search);
-      const res = await fetch(`/api/products?${params}`);
-      const json = await res.json();
-      setProducts(json.data || []);
-    } catch {
-      toast("Error al cargar productos", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [isAdmin, search, toast]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const addToCart = async (productId: number) => {
-    try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId }),
-      });
-      if (!res.ok) throw new Error();
-      toast("Agregado al carrito", "success");
-      onCartChange();
-    } catch {
-      toast("Error al agregar", "error");
-    }
-  };
-
-  if (loading) {
-    return <div className={styles.loading}><Spinner /></div>;
-  }
-
-  return (
-    <>
-      <div className={styles.toolbar}>
-        <Input
-          placeholder="Buscar productos..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={styles.search}
-        />
-      </div>
-      <div className={styles.productGrid}>
-        {products.map((p) => (
-          <Card key={p.id} hover padding="none">
-            {p.image_url && (
-              <div className={styles.productImage}>
-                <img src={p.image_url} alt={p.name} />
-              </div>
-            )}
-            <div className={styles.productBody}>
-              <h3 className={styles.productName}>{p.name}</h3>
-              {p.description && <p className={styles.productDesc}>{p.description}</p>}
-              <div className={styles.productFooter}>
-                <span className={styles.productPrice}>{formatCurrency(p.price)}</span>
-                {p.stock <= 0 ? (
-                  <Badge variant="error">Agotado</Badge>
-                ) : !p.allow_quantities && cartItems.some((ci) => ci.product_id === p.id) ? (
-                  <Badge variant="info">En carrito</Badge>
-                ) : (
-                  <Button size="sm" onClick={() => addToCart(p.id)}>Agregar</Button>
-                )}
-              </div>
-            </div>
-          </Card>
-        ))}
-        {products.length === 0 && <p className={styles.empty}>No hay productos disponibles.</p>}
+        {items.length === 0 && <p className={styles.empty}>{emptyMsg}</p>}
       </div>
     </>
   );
@@ -526,10 +433,12 @@ function CartView({
 // ---- Orders View ----
 
 function OrdersView({ toast }: { toast: (m: string, t: "success" | "error") => void }) {
+  const router = useRouter();
   const [data, setData] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -550,6 +459,24 @@ function OrdersView({ toast }: { toast: (m: string, t: "success" | "error") => v
     fetchData();
   }, [fetchData]);
 
+  const deleteOrder = async (id: number) => {
+    if (!confirm("¿Eliminar este pedido? Esta acción no se puede deshacer.")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/orders/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || "Error");
+      }
+      toast("Pedido eliminado", "success");
+      fetchData();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Error al eliminar", "error");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const columns: Column<OrderRow>[] = [
     { key: "id", header: "#", width: "60px", render: (r) => `#${r.id}` },
     { key: "total", header: "Total", render: (r) => <strong>{formatCurrency(r.total)}</strong> },
@@ -557,12 +484,36 @@ function OrdersView({ toast }: { toast: (m: string, t: "success" | "error") => v
       key: "status",
       header: "Estado",
       render: (r) => (
-        <Badge variant={ORDER_BADGE[r.status] || "default"}>
-          {ORDER_STATUS_LABELS[r.status] || r.status}
+        <Badge variant={ORDER_STATUS_BADGE[r.status as OrderStatus] || "default"}>
+          {ORDER_STATUS_LABELS[r.status as OrderStatus] || r.status}
         </Badge>
       ),
     },
     { key: "date", header: "Fecha", render: (r) => formatDate(r.created_at) },
+    {
+      key: "actions",
+      header: "",
+      width: "50px",
+      render: (r) => (
+        <button
+          className={styles.deleteBtn}
+          onClick={(e) => { e.stopPropagation(); deleteOrder(r.id); }}
+          disabled={deletingId === r.id}
+          title="Eliminar pedido"
+          aria-label="Eliminar pedido"
+        >
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+            <path
+              d="M6 4V3a1 1 0 011-1h6a1 1 0 011 1v1M3 6h14M5 6v10a2 2 0 002 2h6a2 2 0 002-2V6M8 9v5M12 9v5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      ),
+    },
   ];
 
   if (loading) {
@@ -577,8 +528,19 @@ function OrdersView({ toast }: { toast: (m: string, t: "success" | "error") => v
       page={page}
       totalPages={totalPages}
       onPageChange={setPage}
+      onRowClick={(r) => router.push(`/dashboard/marketplace/orders/${r.id}`)}
       emptyTitle="Sin pedidos"
       emptyDescription="No has realizado ningún pedido."
     />
   );
+}
+
+// ---- Confirmations redirect ----
+
+function ConfirmationsRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.push("/dashboard/marketplace/confirmations");
+  }, [router]);
+  return <div className={styles.loading}><Spinner /></div>;
 }

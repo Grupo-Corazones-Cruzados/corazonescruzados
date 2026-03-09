@@ -6,6 +6,11 @@ const pool = new Pool({
     process.env.NODE_ENV === "production"
       ? { rejectUnauthorized: false }
       : false,
+  max: 10,
+  idleTimeoutMillis: 20000,
+  connectionTimeoutMillis: 10000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
 });
 
 export async function query<T = Record<string, unknown>>(
@@ -13,18 +18,39 @@ export async function query<T = Record<string, unknown>>(
   params?: unknown[]
 ): Promise<QueryResult<T>> {
   const start = Date.now();
-  const result = await pool.query<T>(text, params);
-  const duration = Date.now() - start;
+  try {
+    const result = await pool.query<T>(text, params);
+    const duration = Date.now() - start;
+    if (process.env.NODE_ENV === "development") {
+      console.log("query", { text: text.slice(0, 100), duration, rows: result.rowCount });
+    }
+    return result;
+  } catch (err: unknown) {
+    const code = (err as { code?: string }).code;
+    const msg = (err as { message?: string }).message || "";
+    const isConnectionError =
+      code === "ECONNRESET" ||
+      code === "EPIPE" ||
+      code === "57P01" ||
+      code === "57P03" ||
+      msg.includes("terminated unexpectedly") ||
+      msg.includes("Connection terminated") ||
+      msg.includes("ECONNRESET") ||
+      msg.includes("ECONNREFUSED");
 
-  if (process.env.NODE_ENV === "development") {
-    console.log("query", {
-      text: text.slice(0, 100),
-      duration,
-      rows: result.rowCount,
-    });
+    if (isConnectionError) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("query (retrying after connection error)", { code, msg: msg.slice(0, 80) });
+      }
+      const result = await pool.query<T>(text, params);
+      const duration = Date.now() - start;
+      if (process.env.NODE_ENV === "development") {
+        console.log("query (retry ok)", { text: text.slice(0, 100), duration, rows: result.rowCount });
+      }
+      return result;
+    }
+    throw err;
   }
-
-  return result;
 }
 
 export async function getClient(): Promise<PoolClient> {

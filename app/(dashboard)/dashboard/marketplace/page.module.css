@@ -512,3 +512,22 @@
     transform: translateY(0);
   }
 }
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  transition: all var(--duration-fast) var(--ease);
+}
+.deleteBtn:hover {
+  background: var(--error-light);
+  color: var(--error);
+}
+.deleteBtn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}

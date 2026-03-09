@@ -16,23 +16,26 @@ export async function listMembers(params: {
   let idx = 1;
 
   if (params.active_only !== false) {
-    conditions.push(`is_active = true`);
+    conditions.push(`m.is_active = true`);
   }
   if (params.search) {
-    conditions.push(`(name ILIKE $${idx} OR email ILIKE $${idx})`);
+    conditions.push(`(m.name ILIKE $${idx} OR m.email ILIKE $${idx})`);
     values.push(`%${params.search}%`);
     idx++;
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-  const countResult = await query(`SELECT COUNT(*) FROM members ${where}`, values);
+  const countResult = await query(`SELECT COUNT(*) FROM members m ${where}`, values);
   const total = parseInt(countResult.rows[0].count, 10);
 
   const dataValues = [...values, perPage, offset];
   const result = await query(
-    `SELECT * FROM members ${where}
-     ORDER BY name ASC
+    `SELECT m.*, p.name AS position_name
+     FROM members m
+     LEFT JOIN positions p ON p.id = m.position_id
+     ${where}
+     ORDER BY m.name ASC
      LIMIT $${idx++} OFFSET $${idx}`,
     dataValues
   );
@@ -56,14 +59,14 @@ export async function createMember(data: {
   email?: string;
   phone?: string;
   photo_url?: string;
-  position?: string;
+  position_id?: number;
   hourly_rate?: number;
 }): Promise<Member> {
   const result = await query(
-    `INSERT INTO members (name, email, phone, photo_url, position, hourly_rate)
+    `INSERT INTO members (name, email, phone, photo_url, position_id, hourly_rate)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [data.name, data.email, data.phone, data.photo_url, data.position, data.hourly_rate]
+    [data.name, data.email, data.phone, data.photo_url, data.position_id || null, data.hourly_rate]
   );
   return result.rows[0];
 }
@@ -75,7 +78,7 @@ export async function updateMember(
     email: string;
     phone: string;
     photo_url: string;
-    position: string;
+    position_id: number;
     hourly_rate: number;
     is_active: boolean;
   }>
@@ -105,9 +108,10 @@ export async function updateMember(
 
 export async function listPublicMembers(): Promise<PublicMember[]> {
   const result = await query(
-    `SELECT m.id, m.name, m.photo_url, m.position, m.hourly_rate, m.phone,
+    `SELECT m.id, m.name, m.photo_url, p.name AS position, m.hourly_rate, m.phone,
             cv.bio, cv.skills
      FROM members m
+     LEFT JOIN positions p ON p.id = m.position_id
      LEFT JOIN member_cv_profiles cv ON cv.member_id = m.id
      WHERE m.is_active = true AND m.phone IS NOT NULL AND m.phone != ''
      ORDER BY m.name ASC`

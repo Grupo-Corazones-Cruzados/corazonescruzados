@@ -158,6 +158,7 @@ export default function TicketsPage() {
           onRowClick={(r) => router.push(`/dashboard/tickets/${r.id}`)}
           emptyTitle="Sin tickets"
           emptyDescription="No hay tickets que mostrar. Crea uno nuevo para comenzar."
+          emptyAction={<Button onClick={() => setShowCreate(true)}>Nuevo Ticket</Button>}
         />
       )}
 

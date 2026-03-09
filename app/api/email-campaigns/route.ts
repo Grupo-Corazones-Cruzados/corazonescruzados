@@ -1,0 +1,43 @@
+import { NextRequest, NextResponse } from "next/server";
+import { query } from "@/lib/db";
+
+export async function GET(req: NextRequest) {
+  const result = await query(
+    `SELECT ec.*, el.name AS list_name
+     FROM email_campaigns ec
+     LEFT JOIN email_lists el ON el.id = ec.list_id
+     ORDER BY ec.created_at DESC`
+  );
+
+  return NextResponse.json({ data: result.rows });
+}
+
+export async function POST(req: NextRequest) {
+  const { name, subject, html_body, signature_html, list_id, category_filter } =
+    await req.json();
+
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  }
+  if (!subject || typeof subject !== "string" || !subject.trim()) {
+    return NextResponse.json({ error: "subject is required" }, { status: 400 });
+  }
+
+  const result = await query(
+    `INSERT INTO email_campaigns
+       (name, subject, html_body, signature_html, list_id, category_filter, status, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7)
+     RETURNING *`,
+    [
+      name.trim(),
+      subject.trim(),
+      html_body || null,
+      signature_html || null,
+      list_id || null,
+      category_filter || null,
+      null,
+    ]
+  );
+
+  return NextResponse.json({ data: result.rows[0] }, { status: 201 });
+}

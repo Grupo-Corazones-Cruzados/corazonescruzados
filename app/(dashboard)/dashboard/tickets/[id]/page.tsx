@@ -11,7 +11,7 @@ import styles from "./page.module.css";
 
 interface TicketDetail {
   id: number;
-  client_id: number;
+  user_id: string;
   service_id: number | null;
   member_id: number | null;
   title: string | null;

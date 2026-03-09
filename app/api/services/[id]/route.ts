@@ -16,7 +16,7 @@ export async function PATCH(
   const values: unknown[] = [];
   let idx = 1;
 
-  for (const key of ["name", "description", "base_price", "is_active"] as const) {
+  for (const key of ["name", "description", "base_price", "is_active", "position_id"] as const) {
     if (body[key] !== undefined) {
       fields.push(`${key} = $${idx++}`);
       values.push(body[key]);

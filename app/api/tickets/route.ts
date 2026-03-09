@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     page: Number(url.get("page")) || 1,
     per_page: Number(url.get("per_page")) || 20,
     status: url.get("status") || undefined,
-    client_id: url.get("client_id") ? Number(url.get("client_id")) : undefined,
+    user_id: url.get("user_id") || undefined,
     member_id: url.get("member_id") ? Number(url.get("member_id")) : undefined,
     search: url.get("search") || undefined,
   });
@@ -25,15 +25,24 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
-  if (!body.client_id || !body.title) {
+  if (!body.title) {
     return NextResponse.json(
-      { error: "client_id and title are required" },
+      { error: "title is required" },
       { status: 400 }
     );
   }
 
   try {
-    const ticket = await createTicket(body);
+    const ticket = await createTicket({
+      user_id: auth.userId,
+      title: body.title,
+      description: body.description,
+      service_id: body.service_id,
+      member_id: body.member_id,
+      scheduled_at: body.scheduled_at,
+      estimated_hours: body.estimated_hours,
+      estimated_cost: body.estimated_cost,
+    });
     return NextResponse.json({ data: ticket }, { status: 201 });
   } catch (error) {
     console.error("Create ticket error:", error);

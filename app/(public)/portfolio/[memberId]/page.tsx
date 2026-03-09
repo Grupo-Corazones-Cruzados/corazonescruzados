@@ -15,12 +15,18 @@ export default async function PublicPortfolioPage({
 
   // Fetch member, CV, and portfolio in parallel
   const [memberResult, cv, portfolio] = await Promise.all([
-    query("SELECT * FROM members WHERE id = $1 AND is_active = true", [id]),
+    query(
+      `SELECT m.*, p.name AS position_name
+       FROM members m
+       LEFT JOIN positions p ON p.id = m.position_id
+       WHERE m.id = $1 AND m.is_active = true`,
+      [id]
+    ),
     getCvProfile(id),
     getPortfolioItems(id),
   ]);
 
-  const member: Member | undefined = memberResult.rows[0];
+  const member: (Member & { position_name?: string }) | undefined = memberResult.rows[0];
   if (!member) notFound();
 
   return (
@@ -35,7 +41,7 @@ export default async function PublicPortfolioPage({
           />
         )}
         <h1 className={styles.name}>{member.name}</h1>
-        {member.position && <p className={styles.position}>{member.position}</p>}
+        {member.position_name && <p className={styles.position}>{member.position_name}</p>}
         {cv?.bio && <p className={styles.bio}>{cv.bio}</p>}
         <div className={styles.links}>
           {cv?.linkedin_url && (

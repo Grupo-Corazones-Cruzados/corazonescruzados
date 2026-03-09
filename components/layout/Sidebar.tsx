@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import Avatar from "@/components/ui/Avatar";
+import NotificationBell from "./NotificationBell";
 import styles from "./Sidebar.module.css";
 
 const NAV_ITEMS = [
@@ -12,9 +13,9 @@ const NAV_ITEMS = [
   { path: "/dashboard/tickets", label: "Tickets", icon: "ticket", roles: ["client", "member", "admin"] },
   { path: "/dashboard/projects", label: "Proyectos", icon: "folder", roles: ["client", "member", "admin"] },
   { path: "/dashboard/packages", label: "Paquetes", icon: "package", roles: ["client", "member", "admin"] },
-  { path: "/dashboard/invoices", label: "Facturas", icon: "receipt", roles: ["client", "member", "admin"] },
   { path: "/dashboard/marketplace", label: "Marketplace", icon: "store", roles: ["client", "member", "admin"] },
-  { path: "/dashboard/recruitment", label: "Reclutamiento", icon: "users", roles: ["member", "admin"] },
+  { path: "/dashboard/centralized-project", label: "Proyecto Centralizado", icon: "users", roles: ["member", "admin"] },
+  { path: "/automations", label: "Automatizaciones", icon: "zap", roles: ["member", "admin"] },
   { path: "/dashboard/settings", label: "Configuración", icon: "settings", roles: ["client", "member", "admin"] },
   { path: "/dashboard/admin", label: "Admin", icon: "shield", roles: ["admin"] },
 ] as const;
@@ -28,6 +29,7 @@ const ICONS: Record<string, string> = {
   store: "M3 3h14l1 7H2L3 3zM4 10v7a1 1 0 001 1h10a1 1 0 001-1v-7",
   users: "M7 10a3 3 0 100-6 3 3 0 000 6zM1 17v-1a4 4 0 014-4h4a4 4 0 014 4v1M13 4.5a3 3 0 010 5.5M17 17v-1a4 4 0 00-3-3.87",
   settings: "M10 13a3 3 0 100-6 3 3 0 000 6zM16.5 10a6.5 6.5 0 01-.7 2.8l1.5 1.5-1.4 1.4-1.5-1.5A6.5 6.5 0 0110 16.5a6.5 6.5 0 01-4.4-1.8l-1.5 1.5-1.4-1.4 1.5-1.5A6.5 6.5 0 013.5 10a6.5 6.5 0 011.3-3.8L3.3 4.7l1.4-1.4 1.5 1.5A6.5 6.5 0 0110 3.5a6.5 6.5 0 013.8 1.3l1.5-1.5 1.4 1.4-1.5 1.5A6.5 6.5 0 0116.5 10z",
+  zap: "M11 2L4 12h5l-1 6 7-10H10l1-6z",
   shield: "M12 2l7 4v4c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z",
 };
 
@@ -49,24 +51,7 @@ export default function Sidebar() {
           <img src="/LogoCC.png" alt="GCC" className={styles.logoImg} />
           {!collapsed && <span className={styles.logoText}>GCC</span>}
         </Link>
-        <button
-          className={styles.toggle}
-          onClick={() => setCollapsed((c) => !c)}
-          aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
-        >
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-            <path
-              d={collapsed
-                ? "M7 4l6 6-6 6"   /* chevron right */
-                : "M13 16l-6-6 6-6" /* chevron left */
-              }
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+        <NotificationBell collapsed={collapsed} />
       </div>
 
       <nav className={styles.nav}>
@@ -113,20 +98,41 @@ export default function Sidebar() {
             </div>
           )}
         </div>
-        {!collapsed && (
-          <button className={styles.signOut} onClick={signOut}>
-            Salir
-          </button>
-        )}
-        {collapsed && (
+        <div className={styles.bottomActions}>
+          {!collapsed && (
+            <button className={styles.signOut} onClick={signOut}>
+              Salir
+            </button>
+          )}
+          {collapsed && (
+            <button
+              className={styles.signOut}
+              onClick={signOut}
+              title="Salir"
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3M10 10h7m0 0l-3-3m3 3l-3 3"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          )}
           <button
-            className={styles.signOut}
-            onClick={signOut}
-            title="Salir"
+            className={styles.toggle}
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+            title={collapsed ? "Expandir" : "Colapsar"}
           >
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
               <path
-                d="M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3M10 10h7m0 0l-3-3m3 3l-3 3"
+                d={collapsed
+                  ? "M7 4l6 6-6 6"   /* chevron right */
+                  : "M13 16l-6-6 6-6" /* chevron left */
+                }
                 stroke="currentColor"
                 strokeWidth="1.5"
                 strokeLinecap="round"
@@ -134,7 +140,7 @@ export default function Sidebar() {
               />
             </svg>
           </button>
-        )}
+        </div>
       </div>
     </aside>
   );

@@ -33,7 +33,8 @@ export interface Member {
   email: string | null;
   phone: string | null;
   photo_url: string | null;
-  position: string | null;
+  position_id: number | null;
+  position_name?: string;
   hourly_rate: number | null;
   is_active: boolean;
   created_at: string;
@@ -51,16 +52,29 @@ export interface Client {
   updated_at: string;
 }
 
+// ----- Positions -----
+
+export interface Position {
+  id: number;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // ----- Services -----
 
 export interface Service {
   id: number;
+  position_id: number | null;
   name: string;
   description: string | null;
   base_price: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  position_name?: string;
 }
 
 // ----- Tickets -----
@@ -74,7 +88,7 @@ export type TicketStatus =
 
 export interface Ticket {
   id: number;
-  client_id: number;
+  user_id: string;
   service_id: number | null;
   member_id: number | null;
   title: string;
@@ -249,6 +263,9 @@ export interface CartItem {
 
 export type OrderStatus =
   | "pending"
+  | "pending_confirmation"
+  | "awaiting_acceptance"
+  | "awaiting_payment"
   | "paid"
   | "shipped"
   | "delivered"
@@ -263,6 +280,34 @@ export interface Order {
   paypal_capture_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface OrderItem {
+  id: number;
+  order_id: number;
+  product_id: number;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  member_id: number | null;
+  requires_confirmation: boolean;
+  member_confirmed: boolean | null;
+  member_message: string | null;
+  delivery_date: string | null;
+  member_responded_at: string | null;
+  client_accepted: boolean | null;
+  client_responded_at: string | null;
+  // Joined fields
+  product_name?: string;
+  image_url?: string;
+  member_name?: string;
+  member_email?: string;
+}
+
+export interface OrderWithItems extends Order {
+  items: OrderItem[];
+  user_name?: string;
+  user_email?: string;
 }
 
 // ----- Recruitment -----
@@ -361,6 +406,7 @@ export interface PortfolioItem {
   tags: string[];
   cost: number | null;
   allow_quantities: boolean;
+  item_type: "project" | "product";
   sort_order: number;
   updated_at: string;
 }
@@ -382,6 +428,91 @@ export interface PublicMember {
   phone: string | null;
   bio: string | null;
   skills: string[];
+}
+
+// ----- Notifications -----
+
+export type NotificationType =
+  | "order_created"
+  | "member_confirmed"
+  | "client_accepted";
+
+export interface Notification {
+  id: number;
+  created_at: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string | null;
+  link: string | null;
+  is_read: boolean;
+  read_at: string | null;
+}
+
+// ----- Email Automation -----
+
+export interface EmailList {
+  id: number;
+  name: string;
+  description: string | null;
+  client_id: number | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  contact_count?: number;
+  categories?: string[];
+}
+
+export interface EmailContact {
+  id: number;
+  list_id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  category: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CampaignStatus = "draft" | "sending" | "sent" | "failed";
+
+export interface EmailCampaign {
+  id: number;
+  name: string;
+  subject: string;
+  html_body: string;
+  signature_html: string | null;
+  list_id: number | null;
+  category_filter: string | null;
+  status: CampaignStatus;
+  total_recipients: number;
+  total_sent: number;
+  total_failed: number;
+  created_by: string | null;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+  list_name?: string;
+}
+
+export type EmailSendStatus = "pending" | "sent" | "failed" | "delivered" | "bounced";
+
+export interface EmailSend {
+  id: number;
+  campaign_id: number;
+  contact_id: number;
+  status: EmailSendStatus;
+  error_message: string | null;
+  sent_at: string | null;
+  delivered_at: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
+  bounced_at: string | null;
+  bounce_type: string | null;
+  bounce_reason: string | null;
+  created_at: string;
+  contact_name?: string;
+  contact_email?: string;
 }
 
 // ----- API Helpers -----

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import PageHeader from "@/components/layout/PageHeader";
-import { Button, Badge, Card, DataTable, Tabs, Spinner, Modal, Input, Select } from "@/components/ui";
+import { Button, Badge, Card, DataTable, EmptyState, Tabs, Spinner, Modal, Input, Select } from "@/components/ui";
 import type { Column } from "@/components/ui/DataTable";
 import { formatCurrency } from "@/lib/utils";
 import styles from "./page.module.css";
@@ -44,12 +44,15 @@ export default function PackagesPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [tab, setTab] = useState<TabValue>("catalog");
+  const [showCreate, setShowCreate] = useState(false);
+  const isAdmin = user?.role === "admin";
 
   return (
     <div>
       <PageHeader
         title="Paquetes"
         description="Compra y gestiona paquetes de horas."
+        action={isAdmin ? <Button onClick={() => setShowCreate(true)}>Nuevo Paquete</Button> : undefined}
       />
 
       <Tabs
@@ -61,7 +64,15 @@ export default function PackagesPage() {
         onChange={(v) => setTab(v as TabValue)}
       />
 
-      {tab === "catalog" && <PackageCatalog toast={toast} isAdmin={user?.role === "admin"} />}
+      {tab === "catalog" && (
+        <PackageCatalog
+          toast={toast}
+          isAdmin={isAdmin}
+          showCreate={showCreate}
+          onCloseCreate={() => setShowCreate(false)}
+          onOpenCreate={() => setShowCreate(true)}
+        />
+      )}
       {tab === "purchases" && <PurchasesList toast={toast} />}
     </div>
   );
@@ -69,10 +80,21 @@ export default function PackagesPage() {
 
 // ---- Catalog ----
 
-function PackageCatalog({ toast, isAdmin }: { toast: (m: string, t: "success" | "error") => void; isAdmin: boolean }) {
+function PackageCatalog({
+  toast,
+  isAdmin,
+  showCreate,
+  onCloseCreate,
+  onOpenCreate,
+}: {
+  toast: (m: string, t: "success" | "error") => void;
+  isAdmin: boolean;
+  showCreate: boolean;
+  onCloseCreate: () => void;
+  onOpenCreate: () => void;
+}) {
   const [packages, setPackages] = useState<PackageItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -101,48 +123,45 @@ function PackageCatalog({ toast, isAdmin }: { toast: (m: string, t: "success" | 
 
   return (
     <>
-      {isAdmin && (
-        <div className={styles.toolbar}>
-          <Button size="sm" onClick={() => setShowCreate(true)}>
-            Nuevo Paquete
-          </Button>
+      {packages.length === 0 ? (
+        <EmptyState
+          title="Sin paquetes"
+          description="No hay paquetes disponibles. Crea uno nuevo para comenzar."
+          action={isAdmin ? <Button onClick={onOpenCreate}>Nuevo Paquete</Button> : undefined}
+        />
+      ) : (
+        <div className={styles.packagesGrid}>
+          {packages.map((pkg) => (
+            <Card key={pkg.id} hover padding="lg">
+              <div className={styles.pkgHeader}>
+                <h3 className={styles.pkgName}>{pkg.name}</h3>
+                {!pkg.is_active && <Badge variant="default">Inactivo</Badge>}
+              </div>
+              <p className={styles.pkgPrice}>{formatCurrency(pkg.price)}</p>
+              <p className={styles.pkgHours}>{pkg.hours} horas incluidas</p>
+              {pkg.description && (
+                <p className={styles.pkgDesc}>{pkg.description}</p>
+              )}
+              {pkg.features.length > 0 && (
+                <ul className={styles.featureList}>
+                  {pkg.features.map((f, i) => (
+                    <li key={i} className={styles.featureItem}>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          ))}
         </div>
       )}
-
-      <div className={styles.packagesGrid}>
-        {packages.map((pkg) => (
-          <Card key={pkg.id} hover padding="lg">
-            <div className={styles.pkgHeader}>
-              <h3 className={styles.pkgName}>{pkg.name}</h3>
-              {!pkg.is_active && <Badge variant="default">Inactivo</Badge>}
-            </div>
-            <p className={styles.pkgPrice}>{formatCurrency(pkg.price)}</p>
-            <p className={styles.pkgHours}>{pkg.hours} horas incluidas</p>
-            {pkg.description && (
-              <p className={styles.pkgDesc}>{pkg.description}</p>
-            )}
-            {pkg.features.length > 0 && (
-              <ul className={styles.featureList}>
-                {pkg.features.map((f, i) => (
-                  <li key={i} className={styles.featureItem}>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        ))}
-        {packages.length === 0 && (
-          <p className={styles.empty}>No hay paquetes disponibles.</p>
-        )}
-      </div>
 
       {isAdmin && (
         <CreatePackageModal
           open={showCreate}
-          onClose={() => setShowCreate(false)}
+          onClose={onCloseCreate}
           onCreated={() => {
-            setShowCreate(false);
+            onCloseCreate();
             fetchData();
           }}
           toast={toast}

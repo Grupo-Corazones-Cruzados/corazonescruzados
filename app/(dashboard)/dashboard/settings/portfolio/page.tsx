@@ -11,8 +11,11 @@ import Modal from "@/components/ui/Modal";
 import Spinner from "@/components/ui/Spinner";
 import EmptyState from "@/components/ui/EmptyState";
 import Badge from "@/components/ui/Badge";
+import Tabs from "@/components/ui/Tabs";
 import type { PortfolioItem } from "@/lib/types";
 import styles from "./page.module.css";
+
+type ItemType = "project" | "product";
 
 export default function PortfolioEditorPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -23,6 +26,7 @@ export default function PortfolioEditorPage() {
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState<PortfolioItem | null>(null);
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<ItemType>("project");
 
   // Form fields
   const [title, setTitle] = useState("");
@@ -31,7 +35,6 @@ export default function PortfolioEditorPage() {
   const [projectUrl, setProjectUrl] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [cost, setCost] = useState("");
-  const [allowQuantities, setAllowQuantities] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,6 +58,8 @@ export default function PortfolioEditorPage() {
     else if (!authLoading) setLoading(false);
   }, [authLoading, memberId, loadItems]);
 
+  const filteredItems = items.filter((i) => (i.item_type || "project") === tab);
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -62,7 +67,6 @@ export default function PortfolioEditorPage() {
     setProjectUrl("");
     setTagsText("");
     setCost("");
-    setAllowQuantities(true);
     setEditItem(null);
   };
 
@@ -79,7 +83,6 @@ export default function PortfolioEditorPage() {
     setProjectUrl(item.project_url || "");
     setTagsText((item.tags || []).join(", "));
     setCost(item.cost != null ? String(item.cost) : "");
-    setAllowQuantities(item.allow_quantities ?? true);
     setShowModal(true);
   };
 
@@ -122,40 +125,33 @@ export default function PortfolioEditorPage() {
       .map((t) => t.trim())
       .filter(Boolean);
 
+    const payload = {
+      title,
+      description: description || null,
+      image_url: imageUrl || null,
+      project_url: projectUrl || null,
+      tags,
+      cost: cost ? parseFloat(cost) : null,
+      item_type: tab,
+    };
+
     try {
       if (editItem) {
         const res = await fetch(`/api/members/${memberId}/portfolio`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            item_id: editItem.id,
-            title,
-            description: description || null,
-            image_url: imageUrl || null,
-            project_url: projectUrl || null,
-            tags,
-            cost: cost ? parseFloat(cost) : null,
-            allow_quantities: allowQuantities,
-          }),
+          body: JSON.stringify({ item_id: editItem.id, ...payload }),
         });
         if (!res.ok) throw new Error();
-        toast("Proyecto actualizado", "success");
+        toast(tab === "project" ? "Proyecto actualizado" : "Producto actualizado", "success");
       } else {
         const res = await fetch(`/api/members/${memberId}/portfolio`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title,
-            description: description || null,
-            image_url: imageUrl || null,
-            project_url: projectUrl || null,
-            tags,
-            cost: cost ? parseFloat(cost) : null,
-            allow_quantities: allowQuantities,
-          }),
+          body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error();
-        toast("Proyecto agregado", "success");
+        toast(tab === "project" ? "Proyecto agregado" : "Producto agregado", "success");
       }
       setShowModal(false);
       resetForm();
@@ -168,7 +164,8 @@ export default function PortfolioEditorPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Eliminar este proyecto?")) return;
+    const label = tab === "project" ? "proyecto" : "producto";
+    if (!confirm(`¿Eliminar este ${label}?`)) return;
     try {
       const res = await fetch(`/api/members/${memberId}/portfolio`, {
         method: "DELETE",
@@ -202,80 +199,104 @@ export default function PortfolioEditorPage() {
     );
   }
 
+  const isProject = tab === "project";
+  const typeLabel = isProject ? "proyecto" : "producto";
+  const typeLabelPlural = isProject ? "proyectos" : "productos";
+
   return (
     <div>
       <PageHeader
         title="Mi Portafolio"
-        description="Administra tus proyectos destacados."
+        description="Administra tus proyectos y productos."
         breadcrumbs={[
           { label: "Configuración", href: "/dashboard/settings" },
           { label: "Portafolio" },
         ]}
         action={
           <Button onClick={openCreate} size="sm">
-            + Nuevo proyecto
+            + Nuevo {typeLabel}
           </Button>
         }
       />
 
-      {items.length === 0 ? (
-        <EmptyState
-          title="Sin proyectos"
-          description="Agrega proyectos a tu portafolio para mostrar tu trabajo."
-          actionLabel="Agregar proyecto"
-          onAction={openCreate}
-        />
-      ) : (
-        <div className={styles.grid}>
-          {items.map((item) => (
-            <Card key={item.id} padding="none" hover>
-              {item.image_url && (
-                <div className={styles.imageWrap}>
-                  <img src={item.image_url} alt={item.title} className={styles.image} />
-                </div>
-              )}
-              <div className={styles.cardBody}>
-                <h3 className={styles.cardTitle}>{item.title}</h3>
-                {item.description && (
-                  <p className={styles.cardDesc}>{item.description}</p>
-                )}
-                {item.tags && item.tags.length > 0 && (
-                  <div className={styles.tags}>
-                    {item.tags.map((tag) => (
-                      <Badge key={tag} variant="default">
-                        {tag}
-                      </Badge>
-                    ))}
+      <Tabs
+        tabs={[
+          { value: "project", label: "Proyectos" },
+          { value: "product", label: "Productos" },
+        ]}
+        active={tab}
+        onChange={(v) => setTab(v as ItemType)}
+      />
+
+      <div style={{ marginTop: "var(--space-5)" }}>
+        {filteredItems.length === 0 ? (
+          <EmptyState
+            title={`Sin ${typeLabelPlural}`}
+            description={isProject
+              ? "Agrega proyectos a tu portafolio para mostrar tu trabajo."
+              : "Agrega productos para venderlos en el marketplace."
+            }
+            actionLabel={`Agregar ${typeLabel}`}
+            onAction={openCreate}
+          />
+        ) : (
+          <div className={styles.grid}>
+            {filteredItems.map((item) => (
+              <Card key={item.id} padding="none" hover>
+                {item.image_url && (
+                  <div className={styles.imageWrap}>
+                    <img src={item.image_url} alt={item.title} className={styles.image} />
                   </div>
                 )}
-                <div className={styles.cardActions}>
-                  <Button variant="secondary" size="sm" onClick={() => openEdit(item)}>
-                    Editar
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
-                    Eliminar
-                  </Button>
-                  {item.project_url && (
-                    <a
-                      href={item.project_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.linkBtn}
-                    >
-                      Ver proyecto
-                    </a>
+                <div className={styles.cardBody}>
+                  <h3 className={styles.cardTitle}>{item.title}</h3>
+                  {item.description && (
+                    <p className={styles.cardDesc}>{item.description}</p>
                   )}
+                  {item.cost != null && (
+                    <span className={styles.cardPrice}>
+                      ${Number(item.cost).toFixed(2)}
+                      {!isProject && " c/u"}
+                    </span>
+                  )}
+                  {item.tags && item.tags.length > 0 && (
+                    <div className={styles.tags}>
+                      {item.tags.map((tag) => (
+                        <Badge key={tag} variant="default">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <div className={styles.cardActions}>
+                    <Button variant="secondary" size="sm" onClick={() => openEdit(item)}>
+                      Editar
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
+                      Eliminar
+                    </Button>
+                    {item.project_url && (
+                      <a
+                        href={item.project_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.linkBtn}
+                      >
+                        Ver proyecto
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
 
       <Modal
         open={showModal}
         onClose={() => setShowModal(false)}
-        title={editItem ? "Editar proyecto" : "Nuevo proyecto"}
+        title={editItem ? `Editar ${typeLabel}` : `Nuevo ${typeLabel}`}
       >
         <form onSubmit={handleSave} className={styles.form}>
           <Input
@@ -289,7 +310,7 @@ export default function PortfolioEditorPage() {
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Descripción del proyecto..."
+            placeholder={`Descripción del ${typeLabel}...`}
           />
           <div>
             <label className={styles.fieldLabel}>Imagen</label>
@@ -340,44 +361,25 @@ export default function PortfolioEditorPage() {
               </button>
             )}
           </div>
+          {isProject && (
+            <Input
+              label="URL del proyecto"
+              value={projectUrl}
+              onChange={(e) => setProjectUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          )}
           <Input
-            label="URL del proyecto"
-            value={projectUrl}
-            onChange={(e) => setProjectUrl(e.target.value)}
-            placeholder="https://..."
-          />
-          <Input
-            label="Costo final (USD)"
+            label="Precio (USD)"
             type="number"
             value={cost}
             onChange={(e) => setCost(e.target.value)}
             placeholder="0.00"
-            hint="Opcional — se muestra en el marketplace"
+            hint={isProject
+              ? "Precio único del proyecto — se compra una sola vez"
+              : "Precio por unidad — el cliente puede comprar varias unidades"
+            }
           />
-          <div className={styles.toggleField}>
-            <label className={styles.fieldLabel}>¿Permitir venta por cantidades?</label>
-            <div className={styles.toggleRow}>
-              <button
-                type="button"
-                className={`${styles.toggleOption} ${allowQuantities ? styles.toggleActive : ""}`}
-                onClick={() => setAllowQuantities(true)}
-              >
-                Sí
-              </button>
-              <button
-                type="button"
-                className={`${styles.toggleOption} ${!allowQuantities ? styles.toggleActive : ""}`}
-                onClick={() => setAllowQuantities(false)}
-              >
-                No
-              </button>
-            </div>
-            <span className={styles.toggleHint}>
-              {allowQuantities
-                ? "El cliente puede pedir varias unidades de este proyecto."
-                : "El cliente solo puede pedir este proyecto una vez."}
-            </span>
-          </div>
           <Input
             label="Etiquetas"
             value={tagsText}

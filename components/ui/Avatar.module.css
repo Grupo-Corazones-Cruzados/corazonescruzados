@@ -1,6 +1,7 @@
 .avatar {
   border-radius: var(--radius-full);
   object-fit: cover;
+  aspect-ratio: 1;
   flex-shrink: 0;
 }
 
@@ -13,7 +14,7 @@
   font-weight: 600;
 }
 
-.sm  { width: 28px; height: 28px; font-size: 11px; }
-.md  { width: 36px; height: 36px; font-size: 13px; }
-.lg  { width: 48px; height: 48px; font-size: 16px; }
-.xl  { width: 64px; height: 64px; font-size: 20px; }
+.sm  { width: 28px; min-width: 28px; height: 28px; font-size: 11px; }
+.md  { width: 36px; min-width: 36px; height: 36px; font-size: 13px; }
+.lg  { width: 48px; min-width: 48px; height: 48px; font-size: 16px; }
+.xl  { width: 64px; min-width: 64px; height: 64px; font-size: 20px; }

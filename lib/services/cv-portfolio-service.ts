@@ -68,12 +68,14 @@ export async function createPortfolioItem(data: {
   project_url?: string;
   tags?: string[];
   cost?: number;
-  allow_quantities?: boolean;
+  item_type?: "project" | "product";
   sort_order?: number;
 }): Promise<PortfolioItem> {
+  const itemType = data.item_type ?? "project";
+  const allowQuantities = itemType === "product";
   const result = await query(
-    `INSERT INTO member_portfolio_items (member_id, title, description, image_url, project_url, tags, cost, allow_quantities, sort_order)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    `INSERT INTO member_portfolio_items (member_id, title, description, image_url, project_url, tags, cost, allow_quantities, item_type, sort_order)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
      RETURNING *`,
     [
       data.member_id,
@@ -83,7 +85,8 @@ export async function createPortfolioItem(data: {
       data.project_url || null,
       data.tags || [],
       data.cost ?? null,
-      data.allow_quantities ?? true,
+      allowQuantities,
+      itemType,
       data.sort_order ?? 0,
     ]
   );
@@ -99,15 +102,21 @@ export async function updatePortfolioItem(
     project_url: string;
     tags: string[];
     cost: number;
-    allow_quantities: boolean;
+    item_type: "project" | "product";
     sort_order: number;
   }>
 ): Promise<PortfolioItem | null> {
+  // Derive allow_quantities from item_type if type is being changed
+  const cleanData: Record<string, unknown> = { ...data };
+  if (data.item_type) {
+    cleanData.allow_quantities = data.item_type === "product";
+  }
+
   const fields: string[] = [];
   const vals: unknown[] = [];
   let idx = 1;
 
-  for (const [key, value] of Object.entries(data)) {
+  for (const [key, value] of Object.entries(cleanData)) {
     if (value !== undefined) {
       fields.push(`${key} = $${idx++}`);
       vals.push(value);
@@ -143,10 +152,16 @@ export async function deletePortfolioItem(id: number): Promise<boolean> {
 
 export async function listAllPortfolioItems(params?: {
   search?: string;
+  item_type?: "project" | "product";
 }): Promise<PortfolioItemWithMember[]> {
   const conditions: string[] = ["m.is_active = true"];
   const values: unknown[] = [];
   let idx = 1;
+
+  if (params?.item_type) {
+    conditions.push(`p.item_type = $${idx++}`);
+    values.push(params.item_type);
+  }
 
   if (params?.search) {
     conditions.push(`(p.title ILIKE $${idx} OR p.tags::text ILIKE $${idx} OR m.name ILIKE $${idx})`);
@@ -157,9 +172,10 @@ export async function listAllPortfolioItems(params?: {
   const where = `WHERE ${conditions.join(" AND ")}`;
 
   const result = await query(
-    `SELECT p.*, m.name AS member_name, m.photo_url AS member_photo_url, m.position AS member_position
+    `SELECT p.*, m.name AS member_name, m.photo_url AS member_photo_url, pos.name AS member_position
      FROM member_portfolio_items p
      JOIN members m ON m.id = p.member_id
+     LEFT JOIN positions pos ON pos.id = m.position_id
      ${where}
      ORDER BY p.created_at DESC`,
     values

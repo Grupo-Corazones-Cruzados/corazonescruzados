@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS members (
   email      VARCHAR(255) UNIQUE,
   phone      VARCHAR(50),
   photo_url  TEXT,
-  position   VARCHAR(255),
+  position_id BIGINT REFERENCES positions(id) ON DELETE SET NULL,
   hourly_rate DECIMAL(10,2),
   is_active  BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -106,13 +106,25 @@ CREATE TABLE IF NOT EXISTS clients (
 );
 
 -- =====================================================
--- 4. SERVICES
+-- 4. POSITIONS & SERVICES
 -- =====================================================
+
+CREATE TABLE IF NOT EXISTS positions (
+  id          BIGSERIAL PRIMARY KEY,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  name        VARCHAR(255) NOT NULL UNIQUE,
+  description TEXT,
+  is_active   BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_positions_active ON positions(is_active);
 
 CREATE TABLE IF NOT EXISTS services (
   id          BIGSERIAL PRIMARY KEY,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  position_id BIGINT REFERENCES positions(id) ON DELETE CASCADE,
   name        VARCHAR(255) NOT NULL,
   description TEXT,
   base_price  DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -120,6 +132,19 @@ CREATE TABLE IF NOT EXISTS services (
 );
 
 CREATE INDEX IF NOT EXISTS idx_services_active ON services(is_active);
+CREATE INDEX IF NOT EXISTS idx_services_position ON services(position_id);
+
+-- Member ↔ Service many-to-many
+CREATE TABLE IF NOT EXISTS member_services (
+  id         BIGSERIAL PRIMARY KEY,
+  member_id  BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  service_id BIGINT NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(member_id, service_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_member_services_member ON member_services(member_id);
+CREATE INDEX IF NOT EXISTS idx_member_services_service ON member_services(service_id);
 
 -- =====================================================
 -- 5. MODULES
@@ -176,7 +201,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   id              BIGSERIAL PRIMARY KEY,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  client_id       BIGINT REFERENCES clients(id) ON DELETE CASCADE,
+  user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
   service_id      BIGINT REFERENCES services(id) ON DELETE SET NULL,
   member_id       BIGINT REFERENCES members(id) ON DELETE SET NULL,
   title           VARCHAR(255) NOT NULL,
@@ -193,7 +218,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   google_meet_link TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_tickets_client ON tickets(client_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_user ON tickets(user_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_member ON tickets(member_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
 CREATE INDEX IF NOT EXISTS idx_tickets_scheduled ON tickets(scheduled_at) WHERE scheduled_at IS NOT NULL;
@@ -460,8 +485,8 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   user_id        UUID NOT NULL REFERENCES users(id),
   total          DECIMAL(10,2) NOT NULL,
-  status         VARCHAR(20) NOT NULL DEFAULT 'pending'
-                 CHECK (status IN ('pending','paid','shipped','delivered','cancelled')),
+  status         VARCHAR(30) NOT NULL DEFAULT 'pending'
+                 CHECK (status IN ('pending','pending_confirmation','awaiting_acceptance','awaiting_payment','paid','shipped','delivered','cancelled')),
   paypal_order_id VARCHAR(255),
   paypal_capture_id VARCHAR(255)
 );
@@ -470,15 +495,24 @@ CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 
 CREATE TABLE IF NOT EXISTS order_items (
-  id         BIGSERIAL PRIMARY KEY,
-  order_id   BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id BIGINT NOT NULL REFERENCES products(id),
-  quantity   INT NOT NULL CHECK (quantity > 0),
-  unit_price DECIMAL(10,2) NOT NULL,
-  subtotal   DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED
+  id                   BIGSERIAL PRIMARY KEY,
+  order_id             BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  product_id           BIGINT NOT NULL REFERENCES products(id),
+  quantity             INT NOT NULL CHECK (quantity > 0),
+  unit_price           DECIMAL(10,2) NOT NULL,
+  subtotal             DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+  member_id            BIGINT REFERENCES members(id),
+  requires_confirmation BOOLEAN NOT NULL DEFAULT FALSE,
+  member_confirmed     BOOLEAN,
+  member_message       TEXT,
+  delivery_date        DATE,
+  member_responded_at  TIMESTAMPTZ,
+  client_accepted      BOOLEAN,
+  client_responded_at  TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_oi_order ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_oi_member ON order_items(member_id);
 
 -- =====================================================
 -- 12. RECRUITMENT
@@ -573,6 +607,7 @@ CREATE TABLE IF NOT EXISTS member_portfolio_items (
   tags        TEXT[],
   cost        NUMERIC(12,2),
   allow_quantities BOOLEAN NOT NULL DEFAULT TRUE,
+  item_type   VARCHAR(20) NOT NULL DEFAULT 'project',
   sort_order  INT NOT NULL DEFAULT 0
 );
 
@@ -595,6 +630,97 @@ CREATE TABLE IF NOT EXISTS faq (
 
 CREATE INDEX IF NOT EXISTS idx_faq_category ON faq(category);
 CREATE INDEX IF NOT EXISTS idx_faq_published ON faq(is_published);
+
+-- =====================================================
+-- 15. NOTIFICATIONS
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id         BIGSERIAL PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type       VARCHAR(50) NOT NULL,
+  title      VARCHAR(255) NOT NULL,
+  message    TEXT,
+  link       TEXT,
+  is_read    BOOLEAN NOT NULL DEFAULT FALSE,
+  read_at    TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notif_unread ON notifications(user_id) WHERE is_read = false;
+
+-- =====================================================
+-- 16. EMAIL AUTOMATION
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS email_lists (
+  id          SERIAL PRIMARY KEY,
+  name        VARCHAR(200) NOT NULL,
+  description TEXT,
+  client_id   INT,
+  created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_el_client ON email_lists(client_id);
+
+CREATE TABLE IF NOT EXISTS email_contacts (
+  id         SERIAL PRIMARY KEY,
+  list_id    INT NOT NULL REFERENCES email_lists(id) ON DELETE CASCADE,
+  name       VARCHAR(200) NOT NULL,
+  email      VARCHAR(320) NOT NULL,
+  phone      VARCHAR(50),
+  category   VARCHAR(100),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ec_list ON email_contacts(list_id);
+CREATE INDEX IF NOT EXISTS idx_ec_category ON email_contacts(list_id, category);
+
+CREATE TABLE IF NOT EXISTS email_campaigns (
+  id               SERIAL PRIMARY KEY,
+  name             VARCHAR(200) NOT NULL,
+  subject          VARCHAR(500) NOT NULL,
+  html_body        TEXT NOT NULL DEFAULT '',
+  signature_html   TEXT,
+  list_id          INT REFERENCES email_lists(id) ON DELETE SET NULL,
+  category_filter  VARCHAR(100),
+  status           VARCHAR(20) NOT NULL DEFAULT 'draft',
+  total_recipients INT NOT NULL DEFAULT 0,
+  total_sent       INT NOT NULL DEFAULT 0,
+  total_failed     INT NOT NULL DEFAULT 0,
+  created_by       UUID REFERENCES users(id) ON DELETE SET NULL,
+  sent_at          TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ecamp_status ON email_campaigns(status);
+
+CREATE TABLE IF NOT EXISTS email_sends (
+  id              SERIAL PRIMARY KEY,
+  campaign_id     INT NOT NULL REFERENCES email_campaigns(id) ON DELETE CASCADE,
+  contact_id      INT NOT NULL REFERENCES email_contacts(id) ON DELETE CASCADE,
+  status          VARCHAR(20) NOT NULL DEFAULT 'pending',
+  provider_id     VARCHAR(100),
+  error_message   TEXT,
+  sent_at         TIMESTAMPTZ,
+  delivered_at    TIMESTAMPTZ,
+  opened_at       TIMESTAMPTZ,
+  clicked_at      TIMESTAMPTZ,
+  bounced_at      TIMESTAMPTZ,
+  bounce_type     VARCHAR(20),
+  bounce_reason   TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_es_campaign ON email_sends(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_es_contact ON email_sends(contact_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_es_campaign_contact ON email_sends(campaign_id, contact_id);
+CREATE INDEX IF NOT EXISTS idx_es_provider_id ON email_sends(provider_id);
 
 -- =====================================================
 -- TRIGGERS
@@ -678,3 +804,12 @@ CREATE TRIGGER trg_portfolio_items_updated BEFORE UPDATE ON member_portfolio_ite
 
 DROP TRIGGER IF EXISTS trg_faq_updated ON faq;
 CREATE TRIGGER trg_faq_updated BEFORE UPDATE ON faq FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_email_lists_updated ON email_lists;
+CREATE TRIGGER trg_email_lists_updated BEFORE UPDATE ON email_lists FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_email_contacts_updated ON email_contacts;
+CREATE TRIGGER trg_email_contacts_updated BEFORE UPDATE ON email_contacts FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_email_campaigns_updated ON email_campaigns;
+CREATE TRIGGER trg_email_campaigns_updated BEFORE UPDATE ON email_campaigns FOR EACH ROW EXECUTE FUNCTION update_updated_at();

@@ -7,6 +7,10 @@ export async function GET(req: NextRequest) {
   if (isErrorResponse(auth)) return auth;
 
   const search = req.nextUrl.searchParams.get("search") || undefined;
-  const items = await listAllPortfolioItems({ search });
+  const item_type = req.nextUrl.searchParams.get("type") as "project" | "product" | null;
+  const items = await listAllPortfolioItems({
+    search,
+    item_type: item_type || undefined,
+  });
   return NextResponse.json({ data: items });
 }
