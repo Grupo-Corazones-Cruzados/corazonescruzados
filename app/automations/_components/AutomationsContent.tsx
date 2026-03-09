@@ -1154,6 +1154,8 @@ function CampaignFormView({
   const [sending, setSending] = useState(false);
   const [showConfirmSend, setShowConfirmSend] = useState(false);
   const [exportingReport, setExportingReport] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [showResendModal, setShowResendModal] = useState(false);
 
   const fetchLists = useCallback(async () => {
     try {
@@ -1382,6 +1384,33 @@ function CampaignFormView({
     }
   };
 
+  const handleResend = async (mode: "all" | "failed") => {
+    if (!campaignId) return;
+    setResending(true);
+    setShowResendModal(false);
+    try {
+      const res = await fetch(`/api/email-campaigns/${campaignId}/resend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Error al reenviar");
+      toast(
+        `Reenviado: ${json.data.total_sent} de ${json.data.total_resent} emails`,
+        "success"
+      );
+      // Refresh campaign detail
+      const detailRes = await fetch(`/api/email-campaigns/${campaignId}`);
+      const detailJson = await detailRes.json();
+      setCampaign(detailJson.data);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Error al reenviar", "error");
+    } finally {
+      setResending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -1416,7 +1445,40 @@ function CampaignFormView({
             <IconDownload size={16} />
             Exportar reporte
           </Button>
+          <Button size="sm" onClick={() => setShowResendModal(true)} isLoading={resending}>
+            <IconSend size={16} />
+            Reenviar
+          </Button>
         </div>
+
+        <Modal open={showResendModal} onClose={() => setShowResendModal(false)} title="Reenviar campaña">
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", marginBottom: "var(--space-5)" }}>
+            Selecciona a quién deseas reenviar esta campaña:
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <Button
+              onClick={() => handleResend("failed")}
+              variant="secondary"
+              style={{ justifyContent: "flex-start" }}
+            >
+              <IconSend size={16} />
+              Solo a fallidos y rebotados
+              {campaign.sends && (
+                <Badge variant="error">
+                  {campaign.sends.filter((s) => s.status === "failed" || s.status === "bounced").length}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              onClick={() => handleResend("all")}
+              variant="secondary"
+              style={{ justifyContent: "flex-start" }}
+            >
+              <IconSend size={16} />
+              A todos los contactos de la lista
+            </Button>
+          </div>
+        </Modal>
 
         <div className={styles.summaryGrid}>
           <div className={`${styles.summaryCard} ${styles.summaryCardInfo}`}>
