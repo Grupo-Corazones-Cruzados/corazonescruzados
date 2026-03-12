@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
       description: body.description,
       service_id: body.service_id,
       member_id: body.member_id,
-      scheduled_at: body.scheduled_at,
+      client_id: body.client_id,
+      deadline: body.deadline,
       estimated_hours: body.estimated_hours,
       estimated_cost: body.estimated_cost,
     });

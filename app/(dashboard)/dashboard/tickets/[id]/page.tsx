@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
-import { Button, Badge, Card, Input, Select, Spinner, Modal } from "@/components/ui";
+import { Button, Badge, Card, Input, Spinner, Modal } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { TICKET_STATUS_LABELS } from "@/lib/constants";
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils";
 import styles from "./page.module.css";
@@ -14,11 +15,13 @@ interface TicketDetail {
   user_id: string;
   service_id: number | null;
   member_id: number | null;
+  client_id: number | null;
   title: string | null;
   description: string | null;
   status: string;
-  scheduled_at: string | null;
+  deadline: string | null;
   completed_at: string | null;
+  cancellation_reason: string | null;
   estimated_hours: number | null;
   actual_hours: number | null;
   estimated_cost: number | null;
@@ -33,78 +36,48 @@ interface TicketDetail {
   service_name: string | null;
 }
 
-interface TimeSlot {
-  id: number;
-  ticket_id: number;
-  date: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  actual_duration: number | null;
-  notes: string | null;
-}
-
-interface TicketServiceItem {
-  id: number;
-  ticket_id: number;
-  service_id: number | null;
-  assigned_hours: number;
-  hourly_cost: number;
-  subtotal: number;
-  service_name: string | null;
-}
-
-const STATUS_OPTIONS = [
-  { value: "pending", label: "Pendiente" },
-  { value: "confirmed", label: "Confirmado" },
-  { value: "in_progress", label: "En Progreso" },
-  { value: "completed", label: "Completado" },
-  { value: "cancelled", label: "Cancelado" },
-];
-
 const BADGE_VARIANT: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
   pending: "warning",
   confirmed: "info",
   in_progress: "info",
   completed: "success",
   cancelled: "error",
-};
-
-const SLOT_STATUS_VARIANT: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
-  pending: "warning",
-  confirmed: "info",
-  completed: "success",
-  cancelled: "error",
+  withdrawn: "default",
 };
 
 export default function TicketDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
   const ticketId = Number(params.id);
 
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
-  const [slots, setSlots] = useState<TimeSlot[]>([]);
-  const [services, setServices] = useState<TicketServiceItem[]>([]);
+  const [workDays, setWorkDays] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [editStatus, setEditStatus] = useState("");
-  const [savingStatus, setSavingStatus] = useState(false);
+  // Rejection modal
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [savingReject, setSavingReject] = useState(false);
 
-  // Slot modal
-  const [showSlotModal, setShowSlotModal] = useState(false);
-  const [slotDate, setSlotDate] = useState("");
-  const [slotStart, setSlotStart] = useState("");
-  const [slotEnd, setSlotEnd] = useState("");
-  const [savingSlot, setSavingSlot] = useState(false);
+  // Confirmation calendar modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [savingConfirm, setSavingConfirm] = useState(false);
 
-  // Service modal
-  const [showServiceModal, setShowServiceModal] = useState(false);
-  const [svcHours, setSvcHours] = useState("");
-  const [svcCost, setSvcCost] = useState("");
-  const [svcServiceId, setSvcServiceId] = useState("");
-  const [availableServices, setAvailableServices] = useState<{ value: string; label: string }[]>([]);
-  const [savingService, setSavingService] = useState(false);
+  // Edit work days modal
+  const [showEditDaysModal, setShowEditDaysModal] = useState(false);
+  const [editDates, setEditDates] = useState<string[]>([]);
+  const [editReason, setEditReason] = useState("");
+  const [savingEditDays, setSavingEditDays] = useState(false);
+
+  // Member status update
+  const [savingMemberStatus, setSavingMemberStatus] = useState(false);
+
+  // Withdrawn modal (desistido with reason)
+  const [showWithdrawnModal, setShowWithdrawnModal] = useState(false);
+  const [withdrawnReason, setWithdrawnReason] = useState("");
 
   const fetchTicket = useCallback(async () => {
     try {
@@ -112,7 +85,6 @@ export default function TicketDetailPage() {
       if (!res.ok) throw new Error();
       const json = await res.json();
       setTicket(json.data);
-      setEditStatus(json.data.status);
     } catch {
       toast("Error al cargar ticket", "error");
       router.push("/dashboard/tickets");
@@ -123,148 +95,185 @@ export default function TicketDetailPage() {
     try {
       const res = await fetch(`/api/tickets/${ticketId}/slots`);
       const json = await res.json();
-      setSlots(json.data || []);
-    } catch {
-      /* silent */
-    }
-  }, [ticketId]);
-
-  const fetchServices = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/tickets/${ticketId}/services`);
-      const json = await res.json();
-      setServices(json.data || []);
+      const dates = ((json.data || []) as { date: string }[])
+        .map((s) => s.date.split("T")[0])
+        .sort();
+      setWorkDays(dates);
     } catch {
       /* silent */
     }
   }, [ticketId]);
 
   useEffect(() => {
-    async function loadAll() {
-      setLoading(true);
-      await Promise.all([fetchTicket(), fetchSlots(), fetchServices()]);
-      setLoading(false);
-    }
-    loadAll();
-  }, [fetchTicket, fetchSlots, fetchServices]);
+    setLoading(true);
+    Promise.all([fetchTicket(), fetchSlots()]).finally(() => setLoading(false));
+  }, [fetchTicket, fetchSlots]);
 
-  // Update status
-  const handleStatusChange = async () => {
-    if (!ticket || editStatus === ticket.status) return;
-    setSavingStatus(true);
+  // Role checks
+  const isMemberAssigned = user?.role === "member" && user.member_id != null && ticket?.member_id === user.member_id;
+  const isCreator = user?.id === ticket?.user_id;
+  const isPending = ticket?.status === "pending";
+
+  // Creator can only delete while ticket is still pending
+  const canDelete = isCreator && isPending;
+
+  // Member rejects ticket
+  const handleReject = async () => {
+    if (!rejectReason.trim()) return;
+    setSavingReject(true);
     try {
       const res = await fetch(`/api/tickets/${ticketId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: editStatus }),
+        body: JSON.stringify({
+          status: "cancelled",
+          cancellation_reason: rejectReason.trim(),
+        }),
       });
       if (!res.ok) throw new Error();
-      toast("Estado actualizado", "success");
+      toast("Ticket rechazado", "success");
+      setShowRejectModal(false);
+      setRejectReason("");
       fetchTicket();
     } catch {
-      toast("Error al actualizar", "error");
+      toast("Error al rechazar", "error");
     } finally {
-      setSavingStatus(false);
+      setSavingReject(false);
     }
   };
 
-  // Add slot
-  const handleAddSlot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingSlot(true);
+  // Member confirms ticket with selected work dates
+  const handleConfirm = async () => {
+    if (selectedDates.length === 0) return;
+    setSavingConfirm(true);
+    try {
+      const statusRes = await fetch(`/api/tickets/${ticketId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "confirmed" }),
+      });
+      if (!statusRes.ok) throw new Error();
+
+      for (const date of selectedDates) {
+        await fetch(`/api/tickets/${ticketId}/slots`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date,
+            start_time: "00:00",
+            end_time: "23:59",
+          }),
+        });
+      }
+
+      toast("Ticket confirmado con fechas de trabajo", "success");
+      setShowConfirmModal(false);
+      setSelectedDates([]);
+      fetchTicket();
+      fetchSlots();
+    } catch {
+      toast("Error al confirmar", "error");
+    } finally {
+      setSavingConfirm(false);
+    }
+  };
+
+  const toggleDate = (dateStr: string) => {
+    setSelectedDates((prev) =>
+      prev.includes(dateStr)
+        ? prev.filter((d) => d !== dateStr)
+        : [...prev, dateStr].sort()
+    );
+  };
+
+  const toggleEditDate = (dateStr: string) => {
+    setEditDates((prev) =>
+      prev.includes(dateStr)
+        ? prev.filter((d) => d !== dateStr)
+        : [...prev, dateStr].sort()
+    );
+  };
+
+  const openEditDaysModal = () => {
+    setEditDates([...workDays]);
+    setEditReason("");
+    setShowEditDaysModal(true);
+  };
+
+  const handleEditDays = async () => {
+    if (editDates.length === 0 || !editReason.trim()) return;
+    setSavingEditDays(true);
     try {
       const res = await fetch(`/api/tickets/${ticketId}/slots`, {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: slotDate,
-          start_time: slotStart,
-          end_time: slotEnd,
+          dates: editDates,
+          reason: editReason.trim(),
         }),
       });
       if (!res.ok) throw new Error();
-      toast("Horario agregado", "success");
-      setShowSlotModal(false);
-      setSlotDate("");
-      setSlotStart("");
-      setSlotEnd("");
+      toast("Días actualizados y cliente notificado", "success");
+      setShowEditDaysModal(false);
       fetchSlots();
     } catch {
-      toast("Error al agregar horario", "error");
+      toast("Error al actualizar días", "error");
     } finally {
-      setSavingSlot(false);
+      setSavingEditDays(false);
     }
   };
 
-  const handleDeleteSlot = async (slotId: number) => {
+  // Member updates ticket status (completed / cancelled — no reason needed)
+  const handleMemberStatus = async (newStatus: string) => {
+    if (newStatus === "withdrawn") {
+      setWithdrawnReason("");
+      setShowWithdrawnModal(true);
+      return;
+    }
+    const labels: Record<string, string> = {
+      completed: "completar",
+      cancelled: "cancelar",
+    };
+    if (!confirm(`¿Estás seguro de ${labels[newStatus] || "cambiar"} este ticket?`)) return;
+    setSavingMemberStatus(true);
     try {
-      await fetch(`/api/tickets/${ticketId}/slots`, {
-        method: "DELETE",
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slot_id: slotId }),
+        body: JSON.stringify({ status: newStatus }),
       });
-      toast("Horario eliminado", "success");
-      fetchSlots();
+      if (!res.ok) throw new Error();
+      toast("Estado actualizado y cliente notificado", "success");
+      fetchTicket();
     } catch {
-      toast("Error", "error");
+      toast("Error al actualizar estado", "error");
+    } finally {
+      setSavingMemberStatus(false);
     }
   };
 
-  // Add service
-  const openServiceModal = async () => {
+  // Member withdraws with required reason
+  const handleWithdrawn = async () => {
+    if (!withdrawnReason.trim()) return;
+    setSavingMemberStatus(true);
     try {
-      const res = await fetch("/api/services?active_only=true");
-      const json = await res.json();
-      setAvailableServices(
-        (json.data || []).map((s: { id: number; name: string }) => ({
-          value: String(s.id),
-          label: s.name,
-        }))
-      );
-    } catch {
-      /* silent */
-    }
-    setShowServiceModal(true);
-  };
-
-  const handleAddService = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingService(true);
-    try {
-      const res = await fetch(`/api/tickets/${ticketId}/services`, {
-        method: "POST",
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          service_id: svcServiceId ? Number(svcServiceId) : undefined,
-          assigned_hours: Number(svcHours),
-          hourly_cost: Number(svcCost),
+          status: "withdrawn",
+          cancellation_reason: withdrawnReason.trim(),
         }),
       });
       if (!res.ok) throw new Error();
-      toast("Servicio agregado", "success");
-      setShowServiceModal(false);
-      setSvcHours("");
-      setSvcCost("");
-      setSvcServiceId("");
-      fetchServices();
+      toast("Ticket desistido y cliente notificado", "success");
+      setShowWithdrawnModal(false);
+      setWithdrawnReason("");
+      fetchTicket();
     } catch {
-      toast("Error al agregar servicio", "error");
+      toast("Error al desistir", "error");
     } finally {
-      setSavingService(false);
-    }
-  };
-
-  const handleDeleteService = async (serviceItemId: number) => {
-    try {
-      await fetch(`/api/tickets/${ticketId}/services`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticket_service_id: serviceItemId }),
-      });
-      toast("Servicio eliminado", "success");
-      fetchServices();
-    } catch {
-      toast("Error", "error");
+      setSavingMemberStatus(false);
     }
   };
 
@@ -290,8 +299,6 @@ export default function TicketDetailPage() {
 
   if (!ticket) return null;
 
-  const totalServicesCost = services.reduce((sum, s) => sum + s.subtotal, 0);
-
   return (
     <div>
       <PageHeader
@@ -302,9 +309,11 @@ export default function TicketDetailPage() {
             <Button variant="ghost" onClick={() => router.push("/dashboard/tickets")}>
               Volver
             </Button>
-            <Button variant="danger" size="sm" onClick={handleDelete}>
-              Eliminar
-            </Button>
+            {canDelete && (
+              <Button variant="danger" size="sm" onClick={handleDelete}>
+                Eliminar
+              </Button>
+            )}
           </div>
         }
       />
@@ -312,154 +321,141 @@ export default function TicketDetailPage() {
       <div className={styles.grid}>
         {/* Left column: main info */}
         <div className={styles.main}>
-          {/* Status card */}
           <Card>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Estado</h3>
-              <Badge variant={BADGE_VARIANT[ticket.status] || "default"}>
-                {TICKET_STATUS_LABELS[ticket.status] || ticket.status}
-              </Badge>
+            <div className={styles.mainContent}>
+              {/* Status */}
+              <div className={styles.statusSection}>
+                <Badge variant={BADGE_VARIANT[ticket.status] || "default"}>
+                  {TICKET_STATUS_LABELS[ticket.status] || ticket.status}
+                </Badge>
+                {/* Member pending actions */}
+                {isMemberAssigned && isPending && (
+                  <div className={styles.memberActions}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowRejectModal(true)}
+                    >
+                      Rechazar
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setShowConfirmModal(true)}
+                    >
+                      Confirmar
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Cancellation / withdrawal reason */}
+              {(ticket.status === "cancelled" || ticket.status === "withdrawn") && ticket.cancellation_reason && (
+                <div className={styles.section}>
+                  <h3 className={styles.sectionTitle}>
+                    {ticket.status === "withdrawn" ? "Motivo de desistimiento" : "Motivo de rechazo"}
+                  </h3>
+                  <p className={styles.description}>{ticket.cancellation_reason}</p>
+                </div>
+              )}
+
+              {/* Description */}
+              {ticket.description && (
+                <div className={styles.section}>
+                  <h3 className={styles.sectionTitle}>Descripción</h3>
+                  <p className={styles.description}>{ticket.description}</p>
+                </div>
+              )}
+
+              {/* Work days */}
+              {workDays.length > 0 && (
+                <div className={styles.section}>
+                  <div className={styles.sectionHeader}>
+                    <h3 className={styles.sectionTitle}>Días de trabajo</h3>
+                    {isMemberAssigned && !isPending && ticket.status !== "cancelled" && (
+                      <Button size="sm" variant="ghost" onClick={openEditDaysModal}>
+                        Editar días
+                      </Button>
+                    )}
+                  </div>
+                  <div className={styles.workDays}>
+                    {workDays.map((d) => (
+                      <span key={d} className={styles.workDayChip}>
+                        {formatDate(d)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className={styles.statusRow}>
-              <Select
-                options={STATUS_OPTIONS}
-                value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value)}
-              />
+          </Card>
+
+          {/* Member status actions */}
+          {isMemberAssigned && (ticket.status === "confirmed" || ticket.status === "in_progress") && (
+            <div className={styles.memberStatusActions}>
               <Button
                 size="sm"
-                onClick={handleStatusChange}
-                isLoading={savingStatus}
-                disabled={editStatus === ticket.status}
+                onClick={() => handleMemberStatus("completed")}
+                isLoading={savingMemberStatus}
               >
-                Actualizar
+                Completado
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleMemberStatus("withdrawn")}
+                isLoading={savingMemberStatus}
+              >
+                Desistido
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleMemberStatus("cancelled")}
+                isLoading={savingMemberStatus}
+              >
+                Cancelado
               </Button>
             </div>
-          </Card>
-
-          {/* Description */}
-          {ticket.description && (
-            <Card>
-              <h3 className={styles.cardTitle}>Descripción</h3>
-              <p className={styles.description}>{ticket.description}</p>
-            </Card>
           )}
-
-          {/* Time Slots */}
-          <Card>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Horarios</h3>
-              <Button size="sm" variant="secondary" onClick={() => setShowSlotModal(true)}>
-                Agregar
-              </Button>
-            </div>
-            {slots.length === 0 ? (
-              <p className={styles.empty}>Sin horarios programados</p>
-            ) : (
-              <div className={styles.slotList}>
-                {slots.map((slot) => (
-                  <div key={slot.id} className={styles.slotItem}>
-                    <div className={styles.slotInfo}>
-                      <span className={styles.slotDate}>{formatDate(slot.date)}</span>
-                      <span className={styles.slotTime}>
-                        {slot.start_time} — {slot.end_time}
-                      </span>
-                      <Badge variant={SLOT_STATUS_VARIANT[slot.status] || "default"} >
-                        {slot.status}
-                      </Badge>
-                    </div>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => handleDeleteSlot(slot.id)}
-                      aria-label="Eliminar horario"
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          {/* Ticket Services */}
-          <Card>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Servicios</h3>
-              <Button size="sm" variant="secondary" onClick={openServiceModal}>
-                Agregar
-              </Button>
-            </div>
-            {services.length === 0 ? (
-              <p className={styles.empty}>Sin servicios asignados</p>
-            ) : (
-              <>
-                <div className={styles.serviceList}>
-                  {services.map((svc) => (
-                    <div key={svc.id} className={styles.serviceItem}>
-                      <div className={styles.serviceInfo}>
-                        <span className={styles.serviceName}>
-                          {svc.service_name || "Servicio personalizado"}
-                        </span>
-                        <span className={styles.serviceMeta}>
-                          {svc.assigned_hours}h × {formatCurrency(svc.hourly_cost)} ={" "}
-                          <strong>{formatCurrency(svc.subtotal)}</strong>
-                        </span>
-                      </div>
-                      <button
-                        className={styles.deleteBtn}
-                        onClick={() => handleDeleteService(svc.id)}
-                        aria-label="Eliminar servicio"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className={styles.totalRow}>
-                  Total: <strong>{formatCurrency(totalServicesCost)}</strong>
-                </div>
-              </>
-            )}
-          </Card>
         </div>
 
         {/* Right column: sidebar info */}
         <div className={styles.sidebar}>
           <Card>
             <h3 className={styles.cardTitle}>Detalles</h3>
-            <div className={styles.detailList}>
-              <div className={styles.detailItem}>
+            <div className={styles.detailStack}>
+              <div className={styles.detailBlock}>
                 <span className={styles.detailLabel}>Cliente</span>
                 <span className={styles.detailValue}>
                   {ticket.client_name || "—"}
                 </span>
               </div>
-              <div className={styles.detailItem}>
+              <div className={styles.detailBlock}>
                 <span className={styles.detailLabel}>Miembro</span>
                 <span className={styles.detailValue}>
                   {ticket.member_name || "Sin asignar"}
                 </span>
               </div>
-              <div className={styles.detailItem}>
+              <div className={styles.detailBlock}>
                 <span className={styles.detailLabel}>Servicio</span>
                 <span className={styles.detailValue}>
                   {ticket.service_name || "—"}
                 </span>
               </div>
-              <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>Fecha programada</span>
+              <div className={styles.detailBlock}>
+                <span className={styles.detailLabel}>Fecha límite</span>
                 <span className={styles.detailValue}>
-                  {ticket.scheduled_at ? formatDateTime(ticket.scheduled_at) : "—"}
+                  {ticket.deadline ? formatDate(ticket.deadline) : "—"}
                 </span>
               </div>
-              <div className={styles.detailItem}>
+              <div className={styles.detailBlock}>
                 <span className={styles.detailLabel}>Creado</span>
                 <span className={styles.detailValue}>
                   {formatDateTime(ticket.created_at)}
                 </span>
               </div>
               {ticket.completed_at && (
-                <div className={styles.detailItem}>
+                <div className={styles.detailBlock}>
                   <span className={styles.detailLabel}>Completado</span>
                   <span className={styles.detailValue}>
                     {formatDateTime(ticket.completed_at)}
@@ -470,31 +466,19 @@ export default function TicketDetailPage() {
           </Card>
 
           <Card>
-            <h3 className={styles.cardTitle}>Estimaciones</h3>
-            <div className={styles.detailList}>
-              <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>Horas est.</span>
-                <span className={styles.detailValue}>
+            <h3 className={styles.cardTitle}>Horas y Costo</h3>
+            <div className={styles.costGrid}>
+              <div className={styles.costItem}>
+                <span className={styles.costValue}>
                   {ticket.estimated_hours != null ? `${ticket.estimated_hours}h` : "—"}
                 </span>
+                <span className={styles.costLabel}>Horas</span>
               </div>
-              <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>Horas reales</span>
-                <span className={styles.detailValue}>
-                  {ticket.actual_hours != null ? `${ticket.actual_hours}h` : "—"}
-                </span>
-              </div>
-              <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>Costo est.</span>
-                <span className={styles.detailValue}>
+              <div className={styles.costItem}>
+                <span className={styles.costValue}>
                   {ticket.estimated_cost != null ? formatCurrency(ticket.estimated_cost) : "—"}
                 </span>
-              </div>
-              <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>Costo real</span>
-                <span className={styles.detailValue}>
-                  {ticket.actual_cost != null ? formatCurrency(ticket.actual_cost) : "—"}
-                </span>
+                <span className={styles.costLabel}>Costo</span>
               </div>
             </div>
           </Card>
@@ -515,73 +499,242 @@ export default function TicketDetailPage() {
         </div>
       </div>
 
-      {/* Add Slot Modal */}
-      <Modal open={showSlotModal} onClose={() => setShowSlotModal(false)} title="Agregar Horario" size="sm">
-        <form onSubmit={handleAddSlot} className={styles.modalForm}>
-          <Input
-            label="Fecha *"
-            type="date"
-            value={slotDate}
-            onChange={(e) => setSlotDate(e.target.value)}
-            required
-          />
-          <div className={styles.modalRow}>
-            <Input
-              label="Inicio *"
-              type="time"
-              value={slotStart}
-              onChange={(e) => setSlotStart(e.target.value)}
-              required
-            />
-            <Input
-              label="Fin *"
-              type="time"
-              value={slotEnd}
-              onChange={(e) => setSlotEnd(e.target.value)}
-              required
+      {/* Rejection Modal */}
+      <Modal open={showRejectModal} onClose={() => setShowRejectModal(false)} title="Rechazar Ticket" size="sm">
+        <div className={styles.modalForm}>
+          <p className={styles.modalHint}>
+            Por favor indica el motivo por el cual rechazas este ticket. El cliente podrá ver esta razón.
+          </p>
+          <div className={styles.textarea}>
+            <textarea
+              className={styles.textareaInput}
+              rows={4}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Escribe el motivo del rechazo..."
             />
           </div>
-          <Button type="submit" isLoading={savingSlot} style={{ width: "100%" }}>
-            Agregar horario
+          <Button
+            variant="danger"
+            onClick={handleReject}
+            isLoading={savingReject}
+            disabled={!rejectReason.trim()}
+            style={{ width: "100%" }}
+          >
+            Confirmar rechazo
           </Button>
-        </form>
+        </div>
       </Modal>
 
-      {/* Add Service Modal */}
-      <Modal open={showServiceModal} onClose={() => setShowServiceModal(false)} title="Agregar Servicio" size="sm">
-        <form onSubmit={handleAddService} className={styles.modalForm}>
-          <Select
-            label="Servicio"
-            options={availableServices}
-            value={svcServiceId}
-            onChange={(e) => setSvcServiceId(e.target.value)}
-            placeholder="Opcional"
+      {/* Confirmation Calendar Modal */}
+      <Modal open={showConfirmModal} onClose={() => setShowConfirmModal(false)} title="Confirmar Ticket" size="md">
+        <div className={styles.modalForm}>
+          <p className={styles.modalHint}>
+            Selecciona los días en los que vas a trabajar en este ticket.
+            {ticket.deadline && (
+              <> Fecha límite: <strong>{formatDate(ticket.deadline)}</strong></>
+            )}
+          </p>
+
+          <CalendarPicker
+            selectedDates={selectedDates}
+            onToggleDate={toggleDate}
+            minDate={new Date().toISOString().split("T")[0]}
+            maxDate={ticket.deadline || undefined}
           />
-          <div className={styles.modalRow}>
-            <Input
-              label="Horas *"
-              type="number"
-              step="0.5"
-              min="0.5"
-              value={svcHours}
-              onChange={(e) => setSvcHours(e.target.value)}
-              required
-            />
-            <Input
-              label="Costo/hora *"
-              type="number"
-              step="0.01"
-              min="0"
-              value={svcCost}
-              onChange={(e) => setSvcCost(e.target.value)}
-              required
+
+          {selectedDates.length > 0 && (
+            <div className={styles.selectedDatesInfo}>
+              <span>{selectedDates.length} día(s) seleccionado(s)</span>
+            </div>
+          )}
+
+          <Button
+            onClick={handleConfirm}
+            isLoading={savingConfirm}
+            disabled={selectedDates.length === 0}
+            style={{ width: "100%" }}
+          >
+            Confirmar y programar ({selectedDates.length} día(s))
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Withdrawn Modal (Desistido) */}
+      <Modal open={showWithdrawnModal} onClose={() => setShowWithdrawnModal(false)} title="Desistir del Ticket" size="sm">
+        <div className={styles.modalForm}>
+          <p className={styles.modalHint}>
+            Por favor indica el motivo por el cual desistes de este ticket. El cliente será notificado por correo.
+          </p>
+          <div className={styles.textarea}>
+            <textarea
+              className={styles.textareaInput}
+              rows={4}
+              value={withdrawnReason}
+              onChange={(e) => setWithdrawnReason(e.target.value)}
+              placeholder="Escribe el motivo..."
             />
           </div>
-          <Button type="submit" isLoading={savingService} style={{ width: "100%" }}>
-            Agregar servicio
+          <Button
+            variant="danger"
+            onClick={handleWithdrawn}
+            isLoading={savingMemberStatus}
+            disabled={!withdrawnReason.trim()}
+            style={{ width: "100%" }}
+          >
+            Confirmar desistimiento
           </Button>
-        </form>
+        </div>
       </Modal>
+
+      {/* Edit Work Days Modal */}
+      <Modal open={showEditDaysModal} onClose={() => setShowEditDaysModal(false)} title="Editar Días de Trabajo" size="md">
+        <div className={styles.modalForm}>
+          <div className={styles.textarea}>
+            <label className={styles.textareaLabel}>Motivo del cambio *</label>
+            <textarea
+              className={styles.textareaInput}
+              rows={3}
+              value={editReason}
+              onChange={(e) => setEditReason(e.target.value)}
+              placeholder="Explica por qué necesitas cambiar los días..."
+            />
+          </div>
+
+          <p className={styles.modalHint}>
+            Selecciona los nuevos días de trabajo.
+            {ticket.deadline && (
+              <> Fecha límite: <strong>{formatDate(ticket.deadline)}</strong></>
+            )}
+          </p>
+
+          <CalendarPicker
+            selectedDates={editDates}
+            onToggleDate={toggleEditDate}
+            minDate={new Date().toISOString().split("T")[0]}
+            maxDate={ticket.deadline || undefined}
+          />
+
+          {editDates.length > 0 && (
+            <div className={styles.selectedDatesInfo}>
+              <span>{editDates.length} día(s) seleccionado(s)</span>
+            </div>
+          )}
+
+          <Button
+            onClick={handleEditDays}
+            isLoading={savingEditDays}
+            disabled={editDates.length === 0 || !editReason.trim()}
+            style={{ width: "100%" }}
+          >
+            Guardar y notificar al cliente
+          </Button>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+// ----- Calendar Picker Component -----
+
+function CalendarPicker({
+  selectedDates,
+  onToggleDate,
+  minDate,
+  maxDate,
+}: {
+  selectedDates: string[];
+  onToggleDate: (date: string) => void;
+  minDate: string;
+  maxDate?: string;
+}) {
+  const [viewYear, setViewYear] = useState(() => {
+    const d = new Date(minDate);
+    return d.getFullYear();
+  });
+  const [viewMonth, setViewMonth] = useState(() => {
+    const d = new Date(minDate);
+    return d.getMonth();
+  });
+
+  const DAYS = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"];
+  const MONTHS = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  ];
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const cells: (string | null)[] = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    cells.push(dateStr);
+  }
+
+  const prevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(viewYear - 1);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
+  };
+
+  const nextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(viewYear + 1);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  };
+
+  const isDisabled = (dateStr: string) => {
+    if (dateStr < minDate) return true;
+    if (maxDate && dateStr > maxDate) return true;
+    return false;
+  };
+
+  return (
+    <div className={styles.calendar}>
+      <div className={styles.calendarNav}>
+        <button type="button" className={styles.calendarNavBtn} onClick={prevMonth}>
+          &#8249;
+        </button>
+        <span className={styles.calendarTitle}>
+          {MONTHS[viewMonth]} {viewYear}
+        </span>
+        <button type="button" className={styles.calendarNavBtn} onClick={nextMonth}>
+          &#8250;
+        </button>
+      </div>
+      <div className={styles.calendarGrid}>
+        {DAYS.map((d) => (
+          <div key={d} className={styles.calendarDayHeader}>{d}</div>
+        ))}
+        {cells.map((dateStr, i) => {
+          if (!dateStr) {
+            return <div key={`empty-${i}`} className={styles.calendarCell} />;
+          }
+          const disabled = isDisabled(dateStr);
+          const selected = selectedDates.includes(dateStr);
+          const dayNum = parseInt(dateStr.split("-")[2], 10);
+
+          return (
+            <button
+              key={dateStr}
+              type="button"
+              disabled={disabled}
+              className={`${styles.calendarDay} ${selected ? styles.calendarDaySelected : ""} ${disabled ? styles.calendarDayDisabled : ""}`}
+              onClick={() => !disabled && onToggleDate(dateStr)}
+            >
+              {dayNum}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -45,15 +45,23 @@ export async function listTickets(params: {
   const dataVals = [...vals, perPage, offset];
   const result = await query(
     `SELECT t.*,
-            COALESCE(u.first_name || ' ' || u.last_name, u.email) AS client_name,
+            COALESCE(c.name, u.first_name || ' ' || u.last_name, u.email) AS client_name,
             m.name  AS member_name,
-            s.name  AS service_name
+            s.name  AS service_name,
+            COALESCE(
+              (SELECT ARRAY_AGG(tts.date ORDER BY tts.date)
+               FROM ticket_time_slots tts WHERE tts.ticket_id = t.id),
+              '{}'
+            ) AS work_days,
+            (SELECT MIN(tts.date) FROM ticket_time_slots tts
+             WHERE tts.ticket_id = t.id AND tts.date >= CURRENT_DATE) AS next_work_day
      FROM tickets t
      LEFT JOIN users    u ON u.id = t.user_id
      LEFT JOIN members  m ON m.id = t.member_id
      LEFT JOIN services s ON s.id = t.service_id
+     LEFT JOIN clients  c ON c.id = t.client_id
      ${where}
-     ORDER BY t.created_at DESC
+     ORDER BY next_work_day ASC NULLS LAST, t.created_at DESC
      LIMIT $${idx++} OFFSET $${idx}`,
     dataVals
   );
@@ -70,14 +78,15 @@ export async function listTickets(params: {
 export async function getTicketById(id: number) {
   const result = await query(
     `SELECT t.*,
-            COALESCE(u.first_name || ' ' || u.last_name, u.email) AS client_name,
-            u.email AS client_email,
+            COALESCE(c.name, u.first_name || ' ' || u.last_name, u.email) AS client_name,
+            COALESCE(c.email, u.email) AS client_email,
             m.name  AS member_name,  m.email AS member_email,
             s.name  AS service_name
      FROM tickets t
      LEFT JOIN users    u ON u.id = t.user_id
      LEFT JOIN members  m ON m.id = t.member_id
      LEFT JOIN services s ON s.id = t.service_id
+     LEFT JOIN clients  c ON c.id = t.client_id
      WHERE t.id = $1`,
     [id]
   );
@@ -90,25 +99,27 @@ export async function createTicket(data: {
   user_id: string;
   service_id?: number;
   member_id?: number;
+  client_id?: number;
   title: string;
   description?: string;
-  scheduled_at?: string;
+  deadline?: string;
   estimated_hours?: number;
   estimated_cost?: number;
 }): Promise<Ticket> {
   const result = await query(
     `INSERT INTO tickets
-       (user_id, service_id, member_id, title, description,
-        scheduled_at, estimated_hours, estimated_cost)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       (user_id, service_id, member_id, client_id, title, description,
+        deadline, estimated_hours, estimated_cost)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
      RETURNING *`,
     [
       data.user_id,
       data.service_id || null,
       data.member_id || null,
+      data.client_id || null,
       data.title,
       data.description || null,
-      data.scheduled_at || null,
+      data.deadline || null,
       data.estimated_hours || null,
       data.estimated_cost || null,
     ]
@@ -123,10 +134,12 @@ export async function updateTicket(
   data: Partial<{
     service_id: number;
     member_id: number;
+    client_id: number;
     title: string;
     description: string;
     status: string;
-    scheduled_at: string;
+    deadline: string;
+    cancellation_reason: string;
     estimated_hours: number;
     actual_hours: number;
     estimated_cost: number;
@@ -224,6 +237,23 @@ export async function updateTicketSlot(
 export async function deleteTicketSlot(id: number): Promise<boolean> {
   const result = await query("DELETE FROM ticket_time_slots WHERE id = $1", [id]);
   return (result.rowCount ?? 0) > 0;
+}
+
+export async function replaceTicketSlots(
+  ticketId: number,
+  dates: string[]
+): Promise<TicketTimeSlot[]> {
+  await query("DELETE FROM ticket_time_slots WHERE ticket_id = $1", [ticketId]);
+  const slots: TicketTimeSlot[] = [];
+  for (const date of dates) {
+    const result = await query(
+      `INSERT INTO ticket_time_slots (ticket_id, date, start_time, end_time)
+       VALUES ($1, $2, '00:00', '23:59') RETURNING *`,
+      [ticketId, date]
+    );
+    slots.push(result.rows[0]);
+  }
+  return slots;
 }
 
 // ----- Ticket Services (line items) -----

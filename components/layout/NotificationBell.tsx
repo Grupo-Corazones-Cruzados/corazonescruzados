@@ -30,6 +30,8 @@ export default function NotificationBell({ collapsed }: Props) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -102,8 +104,15 @@ export default function NotificationBell({ collapsed }: Props) {
   return (
     <div className={styles.wrapper} ref={wrapperRef}>
       <button
+        ref={bellRef}
         className={styles.bellBtn}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!open && bellRef.current) {
+            const rect = bellRef.current.getBoundingClientRect();
+            setDropdownPos({ top: rect.bottom + 8, left: rect.left });
+          }
+          setOpen((v) => !v);
+        }}
         aria-label="Notificaciones"
         title={collapsed ? "Notificaciones" : undefined}
       >
@@ -124,7 +133,10 @@ export default function NotificationBell({ collapsed }: Props) {
       </button>
 
       {open && (
-        <div className={styles.dropdown}>
+        <div
+          className={styles.dropdown}
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+        >
           <div className={styles.header}>
             <span className={styles.headerTitle}>Notificaciones</span>
             {unreadCount > 0 && (

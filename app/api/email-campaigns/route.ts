@@ -1,18 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { requireRole, isErrorResponse } from "@/lib/auth/guards";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
+  const isAdmin = auth.role === "admin";
   const result = await query(
     `SELECT ec.*, el.name AS list_name
      FROM email_campaigns ec
      LEFT JOIN email_lists el ON el.id = ec.list_id
-     ORDER BY ec.created_at DESC`
+     ${isAdmin ? "" : "WHERE ec.created_by = $1"}
+     ORDER BY ec.created_at DESC`,
+    isAdmin ? [] : [auth.userId]
   );
 
   return NextResponse.json({ data: result.rows });
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { name, subject, html_body, signature_html, list_id, category_filter } =
     await req.json();
 
@@ -35,7 +45,7 @@ export async function POST(req: NextRequest) {
       signature_html || null,
       list_id || null,
       category_filter || null,
-      null,
+      auth.userId,
     ]
   );
 

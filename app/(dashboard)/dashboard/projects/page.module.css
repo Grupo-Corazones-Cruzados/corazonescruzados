@@ -20,3 +20,19 @@
   color: var(--accent);
   font-size: var(--text-xs);
 }
+
+.memberAvatars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.memberAvatarWrap {
+  display: inline-flex;
+}
+
+.noMembers {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}

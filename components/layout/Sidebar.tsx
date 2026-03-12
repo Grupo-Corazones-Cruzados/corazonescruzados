@@ -12,10 +12,10 @@ const NAV_ITEMS = [
   { path: "/dashboard", label: "Inicio", icon: "home", roles: ["client", "member", "admin"] },
   { path: "/dashboard/tickets", label: "Tickets", icon: "ticket", roles: ["client", "member", "admin"] },
   { path: "/dashboard/projects", label: "Proyectos", icon: "folder", roles: ["client", "member", "admin"] },
-  { path: "/dashboard/packages", label: "Paquetes", icon: "package", roles: ["client", "member", "admin"] },
+
   { path: "/dashboard/marketplace", label: "Marketplace", icon: "store", roles: ["client", "member", "admin"] },
   { path: "/dashboard/centralized-project", label: "Proyecto Centralizado", icon: "users", roles: ["member", "admin"] },
-  { path: "/automations", label: "Automatizaciones", icon: "zap", roles: ["member", "admin"] },
+  { path: "/dashboard/automations", label: "Automatizaciones", icon: "zap", roles: ["member", "admin"] },
   { path: "/dashboard/settings", label: "Configuración", icon: "settings", roles: ["client", "member", "admin"] },
   { path: "/dashboard/admin", label: "Admin", icon: "shield", roles: ["admin"] },
 ] as const;
@@ -24,7 +24,7 @@ const ICONS: Record<string, string> = {
   home: "M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z",
   ticket: "M4 4h12a2 2 0 012 2v1a2 2 0 000 4v1a2 2 0 01-2 2H4a2 2 0 01-2-2v-1a2 2 0 000-4V6a2 2 0 012-2z",
   folder: "M4 4h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z",
-  package: "M3 7l7-4 7 4v6l-7 4-7-4V7z",
+
   receipt: "M5 3h10a2 2 0 012 2v12l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 012-2z",
   store: "M3 3h14l1 7H2L3 3zM4 10v7a1 1 0 001 1h10a1 1 0 001-1v-7",
   users: "M7 10a3 3 0 100-6 3 3 0 000 6zM1 17v-1a4 4 0 014-4h4a4 4 0 014 4v1M13 4.5a3 3 0 010 5.5M17 17v-1a4 4 0 00-3-3.87",

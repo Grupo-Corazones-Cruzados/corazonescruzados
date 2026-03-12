@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { Button, Badge, DataTable, Input, Spinner, Modal, Select, Tabs } from "@/components/ui";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import type { Column } from "@/components/ui/DataTable";
@@ -132,7 +134,18 @@ function IconFile({ size = 20 }: { size?: number }) {
 // =====================================================
 
 export default function AutomationsContent({ toast }: { toast: ToastFn }) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [tab, setTab] = useState<AutoTab>("contacts");
+
+  useEffect(() => {
+    if (!loading && (!user || user.role === "client")) {
+      router.replace("/dashboard");
+    }
+  }, [user, loading, router]);
+
+  if (loading) return <div className={styles.loading}><Spinner /></div>;
+  if (!user || user.role === "client") return null;
 
   return (
     <div>

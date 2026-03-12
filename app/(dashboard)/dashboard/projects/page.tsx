@@ -4,33 +4,40 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import { Button, Badge, DataTable, Tabs, Input, Spinner } from "@/components/ui";
+import Avatar from "@/components/ui/Avatar";
 import type { Column } from "@/components/ui/DataTable";
 import { PROJECT_STATUS_LABELS } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { useAuth } from "@/components/providers/AuthProvider";
 import CreateProjectModal from "./[id]/_components/CreateProjectModal";
 import styles from "./page.module.css";
+
+interface AcceptedMemberSummary {
+  name: string;
+  photo_url: string | null;
+}
 
 interface ProjectRow {
   id: number;
   title: string;
   status: string;
   client_name: string | null;
-  member_name: string | null;
+  accepted_members: AcceptedMemberSummary[];
   budget_min: number | null;
   budget_max: number | null;
   deadline: string | null;
   updated_at: string;
 }
 
-const STATUS_TABS = [
+const BASE_TABS = [
   { value: "all", label: "Todos" },
   { value: "draft", label: "Borrador" },
   { value: "open", label: "Abiertos" },
   { value: "in_progress", label: "En Progreso" },
   { value: "review", label: "En Revisión" },
   { value: "completed", label: "Completados" },
+  { value: "closed", label: "Cerrados" },
   { value: "cancelled", label: "Cancelados" },
-  { value: "on_hold", label: "En Espera" },
 ];
 
 const BADGE_VARIANT: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
@@ -39,12 +46,15 @@ const BADGE_VARIANT: Record<string, "default" | "success" | "warning" | "error" 
   in_progress: "warning",
   review: "warning",
   completed: "success",
+  closed: "success",
   cancelled: "error",
-  on_hold: "default",
 };
 
 export default function ProjectsPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const isMember = user?.role === "member";
+  const isClient = user?.role === "client";
   const [data, setData] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -53,10 +63,25 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
 
+  const tabs = isMember
+    ? [{ value: "invited", label: "Invitado" }, ...BASE_TABS]
+    : isClient
+    ? [{ value: "mine", label: "Mis Proyectos" }, ...BASE_TABS]
+    : BASE_TABS;
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), per_page: "15" });
-    if (statusFilter !== "all") params.set("status", statusFilter);
+    if (statusFilter === "invited" && isMember && user?.member_id) {
+      params.set("invited_member_id", String(user.member_id));
+    } else if (statusFilter === "mine" && isClient) {
+      params.set("my_projects", "true");
+    } else {
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (isMember && user?.member_id) {
+        params.set("visible_to_member_id", String(user.member_id));
+      }
+    }
     if (search) params.set("search", search);
 
     try {
@@ -69,7 +94,7 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, search]);
+  }, [page, statusFilter, search, isMember, isClient, user?.member_id]);
 
   useEffect(() => {
     fetchData();
@@ -106,9 +131,21 @@ export default function ProjectsPage() {
       render: (r) => r.client_name || "—",
     },
     {
-      key: "member",
-      header: "Miembro",
-      render: (r) => r.member_name || "Sin asignar",
+      key: "members",
+      header: "Miembros",
+      render: (r) => {
+        const members = r.accepted_members || [];
+        if (members.length === 0) return <span className={styles.noMembers}>Sin asignar</span>;
+        return (
+          <div className={styles.memberAvatars}>
+            {members.map((m, i) => (
+              <span key={i} className={styles.memberAvatarWrap} title={m.name}>
+                <Avatar src={m.photo_url} name={m.name} size="xs" />
+              </span>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: "budget",
@@ -133,12 +170,12 @@ export default function ProjectsPage() {
         title="Proyectos"
         description="Publica y gestiona proyectos."
         action={
-          <Button onClick={() => setShowCreate(true)}>Nuevo Proyecto</Button>
+          !isMember ? <Button onClick={() => setShowCreate(true)}>Nuevo Proyecto</Button> : undefined
         }
       />
 
       <Tabs
-        tabs={STATUS_TABS}
+        tabs={tabs}
         active={statusFilter}
         onChange={(v) => setStatusFilter(v)}
       />
@@ -167,7 +204,7 @@ export default function ProjectsPage() {
           onRowClick={(r) => router.push(`/dashboard/projects/${r.id}`)}
           emptyTitle="Sin proyectos"
           emptyDescription="No hay proyectos que mostrar. Crea uno nuevo para comenzar."
-          emptyAction={<Button onClick={() => setShowCreate(true)}>Nuevo Proyecto</Button>}
+          emptyAction={!isMember ? <Button onClick={() => setShowCreate(true)}>Nuevo Proyecto</Button> : undefined}
         />
       )}
 

@@ -6,6 +6,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Polling needed because project lives on OneDrive (cloud sync breaks fsevents)
   webpack: (config) => {
     config.watchOptions = {
       poll: 1000,

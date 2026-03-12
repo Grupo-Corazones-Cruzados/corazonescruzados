@@ -1,19 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { requireRole, isErrorResponse } from "@/lib/auth/guards";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { id } = await params;
   const campaignId = Number(id);
 
+  const isAdmin = auth.role === "admin";
   const campaignResult = await query(
     `SELECT ec.*, el.name AS list_name
      FROM email_campaigns ec
      LEFT JOIN email_lists el ON el.id = ec.list_id
-     WHERE ec.id = $1`,
-    [campaignId]
+     WHERE ec.id = $1 ${isAdmin ? "" : "AND ec.created_by = $2"}`,
+    isAdmin ? [campaignId] : [campaignId, auth.userId]
   );
 
   if (campaignResult.rows.length === 0) {
@@ -41,13 +46,17 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { id } = await params;
   const campaignId = Number(id);
 
-  // Verify campaign exists and is draft
+  // Verify campaign exists, is draft, and belongs to user
+  const isAdmin = auth.role === "admin";
   const existing = await query<{ status: string }>(
-    "SELECT status FROM email_campaigns WHERE id = $1",
-    [campaignId]
+    `SELECT status FROM email_campaigns WHERE id = $1 ${isAdmin ? "" : "AND created_by = $2"}`,
+    isAdmin ? [campaignId] : [campaignId, auth.userId]
   );
 
   if (existing.rows.length === 0) {
@@ -100,11 +109,15 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { id } = await params;
 
+  const isAdmin = auth.role === "admin";
   const result = await query(
-    "DELETE FROM email_campaigns WHERE id = $1",
-    [Number(id)]
+    `DELETE FROM email_campaigns WHERE id = $1 ${isAdmin ? "" : "AND created_by = $2"}`,
+    isAdmin ? [Number(id)] : [Number(id), auth.userId]
   );
 
   if ((result.rowCount ?? 0) === 0) {

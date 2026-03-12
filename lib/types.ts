@@ -37,6 +37,7 @@ export interface Member {
   position_name?: string;
   hourly_rate: number | null;
   is_active: boolean;
+  is_blocked_from_projects: boolean;
   created_at: string;
 }
 
@@ -84,18 +85,21 @@ export type TicketStatus =
   | "confirmed"
   | "in_progress"
   | "completed"
-  | "cancelled";
+  | "cancelled"
+  | "withdrawn";
 
 export interface Ticket {
   id: number;
   user_id: string;
   service_id: number | null;
   member_id: number | null;
+  client_id: number | null;
   title: string;
   description: string | null;
   status: TicketStatus;
-  scheduled_at: string | null;
+  deadline: string | null;
   completed_at: string | null;
+  cancellation_reason: string | null;
   estimated_hours: number | null;
   actual_hours: number | null;
   estimated_cost: number | null;
@@ -135,7 +139,8 @@ export type ProjectStatus =
   | "review"
   | "completed"
   | "cancelled"
-  | "on_hold";
+  | "on_hold"
+  | "closed";
 
 export interface Project {
   id: number;
@@ -150,19 +155,41 @@ export interface Project {
   is_private: boolean;
   share_token: string | null;
   cancellation_reason: string | null;
+  final_cost: number | null;
+  confirmed_at: string | null;
+  completion_notified_at: string | null;
+  review_deadline: string | null;
+  penalty_applied: boolean;
   created_at: string;
   updated_at: string;
 }
 
-export type BidStatus = "pending" | "accepted" | "rejected";
+export type BidStatus = "invited" | "pending" | "accepted" | "rejected";
+
+export type PaymentStatus = "pending" | "confirmed" | "rejected";
+
+export interface ProjectPayment {
+  id: number;
+  project_id: number;
+  amount: number;
+  proof_url: string;
+  status: PaymentStatus;
+  confirmed_by: string | null;
+  confirmed_at: string | null;
+  notes: string | null;
+  created_at: string;
+  confirmer_email?: string;
+}
 
 export interface ProjectBid {
   id: number;
   project_id: number;
   member_id: number;
-  proposal: string;
-  bid_amount: number;
+  proposal: string | null;
+  bid_amount: number | null;
   estimated_days: number | null;
+  requirement_ids: number[];
+  work_dates: string[];
   status: BidStatus;
   created_at: string;
   updated_at: string;
@@ -178,33 +205,44 @@ export interface ProjectRequirement {
   updated_at: string;
 }
 
-// ----- Packages -----
-
-export interface Package {
+export interface RequirementItem {
   id: number;
-  name: string;
-  description: string | null;
-  price: number;
-  hours: number;
-  features: string[];
-  is_active: boolean;
+  requirement_id: number;
+  title: string;
+  is_completed: boolean;
+  completed_at: string | null;
   sort_order: number;
-}
-
-export type PurchaseStatus = "active" | "exhausted" | "expired" | "cancelled";
-
-export interface PackagePurchase {
-  id: number;
-  package_id: number;
-  client_id: number;
-  user_id: string;
-  hours_total: number;
-  hours_used: number;
-  status: PurchaseStatus;
-  expires_at: string | null;
-  payment_ref: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type AssignmentStatus = "proposed" | "counter" | "accepted" | "rejected";
+
+export interface RequirementAssignment {
+  id: number;
+  requirement_id: number;
+  project_id: number;
+  member_id: number;
+  proposed_cost: number;
+  member_cost: number | null;
+  status: AssignmentStatus;
+  created_at: string;
+  updated_at: string;
+  member_name?: string;
+  member_photo_url?: string | null;
+  requirement_title?: string;
+}
+
+export interface ProjectCancellationVote {
+  id: number;
+  request_id: number;
+  member_id: number;
+  user_id: string;
+  vote: "approve" | "reject";
+  comment: string | null;
+  created_at: string;
+  member_name?: string;
+  member_photo_url?: string | null;
 }
 
 // ----- Invoices -----
@@ -435,7 +473,18 @@ export interface PublicMember {
 export type NotificationType =
   | "order_created"
   | "member_confirmed"
-  | "client_accepted";
+  | "client_accepted"
+  | "project_invitation"
+  | "project_confirmed"
+  | "requirement_deleted"
+  | "cancellation_requested"
+  | "cancellation_vote"
+  | "cancellation_resolved"
+  | "project_all_completed"
+  | "payment_submitted"
+  | "payment_confirmed"
+  | "member_penalty"
+  | "member_blocked";
 
 export interface Notification {
   id: number;
@@ -455,8 +504,7 @@ export interface EmailList {
   id: number;
   name: string;
   description: string | null;
-  client_id: number | null;
-  created_by: string | null;
+  created_by: string;
   created_at: string;
   updated_at: string;
   contact_count?: number;
@@ -488,7 +536,7 @@ export interface EmailCampaign {
   total_recipients: number;
   total_sent: number;
   total_failed: number;
-  created_by: string | null;
+  created_by: string;
   sent_at: string | null;
   created_at: string;
   updated_at: string;

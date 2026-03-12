@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { requireRole, isErrorResponse } from "@/lib/auth/guards";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; contactId: string }> }
 ) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { id, contactId } = await params;
+  const listId = Number(id);
+
+  // Verify list ownership
+  const isAdmin = auth.role === "admin";
+  const ownerCheck = await query(
+    `SELECT id FROM email_lists WHERE id = $1 ${isAdmin ? "" : "AND created_by = $2"}`,
+    isAdmin ? [listId] : [listId, auth.userId]
+  );
+  if (ownerCheck.rows.length === 0) {
+    return NextResponse.json({ error: "List not found" }, { status: 404 });
+  }
+
   const body = await req.json();
 
   const fields: string[] = [];
@@ -23,7 +39,7 @@ export async function PATCH(
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  values.push(Number(contactId), Number(id));
+  values.push(Number(contactId), listId);
   const result = await query(
     `UPDATE email_contacts
      SET ${fields.join(", ")}
@@ -43,11 +59,25 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; contactId: string }> }
 ) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { id, contactId } = await params;
+  const listId = Number(id);
+
+  // Verify list ownership
+  const isAdmin = auth.role === "admin";
+  const ownerCheck = await query(
+    `SELECT id FROM email_lists WHERE id = $1 ${isAdmin ? "" : "AND created_by = $2"}`,
+    isAdmin ? [listId] : [listId, auth.userId]
+  );
+  if (ownerCheck.rows.length === 0) {
+    return NextResponse.json({ error: "List not found" }, { status: 404 });
+  }
 
   const result = await query(
     "DELETE FROM email_contacts WHERE id = $1 AND list_id = $2",
-    [Number(contactId), Number(id)]
+    [Number(contactId), listId]
   );
 
   if ((result.rowCount ?? 0) === 0) {

@@ -82,7 +82,8 @@ CREATE TABLE IF NOT EXISTS members (
   photo_url  TEXT,
   position_id BIGINT REFERENCES positions(id) ON DELETE SET NULL,
   hourly_rate DECIMAL(10,2),
-  is_active  BOOLEAN NOT NULL DEFAULT TRUE
+  is_active  BOOLEAN NOT NULL DEFAULT TRUE,
+  is_blocked_from_projects BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 ALTER TABLE users
@@ -204,12 +205,14 @@ CREATE TABLE IF NOT EXISTS tickets (
   user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
   service_id      BIGINT REFERENCES services(id) ON DELETE SET NULL,
   member_id       BIGINT REFERENCES members(id) ON DELETE SET NULL,
+  client_id       BIGINT REFERENCES clients(id) ON DELETE SET NULL,
   title           VARCHAR(255) NOT NULL,
   description     TEXT,
   status          VARCHAR(30) NOT NULL DEFAULT 'pending'
-                  CHECK (status IN ('pending','confirmed','in_progress','completed','cancelled')),
-  scheduled_at    TIMESTAMPTZ,
+                  CHECK (status IN ('pending','confirmed','in_progress','completed','cancelled','withdrawn')),
+  deadline        DATE,
   completed_at    TIMESTAMPTZ,
+  cancellation_reason TEXT,
   estimated_hours DECIMAL(10,2),
   actual_hours    DECIMAL(10,2),
   estimated_cost  DECIMAL(10,2),
@@ -220,8 +223,9 @@ CREATE TABLE IF NOT EXISTS tickets (
 
 CREATE INDEX IF NOT EXISTS idx_tickets_user ON tickets(user_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_member ON tickets(member_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_client ON tickets(client_id) WHERE client_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
-CREATE INDEX IF NOT EXISTS idx_tickets_scheduled ON tickets(scheduled_at) WHERE scheduled_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tickets_deadline ON tickets(deadline) WHERE deadline IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS ticket_time_slots (
   id          BIGSERIAL PRIMARY KEY,
@@ -267,10 +271,15 @@ CREATE TABLE IF NOT EXISTS projects (
   budget_max         DECIMAL(10,2),
   deadline           DATE,
   status             VARCHAR(30) NOT NULL DEFAULT 'draft'
-                     CHECK (status IN ('draft','open','in_progress','review','completed','cancelled','on_hold')),
+                     CHECK (status IN ('draft','open','in_progress','review','completed','cancelled','on_hold','closed')),
   is_private         BOOLEAN NOT NULL DEFAULT FALSE,
   share_token        VARCHAR(64) UNIQUE,
   cancellation_reason TEXT,
+  final_cost         DECIMAL(10,2),
+  confirmed_at       TIMESTAMPTZ,
+  completion_notified_at TIMESTAMPTZ,
+  review_deadline    DATE,
+  penalty_applied    BOOLEAN NOT NULL DEFAULT FALSE,
   CONSTRAINT valid_budget CHECK (budget_min IS NULL OR budget_max IS NULL OR budget_min <= budget_max)
 );
 
@@ -284,11 +293,13 @@ CREATE TABLE IF NOT EXISTS project_bids (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   project_id      BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   member_id       BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-  proposal        TEXT NOT NULL,
-  bid_amount      DECIMAL(10,2) NOT NULL,
+  proposal        TEXT,
+  bid_amount      DECIMAL(10,2),
   estimated_days  INT,
+  requirement_ids BIGINT[] DEFAULT '{}',
+  work_dates      DATE[] DEFAULT '{}',
   status          VARCHAR(20) NOT NULL DEFAULT 'pending'
-                  CHECK (status IN ('pending','accepted','rejected')),
+                  CHECK (status IN ('invited','pending','accepted','rejected')),
   UNIQUE(project_id, member_id)
 );
 
@@ -308,6 +319,37 @@ CREATE TABLE IF NOT EXISTS project_requirements (
 
 CREATE INDEX IF NOT EXISTS idx_pr_project ON project_requirements(project_id);
 
+CREATE TABLE IF NOT EXISTS requirement_items (
+  id              BIGSERIAL PRIMARY KEY,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  requirement_id  BIGINT NOT NULL REFERENCES project_requirements(id) ON DELETE CASCADE,
+  title           VARCHAR(255) NOT NULL,
+  is_completed    BOOLEAN NOT NULL DEFAULT FALSE,
+  completed_at    TIMESTAMPTZ,
+  sort_order      INT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_ri_requirement ON requirement_items(requirement_id);
+
+CREATE TABLE IF NOT EXISTS requirement_assignments (
+  id              BIGSERIAL PRIMARY KEY,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  requirement_id  BIGINT NOT NULL REFERENCES project_requirements(id) ON DELETE CASCADE,
+  project_id      BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  member_id       BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  proposed_cost   DECIMAL(10,2) NOT NULL,
+  member_cost     DECIMAL(10,2),
+  status          VARCHAR(20) NOT NULL DEFAULT 'proposed'
+                  CHECK (status IN ('proposed','counter','accepted','rejected')),
+  UNIQUE(requirement_id, member_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ra_requirement ON requirement_assignments(requirement_id);
+CREATE INDEX IF NOT EXISTS idx_ra_project ON requirement_assignments(project_id);
+CREATE INDEX IF NOT EXISTS idx_ra_member ON requirement_assignments(member_id);
+
 CREATE TABLE IF NOT EXISTS project_cancellation_requests (
   id            BIGSERIAL PRIMARY KEY,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -323,91 +365,37 @@ CREATE TABLE IF NOT EXISTS project_cancellation_requests (
 CREATE INDEX IF NOT EXISTS idx_pcr_project ON project_cancellation_requests(project_id);
 CREATE INDEX IF NOT EXISTS idx_pcr_status ON project_cancellation_requests(status);
 
--- =====================================================
--- 9. PACKAGES
--- =====================================================
-
-CREATE TABLE IF NOT EXISTS packages (
+CREATE TABLE IF NOT EXISTS project_cancellation_votes (
   id          BIGSERIAL PRIMARY KEY,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  name        VARCHAR(255) NOT NULL,
-  description TEXT,
-  price       DECIMAL(10,2) NOT NULL,
-  hours       DECIMAL(10,2) NOT NULL,
-  features    TEXT[],
-  is_active   BOOLEAN NOT NULL DEFAULT TRUE,
-  sort_order  INT NOT NULL DEFAULT 0
+  request_id  BIGINT NOT NULL REFERENCES project_cancellation_requests(id) ON DELETE CASCADE,
+  member_id   BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  user_id     UUID NOT NULL REFERENCES users(id),
+  vote        VARCHAR(10) NOT NULL CHECK (vote IN ('approve', 'reject')),
+  comment     TEXT,
+  UNIQUE(request_id, member_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_packages_active ON packages(is_active);
+CREATE INDEX IF NOT EXISTS idx_pcv_request ON project_cancellation_votes(request_id);
+CREATE INDEX IF NOT EXISTS idx_pcv_member ON project_cancellation_votes(member_id);
 
-CREATE TABLE IF NOT EXISTS package_purchases (
-  id           BIGSERIAL PRIMARY KEY,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  package_id   BIGINT NOT NULL REFERENCES packages(id),
-  client_id    BIGINT NOT NULL REFERENCES clients(id),
-  user_id      UUID NOT NULL REFERENCES users(id),
-  hours_total  DECIMAL(10,2) NOT NULL,
-  hours_used   DECIMAL(10,2) NOT NULL DEFAULT 0,
-  status       VARCHAR(20) NOT NULL DEFAULT 'active'
-               CHECK (status IN ('active','exhausted','expired','cancelled')),
-  expires_at   TIMESTAMPTZ,
-  payment_ref  VARCHAR(255)
-);
-
-CREATE INDEX IF NOT EXISTS idx_pp_client ON package_purchases(client_id);
-CREATE INDEX IF NOT EXISTS idx_pp_user ON package_purchases(user_id);
-CREATE INDEX IF NOT EXISTS idx_pp_status ON package_purchases(status);
-
-CREATE TABLE IF NOT EXISTS package_requests (
-  id             BIGSERIAL PRIMARY KEY,
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  purchase_id    BIGINT NOT NULL REFERENCES package_purchases(id) ON DELETE CASCADE,
-  client_id      BIGINT NOT NULL REFERENCES clients(id),
-  service_id     BIGINT REFERENCES services(id),
-  title          VARCHAR(255) NOT NULL,
-  description    TEXT,
-  hours_requested DECIMAL(10,2),
-  status         VARCHAR(20) NOT NULL DEFAULT 'pending'
-                 CHECK (status IN ('pending','approved','in_progress','completed','rejected')),
-  resolved_at    TIMESTAMPTZ
-);
-
-CREATE INDEX IF NOT EXISTS idx_preq_purchase ON package_requests(purchase_id);
-CREATE INDEX IF NOT EXISTS idx_preq_client ON package_requests(client_id);
-CREATE INDEX IF NOT EXISTS idx_preq_status ON package_requests(status);
-
-CREATE TABLE IF NOT EXISTS package_assignments (
-  id          BIGSERIAL PRIMARY KEY,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  request_id  BIGINT NOT NULL REFERENCES package_requests(id) ON DELETE CASCADE,
-  member_id   BIGINT NOT NULL REFERENCES members(id),
-  hours_assigned DECIMAL(10,2) NOT NULL,
-  status      VARCHAR(20) NOT NULL DEFAULT 'assigned'
-              CHECK (status IN ('assigned','in_progress','completed'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_pa_request ON package_assignments(request_id);
-CREATE INDEX IF NOT EXISTS idx_pa_member ON package_assignments(member_id);
-CREATE INDEX IF NOT EXISTS idx_pa_status ON package_assignments(status);
-
-CREATE TABLE IF NOT EXISTS package_progress_updates (
+CREATE TABLE IF NOT EXISTS project_payments (
   id            BIGSERIAL PRIMARY KEY,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  assignment_id BIGINT NOT NULL REFERENCES package_assignments(id) ON DELETE CASCADE,
-  author_id     UUID NOT NULL REFERENCES users(id),
-  content       TEXT NOT NULL,
-  hours_logged  DECIMAL(10,2)
+  project_id    BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  amount        DECIMAL(10,2) NOT NULL,
+  proof_url     TEXT NOT NULL,
+  status        VARCHAR(20) NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending','confirmed','rejected')),
+  confirmed_by  UUID REFERENCES users(id),
+  confirmed_at  TIMESTAMPTZ,
+  notes         TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_ppu_assignment ON package_progress_updates(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_pp_project ON project_payments(project_id);
 
 -- =====================================================
--- 10. INVOICES
+-- 9. INVOICES
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS invoices (
@@ -658,13 +646,12 @@ CREATE TABLE IF NOT EXISTS email_lists (
   id          SERIAL PRIMARY KEY,
   name        VARCHAR(200) NOT NULL,
   description TEXT,
-  client_id   INT,
-  created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_by  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_el_client ON email_lists(client_id);
+CREATE INDEX IF NOT EXISTS idx_el_created_by ON email_lists(created_by);
 
 CREATE TABLE IF NOT EXISTS email_contacts (
   id         SERIAL PRIMARY KEY,
@@ -692,13 +679,14 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   total_recipients INT NOT NULL DEFAULT 0,
   total_sent       INT NOT NULL DEFAULT 0,
   total_failed     INT NOT NULL DEFAULT 0,
-  created_by       UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_by       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   sent_at          TIMESTAMPTZ,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_ecamp_status ON email_campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_ecamp_created_by ON email_campaigns(created_by);
 
 CREATE TABLE IF NOT EXISTS email_sends (
   id              SERIAL PRIMARY KEY,
@@ -765,18 +753,6 @@ CREATE TRIGGER trg_project_bids_updated BEFORE UPDATE ON project_bids FOR EACH R
 
 DROP TRIGGER IF EXISTS trg_project_requirements_updated ON project_requirements;
 CREATE TRIGGER trg_project_requirements_updated BEFORE UPDATE ON project_requirements FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
-DROP TRIGGER IF EXISTS trg_packages_updated ON packages;
-CREATE TRIGGER trg_packages_updated BEFORE UPDATE ON packages FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
-DROP TRIGGER IF EXISTS trg_package_purchases_updated ON package_purchases;
-CREATE TRIGGER trg_package_purchases_updated BEFORE UPDATE ON package_purchases FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
-DROP TRIGGER IF EXISTS trg_package_requests_updated ON package_requests;
-CREATE TRIGGER trg_package_requests_updated BEFORE UPDATE ON package_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
-DROP TRIGGER IF EXISTS trg_package_assignments_updated ON package_assignments;
-CREATE TRIGGER trg_package_assignments_updated BEFORE UPDATE ON package_assignments FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 DROP TRIGGER IF EXISTS trg_invoices_updated ON invoices;
 CREATE TRIGGER trg_invoices_updated BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at();

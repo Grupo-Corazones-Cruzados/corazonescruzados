@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { requireRole, isErrorResponse } from "@/lib/auth/guards";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { id } = await params;
   const campaignId = Number(id);
 
+  const isAdmin = auth.role === "admin";
   const campaignResult = await query<{
     name: string;
     subject: string;
@@ -25,8 +30,8 @@ export async function GET(
             el.name AS list_name
      FROM email_campaigns ec
      LEFT JOIN email_lists el ON el.id = ec.list_id
-     WHERE ec.id = $1`,
-    [campaignId]
+     WHERE ec.id = $1 ${isAdmin ? "" : "AND ec.created_by = $2"}`,
+    isAdmin ? [campaignId] : [campaignId, auth.userId]
   );
 
   if (campaignResult.rows.length === 0) {

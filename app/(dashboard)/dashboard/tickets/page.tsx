@@ -17,7 +17,8 @@ interface TicketRow {
   client_name: string | null;
   member_name: string | null;
   service_name: string | null;
-  scheduled_at: string | null;
+  deadline: string | null;
+  work_days: string[];
   created_at: string;
 }
 
@@ -25,9 +26,9 @@ const STATUS_TABS = [
   { value: "all", label: "Todos" },
   { value: "pending", label: "Pendientes" },
   { value: "confirmed", label: "Confirmados" },
-  { value: "in_progress", label: "En Progreso" },
   { value: "completed", label: "Completados" },
   { value: "cancelled", label: "Cancelados" },
+  { value: "withdrawn", label: "Desistidos" },
 ];
 
 const BADGE_VARIANT: Record<string, "default" | "success" | "warning" | "error" | "info"> = {
@@ -36,6 +37,7 @@ const BADGE_VARIANT: Record<string, "default" | "success" | "warning" | "error" 
   in_progress: "info",
   completed: "success",
   cancelled: "error",
+  withdrawn: "default",
 };
 
 export default function TicketsPage() {
@@ -112,9 +114,22 @@ export default function TicketsPage() {
     },
     {
       key: "date",
-      header: "Fecha",
+      header: "Fecha límite",
       render: (r) =>
-        r.scheduled_at ? formatDate(r.scheduled_at) : formatDate(r.created_at),
+        r.deadline ? formatDate(r.deadline) : "—",
+    },
+    {
+      key: "work_days",
+      header: "Próximo día",
+      render: (r) => {
+        if (!r.work_days || r.work_days.length === 0) return "—";
+        const today = new Date().toISOString().split("T")[0];
+        const next = r.work_days
+          .map((d: string) => d.split("T")[0])
+          .sort()
+          .find((d: string) => d >= today);
+        return next ? formatDate(next) : <span className={styles.workDaysPast}>Completado</span>;
+      },
     },
   ];
 

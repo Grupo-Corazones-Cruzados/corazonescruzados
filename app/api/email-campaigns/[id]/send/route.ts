@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { requireRole, isErrorResponse } from "@/lib/auth/guards";
 import { sendZeptoMailEmail } from "@/lib/integrations/zeptomail";
 
 interface CampaignRow {
@@ -22,13 +23,17 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { id } = await params;
   const campaignId = Number(id);
 
-  // 1. Get campaign and verify it's a draft
+  // 1. Get campaign and verify it's a draft + ownership
+  const isAdmin = auth.role === "admin";
   const campaignResult = await query<CampaignRow>(
-    "SELECT id, subject, html_body, signature_html, list_id, category_filter, status FROM email_campaigns WHERE id = $1",
-    [campaignId]
+    `SELECT id, subject, html_body, signature_html, list_id, category_filter, status FROM email_campaigns WHERE id = $1 ${isAdmin ? "" : "AND created_by = $2"}`,
+    isAdmin ? [campaignId] : [campaignId, auth.userId]
   );
 
   if (campaignResult.rows.length === 0) {

@@ -3,43 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
 import Spinner from "@/components/ui/Spinner";
 import type { PublicMember } from "@/lib/types";
 import styles from "./page.module.css";
-
-const PACKAGES = [
-  {
-    name: "Basic",
-    price: "$99",
-    hours: "5 horas",
-    features: ["Soporte por email", "1 proyecto activo", "Facturación básica"],
-  },
-  {
-    name: "Enfoque",
-    price: "$249",
-    hours: "15 horas",
-    features: [
-      "Soporte prioritario",
-      "3 proyectos activos",
-      "Facturación completa",
-      "Google Calendar",
-    ],
-    featured: true,
-  },
-  {
-    name: "Elite",
-    price: "$499",
-    hours: "40 horas",
-    features: [
-      "Soporte dedicado",
-      "Proyectos ilimitados",
-      "Facturación automática",
-      "Google Calendar",
-      "Marketplace incluido",
-    ],
-  },
-];
 
 // --- Member Gallery (client component) ---
 
@@ -81,13 +47,7 @@ function MemberGallery() {
   return (
     <div className={styles.membersGrid}>
       {members.map((m) => (
-        <a
-          key={m.id}
-          className={styles.memberCard}
-          href={formatWhatsAppUrl(m.phone!)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <div key={m.id} className={styles.memberCard}>
           {m.photo_url ? (
             <img
               src={m.photo_url}
@@ -117,13 +77,30 @@ function MemberGallery() {
               </div>
             )}
           </div>
-          <span className={styles.waButton}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
-            Contactar
-          </span>
-        </a>
+          <div className={styles.memberActions}>
+            <Link href={`/portfolio/${m.id}`} className={styles.cvButton}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+              Ver CV
+            </Link>
+            <a
+              className={styles.waButton}
+              href={formatWhatsAppUrl(m.phone!)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+              Contactar
+            </a>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -228,51 +205,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Packages */}
-      <section id="paquetes" className={styles.section} style={{ background: "var(--bg-secondary)" }}>
-        <div className="container">
-          <div className={styles.sectionHeader}>
-            <h2 className="heading-2">Paquetes</h2>
-            <p className="text-secondary">
-              Elige el plan que mejor se adapte a tus necesidades.
-            </p>
-          </div>
-          <div className={styles.packagesGrid}>
-            {PACKAGES.map((pkg) => (
-              <Card
-                key={pkg.name}
-                padding="lg"
-                className={pkg.featured ? styles.featuredPkg : ""}
-              >
-                <h3 className={styles.pkgName}>{pkg.name}</h3>
-                <div className={styles.pkgPrice}>
-                  <span className={styles.priceAmount}>{pkg.price}</span>
-                  <span className={styles.priceUnit}>/ {pkg.hours}</span>
-                </div>
-                <ul className={styles.pkgFeatures}>
-                  {pkg.features.map((f) => (
-                    <li key={f} className={styles.pkgFeature}>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 8l3 3 5-6" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/auth?tab=register" style={{ width: "100%" }}>
-                  <Button
-                    variant={pkg.featured ? "primary" : "secondary"}
-                    style={{ width: "100%" }}
-                  >
-                    Seleccionar
-                  </Button>
-                </Link>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FAQ */}
       <section id="faq" className={styles.section}>
         <div className="container" style={{ maxWidth: "680px" }}>
@@ -282,30 +214,45 @@ export default function HomePage() {
           <div className={styles.faqList}>
             <details className={styles.faqItem}>
               <summary className={styles.faqQuestion}>
-                ¿Cómo funciona el sistema de tickets?
+                ¿Qué es Corazones Cruzados?
               </summary>
               <p className={styles.faqAnswer}>
-                Creas un ticket seleccionando el servicio y miembro del equipo.
-                Reservas un horario disponible y recibes confirmación con enlace
-                de Google Meet.
+                Es una plataforma de desarrollo humano que conecta personas que
+                buscan soluciones con profesionales capacitados. Puedes agendar
+                consultorías, publicar proyectos o adquirir productos y
+                servicios del marketplace, todo desde un solo lugar.
               </p>
             </details>
             <details className={styles.faqItem}>
               <summary className={styles.faqQuestion}>
-                ¿Puedo publicar proyectos?
+                ¿Qué servicios puedo encontrar?
               </summary>
               <p className={styles.faqAnswer}>
-                Sí. Los clientes publican proyectos y los miembros envían
-                propuestas con precio y tiempo estimado.
+                Puedes agendar sesiones individuales con un profesional a través
+                de tickets, publicar proyectos para recibir propuestas de
+                nuestro equipo, o explorar el marketplace donde encontrarás
+                productos y trabajos listos para adquirir.
               </p>
             </details>
             <details className={styles.faqItem}>
               <summary className={styles.faqQuestion}>
-                ¿Cómo funcionan los paquetes de horas?
+                ¿La plataforma es gratuita?
               </summary>
               <p className={styles.faqAnswer}>
-                Compras un paquete con horas incluidas. Luego creas solicitudes
-                que se descuentan de tu saldo.
+                Crear tu cuenta y explorar la plataforma es completamente gratis.
+                Solo pagas cuando contratas un servicio, apruebas una propuesta
+                de proyecto o realizas una compra en el marketplace.
+              </p>
+            </details>
+            <details className={styles.faqItem}>
+              <summary className={styles.faqQuestion}>
+                ¿Cómo me registro y comienzo?
+              </summary>
+              <p className={styles.faqAnswer}>
+                Haz clic en &quot;Crear cuenta&quot;, completa tus datos y
+                verifica tu correo electrónico. Una vez dentro, podrás explorar
+                los servicios disponibles, agendar tickets, publicar proyectos y
+                comprar en el marketplace desde tu panel de control.
               </p>
             </details>
           </div>

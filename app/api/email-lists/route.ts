@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { requireRole, isErrorResponse } from "@/lib/auth/guards";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   try {
+    const isAdmin = auth.role === "admin";
     const result = await query(
       `SELECT el.*,
               COALESCE(c.contact_count, 0)::int AS contact_count,
@@ -14,7 +19,9 @@ export async function GET(req: NextRequest) {
          FROM email_contacts ec
          WHERE ec.list_id = el.id
        ) c ON true
-       ORDER BY el.created_at DESC`
+       ${isAdmin ? "" : "WHERE el.created_by = $1"}
+       ORDER BY el.created_at DESC`,
+      isAdmin ? [] : [auth.userId]
     );
 
     return NextResponse.json({ data: result.rows });
@@ -28,6 +35,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { name, description } = await req.json();
 
   if (!name || typeof name !== "string" || !name.trim()) {
@@ -38,7 +48,7 @@ export async function POST(req: NextRequest) {
     `INSERT INTO email_lists (name, description, created_by)
      VALUES ($1, $2, $3)
      RETURNING *`,
-    [name.trim(), description || null, null]
+    [name.trim(), description || null, auth.userId]
   );
 
   return NextResponse.json({ data: result.rows[0] }, { status: 201 });

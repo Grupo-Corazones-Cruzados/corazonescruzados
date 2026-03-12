@@ -3,7 +3,7 @@
 import { getInitials } from "@/lib/utils";
 import styles from "./Avatar.module.css";
 
-type Size = "sm" | "md" | "lg" | "xl";
+type Size = "xs" | "sm" | "md" | "lg" | "xl";
 
 interface AvatarProps {
   src?: string | null;

@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { requireRole, isErrorResponse } from "@/lib/auth/guards";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireRole(req, "member", "admin");
+  if (isErrorResponse(auth)) return auth;
+
   const { id } = await params;
   const listId = Number(id);
 
+  const isAdmin = auth.role === "admin";
   const listResult = await query<{ name: string }>(
-    "SELECT name FROM email_lists WHERE id = $1",
-    [listId]
+    `SELECT name FROM email_lists WHERE id = $1 ${isAdmin ? "" : "AND created_by = $2"}`,
+    isAdmin ? [listId] : [listId, auth.userId]
   );
   if (listResult.rows.length === 0) {
     return NextResponse.json({ error: "List not found" }, { status: 404 });

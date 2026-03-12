@@ -121,6 +121,108 @@ export async function sendTicketConfirmationEmail(
   return resend.emails.send({ from: FROM_EMAIL, to: email, subject: `Ticket confirmado: ${ticketTitle} — Corazones Cruzados`, html });
 }
 
+export async function sendTicketWorkDaysUpdatedEmail(
+  email: string,
+  clientName: string,
+  ticketId: number,
+  ticketTitle: string,
+  memberName: string,
+  reason: string,
+  newDates: string[]
+) {
+  const datesHtml = newDates
+    .map(
+      (d) =>
+        `<span style="display:inline-block;background:#EFF6FF;color:#4B2D8E;padding:4px 12px;border-radius:9999px;font-size:13px;font-weight:500;margin:2px 4px;">${d}</span>`
+    )
+    .join(" ");
+
+  const html = emailShell(`
+    <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Días de Trabajo Actualizados</h1>
+    <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">Ticket #${ticketId}: ${ticketTitle}</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">
+      Hola <strong>${clientName}</strong>,<br/>
+      <strong>${memberName}</strong> ha actualizado los días de trabajo de tu ticket.
+    </p>
+    <div style="padding:16px;background:#F9FAFB;border-radius:12px;margin:0 0 20px;">
+      <p style="color:#6B7280;font-size:12px;margin:0 0 8px;">Motivo del cambio:</p>
+      <p style="color:#374151;font-size:14px;line-height:1.6;margin:0;">${reason}</p>
+    </div>
+    <p style="color:#6B7280;font-size:13px;margin:0 0 8px;">Nuevos días de trabajo:</p>
+    <div style="margin:0 0 24px;">${datesHtml}</div>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${APP_URL}/dashboard/tickets/${ticketId}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+        Ver ticket
+      </a>
+    </div>
+  `);
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Días actualizados — Ticket #${ticketId}: ${ticketTitle}`,
+    html,
+  });
+}
+
+export async function sendTicketStatusChangeEmail(
+  email: string,
+  clientName: string,
+  ticketId: number,
+  ticketTitle: string,
+  memberName: string,
+  newStatus: "completed" | "cancelled" | "withdrawn",
+  reason?: string
+) {
+  const statusLabels: Record<string, string> = {
+    completed: "Completado",
+    cancelled: "Cancelado",
+    withdrawn: "Desistido",
+  };
+  const statusColors: Record<string, { bg: string; color: string }> = {
+    completed: { bg: "#ECFDF5", color: "#059669" },
+    cancelled: { bg: "#FEF2F2", color: "#DC2626" },
+    withdrawn: { bg: "#F3F4F6", color: "#6B7280" },
+  };
+  const statusMessages: Record<string, string> = {
+    completed: "ha marcado como completado",
+    cancelled: "ha cancelado",
+    withdrawn: "ha desistido de",
+  };
+
+  const label = statusLabels[newStatus];
+  const colors = statusColors[newStatus];
+  const message = statusMessages[newStatus];
+
+  const html = emailShell(`
+    <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Ticket ${label}</h1>
+    <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">Ticket #${ticketId}: ${ticketTitle}</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">
+      Hola <strong>${clientName}</strong>,<br/>
+      <strong>${memberName}</strong> ${message} tu ticket.
+    </p>
+    <div style="text-align:center;margin:0 0 24px;">
+      <span style="display:inline-block;background:${colors.bg};color:${colors.color};padding:8px 20px;border-radius:9999px;font-size:14px;font-weight:600;">
+        ${label}
+      </span>
+    </div>
+    ${reason ? `<div style="padding:16px;background:#F9FAFB;border-radius:12px;margin:0 0 24px;">
+      <p style="color:#6B7280;font-size:12px;margin:0 0 8px;">Motivo:</p>
+      <p style="color:#374151;font-size:14px;line-height:1.6;margin:0;">${reason}</p>
+    </div>` : ""}
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${APP_URL}/dashboard/tickets/${ticketId}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+        Ver ticket
+      </a>
+    </div>
+  `);
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Ticket #${ticketId} ${label} — ${ticketTitle}`,
+    html,
+  });
+}
+
 export async function sendProjectUpdateEmail(
   email: string,
   projectTitle: string,
@@ -177,6 +279,71 @@ export async function sendOrderConfirmationEmail(
     </div>
   `);
   return resend.emails.send({ from: FROM_EMAIL, to: email, subject: `Pedido #${orderId} confirmado — Corazones Cruzados`, html });
+}
+
+// ----- Project invitation & confirmation emails -----
+
+export async function sendProjectInvitationEmail(
+  email: string,
+  memberName: string,
+  projectTitle: string,
+  clientName: string,
+  projectId: number
+) {
+  const html = emailShell(`
+    <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Invitación a Proyecto</h1>
+    <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">Has sido invitado a participar</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px;">
+      Hola <strong>${memberName}</strong>,<br/>
+      <strong>${clientName}</strong> te ha invitado al proyecto <strong style="color:#4B2D8E;">${projectTitle}</strong>.
+      Revisa los detalles y envía tu propuesta.
+    </p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${APP_URL}/dashboard/projects/${projectId}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+        Ver proyecto
+      </a>
+    </div>
+  `);
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Invitación al proyecto: ${projectTitle} — Corazones Cruzados`,
+    html,
+  });
+}
+
+export async function sendProjectConfirmedEmail(
+  email: string,
+  recipientName: string,
+  projectTitle: string,
+  finalCost: string,
+  projectId: number
+) {
+  const html = emailShell(`
+    <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Proyecto Confirmado</h1>
+    <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">¡El proyecto ha sido confirmado!</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px;">
+      Hola <strong>${recipientName}</strong>,<br/>
+      El proyecto <strong style="color:#4B2D8E;">${projectTitle}</strong> ha sido confirmado.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+      <tr>
+        <td style="padding:10px 0;color:#6B7280;font-size:14px;border-bottom:1px solid #F3F4F6;">Costo final</td>
+        <td style="padding:10px 0;color:#111827;font-size:18px;font-weight:700;text-align:right;border-bottom:1px solid #F3F4F6;">${finalCost}</td>
+      </tr>
+    </table>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${APP_URL}/dashboard/projects/${projectId}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+        Ver proyecto
+      </a>
+    </div>
+  `);
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Proyecto confirmado: ${projectTitle} — Corazones Cruzados`,
+    html,
+  });
 }
 
 // ----- Campaign emails -----

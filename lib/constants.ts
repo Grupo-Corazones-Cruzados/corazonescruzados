@@ -1,4 +1,4 @@
-import type { OrderStatus, ProjectStatus, UserRole } from "./types";
+import type { BidStatus, OrderStatus, ProjectStatus, UserRole } from "./types";
 
 // ----- Roles -----
 
@@ -18,6 +18,7 @@ export const TICKET_STATUS_LABELS: Record<string, string> = {
   in_progress: "En Progreso",
   completed: "Completado",
   cancelled: "Cancelado",
+  withdrawn: "Desistido",
 };
 
 // ----- Project statuses -----
@@ -30,6 +31,23 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   completed: "Completado",
   cancelled: "Cancelado",
   on_hold: "En Espera",
+  closed: "Cerrado",
+};
+
+// ----- Bid statuses -----
+
+export const BID_STATUS_LABELS: Record<BidStatus, string> = {
+  invited: "Invitado",
+  pending: "Pendiente",
+  accepted: "Aceptada",
+  rejected: "Rechazada",
+};
+
+export const BID_STATUS_BADGE: Record<BidStatus, "default" | "success" | "warning" | "error" | "info"> = {
+  invited: "info",
+  pending: "warning",
+  accepted: "success",
+  rejected: "error",
 };
 
 export const ACTIVE_PROJECT_STATES: ProjectStatus[] = [
@@ -40,6 +58,7 @@ export const ACTIVE_PROJECT_STATES: ProjectStatus[] = [
 export const TERMINAL_PROJECT_STATES: ProjectStatus[] = [
   "completed",
   "cancelled",
+  "closed",
 ];
 
 export const PRIVATE_PROJECT_FLOW: ProjectStatus[] = [
@@ -131,6 +150,30 @@ export const CAMPAIGN_STATUS_BADGE: Record<string, "default" | "success" | "warn
   sending: "warning",
   sent: "success",
   failed: "error",
+};
+
+// ----- Cancellation limits -----
+
+export const MAX_CANCELLATION_REQUESTS = 3;
+
+// ----- Project completion -----
+
+export const PENALTY_PERCENTAGE = 10;
+export const MAX_EXTENSION_DAYS = 30;
+
+export const PAYMENT_ACCOUNT = {
+  name: "González Muyulema Luis Fernando",
+  bank: "Banco Guayaquil",
+  type: "Ahorro",
+  number: "0039785956",
+  email: "LFGONZALEZM0@OUTLOOK.COM",
+  ci: "0930095922",
+};
+
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  confirmed: "Confirmado",
+  rejected: "Rechazado",
 };
 
 // ----- Days of week -----

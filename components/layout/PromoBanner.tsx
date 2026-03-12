@@ -16,7 +16,7 @@ export default function PromoBanner() {
       <div className={styles.content}>
         <span className={styles.badge}>5% OFF</span>
         <p className={styles.text}>
-          Crea tu cuenta y obtén un <strong>5% de descuento</strong> en todos nuestros servicios, paquetes de horas y proyectos.
+          Crea tu cuenta y obtén un <strong>5% de descuento</strong> en todos nuestros servicios y proyectos.
         </p>
         <Link href="/auth?tab=register" className={styles.cta}>
           Crear cuenta
