@@ -1,5 +1,5 @@
 -- =====================================================
--- CORAZONES CRUZADOS v2 — DATABASE SCHEMA (33 tables)
+-- CORAZONES CRUZADOS v2 — DATABASE SCHEMA (34 tables)
 -- All tables: English, plural, snake_case
 -- =====================================================
 
@@ -105,6 +105,22 @@ CREATE TABLE IF NOT EXISTS clients (
   phone      VARCHAR(50),
   company    VARCHAR(255)
 );
+
+-- =====================================================
+-- 3b. CLIENT ↔ MEMBER ASSOCIATIONS
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS client_members (
+  id         BIGSERIAL PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  client_id  BIGINT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  member_id  BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  source     VARCHAR(50) NOT NULL DEFAULT 'manual',
+  UNIQUE(client_id, member_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cm_client ON client_members(client_id);
+CREATE INDEX IF NOT EXISTS idx_cm_member ON client_members(member_id);
 
 -- =====================================================
 -- 4. POSITIONS & SERVICES

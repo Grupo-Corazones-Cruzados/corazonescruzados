@@ -346,6 +346,40 @@ export async function sendProjectConfirmedEmail(
   });
 }
 
+// ----- Client invitation email -----
+
+export async function sendClientInvitationEmail(
+  email: string,
+  memberName: string,
+  projectTitle?: string
+) {
+  const url = `${APP_URL}/auth?tab=register`;
+  const contextLine = projectTitle
+    ? `Te ha invitado al proyecto <strong style="color:#4B2D8E;">${projectTitle}</strong>.`
+    : `Te ha invitado a colaborar en la plataforma.`;
+  const html = emailShell(`
+    <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Invitación a Corazones Cruzados</h1>
+    <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">Has recibido una invitación</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px;">
+      Hola,<br/>
+      <strong>${memberName}</strong> ${contextLine}
+      Crea tu cuenta para comenzar:
+    </p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;">
+        Crear mi cuenta
+      </a>
+    </div>
+    <p style="color:#9CA3AF;font-size:12px;margin:24px 0 0;">Si ya tienes una cuenta, simplemente inicia sesión.</p>
+  `);
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `${memberName} te invita a Corazones Cruzados`,
+    html,
+  });
+}
+
 // ----- Campaign emails -----
 
 export async function sendCampaignEmail(

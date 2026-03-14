@@ -422,14 +422,14 @@
 }
 
 /* Desktop: show sidebar */
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
   .preview {
     display: block;
   }
 }
 
 /* Mobile */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .productGrid {
     grid-template-columns: 1fr;
   }

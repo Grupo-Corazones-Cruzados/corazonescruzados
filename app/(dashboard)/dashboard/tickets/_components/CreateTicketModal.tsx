@@ -48,6 +48,7 @@ export default function CreateTicketModal({ open, onClose, onCreated }: Props) {
   const [serviceId, setServiceId] = useState("");
   const [memberId, setMemberId] = useState("");
   const [clientId, setClientId] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
   const [deadline, setDeadline] = useState("");
   const [estimatedHours, setEstimatedHours] = useState("");
   const [estimatedCost, setEstimatedCost] = useState("");
@@ -164,12 +165,15 @@ export default function CreateTicketModal({ open, onClose, onCreated }: Props) {
     c.email.toLowerCase().includes(clientSearch.toLowerCase())
   );
 
+  const isEmailLike = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+
   const reset = () => {
     setTitle("");
     setDescription("");
     setServiceId("");
     setMemberId("");
     setClientId("");
+    setClientEmail("");
     setMemberSearch("");
     setClientSearch("");
     setDeadline("");
@@ -196,9 +200,13 @@ export default function CreateTicketModal({ open, onClose, onCreated }: Props) {
       if (mode === "member") {
         payload.member_id = memberId ? Number(memberId) : undefined;
       } else {
-        // Client mode: member assigns themselves, selects a client
+        // Client mode: member assigns themselves, selects a client or invites by email
         payload.member_id = user?.member_id || undefined;
-        payload.client_id = clientId ? Number(clientId) : undefined;
+        if (clientId) {
+          payload.client_id = Number(clientId);
+        } else if (clientEmail) {
+          payload.client_email = clientEmail;
+        }
       }
 
       const res = await fetch("/api/tickets", {
@@ -220,6 +228,7 @@ export default function CreateTicketModal({ open, onClose, onCreated }: Props) {
     setMode(newMode);
     setMemberId("");
     setClientId("");
+    setClientEmail("");
     setMemberSearch("");
     setClientSearch("");
     setServiceId("");
@@ -367,7 +376,7 @@ export default function CreateTicketModal({ open, onClose, onCreated }: Props) {
           </div>
         )}
 
-        {/* --- Client mode: pick a client --- */}
+        {/* --- Client mode: pick a client or invite by email --- */}
         {mode === "client" && (
           <div className={styles.fieldGroup} ref={clientRef}>
             <span className={styles.label}>Cliente</span>
@@ -375,12 +384,6 @@ export default function CreateTicketModal({ open, onClose, onCreated }: Props) {
               <div className={styles.autoField}>
                 <Spinner size="sm" />
                 <span>Cargando clientes...</span>
-              </div>
-            ) : clients.length === 0 ? (
-              <div className={styles.autoField}>
-                <span className={styles.disabledHint}>
-                  No tienes clientes asociados por proyectos
-                </span>
               </div>
             ) : selectedClient ? (
               <div className={styles.selectedMember}>
@@ -407,12 +410,36 @@ export default function CreateTicketModal({ open, onClose, onCreated }: Props) {
                   </svg>
                 </button>
               </div>
+            ) : clientEmail ? (
+              <div className={styles.emailChip}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className={styles.emailIcon}>
+                  <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M2 7l10 6 10-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <div className={styles.selectedMemberInfo}>
+                  <span className={styles.selectedMemberName}>{clientEmail}</span>
+                  <span className={styles.selectedMemberPos}>Se enviará invitación</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.clearBtn}
+                  onClick={() => {
+                    setClientEmail("");
+                    setClientSearch("");
+                  }}
+                  aria-label="Quitar email"
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
             ) : (
               <div className={styles.memberSearchWrap}>
                 <input
                   type="text"
                   className={styles.memberSearchInput}
-                  placeholder="Buscar cliente..."
+                  placeholder="Buscar cliente o escribir email..."
                   value={clientSearch}
                   onChange={(e) => {
                     setClientSearch(e.target.value);
@@ -422,27 +449,50 @@ export default function CreateTicketModal({ open, onClose, onCreated }: Props) {
                 />
                 {clientDropdownOpen && (
                   <div className={styles.memberDropdown}>
-                    {filteredClients.length === 0 ? (
-                      <div className={styles.memberEmpty}>Sin resultados</div>
-                    ) : (
-                      filteredClients.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          className={styles.memberOption}
-                          onClick={() => {
-                            setClientId(String(c.id));
-                            setClientSearch("");
-                            setClientDropdownOpen(false);
-                          }}
-                        >
-                          <Avatar name={c.name} size="sm" />
-                          <div className={styles.memberOptionInfo}>
-                            <span className={styles.memberOptionName}>{c.name}</span>
-                            <span className={styles.memberOptionPos}>{c.email}</span>
-                          </div>
-                        </button>
-                      ))
+                    {filteredClients.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={styles.memberOption}
+                        onClick={() => {
+                          setClientId(String(c.id));
+                          setClientSearch("");
+                          setClientDropdownOpen(false);
+                        }}
+                      >
+                        <Avatar name={c.name} size="sm" />
+                        <div className={styles.memberOptionInfo}>
+                          <span className={styles.memberOptionName}>{c.name}</span>
+                          <span className={styles.memberOptionPos}>{c.email}</span>
+                        </div>
+                      </button>
+                    ))}
+
+                    {filteredClients.length === 0 && clientSearch && !isEmailLike(clientSearch) && (
+                      <div className={styles.memberEmpty}>
+                        Escribe un email válido para invitar un nuevo cliente
+                      </div>
+                    )}
+
+                    {isEmailLike(clientSearch) && (
+                      <button
+                        type="button"
+                        className={`${styles.memberOption} ${styles.inviteOption}`}
+                        onClick={() => {
+                          setClientEmail(clientSearch);
+                          setClientSearch("");
+                          setClientDropdownOpen(false);
+                        }}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className={styles.emailIcon}>
+                          <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                          <path d="M2 7l10 6 10-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <div className={styles.memberOptionInfo}>
+                          <span className={styles.memberOptionName}>Invitar {clientSearch}</span>
+                          <span className={styles.memberOptionPos}>Enviar invitación por correo</span>
+                        </div>
+                      </button>
                     )}
                   </div>
                 )}

@@ -10,6 +10,7 @@ export async function listProjects(params: {
   status?: string;
   client_id?: number;
   member_id?: number;
+  assigned_member_id?: number;
   invited_member_id?: number;
   visible_to_member_id?: number;
   search?: string;
@@ -34,6 +35,10 @@ export async function listProjects(params: {
   if (params.member_id) {
     conds.push(`EXISTS (SELECT 1 FROM project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${idx++} AND pb2.status = 'accepted')`);
     vals.push(params.member_id);
+  }
+  if (params.assigned_member_id) {
+    conds.push(`p.assigned_member_id = $${idx++}`);
+    vals.push(params.assigned_member_id);
   }
   if (params.invited_member_id) {
     conds.push(`EXISTS (SELECT 1 FROM project_bids pb3 WHERE pb3.project_id = p.id AND pb3.member_id = $${idx++} AND pb3.status != 'rejected')`);
@@ -116,14 +121,17 @@ export async function createProject(data: {
   description?: string;
   budget_min?: number;
   budget_max?: number;
+  final_cost?: number;
   deadline?: string;
   is_private?: boolean;
+  status?: string;
+  assigned_member_id?: number;
 }): Promise<Project> {
   const shareToken = data.is_private ? null : randomHex(32);
   const result = await query(
     `INSERT INTO projects
-       (client_id, title, description, budget_min, budget_max, deadline, is_private, share_token)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       (client_id, title, description, budget_min, budget_max, final_cost, deadline, is_private, share_token, assigned_member_id, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
      RETURNING *`,
     [
       data.client_id,
@@ -131,9 +139,12 @@ export async function createProject(data: {
       data.description || null,
       data.budget_min ?? null,
       data.budget_max ?? null,
+      data.final_cost ?? null,
       data.deadline || null,
       data.is_private ?? false,
       shareToken,
+      data.assigned_member_id ?? null,
+      data.status ?? "draft",
     ]
   );
   return result.rows[0];
@@ -153,6 +164,7 @@ export async function updateProject(
     is_private: boolean;
     assigned_member_id: number;
     cancellation_reason: string;
+    final_cost: number;
   }>
 ): Promise<Project | null> {
   const fields: string[] = [];

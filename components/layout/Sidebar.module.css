@@ -17,6 +17,16 @@
   width: var(--sidebar-collapsed-width);
 }
 
+/* --- Mobile top bar (hamburger) --- */
+.mobileBar {
+  display: none;
+}
+
+/* --- Mobile close button inside sidebar --- */
+.mobileClose {
+  display: none;
+}
+
 /* --- Top bar --- */
 .top {
   height: var(--header-height);
@@ -28,12 +38,24 @@
   flex-shrink: 0;
 }
 
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .logo {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
   overflow: hidden;
+}
+
+.mobileLogo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .logoImg {
@@ -202,8 +224,120 @@
   color: var(--text-primary);
 }
 
-@media (max-width: 768px) {
+/* --- Mobile open state (needs standalone rule for CSS Modules export) --- */
+.mobileOpen {
+  transform: translateX(0) !important;
+}
+
+/* --- Overlay --- */
+.overlay {
+  display: none;
+}
+
+/* --- Hamburger button --- */
+.hamburger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  transition: background var(--duration-fast) var(--ease);
+}
+.hamburger:hover {
+  background: var(--gray-100);
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 1024px) {
+  /* Show mobile top bar */
+  .mobileBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    padding: 0 var(--space-4);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border-light);
+    z-index: 40;
+  }
+
+  /* Hide sidebar by default, slide in when open */
   .sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--duration-normal) var(--ease);
+    width: 260px;
+    z-index: 60;
+  }
+
+  .sidebar.collapsed {
+    width: 260px;
+  }
+
+  /* Show close button inside sidebar on mobile */
+  .mobileClose {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    transition: all var(--duration-fast) var(--ease);
+  }
+  .mobileClose:hover {
+    background: var(--gray-100);
+    color: var(--text-primary);
+  }
+
+  /* Hide collapse toggle on mobile */
+  .toggle {
     display: none;
+  }
+
+  /* Force expanded state on mobile sidebar */
+  .collapsed .logoText,
+  .collapsed .logo {
+    display: flex;
+    opacity: 1;
+    width: auto;
+  }
+
+  .collapsed .link {
+    justify-content: flex-start;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .collapsed .top {
+    padding: 0 var(--space-4);
+    justify-content: space-between;
+  }
+
+  .collapsed .user {
+    justify-content: flex-start;
+  }
+
+  .collapsed .bottomActions {
+    flex-direction: row;
+  }
+
+  .collapsed .signOut {
+    justify-content: flex-start;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* Overlay backdrop */
+  .overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 55;
+    backdrop-filter: blur(2px);
   }
 }

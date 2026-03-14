@@ -44,6 +44,17 @@ export async function POST(req: NextRequest) {
     );
     const user = result.rows[0];
 
+    // If a client record exists for this email (created via member invitation),
+    // update its name with the user's real name
+    const clientName = [first_name, last_name].filter(Boolean).join(" ");
+    if (clientName) {
+      await query(
+        `UPDATE clients SET name = $1
+         WHERE LOWER(email) = LOWER($2) AND name = email`,
+        [clientName, email.toLowerCase()]
+      );
+    }
+
     // Create verification token
     const token = randomHex(32);
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h

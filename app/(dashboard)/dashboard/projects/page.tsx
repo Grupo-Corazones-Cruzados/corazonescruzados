@@ -25,6 +25,7 @@ interface ProjectRow {
   accepted_members: AcceptedMemberSummary[];
   budget_min: number | null;
   budget_max: number | null;
+  final_cost: number | null;
   deadline: string | null;
   updated_at: string;
 }
@@ -64,7 +65,7 @@ export default function ProjectsPage() {
   const [showCreate, setShowCreate] = useState(false);
 
   const tabs = isMember
-    ? [{ value: "invited", label: "Invitado" }, ...BASE_TABS]
+    ? [{ value: "my_member", label: "Mis Proyectos" }, { value: "invited", label: "Invitado" }, ...BASE_TABS]
     : isClient
     ? [{ value: "mine", label: "Mis Proyectos" }, ...BASE_TABS]
     : BASE_TABS;
@@ -72,7 +73,9 @@ export default function ProjectsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), per_page: "15" });
-    if (statusFilter === "invited" && isMember && user?.member_id) {
+    if (statusFilter === "my_member" && isMember && user?.member_id) {
+      params.set("assigned_member_id", String(user.member_id));
+    } else if (statusFilter === "invited" && isMember && user?.member_id) {
       params.set("invited_member_id", String(user.member_id));
     } else if (statusFilter === "mine" && isClient) {
       params.set("my_projects", "true");
@@ -158,6 +161,11 @@ export default function ProjectsPage() {
       },
     },
     {
+      key: "final_cost",
+      header: "Costo Final",
+      render: (r) => (r.final_cost ? formatCurrency(r.final_cost) : "—"),
+    },
+    {
       key: "deadline",
       header: "Fecha límite",
       render: (r) => (r.deadline ? formatDate(r.deadline) : "—"),
@@ -170,7 +178,7 @@ export default function ProjectsPage() {
         title="Proyectos"
         description="Publica y gestiona proyectos."
         action={
-          !isMember ? <Button onClick={() => setShowCreate(true)}>Nuevo Proyecto</Button> : undefined
+          <Button onClick={() => setShowCreate(true)}>Nuevo Proyecto</Button>
         }
       />
 
@@ -204,7 +212,7 @@ export default function ProjectsPage() {
           onRowClick={(r) => router.push(`/dashboard/projects/${r.id}`)}
           emptyTitle="Sin proyectos"
           emptyDescription="No hay proyectos que mostrar. Crea uno nuevo para comenzar."
-          emptyAction={!isMember ? <Button onClick={() => setShowCreate(true)}>Nuevo Proyecto</Button> : undefined}
+          emptyAction={<Button onClick={() => setShowCreate(true)}>Nuevo Proyecto</Button>}
         />
       )}
 

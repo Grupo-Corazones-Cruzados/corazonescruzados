@@ -302,7 +302,7 @@ input, textarea, select {
    RESPONSIVE
    ===================================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   :root {
     --header-height: 56px;
     --sidebar-width: 0px;

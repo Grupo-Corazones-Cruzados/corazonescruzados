@@ -53,6 +53,16 @@ export interface Client {
   updated_at: string;
 }
 
+// ----- Client-Member Associations -----
+
+export interface ClientMember {
+  id: number;
+  client_id: number;
+  member_id: number;
+  source: string;
+  created_at: string;
+}
+
 // ----- Positions -----
 
 export interface Position {

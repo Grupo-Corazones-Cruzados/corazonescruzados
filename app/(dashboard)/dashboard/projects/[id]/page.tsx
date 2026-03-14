@@ -10,6 +10,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import {
   PROJECT_STATUS_LABELS,
   PUBLIC_PROJECT_TRANSITIONS,
+  MEMBER_CREATOR_TRANSITIONS,
   BID_STATUS_LABELS,
   BID_STATUS_BADGE,
   PAYMENT_ACCOUNT,
@@ -253,6 +254,11 @@ export default function ProjectDetailPage() {
   const [counterCost, setCounterCost] = useState("");
   const [savingCounter, setSavingCounter] = useState(false);
 
+  // Edit final cost (member creator)
+  const [editingFinalCost, setEditingFinalCost] = useState(false);
+  const [finalCostInput, setFinalCostInput] = useState("");
+  const [savingFinalCost, setSavingFinalCost] = useState(false);
+
   const isClient = user?.role === "client";
   const isMember = user?.role === "member";
   const isAdmin = user?.role === "admin";
@@ -360,9 +366,17 @@ export default function ProjectDetailPage() {
     return () => document.removeEventListener("mousedown", handle);
   }, []);
 
-  // Available transitions
+  // Is the current member the creator of this project?
+  const isMemberCreator = isMember && user?.member_id != null && project?.assigned_member_id === user.member_id;
+
+  // The project owner: admin, matching client, or the member who created the project
+  const isOwner = isAdmin || (isClient && project?.client_email?.toLowerCase() === user?.email?.toLowerCase()) || isMemberCreator;
+
+  // Available transitions (member creators get their own set)
   const availableTransitions = project
-    ? PUBLIC_PROJECT_TRANSITIONS[project.status as ProjectStatus] || []
+    ? (isMemberCreator
+        ? MEMBER_CREATOR_TRANSITIONS[project.status as ProjectStatus]
+        : PUBLIC_PROJECT_TRANSITIONS[project.status as ProjectStatus]) || []
     : [];
 
   // Estimated cost from accepted bids
@@ -383,12 +397,12 @@ export default function ProjectDetailPage() {
   );
   const hasUntakenReqs = requirements.some((r) => !takenReqIds.has(r.id));
 
-  // Can invite: private project, owner or admin, and untaken requirements exist
+  // Can invite: private project, owner (including member creator), and untaken requirements exist
   const canInvite =
     project &&
     project.is_private &&
     hasUntakenReqs &&
-    (isClient || isAdmin);
+    isOwner;
 
   // Status change
   const handleStatusChange = async () => {
@@ -455,6 +469,27 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Update final cost (member creator)
+  const handleUpdateFinalCost = async () => {
+    if (!finalCostInput || Number(finalCostInput) <= 0) return;
+    setSavingFinalCost(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ final_cost: Number(finalCostInput) }),
+      });
+      if (!res.ok) throw new Error();
+      toast("Costo actualizado", "success");
+      setEditingFinalCost(false);
+      fetchProject();
+    } catch {
+      toast("Error al actualizar costo", "error");
+    } finally {
+      setSavingFinalCost(false);
+    }
+  };
+
   // Completion action
   const handleCompletionAction = async () => {
     if (!completionAction) return;
@@ -505,8 +540,21 @@ export default function ProjectDetailPage() {
         fetchProject();
         fetchRequirements();
       } else if (completionAction === "confirm_completion") {
-        setShowCompletionModal(false);
-        setShowPaymentModal(true);
+        if (isMemberCreator) {
+          const res = await fetch(`/api/projects/${projectId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "completed" }),
+          });
+          if (!res.ok) throw new Error();
+          toast("Proyecto completado", "success");
+          setShowCompletionModal(false);
+          setCompletionAction(null);
+          fetchProject();
+        } else {
+          setShowCompletionModal(false);
+          setShowPaymentModal(true);
+        }
       } else if (completionAction === "request_review") {
         if (!reviewDeadline) {
           toast("Debes especificar una fecha de revisión", "error");
@@ -1080,6 +1128,28 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Self-assign requirement (member creator)
+  const handleSelfAssignReq = async (reqId: number) => {
+    if (!myBid) return;
+    try {
+      const res = await fetch(`/api/projects/${projectId}/self-assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requirement_id: reqId, bid_id: myBid.id }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        toast(json.error || "Error", "error");
+        return;
+      }
+      toast("Requerimiento asignado", "success");
+      fetchBids();
+      fetchRequirements();
+    } catch {
+      toast("Error al asignar", "error");
+    }
+  };
+
   // Delete project
   const handleDelete = async () => {
     if (!confirm("¿Estás seguro de eliminar este proyecto?")) return;
@@ -1105,9 +1175,6 @@ export default function ProjectDetailPage() {
   const totalReqCost = requirements.reduce((s, r) => s + (r.cost || 0), 0);
   const completedReqs = requirements.filter((r) => r.completed_at).length;
   const allReqsCompleted = requirements.length > 0 && completedReqs === requirements.length;
-
-  // Only the project owner (matching client) or admin can change visibility/publish
-  const isOwner = isAdmin || (isClient && project.client_email?.toLowerCase() === user?.email?.toLowerCase());
 
   // Current member's bid (if any)
   const myBid = isMember && user?.member_id
@@ -1145,7 +1212,7 @@ export default function ProjectDetailPage() {
                 Copiar enlace
               </Button>
             )}
-            {isAdmin && (
+            {(isAdmin || (isMemberCreator && !project.confirmed_at)) && (
               <Button variant="danger" size="sm" onClick={handleDelete}>
                 Eliminar
               </Button>
@@ -1191,6 +1258,36 @@ export default function ProjectDetailPage() {
                       Publicar privado
                     </Button>
                   </div>
+                ) : isMemberCreator && !["completed", "cancelled", "closed"].includes(project.status) ? (
+                  project.is_private && hasUntakenReqs ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleTogglePrivacy(false)}
+                      isLoading={publishing}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </svg>
+                      Cambiar a compartido
+                    </Button>
+                  ) : !project.is_private ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleTogglePrivacy(true)}
+                      isLoading={publishing}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      Cambiar a privado
+                    </Button>
+                  ) : null
                 ) : project.status === "open" && !project.is_private && isOwner ? (
                   <Button
                     size="sm"
@@ -1203,21 +1300,6 @@ export default function ProjectDetailPage() {
                       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
                     Cambiar a privado
-                  </Button>
-                ) : project.status === "in_progress" && project.is_private && !project.confirmed_at && isOwner ? (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => handlePublish(false)}
-                    isLoading={publishing}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                    Cambiar a compartido
                   </Button>
                 ) : project.confirmed_at && isOwner ? (
                   <Button
@@ -1246,7 +1328,7 @@ export default function ProjectDetailPage() {
                       </>
                     )}
                   </Button>
-                ) : availableTransitions.length > 0 && isOwner ? (
+                ) : availableTransitions.length > 0 && isOwner && !isMemberCreator ? (
                   <div className={styles.statusRow}>
                     <Select
                       options={availableTransitions.map((s) => ({
@@ -1279,7 +1361,7 @@ export default function ProjectDetailPage() {
           </Card>
 
           {/* Completion banner for owner */}
-          {allReqsCompleted && project.confirmed_at && isOwner && (project.status === "in_progress" || project.status === "review") && (
+          {allReqsCompleted && (project.confirmed_at || isMemberCreator) && isOwner && (project.status === "in_progress" || project.status === "review" || (isMemberCreator && project.status === "open")) && (
             <Card>
               <div className={styles.completionBanner}>
                 <div className={styles.completionIcon}>✓</div>
@@ -1514,7 +1596,7 @@ export default function ProjectDetailPage() {
                       (b) => b.status === "accepted" && b.requirement_ids?.includes(req.id)
                     );
                     const canEditReq = !isTerminal && (isMyReq || (isOwner && !hasAcceptedBid));
-                    const canToggleReq = !isTerminal && isMyReq;
+                    const canToggleReq = !isTerminal && (isMyReq || (isMemberCreator && !hasAcceptedBid));
                     const canDeleteReq = isOwner && !hasAcceptedBid && !project.confirmed_at;
                     return (
                     <div
@@ -1652,8 +1734,23 @@ export default function ProjectDetailPage() {
                         {project.confirmed_at && req.cost != null && (
                           <span className={styles.reqCost}>{formatCurrency(req.cost)}</span>
                         )}
+                        {/* Self-assign button: member creator, untaken requirement, not terminal */}
+                        {isMemberCreator && !hasAcceptedBid && !isTerminal && !myReqIdsSet.has(req.id) && (
+                          <button
+                            className={styles.assignBtn}
+                            title="Asignarme este requerimiento"
+                            onClick={() => handleSelfAssignReq(req.id)}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                              <circle cx="9" cy="7" r="4" />
+                              <line x1="19" y1="8" x2="19" y2="14" />
+                              <line x1="22" y1="11" x2="16" y2="11" />
+                            </svg>
+                          </button>
+                        )}
                         {/* Assign button: owner, confirmed project, untaken requirement, not terminal */}
-                        {isOwner && project.confirmed_at && !hasAcceptedBid && !isTerminal && acceptedMembers.length > 0 && (
+                        {isOwner && project.confirmed_at && !hasAcceptedBid && !isTerminal && acceptedMembers.length > 0 && !isMemberCreator && (
                           <button
                             className={styles.assignBtn}
                             title="Asignar miembro"
@@ -1978,24 +2075,72 @@ export default function ProjectDetailPage() {
           </Card>
 
           {/* Cost section */}
-          {(estimatedCost > 0 || project.confirmed_at) && (
+          {(estimatedCost > 0 || project.confirmed_at || (isMemberCreator && project.final_cost != null)) && (
             <Card>
               <h3 className={styles.cardTitle}>Costos</h3>
               <div className={styles.detailStack}>
-                {project.confirmed_at && project.final_cost != null ? (
+                {(project.confirmed_at || isMemberCreator) && project.final_cost != null ? (
                   <>
                     <div className={styles.detailBlock}>
                       <span className={styles.detailLabel}>Costo final</span>
-                      <span className={styles.costValue}>
-                        {formatCurrency(project.final_cost)}
-                      </span>
+                      {editingFinalCost && isMemberCreator ? (
+                        <div className={styles.inlineEdit}>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={finalCostInput}
+                            onChange={(e) => setFinalCostInput(e.target.value)}
+                            placeholder="0.00"
+                          />
+                          <div className={styles.inlineEditActions}>
+                            <Button
+                              size="sm"
+                              onClick={handleUpdateFinalCost}
+                              isLoading={savingFinalCost}
+                              disabled={!finalCostInput || Number(finalCostInput) <= 0}
+                            >
+                              Guardar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingFinalCost(false)}
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className={styles.costValueRow}>
+                          <span className={styles.costValue}>
+                            {formatCurrency(project.final_cost)}
+                          </span>
+                          {isMemberCreator && !["completed", "cancelled", "closed"].includes(project.status) && (
+                            <button
+                              className={styles.editCostBtn}
+                              onClick={() => {
+                                setFinalCostInput(String(project.final_cost));
+                                setEditingFinalCost(true);
+                              }}
+                              title="Editar costo"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                <path d="m15 5 4 4" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className={styles.detailBlock}>
-                      <span className={styles.detailLabel}>Confirmado</span>
-                      <span className={styles.detailValue}>
-                        {formatDate(project.confirmed_at)}
-                      </span>
-                    </div>
+                    {project.confirmed_at && (
+                      <div className={styles.detailBlock}>
+                        <span className={styles.detailLabel}>Confirmado</span>
+                        <span className={styles.detailValue}>
+                          {formatDate(project.confirmed_at)}
+                        </span>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className={styles.detailBlock}>
@@ -2014,7 +2159,7 @@ export default function ProjectDetailPage() {
             <Card>
               <h3 className={styles.cardTitle}>Acciones</h3>
               <div className={styles.actionList}>
-                {canConfirm && (
+                {canConfirm && !isMemberCreator && (
                   <Button
                     size="sm"
                     style={{ width: "100%" }}
@@ -2337,49 +2482,64 @@ export default function ProjectDetailPage() {
             </>
           )}
           {completionAction === "confirm_completion" && (
-            <>
-              <p className={styles.reqModalHint}>
-                Para completar el proyecto debes realizar el pago a la siguiente cuenta:
-              </p>
-              <div className={styles.bankInfo}>
-                <div className={styles.bankRow}>
-                  <span className={styles.bankLabel}>Titular</span>
-                  <span className={styles.bankValue}>{PAYMENT_ACCOUNT.name}</span>
-                </div>
-                <div className={styles.bankRow}>
-                  <span className={styles.bankLabel}>Banco</span>
-                  <span className={styles.bankValue}>{PAYMENT_ACCOUNT.bank}</span>
-                </div>
-                <div className={styles.bankRow}>
-                  <span className={styles.bankLabel}>Tipo</span>
-                  <span className={styles.bankValue}>{PAYMENT_ACCOUNT.type}</span>
-                </div>
-                <div className={styles.bankRow}>
-                  <span className={styles.bankLabel}>Cuenta #</span>
-                  <span className={styles.bankValue}>{PAYMENT_ACCOUNT.number}</span>
-                </div>
-                <div className={styles.bankRow}>
-                  <span className={styles.bankLabel}>Email</span>
-                  <span className={styles.bankValue}>{PAYMENT_ACCOUNT.email}</span>
-                </div>
-                <div className={styles.bankRow}>
-                  <span className={styles.bankLabel}>CI</span>
-                  <span className={styles.bankValue}>{PAYMENT_ACCOUNT.ci}</span>
-                </div>
-                {project?.final_cost != null && (
+            isMemberCreator ? (
+              <>
+                <p className={styles.reqModalHint}>
+                  ¿Confirmas que todos los requerimientos están completados y deseas finalizar el proyecto?
+                </p>
+                <Button
+                  style={{ width: "100%", marginTop: "var(--space-3)" }}
+                  onClick={handleCompletionAction}
+                  isLoading={savingCompletion}
+                >
+                  Confirmar completación
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className={styles.reqModalHint}>
+                  Para completar el proyecto debes realizar el pago a la siguiente cuenta:
+                </p>
+                <div className={styles.bankInfo}>
                   <div className={styles.bankRow}>
-                    <span className={styles.bankLabel}>Monto</span>
-                    <span className={styles.bankValueBold}>{formatCurrency(project.final_cost)}</span>
+                    <span className={styles.bankLabel}>Titular</span>
+                    <span className={styles.bankValue}>{PAYMENT_ACCOUNT.name}</span>
                   </div>
-                )}
-              </div>
-              <Button
-                style={{ width: "100%", marginTop: "var(--space-3)" }}
-                onClick={handleCompletionAction}
-              >
-                Proceder al pago
-              </Button>
-            </>
+                  <div className={styles.bankRow}>
+                    <span className={styles.bankLabel}>Banco</span>
+                    <span className={styles.bankValue}>{PAYMENT_ACCOUNT.bank}</span>
+                  </div>
+                  <div className={styles.bankRow}>
+                    <span className={styles.bankLabel}>Tipo</span>
+                    <span className={styles.bankValue}>{PAYMENT_ACCOUNT.type}</span>
+                  </div>
+                  <div className={styles.bankRow}>
+                    <span className={styles.bankLabel}>Cuenta #</span>
+                    <span className={styles.bankValue}>{PAYMENT_ACCOUNT.number}</span>
+                  </div>
+                  <div className={styles.bankRow}>
+                    <span className={styles.bankLabel}>Email</span>
+                    <span className={styles.bankValue}>{PAYMENT_ACCOUNT.email}</span>
+                  </div>
+                  <div className={styles.bankRow}>
+                    <span className={styles.bankLabel}>CI</span>
+                    <span className={styles.bankValue}>{PAYMENT_ACCOUNT.ci}</span>
+                  </div>
+                  {project?.final_cost != null && (
+                    <div className={styles.bankRow}>
+                      <span className={styles.bankLabel}>Monto</span>
+                      <span className={styles.bankValueBold}>{formatCurrency(project.final_cost)}</span>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  style={{ width: "100%", marginTop: "var(--space-3)" }}
+                  onClick={handleCompletionAction}
+                >
+                  Proceder al pago
+                </Button>
+              </>
+            )
           )}
           {completionAction === "request_review" && (
             <>

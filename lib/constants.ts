@@ -76,6 +76,14 @@ export const PUBLIC_PROJECT_TRANSITIONS: Partial<
   review: ["in_progress", "completed"],
 };
 
+export const MEMBER_CREATOR_TRANSITIONS: Partial<
+  Record<ProjectStatus, ProjectStatus[]>
+> = {
+  draft: ["in_progress", "closed"],
+  in_progress: ["review", "completed", "closed"],
+  review: ["in_progress", "completed", "closed"],
+};
+
 export type CancellationReason =
   | "no_agreement"
   | "no_budget"

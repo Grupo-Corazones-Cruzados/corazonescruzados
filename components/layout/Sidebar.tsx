@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -37,6 +37,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   if (!user) return null;
 
@@ -45,74 +51,132 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`} data-collapsed={collapsed || undefined}>
-      <div className={styles.top}>
-        <Link href="/" className={styles.logo}>
+    <>
+      {/* Mobile top bar */}
+      <div className={styles.mobileBar}>
+        <button
+          className={styles.hamburger}
+          onClick={() => setMobileOpen(true)}
+          aria-label="Abrir menú"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
+        <Link href="/dashboard" className={styles.mobileLogo}>
           <img src="/LogoCC.png" alt="GCC" className={styles.logoImg} />
-          {!collapsed && <span className={styles.logoText}>GCC</span>}
+          <span className={styles.logoText}>GCC</span>
         </Link>
-        <NotificationBell collapsed={collapsed} />
+        <NotificationBell collapsed={false} />
       </div>
 
-      <nav className={styles.nav}>
-        {visibleItems.map((item) => {
-          const isActive =
-            item.path === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.path);
-          return (
-            <Link
-              key={item.path}
-              href={item.path}
-              className={`${styles.link} ${isActive ? styles.active : ""}`}
-              title={collapsed ? item.label : undefined}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className={styles.icon}>
-                <path
-                  d={ICONS[item.icon] || ICONS.home}
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className={styles.overlay} onClick={() => setMobileOpen(false)} />
+      )}
 
-      <div className={styles.bottom}>
-        <div className={styles.user}>
-          <Avatar
-            src={user.avatar_url}
-            name={`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email}
-            size="sm"
-          />
-          {!collapsed && (
-            <div className={styles.userInfo}>
-              <span className={styles.userName}>
-                {user.first_name || user.email.split("@")[0]}
-              </span>
-              <span className={styles.userRole}>{user.role}</span>
-            </div>
-          )}
-        </div>
-        <div className={styles.bottomActions}>
-          {!collapsed && (
-            <button className={styles.signOut} onClick={signOut}>
-              Salir
-            </button>
-          )}
-          {collapsed && (
+      <aside
+        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""} ${mobileOpen ? styles.mobileOpen : ""}`}
+        data-collapsed={collapsed || undefined}
+      >
+        <div className={styles.top}>
+          <Link href="/" className={styles.logo}>
+            <img src="/LogoCC.png" alt="GCC" className={styles.logoImg} />
+            {!collapsed && <span className={styles.logoText}>GCC</span>}
+          </Link>
+          <div className={styles.topActions}>
+            <NotificationBell collapsed={collapsed} />
             <button
-              className={styles.signOut}
-              onClick={signOut}
-              title="Salir"
+              className={styles.mobileClose}
+              onClick={() => setMobileOpen(false)}
+              aria-label="Cerrar menú"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <nav className={styles.nav}>
+          {visibleItems.map((item) => {
+            const isActive =
+              item.path === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname.startsWith(item.path);
+            return (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={`${styles.link} ${isActive ? styles.active : ""}`}
+                title={collapsed ? item.label : undefined}
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className={styles.icon}>
+                  <path
+                    d={ICONS[item.icon] || ICONS.home}
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {!collapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className={styles.bottom}>
+          <div className={styles.user}>
+            <Avatar
+              src={user.avatar_url}
+              name={`${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email}
+              size="sm"
+            />
+            {!collapsed && (
+              <div className={styles.userInfo}>
+                <span className={styles.userName}>
+                  {user.first_name || user.email.split("@")[0]}
+                </span>
+                <span className={styles.userRole}>{user.role}</span>
+              </div>
+            )}
+          </div>
+          <div className={styles.bottomActions}>
+            {!collapsed && (
+              <button className={styles.signOut} onClick={signOut}>
+                Salir
+              </button>
+            )}
+            {collapsed && (
+              <button
+                className={styles.signOut}
+                onClick={signOut}
+                title="Salir"
+              >
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3M10 10h7m0 0l-3-3m3 3l-3 3"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
+            <button
+              className={styles.toggle}
+              onClick={() => setCollapsed((c) => !c)}
+              aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+              title={collapsed ? "Expandir" : "Colapsar"}
             >
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
                 <path
-                  d="M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3M10 10h7m0 0l-3-3m3 3l-3 3"
+                  d={collapsed
+                    ? "M7 4l6 6-6 6"   /* chevron right */
+                    : "M13 16l-6-6 6-6" /* chevron left */
+                  }
                   stroke="currentColor"
                   strokeWidth="1.5"
                   strokeLinecap="round"
@@ -120,28 +184,9 @@ export default function Sidebar() {
                 />
               </svg>
             </button>
-          )}
-          <button
-            className={styles.toggle}
-            onClick={() => setCollapsed((c) => !c)}
-            aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
-            title={collapsed ? "Expandir" : "Colapsar"}
-          >
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-              <path
-                d={collapsed
-                  ? "M7 4l6 6-6 6"   /* chevron right */
-                  : "M13 16l-6-6 6-6" /* chevron left */
-                }
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

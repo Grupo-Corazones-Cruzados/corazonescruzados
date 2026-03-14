@@ -5,6 +5,7 @@ import {
   updateProject,
   deleteProject,
 } from "@/lib/services/project-service";
+import { query } from "@/lib/db";
 
 export async function GET(
   req: NextRequest,
@@ -47,11 +48,24 @@ export async function DELETE(
   const auth = await requireAuth(req);
   if (isErrorResponse(auth)) return auth;
 
-  if (auth.role !== "admin") {
+  const { id } = await params;
+  const project = await getProjectById(Number(id));
+  if (!project) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Admin can always delete; member creator can delete if not confirmed
+  let isMemberCreator = false;
+  if (auth.role === "member") {
+    const userRes = await query("SELECT member_id FROM users WHERE id = $1", [auth.userId]);
+    const memberId = userRes.rows[0]?.member_id;
+    isMemberCreator = memberId != null && project.assigned_member_id === memberId;
+  }
+
+  if (auth.role !== "admin" && !(isMemberCreator && !project.confirmed_at)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
   const ok = await deleteProject(Number(id));
   if (!ok) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

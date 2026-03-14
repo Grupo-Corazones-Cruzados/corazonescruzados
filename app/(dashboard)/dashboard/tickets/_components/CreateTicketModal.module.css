@@ -247,6 +247,31 @@
   color: var(--text-tertiary);
 }
 
+/* Email chip (invited client by email) */
+.emailChip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1.5px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-light);
+}
+
+.emailIcon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+/* Invite option in dropdown */
+.inviteOption {
+  background: var(--accent-light);
+}
+
+.inviteOption:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent) !important;
+}
+
 /* Native select for services */
 .nativeSelect {
   width: 100%;

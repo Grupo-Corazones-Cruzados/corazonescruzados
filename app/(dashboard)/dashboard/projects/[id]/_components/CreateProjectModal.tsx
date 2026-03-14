@@ -24,12 +24,15 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
   const { user } = useAuth();
   const { toast } = useToast();
   const isClient = user?.role === "client";
+  const isMember = user?.role === "member" && user.member_id != null;
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
+  const [finalCost, setFinalCost] = useState("");
   const [deadline, setDeadline] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -42,16 +45,32 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
 
   const loadOptions = useCallback(async () => {
     try {
-      const cRes = await fetch("/api/clients?per_page=200");
-      const cJson = await cRes.json();
-
-      const clientList = ((cJson.data || []) as ClientOption[]).sort((a, b) =>
-        a.name.localeCompare(b.name)
-      );
-      setClients(clientList);
-
-      // Auto-select client for client role users
-      if (isClient && user?.email) {
+      if (isMember && user?.member_id) {
+        // Members: load only associated clients
+        const cRes = await fetch(`/api/members/${user.member_id}/clients`);
+        const cJson = await cRes.json();
+        setClients(
+          ((cJson.data || []) as ClientOption[]).sort((a, b) =>
+            a.name.localeCompare(b.name)
+          )
+        );
+      } else if (!isClient) {
+        // Admin: load all clients
+        const cRes = await fetch("/api/clients?per_page=200");
+        const cJson = await cRes.json();
+        setClients(
+          ((cJson.data || []) as ClientOption[]).sort((a, b) =>
+            a.name.localeCompare(b.name)
+          )
+        );
+      } else if (isClient && user?.email) {
+        // Client: auto-select themselves
+        const cRes = await fetch("/api/clients?per_page=200");
+        const cJson = await cRes.json();
+        const clientList = ((cJson.data || []) as ClientOption[]).sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+        setClients(clientList);
         const match = clientList.find(
           (c) => c.email.toLowerCase() === user.email.toLowerCase()
         );
@@ -60,7 +79,7 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
     } catch {
       /* silent */
     }
-  }, [isClient, user?.email]);
+  }, [isClient, isMember, user?.email, user?.member_id]);
 
   useEffect(() => {
     if (open) loadOptions();
@@ -84,32 +103,51 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
       c.email.toLowerCase().includes(clientSearch.toLowerCase())
   );
 
+  const isEmailLike = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+
   const reset = () => {
     setTitle("");
     setDescription("");
     if (!isClient) setClientId("");
+    setClientEmail("");
     setClientSearch("");
     setBudgetMin("");
     setBudgetMax("");
+    setFinalCost("");
     setDeadline("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!isClient && !clientId) || !title) return;
+    if (!title) return;
+    // Validation: need a client (selected or by email)
+    if (!isClient && !clientId && !clientEmail) return;
+
     setSaving(true);
     try {
+      const payload: Record<string, unknown> = {
+        title,
+        description: description || undefined,
+        deadline: deadline || undefined,
+      };
+
+      if (clientId) {
+        payload.client_id = Number(clientId);
+      } else if (clientEmail) {
+        payload.client_email = clientEmail;
+      }
+
+      if (isMember) {
+        payload.final_cost = finalCost ? Number(finalCost) : undefined;
+      } else {
+        payload.budget_min = budgetMin ? Number(budgetMin) : undefined;
+        payload.budget_max = budgetMax ? Number(budgetMax) : undefined;
+      }
+
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_id: Number(clientId),
-          title,
-          description: description || undefined,
-          budget_min: budgetMin ? Number(budgetMin) : undefined,
-          budget_max: budgetMax ? Number(budgetMax) : undefined,
-          deadline: deadline || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error();
       reset();
@@ -155,6 +193,8 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
         {showClientPicker && (
           <div className={styles.fieldGroup} ref={clientRef}>
             <span className={styles.label}>Cliente *</span>
+
+            {/* Show selected client */}
             {selectedClient ? (
               <div className={styles.selectedMember}>
                 <Avatar name={selectedClient.name} size="sm" />
@@ -180,12 +220,40 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
                   </svg>
                 </button>
               </div>
+
+            /* Show email chip (member invited by email) */
+            ) : clientEmail ? (
+              <div className={styles.emailChip}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className={styles.emailIcon}>
+                  <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M2 7l10 6 10-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <div className={styles.selectedMemberInfo}>
+                  <span className={styles.selectedMemberName}>{clientEmail}</span>
+                  <span className={styles.selectedMemberPos}>Se enviará invitación</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.clearBtn}
+                  onClick={() => {
+                    setClientEmail("");
+                    setClientSearch("");
+                  }}
+                  aria-label="Quitar email"
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+            /* Show search input with dropdown */
             ) : (
               <div className={styles.memberSearchWrap}>
                 <input
                   type="text"
                   className={styles.memberSearchInput}
-                  placeholder="Buscar cliente..."
+                  placeholder={isMember ? "Buscar cliente o escribir email..." : "Buscar cliente..."}
                   value={clientSearch}
                   onChange={(e) => {
                     setClientSearch(e.target.value);
@@ -195,27 +263,55 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
                 />
                 {clientDropdownOpen && (
                   <div className={styles.memberDropdown}>
-                    {filteredClients.length === 0 ? (
+                    {filteredClients.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={styles.memberOption}
+                        onClick={() => {
+                          setClientId(String(c.id));
+                          setClientSearch("");
+                          setClientDropdownOpen(false);
+                        }}
+                      >
+                        <Avatar name={c.name} size="sm" />
+                        <div className={styles.memberOptionInfo}>
+                          <span className={styles.memberOptionName}>{c.name}</span>
+                          <span className={styles.memberOptionPos}>{c.email}</span>
+                        </div>
+                      </button>
+                    ))}
+
+                    {/* Email invite option for members */}
+                    {isMember && filteredClients.length === 0 && clientSearch && !isEmailLike(clientSearch) && (
+                      <div className={styles.memberEmpty}>
+                        Escribe un email válido para invitar un nuevo cliente
+                      </div>
+                    )}
+
+                    {isMember && isEmailLike(clientSearch) && (
+                      <button
+                        type="button"
+                        className={`${styles.memberOption} ${styles.inviteOption}`}
+                        onClick={() => {
+                          setClientEmail(clientSearch);
+                          setClientSearch("");
+                          setClientDropdownOpen(false);
+                        }}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className={styles.emailIcon}>
+                          <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                          <path d="M2 7l10 6 10-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <div className={styles.memberOptionInfo}>
+                          <span className={styles.memberOptionName}>Invitar {clientSearch}</span>
+                          <span className={styles.memberOptionPos}>Enviar invitación por correo</span>
+                        </div>
+                      </button>
+                    )}
+
+                    {!isMember && filteredClients.length === 0 && (
                       <div className={styles.memberEmpty}>Sin resultados</div>
-                    ) : (
-                      filteredClients.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          className={styles.memberOption}
-                          onClick={() => {
-                            setClientId(String(c.id));
-                            setClientSearch("");
-                            setClientDropdownOpen(false);
-                          }}
-                        >
-                          <Avatar name={c.name} size="sm" />
-                          <div className={styles.memberOptionInfo}>
-                            <span className={styles.memberOptionName}>{c.name}</span>
-                            <span className={styles.memberOptionPos}>{c.email}</span>
-                          </div>
-                        </button>
-                      ))
                     )}
                   </div>
                 )}
@@ -234,24 +330,38 @@ export default function CreateProjectModal({ open, onClose, onCreated }: Props) 
             placeholder="Describe el proyecto..."
           />
         </div>
-        <div className={styles.row}>
+
+        {/* Budget fields: members see single "Costo final", others see min/max */}
+        {isMember ? (
           <Input
-            label="Presupuesto mínimo"
+            label="Costo final"
             type="number"
             step="0.01"
             min="0"
-            value={budgetMin}
-            onChange={(e) => setBudgetMin(e.target.value)}
+            value={finalCost}
+            onChange={(e) => setFinalCost(e.target.value)}
           />
-          <Input
-            label="Presupuesto máximo"
-            type="number"
-            step="0.01"
-            min="0"
-            value={budgetMax}
-            onChange={(e) => setBudgetMax(e.target.value)}
-          />
-        </div>
+        ) : (
+          <div className={styles.row}>
+            <Input
+              label="Presupuesto mínimo"
+              type="number"
+              step="0.01"
+              min="0"
+              value={budgetMin}
+              onChange={(e) => setBudgetMin(e.target.value)}
+            />
+            <Input
+              label="Presupuesto máximo"
+              type="number"
+              step="0.01"
+              min="0"
+              value={budgetMax}
+              onChange={(e) => setBudgetMax(e.target.value)}
+            />
+          </div>
+        )}
+
         <Input
           label="Fecha límite"
           type="date"
