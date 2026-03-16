@@ -1576,6 +1576,19 @@ export default function ProjectDetailPage() {
                 </Button>
               )}
             </div>
+            {requirements.length > 0 && (
+              <div className={styles.reqProgressWrap}>
+                <div className={styles.reqProgressBar}>
+                  <div
+                    className={`${styles.reqProgressFill} ${allReqsCompleted ? styles.reqProgressComplete : ""}`}
+                    style={{ width: `${Math.round((completedReqs / requirements.length) * 100)}%` }}
+                  />
+                </div>
+                <span className={styles.reqProgressLabel}>
+                  {Math.round((completedReqs / requirements.length) * 100)}%
+                </span>
+              </div>
+            )}
             {requirements.length === 0 && !generatingAI ? (
               <p className={styles.empty}>Sin requerimientos</p>
             ) : (

@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { path: "/dashboard/centralized-project", label: "Proyecto Centralizado", icon: "users", roles: ["member", "admin"] },
   { path: "/dashboard/automations", label: "Automatizaciones", icon: "zap", roles: ["member", "admin"] },
   { path: "/dashboard/settings", label: "Configuración", icon: "settings", roles: ["client", "member", "admin"] },
+  { path: "/dashboard/support", label: "Soporte", icon: "helpCircle", roles: ["client", "member", "admin"] },
   { path: "/dashboard/admin", label: "Admin", icon: "shield", roles: ["admin"] },
 ] as const;
 
@@ -30,6 +31,7 @@ const ICONS: Record<string, string> = {
   users: "M7 10a3 3 0 100-6 3 3 0 000 6zM1 17v-1a4 4 0 014-4h4a4 4 0 014 4v1M13 4.5a3 3 0 010 5.5M17 17v-1a4 4 0 00-3-3.87",
   settings: "M10 13a3 3 0 100-6 3 3 0 000 6zM16.5 10a6.5 6.5 0 01-.7 2.8l1.5 1.5-1.4 1.4-1.5-1.5A6.5 6.5 0 0110 16.5a6.5 6.5 0 01-4.4-1.8l-1.5 1.5-1.4-1.4 1.5-1.5A6.5 6.5 0 013.5 10a6.5 6.5 0 011.3-3.8L3.3 4.7l1.4-1.4 1.5 1.5A6.5 6.5 0 0110 3.5a6.5 6.5 0 013.8 1.3l1.5-1.5 1.4 1.4-1.5 1.5A6.5 6.5 0 0116.5 10z",
   zap: "M11 2L4 12h5l-1 6 7-10H10l1-6z",
+  helpCircle: "M10 18a8 8 0 100-16 8 8 0 000 16zM7.5 7.5a2.5 2.5 0 015 0c0 1.5-2.5 2-2.5 3.5M10 14.5v.01",
   shield: "M12 2l7 4v4c0 5.25-3.5 9.74-7 11-3.5-1.26-7-5.75-7-11V6l7-4z",
 };
 

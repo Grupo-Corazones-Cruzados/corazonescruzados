@@ -71,7 +71,9 @@ export async function listProjects(params: {
              FROM project_bids pb_m
              JOIN members m ON m.id = pb_m.member_id
              WHERE pb_m.project_id = p.id AND pb_m.status = 'accepted'
-            ) AS accepted_members
+            ) AS accepted_members,
+            (SELECT COUNT(*) FROM project_requirements pr WHERE pr.project_id = p.id)::int AS total_requirements,
+            (SELECT COUNT(*) FROM project_requirements pr WHERE pr.project_id = p.id AND pr.completed_at IS NOT NULL)::int AS completed_requirements
      FROM projects p
      LEFT JOIN clients c ON c.id = p.client_id
      ${where}

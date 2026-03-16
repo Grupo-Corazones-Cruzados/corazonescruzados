@@ -380,6 +380,60 @@ export async function sendClientInvitationEmail(
   });
 }
 
+// ----- Support / Contact -----
+
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "soporte@corazonescruzados.com";
+
+export async function sendSupportEmail(data: {
+  userName: string;
+  userEmail: string;
+  userRole: string;
+  type: string;
+  subject: string;
+  message: string;
+}) {
+  const typeLabels: Record<string, string> = {
+    bug: "Reporte de error",
+    feature: "Sugerencia o mejora",
+    question: "Pregunta general",
+    other: "Otro",
+  };
+  const html = emailShell(`
+    <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Nuevo Reporte de Soporte</h1>
+    <p style="color:#6B7280;font-size:14px;text-align:center;margin:0 0 24px;">${typeLabels[data.type] || data.type}</p>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+      <tr>
+        <td style="padding:10px 0;color:#6B7280;font-size:14px;border-bottom:1px solid #F3F4F6;">Usuario</td>
+        <td style="padding:10px 0;color:#111827;font-size:14px;font-weight:500;text-align:right;border-bottom:1px solid #F3F4F6;">${data.userName}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0;color:#6B7280;font-size:14px;border-bottom:1px solid #F3F4F6;">Email</td>
+        <td style="padding:10px 0;color:#111827;font-size:14px;font-weight:500;text-align:right;border-bottom:1px solid #F3F4F6;">${data.userEmail}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0;color:#6B7280;font-size:14px;border-bottom:1px solid #F3F4F6;">Rol</td>
+        <td style="padding:10px 0;color:#111827;font-size:14px;font-weight:500;text-align:right;border-bottom:1px solid #F3F4F6;">${data.userRole}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0;color:#6B7280;font-size:14px;">Asunto</td>
+        <td style="padding:10px 0;color:#111827;font-size:14px;font-weight:500;text-align:right;">${data.subject}</td>
+      </tr>
+    </table>
+    <div style="padding:16px;background:#F9FAFB;border-radius:12px;margin:0 0 24px;">
+      <p style="color:#6B7280;font-size:12px;margin:0 0 8px;">Mensaje:</p>
+      <p style="color:#374151;font-size:14px;line-height:1.6;margin:0;white-space:pre-wrap;">${data.message}</p>
+    </div>
+    <p style="color:#9CA3AF;font-size:12px;margin:0;">Responder directamente a: ${data.userEmail}</p>
+  `);
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: SUPPORT_EMAIL,
+    replyTo: data.userEmail,
+    subject: `[Soporte] ${data.subject}`,
+    html,
+  });
+}
+
 // ----- Campaign emails -----
 
 export async function sendCampaignEmail(

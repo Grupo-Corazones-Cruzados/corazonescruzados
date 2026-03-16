@@ -259,6 +259,41 @@
   color: var(--accent);
 }
 
+/* Requirement progress bar */
+.reqProgressWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.reqProgressBar {
+  flex: 1;
+  height: 8px;
+  background: var(--gray-100, #F3F4F6);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.reqProgressFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width var(--duration-normal) var(--ease);
+}
+
+.reqProgressFill.reqProgressComplete {
+  background: var(--success, #34C759);
+}
+
+.reqProgressLabel {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 36px;
+  text-align: right;
+}
+
 /* Requirements */
 .reqList {
   display: flex;

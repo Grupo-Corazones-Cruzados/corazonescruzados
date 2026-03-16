@@ -36,3 +36,36 @@
   color: var(--text-tertiary);
   font-size: var(--text-xs);
 }
+
+/* Progress bar */
+.progressCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.progressBar {
+  flex: 1;
+  height: 6px;
+  background: var(--gray-100, #F3F4F6);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width var(--duration-normal) var(--ease);
+}
+
+.progressFill.progressComplete {
+  background: var(--success, #34C759);
+}
+
+.progressLabel {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  min-width: 28px;
+}

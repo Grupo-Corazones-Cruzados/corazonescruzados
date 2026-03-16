@@ -28,6 +28,8 @@ interface ProjectRow {
   final_cost: number | null;
   deadline: string | null;
   updated_at: string;
+  total_requirements: number;
+  completed_requirements: number;
 }
 
 const BASE_TABS = [
@@ -146,6 +148,28 @@ export default function ProjectsPage() {
                 <Avatar src={m.photo_url} name={m.name} size="xs" />
               </span>
             ))}
+          </div>
+        );
+      },
+    },
+    {
+      key: "progress",
+      header: "Progreso",
+      width: "140px",
+      render: (r) => {
+        const total = r.total_requirements || 0;
+        const completed = r.completed_requirements || 0;
+        if (total === 0) return <span className={styles.noMembers}>—</span>;
+        const pct = Math.round((completed / total) * 100);
+        return (
+          <div className={styles.progressCell}>
+            <div className={styles.progressBar}>
+              <div
+                className={`${styles.progressFill} ${pct === 100 ? styles.progressComplete : ""}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className={styles.progressLabel}>{completed}/{total}</span>
           </div>
         );
       },
