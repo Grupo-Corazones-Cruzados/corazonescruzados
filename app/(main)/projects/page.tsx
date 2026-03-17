@@ -192,7 +192,8 @@ function ProjectColumn({
   const appUrl = agentInfo?.productionUrl || (agentInfo?.port ? `http://localhost:${agentInfo.port}` : null);
 
   const copyPortalLink = () => {
-    const url = `${window.location.origin}/portal/${project.id}`;
+    const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const url = `${base}/portal/${project.id}`;
     navigator.clipboard.writeText(url);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
