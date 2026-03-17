@@ -6,8 +6,8 @@ import { FolderTree, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
-  { href: '/projects', label: 'Proyectos', icon: FolderTree },
-  { href: '/tasks', label: 'Incidencias', icon: ClipboardList },
+  { href: '/panel/projects', label: 'Proyectos', icon: FolderTree },
+  { href: '/panel/tasks', label: 'Incidencias', icon: ClipboardList },
 ];
 
 export default function PublicNav() {
