@@ -256,12 +256,12 @@ export default function PortalPage() {
                           {inc.images.map((img, i) => (
                             <a
                               key={i}
-                              href={`/api/incidents/uploads?file=${img}`}
+                              href={`${img}`}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
                               <img
-                                src={`/api/incidents/uploads?file=${img}`}
+                                src={`${img}`}
                                 alt=""
                                 className="w-24 h-24 object-cover rounded border border-[#2a2a2a] hover:border-white/30 transition-colors cursor-pointer"
                               />

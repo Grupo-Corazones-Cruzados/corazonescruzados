@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Project {
+  id       String   @id @default(cuid())
+  agentId  String   @unique
+  name     String
+  modules  Module[]
+}
+
+model Module {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  order       Int       @default(0)
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sections    Section[]
+}
+
+model Section {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  order       Int          @default(0)
+  moduleId    String
+  module      Module       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  subsections Subsection[]
+}
+
+model Subsection {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  order       Int     @default(0)
+  sectionId   String
+  section     Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+}
+
+model Incident {
+  id          String   @id @default(cuid())
+  projectId   String
+  clientName  String   @default("Cliente")
+  title       String
+  description String
+  images      String[] @default([])
+  status      String   @default("pending") // pending, approved, rejected, completed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

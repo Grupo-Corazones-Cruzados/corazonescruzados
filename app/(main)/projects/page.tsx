@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Plus, Trash2, ChevronRight, ChevronDown,
   FolderTree, Box, Layers, FileText,
-  Save, Loader2, Link2, Check,
+  Save, Loader2, Link2, Check, ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type {
@@ -17,7 +17,7 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-type AgentInfo = Record<string, { projectPath?: string }>;
+type AgentInfo = Record<string, { projectPath?: string; port?: number; productionUrl?: string }>;
 
 /* ────────── page ────────── */
 
@@ -163,7 +163,7 @@ export default function ProjectsPage() {
               <ProjectColumn
                 key={project.id}
                 project={project}
-                agentPath={agents[project.agentId]?.projectPath}
+                agentInfo={agents[project.agentId]}
                 onUpdate={patch => updateProject(project.id, patch)}
                 onRemove={() => removeProject(project.id)}
               />
@@ -179,16 +179,17 @@ export default function ProjectsPage() {
 
 function ProjectColumn({
   project,
-  agentPath,
+  agentInfo,
   onUpdate,
   onRemove,
 }: {
   project: ProjectStructure;
-  agentPath?: string;
+  agentInfo?: { projectPath?: string; port?: number; productionUrl?: string };
   onUpdate: (patch: Partial<ProjectStructure>) => void;
   onRemove: () => void;
 }) {
   const [linkCopied, setLinkCopied] = useState(false);
+  const appUrl = agentInfo?.productionUrl || (agentInfo?.port ? `http://localhost:${agentInfo.port}` : null);
 
   const copyPortalLink = () => {
     const url = `${window.location.origin}/portal/${project.id}`;
@@ -253,9 +254,20 @@ function ProjectColumn({
           <span className="text-[10px] text-digi-muted font-mono">{project.agentId}</span>
           <span className="text-[10px] text-digi-muted">{project.modules.length} módulos</span>
         </div>
-        {agentPath && (
+        {appUrl && (
+          <a
+            href={appUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-[10px] text-blue-400 hover:bg-blue-500/20 transition-colors truncate"
+          >
+            <ExternalLink size={10} className="shrink-0" />
+            <span className="truncate">{appUrl}</span>
+          </a>
+        )}
+        {agentInfo?.projectPath && (
           <p className="text-[9px] text-digi-muted/60 font-mono truncate mt-1">
-            {agentPath}
+            {agentInfo.projectPath}
           </p>
         )}
       </div>

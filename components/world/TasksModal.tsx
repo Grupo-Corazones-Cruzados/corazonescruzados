@@ -209,9 +209,9 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
                   <p className="text-[10px] text-[#484f58] font-mono uppercase">Imagenes adjuntas</p>
                   <div className="flex flex-wrap gap-2">
                     {detail.images.map((img, i) => (
-                      <a key={i} href={`/api/incidents/uploads?file=${img}`} target="_blank" rel="noopener noreferrer">
+                      <a key={i} href={`${img}`} target="_blank" rel="noopener noreferrer">
                         <img
-                          src={`/api/incidents/uploads?file=${img}`}
+                          src={`${img}`}
                           alt=""
                           className="w-28 h-28 object-cover rounded border border-[#30363d] hover:border-white/40 transition-colors"
                         />
