@@ -2,13 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Globe, FolderTree, X } from 'lucide-react';
+import { LayoutDashboard, Globe, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/world', label: 'DigiMundo', icon: Globe },
-  { href: '/projects', label: 'Proyectos', icon: FolderTree },
 ];
 
 export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
