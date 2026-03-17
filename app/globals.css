@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --color-digi-green: #ffffff;
+  --color-digi-dark: #111111;
+  --color-digi-darker: #0a0a0a;
+  --color-digi-card: #1a1a1a;
+  --color-digi-border: #2a2a2a;
+  --color-digi-text: #e5e5e5;
+  --color-digi-muted: #737373;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-pixel: 'Silkscreen', cursive;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-digi-darker);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-digi-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-digi-muted);
+}
+
+/* Prevent iOS zoom and scroll issues */
+html, body {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Prevent iOS zoom on input focus (font-size must be >= 16px) */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Landscape variant for Tailwind */
+@variant landscape (@media (orientation: landscape) and (max-height: 500px));
+
+/* Pixel-art image rendering */
+.pixel-render {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+/* Scanline overlay effect */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
