@@ -1,0 +1,56 @@
+[
+  {
+    "id": "sprite_palmon_1773806410315",
+    "agentId": "palmon",
+    "digimonName": "Palmon",
+    "status": "error",
+    "progress": 60,
+    "createdAt": "2026-03-18T04:00:10.315Z",
+    "errorMessage": "ComfyUI generation timed out after 120000ms"
+  },
+  {
+    "id": "sprite_gomamon_1773806935417",
+    "agentId": "gomamon",
+    "digimonName": "Gomamon",
+    "status": "error",
+    "progress": 60,
+    "createdAt": "2026-03-18T04:08:55.417Z",
+    "errorMessage": "ComfyUI generation timed out after 120000ms"
+  },
+  {
+    "id": "sprite_gomamon_1773807229759",
+    "agentId": "gomamon",
+    "digimonName": "Gomamon",
+    "status": "error",
+    "progress": 60,
+    "createdAt": "2026-03-18T04:13:49.759Z",
+    "errorMessage": "ComfyUI generation timed out after 120000ms"
+  },
+  {
+    "id": "sprite_gatomon_1773808792955",
+    "agentId": "gatomon",
+    "digimonName": "Gatomon",
+    "status": "error",
+    "progress": 80,
+    "createdAt": "2026-03-18T04:39:52.955Z",
+    "errorMessage": "Image to composite must have same dimensions or smaller"
+  },
+  {
+    "id": "sprite_metalgreymon_1773808849155",
+    "agentId": "metalgreymon",
+    "digimonName": "Metalgreymon",
+    "status": "error",
+    "progress": 80,
+    "createdAt": "2026-03-18T04:40:49.155Z",
+    "errorMessage": "Image to composite must have same dimensions or smaller"
+  },
+  {
+    "id": "sprite_gomamon_1773811057518",
+    "agentId": "gomamon",
+    "digimonName": "Gomamon",
+    "status": "ready",
+    "progress": 100,
+    "createdAt": "2026-03-18T05:17:37.518Z",
+    "completedAt": "2026-03-18T05:18:44.312Z"
+  }
+]

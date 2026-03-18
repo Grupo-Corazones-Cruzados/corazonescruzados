@@ -85,6 +85,8 @@ import {
   CodeXml,
   Mic,
   MicOff,
+  Link,
+  Check,
 } from 'lucide-react';
 
 // Each block in the conversation
@@ -152,6 +154,9 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
 
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
+  const runIdRef = useRef<string | null>(null);
+  const eventIndexRef = useRef(0);
+  const reconnectingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [projectPath, setProjectPath] = useState('');
   const [previewPort, setPreviewPort] = useState<number | null>(null);
@@ -161,6 +166,8 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [showAppLinkInput, setShowAppLinkInput] = useState(false);
+  const [appLinkDraft, setAppLinkDraft] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -217,6 +224,20 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agentId: citizen.agentId, projectPath: path, port: port || undefined }),
+      });
+    } catch {}
+  };
+
+  const saveAppLink = async (url: string) => {
+    const trimmed = url.trim();
+    setProductionUrl(trimmed || null);
+    setShowAppLinkInput(false);
+    setAppLinkDraft('');
+    try {
+      await fetch('/api/agent-links', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId: citizen.agentId, productionUrl: trimmed || '' }),
       });
     } catch {}
   };
@@ -365,117 +386,177 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
         throw new Error(errData.error || 'Chat failed');
       }
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let currentTextBlockId: string | null = null;
-      let accumulatedText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(data);
-
-            switch (parsed.type) {
-              case 'thinking': {
-                setBlocks(prev => [...prev, {
-                  id: newId(),
-                  type: 'thinking',
-                  content: parsed.text,
-                  collapsed: true,
-                }]);
-                currentTextBlockId = null;
-                break;
-              }
-              case 'tool_use': {
-                setBlocks(prev => [...prev, {
-                  id: newId(),
-                  type: 'tool_use',
-                  content: formatToolInput(parsed.tool, parsed.input),
-                  tool: parsed.tool,
-                  input: parsed.input,
-                  collapsed: false,
-                }]);
-                currentTextBlockId = null;
-                break;
-              }
-              case 'tool_result': {
-                setBlocks(prev => [...prev, {
-                  id: newId(),
-                  type: 'tool_result',
-                  content: parsed.result || '(empty result)',
-                  collapsed: true,
-                }]);
-                currentTextBlockId = null;
-                break;
-              }
-              case 'text': {
-                if (currentTextBlockId) {
-                  accumulatedText += parsed.text;
-                  const capturedText = accumulatedText;
-                  const capturedId = currentTextBlockId;
-                  setBlocks(prev => prev.map(b =>
-                    b.id === capturedId ? { ...b, content: capturedText } : b
-                  ));
-                } else {
-                  accumulatedText = parsed.text;
-                  const id = newId();
-                  currentTextBlockId = id;
-                  setBlocks(prev => [...prev, {
-                    id,
-                    type: 'text',
-                    content: parsed.text,
-                  }]);
-                }
-                break;
-              }
-              case 'error': {
-                setBlocks(prev => [...prev, {
-                  id: newId(),
-                  type: 'error',
-                  content: parsed.text,
-                }]);
-                currentTextBlockId = null;
-                break;
-              }
-              case 'result': {
-                setBlocks(prev => [...prev, {
-                  id: newId(),
-                  type: 'result',
-                  content: '',
-                  cost: parsed.cost,
-                  duration: parsed.duration,
-                  turns: parsed.turns,
-                }]);
-                break;
-              }
-            }
-          } catch (parseErr: any) {
-            if (parseErr.message && !parseErr.message.includes('JSON')) {
-              throw parseErr;
-            }
-          }
-        }
-      }
+      await readSSEStream(res.body!.getReader());
     } catch (e: any) {
+      // If connection dropped but we have a runId, don't error — we'll reconnect
+      if (runIdRef.current && streamingRef.current) return;
       setError(e.message);
     } finally {
-      setStreaming(false);
-      streamingRef.current = false;
+      if (!reconnectingRef.current) {
+        setStreaming(false);
+        streamingRef.current = false;
+        runIdRef.current = null;
+        eventIndexRef.current = 0;
+      }
       inputRef.current?.focus();
     }
   }, [input, streaming, citizen, projectPath]);
+
+  // ─── Shared SSE stream reader ───
+  const textStateRef = useRef<{ currentTextBlockId: string | null; accumulatedText: string }>({
+    currentTextBlockId: null, accumulatedText: '',
+  });
+
+  const readSSEStream = useCallback(async (reader: ReadableStreamDefaultReader<Uint8Array>) => {
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const ts = textStateRef.current;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        if (data === '[DONE]') {
+          runIdRef.current = null;
+          continue;
+        }
+
+        eventIndexRef.current++;
+
+        try {
+          const parsed = JSON.parse(data);
+
+          // Capture runId for reconnection
+          if (parsed.type === 'run_id') {
+            runIdRef.current = parsed.runId;
+            continue;
+          }
+
+          switch (parsed.type) {
+            case 'thinking': {
+              setBlocks(prev => [...prev, {
+                id: newId(),
+                type: 'thinking',
+                content: parsed.text,
+                collapsed: true,
+              }]);
+              ts.currentTextBlockId = null;
+              break;
+            }
+            case 'tool_use': {
+              setBlocks(prev => [...prev, {
+                id: newId(),
+                type: 'tool_use',
+                content: formatToolInput(parsed.tool, parsed.input),
+                tool: parsed.tool,
+                input: parsed.input,
+                collapsed: false,
+              }]);
+              ts.currentTextBlockId = null;
+              break;
+            }
+            case 'tool_result': {
+              setBlocks(prev => [...prev, {
+                id: newId(),
+                type: 'tool_result',
+                content: parsed.result || '(empty result)',
+                collapsed: true,
+              }]);
+              ts.currentTextBlockId = null;
+              break;
+            }
+            case 'text': {
+              if (ts.currentTextBlockId) {
+                ts.accumulatedText += parsed.text;
+                const capturedText = ts.accumulatedText;
+                const capturedId = ts.currentTextBlockId;
+                setBlocks(prev => prev.map(b =>
+                  b.id === capturedId ? { ...b, content: capturedText } : b
+                ));
+              } else {
+                ts.accumulatedText = parsed.text;
+                const id = newId();
+                ts.currentTextBlockId = id;
+                setBlocks(prev => [...prev, {
+                  id,
+                  type: 'text',
+                  content: parsed.text,
+                }]);
+              }
+              break;
+            }
+            case 'error': {
+              setBlocks(prev => [...prev, {
+                id: newId(),
+                type: 'error',
+                content: parsed.text,
+              }]);
+              ts.currentTextBlockId = null;
+              break;
+            }
+            case 'result': {
+              setBlocks(prev => [...prev, {
+                id: newId(),
+                type: 'result',
+                content: '',
+                cost: parsed.cost,
+                duration: parsed.duration,
+                turns: parsed.turns,
+              }]);
+              break;
+            }
+          }
+        } catch (parseErr: any) {
+          if (parseErr.message && !parseErr.message.includes('JSON')) {
+            throw parseErr;
+          }
+        }
+      }
+    }
+  }, [setBlocks]);
+
+  // ─── Reconnect on visibility change (iOS Safari background resume) ───
+  const reconnect = useCallback(async () => {
+    if (!runIdRef.current || !streamingRef.current || reconnectingRef.current) return;
+    reconnectingRef.current = true;
+    try {
+      const res = await fetch(`/api/chat?runId=${runIdRef.current}&from=${eventIndexRef.current}`);
+      if (!res.ok) {
+        // Run expired or finished while away
+        setStreaming(false);
+        streamingRef.current = false;
+        runIdRef.current = null;
+        return;
+      }
+      await readSSEStream(res.body!.getReader());
+    } catch {
+      // Connection failed, will retry on next visibility change
+    } finally {
+      reconnectingRef.current = false;
+      if (!runIdRef.current) {
+        setStreaming(false);
+        streamingRef.current = false;
+        eventIndexRef.current = 0;
+      }
+    }
+  }, [readSSEStream]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'visible' && streamingRef.current && runIdRef.current) {
+        reconnect();
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [reconnect]);
 
   // Handle external voice messages
   const externalProcessedRef = useRef<string | null>(null);
@@ -569,17 +650,35 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
             <CodeXml size={12} />
           </button>
         )}
-        {productionUrl && (
-          <a
-            href={productionUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+        {productionUrl ? (
+          <div className="flex items-center">
+            <a
+              href={productionUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1 rounded text-digi-green hover:text-digi-green/80 flex items-center gap-0.5"
+              title={productionUrl}
+            >
+              <ExternalLink size={12} />
+              <span className="text-[9px] font-mono">App</span>
+            </a>
+            <button
+              onClick={() => { setShowAppLinkInput(true); setAppLinkDraft(productionUrl); }}
+              className="p-0.5 rounded text-[#484f58] hover:text-[#8b949e]"
+              title="Editar enlace"
+            >
+              <Pencil size={8} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setShowAppLinkInput(true); setAppLinkDraft(''); }}
             className="p-1 rounded text-[#8b949e] hover:text-digi-green flex items-center gap-0.5"
-            title="Abrir App"
+            title="Agregar enlace de app"
           >
-            <ExternalLink size={12} />
-            <span className="text-[9px] font-mono">App</span>
-          </a>
+            <Link size={12} />
+            <span className="text-[9px] font-mono">+ App</span>
+          </button>
         )}
         {previewPort && onOpenPreview && (
           <button
@@ -625,6 +724,39 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
               className="px-2 py-1 bg-digi-green/20 border border-digi-green/30 rounded text-[10px] text-digi-green ml-auto"
             >
               Save
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* App link input */}
+      {showAppLinkInput && (
+        <div className="px-2 py-1.5 shrink-0 border-b border-[#21262d]">
+          <div className="flex gap-1 items-center">
+            <Link size={10} className="text-digi-green shrink-0" />
+            <input
+              type="url"
+              value={appLinkDraft}
+              onChange={e => setAppLinkDraft(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveAppLink(appLinkDraft); if (e.key === 'Escape') setShowAppLinkInput(false); }}
+              placeholder="https://mi-app.vercel.app"
+              autoFocus
+              className="flex-1 min-w-0 px-2 py-1 bg-[#0d1117] border border-[#30363d] rounded text-[10px] font-mono text-[#c9d1d9] focus:outline-none focus:border-digi-green/50"
+            />
+            <button
+              onClick={() => saveAppLink(appLinkDraft)}
+              disabled={!appLinkDraft.trim()}
+              className="p-1 text-digi-green hover:text-digi-green/80 disabled:opacity-30"
+              title="Guardar"
+            >
+              <Check size={12} />
+            </button>
+            <button
+              onClick={() => setShowAppLinkInput(false)}
+              className="p-1 text-[#8b949e] hover:text-red-400"
+              title="Cancelar"
+            >
+              <X size={12} />
             </button>
           </div>
         </div>

@@ -69,3 +69,31 @@ html, body {
     rgba(0, 0, 0, 0.03) 4px
   );
 }
+
+/* ─── Retro text styles for floating tasks widget ─── */
+/* White text with dark outline — readable on any background */
+.retro-text {
+  color: #ffffff;
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0    0  6px rgba(0, 0, 0, 0.5);
+}
+
+.retro-text-muted {
+  color: rgba(255, 255, 255, 0.6);
+  text-shadow:
+    -1px -1px 0 rgba(0, 0, 0, 0.8),
+     1px -1px 0 rgba(0, 0, 0, 0.8),
+    -1px  1px 0 rgba(0, 0, 0, 0.8),
+     1px  1px 0 rgba(0, 0, 0, 0.8);
+}
+
+/* Hide floating tasks widget on very small screens / landscape mobile */
+@media (max-width: 640px), (orientation: landscape) and (max-height: 500px) {
+  .floating-tasks-widget {
+    display: none;
+  }
+}

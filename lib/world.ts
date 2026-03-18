@@ -40,6 +40,20 @@ export async function writeWorldConfig(config: WorldConfig): Promise<void> {
   await fs.writeFile(filePath, JSON.stringify(config, null, 2) + '\n');
 }
 
+// Register or update a citizen in world.json
+export async function registerCitizen(citizen: WorldConfig['citizens'][number]): Promise<WorldConfig> {
+  const config = await readWorldConfig();
+  if (!config.citizens) config.citizens = [];
+  const idx = config.citizens.findIndex((c) => c.agentId === citizen.agentId);
+  if (idx >= 0) {
+    config.citizens[idx] = citizen;
+  } else {
+    config.citizens.push(citizen);
+  }
+  await writeWorldConfig(config);
+  return config;
+}
+
 // Update a specific section of world.json
 export async function updateWorldSection<K extends keyof WorldConfig>(
   key: K,

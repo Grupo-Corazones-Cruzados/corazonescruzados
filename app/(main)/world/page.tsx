@@ -6,6 +6,7 @@ import type { ChatBlock } from '@/components/world/ChatPanel';
 import { useAppStore } from '@/lib/store';
 import { MessageSquare, X, Mic, MicOff, Loader2, ClipboardList } from 'lucide-react';
 import TasksModal from '@/components/world/TasksModal';
+import FloatingTasksWidget from '@/components/world/FloatingTasksWidget';
 import type { ProjectStructure } from '@/types/projects';
 
 // ─── Types ──────────────────────────────────────────────
@@ -22,12 +23,14 @@ interface SpriteState {
   targetX: number;
   y: number;
   direction: 'left' | 'right';
-  phase: 'idle' | 'walking' | 'working' | 'hovered' | 'done';
+  phase: 'idle' | 'walking' | 'working' | 'hovered' | 'done' | 'resting';
   idleTimer: number;
   walkImg: HTMLImageElement | null;
   actionsImg: HTMLImageElement | null;
   doneImg: HTMLImageElement | null;
   hoverBounce: number;
+  doneStartFrame: number;
+  lastActiveTime: number;
 }
 
 // ─── Constants ──────────────────────────────────────────
@@ -40,7 +43,8 @@ const IDLE_MIN = 3000;
 const IDLE_MAX = 8000;
 
 // Per-agent sprite configuration (defaults: walkFrames=4, doneFrames=10)
-const SPRITE_CONFIG: Record<string, { walkFrames?: number; doneFrames?: number; workingBounce?: boolean }> = {
+const RESTING_TIMEOUT = 60000; // 1 minute without interaction → resting
+const SPRITE_CONFIG: Record<string, { walkFrames?: number; doneFrames?: number; workingBounce?: boolean; frameHeight?: number; flipRight?: boolean; doneClamp?: boolean; doneLoopFrom?: number; yOffsets?: { idle?: number; walking?: number; working?: number; hovered?: number; done?: number; resting?: number } }> = {
   shoutmon: { walkFrames: 8, doneFrames: 4 },
   patamon: { walkFrames: 8, doneFrames: 8, workingBounce: true },
 };
@@ -59,6 +63,7 @@ function loadImg(src: string): Promise<HTMLImageElement> {
 export default function WorldPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [activeAgent, setActiveAgent] = useState<string | null>(null);
+  const MAX_BLOCKS_PER_AGENT = 50;
   const [chatHistories, setChatHistories] = useState<Record<string, ChatBlock[]>>({});
   const [unread, setUnread] = useState<Record<string, number>>({});
   const [streamingAgents, setStreamingAgents] = useState<Set<string>>(new Set());
@@ -68,6 +73,17 @@ export default function WorldPage() {
   const [voiceMessage, setVoiceMessage] = useState<{ agentId: string; text: string } | null>(null);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [agentProjectMap, setAgentProjectMap] = useState<Record<string, string>>({});
+  const [hiddenAgents, setHiddenAgents] = useState<Set<string>>(new Set());
+
+  // Restore hidden agents after mount (avoids SSR hydration mismatch)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('world_hidden_agents');
+      if (saved) setHiddenAgents(new Set(JSON.parse(saved)));
+    } catch { /* use default */ }
+  }, []);
+  const hiddenAgentsRef = useRef(hiddenAgents);
+  hiddenAgentsRef.current = hiddenAgents;
   const voiceRecorderRef = useRef<MediaRecorder | null>(null);
   const voiceChunksRef = useRef<Blob[]>([]);
   const prevTextCounts = useRef<Record<string, number>>({});
@@ -80,6 +96,20 @@ export default function WorldPage() {
   const hoveredAgentRef = useRef<string | null>(null);
   const activeAgentRef = useRef<string | null>(null);
   activeAgentRef.current = activeAgent;
+
+  const toggleAgentVisibility = useCallback((agentId: string) => {
+    setHiddenAgents(prev => {
+      const next = new Set(prev);
+      if (next.has(agentId)) next.delete(agentId);
+      else {
+        next.add(agentId);
+        // Deselect if hiding the active agent
+        if (activeAgent === agentId) setActiveAgent(null);
+      }
+      localStorage.setItem('world_hidden_agents', JSON.stringify([...next]));
+      return next;
+    });
+  }, [activeAgent]);
   const streamingAgentsRef = useRef(streamingAgents);
   streamingAgentsRef.current = streamingAgents;
   const unreadRef = useRef(unread);
@@ -134,6 +164,8 @@ export default function WorldPage() {
             actionsImg,
             doneImg,
             hoverBounce: 0,
+            doneStartFrame: 0,
+            lastActiveTime: Date.now(),
           });
         }
       } catch {}
@@ -504,8 +536,9 @@ export default function WorldPage() {
           const s = sprites.get(a.agentId);
           if (!s) continue;
 
+          const isAgentHidden = hiddenAgentsRef.current.has(a.agentId);
           const isWorking = streamingAgentsRef.current.has(a.agentId);
-          const isHovered = hoveredAgentRef.current === a.agentId;
+          const isHovered = isAgentHidden ? false : hoveredAgentRef.current === a.agentId;
           const baseY = groundY - DRAW_SIZE + 16;
           s.y = baseY + (a.sprite === 'shoutmon' ? 39 : 0);
 
@@ -518,6 +551,7 @@ export default function WorldPage() {
             // Just finished working → enter done phase
             s.phase = 'done';
             s.hoverBounce = 0;
+            s.doneStartFrame = frameRef.current;
           } else if (s.phase === 'done' && activeAgentRef.current === a.agentId) {
             // User opened this chat → exit done phase
             s.phase = 'idle';
@@ -528,15 +562,26 @@ export default function WorldPage() {
             s.targetX = s.x;
           } else if (!isHovered && s.phase === 'hovered') {
             s.phase = 'idle';
+            s.lastActiveTime = Date.now();
             s.idleTimer = IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
           }
 
           if (!isWorking && s.phase !== 'hovered') {
+            // Resting: wake up on any interaction
+            if (s.phase === 'resting' && (isHovered || activeAgentRef.current === a.agentId)) {
+              s.phase = 'idle';
+              s.lastActiveTime = Date.now();
+              s.idleTimer = IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
+            }
             if (s.phase === 'idle') {
               s.idleTimer -= dt;
-              if (s.idleTimer <= 0) {
+              // After 1 min without interaction → rest
+              if (Date.now() - s.lastActiveTime > RESTING_TIMEOUT) {
+                s.phase = 'resting';
+              } else if (s.idleTimer <= 0) {
                 s.targetX = 60 + Math.random() * (W - 120);
                 s.phase = 'walking';
+                s.lastActiveTime = Date.now();
                 s.direction = s.targetX > s.x ? 'right' : 'left';
               }
             } else if (s.phase === 'walking') {
@@ -557,7 +602,8 @@ export default function WorldPage() {
             s.hoverBounce += 0.08;
           }
 
-          // Draw sprite
+          // Draw sprite — ghost mode if hidden
+          if (isAgentHidden) ctx.globalAlpha = 0.12;
           let sheet: HTMLImageElement | null;
           let row: number;
           let frames: number;
@@ -567,7 +613,7 @@ export default function WorldPage() {
           if (s.phase === 'done') {
             sheet = s.doneImg;
             row = 0;
-            frames = sprCfg.doneFrames || 10;
+            frames = sprCfg.doneFrames || 4;
             speed = 3;
           } else if (s.phase === 'working') {
             sheet = s.actionsImg;
@@ -584,9 +630,14 @@ export default function WorldPage() {
             row = s.direction === 'right' ? 3 : 2;
             frames = sprCfg.walkFrames || 4;
             speed = 2;
+          } else if (s.phase === 'resting') {
+            sheet = s.actionsImg;
+            row = 1; // sleeping/resting row
+            frames = 4;
+            speed = 6; // slow animation
           } else {
             sheet = s.actionsImg;
-            row = 3;
+            row = 3; // idle row
             frames = 4;
             speed = 3;
           }
@@ -605,13 +656,28 @@ export default function WorldPage() {
           if (a.sprite === 'gumdramon') agentScale = 0.9;   // Gumdramon scale
           if (a.sprite === 'gabumon') agentScale = 0.9;    // Gabumon scale
           if (a.sprite === 'shoutmon') agentScale = 1.2;    // Shoutmon scale
+          const fh = sprCfg.frameHeight || SPRITE_SIZE;
+          const aspectRatio = fh / SPRITE_SIZE;
           const drawW = DRAW_SIZE * agentScale;
-          const drawH = DRAW_SIZE * agentScale;
-          const spriteTopY = s.y + DRAW_SIZE - drawH;
+          const drawH = DRAW_SIZE * agentScale * aspectRatio;
+          const phaseYOffset = sprCfg.yOffsets?.[s.phase] ?? 0;
+          const spriteTopY = s.y + DRAW_SIZE - drawH + phaseYOffset;
 
           if (sheet && sheet.complete && sheet.naturalWidth > 0) {
             let frame: number;
-            if (sprCfg.workingBounce && s.phase === 'working' && frames > 1) {
+            if (sprCfg.doneClamp && s.phase === 'done') {
+              // Play once, then loop from doneLoopFrom (or stay on last frame)
+              const elapsed = Math.floor((frameRef.current - s.doneStartFrame) / speed);
+              const loopFrom = sprCfg.doneLoopFrom ?? frames;
+              if (elapsed < frames) {
+                frame = elapsed;
+              } else if (loopFrom < frames) {
+                const loopLen = frames - loopFrom;
+                frame = loopFrom + (elapsed - frames) % loopLen;
+              } else {
+                frame = frames - 1;
+              }
+            } else if (sprCfg.workingBounce && s.phase === 'working' && frames > 1) {
               // Ping-pong: 0,1,2,3,2,1,0,1,2,3,...
               const cycle = 2 * (frames - 1);
               const pos = Math.floor(frameRef.current / speed) % cycle;
@@ -620,10 +686,21 @@ export default function WorldPage() {
               frame = Math.floor(frameRef.current / speed) % frames;
             }
             const sx = frame * SPRITE_SIZE;
-            const sy = row * SPRITE_SIZE;
+            const sy = row * fh;
             ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(sheet, sx, sy, SPRITE_SIZE, SPRITE_SIZE, s.x - drawW / 2, spriteTopY, drawW, drawH);
+            // Flip horizontally for right-walking sprites that share left-facing frames
+            if (sprCfg.flipRight && s.phase === 'walking' && s.direction === 'right') {
+              ctx.save();
+              ctx.translate(s.x, 0);
+              ctx.scale(-1, 1);
+              ctx.drawImage(sheet, sx, sy, SPRITE_SIZE, fh, -drawW / 2, spriteTopY, drawW, drawH);
+              ctx.restore();
+            } else {
+              ctx.drawImage(sheet, sx, sy, SPRITE_SIZE, fh, s.x - drawW / 2, spriteTopY, drawW, drawH);
+            }
           }
+
+          if (isAgentHidden) { ctx.globalAlpha = 1; continue; } // Skip labels for hidden agents
 
           // Name label — fixed distance above ground line for all agents
           const namePad = 22;
@@ -635,7 +712,7 @@ export default function WorldPage() {
 
           const isDone = s.phase === 'done';
           const statusColor = isWorking ? '#f472b6' : isDone ? '#fbbf24' : isHovered ? '#4ade80' : '#1D9E75';
-          const statusText = isWorking ? 'working...' : isDone ? 'task complete!' : isHovered ? 'click to chat!' : (s.phase === 'walking' ? 'wandering' : 'idle');
+          const statusText = isWorking ? 'working...' : isDone ? 'task complete!' : isHovered ? 'click to chat!' : s.phase === 'resting' ? 'zzz...' : s.phase === 'walking' ? 'wandering' : 'idle';
 
           // Name bg
           ctx.fillStyle = isHovered ? 'rgba(29, 158, 117, 0.3)' : 'rgba(0,0,0,0.7)';
@@ -728,17 +805,24 @@ export default function WorldPage() {
           const bx = bubbleStartX + i * (bubbleSize + bubblePad) + bubbleSize / 2;
           const by = bubbleY + bubbleSize / 2;
           const isSelected = activeAgentRef.current === a.agentId;
+          const isHidden = hiddenAgentsRef.current.has(a.agentId);
 
-          // Circle bg
-          ctx.fillStyle = isSelected ? 'rgba(29, 158, 117, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+          // Circle bg — greyed out if hidden
+          if (isHidden) {
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = 'rgba(60, 60, 60, 0.8)';
+          } else {
+            ctx.fillStyle = isSelected ? 'rgba(29, 158, 117, 0.4)' : 'rgba(0, 0, 0, 0.6)';
+          }
           ctx.beginPath();
           ctx.arc(bx, by, bubbleSize / 2 + 2, 0, Math.PI * 2);
           ctx.fill();
 
           // Border
-          ctx.strokeStyle = isSelected ? '#1D9E75' : 'rgba(255,255,255,0.15)';
-          ctx.lineWidth = isSelected ? 2 : 1;
+          ctx.strokeStyle = isHidden ? 'rgba(100,100,100,0.3)' : isSelected ? '#1D9E75' : 'rgba(255,255,255,0.15)';
+          ctx.lineWidth = isSelected && !isHidden ? 2 : 1;
           ctx.stroke();
+          ctx.globalAlpha = isHidden ? 0.35 : 1;
 
           // Draw face (zoom into top portion of walk sprite row 0, frame 0)
           const sheet = s.walkImg;
@@ -749,12 +833,13 @@ export default function WorldPage() {
             ctx.clip();
             // Per-agent camera offset for face crop
             let srcX = 12, srcY = 14, srcW = 28, srcH = 28;
-            if (a.sprite === 'gabumon') { srcX = 26; ; srcY = 25}                  // Gabumon: right
+            if (a.sprite === 'gabumon') { srcX = 25; ; srcY = 25}                  // Gabumon: right
             else if (a.sprite === 'agumon') { srcX = 21; srcY = 28; }   // Agumon: down + right
             else if (a.sprite === 'gumdramon') { srcX = 14;srcY = 26 }           // Gumdramon: down
             else if (a.sprite === 'shoutmon') { srcX = 27; srcY = 21.5; srcW = 19; srcH = 19; }
             else if (a.sprite === 'patamon') { srcX = 23; srcY = 42; srcW = 22; srcH = 22; }
             ctx.imageSmoothingEnabled = false;
+            if (isHidden) ctx.filter = 'grayscale(100%)';
             if (a.sprite === 'gumdramon') {
               ctx.translate(bx, by);
               ctx.scale(-1, 1);
@@ -762,26 +847,81 @@ export default function WorldPage() {
             } else {
               ctx.drawImage(sheet, srcX, srcY, srcW, srcH, bx - bubbleSize / 2, by - bubbleSize / 2, bubbleSize, bubbleSize);
             }
+            ctx.filter = 'none';
             ctx.restore();
           }
+          ctx.globalAlpha = 1;
 
-          // Unread badge on bubble
-          const n = unreadRef.current[a.agentId] || 0;
-          if (n > 0) {
-            ctx.fillStyle = '#ef4444';
+          // Eye toggle icon below bubble — pixel-art style
+          const eyeY = by + bubbleSize / 2 + 8;
+          const ew = 10; // half-width
+          const eh = 4;  // half-height
+          ctx.globalAlpha = isHidden ? 0.5 : 0.85;
+          ctx.lineWidth = 2;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          if (isHidden) {
+            // Closed eye: horizontal line with small lashes down
+            ctx.strokeStyle = '#6b7280';
             ctx.beginPath();
-            ctx.arc(bx + bubbleSize / 2 - 2, by - bubbleSize / 2 + 2, 6, 0, Math.PI * 2);
+            ctx.moveTo(bx - ew, eyeY);
+            ctx.lineTo(bx + ew, eyeY);
+            ctx.stroke();
+            // Lashes
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(bx - 6, eyeY);
+            ctx.lineTo(bx - 7, eyeY + 3);
+            ctx.moveTo(bx, eyeY);
+            ctx.lineTo(bx, eyeY + 4);
+            ctx.moveTo(bx + 6, eyeY);
+            ctx.lineTo(bx + 7, eyeY + 3);
+            ctx.stroke();
+            // Red slash
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(bx - ew - 2, eyeY - eh - 1);
+            ctx.lineTo(bx + ew + 2, eyeY + eh + 1);
+            ctx.stroke();
+          } else {
+            // Open eye: almond shape + pupil
+            ctx.strokeStyle = '#9ca3af';
+            ctx.beginPath();
+            ctx.moveTo(bx - ew, eyeY);
+            ctx.quadraticCurveTo(bx, eyeY - eh * 2, bx + ew, eyeY);
+            ctx.quadraticCurveTo(bx, eyeY + eh * 2, bx - ew, eyeY);
+            ctx.closePath();
+            ctx.stroke();
+            // Pupil
+            ctx.fillStyle = '#d1d5db';
+            ctx.beginPath();
+            ctx.arc(bx, eyeY, 2.5, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 7px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(String(n), bx + bubbleSize / 2 - 2, by - bubbleSize / 2 + 2);
-            ctx.textBaseline = 'alphabetic';
+          }
+          ctx.globalAlpha = 1;
+
+          // Unread badge on bubble (only if visible)
+          if (!isHidden) {
+            const n = unreadRef.current[a.agentId] || 0;
+            if (n > 0) {
+              ctx.fillStyle = '#ef4444';
+              ctx.beginPath();
+              ctx.arc(bx + bubbleSize / 2 - 2, by - bubbleSize / 2 + 2, 6, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#fff';
+              ctx.font = 'bold 7px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(String(n), bx + bubbleSize / 2 - 2, by - bubbleSize / 2 + 2);
+              ctx.textBaseline = 'alphabetic';
+            }
           }
 
-          // Working indicator
-          if (streamingAgentsRef.current.has(a.agentId)) {
+          // Working indicator (only if visible)
+          if (!isHidden && streamingAgentsRef.current.has(a.agentId)) {
             ctx.strokeStyle = '#f472b6';
             ctx.lineWidth = 2;
             ctx.globalAlpha = 0.5 + 0.5 * Math.sin(frameRef.current * 0.15);
@@ -791,8 +931,8 @@ export default function WorldPage() {
             ctx.globalAlpha = 1;
           }
 
-          // Done indicator
-          if (s.phase === 'done') {
+          // Done indicator (only if visible)
+          if (!isHidden && s.phase === 'done') {
             ctx.strokeStyle = '#fbbf24';
             ctx.lineWidth = 2;
             ctx.globalAlpha = 0.5 + 0.5 * Math.sin(frameRef.current * 0.1);
@@ -823,20 +963,30 @@ export default function WorldPage() {
     const cy = clientY - rect.top;
     const W = canvas.width;
 
-    // Check avatar bubbles first (top bar)
+    // Check eye toggle buttons first (below bubbles)
     const bubbleSize = 32;
     const bubblePad = 10;
     const totalBubbleW = agents.length * (bubbleSize + bubblePad) - bubblePad;
     const bubbleStartX = (W - totalBubbleW) / 2;
     for (let i = 0; i < agents.length; i++) {
       const bx = bubbleStartX + i * (bubbleSize + bubblePad) + bubbleSize / 2;
+      const eyeY = 10 + bubbleSize / 2 + bubbleSize / 2 + 8;
+      const eyeDist = Math.sqrt((cx - bx) ** 2 + (cy - eyeY) ** 2);
+      if (eyeDist <= 12) return `eye:${agents[i].agentId}`;
+    }
+
+    // Check avatar bubbles (top bar) — skip hidden agents
+    for (let i = 0; i < agents.length; i++) {
+      if (hiddenAgentsRef.current.has(agents[i].agentId)) continue;
+      const bx = bubbleStartX + i * (bubbleSize + bubblePad) + bubbleSize / 2;
       const by = 10 + bubbleSize / 2;
       const dist = Math.sqrt((cx - bx) ** 2 + (cy - by) ** 2);
       if (dist <= bubbleSize / 2 + 5) return agents[i].agentId;
     }
 
-    // Check sprites on ground
+    // Check sprites on ground — skip hidden agents
     for (const a of agents) {
+      if (hiddenAgentsRef.current.has(a.agentId)) continue;
       const s = spritesRef.current.get(a.agentId);
       if (!s) continue;
       if (cx >= s.x - DRAW_SIZE / 2 - 15 && cx <= s.x + DRAW_SIZE / 2 + 15 && cy >= s.y - 15 && cy <= s.y + DRAW_SIZE + 15) {
@@ -854,21 +1004,31 @@ export default function WorldPage() {
 
   // ─── Click/tap on canvas to select agent ────────────────
   const selectAgentAt = useCallback((clientX: number, clientY: number) => {
-    const agentId = hitTestAgent(clientX, clientY);
-    if (agentId) {
-      if (activeAgent === agentId) setActiveAgent(null);
-      else { setActiveAgent(agentId); setUnread(u => ({ ...u, [agentId]: 0 })); }
+    const result = hitTestAgent(clientX, clientY);
+    if (!result) return;
+    // Eye toggle click
+    if (result.startsWith('eye:')) {
+      const agentId = result.slice(4);
+      toggleAgentVisibility(agentId);
+      return;
     }
-  }, [hitTestAgent, activeAgent]);
+    const agentId = result;
+    if (activeAgent === agentId) setActiveAgent(null);
+    else { setActiveAgent(agentId); setUnread(u => ({ ...u, [agentId]: 0 })); }
+  }, [hitTestAgent, activeAgent, toggleAgentVisibility]);
+
+  const lastInteractionRef = useRef(0);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Skip if this click was already handled by a recent touch event
+    if (Date.now() - lastInteractionRef.current < 300) return;
+    lastInteractionRef.current = Date.now();
     selectAgentAt(e.clientX, e.clientY);
   }, [selectAgentAt]);
 
   const handleCanvasTouch = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     if (e.touches.length === 1) {
       const t = e.touches[0];
-      // Set hover on touch
       hoveredAgentRef.current = hitTestAgent(t.clientX, t.clientY);
     }
   }, [hitTestAgent]);
@@ -876,6 +1036,7 @@ export default function WorldPage() {
   const handleCanvasTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     if (e.changedTouches.length === 1) {
       const t = e.changedTouches[0];
+      lastInteractionRef.current = Date.now();
       selectAgentAt(t.clientX, t.clientY);
       hoveredAgentRef.current = null;
     }
@@ -1032,14 +1193,8 @@ export default function WorldPage() {
           className="block w-full h-full touch-none"
           style={{ imageRendering: 'pixelated' }}
         />
-        {/* Floating tasks button */}
-        <button
-          onClick={() => setTasksOpen(true)}
-          className="absolute bottom-4 right-22 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all z-10 bg-[#6366f1] hover:bg-[#7c7ff7] active:scale-95"
-          title="Ver tareas / incidencias"
-        >
-          <ClipboardList size={24} className="text-white" />
-        </button>
+        {/* Floating tasks widget (left center) */}
+        <FloatingTasksWidget onOpenTasksModal={() => setTasksOpen(true)} />
 
         {/* Floating voice command button */}
         <button
@@ -1083,6 +1238,15 @@ export default function WorldPage() {
               <span className="text-[9px] md:text-[10px] font-mono text-[#484f58] truncate flex-1">
                 {agent.projectPath ? agent.projectPath.split('/').pop() : 'No project'}
               </span>
+              <button
+                onClick={() => {
+                  if (agent) setChatHistories(prev => ({ ...prev, [agent.agentId]: [] }));
+                }}
+                className="p-1.5 rounded text-[#484f58] hover:text-red-400 active:bg-red-400/10"
+                title="Limpiar chat"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
               <button onClick={() => setActiveAgent(null)} className="p-1.5 rounded text-[#484f58] hover:text-white active:bg-white/10">
                 <X size={14} />
               </button>
@@ -1095,7 +1259,10 @@ export default function WorldPage() {
                 blocks={chatHistories[agent.agentId] || []}
                 onBlocksChange={(newBlocks) => {
                   const id = agent.agentId;
-                  setChatHistories(prev => ({ ...prev, [id]: newBlocks }));
+                  const trimmed = newBlocks.length > MAX_BLOCKS_PER_AGENT
+                    ? newBlocks.slice(-MAX_BLOCKS_PER_AGENT)
+                    : newBlocks;
+                  setChatHistories(prev => ({ ...prev, [id]: trimmed }));
                 }}
                 externalMessage={voiceMessage?.agentId === agent.agentId ? voiceMessage.text : null}
                 onExternalMessageConsumed={() => setVoiceMessage(null)}

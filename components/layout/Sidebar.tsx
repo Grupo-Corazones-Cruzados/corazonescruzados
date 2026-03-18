@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Globe, FolderTree, ClipboardList, X } from 'lucide-react';
+import { LayoutDashboard, Globe, FolderTree, ClipboardList, Wand2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/world', label: 'DigiMundo', icon: Globe },
   { href: '/projects', label: 'Proyectos', icon: FolderTree },
   { href: '/tasks', label: 'Incidencias', icon: ClipboardList },
+  { href: '/sprites', label: 'Sprites', icon: Wand2 },
 ];
 
 export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {

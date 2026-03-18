@@ -10,6 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.9.4",
     "@hookform/resolvers": "^3.9.0",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
@@ -27,6 +28,7 @@
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.1",
     "remark-gfm": "^4.0.1",
+    "sharp": "^0.34.5",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.6.0",
     "zod": "^3.24.0",

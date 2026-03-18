@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Incident, IncidentStatus } from '@/types/incidents';
+import type { ProjectStructure, Module, Section } from '@/types/projects';
 
 const STATUS_CONFIG: Record<IncidentStatus, { label: string; color: string; icon: typeof Clock }> = {
   pending:   { label: 'Pendiente',  color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30', icon: Clock },
@@ -20,8 +21,14 @@ export default function PortalPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'new' | 'list'>('list');
+  const [tab, setTab] = useState<'new' | 'list'>('new');
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  // project structure
+  const [project, setProject] = useState<ProjectStructure | null>(null);
+  const [selectedModule, setSelectedModule] = useState('');
+  const [selectedSection, setSelectedSection] = useState('');
+  const [selectedSubsection, setSelectedSubsection] = useState('');
 
   // form state
   const [title, setTitle] = useState('');
@@ -32,6 +39,13 @@ export default function PortalPage() {
   const [submitted, setSubmitted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // derived options
+  const modules = project?.modules || [];
+  const currentModule = modules.find(m => m.id === selectedModule);
+  const sections = currentModule?.sections || [];
+  const currentSection = sections.find(s => s.id === selectedSection);
+  const subsections = currentSection?.subsections || [];
+
   const fetchIncidents = async () => {
     const res = await fetch(`/api/incidents?projectId=${projectId}`);
     const data = await res.json();
@@ -39,17 +53,44 @@ export default function PortalPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchIncidents(); }, [projectId]);
+  useEffect(() => {
+    fetchIncidents();
+    // Load project structure
+    fetch('/api/project-structures').then(r => r.json()).then((structs: ProjectStructure[]) => {
+      const found = structs.find(s => s.id === projectId);
+      if (found) setProject(found);
+    });
+  }, [projectId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
+    if (modules.length > 0 && !selectedModule) return;
     setSubmitting(true);
+
+    // Build location label
+    const locationParts: string[] = [];
+    const modLabel = selectedModule === '__all__' ? 'Todas' : currentModule?.name || '';
+    locationParts.push(modLabel);
+
+    if (selectedModule !== '__all__') {
+      const secLabel = selectedSection ? (currentSection?.name || '') : 'Todas';
+      locationParts.push(secLabel);
+
+      if (selectedSection) {
+        const subLabel = selectedSubsection
+          ? (subsections.find(ss => ss.id === selectedSubsection)?.name || '')
+          : 'Todas';
+        locationParts.push(subLabel);
+      }
+    }
+
+    const location = locationParts.filter(Boolean).join(' > ');
 
     const form = new FormData();
     form.append('projectId', projectId);
     form.append('title', title.trim());
-    form.append('description', description.trim());
+    form.append('description', `[${location}]\n\n${description.trim()}`);
     form.append('clientName', clientName.trim() || 'Cliente');
     for (const f of files) form.append('images', f);
 
@@ -57,6 +98,9 @@ export default function PortalPage() {
 
     setTitle('');
     setDescription('');
+    setSelectedModule('');
+    setSelectedSection('');
+    setSelectedSubsection('');
     setFiles([]);
     setSubmitting(false);
     setSubmitted(true);
@@ -142,15 +186,77 @@ export default function PortalPage() {
               />
             </div>
 
+            {/* module / section / subsection selectors */}
+            {modules.length > 0 && (
+              <>
+                <div>
+                  <label className="block text-[11px] text-[#737373] mb-1.5">Modulo *</label>
+                  <select
+                    value={selectedModule}
+                    onChange={e => { setSelectedModule(e.target.value); setSelectedSection(''); setSelectedSubsection(''); }}
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
+                    required
+                  >
+                    <option value="">Selecciona un modulo</option>
+                    <option value="__all__">Todas</option>
+                    {modules.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedModule && selectedModule !== '__all__' && sections.length > 0 && (
+                  <div>
+                    <label className="block text-[11px] text-[#737373] mb-1.5">Seccion</label>
+                    <select
+                      value={selectedSection}
+                      onChange={e => { setSelectedSection(e.target.value); setSelectedSubsection(''); }}
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
+                    >
+                      <option value="">Todas</option>
+                      {sections.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {selectedSection && selectedSection !== '' && subsections.length > 0 && (
+                  <div>
+                    <label className="block text-[11px] text-[#737373] mb-1.5">Subseccion</label>
+                    <select
+                      value={selectedSubsection}
+                      onChange={e => setSelectedSubsection(e.target.value)}
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
+                    >
+                      <option value="">Todas</option>
+                      {subsections.map(ss => (
+                        <option key={ss.id} value={ss.id}>{ss.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
+            )}
+
             <div>
               <label className="block text-[11px] text-[#737373] mb-1.5">Descripcion *</label>
+              {modules.length > 0 && !selectedModule && (
+                <p className="text-[10px] text-yellow-400/70 mb-1.5 flex items-center gap-1">
+                  <AlertTriangle size={10} /> Selecciona un módulo primero
+                </p>
+              )}
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={5}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors resize-none"
+                className={cn(
+                  "w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors resize-none",
+                  modules.length > 0 && !selectedModule && "opacity-40 cursor-not-allowed"
+                )}
                 placeholder="Describe con detalle la incidencia encontrada..."
                 required
+                disabled={modules.length > 0 && !selectedModule}
               />
             </div>
 
@@ -198,7 +304,7 @@ export default function PortalPage() {
 
             <button
               type="submit"
-              disabled={submitting || !title.trim() || !description.trim()}
+              disabled={submitting || !title.trim() || !description.trim() || (modules.length > 0 && !selectedModule)}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-black rounded text-sm font-medium hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}

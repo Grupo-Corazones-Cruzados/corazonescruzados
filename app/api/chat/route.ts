@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { spawn } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -13,9 +13,35 @@ const PERSONAS: Record<string, string> = {
   patamon: `You are Patamon, the gentle and kind Digimon from Digimon Adventure, working in GCC WORLD. You are sweet, caring, and have an innocent cheerfulness that lifts everyone's spirits. Despite your small and cute appearance, you carry great hidden power and courage — you proved this when you digivolved to Angemon to protect your friends. You are patient, supportive, and always try to see the best in others. You speak softly and kindly, with occasional moments of surprising wisdom. You are protective of your friends in a quiet, steady way. Keep responses concise. Use markdown for code. Respond in the same language the user writes to you.`,
 };
 
-// Store session IDs per agent so conversations have context
+// Load dynamic personas from file (merged with hardcoded above)
+async function getPersona(agentId: string, agentName: string): Promise<string> {
+  if (PERSONAS[agentId]) return PERSONAS[agentId];
+  try {
+    const personasFile = path.join(process.cwd(), 'data', 'personas.json');
+    const raw = await fs.readFile(personasFile, 'utf-8');
+    const dynamic = JSON.parse(raw);
+    if (dynamic[agentId]) return dynamic[agentId];
+  } catch { /* file may not exist */ }
+  return `You are ${agentName}, a Digimon working in GCC WORLD. You are helpful, knowledgeable, and dedicated to your tasks. Keep responses concise. Use markdown for code. Respond in the same language the user writes to you.`;
+}
+
+// ─── Persistent state (module-level, survives across requests) ───
 const agentSessions = new Map<string, string>();
 
+interface AgentRun {
+  events: string[];       // buffered SSE event strings
+  done: boolean;          // process exited?
+  agentId: string;
+}
+
+const agentRuns = new Map<string, AgentRun>();
+
+// Clean up old runs after 5 minutes
+function scheduleCleanup(runId: string) {
+  setTimeout(() => agentRuns.delete(runId), 5 * 60 * 1000);
+}
+
+// ─── Heartbeat ───
 async function sendHeartbeat(agent: string, name: string, state: string, task?: string) {
   try {
     await fetch(`${SERVER_URL}/api/heartbeat`, {
@@ -27,6 +53,62 @@ async function sendHeartbeat(agent: string, name: string, state: string, task?: 
   } catch {}
 }
 
+// ─── SSE helpers ───
+const SSE_HEADERS = {
+  'Content-Type': 'text/event-stream',
+  'Cache-Control': 'no-cache',
+  Connection: 'keep-alive',
+};
+
+function streamFromRun(run: AgentRun, fromIndex: number, abortSignal?: AbortSignal): ReadableStream {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    start(controller) {
+      let cursor = fromIndex;
+      const interval = setInterval(() => {
+        // Flush buffered events
+        while (cursor < run.events.length) {
+          try {
+            controller.enqueue(encoder.encode(run.events[cursor]));
+          } catch {
+            clearInterval(interval);
+            return;
+          }
+          cursor++;
+        }
+        // If done and all events flushed, close
+        if (run.done && cursor >= run.events.length) {
+          clearInterval(interval);
+          try { controller.close(); } catch {}
+        }
+      }, 50);
+
+      // Clean up on client disconnect
+      abortSignal?.addEventListener('abort', () => clearInterval(interval));
+    },
+  });
+}
+
+// ─── GET: Reconnect to an active run ───
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const runId = url.searchParams.get('runId');
+  const fromIndex = parseInt(url.searchParams.get('from') || '0');
+
+  if (!runId) {
+    return NextResponse.json({ error: 'runId required' }, { status: 400 });
+  }
+
+  const run = agentRuns.get(runId);
+  if (!run) {
+    return NextResponse.json({ error: 'Run not found or expired' }, { status: 404 });
+  }
+
+  const stream = streamFromRun(run, fromIndex, req.signal);
+  return new Response(stream, { headers: SSE_HEADERS });
+}
+
+// ─── POST: Start a new chat ───
 export async function POST(req: Request) {
   try {
     const { agentId, agentName, message, projectPath } = await req.json();
@@ -35,7 +117,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing message' }, { status: 400 });
     }
 
-    const persona = PERSONAS[agentId] || `You are ${agentName}, a helpful Digimon assistant. Keep responses concise.`;
+    const persona = await getPersona(agentId, agentName);
 
     await sendHeartbeat(agentId, agentName, 'thinking', 'Reading message...');
 
@@ -46,14 +128,11 @@ export async function POST(req: Request) {
       '--dangerously-skip-permissions',
     ];
 
-    // Resume previous session for this agent (maintains conversation context)
+    // Resume previous session for this agent
     const prevSessionId = agentSessions.get(agentId);
     let isResume = false;
     if (prevSessionId) {
-      // Verify session file exists before trying to resume
       try {
-        const sessDir = path.join(process.env.HOME || '', '.claude', 'projects');
-        // Just try to resume - if it fails, we'll catch it below
         args.push('--resume', prevSessionId);
         isResume = true;
       } catch {}
@@ -77,136 +156,130 @@ export async function POST(req: Request) {
       cwd: finalCwd,
     });
 
+    // ─── Create run buffer (decoupled from HTTP stream) ───
+    const runId = `${agentId}-${Date.now()}`;
+    const run: AgentRun = { events: [], done: false, agentId };
+    agentRuns.set(runId, run);
+
+    // Send runId as first event so client can reconnect
+    run.events.push(`data: ${JSON.stringify({ type: 'run_id', runId })}\n\n`);
+
     let sentFirstChunk = false;
     let currentTask = 'Processing...';
-    const encoder = new TextEncoder();
+    let stdoutBuffer = '';
 
-    const stream = new ReadableStream({
-      start(controller) {
-        let buffer = '';
+    // Process stdout → buffer (runs independently of HTTP connection)
+    proc.stdout.on('data', (chunk: Buffer) => {
+      stdoutBuffer += chunk.toString();
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop() || '';
 
-        proc.stdout.on('data', (chunk: Buffer) => {
-          buffer += chunk.toString();
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
 
-          for (const line of lines) {
-            if (!line.trim()) continue;
+        try {
+          const event = JSON.parse(line);
 
-            try {
-              const event = JSON.parse(line);
-
-              if (!sentFirstChunk) {
-                sentFirstChunk = true;
-                sendHeartbeat(agentId, agentName, 'working', 'Processing...');
-              }
-
-              // Capture session_id for future resume
-              if (event.session_id && !agentSessions.has(agentId)) {
-                agentSessions.set(agentId, event.session_id);
-              }
-
-              if (event.type === 'system' && event.subtype === 'init') {
-                // Save session from init event
-                if (event.session_id) agentSessions.set(agentId, event.session_id);
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ type: 'init', tools: event.tools })}\n\n`)
-                );
-              } else if (event.type === 'assistant') {
-                const contents = event.message?.content || [];
-                for (const block of contents) {
-                  if (block.type === 'thinking') {
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ type: 'thinking', text: block.thinking })}\n\n`)
-                    );
-                  } else if (block.type === 'text') {
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ type: 'text', text: block.text })}\n\n`)
-                    );
-                  } else if (block.type === 'tool_use') {
-                    currentTask = `${block.name}: ${JSON.stringify(block.input).slice(0, 60)}`;
-                    sendHeartbeat(agentId, agentName, 'working', currentTask);
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({
-                        type: 'tool_use',
-                        tool: block.name,
-                        input: block.input,
-                        id: block.id,
-                      })}\n\n`)
-                    );
-                  }
-                }
-              } else if (event.type === 'user' && event.tool_use_result) {
-                let resultPreview = '';
-                const content = event.message?.content;
-                if (Array.isArray(content)) {
-                  for (const c of content) {
-                    if (c.type === 'tool_result' && typeof c.content === 'string') {
-                      resultPreview = c.content.slice(0, 500);
-                    }
-                  }
-                }
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({
-                    type: 'tool_result',
-                    result: resultPreview,
-                  })}\n\n`)
-                );
-              } else if (event.type === 'result') {
-                // If resume failed, clear the session so next attempt starts fresh
-                if (event.subtype === 'error_during_execution' || event.is_error) {
-                  agentSessions.delete(agentId);
-                }
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({
-                    type: 'result',
-                    subtype: event.subtype,
-                    cost: event.total_cost_usd,
-                    duration: event.duration_ms,
-                    turns: event.num_turns,
-                  })}\n\n`)
-                );
-              }
-            } catch {}
+          if (!sentFirstChunk) {
+            sentFirstChunk = true;
+            sendHeartbeat(agentId, agentName, 'working', 'Processing...');
           }
-        });
 
-        proc.stderr.on('data', (chunk: Buffer) => {
-          const errText = chunk.toString().trim();
-          if (errText && (errText.includes('Error') || errText.includes('error'))) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'error', text: errText })}\n\n`)
+          // Capture session_id for future resume
+          if (event.session_id && !agentSessions.has(agentId)) {
+            agentSessions.set(agentId, event.session_id);
+          }
+
+          if (event.type === 'system' && event.subtype === 'init') {
+            if (event.session_id) agentSessions.set(agentId, event.session_id);
+            run.events.push(
+              `data: ${JSON.stringify({ type: 'init', tools: event.tools })}\n\n`
+            );
+          } else if (event.type === 'assistant') {
+            const contents = event.message?.content || [];
+            for (const block of contents) {
+              if (block.type === 'thinking') {
+                run.events.push(
+                  `data: ${JSON.stringify({ type: 'thinking', text: block.thinking })}\n\n`
+                );
+              } else if (block.type === 'text') {
+                run.events.push(
+                  `data: ${JSON.stringify({ type: 'text', text: block.text })}\n\n`
+                );
+              } else if (block.type === 'tool_use') {
+                currentTask = `${block.name}: ${JSON.stringify(block.input).slice(0, 60)}`;
+                sendHeartbeat(agentId, agentName, 'working', currentTask);
+                run.events.push(
+                  `data: ${JSON.stringify({
+                    type: 'tool_use',
+                    tool: block.name,
+                    input: block.input,
+                    id: block.id,
+                  })}\n\n`
+                );
+              }
+            }
+          } else if (event.type === 'user' && event.tool_use_result) {
+            let resultPreview = '';
+            const content = event.message?.content;
+            if (Array.isArray(content)) {
+              for (const c of content) {
+                if (c.type === 'tool_result' && typeof c.content === 'string') {
+                  resultPreview = c.content.slice(0, 500);
+                }
+              }
+            }
+            run.events.push(
+              `data: ${JSON.stringify({ type: 'tool_result', result: resultPreview })}\n\n`
+            );
+          } else if (event.type === 'result') {
+            if (event.subtype === 'error_during_execution' || event.is_error) {
+              agentSessions.delete(agentId);
+            }
+            run.events.push(
+              `data: ${JSON.stringify({
+                type: 'result',
+                subtype: event.subtype,
+                cost: event.total_cost_usd,
+                duration: event.duration_ms,
+                turns: event.num_turns,
+              })}\n\n`
             );
           }
-        });
-
-        proc.on('close', () => {
-          sendHeartbeat(agentId, agentName, 'idle', null as any);
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          controller.close();
-        });
-
-        proc.on('error', (err) => {
-          sendHeartbeat(agentId, agentName, 'error', 'CLI error');
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({
-              type: 'error',
-              text: `Claude CLI error: ${err.message}`,
-            })}\n\n`)
-          );
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          controller.close();
-        });
-      },
+        } catch {}
+      }
     });
 
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      },
+    proc.stderr.on('data', (chunk: Buffer) => {
+      const errText = chunk.toString().trim();
+      if (errText && (errText.includes('Error') || errText.includes('error'))) {
+        run.events.push(
+          `data: ${JSON.stringify({ type: 'error', text: errText })}\n\n`
+        );
+      }
     });
+
+    proc.on('close', () => {
+      sendHeartbeat(agentId, agentName, 'idle', null as any);
+      run.events.push('data: [DONE]\n\n');
+      run.done = true;
+      scheduleCleanup(runId);
+    });
+
+    proc.on('error', (err) => {
+      sendHeartbeat(agentId, agentName, 'error', 'CLI error');
+      run.events.push(
+        `data: ${JSON.stringify({ type: 'error', text: `Claude CLI error: ${err.message}` })}\n\n`
+      );
+      run.events.push('data: [DONE]\n\n');
+      run.done = true;
+      scheduleCleanup(runId);
+    });
+
+    // ─── Stream from buffer to this client ───
+    const stream = streamFromRun(run, 0, req.signal);
+    return new Response(stream, { headers: SSE_HEADERS });
+
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
