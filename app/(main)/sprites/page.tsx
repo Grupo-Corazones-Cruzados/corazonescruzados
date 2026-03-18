@@ -315,8 +315,8 @@ export default function SpritesPage() {
                   </p>
                 )}
 
-                {/* Sprite previews */}
-                <div className="flex items-center gap-2 pt-1">
+                {/* Sprite previews — 7 states */}
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
                   <div className="text-center">
                     <AnimatedSprite
                       src={`/api/assets/universal_assets/citizens/${c.sprite}_actions.png`}
@@ -353,6 +353,17 @@ export default function SpritesPage() {
                   <div className="text-center">
                     <AnimatedSprite
                       src={`/api/assets/universal_assets/citizens/${c.sprite}_actions.png`}
+                      row={2}
+                      frameCount={4}
+                      fps={4}
+                      scale={2}
+                      className="mx-auto"
+                    />
+                    <span className="text-[9px] text-digi-muted block">excited</span>
+                  </div>
+                  <div className="text-center">
+                    <AnimatedSprite
+                      src={`/api/assets/universal_assets/citizens/${c.sprite}_actions.png`}
                       row={1}
                       frameCount={4}
                       fps={2}
@@ -360,6 +371,28 @@ export default function SpritesPage() {
                       className="mx-auto"
                     />
                     <span className="text-[9px] text-digi-muted block">rest</span>
+                  </div>
+                  <div className="text-center">
+                    <AnimatedSprite
+                      src={`/api/assets/universal_assets/citizens/${c.sprite}_done.png`}
+                      row={0}
+                      frameCount={4}
+                      fps={4}
+                      scale={2}
+                      className="mx-auto"
+                    />
+                    <span className="text-[9px] text-digi-muted block">done</span>
+                  </div>
+                  <div className="text-center">
+                    <AnimatedSprite
+                      src={`/api/assets/universal_assets/citizens/${c.sprite}_eating.png`}
+                      row={0}
+                      frameCount={4}
+                      fps={4}
+                      scale={2}
+                      className="mx-auto"
+                    />
+                    <span className="text-[9px] text-digi-muted block">eating</span>
                   </div>
                 </div>
               </div>
@@ -449,8 +482,8 @@ export default function SpritesPage() {
 
       {/* Info */}
       <div className="text-xs text-digi-muted space-y-1 border-t border-digi-border pt-4">
-        <p>Generacion via <strong className="text-digi-text">fal.ai nano-banana-pro</strong> + remocion de fondo con <strong className="text-digi-text">bria</strong>.</p>
-        <p>Se generan 2 sprite sheets por personaje (walk + actions) con 6 estados: idle, walking, working, hover, resting y celebration.</p>
+        <p>Generacion via <strong className="text-digi-text">fal.ai nano-banana-pro</strong> + remocion de fondo con <strong className="text-digi-text">bria</strong> + perfil via <strong className="text-digi-text">OpenAI GPT-4o</strong>.</p>
+        <p>Se generan 3 sprite sheets por personaje (walk + actions + eating) con 7 estados: idle, walking, working, excited, resting, celebration y eating.</p>
       </div>
     </div>
   );

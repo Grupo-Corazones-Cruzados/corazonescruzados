@@ -87,6 +87,7 @@ import {
   MicOff,
   Link,
   Check,
+  Square,
 } from 'lucide-react';
 
 // Each block in the conversation
@@ -344,9 +345,28 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
   const citizenRef = useRef(citizen);
   citizenRef.current = citizen;
 
+  // Stop the current running agent process
+  const stopAgent = useCallback(async () => {
+    const currentRunId = runIdRef.current;
+    if (!currentRunId) return;
+    try {
+      await fetch(`/api/chat?runId=${currentRunId}`, { method: 'DELETE' });
+    } catch {}
+  }, []);
+
   const sendMessage = useCallback(async () => {
     const msg = input.trim();
-    if (!msg || streaming) return;
+    if (!msg) return;
+
+    // If already streaming, kill current process first so the new message
+    // gets sent to a fresh --resume session with full context
+    if (streaming && runIdRef.current) {
+      try {
+        await fetch(`/api/chat?runId=${runIdRef.current}`, { method: 'DELETE' });
+      } catch {}
+      // Small delay for process cleanup
+      await new Promise(r => setTimeout(r, 300));
+    }
 
     setInput('');
     setError(null);
@@ -558,7 +578,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
     return () => document.removeEventListener('visibilitychange', handler);
   }, [reconnect]);
 
-  // Handle external voice messages
+  // Handle external voice messages / incident forwarding
   const externalProcessedRef = useRef<string | null>(null);
   useEffect(() => {
     if (externalMessage && !streaming && externalProcessedRef.current !== externalMessage) {
@@ -587,44 +607,21 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
           }),
         }).then(async (res) => {
           if (!res.ok) throw new Error('Chat failed');
-          const reader = res.body?.getReader();
-          if (!reader) return;
-          const decoder = new TextDecoder();
-          let currentTextBlockId: string | null = null;
-          let accumulatedText = '';
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const text = decoder.decode(value, { stream: true });
-            for (const line of text.split('\n')) {
-              if (!line.startsWith('data: ')) continue;
-              const payload = line.slice(6);
-              if (payload === '[DONE]') break;
-              try {
-                const parsed = JSON.parse(payload);
-                if (parsed.type === 'text') {
-                  if (currentTextBlockId) {
-                    accumulatedText += parsed.text;
-                    const t = accumulatedText, id = currentTextBlockId;
-                    setBlocks(prev => prev.map(b => b.id === id ? { ...b, content: t } : b));
-                  } else {
-                    accumulatedText = parsed.text;
-                    const id = newId();
-                    currentTextBlockId = id;
-                    setBlocks(prev => [...prev, { id, type: 'text', content: parsed.text }]);
-                  }
-                } else if (parsed.type === 'result') {
-                  setBlocks(prev => [...prev, { id: newId(), type: 'result', content: '', cost: parsed.cost, duration: parsed.duration, turns: parsed.turns }]);
-                }
-              } catch {}
-            }
+          await readSSEStream(res.body!.getReader());
+        }).catch((e) => {
+          if (runIdRef.current && streamingRef.current) return;
+          setError(e.message);
+        }).finally(() => {
+          if (!reconnectingRef.current) {
+            setStreaming(false);
+            streamingRef.current = false;
+            runIdRef.current = null;
+            eventIndexRef.current = 0;
           }
-        }).catch((e) => setError(e.message))
-          .finally(() => { setStreaming(false); streamingRef.current = false; });
+        });
       }, 50);
     }
-  }, [externalMessage]);
+  }, [externalMessage, readSSEStream]);
 
   const clearChat = () => {
     setBlocks([]);
@@ -943,16 +940,24 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } }}
             onPaste={handlePaste as any}
-            placeholder={`Message ${citizen.name}...`}
-            className="flex-1 min-w-0 px-3 py-2 bg-[#0d1117] border border-[#30363d] rounded-lg text-[13px] text-[#c9d1d9] placeholder:text-[#484f58] focus:outline-none focus:border-digi-green/50"
-            disabled={streaming}
+            placeholder={streaming ? `Agregar contexto a ${citizen.name}...` : `Message ${citizen.name}...`}
+            className={`flex-1 min-w-0 px-3 py-2 bg-[#0d1117] border rounded-lg text-[13px] text-[#c9d1d9] placeholder:text-[#484f58] focus:outline-none focus:border-digi-green/50 ${streaming ? 'border-amber-500/30' : 'border-[#30363d]'}`}
           />
+          {streaming && (
+            <button
+              onClick={stopAgent}
+              className="p-2 text-red-400 hover:text-red-300 active:text-red-500 shrink-0"
+              title="Detener agente"
+            >
+              <Square size={16} fill="currentColor" />
+            </button>
+          )}
           <button
             onClick={sendMessage}
-            disabled={streaming || !input.trim()}
+            disabled={!input.trim()}
             className="p-2 text-digi-green active:text-digi-green disabled:opacity-20 shrink-0"
           >
-            {streaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            {streaming && !input.trim() ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
           </button>
         </div>
       </div>

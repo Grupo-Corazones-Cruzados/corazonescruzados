@@ -23,14 +23,38 @@ interface SpriteState {
   targetX: number;
   y: number;
   direction: 'left' | 'right';
-  phase: 'idle' | 'walking' | 'working' | 'hovered' | 'done' | 'resting';
+  phase: 'idle' | 'walking' | 'working' | 'hovered' | 'done' | 'resting' | 'eating';
   idleTimer: number;
   walkImg: HTMLImageElement | null;
   actionsImg: HTMLImageElement | null;
   doneImg: HTMLImageElement | null;
+  eatingImg: HTMLImageElement | null;
   hoverBounce: number;
   doneStartFrame: number;
   lastActiveTime: number;
+  eatingStartFrame: number;
+}
+
+interface DigimonClientData {
+  agentId: string;
+  affinity: number;
+  foodSchedule: { meals: [string, string, string] };
+  lastFedDates: string[];
+  phrases: {
+    tier1: string[]; tier2: string[]; tier3: string[];
+    tier4: string[]; tier5: string[]; tier6: string[];
+  };
+}
+
+interface SpeechBubble {
+  text: string;
+  startTime: number;
+  duration: number;  // ms
+}
+
+interface FoodIconState {
+  mealIndex: number;
+  bouncePhase: number;
 }
 
 // ─── Constants ──────────────────────────────────────────
@@ -42,9 +66,15 @@ const WALK_SPEED = 1.2;
 const IDLE_MIN = 3000;
 const IDLE_MAX = 8000;
 
+// Speech bubble frequency per tier (ms between phrases)
+const SPEECH_INTERVALS: Record<number, number> = { 1: 120000, 2: 60000, 3: 40000, 4: 25000, 5: 15000, 6: 8000 };
+const SPEECH_DURATION_MIN = 3000;
+const SPEECH_DURATION_MAX = 5000;
+const EATING_DURATION_FRAMES = 24; // ~2s at 12fps
+
 // Per-agent sprite configuration (defaults: walkFrames=4, doneFrames=10)
 const RESTING_TIMEOUT = 60000; // 1 minute without interaction → resting
-const SPRITE_CONFIG: Record<string, { walkFrames?: number; doneFrames?: number; workingBounce?: boolean; frameHeight?: number; flipRight?: boolean; doneClamp?: boolean; doneLoopFrom?: number; yOffsets?: { idle?: number; walking?: number; working?: number; hovered?: number; done?: number; resting?: number } }> = {
+const SPRITE_CONFIG: Record<string, { walkFrames?: number; doneFrames?: number; workingBounce?: boolean; frameHeight?: number; flipRight?: boolean; doneClamp?: boolean; doneLoopFrom?: number; yOffsets?: { idle?: number; walking?: number; working?: number; hovered?: number; done?: number; resting?: number; eating?: number } }> = {
   shoutmon: { walkFrames: 8, doneFrames: 4 },
   patamon: { walkFrames: 8, doneFrames: 8, workingBounce: true },
 };
@@ -72,8 +102,15 @@ export default function WorldPage() {
   const [voiceStatus, setVoiceStatus] = useState<string | null>(null);
   const [voiceMessage, setVoiceMessage] = useState<{ agentId: string; text: string } | null>(null);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [initialTaskId, setInitialTaskId] = useState<string | null>(null);
   const [agentProjectMap, setAgentProjectMap] = useState<Record<string, string>>({});
   const [hiddenAgents, setHiddenAgents] = useState<Set<string>>(new Set());
+
+  // Digimon data (affinity, food, phrases)
+  const digimonDataRef = useRef<Record<string, DigimonClientData>>({});
+  const speechBubblesRef = useRef<Map<string, SpeechBubble>>(new Map());
+  const speechTimersRef = useRef<Map<string, number>>(new Map());
+  const foodIconsRef = useRef<Map<string, FoodIconState>>(new Map());
 
   // Restore hidden agents after mount (avoids SSR hydration mismatch)
   useEffect(() => {
@@ -140,6 +177,13 @@ export default function WorldPage() {
         }
         setAgentProjectMap(projMap);
 
+        // Load digimon data (affinity, food, phrases)
+        try {
+          const digiRes = await fetch('/api/digimon-data');
+          const digiData = await digiRes.json();
+          digimonDataRef.current = digiData;
+        } catch { /* ignore */ }
+
         // Load sprite images
         const cW = containerRef.current?.clientWidth || window.innerWidth;
         const spacing = Math.min(200, (cW - 120) / Math.max(loaded.length, 1));
@@ -147,10 +191,11 @@ export default function WorldPage() {
 
         for (let i = 0; i < loaded.length; i++) {
           const a = loaded[i];
-          const [walkImg, actionsImg, doneImg] = await Promise.all([
+          const [walkImg, actionsImg, doneImg, eatingImg] = await Promise.all([
             loadImg(`/api/assets/universal_assets/citizens/${a.sprite}_walk.png`),
             loadImg(`/api/assets/universal_assets/citizens/${a.sprite}_actions.png`),
             loadImg(`/api/assets/universal_assets/citizens/${a.sprite}_done.png`),
+            loadImg(`/api/assets/universal_assets/citizens/${a.sprite}_eating.png`),
           ]);
           const initX = Math.min(startX + i * spacing, cW - 60);
           spritesRef.current.set(a.agentId, {
@@ -163,9 +208,11 @@ export default function WorldPage() {
             walkImg,
             actionsImg,
             doneImg,
+            eatingImg,
             hoverBounce: 0,
             doneStartFrame: 0,
             lastActiveTime: Date.now(),
+            eatingStartFrame: 0,
           });
         }
       } catch {}
@@ -542,8 +589,15 @@ export default function WorldPage() {
           const baseY = groundY - DRAW_SIZE + 16;
           s.y = baseY + (a.sprite === 'shoutmon' ? 39 : 0);
 
-          // Behavior
-          if (isWorking) {
+          // Behavior — eating takes priority after food icon click
+          if (s.phase === 'eating') {
+            // Stay in eating until animation completes
+            if (frameRef.current - s.eatingStartFrame > EATING_DURATION_FRAMES) {
+              s.phase = 'idle';
+              s.idleTimer = IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
+              s.lastActiveTime = Date.now();
+            }
+          } else if (isWorking) {
             s.phase = 'working';
             s.targetX = s.x;
             s.hoverBounce = 0;
@@ -610,7 +664,12 @@ export default function WorldPage() {
           let speed: number;
           const sprCfg = SPRITE_CONFIG[a.sprite] || {};
 
-          if (s.phase === 'done') {
+          if (s.phase === 'eating') {
+            sheet = s.eatingImg;
+            row = 0;
+            frames = 4;
+            speed = 3;
+          } else if (s.phase === 'done') {
             sheet = s.doneImg;
             row = 0;
             frames = sprCfg.doneFrames || 4;
@@ -789,6 +848,153 @@ export default function WorldPage() {
             }
             ctx.globalAlpha = 1;
           }
+
+          // ── Affinity bar + Food icon + Speech bubble ──
+          const dData = digimonDataRef.current[a.agentId];
+          if (dData) {
+            // Affinity bar — below name label, above sprite
+            const barW = 28;
+            const barH = 3;
+            const barX = s.x - barW / 2;
+            const barY = nameY + 18;
+            const fill = Math.max(0, Math.min(1, dData.affinity / 100));
+            // Background
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+            // Fill — red to yellow to green gradient
+            const r = Math.round(255 * (1 - fill));
+            const g = Math.round(255 * fill);
+            ctx.fillStyle = `rgb(${r},${g},50)`;
+            ctx.fillRect(barX, barY, barW * fill, barH);
+
+            // ── Food icon (bouncing) ──
+            const nowMs = Date.now();
+            const nowDate = new Date();
+            const todayStr = nowDate.toISOString().split('T')[0];
+            const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+
+            for (let mi = 0; mi < 3; mi++) {
+              const mealStr = dData.foodSchedule.meals[mi];
+              if (!mealStr) continue;
+              const [mh, mm] = mealStr.split(':').map(Number);
+              const mealMin = mh * 60 + mm;
+              const diff = nowMinutes - mealMin;
+              const fedKey = `${todayStr}_${mi}`;
+              const alreadyFed = dData.lastFedDates.includes(fedKey);
+
+              if (diff >= 0 && diff < 180 && !alreadyFed && s.phase !== 'eating') {
+                // Show food icon above sprite
+                const bounce = Math.sin(frameRef.current * 0.15) * 4;
+                const iconX = s.x;
+                const iconY = s.y - 10 + bounce;
+
+                // Store food icon state for hit testing
+                foodIconsRef.current.set(a.agentId, { mealIndex: mi, bouncePhase: bounce });
+
+                // Draw pixel-art food icon (small apple/meat)
+                ctx.fillStyle = '#ff6347'; // tomato red
+                ctx.beginPath();
+                ctx.arc(iconX, iconY, 7, 0, Math.PI * 2);
+                ctx.fill();
+                // Highlight
+                ctx.fillStyle = '#ff8c69';
+                ctx.beginPath();
+                ctx.arc(iconX - 2, iconY - 2, 3, 0, Math.PI * 2);
+                ctx.fill();
+                // Stem
+                ctx.fillStyle = '#228b22';
+                ctx.fillRect(iconX - 1, iconY - 10, 2, 4);
+                // Leaf
+                ctx.fillRect(iconX + 1, iconY - 9, 3, 2);
+
+                // Pulsing ring
+                ctx.strokeStyle = '#ff6347';
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = 0.3 + 0.3 * Math.sin(frameRef.current * 0.1);
+                ctx.beginPath();
+                ctx.arc(iconX, iconY, 11, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+                break; // Only show one food icon at a time
+              } else {
+                foodIconsRef.current.delete(a.agentId);
+              }
+            }
+
+            // ── Speech bubble ──
+            const bubble = speechBubblesRef.current.get(a.agentId);
+            const tier = dData.affinity >= 90 ? 6 : dData.affinity >= 70 ? 5 : dData.affinity >= 50 ? 4 : dData.affinity >= 30 ? 3 : dData.affinity >= 10 ? 2 : 1;
+
+            // Generate new speech bubble if timer expired
+            const lastSpeech = speechTimersRef.current.get(a.agentId) ?? 0;
+            const interval = SPEECH_INTERVALS[tier] ?? 120000;
+            if (nowMs - lastSpeech > interval && !bubble) {
+              const allPhrases: string[] = [
+                ...dData.phrases.tier1,
+                ...(tier >= 2 ? dData.phrases.tier2 : []),
+                ...(tier >= 3 ? dData.phrases.tier3 : []),
+                ...(tier >= 4 ? dData.phrases.tier4 : []),
+                ...(tier >= 5 ? dData.phrases.tier5 : []),
+                ...(tier >= 6 ? dData.phrases.tier6 : []),
+              ];
+              if (allPhrases.length > 0) {
+                const phrase = allPhrases[Math.floor(Math.random() * allPhrases.length)];
+                const dur = SPEECH_DURATION_MIN + Math.random() * (SPEECH_DURATION_MAX - SPEECH_DURATION_MIN);
+                speechBubblesRef.current.set(a.agentId, { text: phrase, startTime: nowMs, duration: dur });
+                speechTimersRef.current.set(a.agentId, nowMs);
+              }
+            }
+
+            // Draw active speech bubble
+            if (bubble) {
+              const elapsed = nowMs - bubble.startTime;
+              if (elapsed > bubble.duration) {
+                speechBubblesRef.current.delete(a.agentId);
+              } else {
+                // Fade in/out
+                const fadeIn = Math.min(1, elapsed / 300);
+                const fadeOut = Math.min(1, (bubble.duration - elapsed) / 300);
+                const alpha = fadeIn * fadeOut;
+
+                ctx.globalAlpha = alpha;
+                ctx.font = '9px "JetBrains Mono", monospace';
+                const textW = ctx.measureText(bubble.text).width;
+                const bw = textW + 12;
+                const bh = 18;
+                const bx = s.x - bw / 2;
+                const by = s.y - 28;
+
+                // Bubble body
+                ctx.fillStyle = 'rgba(255,255,255,0.92)';
+                ctx.beginPath();
+                ctx.roundRect(bx, by, bw, bh, 4);
+                ctx.fill();
+                // Border
+                ctx.strokeStyle = '#1D9E75';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                // Triangle pointer
+                ctx.fillStyle = 'rgba(255,255,255,0.92)';
+                ctx.beginPath();
+                ctx.moveTo(s.x - 4, by + bh);
+                ctx.lineTo(s.x + 4, by + bh);
+                ctx.lineTo(s.x, by + bh + 5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#1D9E75';
+                ctx.beginPath();
+                ctx.moveTo(s.x - 4, by + bh);
+                ctx.lineTo(s.x, by + bh + 5);
+                ctx.lineTo(s.x + 4, by + bh);
+                ctx.stroke();
+                // Text
+                ctx.fillStyle = '#1a1a2e';
+                ctx.textAlign = 'center';
+                ctx.fillText(bubble.text, s.x, by + 13);
+                ctx.globalAlpha = 1;
+              }
+            }
+          }
         }
 
         // ── Agent avatar bubbles (top bar) ──
@@ -852,8 +1058,24 @@ export default function WorldPage() {
           }
           ctx.globalAlpha = 1;
 
+          // Affinity bar below bubble (between bubble and eye)
+          const abData = digimonDataRef.current[a.agentId];
+          if (abData && !isHidden) {
+            const abW = 28;
+            const abH = 3;
+            const abX = bx - abW / 2;
+            const abY = by + bubbleSize / 2 + 4;
+            const abFill = Math.max(0, Math.min(1, abData.affinity / 100));
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(abX - 1, abY - 1, abW + 2, abH + 2);
+            const abR = Math.round(255 * (1 - abFill));
+            const abG = Math.round(255 * abFill);
+            ctx.fillStyle = `rgb(${abR},${abG},50)`;
+            ctx.fillRect(abX, abY, abW * abFill, abH);
+          }
+
           // Eye toggle icon below bubble — pixel-art style
-          const eyeY = by + bubbleSize / 2 + 8;
+          const eyeY = by + bubbleSize / 2 + 12;
           const ew = 10; // half-width
           const eh = 4;  // half-height
           ctx.globalAlpha = isHidden ? 0.5 : 0.85;
@@ -963,6 +1185,17 @@ export default function WorldPage() {
     const cy = clientY - rect.top;
     const W = canvas.width;
 
+    // Check food icons first (on sprites)
+    for (const a of agents) {
+      const s = spritesRef.current.get(a.agentId);
+      const food = foodIconsRef.current.get(a.agentId);
+      if (!s || !food) continue;
+      const iconX = s.x;
+      const iconY = s.y - 10;
+      const dist = Math.sqrt((cx - iconX) ** 2 + (cy - iconY) ** 2);
+      if (dist <= 15) return `food:${a.agentId}:${food.mealIndex}`;
+    }
+
     // Check eye toggle buttons first (below bubbles)
     const bubbleSize = 32;
     const bubblePad = 10;
@@ -970,7 +1203,7 @@ export default function WorldPage() {
     const bubbleStartX = (W - totalBubbleW) / 2;
     for (let i = 0; i < agents.length; i++) {
       const bx = bubbleStartX + i * (bubbleSize + bubblePad) + bubbleSize / 2;
-      const eyeY = 10 + bubbleSize / 2 + bubbleSize / 2 + 8;
+      const eyeY = 10 + bubbleSize / 2 + bubbleSize / 2 + 12;
       const eyeDist = Math.sqrt((cx - bx) ** 2 + (cy - eyeY) ** 2);
       if (eyeDist <= 12) return `eye:${agents[i].agentId}`;
     }
@@ -1003,9 +1236,43 @@ export default function WorldPage() {
   }, [hitTestAgent]);
 
   // ─── Click/tap on canvas to select agent ────────────────
+  // Feed a digimon via API
+  const feedDigimon = useCallback(async (agentId: string, mealIndex: number) => {
+    try {
+      const res = await fetch('/api/digimon-data/feed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId, mealIndex }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Update local digimon data
+        const d = digimonDataRef.current[agentId];
+        if (d) {
+          d.affinity = data.affinity;
+          d.lastFedDates.push(data.fedKey);
+        }
+        // Trigger eating animation
+        const s = spritesRef.current.get(agentId);
+        if (s) {
+          s.phase = 'eating';
+          s.eatingStartFrame = frameRef.current;
+        }
+        // Remove food icon
+        foodIconsRef.current.delete(agentId);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const selectAgentAt = useCallback((clientX: number, clientY: number) => {
     const result = hitTestAgent(clientX, clientY);
     if (!result) return;
+    // Food icon click
+    if (result.startsWith('food:')) {
+      const parts = result.split(':');
+      feedDigimon(parts[1], parseInt(parts[2]));
+      return;
+    }
     // Eye toggle click
     if (result.startsWith('eye:')) {
       const agentId = result.slice(4);
@@ -1015,7 +1282,7 @@ export default function WorldPage() {
     const agentId = result;
     if (activeAgent === agentId) setActiveAgent(null);
     else { setActiveAgent(agentId); setUnread(u => ({ ...u, [agentId]: 0 })); }
-  }, [hitTestAgent, activeAgent, toggleAgentVisibility]);
+  }, [hitTestAgent, activeAgent, toggleAgentVisibility, feedDigimon]);
 
   const lastInteractionRef = useRef(0);
 
@@ -1165,12 +1432,32 @@ export default function WorldPage() {
   }, [voiceRecording, activeAgent, agents, detectAgent]);
 
   // ─── Send incident to agent ─────────────────────────────
-  const handleSendToAgent = useCallback((agentId: string, message: string, images: string[]) => {
-    // Build message with image references
+  const handleSendToAgent = useCallback(async (agentId: string, message: string, images: string[]) => {
     let fullMsg = message;
+
+    // Save base64 images to temp files so the agent can read them
     if (images.length > 0) {
-      fullMsg += '\n\nImagenes adjuntas:\n' + images.map(img => `- /api/incidents/uploads?file=${img}`).join('\n');
+      const savedPaths: string[] = [];
+      for (const dataUri of images) {
+        try {
+          // Convert base64 data URI to Blob
+          const res = await fetch(dataUri);
+          const blob = await res.blob();
+          const ext = blob.type.split('/')[1] || 'png';
+          const file = new File([blob], `incident-img-${Date.now()}.${ext}`, { type: blob.type });
+          const form = new FormData();
+          form.append('file', file);
+          const uploadRes = await fetch('/api/chat-upload', { method: 'POST', body: form });
+          const uploadData = await uploadRes.json();
+          if (uploadData.path) savedPaths.push(uploadData.path);
+        } catch { /* skip failed uploads */ }
+      }
+      if (savedPaths.length > 0) {
+        const paths = savedPaths.map(p => `"${p}"`).join(', ');
+        fullMsg += `\n\n[The user has attached ${savedPaths.length} image(s). Read them with the Read tool to see them: ${paths}]`;
+      }
     }
+
     setActiveAgent(agentId);
     setUnread(u => ({ ...u, [agentId]: 0 }));
     setTimeout(() => setVoiceMessage({ agentId, text: fullMsg }), 300);
@@ -1194,7 +1481,10 @@ export default function WorldPage() {
           style={{ imageRendering: 'pixelated' }}
         />
         {/* Floating tasks widget (left center) */}
-        <FloatingTasksWidget onOpenTasksModal={() => setTasksOpen(true)} />
+        <FloatingTasksWidget
+          onOpenTasksModal={() => { setInitialTaskId(null); setTasksOpen(true); }}
+          onOpenTaskDetail={(id) => { setInitialTaskId(id); setTasksOpen(true); }}
+        />
 
         {/* Floating voice command button */}
         <button
@@ -1275,10 +1565,11 @@ export default function WorldPage() {
       {/* Tasks modal */}
       <TasksModal
         open={tasksOpen}
-        onClose={() => setTasksOpen(false)}
+        onClose={() => { setTasksOpen(false); setInitialTaskId(null); }}
         activeAgentId={activeAgent}
         agentProjectMap={agentProjectMap}
         onSendToAgent={handleSendToAgent}
+        initialTaskId={initialTaskId}
       />
     </div>
   );

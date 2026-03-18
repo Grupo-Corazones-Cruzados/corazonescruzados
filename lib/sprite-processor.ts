@@ -80,20 +80,34 @@ export async function buildDoneSheet(actionsBuffer: Buffer): Promise<Buffer> {
   return extractRow(actionsBuffer, 2);
 }
 
+// ── Process eating sheet (1 row of 4 frames) ──
+
+export async function processEatingSheet(imageBuffer: Buffer): Promise<Buffer> {
+  // Resize to 256x64 (4 frames of 64x64 in a single row)
+  return sharp(imageBuffer)
+    .resize(COLS * FRAME, FRAME, { kernel: sharp.kernel.nearest })
+    .png()
+    .toBuffer();
+}
+
 // ── Save sprites ───────────────────────────────────────
 
 export async function saveSprites(
   agentId: string,
-  sheets: { walk: Buffer; actions: Buffer; done: Buffer }
+  sheets: { walk: Buffer; actions: Buffer; done: Buffer; eating?: Buffer }
 ): Promise<string> {
   const citizensDir = getCitizensDir();
   await fs.mkdir(citizensDir, { recursive: true });
 
-  await Promise.all([
+  const writes = [
     fs.writeFile(path.join(citizensDir, `${agentId}_walk.png`), sheets.walk),
     fs.writeFile(path.join(citizensDir, `${agentId}_actions.png`), sheets.actions),
     fs.writeFile(path.join(citizensDir, `${agentId}_done.png`), sheets.done),
-  ]);
+  ];
+  if (sheets.eating) {
+    writes.push(fs.writeFile(path.join(citizensDir, `${agentId}_eating.png`), sheets.eating));
+  }
+  await Promise.all(writes);
 
   return citizensDir;
 }

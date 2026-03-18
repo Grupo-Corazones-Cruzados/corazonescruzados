@@ -32,6 +32,7 @@ interface AgentRun {
   events: string[];       // buffered SSE event strings
   done: boolean;          // process exited?
   agentId: string;
+  proc?: ChildProcess;    // reference to kill if needed
 }
 
 const agentRuns = new Map<string, AgentRun>();
@@ -87,6 +88,44 @@ function streamFromRun(run: AgentRun, fromIndex: number, abortSignal?: AbortSign
       abortSignal?.addEventListener('abort', () => clearInterval(interval));
     },
   });
+}
+
+// ─── DELETE: Stop a running agent process ───
+export async function DELETE(req: Request) {
+  const url = new URL(req.url);
+  const runId = url.searchParams.get('runId');
+
+  if (!runId) {
+    return NextResponse.json({ error: 'runId required' }, { status: 400 });
+  }
+
+  const run = agentRuns.get(runId);
+  if (!run) {
+    return NextResponse.json({ error: 'Run not found' }, { status: 404 });
+  }
+
+  if (run.proc && !run.done) {
+    // Kill the entire process tree
+    try {
+      // First try SIGTERM
+      run.proc.kill('SIGTERM');
+      // Force kill after 2s if still alive
+      setTimeout(() => {
+        try { run.proc?.kill('SIGKILL'); } catch {}
+      }, 2000);
+    } catch {}
+
+    run.events.push(
+      `data: ${JSON.stringify({ type: 'error', text: 'Proceso detenido por el usuario' })}\n\n`
+    );
+    run.events.push('data: [DONE]\n\n');
+    run.done = true;
+
+    sendHeartbeat(run.agentId, '', 'idle');
+    scheduleCleanup(runId);
+  }
+
+  return NextResponse.json({ ok: true });
 }
 
 // ─── GET: Reconnect to an active run ───
@@ -158,7 +197,7 @@ export async function POST(req: Request) {
 
     // ─── Create run buffer (decoupled from HTTP stream) ───
     const runId = `${agentId}-${Date.now()}`;
-    const run: AgentRun = { events: [], done: false, agentId };
+    const run: AgentRun = { events: [], done: false, agentId, proc };
     agentRuns.set(runId, run);
 
     // Send runId as first event so client can reconnect

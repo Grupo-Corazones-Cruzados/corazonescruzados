@@ -9,10 +9,11 @@ import { cn } from '@/lib/utils';
 import type { Incident, IncidentStatus } from '@/types/incidents';
 
 const STATUS_CFG: Record<IncidentStatus, { label: string; color: string; bg: string; icon: typeof Clock }> = {
-  pending:   { label: 'Pendiente',  color: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/30', icon: Clock },
-  approved:  { label: 'Aprobada',   color: 'text-blue-400',   bg: 'bg-blue-400/10 border-blue-400/30',     icon: CheckCircle },
-  rejected:  { label: 'Rechazada',  color: 'text-red-400',    bg: 'bg-red-400/10 border-red-400/30',       icon: XCircle },
-  completed: { label: 'Completada', color: 'text-green-400',  bg: 'bg-green-400/10 border-green-400/30',   icon: CheckCircle },
+  pending:   { label: 'Pendiente',   color: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/30', icon: Clock },
+  approved:  { label: 'Aprobada',    color: 'text-blue-400',   bg: 'bg-blue-400/10 border-blue-400/30',     icon: CheckCircle },
+  rejected:  { label: 'Rechazada',   color: 'text-red-400',    bg: 'bg-red-400/10 border-red-400/30',       icon: XCircle },
+  reviewing: { label: 'En revisión', color: 'text-purple-400', bg: 'bg-purple-400/10 border-purple-400/30', icon: Eye },
+  completed: { label: 'Completada',  color: 'text-green-400',  bg: 'bg-green-400/10 border-green-400/30',   icon: CheckCircle },
 };
 
 interface ProjectInfo { id: string; name: string; agentId: string }

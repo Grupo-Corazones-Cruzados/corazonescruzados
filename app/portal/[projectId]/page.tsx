@@ -11,10 +11,11 @@ import type { Incident, IncidentStatus } from '@/types/incidents';
 import type { ProjectStructure, Module, Section } from '@/types/projects';
 
 const STATUS_CONFIG: Record<IncidentStatus, { label: string; color: string; icon: typeof Clock }> = {
-  pending:   { label: 'Pendiente',  color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30', icon: Clock },
-  approved:  { label: 'Aprobada',   color: 'text-blue-400 bg-blue-400/10 border-blue-400/30',     icon: CheckCircle },
-  rejected:  { label: 'Rechazada',  color: 'text-red-400 bg-red-400/10 border-red-400/30',        icon: XCircle },
-  completed: { label: 'Completada', color: 'text-green-400 bg-green-400/10 border-green-400/30',   icon: CheckCircle },
+  pending:   { label: 'Pendiente',   color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30', icon: Clock },
+  approved:  { label: 'Aprobada',    color: 'text-blue-400 bg-blue-400/10 border-blue-400/30',     icon: CheckCircle },
+  rejected:  { label: 'Rechazada',   color: 'text-red-400 bg-red-400/10 border-red-400/30',        icon: XCircle },
+  reviewing: { label: 'En revisión', color: 'text-purple-400 bg-purple-400/10 border-purple-400/30', icon: Clock },
+  completed: { label: 'Completada',  color: 'text-green-400 bg-green-400/10 border-green-400/30',   icon: CheckCircle },
 };
 
 export default function PortalPage() {

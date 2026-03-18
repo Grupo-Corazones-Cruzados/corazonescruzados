@@ -8,6 +8,7 @@ const STATUS_ICON: Record<IncidentStatus, { icon: typeof Clock; color: string; g
   pending:   { icon: Clock,       color: '#facc15', glow: '#facc1580' },
   approved:  { icon: CheckCircle, color: '#60a5fa', glow: '#60a5fa80' },
   rejected:  { icon: XCircle,     color: '#f87171', glow: '#f8717180' },
+  reviewing: { icon: Clock,       color: '#c084fc', glow: '#c084fc80' },
   completed: { icon: CheckCircle, color: '#4ade80', glow: '#4ade8080' },
 };
 
@@ -15,6 +16,7 @@ const STATUS_LABEL: Record<IncidentStatus, string> = {
   pending: 'PND',
   approved: 'APR',
   rejected: 'REJ',
+  reviewing: 'REV',
   completed: 'DON',
 };
 
@@ -23,9 +25,10 @@ const DEFAULT_POS = { portrait: { x: -1, y: 52 }, landscape: { x: 8, y: 8 } };
 
 interface Props {
   onOpenTasksModal: () => void;
+  onOpenTaskDetail?: (incidentId: string) => void;
 }
 
-export default function FloatingTasksWidget({ onOpenTasksModal }: Props) {
+export default function FloatingTasksWidget({ onOpenTasksModal, onOpenTaskDetail }: Props) {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -130,6 +133,7 @@ export default function FloatingTasksWidget({ onOpenTasksModal }: Props) {
       const res = await fetch('/api/incidents');
       const data: Incident[] = await res.json();
       const sorted = data
+        .filter(i => i.status !== 'completed')
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5);
       setIncidents(sorted);
@@ -243,7 +247,8 @@ export default function FloatingTasksWidget({ onOpenTasksModal }: Props) {
                 return (
                   <div
                     key={inc.id}
-                    className="flex items-center gap-2 px-1.5 py-1.5 rounded transition-colors hover:bg-white/5 cursor-default"
+                    onClick={() => onOpenTaskDetail?.(inc.id)}
+                    className="flex items-center gap-2 px-1.5 py-1.5 rounded transition-colors hover:bg-white/8 cursor-pointer active:bg-white/12"
                   >
                     <Icon
                       size={12}

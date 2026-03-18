@@ -1,4 +1,4 @@
-export type IncidentStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+export type IncidentStatus = 'pending' | 'approved' | 'rejected' | 'reviewing' | 'completed';
 
 export interface Incident {
   id: string;
