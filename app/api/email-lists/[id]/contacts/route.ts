@@ -6,7 +6,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireRole(req, "member", "admin");
+  const auth = await requireRole(req, "client", "member", "admin");
   if (isErrorResponse(auth)) return auth;
 
   const { id } = await params;
@@ -76,7 +76,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireRole(req, "member", "admin");
+  const auth = await requireRole(req, "client", "member", "admin");
   if (isErrorResponse(auth)) return auth;
 
   const { id } = await params;

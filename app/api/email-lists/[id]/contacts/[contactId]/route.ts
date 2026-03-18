@@ -6,7 +6,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; contactId: string }> }
 ) {
-  const auth = await requireRole(req, "member", "admin");
+  const auth = await requireRole(req, "client", "member", "admin");
   if (isErrorResponse(auth)) return auth;
 
   const { id, contactId } = await params;
@@ -59,7 +59,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; contactId: string }> }
 ) {
-  const auth = await requireRole(req, "member", "admin");
+  const auth = await requireRole(req, "client", "member", "admin");
   if (isErrorResponse(auth)) return auth;
 
   const { id, contactId } = await params;

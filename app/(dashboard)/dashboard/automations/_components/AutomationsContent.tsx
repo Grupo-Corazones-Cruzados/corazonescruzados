@@ -134,18 +134,18 @@ function IconFile({ size = 20 }: { size?: number }) {
 // =====================================================
 
 export default function AutomationsContent({ toast }: { toast: ToastFn }) {
-  const { user, loading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<AutoTab>("contacts");
 
   useEffect(() => {
-    if (!loading && (!user || user.role === "client")) {
+    if (!authLoading && !user) {
       router.replace("/dashboard");
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
 
-  if (loading) return <div className={styles.loading}><Spinner /></div>;
-  if (!user || user.role === "client") return null;
+  if (authLoading) return <div className={styles.loading}><Spinner /></div>;
+  if (!user) return null;
 
   return (
     <div>

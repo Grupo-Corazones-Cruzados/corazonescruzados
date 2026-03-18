@@ -727,6 +727,69 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_es_campaign_contact ON email_sends(campaig
 CREATE INDEX IF NOT EXISTS idx_es_provider_id ON email_sends(provider_id);
 
 -- =====================================================
+-- 17. WHATSAPP AUTOMATION
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS whatsapp_campaigns (
+  id               SERIAL PRIMARY KEY,
+  name             VARCHAR(200) NOT NULL,
+  message_type     VARCHAR(20) NOT NULL DEFAULT 'text' CHECK (message_type IN ('text', 'template')),
+  message          TEXT NOT NULL DEFAULT '',
+  template_name    VARCHAR(200),
+  template_lang    VARCHAR(10) DEFAULT 'es',
+  template_vars    JSONB DEFAULT '[]',
+  list_id          INT REFERENCES email_lists(id) ON DELETE SET NULL,
+  category_filter  VARCHAR(100),
+  status           VARCHAR(20) NOT NULL DEFAULT 'draft'
+                   CHECK (status IN ('draft', 'sending', 'sent', 'failed')),
+  total_recipients INT NOT NULL DEFAULT 0,
+  total_sent       INT NOT NULL DEFAULT 0,
+  total_failed     INT NOT NULL DEFAULT 0,
+  created_by       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sent_at          TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_wcamp_status ON whatsapp_campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_wcamp_created_by ON whatsapp_campaigns(created_by);
+
+CREATE TABLE IF NOT EXISTS whatsapp_sends (
+  id              SERIAL PRIMARY KEY,
+  campaign_id     INT NOT NULL REFERENCES whatsapp_campaigns(id) ON DELETE CASCADE,
+  contact_id      INT NOT NULL REFERENCES email_contacts(id) ON DELETE CASCADE,
+  status          VARCHAR(20) NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending', 'sent', 'failed', 'delivered', 'read')),
+  provider_id     VARCHAR(100),
+  error_message   TEXT,
+  sent_at         TIMESTAMPTZ,
+  delivered_at    TIMESTAMPTZ,
+  read_at         TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ws_campaign ON whatsapp_sends(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_ws_contact ON whatsapp_sends(contact_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ws_campaign_contact ON whatsapp_sends(campaign_id, contact_id);
+
+-- =====================================================
+-- 18. USER API KEYS (per-user integrations)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS user_api_keys (
+  id          SERIAL PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  service     VARCHAR(50) NOT NULL,   -- 'zeptomail', 'meta_whatsapp'
+  api_key     TEXT NOT NULL,
+  config      JSONB NOT NULL DEFAULT '{}',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_uak_user_service ON user_api_keys(user_id, service);
+CREATE INDEX IF NOT EXISTS idx_uak_user ON user_api_keys(user_id);
+
+-- =====================================================
 -- TRIGGERS
 -- =====================================================
 
@@ -785,6 +848,9 @@ CREATE TRIGGER trg_applicants_updated BEFORE UPDATE ON applicants FOR EACH ROW E
 DROP TRIGGER IF EXISTS trg_recruitment_events_updated ON recruitment_events;
 CREATE TRIGGER trg_recruitment_events_updated BEFORE UPDATE ON recruitment_events FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_user_api_keys_updated ON user_api_keys;
+CREATE TRIGGER trg_user_api_keys_updated BEFORE UPDATE ON user_api_keys FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 DROP TRIGGER IF EXISTS trg_event_invitations_updated ON event_invitations;
 CREATE TRIGGER trg_event_invitations_updated BEFORE UPDATE ON event_invitations FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
@@ -805,3 +871,6 @@ CREATE TRIGGER trg_email_contacts_updated BEFORE UPDATE ON email_contacts FOR EA
 
 DROP TRIGGER IF EXISTS trg_email_campaigns_updated ON email_campaigns;
 CREATE TRIGGER trg_email_campaigns_updated BEFORE UPDATE ON email_campaigns FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_whatsapp_campaigns_updated ON whatsapp_campaigns;
+CREATE TRIGGER trg_whatsapp_campaigns_updated BEFORE UPDATE ON whatsapp_campaigns FOR EACH ROW EXECUTE FUNCTION update_updated_at();

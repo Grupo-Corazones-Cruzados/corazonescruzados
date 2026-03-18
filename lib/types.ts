@@ -508,6 +508,72 @@ export interface Notification {
   read_at: string | null;
 }
 
+// ----- User API Keys -----
+
+export type ApiService = "zeptomail" | "meta_whatsapp";
+
+export interface UserApiKey {
+  id: number;
+  user_id: string;
+  service: ApiService;
+  api_key: string;
+  config: Record<string, string>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MetaWhatsAppConfig {
+  phone_number_id: string;
+  business_account_id: string;
+  app_id?: string;
+  app_secret?: string;
+  business_manager_id?: string;
+  webhook_verify_token?: string;
+  api_version?: string;
+}
+
+// ----- WhatsApp Automation -----
+
+export type WhatsAppCampaignStatus = "draft" | "sending" | "sent" | "failed";
+
+export interface WhatsAppCampaign {
+  id: number;
+  name: string;
+  message_type: "text" | "template";
+  message: string;
+  template_name: string | null;
+  template_lang: string | null;
+  template_vars: Record<string, string>[];
+  list_id: number | null;
+  category_filter: string | null;
+  status: WhatsAppCampaignStatus;
+  total_recipients: number;
+  total_sent: number;
+  total_failed: number;
+  created_by: string;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+  list_name?: string;
+}
+
+export type WhatsAppSendStatus = "pending" | "sent" | "failed" | "delivered" | "read";
+
+export interface WhatsAppSend {
+  id: number;
+  campaign_id: number;
+  contact_id: number;
+  status: WhatsAppSendStatus;
+  provider_id: string | null;
+  error_message: string | null;
+  sent_at: string | null;
+  delivered_at: string | null;
+  read_at: string | null;
+  created_at: string;
+  contact_name?: string;
+  contact_phone?: string;
+}
+
 // ----- Email Automation -----
 
 export interface EmailList {

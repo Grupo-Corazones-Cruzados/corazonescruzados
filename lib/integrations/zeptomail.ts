@@ -9,14 +9,27 @@ interface ZeptoResponse {
   error?: { code?: string; details?: { code?: string; message?: string }[] };
 }
 
+interface ZeptoMailOptions {
+  apiKey?: string;
+  fromAddress?: string;
+}
+
 export async function sendZeptoMailEmail(
   to: string,
   toName: string | undefined,
   subject: string,
-  htmlBody: string
+  htmlBody: string,
+  options?: ZeptoMailOptions
 ): Promise<{ requestId: string | null }> {
+  const apiKey = options?.apiKey || ZEPTOMAIL_KEY;
+  const fromAddr = options?.fromAddress || FROM_ADDRESS;
+
+  if (!apiKey) {
+    throw new Error("ZeptoMail API key not configured");
+  }
+
   const body = {
-    from: { address: FROM_ADDRESS },
+    from: { address: fromAddr },
     to: [
       {
         email_address: {
@@ -34,7 +47,7 @@ export async function sendZeptoMailEmail(
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      Authorization: `Zoho-enczapikey ${ZEPTOMAIL_KEY}`,
+      Authorization: `Zoho-enczapikey ${apiKey}`,
     },
     body: JSON.stringify(body),
   });

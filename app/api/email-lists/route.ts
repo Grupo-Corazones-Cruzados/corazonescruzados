@@ -3,7 +3,7 @@ import { query } from "@/lib/db";
 import { requireRole, isErrorResponse } from "@/lib/auth/guards";
 
 export async function GET(req: NextRequest) {
-  const auth = await requireRole(req, "member", "admin");
+  const auth = await requireRole(req, "client", "member", "admin");
   if (isErrorResponse(auth)) return auth;
 
   try {
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireRole(req, "member", "admin");
+  const auth = await requireRole(req, "client", "member", "admin");
   if (isErrorResponse(auth)) return auth;
 
   const { name, description } = await req.json();

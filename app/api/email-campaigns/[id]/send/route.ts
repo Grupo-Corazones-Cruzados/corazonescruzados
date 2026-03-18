@@ -23,7 +23,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireRole(req, "member", "admin");
+  const auth = await requireRole(req, "client", "member", "admin");
   if (isErrorResponse(auth)) return auth;
 
   const { id } = await params;
@@ -105,12 +105,19 @@ export async function POST(
     [contacts.length, campaignId]
   );
 
-  // 5. Build full HTML body (body + signature)
+  // 5. Get user's ZeptoMail API key (if configured)
+  const userKeyResult = await query<{ api_key: string }>(
+    `SELECT api_key FROM user_api_keys WHERE user_id = $1 AND service = 'zeptomail'`,
+    [auth.userId]
+  );
+  const userZeptoKey = userKeyResult.rows[0]?.api_key || undefined;
+
+  // 6. Build full HTML body (body + signature)
   const fullHtml = campaign.signature_html
     ? `${campaign.html_body}${campaign.signature_html}`
     : campaign.html_body!;
 
-  // 6. Send to each contact individually via ZeptoMail
+  // 7. Send to each contact individually via ZeptoMail
   let totalSent = 0;
   let totalFailed = 0;
 
@@ -124,7 +131,8 @@ export async function POST(
         contact.email,
         contact.name,
         campaign.subject,
-        fullHtml
+        fullHtml,
+        userZeptoKey ? { apiKey: userZeptoKey } : undefined
       );
       providerId = result.requestId;
       totalSent++;
