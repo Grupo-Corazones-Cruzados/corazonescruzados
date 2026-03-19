@@ -692,13 +692,48 @@ export default function SpritesPage() {
                       })}
                     </div>
 
-                    {/* Y Shift raw preview — shown inline on mobile when expanded */}
+                    {/* Y Shift preview + controls — visible in left area when expanded */}
                     {isExpanded && (
-                      <div className="md:hidden">
+                      <div className="bg-digi-dark/50 border border-digi-border/50 rounded-lg p-3 space-y-2">
+                        <p className="text-[9px] text-digi-muted font-medium">Ajuste vertical de corte</p>
                         <RawSheetPreview
                           src={`/api/assets/universal_assets/citizens/${c.sprite}_raw.png?v=${spriteVer}`}
                           yShift={reprocessYShift[c.agentId] ?? c.yShift ?? 0}
                         />
+                        <p className="text-[9px] text-digi-muted">Negativo = mas pies, Positivo = mas cabeza.</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] text-amber-400 font-mono w-14 shrink-0">Y Shift:</span>
+                          <input
+                            type="range"
+                            min="-15"
+                            max="15"
+                            step="1"
+                            value={reprocessYShift[c.agentId] ?? c.yShift ?? 0}
+                            onChange={(e) => setReprocessYShift(prev => ({ ...prev, [c.agentId]: parseInt(e.target.value) }))}
+                            className="flex-1 h-1.5 accent-amber-400"
+                          />
+                          <span className="text-[10px] text-amber-400 font-mono w-10 text-right font-bold">
+                            {reprocessYShift[c.agentId] ?? c.yShift ?? 0}%
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          value={reprocessUrl[c.agentId] || ''}
+                          onChange={(e) => setReprocessUrl(prev => ({ ...prev, [c.agentId]: e.target.value }))}
+                          placeholder="URL imagen raw (opcional)"
+                          className="w-full bg-digi-dark border border-digi-border rounded px-2 py-1.5 text-[9px] text-digi-text placeholder:text-digi-muted/40 focus:outline-none focus:border-amber-400/40 font-mono"
+                        />
+                        <button
+                          onClick={() => handleReprocess(c.agentId)}
+                          disabled={reprocessing === c.agentId}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400/15 border border-amber-400/30 text-amber-400 rounded text-xs font-medium hover:bg-amber-400/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full justify-center"
+                        >
+                          {reprocessing === c.agentId ? (
+                            <><RotateCcw size={12} className="animate-spin" /> Reprocesando...</>
+                          ) : (
+                            <><RotateCcw size={12} /> Aplicar Y Shift y Reprocesar</>
+                          )}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -739,51 +774,6 @@ export default function SpritesPage() {
                             />
                           </div>
                         ))}
-                      </div>
-
-                      {/* Y Shift controls + preview (desktop only — mobile preview is above) */}
-                      <div className="border-t border-digi-border/30 pt-3 space-y-2">
-                        <p className="text-[9px] text-digi-muted">Ajuste vertical de corte. Negativo = mas pies, Positivo = mas cabeza.</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] text-amber-400 font-mono w-14 shrink-0">Y Shift:</span>
-                          <input
-                            type="range"
-                            min="-15"
-                            max="15"
-                            step="1"
-                            value={reprocessYShift[c.agentId] ?? c.yShift ?? 0}
-                            onChange={(e) => setReprocessYShift(prev => ({ ...prev, [c.agentId]: parseInt(e.target.value) }))}
-                            className="flex-1 h-1.5 accent-amber-400"
-                          />
-                          <span className="text-[10px] text-amber-400 font-mono w-10 text-right font-bold">
-                            {reprocessYShift[c.agentId] ?? c.yShift ?? 0}%
-                          </span>
-                        </div>
-                        {/* Desktop-only raw preview next to controls */}
-                        <div className="hidden md:block">
-                          <RawSheetPreview
-                            src={`/api/assets/universal_assets/citizens/${c.sprite}_raw.png?v=${spriteVer}`}
-                            yShift={reprocessYShift[c.agentId] ?? c.yShift ?? 0}
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          value={reprocessUrl[c.agentId] || ''}
-                          onChange={(e) => setReprocessUrl(prev => ({ ...prev, [c.agentId]: e.target.value }))}
-                          placeholder="URL imagen raw (opcional)"
-                          className="w-full bg-digi-dark border border-digi-border rounded px-2 py-1.5 text-[9px] text-digi-text placeholder:text-digi-muted/40 focus:outline-none focus:border-amber-400/40 font-mono"
-                        />
-                        <button
-                          onClick={() => handleReprocess(c.agentId)}
-                          disabled={reprocessing === c.agentId}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400/15 border border-amber-400/30 text-amber-400 rounded text-xs font-medium hover:bg-amber-400/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full justify-center"
-                        >
-                          {reprocessing === c.agentId ? (
-                            <><RotateCcw size={12} className="animate-spin" /> Reprocesando...</>
-                          ) : (
-                            <><RotateCcw size={12} /> Aplicar Y Shift y Reprocesar</>
-                          )}
-                        </button>
                       </div>
                     </div>
                   )}
