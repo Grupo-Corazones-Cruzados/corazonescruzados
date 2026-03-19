@@ -16,10 +16,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Determine correct file extension from mimeType
+    // Whisper supports: mp3, mp4, mpeg, mpga, m4a, wav, webm
     let ext = 'webm';
-    if (mimeType.includes('mp4') || mimeType.includes('m4a')) ext = 'mp4';
+    if (mimeType.includes('mpeg') || mimeType.includes('mp3')) ext = 'mp3';
+    else if (mimeType.includes('mp4') || mimeType.includes('m4a') || mimeType.includes('x-m4a')) ext = 'm4a';
     else if (mimeType.includes('ogg')) ext = 'ogg';
-    else if (mimeType.includes('wav')) ext = 'wav';
+    else if (mimeType.includes('wav') || mimeType.includes('wave')) ext = 'wav';
+    else if (mimeType.includes('flac')) ext = 'flac';
+    else if (mimeType.includes('aac')) ext = 'mp4';
 
     // Forward to OpenAI Whisper API
     const whisperForm = new FormData();
@@ -36,8 +40,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ error: `Whisper API error: ${err}` }, { status: res.status });
+      const err = await res.text().catch(() => '');
+      return NextResponse.json({ error: `Whisper API error (${res.status}): ${err || 'Unknown error'}. File: ${ext}, size: ${(audio.size / 1024).toFixed(0)}KB` }, { status: res.status });
     }
 
     const data = await res.json();
