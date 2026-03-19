@@ -705,7 +705,7 @@ export default function SpritesPage() {
 
                   {/* ── Right side: adjustment panel (only when expanded) ── */}
                   {isExpanded && (
-                    <div className="w-full md:w-[340px] shrink-0 bg-digi-dark/50 border border-digi-border/50 rounded-lg p-3 space-y-3">
+                    <div className="w-full md:w-[340px] shrink-0 bg-digi-dark/50 border border-digi-border/50 rounded-lg p-3 space-y-3 overflow-y-auto max-h-[75vh]">
                       {/* Avatar crop editor */}
                       <div className="space-y-1.5">
                         <p className="text-[9px] text-digi-muted font-medium">Foto de burbuja</p>

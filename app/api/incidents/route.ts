@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     const title = form.get('title') as string;
     const description = form.get('description') as string;
     const clientName = (form.get('clientName') as string) || 'Cliente';
+    const severity = (form.get('severity') as string) || 'medium';
 
     if (!projectId || !title || !description) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
@@ -52,6 +53,7 @@ export async function POST(req: Request) {
         clientName,
         title,
         description,
+        severity,
         images: savedImages,
         status: 'pending',
       },

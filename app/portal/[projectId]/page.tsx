@@ -7,7 +7,7 @@ import {
   AlertTriangle, ChevronDown, ChevronUp, Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Incident, IncidentStatus } from '@/types/incidents';
+import type { Incident, IncidentStatus, IncidentSeverity } from '@/types/incidents';
 import type { ProjectStructure, Module, Section } from '@/types/projects';
 
 const STATUS_CONFIG: Record<IncidentStatus, { label: string; color: string; icon: typeof Clock }> = {
@@ -16,6 +16,13 @@ const STATUS_CONFIG: Record<IncidentStatus, { label: string; color: string; icon
   rejected:  { label: 'Rechazada',   color: 'text-red-400 bg-red-400/10 border-red-400/30',        icon: XCircle },
   reviewing: { label: 'En revisión', color: 'text-purple-400 bg-purple-400/10 border-purple-400/30', icon: Clock },
   completed: { label: 'Completada',  color: 'text-green-400 bg-green-400/10 border-green-400/30',   icon: CheckCircle },
+};
+
+const SEVERITY_CONFIG: Record<IncidentSeverity, { label: string; color: string }> = {
+  low:      { label: 'Baja',     color: 'text-blue-300 bg-blue-400/10 border-blue-400/30' },
+  medium:   { label: 'Media',    color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' },
+  high:     { label: 'Alta',     color: 'text-orange-400 bg-orange-400/10 border-orange-400/30' },
+  critical: { label: 'Critica',  color: 'text-red-400 bg-red-400/10 border-red-400/30' },
 };
 
 export default function PortalPage() {
@@ -35,6 +42,7 @@ export default function PortalPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [clientName, setClientName] = useState('');
+  const [severity, setSeverity] = useState<IncidentSeverity>('medium');
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -93,12 +101,14 @@ export default function PortalPage() {
     form.append('title', title.trim());
     form.append('description', `[${location}]\n\n${description.trim()}`);
     form.append('clientName', clientName.trim() || 'Cliente');
+    form.append('severity', severity);
     for (const f of files) form.append('images', f);
 
     await fetch('/api/incidents', { method: 'POST', body: form });
 
     setTitle('');
     setDescription('');
+    setSeverity('medium');
     setSelectedModule('');
     setSelectedSection('');
     setSelectedSubsection('');
@@ -200,6 +210,27 @@ export default function PortalPage() {
                 placeholder="Breve resumen de la incidencia"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-[#737373] mb-1.5">Criticidad *</label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(Object.entries(SEVERITY_CONFIG) as [IncidentSeverity, { label: string; color: string }][]).map(([key, cfg]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSeverity(key)}
+                    className={cn(
+                      'py-2 rounded border text-xs font-medium transition-all',
+                      severity === key
+                        ? cfg.color
+                        : 'text-[#737373] bg-[#1a1a1a] border-[#2a2a2a] hover:border-[#4a4a4a]'
+                    )}
+                  >
+                    {cfg.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* module / section / subsection selectors */}
@@ -348,16 +379,20 @@ export default function PortalPage() {
             {incidents.map(inc => {
               const cfg = STATUS_CONFIG[inc.status];
               const Icon = cfg.icon;
+              const sevCfg = SEVERITY_CONFIG[(inc.severity as IncidentSeverity) || 'medium'];
               const isOpen = expanded === inc.id;
 
               return (
                 <div key={inc.id} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-hidden">
                   <button
                     onClick={() => setExpanded(isOpen ? null : inc.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-white/5 transition-colors"
                   >
                     <div className={cn('flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] shrink-0', cfg.color)}>
                       <Icon size={10} /> {cfg.label}
+                    </div>
+                    <div className={cn('px-1.5 py-0.5 rounded border text-[9px] shrink-0', sevCfg.color)}>
+                      {sevCfg.label}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{inc.title}</p>

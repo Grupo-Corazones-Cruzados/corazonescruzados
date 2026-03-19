@@ -49,6 +49,7 @@ model Incident {
   clientName  String   @default("Cliente")
   title       String
   description String
+  severity    String   @default("medium") // low, medium, high, critical
   images      String[] @default([])
   status      String   @default("pending") // pending, approved, rejected, completed
   createdAt   DateTime @default(now())
