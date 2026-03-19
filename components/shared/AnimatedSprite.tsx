@@ -10,6 +10,7 @@ interface AnimatedSpriteProps {
   fps?: number;
   scale?: number;
   className?: string;
+  selectedFrames?: number[]; // only cycle through these frame indices (e.g. [0, 2])
 }
 
 export default function AnimatedSprite({
@@ -20,6 +21,7 @@ export default function AnimatedSprite({
   fps = 6,
   scale = 2,
   className,
+  selectedFrames,
 }: AnimatedSpriteProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
@@ -40,7 +42,13 @@ export default function AnimatedSprite({
     const img = new Image();
     img.crossOrigin = 'anonymous';
 
-    let frame = 0;
+    // Build the list of frame indices to cycle through
+    const frames = selectedFrames && selectedFrames.length > 0
+      ? selectedFrames.filter(f => f >= 0 && f < frameCount)
+      : Array.from({ length: frameCount }, (_, i) => i);
+    if (frames.length === 0) frames.push(0);
+
+    let idx = 0;
     let lastTime = 0;
     const interval = 1000 / fps;
 
@@ -51,12 +59,12 @@ export default function AnimatedSprite({
         ctx.clearRect(0, 0, displaySize, displaySize);
         ctx.imageSmoothingEnabled = false;
 
-        const col = frame % frameCount;
+        const col = frames[idx];
         const sx = col * frameSize;
         const sy = row * frameSize;
 
         ctx.drawImage(img, sx, sy, frameSize, frameSize, 0, 0, displaySize, displaySize);
-        frame = (frame + 1) % frameCount;
+        idx = (idx + 1) % frames.length;
       }
       animRef.current = requestAnimationFrame(animate);
     };
@@ -83,7 +91,8 @@ export default function AnimatedSprite({
       cancelled = true;
       cancelAnimationFrame(animRef.current);
     };
-  }, [src, row, frameCount, frameSize, fps, scale]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, row, frameCount, frameSize, fps, scale, selectedFrames?.join(',')]);
 
   return (
     <canvas

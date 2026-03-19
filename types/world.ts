@@ -10,12 +10,21 @@ export interface WorldConfig {
   tiles: Record<string, string>;      // tileId → relative path
 }
 
+export type AnimationPhase = 'idle' | 'walk' | 'work' | 'excited' | 'rest' | 'done' | 'eating';
+
+export type FrameConfig = Partial<Record<AnimationPhase, number[]>>;
+
 export interface CitizenDef {
   agentId: string;
   name: string;
   sprite: string;
   position: string;
   type: 'agent' | 'npc';
+  scale?: number;       // 0.5-2.0, default 1.0 — affects world display size
+  flipWalk?: boolean;   // true = flip sprite when walking right (default), false = flip when walking left
+  frameConfig?: FrameConfig; // per-animation selected frame indices (e.g. { idle: [0,2], walk: [0,1,2,3] })
+  yShift?: number;           // -15 to 15 — vertical crop offset for sprite extraction (negative = more feet)
+  avatarCrop?: { x: number; y: number; size: number }; // face crop for bubble avatar (source pixel coords)
 }
 
 export interface PropInstance {

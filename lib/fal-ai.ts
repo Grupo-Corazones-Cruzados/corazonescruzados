@@ -1,4 +1,5 @@
 import { fal } from '@fal-ai/client';
+import sharp from 'sharp';
 import type { SpritePromptData } from '@/types/sprites';
 
 fal.config({ credentials: process.env.FAL_KEY });
@@ -21,10 +22,7 @@ export async function generateSpriteSheet(
   const result = await (fal as any).subscribe(GENERATION_MODEL, {
     input: {
       prompt: promptData.positive,
-      image_size: {
-        width: promptData.config.sheetWidth,
-        height: promptData.config.sheetHeight,
-      },
+      aspect_ratio: promptData.config.rows > 4 ? '9:16' : '1:1',
     },
     logs: false,
     onQueueUpdate: (update: { status: string }) => {
@@ -45,6 +43,11 @@ export async function generateSpriteSheet(
   if (!imgRes.ok) throw new Error(`Failed to download generated image: ${imgRes.status}`);
   const generatedBuffer = Buffer.from(await imgRes.arrayBuffer());
 
+  // Record original dimensions before bg removal
+  const origMeta = await sharp(generatedBuffer).metadata();
+  const origW = origMeta.width!;
+  const origH = origMeta.height!;
+
   onProgress?.(55);
 
   // Remove background using bria
@@ -54,18 +57,30 @@ export async function generateSpriteSheet(
     logs: false,
   });
 
-  onProgress?.(75);
+  onProgress?.(70);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cleanUrl = (bgResult.data as any)?.image?.url;
   if (!cleanUrl) {
-    // If bg removal fails, return the original
     return generatedBuffer;
   }
 
   const cleanRes = await fetch(cleanUrl);
   if (!cleanRes.ok) return generatedBuffer;
 
+  let cleanBuffer = Buffer.from(await cleanRes.arrayBuffer());
+
+  // If bria changed dimensions, resize back to original to preserve grid alignment
+  const cleanMeta = await sharp(cleanBuffer).metadata();
+  if (cleanMeta.width !== origW || cleanMeta.height !== origH) {
+    cleanBuffer = Buffer.from(
+      await sharp(cleanBuffer)
+        .resize(origW, origH, { fit: 'fill', kernel: sharp.kernel.nearest })
+        .png()
+        .toBuffer()
+    );
+  }
+
   onProgress?.(80);
-  return Buffer.from(await cleanRes.arrayBuffer());
+  return cleanBuffer;
 }

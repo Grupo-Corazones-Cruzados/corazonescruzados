@@ -19,6 +19,7 @@ export interface SpriteGenerationRequest {
 export interface SpritePromptData {
   positive: string;
   negative: string;
+  chromaKey?: string; // hex color for background removal
   config: {
     frameSize: number;
     cols: number;

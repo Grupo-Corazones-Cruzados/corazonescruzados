@@ -1,18 +1,22 @@
 import type { SpritePromptData } from '@/types/sprites';
+import type { ActionDescriptions } from '@/types/digimon';
 
-const WALK_PROMPT = `32-bit pixel art, top-down RPG style, consistent subtle top-left shading, soft sub-pixel shading with 3-4 value ramps per color, selective dark outlines (hue-shifted not black), slight dithering on large surfaces, warm muted palette, cozy indie game aesthetic, clean readable silhouettes, no anti-aliasing to background, transparent background, PNG, character sprite sheet for a pixel RPG, 64x64 pixel character, 4 rows x 4 columns grid layout on single image, row 1: walking down (toward camera) 4 frames, row 2: walking up (away from camera) 4 frames, row 3: walking left 4 frames, row 4: walking right 4 frames, {{CHARACTER}}, subtle walk cycle bob, arms swinging, consistent proportions across all frames, character fills about 80% of each cell height`;
+// 4x7 grid (1024x1792)
+// Row 0: walk left
+// Row 1: idle
+// Row 2: working/thinking (personalized)
+// Row 3: excited (personalized)
+// Row 4: done/celebrating (personalized — different from excited)
+// Row 5: sleeping (personalized)
+// Row 6: eating (personalized)
 
-const ACTIONS_PROMPT = `32-bit pixel art, top-down RPG style, consistent subtle top-left shading, soft sub-pixel shading with 3-4 value ramps per color, selective dark outlines (hue-shifted not black), slight dithering on large surfaces, warm muted palette, cozy indie game aesthetic, clean readable silhouettes, no anti-aliasing to background, transparent background, PNG, character action sprite sheet for a pixel RPG, 64x64 pixel character, 4 rows x 4 columns grid layout on single image, CHARACTER ONLY no props no desk no chair no objects in any frame, row 1: working typing gesture facing up (away from camera back to viewer) 4 frames, row 2: sleeping resting pose curled up or head drooping facing down eyes closed 4 frames, row 3: excited waving celebrating happy jumping facing camera 4 frames, row 4: standing idle facing camera with subtle breathing animation 4 frames, {{CHARACTER}}, consistent with walking sheet style, character fills about 80% of each cell height`;
+const NEGATIVE_PROMPT = `blurry, 3D render, realistic, photographic, smooth shading, gradient background, text, watermark, multiple characters, background elements, floor, ground, furniture, objects, props, fire, flames, energy blasts, projectiles, special effects, aura, magic`;
 
-const EATING_PROMPT = `32-bit pixel art, top-down RPG style, consistent subtle top-left shading, soft sub-pixel shading with 3-4 value ramps per color, selective dark outlines (hue-shifted not black), slight dithering on large surfaces, warm muted palette, cozy indie game aesthetic, clean readable silhouettes, no anti-aliasing to background, transparent background, PNG, character eating sprite sheet for a pixel RPG, 64x64 pixel character, 1 row x 4 columns grid layout on single image, row 1: eating food happily munching chewing with small food item 4 frames showing bite chew chew swallow sequence, CHARACTER ONLY no table no plate no background, {{CHARACTER}}, consistent with walking sheet style, character fills about 80% of each cell height`;
-
-const NEGATIVE_PROMPT = `blurry, 3D render, realistic, photographic, smooth shading, gradient background, text, watermark, multiple characters, background elements, floor, ground`;
-
-function makeConfig(w: number, h: number): SpritePromptData['config'] {
+function makeConfig(w: number, h: number, rows: number): SpritePromptData['config'] {
   return {
     frameSize: 64,
     cols: 4,
-    rows: 4,
+    rows,
     sheetWidth: w,
     sheetHeight: h,
     backgroundColorHex: '#FF00FF',
@@ -20,31 +24,45 @@ function makeConfig(w: number, h: number): SpritePromptData['config'] {
   };
 }
 
+// Default fallbacks if OpenAI didn't generate action descriptions
+const DEFAULT_ACTIONS: ActionDescriptions = {
+  working: 'thinking concentrating hand on chin puzzled face looking up deep in thought',
+  excited: 'excited happy jumping with arms raised wide open mouth smiling',
+  done: 'proud victory pose one arm raised fist up confident satisfied smile',
+  sleeping: 'sleeping curled up on ground eyes closed peaceful',
+  eating: 'eating food chewing happily facing camera mouth open',
+  chromaKey: '#00FF00',
+};
+
+export function buildFullSheetPrompt(
+  digimonName: string,
+  actions?: ActionDescriptions,
+  visualDescription?: string,
+): SpritePromptData {
+  const a = actions || DEFAULT_ACTIONS;
+  const charDesc = visualDescription
+    ? `${digimonName} from Digimon anime series, ${visualDescription}`
+    : `${digimonName}, the exact character from the Digimon anime series, faithful to the original design`;
+
+  const prompt = `pixel art RPG character sprite sheet, 16-bit style, vibrant saturated colors, bold bright palette, solid white background, PNG, ${charDesc}, single character only no objects no props, 4 columns 7 rows uniform grid on single image, row 1: walking side view 4 frame walk cycle frame1 right foot forward left foot back frame2 feet together standing straight frame3 left foot forward right foot back frame4 feet together standing straight each frame clearly different leg positions, row 2: standing idle facing camera subtle breathing 4 frames, row 3: ${a.working} 4 frames, row 4: ${a.excited} 4 frames, row 5: ${a.done} 4 frames, row 6: ${a.sleeping} 4 frames, row 7: ${a.eating} 4 frames, same consistent character design colors proportions in all 28 cells, IMPORTANT each of the 4 frames in every row must show a clearly different pose or position to create smooth animation sequence frame1 and frame2 and frame3 and frame4 must all be visually distinct from each other with different limb positions body angles and expressions`;
+
+  return {
+    positive: prompt,
+    negative: NEGATIVE_PROMPT,
+    config: makeConfig(1024, 1792, 7),
+  };
+}
+
+// Legacy exports
 export function buildWalkPrompt(digimonName: string): SpritePromptData {
-  return {
-    positive: WALK_PROMPT.replace('{{CHARACTER}}', `${digimonName} is a digimon, it is a digital monster from the digimon series`),
-    negative: NEGATIVE_PROMPT,
-    config: makeConfig(1024, 1024),
-  };
+  return buildFullSheetPrompt(digimonName);
 }
-
 export function buildActionsPrompt(digimonName: string): SpritePromptData {
-  return {
-    positive: ACTIONS_PROMPT.replace('{{CHARACTER}}', `${digimonName} is a digimon, it is a digital monster from the digimon series`),
-    negative: NEGATIVE_PROMPT,
-    config: makeConfig(1024, 1024),
-  };
+  return buildFullSheetPrompt(digimonName);
 }
-
 export function buildEatingPrompt(digimonName: string): SpritePromptData {
-  return {
-    positive: EATING_PROMPT.replace('{{CHARACTER}}', `${digimonName} is a digimon, it is a digital monster from the digimon series`),
-    negative: NEGATIVE_PROMPT,
-    config: makeConfig(1024, 256), // 1 row of 4 frames
-  };
+  return buildFullSheetPrompt(digimonName);
 }
-
-// Legacy
 export function buildSpritePrompt(digimonName: string): SpritePromptData {
-  return buildWalkPrompt(digimonName);
+  return buildFullSheetPrompt(digimonName);
 }

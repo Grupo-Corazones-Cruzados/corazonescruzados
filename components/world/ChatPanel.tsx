@@ -77,6 +77,7 @@ import {
   Maximize2,
   Minimize2,
   GitBranch,
+  FileAudio,
 } from 'lucide-react';
 
 // Each block in the conversation
@@ -165,6 +166,9 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
+  const expandedAudioFileInputRef = useRef<HTMLInputElement>(null);
+  const [transcribingFile, setTranscribingFile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const idCounter = useRef(0);
@@ -327,6 +331,27 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
       setError('Microphone access denied');
     }
   }, [recording]);
+
+  const handleAudioFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith('audio/')) return;
+    setTranscribingFile(true);
+    try {
+      const form = new FormData();
+      form.append('audio', file);
+      form.append('mimeType', file.type);
+      const res = await fetch('/api/transcribe', { method: 'POST', body: form });
+      const data = await res.json();
+      if (data.text) {
+        setInput(prev => prev ? `${prev} ${data.text}` : data.text);
+      } else if (data.error) {
+        setError(data.error);
+      }
+    } catch {
+      setError('Error al transcribir archivo de audio');
+    } finally {
+      setTranscribingFile(false);
+    }
+  }, []);
 
   const toggleCollapse = (id: string) => {
     setBlocks(prev => prev.map(b => b.id === id ? { ...b, collapsed: !b.collapsed } : b));
@@ -1020,6 +1045,23 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
             {transcribing ? <Loader2 size={16} className="animate-spin" /> : recording ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
 
+          {/* Audio file transcription */}
+          <input ref={audioFileInputRef} type="file" accept="audio/*" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleAudioFile(f); e.target.value = ''; }}
+          />
+          <button
+            onClick={() => audioFileInputRef.current?.click()}
+            disabled={streaming || transcribingFile}
+            className={`p-2 shrink-0 transition-colors ${
+              transcribingFile
+                ? 'text-yellow-400 animate-pulse'
+                : 'text-[#8b949e] active:text-[#c9d1d9]'
+            } disabled:opacity-30`}
+            title={transcribingFile ? 'Transcribiendo audio...' : 'Adjuntar audio para transcribir'}
+          >
+            {transcribingFile ? <Loader2 size={16} className="animate-spin" /> : <FileAudio size={16} />}
+          </button>
+
           <input
             ref={inputRef as any}
             type="text"
@@ -1127,6 +1169,23 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
                 title={recording ? 'Detener y transcribir' : transcribing ? 'Transcribiendo...' : 'Dictar por voz'}
               >
                 {transcribing ? <Loader2 size={18} className="animate-spin" /> : recording ? <MicOff size={18} /> : <Mic size={18} />}
+              </button>
+
+              {/* Audio file transcription */}
+              <input ref={expandedAudioFileInputRef} type="file" accept="audio/*" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleAudioFile(f); e.target.value = ''; }}
+              />
+              <button
+                onClick={() => expandedAudioFileInputRef.current?.click()}
+                disabled={transcribingFile}
+                className={`p-2 rounded transition-colors ${
+                  transcribingFile
+                    ? 'text-yellow-400 animate-pulse bg-yellow-400/10'
+                    : 'text-[#8b949e] hover:text-[#c9d1d9] active:bg-white/5'
+                } disabled:opacity-30`}
+                title={transcribingFile ? 'Transcribiendo audio...' : 'Adjuntar audio para transcribir'}
+              >
+                {transcribingFile ? <Loader2 size={18} className="animate-spin" /> : <FileAudio size={18} />}
               </button>
 
               {attachedImages.length > 0 && (

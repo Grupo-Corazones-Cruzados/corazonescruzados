@@ -14,6 +14,15 @@ export interface DigimonPhrases {
   tier6: string[];  // 40 phrases — soulmate
 }
 
+export interface ActionDescriptions {
+  working: string;   // how this digimon looks when thinking/working
+  excited: string;   // how this digimon shows excitement
+  done: string;      // how this digimon celebrates completing a task
+  sleeping: string;  // how this digimon sleeps
+  eating: string;    // how this digimon eats
+  chromaKey: string; // best background color for chroma key removal (hex like #FF00FF)
+}
+
 export interface DigimonData {
   agentId: string;
   digimonName: string;
@@ -22,6 +31,7 @@ export interface DigimonData {
   lastFedDates: string[];         // ISO dates of last 3 meals today
   visualDescription: string;      // English, for fal.ai prompts
   phrases: DigimonPhrases;
+  actionDescriptions?: ActionDescriptions;  // personalized sprite action descriptions
   createdAt: string;
 }
 

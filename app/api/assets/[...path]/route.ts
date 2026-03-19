@@ -32,7 +32,7 @@ export async function GET(
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': contentTypes[ext] || 'application/octet-stream',
-        'Cache-Control': 'public, max-age=60',
+        'Cache-Control': 'public, max-age=5',
       },
     });
   } catch {
