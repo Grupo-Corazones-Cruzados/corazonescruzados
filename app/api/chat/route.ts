@@ -5,28 +5,59 @@ import path from 'path';
 
 const SERVER_URL = process.env.WORLD_SERVER_URL || 'http://localhost:4321';
 
-const PERSONAS: Record<string, string> = {
+// Default personas by agentId (fallback only — dynamic personas.json takes priority)
+const DEFAULT_PERSONAS: Record<string, string> = {
   gabumon: `You are Gabumon, a loyal, reserved, and deeply reliable Digimon working in GCC WORLD. Like in Digimon Adventure, you are shy and introverted but fiercely protective of those you care about. You think carefully before speaking, prefer methodical approaches, and value trust above all. You sometimes doubt yourself but always come through when it matters. You speak calmly and thoughtfully, occasionally showing dry humor. You excel at systematic analysis, code quality, and careful problem-solving. Keep responses concise. Use markdown for code. Respond in the same language the user writes to you.`,
   agumon: `You are Agumon, the brave and warm-hearted Digimon from Digimon Adventure, working in GCC WORLD. You are courageous, optimistic, and always ready to help — sometimes rushing in before fully thinking things through, but your heart is always in the right place. You are fiercely loyal to your friends and have a simple, straightforward way of communicating. You love food and occasionally make food analogies. You tackle problems head-on with enthusiasm and never give up. Keep responses concise. Use markdown for code. Respond in the same language the user writes to you.`,
-  gumdramon: `You are Gumdramon, the mischievous and energetic Digimon from Digimon Xros Wars/Fusion. You are playful, a bit cocky, and love showing off — but underneath the bravado you are genuinely talented and creative. You have a rebellious streak and don't like following rules blindly. You speak with confidence (sometimes overconfidence), use casual language, and enjoy friendly banter. You find innovative and unconventional solutions and think outside the box. Keep responses concise. Use markdown for code. Respond in the same language the user writes to you.`,
   shoutmon: `You are Shoutmon, the passionate and hot-blooded Digimon from Digimon Xros Wars/Fusion, working in GCC WORLD. You dream big — your original goal was to become the Digimon King, and you bring that same ambition to everything you do. You are loud, expressive, and wear your emotions on your sleeve. You hate injustice and fight fiercely for what you believe in. You are a natural leader who inspires others with your determination. You speak with energy and passion, sometimes dramatically. Despite your intensity, you deeply care about your teammates. Keep responses concise. Use markdown for code. Respond in the same language the user writes to you.`,
   patamon: `You are Patamon, the gentle and kind Digimon from Digimon Adventure, working in GCC WORLD. You are sweet, caring, and have an innocent cheerfulness that lifts everyone's spirits. Despite your small and cute appearance, you carry great hidden power and courage — you proved this when you digivolved to Angemon to protect your friends. You are patient, supportive, and always try to see the best in others. You speak softly and kindly, with occasional moments of surprising wisdom. You are protective of your friends in a quiet, steady way. Keep responses concise. Use markdown for code. Respond in the same language the user writes to you.`,
 };
 
-// Load dynamic personas from file (merged with hardcoded above)
+// Load persona: personas.json (dynamic, updated on rename) > hardcoded defaults > generic fallback
 async function getPersona(agentId: string, agentName: string): Promise<string> {
-  if (PERSONAS[agentId]) return PERSONAS[agentId];
+  // 1. Dynamic personas.json takes priority (updated when digimon is renamed)
   try {
     const personasFile = path.join(process.cwd(), 'data', 'personas.json');
     const raw = await fs.readFile(personasFile, 'utf-8');
     const dynamic = JSON.parse(raw);
     if (dynamic[agentId]) return dynamic[agentId];
   } catch { /* file may not exist */ }
+  // 2. Hardcoded defaults (only if agentName matches agentId — i.e. not renamed)
+  if (DEFAULT_PERSONAS[agentId] && agentName.toLowerCase() === agentId) {
+    return DEFAULT_PERSONAS[agentId];
+  }
+  // 3. Generic fallback using the current display name
   return `You are ${agentName}, a Digimon working in GCC WORLD. You are helpful, knowledgeable, and dedicated to your tasks. Keep responses concise. Use markdown for code. Respond in the same language the user writes to you.`;
 }
 
-// ─── Persistent state (module-level, survives across requests) ───
-const agentSessions = new Map<string, string>();
+// ─── Persistent state ───
+// In-memory cache + disk persistence for session IDs (survives hot reloads)
+const SESSIONS_PATH = path.join(process.cwd(), 'data', 'agent-sessions.json');
+
+async function loadSessions(): Promise<Record<string, string>> {
+  try {
+    return JSON.parse(await fs.readFile(SESSIONS_PATH, 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+
+async function saveSession(agentId: string, sessionId: string) {
+  const sessions = await loadSessions();
+  sessions[agentId] = sessionId;
+  await fs.writeFile(SESSIONS_PATH, JSON.stringify(sessions, null, 2));
+}
+
+async function deleteSession(agentId: string) {
+  const sessions = await loadSessions();
+  delete sessions[agentId];
+  await fs.writeFile(SESSIONS_PATH, JSON.stringify(sessions, null, 2));
+}
+
+async function getSession(agentId: string): Promise<string | null> {
+  const sessions = await loadSessions();
+  return sessions[agentId] ?? null;
+}
 
 interface AgentRun {
   events: string[];       // buffered SSE event strings
@@ -167,14 +198,12 @@ export async function POST(req: Request) {
       '--dangerously-skip-permissions',
     ];
 
-    // Resume previous session for this agent
-    const prevSessionId = agentSessions.get(agentId);
+    // Resume previous session for this agent (from disk)
+    const prevSessionId = await getSession(agentId);
     let isResume = false;
     if (prevSessionId) {
-      try {
-        args.push('--resume', prevSessionId);
-        isResume = true;
-      } catch {}
+      args.push('--resume', prevSessionId);
+      isResume = true;
     }
     if (!isResume) {
       args.push('--append-system-prompt', persona);
@@ -224,13 +253,8 @@ export async function POST(req: Request) {
             sendHeartbeat(agentId, agentName, 'working', 'Processing...');
           }
 
-          // Capture session_id for future resume
-          if (event.session_id && !agentSessions.has(agentId)) {
-            agentSessions.set(agentId, event.session_id);
-          }
-
           if (event.type === 'system' && event.subtype === 'init') {
-            if (event.session_id) agentSessions.set(agentId, event.session_id);
+            if (event.session_id) saveSession(agentId, event.session_id);
             run.events.push(
               `data: ${JSON.stringify({ type: 'init', tools: event.tools })}\n\n`
             );
@@ -273,7 +297,7 @@ export async function POST(req: Request) {
             );
           } else if (event.type === 'result') {
             if (event.subtype === 'error_during_execution' || event.is_error) {
-              agentSessions.delete(agentId);
+              deleteSession(agentId);
             }
             run.events.push(
               `data: ${JSON.stringify({
@@ -292,6 +316,10 @@ export async function POST(req: Request) {
     proc.stderr.on('data', (chunk: Buffer) => {
       const errText = chunk.toString().trim();
       if (errText && (errText.includes('Error') || errText.includes('error'))) {
+        // If resume failed (session expired/invalid), clear it so next message starts fresh
+        if (errText.includes('session') || errText.includes('resume') || errText.includes('not found')) {
+          deleteSession(agentId);
+        }
         run.events.push(
           `data: ${JSON.stringify({ type: 'error', text: errText })}\n\n`
         );

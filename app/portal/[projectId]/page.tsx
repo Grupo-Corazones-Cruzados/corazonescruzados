@@ -114,6 +114,21 @@ export default function PortalPage() {
     setFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
+  const handlePasteImage = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    const pastedFiles: File[] = [];
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) pastedFiles.push(file);
+      }
+    }
+    if (pastedFiles.length > 0) {
+      e.preventDefault();
+      setFiles(prev => [...prev, ...pastedFiles]);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#e5e5e5]">
       {/* header */}
@@ -250,12 +265,13 @@ export default function PortalPage() {
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
+                onPaste={handlePasteImage}
                 rows={5}
                 className={cn(
                   "w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors resize-none",
                   modules.length > 0 && !selectedModule && "opacity-40 cursor-not-allowed"
                 )}
-                placeholder="Describe con detalle la incidencia encontrada..."
+                placeholder="Describe con detalle la incidencia encontrada... (puedes pegar imágenes aquí)"
                 required
                 disabled={modules.length > 0 && !selectedModule}
               />
@@ -279,7 +295,7 @@ export default function PortalPage() {
                 onClick={() => fileRef.current?.click()}
                 className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] border border-dashed border-[#2a2a2a] rounded text-xs text-[#737373] hover:text-white hover:border-[#4a4a4a] transition-colors w-full justify-center"
               >
-                <ImagePlus size={14} /> Agregar imagenes
+                <ImagePlus size={14} /> Agregar imagenes o pegar (Ctrl+V)
               </button>
               {files.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">

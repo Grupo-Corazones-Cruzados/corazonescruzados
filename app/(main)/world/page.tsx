@@ -4,9 +4,11 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import ChatPanel from '@/components/world/ChatPanel';
 import type { ChatBlock } from '@/components/world/ChatPanel';
 import { useAppStore } from '@/lib/store';
-import { MessageSquare, X, Mic, MicOff, Loader2, ClipboardList } from 'lucide-react';
+import { X } from 'lucide-react';
 import TasksModal from '@/components/world/TasksModal';
 import FloatingTasksWidget from '@/components/world/FloatingTasksWidget';
+import MusicPlayer from '@/components/world/MusicPlayer';
+import FeedingScheduleModal from '@/components/world/FeedingScheduleModal';
 import type { ProjectStructure } from '@/types/projects';
 
 // ─── Types ──────────────────────────────────────────────
@@ -15,6 +17,10 @@ interface Agent {
   name: string;
   sprite: string;
   projectPath: string;
+  scale: number;
+  flipWalk: boolean;
+  frameConfig?: Record<string, number[]>;
+  avatarCrop?: { x: number; y: number; size: number };
 }
 
 // Walk sheet: row 0=down, 1=up, 2=left, 3=right | Actions sheet: row 0=working, 1=sleeping, 2=talking, 3=idle
@@ -33,6 +39,7 @@ interface SpriteState {
   doneStartFrame: number;
   lastActiveTime: number;
   eatingStartFrame: number;
+  groundOffset: number; // vertical offset on terrain (0 = ground line)
 }
 
 interface DigimonClientData {
@@ -61,7 +68,7 @@ interface FoodIconState {
 const SPRITE_SIZE = 64;
 const SCALE = 2;
 const DRAW_SIZE = SPRITE_SIZE * SCALE;
-const GROUND_Y = 0.72; // ground at 72% of canvas height
+const GROUND_Y = 0.65; // ground at 65% of canvas height (elevated)
 const WALK_SPEED = 1.2;
 const IDLE_MIN = 3000;
 const IDLE_MAX = 8000;
@@ -75,8 +82,6 @@ const EATING_DURATION_FRAMES = 24; // ~2s at 12fps
 // Per-agent sprite configuration (defaults: walkFrames=4, doneFrames=10)
 const RESTING_TIMEOUT = 60000; // 1 minute without interaction → resting
 const SPRITE_CONFIG: Record<string, { walkFrames?: number; doneFrames?: number; workingBounce?: boolean; frameHeight?: number; flipRight?: boolean; doneClamp?: boolean; doneLoopFrom?: number; yOffsets?: { idle?: number; walking?: number; working?: number; hovered?: number; done?: number; resting?: number; eating?: number } }> = {
-  shoutmon: { walkFrames: 8, doneFrames: 4 },
-  patamon: { walkFrames: 8, doneFrames: 8, workingBounce: true },
 };
 
 function loadImg(src: string): Promise<HTMLImageElement> {
@@ -97,11 +102,9 @@ export default function WorldPage() {
   const [chatHistories, setChatHistories] = useState<Record<string, ChatBlock[]>>({});
   const [unread, setUnread] = useState<Record<string, number>>({});
   const [streamingAgents, setStreamingAgents] = useState<Set<string>>(new Set());
-  const [voiceRecording, setVoiceRecording] = useState(false);
-  const [voiceTranscribing, setVoiceTranscribing] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState<string | null>(null);
-  const [voiceMessage, setVoiceMessage] = useState<{ agentId: string; text: string } | null>(null);
+  const [externalMessage, setExternalMessage] = useState<{ agentId: string; text: string } | null>(null);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [feedingOpen, setFeedingOpen] = useState(false);
   const [initialTaskId, setInitialTaskId] = useState<string | null>(null);
   const [agentProjectMap, setAgentProjectMap] = useState<Record<string, string>>({});
   const [hiddenAgents, setHiddenAgents] = useState<Set<string>>(new Set());
@@ -121,8 +124,6 @@ export default function WorldPage() {
   }, []);
   const hiddenAgentsRef = useRef(hiddenAgents);
   hiddenAgentsRef.current = hiddenAgents;
-  const voiceRecorderRef = useRef<MediaRecorder | null>(null);
-  const voiceChunksRef = useRef<Blob[]>([]);
   const prevTextCounts = useRef<Record<string, number>>({});
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -167,6 +168,10 @@ export default function WorldPage() {
           name: c.name,
           sprite: c.sprite,
           projectPath: linksRes[c.agentId]?.projectPath || '',
+          scale: c.scale ?? 1.0,
+          flipWalk: c.flipWalk ?? true,
+          frameConfig: c.frameConfig,
+          avatarCrop: c.avatarCrop,
         }));
         setAgents(loaded);
 
@@ -184,10 +189,11 @@ export default function WorldPage() {
           digimonDataRef.current = digiData;
         } catch { /* ignore */ }
 
-        // Load sprite images
+        // Load sprite images — spread across the terrain
         const cW = containerRef.current?.clientWidth || window.innerWidth;
-        const spacing = Math.min(200, (cW - 120) / Math.max(loaded.length, 1));
-        const startX = Math.max(60, (cW - spacing * (loaded.length - 1)) / 2);
+        // All citizens share the same Y baseline (groundOffset = 0)
+        const cols = Math.min(loaded.length, Math.max(3, Math.floor(cW / 160)));
+        const colSpacing = (cW - 120) / Math.max(cols, 1);
 
         for (let i = 0; i < loaded.length; i++) {
           const a = loaded[i];
@@ -197,7 +203,9 @@ export default function WorldPage() {
             loadImg(`/api/assets/universal_assets/citizens/${a.sprite}_done.png`),
             loadImg(`/api/assets/universal_assets/citizens/${a.sprite}_eating.png`),
           ]);
-          const initX = Math.min(startX + i * spacing, cW - 60);
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          const initX = 60 + col * colSpacing + (row % 2 === 1 ? colSpacing * 0.4 : 0);
           spritesRef.current.set(a.agentId, {
             x: initX,
             targetX: initX,
@@ -213,6 +221,7 @@ export default function WorldPage() {
             doneStartFrame: 0,
             lastActiveTime: Date.now(),
             eatingStartFrame: 0,
+            groundOffset: 0,
           });
         }
       } catch {}
@@ -437,24 +446,63 @@ export default function WorldPage() {
         }
         ctx.globalAlpha = 1;
 
-        // ── Ground (tinted by time) ──
-        const groundTop = lerpColor([26, 35, 50], [60, 90, 50], dayIntensity * 0.5);
-        const groundBot = lerpColor([13, 17, 23], [30, 50, 30], dayIntensity * 0.3);
+        // ── Ground (digital terrain with depth) ──
+        // Main ground gradient — richer green during day, darker at night
+        const groundTop = lerpColor([20, 30, 42], [55, 105, 55], dayIntensity * 0.6);
+        const groundMid = lerpColor([15, 22, 32], [40, 75, 40], dayIntensity * 0.4);
+        const groundBot = lerpColor([8, 12, 18], [22, 40, 25], dayIntensity * 0.3);
         const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
         groundGrad.addColorStop(0, groundTop);
+        groundGrad.addColorStop(0.3, groundMid);
         groundGrad.addColorStop(1, groundBot);
         ctx.fillStyle = groundGrad;
         ctx.fillRect(0, groundY, W, H - groundY);
 
+        // Digital grid pattern on ground (digimon-style)
+        ctx.strokeStyle = `rgba(29, 158, 117, ${0.04 + dayIntensity * 0.06})`;
+        ctx.lineWidth = 0.5;
+        const gridSpacing = 24;
+        for (let gy = groundY + gridSpacing; gy < H; gy += gridSpacing) {
+          const fade = 1 - (gy - groundY) / (H - groundY);
+          ctx.globalAlpha = fade * (0.04 + dayIntensity * 0.06);
+          ctx.beginPath();
+          ctx.moveTo(0, gy);
+          ctx.lineTo(W, gy);
+          ctx.stroke();
+        }
+        for (let gx = 0; gx < W; gx += gridSpacing) {
+          ctx.globalAlpha = 0.02 + dayIntensity * 0.03;
+          ctx.beginPath();
+          ctx.moveTo(gx, groundY);
+          ctx.lineTo(gx, H);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        // Ground edge — glowing line with shadow
+        const edgeGlow = ctx.createLinearGradient(0, groundY - 4, 0, groundY + 6);
+        edgeGlow.addColorStop(0, 'rgba(29, 158, 117, 0)');
+        edgeGlow.addColorStop(0.4, `rgba(29, 158, 117, ${0.15 + dayIntensity * 0.2})`);
+        edgeGlow.addColorStop(0.5, `rgba(29, 158, 117, ${0.3 + dayIntensity * 0.3})`);
+        edgeGlow.addColorStop(0.6, `rgba(29, 158, 117, ${0.15 + dayIntensity * 0.15})`);
+        edgeGlow.addColorStop(1, 'rgba(29, 158, 117, 0)');
+        ctx.fillStyle = edgeGlow;
+        ctx.fillRect(0, groundY - 4, W, 10);
+
         // Ground line
-        ctx.strokeStyle = '#1D9E75';
-        ctx.globalAlpha = 0.2 + dayIntensity * 0.2;
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = `rgba(29, 158, 117, ${0.4 + dayIntensity * 0.3})`;
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(0, groundY);
         ctx.lineTo(W, groundY);
         ctx.stroke();
-        ctx.globalAlpha = 1;
+
+        // Shadow below ground line
+        const shadowGrad = ctx.createLinearGradient(0, groundY, 0, groundY + 20);
+        shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.3)');
+        shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = shadowGrad;
+        ctx.fillRect(0, groundY, W, 20);
 
         // ── Nature assets (behind sprites) ──
         ctx.imageSmoothingEnabled = false;
@@ -586,8 +634,8 @@ export default function WorldPage() {
           const isAgentHidden = hiddenAgentsRef.current.has(a.agentId);
           const isWorking = streamingAgentsRef.current.has(a.agentId);
           const isHovered = isAgentHidden ? false : hoveredAgentRef.current === a.agentId;
-          const baseY = groundY - DRAW_SIZE + 16;
-          s.y = baseY + (a.sprite === 'shoutmon' ? 39 : 0);
+          const baseY = groundY - DRAW_SIZE + 40 + s.groundOffset;
+          s.y = baseY;
 
           // Behavior — eating takes priority after food icon click
           if (s.phase === 'eating') {
@@ -606,6 +654,8 @@ export default function WorldPage() {
             s.phase = 'done';
             s.hoverBounce = 0;
             s.doneStartFrame = frameRef.current;
+            // Play task-complete sound
+            import('@/lib/digimon-sounds').then(m => m.playDigimonDone(a.sprite));
           } else if (s.phase === 'done' && activeAgentRef.current === a.agentId) {
             // User opened this chat → exit done phase
             s.phase = 'idle';
@@ -664,40 +714,48 @@ export default function WorldPage() {
           let speed: number;
           const sprCfg = SPRITE_CONFIG[a.sprite] || {};
 
+          // Map phase to frameConfig key
+          const phaseToConfigKey: Record<string, string> = {
+            eating: 'eating', done: 'done', working: 'work',
+            hovered: 'excited', walking: 'walk', resting: 'rest', idle: 'idle',
+          };
+          const cfgKey = phaseToConfigKey[s.phase] || 'idle';
+          const activeFrames = a.frameConfig?.[cfgKey];
+
           if (s.phase === 'eating') {
             sheet = s.eatingImg;
             row = 0;
-            frames = 4;
+            frames = activeFrames?.length || 4;
             speed = 3;
           } else if (s.phase === 'done') {
             sheet = s.doneImg;
             row = 0;
-            frames = sprCfg.doneFrames || 4;
+            frames = activeFrames?.length || sprCfg.doneFrames || 4;
             speed = 3;
           } else if (s.phase === 'working') {
             sheet = s.actionsImg;
             row = 0;
-            frames = 4;
+            frames = activeFrames?.length || 4;
             speed = 3;
           } else if (s.phase === 'hovered') {
             sheet = s.actionsImg;
             row = 2;
-            frames = 4;
+            frames = activeFrames?.length || 4;
             speed = 4;
           } else if (s.phase === 'walking') {
             sheet = s.walkImg;
-            row = s.direction === 'right' ? 3 : 2;
-            frames = sprCfg.walkFrames || 4;
-            speed = 2;
+            row = 2; // always use walk-left row, flip via canvas for right
+            frames = activeFrames?.length || sprCfg.walkFrames || 4;
+            speed = 3;
           } else if (s.phase === 'resting') {
             sheet = s.actionsImg;
             row = 1; // sleeping/resting row
-            frames = 4;
+            frames = activeFrames?.length || 4;
             speed = 6; // slow animation
           } else {
             sheet = s.actionsImg;
             row = 3; // idle row
-            frames = 4;
+            frames = activeFrames?.length || 4;
             speed = 3;
           }
 
@@ -710,11 +768,8 @@ export default function WorldPage() {
             ctx.fill();
           }
 
-          // Per-agent scale: edit multiplier here (1.0 = normal, 1.2 = 20% bigger, etc.)
-          let agentScale = 1.0;
-          if (a.sprite === 'gumdramon') agentScale = 0.9;   // Gumdramon scale
-          if (a.sprite === 'gabumon') agentScale = 0.9;    // Gabumon scale
-          if (a.sprite === 'shoutmon') agentScale = 1.2;    // Shoutmon scale
+          // Per-agent scale from world config (editable in sprites page)
+          const agentScale = a.scale;
           const fh = sprCfg.frameHeight || SPRITE_SIZE;
           const aspectRatio = fh / SPRITE_SIZE;
           const drawW = DRAW_SIZE * agentScale;
@@ -744,11 +799,16 @@ export default function WorldPage() {
             } else {
               frame = Math.floor(frameRef.current / speed) % frames;
             }
-            const sx = frame * SPRITE_SIZE;
+            // Map logical frame index to actual sprite column using frameConfig
+            const actualFrame = activeFrames ? (activeFrames[frame] ?? frame) : frame;
+            const sx = actualFrame * SPRITE_SIZE;
             const sy = row * fh;
             ctx.imageSmoothingEnabled = false;
-            // Flip horizontally for right-walking sprites that share left-facing frames
-            if (sprCfg.flipRight && s.phase === 'walking' && s.direction === 'right') {
+            // Flip walk direction based on per-agent config
+            const shouldFlip = s.phase === 'walking' && (
+              a.flipWalk ? s.direction === 'left' : s.direction === 'right'
+            );
+            if (shouldFlip) {
               ctx.save();
               ctx.translate(s.x, 0);
               ctx.scale(-1, 1);
@@ -849,24 +909,9 @@ export default function WorldPage() {
             ctx.globalAlpha = 1;
           }
 
-          // ── Affinity bar + Food icon + Speech bubble ──
+          // ── Food icon + Speech bubble (affinity bar only on top bubbles) ──
           const dData = digimonDataRef.current[a.agentId];
           if (dData) {
-            // Affinity bar — below name label, above sprite
-            const barW = 28;
-            const barH = 3;
-            const barX = s.x - barW / 2;
-            const barY = nameY + 18;
-            const fill = Math.max(0, Math.min(1, dData.affinity / 100));
-            // Background
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
-            // Fill — red to yellow to green gradient
-            const r = Math.round(255 * (1 - fill));
-            const g = Math.round(255 * fill);
-            ctx.fillStyle = `rgb(${r},${g},50)`;
-            ctx.fillRect(barX, barY, barW * fill, barH);
-
             // ── Food icon (bouncing) ──
             const nowMs = Date.now();
             const nowDate = new Date();
@@ -962,7 +1007,7 @@ export default function WorldPage() {
                 const bw = textW + 12;
                 const bh = 18;
                 const bx = s.x - bw / 2;
-                const by = s.y - 28;
+                const by = s.y - 50;
 
                 // Bubble body
                 ctx.fillStyle = 'rgba(255,255,255,0.92)';
@@ -1037,22 +1082,15 @@ export default function WorldPage() {
             ctx.beginPath();
             ctx.arc(bx, by, bubbleSize / 2, 0, Math.PI * 2);
             ctx.clip();
-            // Per-agent camera offset for face crop
-            let srcX = 12, srcY = 14, srcW = 28, srcH = 28;
-            if (a.sprite === 'gabumon') { srcX = 25; ; srcY = 25}                  // Gabumon: right
-            else if (a.sprite === 'agumon') { srcX = 21; srcY = 28; }   // Agumon: down + right
-            else if (a.sprite === 'gumdramon') { srcX = 14;srcY = 26 }           // Gumdramon: down
-            else if (a.sprite === 'shoutmon') { srcX = 27; srcY = 21.5; srcW = 19; srcH = 19; }
-            else if (a.sprite === 'patamon') { srcX = 23; srcY = 42; srcW = 22; srcH = 22; }
+            // Per-agent camera offset for face crop (from avatarCrop config or defaults)
+            const ac = a.avatarCrop;
+            const srcX = ac?.x ?? 12;
+            const srcY = ac?.y ?? 14;
+            const srcW = ac?.size ?? 28;
+            const srcH = ac?.size ?? 28;
             ctx.imageSmoothingEnabled = false;
             if (isHidden) ctx.filter = 'grayscale(100%)';
-            if (a.sprite === 'gumdramon') {
-              ctx.translate(bx, by);
-              ctx.scale(-1, 1);
-              ctx.drawImage(sheet, srcX, srcY, srcW, srcH, -bubbleSize / 2, -bubbleSize / 2, bubbleSize, bubbleSize);
-            } else {
-              ctx.drawImage(sheet, srcX, srcY, srcW, srcH, bx - bubbleSize / 2, by - bubbleSize / 2, bubbleSize, bubbleSize);
-            }
+            ctx.drawImage(sheet, srcX, srcY, srcW, srcH, bx - bubbleSize / 2, by - bubbleSize / 2, bubbleSize, bubbleSize);
             ctx.filter = 'none';
             ctx.restore();
           }
@@ -1252,11 +1290,15 @@ export default function WorldPage() {
           d.affinity = data.affinity;
           d.lastFedDates.push(data.fedKey);
         }
-        // Trigger eating animation
+        // Trigger eating animation + sound
         const s = spritesRef.current.get(agentId);
         if (s) {
           s.phase = 'eating';
           s.eatingStartFrame = frameRef.current;
+          const agent = agents.find(a => a.agentId === agentId);
+          if (agent) {
+            import('@/lib/digimon-sounds').then(m => m.playDigimonEat(agent.sprite));
+          }
         }
         // Remove food icon
         foodIconsRef.current.delete(agentId);
@@ -1280,9 +1322,18 @@ export default function WorldPage() {
       return;
     }
     const agentId = result;
-    if (activeAgent === agentId) setActiveAgent(null);
-    else { setActiveAgent(agentId); setUnread(u => ({ ...u, [agentId]: 0 })); }
-  }, [hitTestAgent, activeAgent, toggleAgentVisibility, feedDigimon]);
+    if (activeAgent === agentId) {
+      setActiveAgent(null);
+    } else {
+      setActiveAgent(agentId);
+      setUnread(u => ({ ...u, [agentId]: 0 }));
+      // Play selection sound
+      const agent = agents.find(a => a.agentId === agentId);
+      if (agent) {
+        import('@/lib/digimon-sounds').then(m => m.playDigimonSelect(agent.sprite));
+      }
+    }
+  }, [hitTestAgent, activeAgent, toggleAgentVisibility, feedDigimon, agents]);
 
   const lastInteractionRef = useRef(0);
 
@@ -1310,126 +1361,6 @@ export default function WorldPage() {
   }, [selectAgentAt]);
 
   const agent = agents.find(a => a.agentId === activeAgent);
-
-  // ─── Voice command ──────────────────────────────────
-  const AGENT_ALIASES: Record<string, string[]> = {
-    agumon: ['agumon'],
-    gabumon: ['gabumon', 'tentomon'],
-    gumdramon: ['gumdramon'],
-    shoutmon: ['shoutmon'],
-    patamon: ['patamon'],
-  };
-
-  const detectAgent = useCallback((text: string): string | null => {
-    const lower = text.toLowerCase();
-    for (const [agentId, aliases] of Object.entries(AGENT_ALIASES)) {
-      for (const alias of aliases) {
-        if (lower.includes(alias)) return agentId;
-      }
-    }
-    return null;
-  }, []);
-
-  const toggleVoiceCommand = useCallback(async () => {
-    if (voiceRecording) {
-      const recorder = voiceRecorderRef.current;
-      voiceRecorderRef.current = null;
-      recorder?.stop();
-      setVoiceRecording(false);
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
-      // Let the browser choose the best format (important for iOS Safari)
-      const options: MediaRecorderOptions = {};
-      if (MediaRecorder.isTypeSupported('audio/webm')) options.mimeType = 'audio/webm';
-      const recorder = new MediaRecorder(stream, options);
-      voiceChunksRef.current = [];
-      voiceRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) voiceChunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const chunks = voiceChunksRef.current;
-        console.log('[Voice] Chunks:', chunks.length, 'mimeType:', recorder.mimeType);
-        if (chunks.length === 0) {
-          console.log('[Voice] No audio chunks captured');
-          setVoiceStatus('No se capturó audio');
-          setTimeout(() => setVoiceStatus(null), 3000);
-          return;
-        }
-
-        const blob = new Blob(chunks, { type: recorder.mimeType });
-        console.log('[Voice] Blob size:', blob.size, 'bytes');
-        if (blob.size < 1000) {
-          setVoiceStatus('Audio muy corto, intenta de nuevo');
-          setTimeout(() => setVoiceStatus(null), 3000);
-          return;
-        }
-        setVoiceTranscribing(true);
-
-        try {
-          const form = new FormData();
-          form.append('audio', blob);
-          form.append('mimeType', recorder.mimeType);
-          const res = await fetch('/api/transcribe', { method: 'POST', body: form });
-          const data = await res.json();
-
-          console.log('[Voice] Transcription result:', data);
-
-          if (data.error && !data.text) {
-            setVoiceStatus(`Error: ${data.error}`);
-            setTimeout(() => setVoiceStatus(null), 3000);
-          } else if (data.text) {
-            setVoiceStatus(`"${data.text}"`);
-            setTimeout(() => setVoiceStatus(null), 4000);
-
-            const detectedAgentId = detectAgent(data.text);
-            const sendToAgent = (agentId: string, text: string) => {
-              setActiveAgent(agentId);
-              setUnread(u => ({ ...u, [agentId]: 0 }));
-              // Delay so ChatPanel mounts before receiving the message
-              setTimeout(() => setVoiceMessage({ agentId, text }), 300);
-            };
-
-            if (detectedAgentId) {
-              let cleanText = data.text;
-              for (const alias of AGENT_ALIASES[detectedAgentId] || []) {
-                cleanText = cleanText.replace(new RegExp(alias, 'gi'), '').trim();
-              }
-              cleanText = cleanText.replace(/^[,.\s]+/, '').trim();
-              sendToAgent(detectedAgentId, cleanText || data.text);
-            } else {
-              const targetId = activeAgent || agents[0]?.agentId;
-              if (targetId) {
-                sendToAgent(targetId, data.text);
-              }
-            }
-          } else {
-            setVoiceStatus('No se detectó voz');
-            setTimeout(() => setVoiceStatus(null), 3000);
-          }
-        } catch (err) {
-          console.error('[Voice] Error:', err);
-          setVoiceStatus('Error al transcribir');
-          setTimeout(() => setVoiceStatus(null), 3000);
-        } finally {
-          setVoiceTranscribing(false);
-        }
-      };
-
-      recorder.start(250); // capture chunks every 250ms
-      setVoiceRecording(true);
-    } catch {
-      // mic denied
-    }
-  }, [voiceRecording, activeAgent, agents, detectAgent]);
 
   // ─── Send incident to agent ─────────────────────────────
   const handleSendToAgent = useCallback(async (agentId: string, message: string, images: string[]) => {
@@ -1460,7 +1391,7 @@ export default function WorldPage() {
 
     setActiveAgent(agentId);
     setUnread(u => ({ ...u, [agentId]: 0 }));
-    setTimeout(() => setVoiceMessage({ agentId, text: fullMsg }), 300);
+    setTimeout(() => setExternalMessage({ agentId, text: fullMsg }), 300);
   }, []);
 
   // ─── Render ───────────────────────────────────────────
@@ -1480,37 +1411,26 @@ export default function WorldPage() {
           className="block w-full h-full touch-none"
           style={{ imageRendering: 'pixelated' }}
         />
-        {/* Floating tasks widget (left center) */}
+        {/* Bottom-left button row */}
+        <div className="absolute bottom-4 left-4 z-10 flex items-end gap-3">
+          <MusicPlayer />
+
+          {/* Feeding schedule button */}
+          <button
+            onClick={() => setFeedingOpen(true)}
+            className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg bg-[#0d1117]/90 border border-[#30363d] hover:border-amber-400/40 hover:bg-amber-400/10 transition-all text-xl"
+            title="Horarios de comida"
+          >
+            🍖
+          </button>
+
+        </div>
+
+        <FeedingScheduleModal open={feedingOpen} onClose={() => setFeedingOpen(false)} />
         <FloatingTasksWidget
           onOpenTasksModal={() => { setInitialTaskId(null); setTasksOpen(true); }}
           onOpenTaskDetail={(id) => { setInitialTaskId(id); setTasksOpen(true); }}
         />
-
-        {/* Floating voice command button */}
-        <button
-          onClick={toggleVoiceCommand}
-          className={`absolute bottom-4 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all z-10 ${
-            voiceRecording
-              ? 'bg-red-500 animate-pulse scale-110'
-              : voiceTranscribing
-                ? 'bg-yellow-500 animate-pulse'
-                : 'bg-[#1D9E75] hover:bg-[#25b888] active:scale-95'
-          }`}
-          title={voiceRecording ? 'Detener y enviar' : voiceTranscribing ? 'Transcribiendo...' : 'Comando de voz — menciona el nombre del Digimon'}
-        >
-          {voiceTranscribing
-            ? <Loader2 size={24} className="text-white animate-spin" />
-            : voiceRecording
-              ? <MicOff size={24} className="text-white" />
-              : <Mic size={24} className="text-white" />
-          }
-        </button>
-        {/* Voice status indicator */}
-        {voiceStatus && (
-          <div className="absolute bottom-20 right-4 max-w-[250px] bg-black/80 text-white text-xs font-mono px-3 py-2 rounded-lg z-10 break-words">
-            {voiceStatus}
-          </div>
-        )}
       </div>
 
       {/* Chat panel */}
@@ -1544,7 +1464,7 @@ export default function WorldPage() {
             <div className="flex-1 min-h-0">
               <ChatPanel
                 key={agent.agentId}
-                citizen={{ agentId: agent.agentId, name: agent.name, sprite: agent.sprite, position: '', type: 'agent' }}
+                citizen={{ agentId: agent.agentId, name: agent.name, sprite: agent.sprite, position: '', type: 'agent', avatarCrop: agent.avatarCrop }}
                 onClose={() => setActiveAgent(null)}
                 blocks={chatHistories[agent.agentId] || []}
                 onBlocksChange={(newBlocks) => {
@@ -1554,8 +1474,8 @@ export default function WorldPage() {
                     : newBlocks;
                   setChatHistories(prev => ({ ...prev, [id]: trimmed }));
                 }}
-                externalMessage={voiceMessage?.agentId === agent.agentId ? voiceMessage.text : null}
-                onExternalMessageConsumed={() => setVoiceMessage(null)}
+                externalMessage={externalMessage?.agentId === agent.agentId ? externalMessage.text : null}
+                onExternalMessageConsumed={() => setExternalMessage(null)}
               />
             </div>
           </div>

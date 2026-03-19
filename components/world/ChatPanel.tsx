@@ -5,16 +5,7 @@ import type { CitizenDef } from '@/types/world';
 import AnimatedSprite from '@/components/shared/AnimatedSprite';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 
-// Face crop config per sprite (same as world page bubbles)
-const FACE_CROPS: Record<string, { srcX: number; srcY: number; srcW: number; srcH: number; flip?: boolean }> = {
-  gabumon:   { srcX: 26, srcY: 25, srcW: 28, srcH: 28 },
-  agumon:    { srcX: 21, srcY: 28, srcW: 28, srcH: 28 },
-  gumdramon: { srcX: 14, srcY: 26, srcW: 28, srcH: 28, flip: true },
-  shoutmon:  { srcX: 27, srcY: 21.5, srcW: 19, srcH: 19 },
-  patamon:   { srcX: 23, srcY: 42, srcW: 22, srcH: 22 },
-};
-
-function FaceBubble({ sprite, size = 48 }: { sprite: string; size?: number }) {
+function FaceBubble({ sprite, avatarCrop, size = 48 }: { sprite: string; avatarCrop?: { x: number; y: number; size: number }; size?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -29,7 +20,9 @@ function FaceBubble({ sprite, size = 48 }: { sprite: string; size?: number }) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      const crop = FACE_CROPS[sprite] || { srcX: 12, srcY: 14, srcW: 28, srcH: 28 };
+      const srcX = avatarCrop?.x ?? 12;
+      const srcY = avatarCrop?.y ?? 14;
+      const srcS = avatarCrop?.size ?? 28;
       ctx.clearRect(0, 0, size, size);
 
       // Circular clip
@@ -42,15 +35,7 @@ function FaceBubble({ sprite, size = 48 }: { sprite: string; size?: number }) {
       ctx.fill();
 
       ctx.imageSmoothingEnabled = false;
-      if (crop.flip) {
-        ctx.save();
-        ctx.translate(size, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(img, crop.srcX, crop.srcY, crop.srcW, crop.srcH, 0, 0, size, size);
-        ctx.restore();
-      } else {
-        ctx.drawImage(img, crop.srcX, crop.srcY, crop.srcW, crop.srcH, 0, 0, size, size);
-      }
+      ctx.drawImage(img, srcX, srcY, srcS, srcS, 0, 0, size, size);
 
       // Border
       ctx.strokeStyle = '#1D9E75';
@@ -60,7 +45,7 @@ function FaceBubble({ sprite, size = 48 }: { sprite: string; size?: number }) {
       ctx.stroke();
     };
     img.src = `/api/assets/universal_assets/citizens/${sprite}_walk.png`;
-  }, [sprite, size]);
+  }, [sprite, avatarCrop, size]);
 
   return <canvas ref={canvasRef} style={{ imageRendering: 'pixelated', width: size, height: size }} />;
 }
@@ -88,6 +73,10 @@ import {
   Link,
   Check,
   Square,
+  Zap,
+  Maximize2,
+  Minimize2,
+  GitBranch,
 } from 'lucide-react';
 
 // Each block in the conversation
@@ -169,6 +158,10 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
   const [transcribing, setTranscribing] = useState(false);
   const [showAppLinkInput, setShowAppLinkInput] = useState(false);
   const [appLinkDraft, setAppLinkDraft] = useState('');
+  const [showQuickMenu, setShowQuickMenu] = useState(false);
+  const [expandedEditor, setExpandedEditor] = useState(false);
+  const expandedInputRef = useRef<HTMLTextAreaElement>(null);
+  const expandedFileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -626,7 +619,57 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
   const clearChat = () => {
     setBlocks([]);
     setError(null);
+    // Clear the agent's session so next message starts a fresh conversation
+    fetch('/api/chat/clear-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: citizen.agentId }),
+    }).catch(() => {});
   };
+
+  // ─── Quick commands ───
+  const QUICK_COMMANDS = [
+    { id: 'commit-push', label: 'Commit y Push', message: 'Haz commit de todos los cambios pendientes con un mensaje descriptivo y luego push al repositorio remoto.', icon: GitBranch },
+  ];
+
+  const sendQuickCommand = useCallback((message: string) => {
+    setShowQuickMenu(false);
+    setInput(message);
+    // Use setTimeout to let input update, then trigger send
+    setTimeout(() => {
+      setInput('');
+      setError(null);
+      setStreaming(true);
+      streamingRef.current = true;
+
+      const userBlock: ChatBlock = { id: newId(), type: 'user', content: message };
+      setBlocks(prev => [...prev, userBlock]);
+
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: citizenRef.current.agentId,
+          agentName: citizenRef.current.name,
+          message,
+          projectPath: projectPathRef.current || undefined,
+        }),
+      }).then(async (res) => {
+        if (!res.ok) throw new Error('Chat failed');
+        await readSSEStream(res.body!.getReader());
+      }).catch((e) => {
+        if (runIdRef.current && streamingRef.current) return;
+        setError(e.message);
+      }).finally(() => {
+        if (!reconnectingRef.current) {
+          setStreaming(false);
+          streamingRef.current = false;
+          runIdRef.current = null;
+          eventIndexRef.current = 0;
+        }
+      });
+    }, 50);
+  }, [readSSEStream, setBlocks]);
 
   return (
     <div className="flex flex-col h-full text-[#c9d1d9] overflow-hidden max-w-full">
@@ -764,7 +807,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
         {blocks.length === 0 && (
           <div className="flex items-center gap-2 py-3 px-1">
             <div className="shrink-0">
-              <FaceBubble sprite={citizen.sprite} size={48} />
+              <FaceBubble sprite={citizen.sprite} avatarCrop={citizen.avatarCrop} size={48} />
             </div>
             <div>
               <p className="text-[11px] text-[#8b949e]">
@@ -893,7 +936,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
       {/* Input bar */}
       <div className="px-2 py-1.5 shrink-0" onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
         {attachedImages.length > 0 && (
-          <div className="flex gap-1.5 mb-1">
+          <div className="flex gap-1.5 mb-1 flex-wrap">
             {attachedImages.map((img, i) => (
               <div key={i} className="relative group">
                 <img src={img.preview} alt={img.name} className="w-10 h-10 object-cover rounded border border-white/10" />
@@ -912,13 +955,56 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
           <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden"
             onChange={e => { for (const file of e.target.files || []) uploadImage(file); e.target.value = ''; }}
           />
+
+          {/* Quick commands button */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setShowQuickMenu(!showQuickMenu)}
+              disabled={streaming}
+              className={`p-2 transition-colors disabled:opacity-30 shrink-0 ${showQuickMenu ? 'text-amber-400' : 'text-[#8b949e] active:text-[#c9d1d9]'}`}
+              title="Comandos rápidos"
+            >
+              <Zap size={16} />
+            </button>
+            {showQuickMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowQuickMenu(false)} />
+                <div className="absolute bottom-full left-0 mb-1 z-50 bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl min-w-[180px] py-1">
+                  {QUICK_COMMANDS.map(cmd => (
+                    <button
+                      key={cmd.id}
+                      onClick={() => sendQuickCommand(cmd.message)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-[#c9d1d9] hover:bg-[#1f2937] transition-colors text-left"
+                    >
+                      <cmd.icon size={13} className="text-amber-400 shrink-0" />
+                      {cmd.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Expand editor button */}
+          <button
+            onClick={() => { setExpandedEditor(true); setTimeout(() => expandedInputRef.current?.focus(), 100); }}
+            className="p-2 text-[#8b949e] active:text-[#c9d1d9] shrink-0"
+            title="Expandir editor"
+          >
+            <Maximize2 size={16} />
+          </button>
+
+          {/* Image attach */}
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={streaming || uploading}
             className="p-2 text-[#8b949e] active:text-[#c9d1d9] disabled:opacity-30 shrink-0"
+            title="Adjuntar imagen"
           >
             {uploading ? <Loader2 size={16} className="animate-spin" /> : <ImagePlus size={16} />}
           </button>
+
+          {/* Mic */}
           <button
             onClick={toggleMic}
             disabled={streaming || transcribing}
@@ -929,10 +1015,11 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
                   ? 'text-yellow-400 animate-pulse'
                   : 'text-[#8b949e] active:text-[#c9d1d9]'
             } disabled:opacity-30`}
-            title={recording ? 'Stop & transcribe' : transcribing ? 'Transcribing...' : 'Voice input'}
+            title={recording ? 'Detener y transcribir' : transcribing ? 'Transcribiendo...' : 'Dictar por voz'}
           >
             {transcribing ? <Loader2 size={16} className="animate-spin" /> : recording ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
+
           <input
             ref={inputRef as any}
             type="text"
@@ -961,6 +1048,107 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
           </button>
         </div>
       </div>
+
+      {/* ─── Expanded editor modal ─── */}
+      {expandedEditor && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col p-3 md:p-6">
+          <div className="flex-1 flex flex-col bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden max-w-3xl w-full mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#21262d] shrink-0">
+              <span className="text-xs font-mono text-digi-green">
+                Mensaje para {citizen.name}
+              </span>
+              <button
+                onClick={() => setExpandedEditor(false)}
+                className="p-1.5 rounded text-[#8b949e] hover:text-white hover:bg-white/10"
+                title="Cerrar editor"
+              >
+                <Minimize2 size={16} />
+              </button>
+            </div>
+
+            {/* Textarea */}
+            <div className="flex-1 p-3 min-h-0">
+              <textarea
+                ref={expandedInputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onPaste={handlePaste as any}
+                onDrop={handleDrop}
+                onDragOver={e => e.preventDefault()}
+                placeholder={`Escribe tu mensaje para ${citizen.name}...\n\nPuedes usar saltos de línea libremente.`}
+                className="w-full h-full resize-none bg-transparent text-sm text-[#c9d1d9] placeholder:text-[#484f58] focus:outline-none leading-relaxed"
+              />
+            </div>
+
+            {/* Attached images preview */}
+            {attachedImages.length > 0 && (
+              <div className="px-3 pb-2 shrink-0">
+                <div className="flex gap-2 flex-wrap">
+                  {attachedImages.map((img, i) => (
+                    <div key={i} className="relative group">
+                      <img src={img.preview} alt={img.name} className="w-16 h-16 object-cover rounded-lg border border-white/10" />
+                      <button
+                        onClick={() => setAttachedImages(prev => prev.filter((_, j) => j !== i))}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={10} className="text-white" />
+                      </button>
+                      <span className="block text-[8px] text-[#484f58] truncate w-16 mt-0.5">{img.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bottom toolbar */}
+            <div className="flex items-center gap-1 px-3 py-2.5 border-t border-[#21262d] shrink-0">
+              <input ref={expandedFileInputRef} type="file" accept="image/*" multiple className="hidden"
+                onChange={e => { for (const file of e.target.files || []) uploadImage(file); e.target.value = ''; }}
+              />
+              <button
+                onClick={() => expandedFileInputRef.current?.click()}
+                disabled={uploading}
+                className="p-2 text-[#8b949e] hover:text-[#c9d1d9] active:bg-white/5 rounded disabled:opacity-30"
+                title="Adjuntar imagen"
+              >
+                {uploading ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} />}
+              </button>
+              <button
+                onClick={toggleMic}
+                disabled={transcribing}
+                className={`p-2 rounded transition-colors ${
+                  recording
+                    ? 'text-red-400 animate-pulse bg-red-400/10'
+                    : transcribing
+                      ? 'text-yellow-400 animate-pulse'
+                      : 'text-[#8b949e] hover:text-[#c9d1d9] active:bg-white/5'
+                } disabled:opacity-30`}
+                title={recording ? 'Detener y transcribir' : transcribing ? 'Transcribiendo...' : 'Dictar por voz'}
+              >
+                {transcribing ? <Loader2 size={18} className="animate-spin" /> : recording ? <MicOff size={18} /> : <Mic size={18} />}
+              </button>
+
+              {attachedImages.length > 0 && (
+                <span className="text-[9px] text-[#484f58] font-mono ml-1">
+                  {attachedImages.length} imagen{attachedImages.length > 1 ? 'es' : ''}
+                </span>
+              )}
+
+              <div className="flex-1" />
+
+              <button
+                onClick={() => { setExpandedEditor(false); sendMessage(); }}
+                disabled={!input.trim() && attachedImages.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-digi-green/20 border border-digi-green/30 text-digi-green rounded-lg text-xs font-medium hover:bg-digi-green/30 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+              >
+                <Send size={14} />
+                Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

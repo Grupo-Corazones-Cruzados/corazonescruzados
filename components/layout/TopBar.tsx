@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import type { MemoryLevel } from '@/lib/store';
-import { Circle, RefreshCw, Menu, HardDrive } from 'lucide-react';
+import { Menu, HardDrive, Sun, SunDim } from 'lucide-react';
+import { useWakeLock } from '@/hooks/useWakeLock';
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -18,14 +19,9 @@ const LEVEL_COLORS: Record<MemoryLevel, { dot: string; text: string; bg: string 
 };
 
 export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) {
-  const { serverOnline, fetchServerStatus, memoryUsage } = useAppStore();
+  const { memoryUsage } = useAppStore();
   const [showDetail, setShowDetail] = useState(false);
-
-  useEffect(() => {
-    fetchServerStatus();
-    const interval = setInterval(fetchServerStatus, 10000);
-    return () => clearInterval(interval);
-  }, [fetchServerStatus]);
+  const wakeLock = useWakeLock();
 
   const { bytes, blockCount, level } = memoryUsage;
   const colors = LEVEL_COLORS[level];
@@ -42,6 +38,25 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
         </span>
       </div>
       <div className="flex items-center gap-2">
+        {/* Wake Lock toggle */}
+        {wakeLock.isSupported && (
+          <button
+            onClick={() => wakeLock.isActive ? wakeLock.release() : wakeLock.request()}
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors duration-300 ${
+              wakeLock.isActive ? 'bg-amber-500/10' : 'bg-white/5'
+            }`}
+            title={wakeLock.isActive ? 'Pantalla activa — toca para desactivar' : 'Mantener pantalla encendida'}
+          >
+            {wakeLock.isActive
+              ? <Sun size={10} className="text-amber-400" />
+              : <SunDim size={10} className="text-digi-muted" />
+            }
+            <span className={`text-[9px] font-mono hidden sm:inline ${wakeLock.isActive ? 'text-amber-400' : 'text-digi-muted'}`}>
+              {wakeLock.isActive ? 'ON' : 'OFF'}
+            </span>
+          </button>
+        )}
+
         {/* Memory usage indicator */}
         {showIndicator && (
           <button
@@ -100,16 +115,6 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
           </div>
         )}
 
-        {/* Server status */}
-        <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-mono">
-          <Circle size={6} className={serverOnline ? 'fill-green-500 text-green-500' : 'fill-red-500 text-red-500'} />
-          <span className={`hidden sm:inline ${serverOnline ? 'text-green-400' : 'text-red-400'}`}>
-            {serverOnline ? 'Online' : 'Offline'}
-          </span>
-        </div>
-        <button onClick={fetchServerStatus} className="p-1 rounded hover:bg-white/5 text-digi-muted">
-          <RefreshCw size={12} />
-        </button>
       </div>
     </header>
   );
