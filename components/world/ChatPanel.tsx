@@ -168,7 +168,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioFileInputRef = useRef<HTMLInputElement>(null);
   const expandedAudioFileInputRef = useRef<HTMLInputElement>(null);
-  const [transcribingFile, setTranscribingFile] = useState(false);
+  const [transcribingFile, setTranscribingFile] = useState<string | false>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const idCounter = useRef(0);
@@ -334,20 +334,85 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
 
   const handleAudioFile = useCallback(async (file: File) => {
     if (!file.type.startsWith('audio/')) return;
-    setTranscribingFile(true);
-    try {
-      const form = new FormData();
-      form.append('audio', file);
-      form.append('mimeType', file.type);
-      const res = await fetch('/api/transcribe', { method: 'POST', body: form });
-      const data = await res.json();
-      if (data.text) {
-        setInput(prev => prev ? `${prev} ${data.text}` : data.text);
-      } else if (data.error) {
-        setError(data.error);
+    const MAX_DIRECT = 24 * 1024 * 1024; // 24MB — Whisper limit is 25MB
+
+    // Small file: send directly
+    if (file.size <= MAX_DIRECT) {
+      setTranscribingFile('Transcribiendo...');
+      try {
+        const form = new FormData();
+        form.append('audio', file);
+        form.append('mimeType', file.type);
+        const res = await fetch('/api/transcribe', { method: 'POST', body: form });
+        const data = await res.json();
+        if (data.text) {
+          setInput(prev => prev ? `${prev} ${data.text}` : data.text);
+        } else if (data.error) {
+          setError(data.error);
+        }
+      } catch {
+        setError('Error al transcribir archivo de audio');
+      } finally {
+        setTranscribingFile(false);
       }
-    } catch {
-      setError('Error al transcribir archivo de audio');
+      return;
+    }
+
+    // Large file: decode → split into WAV chunks → transcribe each
+    setTranscribingFile('Decodificando audio...');
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      audioCtx.close();
+
+      const sampleRate = audioBuffer.sampleRate;
+      const chunkSeconds = 180; // 3 minutes per chunk
+      const chunkSamples = chunkSeconds * sampleRate;
+      const totalSamples = audioBuffer.length;
+      const numChunks = Math.ceil(totalSamples / chunkSamples);
+      const channelData = audioBuffer.getChannelData(0); // mono
+
+      let fullText = '';
+      for (let i = 0; i < numChunks; i++) {
+        setTranscribingFile(`Transcribiendo ${i + 1}/${numChunks}...`);
+
+        const start = i * chunkSamples;
+        const len = Math.min(chunkSamples, totalSamples - start);
+
+        // Encode as 16-bit mono WAV
+        const dataSize = len * 2;
+        const buf = new ArrayBuffer(44 + dataSize);
+        const v = new DataView(buf);
+        const w = (o: number, s: string) => { for (let j = 0; j < s.length; j++) v.setUint8(o + j, s.charCodeAt(j)); };
+        w(0, 'RIFF'); v.setUint32(4, 36 + dataSize, true); w(8, 'WAVE');
+        w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+        v.setUint16(22, 1, true); v.setUint32(24, sampleRate, true);
+        v.setUint32(28, sampleRate * 2, true); v.setUint16(32, 2, true);
+        v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, dataSize, true);
+        let off = 44;
+        for (let j = start; j < start + len; j++) {
+          const s = Math.max(-1, Math.min(1, channelData[j]));
+          v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          off += 2;
+        }
+
+        const blob = new Blob([buf], { type: 'audio/wav' });
+        const form = new FormData();
+        form.append('audio', blob);
+        form.append('mimeType', 'audio/wav');
+        const res = await fetch('/api/transcribe', { method: 'POST', body: form });
+        const data = await res.json();
+        if (data.text) fullText += (fullText ? ' ' : '') + data.text;
+      }
+
+      if (fullText) {
+        setInput(prev => prev ? `${prev} ${fullText}` : fullText);
+      } else {
+        setError('No se detectó habla en el audio');
+      }
+    } catch (e: any) {
+      setError(e.message || 'Error al procesar archivo de audio');
     } finally {
       setTranscribingFile(false);
     }
@@ -1051,13 +1116,13 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
           />
           <button
             onClick={() => audioFileInputRef.current?.click()}
-            disabled={streaming || transcribingFile}
+            disabled={streaming || !!transcribingFile}
             className={`p-2 shrink-0 transition-colors ${
               transcribingFile
                 ? 'text-yellow-400 animate-pulse'
                 : 'text-[#8b949e] active:text-[#c9d1d9]'
             } disabled:opacity-30`}
-            title={transcribingFile ? 'Transcribiendo audio...' : 'Adjuntar audio para transcribir'}
+            title={transcribingFile ? String(transcribingFile) : 'Adjuntar audio para transcribir'}
           >
             {transcribingFile ? <Loader2 size={16} className="animate-spin" /> : <FileAudio size={16} />}
           </button>
@@ -1177,13 +1242,13 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
               />
               <button
                 onClick={() => expandedAudioFileInputRef.current?.click()}
-                disabled={transcribingFile}
+                disabled={!!transcribingFile}
                 className={`p-2 rounded transition-colors ${
                   transcribingFile
                     ? 'text-yellow-400 animate-pulse bg-yellow-400/10'
                     : 'text-[#8b949e] hover:text-[#c9d1d9] active:bg-white/5'
                 } disabled:opacity-30`}
-                title={transcribingFile ? 'Transcribiendo audio...' : 'Adjuntar audio para transcribir'}
+                title={transcribingFile ? String(transcribingFile) : 'Adjuntar audio para transcribir'}
               >
                 {transcribingFile ? <Loader2 size={18} className="animate-spin" /> : <FileAudio size={18} />}
               </button>
