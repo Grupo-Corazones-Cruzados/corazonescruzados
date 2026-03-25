@@ -131,18 +131,17 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
       body: JSON.stringify({ id, status }),
     });
 
-    if (status === 'approved' || status === 'rejected') {
+    if (status === 'approved') {
       const fullInc = await fetchFullIncident(id);
       if (fullInc) {
-        const statusLabel = status === 'approved' ? 'aprobada' : 'rechazada';
-        sendToAgent(fullInc, statusLabel);
+        sendToAgent(fullInc, 'aprobada');
       }
     }
 
     await fetchIncidents();
     setUpdating(false);
     setDetail(null);
-    onClose();
+    if (status === 'approved') onClose();
   };
 
   const changeStatus = async (id: string, status: IncidentStatus) => {
