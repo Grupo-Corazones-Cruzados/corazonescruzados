@@ -259,6 +259,20 @@ export default function PortalPage() {
     }
   };
 
+  // Override global overflow:hidden on html/body (needed for world canvas but blocks portal scroll)
+  useEffect(() => {
+    document.documentElement.style.overflow = 'auto';
+    document.documentElement.style.position = 'static';
+    document.body.style.overflow = 'auto';
+    document.body.style.position = 'static';
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.position = '';
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#e5e5e5]">
       {/* header */}
