@@ -61,6 +61,11 @@ export default function PortalPage() {
   const [saving, setSaving] = useState(false);
   const editFileRef = useRef<HTMLInputElement>(null);
 
+  // "No Resuelto" comment state
+  const [unresolvedId, setUnresolvedId] = useState<string | null>(null);
+  const [unresolvedComment, setUnresolvedComment] = useState('');
+  const [savingUnresolved, setSavingUnresolved] = useState(false);
+
   // derived options
   const modules = project?.modules || [];
   const currentModule = modules.find(m => m.id === selectedModule);
@@ -242,6 +247,45 @@ export default function PortalPage() {
       body: JSON.stringify({ id, status: 'completed' }),
     });
     await fetchIncidents();
+  };
+
+  // Mark as unresolved: change to pending + open comment form
+  const markUnresolved = async (id: string) => {
+    setSavingUnresolved(true);
+    await fetch('/api/incidents', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: 'pending' }),
+    });
+    await fetchIncidents();
+    setSavingUnresolved(false);
+    setUnresolvedId(id);
+    setUnresolvedComment('');
+  };
+
+  const saveUnresolvedComment = async () => {
+    if (!unresolvedId || !unresolvedComment.trim()) return;
+    setSavingUnresolved(true);
+    // Fetch current description to append comment
+    const res = await fetch(`/api/incidents/${unresolvedId}`);
+    if (res.ok) {
+      const inc = await res.json();
+      const newDesc = `${inc.description}\n\n--- Nuevo comentario del problema: ---\n${unresolvedComment.trim()}`;
+      await fetch('/api/incidents', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: unresolvedId, description: newDesc }),
+      });
+    }
+    setSavingUnresolved(false);
+    setUnresolvedId(null);
+    setUnresolvedComment('');
+    await fetchIncidents();
+  };
+
+  const cancelUnresolved = () => {
+    setUnresolvedId(null);
+    setUnresolvedComment('');
   };
 
   const handlePasteImage = (e: React.ClipboardEvent) => {
@@ -708,7 +752,39 @@ export default function PortalPage() {
                               ))}
                             </div>
                           )}
+                          {/* Unresolved comment form */}
+                          {unresolvedId === inc.id && (
+                            <div className="space-y-2 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded">
+                              <label className="block text-[11px] text-yellow-400 font-medium">¿Qué no se resolvió?</label>
+                              <textarea
+                                value={unresolvedComment}
+                                onChange={e => setUnresolvedComment(e.target.value)}
+                                placeholder="Describe qué parte del problema no fue resuelta..."
+                                rows={4}
+                                autoFocus
+                                className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-yellow-500/40 resize-none placeholder:text-[#484848]"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={saveUnresolvedComment}
+                                  disabled={savingUnresolved || !unresolvedComment.trim()}
+                                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-500/15 border border-yellow-500/30 rounded text-xs font-medium text-yellow-400 hover:bg-yellow-500/25 disabled:opacity-40 transition-colors"
+                                >
+                                  {savingUnresolved ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                  Guardar comentario
+                                </button>
+                                <button
+                                  onClick={cancelUnresolved}
+                                  className="px-3 py-2 bg-[#2a2a2a] text-[#737373] rounded text-xs font-medium hover:text-white transition-colors"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Action buttons */}
+                          {unresolvedId !== inc.id && (
                           <div className="flex gap-2 pt-1">
                             {inc.status === 'pending' && (
                               <button
@@ -719,14 +795,25 @@ export default function PortalPage() {
                               </button>
                             )}
                             {inc.status === 'reviewing' && (
-                              <button
-                                onClick={() => markCompleted(inc.id)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400 hover:bg-green-500/20 transition-colors"
-                              >
-                                <CheckCircle size={11} /> Marcar como completada
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => markUnresolved(inc.id)}
+                                  disabled={savingUnresolved}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs text-yellow-400 hover:bg-yellow-500/20 transition-colors disabled:opacity-50"
+                                >
+                                  {savingUnresolved ? <Loader2 size={11} className="animate-spin" /> : <AlertTriangle size={11} />}
+                                  No Resuelto
+                                </button>
+                                <button
+                                  onClick={() => markCompleted(inc.id)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400 hover:bg-green-500/20 transition-colors"
+                                >
+                                  <CheckCircle size={11} /> Marcar como completada
+                                </button>
+                              </>
                             )}
                           </div>
+                          )}
                         </>
                       )}
                     </div>
