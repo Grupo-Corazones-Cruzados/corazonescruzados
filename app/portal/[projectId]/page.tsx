@@ -54,7 +54,12 @@ export default function PortalPage() {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editSeverity, setEditSeverity] = useState<IncidentSeverity>('medium');
+  const [editImages, setEditImages] = useState<string[]>([]);
+  const [editNewFiles, setEditNewFiles] = useState<File[]>([]);
+  const [loadingEditImages, setLoadingEditImages] = useState(false);
+  const [savingImage, setSavingImage] = useState(false);
   const [saving, setSaving] = useState(false);
+  const editFileRef = useRef<HTMLInputElement>(null);
 
   // derived options
   const modules = project?.modules || [];
@@ -148,11 +153,26 @@ export default function PortalPage() {
     setFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const startEditing = (inc: Incident) => {
+  const startEditing = async (inc: Incident) => {
     setEditingId(inc.id);
     setEditTitle(inc.title);
     setEditDescription(inc.description);
     setEditSeverity((inc.severity as IncidentSeverity) || 'medium');
+    setEditNewFiles([]);
+    // Fetch full incident to get images
+    const existing = fullIncidents[inc.id];
+    if (existing?.images) {
+      setEditImages(existing.images);
+    } else {
+      setLoadingEditImages(true);
+      const res = await fetch(`/api/incidents/${inc.id}`);
+      if (res.ok) {
+        const full = await res.json();
+        setEditImages(full.images || []);
+        setFullIncidents(prev => ({ ...prev, [inc.id]: full }));
+      }
+      setLoadingEditImages(false);
+    }
   };
 
   const cancelEditing = () => {
@@ -160,11 +180,51 @@ export default function PortalPage() {
     setEditTitle('');
     setEditDescription('');
     setEditSeverity('medium');
+    setEditImages([]);
+    setEditNewFiles([]);
+  };
+
+  const removeEditImage = async (imageIndex: number) => {
+    if (!editingId) return;
+    setSavingImage(true);
+    const res = await fetch(`/api/incidents/${editingId}/images`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageIndex }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setEditImages(updated.images || []);
+      setFullIncidents(prev => ({ ...prev, [editingId]: updated }));
+    }
+    setSavingImage(false);
+  };
+
+  const addEditImages = async (newFiles: File[]) => {
+    if (!editingId || newFiles.length === 0) return;
+    setSavingImage(true);
+    const form = new FormData();
+    newFiles.forEach(f => form.append('images', f));
+    const res = await fetch(`/api/incidents/${editingId}/images`, {
+      method: 'POST',
+      body: form,
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setEditImages(updated.images || []);
+      setFullIncidents(prev => ({ ...prev, [editingId]: updated }));
+    }
+    setSavingImage(false);
   };
 
   const saveEdit = async () => {
     if (!editingId || !editTitle.trim() || !editDescription.trim()) return;
     setSaving(true);
+    // Upload any pending new files first
+    if (editNewFiles.length > 0) {
+      await addEditImages(editNewFiles);
+      setEditNewFiles([]);
+    }
     await fetch('/api/incidents', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -513,10 +573,76 @@ export default function PortalPage() {
                               className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] resize-none"
                             />
                           </div>
+
+                          {/* Image editing */}
+                          <div>
+                            <label className="block text-[11px] text-[#737373] mb-1">Imágenes</label>
+                            {loadingEditImages ? (
+                              <div className="flex items-center gap-2 py-2 text-[10px] text-[#737373]">
+                                <Loader2 size={12} className="animate-spin" /> Cargando imágenes...
+                              </div>
+                            ) : (
+                              <>
+                                {editImages.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mb-2">
+                                    {editImages.map((img, i) => (
+                                      <div key={i} className="relative group">
+                                        <img src={img} alt="" className="w-20 h-20 object-cover rounded border border-[#2a2a2a]" />
+                                        <button
+                                          type="button"
+                                          onClick={() => removeEditImage(i)}
+                                          disabled={savingImage}
+                                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                                        >
+                                          {savingImage ? <Loader2 size={8} className="animate-spin text-white" /> : <X size={10} className="text-white" />}
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {editNewFiles.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mb-2">
+                                    {editNewFiles.map((f, i) => (
+                                      <div key={`new-${i}`} className="relative group">
+                                        <img src={URL.createObjectURL(f)} alt="" className="w-20 h-20 object-cover rounded border border-dashed border-[#4a4a4a]" />
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditNewFiles(prev => prev.filter((_, idx) => idx !== i))}
+                                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                          <X size={10} className="text-white" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                <input
+                                  ref={editFileRef}
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  className="hidden"
+                                  onChange={e => {
+                                    if (e.target.files) setEditNewFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                                    e.target.value = '';
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => editFileRef.current?.click()}
+                                  disabled={savingImage}
+                                  className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-dashed border-[#2a2a2a] rounded text-xs text-[#737373] hover:text-white hover:border-[#4a4a4a] transition-colors w-full justify-center disabled:opacity-50"
+                                >
+                                  <ImagePlus size={14} /> Agregar imágenes
+                                </button>
+                              </>
+                            )}
+                          </div>
+
                           <div className="flex gap-2">
                             <button
                               onClick={saveEdit}
-                              disabled={saving || !editTitle.trim() || !editDescription.trim()}
+                              disabled={saving || savingImage || !editTitle.trim() || !editDescription.trim()}
                               className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white text-black rounded text-xs font-medium hover:bg-white/90 disabled:opacity-40 transition-colors"
                             >
                               {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
