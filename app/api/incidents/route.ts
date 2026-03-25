@@ -1,27 +1,29 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { prisma, pool } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/incidents?projectId=xxx
 // Returns incidents WITHOUT base64 images (lightweight list).
-// Use GET /api/incidents/[id] to fetch a single incident with images.
+// Uses raw SQL to avoid fetching the heavy images column from the DB.
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const projectId = searchParams.get('projectId');
 
-  const incidents = await prisma.incident.findMany({
-    where: projectId ? { projectId } : undefined,
-    orderBy: { createdAt: 'desc' },
-  });
+  const query = `
+    SELECT id, "projectId", "clientName", title, description, severity, status,
+           "createdAt", "updatedAt",
+           COALESCE(array_length(images, 1), 0) AS "imageCount"
+    FROM "Incident"
+    ${projectId ? 'WHERE "projectId" = $1' : ''}
+    ORDER BY "createdAt" DESC
+  `;
 
-  // Strip heavy base64 images — only send metadata + count
-  const result = incidents.map(({ images, ...rest }) => ({
-    ...rest,
-    imageCount: images.length,
-  }));
+  const result = projectId
+    ? await pool.query(query, [projectId])
+    : await pool.query(query);
 
-  return NextResponse.json(result);
+  return NextResponse.json(result.rows);
 }
 
 // POST /api/incidents — create (multipart)
@@ -79,9 +81,21 @@ export async function PUT(req: Request) {
     const { id, ...updates } = await req.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
+    // Use raw SQL to avoid returning heavy images column
     const incident = await prisma.incident.update({
       where: { id },
       data: updates,
+      select: {
+        id: true,
+        projectId: true,
+        clientName: true,
+        title: true,
+        description: true,
+        severity: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     return NextResponse.json(incident);
