@@ -4,10 +4,10 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   X, Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight,
   Loader2, Check, Ban, Eye, Edit3, Save, AlertTriangle, Send,
-  ImagePlus, Trash2,
+  ImagePlus, Trash2, Image as ImageIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Incident, IncidentStatus } from '@/types/incidents';
+import type { Incident, IncidentStatus, IncidentSeverity } from '@/types/incidents';
 
 const STATUS_CFG: Record<IncidentStatus, { label: string; color: string; bg: string; icon: typeof Clock }> = {
   pending:   { label: 'Pendiente',   color: 'text-yellow-400', bg: 'bg-yellow-400/15 border-yellow-400/30', icon: Clock },
@@ -15,6 +15,13 @@ const STATUS_CFG: Record<IncidentStatus, { label: string; color: string; bg: str
   rejected:  { label: 'Rechazada',   color: 'text-red-400',    bg: 'bg-red-400/15 border-red-400/30',       icon: XCircle },
   reviewing: { label: 'En revisión', color: 'text-purple-400', bg: 'bg-purple-400/15 border-purple-400/30', icon: Eye },
   completed: { label: 'Completada',  color: 'text-green-400',  bg: 'bg-green-400/15 border-green-400/30',   icon: CheckCircle },
+};
+
+const SEVERITY_CFG: Record<IncidentSeverity, { label: string; color: string; bg: string }> = {
+  low:      { label: 'Baja',    color: 'text-blue-300',   bg: 'bg-blue-400/15 border-blue-400/30' },
+  medium:   { label: 'Media',   color: 'text-yellow-400', bg: 'bg-yellow-400/15 border-yellow-400/30' },
+  high:     { label: 'Alta',    color: 'text-orange-400', bg: 'bg-orange-400/15 border-orange-400/30' },
+  critical: { label: 'Critica', color: 'text-red-400',    bg: 'bg-red-400/15 border-red-400/30' },
 };
 
 const PAGE_SIZE = 5;
@@ -40,11 +47,15 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
   const [uploadingImages, setUploadingImages] = useState(false);
   const [deletingImageIdx, setDeletingImageIdx] = useState<number | null>(null);
 
+  // Images are NOT loaded by default — user must click to view them
+  const [loadedImages, setLoadedImages] = useState<string[]>([]);
+  const [imagesVisible, setImagesVisible] = useState(false);
+  const [loadingImages, setLoadingImages] = useState(false);
+
   const activeProjectId = activeAgentId ? agentProjectMap[activeAgentId] : null;
 
   const fetchIncidents = useCallback(async () => {
     setLoading(true);
-    // When opening for a specific task, fetch all incidents (no project filter)
     const url = initialTaskId
       ? '/api/incidents'
       : activeProjectId
@@ -57,21 +68,49 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
     return data as Incident[];
   }, [activeProjectId, initialTaskId]);
 
+  const fetchFullIncident = useCallback(async (id: string) => {
+    const res = await fetch(`/api/incidents/${id}`);
+    if (!res.ok) return null;
+    return (await res.json()) as Incident;
+  }, []);
+
+  // Open detail WITHOUT loading images
+  const openDetail = useCallback((inc: Incident) => {
+    setDetail(inc);
+    setLoadedImages([]);
+    setImagesVisible(false);
+  }, []);
+
+  // Load images on demand when user clicks
+  const showImages = useCallback(async () => {
+    if (!detail) return;
+    setLoadingImages(true);
+    const full = await fetchFullIncident(detail.id);
+    if (full) {
+      setLoadedImages(full.images || []);
+      setDetail(full);
+    }
+    setImagesVisible(true);
+    setLoadingImages(false);
+  }, [detail, fetchFullIncident]);
+
   useEffect(() => {
     if (open) {
       fetchIncidents().then(data => {
         if (initialTaskId) {
           const task = data.find((i: Incident) => i.id === initialTaskId);
           if (task) {
-            setDetail(task);
+            openDetail(task);
             return;
           }
         }
         setDetail(null);
       });
       setPage(0);
+      setImagesVisible(false);
+      setLoadedImages([]);
     }
-  }, [open, fetchIncidents, initialTaskId]);
+  }, [open, fetchIncidents, initialTaskId, openDetail]);
 
   const sendToAgent = (inc: Incident, statusLabel: string) => {
     if (!onSendToAgent) return;
@@ -80,35 +119,32 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
     )?.[0];
     if (agentId) {
       const msg = `**Incidencia ${statusLabel}: ${inc.title}**\n\n${inc.description}`;
-      onSendToAgent(agentId, msg, inc.images);
+      onSendToAgent(agentId, msg, inc.images || []);
     }
   };
 
-  // Change status and send to agent → close modal
   const updateStatus = async (id: string, status: IncidentStatus) => {
     setUpdating(true);
-    const res = await fetch('/api/incidents', {
+    await fetch('/api/incidents', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status }),
     });
-    const updated = await res.json();
 
-    // Send to agent on approve or reject
     if (status === 'approved' || status === 'rejected') {
-      const inc = (detail?.id === id ? detail : null) || incidents.find(i => i.id === id) || updated;
-      const statusLabel = status === 'approved' ? 'aprobada' : 'rechazada';
-      sendToAgent(inc, statusLabel);
+      const fullInc = await fetchFullIncident(id);
+      if (fullInc) {
+        const statusLabel = status === 'approved' ? 'aprobada' : 'rechazada';
+        sendToAgent(fullInc, statusLabel);
+      }
     }
 
     await fetchIncidents();
     setUpdating(false);
-    // Close modal so user sees the agent chat
     setDetail(null);
     onClose();
   };
 
-  // Change status only (no agent send, stay in detail)
   const changeStatus = async (id: string, status: IncidentStatus) => {
     setUpdating(true);
     await fetch('/api/incidents', {
@@ -117,12 +153,18 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
       body: JSON.stringify({ id, status }),
     });
     await fetchIncidents();
-    if (detail?.id === id) setDetail({ ...detail, status });
+    if (detail?.id === id) setDetail(prev => prev ? { ...prev, status } : null);
     setUpdating(false);
   };
 
-  const resendToAgent = (inc: Incident) => {
-    sendToAgent(inc, 'reenvío');
+  const resendToAgent = async (inc: Incident) => {
+    // Need full images for agent
+    let fullInc = inc;
+    if (!inc.images || inc.images.length === 0) {
+      const fetched = await fetchFullIncident(inc.id);
+      if (fetched) fullInc = fetched;
+    }
+    sendToAgent(fullInc, 'reenvío');
     setDetail(null);
     onClose();
   };
@@ -140,6 +182,7 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
       if (res.ok) {
         const updated = await res.json();
         setDetail(updated);
+        setLoadedImages(updated.images || []);
         await fetchIncidents();
       }
     } finally {
@@ -159,6 +202,7 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
       if (res.ok) {
         const updated = await res.json();
         setDetail(updated);
+        setLoadedImages(updated.images || []);
         await fetchIncidents();
       }
     } finally {
@@ -185,11 +229,15 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
   const totalPages = Math.ceil(incidents.length / PAGE_SIZE);
   const pageIncidents = incidents.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
+  // Image count: from imageCount field (list) or images array (full)
+  const detailImageCount = detail
+    ? (detail.imageCount ?? detail.images?.length ?? 0)
+    : 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
 
-      {/* modal frame — videogame style */}
       <div className="relative w-[95vw] max-w-lg max-h-[85vh] flex flex-col bg-[#0d1117] border-2 border-[#30363d] rounded-lg shadow-2xl overflow-hidden"
         style={{ boxShadow: '0 0 30px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)' }}
       >
@@ -197,7 +245,7 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
         <div className="flex items-center justify-between px-4 py-2.5 bg-[#161b22] border-b border-[#30363d] shrink-0">
           <div className="flex items-center gap-2">
             {detail && (
-              <button onClick={() => { setDetail(null); setEditing(false); }} className="text-[#484f58] hover:text-white transition-colors">
+              <button onClick={() => { setDetail(null); setEditing(false); setImagesVisible(false); setLoadedImages([]); }} className="text-[#484f58] hover:text-white transition-colors">
                 <ChevronLeft size={16} />
               </button>
             )}
@@ -225,15 +273,21 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
           ) : detail ? (
             /* ─── DETAIL VIEW ─── */
             <div className="p-4 space-y-4">
-              {/* status + actions */}
+              {/* status + severity + actions */}
               <div className="flex items-center gap-2 flex-wrap">
                 {(() => {
                   const cfg = STATUS_CFG[detail.status];
                   const Icon = cfg.icon;
+                  const sevCfg = SEVERITY_CFG[(detail.severity as IncidentSeverity) || 'medium'];
                   return (
-                    <span className={cn('flex items-center gap-1 px-2 py-1 rounded border text-[11px] font-medium', cfg.bg, cfg.color)}>
-                      <Icon size={12} /> {cfg.label}
-                    </span>
+                    <>
+                      <span className={cn('flex items-center gap-1 px-2 py-1 rounded border text-[11px] font-medium', cfg.bg, cfg.color)}>
+                        <Icon size={12} /> {cfg.label}
+                      </span>
+                      <span className={cn('px-2 py-1 rounded border text-[11px] font-medium', sevCfg.bg, sevCfg.color)}>
+                        {sevCfg.label}
+                      </span>
+                    </>
                   );
                 })()}
                 <span className="text-[10px] text-[#484f58] font-mono ml-auto">
@@ -286,11 +340,11 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
                 </>
               )}
 
-              {/* images */}
+              {/* images section */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] text-[#484f58] font-mono uppercase">
-                    Imagenes adjuntas {detail.images.length > 0 && `(${detail.images.length})`}
+                    Imagenes adjuntas {detailImageCount > 0 && `(${detailImageCount})`}
                   </p>
                   <label className={cn(
                     'flex items-center gap-1 px-2 py-1 rounded border text-[10px] cursor-pointer transition-colors',
@@ -308,9 +362,33 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
                     />
                   </label>
                 </div>
-                {detail.images.length > 0 ? (
+
+                {detailImageCount === 0 && !imagesVisible && (
+                  <p className="text-[10px] text-[#484f58] italic">Sin imágenes adjuntas</p>
+                )}
+
+                {/* Placeholder: images not yet loaded */}
+                {detailImageCount > 0 && !imagesVisible && (
+                  <button
+                    onClick={showImages}
+                    disabled={loadingImages}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-[#1a1a1a] border border-[#30363d] rounded hover:bg-white/5 hover:border-white/20 transition-colors"
+                  >
+                    {loadingImages ? (
+                      <Loader2 size={14} className="animate-spin text-[#484f58]" />
+                    ) : (
+                      <ImageIcon size={14} className="text-[#484f58]" />
+                    )}
+                    <span className="text-[11px] text-[#8b949e]">
+                      {loadingImages ? 'Cargando imágenes...' : `Ver ${detailImageCount} ${detailImageCount === 1 ? 'imagen' : 'imágenes'}`}
+                    </span>
+                  </button>
+                )}
+
+                {/* Loaded images */}
+                {imagesVisible && loadedImages.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {detail.images.map((img, i) => (
+                    {loadedImages.map((img, i) => (
                       <div key={i} className="relative group">
                         <a href={`${img}`} target="_blank" rel="noopener noreferrer">
                           <img
@@ -332,8 +410,6 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-[10px] text-[#484f58] italic">Sin imágenes adjuntas</p>
                 )}
               </div>
 
@@ -410,19 +486,27 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
                   {pageIncidents.map(inc => {
                     const cfg = STATUS_CFG[inc.status];
                     const Icon = cfg.icon;
+                    const sevCfg = SEVERITY_CFG[(inc.severity as IncidentSeverity) || 'medium'];
+                    const imgCount = inc.imageCount ?? inc.images?.length ?? 0;
                     return (
-                      <button
+                      <div
                         key={inc.id}
-                        onClick={() => setDetail(inc)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded hover:bg-white/5 transition-colors text-left group"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openDetail(inc)}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openDetail(inc); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded hover:bg-white/5 transition-colors text-left group cursor-pointer"
                       >
                         <Icon size={14} className={cfg.color} />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate group-hover:text-white transition-colors">{inc.title}</p>
                           <p className="text-[10px] text-[#484f58] font-mono">{inc.clientName} — {new Date(inc.createdAt).toLocaleDateString()}</p>
                         </div>
-                        {inc.images.length > 0 && (
-                          <span className="text-[9px] text-[#484f58] shrink-0">{inc.images.length} img</span>
+                        <span className={cn('px-1.5 py-0.5 rounded border text-[9px] font-medium shrink-0', sevCfg.bg, sevCfg.color)}>
+                          {sevCfg.label}
+                        </span>
+                        {imgCount > 0 && (
+                          <span className="text-[9px] text-[#484f58] shrink-0">{imgCount} img</span>
                         )}
                         {inc.status === 'pending' && (
                           <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -443,7 +527,7 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
                           </div>
                         )}
                         <Eye size={12} className="text-[#484f58] group-hover:text-white shrink-0" />
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

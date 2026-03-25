@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 // GET /api/incidents?projectId=xxx
+// Returns incidents WITHOUT base64 images (lightweight list).
+// Use GET /api/incidents/[id] to fetch a single incident with images.
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const projectId = searchParams.get('projectId');
@@ -13,7 +15,13 @@ export async function GET(req: Request) {
     orderBy: { createdAt: 'desc' },
   });
 
-  return NextResponse.json(incidents);
+  // Strip heavy base64 images — only send metadata + count
+  const result = incidents.map(({ images, ...rest }) => ({
+    ...rest,
+    imageCount: images.length,
+  }));
+
+  return NextResponse.json(result);
 }
 
 // POST /api/incidents — create (multipart)

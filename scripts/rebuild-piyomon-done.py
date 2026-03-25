@@ -1,14 +1,14 @@
 """
-Rebuild gumdramon_done.png
+Rebuild piyomon_done.png
 Edit the SHIFT values below to adjust vertical position of each frame.
 
-Save only:     python3 scripts/rebuild-gumdramon-done.py
-Preview only:  python3 scripts/rebuild-gumdramon-done.py --preview
+Save only:     python3 scripts/rebuild-piyomon-done.py
+Preview only:  python3 scripts/rebuild-piyomon-done.py --preview
 """
 import sys
 from PIL import Image
 
-src = Image.open("public/universal_assets/citizens/Gumdramon Vital Bracelet BE.png").convert('RGBA')
+src = Image.open("public/universal_assets/citizens/Piyomon Vital Bracelet BE.png").convert('RGBA')
 
 cols = [1, 66, 131, 196]
 rows = [1, 66, 131]
@@ -67,6 +67,6 @@ else:
     for i in range(10):
         frame = f1 if i % 2 == 0 else f2
         done.paste(frame, (i * 64, 0), frame)
-    done.save("public/universal_assets/citizens/gumdramon_done.png")
+    done.save("public/universal_assets/citizens/piyomon_done.png")
     preview_big.show()
-    print("Saved gumdramon_done.png!")
+    print("Saved piyomon_done.png!")

@@ -9,7 +9,8 @@ export interface Incident {
   title: string;
   description: string;
   severity: IncidentSeverity;
-  images: string[]; // filenames in /data/uploads/
+  images: string[];
+  imageCount: number; // present in list responses (images stripped for performance)
   status: IncidentStatus;
   createdAt: string; // ISO date
   updatedAt: string;

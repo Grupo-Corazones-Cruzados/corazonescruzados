@@ -152,6 +152,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
   const [projectPath, setProjectPath] = useState('');
   const [previewPort, setPreviewPort] = useState<number | null>(null);
   const [productionUrl, setProductionUrl] = useState<string | null>(null);
+  const [databaseUrl, setDatabaseUrl] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [attachedImages, setAttachedImages] = useState<{ name: string; path: string; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -190,6 +191,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
     setProjectPath('');
     setPreviewPort(null);
     setProductionUrl(null);
+    setDatabaseUrl('');
     setStreaming(false);
     streamingRef.current = false;
     setError(null);
@@ -202,6 +204,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
         if (c?.projectPath) setProjectPath(c.projectPath);
         if (c?.port) setPreviewPort(c.port);
         if (c?.productionUrl) setProductionUrl(c.productionUrl);
+        if (c?.databaseUrl) setDatabaseUrl(c.databaseUrl);
       })
       .catch(() => {});
   }, [citizen.agentId]);
@@ -214,14 +217,15 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
     inputRef.current?.focus();
   }, []);
 
-  const saveSettings = async (path: string, port: number | null) => {
+  const saveSettings = async (path: string, port: number | null, dbUrl?: string) => {
     setProjectPath(path);
     setPreviewPort(port);
+    if (dbUrl !== undefined) setDatabaseUrl(dbUrl);
     try {
       await fetch('/api/agent-links', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId: citizen.agentId, projectPath: path, port: port || undefined }),
+        body: JSON.stringify({ agentId: citizen.agentId, projectPath: path, port: port || undefined, databaseUrl: dbUrl ?? undefined }),
       });
     } catch {}
   };
@@ -849,9 +853,21 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
               placeholder="3000"
               className="w-16 px-2 py-1 bg-[#0d1117] border border-[#30363d] rounded text-[10px] font-mono text-[#c9d1d9] focus:outline-none focus:border-digi-green/50"
             />
+          </div>
+          <div className="flex gap-1.5 items-center">
+            <span className="text-[9px] text-white/30 font-mono">DB:</span>
+            <input
+              type="text"
+              value={databaseUrl}
+              onChange={e => setDatabaseUrl(e.target.value)}
+              placeholder="postgresql://..."
+              className="flex-1 min-w-0 px-2 py-1 bg-[#0d1117] border border-[#30363d] rounded text-[10px] font-mono text-[#c9d1d9] focus:outline-none focus:border-digi-green/50"
+            />
+          </div>
+          <div className="flex justify-end">
             <button
-              onClick={() => { saveSettings(projectPath, previewPort); setShowSettings(false); }}
-              className="px-2 py-1 bg-digi-green/20 border border-digi-green/30 rounded text-[10px] text-digi-green ml-auto"
+              onClick={() => { saveSettings(projectPath, previewPort, databaseUrl); setShowSettings(false); }}
+              className="px-2 py-1 bg-digi-green/20 border border-digi-green/30 rounded text-[10px] text-digi-green"
             >
               Save
             </button>

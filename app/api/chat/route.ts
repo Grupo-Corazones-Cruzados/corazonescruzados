@@ -4,6 +4,15 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const SERVER_URL = process.env.WORLD_SERVER_URL || 'http://localhost:4321';
+const DB_URLS_FILE = path.join(process.cwd(), 'data', 'agent-db-urls.json');
+
+async function getAgentDbUrl(agentId: string): Promise<string | null> {
+  try {
+    const raw = await fs.readFile(DB_URLS_FILE, 'utf-8');
+    const dbUrls = JSON.parse(raw);
+    return dbUrls[agentId] || null;
+  } catch { return null; }
+}
 
 // Default personas by agentId (fallback only — dynamic personas.json takes priority)
 const DEFAULT_PERSONAS: Record<string, string> = {
@@ -188,6 +197,7 @@ export async function POST(req: Request) {
     }
 
     const persona = await getPersona(agentId, agentName);
+    const dbUrl = await getAgentDbUrl(agentId);
 
     await sendHeartbeat(agentId, agentName, 'thinking', 'Reading message...');
 
@@ -205,8 +215,13 @@ export async function POST(req: Request) {
       args.push('--resume', prevSessionId);
       isResume = true;
     }
+    // Build system prompt: persona + database context
     if (!isResume) {
-      args.push('--append-system-prompt', persona);
+      let systemPrompt = persona;
+      if (dbUrl) {
+        systemPrompt += `\n\n[DB] Your project DATABASE_URL: ${dbUrl} — ALWAYS use this for any database operation. NEVER use a DATABASE_URL from .env files or other projects.`;
+      }
+      args.push('--append-system-prompt', systemPrompt);
     }
 
     // Resolve project directory
@@ -313,20 +328,121 @@ export async function POST(req: Request) {
       }
     });
 
+    let resumeFailed = false;
+
     proc.stderr.on('data', (chunk: Buffer) => {
       const errText = chunk.toString().trim();
       if (errText && (errText.includes('Error') || errText.includes('error'))) {
-        // If resume failed (session expired/invalid), clear it so next message starts fresh
-        if (errText.includes('session') || errText.includes('resume') || errText.includes('not found')) {
+        // If resume failed (session expired/invalid), mark for auto-retry
+        if (isResume && (errText.includes('session') || errText.includes('resume') || errText.includes('not found'))) {
+          resumeFailed = true;
           deleteSession(agentId);
+        } else {
+          run.events.push(
+            `data: ${JSON.stringify({ type: 'error', text: errText })}\n\n`
+          );
         }
-        run.events.push(
-          `data: ${JSON.stringify({ type: 'error', text: errText })}\n\n`
-        );
       }
     });
 
-    proc.on('close', () => {
+    proc.on('close', async () => {
+      // If resume failed, auto-retry as a new conversation instead of showing error
+      if (resumeFailed) {
+        run.events.push(
+          `data: ${JSON.stringify({ type: 'text', text: '_Sesión anterior expirada, reconectando..._\n\n' })}\n\n`
+        );
+
+        let systemPrompt = persona;
+        if (dbUrl) {
+          systemPrompt += `\n\n[DB] Your project DATABASE_URL: ${dbUrl} — ALWAYS use this for any database operation. NEVER use a DATABASE_URL from .env files or other projects.`;
+        }
+
+        const retryArgs = [
+          '-p', message,
+          '--output-format', 'stream-json',
+          '--verbose',
+          '--dangerously-skip-permissions',
+          '--append-system-prompt', systemPrompt,
+        ];
+
+        const retryProc = spawn('claude', retryArgs, {
+          env: { ...process.env },
+          stdio: ['ignore', 'pipe', 'pipe'],
+          cwd: finalCwd,
+        });
+
+        run.proc = retryProc;
+        let retryBuffer = '';
+
+        retryProc.stdout.on('data', (chunk: Buffer) => {
+          retryBuffer += chunk.toString();
+          const lines = retryBuffer.split('\n');
+          retryBuffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const event = JSON.parse(line);
+
+              if (event.type === 'system' && event.subtype === 'init') {
+                if (event.session_id) saveSession(agentId, event.session_id);
+              } else if (event.type === 'assistant') {
+                const contents = event.message?.content || [];
+                for (const block of contents) {
+                  if (block.type === 'thinking') {
+                    run.events.push(`data: ${JSON.stringify({ type: 'thinking', text: block.thinking })}\n\n`);
+                  } else if (block.type === 'text') {
+                    run.events.push(`data: ${JSON.stringify({ type: 'text', text: block.text })}\n\n`);
+                  } else if (block.type === 'tool_use') {
+                    sendHeartbeat(agentId, agentName, 'working', `${block.name}: ${JSON.stringify(block.input).slice(0, 60)}`);
+                    run.events.push(`data: ${JSON.stringify({ type: 'tool_use', tool: block.name, input: block.input, id: block.id })}\n\n`);
+                  }
+                }
+              } else if (event.type === 'user' && event.tool_use_result) {
+                let resultPreview = '';
+                const content = event.message?.content;
+                if (Array.isArray(content)) {
+                  for (const c of content) {
+                    if (c.type === 'tool_result' && typeof c.content === 'string') {
+                      resultPreview = c.content.slice(0, 500);
+                    }
+                  }
+                }
+                run.events.push(`data: ${JSON.stringify({ type: 'tool_result', result: resultPreview })}\n\n`);
+              } else if (event.type === 'result') {
+                if (event.subtype === 'error_during_execution' || event.is_error) {
+                  deleteSession(agentId);
+                }
+                run.events.push(`data: ${JSON.stringify({ type: 'result', subtype: event.subtype, cost: event.total_cost_usd, duration: event.duration_ms, turns: event.num_turns })}\n\n`);
+              }
+            } catch {}
+          }
+        });
+
+        retryProc.stderr.on('data', (chunk: Buffer) => {
+          const errText = chunk.toString().trim();
+          if (errText && (errText.includes('Error') || errText.includes('error'))) {
+            run.events.push(`data: ${JSON.stringify({ type: 'error', text: errText })}\n\n`);
+          }
+        });
+
+        retryProc.on('close', () => {
+          sendHeartbeat(agentId, agentName, 'idle', null as any);
+          run.events.push('data: [DONE]\n\n');
+          run.done = true;
+          scheduleCleanup(runId);
+        });
+
+        retryProc.on('error', (err) => {
+          run.events.push(`data: ${JSON.stringify({ type: 'error', text: `Claude CLI error: ${err.message}` })}\n\n`);
+          run.events.push('data: [DONE]\n\n');
+          run.done = true;
+          scheduleCleanup(runId);
+        });
+
+        return; // Don't close the run yet — retry is handling it
+      }
+
       sendHeartbeat(agentId, agentName, 'idle', null as any);
       run.events.push('data: [DONE]\n\n');
       run.done = true;

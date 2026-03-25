@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Send, ImagePlus, X, Clock, CheckCircle, XCircle, Loader2,
-  AlertTriangle, ChevronDown, ChevronUp, Plus,
+  AlertTriangle, ChevronDown, ChevronUp, Plus, Pencil, Check,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Incident, IncidentStatus, IncidentSeverity } from '@/types/incidents';
@@ -48,6 +49,13 @@ export default function PortalPage() {
   const [submitted, setSubmitted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // editing state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editSeverity, setEditSeverity] = useState<IncidentSeverity>('medium');
+  const [saving, setSaving] = useState(false);
+
   // derived options
   const modules = project?.modules || [];
   const currentModule = modules.find(m => m.id === selectedModule);
@@ -55,11 +63,27 @@ export default function PortalPage() {
   const currentSection = sections.find(s => s.id === selectedSection);
   const subsections = currentSection?.subsections || [];
 
+  // Cache of fully-loaded incidents (with images)
+  const [fullIncidents, setFullIncidents] = useState<Record<string, Incident>>({});
+
   const fetchIncidents = async () => {
     const res = await fetch(`/api/incidents?projectId=${projectId}`);
     const data = await res.json();
     setIncidents(data);
     setLoading(false);
+  };
+
+  // Fetch full incident with images when expanding
+  const expandIncident = async (id: string) => {
+    const isOpen = expanded === id;
+    setExpanded(isOpen ? null : id);
+    if (!isOpen && !fullIncidents[id]) {
+      const res = await fetch(`/api/incidents/${id}`);
+      if (res.ok) {
+        const full = await res.json();
+        setFullIncidents(prev => ({ ...prev, [id]: full }));
+      }
+    }
   };
 
   useEffect(() => {
@@ -122,6 +146,42 @@ export default function PortalPage() {
 
   const removeFile = (idx: number) => {
     setFiles(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const startEditing = (inc: Incident) => {
+    setEditingId(inc.id);
+    setEditTitle(inc.title);
+    setEditDescription(inc.description);
+    setEditSeverity((inc.severity as IncidentSeverity) || 'medium');
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditTitle('');
+    setEditDescription('');
+    setEditSeverity('medium');
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editTitle.trim() || !editDescription.trim()) return;
+    setSaving(true);
+    await fetch('/api/incidents', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editingId, title: editTitle.trim(), description: editDescription.trim(), severity: editSeverity }),
+    });
+    setSaving(false);
+    cancelEditing();
+    await fetchIncidents();
+  };
+
+  const markCompleted = async (id: string) => {
+    await fetch('/api/incidents', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: 'completed' }),
+    });
+    await fetchIncidents();
   };
 
   const handlePasteImage = (e: React.ClipboardEvent) => {
@@ -381,11 +441,12 @@ export default function PortalPage() {
               const Icon = cfg.icon;
               const sevCfg = SEVERITY_CONFIG[(inc.severity as IncidentSeverity) || 'medium'];
               const isOpen = expanded === inc.id;
+              const isEditing = editingId === inc.id;
 
               return (
                 <div key={inc.id} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-hidden">
                   <button
-                    onClick={() => setExpanded(isOpen ? null : inc.id)}
+                    onClick={() => expandIncident(inc.id)}
                     className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-white/5 transition-colors"
                   >
                     <div className={cn('flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] shrink-0', cfg.color)}>
@@ -400,35 +461,137 @@ export default function PortalPage() {
                         {inc.clientName} — {new Date(inc.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    {inc.images.length > 0 && (
-                      <span className="text-[10px] text-[#737373] shrink-0">{inc.images.length} img</span>
+                    {(inc.imageCount ?? inc.images?.length ?? 0) > 0 && (
+                      <span className="text-[10px] text-[#737373] shrink-0">{inc.imageCount ?? inc.images?.length ?? 0} img</span>
                     )}
                     {isOpen ? <ChevronUp size={14} className="text-[#737373]" /> : <ChevronDown size={14} className="text-[#737373]" />}
                   </button>
 
-                  {isOpen && (
+                  {isOpen && (() => {
+                    const fullInc = fullIncidents[inc.id];
+                    const displayImages = fullInc?.images ?? [];
+                    const imgCount = inc.imageCount ?? inc.images?.length ?? 0;
+                    return (
                     <div className="px-4 pb-4 border-t border-[#2a2a2a] pt-3 space-y-3">
-                      <p className="text-sm text-[#e5e5e5] whitespace-pre-wrap">{inc.description}</p>
-                      {inc.images.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {inc.images.map((img, i) => (
-                            <a
-                              key={i}
-                              href={`${img}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                      {isEditing ? (
+                        /* ─── EDIT MODE ─── */
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-[11px] text-[#737373] mb-1">Titulo</label>
+                            <input
+                              value={editTitle}
+                              onChange={e => setEditTitle(e.target.value)}
+                              className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-[#737373] mb-1">Criticidad</label>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {(Object.entries(SEVERITY_CONFIG) as [IncidentSeverity, { label: string; color: string }][]).map(([key, scfg]) => (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => setEditSeverity(key)}
+                                  className={cn(
+                                    'py-1.5 rounded border text-xs font-medium transition-all',
+                                    editSeverity === key
+                                      ? scfg.color
+                                      : 'text-[#737373] bg-[#111] border-[#2a2a2a] hover:border-[#4a4a4a]'
+                                  )}
+                                >
+                                  {scfg.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-[#737373] mb-1">Descripcion</label>
+                            <textarea
+                              value={editDescription}
+                              onChange={e => setEditDescription(e.target.value)}
+                              rows={5}
+                              className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] resize-none"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={saveEdit}
+                              disabled={saving || !editTitle.trim() || !editDescription.trim()}
+                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white text-black rounded text-xs font-medium hover:bg-white/90 disabled:opacity-40 transition-colors"
                             >
-                              <img
-                                src={`${img}`}
-                                alt=""
-                                className="w-24 h-24 object-cover rounded border border-[#2a2a2a] hover:border-white/30 transition-colors cursor-pointer"
-                              />
-                            </a>
-                          ))}
+                              {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                              Guardar
+                            </button>
+                            <button
+                              onClick={cancelEditing}
+                              className="px-3 py-2 bg-[#2a2a2a] text-[#737373] rounded text-xs font-medium hover:text-white transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
                         </div>
+                      ) : (
+                        /* ─── VIEW MODE ─── */
+                        <>
+                          <p className="text-sm text-[#e5e5e5] whitespace-pre-wrap">{inc.description}</p>
+                          {/* Images — show placeholder button, load on click */}
+                          {imgCount > 0 && !fullInc && (
+                            <button
+                              onClick={() => expandIncident(inc.id)}
+                              className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-[#111] border border-[#2a2a2a] rounded hover:bg-white/5 hover:border-[#4a4a4a] transition-colors"
+                            >
+                              {!fullInc ? (
+                                <Loader2 size={14} className="animate-spin text-[#737373]" />
+                              ) : (
+                                <ImageIcon size={14} className="text-[#737373]" />
+                              )}
+                              <span className="text-[11px] text-[#8b949e]">
+                                Cargando {imgCount} {imgCount === 1 ? 'imagen' : 'imágenes'}...
+                              </span>
+                            </button>
+                          )}
+                          {displayImages.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {displayImages.map((img, i) => (
+                                <a
+                                  key={i}
+                                  href={`${img}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <img
+                                    src={`${img}`}
+                                    alt=""
+                                    className="w-24 h-24 object-cover rounded border border-[#2a2a2a] hover:border-white/30 transition-colors cursor-pointer"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          {/* Action buttons */}
+                          <div className="flex gap-2 pt-1">
+                            {inc.status === 'pending' && (
+                              <button
+                                onClick={() => startEditing(inc)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-[#2a2a2a] rounded text-xs text-[#e5e5e5] hover:bg-white/10 hover:border-[#4a4a4a] transition-colors"
+                              >
+                                <Pencil size={11} /> Editar
+                              </button>
+                            )}
+                            {inc.status === 'reviewing' && (
+                              <button
+                                onClick={() => markCompleted(inc.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400 hover:bg-green-500/20 transition-colors"
+                              >
+                                <CheckCircle size={11} /> Marcar como completada
+                              </button>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               );
             })}

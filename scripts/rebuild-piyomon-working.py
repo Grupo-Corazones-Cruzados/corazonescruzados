@@ -1,14 +1,14 @@
 """
-Rebuild gumdramon working row (row 0 of actions sheet).
-Uses Row 3 Frame 2 from Gumdramon Vital Bracelet BE.png
+Rebuild piyomon working row (row 0 of actions sheet).
+Uses Row 3 Frame 2 from Piyomon Vital Bracelet BE.png
 
-Save only:     python3 scripts/rebuild-gumdramon-working.py
-Preview only:  python3 scripts/rebuild-gumdramon-working.py --preview
+Save only:     python3 scripts/rebuild-piyomon-working.py
+Preview only:  python3 scripts/rebuild-piyomon-working.py --preview
 """
 import sys
 from PIL import Image
 
-src = Image.open("public/universal_assets/citizens/Gumdramon Vital Bracelet BE.png").convert('RGBA')
+src = Image.open("public/universal_assets/citizens/Piyomon Vital Bracelet BE.png").convert('RGBA')
 
 cols = [1, 66, 131, 196]
 rows = [1, 66, 131]
@@ -62,10 +62,10 @@ if '--preview' in sys.argv:
     preview_big.show()
     print("Preview shown. Edit SHIFT value, save, run again.")
 else:
-    actions = Image.open("public/universal_assets/citizens/gumdramon_actions.png").convert('RGBA')
+    actions = Image.open("public/universal_assets/citizens/piyomon_actions.png").convert('RGBA')
     actions.paste(Image.new('RGBA', (256, 64), (0, 0, 0, 0)), (0, 0))
     for i in range(4):
         actions.paste(shifted, (i * 64, 0), shifted)
-    actions.save("public/universal_assets/citizens/gumdramon_actions.png")
+    actions.save("public/universal_assets/citizens/piyomon_actions.png")
     preview_big.show()
-    print("Saved gumdramon_actions.png!")
+    print("Saved piyomon_actions.png!")

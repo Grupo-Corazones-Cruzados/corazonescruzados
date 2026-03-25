@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Clock, CheckCircle, XCircle, ChevronDown, ChevronUp,
-  Loader2, Filter, Eye, Edit3, Save, X,
+  Clock, CheckCircle, XCircle, ChevronDown,
+  Loader2, Filter, Eye, Edit3, Save,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Incident, IncidentStatus } from '@/types/incidents';
@@ -30,6 +31,11 @@ export default function TasksPage() {
   const [editDesc, setEditDesc] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Images loaded on demand
+  const [loadedImages, setLoadedImages] = useState<string[]>([]);
+  const [imagesVisible, setImagesVisible] = useState(false);
+  const [loadingImages, setLoadingImages] = useState(false);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [incRes, projRes] = await Promise.all([
@@ -42,6 +48,25 @@ export default function TasksPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const openDetail = (inc: Incident) => {
+    setDetail(inc);
+    setLoadedImages([]);
+    setImagesVisible(false);
+  };
+
+  const showImages = async () => {
+    if (!detail) return;
+    setLoadingImages(true);
+    const res = await fetch(`/api/incidents/${detail.id}`);
+    if (res.ok) {
+      const full = await res.json();
+      setLoadedImages(full.images || []);
+      setDetail(full);
+    }
+    setImagesVisible(true);
+    setLoadingImages(false);
+  };
 
   const updateStatus = async (id: string, status: IncidentStatus) => {
     setSaving(true);
@@ -90,10 +115,11 @@ export default function TasksPage() {
   if (detail) {
     const cfg = STATUS_CFG[detail.status];
     const Icon = cfg.icon;
+    const imgCount = detail.imageCount ?? detail.images?.length ?? 0;
     return (
       <div className="max-w-2xl mx-auto space-y-4">
         <button
-          onClick={() => { setDetail(null); setEditing(false); }}
+          onClick={() => { setDetail(null); setEditing(false); setImagesVisible(false); setLoadedImages([]); }}
           className="text-xs text-[#737373] hover:text-white flex items-center gap-1"
         >
           <ChevronDown size={12} className="rotate-90" /> Volver a la lista
@@ -150,12 +176,28 @@ export default function TasksPage() {
             </>
           )}
 
-          {/* images */}
-          {detail.images.length > 0 && (
+          {/* images — lazy loaded */}
+          {imgCount > 0 && !imagesVisible && (
+            <button
+              onClick={showImages}
+              disabled={loadingImages}
+              className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-[#111] border border-[#2a2a2a] rounded hover:bg-white/5 hover:border-[#4a4a4a] transition-colors"
+            >
+              {loadingImages ? (
+                <Loader2 size={14} className="animate-spin text-[#737373]" />
+              ) : (
+                <ImageIcon size={14} className="text-[#737373]" />
+              )}
+              <span className="text-[11px] text-[#8b949e]">
+                {loadingImages ? 'Cargando imágenes...' : `Ver ${imgCount} ${imgCount === 1 ? 'imagen' : 'imágenes'}`}
+              </span>
+            </button>
+          )}
+          {imagesVisible && loadedImages.length > 0 && (
             <div className="space-y-2">
               <p className="text-[10px] text-[#737373] font-mono uppercase">Imagenes adjuntas</p>
               <div className="flex flex-wrap gap-2">
-                {detail.images.map((img, i) => (
+                {loadedImages.map((img, i) => (
                   <a key={i} href={`${img}`} target="_blank" rel="noopener noreferrer">
                     <img src={`${img}`} alt="" className="w-28 h-28 object-cover rounded border border-[#2a2a2a] hover:border-white/40 transition-colors" />
                   </a>
@@ -227,10 +269,11 @@ export default function TasksPage() {
           {filtered.map(inc => {
             const cfg = STATUS_CFG[inc.status];
             const Icon = cfg.icon;
+            const imgCount = inc.imageCount ?? inc.images?.length ?? 0;
             return (
               <button
                 key={inc.id}
-                onClick={() => setDetail(inc)}
+                onClick={() => openDetail(inc)}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg hover:bg-white/5 transition-colors text-left group"
               >
                 <Icon size={14} className={cfg.color} />
@@ -240,8 +283,8 @@ export default function TasksPage() {
                     {projectName(inc.projectId)} — {inc.clientName} — {new Date(inc.createdAt).toLocaleDateString()}
                   </p>
                 </div>
-                {inc.images.length > 0 && (
-                  <span className="text-[9px] text-[#737373] shrink-0">{inc.images.length} img</span>
+                {imgCount > 0 && (
+                  <span className="text-[9px] text-[#737373] shrink-0">{imgCount} img</span>
                 )}
                 <span className={cn('text-[10px] px-1.5 py-0.5 rounded border shrink-0', cfg.bg, cfg.color)}>
                   {cfg.label}

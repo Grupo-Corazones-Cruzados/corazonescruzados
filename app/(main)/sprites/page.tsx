@@ -23,7 +23,7 @@ interface Citizen {
 }
 
 const KNOWN_DIGIMON = [
-  'Agumon', 'Gabumon', 'Patamon', 'Gumdramon',
+  'Agumon', 'Gabumon', 'Patamon', 'Piyomon',
   'Shoutmon', 'Greymon', 'Metalgreymon',
   'Gatomon', 'Angemon', 'Devimon',
   'Gomamon', 'Biyomon', 'Palmon', 'Veemon', 'Guilmon',

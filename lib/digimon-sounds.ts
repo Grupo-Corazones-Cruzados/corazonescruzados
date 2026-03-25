@@ -19,7 +19,7 @@ interface SynthDef {
 }
 
 const SYNTH_SELECT: Record<string, SynthDef> = {
-  gumdramon: {
+  piyomon: {
     notes: [
       { freq: 350, duration: 0.05 }, { freq: 500, duration: 0.04 },
       { freq: 420, duration: 0.05 }, { freq: 580, duration: 0.04 },
@@ -38,7 +38,7 @@ const SYNTH_SELECT: Record<string, SynthDef> = {
 };
 
 const SYNTH_DONE: Record<string, SynthDef> = {
-  gumdramon: {
+  piyomon: {
     notes: [
       { freq: 400, duration: 0.06 }, { freq: 500, duration: 0.06 },
       { freq: 600, duration: 0.06 }, { freq: 800, duration: 0.10 },
