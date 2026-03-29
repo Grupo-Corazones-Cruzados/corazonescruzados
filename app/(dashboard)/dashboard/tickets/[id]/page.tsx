@@ -26,6 +26,7 @@ const STATUSES = [
   { value: 'in_progress', label: 'En progreso' },
   { value: 'completed', label: 'Completado' },
   { value: 'cancelled', label: 'Cancelado' },
+  { value: 'withdrawn', label: 'Retirado' },
 ];
 
 type SelectedDates = string[];
@@ -201,7 +202,7 @@ export default function TicketDetailPage() {
   const isAdmin = user?.role === 'admin';
   const isMember = user?.role === 'member';
   const canEdit = isAdmin || isMember;
-  const isClosed = ['completed', 'cancelled', 'withdrawn'].includes(ticket.status);
+  const isClosed = ['completed', 'cancelled'].includes(ticket.status);
   const isPending = ticket.status === 'pending';
   const timeSlots = ticket.time_slots || [];
   // Is this a request from a client to this member?
@@ -407,7 +408,7 @@ export default function TicketDetailPage() {
               <div className="pixel-card">
                 <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Acciones rapidas</h3>
                 <div className="space-y-1.5">
-                  {ticket.status === 'pending' && (
+                  {(ticket.status === 'pending' || ticket.status === 'withdrawn') && (
                     <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary w-full text-[9px]">Confirmar</button>
                   )}
                   {ticket.status === 'confirmed' && (
@@ -416,10 +417,12 @@ export default function TicketDetailPage() {
                   {(ticket.status === 'confirmed' || ticket.status === 'in_progress') && (
                     <button onClick={() => updateStatus('completed')} className="pixel-btn pixel-btn-primary w-full text-[9px]">Completar</button>
                   )}
-                  <button onClick={() => updateStatus('cancelled')}
-                    className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
-                    Cancelar Ticket
-                  </button>
+                  {ticket.status !== 'cancelled' && (
+                    <button onClick={() => updateStatus('cancelled')}
+                      className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
+                      Cancelar Ticket
+                    </button>
+                  )}
                 </div>
               </div>
             )}
