@@ -77,21 +77,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
                 });
               }
 
+              const clientDisplayName = client_name || 'Cliente';
               await getResend().emails.send({
                 from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
                 to: client_email,
                 subject: `Factura Electrónica ${inv.invoice_number} — GCC World`,
-                html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-                  <h2 style="color:#333;">Factura Electrónica</h2>
-                  <p>Estimado/a cliente,</p>
-                  <p>Adjuntamos su factura electrónica correspondiente al proyecto completado.</p>
-                  <table style="width:100%;border-collapse:collapse;margin:20px 0;">
-                    <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">No. Factura</td><td style="padding:8px;border-bottom:1px solid #eee;font-weight:bold;">${inv.invoice_number}</td></tr>
-                    <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Total</td><td style="padding:8px;border-bottom:1px solid #eee;font-weight:bold;">$${Number(inv.total).toFixed(2)}</td></tr>
-                  </table>
-                  <p style="color:#666;font-size:12px;">Encontrará el detalle completo en el documento PDF adjunto.</p>
-                  <p style="color:#999;font-size:11px;">Este documento fue generado electrónicamente y es válido sin firma ni sello según la normativa del SRI Ecuador.</p>
-                </div>`,
+                html: `<div style="font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;padding:0;margin:0;">
+<div style="max-width:600px;margin:0 auto;background:#ffffff;">
+  <div style="height:6px;background:#4B2D8E;"></div>
+  <div style="padding:30px 40px;">
+    <h1 style="color:#1a1a2e;font-size:22px;margin:0 0 6px;">Hola ${clientDisplayName}!</h1>
+    <p style="color:#888;font-size:14px;margin:0 0 24px;">Adjunto encontraras tu documento electronico en formato PDF.</p>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;width:40%"><strong>Tipo Doc:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">Factura Electronica</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>No. Doc:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${inv.invoice_number}</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Autorizacion:</strong></td><td style="padding:10px 16px;font-size:11px;border-bottom:1px solid #f0f0f0;word-break:break-all;">${inv.authorization_number || 'Pendiente'}</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>RUC Emisor:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">0930095922001</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Razon Social:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">GONZALEZ MUYULEMA LUIS FERNANDO</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Valor Total:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#1a1a2e;">$${Number(inv.total).toFixed(2)}</td></tr>
+    </table>
+    <p style="color:#888;font-size:12px;margin:24px 0 0;text-align:center;">Este documento fue generado electronicamente y es valido sin firma ni sello segun la normativa del SRI Ecuador.</p>
+  </div>
+  <div style="height:3px;background:#4B2D8E;"></div>
+</div>
+</div>`,
                 ...(attachments.length > 0 ? { attachments } : {}),
               });
             } catch (emailErr: any) {
