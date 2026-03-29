@@ -3,5 +3,6 @@ node_modules/
 .env
 .env.local
 data/uploads/
+data/*.p12
 certificates/
 /lib/generated/prisma
