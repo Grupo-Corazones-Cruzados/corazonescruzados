@@ -42,7 +42,7 @@ async function ensureSriColumns() {
  * Get next sequential number
  */
 // Minimum sequential — must be higher than the last invoice emitted outside this system
-const SRI_MIN_SECUENCIAL = 22;
+const SRI_MIN_SECUENCIAL = 23;
 
 async function getNextSecuencial(): Promise<number> {
   const { rows } = await pool.query(
