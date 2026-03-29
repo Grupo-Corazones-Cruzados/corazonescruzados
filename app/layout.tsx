@@ -6,7 +6,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'GCC World',
   description: 'Plataforma de desarrollo humano',
-  icons: { icon: '/favicon.ico' },
+  icons: { icon: '/icon.png' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
