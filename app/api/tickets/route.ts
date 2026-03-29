@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const body = await req.json();
-    const { title, description, service_id, member_id, client_id, deadline, estimated_hours, estimated_cost } = body;
+    const { title, description, service_id, member_id, client_id, deadline, estimated_hours, estimated_cost, time_slots } = body;
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'El titulo es requerido' }, { status: 400 });
@@ -89,7 +89,21 @@ export async function POST(req: NextRequest) {
       ]
     );
 
-    return NextResponse.json({ data: rows[0] }, { status: 201 });
+    const ticket = rows[0];
+
+    // Insert time slots if provided
+    if (Array.isArray(time_slots) && time_slots.length > 0) {
+      for (const slot of time_slots) {
+        if (!slot.date) continue;
+        await pool.query(
+          `INSERT INTO gcc_world.ticket_time_slots (ticket_id, date, start_time, end_time, status, created_at)
+           VALUES ($1, $2, $3, $4, 'scheduled', NOW())`,
+          [ticket.id, slot.date, slot.start_time || null, slot.end_time || null]
+        );
+      }
+    }
+
+    return NextResponse.json({ data: ticket }, { status: 201 });
   } catch (err: any) {
     console.error('Ticket create error:', err.message);
     return NextResponse.json({ error: 'Error al crear ticket' }, { status: 500 });

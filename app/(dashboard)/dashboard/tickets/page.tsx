@@ -33,6 +33,9 @@ const PER_PAGE = 15;
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 
+// Selected dates as ISO strings (YYYY-MM-DD)
+type SelectedDates = string[];
+
 const emptyForm = {
   title: '',
   description: '',
@@ -56,6 +59,9 @@ export default function TicketsPage() {
   // Create ticket state
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [selectedDates, setSelectedDates] = useState<SelectedDates>([]);
+  const [slotsModal, setSlotsModal] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
   const [creating, setCreating] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
@@ -77,6 +83,10 @@ export default function TicketsPage() {
   useEffect(() => { setPage(1); }, [tab, search]);
 
   const openCreateModal = async () => {
+    // Pre-fill member_id if user is a member
+    if (user?.role === 'member' && user.member_id) {
+      setForm(prev => ({ ...prev, member_id: String(user.member_id) }));
+    }
     setModal(true);
     // Fetch services, members, clients in parallel
     const [sRes, mRes, cRes] = await Promise.all([
@@ -86,12 +96,27 @@ export default function TicketsPage() {
     ]);
     setServices(sRes.data || []);
     setMembers(mRes.data || []);
-    setClients(cRes.data || []);
+    const clientList = cRes.data || [];
+    setClients(clientList);
+    // Pre-fill client_id if user is a client (match by email)
+    if (user?.role === 'client' && user.email) {
+      const match = clientList.find((c: any) => c.email === user.email);
+      if (match) setForm(prev => ({ ...prev, client_id: String(match.id) }));
+    }
   };
 
   const handleCreate = async () => {
     if (!form.title.trim()) {
       toast.error('El titulo es requerido');
+      return;
+    }
+    if (!form.deadline) {
+      toast.error('La fecha limite es requerida');
+      return;
+    }
+    // Members must include at least one work day
+    if (user?.role === 'member' && selectedDates.length === 0) {
+      toast.error('Debes indicar al menos un dia de trabajo');
       return;
     }
     setCreating(true);
@@ -108,6 +133,7 @@ export default function TicketsPage() {
           deadline: form.deadline || undefined,
           estimated_hours: form.estimated_hours ? Number(form.estimated_hours) : undefined,
           estimated_cost: form.estimated_cost ? Number(form.estimated_cost) : undefined,
+          time_slots: selectedDates.length > 0 ? selectedDates.map(d => ({ date: d })) : undefined,
         }),
       });
       if (!res.ok) {
@@ -117,6 +143,7 @@ export default function TicketsPage() {
       toast.success('Ticket creado exitosamente');
       setModal(false);
       setForm(emptyForm);
+      setSelectedDates([]);
       fetchTickets();
     } catch (err: any) {
       toast.error(err.message || 'Error al crear ticket');
@@ -200,31 +227,39 @@ export default function TicketsPage() {
             placeholder="-- Seleccionar servicio --"
           />
 
-          {(user?.role === 'admin' || user?.role === 'member') && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <PixelSelect
-                label="Miembro asignado"
-                value={form.member_id}
-                onChange={(e) => setForm({ ...form, member_id: e.target.value })}
-                options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
-                placeholder="-- Sin asignar --"
-              />
-              <PixelSelect
-                label="Cliente"
-                value={form.client_id}
-                onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-                options={clients.map((c: any) => ({ value: String(c.id), label: c.name || c.email }))}
-                placeholder="-- Sin cliente --"
-              />
-            </div>
-          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PixelSelect
+              label="Miembro asignado"
+              value={form.member_id}
+              onChange={(e) => setForm({ ...form, member_id: e.target.value })}
+              options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
+              placeholder="-- Sin asignar --"
+              disabled={user?.role === 'member'}
+            />
+            <PixelSelect
+              label="Cliente"
+              value={form.client_id}
+              onChange={(e) => setForm({ ...form, client_id: e.target.value })}
+              options={clients.map((c: any) => ({ value: String(c.id), label: c.name || c.email }))}
+              placeholder="-- Sin cliente --"
+              disabled={user?.role === 'client'}
+            />
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <PixelInput
-              label="Fecha limite"
+              label="Fecha limite *"
               type="date"
               value={form.deadline}
-              onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+              onChange={(e) => {
+                const newDeadline = e.target.value;
+                setForm({ ...form, deadline: newDeadline });
+                // Remove selected dates beyond new deadline
+                if (newDeadline) {
+                  setSelectedDates(prev => prev.filter(d => d <= newDeadline));
+                }
+              }}
+              required
             />
             <PixelInput
               label="Horas estimadas"
@@ -242,6 +277,37 @@ export default function TicketsPage() {
             />
           </div>
 
+          {/* Time slots button */}
+          {(user?.role === 'member' || user?.role === 'admin') && (
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>
+                  Dias de trabajo {user?.role === 'member' ? '*' : ''}
+                </label>
+                {!form.deadline && (
+                  <p className="text-[9px] text-amber-400 mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    Primero elige la fecha limite
+                  </p>
+                )}
+                {form.deadline && selectedDates.length > 0 && (
+                  <p className="text-[9px] text-digi-muted mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    {selectedDates.length} dia(s) seleccionados
+                  </p>
+                )}
+              </div>
+              <button type="button"
+                onClick={() => {
+                  // Clear dates that are beyond the new deadline
+                  setSelectedDates(prev => prev.filter(d => d <= form.deadline));
+                  setSlotsModal(true);
+                }}
+                disabled={!form.deadline}
+                className="text-[9px] text-accent-glow border border-accent/30 px-3 py-1 hover:bg-accent/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" style={pf}>
+                {selectedDates.length > 0 ? 'Editar dias' : 'Seleccionar dias'}
+              </button>
+            </div>
+          )}
+
           <button
             onClick={handleCreate}
             disabled={creating || !form.title.trim()}
@@ -250,6 +316,96 @@ export default function TicketsPage() {
             {creating ? 'Creando...' : 'Crear Ticket'}
           </button>
         </div>
+      </PixelModal>
+
+      {/* Calendar Modal */}
+      <PixelModal open={slotsModal} onClose={() => setSlotsModal(false)} title="Seleccionar Dias de Trabajo">
+        {(() => {
+          const { year, month } = calMonth;
+          const firstDay = new Date(year, month, 1).getDay();
+          const daysInMonth = new Date(year, month + 1, 0).getDate();
+          const today = new Date().toISOString().split('T')[0];
+          const deadline = form.deadline || '';
+          const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+          const dayNames = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
+
+          const toggleDate = (dateStr: string) => {
+            setSelectedDates(prev =>
+              prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr].sort()
+            );
+          };
+
+          const prevMonth = () => setCalMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
+          const nextMonth = () => setCalMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
+
+          const cells: (number | null)[] = [];
+          for (let i = 0; i < firstDay; i++) cells.push(null);
+          for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+          return (
+            <div className="space-y-3">
+              {/* Month nav */}
+              <div className="flex items-center justify-between">
+                <button onClick={prevMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&lt;</button>
+                <span className="text-xs text-white" style={pf}>{monthNames[month]} {year}</span>
+                <button onClick={nextMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&gt;</button>
+              </div>
+
+              {/* Day headers */}
+              <div className="grid grid-cols-7 gap-1">
+                {dayNames.map(d => (
+                  <div key={d} className="text-center text-[8px] text-digi-muted py-1" style={pf}>{d}</div>
+                ))}
+              </div>
+
+              {/* Day cells */}
+              <div className="grid grid-cols-7 gap-1">
+                {cells.map((day, i) => {
+                  if (day === null) return <div key={`e${i}`} />;
+                  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  const isSelected = selectedDates.includes(dateStr);
+                  const isOutOfRange = dateStr < today || (!!deadline && dateStr > deadline);
+                  return (
+                    <button
+                      key={dateStr}
+                      onClick={() => !isOutOfRange && toggleDate(dateStr)}
+                      disabled={isOutOfRange}
+                      className={`py-1.5 text-[10px] text-center border transition-colors ${
+                        isSelected
+                          ? 'bg-accent/30 border-accent text-white'
+                          : isOutOfRange
+                            ? 'border-transparent text-digi-muted/30 cursor-default'
+                            : 'border-digi-border/30 text-digi-text hover:border-accent/50 hover:bg-accent/10'
+                      }`}
+                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Selected summary */}
+              {selectedDates.length > 0 && (
+                <div className="border-t border-digi-border/30 pt-2">
+                  <p className="text-[9px] text-digi-muted mb-1" style={pf}>{selectedDates.length} dia(s) seleccionados:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedDates.map(d => (
+                      <span key={d} className="text-[9px] px-1.5 py-0.5 bg-accent/20 border border-accent/30 text-accent-glow flex items-center gap-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        {new Date(d + 'T12:00:00').toLocaleDateString('es', { day: '2-digit', month: 'short' })}
+                        <button onClick={() => toggleDate(d)} className="text-red-400 hover:text-red-300 text-[8px]">x</button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => setSlotsModal(false)} className="pixel-btn pixel-btn-primary w-full">
+                Confirmar ({selectedDates.length} dias)
+              </button>
+            </div>
+          );
+        })()}
       </PixelModal>
     </div>
   );
