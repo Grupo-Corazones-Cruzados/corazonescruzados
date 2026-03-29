@@ -106,20 +106,25 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     // Rows
     doc.font('Helvetica').fontSize(7).fillColor('#333');
     data.items.forEach((item, idx) => {
-      const rowH = 14;
+      // Calculate row height based on description text
+      const descWidth = cols[1].width - 8;
+      const descHeight = doc.heightOfString(item.description, { width: descWidth });
+      const rowH = Math.max(16, descHeight + 6);
+
       if (idx % 2 === 1) { doc.rect(L, y, W, rowH).fill('#f8f8f8'); doc.fillColor('#333'); }
+      const valY = y + 3;
       let rx = L;
-      const vals = [
-        String(idx + 1),
-        item.description.length > 55 ? item.description.substring(0, 55) + '...' : item.description,
-        item.quantity.toFixed(2),
-        item.unitPrice.toFixed(2),
-        `${item.ivaRate}%`,
-        item.subtotal.toFixed(2),
-      ];
-      vals.forEach((v, i) => {
-        doc.text(v, rx + 4, y + 3, { width: cols[i].width - 8, align: cols[i].align });
-        rx += cols[i].width;
+      // Column 0: #
+      doc.text(String(idx + 1), rx + 4, valY, { width: cols[0].width - 8, align: cols[0].align });
+      rx += cols[0].width;
+      // Column 1: Description (multi-line)
+      doc.text(item.description, rx + 4, valY, { width: descWidth });
+      rx += cols[1].width;
+      // Column 2-5: numbers (vertically centered)
+      const numVals = [item.quantity.toFixed(2), item.unitPrice.toFixed(2), `${item.ivaRate}%`, item.subtotal.toFixed(2)];
+      numVals.forEach((v, i) => {
+        doc.text(v, rx + 4, valY, { width: cols[i + 2].width - 8, align: cols[i + 2].align });
+        rx += cols[i + 2].width;
       });
       y += rowH;
     });
