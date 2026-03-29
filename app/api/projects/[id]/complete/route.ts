@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createInvoiceFromProject, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { Resend } from 'resend';
+import crypto from 'crypto';
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -78,6 +79,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               }
 
               const clientDisplayName = client_name || 'Cliente';
+
+              // Generate token for private projects (expires in 1 week)
+              const { rows: [projInfo] } = await pool.query(`SELECT is_private FROM gcc_world.projects WHERE id = $1`, [id]);
+              let projectUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/proyecto/${id}`;
+              if (projInfo?.is_private) {
+                const newToken = crypto.randomBytes(32).toString('hex');
+                const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 1 week
+                await pool.query(`
+                  ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token VARCHAR(64);
+                  ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMPTZ;
+                `);
+                await pool.query(`UPDATE gcc_world.projects SET public_token = $1, public_token_expires_at = $2 WHERE id = $3`, [newToken, expiresAt, id]);
+                projectUrl += `?token=${newToken}`;
+              }
+
               await getResend().emails.send({
                 from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
                 to: client_email,
@@ -98,7 +114,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Valor Total:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#1a1a2e;">$${Number(inv.total).toFixed(2)}</td></tr>
     </table>
     <div style="text-align:center;margin:24px 0 0;">
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/proyecto/${id}" style="display:inline-block;padding:12px 24px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;border-radius:4px;">Ver Detalle del Proyecto</a>
+      <a href="${projectUrl}" style="display:inline-block;padding:12px 24px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;border-radius:4px;">Ver Detalle del Proyecto</a>
     </div>
     <p style="color:#888;font-size:12px;margin:16px 0 0;text-align:center;">Este documento fue generado electronicamente y es valido sin firma ni sello segun la normativa del SRI Ecuador.</p>
   </div>

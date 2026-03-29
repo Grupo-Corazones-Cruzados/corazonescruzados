@@ -6,12 +6,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const token = req.nextUrl.searchParams.get('token');
 
-    // Ensure public_token column exists
-    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token VARCHAR(64)`);
+    // Ensure columns exist
+    await pool.query(`
+      ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token VARCHAR(64);
+      ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMPTZ;
+    `);
 
     const { rows } = await pool.query(
       `SELECT p.id, p.title, p.description, p.status, p.budget_min, p.budget_max,
-              p.final_cost, p.deadline, p.is_private, p.public_token,
+              p.final_cost, p.deadline, p.is_private, p.public_token, p.public_token_expires_at,
               p.created_at, p.updated_at, p.confirmed_at,
               c.name as client_name
        FROM gcc_world.projects p
@@ -24,10 +27,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const project = rows[0];
 
-    // Private projects require a valid token
+    // Private projects require a valid, non-expired token
     if (project.is_private) {
       if (!token || token !== project.public_token) {
         return NextResponse.json({ error: 'Este proyecto es privado' }, { status: 403 });
+      }
+      if (project.public_token_expires_at && new Date(project.public_token_expires_at) < new Date()) {
+        return NextResponse.json({ error: 'El enlace ha expirado. Solicita uno nuevo al administrador.' }, { status: 403 });
       }
     }
 

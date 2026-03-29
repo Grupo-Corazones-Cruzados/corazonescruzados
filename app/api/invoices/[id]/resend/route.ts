@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import crypto from 'crypto';
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -27,6 +28,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const pdfBuffer = Buffer.isBuffer(inv.pdf_data) ? inv.pdf_data : Buffer.from(inv.pdf_data);
 
+    // Generate token for private projects (expires in 1 week)
+    let projectUrl = '';
+    if (inv.project_id) {
+      projectUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/proyecto/${inv.project_id}`;
+      const { rows: [proj] } = await pool.query(`SELECT is_private FROM gcc_world.projects WHERE id = $1`, [inv.project_id]);
+      if (proj?.is_private) {
+        const newToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await pool.query(`
+          ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token VARCHAR(64);
+          ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMPTZ;
+        `);
+        await pool.query(`UPDATE gcc_world.projects SET public_token = $1, public_token_expires_at = $2 WHERE id = $3`, [newToken, expiresAt, inv.project_id]);
+        projectUrl += `?token=${newToken}`;
+      }
+    }
+
     await getResend().emails.send({
       from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
       to: emails,
@@ -46,8 +64,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Razon Social:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">GONZALEZ MUYULEMA LUIS FERNANDO</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Valor Total:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#1a1a2e;">$${Number(inv.total).toFixed(2)}</td></tr>
     </table>
-    ${inv.project_id ? `<div style="text-align:center;margin:24px 0 0;">
-      <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/proyecto/${inv.project_id}" style="display:inline-block;padding:12px 24px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;border-radius:4px;">Ver Detalle del Proyecto</a>
+    ${projectUrl ? `<div style="text-align:center;margin:24px 0 0;">
+      <a href="${projectUrl}" style="display:inline-block;padding:12px 24px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;border-radius:4px;">Ver Detalle del Proyecto</a>
     </div>` : ''}
     <p style="color:#888;font-size:12px;margin:16px 0 0;text-align:center;">Este documento fue generado electronicamente y es valido sin firma ni sello segun la normativa del SRI Ecuador.</p>
   </div>
