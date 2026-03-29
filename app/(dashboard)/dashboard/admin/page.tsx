@@ -1,0 +1,303 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useAuth } from '@/components/providers/AuthProvider';
+import PageHeader from '@/components/ui/PageHeader';
+import PixelTabs from '@/components/ui/PixelTabs';
+import PixelDataTable from '@/components/ui/PixelDataTable';
+import PixelBadge from '@/components/ui/PixelBadge';
+import BrandLoader from '@/components/ui/BrandLoader';
+
+const pf = { fontFamily: "'Silkscreen', cursive" } as const;
+const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+
+const MAIN_TABS = [
+  { value: 'team', label: 'Equipo' },
+  { value: 'clients', label: 'Clientes' },
+  { value: 'digimundo', label: 'DigiMundo' },
+];
+
+const DIGI_TABS = [
+  { value: 'digi-dashboard', label: 'Dashboard' },
+  { value: 'digi-world', label: 'Mundo' },
+  { value: 'digi-projects', label: 'Proyectos' },
+  { value: 'digi-incidents', label: 'Incidentes' },
+  { value: 'digi-sprites', label: 'Sprites' },
+];
+
+const SEV_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
+  low: 'default', medium: 'warning', high: 'error', critical: 'error',
+};
+const INC_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
+  pending: 'warning', approved: 'info', reviewing: 'info', completed: 'success', rejected: 'error',
+};
+
+// Lazy-load heavy DigiMundo components
+const WorldViewer = dynamic(() => import('@/app/(main)/world/page'), {
+  ssr: false,
+  loading: () => <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando mundo..." /></div>,
+});
+const SpritesEditor = dynamic(() => import('@/app/(main)/sprites/page'), {
+  ssr: false,
+  loading: () => <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando sprites..." /></div>,
+});
+const ProjectsEditor = dynamic(() => import('@/app/(main)/projects/page'), {
+  ssr: false,
+  loading: () => <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando proyectos..." /></div>,
+});
+
+export default function AdminPage() {
+  const { user } = useAuth();
+  const [tab, setTab] = useState('team');
+  const [digiTab, setDigiTab] = useState('digi-dashboard');
+
+  if (user?.role !== 'admin') {
+    return (
+      <div className="pixel-card text-center py-12">
+        <p className="pixel-heading text-sm text-red-400">Acceso Denegado</p>
+        <p className="text-xs text-digi-muted mt-1" style={mf}>Solo administradores pueden ver esta pagina.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageHeader title="Administracion" description="Gestiona equipo, clientes y DigiMundo" />
+      <PixelTabs tabs={MAIN_TABS} active={tab} onChange={setTab} />
+
+      {tab === 'team' && <TeamSection />}
+      {tab === 'clients' && <ClientsSection />}
+      {tab === 'digimundo' && (
+        <div>
+          {/* DigiMundo sub-tabs */}
+          <div className="mb-4 flex gap-1 overflow-x-auto">
+            {DIGI_TABS.map(dt => (
+              <button
+                key={dt.value}
+                onClick={() => setDigiTab(dt.value)}
+                className={`px-3 py-1.5 text-[9px] border transition-colors whitespace-nowrap ${
+                  digiTab === dt.value
+                    ? 'border-accent bg-accent/15 text-accent-glow'
+                    : 'border-digi-border text-digi-muted hover:text-digi-text hover:border-digi-muted'
+                }`}
+                style={pf}
+              >
+                {dt.label}
+              </button>
+            ))}
+          </div>
+
+          {digiTab === 'digi-dashboard' && <DigiDashboard />}
+          {digiTab === 'digi-world' && (
+            <div
+              className="border-2 border-digi-border overflow-hidden relative"
+              style={{ height: 'calc(100vh - 200px)', minHeight: 400 }}
+            >
+              {/* Reset the negative margins the world viewer applies */}
+              <div className="absolute inset-0 overflow-hidden [&>div]:!m-0 [&>div]:!h-full">
+                <WorldViewer />
+              </div>
+            </div>
+          )}
+          {digiTab === 'digi-projects' && (
+            <div className="border-2 border-digi-border overflow-auto p-3" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+              <ProjectsEditor />
+            </div>
+          )}
+          {digiTab === 'digi-incidents' && <DigiIncidents />}
+          {digiTab === 'digi-sprites' && (
+            <div className="border-2 border-digi-border overflow-auto p-3" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+              <SpritesEditor />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Team ─── */
+function TeamSection() {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/team').then(r => r.json()).then(d => setData(d.data || [])).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando equipo..." /></div>;
+
+  return (
+    <PixelDataTable
+      columns={[
+        { key: 'name', header: 'Nombre', render: (m: any) => m.name },
+        { key: 'email', header: 'Email', render: (m: any) => m.email },
+        { key: 'position', header: 'Posicion', render: (m: any) => m.position_name || '-' },
+        { key: 'rate', header: 'Tarifa/h', render: (m: any) => m.hourly_rate ? `$${m.hourly_rate}` : '-' },
+        { key: 'active', header: 'Activo', render: (m: any) => (
+          <PixelBadge variant={m.is_active ? 'success' : 'default'}>{m.is_active ? 'Si' : 'No'}</PixelBadge>
+        )},
+      ]}
+      data={data}
+      emptyTitle="Sin miembros"
+      emptyDesc="No hay miembros registrados."
+    />
+  );
+}
+
+/* ─── Clients ─── */
+function ClientsSection() {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/clients').then(r => r.json()).then(d => setData(d.data || [])).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando clientes..." /></div>;
+
+  return (
+    <PixelDataTable
+      columns={[
+        { key: 'name', header: 'Nombre', render: (c: any) => `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email },
+        { key: 'email', header: 'Email', render: (c: any) => c.email },
+        { key: 'phone', header: 'Telefono', render: (c: any) => c.phone || '-' },
+        { key: 'verified', header: 'Verificado', render: (c: any) => (
+          <PixelBadge variant={c.is_verified ? 'success' : 'warning'}>{c.is_verified ? 'Si' : 'No'}</PixelBadge>
+        )},
+        { key: 'date', header: 'Registro', render: (c: any) => new Date(c.created_at).toLocaleDateString() },
+      ]}
+      data={data}
+      emptyTitle="Sin clientes"
+      emptyDesc="No hay clientes registrados."
+    />
+  );
+}
+
+/* ─── DigiMundo Dashboard ─── */
+function DigiDashboard() {
+  const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/digimundo/projects').then(r => r.json()),
+      fetch('/api/incidents').then(r => r.json()),
+      fetch('/api/world').then(r => r.json()),
+    ]).then(([proj, inc, world]) => {
+      const incidents = Array.isArray(inc) ? inc : inc.data || [];
+      setStats({
+        projects: (proj.data || []).length,
+        incidents: incidents.length,
+        pending: incidents.filter((i: any) => i.status === 'pending').length,
+        critical: incidents.filter((i: any) => i.severity === 'critical' || i.severity === 'high').length,
+        citizens: (world.citizens || []).length,
+      });
+    }).catch(() => {});
+  }, []);
+
+  if (!stats) return <div className="flex justify-center py-8"><BrandLoader size="md" /></div>;
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {[
+        { label: 'Proyectos', value: stats.projects },
+        { label: 'Ciudadanos', value: stats.citizens },
+        { label: 'Incidentes', value: stats.incidents },
+        { label: 'Pendientes', value: stats.pending, color: 'text-yellow-400' },
+        { label: 'Criticos', value: stats.critical, color: 'text-red-400' },
+      ].map(s => (
+        <div key={s.label} className="pixel-card py-4 text-center">
+          <p className="text-[9px] text-digi-muted mb-1" style={pf}>{s.label}</p>
+          <p className={`text-2xl font-bold ${s.color || 'text-white'}`} style={mf}>{s.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── DigiMundo Incidents ─── */
+function DigiIncidents() {
+  const [incidents, setIncidents] = useState<any[]>([]);
+  const [digiProjects, setDigiProjects] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [projectFilter, setProjectFilter] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/incidents').then(r => r.json()),
+      fetch('/api/digimundo/projects').then(r => r.json()),
+    ]).then(([inc, proj]) => {
+      setIncidents(Array.isArray(inc) ? inc : inc.data || []);
+      setDigiProjects(proj.data || []);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando incidentes..." /></div>;
+
+  const projectName = (pid: string) => digiProjects.find((p: any) => p.id === pid)?.name || pid.slice(0, 8);
+
+  let filtered = incidents;
+  if (statusFilter !== 'all') filtered = filtered.filter((i: any) => i.status === statusFilter);
+  if (projectFilter) filtered = filtered.filter((i: any) => i.projectId === projectFilter);
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <select
+          value={projectFilter}
+          onChange={(e) => setProjectFilter(e.target.value)}
+          className="px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none appearance-none cursor-pointer"
+          style={{
+            ...mf,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237B5FBF' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 8px center',
+            paddingRight: '28px',
+          }}
+        >
+          <option value="">Todos los proyectos</option>
+          {digiProjects.map((p: any) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+
+        <div className="flex gap-1">
+          {['all', 'pending', 'reviewing', 'completed'].map(s => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-2 py-1 text-[9px] border transition-colors ${
+                statusFilter === s ? 'border-accent text-accent-glow bg-accent/10' : 'border-digi-border text-digi-muted'
+              }`}
+              style={pf}
+            >
+              {s === 'all' ? 'Todos' : s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <PixelDataTable
+        columns={[
+          { key: 'title', header: 'Titulo', render: (i: any) => i.title },
+          { key: 'project', header: 'Proyecto', render: (i: any) => (
+            <span className="text-accent-glow">{projectName(i.projectId)}</span>
+          )},
+          { key: 'client', header: 'Cliente', render: (i: any) => i.clientName || '-' },
+          { key: 'severity', header: 'Severidad', render: (i: any) => (
+            <PixelBadge variant={SEV_V[i.severity] || 'default'}>{i.severity}</PixelBadge>
+          )},
+          { key: 'status', header: 'Estado', render: (i: any) => (
+            <PixelBadge variant={INC_V[i.status] || 'default'}>{i.status}</PixelBadge>
+          )},
+          { key: 'date', header: 'Fecha', render: (i: any) => new Date(i.createdAt).toLocaleDateString() },
+        ]}
+        data={filtered}
+        emptyTitle="Sin incidentes"
+        emptyDesc="No hay incidentes con este filtro."
+      />
+    </div>
+  );
+}

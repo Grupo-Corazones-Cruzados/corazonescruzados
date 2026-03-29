@@ -100,6 +100,7 @@ export async function PUT(req: Request) {
 
     return NextResponse.json(incident);
   } catch (e: any) {
+    console.error('PUT /api/incidents error:', e.message);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

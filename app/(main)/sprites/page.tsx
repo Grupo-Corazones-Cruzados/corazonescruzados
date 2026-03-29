@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Wand2, Wifi, WifiOff, Upload, Sparkles, RefreshCw, Pencil, Check, X, SlidersHorizontal, RotateCcw, Plus, ChevronDown } from 'lucide-react';
+import { Wand2, Wifi, WifiOff, Upload, Sparkles, RefreshCw, Pencil, Check, X, SlidersHorizontal, RotateCcw, Plus, ChevronDown, ImageIcon } from 'lucide-react';
 import SpriteJobCard from '@/components/sprites/SpriteJobCard';
 import DropZone from '@/components/shared/DropZone';
 import AnimatedSprite from '@/components/shared/AnimatedSprite';
@@ -20,6 +20,9 @@ interface Citizen {
   frameConfig?: FrameConfig;
   yShift?: number;
   avatarCrop?: { x: number; y: number; size: number };
+  walkSheetCols?: number;   // columns in walk sprite sheet (default 4)
+  walkSheetRows?: number;   // rows in walk sprite sheet (default 4)
+  walkRow?: number;         // which row is the walk animation (default 2)
 }
 
 const KNOWN_DIGIMON = [
@@ -61,6 +64,10 @@ export default function SpritesPage() {
 
   // Regenerate confirmation
   const [confirmRegenerate, setConfirmRegenerate] = useState<{ agentId: string; name: string } | null>(null);
+
+  // Sprite sheet viewer modal
+  const [sheetViewer, setSheetViewer] = useState<{ sprite: string; name: string } | null>(null);
+  const [sheetViewerIndex, setSheetViewerIndex] = useState(0);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hadActiveRef = useRef(false);
@@ -219,6 +226,24 @@ export default function SpritesPage() {
       const citizen = config.citizens?.find((c: Citizen) => c.agentId === agentId);
       if (citizen) {
         citizen.flipWalk = flipWalk;
+        await fetch('/api/world', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config),
+        });
+      }
+    } catch { /* ignore */ }
+  };
+
+  // Update walk sheet geometry in world.json
+  const handleSheetConfigChange = async (agentId: string, field: 'walkSheetCols' | 'walkSheetRows' | 'walkRow', value: number) => {
+    setCitizens(prev => prev.map(c => c.agentId === agentId ? { ...c, [field]: value } : c));
+    try {
+      const res = await fetch('/api/world');
+      const config = await res.json();
+      const citizen = config.citizens?.find((c: Citizen) => c.agentId === agentId);
+      if (citizen) {
+        citizen[field] = value;
         await fetch('/api/world', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -572,6 +597,13 @@ export default function SpritesPage() {
                             >
                               <Pencil size={12} />
                             </button>
+                            <button
+                              onClick={() => { setSheetViewer({ sprite: c.sprite, name: c.name }); setSheetViewerIndex(0); }}
+                              className="text-digi-muted hover:text-amber-400 transition-colors shrink-0"
+                              title="Ver sprite sheets"
+                            >
+                              <ImageIcon size={12} />
+                            </button>
                           </div>
                         )}
                         <p className="text-xs text-digi-muted font-mono mt-0.5">
@@ -638,6 +670,85 @@ export default function SpritesPage() {
                         Flip: {(c.flipWalk ?? true) ? '← izq' : '→ der'}
                       </button>
                     </div>
+
+                    {/* Walk sheet geometry + live preview */}
+                    {(() => {
+                      const cols = c.walkSheetCols ?? 4;
+                      const rows = c.walkSheetRows ?? 4;
+                      const row = c.walkRow ?? 2;
+                      const frames = c.frameConfig?.walk ?? [0, 1, 2, 3];
+                      const previewSize = 64;
+                      const bgW = cols * previewSize;
+                      const bgH = rows * previewSize;
+                      const rowY = -row * previewSize;
+                      const n = frames.length;
+                      const animName = `preview_${c.agentId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                      const stops = frames.map((col, i) => {
+                        const pct = ((i / n) * 100).toFixed(2);
+                        return `${pct}% { background-position: ${-col * previewSize}px ${rowY}px; }`;
+                      });
+                      const duration = (n * 0.24).toFixed(2);
+                      const walkSrc = `/api/assets/universal_assets/citizens/${c.sprite}_walk.png?v=${spriteVer}`;
+
+                      return (
+                        <div className="flex items-center gap-4 flex-wrap">
+                          {/* Preview box */}
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="border border-digi-border rounded bg-black/20 p-1 flex items-center justify-center" style={{ width: 74, height: 74 }}>
+                              <style dangerouslySetInnerHTML={{ __html: `@keyframes ${animName} { ${stops.join(' ')} }` }} />
+                              <div
+                                style={{
+                                  width: previewSize,
+                                  height: previewSize,
+                                  backgroundImage: `url(${walkSrc})`,
+                                  backgroundSize: `${bgW}px ${bgH}px`,
+                                  imageRendering: 'pixelated',
+                                  animation: `${animName} ${duration}s step-end infinite`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-[8px] text-digi-muted/50">Preview walk</span>
+                          </div>
+
+                          {/* Controls */}
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[9px] text-digi-muted w-9">Sheet:</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[8px] text-digi-muted/60">Cols</span>
+                                <input
+                                  type="number" min="1" max="10"
+                                  value={cols}
+                                  onChange={(e) => handleSheetConfigChange(c.agentId, 'walkSheetCols', parseInt(e.target.value) || 4)}
+                                  className="w-10 px-1 py-0.5 text-[9px] bg-digi-darker border border-digi-border rounded text-center text-digi-text"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[8px] text-digi-muted/60">Rows</span>
+                                <input
+                                  type="number" min="1" max="10"
+                                  value={rows}
+                                  onChange={(e) => handleSheetConfigChange(c.agentId, 'walkSheetRows', parseInt(e.target.value) || 4)}
+                                  className="w-10 px-1 py-0.5 text-[9px] bg-digi-darker border border-digi-border rounded text-center text-digi-text"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[8px] text-digi-muted/60">WalkRow</span>
+                                <input
+                                  type="number" min="0" max="9"
+                                  value={row}
+                                  onChange={(e) => handleSheetConfigChange(c.agentId, 'walkRow', parseInt(e.target.value) || 0)}
+                                  className="w-10 px-1 py-0.5 text-[9px] bg-digi-darker border border-digi-border rounded text-center text-digi-text"
+                                />
+                              </div>
+                            </div>
+                            <div className="text-[8px] text-digi-muted/40 font-mono">
+                              Frames: [{frames.join(', ')}] · {bgW}×{bgH}px · row {row}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Active job status */}
                     {job && ['pending', 'generating', 'processing', 'converting'].includes(job.status) && (
@@ -817,6 +928,70 @@ export default function SpritesPage() {
           </div>
         </div>
       )}
+      {/* Sprite sheet viewer modal */}
+      {sheetViewer && (() => {
+        const SHEET_TYPES = [
+          { suffix: '_walk', label: 'Walk' },
+          { suffix: '_actions', label: 'Actions' },
+          { suffix: '_done', label: 'Done' },
+          { suffix: '_eating', label: 'Eating' },
+          { suffix: '_raw', label: 'Raw' },
+        ];
+        const basePath = `/api/assets/universal_assets/citizens/${sheetViewer.sprite}`;
+        return (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSheetViewer(null)}>
+            <div className="bg-digi-dark border-2 border-digi-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-digi-border">
+                <h3 className="font-pixel text-sm text-digi-green">{sheetViewer.name} — Sprite Sheets</h3>
+                <button onClick={() => setSheetViewer(null)} className="text-digi-muted hover:text-white text-lg leading-none">&times;</button>
+              </div>
+
+              {/* Tab bar */}
+              <div className="flex border-b border-digi-border">
+                {SHEET_TYPES.map((st, i) => (
+                  <button
+                    key={st.suffix}
+                    onClick={() => setSheetViewerIndex(i)}
+                    className={`flex-1 px-3 py-2 text-[10px] font-medium transition-colors ${
+                      sheetViewerIndex === i
+                        ? 'text-digi-green border-b-2 border-digi-green bg-digi-green/5'
+                        : 'text-digi-muted hover:text-digi-text'
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Image */}
+              <div className="p-4 flex flex-col items-center gap-3">
+                <div className="border-2 border-digi-border bg-black/30 p-2 w-full flex items-center justify-center min-h-[256px]">
+                  <img
+                    src={`${basePath}${SHEET_TYPES[sheetViewerIndex].suffix}.png?v=${spriteVer}`}
+                    alt={`${sheetViewer.name} ${SHEET_TYPES[sheetViewerIndex].label}`}
+                    className="max-w-full"
+                    style={{ imageRendering: 'pixelated' }}
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.style.display = 'none';
+                      const parent = img.parentElement;
+                      if (parent) {
+                        const span = document.createElement('span');
+                        span.className = 'text-xs text-digi-muted/50';
+                        span.textContent = 'No disponible';
+                        parent.appendChild(span);
+                      }
+                    }}
+                  />
+                </div>
+                <span className="text-[9px] text-digi-muted font-mono">
+                  {sheetViewer.sprite}{SHEET_TYPES[sheetViewerIndex].suffix}.png
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

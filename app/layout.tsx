@@ -1,15 +1,16 @@
 import type { Metadata } from 'next';
 import { Toaster } from 'sonner';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'DigiMundo',
-  description: 'Digimon agent workspace',
+  title: 'GCC World',
+  description: 'Plataforma de desarrollo humano',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="es" className="dark">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,7 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-digi-darker text-digi-text antialiased">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster theme="dark" richColors position="bottom-right" />
       </body>
     </html>

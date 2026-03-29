@@ -9,6 +9,13 @@
   --color-digi-text: #e5e5e5;
   --color-digi-muted: #737373;
 
+  /* Landing page palette (from Corazones Cruzados) */
+  --color-accent: #4B2D8E;
+  --color-accent-hover: #5A3BA0;
+  --color-accent-light: #EDEBFA;
+  --color-accent-dark: #3A1F7A;
+  --color-accent-glow: #7B5FBF;
+
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-pixel: 'Silkscreen', cursive;
@@ -30,13 +37,16 @@
   background: var(--color-digi-muted);
 }
 
-/* Prevent iOS zoom and scroll issues */
-html, body {
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Lock viewport only inside the app shell (world viewer, dashboard) */
+.app-shell-locked {
   overflow: hidden;
   position: fixed;
   width: 100%;
   height: 100%;
-  -webkit-text-size-adjust: 100%;
 }
 
 /* Prevent iOS zoom on input focus (font-size must be >= 16px) */
@@ -70,8 +80,7 @@ html, body {
   );
 }
 
-/* ─── Retro text styles for floating tasks widget ─── */
-/* White text with dark outline — readable on any background */
+/* ─── Retro text styles ─── */
 .retro-text {
   color: #ffffff;
   text-shadow:
@@ -95,5 +104,371 @@ html, body {
 @media (max-width: 640px), (orientation: landscape) and (max-height: 500px) {
   .floating-tasks-widget {
     display: none;
+  }
+}
+
+/* =====================================================
+   LANDING PAGE — Pixel-Art / Retro Game Style
+   ===================================================== */
+
+/* --- Sprite animation keyframes --- */
+@keyframes spriteWalk {
+  from { background-position-x: var(--sx, 0px); }
+  to   { background-position-x: calc(var(--sx, 0px) + var(--sw, -256px)); }
+}
+
+@keyframes slowSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Ping-pong sprite: frames go forward then backward
+   --sx: X position of frame 1
+   --fw: width of each frame (negative = left)
+   Sequence: frame2 → frame3 → frame4 → frame5 → frame4 → frame3 → (loop) */
+@keyframes spritePingPong {
+  0%,    16.66%  { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 1); }
+  16.67%, 33.32% { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 2); }
+  33.33%, 49.99% { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 3); }
+  50%,   66.66%  { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 4); }
+  66.67%, 83.32% { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 3); }
+  83.33%, 100%   { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 2); }
+}
+
+@keyframes walkAcrossRight {
+  from { transform: translateX(-80px); }
+  to   { transform: translateX(calc(100vw + 80px)); }
+}
+
+@keyframes walkAcrossLeft {
+  from { transform: translateX(calc(100vw + 80px)); }
+  to   { transform: translateX(-80px); }
+}
+
+@keyframes digiPeekIn {
+  0%   { transform: translateY(100%); opacity: 0; }
+  15%  { transform: translateY(0); opacity: 1; }
+  80%  { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes digiBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+
+@keyframes digiWave {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(15deg); }
+  50%  { transform: rotate(0deg); }
+  75%  { transform: rotate(-10deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes pixelFadeIn {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.9); filter: blur(4px); }
+  50%  { opacity: 0.5; filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes floatUpDown {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+@keyframes glitchFlicker {
+  0%, 100% { opacity: 1; }
+  92%      { opacity: 1; }
+  93%      { opacity: 0.6; transform: translateX(2px); }
+  94%      { opacity: 1; transform: translateX(-1px); }
+  95%      { opacity: 0.8; }
+  96%      { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scanlineMove {
+  from { background-position-y: 0; }
+  to   { background-position-y: 4px; }
+}
+
+@keyframes pixelBorderPulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--color-accent), 0 0 12px rgba(75, 45, 142, 0.3); }
+  50%      { box-shadow: 0 0 0 2px var(--color-accent-glow), 0 0 20px rgba(123, 95, 191, 0.5); }
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+@keyframes blinkCaret {
+  50% { border-color: transparent; }
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50%      { opacity: 1; transform: scale(1.2); }
+}
+
+/* --- Landing page base --- */
+.landing-page {
+  min-height: 100vh;
+  background: #0A0E17;
+  color: #e5e5e5;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.landing-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(75, 45, 142, 0.015) 2px,
+    rgba(75, 45, 142, 0.015) 4px
+  );
+  animation: scanlineMove 0.3s linear infinite;
+  z-index: 50;
+}
+
+/* --- Pixel text helpers --- */
+.pixel-heading {
+  font-family: 'Silkscreen', cursive;
+  letter-spacing: 0.05em;
+  text-shadow:
+    2px 2px 0 rgba(0, 0, 0, 0.8),
+    -1px -1px 0 rgba(75, 45, 142, 0.3);
+}
+
+.pixel-glow {
+  text-shadow:
+    0 0 10px rgba(75, 45, 142, 0.6),
+    0 0 20px rgba(75, 45, 142, 0.3),
+    2px 2px 0 rgba(0, 0, 0, 0.8);
+}
+
+/* --- Pixel button --- */
+.pixel-btn {
+  font-family: 'Silkscreen', cursive;
+  font-size: 0.8rem;
+  padding: 12px 28px;
+  border: 3px solid;
+  image-rendering: pixelated;
+  position: relative;
+  transition: all 150ms ease;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.pixel-btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent-glow);
+  color: white;
+  box-shadow:
+    4px 4px 0 rgba(0, 0, 0, 0.4),
+    0 0 12px rgba(75, 45, 142, 0.3);
+}
+
+.pixel-btn-primary:hover {
+  background: var(--color-accent-hover);
+  transform: translateY(-2px);
+  box-shadow:
+    6px 6px 0 rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(75, 45, 142, 0.5);
+}
+
+.pixel-btn-primary:active {
+  transform: translateY(2px);
+  box-shadow:
+    2px 2px 0 rgba(0, 0, 0, 0.4),
+    0 0 8px rgba(75, 45, 142, 0.2);
+}
+
+.pixel-btn-secondary {
+  background: transparent;
+  border-color: var(--color-accent);
+  color: var(--color-accent-glow);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.pixel-btn-secondary:hover {
+  background: rgba(75, 45, 142, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* --- Pixel card --- */
+.pixel-card {
+  background: #131923;
+  border: 2px solid #2a2a3a;
+  position: relative;
+  padding: 24px;
+  transition: all 200ms ease;
+}
+
+.pixel-card::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid transparent;
+  pointer-events: none;
+  transition: border-color 200ms ease;
+}
+
+.pixel-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 0 rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(75, 45, 142, 0.2);
+}
+
+.pixel-card:hover::before {
+  border-color: rgba(75, 45, 142, 0.3);
+}
+
+/* --- Digimon sprite container --- */
+.digi-sprite {
+  --sw: -256px;
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  background-size: 256px 256px;
+  animation: spriteWalk 0.5s steps(4) infinite;
+}
+
+.digi-sprite-lg {
+  --sw: -512px;
+  width: 128px;
+  height: 128px;
+  background-size: 512px 512px;
+}
+
+/* Walk right (row 2, y=128 in 256px sheet) */
+.digi-walk-right {
+  background-position-y: -128px;
+}
+.digi-walk-right.digi-sprite-lg {
+  background-position-y: -256px;
+}
+
+/* Walk left (row 1, y=64 in 256px sheet) */
+.digi-walk-left {
+  background-position-y: -64px;
+}
+.digi-walk-left.digi-sprite-lg {
+  background-position-y: -128px;
+}
+
+/* Walk down (row 0) */
+.digi-walk-down {
+  background-position-y: 0;
+}
+
+/* --- Walking Digimon across screen --- */
+.digi-walker {
+  position: fixed;
+  pointer-events: auto;
+  z-index: 40;
+}
+
+/* --- Pixel art stars background --- */
+.pixel-stars {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pixel-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(123, 95, 191, 0.6);
+  animation: starTwinkle var(--duration, 3s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+/* --- Grid terrain overlay for sections --- */
+.pixel-grid-bg {
+  background-image:
+    linear-gradient(rgba(75, 45, 142, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(75, 45, 142, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* --- FAQ pixel style --- */
+.pixel-faq summary {
+  font-family: 'Silkscreen', cursive;
+  font-size: 0.75rem;
+  padding: 16px 20px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2px solid #2a2a3a;
+  background: #131923;
+  color: #e5e5e5;
+  transition: all 150ms ease;
+}
+
+.pixel-faq summary:hover {
+  border-color: var(--color-accent);
+  background: #1a1f2e;
+}
+
+.pixel-faq summary::after {
+  content: '>';
+  font-family: 'Silkscreen', cursive;
+  color: var(--color-accent-glow);
+  transition: transform 150ms ease;
+}
+
+.pixel-faq[open] summary {
+  border-color: var(--color-accent);
+  background: #1a1f2e;
+}
+
+.pixel-faq[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.pixel-faq .pixel-faq-answer {
+  padding: 16px 20px;
+  font-size: 0.875rem;
+  color: #94A3B8;
+  line-height: 1.65;
+  border: 2px solid #2a2a3a;
+  border-top: none;
+  background: #0f1320;
+}
+
+/* --- Section divider (pixel art) --- */
+.pixel-divider {
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-accent) 0px,
+    var(--color-accent) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  opacity: 0.4;
+}
+
+/* --- Responsive landing --- */
+@media (max-width: 768px) {
+  .pixel-btn {
+    font-size: 0.7rem;
+    padding: 10px 20px;
   }
 }

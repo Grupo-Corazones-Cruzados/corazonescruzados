@@ -242,7 +242,7 @@ export default function FloatingTasksWidget({ onOpenTasksModal, onOpenTaskDetail
               </div>
             ) : (
               incidents.map((inc) => {
-                const cfg = STATUS_ICON[inc.status];
+                const cfg = STATUS_ICON[inc.status] || STATUS_ICON.pending;
                 const Icon = cfg.icon;
                 return (
                   <div

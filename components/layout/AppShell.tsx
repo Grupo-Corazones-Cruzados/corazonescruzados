@@ -8,7 +8,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-[100dvh] w-screen overflow-hidden">
+    <div className="flex h-[100dvh] w-screen overflow-hidden app-shell-locked">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-col flex-1 overflow-hidden min-w-0 max-w-full">
         <TopBar onMenuToggle={() => setSidebarOpen(v => !v)} />

@@ -5,6 +5,7 @@ import path from 'path';
 const LINKS_FILE = path.join(process.cwd(), 'data', 'agent-links.json');
 const PORTS_FILE = path.join(process.cwd(), 'data', 'agent-ports.json');
 const URLS_FILE = path.join(process.cwd(), 'data', 'agent-urls.json');
+const DB_URLS_FILE = path.join(process.cwd(), 'data', 'agent-db-urls.json');
 
 async function readJson(file: string): Promise<Record<string, any>> {
   try {
@@ -27,7 +28,8 @@ export async function GET() {
   const ports = await readJson(PORTS_FILE);
   const urls = await readJson(URLS_FILE);
   // Merge into single response: { agentId: { projectPath, port, productionUrl } }
-  const result: Record<string, { projectPath?: string; port?: number; productionUrl?: string }> = {};
+  const dbUrls = await readJson(DB_URLS_FILE);
+  const result: Record<string, { projectPath?: string; port?: number; productionUrl?: string; databaseUrl?: string }> = {};
   for (const [id, path] of Object.entries(links)) {
     result[id] = { projectPath: path as string };
   }
@@ -39,13 +41,17 @@ export async function GET() {
     if (!result[id]) result[id] = {};
     result[id].productionUrl = url as string;
   }
+  for (const [id, dbUrl] of Object.entries(dbUrls)) {
+    if (!result[id]) result[id] = {};
+    result[id].databaseUrl = dbUrl as string;
+  }
   return NextResponse.json(result);
 }
 
 // Set agent config
 export async function PUT(req: Request) {
   try {
-    const { agentId, projectPath, port, productionUrl } = await req.json();
+    const { agentId, projectPath, port, productionUrl, databaseUrl } = await req.json();
     if (!agentId) {
       return NextResponse.json({ error: 'Missing agentId' }, { status: 400 });
     }
@@ -81,6 +87,17 @@ export async function PUT(req: Request) {
         delete urls[agentId];
       }
       await writeJson(URLS_FILE, urls);
+    }
+
+    // Update database URL
+    if (databaseUrl !== undefined) {
+      const dbUrls = await readJson(DB_URLS_FILE);
+      if (databaseUrl) {
+        dbUrls[agentId] = databaseUrl;
+      } else {
+        delete dbUrls[agentId];
+      }
+      await writeJson(DB_URLS_FILE, dbUrls);
     }
 
     return NextResponse.json({ ok: true });

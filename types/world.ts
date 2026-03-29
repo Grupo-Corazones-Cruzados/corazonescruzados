@@ -25,6 +25,9 @@ export interface CitizenDef {
   frameConfig?: FrameConfig; // per-animation selected frame indices (e.g. { idle: [0,2], walk: [0,1,2,3] })
   yShift?: number;           // -15 to 15 — vertical crop offset for sprite extraction (negative = more feet)
   avatarCrop?: { x: number; y: number; size: number }; // face crop for bubble avatar (source pixel coords)
+  walkSheetCols?: number;     // columns in walk sprite sheet (default 4)
+  walkSheetRows?: number;     // rows in walk sprite sheet (default 4)
+  walkRow?: number;           // which row is the walk animation (default 2)
 }
 
 export interface PropInstance {
