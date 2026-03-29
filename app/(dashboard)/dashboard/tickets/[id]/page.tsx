@@ -253,6 +253,7 @@ export default function TicketDetailPage() {
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const todayStr = new Date().toISOString().split('T')[0];
+        const deadlineStr = ticket.deadline ? ticket.deadline.split('T')[0] : '';
         const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
         const dayNames = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
         const toggleDate = (d: string) => setSelectedDates(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort());
@@ -280,10 +281,10 @@ export default function TicketDetailPage() {
                 if (day === null) return <div key={`e${i}`} />;
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const isSelected = selectedDates.includes(dateStr);
-                const isPast = dateStr < todayStr;
+                const isOutOfRange = dateStr < todayStr || (!!deadlineStr && dateStr > deadlineStr);
                 return (
-                  <button key={dateStr} onClick={() => !isPast && toggleDate(dateStr)} disabled={isPast}
-                    className={`py-1.5 text-[10px] text-center border transition-colors ${isSelected ? 'bg-accent/30 border-accent text-white' : isPast ? 'border-transparent text-digi-muted/30 cursor-default' : 'border-digi-border/30 text-digi-text hover:border-accent/50 hover:bg-accent/10'}`}
+                  <button key={dateStr} onClick={() => !isOutOfRange && toggleDate(dateStr)} disabled={isOutOfRange}
+                    className={`py-1.5 text-[10px] text-center border transition-colors ${isSelected ? 'bg-accent/30 border-accent text-white' : isOutOfRange ? 'border-transparent text-digi-muted/30 cursor-default' : 'border-digi-border/30 text-digi-text hover:border-accent/50 hover:bg-accent/10'}`}
                     style={{ fontFamily: "'JetBrains Mono', monospace" }}>{day}</button>
                 );
               })}
