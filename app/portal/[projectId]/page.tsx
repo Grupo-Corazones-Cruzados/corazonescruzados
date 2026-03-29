@@ -77,9 +77,11 @@ export default function PortalPage() {
   const [fullIncidents, setFullIncidents] = useState<Record<string, Incident>>({});
 
   const fetchIncidents = async () => {
-    const res = await fetch(`/api/incidents?projectId=${projectId}`);
-    const data = await res.json();
-    setIncidents(data);
+    try {
+      const res = await fetch(`/api/incidents?projectId=${projectId}`);
+      const data = await res.json();
+      setIncidents(Array.isArray(data) ? data : data.data || []);
+    } catch { /* ignore */ }
     setLoading(false);
   };
 
