@@ -4,7 +4,7 @@ export const SRI_CONFIG = {
   // Emisor
   ruc: '0930095922001',
   razonSocial: 'GONZALEZ MUYULEMA LUIS FERNANDO',
-  nombreComercial: 'GCC WORLD',
+  nombreComercial: 'GRUPO CORAZONES CRUZADOS',
   dirMatriz: 'Barrio 7 Lagos, Calle Tabacundo #12, Guasmo Central',
   dirEstablecimiento: 'Barrio 7 Lagos, Calle Tabacundo #12, Guasmo Central',
   obligadoContabilidad: 'NO',

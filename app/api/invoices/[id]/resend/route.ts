@@ -20,7 +20,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!emails?.length) return NextResponse.json({ error: 'Correos requeridos' }, { status: 400 });
 
     const { rows: [inv] } = await pool.query(
-      `SELECT invoice_number, total, pdf_data, authorization_number, client_name_sri FROM gcc_world.invoices WHERE id = $1`, [id]
+      `SELECT invoice_number, total, pdf_data, authorization_number, client_name_sri, project_id FROM gcc_world.invoices WHERE id = $1`, [id]
     );
     if (!inv) return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 });
     if (!inv.pdf_data) return NextResponse.json({ error: 'PDF no disponible' }, { status: 400 });
@@ -30,6 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await getResend().emails.send({
       from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
       to: emails,
+      bcc: 'lfgonzalezm0@grupocc.org',
       subject: `Factura Electrónica ${inv.invoice_number} — GCC World`,
       html: `<div style="font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;padding:0;margin:0;">
 <div style="max-width:600px;margin:0 auto;background:#ffffff;">
@@ -45,7 +46,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Razon Social:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">GONZALEZ MUYULEMA LUIS FERNANDO</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Valor Total:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#1a1a2e;">$${Number(inv.total).toFixed(2)}</td></tr>
     </table>
-    <p style="color:#888;font-size:12px;margin:24px 0 0;text-align:center;">Este documento fue generado electronicamente y es valido sin firma ni sello segun la normativa del SRI Ecuador.</p>
+    ${inv.project_id ? `<div style="text-align:center;margin:24px 0 0;">
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/proyecto/${inv.project_id}" style="display:inline-block;padding:12px 24px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;border-radius:4px;">Ver Detalle del Proyecto</a>
+    </div>` : ''}
+    <p style="color:#888;font-size:12px;margin:16px 0 0;text-align:center;">Este documento fue generado electronicamente y es valido sin firma ni sello segun la normativa del SRI Ecuador.</p>
   </div>
   <div style="height:3px;background:#4B2D8E;"></div>
 </div>
