@@ -19,138 +19,138 @@ interface RideData {
   total: number;
 }
 
-/**
- * Genera el RIDE (PDF) de la factura
- * Returns a Buffer with the PDF content
- */
 export async function generateRidePdf(data: RideData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
     const chunks: Buffer[] = [];
-
     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    const w = doc.page.width - 80; // usable width
-    const col1 = 40; // left margin
+    const W = doc.page.width - 80;
+    const L = 40;
+    const purple = '#4B2D8E';
+    let y = 40;
 
-    // ─── Header ───
-    doc.fontSize(14).font('Helvetica-Bold').text(SRI_CONFIG.razonSocial, col1, 40, { width: w / 2 });
-    doc.fontSize(8).font('Helvetica').text(`RUC: ${SRI_CONFIG.ruc}`, col1, 58);
-    doc.text(SRI_CONFIG.regimenMicroempresas, col1, 68);
-    doc.text(`Obligado Contabilidad: ${SRI_CONFIG.obligadoContabilidad}`, col1, 78);
-    doc.text(`Dir. Matriz: ${SRI_CONFIG.dirMatriz}`, col1, 88);
-    doc.text(`Dir. Establecimiento: ${SRI_CONFIG.dirEstablecimiento}`, col1, 98);
+    // ─── Emisor (left side) ───
+    const leftW = W * 0.55;
+    const rightW = W * 0.42;
+    const rightX = L + W - rightW;
 
-    // Right side — invoice info box
-    const boxX = w / 2 + 60;
-    const boxW = w / 2 - 20;
-    doc.rect(boxX, 35, boxW, 85).stroke('#4B2D8E');
-    doc.fontSize(9).font('Helvetica-Bold').fillColor('#4B2D8E').text('FACTURA', boxX + 10, 42, { width: boxW - 20, align: 'center' });
-    doc.fillColor('black').fontSize(8).font('Helvetica-Bold').text(`No. ${data.numeroFactura}`, boxX + 10, 56, { width: boxW - 20, align: 'center' });
-    doc.font('Helvetica').fontSize(7);
-    doc.text(`Ambiente: ${SRI_CONFIG.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}`, boxX + 10, 72);
-    doc.text(`Emisión: ${SRI_CONFIG.tipoEmision === '1' ? 'NORMAL' : 'CONTINGENCIA'}`, boxX + 10, 82);
-    doc.text(`Fecha: ${data.fechaEmision}`, boxX + 10, 92);
+    doc.fontSize(11).font('Helvetica-Bold').text(SRI_CONFIG.razonSocial, L, y, { width: leftW });
+    y = doc.y + 4;
 
-    // Clave de acceso
-    doc.fontSize(6).text('CLAVE DE ACCESO:', boxX + 10, 104);
-    doc.fontSize(6).font('Courier').text(data.claveAcceso, boxX + 10, 112, { width: boxW - 20 });
+    doc.fontSize(7).font('Helvetica').fillColor('#333');
+    doc.text(`RUC: ${SRI_CONFIG.ruc}`, L, y); y += 10;
+    doc.text(`Obligado Contabilidad: ${SRI_CONFIG.obligadoContabilidad}`, L, y); y += 10;
+    doc.text(`Dir. Matriz: ${SRI_CONFIG.dirMatriz}`, L, y, { width: leftW }); y = doc.y + 4;
+    doc.text(`Dir. Establecimiento: ${SRI_CONFIG.dirEstablecimiento}`, L, y, { width: leftW }); y = doc.y + 4;
 
-    // Autorización
-    let y = 130;
+    // ─── Invoice info box (right side) ───
+    const boxY = 40;
+    const boxH = y - boxY + 5;
+    doc.rect(rightX, boxY, rightW, boxH).stroke(purple);
+    doc.fontSize(10).font('Helvetica-Bold').fillColor(purple).text('FACTURA', rightX, boxY + 8, { width: rightW, align: 'center' });
+    doc.fontSize(8).fillColor('#333').font('Helvetica-Bold').text(`No. ${data.numeroFactura}`, rightX, boxY + 22, { width: rightW, align: 'center' });
+    doc.font('Helvetica').fontSize(7).fillColor('#555');
+    let ry = boxY + 36;
+    doc.text(`Ambiente: ${SRI_CONFIG.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}`, rightX + 8, ry); ry += 10;
+    doc.text(`Emisión: NORMAL`, rightX + 8, ry); ry += 10;
+    doc.text(`Fecha: ${data.fechaEmision}`, rightX + 8, ry); ry += 12;
+    doc.fontSize(6).fillColor('#666');
+    doc.text('CLAVE DE ACCESO:', rightX + 8, ry); ry += 8;
+    doc.font('Courier').fontSize(5.5).text(data.claveAcceso, rightX + 8, ry, { width: rightW - 16 });
+
+    y += 10;
+
+    // ─── Autorización ───
     if (data.numeroAutorizacion) {
-      doc.font('Helvetica').fontSize(6).text('No. AUTORIZACIÓN:', col1, y);
-      doc.font('Courier').fontSize(6).text(data.numeroAutorizacion, col1 + 80, y, { width: w - 80 });
-      y += 10;
-      doc.font('Helvetica').text(`Fecha Autorización: ${data.fechaAutorizacion}`, col1, y);
-      y += 14;
+      doc.font('Helvetica').fontSize(7).fillColor('#333');
+      doc.text(`No. AUTORIZACIÓN:    ${data.numeroAutorizacion}`, L, y, { width: W }); y += 10;
+      doc.text(`Fecha Autorización: ${data.fechaAutorizacion}`, L, y); y += 14;
     } else {
       y += 10;
     }
 
-    // ─── Client info ───
-    doc.rect(col1, y, w, 55).stroke();
-    y += 5;
-    doc.fontSize(7).font('Helvetica');
-    doc.text(`Razón Social / Nombres: ${data.clienteNombre}`, col1 + 5, y);
-    y += 12;
-    doc.text(`RUC / CI: ${data.clienteRuc}`, col1 + 5, y);
-    doc.text(`Teléfono: ${data.clienteTelefono}`, col1 + w / 2, y);
-    y += 12;
-    doc.text(`Dirección: ${data.clienteDireccion}`, col1 + 5, y);
-    y += 12;
-    doc.text(`Email: ${data.clienteEmail}`, col1 + 5, y);
-    y += 20;
+    // ─── Cliente box ───
+    doc.rect(L, y, W, 55).stroke('#ccc');
+    const cy = y + 6;
+    doc.fontSize(7).font('Helvetica').fillColor('#333');
+    doc.text(`Razón Social / Nombres: ${data.clienteNombre}`, L + 8, cy, { width: W - 16 });
+    doc.text(`RUC / CI: ${data.clienteRuc}`, L + 8, cy + 12);
+    doc.text(`Teléfono: ${data.clienteTelefono}`, L + W / 2, cy + 12);
+    doc.text(`Dirección: ${data.clienteDireccion}`, L + 8, cy + 24, { width: W - 16 });
+    doc.text(`Email: ${data.clienteEmail}`, L + 8, cy + 36);
+    y += 62;
 
     // ─── Items table ───
-    const colWidths = [w * 0.05, w * 0.45, w * 0.12, w * 0.13, w * 0.12, w * 0.13];
-    const headers = ['#', 'Descripción', 'Cant.', 'P. Unit.', 'IVA %', 'Subtotal'];
+    const cols = [
+      { header: '#', width: W * 0.05, align: 'center' as const },
+      { header: 'Descripción', width: W * 0.40, align: 'left' as const },
+      { header: 'Cant.', width: W * 0.10, align: 'right' as const },
+      { header: 'P. Unit.', width: W * 0.14, align: 'right' as const },
+      { header: 'IVA %', width: W * 0.10, align: 'right' as const },
+      { header: 'Subtotal', width: W * 0.14, align: 'right' as const },
+    ];
 
-    // Header row
-    doc.rect(col1, y, w, 14).fill('#4B2D8E');
+    // Header
+    doc.rect(L, y, W, 16).fill(purple);
     doc.fillColor('white').font('Helvetica-Bold').fontSize(7);
-    let hx = col1 + 3;
-    headers.forEach((h, i) => {
-      doc.text(h, hx, y + 3, { width: colWidths[i] - 6, align: i > 1 ? 'right' : 'left' });
-      hx += colWidths[i];
+    let hx = L;
+    cols.forEach(col => {
+      doc.text(col.header, hx + 4, y + 4, { width: col.width - 8, align: col.align });
+      hx += col.width;
     });
-    y += 14;
+    y += 16;
 
-    // Items
-    doc.fillColor('black').font('Helvetica').fontSize(7);
+    // Rows
+    doc.font('Helvetica').fontSize(7).fillColor('#333');
     data.items.forEach((item, idx) => {
-      const rowH = 12;
-      if (idx % 2 === 1) doc.rect(col1, y, w, rowH).fill('#f5f5f5');
-      doc.fillColor('black');
-      let ix = col1 + 3;
+      const rowH = 14;
+      if (idx % 2 === 1) { doc.rect(L, y, W, rowH).fill('#f8f8f8'); doc.fillColor('#333'); }
+      let rx = L;
       const vals = [
         String(idx + 1),
-        item.description,
+        item.description.length > 55 ? item.description.substring(0, 55) + '...' : item.description,
         item.quantity.toFixed(2),
         item.unitPrice.toFixed(2),
         `${item.ivaRate}%`,
         item.subtotal.toFixed(2),
       ];
       vals.forEach((v, i) => {
-        doc.text(v, ix, y + 2, { width: colWidths[i] - 6, align: i > 1 ? 'right' : 'left' });
-        ix += colWidths[i];
+        doc.text(v, rx + 4, y + 3, { width: cols[i].width - 8, align: cols[i].align });
+        rx += cols[i].width;
       });
       y += rowH;
     });
 
-    y += 10;
+    y += 12;
 
     // ─── Totals ───
-    const totX = col1 + w * 0.6;
-    const totW = w * 0.4;
+    const totX = L + W * 0.56;
+    const totW = W * 0.44;
     const totals = [
       ['SUBTOTAL 0%', data.subtotal0.toFixed(2)],
       ['SUBTOTAL IVA', data.subtotalIva.toFixed(2)],
       ['IVA', data.ivaMonto.toFixed(2)],
       ['TOTAL', data.total.toFixed(2)],
     ];
-
     totals.forEach(([label, val], i) => {
       const isLast = i === totals.length - 1;
       if (isLast) {
-        doc.rect(totX, y, totW, 14).fill('#4B2D8E');
-        doc.fillColor('white').font('Helvetica-Bold');
+        doc.rect(totX, y, totW, 16).fill(purple);
+        doc.fillColor('white').font('Helvetica-Bold').fontSize(8);
       } else {
-        doc.fillColor('black').font('Helvetica');
+        doc.fillColor('#333').font('Helvetica').fontSize(7);
       }
-      doc.fontSize(7).text(label, totX + 5, y + 3, { width: totW / 2 - 10 });
-      doc.text(val, totX + totW / 2, y + 3, { width: totW / 2 - 5, align: 'right' });
-      y += 14;
+      doc.text(label, totX + 8, y + (isLast ? 4 : 3), { width: totW / 2 - 12 });
+      doc.text(val, totX + totW / 2, y + (isLast ? 4 : 3), { width: totW / 2 - 8, align: 'right' });
+      y += isLast ? 16 : 14;
     });
 
-    doc.fillColor('black');
-    y += 20;
-
     // ─── Footer ───
-    doc.fontSize(6).font('Helvetica').fillColor('#666');
-    doc.text('Documento generado electrónicamente — GCC World', col1, y, { width: w, align: 'center' });
+    doc.fillColor('#999').font('Helvetica').fontSize(6);
+    doc.text('Documento generado electrónicamente — GCC World', L, y + 20, { width: W, align: 'center' });
 
     doc.end();
   });

@@ -162,20 +162,16 @@ export default function InvoiceDetailPage() {
               <div className="space-y-2">
                 <div>
                   <label className="text-[8px] text-digi-muted block mb-0.5" style={pf}>Clave de Acceso</label>
-                  <div className="flex gap-1">
-                    <input value={invoice.access_key} readOnly className="flex-1 px-2 py-1 bg-digi-darker border border-digi-border text-[8px] text-digi-text focus:outline-none" style={mf} />
-                    <button onClick={() => { navigator.clipboard.writeText(invoice.access_key); toast.success('Copiado'); }}
-                      className="px-2 py-1 text-[7px] border border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Copiar</button>
-                  </div>
+                  <p className="text-[7px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.access_key}</p>
+                  <button onClick={() => { navigator.clipboard.writeText(invoice.access_key); toast.success('Clave copiada'); }}
+                    className="text-[7px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>Copiar clave</button>
                 </div>
                 {invoice.authorization_number && (
                   <div>
                     <label className="text-[8px] text-digi-muted block mb-0.5" style={pf}>No. Autorizacion</label>
-                    <div className="flex gap-1">
-                      <input value={invoice.authorization_number} readOnly className="flex-1 px-2 py-1 bg-digi-darker border border-digi-border text-[8px] text-digi-text focus:outline-none" style={mf} />
-                      <button onClick={() => { navigator.clipboard.writeText(invoice.authorization_number); toast.success('Copiado'); }}
-                        className="px-2 py-1 text-[7px] border border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Copiar</button>
-                    </div>
+                    <p className="text-[7px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.authorization_number}</p>
+                    <button onClick={() => { navigator.clipboard.writeText(invoice.authorization_number); toast.success('Autorizacion copiada'); }}
+                      className="text-[7px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>Copiar autorizacion</button>
                   </div>
                 )}
               </div>
