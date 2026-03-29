@@ -67,6 +67,21 @@ export default function ProjectDetailPage() {
   const [acceptedMembers, setAcceptedMembers] = useState<any[]>([]);
   const [counterCosts, setCounterCosts] = useState<Record<number, string>>({});
 
+  // Invite states
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [allMembers, setAllMembers] = useState<any[]>([]);
+  const [selectedInvites, setSelectedInvites] = useState<Set<number>>(new Set());
+  const [inviting, setInviting] = useState(false);
+
+  // Bid/Postulation states
+  const [showBidModal, setShowBidModal] = useState(false);
+  const [bidProposal, setBidProposal] = useState('');
+  const [bidAmount, setBidAmount] = useState('');
+  const [bidDays, setBidDays] = useState('');
+  const [bidReqIds, setBidReqIds] = useState<number[]>([]);
+  const [bidReqCosts, setBidReqCosts] = useState<Record<number, string>>({});
+  const [submittingBid, setSubmittingBid] = useState(false);
+
   const isAdmin = user?.role === 'admin';
   const isMember = user?.role === 'member';
   const memberId = user?.member_id;
@@ -132,6 +147,82 @@ export default function ProjectDetailPage() {
     toast.success('Limite actualizado');
   };
 
+  // --- Invite members ---
+  const openInviteModal = async () => {
+    try {
+      const res = await fetch('/api/members/list');
+      const data = await res.json();
+      setAllMembers(data.data || []);
+    } catch { /* */ }
+    setSelectedInvites(new Set());
+    setShowInviteModal(true);
+  };
+
+  const sendInvites = async () => {
+    if (selectedInvites.size === 0) return;
+    setInviting(true);
+    try {
+      await fetch(`/api/projects/${id}/invite`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ member_ids: Array.from(selectedInvites) }),
+      });
+      toast.success(`${selectedInvites.size} miembros invitados`);
+      setShowInviteModal(false);
+      fetchProject();
+    } catch { toast.error('Error al invitar'); }
+    finally { setInviting(false); }
+  };
+
+  // --- Submit bid/postulation ---
+  const submitBid = async () => {
+    if (!bidProposal.trim()) { toast.error('Escribe una propuesta'); return; }
+    if (bidReqIds.length === 0) { toast.error('Selecciona al menos un requerimiento'); return; }
+
+    // Calculate total from per-requirement costs
+    const totalBid = bidReqIds.reduce((sum, rid) => sum + (Number(bidReqCosts[rid]) || 0), 0);
+
+    setSubmittingBid(true);
+    try {
+      // Build requirement_costs map {reqId: cost}
+      const reqCostsMap: Record<string, number> = {};
+      bidReqIds.forEach(rid => { reqCostsMap[String(rid)] = Number(bidReqCosts[rid]) || 0; });
+
+      if (myBid?.status === 'invited') {
+        // Update existing invited bid with proposal
+        await fetch(`/api/projects/${id}/bids`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bid_id: myBid.id,
+            proposal: bidProposal.trim(),
+            bid_amount: totalBid || null,
+            requirement_ids: bidReqIds,
+            requirement_costs: reqCostsMap,
+            work_dates: [],
+          }),
+        });
+      } else {
+        // Create new bid
+        await fetch(`/api/projects/${id}/bids`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            member_id: memberId,
+            proposal: bidProposal.trim(),
+            bid_amount: totalBid || null,
+            estimated_days: bidDays ? Number(bidDays) : null,
+            requirement_ids: bidReqIds,
+            requirement_costs: reqCostsMap,
+            status: 'pending',
+          }),
+        });
+      }
+      toast.success('Propuesta enviada');
+      setShowBidModal(false);
+      setBidProposal(''); setBidAmount(''); setBidDays(''); setBidReqIds([]); setBidReqCosts({});
+      fetchProject();
+    } catch { toast.error('Error al enviar propuesta'); }
+    finally { setSubmittingBid(false); }
+  };
+
   // --- Actions ---
   const updateStatus = async (status: string) => {
     await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
@@ -188,8 +279,22 @@ export default function ProjectDetailPage() {
   const openAssignModal = (reqId: number) => {
     setAssignReqId(reqId);
     setAssignMemberId('');
-    setAssignCost('');
+    // Pre-fill cost from requirement's reference cost
+    const req = reqs.find((r: any) => r.id === reqId);
+    setAssignCost(req?.cost ? String(req.cost) : '');
     setShowAssignModal(true);
+  };
+
+  // When member is selected in assign modal, try to use their bid cost for this requirement
+  const handleAssignMemberChange = (mId: string) => {
+    setAssignMemberId(mId);
+    if (!mId || !assignReqId) return;
+    const bid = bids.find((b: any) => String(b.member_id) === mId && b.status === 'accepted');
+    if (bid?.requirement_ids?.includes(assignReqId) || bid?.requirement_ids?.includes(Number(assignReqId))) {
+      // Member proposed for this requirement — use their bid amount proportionally or the req reference cost
+      const req = reqs.find((r: any) => r.id === assignReqId);
+      if (req?.cost) setAssignCost(String(req.cost));
+    }
   };
 
   const submitAssignment = async () => {
@@ -248,7 +353,15 @@ export default function ProjectDetailPage() {
   const bids = project.bids || [];
   const incidents = project.incidents || [];
   const linkedDigiName = digiProjects.find((d: any) => d.id === project.digimundo_project_id)?.name;
-  const canEditReqs = isOwner || bids.some((b: any) => b.member_id == memberId && b.status === 'accepted');
+  const canEditReqs = isOwner; // owner can always edit all
+  // Check if current member is assigned (accepted) to a specific requirement
+  const canMemberEditReq = (reqId: number) => {
+    if (isOwner) return true;
+    if (!isMember || !memberId) return false;
+    const req = reqs.find((r: any) => r.id === reqId);
+    if (!req) return false;
+    return (req.assignments || []).some((a: any) => String(a.member_id) === String(memberId) && a.status === 'accepted');
+  };
   // Total cost = sum of accepted assignment costs (member_cost if negotiated, else proposed_cost)
   const totalAcceptedCost = reqs.reduce((sum: number, r: any) => {
     const accepted = (r.assignments || []).filter((a: any) => a.status === 'accepted');
@@ -256,6 +369,11 @@ export default function ProjectDetailPage() {
   }, 0);
   const isTerminal = ['completed', 'closed', 'cancelled'].includes(project.status);
   const hasReqs = reqs.length > 0;
+  const myBid = bids.find((b: any) => String(b.member_id) === String(memberId));
+  const canBidNew = isMember && !isOwner && !myBid && (project.status === 'open' || (project.status === 'draft' && !project.is_private));
+  const canBidInvited = isMember && !isOwner && myBid?.status === 'invited';
+  const canBid = canBidNew || canBidInvited;
+  const canInvite = isOwner && !isTerminal;
 
   return (
     <div>
@@ -326,24 +444,49 @@ export default function ProjectDetailPage() {
                 {reqs.map((r: any) => {
                   const assignments = r.assignments || [];
                   const items = r.items || [];
+                  const canEditThis = canMemberEditReq(r.id);
+                  const assignedMemberName = assignments.find((a: any) => a.status === 'accepted')?.member_name;
                   return (
                     <div key={r.id} className="px-2.5 py-2 border border-digi-border/50">
                       <div className="flex items-start gap-2">
                         <button
-                          onClick={() => canEditReqs && toggleReqComplete(r.id, !r.is_completed)}
-                          className={`text-[10px] mt-0.5 ${r.is_completed ? 'text-green-400' : 'text-digi-muted'} ${canEditReqs ? 'cursor-pointer hover:text-accent-glow' : ''}`}
+                          onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
+                          className={`text-[10px] mt-0.5 ${r.is_completed ? 'text-green-400' : 'text-digi-muted'} ${canEditThis ? 'cursor-pointer hover:text-accent-glow' : ''}`}
                           style={pf}
-                          disabled={!canEditReqs}
+                          disabled={!canEditThis}
                         >
                           {r.is_completed ? '[x]' : '[ ]'}
                         </button>
                         <div className="min-w-0 flex-1">
                           <p className={`text-xs ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</p>
                           {r.description && <p className="text-[10px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
+                          {(() => {
+                            const acceptedAssignments = assignments.filter((a: any) => a.status === 'accepted');
+                            if (acceptedAssignments.length === 0) return null;
+                            return (
+                              <div className="flex items-center gap-1 mt-1">
+                                {acceptedAssignments.map((a: any) => (
+                                  <div key={a.id} className="relative group/avatar">
+                                    {a.photo_url ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={a.photo_url} alt="" className="w-5 h-5 rounded-full border border-accent/50 object-cover" />
+                                    ) : (
+                                      <div className="w-5 h-5 rounded-full border border-accent/50 bg-accent/20 flex items-center justify-center text-[7px] text-accent-glow" style={pf}>
+                                        {(a.member_name || '?')[0].toUpperCase()}
+                                      </div>
+                                    )}
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-digi-card border border-digi-border text-[8px] text-white whitespace-nowrap opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none z-10" style={mf}>
+                                      {a.member_name}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {r.cost && <span className="text-[9px] text-accent-glow" style={mf}>${r.cost}</span>}
-                          {canEditReqs && (
+                          {isOwner && (
                             <button onClick={() => deleteRequirement(r.id)} className="text-[8px] text-red-400/50 hover:text-red-400 transition-colors" style={pf}>x</button>
                           )}
                         </div>
@@ -353,7 +496,19 @@ export default function ProjectDetailPage() {
                       <div className="mt-1.5 ml-5 space-y-1">
                         {assignments.map((a: any) => (
                           <div key={a.id} className="flex items-center gap-1.5 flex-wrap px-1.5 py-1 border border-accent/20 bg-accent/5">
-                            <span className="text-[8px] text-accent-glow" style={pf}>{a.member_name}</span>
+                            <div className="relative group/asgn">
+                              {a.photo_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={a.photo_url} alt="" className="w-5 h-5 rounded-full border border-accent/50 object-cover" />
+                              ) : (
+                                <div className="w-5 h-5 rounded-full border border-accent/50 bg-accent/20 flex items-center justify-center text-[7px] text-accent-glow" style={pf}>
+                                  {(a.member_name || '?')[0].toUpperCase()}
+                                </div>
+                              )}
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-digi-card border border-digi-border text-[8px] text-white whitespace-nowrap opacity-0 group-hover/asgn:opacity-100 transition-opacity pointer-events-none z-10" style={mf}>
+                                {a.member_name}
+                              </div>
+                            </div>
                             <span className="text-[8px] text-digi-muted" style={mf}>
                               Propuesto: ${a.proposed_cost}
                               {a.member_cost != null && ` → Contra: $${a.member_cost}`}
@@ -385,8 +540,8 @@ export default function ProjectDetailPage() {
                           </div>
                         ))}
 
-                        {/* Assign button (owner only, confirmed project) */}
-                        {isOwner && (project.confirmed_at || isMemberCreator) && (
+                        {/* Assign button (owner only) */}
+                        {isOwner && (isAdmin || project.confirmed_at || isMemberCreator) && (
                           <button onClick={() => openAssignModal(r.id)} className="text-[8px] text-digi-muted hover:text-accent-glow border border-digi-border/30 hover:border-accent/30 px-1.5 py-0.5 transition-colors" style={pf}>
                             + Asignar miembro
                           </button>
@@ -399,15 +554,15 @@ export default function ProjectDetailPage() {
                           {items.map((item: any) => (
                             <div key={item.id} className="flex items-center gap-1.5 group">
                               <button
-                                onClick={() => canEditReqs && toggleSubItem(item.id, !item.is_completed)}
+                                onClick={() => canEditThis && toggleSubItem(item.id, !item.is_completed)}
                                 className={`text-[8px] ${item.is_completed ? 'text-green-400' : 'text-digi-muted'}`}
                                 style={pf}
-                                disabled={!canEditReqs}
+                                disabled={!canEditThis}
                               >
                                 {item.is_completed ? '[x]' : '[ ]'}
                               </button>
                               <span className={`text-[9px] flex-1 ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
-                              {canEditReqs && (
+                              {canEditThis && (
                                 <button onClick={() => deleteSubItem(item.id)} className="text-[7px] text-red-400/0 group-hover:text-red-400/60 hover:!text-red-400 transition-colors" style={pf}>x</button>
                               )}
                             </div>
@@ -416,7 +571,7 @@ export default function ProjectDetailPage() {
                       )}
 
                       {/* Add sub-item input */}
-                      {canEditReqs && (
+                      {canEditThis && (
                         <div className="mt-1.5 ml-5 flex gap-1">
                           <input
                             value={newItemText[r.id] || ''}
@@ -436,17 +591,41 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Participants */}
-          {bids.length > 0 && (
-            <div className="pixel-card">
-              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Participantes</h3>
+          <div className="pixel-card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[10px] text-accent-glow" style={pf}>Participantes</h3>
+              <div className="flex gap-1">
+                {canInvite && (
+                  <button onClick={openInviteModal} className="text-[8px] text-accent-glow border border-accent/50 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>
+                    + Invitar
+                  </button>
+                )}
+                {canBid && (
+                  <button onClick={() => setShowBidModal(true)} className="text-[8px] text-green-400 border border-green-500/30 px-2 py-0.5 hover:bg-green-900/20 transition-colors" style={pf}>
+                    Postularse
+                  </button>
+                )}
+              </div>
+            </div>
+            {bids.length > 0 ? (
               <div className="space-y-2">
                 {bids.map((b: any) => (
-                  <div key={b.id} className="flex items-center justify-between px-2 py-1.5 border border-digi-border/50">
-                    <div>
-                      <span className="text-xs text-digi-text" style={mf}>{b.member_name}</span>
-                      {b.bid_amount && <span className="text-[9px] text-digi-muted ml-2" style={mf}>${b.bid_amount}</span>}
-                    </div>
-                    <div className="flex items-center gap-1.5">
+                  <div key={b.id} className="px-2 py-1.5 border border-digi-border/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {b.photo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={b.photo_url} alt="" className="w-6 h-6 rounded-full border border-accent/50 object-cover shrink-0" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full border border-accent/50 bg-accent/20 flex items-center justify-center text-[8px] text-accent-glow shrink-0" style={pf}>
+                            {(b.member_name || '?')[0].toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-xs text-digi-text" style={mf}>{b.member_name}</span>
+                        {b.bid_amount != null && <span className="text-[9px] text-accent-glow ml-2" style={mf}>${Number(b.bid_amount).toFixed(2)}</span>}
+                        {b.estimated_days && <span className="text-[9px] text-digi-muted ml-1" style={mf}>({b.estimated_days}d)</span>}
+                      </div>
+                    <div className="flex items-center gap-1.5 ml-2">
                       <PixelBadge variant={BID_V[b.status] || 'default'}>{b.status}</PixelBadge>
                       {isOwner && b.status === 'pending' && (
                         <>
@@ -454,12 +633,166 @@ export default function ProjectDetailPage() {
                           <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'rejected' }) }); fetchProject(); }} className="text-[7px] text-red-400 border border-red-500/30 px-1 hover:bg-red-900/20" style={pf}>NO</button>
                         </>
                       )}
+                      {b.status === 'invited' && String(b.member_id) === String(memberId) && (
+                        <button onClick={() => setShowBidModal(true)} className="text-[7px] text-accent-glow border border-accent/30 px-1.5 hover:bg-accent/10 transition-colors" style={pf}>
+                          Enviar Propuesta
+                        </button>
+                      )}
+                      {isOwner && b.status === 'invited' && String(b.member_id) !== String(memberId) && (
+                        <span className="text-[7px] text-yellow-400" style={pf}>Esperando</span>
+                      )}
                     </div>
+                    </div>
+                    {/* Proposal details */}
+                    {b.proposal && (
+                      <div className="mt-1.5 pt-1.5 border-t border-digi-border/30">
+                        <p className="text-[9px] text-digi-muted" style={mf}>{b.proposal}</p>
+                        {b.requirement_ids?.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            <span className="text-[8px] text-digi-muted" style={pf}>Reqs:</span>
+                            {b.requirement_ids.map((rid: number) => {
+                              const req = reqs.find((r: any) => r.id === rid || r.id === Number(rid));
+                              return req ? (
+                                <span key={rid} className="text-[8px] text-accent-glow border border-accent/20 px-1" style={mf}>{req.title}</span>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
+            ) : (
+              <p className="text-[9px] text-digi-muted text-center py-2" style={mf}>Sin participantes aun</p>
+            )}
+          </div>
+
+          {/* Invite Modal */}
+          <PixelModal open={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invitar Miembros" size="md">
+            <div className="space-y-3">
+              <p className="text-[9px] text-digi-muted" style={mf}>Selecciona los miembros que deseas invitar a enviar una propuesta:</p>
+              <div className="max-h-64 overflow-y-auto space-y-1">
+                {allMembers.filter(m => !bids.some((b: any) => String(b.member_id) === String(m.id))).map((m: any) => (
+                  <label key={m.id} className="flex items-center gap-2 px-3 py-2 border border-digi-border/50 cursor-pointer hover:bg-accent/5 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={selectedInvites.has(m.id)}
+                      onChange={() => {
+                        const next = new Set(selectedInvites);
+                        if (next.has(m.id)) next.delete(m.id); else next.add(m.id);
+                        setSelectedInvites(next);
+                      }}
+                      className="accent-[#4B2D8E]"
+                    />
+                    <div className="flex-1">
+                      <span className="text-xs text-digi-text" style={mf}>{m.name}</span>
+                      {m.email && <span className="text-[9px] text-digi-muted ml-2" style={mf}>{m.email}</span>}
+                    </div>
+                    {m.position_name && <PixelBadge variant="default">{m.position_name}</PixelBadge>}
+                  </label>
+                ))}
+                {allMembers.filter(m => !bids.some((b: any) => String(b.member_id) === String(m.id))).length === 0 && (
+                  <p className="text-center text-[9px] text-digi-muted py-4" style={mf}>Todos los miembros ya fueron invitados</p>
+                )}
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
+                <button onClick={() => setShowInviteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
+                <button onClick={sendInvites} disabled={inviting || selectedInvites.size === 0} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                  {inviting ? 'Invitando...' : `Invitar (${selectedInvites.size})`}
+                </button>
+              </div>
             </div>
-          )}
+          </PixelModal>
+
+          {/* Bid/Postulation Modal */}
+          <PixelModal open={showBidModal} onClose={() => setShowBidModal(false)} title="Enviar Propuesta" size="md">
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Propuesta <span className="text-red-400">*</span></label>
+                <textarea value={bidProposal} onChange={e => setBidProposal(e.target.value)} rows={3}
+                  placeholder="Describe tu propuesta, experiencia relevante y como abordarias el proyecto..."
+                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
+              </div>
+
+              <div>
+                <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Dias estimados</label>
+                <input value={bidDays} onChange={e => setBidDays(e.target.value)} type="number" placeholder="Opcional"
+                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              </div>
+
+              {reqs.length > 0 && (
+                <div>
+                  <label className="block text-[9px] text-digi-muted mb-1" style={pf}>
+                    Requerimientos que puedes atender <span className="text-red-400">*</span>
+                  </label>
+                  <p className="text-[8px] text-digi-muted mb-2" style={mf}>Selecciona y especifica tu costo para cada uno</p>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {reqs.map((r: any) => {
+                      const selected = bidReqIds.includes(r.id);
+                      return (
+                        <div key={r.id} className={`border px-3 py-2 transition-colors ${selected ? 'border-accent bg-accent/5' : 'border-digi-border/50'}`}>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => {
+                                if (selected) {
+                                  setBidReqIds(prev => prev.filter(rid => rid !== r.id));
+                                  setBidReqCosts(prev => { const next = { ...prev }; delete next[r.id]; return next; });
+                                } else {
+                                  setBidReqIds(prev => [...prev, r.id]);
+                                }
+                              }}
+                              className="accent-[#4B2D8E]"
+                            />
+                            <span className="text-xs text-digi-text flex-1" style={mf}>{r.title}</span>
+                            {r.cost && <span className="text-[9px] text-digi-muted" style={mf}>Ref: ${r.cost}</span>}
+                          </label>
+                          {selected && (
+                            <div className="mt-1.5 ml-6 flex items-center gap-2">
+                              <span className="text-[8px] text-digi-muted" style={pf}>Tu costo ($):</span>
+                              <input
+                                value={bidReqCosts[r.id] || ''}
+                                onChange={e => setBidReqCosts(prev => ({ ...prev, [r.id]: e.target.value }))}
+                                type="number"
+                                placeholder="0"
+                                className="w-24 px-2 py-1 bg-digi-darker border border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf}
+                              />
+                              {r.cost && (
+                                <button
+                                  onClick={() => setBidReqCosts(prev => ({ ...prev, [r.id]: String(r.cost) }))}
+                                  className="text-[7px] text-accent-glow border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors"
+                                  style={pf}
+                                  title="Usar el costo propuesto por el creador"
+                                >
+                                  Usar ${r.cost}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {bidReqIds.length > 0 && (
+                    <div className="mt-2 flex justify-end">
+                      <span className="text-[9px] text-accent-glow" style={pf}>
+                        Total: ${bidReqIds.reduce((sum, rid) => sum + (Number(bidReqCosts[rid]) || 0), 0).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
+                <button onClick={() => setShowBidModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
+                <button onClick={submitBid} disabled={submittingBid || !bidProposal.trim() || bidReqIds.length === 0} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                  {submittingBid ? 'Enviando...' : 'Enviar Propuesta'}
+                </button>
+              </div>
+            </div>
+          </PixelModal>
 
           {/* Details */}
           <div className="pixel-card">
@@ -657,25 +990,14 @@ export default function ProjectDetailPage() {
             <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Miembro</label>
             <select
               value={assignMemberId}
-              onChange={(e) => setAssignMemberId(e.target.value)}
+              onChange={(e) => handleAssignMemberChange(e.target.value)}
               className="w-full px-2 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none appearance-none cursor-pointer"
               style={{ ...mf, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237B5FBF' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px' }}
             >
               <option value="">Seleccionar miembro...</option>
-              {acceptedMembers.filter((m: any) => m.isAccepted).length > 0 && (
-                <optgroup label="En el proyecto">
-                  {acceptedMembers.filter((m: any) => m.isAccepted).map((m: any) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </optgroup>
-              )}
-              {acceptedMembers.filter((m: any) => !m.isAccepted).length > 0 && (
-                <optgroup label="Otros miembros">
-                  {acceptedMembers.filter((m: any) => !m.isAccepted).map((m: any) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </optgroup>
-              )}
+              {bids.filter((b: any) => b.status === 'accepted').map((b: any) => (
+                <option key={b.member_id} value={b.member_id}>{b.member_name}</option>
+              ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">

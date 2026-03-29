@@ -17,7 +17,32 @@ export async function GET(req: NextRequest) {
     let where = 'WHERE 1=1';
     const params: any[] = [];
 
-    if (status && status !== 'all') {
+    // Access control: private projects only visible to owner, invited members, or admin
+    if (user.role === 'member') {
+      const memberRes = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
+      const mId = memberRes.rows[0]?.member_id;
+      if (mId) {
+        params.push(mId);
+        const mIdx = params.length;
+        where += ` AND (p.is_private = false OR p.assigned_member_id = $${mIdx} OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = $${mIdx}))`;
+
+        // Handle special tabs
+        if (status === 'mine') {
+          where += ` AND p.assigned_member_id = $${mIdx}`;
+        } else if (status === 'invited') {
+          where += ` AND EXISTS (SELECT 1 FROM gcc_world.project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${mIdx} AND pb2.status = 'invited')`;
+        }
+      }
+    } else if (user.role === 'client') {
+      const clientRes = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [user.email]);
+      if (clientRes.rows[0]) {
+        params.push(clientRes.rows[0].id);
+        where += ` AND p.client_id = $${params.length}`;
+      }
+    }
+    // admin sees everything
+
+    if (status && status !== 'all' && status !== 'mine' && status !== 'invited') {
       params.push(status);
       where += ` AND p.status = $${params.length}`;
     }

@@ -20,12 +20,39 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+    // Access control for private projects
+    const project = rows[0];
+    if (project.is_private && user.role !== 'admin') {
+      let hasAccess = false;
+
+      if (user.role === 'member') {
+        const memberRes = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
+        const mId = memberRes.rows[0]?.member_id;
+        if (mId) {
+          // Owner?
+          if (project.assigned_member_id == mId) hasAccess = true;
+          // Invited/accepted?
+          if (!hasAccess) {
+            const bidRes = await pool.query(
+              `SELECT 1 FROM gcc_world.project_bids WHERE project_id = $1 AND member_id = $2 LIMIT 1`, [id, mId]
+            );
+            if (bidRes.rows.length > 0) hasAccess = true;
+          }
+        }
+      } else if (user.role === 'client') {
+        const clientRes = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [user.email]);
+        if (clientRes.rows[0] && project.client_id == clientRes.rows[0].id) hasAccess = true;
+      }
+
+      if (!hasAccess) return NextResponse.json({ error: 'No tienes acceso a este proyecto privado' }, { status: 403 });
+    }
+
     // Get requirements with assigned members and sub-items
     const reqs = await pool.query(
       `SELECT r.*, (r.completed_at IS NOT NULL) as is_completed,
               COALESCE(
                 (SELECT json_agg(json_build_object(
-                  'id', ra.id, 'member_id', ra.member_id, 'member_name', m.name,
+                  'id', ra.id, 'member_id', ra.member_id, 'member_name', m.name, 'photo_url', m.photo_url,
                   'proposed_cost', ra.proposed_cost, 'member_cost', ra.member_cost, 'status', ra.status
                 )) FROM gcc_world.requirement_assignments ra
                 JOIN gcc_world.members m ON m.id = ra.member_id
@@ -47,7 +74,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     // Get bids/participants
     const bids = await pool.query(
-      `SELECT pb.*, m.name as member_name, m.email as member_email
+      `SELECT pb.*, m.name as member_name, m.email as member_email, m.photo_url
        FROM gcc_world.project_bids pb
        JOIN gcc_world.members m ON m.id = pb.member_id
        WHERE pb.project_id = $1
