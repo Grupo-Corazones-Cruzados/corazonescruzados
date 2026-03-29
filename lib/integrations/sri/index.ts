@@ -219,7 +219,7 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
         clienteDireccion: invoice.client_address_sri || '',
         clienteEmail: invoice.client_email_sri || '',
         clienteTelefono: invoice.client_phone_sri || '',
-        formaPago: invoiceData.payments?.[0]?.code || '20',
+        formaPago: options?.paymentCode || '20',
         items: items.map((it: any) => ({
           description: it.description,
           quantity: Number(it.quantity),
