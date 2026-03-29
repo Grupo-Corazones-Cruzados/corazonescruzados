@@ -67,7 +67,8 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     if (data.numeroAutorizacion) {
       doc.font('Helvetica').fontSize(7).fillColor('#333');
       doc.text(`No. AUTORIZACIÓN:    ${data.numeroAutorizacion}`, L, y, { width: W }); y += 10;
-      doc.text(`Fecha Autorización: ${data.fechaAutorizacion}`, L, y); y += 14;
+      const fechaAuth = (() => { try { const d = new Date(data.fechaAutorizacion); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; } catch { return data.fechaAutorizacion; } })();
+      doc.text(`Fecha Autorización: ${fechaAuth}`, L, y); y += 14;
     } else {
       y += 10;
     }
