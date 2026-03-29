@@ -11,8 +11,9 @@ import { cn } from '@/lib/utils';
 import type { Incident, IncidentStatus, IncidentSeverity } from '@/types/incidents';
 import type { ProjectStructure, Module, Section } from '@/types/projects';
 
-const STATUS_CONFIG: Record<IncidentStatus, { label: string; color: string; icon: typeof Clock }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pending:   { label: 'Pendiente',   color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30', icon: Clock },
+  proposal:  { label: 'Propuesta',   color: 'text-orange-400 bg-orange-400/10 border-orange-400/30', icon: AlertTriangle },
   approved:  { label: 'Aprobada',    color: 'text-blue-400 bg-blue-400/10 border-blue-400/30',     icon: CheckCircle },
   rejected:  { label: 'Rechazada',   color: 'text-red-400 bg-red-400/10 border-red-400/30',        icon: XCircle },
   reviewing: { label: 'En revisión', color: 'text-purple-400 bg-purple-400/10 border-purple-400/30', icon: Clock },
@@ -557,9 +558,9 @@ export default function PortalPage() {
             )}
 
             {incidents.map(inc => {
-              const cfg = STATUS_CONFIG[inc.status];
+              const cfg = STATUS_CONFIG[inc.status] || STATUS_CONFIG.pending;
               const Icon = cfg.icon;
-              const sevCfg = SEVERITY_CONFIG[(inc.severity as IncidentSeverity) || 'medium'];
+              const sevCfg = SEVERITY_CONFIG[(inc.severity as IncidentSeverity) || 'medium'] || SEVERITY_CONFIG.medium;
               const isOpen = expanded === inc.id;
               const isEditing = editingId === inc.id;
 
