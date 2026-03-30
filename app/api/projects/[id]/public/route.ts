@@ -64,7 +64,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Get accepted participants/bids (public info only)
     const bids = await pool.query(
-      `SELECT m.name as member_name, m.photo_url, m.position, pb.status
+      `SELECT m.name as member_name, m.photo_url, pb.status
        FROM gcc_world.project_bids pb
        JOIN gcc_world.members m ON m.id = pb.member_id
        WHERE pb.project_id = $1 AND pb.status = 'accepted'
