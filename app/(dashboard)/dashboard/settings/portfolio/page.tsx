@@ -80,20 +80,29 @@ export default function PortfolioPage() {
     setGalleryOpen(true);
   };
 
-  // --- Images form helpers ---
-  const updateImage = (index: number, value: string) => {
-    const next = [...form.images];
-    next[index] = value;
-    setForm({ ...form, images: next });
+  // --- File to base64 helper ---
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleFileUpload = async (files: FileList | null, setter: (imgs: string[]) => void, current: string[]) => {
+    if (!files) return;
+    const newImages = [...current.filter(Boolean)];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      const dataUri = await fileToBase64(file);
+      newImages.push(dataUri);
+    }
+    setter(newImages);
   };
 
-  const addImageField = () => {
-    setForm({ ...form, images: [...form.images, ''] });
-  };
-
-  const removeImageField = (index: number) => {
-    const next = form.images.filter((_, i) => i !== index);
-    setForm({ ...form, images: next.length === 0 ? [''] : next });
+  const removeImage = (index: number, setter: (imgs: string[]) => void, current: string[]) => {
+    const next = current.filter((_, i) => i !== index);
+    setter(next);
   };
 
   const handleSave = async () => {
@@ -199,16 +208,6 @@ export default function PortfolioPage() {
       fetchTeamProjects();
     } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
     finally { setTeamSaving(false); }
-  };
-
-  const teamUpdateImage = (i: number, v: string) => {
-    const next = [...teamForm.images]; next[i] = v;
-    setTeamForm({ ...teamForm, images: next });
-  };
-  const teamAddImage = () => setTeamForm({ ...teamForm, images: [...teamForm.images, ''] });
-  const teamRemoveImage = (i: number) => {
-    const next = teamForm.images.filter((_, idx) => idx !== i);
-    setTeamForm({ ...teamForm, images: next.length === 0 ? [''] : next });
   };
 
   const imageCount = (item: any) => {
@@ -383,25 +382,22 @@ export default function PortfolioPage() {
             <PixelInput label="Titulo" value={teamForm.title} onChange={(e) => setTeamForm({ ...teamForm, title: e.target.value })} />
             <PixelInput label="Precio (USD)" type="number" value={teamForm.price} onChange={(e) => setTeamForm({ ...teamForm, price: e.target.value })} placeholder="0.00" />
             <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Imagenes (URLs)</label>
-                <button type="button" onClick={teamAddImage} className="text-[9px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>+ Agregar</button>
-              </div>
-              <div className="space-y-2">
-                {teamForm.images.map((img, i) => (
-                  <div key={i} className="flex gap-2">
-                    <input value={img} onChange={(e) => teamUpdateImage(i, e.target.value)} placeholder="https://..." className="flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-                    {teamForm.images.length > 1 && (
-                      <button type="button" onClick={() => teamRemoveImage(i)} className="px-2 text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors text-[10px]" style={pf}>X</button>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Imagenes</label>
+              <label className="flex items-center justify-center gap-2 py-3 border-2 border-dashed border-digi-border hover:border-accent/50 cursor-pointer transition-colors">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-digi-muted"><path d="M8 3v10M3 8h10" /></svg>
+                <span className="text-[10px] text-digi-muted" style={mf}>Subir imagenes</span>
+                <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files, (imgs) => setTeamForm({ ...teamForm, images: imgs }), teamForm.images)} />
+              </label>
               {teamForm.images.filter(Boolean).length > 0 && (
                 <div className="flex gap-2 flex-wrap mt-1">
                   {teamForm.images.filter(Boolean).map((img, i) => (
-                    <div key={i} className="w-16 h-16 border-2 border-digi-border overflow-hidden">
-                      <img src={img} alt={`Preview ${i + 1}`} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <div key={i} className="relative w-16 h-16 border-2 border-digi-border overflow-hidden group">
+                      <img src={img} alt={`${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i, (imgs) => setTeamForm({ ...teamForm, images: imgs }), teamForm.images)}
+                        className="absolute top-0 right-0 w-4 h-4 bg-red-600 text-white text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >X</button>
                     </div>
                   ))}
                 </div>
@@ -439,53 +435,24 @@ export default function PortfolioPage() {
             />
           </div>
 
-          {/* Multiple images */}
+          {/* Image upload */}
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Imagenes (URLs)</label>
-              <button
-                type="button"
-                onClick={addImageField}
-                className="text-[9px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors"
-                style={pf}
-              >
-                + Agregar
-              </button>
-            </div>
-            <div className="space-y-2">
-              {form.images.map((img, i) => (
-                <div key={i} className="flex gap-2">
-                  <input
-                    value={img}
-                    onChange={(e) => updateImage(i, e.target.value)}
-                    placeholder="https://..."
-                    className="flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                    style={mf}
-                  />
-                  {form.images.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeImageField(i)}
-                      className="px-2 text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors text-[10px]"
-                      style={pf}
-                    >
-                      X
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {/* Preview thumbnails */}
+            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Imagenes</label>
+            <label className="flex items-center justify-center gap-2 py-3 border-2 border-dashed border-digi-border hover:border-accent/50 cursor-pointer transition-colors">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-digi-muted"><path d="M8 3v10M3 8h10" /></svg>
+              <span className="text-[10px] text-digi-muted" style={mf}>Subir imagenes</span>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files, (imgs) => setForm({ ...form, images: imgs }), form.images)} />
+            </label>
             {form.images.filter(Boolean).length > 0 && (
               <div className="flex gap-2 flex-wrap mt-1">
                 {form.images.filter(Boolean).map((img, i) => (
-                  <div key={i} className="w-16 h-16 border-2 border-digi-border overflow-hidden">
-                    <img
-                      src={img}
-                      alt={`Preview ${i + 1}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
+                  <div key={i} className="relative w-16 h-16 border-2 border-digi-border overflow-hidden group">
+                    <img src={img} alt={`${i + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i, (imgs) => setForm({ ...form, images: imgs }), form.images)}
+                      className="absolute top-0 right-0 w-4 h-4 bg-red-600 text-white text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >X</button>
                   </div>
                 ))}
               </div>
