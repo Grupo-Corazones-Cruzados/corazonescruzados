@@ -460,7 +460,12 @@ export default function ProjectDetailPage() {
   const bids = project.bids || [];
   const incidents = project.incidents || [];
   const linkedDigiName = digiProjects.find((d: any) => d.id === project.digimundo_project_id)?.name;
-  const canEditReqs = isOwner; // owner can always edit all
+  // Can add requirements: not in review/completed/cancelled; in in_progress only creator/admin
+  const canAddReqs = isOwner && !['review', 'completed', 'cancelled', 'closed'].includes(project.status);
+  // Has unassigned requirements (for invite/visibility controls)
+  const hasUnassignedReqs = reqs.some((r: any) => !(r.assignments || []).some((a: any) => a.status === 'accepted'));
+  // Can invite: only in open/in_progress and if unassigned reqs exist
+  const canInvite = isOwner && ['open', 'in_progress'].includes(project.status) && hasUnassignedReqs;
   // Check if current member is assigned (accepted) to a specific requirement
   const canMemberEditReq = (reqId: number) => {
     if (isOwner) return true;
@@ -480,7 +485,6 @@ export default function ProjectDetailPage() {
   const canBidNew = isMember && !isOwner && !myBid && (project.status === 'open' || (project.status === 'draft' && !project.is_private));
   const canBidInvited = isMember && !isOwner && myBid?.status === 'invited';
   const canBid = canBidNew || canBidInvited;
-  const canInvite = isOwner && !isTerminal;
 
   return (
     <div>
@@ -548,7 +552,7 @@ export default function ProjectDetailPage() {
                     <span className="text-[9px] text-digi-muted" style={mf}>{reqs.length ? Math.round((completedReqs / reqs.length) * 100) : 0}%</span>
                   </div>
                 )}
-                {canEditReqs && (
+                {canAddReqs && (
                   <button onClick={() => setShowReqModal(true)} className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>+ Agregar</button>
                 )}
               </div>

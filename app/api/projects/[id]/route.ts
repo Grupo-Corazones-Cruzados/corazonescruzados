@@ -118,7 +118,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Validate status transitions
     const VALID_TRANSITIONS: Record<string, string[]> = {
-      draft: ['open'], open: ['in_progress'], in_progress: ['review'], review: ['completed'],
+      draft: ['open', 'cancelled'], open: ['in_progress', 'cancelled'], in_progress: ['review', 'cancelled'], review: ['completed'],
     };
     if (body.status && body.status !== current.status) {
       const allowed = VALID_TRANSITIONS[current.status] || [];
