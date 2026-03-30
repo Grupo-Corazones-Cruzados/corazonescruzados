@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Get requirements with assignments
     const reqs = await pool.query(
-      `SELECT r.id, r.title, r.description, r.estimated_cost, r.completed_at,
+      `SELECT r.id, r.title, r.description, r.cost, r.completed_at,
               (r.completed_at IS NOT NULL) as is_completed,
               COALESCE(
                 (SELECT json_agg(json_build_object(

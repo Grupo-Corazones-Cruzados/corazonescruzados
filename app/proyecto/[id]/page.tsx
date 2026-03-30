@@ -253,9 +253,9 @@ export default function PublicProjectPage() {
                         </div>
                       )}
                     </div>
-                    {req.estimated_cost && (
+                    {req.cost && (
                       <span className="text-[10px] text-accent-glow shrink-0" style={mf}>
-                        ${Number(req.estimated_cost).toFixed(2)}
+                        ${Number(req.cost).toFixed(2)}
                       </span>
                     )}
                   </div>
