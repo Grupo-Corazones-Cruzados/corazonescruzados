@@ -59,6 +59,11 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
 
   const tipoIdComprador = data.clienteIdTipo || getTipoIdentificacion(data.clienteRuc);
 
+  // SRI requires 9999999999999 for exterior (08) identification
+  const idCompradorSri = tipoIdComprador === '08' ? '9999999999999' : data.clienteRuc;
+  // Keep real ID for additional fields
+  const realIdExterior = tipoIdComprador === '08' && data.clienteRuc !== '9999999999999' ? data.clienteRuc : null;
+
   // IVA code mapping: rate -> codigoPorcentaje
   const ivaCodeMap: Record<number, string> = { 0: '0', 5: '5', 15: '4' };
 
@@ -137,6 +142,7 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
     ...(data.clienteEmail ? [{ name: 'email', value: data.clienteEmail }] : []),
     ...(data.clienteTelefono ? [{ name: 'telefono', value: data.clienteTelefono }] : []),
     ...(data.clienteDireccion ? [{ name: 'direccion', value: data.clienteDireccion }] : []),
+    ...(realIdExterior ? [{ name: 'identificacionExterior', value: realIdExterior }] : []),
     ...(data.additionalFields || []),
   ];
   const infoAdicionalXml = additionalFields.length > 0
@@ -168,7 +174,7 @@ ${SRI_CONFIG.regimenMicroempresas ? `    <regimenMicroempresas>${escapeXml(SRI_C
     <obligadoContabilidad>${SRI_CONFIG.obligadoContabilidad}</obligadoContabilidad>
     <tipoIdentificacionComprador>${tipoIdComprador}</tipoIdentificacionComprador>
     <razonSocialComprador>${escapeXml(data.clienteNombre)}</razonSocialComprador>
-    <identificacionComprador>${data.clienteRuc}</identificacionComprador>
+    <identificacionComprador>${idCompradorSri}</identificacionComprador>
     <direccionComprador>${escapeXml(data.clienteDireccion || 'N/A')}</direccionComprador>
     <totalSinImpuestos>${totalSinImpuestos.toFixed(2)}</totalSinImpuestos>
     <totalDescuento>${totalDescuento.toFixed(2)}</totalDescuento>
