@@ -23,7 +23,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       [id]
     );
 
-    return NextResponse.json({ data: { ...rows[0], items: items.rows } });
+    const inv = rows[0];
+    // Don't send the binary blob to the client, just indicate presence
+    const has_payment_proof = !!(inv.payment_proof);
+    delete inv.payment_proof;
+
+    return NextResponse.json({ data: { ...inv, items: items.rows, has_payment_proof } });
   } catch (err: any) {
     console.error('Invoice GET error:', err.message);
     return NextResponse.json({ error: 'Error' }, { status: 500 });

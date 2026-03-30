@@ -31,6 +31,8 @@ export default function InvoiceDetailPage() {
   const [showVoid, setShowVoid] = useState(false);
   const [voidReason, setVoidReason] = useState('');
   const [voiding, setVoiding] = useState(false);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [showProof, setShowProof] = useState(false);
 
   const fetchInvoice = useCallback(async () => {
     try {
@@ -70,6 +72,38 @@ export default function InvoiceDetailPage() {
       }
     } catch { toast.error('Error de conexion'); }
     finally { setSending(false); }
+  };
+
+  const isAdmin = user?.role === 'admin';
+
+  const handleUploadProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingProof(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`/api/invoices/${id}/proof`, { method: 'POST', body: formData });
+      if (res.ok) {
+        toast.success('Comprobante adjuntado');
+        fetchInvoice();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Error al subir');
+      }
+    } catch { toast.error('Error al subir comprobante'); }
+    finally { setUploadingProof(false); e.target.value = ''; }
+  };
+
+  const handleDeleteProof = async () => {
+    try {
+      const res = await fetch(`/api/invoices/${id}/proof`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Comprobante eliminado');
+        setShowProof(false);
+        fetchInvoice();
+      }
+    } catch { toast.error('Error al eliminar'); }
   };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando factura..." /></div>;
@@ -203,8 +237,52 @@ export default function InvoiceDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Payment Proof */}
+          {isAdmin && (
+            <div className="pixel-card">
+              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Comprobante de Pago</h3>
+              {invoice.has_payment_proof ? (
+                <div className="space-y-1.5">
+                  <button onClick={() => setShowProof(true)}
+                    className="w-full py-1.5 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
+                    Ver Comprobante
+                  </button>
+                  <button onClick={() => window.open(`/api/invoices/${id}/proof`, '_blank')}
+                    className="w-full py-1.5 text-[9px] text-accent-glow border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
+                    Abrir en Nueva Pestaña
+                  </button>
+                  <label className="block w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-white hover:border-accent/30 transition-colors text-center cursor-pointer" style={pf}>
+                    {uploadingProof ? 'Subiendo...' : 'Reemplazar'}
+                    <input type="file" accept="image/*" onChange={handleUploadProof} className="hidden" disabled={uploadingProof} />
+                  </label>
+                  <button onClick={handleDeleteProof}
+                    className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
+                    Eliminar Comprobante
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[9px] text-digi-muted" style={mf}>Sin comprobante adjunto</p>
+                  <label className="block w-full py-2 text-[9px] text-accent-glow border-2 border-dashed border-accent/30 hover:bg-accent/5 transition-colors text-center cursor-pointer" style={pf}>
+                    {uploadingProof ? 'Subiendo...' : 'Adjuntar Imagen'}
+                    <input type="file" accept="image/*" onChange={handleUploadProof} className="hidden" disabled={uploadingProof} />
+                  </label>
+                  <p className="text-[7px] text-digi-muted" style={mf}>JPG, PNG, WEBP o GIF</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Payment Proof Modal */}
+      <PixelModal open={showProof} onClose={() => setShowProof(false)} title="Comprobante de Pago" size="lg">
+        <div className="flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`/api/invoices/${id}/proof`} alt="Comprobante de pago" className="max-w-full max-h-[75vh] object-contain" />
+        </div>
+      </PixelModal>
 
       {/* Void Modal */}
       <PixelModal open={showVoid} onClose={() => setShowVoid(false)} title="Anular Factura" size="sm">

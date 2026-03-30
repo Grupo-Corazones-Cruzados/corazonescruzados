@@ -34,6 +34,8 @@ async function ensureSriColumns() {
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS currency VARCHAR(3) DEFAULT 'USD';
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS exchange_rate NUMERIC(12,6) DEFAULT 1;
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS original_total_usd NUMERIC(12,2);
+    ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS payment_proof BYTEA;
+    ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS payment_proof_type VARCHAR(50);
     CREATE TABLE IF NOT EXISTS gcc_world.invoice_items_sri (
       id SERIAL PRIMARY KEY,
       invoice_id INT NOT NULL,
