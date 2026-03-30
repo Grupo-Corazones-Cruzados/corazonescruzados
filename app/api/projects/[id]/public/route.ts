@@ -74,7 +74,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Get invoice summary (no sensitive data)
     const invoice = await pool.query(
-      `SELECT i.invoice_number, i.total, i.issue_date, i.sri_status,
+      `SELECT i.invoice_number, i.total, i.created_at as issue_date, i.sri_status,
               i.subtotal_0, i.subtotal_iva, i.iva_amount
        FROM gcc_world.invoices i
        WHERE i.project_id = $1
