@@ -20,9 +20,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    // Access control for private projects
+    // Access control: private projects or drafts require ownership/participation
     const project = rows[0];
-    if (project.is_private && user.role !== 'admin') {
+    if ((project.is_private || project.status === 'draft') && user.role !== 'admin') {
       let hasAccess = false;
 
       if (user.role === 'member') {

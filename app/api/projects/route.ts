@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       if (mId) {
         params.push(mId);
         const mIdx = params.length;
-        where += ` AND (p.is_private = false OR p.assigned_member_id = $${mIdx} OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = $${mIdx}))`;
+        where += ` AND ((p.is_private = false AND p.status != 'draft') OR p.assigned_member_id = $${mIdx} OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = $${mIdx}))`;
 
         // Handle special tabs
         if (status === 'mine') {
