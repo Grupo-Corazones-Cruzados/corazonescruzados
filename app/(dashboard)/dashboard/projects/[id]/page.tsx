@@ -41,6 +41,13 @@ export default function ProjectDetailPage() {
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [incidentFilter, setIncidentFilter] = useState('all');
 
+  // Withdrawal/exit request states
+  const [projectRequests, setProjectRequests] = useState<any[]>([]);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawReason, setWithdrawReason] = useState('');
+  const [withdrawType, setWithdrawType] = useState<'withdrawal' | 'supervised_exit'>('withdrawal');
+  const [submittingWithdraw, setSubmittingWithdraw] = useState(false);
+
   // CRUD states
   const [showReqModal, setShowReqModal] = useState(false);
   const [reqTitle, setReqTitle] = useState('');
@@ -115,7 +122,15 @@ export default function ProjectDetailPage() {
     finally { setLoading(false); }
   }, [id]);
 
-  useEffect(() => { fetchProject(); }, [fetchProject]);
+  const fetchProjectRequests = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/requests`);
+      const data = await res.json();
+      setProjectRequests(data.data || []);
+    } catch { /* ignore */ }
+  }, [id]);
+
+  useEffect(() => { fetchProject(); fetchProjectRequests(); }, [fetchProject, fetchProjectRequests]);
   useEffect(() => {
     if (!isAdmin) return;
     fetch('/api/digimundo/projects').then(r => r.json()).then(d => setDigiProjects(d.data || [])).catch(() => {});
@@ -356,6 +371,34 @@ export default function ProjectDetailPage() {
       fetchProject();
     } catch (e: any) { toast.error(e.message || 'Error al agregar requerimiento'); }
     finally { setSavingReq(false); }
+  };
+
+  const submitWithdrawRequest = async () => {
+    if (!withdrawReason.trim()) return;
+    setSubmittingWithdraw(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/requests`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: withdrawType, reason: withdrawReason }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      toast.success(withdrawType === 'withdrawal' ? 'Solicitud de desistimiento enviada' : 'Solicitud de salida enviada');
+      setShowWithdrawModal(false); setWithdrawReason('');
+      fetchProjectRequests();
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setSubmittingWithdraw(false); }
+  };
+
+  const reviewRequest = async (requestId: number, status: string) => {
+    try {
+      const res = await fetch(`/api/projects/${id}/requests`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: requestId, status }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      toast.success('Solicitud revisada');
+      fetchProjectRequests(); fetchProject();
+    } catch (e: any) { toast.error(e.message || 'Error'); }
   };
 
   const deleteRequirement = async (reqId: number) => {
@@ -1212,6 +1255,48 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
+          {/* Withdrawal Requests */}
+          {projectRequests.length > 0 && (
+            <div className="pixel-card">
+              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Solicitudes</h3>
+              <div className="space-y-2">
+                {projectRequests.map((r: any) => (
+                  <div key={r.id} className="p-2 border border-digi-border bg-digi-darker">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1.5">
+                        {r.photo_url ? (
+                          <img src={r.photo_url} alt={r.member_name} className="w-4 h-4 rounded-full object-cover border border-digi-border" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center">
+                            <span className="text-[6px] text-accent-glow" style={pf}>{r.member_name?.charAt(0)}</span>
+                          </div>
+                        )}
+                        <span className="text-[9px] text-digi-text" style={mf}>{r.member_name}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <PixelBadge variant={r.type === 'withdrawal' ? 'info' : 'warning'}>
+                          {r.type === 'withdrawal' ? 'Desistimiento' : 'Salida Supervisada'}
+                        </PixelBadge>
+                        <PixelBadge variant={
+                          r.status === 'pending' ? 'warning' : r.status === 'approved' || r.status === 'exit_no_fee' ? 'success' : r.status === 'rejected' ? 'error' : 'default'
+                        }>
+                          {r.status === 'pending' ? 'Pendiente' : r.status === 'approved' ? 'Aprobado' : r.status === 'rejected' ? 'Rechazado' : r.status === 'exit_no_fee' ? 'Sin cuota' : r.status === 'exit_with_fee' ? 'Con cuota' : r.status}
+                        </PixelBadge>
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-digi-muted" style={mf}>{r.reason}</p>
+                    {r.status === 'pending' && r.type === 'withdrawal' && isOwner && (
+                      <div className="flex gap-1 mt-1.5">
+                        <button onClick={() => reviewRequest(r.id, 'approved')} className="text-[8px] text-green-400 border border-green-500/30 px-2 py-0.5 hover:bg-green-900/20 transition-colors" style={pf}>Aprobar</button>
+                        <button onClick={() => reviewRequest(r.id, 'rejected')} className="text-[8px] text-red-400 border border-red-500/30 px-2 py-0.5 hover:bg-red-900/20 transition-colors" style={pf}>Rechazar</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Participant Progress */}
           {['in_progress', 'review', 'completed'].includes(project.status) && (() => {
             const reqs = project.requirements || [];
@@ -1299,6 +1384,29 @@ export default function ProjectDetailPage() {
                     Eliminar
                   </button>
                 )}
+                {/* Participant: Desistir / Salida Supervisada */}
+                {isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && (() => {
+                  const myReqs = projectRequests.filter((r: any) => String(r.member_id) === String(memberId));
+                  const hasRejectedWithdrawal = myReqs.some((r: any) => r.type === 'withdrawal' && r.status === 'rejected');
+                  const hasPendingWithdrawal = myReqs.some((r: any) => r.type === 'withdrawal' && r.status === 'pending');
+                  const hasPendingSupervisedExit = myReqs.some((r: any) => r.type === 'supervised_exit' && r.status === 'pending');
+                  return (
+                    <>
+                      {!hasPendingWithdrawal && !hasRejectedWithdrawal && (
+                        <button onClick={() => { setWithdrawType('withdrawal'); setWithdrawReason(''); setShowWithdrawModal(true); }}
+                          className="py-1.5 px-3 text-[9px] text-yellow-400 border border-yellow-500/30 hover:bg-yellow-900/20 transition-colors" style={pf}>
+                          Desistir
+                        </button>
+                      )}
+                      {hasRejectedWithdrawal && !hasPendingSupervisedExit && (
+                        <button onClick={() => { setWithdrawType('supervised_exit'); setWithdrawReason(''); setShowWithdrawModal(true); }}
+                          className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
+                          Salida con Supervision
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
                 </div>
                 <p className="text-[9px] text-digi-muted leading-relaxed" style={mf}>
                   {project.status === 'draft' && 'Publicar hara visible este proyecto para que miembros puedan postularse y trabajar en el.'}
@@ -1405,6 +1513,27 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Add Requirement Modal */}
+      {/* Withdraw/Exit Modal */}
+      <PixelModal open={showWithdrawModal} onClose={() => !submittingWithdraw && setShowWithdrawModal(false)}
+        title={withdrawType === 'withdrawal' ? 'Solicitar Desistimiento' : 'Salida con Supervision'}>
+        <div className="space-y-3">
+          <p className="text-[10px] text-digi-muted" style={mf}>
+            {withdrawType === 'withdrawal'
+              ? 'Tu solicitud sera enviada al creador del proyecto para su aprobacion.'
+              : 'Tu solicitud sera enviada al administrador. Puede implicar una cuota por perjuicio.'}
+          </p>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Motivo *</label>
+            <textarea value={withdrawReason} onChange={(e) => setWithdrawReason(e.target.value)} rows={3} placeholder="Describe el motivo de tu solicitud..."
+              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
+          </div>
+          <button onClick={submitWithdrawRequest} disabled={submittingWithdraw || !withdrawReason.trim()}
+            className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+            {submittingWithdraw ? 'Enviando...' : 'Enviar Solicitud'}
+          </button>
+        </div>
+      </PixelModal>
+
       <PixelModal open={showReqModal} onClose={() => setShowReqModal(false)} title="Nuevo Requerimiento">
         <div className="space-y-3">
           <div className="flex flex-col gap-1">

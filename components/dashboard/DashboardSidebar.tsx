@@ -26,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Proyectos', href: '/dashboard/projects', icon: '>' },
   { label: 'Marketplace', href: '/dashboard/marketplace', icon: '$' },
   { label: 'Facturas', href: '/dashboard/invoices', icon: '%' },
+  { label: 'Centralizado', href: '/dashboard/centralized', icon: '@', roles: ['member', 'admin'] },
   { label: 'Configuracion', href: '/dashboard/settings', icon: '*' },
   { label: 'Soporte', href: '/dashboard/support', icon: '?' },
   { label: 'Admin', href: '/dashboard/admin', icon: '!', roles: ['admin'] },
