@@ -191,12 +191,14 @@ export default function DigimonWalkers() {
             }}
             onMouseEnter={() => isWalking && handleHover(walker.id)}
           >
+            <div style={{ position: 'relative', width: size, height: size }}>
             {/* Walk sprite */}
             <div
               style={{
                 width: size,
                 height: size,
-                display: isWalking ? 'block' : 'none',
+                position: 'absolute',
+                visibility: isWalking ? 'visible' : 'hidden',
                 backgroundImage: `url(${digimon.walkSrc})`,
                 backgroundSize: `${walkBgW}px ${walkBgH}px`,
                 imageRendering: 'pixelated',
@@ -204,20 +206,21 @@ export default function DigimonWalkers() {
                 animation: `${walkName} ${walkCycleDuration}s step-end infinite`,
               } as React.CSSProperties}
             />
-            {/* Done sprite */}
-            {isStopped && (
-              <div
-                style={{
-                  width: size,
-                  height: size,
-                  backgroundImage: `url(${digimon.doneSrc})`,
-                  backgroundSize: `${doneBgW}px ${doneBgH}px`,
-                  imageRendering: 'pixelated',
-                  transform: shouldFlip ? 'scaleX(-1)' : 'none',
-                  animation: `${doneName} ${doneCycleDuration}s step-end infinite`,
-                } as React.CSSProperties}
-              />
-            )}
+            {/* Done sprite (always in DOM to preload image, toggled via visibility) */}
+            <div
+              style={{
+                width: size,
+                height: size,
+                position: 'absolute',
+                visibility: isStopped ? 'visible' : 'hidden',
+                backgroundImage: `url(${digimon.doneSrc})`,
+                backgroundSize: `${doneBgW}px ${doneBgH}px`,
+                imageRendering: 'pixelated',
+                transform: shouldFlip ? 'scaleX(-1)' : 'none',
+                animation: isStopped ? `${doneName} ${doneCycleDuration}s step-end infinite` : 'none',
+              } as React.CSSProperties}
+            />
+            </div>
           </div>
         );
       })}
