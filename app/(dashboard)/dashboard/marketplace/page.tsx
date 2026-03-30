@@ -66,9 +66,22 @@ export default function MarketplacePage() {
 
   const fetchMarketplaceProjects = useCallback(async () => {
     try {
-      const res = await fetch(`/api/marketplace/projects${search ? `?search=${encodeURIComponent(search)}` : ''}`);
-      const data = await res.json();
-      setMarketplaceProjects(data.data || []);
+      // Fetch both: published completed projects + portfolio project items
+      const [mpRes, pfRes] = await Promise.all([
+        fetch(`/api/marketplace/projects${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+        fetch(`/api/portfolio/public?type=project`),
+      ]);
+      const mpData = await mpRes.json();
+      const pfData = await pfRes.json();
+
+      // Normalize portfolio items to have a source_type marker
+      const portfolioItems = (pfData.data || []).map((p: any) => ({
+        ...p, source_type: 'portfolio', final_cost: p.price, team: [], requirements_count: 0,
+      }));
+      // Marketplace projects
+      const mpItems = (mpData.data || []).map((p: any) => ({ ...p, source_type: 'project' }));
+
+      setMarketplaceProjects([...mpItems, ...portfolioItems]);
     } catch { setMarketplaceProjects([]); }
   }, [search]);
 
@@ -224,6 +237,7 @@ export default function MarketplacePage() {
             )},
             { key: 'team', header: 'Equipo', render: (p: any) => {
               const team = p.team || [];
+              if (team.length === 0 && p.member_name) return <span className="text-[10px] text-digi-muted" style={mf}>{p.member_name}</span>;
               if (team.length === 0) return <span className="text-digi-muted">-</span>;
               return (
                 <div className="flex items-center gap-1">
@@ -248,11 +262,15 @@ export default function MarketplacePage() {
             )},
             { key: 'actions', header: '', width: '90px', render: (p: any) => (
               <button
-                onClick={(e) => { e.stopPropagation(); setSelectedProject(p); setRequestModal(true); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (p.source_type === 'project') { setSelectedProject(p); setRequestModal(true); }
+                  else { openBuyModal(p); }
+                }}
                 className="text-[9px] text-accent-glow border border-accent/40 px-2 py-0.5 hover:bg-accent/10 transition-colors"
                 style={pf}
               >
-                Solicitar
+                {p.source_type === 'project' ? 'Solicitar' : 'Comprar'}
               </button>
             )},
           ]}

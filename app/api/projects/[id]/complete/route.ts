@@ -55,7 +55,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         );
       }
 
-      await pool.query(`UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = false, updated_at = NOW() WHERE id = $1`, [id]);
+      // Auto-publish to marketplace unless this project came from marketplace
+      const autoPublish = !proj.marketplace_source_id;
+      await pool.query(
+        `UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = $1, marketplace_published_at = $2, updated_at = NOW() WHERE id = $3`,
+        [autoPublish, autoPublish ? new Date() : null, id]
+      );
 
       // Auto-generate SRI invoice
       try {
