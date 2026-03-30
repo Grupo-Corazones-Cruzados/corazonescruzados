@@ -7,6 +7,9 @@ export async function GET(req: NextRequest) {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
+    // Ensure is_manual column exists
+    await pool.query(`ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS is_manual BOOLEAN DEFAULT false`);
+
     const status = req.nextUrl.searchParams.get('status');
     let where = 'WHERE 1=1';
     const params: any[] = [];
