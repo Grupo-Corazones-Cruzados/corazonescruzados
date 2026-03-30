@@ -76,7 +76,7 @@ export default function MarketplacePage() {
 
       // Normalize portfolio items to have a source_type marker
       const portfolioItems = (pfData.data || []).map((p: any) => ({
-        ...p, source_type: 'portfolio', final_cost: p.price, team: [], requirements_count: 0,
+        ...p, source_type: 'portfolio', final_cost: p.price, team: [], requirements_count: 0, member_photo: p.member_photo,
       }));
       // Marketplace projects
       const mpItems = (mpData.data || []).map((p: any) => ({ ...p, source_type: 'project' }));
@@ -237,7 +237,17 @@ export default function MarketplacePage() {
             )},
             { key: 'team', header: 'Equipo', render: (p: any) => {
               const team = p.team || [];
-              if (team.length === 0 && p.member_name) return <span className="text-[10px] text-digi-muted" style={mf}>{p.member_name}</span>;
+              if (team.length === 0 && p.member_name) return (
+                <div className="flex items-center gap-1" title={p.member_name}>
+                  {p.member_photo ? (
+                    <img src={p.member_photo} alt={p.member_name} className="w-5 h-5 rounded-full object-cover border border-digi-border" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center">
+                      <span className="text-[7px] text-accent-glow" style={pf}>{p.member_name?.charAt(0)}</span>
+                    </div>
+                  )}
+                </div>
+              );
               if (team.length === 0) return <span className="text-digi-muted">-</span>;
               return (
                 <div className="flex items-center gap-1">

@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
     const type = req.nextUrl.searchParams.get('type') || 'project';
 
     const { rows } = await pool.query(
-      `SELECT pi.*, pi.cost as price, pi.item_type as type, COALESCE(pi.images, '{}') as images, m.name as member_name
+      `SELECT pi.*, pi.cost as price, pi.item_type as type, COALESCE(pi.images, '{}') as images, m.name as member_name, m.photo_url as member_photo
        FROM gcc_world.member_portfolio_items pi
        JOIN gcc_world.members m ON m.id = pi.member_id
        WHERE pi.item_type = $1
