@@ -35,6 +35,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
+
+    const { rows: [proj] } = await pool.query(`SELECT status FROM gcc_world.projects WHERE id = $1`, [id]);
+    if (proj?.status === 'completed') return NextResponse.json({ error: 'No se pueden agregar requerimientos a un proyecto completado' }, { status: 400 });
+
     const { title, description, cost } = await req.json();
 
     if (!title) return NextResponse.json({ error: 'title required' }, { status: 400 });
@@ -95,6 +99,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
+
+    const { rows: [proj] } = await pool.query(`SELECT status FROM gcc_world.projects WHERE id = $1`, [id]);
+    if (proj?.status === 'completed') return NextResponse.json({ error: 'No se pueden eliminar requerimientos de un proyecto completado' }, { status: 400 });
+
     const { requirement_id } = await req.json();
 
     // Clean up pending bids that only covered this requirement
