@@ -42,6 +42,7 @@ const emptyForm = {
   service_id: '',
   member_id: '',
   client_id: '',
+  client_email: '',
   deadline: '',
   estimated_hours: '',
   estimated_cost: '',
@@ -130,6 +131,7 @@ export default function TicketsPage() {
           service_id: form.service_id ? Number(form.service_id) : undefined,
           member_id: form.member_id ? Number(form.member_id) : undefined,
           client_id: form.client_id ? Number(form.client_id) : undefined,
+          client_email: form.client_email?.trim() || undefined,
           deadline: form.deadline || undefined,
           estimated_hours: form.estimated_hours ? Number(form.estimated_hours) : undefined,
           estimated_cost: form.estimated_cost ? Number(form.estimated_cost) : undefined,
@@ -245,6 +247,14 @@ export default function TicketsPage() {
               disabled={user?.role === 'client'}
             />
           </div>
+
+          <PixelInput
+            label="Email del cliente (notificacion)"
+            type="email"
+            value={form.client_email}
+            onChange={(e) => setForm({ ...form, client_email: e.target.value })}
+            placeholder="correo@ejemplo.com"
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <PixelInput

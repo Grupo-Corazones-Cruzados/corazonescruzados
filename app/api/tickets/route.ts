@@ -1,6 +1,13 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { Resend } from 'resend';
+
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
+  return _resend;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -56,7 +63,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const body = await req.json();
-    const { title, description, service_id, member_id, client_id, deadline, estimated_hours, estimated_cost, time_slots } = body;
+    const { title, description, service_id, member_id, client_id, client_email, deadline, estimated_hours, estimated_cost, time_slots } = body;
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'El titulo es requerido' }, { status: 400 });
@@ -100,6 +107,43 @@ export async function POST(req: NextRequest) {
            VALUES ($1, $2, $3, $4, 'scheduled', NOW())`,
           [ticket.id, slot.date, slot.start_time || null, slot.end_time || null]
         );
+      }
+    }
+
+    // Send email notification to client
+    if (client_email?.trim()) {
+      try {
+        const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/dashboard/tickets/${ticket.id}`;
+        await getResend().emails.send({
+          from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
+          to: client_email.trim(),
+          bcc: 'lfgonzalezm0@grupocc.org',
+          subject: `Nuevo Ticket #${ticket.id}: ${title} — GCC World`,
+          html: `<div style="font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;padding:0;margin:0;">
+<div style="max-width:600px;margin:0 auto;background:#ffffff;">
+  <div style="height:6px;background:#4B2D8E;"></div>
+  <div style="padding:30px 40px;">
+    <h1 style="color:#1a1a2e;font-size:22px;margin:0 0 6px;">Nuevo Ticket Creado</h1>
+    <p style="color:#888;font-size:14px;margin:0 0 24px;">Se ha registrado un nuevo ticket de servicio a tu nombre.</p>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;width:35%"><strong>Ticket:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">#${ticket.id}</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Titulo:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${title}</td></tr>
+      ${description ? `<tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Descripcion:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${description}</td></tr>` : ''}
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Estado:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">Pendiente</td></tr>
+      ${deadline ? `<tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Fecha Limite:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${new Date(deadline).toLocaleDateString('es-EC')}</td></tr>` : ''}
+      ${estimated_cost ? `<tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Costo Estimado:</strong></td><td style="padding:10px 16px;font-size:13px;">$${Number(estimated_cost).toFixed(2)}</td></tr>` : ''}
+    </table>
+    <div style="text-align:center;margin:24px 0 0;">
+      <a href="${ticketUrl}" style="display:inline-block;padding:12px 24px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;border-radius:4px;">Ver Ticket</a>
+    </div>
+    <p style="color:#888;font-size:12px;margin:16px 0 0;text-align:center;">Este correo fue generado automaticamente por GCC World.</p>
+  </div>
+  <div style="height:3px;background:#4B2D8E;"></div>
+</div>
+</div>`,
+        });
+      } catch (emailErr: any) {
+        console.error('Error sending ticket email:', emailErr.message);
       }
     }
 
