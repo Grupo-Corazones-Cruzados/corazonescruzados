@@ -348,10 +348,14 @@ export default function ProjectDetailPage() {
   const addRequirement = async () => {
     if (!reqTitle.trim()) return;
     setSavingReq(true);
-    await fetch(`/api/projects/${id}/requirements`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: reqTitle, description: reqDesc, cost: reqCost ? Number(reqCost) : null }) });
-    setReqTitle(''); setReqDesc(''); setReqCost(''); setShowReqModal(false); setSavingReq(false);
-    toast.success('Requerimiento agregado');
-    fetchProject();
+    try {
+      const res = await fetch(`/api/projects/${id}/requirements`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: reqTitle, description: reqDesc, cost: reqCost ? Number(reqCost) : null }) });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      setReqTitle(''); setReqDesc(''); setReqCost(''); setShowReqModal(false);
+      toast.success('Requerimiento agregado');
+      fetchProject();
+    } catch (e: any) { toast.error(e.message || 'Error al agregar requerimiento'); }
+    finally { setSavingReq(false); }
   };
 
   const deleteRequirement = async (reqId: number) => {

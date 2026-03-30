@@ -62,12 +62,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'No se pueden agregar requerimientos en el estado actual' }, { status: 400 });
     }
 
-    // In in_progress: only creator or admin can create requirements
-    if (proj?.status === 'in_progress' && user.role !== 'admin') {
-      const isCreator = await isProjectCreator(user.userId, id);
-      if (!isCreator) return NextResponse.json({ error: 'Solo el creador del proyecto puede agregar requerimientos' }, { status: 403 });
-    }
-
     const { title, description, cost } = await req.json();
     if (!title) return NextResponse.json({ error: 'title required' }, { status: 400 });
 
