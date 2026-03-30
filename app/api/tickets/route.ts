@@ -69,8 +69,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El titulo es requerido' }, { status: 400 });
     }
 
-    // If user is a client, resolve their client_id automatically
+    // Resolve client: by ID, by email (find or create), or auto for client role
     let resolvedClientId = client_id || null;
+    let resolvedClientEmail = client_email?.trim() || null;
+
+    if (!resolvedClientId && resolvedClientEmail) {
+      // Find existing client by email or create a new one
+      const existing = await pool.query(
+        `SELECT id, email FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [resolvedClientEmail]
+      );
+      if (existing.rows.length > 0) {
+        resolvedClientId = existing.rows[0].id;
+      } else {
+        const { rows: [newClient] } = await pool.query(
+          `INSERT INTO gcc_world.clients (name, email) VALUES ($1, $2) RETURNING id`,
+          [resolvedClientEmail, resolvedClientEmail.toLowerCase()]
+        );
+        resolvedClientId = newClient.id;
+      }
+    } else if (resolvedClientId && !resolvedClientEmail) {
+      // Get email from existing client for notification
+      const { rows: [c] } = await pool.query(`SELECT email FROM gcc_world.clients WHERE id = $1`, [resolvedClientId]);
+      resolvedClientEmail = c?.email || null;
+    }
+
     if (user.role === 'client' && !resolvedClientId) {
       const clientRes = await pool.query(
         `SELECT id FROM gcc_world.clients WHERE user_id = $1 LIMIT 1`,
@@ -111,12 +133,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Send email notification to client
-    if (client_email?.trim()) {
+    if (resolvedClientEmail) {
       try {
         const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/dashboard/tickets/${ticket.id}`;
         await getResend().emails.send({
           from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
-          to: client_email.trim(),
+          to: resolvedClientEmail,
           bcc: 'lfgonzalezm0@grupocc.org',
           subject: `Nuevo Ticket #${ticket.id}: ${title} — GCC World`,
           html: `<div style="font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;padding:0;margin:0;">

@@ -43,6 +43,7 @@ const emptyForm = {
   member_id: '',
   client_id: '',
   client_email: '',
+  client_mode: 'select' as 'select' | 'email',
   deadline: '',
   estimated_hours: '',
   estimated_cost: '',
@@ -238,23 +239,41 @@ export default function TicketsPage() {
               placeholder="-- Sin asignar --"
               disabled={user?.role === 'member'}
             />
-            <PixelSelect
-              label="Cliente"
-              value={form.client_id}
-              onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-              options={clients.map((c: any) => ({ value: String(c.id), label: c.name || c.email }))}
-              placeholder="-- Sin cliente --"
-              disabled={user?.role === 'client'}
-            />
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Cliente</label>
+                {user?.role !== 'client' && (
+                  <button type="button" onClick={() => setForm(prev => ({
+                    ...prev,
+                    client_mode: prev.client_mode === 'select' ? 'email' : 'select',
+                    client_id: '',
+                    client_email: '',
+                  }))}
+                    className="text-[8px] text-digi-muted hover:text-accent-glow border border-digi-border px-1.5 py-0.5 transition-colors" style={pf}>
+                    {form.client_mode === 'select' ? 'Escribir email' : 'Seleccionar'}
+                  </button>
+                )}
+              </div>
+              {form.client_mode === 'select' ? (
+                <PixelSelect
+                  value={form.client_id}
+                  onChange={(e) => setForm({ ...form, client_id: e.target.value })}
+                  options={clients.map((c: any) => ({ value: String(c.id), label: c.name || c.email }))}
+                  placeholder="-- Sin cliente --"
+                  disabled={user?.role === 'client'}
+                />
+              ) : (
+                <input
+                  type="email"
+                  value={form.client_email}
+                  onChange={(e) => setForm({ ...form, client_email: e.target.value })}
+                  placeholder="correo@cliente.com"
+                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                />
+              )}
+            </div>
           </div>
-
-          <PixelInput
-            label="Email del cliente (notificacion)"
-            type="email"
-            value={form.client_email}
-            onChange={(e) => setForm({ ...form, client_email: e.target.value })}
-            placeholder="correo@ejemplo.com"
-          />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <PixelInput
