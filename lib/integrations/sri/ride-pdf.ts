@@ -45,6 +45,7 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
 
     const PW = doc.page.width - 60; // page usable width
     const L = 30; // left margin
+    const cs = data.currency && data.currency !== 'USD' ? (data.currencySymbol || data.currency) : '$'; // currency symbol
     const midX = L + PW * 0.48;
     const rightColX = L + PW * 0.50;
     const rightColW = PW * 0.50;
@@ -150,9 +151,9 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
       doc.text(code, rx + 3, y + 3, { width: tCols[0].w - 6, align: tCols[0].a }); rx += tCols[0].w;
       doc.text(item.quantity.toFixed(0), rx + 3, y + 3, { width: tCols[1].w - 6, align: tCols[1].a }); rx += tCols[1].w;
       doc.text(item.description, rx + 3, y + 3, { width: descW }); rx += tCols[2].w;
-      doc.text(`$${item.unitPrice.toFixed(4)}`, rx + 3, y + 3, { width: tCols[3].w - 6, align: tCols[3].a }); rx += tCols[3].w;
-      doc.text(`$${discount.toFixed(2)}`, rx + 3, y + 3, { width: tCols[4].w - 6, align: tCols[4].a }); rx += tCols[4].w;
-      doc.text(`$${item.subtotal.toFixed(2)}`, rx + 3, y + 3, { width: tCols[5].w - 6, align: tCols[5].a });
+      doc.text(`${cs}${item.unitPrice.toFixed(4)}`, rx + 3, y + 3, { width: tCols[3].w - 6, align: tCols[3].a }); rx += tCols[3].w;
+      doc.text(`${cs}${discount.toFixed(2)}`, rx + 3, y + 3, { width: tCols[4].w - 6, align: tCols[4].a }); rx += tCols[4].w;
+      doc.text(`${cs}${item.subtotal.toFixed(2)}`, rx + 3, y + 3, { width: tCols[5].w - 6, align: tCols[5].a });
       y += rowH;
     });
 
@@ -178,7 +179,7 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     const fpLabel = FORMAS_PAGO_LABEL[data.formaPago || '20'] || 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
     doc.font('Helvetica').fontSize(6);
     doc.text(fpLabel, L + 3, y + 2, { width: botLeftW * 0.55 });
-    doc.text(`$${data.total.toFixed(2)}`, L + botLeftW * 0.55, y + 2, { width: botLeftW * 0.2, align: 'right' });
+    doc.text(`${cs}${data.total.toFixed(2)}`, L + botLeftW * 0.55, y + 2, { width: botLeftW * 0.2, align: 'right' });
     doc.text('0', L + botLeftW * 0.75, y + 2, { width: botLeftW * 0.12, align: 'right' });
     doc.text('dias', L + botLeftW * 0.87, y + 2, { width: botLeftW * 0.12, align: 'right' });
     y += 14;
@@ -197,16 +198,16 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     let ty = botY;
     const totalDiscount = data.items.reduce((s, i) => s + (i.discount || 0), 0);
     const totals: [string, string][] = [
-      ['SUBTOTAL 15%', `$  ${data.subtotalIva.toFixed(2)}`],
-      ['SUBTOTAL 0%', `$  ${data.subtotal0.toFixed(2)}`],
-      ['SUBTOTAL NO SUJETO IVA', '$  0.00'],
-      ['SUBTOTAL EXENTO IVA', '$  0.00'],
-      ['SUBTOTAL SIN IMPUESTOS', `$  ${(data.subtotal0 + data.subtotalIva).toFixed(2)}`],
-      ['DESCUENTO', `$  ${totalDiscount.toFixed(2)}`],
-      ['ICE', '$  0.00'],
-      [`IVA 15%`, `$  ${data.ivaMonto.toFixed(2)}`],
-      ['PROPINA', '$  0.00'],
-      ['VALOR TOTAL', `$  ${data.total.toFixed(2)}`],
+      ['SUBTOTAL 15%', `${cs}  ${data.subtotalIva.toFixed(2)}`],
+      ['SUBTOTAL 0%', `${cs}  ${data.subtotal0.toFixed(2)}`],
+      ['SUBTOTAL NO SUJETO IVA', `${cs}  0.00`],
+      ['SUBTOTAL EXENTO IVA', `${cs}  0.00`],
+      ['SUBTOTAL SIN IMPUESTOS', `${cs}  ${(data.subtotal0 + data.subtotalIva).toFixed(2)}`],
+      ['DESCUENTO', `${cs}  ${totalDiscount.toFixed(2)}`],
+      ['ICE', `${cs}  0.00`],
+      [`IVA 15%`, `${cs}  ${data.ivaMonto.toFixed(2)}`],
+      ['PROPINA', `${cs}  0.00`],
+      ['VALOR TOTAL', `${cs}  ${data.total.toFixed(2)}`],
     ];
 
     totals.forEach(([label, val], i) => {
@@ -225,15 +226,14 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     // Outer border for totals
     doc.rect(botRightX, botY, botRightW, ty - botY).stroke('#ccc');
 
-    // ════════════ CURRENCY CONVERSION NOTE ════════════
-    if (data.currency && data.currency !== 'USD' && data.exchangeRate && data.totalConverted) {
+    // ════════════ CURRENCY NOTE ════════════
+    if (data.currency && data.currency !== 'USD' && data.exchangeRate) {
       const convY = Math.max(y, ty) + 12;
-      const sym = data.currencySymbol || data.currency;
       doc.rect(L, convY, PW, 22).fill('#f0e6ff');
       doc.fillColor('#4B2D8E').font('Helvetica-Bold').fontSize(7);
-      doc.text(`EQUIVALENTE EN ${data.currency}:  ${sym} ${data.totalConverted.toFixed(2)}`, L + 8, convY + 4, { width: PW - 16 });
+      doc.text(`MONEDA: ${data.currency}  |  REFERENCIA USD: $${(data.total / data.exchangeRate).toFixed(2)}`, L + 8, convY + 4, { width: PW - 16 });
       doc.font('Helvetica').fontSize(6).fillColor('#666');
-      doc.text(`Tasa de cambio: 1 USD = ${data.exchangeRate} ${data.currency}`, L + 8, convY + 13, { width: PW - 16 });
+      doc.text(`Tasa de cambio aplicada: 1 USD = ${data.exchangeRate} ${data.currency}`, L + 8, convY + 13, { width: PW - 16 });
     }
 
     // ════════════ FOOTER ════════════
