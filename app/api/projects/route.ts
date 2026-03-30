@@ -66,14 +66,17 @@ export async function GET(req: NextRequest) {
        FROM gcc_world.projects p
        LEFT JOIN gcc_world.clients c ON c.id = p.client_id
        LEFT JOIN LATERAL (
-         SELECT id as invoice_id, sri_status as invoice_sri_status
-         FROM gcc_world.invoices
-         WHERE project_id = p.id AND status != 'cancelled'
-         UNION ALL
-         SELECT ip.invoice_id, i.sri_status
-         FROM gcc_world.invoice_projects ip
-         JOIN gcc_world.invoices i ON i.id = ip.invoice_id AND i.status != 'cancelled'
-         WHERE ip.project_id = CAST(p.id AS TEXT)
+         SELECT inv_all.invoice_id, inv_all.invoice_sri_status FROM (
+           SELECT id as invoice_id, sri_status as invoice_sri_status
+           FROM gcc_world.invoices
+           WHERE project_id = p.id AND status != 'cancelled'
+           UNION ALL
+           SELECT ip.invoice_id, i.sri_status
+           FROM gcc_world.invoice_projects ip
+           JOIN gcc_world.invoices i ON i.id = ip.invoice_id AND i.status != 'cancelled'
+           WHERE ip.project_id = CAST(p.id AS TEXT)
+         ) inv_all
+         ORDER BY CASE inv_all.invoice_sri_status WHEN 'authorized' THEN 0 ELSE 1 END
          LIMIT 1
        ) inv_info ON true
        ${where}
