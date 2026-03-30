@@ -1282,6 +1282,23 @@ export default function ProjectDetailPage() {
                 {!['completed', 'closed', 'cancelled'].includes(project.status) && (
                   <button onClick={() => updateStatus('cancelled')} className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>Cancelar</button>
                 )}
+                {isAdmin && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Estas seguro de eliminar este proyecto? Esta accion no se puede deshacer.')) return;
+                      try {
+                        const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+                        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+                        toast.success('Proyecto eliminado');
+                        window.location.href = '/dashboard/projects';
+                      } catch (e: any) { toast.error(e.message || 'Error al eliminar'); }
+                    }}
+                    className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors"
+                    style={pf}
+                  >
+                    Eliminar
+                  </button>
+                )}
                 </div>
                 <p className="text-[9px] text-digi-muted leading-relaxed" style={mf}>
                   {project.status === 'draft' && 'Publicar hara visible este proyecto para que miembros puedan postularse y trabajar en el.'}
