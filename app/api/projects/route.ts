@@ -53,10 +53,21 @@ export async function GET(req: NextRequest) {
 
     const countQ = await pool.query(`SELECT COUNT(*) FROM gcc_world.projects p ${where}`, params);
     params.push(limit, offset);
+
+    // Ensure invoice_projects table exists for the LEFT JOINs
+    await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.invoice_projects (
+      id SERIAL PRIMARY KEY, invoice_id INT NOT NULL, project_id TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+
     const dataQ = await pool.query(
-      `SELECT p.*, c.name as client_name
+      `SELECT p.*, c.name as client_name,
+              COALESCE(inv_direct.id, inv_manual.invoice_id) as invoice_id,
+              COALESCE(inv_direct.sri_status, inv_manual_inv.sri_status) as invoice_sri_status
        FROM gcc_world.projects p
        LEFT JOIN gcc_world.clients c ON c.id = p.client_id
+       LEFT JOIN gcc_world.invoices inv_direct ON inv_direct.project_id = p.id AND inv_direct.status != 'cancelled'
+       LEFT JOIN gcc_world.invoice_projects inv_manual ON inv_manual.project_id = CAST(p.id AS TEXT)
+       LEFT JOIN gcc_world.invoices inv_manual_inv ON inv_manual_inv.id = inv_manual.invoice_id AND inv_manual_inv.status != 'cancelled'
        ${where}
        ORDER BY p.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,

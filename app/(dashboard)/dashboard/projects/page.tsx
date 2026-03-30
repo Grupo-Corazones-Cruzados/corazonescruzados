@@ -177,6 +177,18 @@ export default function ProjectsPage() {
             p.final_cost ? `$${Number(p.final_cost).toFixed(2)}` : '-'
           },
           { key: 'deadline', header: 'Limite', render: (p: any) => p.deadline ? new Date(p.deadline).toLocaleDateString() : '-' },
+          { key: 'invoice', header: 'Factura', width: '80px', render: (p: any) => {
+            if (!p.invoice_id) return <span className="text-digi-muted text-[8px]">-</span>;
+            return (
+              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                <span className="text-green-400 text-[10px]" title="Factura generada">&#9632;</span>
+                {p.invoice_sri_status === 'authorized' && (
+                  <button onClick={() => window.open(`/api/invoices/${p.invoice_id}/pdf`, '_blank')}
+                    className="px-1.5 py-0.5 text-[7px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>PDF</button>
+                )}
+              </div>
+            );
+          }},
           { key: 'actions', header: '', width: '40px', render: (p: any) => (
             isOwnerOf(p) && !['completed', 'closed', 'cancelled'].includes(p.status) ? (
               <button

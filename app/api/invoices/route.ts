@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const { rows } = await pool.query(
       `SELECT i.id, i.invoice_number, i.access_key, i.authorization_number, i.authorization_date,
               i.client_ruc, i.client_name_sri, i.subtotal, i.tax, i.total, i.status, i.sri_status,
-              i.created_at, i.project_id, c.name as client_name
+              i.created_at, i.project_id, i.is_manual, c.name as client_name
        FROM gcc_world.invoices i
        LEFT JOIN gcc_world.clients c ON c.id = i.client_id
        ${where}

@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { createInvoiceFromProject, sendInvoiceToSri } from '@/lib/integrations/sri';
+import { createInvoiceFromProject, sendInvoiceToSri, projectHasInvoice } from '@/lib/integrations/sri';
 import { Resend } from 'resend';
 import crypto from 'crypto';
 
@@ -62,8 +62,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         [autoPublish, autoPublish ? new Date() : null, id]
       );
 
-      // Auto-generate SRI invoice
+      // Auto-generate SRI invoice (skip if project already has one from manual invoice)
+      const existingInvoice = await projectHasInvoice(id);
       try {
+        if (existingInvoice.hasInvoice) {
+          invoiceId = existingInvoice.invoiceId!;
+          sriResult = { ok: true, authorized: true, skipped: true, message: 'Factura manual ya existente' };
+        } else {
         invoiceId = await createInvoiceFromProject(id, { clientIdType: client_id_type, paymentCode: payment_code, invoiceItems: invoice_items, additionalFields: additional_fields });
 
         // Sign and send to SRI
@@ -137,6 +142,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             }
           }
         }
+        } // close else (no existing invoice)
       } catch (err: any) {
         console.error('Error auto-generating invoice:', err.message);
       }

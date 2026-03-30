@@ -25,6 +25,7 @@ async function ensureSriColumns() {
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS sri_response TEXT;
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS xml_signed TEXT;
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS pdf_data BYTEA;
+    ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS is_manual BOOLEAN DEFAULT false;
     CREATE TABLE IF NOT EXISTS gcc_world.invoice_items_sri (
       id SERIAL PRIMARY KEY,
       invoice_id INT NOT NULL,
@@ -35,6 +36,13 @@ async function ensureSriColumns() {
       iva_rate NUMERIC(5,2) DEFAULT 0,
       iva_amount NUMERIC(12,2) DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS gcc_world.invoice_projects (
+      id SERIAL PRIMARY KEY,
+      invoice_id INT NOT NULL,
+      project_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_invoice_projects_unique ON gcc_world.invoice_projects (invoice_id, project_id);
   `);
 }
 
@@ -167,6 +175,163 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
   }
 
   return invoice.id;
+}
+
+/**
+ * Check if a project already has an invoice (direct or via invoice_projects)
+ */
+export async function projectHasInvoice(projectId: string): Promise<{ hasInvoice: boolean; invoiceId?: number }> {
+  await ensureSriColumns();
+  // Check direct link
+  const { rows: direct } = await pool.query(
+    `SELECT id FROM gcc_world.invoices WHERE project_id = $1 AND status != 'cancelled' LIMIT 1`, [projectId]
+  );
+  if (direct.length > 0) return { hasInvoice: true, invoiceId: direct[0].id };
+  // Check junction table
+  const { rows: junction } = await pool.query(
+    `SELECT ip.invoice_id FROM gcc_world.invoice_projects ip
+     JOIN gcc_world.invoices i ON i.id = ip.invoice_id
+     WHERE ip.project_id = $1 AND i.status != 'cancelled' LIMIT 1`, [projectId]
+  );
+  if (junction.length > 0) return { hasInvoice: true, invoiceId: junction[0].invoice_id };
+  return { hasInvoice: false };
+}
+
+/**
+ * Create a manual invoice from multiple projects
+ */
+interface ManualInvoiceOptions {
+  projectIds: string[];
+  clientIdType?: string;
+  clientName: string;
+  clientRuc: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  paymentCode?: string;
+  invoiceItems?: { description: string; quantity: number; unitPrice: number; ivaRate: number; discount: number }[];
+  additionalFields?: { name: string; value: string }[];
+}
+
+export async function createManualInvoice(options: ManualInvoiceOptions): Promise<{ invoiceId: number; projectsData: any[] }> {
+  await ensureSriColumns();
+  await pool.query(`
+    ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS ruc VARCHAR(13);
+    ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS address TEXT;
+  `);
+
+  // Gather requirements from ALL projects
+  const projectsData: any[] = [];
+  const allReqItems: InvoiceItem[] = [];
+
+  for (const pid of options.projectIds) {
+    const { rows: [project] } = await pool.query(
+      `SELECT p.*, c.name as client_name FROM gcc_world.projects p LEFT JOIN gcc_world.clients c ON c.id = p.client_id WHERE p.id = $1`, [pid]
+    );
+    if (!project) continue;
+
+    const { rows: reqs } = await pool.query(
+      `SELECT r.title, r.description,
+              COALESCE(SUM(COALESCE(ra.member_cost, ra.proposed_cost)), r.cost, 0) as cost
+       FROM gcc_world.project_requirements r
+       LEFT JOIN gcc_world.requirement_assignments ra ON ra.requirement_id = r.id AND ra.status = 'accepted'
+       WHERE r.project_id = $1
+       GROUP BY r.id, r.title, r.description, r.cost
+       ORDER BY r.id`, [pid]
+    );
+
+    const projectItems = reqs.length > 0
+      ? reqs.map((r: any) => ({
+          description: r.title + (r.description ? ` - ${r.description}` : ''),
+          quantity: 1,
+          unitPrice: Number(r.cost) || 0,
+          ivaRate: 0,
+          discount: 0,
+        }))
+      : [{
+          description: `Servicios: ${project.title}`,
+          quantity: 1,
+          unitPrice: Number(project.final_cost) || 0,
+          ivaRate: 0,
+          discount: 0,
+        }];
+
+    projectsData.push({
+      id: pid,
+      title: project.title,
+      items: projectItems,
+      subtotal: projectItems.reduce((s: number, it: InvoiceItem) => s + it.quantity * it.unitPrice, 0),
+    });
+
+    allReqItems.push(...projectItems);
+  }
+
+  // Use manual items if provided, otherwise use gathered requirement items
+  const items: InvoiceItem[] = options.invoiceItems?.length
+    ? options.invoiceItems.map(it => ({
+        description: it.description,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        ivaRate: it.ivaRate,
+        discount: it.discount || 0,
+      }))
+    : allReqItems;
+
+  const secuencial = await getNextSecuencial();
+  const fecha = new Date();
+
+  const isConsumidorFinal = !options.clientRuc || options.clientRuc === '9999999999999' || options.clientIdType === '07';
+
+  const invoiceData: InvoiceData = {
+    secuencial,
+    fecha,
+    clienteIdTipo: isConsumidorFinal ? '07' : options.clientIdType,
+    clienteRuc: isConsumidorFinal ? '9999999999999' : options.clientRuc,
+    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (options.clientName || 'CONSUMIDOR FINAL'),
+    clienteDireccion: options.clientAddress || 'N/A',
+    clienteEmail: options.clientEmail || '',
+    clienteTelefono: options.clientPhone || '',
+    items,
+    payments: options.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
+    additionalFields: options.additionalFields?.filter(f => f.name && f.value),
+  };
+
+  const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
+
+  const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
+
+  // Insert invoice with is_manual = true, project_id = null
+  const { rows: [invoice] } = await pool.query(
+    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual)
+     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'generated', $15, true) RETURNING id`,
+    [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
+     SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
+     invoiceData.clienteRuc, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml]
+  );
+
+  // Link all projects via junction table
+  for (const pid of options.projectIds) {
+    await pool.query(
+      `INSERT INTO gcc_world.invoice_projects (invoice_id, project_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [invoice.id, pid]
+    );
+  }
+
+  // Insert items
+  for (const item of items) {
+    const sub = Math.round(item.quantity * item.unitPrice * 100) / 100;
+    const iva = Math.round(sub * (item.ivaRate / 100) * 100) / 100;
+    await pool.query(
+      `INSERT INTO gcc_world.invoice_items_sri (invoice_id, description, quantity, unit_price, subtotal, iva_rate, iva_amount)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [invoice.id, item.description, item.quantity, item.unitPrice, sub, item.ivaRate, iva]
+    );
+  }
+
+  return { invoiceId: invoice.id, projectsData };
 }
 
 /**
