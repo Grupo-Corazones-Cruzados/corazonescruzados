@@ -22,8 +22,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let sriResult: any = null;
 
     if (action === 'confirm_completion') {
+      // Ensure marketplace columns exist and prevent re-publishing marketplace-derived projects
+      await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS marketplace_source_id BIGINT`);
+      await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS is_marketplace_published BOOLEAN DEFAULT false`);
+
       // Ensure client exists and is linked to project
-      const { rows: [proj] } = await pool.query(`SELECT client_id FROM gcc_world.projects WHERE id = $1`, [id]);
+      const { rows: [proj] } = await pool.query(`SELECT client_id, marketplace_source_id FROM gcc_world.projects WHERE id = $1`, [id]);
       let clientId = proj?.client_id;
 
       if (!clientId && client_name) {
@@ -51,7 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         );
       }
 
-      await pool.query(`UPDATE gcc_world.projects SET status = 'completed', updated_at = NOW() WHERE id = $1`, [id]);
+      await pool.query(`UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = false, updated_at = NOW() WHERE id = $1`, [id]);
 
       // Auto-generate SRI invoice
       try {

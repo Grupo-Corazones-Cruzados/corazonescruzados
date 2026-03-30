@@ -514,7 +514,17 @@ export default function ProjectDetailPage() {
             </h1>
           )}
         </div>
-        <PixelBadge variant={STATUS_V[project.status] || 'default'}>{project.status}</PixelBadge>
+        <div className="flex items-center gap-2">
+          {project.marketplace_source_id && (
+            <Link href={`/dashboard/projects/${project.marketplace_source_id}`}>
+              <PixelBadge variant="info">Marketplace</PixelBadge>
+            </Link>
+          )}
+          {project.is_marketplace_published && (
+            <PixelBadge variant="success">En Marketplace</PixelBadge>
+          )}
+          <PixelBadge variant={STATUS_V[project.status] || 'default'}>{project.status}</PixelBadge>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1205,6 +1215,24 @@ export default function ProjectDetailPage() {
                 {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary text-[9px]">Completar</button>}
                 {!['completed', 'closed', 'cancelled'].includes(project.status) && (
                   <button onClick={() => updateStatus('cancelled')} className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>Cancelar</button>
+                )}
+                {project.status === 'completed' && isOwner && !project.marketplace_source_id && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/projects/${id}/publish`, {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ publish: !project.is_marketplace_published }),
+                        });
+                        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+                        toast.success(project.is_marketplace_published ? 'Despublicado del marketplace' : 'Publicado en el marketplace');
+                        fetchProject();
+                      } catch (e: any) { toast.error(e.message || 'Error'); }
+                    }}
+                    className={`pixel-btn text-[9px] ${project.is_marketplace_published ? 'border border-yellow-500/30 text-yellow-400 hover:bg-yellow-900/20' : 'pixel-btn-primary'}`}
+                  >
+                    {project.is_marketplace_published ? 'Despublicar Marketplace' : 'Publicar en Marketplace'}
+                  </button>
                 )}
               </div>
             </div>

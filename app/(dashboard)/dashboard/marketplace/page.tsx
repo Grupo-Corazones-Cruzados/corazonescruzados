@@ -58,6 +58,20 @@ export default function MarketplacePage() {
   const [orderModal, setOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
+  // Marketplace published projects
+  const [marketplaceProjects, setMarketplaceProjects] = useState<any[]>([]);
+  const [requestModal, setRequestModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [requesting, setRequesting] = useState(false);
+
+  const fetchMarketplaceProjects = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/marketplace/projects${search ? `?search=${encodeURIComponent(search)}` : ''}`);
+      const data = await res.json();
+      setMarketplaceProjects(data.data || []);
+    } catch { setMarketplaceProjects([]); }
+  }, [search]);
+
   const fetchItems = useCallback(async () => {
     const type = TAB_TO_TYPE[tab];
     if (!type) return;
@@ -78,8 +92,9 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     if (tab === 'orders') fetchOrders();
+    else if (tab === 'projects') fetchMarketplaceProjects();
     else fetchItems();
-  }, [tab, fetchItems, fetchOrders]);
+  }, [tab, fetchItems, fetchOrders, fetchMarketplaceProjects]);
 
   const filtered = items.filter((i: any) =>
     !search || i.title?.toLowerCase().includes(search.toLowerCase())
@@ -200,8 +215,53 @@ export default function MarketplacePage() {
           emptyTitle="Sin pedidos"
           emptyDesc="No has realizado ningun pedido aun."
         />
+      ) : tab === 'projects' ? (
+        /* ========== MARKETPLACE PROJECTS TABLE ========== */
+        <PixelDataTable
+          columns={[
+            { key: 'title', header: 'Proyecto', render: (p: any) => (
+              <span className="text-white">{p.title}</span>
+            )},
+            { key: 'team', header: 'Equipo', render: (p: any) => {
+              const team = p.team || [];
+              if (team.length === 0) return <span className="text-digi-muted">-</span>;
+              return (
+                <div className="flex items-center gap-1">
+                  {team.slice(0, 3).map((m: any, i: number) => (
+                    m.photo_url ? (
+                      <img key={i} src={m.photo_url} alt={m.name} className="w-5 h-5 rounded-full object-cover border border-digi-border" title={m.name} />
+                    ) : (
+                      <div key={i} className="w-5 h-5 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center" title={m.name}>
+                        <span className="text-[7px] text-accent-glow" style={pf}>{m.name?.charAt(0)}</span>
+                      </div>
+                    )
+                  ))}
+                  {team.length > 3 && <span className="text-[9px] text-digi-muted" style={mf}>+{team.length - 3}</span>}
+                </div>
+              );
+            }, width: '120px' },
+            { key: 'reqs', header: 'Reqs', render: (p: any) => (
+              <span className="text-digi-muted" style={mf}>{p.requirements_count}</span>
+            ), width: '60px' },
+            { key: 'price', header: 'Precio', width: '100px', render: (p: any) => (
+              <span className="text-accent-glow" style={mf}>${Number(p.final_cost || 0).toFixed(2)}</span>
+            )},
+            { key: 'actions', header: '', width: '90px', render: (p: any) => (
+              <button
+                onClick={(e) => { e.stopPropagation(); setSelectedProject(p); setRequestModal(true); }}
+                className="text-[9px] text-accent-glow border border-accent/40 px-2 py-0.5 hover:bg-accent/10 transition-colors"
+                style={pf}
+              >
+                Solicitar
+              </button>
+            )},
+          ]}
+          data={marketplaceProjects.filter((p: any) => !search || p.title?.toLowerCase().includes(search.toLowerCase()))}
+          emptyTitle="Sin proyectos"
+          emptyDesc="No hay proyectos publicados en el marketplace aun."
+        />
       ) : (
-        /* ========== ITEMS TABLE (Projects / Products / Automations) ========== */
+        /* ========== ITEMS TABLE (Products / Automations) ========== */
         <PixelDataTable
           columns={[
             { key: 'id', header: 'ID', render: (item: any) => `#${item.id}`, width: '60px' },
@@ -392,6 +452,90 @@ export default function MarketplacePage() {
                 className="flex-1 pixel-btn pixel-btn-primary disabled:opacity-50"
               >
                 {purchasing ? 'Procesando...' : 'Confirmar Compra'}
+              </button>
+            </div>
+          </div>
+        )}
+      </PixelModal>
+
+      {/* ========== PROJECT REQUEST MODAL ========== */}
+      <PixelModal open={requestModal} onClose={() => !requesting && setRequestModal(false)} title="Solicitar Proyecto">
+        {selectedProject && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-xs text-white mb-1" style={pf}>{selectedProject.title}</h3>
+              {selectedProject.description && (
+                <p className="text-[10px] text-digi-muted" style={mf}>{selectedProject.description}</p>
+              )}
+            </div>
+
+            {selectedProject.team?.length > 0 && (
+              <div>
+                <span className="text-[9px] text-digi-muted block mb-1.5" style={pf}>Equipo asignado</span>
+                <div className="flex flex-wrap gap-2">
+                  {selectedProject.team.map((m: any, i: number) => (
+                    <div key={i} className="flex items-center gap-1.5 px-2 py-1 border border-digi-border bg-digi-darker">
+                      {m.photo_url ? (
+                        <img src={m.photo_url} alt={m.name} className="w-4 h-4 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-accent/30 flex items-center justify-center">
+                          <span className="text-[6px] text-accent-glow" style={pf}>{m.name?.charAt(0)}</span>
+                        </div>
+                      )}
+                      <span className="text-[9px] text-digi-text" style={mf}>{m.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between text-[10px] py-1 border-b border-digi-border/30" style={mf}>
+              <span className="text-digi-muted">Requerimientos</span>
+              <span className="text-digi-text">{selectedProject.requirements_count}</span>
+            </div>
+
+            <div className="pixel-card !bg-accent/5 !border-accent/30">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-accent-glow" style={pf}>Costo del proyecto</span>
+                <span className="text-sm text-white font-bold" style={mf}>${Number(selectedProject.final_cost || 0).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="text-[9px] text-digi-muted" style={mf}>
+              Se creara un proyecto privado con los mismos requerimientos y se invitara al equipo original.
+              Si algun miembro no acepta, podras asignar otros profesionales.
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setRequestModal(false)}
+                disabled={requesting}
+                className="flex-1 py-2 text-[10px] text-digi-muted border border-digi-border hover:bg-digi-darker transition-colors"
+                style={pf}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  setRequesting(true);
+                  try {
+                    const res = await fetch('/api/marketplace/projects/purchase', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ source_project_id: selectedProject.id }),
+                    });
+                    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+                    const data = await res.json();
+                    toast.success('Proyecto solicitado exitosamente');
+                    setRequestModal(false);
+                    window.location.href = `/dashboard/projects/${data.data.project_id}`;
+                  } catch (e: any) { toast.error(e.message || 'Error al solicitar'); }
+                  finally { setRequesting(false); }
+                }}
+                disabled={requesting}
+                className="flex-1 pixel-btn pixel-btn-primary disabled:opacity-50"
+              >
+                {requesting ? 'Procesando...' : 'Confirmar Solicitud'}
               </button>
             </div>
           </div>
