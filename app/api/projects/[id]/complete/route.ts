@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
-    const { action, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields } = await req.json();
+    const { action, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
 
     let invoiceId: number | null = null;
     let sriResult: any = null;
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           invoiceId = existingInvoice.invoiceId!;
           sriResult = { ok: true, authorized: true, skipped: true, message: 'Factura manual ya existente' };
         } else {
-        invoiceId = await createInvoiceFromProject(id, { clientIdType: client_id_type, paymentCode: payment_code, invoiceItems: invoice_items, additionalFields: additional_fields });
+        invoiceId = await createInvoiceFromProject(id, { clientIdType: client_id_type, paymentCode: payment_code, invoiceItems: invoice_items, additionalFields: additional_fields, currency, exchangeRate: exchange_rate });
 
         // Sign and send to SRI
         if (invoiceId) {
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           if (send_email && client_email && sriResult?.authorized) {
             try {
               const { rows: [inv] } = await pool.query(
-                `SELECT invoice_number, total, pdf_data, access_key, authorization_number FROM gcc_world.invoices WHERE id = $1`, [invoiceId]
+                `SELECT invoice_number, total, pdf_data, access_key, authorization_number, currency, exchange_rate FROM gcc_world.invoices WHERE id = $1`, [invoiceId]
               );
 
               const attachments: any[] = [];
@@ -125,7 +125,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Autorizacion:</strong></td><td style="padding:10px 16px;font-size:11px;border-bottom:1px solid #f0f0f0;word-break:break-all;">${inv.authorization_number || 'Pendiente'}</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>RUC Emisor:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">0930095922001</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Razon Social:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">GONZALEZ MUYULEMA LUIS FERNANDO</td></tr>
-      <tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Valor Total:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#1a1a2e;">$${Number(inv.total).toFixed(2)}</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;${inv.currency && inv.currency !== 'USD' ? 'border-bottom:1px solid #f0f0f0;' : ''}"><strong>Valor Total:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#1a1a2e;${inv.currency && inv.currency !== 'USD' ? 'border-bottom:1px solid #f0f0f0;' : ''}">$${Number(inv.total).toFixed(2)} USD</td></tr>
+      ${inv.currency && inv.currency !== 'USD' ? `<tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Equivalente ${inv.currency}:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#4B2D8E;">${(Number(inv.total) * Number(inv.exchange_rate)).toFixed(2)} ${inv.currency}</td></tr>` : ''}
     </table>
     <div style="text-align:center;margin:24px 0 0;">
       <a href="${projectUrl}" style="display:inline-block;padding:12px 24px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;border-radius:4px;">Ver Detalle del Proyecto</a>

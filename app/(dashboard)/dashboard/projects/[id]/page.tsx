@@ -103,6 +103,9 @@ export default function ProjectDetailPage() {
   const [completeSendEmail, setCompleteSendEmail] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [completeStep, setCompleteStep] = useState('');
+  const [completeCurrency, setCompleteCurrency] = useState('USD');
+  const [completeExchangeRate, setCompleteExchangeRate] = useState('1');
+  const [currencies, setCurrencies] = useState<{ code: string; symbol: string; name: string; rate: number }[]>([]);
 
   const isAdmin = user?.role === 'admin';
   const isMember = user?.role === 'member';
@@ -134,6 +137,7 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     if (!isAdmin) return;
     fetch('/api/digimundo/projects').then(r => r.json()).then(d => setDigiProjects(d.data || [])).catch(() => {});
+    fetch('/api/exchange-rates').then(r => r.json()).then(d => setCurrencies(d.currencies || [])).catch(() => {});
   }, [isAdmin]);
 
   // Fetch members for assignment dropdown (accepted + all active)
@@ -313,6 +317,8 @@ export default function ProjectDetailPage() {
             discount: Number(it.discount) || 0,
           })),
           additional_fields: completeAdditionalFields.filter(f => f.name.trim() && f.value.trim()),
+          currency: completeCurrency,
+          exchange_rate: Number(completeExchangeRate) || 1,
         }),
       });
       const data = await res.json();
@@ -1058,6 +1064,45 @@ export default function ProjectDetailPage() {
                     <option value="20">Otros con utilizacion del sistema financiero</option>
                     <option value="21">Endoso de titulos</option>
                   </select>
+
+                  {currencies.length > 0 && (
+                  <>
+                  <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Moneda</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Moneda</label>
+                      <select value={completeCurrency} onChange={e => {
+                        const code = e.target.value;
+                        setCompleteCurrency(code);
+                        const c = currencies.find(c => c.code === code);
+                        setCompleteExchangeRate(c ? String(c.rate) : '1');
+                      }} className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                        {currencies.map(c => (
+                          <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tasa (1 USD = ?)</label>
+                      <input value={completeExchangeRate} onChange={e => setCompleteExchangeRate(e.target.value)}
+                        type="number" min="0.0001" step="0.0001" disabled={completeCurrency === 'USD'}
+                        className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                    </div>
+                  </div>
+                  {completeCurrency !== 'USD' && (
+                    <div className="px-2 py-1.5 border border-purple-500/30 bg-purple-900/10 text-[9px] text-purple-300 mt-1" style={mf}>
+                      Total convertido: {(() => {
+                        const t = completeItems.reduce((s, it) => {
+                          const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
+                          return s + base + base * ((Number(it.ivaRate) || 0) / 100);
+                        }, 0);
+                        const sym = currencies.find(c => c.code === completeCurrency)?.symbol || completeCurrency;
+                        return `${sym} ${(t * (Number(completeExchangeRate) || 1)).toFixed(2)} ${completeCurrency}`;
+                      })()}
+                    </div>
+                  )}
+                  </>
+                  )}
 
                   <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Campos Adicionales</h4>
                   <div className="space-y-1">

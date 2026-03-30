@@ -5,6 +5,11 @@ import { enviarComprobante, consultarAutorizacion } from './soap-client';
 import { generateRidePdf } from './ride-pdf';
 import { SRI_CONFIG } from './config';
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$', EUR: '€', GBP: '£', COP: 'COP$', MXN: 'MX$',
+  BRL: 'R$', PEN: 'S/', CLP: 'CLP$', ARS: 'AR$',
+};
+
 async function ensureSriColumns() {
   await pool.query(`
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS invoice_number VARCHAR(20);
@@ -26,6 +31,9 @@ async function ensureSriColumns() {
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS xml_signed TEXT;
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS pdf_data BYTEA;
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS is_manual BOOLEAN DEFAULT false;
+    ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS currency VARCHAR(3) DEFAULT 'USD';
+    ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS exchange_rate NUMERIC(12,6) DEFAULT 1;
+    ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS original_total_usd NUMERIC(12,2);
     CREATE TABLE IF NOT EXISTS gcc_world.invoice_items_sri (
       id SERIAL PRIMARY KEY,
       invoice_id INT NOT NULL,
@@ -68,6 +76,8 @@ interface InvoiceOptions {
   paymentCode?: string;
   invoiceItems?: { description: string; quantity: number; unitPrice: number; ivaRate: number; discount: number }[];
   additionalFields?: { name: string; value: string }[];
+  currency?: string;      // e.g. 'USD', 'EUR', 'COP'
+  exchangeRate?: number;  // rate to convert FROM USD TO target currency
 }
 
 export async function createInvoiceFromProject(projectId: string, options?: InvoiceOptions): Promise<number> {
@@ -147,20 +157,25 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
   // Build XML
   const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
 
-  // Calculate totals
+  // Calculate totals (in USD — the SRI base currency)
   const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
-  const total = subtotal0 + subtotalIva + ivaMonto;
+  const totalUsd = subtotal0 + subtotalIva + ivaMonto;
+
+  // Currency conversion
+  const currency = options?.currency || 'USD';
+  const exchangeRate = options?.exchangeRate || 1;
 
   // Insert invoice — 'total' is a generated column (subtotal + tax), don't insert it
   const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed)
-     VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'generated', $17) RETURNING id`,
+    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, currency, exchange_rate, original_total_usd)
+     VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'generated', $17, $18, $19, $20) RETURNING id`,
     [projectId, project.client_id, (subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
      SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
      invoiceData.clienteRuc, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
-     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml]
+     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
+     currency, exchangeRate, totalUsd.toFixed(2)]
   );
 
   // Insert items
@@ -207,6 +222,8 @@ interface ManualInvoiceOptions {
   clientRuc: string;
   clientEmail?: string;
   clientPhone?: string;
+  currency?: string;
+  exchangeRate?: number;
   clientAddress?: string;
   paymentCode?: string;
   invoiceItems?: { description: string; quantity: number; unitPrice: number; ivaRate: number; discount: number }[];
@@ -301,15 +318,20 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
   const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
+  const totalUsd = subtotal0 + subtotalIva + ivaMonto;
+
+  const currency = options.currency || 'USD';
+  const exchangeRate = options.exchangeRate || 1;
 
   // Insert invoice with is_manual = true, project_id = null
   const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual)
-     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'generated', $15, true) RETURNING id`,
+    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
+     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'generated', $15, true, $16, $17, $18) RETURNING id`,
     [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
      SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
      invoiceData.clienteRuc, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
-     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml]
+     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
+     currency, exchangeRate, totalUsd.toFixed(2)]
   );
 
   // Link all projects via junction table
@@ -397,6 +419,12 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
         subtotalIva: Number(invoice.subtotal_iva),
         ivaMonto: Number(invoice.iva_amount),
         total: Number(invoice.total),
+        currency: invoice.currency || 'USD',
+        currencySymbol: CURRENCY_SYMBOLS[invoice.currency] || '$',
+        exchangeRate: Number(invoice.exchange_rate) || 1,
+        totalConverted: invoice.currency && invoice.currency !== 'USD' && invoice.exchange_rate
+          ? Number(invoice.total) * Number(invoice.exchange_rate)
+          : undefined,
       });
 
       await pool.query(`UPDATE gcc_world.invoices SET pdf_data = $1, updated_at = NOW() WHERE id = $2`, [pdfBuffer, invoiceId]);

@@ -59,6 +59,11 @@ export default function InvoicesPage() {
   const [mAdditionalFields, setMAdditionalFields] = useState<{ name: string; value: string }[]>([]);
   const [mSendEmail, setMSendEmail] = useState(true);
 
+  // Currency
+  const [currencies, setCurrencies] = useState<{ code: string; symbol: string; name: string; rate: number }[]>([]);
+  const [mCurrency, setMCurrency] = useState('USD');
+  const [mExchangeRate, setMExchangeRate] = useState('1');
+
   // Processing
   const [processing, setProcessing] = useState(false);
   const [processStep, setProcessStep] = useState('');
@@ -75,6 +80,11 @@ export default function InvoicesPage() {
   }, [tab, search]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Fetch currencies on mount
+  useEffect(() => {
+    fetch('/api/exchange-rates').then(r => r.json()).then(d => setCurrencies(d.currencies || [])).catch(() => {});
+  }, []);
 
   // Search projects for manual invoice
   const searchProjects = useCallback(async (q: string) => {
@@ -121,6 +131,8 @@ export default function InvoicesPage() {
     setMItems([]);
     setMAdditionalFields([]);
     setMSendEmail(true);
+    setMCurrency('USD');
+    setMExchangeRate('1');
     setProcessing(false);
     setProcessStep('');
     setShowManual(true);
@@ -192,6 +204,8 @@ export default function InvoicesPage() {
           client_address: mClientAddress,
           payment_code: mPaymentCode,
           send_email: mSendEmail,
+          currency: mCurrency,
+          exchange_rate: Number(mExchangeRate) || 1,
           invoice_items: mItems.map(it => ({
             description: it.description,
             quantity: Number(it.quantity) || 1,
@@ -482,6 +496,41 @@ export default function InvoicesPage() {
                   <option value="20">Otros con utilizacion del sistema financiero</option>
                   <option value="21">Endoso de titulos</option>
                 </select>
+
+                <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Moneda</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Moneda de la factura</label>
+                    <select value={mCurrency} onChange={e => {
+                      const code = e.target.value;
+                      setMCurrency(code);
+                      const c = currencies.find(c => c.code === code);
+                      setMExchangeRate(c ? String(c.rate) : '1');
+                    }} className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                      {currencies.map(c => (
+                        <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tasa (1 USD = ?)</label>
+                    <input value={mExchangeRate} onChange={e => setMExchangeRate(e.target.value)}
+                      type="number" min="0.0001" step="0.0001" disabled={mCurrency === 'USD'}
+                      className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                  </div>
+                </div>
+                {mCurrency !== 'USD' && (
+                  <div className="px-2 py-1.5 border border-purple-500/30 bg-purple-900/10 text-[9px] text-purple-300 mt-1" style={mf}>
+                    Total convertido: {(() => {
+                      const t = mItems.reduce((s, it) => {
+                        const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
+                        return s + base + base * ((Number(it.ivaRate) || 0) / 100);
+                      }, 0);
+                      const sym = currencies.find(c => c.code === mCurrency)?.symbol || mCurrency;
+                      return `${sym} ${(t * (Number(mExchangeRate) || 1)).toFixed(2)} ${mCurrency}`;
+                    })()}
+                  </div>
+                )}
 
                 <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Campos Adicionales</h4>
                 <div className="space-y-1">
