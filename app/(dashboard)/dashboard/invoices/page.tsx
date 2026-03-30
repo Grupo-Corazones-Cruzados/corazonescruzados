@@ -146,22 +146,20 @@ export default function InvoicesPage() {
 
   // Advance from project selection to client form
   const goToForm = async () => {
-    // Load requirements from selected projects to pre-populate items
+    // Load requirements with their costs from selected projects
     const allItems: typeof mItems = [];
     for (const p of selectedProjects) {
       try {
-        const res = await fetch(`/api/projects/${p.id}/requirements`);
+        // Use the invoice-items endpoint that aggregates assignment costs properly
+        const res = await fetch(`/api/projects/${p.id}/invoice-items`);
         const data = await res.json();
-        const reqs = data.data || [];
-        if (reqs.length > 0) {
-          for (const r of reqs) {
-            const acceptedCost = (r.assignments || [])
-              .filter((a: any) => a.status === 'accepted')
-              .reduce((s: number, a: any) => s + Number(a.member_cost ?? a.proposed_cost ?? 0), 0);
+        const items = data.data || [];
+        if (items.length > 0) {
+          for (const it of items) {
             allItems.push({
-              description: r.title + (r.description ? ` - ${r.description}` : ''),
+              description: it.description,
               quantity: '1',
-              unitPrice: String(acceptedCost || Number(r.cost) || 0),
+              unitPrice: String(Number(it.cost) || 0),
               ivaRate: '0',
               discount: '0',
             });
