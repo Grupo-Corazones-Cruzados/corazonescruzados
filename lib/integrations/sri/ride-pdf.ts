@@ -230,11 +230,12 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
       const convY = Math.max(y, ty) + 12;
       const equivalent = (data.total * data.exchangeRate).toFixed(2);
       const sym = data.currencySymbol || data.currency;
-      doc.rect(L, convY, PW, 22).fill('#f0e6ff');
-      doc.fillColor('#4B2D8E').font('Helvetica-Bold').fontSize(7);
-      doc.text(`EQUIVALENTE CLIENTE: ${sym} ${equivalent} ${data.currency}`, L + 8, convY + 4, { width: PW - 16 });
-      doc.font('Helvetica').fontSize(6).fillColor('#666');
-      doc.text(`Tasa de cambio: 1 USD = ${data.exchangeRate} ${data.currency}`, L + 8, convY + 13, { width: PW - 16 });
+      doc.rect(L, convY, PW, 20).fill('#e8e8e8');
+      doc.fillColor('black').font('Helvetica-Bold').fontSize(6.5);
+      doc.text(`Equivalente: ${sym} ${equivalent} ${data.currency}`, L + 4, convY + 3, { width: PW * 0.55 });
+      doc.font('Helvetica').fontSize(6).fillColor('#333');
+      doc.text(`Tasa de cambio: 1 USD = ${data.exchangeRate} ${data.currency}`, L + 4, convY + 12, { width: PW * 0.55 });
+      doc.rect(L, convY, PW, 20).stroke('#ccc');
     }
 
     // ════════════ FOOTER ════════════
