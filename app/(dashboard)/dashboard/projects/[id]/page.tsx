@@ -1208,7 +1208,8 @@ export default function ProjectDetailPage() {
           {(isOwner || isMember) && (
             <div className="pixel-card">
               <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Acciones</h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
                 {project.status === 'draft' && <button onClick={() => updateStatus('open')} className="pixel-btn pixel-btn-primary text-[9px]">Publicar</button>}
                 {project.status === 'open' && <button onClick={() => updateStatus('in_progress')} className="pixel-btn pixel-btn-primary text-[9px]">Iniciar</button>}
                 {project.status === 'in_progress' && <button onClick={() => updateStatus('review')} className="pixel-btn pixel-btn-primary text-[9px]">Enviar a Revision</button>}
@@ -1216,6 +1217,15 @@ export default function ProjectDetailPage() {
                 {!['completed', 'closed', 'cancelled'].includes(project.status) && (
                   <button onClick={() => updateStatus('cancelled')} className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>Cancelar</button>
                 )}
+                </div>
+                <p className="text-[9px] text-digi-muted leading-relaxed" style={mf}>
+                  {project.status === 'draft' && 'Publicar hara visible este proyecto para que miembros puedan postularse y trabajar en el.'}
+                  {project.status === 'open' && 'Iniciar cambia el estado a En Progreso, indicando que el equipo ya esta trabajando activamente.'}
+                  {project.status === 'in_progress' && 'Enviar a Revision notifica al administrador que el trabajo esta listo para ser evaluado.'}
+                  {project.status === 'review' && isAdmin && 'Completar finaliza el proyecto, genera la factura y lo publica en el marketplace.'}
+                  {project.status === 'completed' && 'Este proyecto ha sido completado exitosamente.'}
+                  {project.status === 'cancelled' && 'Este proyecto fue cancelado.'}
+                </p>
                 {project.status === 'completed' && isOwner && !project.marketplace_source_id && (
                   <button
                     onClick={async () => {
