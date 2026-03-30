@@ -21,7 +21,6 @@ interface RideData {
   currency?: string;
   currencySymbol?: string;
   exchangeRate?: number;
-  totalConverted?: number;
 }
 
 const FORMAS_PAGO_LABEL: Record<string, string> = {
@@ -45,7 +44,7 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
 
     const PW = doc.page.width - 60; // page usable width
     const L = 30; // left margin
-    const cs = data.currency && data.currency !== 'USD' ? (data.currencySymbol || data.currency) : '$'; // currency symbol
+    const cs = '$'; // SRI invoices always in USD
     const midX = L + PW * 0.48;
     const rightColX = L + PW * 0.50;
     const rightColW = PW * 0.50;
@@ -226,14 +225,16 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     // Outer border for totals
     doc.rect(botRightX, botY, botRightW, ty - botY).stroke('#ccc');
 
-    // ════════════ CURRENCY NOTE ════════════
+    // ════════════ CURRENCY REFERENCE NOTE ════════════
     if (data.currency && data.currency !== 'USD' && data.exchangeRate) {
       const convY = Math.max(y, ty) + 12;
+      const equivalent = (data.total * data.exchangeRate).toFixed(2);
+      const sym = data.currencySymbol || data.currency;
       doc.rect(L, convY, PW, 22).fill('#f0e6ff');
       doc.fillColor('#4B2D8E').font('Helvetica-Bold').fontSize(7);
-      doc.text(`MONEDA: ${data.currency}  |  REFERENCIA USD: $${(data.total / data.exchangeRate).toFixed(2)}`, L + 8, convY + 4, { width: PW - 16 });
+      doc.text(`EQUIVALENTE CLIENTE: ${sym} ${equivalent} ${data.currency}`, L + 8, convY + 4, { width: PW - 16 });
       doc.font('Helvetica').fontSize(6).fillColor('#666');
-      doc.text(`Tasa de cambio aplicada: 1 USD = ${data.exchangeRate} ${data.currency}`, L + 8, convY + 13, { width: PW - 16 });
+      doc.text(`Tasa de cambio: 1 USD = ${data.exchangeRate} ${data.currency}`, L + 8, convY + 13, { width: PW - 16 });
     }
 
     // ════════════ FOOTER ════════════

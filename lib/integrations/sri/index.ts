@@ -111,8 +111,8 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
      ORDER BY r.id`, [projectId]
   );
 
-  // Use items from form if provided, otherwise build from requirements (in USD)
-  const itemsUsd: InvoiceItem[] = options?.invoiceItems?.length
+  // Use items from form if provided, otherwise build from requirements — always in USD
+  const items: InvoiceItem[] = options?.invoiceItems?.length
     ? options.invoiceItems.map(it => ({
         description: it.description,
         quantity: it.quantity,
@@ -134,27 +134,26 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
         ivaRate: 0,
       }];
 
-  // Currency conversion — convert item prices for the invoice
+  // Currency info (for reference only — invoice always in USD)
   const currency = options?.currency || 'USD';
   const exchangeRate = options?.exchangeRate || 1;
-  const items: InvoiceItem[] = currency !== 'USD' && exchangeRate !== 1
-    ? itemsUsd.map(it => ({
-        ...it,
-        unitPrice: Math.round(it.unitPrice * exchangeRate * 100) / 100,
-        discount: it.discount ? Math.round(it.discount * exchangeRate * 100) / 100 : 0,
-      }))
-    : itemsUsd;
-
-  // Calculate original USD total for reference
-  const usdSubtotal = itemsUsd.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const usdIva = itemsUsd.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
-  const totalUsd = usdSubtotal + usdIva;
 
   const secuencial = await getNextSecuencial();
   const fecha = new Date();
 
-  // If consumer final, force correct values
   const isConsumidorFinal = !project.client_ruc || project.client_ruc === '9999999999999' || clientIdType === '07';
+
+  // Build additional fields — inject currency reference if not USD
+  const baseAdditionalFields = options?.additionalFields?.filter(f => f.name && f.value) || [];
+  if (currency !== 'USD' && exchangeRate > 0) {
+    const totalUsd = items.reduce((s, i) => s + i.quantity * i.unitPrice - (i.discount || 0), 0);
+    const totalConverted = (totalUsd * exchangeRate).toFixed(2);
+    baseAdditionalFields.push(
+      { name: 'monedaCliente', value: currency },
+      { name: 'tasaCambio', value: `1 USD = ${exchangeRate} ${currency}` },
+      { name: `equivalente${currency}`, value: `${totalConverted} ${currency}` },
+    );
+  }
 
   const invoiceData: InvoiceData = {
     secuencial,
@@ -167,18 +166,18 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
     clienteTelefono: project.client_phone || '',
     items,
     payments: options?.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
-    additionalFields: options?.additionalFields?.filter(f => f.name && f.value),
+    additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
   };
 
-  // Build XML (amounts already in target currency)
+  // Build XML — amounts always in USD
   const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
 
-  // Calculate totals in the invoice currency
+  // Calculate totals in USD
   const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
 
-  // Insert invoice — totals are in the target currency, original_total_usd keeps USD reference
+  // Insert invoice — all amounts in USD, currency/rate stored for reference
   const { rows: [invoice] } = await pool.query(
     `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, currency, exchange_rate, original_total_usd)
      VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'generated', $17, $18, $19, $20) RETURNING id`,
@@ -186,7 +185,7 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
      SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
      invoiceData.clienteRuc, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
      subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-     currency, exchangeRate, totalUsd.toFixed(2)]
+     currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
   );
 
   // Insert items
@@ -294,8 +293,8 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
     allReqItems.push(...projectItems);
   }
 
-  // Use manual items if provided, otherwise use gathered requirement items (all in USD)
-  const itemsUsd: InvoiceItem[] = options.invoiceItems?.length
+  // Use manual items if provided, otherwise use gathered requirement items — always in USD
+  const items: InvoiceItem[] = options.invoiceItems?.length
     ? options.invoiceItems.map(it => ({
         description: it.description,
         quantity: it.quantity,
@@ -305,26 +304,26 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
       }))
     : allReqItems;
 
-  // Currency conversion — convert item prices for the invoice
+  // Currency info (for reference only — invoice always in USD)
   const currency = options.currency || 'USD';
   const exchangeRate = options.exchangeRate || 1;
-  const items: InvoiceItem[] = currency !== 'USD' && exchangeRate !== 1
-    ? itemsUsd.map(it => ({
-        ...it,
-        unitPrice: Math.round(it.unitPrice * exchangeRate * 100) / 100,
-        discount: it.discount ? Math.round(it.discount * exchangeRate * 100) / 100 : 0,
-      }))
-    : itemsUsd;
-
-  // Calculate original USD total for reference
-  const usdSubtotal = itemsUsd.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const usdIva = itemsUsd.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
-  const totalUsd = usdSubtotal + usdIva;
 
   const secuencial = await getNextSecuencial();
   const fecha = new Date();
 
   const isConsumidorFinal = !options.clientRuc || options.clientRuc === '9999999999999' || options.clientIdType === '07';
+
+  // Build additional fields — inject currency reference if not USD
+  const baseAdditionalFields = options.additionalFields?.filter(f => f.name && f.value) || [];
+  if (currency !== 'USD' && exchangeRate > 0) {
+    const totalUsd = items.reduce((s, i) => s + i.quantity * i.unitPrice - (i.discount || 0), 0);
+    const totalConverted = (totalUsd * exchangeRate).toFixed(2);
+    baseAdditionalFields.push(
+      { name: 'monedaCliente', value: currency },
+      { name: 'tasaCambio', value: `1 USD = ${exchangeRate} ${currency}` },
+      { name: `equivalente${currency}`, value: `${totalConverted} ${currency}` },
+    );
+  }
 
   const invoiceData: InvoiceData = {
     secuencial,
@@ -337,12 +336,12 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
     clienteTelefono: options.clientPhone || '',
     items,
     payments: options.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
-    additionalFields: options.additionalFields?.filter(f => f.name && f.value),
+    additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
   };
 
   const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
 
-  // Totals in the invoice currency (already converted)
+  // Totals always in USD
   const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
@@ -355,7 +354,7 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
      SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
      invoiceData.clienteRuc, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
      subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-     currency, exchangeRate, totalUsd.toFixed(2)]
+     currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
   );
 
   // Link all projects via junction table
@@ -446,9 +445,6 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
         currency: invoice.currency || 'USD',
         currencySymbol: CURRENCY_SYMBOLS[invoice.currency] || '$',
         exchangeRate: Number(invoice.exchange_rate) || 1,
-        totalConverted: invoice.currency && invoice.currency !== 'USD' && invoice.exchange_rate
-          ? Number(invoice.total) * Number(invoice.exchange_rate)
-          : undefined,
       });
 
       await pool.query(`UPDATE gcc_world.invoices SET pdf_data = $1, updated_at = NOW() WHERE id = $2`, [pdfBuffer, invoiceId]);

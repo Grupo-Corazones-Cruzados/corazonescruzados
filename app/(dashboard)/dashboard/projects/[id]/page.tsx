@@ -1091,7 +1091,7 @@ export default function ProjectDetailPage() {
                   </div>
                   {completeCurrency !== 'USD' && (
                     <div className="px-2 py-1.5 border border-purple-500/30 bg-purple-900/10 text-[9px] text-purple-300 mt-1" style={mf}>
-                      Total convertido: {(() => {
+                      Equivalente para el cliente: {(() => {
                         const t = completeItems.reduce((s, it) => {
                           const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
                           return s + base + base * ((Number(it.ivaRate) || 0) / 100);
@@ -1099,6 +1099,7 @@ export default function ProjectDetailPage() {
                         const sym = currencies.find(c => c.code === completeCurrency)?.symbol || completeCurrency;
                         return `${sym} ${(t * (Number(completeExchangeRate) || 1)).toFixed(2)} ${completeCurrency}`;
                       })()}
+                      <span className="text-digi-muted"> (referencia, factura en USD)</span>
                     </div>
                   )}
                   </>
