@@ -61,13 +61,21 @@ export async function GET(req: NextRequest) {
 
     const dataQ = await pool.query(
       `SELECT p.*, c.name as client_name,
-              COALESCE(inv_direct.id, inv_manual.invoice_id) as invoice_id,
-              COALESCE(inv_direct.sri_status, inv_manual_inv.sri_status) as invoice_sri_status
+              inv_info.invoice_id,
+              inv_info.invoice_sri_status
        FROM gcc_world.projects p
        LEFT JOIN gcc_world.clients c ON c.id = p.client_id
-       LEFT JOIN gcc_world.invoices inv_direct ON inv_direct.project_id = p.id AND inv_direct.status != 'cancelled'
-       LEFT JOIN gcc_world.invoice_projects inv_manual ON inv_manual.project_id = CAST(p.id AS TEXT)
-       LEFT JOIN gcc_world.invoices inv_manual_inv ON inv_manual_inv.id = inv_manual.invoice_id AND inv_manual_inv.status != 'cancelled'
+       LEFT JOIN LATERAL (
+         SELECT id as invoice_id, sri_status as invoice_sri_status
+         FROM gcc_world.invoices
+         WHERE project_id = p.id AND status != 'cancelled'
+         UNION ALL
+         SELECT ip.invoice_id, i.sri_status
+         FROM gcc_world.invoice_projects ip
+         JOIN gcc_world.invoices i ON i.id = ip.invoice_id AND i.status != 'cancelled'
+         WHERE ip.project_id = CAST(p.id AS TEXT)
+         LIMIT 1
+       ) inv_info ON true
        ${where}
        ORDER BY p.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
