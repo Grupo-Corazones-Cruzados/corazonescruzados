@@ -111,6 +111,53 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { id } = await params;
     const body = await req.json();
+
+    // Get current project state
+    const { rows: [current] } = await pool.query(`SELECT status, is_private FROM gcc_world.projects WHERE id = $1`, [id]);
+    if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    // Validate status transitions
+    const VALID_TRANSITIONS: Record<string, string[]> = {
+      draft: ['open'], open: ['in_progress'], in_progress: ['review'], review: ['completed'],
+    };
+    if (body.status && body.status !== current.status) {
+      const allowed = VALID_TRANSITIONS[current.status] || [];
+      if (!allowed.includes(body.status)) {
+        return NextResponse.json({ error: `No se puede cambiar de ${current.status} a ${body.status}` }, { status: 400 });
+      }
+      // review → completed: only admin
+      if (body.status === 'completed' && user.role !== 'admin') {
+        return NextResponse.json({ error: 'Solo el administrador puede completar proyectos' }, { status: 403 });
+      }
+      // in_progress → review: require 100% completion
+      if (body.status === 'review') {
+        const { rows: reqs } = await pool.query(
+          `SELECT id, completed_at FROM gcc_world.project_requirements WHERE project_id = $1`, [id]
+        );
+        if (reqs.length === 0) return NextResponse.json({ error: 'No hay requerimientos en el proyecto' }, { status: 400 });
+        const incomplete = reqs.filter((r: any) => !r.completed_at);
+        if (incomplete.length > 0) return NextResponse.json({ error: 'Todos los requerimientos deben estar completados para enviar a revision' }, { status: 400 });
+        // Force private on review
+        body.is_private = true;
+      }
+    }
+
+    // Validate visibility changes
+    if (body.is_private !== undefined && body.is_private !== current.is_private) {
+      if (current.status === 'draft') return NextResponse.json({ error: 'No se puede cambiar la visibilidad en borrador' }, { status: 400 });
+      if (current.status === 'review') return NextResponse.json({ error: 'No se puede cambiar la visibilidad en revision' }, { status: 400 });
+      // Only allow changing visibility if there are unassigned requirements
+      if (!body.is_private) { // trying to make public
+        const { rows: [unassigned] } = await pool.query(
+          `SELECT COUNT(*) as cnt FROM gcc_world.project_requirements r
+           WHERE r.project_id = $1 AND NOT EXISTS (
+             SELECT 1 FROM gcc_world.requirement_assignments ra WHERE ra.requirement_id = r.id AND ra.status = 'accepted'
+           )`, [id]
+        );
+        if (Number(unassigned.cnt) === 0) return NextResponse.json({ error: 'No hay requerimientos sin asignar, no es necesario hacer publico' }, { status: 400 });
+      }
+    }
+
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -131,11 +178,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       values
     );
 
-    if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {
     console.error('Project PATCH error:', err.message);
-    return NextResponse.json({ error: 'Error' }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 

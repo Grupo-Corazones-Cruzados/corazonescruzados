@@ -1204,6 +1204,54 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
+          {/* Participant Progress */}
+          {['in_progress', 'review', 'completed'].includes(project.status) && (() => {
+            const reqs = project.requirements || [];
+            // Build per-member progress
+            const memberMap: Record<string, { name: string; photo_url: string; total: number; completed: number }> = {};
+            for (const req of reqs) {
+              const assignments = req.assignments || [];
+              for (const a of assignments) {
+                if (a.status !== 'accepted') continue;
+                if (!memberMap[a.member_id]) memberMap[a.member_id] = { name: a.member_name, photo_url: a.photo_url, total: 0, completed: 0 };
+                memberMap[a.member_id].total++;
+                if (req.is_completed || req.completed_at) memberMap[a.member_id].completed++;
+              }
+            }
+            const members = Object.values(memberMap);
+            if (members.length === 0) return null;
+            return (
+              <div className="pixel-card">
+                <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Progreso del Equipo</h3>
+                <div className="space-y-2">
+                  {members.map((m, i) => {
+                    const pct = m.total > 0 ? Math.round((m.completed / m.total) * 100) : 0;
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        {m.photo_url ? (
+                          <img src={m.photo_url} alt={m.name} className="w-6 h-6 rounded-full object-cover border border-digi-border shrink-0" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center shrink-0">
+                            <span className="text-[7px] text-accent-glow" style={pf}>{m.name?.charAt(0)}</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[9px] text-digi-text truncate" style={mf}>{m.name}</span>
+                            <span className="text-[8px] text-digi-muted shrink-0" style={mf}>{m.completed}/{m.total} ({pct}%)</span>
+                          </div>
+                          <div className="h-1.5 bg-digi-darker border border-digi-border overflow-hidden">
+                            <div className={`h-full transition-all duration-500 ${pct === 100 ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Actions */}
           {(isOwner || isMember) && (
             <div className="pixel-card">
@@ -1212,7 +1260,16 @@ export default function ProjectDetailPage() {
                 <div className="flex flex-wrap gap-2">
                 {project.status === 'draft' && <button onClick={() => updateStatus('open')} className="pixel-btn pixel-btn-primary text-[9px]">Publicar</button>}
                 {project.status === 'open' && <button onClick={() => updateStatus('in_progress')} className="pixel-btn pixel-btn-primary text-[9px]">Iniciar</button>}
-                {project.status === 'in_progress' && <button onClick={() => updateStatus('review')} className="pixel-btn pixel-btn-primary text-[9px]">Enviar a Revision</button>}
+                {project.status === 'in_progress' && (() => {
+                  const reqs = project.requirements || [];
+                  const allDone = reqs.length > 0 && reqs.every((r: any) => r.is_completed || r.completed_at);
+                  return (
+                    <button onClick={() => updateStatus('review')} disabled={!allDone}
+                      className={`pixel-btn text-[9px] ${allDone ? 'pixel-btn-primary' : 'opacity-40 cursor-not-allowed border border-digi-border text-digi-muted'}`}
+                      title={!allDone ? 'Todos los requerimientos deben estar completados' : ''}
+                    >Enviar a Revision</button>
+                  );
+                })()}
                 {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary text-[9px]">Completar</button>}
                 {!['completed', 'closed', 'cancelled'].includes(project.status) && (
                   <button onClick={() => updateStatus('cancelled')} className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>Cancelar</button>
@@ -1221,7 +1278,7 @@ export default function ProjectDetailPage() {
                 <p className="text-[9px] text-digi-muted leading-relaxed" style={mf}>
                   {project.status === 'draft' && 'Publicar hara visible este proyecto para que miembros puedan postularse y trabajar en el.'}
                   {project.status === 'open' && 'Iniciar cambia el estado a En Progreso, indicando que el equipo ya esta trabajando activamente.'}
-                  {project.status === 'in_progress' && 'Enviar a Revision notifica al administrador que el trabajo esta listo para ser evaluado.'}
+                  {project.status === 'in_progress' && 'Enviar a Revision notifica al administrador que el trabajo esta listo para ser evaluado. Todos los requerimientos deben estar completados al 100%.'}
                   {project.status === 'review' && isAdmin && 'Completar finaliza el proyecto, genera la factura y lo publica en el marketplace.'}
                   {project.status === 'completed' && 'Este proyecto ha sido completado exitosamente.'}
                   {project.status === 'cancelled' && 'Este proyecto fue cancelado.'}

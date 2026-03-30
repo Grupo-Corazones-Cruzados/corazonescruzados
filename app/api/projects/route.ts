@@ -78,20 +78,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     if (!body.title) return NextResponse.json({ error: 'title required' }, { status: 400 });
 
-    let clientId = body.client_id || null;
-    let assignedMemberId = body.assigned_member_id || null;
-    let status = body.status || 'draft';
-    let isPrivate = body.is_private ?? false;
+    // Ensure created_by_user_id column exists
+    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS created_by_user_id TEXT`);
 
-    // Member role: auto-assign self, create as in_progress + private
+    let clientId = body.client_id || null;
+    // All roles: always start as draft + private
+    const status = 'draft';
+    const isPrivate = true;
+
+    // Resolve assigned_member_id for members
+    let assignedMemberId = body.assigned_member_id || null;
     if (user.role === 'member') {
       const memberRes = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
       const memberId = memberRes.rows[0]?.member_id;
       if (!memberId) return NextResponse.json({ error: 'No member profile' }, { status: 400 });
-
       assignedMemberId = memberId;
-      isPrivate = true;
-      status = 'in_progress';
 
       // Handle client_email → find/create client
       if (body.client_email && !clientId) {
@@ -123,18 +124,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.projects (client_id, assigned_member_id, title, description, budget_min, budget_max, deadline, status, is_private, final_cost)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [clientId, assignedMemberId, body.title, body.description || null, body.budget_min || null, body.budget_max || null, body.deadline || null, status, isPrivate, body.final_cost || null]
+      `INSERT INTO gcc_world.projects (client_id, assigned_member_id, title, description, budget_min, budget_max, deadline, status, is_private, final_cost, created_by_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [clientId, assignedMemberId, body.title, body.description || null, body.budget_min || null, body.budget_max || null, body.deadline || null, status, isPrivate, body.final_cost || null, user.userId]
     );
-
-    // Auto-add member as accepted bid
-    if (user.role === 'member' && assignedMemberId) {
-      await pool.query(
-        `INSERT INTO gcc_world.project_bids (project_id, member_id, status) VALUES ($1, $2, 'accepted') ON CONFLICT (project_id, member_id) DO NOTHING`,
-        [rows[0].id, assignedMemberId]
-      );
-    }
 
     return NextResponse.json({ data: rows[0] }, { status: 201 });
   } catch (err: any) {
