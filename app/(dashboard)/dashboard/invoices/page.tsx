@@ -38,7 +38,11 @@ export default function InvoicesPage() {
 
   // Manual invoice modal states
   const [showManual, setShowManual] = useState(false);
-  const [manualStep, setManualStep] = useState<'projects' | 'form' | 'processing'>('projects');
+  const [manualType, setManualType] = useState<'completo' | 'con_fallo'>('completo');
+  const [manualStep, setManualStep] = useState<'type' | 'projects' | 'form' | 'paid' | 'processing'>('type');
+
+  // Paid amount (con fallo)
+  const [mPaidAmount, setMPaidAmount] = useState('');
 
   // Project selector
   const [projectSearch, setProjectSearch] = useState('');
@@ -117,7 +121,9 @@ export default function InvoicesPage() {
   };
 
   const openManualModal = () => {
-    setManualStep('projects');
+    setManualStep('type');
+    setManualType('completo');
+    setMPaidAmount('');
     setSelectedProjects([]);
     setProjectSearch('');
     setProjectResults([]);
@@ -181,6 +187,111 @@ export default function InvoicesPage() {
     }
     setMItems(allItems.length > 0 ? allItems : [{ description: '', quantity: '1', unitPrice: '0', ivaRate: '0', discount: '0' }]);
     setManualStep('form');
+  };
+
+  // For "con fallo": calculate items total in USD (before currency conversion)
+  const itemsTotalUsd = mItems.reduce((s, it) => {
+    const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
+    return s + base;
+  }, 0);
+
+  // Apply proportional discounts based on paid amount
+  const applyDiscountsAndSubmit = () => {
+    const paidUsd = Number(mPaidAmount) || 0;
+    if (paidUsd <= 0 || paidUsd >= itemsTotalUsd) {
+      // No discount needed or invalid
+      handleManualSubmit();
+      return;
+    }
+    const totalDiscount = itemsTotalUsd - paidUsd;
+    // Distribute discount proportionally across items based on each item's weight
+    const updatedItems = mItems.map(it => {
+      const itemBase = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
+      const weight = itemsTotalUsd > 0 ? itemBase / itemsTotalUsd : 0;
+      const itemDiscount = Math.round(totalDiscount * weight * 100) / 100;
+      return { ...it, discount: String(itemDiscount) };
+    });
+    // Fix rounding: adjust last item so total discount is exact
+    const appliedDiscount = updatedItems.reduce((s, it) => s + Number(it.discount), 0);
+    const diff = Math.round((totalDiscount - appliedDiscount) * 100) / 100;
+    if (diff !== 0 && updatedItems.length > 0) {
+      const last = updatedItems[updatedItems.length - 1];
+      last.discount = String(Math.round((Number(last.discount) + diff) * 100) / 100);
+    }
+    setMItems(updatedItems);
+    // Submit after state update via setTimeout
+    setTimeout(() => handleManualSubmitWithItems(updatedItems), 50);
+  };
+
+  const handleManualSubmitWithItems = async (itemsToUse: typeof mItems) => {
+    setManualStep('processing');
+    setProcessing(true);
+    setProcessStep('Guardando datos del cliente...');
+    try {
+      await new Promise(r => setTimeout(r, 300));
+      setProcessStep('Generando factura electronica...');
+
+      const res = await fetch('/api/invoices/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_ids: selectedProjects.map(p => p.id),
+          client_id_type: mIdType,
+          client_name: mClientName,
+          client_ruc: mClientRuc,
+          client_email: mClientEmail,
+          client_phone: mClientPhone,
+          client_address: mClientAddress,
+          payment_code: mPaymentCode,
+          send_email: mSendEmail,
+          currency: mCurrency,
+          exchange_rate: Number(mExchangeRate) || 1,
+          invoice_items: itemsToUse.map(it => ({
+            description: it.description,
+            quantity: Number(it.quantity) || 1,
+            unitPrice: Number(it.unitPrice) || 0,
+            ivaRate: Number(it.ivaRate) || 0,
+            discount: Number(it.discount) || 0,
+          })),
+          additional_fields: mAdditionalFields.filter(f => f.name.trim() && f.value.trim()),
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || 'Error al crear factura');
+        setManualStep('form');
+        setProcessing(false);
+        return;
+      }
+
+      const sriOk = data.sriResult?.authorized;
+      const sriError = data.sriResult?.error;
+
+      if (data.invoiceId && sriOk) {
+        setProcessStep('Factura autorizada por el SRI');
+      } else if (data.invoiceId && sriError) {
+        setProcessStep(`Factura generada — SRI: ${sriError}`);
+      }
+
+      await new Promise(r => setTimeout(r, 500));
+      setProcessStep('Proceso completado');
+      await new Promise(r => setTimeout(r, 800));
+
+      toast.success(
+        'Factura manual creada' +
+        (sriOk ? ' — Autorizada por el SRI' : '') +
+        (mSendEmail && mClientEmail && sriOk ? ' — Enviada por correo' : '')
+      );
+      if (sriError && !sriOk) toast.error(`SRI: ${sriError}`);
+
+      setShowManual(false);
+      fetchData();
+    } catch {
+      toast.error('Error al crear factura manual');
+      setManualStep('form');
+      setProcessing(false);
+    }
   };
 
   const handleManualSubmit = async () => {
@@ -369,8 +480,28 @@ export default function InvoicesPage() {
             <p className="text-center text-[8px] text-digi-muted" style={mf}>No cierres esta ventana hasta que el proceso termine</p>
           </div>
 
+        ) : manualStep === 'type' ? (
+          <div className="space-y-4">
+            <p className="text-[10px] text-digi-muted" style={mf}>Selecciona el tipo de factura manual que deseas generar.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => { setManualType('completo'); setManualStep('projects'); }}
+                className="p-4 border-2 border-digi-border hover:border-accent transition-colors text-left space-y-2">
+                <div className="text-[10px] text-accent-glow font-bold" style={pf}>Completo</div>
+                <p className="text-[9px] text-digi-muted" style={mf}>El cliente pago el monto total del proyecto. La factura se genera con el valor completo de los requerimientos.</p>
+              </button>
+              <button onClick={() => { setManualType('con_fallo'); setManualStep('projects'); }}
+                className="p-4 border-2 border-digi-border hover:border-orange-500/50 transition-colors text-left space-y-2">
+                <div className="text-[10px] text-orange-400 font-bold" style={pf}>Con Fallo</div>
+                <p className="text-[9px] text-digi-muted" style={mf}>El cliente envio un monto inferior al total. Se aplicara un descuento proporcional en los requerimientos para igualar lo pagado.</p>
+              </button>
+            </div>
+          </div>
+
         ) : manualStep === 'projects' ? (
           <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+              {manualType === 'con_fallo' && <span className="text-[8px] px-1.5 py-0.5 border border-orange-500/40 text-orange-400" style={pf}>CON FALLO</span>}
+            </div>
             <p className="text-[10px] text-digi-muted" style={mf}>Busca y selecciona los proyectos a incluir en la factura manual.</p>
 
             {/* Project search */}
@@ -425,7 +556,7 @@ export default function InvoicesPage() {
 
             {/* Next button */}
             <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
-              <button onClick={() => setShowManual(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
+              <button onClick={() => setManualStep('type')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Atras</button>
               <button onClick={goToForm} disabled={selectedProjects.length === 0}
                 className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
                 Siguiente
@@ -433,7 +564,7 @@ export default function InvoicesPage() {
             </div>
           </div>
 
-        ) : (
+        ) : manualStep === 'form' ? (
           /* Form step - client data + invoice items */
           <div className="max-h-[80vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -643,14 +774,94 @@ export default function InvoicesPage() {
                 </label>
                 <div className="flex gap-2">
                   <button onClick={() => setManualStep('projects')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Atras</button>
-                  <button onClick={handleManualSubmit} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
-                    Generar Factura
-                  </button>
+                  {manualType === 'con_fallo' ? (
+                    <button onClick={() => setManualStep('paid')} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                      Siguiente
+                    </button>
+                  ) : (
+                    <button onClick={handleManualSubmit} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                      Generar Factura
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-        )}
+
+        ) : manualStep === 'paid' ? (
+          /* Paid amount step (con fallo) */
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[8px] px-1.5 py-0.5 border border-orange-500/40 text-orange-400" style={pf}>CON FALLO</span>
+            </div>
+            <p className="text-[10px] text-digi-muted" style={mf}>Ingresa el monto que el cliente envio (en USD). El descuento se distribuira proporcionalmente entre los requerimientos.</p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Total real de requerimientos (USD)</label>
+                  <div className="px-3 py-2 bg-digi-darker border border-digi-border text-xs text-digi-text" style={mf}>
+                    ${itemsTotalUsd.toFixed(2)}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[8px] text-accent-glow mb-0.5 block" style={pf}>Monto pagado por el cliente (USD) <span className="text-red-400">*</span></label>
+                  <input value={mPaidAmount} onChange={e => setMPaidAmount(e.target.value)}
+                    type="number" min="0.01" step="0.01" placeholder="0.00"
+                    className="w-full px-3 py-2 bg-digi-darker border-2 border-accent/50 text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                </div>
+                {mCurrency !== 'USD' && Number(mPaidAmount) > 0 && (
+                  <div className="px-2 py-1.5 border border-purple-500/30 bg-purple-900/10 text-[9px] text-purple-300" style={mf}>
+                    En {mCurrency}: {currencies.find(c => c.code === mCurrency)?.symbol || ''}{(Number(mPaidAmount) * (Number(mExchangeRate) || 1)).toFixed(2)}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {Number(mPaidAmount) > 0 && Number(mPaidAmount) < itemsTotalUsd && (
+                  <>
+                    <div>
+                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Descuento total a aplicar (USD)</label>
+                      <div className="px-3 py-2 bg-red-900/10 border border-red-500/30 text-xs text-red-400 font-bold" style={mf}>
+                        -${(itemsTotalUsd - Number(mPaidAmount)).toFixed(2)}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Distribucion por item</label>
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {mItems.map((it, i) => {
+                          const itemBase = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
+                          const weight = itemsTotalUsd > 0 ? itemBase / itemsTotalUsd : 0;
+                          const itemDiscount = Math.round((itemsTotalUsd - Number(mPaidAmount)) * weight * 100) / 100;
+                          return (
+                            <div key={i} className="flex justify-between text-[8px] px-2 py-1 border border-digi-border/30" style={mf}>
+                              <span className="text-digi-muted truncate max-w-[60%]">{it.description || `Item ${i + 1}`}</span>
+                              <span className="text-red-400">-${itemDiscount.toFixed(2)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+                {Number(mPaidAmount) > 0 && Number(mPaidAmount) >= itemsTotalUsd && (
+                  <div className="px-3 py-2 border border-yellow-500/30 bg-yellow-900/10 text-[9px] text-yellow-400" style={mf}>
+                    El monto pagado es igual o mayor al total. No se aplicara descuento. Usa el tipo "Completo" en su lugar.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-digi-border">
+              <button onClick={() => setManualStep('form')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Atras</button>
+              <button onClick={applyDiscountsAndSubmit}
+                disabled={!Number(mPaidAmount) || Number(mPaidAmount) <= 0 || Number(mPaidAmount) >= itemsTotalUsd}
+                className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                Generar Factura con Descuento
+              </button>
+            </div>
+          </div>
+        ) : null}
       </PixelModal>
     </div>
   );
