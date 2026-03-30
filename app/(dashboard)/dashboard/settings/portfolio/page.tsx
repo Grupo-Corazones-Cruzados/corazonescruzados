@@ -156,6 +156,61 @@ export default function PortfolioPage() {
     }
   };
 
+  // --- Team projects (marketplace published) ---
+  const [teamProjects, setTeamProjects] = useState<any[]>([]);
+  const [teamEditModal, setTeamEditModal] = useState(false);
+  const [teamEditItem, setTeamEditItem] = useState<any>(null);
+  const [teamForm, setTeamForm] = useState({ title: '', price: '', images: [''] as string[] });
+  const [teamSaving, setTeamSaving] = useState(false);
+
+  const fetchTeamProjects = useCallback(async () => {
+    try {
+      const res = await fetch('/api/marketplace/projects?member=true');
+      const data = await res.json();
+      setTeamProjects(data.data || []);
+    } catch { setTeamProjects([]); }
+  }, []);
+
+  useEffect(() => { if (tab === 'project') fetchTeamProjects(); }, [tab, fetchTeamProjects]);
+
+  const openTeamEdit = (p: any) => {
+    setTeamEditItem(p);
+    setTeamForm({
+      title: p.title || '',
+      price: p.final_cost != null ? String(p.final_cost) : '',
+      images: p.images?.length > 0 ? [...p.images] : [''],
+    });
+    setTeamEditModal(true);
+  };
+
+  const handleTeamSave = async () => {
+    if (!teamEditItem) return;
+    setTeamSaving(true);
+    try {
+      const cleanImages = teamForm.images.filter(u => u.trim());
+      const res = await fetch(`/api/marketplace/projects/${teamEditItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: teamForm.title, final_cost: Number(teamForm.price) || 0, images: cleanImages }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      toast.success('Proyecto actualizado');
+      setTeamEditModal(false);
+      fetchTeamProjects();
+    } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
+    finally { setTeamSaving(false); }
+  };
+
+  const teamUpdateImage = (i: number, v: string) => {
+    const next = [...teamForm.images]; next[i] = v;
+    setTeamForm({ ...teamForm, images: next });
+  };
+  const teamAddImage = () => setTeamForm({ ...teamForm, images: [...teamForm.images, ''] });
+  const teamRemoveImage = (i: number) => {
+    const next = teamForm.images.filter((_, idx) => idx !== i);
+    setTeamForm({ ...teamForm, images: next.length === 0 ? [''] : next });
+  };
+
   const imageCount = (item: any) => {
     if (item.images?.length > 0) return item.images.length;
     return item.image_url ? 1 : 0;
@@ -257,6 +312,107 @@ export default function PortfolioPage() {
         emptyTitle="Sin items"
         emptyDesc={`No hay ${tabLabel.toLowerCase()}s registrados aun.`}
       />
+
+      {/* ========== TEAM PROJECTS SECTION ========== */}
+      {tab === 'project' && teamProjects.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xs text-accent-glow mb-3" style={pf}>Proyectos del Equipo (Marketplace)</h2>
+          <PixelDataTable
+            columns={[
+              {
+                key: 'images', header: 'Fotos', width: '70px',
+                render: (p: any) => {
+                  const count = p.images?.length || 0;
+                  return (
+                    <button
+                      onClick={(e) => openGallery(p, e)}
+                      className={`flex items-center gap-1 px-1.5 py-0.5 border transition-colors ${
+                        count > 0 ? 'border-accent/40 text-accent-glow hover:bg-accent/10' : 'border-digi-border/30 text-digi-muted/40 cursor-default'
+                      }`}
+                      disabled={count === 0}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <rect x="1" y="3" width="14" height="10" rx="1" /><circle cx="5.5" cy="7" r="1.5" /><path d="M14 13L10.5 9L7.5 12L5.5 10.5L2 13" />
+                      </svg>
+                      <span className="text-[9px]" style={mf}>{count}</span>
+                    </button>
+                  );
+                },
+              },
+              { key: 'title', header: 'Proyecto', render: (p: any) => <span className="text-white">{p.title}</span> },
+              { key: 'team', header: 'Equipo', render: (p: any) => {
+                const team = p.team || [];
+                return (
+                  <div className="flex items-center gap-1">
+                    {team.slice(0, 4).map((m: any, i: number) => (
+                      m.photo_url ? (
+                        <img key={i} src={m.photo_url} alt={m.name} className="w-5 h-5 rounded-full object-cover border border-digi-border" title={m.name} />
+                      ) : (
+                        <div key={i} className="w-5 h-5 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center" title={m.name}>
+                          <span className="text-[7px] text-accent-glow" style={pf}>{m.name?.charAt(0)}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                );
+              }, width: '120px' },
+              { key: 'price', header: 'Precio', width: '100px', render: (p: any) => (
+                <span className="text-accent-glow" style={mf}>${Number(p.final_cost || 0).toFixed(2)}</span>
+              )},
+              { key: 'actions', header: '', width: '80px', render: (p: any) => (
+                <button
+                  onClick={(e) => { e.stopPropagation(); openTeamEdit(p); }}
+                  className="text-[9px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors"
+                  style={pf}
+                >
+                  Editar
+                </button>
+              )},
+            ]}
+            data={teamProjects}
+            emptyTitle="Sin proyectos"
+            emptyDesc="No tienes proyectos publicados en equipo."
+          />
+        </div>
+      )}
+
+      {/* ========== TEAM EDIT MODAL ========== */}
+      <PixelModal open={teamEditModal} onClose={() => setTeamEditModal(false)} title="Editar Proyecto del Equipo" size="lg">
+        {teamEditItem && (
+          <div className="space-y-3">
+            <PixelInput label="Titulo" value={teamForm.title} onChange={(e) => setTeamForm({ ...teamForm, title: e.target.value })} />
+            <PixelInput label="Precio (USD)" type="number" value={teamForm.price} onChange={(e) => setTeamForm({ ...teamForm, price: e.target.value })} placeholder="0.00" />
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Imagenes (URLs)</label>
+                <button type="button" onClick={teamAddImage} className="text-[9px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>+ Agregar</button>
+              </div>
+              <div className="space-y-2">
+                {teamForm.images.map((img, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input value={img} onChange={(e) => teamUpdateImage(i, e.target.value)} placeholder="https://..." className="flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+                    {teamForm.images.length > 1 && (
+                      <button type="button" onClick={() => teamRemoveImage(i)} className="px-2 text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors text-[10px]" style={pf}>X</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {teamForm.images.filter(Boolean).length > 0 && (
+                <div className="flex gap-2 flex-wrap mt-1">
+                  {teamForm.images.filter(Boolean).map((img, i) => (
+                    <div key={i} className="w-16 h-16 border-2 border-digi-border overflow-hidden">
+                      <img src={img} alt={`Preview ${i + 1}`} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button onClick={handleTeamSave} disabled={teamSaving || !teamForm.title.trim()} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+              {teamSaving ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        )}
+      </PixelModal>
 
       {/* ========== CREATE / EDIT MODAL ========== */}
       <PixelModal

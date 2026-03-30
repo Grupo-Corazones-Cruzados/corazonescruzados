@@ -232,6 +232,27 @@ export default function MarketplacePage() {
         /* ========== MARKETPLACE PROJECTS TABLE ========== */
         <PixelDataTable
           columns={[
+            {
+              key: 'images', header: 'Fotos', width: '70px',
+              render: (p: any) => {
+                const imgs = p.images || [];
+                return (
+                  <button
+                    onClick={(e) => openGallery(p, e)}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 border transition-colors ${
+                      imgs.length > 0 ? 'border-accent/40 text-accent-glow hover:bg-accent/10' : 'border-digi-border/30 text-digi-muted/40 cursor-default'
+                    }`}
+                    disabled={imgs.length === 0}
+                    title={imgs.length > 0 ? `Ver ${imgs.length} foto(s)` : 'Sin fotos'}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="1" y="3" width="14" height="10" rx="1" /><circle cx="5.5" cy="7" r="1.5" /><path d="M14 13L10.5 9L7.5 12L5.5 10.5L2 13" />
+                    </svg>
+                    <span className="text-[9px]" style={mf}>{imgs.length}</span>
+                  </button>
+                );
+              },
+            },
             { key: 'title', header: 'Proyecto', render: (p: any) => (
               <span className="text-white">{p.title}</span>
             )},
