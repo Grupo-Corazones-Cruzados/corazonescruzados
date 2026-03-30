@@ -1,0 +1,601 @@
+{
+  "gridCols": 20,
+  "gridRows": 16,
+  "floor": [
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "main_wall",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "main_floor"
+    ],
+    [
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor"
+    ],
+    [
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor"
+    ],
+    [
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor",
+      "main_floor"
+    ]
+  ],
+  "props": [
+    {
+      "id": "digi_chair",
+      "x": 6,
+      "y": 4,
+      "w": 1,
+      "h": 2,
+      "layer": "below"
+    }
+  ],
+  "characters": {
+    "gabumon": "digi_data_desk_0_0",
+    "agumon": "digi_data_desk_2_0",
+    "piyomon": "digi_data_desk_4_0",
+    "shoutmon": "digi_data_desk_6_0",
+    "patamon": "digi_data_desk_8_0"
+  },
+  "wanderPoints": [
+    {
+      "name": "wander_6_5",
+      "x": 6,
+      "y": 5
+    }
+  ],
+  "propImages": {
+    "digi_chair": "world_assets/props/prop_1_digi_chair.png",
+    "charging_station": "world_assets/props/prop_3_charging_station.png",
+    "digi_data_desk": "world_assets/props/prop_0_digi_data_desk.png",
+    "data_server_rack": "world_assets/props/prop_8_data_server_rack.png",
+    "digi_plant": "world_assets/props/prop_4_digi_plant.png",
+    "terminal_array_wall": "world_assets/props/prop_5_terminal_array_wall.png",
+    "digi_comm_center": "world_assets/props/prop_2_digi_comm_center.png",
+    "network_hub_floor": "world_assets/props/prop_7_network_hub_floor.png",
+    "digi_portal_wall": "world_assets/props/prop_6_digi_portal_wall.png"
+  },
+  "tiles": {
+    "main_floor": "world_assets/tiles/main_floor.png",
+    "main_wall": "world_assets/tiles/main_wall.png",
+    "console_accent": "world_assets/tiles/console_accent.png",
+    "data_path": "world_assets/tiles/data_path.png",
+    "charging_pad": "world_assets/tiles/charging_pad.png"
+  },
+  "citizens": [
+    {
+      "agentId": "gabumon",
+      "name": "Gabumon",
+      "sprite": "gabumon",
+      "position": "digi_data_desk_0_0",
+      "type": "agent",
+      "frameConfig": {
+        "idle": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "done": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "avatarCrop": {
+        "x": 11,
+        "y": 2,
+        "size": 40
+      },
+      "scale": 0.5,
+      "walkRow": 2,
+      "walkSheetRows": 4
+    },
+    {
+      "agentId": "agumon",
+      "name": "Agumon",
+      "sprite": "agumon",
+      "position": "digi_data_desk_2_0",
+      "type": "agent",
+      "frameConfig": {
+        "walk": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "avatarCrop": {
+        "x": 10,
+        "y": 2,
+        "size": 41
+      },
+      "scale": 0.5,
+      "yShift": 11,
+      "walkSheetCols": 4,
+      "walkSheetRows": 4,
+      "walkRow": 2
+    },
+    {
+      "agentId": "piyomon",
+      "name": "Piyomon",
+      "sprite": "piyomon",
+      "position": "digi_data_desk_4_0",
+      "type": "agent",
+      "flipWalk": true,
+      "frameConfig": {
+        "rest": [
+          0,
+          2
+        ]
+      },
+      "avatarCrop": {
+        "x": 11,
+        "y": 4,
+        "size": 41
+      },
+      "scale": 0.5,
+      "walkRow": 2
+    },
+    {
+      "agentId": "shoutmon",
+      "name": "Shoutmon",
+      "sprite": "shoutmon",
+      "position": "digi_data_desk_6_0",
+      "type": "agent",
+      "avatarCrop": {
+        "x": 10,
+        "y": 2,
+        "size": 41
+      },
+      "scale": 0.5,
+      "walkSheetRows": 4,
+      "walkRow": 2
+    },
+    {
+      "agentId": "patamon",
+      "name": "Patamon",
+      "sprite": "patamon",
+      "position": "digi_data_desk_8_0",
+      "type": "agent",
+      "scale": 0.5,
+      "avatarCrop": {
+        "x": 8,
+        "y": 4,
+        "size": 47
+      },
+      "frameConfig": {
+        "rest": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "walkRow": 2
+    },
+    {
+      "agentId": "gomamon",
+      "name": "Gomamon",
+      "sprite": "gomamon",
+      "position": "",
+      "type": "agent",
+      "flipWalk": false,
+      "frameConfig": {
+        "walk": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "done": [
+          1,
+          2
+        ]
+      },
+      "avatarCrop": {
+        "x": 11,
+        "y": 6,
+        "size": 42
+      },
+      "scale": 0.5,
+      "walkRow": 2
+    },
+    {
+      "agentId": "veemon",
+      "name": "Veemon",
+      "sprite": "veemon",
+      "position": "",
+      "type": "agent",
+      "yShift": 4,
+      "scale": 0.5,
+      "avatarCrop": {
+        "x": 8,
+        "y": 1,
+        "size": 47
+      },
+      "walkRow": 2,
+      "walkSheetCols": 4
+    },
+    {
+      "agentId": "palmon",
+      "name": "Palmon",
+      "sprite": "palmon",
+      "position": "",
+      "type": "agent",
+      "frameConfig": {
+        "walk": [
+          0,
+          1,
+          3
+        ]
+      },
+      "flipWalk": false,
+      "avatarCrop": {
+        "x": 9,
+        "y": 1,
+        "size": 45
+      },
+      "scale": 0.5,
+      "walkRow": 2
+    },
+    {
+      "agentId": "guilmon",
+      "name": "Guilmon",
+      "sprite": "guilmon",
+      "position": "",
+      "type": "agent",
+      "frameConfig": {
+        "walk": [
+          0,
+          1,
+          2
+        ]
+      },
+      "avatarCrop": {
+        "x": 8,
+        "y": 0,
+        "size": 45
+      },
+      "scale": 0.6,
+      "yShift": 6,
+      "walkRow": 2
+    }
+  ]
+}

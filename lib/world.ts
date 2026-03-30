@@ -2,23 +2,18 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { WorldConfig } from '@/types/world';
 
-const PROJECT_PATH = process.env.WORLD_PROJECT_PATH || '';
-const WORLD_ID = process.env.WORLD_ID || 'a-digiworld-like-the-digimon-g';
+const PROJECT_ROOT = process.cwd();
 
 export function getProjectPath() {
-  return PROJECT_PATH;
+  return PROJECT_ROOT;
 }
 
 export function getWorldDir() {
-  return path.join(PROJECT_PATH, 'public', 'worlds', WORLD_ID);
+  return path.join(PROJECT_ROOT, 'data', 'worlds');
 }
 
 export function getCitizensDir() {
-  return path.join(PROJECT_PATH, 'public', 'universal_assets', 'citizens');
-}
-
-export function getWorldId() {
-  return WORLD_ID;
+  return path.join(PROJECT_ROOT, 'public', 'universal_assets', 'citizens');
 }
 
 // Read world.json
