@@ -122,6 +122,15 @@ export async function POST(req: NextRequest) {
 
     // Insert time slots if provided
     if (Array.isArray(time_slots) && time_slots.length > 0) {
+      await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.ticket_time_slots (
+        id SERIAL PRIMARY KEY,
+        ticket_id INT NOT NULL,
+        date DATE NOT NULL,
+        start_time TEXT,
+        end_time TEXT,
+        status VARCHAR(20) DEFAULT 'scheduled',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )`);
       for (const slot of time_slots) {
         if (!slot.date) continue;
         await pool.query(

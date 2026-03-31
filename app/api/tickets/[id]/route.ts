@@ -8,6 +8,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id } = await params;
+    await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.ticket_time_slots (
+      id SERIAL PRIMARY KEY, ticket_id INT NOT NULL, date DATE NOT NULL,
+      start_time TEXT, end_time TEXT, status VARCHAR(20) DEFAULT 'scheduled', created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
     const { rows } = await pool.query(
       `SELECT t.*, c.name as client_name, c.email as client_email,
               m.name as member_name, s.name as service_name,

@@ -14,6 +14,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'time_slots requerido' }, { status: 400 });
     }
 
+    // Ensure table exists
+    await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.ticket_time_slots (
+      id SERIAL PRIMARY KEY,
+      ticket_id INT NOT NULL,
+      date DATE NOT NULL,
+      start_time TEXT,
+      end_time TEXT,
+      status VARCHAR(20) DEFAULT 'scheduled',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+
     // Delete existing slots and re-insert
     await pool.query(`DELETE FROM gcc_world.ticket_time_slots WHERE ticket_id = $1`, [id]);
 
