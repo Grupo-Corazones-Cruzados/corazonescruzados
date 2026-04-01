@@ -2,11 +2,11 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
-// GET: fetch month detail with items
+// GET: fetch month detail with items (anyone authenticated)
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
 
     const { rows: [month] } = await pool.query(`SELECT * FROM gcc_world.finance_months WHERE id = $1`, [id]);

@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createInvoiceFromProject, sendInvoiceToSri, projectHasInvoice } from '@/lib/integrations/sri';
+import { addProjectIncomeToFinance } from '@/lib/finance';
 import { Resend } from 'resend';
 import crypto from 'crypto';
 
@@ -61,6 +62,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         `UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = $1, marketplace_published_at = $2, updated_at = NOW() WHERE id = $3`,
         [autoPublish, autoPublish ? new Date() : null, id]
       );
+
+      // Register project as income in monthly finance
+      try {
+        const { rows: [projData] } = await pool.query(`SELECT title, final_cost FROM gcc_world.projects WHERE id = $1`, [id]);
+        if (projData) {
+          await addProjectIncomeToFinance(id, projData.title, Number(projData.final_cost) || 0);
+        }
+      } catch (finErr: any) { console.error('Finance registration error:', finErr.message); }
 
       // Auto-generate SRI invoice (skip if project already has one from manual invoice)
       const existingInvoice = await projectHasInvoice(id);

@@ -36,7 +36,6 @@ export default function DashboardHome() {
   }, []);
 
   const fetchMonths = useCallback(async () => {
-    if (!isAdmin) return;
     try {
       const res = await fetch('/api/finance');
       const data = await res.json();
@@ -113,20 +112,15 @@ export default function DashboardHome() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
         <StatCard label="Tickets Abiertos" value={stats?.open_tickets} />
         <StatCard label="Proyectos Activos" value={stats?.active_projects} />
-        {isAdmin && (
-          <>
-            <StatCard label="Total Ingresos" value={`$${globalIncome.toFixed(2)}`} color="text-green-400" />
-            <StatCard label="Total Egresos" value={`$${globalExpense.toFixed(2)}`} color="text-red-400" />
-            <StatCard label="Total Ahorro" value={`$${globalSavings.toFixed(2)}`} color={globalSavings >= 0 ? 'text-accent-glow' : 'text-red-400'} />
-            <StatCard label="Clientes" value={stats?.clients} />
-          </>
-        )}
+        <StatCard label="Total Ingresos" value={`$${globalIncome.toFixed(2)}`} color="text-green-400" />
+        <StatCard label="Total Egresos" value={`$${globalExpense.toFixed(2)}`} color="text-red-400" />
+        <StatCard label="Total Ahorro" value={`$${globalSavings.toFixed(2)}`} color={globalSavings >= 0 ? 'text-accent-glow' : 'text-red-400'} />
+        {isAdmin && <StatCard label="Clientes" value={stats?.clients} />}
       </div>
 
-      {/* Finance Table - admin only */}
-      {isAdmin && (
-        <>
-          <h2 className="pixel-heading text-sm text-white mb-3">Estado Financiero Mensual</h2>
+      {/* Finance Table - visible to all, editable by admin */}
+      <>
+        <h2 className="pixel-heading text-sm text-white mb-3">Estado Financiero Mensual</h2>
           <PixelDataTable
             columns={[
               { key: 'period', header: 'Periodo', render: (m: any) => (
@@ -148,8 +142,7 @@ export default function DashboardHome() {
             emptyTitle="Sin registros"
             emptyDesc="No hay estados financieros aun."
           />
-        </>
-      )}
+      </>
 
       {/* Detail Modal */}
       <PixelModal open={!!detailMonth} onClose={() => !saving && setDetailMonth(null)}
@@ -165,19 +158,21 @@ export default function DashboardHome() {
                 {incomeItems.map((item, i) => (
                   <div key={i} className="flex gap-1">
                     <input value={item.description} onChange={e => {
+                      if (!isAdmin) return;
                       const n = [...incomeItems]; n[i] = { ...n[i], description: e.target.value }; setIncomeItems(n);
-                    }} placeholder="Descripcion"
+                    }} placeholder="Descripcion" readOnly={!isAdmin}
                       className="flex-1 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                     <input value={item.amount} onChange={e => {
+                      if (!isAdmin) return;
                       const n = [...incomeItems]; n[i] = { ...n[i], amount: e.target.value }; setIncomeItems(n);
-                    }} type="number" min="0" step="0.01" placeholder="0.00"
+                    }} type="number" min="0" step="0.01" placeholder="0.00" readOnly={!isAdmin}
                       className="w-24 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none text-right" style={mf} />
-                    <button onClick={() => setIncomeItems(prev => prev.filter((_, idx) => idx !== i))}
-                      className="text-red-400/60 hover:text-red-400 text-[8px] px-1" style={pf}>X</button>
+                    {isAdmin && <button onClick={() => setIncomeItems(prev => prev.filter((_, idx) => idx !== i))}
+                      className="text-red-400/60 hover:text-red-400 text-[8px] px-1" style={pf}>X</button>}
                   </div>
                 ))}
-                <button onClick={() => setIncomeItems(prev => [...prev, { type: 'income', description: '', amount: '' }])}
-                  className="text-[8px] text-green-400/70 border border-green-500/30 px-2 py-0.5 hover:bg-green-900/10 transition-colors" style={pf}>+ Ingreso</button>
+                {isAdmin && <button onClick={() => setIncomeItems(prev => [...prev, { type: 'income', description: '', amount: '' }])}
+                  className="text-[8px] text-green-400/70 border border-green-500/30 px-2 py-0.5 hover:bg-green-900/10 transition-colors" style={pf}>+ Ingreso</button>}
                 <div className="flex justify-between px-2 py-1.5 border-2 border-digi-border text-[10px]" style={mf}>
                   <span className="text-digi-muted">Total Ingresos:</span>
                   <span className="text-green-400 font-bold">${detailIncome.toFixed(2)}</span>
@@ -190,19 +185,21 @@ export default function DashboardHome() {
                 {expenseItems.map((item, i) => (
                   <div key={i} className="flex gap-1">
                     <input value={item.description} onChange={e => {
+                      if (!isAdmin) return;
                       const n = [...expenseItems]; n[i] = { ...n[i], description: e.target.value }; setExpenseItems(n);
-                    }} placeholder="Descripcion"
+                    }} placeholder="Descripcion" readOnly={!isAdmin}
                       className="flex-1 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                     <input value={item.amount} onChange={e => {
+                      if (!isAdmin) return;
                       const n = [...expenseItems]; n[i] = { ...n[i], amount: e.target.value }; setExpenseItems(n);
-                    }} type="number" min="0" step="0.01" placeholder="0.00"
+                    }} type="number" min="0" step="0.01" placeholder="0.00" readOnly={!isAdmin}
                       className="w-24 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none text-right" style={mf} />
-                    <button onClick={() => setExpenseItems(prev => prev.filter((_, idx) => idx !== i))}
-                      className="text-red-400/60 hover:text-red-400 text-[8px] px-1" style={pf}>X</button>
+                    {isAdmin && <button onClick={() => setExpenseItems(prev => prev.filter((_, idx) => idx !== i))}
+                      className="text-red-400/60 hover:text-red-400 text-[8px] px-1" style={pf}>X</button>}
                   </div>
                 ))}
-                <button onClick={() => setExpenseItems(prev => [...prev, { type: 'expense', description: '', amount: '' }])}
-                  className="text-[8px] text-red-400/70 border border-red-500/30 px-2 py-0.5 hover:bg-red-900/10 transition-colors" style={pf}>+ Egreso</button>
+                {isAdmin && <button onClick={() => setExpenseItems(prev => [...prev, { type: 'expense', description: '', amount: '' }])}
+                  className="text-[8px] text-red-400/70 border border-red-500/30 px-2 py-0.5 hover:bg-red-900/10 transition-colors" style={pf}>+ Egreso</button>}
                 <div className="flex justify-between px-2 py-1.5 border-2 border-digi-border text-[10px]" style={mf}>
                   <span className="text-digi-muted">Total Egresos:</span>
                   <span className="text-red-400 font-bold">${detailExpense.toFixed(2)}</span>
@@ -218,12 +215,14 @@ export default function DashboardHome() {
               <span className="font-bold">${detailSavings.toFixed(2)}</span>
             </div>
 
-            {/* Save */}
+            {/* Save (admin only) */}
             <div className="flex justify-end gap-2 pt-3 mt-3 border-t border-digi-border">
-              <button onClick={() => setDetailMonth(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
-              <button onClick={saveDetail} disabled={saving} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
-                {saving ? 'Guardando...' : 'Guardar'}
-              </button>
+              <button onClick={() => setDetailMonth(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>{isAdmin ? 'Cancelar' : 'Cerrar'}</button>
+              {isAdmin && (
+                <button onClick={saveDetail} disabled={saving} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
+import { addProjectIncomeToFinance } from '@/lib/finance';
 import { Resend } from 'resend';
 import crypto from 'crypto';
 
@@ -40,6 +41,13 @@ export async function POST(req: NextRequest) {
       currency: currency || 'USD',
       exchangeRate: exchange_rate || 1,
     });
+
+    // Register each project as income in monthly finance
+    for (const p of projectsData) {
+      try {
+        await addProjectIncomeToFinance(String(p.id), p.title, p.subtotal || 0);
+      } catch (finErr: any) { console.error('Finance registration error:', finErr.message); }
+    }
 
     // Sign and send to SRI
     let sriResult: any = null;

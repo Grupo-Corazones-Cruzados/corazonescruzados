@@ -1,45 +1,51 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureFinanceTables, ensureMonth, recalcMonth } from '@/lib/finance';
 
-async function ensureFinanceTables() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS gcc_world.finance_months (
-      id SERIAL PRIMARY KEY,
-      year INT NOT NULL,
-      month INT NOT NULL,
-      total_income NUMERIC(12,2) DEFAULT 0,
-      total_expense NUMERIC(12,2) DEFAULT 0,
-      total_savings NUMERIC(12,2) DEFAULT 0,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE(year, month)
-    );
-    CREATE TABLE IF NOT EXISTS gcc_world.finance_items (
-      id SERIAL PRIMARY KEY,
-      month_id INT NOT NULL REFERENCES gcc_world.finance_months(id) ON DELETE CASCADE,
-      type VARCHAR(10) NOT NULL CHECK (type IN ('income', 'expense')),
-      description TEXT NOT NULL,
-      amount NUMERIC(12,2) NOT NULL DEFAULT 0,
-      sort_order INT DEFAULT 0,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    );
+/**
+ * Backfill: register completed/invoiced projects that aren't yet in finance_items.
+ * Runs once per GET — only inserts missing projects.
+ */
+async function backfillProjectIncomes() {
+  // Get all completed projects or projects with invoices that aren't registered yet
+  const { rows: projects } = await pool.query(`
+    SELECT p.id, p.title, p.final_cost, p.updated_at
+    FROM gcc_world.projects p
+    WHERE p.status = 'completed'
+      AND NOT EXISTS (
+        SELECT 1 FROM gcc_world.finance_items fi WHERE fi.source_type = 'project' AND fi.source_id = CAST(p.id AS TEXT)
+      )
   `);
+
+  for (const p of projects) {
+    const d = new Date(p.updated_at || Date.now());
+    const monthId = await ensureMonth(d.getFullYear(), d.getMonth() + 1);
+    const { rows: [{ max: maxOrder }] } = await pool.query(
+      `SELECT COALESCE(MAX(sort_order), -1) as max FROM gcc_world.finance_items WHERE month_id = $1`, [monthId]
+    );
+    await pool.query(
+      `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order, source_type, source_id)
+       VALUES ($1, 'income', $2, $3, $4, 'project', $5)`,
+      [monthId, p.title, Number(p.final_cost) || 0, maxOrder + 1, String(p.id)]
+    );
+    await recalcMonth(monthId);
+  }
 }
 
 export async function GET() {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     await ensureFinanceTables();
 
-    // Auto-create current month if it doesn't exist
+    // Auto-create current month
     const now = new Date();
-    await pool.query(
-      `INSERT INTO gcc_world.finance_months (year, month) VALUES ($1, $2) ON CONFLICT (year, month) DO NOTHING`,
-      [now.getFullYear(), now.getMonth() + 1]
-    );
+    await ensureMonth(now.getFullYear(), now.getMonth() + 1);
+
+    // Backfill any completed projects not yet registered
+    try { await backfillProjectIncomes(); } catch (e: any) { console.error('Backfill error:', e.message); }
 
     const { rows } = await pool.query(
       `SELECT * FROM gcc_world.finance_months ORDER BY year DESC, month DESC`
@@ -61,20 +67,10 @@ export async function POST(req: NextRequest) {
 
     if (!year || !month) return NextResponse.json({ error: 'year y month requeridos' }, { status: 400 });
 
-    const { rows } = await pool.query(
-      `INSERT INTO gcc_world.finance_months (year, month) VALUES ($1, $2)
-       ON CONFLICT (year, month) DO NOTHING RETURNING *`,
-      [year, month]
-    );
+    const monthId = await ensureMonth(year, month);
+    const { rows: [m] } = await pool.query(`SELECT * FROM gcc_world.finance_months WHERE id = $1`, [monthId]);
 
-    if (rows.length === 0) {
-      const { rows: existing } = await pool.query(
-        `SELECT * FROM gcc_world.finance_months WHERE year = $1 AND month = $2`, [year, month]
-      );
-      return NextResponse.json({ data: existing[0] });
-    }
-
-    return NextResponse.json({ data: rows[0] }, { status: 201 });
+    return NextResponse.json({ data: m }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
