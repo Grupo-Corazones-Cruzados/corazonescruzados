@@ -1,6 +1,10 @@
 import { pool } from '@/lib/db';
 
+let _initialized = false;
+
 async function ensureFinanceTables() {
+  if (_initialized) return;
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.finance_months (
       id SERIAL PRIMARY KEY, year INT NOT NULL, month INT NOT NULL,
@@ -15,29 +19,23 @@ async function ensureFinanceTables() {
       sort_order INT DEFAULT 0, created_at TIMESTAMPTZ DEFAULT NOW(),
       source_type VARCHAR(20), source_id TEXT
     );
+    CREATE TABLE IF NOT EXISTS gcc_world.finance_source_log (
+      source_type VARCHAR(20) NOT NULL,
+      source_id TEXT NOT NULL,
+      registered_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (source_type, source_id)
+    );
   `);
-  // Ensure source columns exist and unique constraint
   await pool.query(`
     ALTER TABLE gcc_world.finance_items ADD COLUMN IF NOT EXISTS source_type VARCHAR(20);
     ALTER TABLE gcc_world.finance_items ADD COLUMN IF NOT EXISTS source_id TEXT;
   `);
-  // Clean up any existing duplicates (keep lowest id)
-  await pool.query(`
-    DELETE FROM gcc_world.finance_items a USING gcc_world.finance_items b
-    WHERE a.source_type IS NOT NULL AND a.source_id IS NOT NULL
-      AND a.source_type = b.source_type AND a.source_id = b.source_id
-      AND a.id > b.id
-  `);
-  // Create unique index to prevent future duplicates
   await pool.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_finance_items_source_unique
     ON gcc_world.finance_items (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL
   `);
-  // Recalc all months to fix stale totals after cleanup
-  const { rows: allMonths } = await pool.query(`SELECT id FROM gcc_world.finance_months`);
-  for (const m of allMonths) {
-    await recalcMonth(m.id);
-  }
+
+  _initialized = true;
 }
 
 async function ensureMonth(year: number, month: number): Promise<number> {
@@ -64,15 +62,18 @@ async function recalcMonth(monthId: number) {
 }
 
 /**
- * Register an income item in the monthly finance table.
- * @param sourceType - 'project' or 'ticket'
- * @param sourceId - unique ID of the source
- * @param description - display name
- * @param amount - USD amount
- * @param date - optional date to determine which month (defaults to now)
+ * Register an income item. Uses finance_source_log to track what was ever
+ * registered — if the admin deletes the item, the log entry remains so
+ * the backfill won't re-add it.
  */
 async function addIncomeToFinance(sourceType: string, sourceId: string, description: string, amount: number, date?: Date) {
   await ensureFinanceTables();
+
+  // Check log — if this source was ever registered, skip (even if item was deleted by admin)
+  const { rows: logged } = await pool.query(
+    `SELECT 1 FROM gcc_world.finance_source_log WHERE source_type = $1 AND source_id = $2`, [sourceType, sourceId]
+  );
+  if (logged.length > 0) return;
 
   const d = date || new Date();
   const monthId = await ensureMonth(d.getFullYear(), d.getMonth() + 1);
@@ -81,11 +82,16 @@ async function addIncomeToFinance(sourceType: string, sourceId: string, descript
     `SELECT COALESCE(MAX(sort_order), -1) as max FROM gcc_world.finance_items WHERE month_id = $1`, [monthId]
   );
 
-  // ON CONFLICT uses the unique partial index on (source_type, source_id)
   await pool.query(
     `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order, source_type, source_id)
      VALUES ($1, 'income', $2, $3, $4, $5, $6) ON CONFLICT (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL DO NOTHING`,
     [monthId, description, amount, maxOrder + 1, sourceType, sourceId]
+  );
+
+  // Log that this source was registered (permanent — survives item deletion)
+  await pool.query(
+    `INSERT INTO gcc_world.finance_source_log (source_type, source_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+    [sourceType, sourceId]
   );
 
   await recalcMonth(monthId);
