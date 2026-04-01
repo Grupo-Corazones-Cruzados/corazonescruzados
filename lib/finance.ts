@@ -47,34 +47,44 @@ async function recalcMonth(monthId: number) {
 }
 
 /**
- * Register a project as income in the monthly finance table.
- * Uses the current date to determine the month.
- * Prevents duplicates via source_type + source_id.
+ * Register an income item in the monthly finance table.
+ * @param sourceType - 'project' or 'ticket'
+ * @param sourceId - unique ID of the source
+ * @param description - display name
+ * @param amount - USD amount
+ * @param date - optional date to determine which month (defaults to now)
  */
-export async function addProjectIncomeToFinance(projectId: string, projectTitle: string, totalCost: number) {
+async function addIncomeToFinance(sourceType: string, sourceId: string, description: string, amount: number, date?: Date) {
   await ensureFinanceTables();
 
-  const now = new Date();
-  const monthId = await ensureMonth(now.getFullYear(), now.getMonth() + 1);
+  const d = date || new Date();
+  const monthId = await ensureMonth(d.getFullYear(), d.getMonth() + 1);
 
-  // Check if already registered (prevent duplicates)
+  // Prevent duplicates
   const { rows: existing } = await pool.query(
-    `SELECT id FROM gcc_world.finance_items WHERE source_type = 'project' AND source_id = $1`, [projectId]
+    `SELECT id FROM gcc_world.finance_items WHERE source_type = $1 AND source_id = $2`, [sourceType, sourceId]
   );
-  if (existing.length > 0) return; // Already registered
+  if (existing.length > 0) return;
 
-  // Get next sort_order
   const { rows: [{ max: maxOrder }] } = await pool.query(
     `SELECT COALESCE(MAX(sort_order), -1) as max FROM gcc_world.finance_items WHERE month_id = $1`, [monthId]
   );
 
   await pool.query(
     `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order, source_type, source_id)
-     VALUES ($1, 'income', $2, $3, $4, 'project', $5)`,
-    [monthId, projectTitle, totalCost, maxOrder + 1, projectId]
+     VALUES ($1, 'income', $2, $3, $4, $5, $6)`,
+    [monthId, description, amount, maxOrder + 1, sourceType, sourceId]
   );
 
   await recalcMonth(monthId);
+}
+
+export async function addProjectIncomeToFinance(projectId: string, projectTitle: string, totalCost: number, date?: Date) {
+  await addIncomeToFinance('project', projectId, projectTitle, totalCost, date);
+}
+
+export async function addTicketIncomeToFinance(ticketId: string, ticketTitle: string, totalCost: number, date?: Date) {
+  await addIncomeToFinance('ticket', ticketId, ticketTitle, totalCost, date);
 }
 
 export { ensureFinanceTables, ensureMonth, recalcMonth };

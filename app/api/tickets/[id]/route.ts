@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { addTicketIncomeToFinance } from '@/lib/finance';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -60,7 +61,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     );
 
     if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json({ data: rows[0] });
+
+    // Auto-register as income when ticket is completed
+    const ticket = rows[0];
+    if (ticket.status === 'completed' && ticket.estimated_cost) {
+      try {
+        await addTicketIncomeToFinance(String(ticket.id), ticket.title, Number(ticket.estimated_cost) || 0);
+      } catch (finErr: any) { console.error('Finance ticket registration error:', finErr.message); }
+    }
+
+    return NextResponse.json({ data: ticket });
   } catch (err: any) {
     console.error('Ticket PATCH error:', err.message);
     return NextResponse.json({ error: 'Error' }, { status: 500 });
