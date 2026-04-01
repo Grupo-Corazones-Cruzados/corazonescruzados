@@ -33,6 +33,11 @@ async function ensureFinanceTables() {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_finance_items_source_unique
     ON gcc_world.finance_items (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL
   `);
+  // Recalc all months to fix stale totals after cleanup
+  const { rows: allMonths } = await pool.query(`SELECT id FROM gcc_world.finance_months`);
+  for (const m of allMonths) {
+    await recalcMonth(m.id);
+  }
 }
 
 async function ensureMonth(year: number, month: number): Promise<number> {
