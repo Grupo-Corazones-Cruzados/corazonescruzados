@@ -2,6 +2,9 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+// Allow up to 5 minutes for large audio files
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();

@@ -54,12 +54,22 @@ export default function ToolsPage() {
     }
   };
 
+  const triggerDownload = (blob: Blob, name: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Delay revoke to ensure browser picks up the download
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  };
+
   // --- Convert ---
   const handleConvert = async () => {
     if (!convertFile) return;
     setConverting(true); setConvertProgress(0); setConvertResult(null);
 
-    // Simulate progress while waiting for server
     const interval = setInterval(() => {
       setConvertProgress(prev => Math.min(prev + Math.random() * 8, 90));
     }, 300);
@@ -71,24 +81,20 @@ export default function ToolsPage() {
       formData.append('to', convertTo);
 
       const res = await fetch('/api/tools/convert', { method: 'POST', body: formData });
-
       clearInterval(interval);
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Error al convertir');
+        let msg = 'Error al convertir';
+        try { const err = await res.json(); msg = err.error || msg; } catch { /* response wasn't JSON */ }
+        throw new Error(msg);
       }
 
-      setConvertProgress(100);
       const blob = await res.blob();
       const name = convertFile.name.replace(/\.[^.]+$/, '') + '.' + convertTo;
+
+      setConvertProgress(100);
       setConvertResult({ blob, name });
-
-      // Auto-download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = name; a.click();
-      URL.revokeObjectURL(url);
-
+      triggerDownload(blob, name);
       toast.success('Conversion completada');
     } catch (err: any) {
       clearInterval(interval);
@@ -112,24 +118,22 @@ export default function ToolsPage() {
       formData.append('file', transcribeFile);
 
       const res = await fetch('/api/tools/transcribe', { method: 'POST', body: formData });
-
       clearInterval(interval);
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Error al transcribir');
+        let msg = 'Error al transcribir';
+        try { const err = await res.json(); msg = err.error || msg; } catch { /* response wasn't JSON */ }
+        throw new Error(msg);
       }
 
-      setTranscribeProgress(100);
-      const blob = await res.blob();
+      // Read as text first, then create blob from it to ensure proper encoding
+      const text = await res.text();
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
       const name = transcribeFile.name.replace(/\.[^.]+$/, '') + '.txt';
+
+      setTranscribeProgress(100);
       setTranscribeResult({ blob, name });
-
-      // Auto-download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = name; a.click();
-      URL.revokeObjectURL(url);
-
+      triggerDownload(blob, name);
       toast.success('Transcripcion completada');
     } catch (err: any) {
       clearInterval(interval);
@@ -140,9 +144,7 @@ export default function ToolsPage() {
   };
 
   const downloadResult = (result: { blob: Blob; name: string }) => {
-    const url = URL.createObjectURL(result.blob);
-    const a = document.createElement('a'); a.href = url; a.download = result.name; a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(result.blob, result.name);
   };
 
   const closeConvert = () => { setShowConvert(false); setConvertResult(null); setConverting(false); };

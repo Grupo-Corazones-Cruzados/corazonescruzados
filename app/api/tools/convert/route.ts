@@ -9,6 +9,8 @@ import { randomUUID } from 'crypto';
 
 const execFileAsync = promisify(execFile);
 
+export const maxDuration = 300;
+
 const SUPPORTED_CONVERSIONS: Record<string, string[]> = {
   'm4a': ['mp3'],
   'mp4': ['mp3'],
