@@ -16,10 +16,22 @@ async function ensureFinanceTables() {
       source_type VARCHAR(20), source_id TEXT
     );
   `);
-  // Ensure source columns exist (for linking to projects/invoices)
+  // Ensure source columns exist and unique constraint
   await pool.query(`
     ALTER TABLE gcc_world.finance_items ADD COLUMN IF NOT EXISTS source_type VARCHAR(20);
     ALTER TABLE gcc_world.finance_items ADD COLUMN IF NOT EXISTS source_id TEXT;
+  `);
+  // Clean up any existing duplicates (keep lowest id)
+  await pool.query(`
+    DELETE FROM gcc_world.finance_items a USING gcc_world.finance_items b
+    WHERE a.source_type IS NOT NULL AND a.source_id IS NOT NULL
+      AND a.source_type = b.source_type AND a.source_id = b.source_id
+      AND a.id > b.id
+  `);
+  // Create unique index to prevent future duplicates
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_finance_items_source_unique
+    ON gcc_world.finance_items (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL
   `);
 }
 
@@ -60,19 +72,14 @@ async function addIncomeToFinance(sourceType: string, sourceId: string, descript
   const d = date || new Date();
   const monthId = await ensureMonth(d.getFullYear(), d.getMonth() + 1);
 
-  // Prevent duplicates
-  const { rows: existing } = await pool.query(
-    `SELECT id FROM gcc_world.finance_items WHERE source_type = $1 AND source_id = $2`, [sourceType, sourceId]
-  );
-  if (existing.length > 0) return;
-
   const { rows: [{ max: maxOrder }] } = await pool.query(
     `SELECT COALESCE(MAX(sort_order), -1) as max FROM gcc_world.finance_items WHERE month_id = $1`, [monthId]
   );
 
+  // ON CONFLICT uses the unique partial index on (source_type, source_id)
   await pool.query(
     `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order, source_type, source_id)
-     VALUES ($1, 'income', $2, $3, $4, $5, $6)`,
+     VALUES ($1, 'income', $2, $3, $4, $5, $6) ON CONFLICT (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL DO NOTHING`,
     [monthId, description, amount, maxOrder + 1, sourceType, sourceId]
   );
 

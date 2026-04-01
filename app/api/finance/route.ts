@@ -26,7 +26,7 @@ async function backfillIncomes() {
     );
     await pool.query(
       `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order, source_type, source_id)
-       VALUES ($1, 'income', $2, $3, $4, 'project', $5)`,
+       VALUES ($1, 'income', $2, $3, $4, 'project', $5) ON CONFLICT (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL DO NOTHING`,
       [monthId, p.title, Number(p.final_cost) || 0, maxOrder + 1, String(p.id)]
     );
     await recalcMonth(monthId);
@@ -57,7 +57,7 @@ async function backfillIncomes() {
     );
     await pool.query(
       `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order, source_type, source_id)
-       VALUES ($1, 'income', $2, $3, $4, 'project', $5)`,
+       VALUES ($1, 'income', $2, $3, $4, 'project', $5) ON CONFLICT (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL DO NOTHING`,
       [monthId, p.title, Number(p.final_cost) || 0, maxOrder + 1, String(p.id)]
     );
     await recalcMonth(monthId);
@@ -81,7 +81,7 @@ async function backfillIncomes() {
     );
     await pool.query(
       `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order, source_type, source_id)
-       VALUES ($1, 'income', $2, $3, $4, 'ticket', $5)`,
+       VALUES ($1, 'income', $2, $3, $4, 'ticket', $5) ON CONFLICT (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL DO NOTHING`,
       [monthId, t.title, Number(t.estimated_cost) || 0, maxOrder + 1, String(t.id)]
     );
     await recalcMonth(monthId);
