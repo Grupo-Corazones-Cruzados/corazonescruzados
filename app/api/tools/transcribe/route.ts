@@ -88,9 +88,16 @@ export async function POST(req: NextRequest) {
       const result = await openai.audio.transcriptions.create({ ...whisperOpts, file: fileForApi });
       fullText = typeof result === 'string' ? result : result.text || '';
     } else {
-      // Split into segments
-      const durationSec = await getDuration(compressedPath);
-      const numSegments = durationSec > 0 ? Math.ceil(durationSec / SEGMENT_SEC) : Math.ceil(compressedStat.size / MAX_WHISPER_SIZE);
+      // Split into segments — need accurate duration
+      let durationSec = await getDuration(compressedPath);
+
+      // Fallback: estimate from file size at 48kbps (bytes = bitrate/8 * seconds)
+      if (durationSec <= 0) {
+        durationSec = Math.ceil(compressedStat.size * 8 / 48000);
+      }
+
+      const numSegments = Math.ceil(durationSec / SEGMENT_SEC);
+      console.log(`Transcribe: ${(compressedStat.size / 1024 / 1024).toFixed(1)}MB, ~${Math.round(durationSec / 60)}min, ${numSegments} segments`);
 
       const texts: string[] = [];
       for (let i = 0; i < numSegments; i++) {
@@ -104,10 +111,15 @@ export async function POST(req: NextRequest) {
           '-ac', '1', '-ar', '16000', '-b:a', '48k', '-f', 'mp3', segPath,
         ], { timeout: 60000 });
 
+        // Skip empty segments (silence at end)
+        const segStat = await fs.stat(segPath);
+        if (segStat.size < 1000) continue; // less than 1KB = empty/silence
+
         const segBuffer = await fs.readFile(segPath);
         const segFile = await toFile(segBuffer, `segment-${i}.mp3`);
         const result = await openai.audio.transcriptions.create({ ...whisperOpts, file: segFile });
-        texts.push(typeof result === 'string' ? result : result.text || '');
+        const segText = typeof result === 'string' ? result : result.text || '';
+        if (segText.trim()) texts.push(segText);
       }
 
       fullText = texts.join('\n\n');
