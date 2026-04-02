@@ -120,7 +120,15 @@ export default function DashboardHome() {
 
       {/* Finance Table - visible to all, editable by admin */}
       <>
-        <h2 className="pixel-heading text-sm text-white mb-3">Estado Financiero Mensual</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="pixel-heading text-sm text-white">Estado Financiero Mensual</h2>
+          {months.length > 0 && (
+            <button onClick={() => window.open('/api/finance/pdf', '_blank')}
+              className="px-3 py-1.5 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
+              Descargar Reporte Global
+            </button>
+          )}
+        </div>
           <PixelDataTable
             columns={[
               { key: 'period', header: 'Periodo', render: (m: any) => (
@@ -136,6 +144,10 @@ export default function DashboardHome() {
                 const s = Number(m.total_savings || 0);
                 return <span className={s >= 0 ? 'text-accent-glow' : 'text-red-400'} style={mf}>${s.toFixed(2)}</span>;
               }},
+              { key: 'pdf', header: '', width: '50px', render: (m: any) => (
+                <button onClick={(e) => { e.stopPropagation(); window.open(`/api/finance/${m.id}/pdf`, '_blank'); }}
+                  className="px-1.5 py-0.5 text-[7px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>PDF</button>
+              )},
             ]}
             data={months}
             onRowClick={(m: any) => openDetail(m)}
@@ -215,14 +227,20 @@ export default function DashboardHome() {
               <span className="font-bold">${detailSavings.toFixed(2)}</span>
             </div>
 
-            {/* Save (admin only) */}
-            <div className="flex justify-end gap-2 pt-3 mt-3 border-t border-digi-border">
+            {/* Actions */}
+            <div className="flex justify-between pt-3 mt-3 border-t border-digi-border">
+              <button onClick={() => detailMonth && window.open(`/api/finance/${detailMonth.id}/pdf`, '_blank')}
+                className="px-3 py-2 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
+                Descargar PDF
+              </button>
+              <div className="flex gap-2">
               <button onClick={() => setDetailMonth(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>{isAdmin ? 'Cancelar' : 'Cerrar'}</button>
               {isAdmin && (
                 <button onClick={saveDetail} disabled={saving} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
                   {saving ? 'Guardando...' : 'Guardar'}
                 </button>
               )}
+              </div>
             </div>
           </div>
         )}
