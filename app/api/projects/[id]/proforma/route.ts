@@ -4,8 +4,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
+import crypto from 'crypto';
+import { Resend } from 'resend';
 
 const LINKS_FILE = path.join(process.cwd(), 'data', 'agent-links.json');
+
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
+  return _resend;
+}
 
 async function readJson(file: string): Promise<Record<string, any>> {
   try { return JSON.parse(await fs.readFile(file, 'utf-8')); } catch { return {}; }
@@ -46,11 +54,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const { id } = await params;
     const body = await req.json();
-    const { senderName, targetAmount, clientName, clientEmail, clientPhone } = body;
+    const { senderName, targetAmount, clientName, clientEmail, clientPhone, emails } = body;
 
     if (!senderName || !targetAmount || !clientName) {
       return NextResponse.json({ error: 'Se requiere nombre del remitente, nombre del cliente y monto objetivo' }, { status: 400 });
     }
+
+    // Parse emails: can be string (comma-separated) or array
+    const emailList: string[] = Array.isArray(emails)
+      ? emails.filter((e: string) => e.trim())
+      : (emails || '').split(',').map((e: string) => e.trim()).filter(Boolean);
 
     await ensureProformaColumn();
 
@@ -117,7 +130,54 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       [proformaHtml, id]
     );
 
-    return NextResponse.json({ proforma: proformaHtml });
+    // 8. Send proforma by email if emails provided
+    let emailsSent = 0;
+    if (emailList.length > 0) {
+      try {
+        // Generate project access URL with token if private
+        let projectUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/proyecto/${id}`;
+        const { rows: [projInfo] } = await pool.query(`SELECT is_private FROM gcc_world.projects WHERE id = $1`, [id]);
+
+        if (projInfo?.is_private) {
+          await pool.query(`
+            ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token VARCHAR(64);
+            ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMPTZ;
+          `);
+          const newToken = crypto.randomBytes(32).toString('hex');
+          const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days (matches proforma validity)
+          await pool.query(`UPDATE gcc_world.projects SET public_token = $1, public_token_expires_at = $2 WHERE id = $3`, [newToken, expiresAt, id]);
+          projectUrl += `?token=${newToken}`;
+        }
+
+        const emailHtml = buildProformaEmail({
+          clientName,
+          projectTitle: project.title || digiProject.name,
+          proformaNumber,
+          targetAmount,
+          senderName,
+          projectUrl,
+        });
+
+        for (const email of emailList) {
+          try {
+            await getResend().emails.send({
+              from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
+              to: email,
+              bcc: 'lfgonzalezm0@grupocc.org',
+              subject: `Proforma ${proformaNumber} — ${project.title || digiProject.name} | GCC World`,
+              html: emailHtml,
+            });
+            emailsSent++;
+          } catch (emailErr: any) {
+            console.error(`Error sending proforma email to ${email}:`, emailErr.message);
+          }
+        }
+      } catch (emailErr: any) {
+        console.error('Error preparing proforma emails:', emailErr.message);
+      }
+    }
+
+    return NextResponse.json({ proforma: proformaHtml, emailsSent });
   } catch (err: any) {
     console.error('Proforma POST error:', err.message);
     return NextResponse.json({ error: err.message || 'Error generando proforma' }, { status: 500 });
@@ -251,6 +311,40 @@ DEBES usar EXACTAMENTE este template HTML/CSS. Solo reemplaza el contenido entre
 </html>
 
 RESPONDE UNICAMENTE con el HTML completo. Sin explicaciones, sin markdown, sin bloques de codigo. Solo el HTML puro desde <!DOCTYPE html> hasta </html>.`;
+}
+
+function buildProformaEmail(data: {
+  clientName: string;
+  projectTitle: string;
+  proformaNumber: string;
+  targetAmount: number;
+  senderName: string;
+  projectUrl: string;
+}): string {
+  const { clientName, projectTitle, proformaNumber, targetAmount, senderName, projectUrl } = data;
+
+  return `<div style="font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;padding:0;margin:0;">
+<div style="max-width:600px;margin:0 auto;background:#ffffff;">
+  <div style="height:6px;background:#4B2D8E;"></div>
+  <div style="padding:30px 40px;">
+    <h1 style="color:#1a1a2e;font-size:22px;margin:0 0 6px;">Hola ${clientName}!</h1>
+    <p style="color:#888;font-size:14px;margin:0 0 24px;">Te hacemos llegar la proforma de tu proyecto. Revisa los detalles a continuacion.</p>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;width:40%"><strong>Documento:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">Proforma</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>No. Proforma:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${proformaNumber}</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Proyecto:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${projectTitle}</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Remitente:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${senderName} - GCC WORLD S.A.</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Validez:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">30 dias desde la emision</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Valor Total:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#1a1a2e;">$${Number(targetAmount).toFixed(2)} USD</td></tr>
+    </table>
+    <div style="text-align:center;margin:24px 0 0;">
+      <a href="${projectUrl}" style="display:inline-block;padding:12px 24px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;border-radius:4px;">Ver Detalle del Proyecto</a>
+    </div>
+    <p style="color:#888;font-size:12px;margin:16px 0 0;text-align:center;">La proforma detallada ha sido generada y esta disponible para tu revision. Si tienes consultas, no dudes en contactarnos.</p>
+  </div>
+  <div style="height:3px;background:#4B2D8E;"></div>
+</div>
+</div>`;
 }
 
 function runClaudeCli(prompt: string, cwd: string): Promise<string> {
