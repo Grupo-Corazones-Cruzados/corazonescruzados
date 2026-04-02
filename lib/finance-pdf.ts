@@ -94,7 +94,7 @@ export async function generateFinancePdf(months: FinanceMonthData[], title: stri
         doc.fillColor(isZero ? '#0088cc' : '#333');
         doc.text(item.description, L + 4, y, { width: colW - 60 });
         if (isZero) {
-          doc.text(`\u26A0 $${item.amount.toFixed(2)}`, L + colW - 56, y, { width: 52, align: 'right' });
+          doc.text(`[!] $${item.amount.toFixed(2)}`, L + colW - 56, y, { width: 52, align: 'right' });
         } else {
           doc.text(`$${item.amount.toFixed(2)}`, L + colW - 50, y, { width: 46, align: 'right' });
         }
