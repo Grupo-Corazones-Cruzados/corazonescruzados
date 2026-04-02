@@ -87,9 +87,11 @@ export async function generateFinancePdf(months: FinanceMonthData[], title: stri
       doc.fillColor('#cc0000').font('Helvetica-Bold').fontSize(8).text('EGRESOS', L, y + 2);
       y += 14;
 
-      doc.font('Helvetica').fontSize(7).fillColor('#333');
+      doc.font('Helvetica').fontSize(7);
       for (const item of m.expenseItems) {
         if (y > doc.page.height - 60) { doc.addPage(); y = 40; }
+        const color = item.amount === 0 ? '#1a1a7a' : '#333';
+        doc.fillColor(color);
         doc.text(item.description, L + 4, y, { width: colW - 50 });
         doc.text(`$${item.amount.toFixed(2)}`, L + colW - 50, y, { width: 46, align: 'right' });
         y += 11;
