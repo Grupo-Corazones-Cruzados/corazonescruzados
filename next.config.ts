@@ -3,9 +3,10 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb',
+      bodySizeLimit: '50mb',
     },
   },
+  serverExternalPackages: ['@ffmpeg-installer/ffmpeg'],
 };
 
 export default nextConfig;
