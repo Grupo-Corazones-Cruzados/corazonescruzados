@@ -115,7 +115,10 @@ export async function POST(req: NextRequest) {
 
     await cleanup(tempFiles);
 
-    // Filter out known Whisper hallucinations (repetitive junk from silence)
+    // Filter out Whisper hallucinations
+    let cleaned = fullText;
+
+    // 1. Known phrase patterns
     const hallucinations = [
       /thank you for watching[.!]*/gi,
       /please subscribe to my channel[.!]*/gi,
@@ -125,10 +128,16 @@ export async function POST(req: NextRequest) {
       /no te olvides de suscribirte[.!]*/gi,
       /dale like y suscr[ií]bete[.!]*/gi,
     ];
-    let cleaned = fullText;
     for (const pattern of hallucinations) {
-      cleaned = cleaned.replace(pattern, '').trim();
+      cleaned = cleaned.replace(pattern, '');
     }
+
+    // 2. Detect and remove ANY repeated word/phrase pattern (e.g. "Lo. Lo. Lo..." or "¿Me escuchaste? ¿Me escuchaste?")
+    // Matches any phrase (1-40 chars) repeated 5+ times consecutively
+    cleaned = cleaned.replace(/(.{1,40}?)\s*(\1[\s.?!,]*){4,}/gi, (match, phrase) => {
+      return phrase.trim();
+    });
+
     // Remove lines that are just whitespace
     cleaned = cleaned.split('\n').filter(l => l.trim()).join('\n');
 
