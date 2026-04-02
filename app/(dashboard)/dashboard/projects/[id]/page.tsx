@@ -1765,7 +1765,7 @@ export default function ProjectDetailPage() {
               </div>
               <div className="text-center space-y-2">
                 <p className="text-[10px] text-accent-glow" style={pf}>Generando proforma...</p>
-                <p className="text-[8px] text-digi-muted" style={mf}>Claude esta analizando el proyecto y generando la proforma. Esto puede tomar 1-2 minutos.</p>
+                <p className="text-[8px] text-digi-muted" style={mf}>Claude esta analizando el proyecto y generando la proforma. Esto puede tomar 3-5 minutos.</p>
               </div>
               <div className="space-y-1.5">
                 {['Leyendo estructura del proyecto...', 'Analizando codigo fuente...', 'Generando desglose profesional...', 'Construyendo documento HTML...'].map((step, i) => (

@@ -353,7 +353,7 @@ function runClaudeCli(prompt: string, cwd: string): Promise<string> {
       '-p', prompt,
       '--output-format', 'json',
       '--dangerously-skip-permissions',
-      '--max-turns', '3',
+      '--max-turns', '10',
     ];
 
     const proc = spawn('claude', args, {
@@ -368,11 +368,11 @@ function runClaudeCli(prompt: string, cwd: string): Promise<string> {
     proc.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
     proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
 
-    // Timeout after 3 minutes
+    // Timeout after 5 minutes
     const timeout = setTimeout(() => {
       proc.kill('SIGTERM');
-      reject(new Error('Claude CLI timeout (3 min)'));
-    }, 180_000);
+      reject(new Error('Claude CLI timeout (5 min)'));
+    }, 300_000);
 
     proc.on('close', (code) => {
       clearTimeout(timeout);
