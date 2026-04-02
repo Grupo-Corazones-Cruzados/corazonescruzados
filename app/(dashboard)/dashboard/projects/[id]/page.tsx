@@ -89,6 +89,13 @@ export default function ProjectDetailPage() {
   const [bidReqCosts, setBidReqCosts] = useState<Record<number, string>>({});
   const [submittingBid, setSubmittingBid] = useState(false);
 
+  // Proforma states
+  const [showProformaModal, setShowProformaModal] = useState(false);
+  const [proformaSender, setProformaSender] = useState('');
+  const [proformaAmount, setProformaAmount] = useState('');
+  const [generatingProforma, setGeneratingProforma] = useState(false);
+  const [proformaPreview, setProformaPreview] = useState<string | null>(null);
+
   // Complete + Invoice states
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completeIdType, setCompleteIdType] = useState('07');
@@ -503,6 +510,42 @@ export default function ProjectDetailPage() {
     toast.success(`Incidencia aprobada y enviada`);
     setSelectedIncidentId(null);
     fetchProject();
+  };
+
+  // --- Proforma ---
+  const generateProforma = async () => {
+    if (!proformaSender.trim() || !proformaAmount) return;
+    setGeneratingProforma(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/proforma`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senderName: proformaSender, targetAmount: Number(proformaAmount) }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      const { proforma } = await res.json();
+      setProformaPreview(proforma);
+      setShowProformaModal(false);
+      toast.success('Proforma generada exitosamente');
+      fetchProject();
+    } catch (e: any) { toast.error(e.message || 'Error al generar proforma'); }
+    finally { setGeneratingProforma(false); }
+  };
+
+  const loadExistingProforma = async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/proforma`);
+      if (res.ok) {
+        const { proforma } = await res.json();
+        if (proforma) setProformaPreview(proforma);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const openProformaInNewTab = () => {
+    if (!proformaPreview) return;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(proformaPreview); w.document.close(); }
   };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando proyecto..." /></div>;
@@ -1510,6 +1553,58 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
+          {/* Proforma */}
+          {project.digimundo_project_id && (
+            <div className="pixel-card" style={{ borderColor: (project.has_proforma || proformaPreview) ? 'var(--color-accent)' : undefined }}>
+              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Proforma</h3>
+              {proformaPreview ? (
+                <div className="space-y-2">
+                  <div className="border border-digi-border/50 rounded overflow-hidden" style={{ height: '160px' }}>
+                    <iframe
+                      srcDoc={proformaPreview}
+                      className="w-full h-full border-0"
+                      sandbox="allow-same-origin"
+                      title="Proforma preview"
+                      style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '286%', height: '286%' }}
+                    />
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button onClick={openProformaInNewTab}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
+                      Abrir
+                    </button>
+                    <button onClick={() => setShowProformaModal(true)}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
+                      Regenerar
+                    </button>
+                  </div>
+                </div>
+              ) : project.has_proforma ? (
+                <div className="space-y-2">
+                  <p className="text-[9px] text-green-400" style={pf}>Proforma guardada</p>
+                  <div className="flex gap-1.5">
+                    <button onClick={loadExistingProforma}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
+                      Ver Proforma
+                    </button>
+                    <button onClick={() => setShowProformaModal(true)}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
+                      Regenerar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[9px] text-digi-muted" style={mf}>Genera una proforma profesional basada en el contexto del proyecto.</p>
+                  <button onClick={() => setShowProformaModal(true)}
+                    className="w-full px-2 py-2 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
+                    Generar Proforma
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Incidents */}
           {project.digimundo_project_id && (
             <div className="pixel-card">
@@ -1636,6 +1731,54 @@ export default function ProjectDetailPage() {
           </button>
         </div>
       </PixelModal>
+
+      {/* Proforma Modal */}
+      <PixelModal open={showProformaModal} onClose={() => !generatingProforma && setShowProformaModal(false)} title="Generar Proforma" size="sm">
+        <div className="space-y-3">
+          <p className="text-[9px] text-digi-muted" style={mf}>
+            La proforma se generara automaticamente con IA basandose en el contexto del proyecto vinculado al DigiMundo.
+          </p>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Nombre del remitente *</label>
+            <input value={proformaSender} onChange={(e) => setProformaSender(e.target.value)} placeholder="Ej: Fernando Gonzalez"
+              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Monto objetivo (USD) *</label>
+            <input value={proformaAmount} onChange={(e) => setProformaAmount(e.target.value)} type="number" placeholder="2000" min="1" step="0.01"
+              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+            <span className="text-[8px] text-digi-muted" style={mf}>Los items se ajustaran para sumar este monto.</span>
+          </div>
+          <button onClick={generateProforma} disabled={generatingProforma || !proformaSender.trim() || !proformaAmount}
+            className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+            {generatingProforma ? 'Generando con IA...' : 'Generar Proforma'}
+          </button>
+        </div>
+      </PixelModal>
+
+      {/* Proforma Preview Overlay */}
+      {proformaPreview && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setProformaPreview(null)}>
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+              <span className="text-sm font-semibold text-gray-800">Vista previa de proforma</span>
+              <div className="flex gap-2">
+                <button onClick={openProformaInNewTab}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-gray-800 rounded-md hover:bg-gray-700 transition-colors">
+                  Abrir en nueva pestana
+                </button>
+                <button onClick={() => setProformaPreview(null)}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                  Cerrar
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <iframe srcDoc={proformaPreview} className="w-full h-full border-0" title="Proforma" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Chat */}
       {chat.chatOpen && chat.citizen && (

@@ -8,9 +8,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id } = await params;
+
+    // Ensure proforma column exists
+    try { await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS proforma TEXT`); } catch { /* ignore */ }
+
     const { rows } = await pool.query(
       `SELECT p.*, c.name as client_name, c.email as client_email,
-              m.name as assigned_member_name
+              m.name as assigned_member_name,
+              (p.proforma IS NOT NULL) as has_proforma
        FROM gcc_world.projects p
        LEFT JOIN gcc_world.clients c ON c.id = p.client_id
        LEFT JOIN gcc_world.members m ON m.id = p.assigned_member_id
@@ -163,7 +168,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     let idx = 1;
 
     for (const [key, val] of Object.entries(body)) {
-      if (['title', 'description', 'status', 'budget_min', 'budget_max', 'final_cost', 'deadline', 'is_private', 'assigned_member_id', 'confirmed_at', 'digimundo_project_id'].includes(key)) {
+      if (['title', 'description', 'status', 'budget_min', 'budget_max', 'final_cost', 'deadline', 'is_private', 'assigned_member_id', 'confirmed_at', 'digimundo_project_id', 'proforma'].includes(key)) {
         fields.push(`${key} = $${idx++}`);
         values.push(val);
       }
