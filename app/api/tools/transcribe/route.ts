@@ -7,8 +7,14 @@ import { promisify } from 'util';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+// @ts-ignore
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+// @ts-ignore
+import ffprobeInstaller from '@ffprobe-installer/ffprobe';
 
 const execFileAsync = promisify(execFile);
+const FFMPEG = ffmpegInstaller.path as string;
+const FFPROBE = ffprobeInstaller.path as string;
 export const maxDuration = 300;
 
 const MAX_WHISPER_SIZE = 24 * 1024 * 1024; // 24MB (safe margin under 25MB limit)
@@ -46,7 +52,7 @@ export async function POST(req: NextRequest) {
     await fs.writeFile(inputPath, buffer);
 
     // Compress to mono mp3 at 48kbps (reduces 39MB → ~8-12MB for 1hr audio)
-    await execFileAsync('ffmpeg', [
+    await execFileAsync(FFMPEG, [
       '-i', inputPath, '-y',
       '-ac', '1',           // mono
       '-ar', '16000',       // 16kHz (Whisper optimal)
@@ -68,7 +74,7 @@ export async function POST(req: NextRequest) {
     } else {
       // Too large — split into segments
       // Get duration first
-      const { stdout } = await execFileAsync('ffprobe', [
+      const { stdout } = await execFileAsync(FFPROBE, [
         '-v', 'error', '-show_entries', 'format=duration',
         '-of', 'default=noprint_wrappers=1:nokey=1', compressedPath,
       ]);
@@ -82,7 +88,7 @@ export async function POST(req: NextRequest) {
         tempFiles.push(segPath);
         segments.push(segPath);
 
-        await execFileAsync('ffmpeg', [
+        await execFileAsync(FFMPEG, [
           '-i', compressedPath, '-y',
           '-ss', String(i * segmentSec),
           '-t', String(segmentSec),

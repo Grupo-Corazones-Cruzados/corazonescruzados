@@ -6,8 +6,11 @@ import { promisify } from 'util';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+// @ts-ignore
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 
 const execFileAsync = promisify(execFile);
+const FFMPEG = ffmpegInstaller.path as string;
 
 export const maxDuration = 300;
 
@@ -49,7 +52,7 @@ export async function POST(req: NextRequest) {
     await writeFile(inputPath, buffer);
 
     // Convert with ffmpeg
-    await execFileAsync('ffmpeg', ['-i', inputPath, '-y', '-q:a', '2', outputPath], { timeout: 120000 });
+    await execFileAsync(FFMPEG, ['-i', inputPath, '-y', '-q:a', '2', outputPath], { timeout: 120000 });
 
     // Read output
     const outputBuffer = await readFile(outputPath);

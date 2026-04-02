@@ -1,3 +1,1 @@
-[phases.setup]
-nixPkgs = ["ffmpeg-full"]
-aptPkgs = ["ffmpeg"]
+# ffmpeg is bundled via @ffmpeg-installer/ffmpeg npm package
