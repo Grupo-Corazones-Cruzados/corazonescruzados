@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { Resend } from 'resend';
+import puppeteer from 'puppeteer';
 
 const LINKS_FILE = path.join(process.cwd(), 'data', 'agent-links.json');
 
@@ -19,14 +20,33 @@ async function readJson(file: string): Promise<Record<string, any>> {
   try { return JSON.parse(await fs.readFile(file, 'utf-8')); } catch { return {}; }
 }
 
-// GET: return existing proforma HTML
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// GET: return existing proforma HTML or PDF
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id } = await params;
     await ensureProformaColumn();
+
+    const format = req.nextUrl.searchParams.get('format');
+
+    if (format === 'pdf') {
+      const { rows } = await pool.query(
+        `SELECT proforma_pdf FROM gcc_world.projects WHERE id = $1`, [id]
+      );
+      if (rows.length === 0 || !rows[0].proforma_pdf) {
+        return NextResponse.json({ error: 'PDF no disponible' }, { status: 404 });
+      }
+      const pdfData = rows[0].proforma_pdf;
+      const pdfBuffer = Buffer.isBuffer(pdfData) ? pdfData : Buffer.from(pdfData);
+      return new NextResponse(pdfBuffer, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="Proforma.pdf"`,
+        },
+      });
+    }
 
     const { rows } = await pool.query(
       `SELECT proforma FROM gcc_world.projects WHERE id = $1`, [id]
@@ -124,13 +144,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // 6. Run Claude CLI in the project directory
     const proformaHtml = await runClaudeCli(prompt, projectPath);
 
-    // 7. Save to database
+    // 7. Convert HTML to PDF with puppeteer
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await htmlToPdf(proformaHtml);
+    } catch (pdfErr: any) {
+      console.error('PDF generation error:', pdfErr.message);
+      // Save HTML even if PDF fails
+      await pool.query(
+        `UPDATE gcc_world.projects SET proforma = $1, updated_at = NOW() WHERE id = $2`,
+        [proformaHtml, id]
+      );
+      return NextResponse.json({ proforma: proformaHtml, emailsSent: 0, pdfError: pdfErr.message });
+    }
+
+    // 8. Save HTML + PDF to database
     await pool.query(
-      `UPDATE gcc_world.projects SET proforma = $1, updated_at = NOW() WHERE id = $2`,
-      [proformaHtml, id]
+      `UPDATE gcc_world.projects SET proforma = $1, proforma_pdf = $2, updated_at = NOW() WHERE id = $3`,
+      [proformaHtml, pdfBuffer, id]
     );
 
-    // 8. Send proforma by email if emails provided
+    // 9. Send proforma by email if emails provided
     let emailsSent = 0;
     if (emailList.length > 0) {
       try {
@@ -144,7 +178,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMPTZ;
           `);
           const newToken = crypto.randomBytes(32).toString('hex');
-          const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days (matches proforma validity)
+          const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
           await pool.query(`UPDATE gcc_world.projects SET public_token = $1, public_token_expires_at = $2 WHERE id = $3`, [newToken, expiresAt, id]);
           projectUrl += `?token=${newToken}`;
         }
@@ -166,6 +200,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               bcc: 'lfgonzalezm0@grupocc.org',
               subject: `Proforma ${proformaNumber} — ${project.title || digiProject.name} | GCC World`,
               html: emailHtml,
+              attachments: [{
+                filename: `Proforma-${proformaNumber}.pdf`,
+                content: pdfBuffer,
+                contentType: 'application/pdf',
+              }],
             });
             emailsSent++;
           } catch (emailErr: any) {
@@ -185,7 +224,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 async function ensureProformaColumn() {
-  try { await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS proforma TEXT`); } catch {}
+  try {
+    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS proforma TEXT`);
+    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS proforma_pdf BYTEA`);
+  } catch {}
 }
 
 function buildClaudePrompt(data: {
@@ -345,6 +387,25 @@ function buildProformaEmail(data: {
   <div style="height:3px;background:#4B2D8E;"></div>
 </div>
 </div>`;
+}
+
+async function htmlToPdf(html: string): Promise<Buffer> {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
+    const pdfUint8 = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    });
+    return Buffer.from(pdfUint8);
+  } finally {
+    await browser.close();
+  }
 }
 
 function runClaudeCli(prompt: string, cwd: string): Promise<string> {

@@ -1596,6 +1596,10 @@ export default function ProjectDetailPage() {
                       className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                       Abrir
                     </button>
+                    <button onClick={() => window.open(`/api/projects/${id}/proforma?format=pdf`, '_blank')}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors" style={pf}>
+                      PDF
+                    </button>
                     <button onClick={openProformaModal}
                       className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
                       Regenerar
@@ -1608,7 +1612,11 @@ export default function ProjectDetailPage() {
                   <div className="flex gap-1.5">
                     <button onClick={loadExistingProforma}
                       className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
-                      Ver Proforma
+                      Ver
+                    </button>
+                    <button onClick={() => window.open(`/api/projects/${id}/proforma?format=pdf`, '_blank')}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors" style={pf}>
+                      PDF
                     </button>
                     <button onClick={openProformaModal}
                       className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
