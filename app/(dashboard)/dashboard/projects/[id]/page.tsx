@@ -93,6 +93,9 @@ export default function ProjectDetailPage() {
   const [showProformaModal, setShowProformaModal] = useState(false);
   const [proformaSender, setProformaSender] = useState('');
   const [proformaAmount, setProformaAmount] = useState('');
+  const [proformaClientName, setProformaClientName] = useState('');
+  const [proformaClientEmail, setProformaClientEmail] = useState('');
+  const [proformaClientPhone, setProformaClientPhone] = useState('');
   const [generatingProforma, setGeneratingProforma] = useState(false);
   const [proformaPreview, setProformaPreview] = useState<string | null>(null);
 
@@ -513,14 +516,27 @@ export default function ProjectDetailPage() {
   };
 
   // --- Proforma ---
+  const openProformaModal = () => {
+    setProformaClientName(project.client_name || '');
+    setProformaClientEmail(project.client_email || '');
+    setProformaClientPhone(project.client_phone || '');
+    setShowProformaModal(true);
+  };
+
   const generateProforma = async () => {
-    if (!proformaSender.trim() || !proformaAmount) return;
+    if (!proformaSender.trim() || !proformaAmount || !proformaClientName.trim()) return;
     setGeneratingProforma(true);
     try {
       const res = await fetch(`/api/projects/${id}/proforma`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senderName: proformaSender, targetAmount: Number(proformaAmount) }),
+        body: JSON.stringify({
+          senderName: proformaSender,
+          targetAmount: Number(proformaAmount),
+          clientName: proformaClientName,
+          clientEmail: proformaClientEmail,
+          clientPhone: proformaClientPhone,
+        }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
       const { proforma } = await res.json();
@@ -1573,7 +1589,7 @@ export default function ProjectDetailPage() {
                       className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                       Abrir
                     </button>
-                    <button onClick={() => setShowProformaModal(true)}
+                    <button onClick={openProformaModal}
                       className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
                       Regenerar
                     </button>
@@ -1587,7 +1603,7 @@ export default function ProjectDetailPage() {
                       className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                       Ver Proforma
                     </button>
-                    <button onClick={() => setShowProformaModal(true)}
+                    <button onClick={openProformaModal}
                       className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
                       Regenerar
                     </button>
@@ -1596,7 +1612,7 @@ export default function ProjectDetailPage() {
               ) : (
                 <div className="space-y-2">
                   <p className="text-[9px] text-digi-muted" style={mf}>Genera una proforma profesional basada en el contexto del proyecto.</p>
-                  <button onClick={() => setShowProformaModal(true)}
+                  <button onClick={openProformaModal}
                     className="w-full px-2 py-2 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                     Generar Proforma
                   </button>
@@ -1735,24 +1751,68 @@ export default function ProjectDetailPage() {
       {/* Proforma Modal */}
       <PixelModal open={showProformaModal} onClose={() => !generatingProforma && setShowProformaModal(false)} title="Generar Proforma" size="sm">
         <div className="space-y-3">
-          <p className="text-[9px] text-digi-muted" style={mf}>
-            La proforma se generara automaticamente con IA basandose en el contexto del proyecto vinculado al DigiMundo.
-          </p>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Nombre del remitente *</label>
-            <input value={proformaSender} onChange={(e) => setProformaSender(e.target.value)} placeholder="Ej: Fernando Gonzalez"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Monto objetivo (USD) *</label>
-            <input value={proformaAmount} onChange={(e) => setProformaAmount(e.target.value)} type="number" placeholder="2000" min="1" step="0.01"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-            <span className="text-[8px] text-digi-muted" style={mf}>Los items se ajustaran para sumar este monto.</span>
-          </div>
-          <button onClick={generateProforma} disabled={generatingProforma || !proformaSender.trim() || !proformaAmount}
-            className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-            {generatingProforma ? 'Generando con IA...' : 'Generar Proforma'}
-          </button>
+          {generatingProforma ? (
+            <div className="py-6 space-y-4">
+              <div className="flex justify-center">
+                <BrandLoader size="md" label="" />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-[10px] text-accent-glow" style={pf}>Generando proforma...</p>
+                <p className="text-[8px] text-digi-muted" style={mf}>Claude esta analizando el proyecto y generando la proforma. Esto puede tomar 1-2 minutos.</p>
+              </div>
+              <div className="space-y-1.5">
+                {['Leyendo estructura del proyecto...', 'Analizando codigo fuente...', 'Generando desglose profesional...', 'Construyendo documento HTML...'].map((step, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[8px]" style={mf}>
+                    <span className={`${i < 3 ? 'text-green-400' : 'text-accent-glow animate-pulse'}`}>{i < 3 ? '\u2713' : '\u25CF'}</span>
+                    <span className={i < 3 ? 'text-digi-muted' : 'text-digi-text'}>{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-[9px] text-digi-muted" style={mf}>
+                Claude CLI leera el proyecto vinculado para generar la proforma automaticamente.
+              </p>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Nombre del remitente *</label>
+                <input value={proformaSender} onChange={(e) => setProformaSender(e.target.value)} placeholder="Ej: Fernando Gonzalez"
+                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+              </div>
+              <div className="border-t border-digi-border/30 pt-3">
+                <p className="text-[9px] text-digi-muted mb-2" style={pf}>Datos del cliente</p>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Nombre del cliente *</label>
+                <input value={proformaClientName} onChange={(e) => setProformaClientName(e.target.value)} placeholder="Nombre completo del cliente"
+                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Email</label>
+                  <input value={proformaClientEmail} onChange={(e) => setProformaClientEmail(e.target.value)} placeholder="email@ejemplo.com"
+                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Telefono</label>
+                  <input value={proformaClientPhone} onChange={(e) => setProformaClientPhone(e.target.value)} placeholder="+593..."
+                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+                </div>
+              </div>
+              <div className="border-t border-digi-border/30 pt-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Monto objetivo (USD) *</label>
+                  <input value={proformaAmount} onChange={(e) => setProformaAmount(e.target.value)} type="number" placeholder="2000" min="1" step="0.01"
+                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+                  <span className="text-[8px] text-digi-muted" style={mf}>Los items se ajustaran para sumar este monto.</span>
+                </div>
+              </div>
+              <button onClick={generateProforma} disabled={!proformaSender.trim() || !proformaAmount || !proformaClientName.trim()}
+                className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+                Generar Proforma
+              </button>
+            </>
+          )}
         </div>
       </PixelModal>
 

@@ -46,10 +46,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const { id } = await params;
     const body = await req.json();
-    const { senderName, targetAmount } = body;
+    const { senderName, targetAmount, clientName, clientEmail, clientPhone } = body;
 
-    if (!senderName || !targetAmount) {
-      return NextResponse.json({ error: 'Se requiere nombre del remitente y monto objetivo' }, { status: 400 });
+    if (!senderName || !targetAmount || !clientName) {
+      return NextResponse.json({ error: 'Se requiere nombre del remitente, nombre del cliente y monto objetivo' }, { status: 400 });
     }
 
     await ensureProformaColumn();
@@ -103,6 +103,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       targetAmount,
       proformaNumber,
       dateStr,
+      clientName,
+      clientEmail: clientEmail || '',
+      clientPhone: clientPhone || '',
     });
 
     // 6. Run Claude CLI in the project directory
@@ -132,12 +135,12 @@ function buildClaudePrompt(data: {
   targetAmount: number;
   proformaNumber: string;
   dateStr: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
 }): string {
-  const { project, digiProjectName, senderName, targetAmount, proformaNumber, dateStr } = data;
+  const { project, digiProjectName, senderName, targetAmount, proformaNumber, dateStr, clientName, clientEmail, clientPhone } = data;
 
-  const clientName = project.client_name || 'Cliente';
-  const clientEmail = project.client_email || '';
-  const clientPhone = project.client_phone || '';
   const projectTitle = project.title || digiProjectName;
   const deadline = project.deadline ? new Date(project.deadline).toLocaleDateString('es-ES') : '';
 
