@@ -34,7 +34,7 @@ export default function ToolsPage() {
   // Transcribe state
   const [showTranscribe, setShowTranscribe] = useState(false);
   const [transcribeFile, setTranscribeFile] = useState<File | null>(null);
-  const [transcribing, setTranscribing] = useState(false);
+  const [transcribePhase, setTranscribePhase] = useState<'idle' | 'processing' | 'done'>('idle');
   const [transcribeProgress, setTranscribeProgress] = useState(0);
   const [transcribeResult, setTranscribeResult] = useState<{ blob: Blob; name: string } | null>(null);
   const transcribeInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +49,7 @@ export default function ToolsPage() {
       setConverting(false); setConvertProgress(0); setConvertResult(null);
       setShowConvert(true);
     } else if (id === 'transcribe') {
-      setTranscribeFile(null); setTranscribing(false); setTranscribeProgress(0); setTranscribeResult(null);
+      setTranscribeFile(null); setTranscribePhase('idle'); setTranscribeProgress(0); setTranscribeResult(null);
       setShowTranscribe(true);
     }
   };
@@ -107,7 +107,7 @@ export default function ToolsPage() {
   // --- Transcribe ---
   const handleTranscribe = async () => {
     if (!transcribeFile) return;
-    setTranscribing(true); setTranscribeProgress(0); setTranscribeResult(null);
+    setTranscribePhase('processing'); setTranscribeProgress(0); setTranscribeResult(null);
 
     const interval = setInterval(() => {
       setTranscribeProgress(prev => Math.min(prev + Math.random() * 5, 90));
@@ -122,24 +122,24 @@ export default function ToolsPage() {
 
       if (!res.ok) {
         let msg = 'Error al transcribir';
-        try { const err = await res.json(); msg = err.error || msg; } catch { /* response wasn't JSON */ }
+        try { const err = await res.json(); msg = err.error || msg; } catch {}
         throw new Error(msg);
       }
 
-      // Read as text first, then create blob from it to ensure proper encoding
       const text = await res.text();
       const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
       const name = transcribeFile.name.replace(/\.[^.]+$/, '') + '.txt';
 
       setTranscribeProgress(100);
       setTranscribeResult({ blob, name });
+      setTranscribePhase('done');
       triggerDownload(blob, name);
       toast.success('Transcripcion completada');
     } catch (err: any) {
       clearInterval(interval);
       toast.error(err.message || 'Error al transcribir');
       setTranscribeProgress(0);
-      setTranscribing(false);
+      setTranscribePhase('idle');
     }
   };
 
@@ -148,7 +148,7 @@ export default function ToolsPage() {
   };
 
   const closeConvert = () => { setShowConvert(false); setConvertResult(null); setConverting(false); };
-  const closeTranscribe = () => { setShowTranscribe(false); setTranscribeResult(null); setTranscribing(false); };
+  const closeTranscribe = () => { setShowTranscribe(false); setTranscribeResult(null); setTranscribePhase('idle'); };
 
   return (
     <div>
@@ -254,32 +254,42 @@ export default function ToolsPage() {
       </PixelModal>
 
       {/* Transcribe Modal */}
-      <PixelModal open={showTranscribe} onClose={() => !transcribing && closeTranscribe()} title="Transcribir Audio" size="sm">
-        {transcribing ? (
+      <PixelModal open={showTranscribe} onClose={() => transcribePhase !== 'processing' && closeTranscribe()} title="Transcribir Audio" size="sm">
+        {transcribePhase === 'processing' ? (
           <div className="py-6 space-y-4">
             <div className="space-y-2">
               <div className="flex justify-between text-[9px]" style={mf}>
-                <span className="text-digi-muted">{transcribeProgress < 100 ? 'Transcribiendo...' : 'Completado'}</span>
+                <span className="text-digi-muted">Transcribiendo...</span>
                 <span className="text-accent-glow">{Math.round(transcribeProgress)}%</span>
               </div>
               <div className="w-full h-2 bg-digi-border overflow-hidden">
                 <div className="h-full bg-accent transition-all duration-300" style={{ width: `${transcribeProgress}%` }} />
               </div>
             </div>
-            {transcribeResult && (
-              <div className="space-y-2 pt-2 border-t border-digi-border">
-                <p className="text-[9px] text-green-400 text-center" style={mf}>Audio transcrito exitosamente</p>
-                <button onClick={() => downloadResult(transcribeResult)}
-                  className="w-full py-2 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
-                  Descargar {transcribeResult.name}
-                </button>
-                <button onClick={closeTranscribe}
-                  className="w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-white transition-colors" style={pf}>
-                  Cerrar
-                </button>
+            <p className="text-[8px] text-digi-muted text-center" style={mf}>No cierres esta ventana</p>
+          </div>
+        ) : transcribePhase === 'done' && transcribeResult ? (
+          <div className="py-6 space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-[9px]" style={mf}>
+                <span className="text-green-400">Completado</span>
+                <span className="text-green-400">100%</span>
               </div>
-            )}
-            {!transcribeResult && <p className="text-[8px] text-digi-muted text-center" style={mf}>No cierres esta ventana</p>}
+              <div className="w-full h-2 bg-digi-border overflow-hidden">
+                <div className="h-full bg-green-500" style={{ width: '100%' }} />
+              </div>
+            </div>
+            <div className="space-y-2 pt-2 border-t border-digi-border">
+              <p className="text-[9px] text-green-400 text-center" style={mf}>Audio transcrito exitosamente</p>
+              <button onClick={() => downloadResult(transcribeResult)}
+                className="w-full py-2 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
+                Descargar {transcribeResult.name}
+              </button>
+              <button onClick={closeTranscribe}
+                className="w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-white transition-colors" style={pf}>
+                Cerrar
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
