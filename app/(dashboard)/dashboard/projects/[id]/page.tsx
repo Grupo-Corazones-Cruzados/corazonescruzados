@@ -1553,8 +1553,8 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          {/* Proforma */}
-          {project.digimundo_project_id && (
+          {/* Proforma (solo localhost) */}
+          {project.digimundo_project_id && chat.isLocalhost && (
             <div className="pixel-card" style={{ borderColor: (project.has_proforma || proformaPreview) ? 'var(--color-accent)' : undefined }}>
               <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Proforma</h3>
               {proformaPreview ? (

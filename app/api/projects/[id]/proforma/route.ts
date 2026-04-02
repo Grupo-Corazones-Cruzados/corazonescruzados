@@ -1,8 +1,15 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { spawn } from 'child_process';
+import fs from 'fs/promises';
+import path from 'path';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const LINKS_FILE = path.join(process.cwd(), 'data', 'agent-links.json');
+
+async function readJson(file: string): Promise<Record<string, any>> {
+  try { return JSON.parse(await fs.readFile(file, 'utf-8')); } catch { return {}; }
+}
 
 // GET: return existing proforma HTML
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -11,8 +18,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id } = await params;
-
-    // Ensure column exists
     await ensureProformaColumn();
 
     const { rows } = await pool.query(
@@ -27,11 +32,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 }
 
-// POST: generate proforma via AI and save it
+// POST: generate proforma via Claude CLI and save it
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    // Localhost check
+    const host = req.headers.get('host') || '';
+    if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
+      return NextResponse.json({ error: 'Solo disponible en localhost' }, { status: 403 });
+    }
 
     const { id } = await params;
     const body = await req.json();
@@ -41,7 +52,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Se requiere nombre del remitente y monto objetivo' }, { status: 400 });
     }
 
-    // Ensure column exists
     await ensureProformaColumn();
 
     // 1. Fetch project + client data
@@ -60,7 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'El proyecto debe estar vinculado a un proyecto DigiMundo' }, { status: 400 });
     }
 
-    // 2. Fetch DigiMundo project with full structure (modules > sections > subsections)
+    // 2. Get DigiMundo project to find agentId
     const { rows: digiRows } = await pool.query(
       `SELECT id, name, "agentId" FROM gcc_world."Project" WHERE id = $1`, [project.digimundo_project_id]
     );
@@ -68,61 +78,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const digiProject = digiRows[0];
 
-    // Fetch modules
-    const { rows: modules } = await pool.query(
-      `SELECT id, name, description, "order" FROM gcc_world."Module" WHERE "projectId" = $1 ORDER BY "order"`,
-      [project.digimundo_project_id]
-    );
-
-    // Fetch sections for all modules
-    const moduleIds = modules.map((m: any) => m.id);
-    let sections: any[] = [];
-    let subsections: any[] = [];
-
-    if (moduleIds.length > 0) {
-      const { rows: sectionRows } = await pool.query(
-        `SELECT id, name, description, "order", "moduleId" FROM gcc_world."Section" WHERE "moduleId" = ANY($1) ORDER BY "order"`,
-        [moduleIds]
-      );
-      sections = sectionRows;
-
-      const sectionIds = sections.map(s => s.id);
-      if (sectionIds.length > 0) {
-        const { rows: subRows } = await pool.query(
-          `SELECT id, name, description, "order", "sectionId" FROM gcc_world."Subsection" WHERE "sectionId" = ANY($1) ORDER BY "order"`,
-          [sectionIds]
-        );
-        subsections = subRows;
-      }
+    // 3. Get the project path from agent-links
+    const links = await readJson(LINKS_FILE);
+    const projectPath = links[digiProject.agentId];
+    if (!projectPath) {
+      return NextResponse.json({ error: 'El agente no tiene un directorio de proyecto vinculado. Configura el path del proyecto en el chat del agente.' }, { status: 400 });
     }
 
-    // 3. Fetch project requirements
-    const { rows: requirements } = await pool.query(
-      `SELECT id, title, description, cost FROM gcc_world.project_requirements WHERE project_id = $1 ORDER BY id`,
-      [id]
-    );
+    // Verify path exists
+    try { await fs.access(projectPath); } catch {
+      return NextResponse.json({ error: `El directorio del proyecto no existe: ${projectPath}` }, { status: 400 });
+    }
 
-    // 4. Fetch incidents for context
-    const { rows: incidents } = await pool.query(
-      `SELECT id, title, description, severity, status FROM gcc_world."Incident" WHERE "projectId" = $1 ORDER BY "createdAt" DESC LIMIT 20`,
-      [project.digimundo_project_id]
-    );
+    // 4. Generate proforma number
+    const now = new Date();
+    const proformaNumber = `PRO-${now.getFullYear()}-${String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0')}`;
+    const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
 
-    // 5. Build project context for AI
-    const projectContext = buildProjectContext({
+    // 5. Build the prompt for Claude CLI
+    const prompt = buildClaudePrompt({
       project,
-      digiProject,
-      modules,
-      sections,
-      subsections,
-      requirements,
-      incidents,
+      digiProjectName: digiProject.name,
       senderName,
       targetAmount,
+      proformaNumber,
+      dateStr,
     });
 
-    // 6. Call OpenAI to generate proforma
-    const proformaHtml = await generateProformaWithAI(projectContext);
+    // 6. Run Claude CLI in the project directory
+    const proformaHtml = await runClaudeCli(prompt, projectPath);
 
     // 7. Save to database
     await pool.query(
@@ -138,138 +122,199 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 async function ensureProformaColumn() {
-  try {
-    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS proforma TEXT`);
-  } catch {
-    // Column may already exist
-  }
+  try { await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS proforma TEXT`); } catch {}
 }
 
-function buildProjectContext(data: {
+function buildClaudePrompt(data: {
   project: any;
-  digiProject: any;
-  modules: any[];
-  sections: any[];
-  subsections: any[];
-  requirements: any[];
-  incidents: any[];
+  digiProjectName: string;
   senderName: string;
   targetAmount: number;
-}) {
-  const { project, digiProject, modules, sections, subsections, requirements, incidents, senderName, targetAmount } = data;
+  proformaNumber: string;
+  dateStr: string;
+}): string {
+  const { project, digiProjectName, senderName, targetAmount, proformaNumber, dateStr } = data;
 
-  // Build hierarchical module structure
-  const moduleTree = modules.map(mod => {
-    const modSections = sections.filter(s => s.moduleId === mod.id).map(sec => {
-      const secSubs = subsections.filter(sub => sub.sectionId === sec.id);
-      return {
-        name: sec.name,
-        description: sec.description,
-        subsections: secSubs.map(sub => ({ name: sub.name, description: sub.description })),
-      };
-    });
-    return {
-      name: mod.name,
-      description: mod.description,
-      sections: modSections,
-    };
-  });
+  const clientName = project.client_name || 'Cliente';
+  const clientEmail = project.client_email || '';
+  const clientPhone = project.client_phone || '';
+  const projectTitle = project.title || digiProjectName;
+  const deadline = project.deadline ? new Date(project.deadline).toLocaleDateString('es-ES') : '';
 
-  return `
-CONTEXTO DEL PROYECTO:
-- Nombre del proyecto: ${project.title}
-- Descripcion: ${project.description || 'Sin descripcion'}
-- Cliente: ${project.client_name || 'No especificado'}
-- Email del cliente: ${project.client_email || 'No especificado'}
-- Telefono del cliente: ${project.client_phone || 'No especificado'}
-- Presupuesto estimado: ${project.budget_min ? `$${project.budget_min}` : 'No definido'} - ${project.budget_max ? `$${project.budget_max}` : 'No definido'}
-- Deadline: ${project.deadline ? new Date(project.deadline).toLocaleDateString('es-ES') : 'No definido'}
+  return `Analiza completamente este proyecto leyendo su codigo fuente, estructura, README, y cualquier archivo relevante para comprender al 100% de que se trata este proyecto, que tecnologias usa, que funcionalidades tiene, y cual es su proposito.
 
-ESTRUCTURA DEL PROYECTO (DigiMundo - ${digiProject.name}):
-${moduleTree.map(mod => `
-MODULO: ${mod.name}
-${mod.description ? `  Descripcion: ${mod.description}` : ''}
-${mod.sections.map(sec => `  SECCION: ${sec.name}
-${sec.description ? `    Descripcion: ${sec.description}` : ''}
-${sec.subsections.map(sub => `    - ${sub.name}${sub.description ? `: ${sub.description}` : ''}`).join('\n')}`).join('\n')}`).join('\n')}
+Luego, genera una proforma profesional en formato HTML para este proyecto.
 
-REQUERIMIENTOS DEL PROYECTO:
-${requirements.length > 0 ? requirements.map(r => `- ${r.title}${r.description ? `: ${r.description}` : ''}${r.cost ? ` (Costo: $${r.cost})` : ''}`).join('\n') : 'Sin requerimientos definidos'}
-
-INCIDENCIAS/TICKETS RECIENTES:
-${incidents.length > 0 ? incidents.map(i => `- [${i.severity}] ${i.title}: ${i.description}`).join('\n') : 'Sin incidencias'}
-
-PARAMETROS DE LA PROFORMA:
+DATOS FIJOS (usa estos exactamente):
+- Numero de proforma: ${proformaNumber}
 - Remitente: ${senderName}
-- Empresa remitente: GCC WORLD S.A.
-- Subtitulo empresa: Technology Solutions
+- Empresa: GCC WORLD S.A.
+- Subtitulo: Technology Solutions
 - Email empresa: contacto@gccworld.com
-- Monto objetivo total: $${targetAmount} USD
+- Cliente: ${clientName}
+- Email cliente: ${clientEmail}
+- Telefono cliente: ${clientPhone}
+- Nombre del proyecto: ${projectTitle}
+- Fecha de emision: ${dateStr}
+- Validez: 30 dias
 - Moneda: USD (Dolares americanos)
-- Fecha de emision: ${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
-`;
+- Monto total objetivo: $${targetAmount} USD
+${deadline ? `- Deadline del proyecto: ${deadline}` : ''}
+
+INSTRUCCIONES PARA EL CONTENIDO:
+1. Los items de la proforma deben ser un desglose profesional del trabajo que implica este proyecto, basado en tu analisis real del codigo y estructura. NO copies los requerimientos del sistema de gestion - genera tu propio desglose inteligente.
+2. Cada item debe tener un titulo claro, una descripcion detallada de 1-2 lineas, y un monto.
+3. Los montos deben sumar EXACTAMENTE $${targetAmount}.00 USD. Distribuye de forma razonable segun complejidad.
+4. La seccion de "Alcance del entregable" debe listar las funcionalidades reales que tiene o tendra el proyecto (basate en el codigo).
+5. Los terminos y condiciones deben ser especificos para este tipo de proyecto, no genericos.
+6. No uses acentos ni caracteres especiales (usa "Analisis" no "Análisis", "diseno" no "diseño").
+
+DEBES usar EXACTAMENTE este template HTML/CSS. Solo reemplaza el contenido entre los tags, no cambies los estilos ni la estructura:
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proforma ${proformaNumber} | GCC WORLD</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1d1d1f; background: #ffffff; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    .page { max-width: 800px; margin: 0 auto; padding: 60px 64px; min-height: 100vh; }
+    @media print { .page { padding: 40px 48px; min-height: auto; } .no-print { display: none !important; } }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 56px; padding-bottom: 32px; border-bottom: 1px solid #e5e5e7; }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #1d1d1f 0%, #424245 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+    .brand-text h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; color: #1d1d1f; }
+    .brand-text p { font-size: 11px; color: #86868b; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .doc-type { text-align: right; }
+    .doc-type h2 { font-size: 28px; font-weight: 300; color: #1d1d1f; letter-spacing: -0.5px; }
+    .doc-type .doc-number { font-size: 13px; color: #86868b; font-weight: 500; margin-top: 4px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 48px; }
+    .info-block h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: #86868b; margin-bottom: 12px; }
+    .info-block p { font-size: 14px; color: #1d1d1f; line-height: 1.7; }
+    .info-block .name { font-weight: 600; font-size: 15px; }
+    .dates-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 48px; padding: 20px 24px; background: #f5f5f7; border-radius: 12px; }
+    .date-item label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #86868b; margin-bottom: 4px; }
+    .date-item span { font-size: 14px; font-weight: 500; color: #1d1d1f; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+    .items-table thead th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #86868b; padding: 0 0 12px 0; text-align: left; border-bottom: 1px solid #e5e5e7; }
+    .items-table thead th:last-child { text-align: right; }
+    .items-table tbody td { padding: 20px 0; vertical-align: top; border-bottom: 1px solid #f0f0f2; }
+    .items-table tbody tr:last-child td { border-bottom: 1px solid #e5e5e7; }
+    .item-number { font-size: 12px; color: #86868b; font-weight: 500; width: 32px; }
+    .item-title { font-weight: 600; font-size: 14px; color: #1d1d1f; margin-bottom: 4px; }
+    .item-desc { font-size: 12px; color: #6e6e73; line-height: 1.5; max-width: 420px; }
+    .item-amount { text-align: right; font-weight: 500; font-size: 14px; white-space: nowrap; }
+    .totals { display: flex; justify-content: flex-end; margin-bottom: 48px; }
+    .totals-box { width: 280px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #6e6e73; }
+    .totals-row.total { padding: 16px 0 0 0; margin-top: 8px; border-top: 2px solid #1d1d1f; font-size: 20px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.3px; }
+    .scope { margin-bottom: 48px; padding: 28px 32px; background: #f5f5f7; border-radius: 12px; }
+    .scope h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: #86868b; margin-bottom: 16px; }
+    .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px; }
+    .scope-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #1d1d1f; line-height: 1.5; }
+    .scope-item .check { color: #34c759; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .scope-item .pending { color: #ff9500; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .scope-item .tag { display: inline-block; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+    .scope-item .tag-future { background: #fff3e0; color: #e65100; }
+    .terms { margin-bottom: 48px; }
+    .terms h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: #86868b; margin-bottom: 16px; }
+    .terms ol { padding-left: 20px; }
+    .terms li { font-size: 12px; color: #6e6e73; line-height: 1.7; margin-bottom: 6px; }
+    .footer { padding-top: 32px; border-top: 1px solid #e5e5e7; display: flex; justify-content: space-between; align-items: flex-end; }
+    .footer-left p { font-size: 11px; color: #86868b; line-height: 1.7; }
+    .footer-right { text-align: right; }
+    .footer-right .signature-line { width: 200px; border-bottom: 1px solid #d2d2d7; margin-bottom: 8px; margin-left: auto; padding-top: 48px; }
+    .footer-right .signature-label { font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+    .print-btn { position: fixed; bottom: 32px; right: 32px; background: #1d1d1f; color: white; border: none; padding: 12px 24px; border-radius: 980px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.15); transition: all 0.2s ease; }
+    .print-btn:hover { background: #424245; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+  </style>
+</head>
+<body>
+<div class="page">
+  <!-- Header: GCC WORLD brand left, "Proforma" + number right -->
+  <!-- Info Grid: "De" (GCC WORLD S.A. + remitente) left, "Para" (cliente + proyecto) right -->
+  <!-- Dates Row: fecha emision, validez 30 dias, moneda USD -->
+  <!-- Items Table: # | Descripcion (titulo + desc) | Monto -->
+  <!-- Totals: subtotal, impuestos $0.00, total -->
+  <!-- Scope: grid 2 cols con checks verdes para incluidos, puntos naranjas para fase 2 -->
+  <!-- Terms: ol con terminos especificos -->
+  <!-- Footer: empresa + proforma number left, firma de aceptacion right -->
+</div>
+<button class="print-btn no-print" onclick="window.print()">Imprimir / Guardar PDF</button>
+</body>
+</html>
+
+RESPONDE UNICAMENTE con el HTML completo. Sin explicaciones, sin markdown, sin bloques de codigo. Solo el HTML puro desde <!DOCTYPE html> hasta </html>.`;
 }
 
-async function generateProformaWithAI(projectContext: string): Promise<string> {
-  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY no configurada');
+function runClaudeCli(prompt: string, cwd: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const args = [
+      '-p', prompt,
+      '--output-format', 'json',
+      '--dangerously-skip-permissions',
+      '--max-turns', '3',
+    ];
 
-  // Generate a proforma number based on current date and random
-  const now = new Date();
-  const proformaNumber = `PRO-${now.getFullYear()}-${String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0')}`;
+    const proc = spawn('claude', args, {
+      env: { ...process.env },
+      stdio: ['ignore', 'pipe', 'pipe'],
+      cwd,
+    });
 
-  const systemPrompt = `Eres un generador experto de proformas profesionales para GCC WORLD S.A., una empresa de soluciones tecnologicas. Tu trabajo es generar proformas en formato HTML que sean elegantes, profesionales y listas para imprimir o guardar como PDF.
+    let stdout = '';
+    let stderr = '';
 
-REGLAS CRITICAS:
-1. Debes generar un documento HTML COMPLETO (con <!DOCTYPE html>, <html>, <head>, <style>, <body>) que sea auto-contenido.
-2. El diseno debe ser minimalista, estilo Apple - limpio, con tipografia Inter, colores neutros, espaciado generoso.
-3. Los items de la proforma deben desglosar el trabajo del proyecto de forma logica y profesional, basandote en la estructura de modulos/secciones del proyecto.
-4. Los montos de cada item deben sumar EXACTAMENTE el monto objetivo indicado. Distribuye el monto de forma razonable segun la complejidad de cada item.
-5. Genera terminos y condiciones relevantes al tipo de proyecto (desarrollo de software, IA, web, etc). No copies terminos genericos - adaptalos al proyecto especifico.
-6. El alcance del entregable debe reflejar las funcionalidades reales del proyecto.
-7. Incluye un boton de imprimir/guardar PDF (con clase no-print para que no aparezca al imprimir).
-8. El numero de proforma es: ${proformaNumber}
-9. Todo el contenido debe estar en ESPANOL.
-10. No uses acentos ni caracteres especiales en el HTML (usa "Analisis" no "Análisis", "Diseno" no "Diseño", etc).
-11. El campo "Para" debe incluir el nombre del cliente y la referencia al proyecto.
-12. La validez debe ser de 30 dias.
-13. Si el proyecto tiene datos de cliente, usalos. Si no, pon campos genericos que se puedan rellenar.
+    proc.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
+    proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
 
-USA EXACTAMENTE ESTE TEMPLATE DE CSS Y ESTRUCTURA HTML (adapta solo el contenido):
+    // Timeout after 3 minutes
+    const timeout = setTimeout(() => {
+      proc.kill('SIGTERM');
+      reject(new Error('Claude CLI timeout (3 min)'));
+    }, 180_000);
 
-Los estilos deben usar la fuente Inter de Google Fonts, con el mismo sistema de clases del ejemplo: .page, .header, .brand, .doc-type, .info-grid, .dates-row, .items-table, .totals, .scope, .terms, .footer, .print-btn.
+    proc.on('close', (code) => {
+      clearTimeout(timeout);
 
-Colores principales: #1d1d1f (texto), #86868b (subtitulos), #f5f5f7 (fondos claros), #e5e5e7 (bordes), #34c759 (check verde), #ff9500 (pendiente naranja).
+      if (code !== 0 && !stdout) {
+        reject(new Error(`Claude CLI exited with code ${code}: ${stderr}`));
+        return;
+      }
 
-IMPORTANTE: Responde UNICAMENTE con el codigo HTML completo. Sin explicaciones, sin markdown, sin bloques de codigo. Solo HTML puro.`;
+      try {
+        // Claude --output-format json returns { result: "..." }
+        const parsed = JSON.parse(stdout);
+        let html = parsed.result || parsed.content || '';
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Genera la proforma profesional para el siguiente proyecto:\n\n${projectContext}` },
-      ],
-      temperature: 0.4,
-      max_tokens: 8000,
-    }),
+        // Clean up markdown fences if present
+        html = html.replace(/^```html?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+        if (!html.includes('<!DOCTYPE') && !html.includes('<html')) {
+          reject(new Error('Claude no genero HTML valido'));
+          return;
+        }
+
+        resolve(html);
+      } catch {
+        // If not JSON, try raw output
+        let html = stdout.trim();
+        html = html.replace(/^```html?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+        if (html.includes('<!DOCTYPE') || html.includes('<html')) {
+          resolve(html);
+        } else {
+          reject(new Error('No se pudo extraer HTML de la respuesta de Claude'));
+        }
+      }
+    });
+
+    proc.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(new Error(`Claude CLI error: ${err.message}`));
+    });
   });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenAI API error: ${res.status} ${err}`);
-  }
-
-  const data = await res.json();
-  let html = data.choices?.[0]?.message?.content;
-  if (!html) throw new Error('No se recibio contenido de la IA');
-
-  // Clean up: remove markdown code fences if AI added them
-  html = html.replace(/^```html?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-
-  return html;
 }
