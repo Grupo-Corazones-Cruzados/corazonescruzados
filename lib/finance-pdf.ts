@@ -90,10 +90,14 @@ export async function generateFinancePdf(months: FinanceMonthData[], title: stri
       doc.font('Helvetica').fontSize(7);
       for (const item of m.expenseItems) {
         if (y > doc.page.height - 60) { doc.addPage(); y = 40; }
-        const color = Number(item.amount) === 0 ? '#1a1a7a' : '#333';
-        doc.fillColor(color);
-        doc.text(item.description, L + 4, y, { width: colW - 50 });
-        doc.text(`$${item.amount.toFixed(2)}`, L + colW - 50, y, { width: 46, align: 'right' });
+        const isZero = Number(item.amount) === 0;
+        doc.fillColor(isZero ? '#0088cc' : '#333');
+        doc.text(item.description, L + 4, y, { width: colW - 60 });
+        if (isZero) {
+          doc.text(`\u26A0 $${item.amount.toFixed(2)}`, L + colW - 56, y, { width: 52, align: 'right' });
+        } else {
+          doc.text(`$${item.amount.toFixed(2)}`, L + colW - 50, y, { width: 46, align: 'right' });
+        }
         y += 11;
       }
       // Expense total
