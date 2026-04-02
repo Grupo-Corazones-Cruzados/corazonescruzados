@@ -70,13 +70,22 @@ export async function POST(req: NextRequest) {
 
     const compressedStat = await fs.stat(compressedPath);
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    // Whisper options: force Spanish, low temperature to avoid hallucinations
+    const whisperOpts = {
+      model: 'whisper-1' as const,
+      language: 'es',
+      temperature: 0,
+      prompt: 'Transcripción de una conversación en español.',
+    };
+
     let fullText = '';
 
     if (compressedStat.size <= MAX_WHISPER_SIZE) {
       // Single file
       const compressedBuffer = await fs.readFile(compressedPath);
       const fileForApi = await toFile(compressedBuffer, 'audio.mp3');
-      const result = await openai.audio.transcriptions.create({ file: fileForApi, model: 'whisper-1' });
+      const result = await openai.audio.transcriptions.create({ ...whisperOpts, file: fileForApi });
       fullText = typeof result === 'string' ? result : result.text || '';
     } else {
       // Split into segments
@@ -97,7 +106,7 @@ export async function POST(req: NextRequest) {
 
         const segBuffer = await fs.readFile(segPath);
         const segFile = await toFile(segBuffer, `segment-${i}.mp3`);
-        const result = await openai.audio.transcriptions.create({ file: segFile, model: 'whisper-1' });
+        const result = await openai.audio.transcriptions.create({ ...whisperOpts, file: segFile });
         texts.push(typeof result === 'string' ? result : result.text || '');
       }
 
@@ -106,12 +115,29 @@ export async function POST(req: NextRequest) {
 
     await cleanup(tempFiles);
 
-    if (!fullText.trim()) {
+    // Filter out known Whisper hallucinations (repetitive junk from silence)
+    const hallucinations = [
+      /thank you for watching[.!]*/gi,
+      /please subscribe to my channel[.!]*/gi,
+      /go to [\w.]+\.com for all of your .+ needs[.!]*/gi,
+      /gracias por ver el video[.!]*/gi,
+      /suscr[ií]bete a mi canal[.!]*/gi,
+      /no te olvides de suscribirte[.!]*/gi,
+      /dale like y suscr[ií]bete[.!]*/gi,
+    ];
+    let cleaned = fullText;
+    for (const pattern of hallucinations) {
+      cleaned = cleaned.replace(pattern, '').trim();
+    }
+    // Remove lines that are just whitespace
+    cleaned = cleaned.split('\n').filter(l => l.trim()).join('\n');
+
+    if (!cleaned.trim()) {
       return NextResponse.json({ error: 'No se pudo extraer texto del audio' }, { status: 400 });
     }
 
     const originalName = file.name.replace(/\.[^.]+$/, '');
-    return new NextResponse(fullText, {
+    return new NextResponse(cleaned, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Content-Disposition': `attachment; filename="${originalName}.txt"`,
