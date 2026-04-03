@@ -74,16 +74,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const { id } = await params;
     const body = await req.json();
-    const { senderName, targetAmount, clientName, clientEmail, clientPhone, emails } = body;
+    const { senderName, targetAmount, clientName, clientEmail, clientPhone } = body;
 
     if (!senderName || !targetAmount || !clientName) {
       return NextResponse.json({ error: 'Se requiere nombre del remitente, nombre del cliente y monto objetivo' }, { status: 400 });
     }
-
-    // Parse emails: can be string (comma-separated) or array
-    const emailList: string[] = Array.isArray(emails)
-      ? emails.filter((e: string) => e.trim())
-      : (emails || '').split(',').map((e: string) => e.trim()).filter(Boolean);
 
     await ensureProformaColumn();
 
@@ -164,62 +159,86 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       [proformaHtml, pdfBuffer, id]
     );
 
-    // 9. Send proforma by email if emails provided
-    let emailsSent = 0;
-    if (emailList.length > 0) {
-      try {
-        // Generate project access URL with token if private
-        let projectUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/proyecto/${id}`;
-        const { rows: [projInfo] } = await pool.query(`SELECT is_private FROM gcc_world.projects WHERE id = $1`, [id]);
-
-        if (projInfo?.is_private) {
-          await pool.query(`
-            ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token VARCHAR(64);
-            ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMPTZ;
-          `);
-          const newToken = crypto.randomBytes(32).toString('hex');
-          const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-          await pool.query(`UPDATE gcc_world.projects SET public_token = $1, public_token_expires_at = $2 WHERE id = $3`, [newToken, expiresAt, id]);
-          projectUrl += `?token=${newToken}`;
-        }
-
-        const emailHtml = buildProformaEmail({
-          clientName,
-          projectTitle: project.title || digiProject.name,
-          proformaNumber,
-          targetAmount,
-          senderName,
-          projectUrl,
-        });
-
-        for (const email of emailList) {
-          try {
-            await getResend().emails.send({
-              from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
-              to: email,
-              bcc: 'lfgonzalezm0@grupocc.org',
-              subject: `Proforma ${proformaNumber} — ${project.title || digiProject.name} | GCC World`,
-              html: emailHtml,
-              attachments: [{
-                filename: `Proforma-${proformaNumber}.pdf`,
-                content: pdfBuffer,
-                contentType: 'application/pdf',
-              }],
-            });
-            emailsSent++;
-          } catch (emailErr: any) {
-            console.error(`Error sending proforma email to ${email}:`, emailErr.message);
-          }
-        }
-      } catch (emailErr: any) {
-        console.error('Error preparing proforma emails:', emailErr.message);
-      }
-    }
-
-    return NextResponse.json({ proforma: proformaHtml, emailsSent });
+    return NextResponse.json({ proforma: proformaHtml });
   } catch (err: any) {
     console.error('Proforma POST error:', err.message);
     return NextResponse.json({ error: err.message || 'Error generando proforma' }, { status: 500 });
+  }
+}
+
+// PUT: send existing proforma by email
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const { id } = await params;
+    const { emails, clientName, projectTitle, proformaNumber, targetAmount, senderName } = await req.json();
+
+    if (!emails) return NextResponse.json({ error: 'Se requiere al menos un correo' }, { status: 400 });
+
+    const emailList: string[] = (typeof emails === 'string' ? emails.split(',') : emails)
+      .map((e: string) => e.trim()).filter(Boolean);
+
+    if (emailList.length === 0) return NextResponse.json({ error: 'Se requiere al menos un correo' }, { status: 400 });
+
+    await ensureProformaColumn();
+
+    // Get PDF
+    const { rows } = await pool.query(`SELECT proforma_pdf FROM gcc_world.projects WHERE id = $1`, [id]);
+    if (!rows[0]?.proforma_pdf) return NextResponse.json({ error: 'No hay PDF de proforma generado' }, { status: 404 });
+
+    const pdfBuffer = Buffer.isBuffer(rows[0].proforma_pdf) ? rows[0].proforma_pdf : Buffer.from(rows[0].proforma_pdf);
+
+    // Generate project access URL with token if private
+    let projectUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/proyecto/${id}`;
+    const { rows: [projInfo] } = await pool.query(`SELECT is_private FROM gcc_world.projects WHERE id = $1`, [id]);
+
+    if (projInfo?.is_private) {
+      await pool.query(`
+        ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token VARCHAR(64);
+        ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMPTZ;
+      `);
+      const newToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      await pool.query(`UPDATE gcc_world.projects SET public_token = $1, public_token_expires_at = $2 WHERE id = $3`, [newToken, expiresAt, id]);
+      projectUrl += `?token=${newToken}`;
+    }
+
+    const emailHtml = buildProformaEmail({
+      clientName: clientName || 'Cliente',
+      projectTitle: projectTitle || 'Proyecto',
+      proformaNumber: proformaNumber || 'PRO-0000',
+      targetAmount: targetAmount || 0,
+      senderName: senderName || 'Grupo Corazones Cruzados',
+      projectUrl,
+    });
+
+    let emailsSent = 0;
+    for (const email of emailList) {
+      try {
+        await getResend().emails.send({
+          from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
+          to: email,
+          bcc: 'lfgonzalezm0@grupocc.org',
+          subject: `Proforma ${proformaNumber || ''} — ${projectTitle || 'Proyecto'} | Grupo Corazones Cruzados`,
+          html: emailHtml,
+          attachments: [{
+            filename: `Proforma-${proformaNumber || 'GCC'}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          }],
+        });
+        emailsSent++;
+      } catch (emailErr: any) {
+        console.error(`Error sending proforma to ${email}:`, emailErr.message);
+      }
+    }
+
+    return NextResponse.json({ emailsSent });
+  } catch (err: any) {
+    console.error('Proforma PUT error:', err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
@@ -252,12 +271,12 @@ Analiza este proyecto leyendo su codigo fuente, estructura, README, y cualquier 
 
 Luego, responde DIRECTAMENTE con el HTML completo de una proforma profesional para este proyecto.
 
-DATOS FIJOS (usa estos exactamente):
+DATOS FIJOS (usa estos exactamente, NO inventes otros):
 - Numero de proforma: ${proformaNumber}
 - Remitente: ${senderName}
-- Empresa: GCC WORLD S.A.
-- Subtitulo: Technology Solutions
-- Email empresa: contacto@gccworld.com
+- Nombre de la empresa: Grupo Corazones Cruzados
+- Subtitulo de la empresa: GCC
+- Email de la empresa: lfgonzalezm0@grupocc.org
 - Cliente: ${clientName}
 - Email cliente: ${clientEmail}
 - Telefono cliente: ${clientPhone}
@@ -283,7 +302,7 @@ DEBES usar EXACTAMENTE este template HTML/CSS. Solo reemplaza el contenido entre
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proforma ${proformaNumber} | GCC WORLD</title>
+  <title>Proforma ${proformaNumber} | Grupo Corazones Cruzados</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -292,7 +311,8 @@ DEBES usar EXACTAMENTE este template HTML/CSS. Solo reemplaza el contenido entre
     @media print { .page { padding: 40px 48px; min-height: auto; } .no-print { display: none !important; } }
     .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 56px; padding-bottom: 32px; border-bottom: 1px solid #e5e5e7; }
     .brand { display: flex; align-items: center; gap: 14px; }
-    .brand-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #1d1d1f 0%, #424245 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+    .brand-icon { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; }
+    .brand-icon img { width: 100%; height: 100%; object-fit: cover; }
     .brand-text h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; color: #1d1d1f; }
     .brand-text p { font-size: 11px; color: #86868b; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
     .doc-type { text-align: right; }
@@ -341,14 +361,14 @@ DEBES usar EXACTAMENTE este template HTML/CSS. Solo reemplaza el contenido entre
 </head>
 <body>
 <div class="page">
-  <!-- Header: GCC WORLD brand left, "Proforma" + number right -->
-  <!-- Info Grid: "De" (GCC WORLD S.A. + remitente) left, "Para" (cliente + proyecto) right -->
+  <!-- Header: Logo (img src="/LogoApp.png") + "Grupo Corazones Cruzados" + subtitulo "GCC" left, "Proforma" + number right -->
+  <!-- Info Grid: "De" (Grupo Corazones Cruzados + remitente + lfgonzalezm0@grupocc.org) left, "Para" (cliente + proyecto) right -->
   <!-- Dates Row: fecha emision, validez 30 dias, moneda USD -->
   <!-- Items Table: # | Descripcion (titulo + desc) | Monto -->
   <!-- Totals: subtotal, impuestos $0.00, total -->
   <!-- Scope: grid 2 cols con checks verdes para incluidos, puntos naranjas para fase 2 -->
   <!-- Terms: ol con terminos especificos -->
-  <!-- Footer: empresa + proforma number left, firma de aceptacion right -->
+  <!-- Footer: "Grupo Corazones Cruzados" + proforma number left, firma de aceptacion right -->
 </div>
 <button class="print-btn no-print" onclick="window.print()">Imprimir / Guardar PDF</button>
 </body>
@@ -382,7 +402,7 @@ function buildProformaEmail(data: {
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;width:40%"><strong>Documento:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">Proforma</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>No. Proforma:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${proformaNumber}</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Proyecto:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${projectTitle}</td></tr>
-      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Remitente:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${senderName} - GCC WORLD S.A.</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Remitente:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${senderName} - Grupo Corazones Cruzados</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Validez:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">30 dias desde la emision</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Valor Total:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#1a1a2e;">$${Number(targetAmount).toFixed(2)} USD</td></tr>
     </table>

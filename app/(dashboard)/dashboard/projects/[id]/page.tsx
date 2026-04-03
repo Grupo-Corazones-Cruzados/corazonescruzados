@@ -96,9 +96,11 @@ export default function ProjectDetailPage() {
   const [proformaClientName, setProformaClientName] = useState('');
   const [proformaClientEmail, setProformaClientEmail] = useState('');
   const [proformaClientPhone, setProformaClientPhone] = useState('');
-  const [proformaEmails, setProformaEmails] = useState('');
   const [generatingProforma, setGeneratingProforma] = useState(false);
   const [proformaPreview, setProformaPreview] = useState<string | null>(null);
+  const [showSendProformaModal, setShowSendProformaModal] = useState(false);
+  const [sendProformaEmails, setSendProformaEmails] = useState('');
+  const [sendingProforma, setSendingProforma] = useState(false);
 
   // Complete + Invoice states
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -521,7 +523,6 @@ export default function ProjectDetailPage() {
     setProformaClientName(project.client_name || '');
     setProformaClientEmail(project.client_email || '');
     setProformaClientPhone(project.client_phone || '');
-    setProformaEmails(project.client_email || '');
     setShowProformaModal(true);
   };
 
@@ -538,18 +539,13 @@ export default function ProjectDetailPage() {
           clientName: proformaClientName,
           clientEmail: proformaClientEmail,
           clientPhone: proformaClientPhone,
-          emails: proformaEmails,
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-      const { proforma, emailsSent } = await res.json();
+      const { proforma } = await res.json();
       setProformaPreview(proforma);
       setShowProformaModal(false);
-      if (emailsSent > 0) {
-        toast.success(`Proforma generada y enviada a ${emailsSent} correo${emailsSent > 1 ? 's' : ''}`);
-      } else {
-        toast.success('Proforma generada exitosamente');
-      }
+      toast.success('Proforma generada exitosamente');
       fetchProject();
     } catch (e: any) { toast.error(e.message || 'Error al generar proforma'); }
     finally { setGeneratingProforma(false); }
@@ -569,6 +565,34 @@ export default function ProjectDetailPage() {
     if (!proformaPreview) return;
     const w = window.open('', '_blank');
     if (w) { w.document.write(proformaPreview); w.document.close(); }
+  };
+
+  const openSendProformaModal = () => {
+    setSendProformaEmails(project.client_email || '');
+    setShowSendProformaModal(true);
+  };
+
+  const sendProformaByEmail = async () => {
+    if (!sendProformaEmails.trim()) return;
+    setSendingProforma(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/proforma`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emails: sendProformaEmails,
+          clientName: proformaClientName || project.client_name || 'Cliente',
+          projectTitle: project.title,
+          targetAmount: proformaAmount ? Number(proformaAmount) : 0,
+          senderName: proformaSender || 'Grupo Corazones Cruzados',
+        }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      const { emailsSent } = await res.json();
+      setShowSendProformaModal(false);
+      toast.success(`Proforma enviada a ${emailsSent} correo${emailsSent > 1 ? 's' : ''}`);
+    } catch (e: any) { toast.error(e.message || 'Error al enviar'); }
+    finally { setSendingProforma(false); }
   };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando proyecto..." /></div>;
@@ -1591,7 +1615,7 @@ export default function ProjectDetailPage() {
                       style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '286%', height: '286%' }}
                     />
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 flex-wrap">
                     <button onClick={openProformaInNewTab}
                       className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                       Abrir
@@ -1599,6 +1623,10 @@ export default function ProjectDetailPage() {
                     <button onClick={() => window.open(`/api/projects/${id}/proforma?format=pdf`, '_blank')}
                       className="flex-1 px-2 py-1.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors" style={pf}>
                       PDF
+                    </button>
+                    <button onClick={openSendProformaModal}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-blue-400 border border-blue-700/50 hover:bg-blue-900/20 transition-colors" style={pf}>
+                      Enviar
                     </button>
                     <button onClick={openProformaModal}
                       className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
@@ -1609,7 +1637,7 @@ export default function ProjectDetailPage() {
               ) : project.has_proforma ? (
                 <div className="space-y-2">
                   <p className="text-[9px] text-green-400" style={pf}>Proforma guardada</p>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 flex-wrap">
                     <button onClick={loadExistingProforma}
                       className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                       Ver
@@ -1617,6 +1645,10 @@ export default function ProjectDetailPage() {
                     <button onClick={() => window.open(`/api/projects/${id}/proforma?format=pdf`, '_blank')}
                       className="flex-1 px-2 py-1.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors" style={pf}>
                       PDF
+                    </button>
+                    <button onClick={openSendProformaModal}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-blue-400 border border-blue-700/50 hover:bg-blue-900/20 transition-colors" style={pf}>
+                      Enviar
                     </button>
                     <button onClick={openProformaModal}
                       className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
@@ -1822,20 +1854,31 @@ export default function ProjectDetailPage() {
                   <span className="text-[8px] text-digi-muted" style={mf}>Los items se ajustaran para sumar este monto.</span>
                 </div>
               </div>
-              <div className="border-t border-digi-border/30 pt-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Enviar proforma por correo</label>
-                  <input value={proformaEmails} onChange={(e) => setProformaEmails(e.target.value)} placeholder="email1@ejemplo.com, email2@ejemplo.com"
-                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-                  <span className="text-[8px] text-digi-muted" style={mf}>Separa multiples correos con comas. Se enviara automaticamente al generar.</span>
-                </div>
-              </div>
               <button onClick={generateProforma} disabled={!proformaSender.trim() || !proformaAmount || !proformaClientName.trim()}
                 className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
                 Generar Proforma
               </button>
             </>
           )}
+        </div>
+      </PixelModal>
+
+      {/* Send Proforma Modal */}
+      <PixelModal open={showSendProformaModal} onClose={() => !sendingProforma && setShowSendProformaModal(false)} title="Enviar Proforma" size="sm">
+        <div className="space-y-3">
+          <p className="text-[9px] text-digi-muted" style={mf}>
+            La proforma se enviara como PDF adjunto a los correos indicados.
+          </p>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Correos destinatarios *</label>
+            <input value={sendProformaEmails} onChange={(e) => setSendProformaEmails(e.target.value)} placeholder="email1@ejemplo.com, email2@ejemplo.com"
+              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+            <span className="text-[8px] text-digi-muted" style={mf}>Separa multiples correos con comas.</span>
+          </div>
+          <button onClick={sendProformaByEmail} disabled={sendingProforma || !sendProformaEmails.trim()}
+            className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+            {sendingProforma ? 'Enviando...' : 'Enviar Proforma'}
+          </button>
         </div>
       </PixelModal>
 
