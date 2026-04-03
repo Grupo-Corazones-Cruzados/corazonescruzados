@@ -49,6 +49,7 @@ export default function ProformaChatPanel({
   const [showSendEmails, setShowSendEmails] = useState(false);
   const [sendEmails, setSendEmails] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [hasDocumentation, setHasDocumentation] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -381,6 +382,48 @@ REGLAS DE RESPUESTA CRITICAS:
     finally { setSaving(false); }
   };
 
+  // --- Add documentation ---
+  const addDocumentation = () => {
+    const docPrompt = `IMPORTANTE: NO uses herramientas de escritura (Write, Edit). NO crees archivos. Responde UNICAMENTE con el HTML puro.
+
+Ahora necesito que generes un documento HTML COMPLETO que incluya documentacion tecnica del proyecto Y la proforma que ya generaste. El documento final debe ser un solo archivo HTML auto-contenido.
+
+El documento debe tener estas secciones EN ESTE ORDEN, basandote en tu analisis real del proyecto:
+
+1. **Navegacion fija** (nav bar con links a cada seccion + link a la proforma al final)
+2. **Hero/Portada** - Titulo del proyecto con un subtitulo descriptivo, badge "Propuesta Tecnica", y metricas clave del proyecto (3-4 datos relevantes)
+3. **El problema y la solucion** - Dos cards lado a lado: "Hoy (manual)" vs "Con la solucion". Describe el problema real que resuelve el proyecto
+4. **Como funciona paso a paso** - Steps verticales numerados (3-5 pasos) explicando el flujo del sistema basado en lo que leiste del codigo
+5. **Caracteristicas principales** - Grid de 4-6 features del sistema basadas en funcionalidades reales del codigo
+6. **Diagrama de flujo** - Flujo visual del sistema usando divs estilizados como nodos con flechas (flow-node, flow-arrow)
+7. **Seguridad y privacidad** - Grid 2x2 con medidas de seguridad relevantes al tipo de proyecto
+8. **Stack tecnologico** - Grid con las tecnologias reales que usa el proyecto (las que viste en package.json, etc)
+9. **PROFORMA** - Incluye la proforma EXACTAMENTE como la generaste antes, sin modificarla. Usa la seccion con clase .proforma-page para la proforma
+
+REGLAS:
+- Usa la fuente Inter de Google Fonts
+- Estilo Apple: minimalista, limpio, espaciado generoso
+- Colores: #1d1d1f texto, #86868b subtitulos, #f5f5f7 fondos claros, #e5e5e7 bordes
+- Gradiente azul para highlights: linear-gradient(90deg, #0071e3, #40c8e0)
+- El nav debe tener backdrop-filter blur y ser sticky
+- Usa emojis Unicode como iconos (no necesitas libreria de iconos)
+- La proforma va al final del documento con su propio estilo (prefijos pro- para las clases)
+- Incluye boton de imprimir (class no-print)
+- No uses acentos ni caracteres especiales
+- El logo usa: <img src="/LogoApp.png" alt="GCC">
+- Empresa: Grupo Corazones Cruzados (subtitulo: GCC)
+- Todo el CSS debe estar en el <style> del head, no inline excepto casos minimos
+- @media print: ocultar nav y no-print, page-break-before en la proforma
+
+REGLAS DE RESPUESTA CRITICAS:
+- NO uses la herramienta Write ni Edit. NO crees ningun archivo.
+- NO uses bloques de codigo markdown.
+- Tu respuesta debe ser SOLAMENTE el HTML completo desde <!DOCTYPE html> hasta </html>.`;
+
+    sendMessage(docPrompt);
+    setHasDocumentation(true);
+  };
+
   // --- Preview proforma ---
   const previewHtml = () => {
     if (!latestHtml) return;
@@ -401,7 +444,7 @@ REGLAS DE RESPUESTA CRITICAS:
         <div>
           {beforeHtml && <ReactMarkdown remarkPlugins={[remarkGfm]}>{beforeHtml}</ReactMarkdown>}
           <button onClick={previewHtml} className="mt-1 px-3 py-1.5 text-[9px] bg-accent/20 text-accent-glow border border-accent/40 hover:bg-accent/30 transition-colors" style={pf}>
-            Ver Proforma Generada
+            {hasDocumentation ? 'Ver Documento Completo' : 'Ver Proforma Generada'}
           </button>
         </div>
       );
@@ -480,7 +523,7 @@ REGLAS DE RESPUESTA CRITICAS:
           <div className="flex items-center gap-2">
             {latestHtml && (
               <button onClick={previewHtml} className="px-2 py-1 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
-                Ver Proforma
+                {hasDocumentation ? 'Ver Documento' : 'Ver Proforma'}
               </button>
             )}
             <button onClick={onClose} className="text-digi-muted hover:text-digi-text text-sm">&times;</button>
@@ -590,6 +633,12 @@ REGLAS DE RESPUESTA CRITICAS:
                   className="flex-1 px-3 py-1.5 text-[9px] bg-blue-700 text-white hover:bg-blue-600 transition-colors" style={pf}>
                   Guardar y Enviar
                 </button>
+                {!hasDocumentation && (
+                  <button onClick={addDocumentation} disabled={streaming}
+                    className="flex-1 px-3 py-1.5 text-[9px] bg-purple-700 text-white hover:bg-purple-600 disabled:opacity-50 transition-colors" style={pf}>
+                    + Documentacion
+                  </button>
+                )}
               </div>
             )}
           </div>
