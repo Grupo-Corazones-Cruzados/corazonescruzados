@@ -214,28 +214,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       projectUrl,
     });
 
-    let emailsSent = 0;
-    for (const email of emailList) {
-      try {
-        await getResend().emails.send({
-          from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
-          to: email,
-          bcc: 'lfgonzalezm0@grupocc.org',
-          subject: `Proforma ${proformaNumber || ''} — ${projectTitle || 'Proyecto'} | Grupo Corazones Cruzados`,
-          html: emailHtml,
-          attachments: [{
-            filename: `Proforma-${proformaNumber || 'GCC'}.pdf`,
-            content: pdfBuffer,
-            contentType: 'application/pdf',
-          }],
-        });
-        emailsSent++;
-      } catch (emailErr: any) {
-        console.error(`Error sending proforma to ${email}:`, emailErr.message);
-      }
+    try {
+      await getResend().emails.send({
+        from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
+        to: emailList,
+        bcc: 'lfgonzalezm0@grupocc.org',
+        subject: `Proforma ${proformaNumber || ''} — ${projectTitle || 'Proyecto'} | Grupo Corazones Cruzados`,
+        html: emailHtml,
+        attachments: [{
+          filename: `Proforma-${proformaNumber || 'GCC'}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        }],
+      });
+    } catch (emailErr: any) {
+      console.error('Error sending proforma email:', emailErr.message);
+      return NextResponse.json({ error: emailErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ emailsSent });
+    return NextResponse.json({ emailsSent: emailList.length });
   } catch (err: any) {
     console.error('Proforma PUT error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
