@@ -410,9 +410,11 @@ async function htmlToPdf(html: string): Promise<Buffer> {
 
 function runClaudeCli(prompt: string, cwd: string): Promise<string> {
   return new Promise((resolve, reject) => {
+    // Use stream-json like the working chat system
     const args = [
       '-p', prompt,
-      '--output-format', 'json',
+      '--output-format', 'stream-json',
+      '--verbose',
       '--dangerously-skip-permissions',
       '--max-turns', '10',
     ];
@@ -423,10 +425,32 @@ function runClaudeCli(prompt: string, cwd: string): Promise<string> {
       cwd,
     });
 
-    let stdout = '';
+    // Collect all text blocks from assistant messages (same approach as chat)
+    const textBlocks: string[] = [];
+    let stdoutBuffer = '';
     let stderr = '';
 
-    proc.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
+    proc.stdout.on('data', (chunk: Buffer) => {
+      stdoutBuffer += chunk.toString();
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const event = JSON.parse(line);
+          if (event.type === 'assistant') {
+            const contents = event.message?.content || [];
+            for (const block of contents) {
+              if (block.type === 'text') {
+                textBlocks.push(block.text);
+              }
+            }
+          }
+        } catch { /* ignore parse errors for non-JSON lines */ }
+      }
+    });
+
     proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
 
     // Timeout after 5 minutes
@@ -438,36 +462,62 @@ function runClaudeCli(prompt: string, cwd: string): Promise<string> {
     proc.on('close', (code) => {
       clearTimeout(timeout);
 
-      if (code !== 0 && !stdout) {
-        reject(new Error(`Claude CLI exited with code ${code}: ${stderr}`));
+      // Process any remaining buffer
+      if (stdoutBuffer.trim()) {
+        try {
+          const event = JSON.parse(stdoutBuffer);
+          if (event.type === 'assistant') {
+            const contents = event.message?.content || [];
+            for (const block of contents) {
+              if (block.type === 'text') textBlocks.push(block.text);
+            }
+          }
+        } catch {}
+      }
+
+      if (textBlocks.length === 0) {
+        reject(new Error(`Claude CLI no produjo respuesta de texto. Exit code: ${code}. Stderr: ${stderr.slice(0, 500)}`));
         return;
       }
 
-      try {
-        // Claude --output-format json returns { result: "..." }
-        const parsed = JSON.parse(stdout);
-        let html = parsed.result || parsed.content || '';
+      // Join all text blocks - the last one should contain the HTML
+      // Claude may output explanatory text first, then the HTML
+      const fullText = textBlocks.join('');
 
-        // Clean up markdown fences if present
-        html = html.replace(/^```html?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+      // Extract HTML from the response
+      let html = fullText;
 
-        if (!html.includes('<!DOCTYPE') && !html.includes('<html')) {
-          reject(new Error('Claude no genero HTML valido'));
-          return;
-        }
-
-        resolve(html);
-      } catch {
-        // If not JSON, try raw output
-        let html = stdout.trim();
-        html = html.replace(/^```html?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-
-        if (html.includes('<!DOCTYPE') || html.includes('<html')) {
-          resolve(html);
-        } else {
-          reject(new Error('No se pudo extraer HTML de la respuesta de Claude'));
-        }
+      // Remove markdown code fences if present
+      const fenceMatch = html.match(/```html?\s*\n?([\s\S]*?)\n?```/i);
+      if (fenceMatch) {
+        html = fenceMatch[1];
       }
+
+      html = html.trim();
+
+      // Try to extract just the HTML if there's extra text around it
+      const htmlStart = html.indexOf('<!DOCTYPE');
+      if (htmlStart === -1) {
+        const htmlStart2 = html.indexOf('<html');
+        if (htmlStart2 !== -1) {
+          html = html.substring(htmlStart2);
+        }
+      } else {
+        html = html.substring(htmlStart);
+      }
+
+      // Trim anything after closing </html>
+      const htmlEnd = html.lastIndexOf('</html>');
+      if (htmlEnd !== -1) {
+        html = html.substring(0, htmlEnd + 7);
+      }
+
+      if (!html.includes('<html')) {
+        reject(new Error(`Claude no genero HTML valido. Respuesta (primeros 500 chars): ${fullText.slice(0, 500)}`));
+        return;
+      }
+
+      resolve(html);
     });
 
     proc.on('error', (err) => {
