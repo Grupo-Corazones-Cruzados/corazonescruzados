@@ -246,9 +246,11 @@ function buildClaudePrompt(data: {
   const projectTitle = project.title || digiProjectName;
   const deadline = project.deadline ? new Date(project.deadline).toLocaleDateString('es-ES') : '';
 
-  return `Analiza completamente este proyecto leyendo su codigo fuente, estructura, README, y cualquier archivo relevante para comprender al 100% de que se trata este proyecto, que tecnologias usa, que funcionalidades tiene, y cual es su proposito.
+  return `IMPORTANTE: NO uses herramientas de escritura (Write, Edit). NO crees archivos. Tu respuesta debe ser UNICAMENTE el HTML puro como texto plano en tu mensaje.
 
-Luego, genera una proforma profesional en formato HTML para este proyecto.
+Analiza este proyecto leyendo su codigo fuente, estructura, README, y cualquier archivo relevante para comprender de que se trata, que tecnologias usa, que funcionalidades tiene y su proposito.
+
+Luego, responde DIRECTAMENTE con el HTML completo de una proforma profesional para este proyecto.
 
 DATOS FIJOS (usa estos exactamente):
 - Numero de proforma: ${proformaNumber}
@@ -352,7 +354,12 @@ DEBES usar EXACTAMENTE este template HTML/CSS. Solo reemplaza el contenido entre
 </body>
 </html>
 
-RESPONDE UNICAMENTE con el HTML completo. Sin explicaciones, sin markdown, sin bloques de codigo. Solo el HTML puro desde <!DOCTYPE html> hasta </html>.`;
+REGLAS DE RESPUESTA CRITICAS:
+- NO uses la herramienta Write ni Edit. NO crees ningun archivo.
+- NO uses bloques de codigo markdown (no uses triple backticks).
+- NO agregues explicaciones, comentarios ni tablas antes o despues del HTML.
+- Tu respuesta completa debe ser SOLAMENTE el documento HTML, empezando con <!DOCTYPE html> y terminando con </html>.
+- Escribe el HTML directamente como texto plano en tu mensaje de respuesta.`;
 }
 
 function buildProformaEmail(data: {
@@ -513,6 +520,22 @@ function runClaudeCli(prompt: string, cwd: string): Promise<string> {
       }
 
       if (!html.includes('<html')) {
+        // Fallback: Claude may have written a file instead of outputting HTML
+        // Look for a filename pattern like proforma_PRO-2026-XXXX.html or similar
+        const fileMatch = fullText.match(/([a-zA-Z0-9_\-]+\.html)/);
+        if (fileMatch) {
+          try {
+            const filePath = require('path').join(cwd, fileMatch[1]);
+            const fileContent = require('fs').readFileSync(filePath, 'utf-8');
+            if (fileContent.includes('<html')) {
+              // Clean up the file Claude created
+              try { require('fs').unlinkSync(filePath); } catch {}
+              resolve(fileContent);
+              return;
+            }
+          } catch {}
+        }
+
         reject(new Error(`Claude no genero HTML valido. Respuesta (primeros 500 chars): ${fullText.slice(0, 500)}`));
         return;
       }
