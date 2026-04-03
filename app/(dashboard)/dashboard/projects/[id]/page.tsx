@@ -12,6 +12,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import IncidentDetailPanel from '@/components/projects/IncidentDetailPanel';
 import FloatingChatWindow from '@/components/projects/FloatingChatWindow';
 import TaskQueueIndicator from '@/components/projects/TaskQueueIndicator';
+import ProformaChatPanel from '@/components/projects/ProformaChatPanel';
 import useAgentChat from '@/hooks/useAgentChat';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
@@ -90,17 +91,8 @@ export default function ProjectDetailPage() {
   const [submittingBid, setSubmittingBid] = useState(false);
 
   // Proforma states
-  const [showProformaModal, setShowProformaModal] = useState(false);
-  const [proformaSender, setProformaSender] = useState('');
-  const [proformaAmount, setProformaAmount] = useState('');
-  const [proformaClientName, setProformaClientName] = useState('');
-  const [proformaClientEmail, setProformaClientEmail] = useState('');
-  const [proformaClientPhone, setProformaClientPhone] = useState('');
-  const [generatingProforma, setGeneratingProforma] = useState(false);
-  const [proformaPreview, setProformaPreview] = useState<string | null>(null);
-  const [showSendProformaModal, setShowSendProformaModal] = useState(false);
-  const [sendProformaEmails, setSendProformaEmails] = useState('');
-  const [sendingProforma, setSendingProforma] = useState(false);
+  const [showProformaChat, setShowProformaChat] = useState(false);
+  const [proformaAgentConfig, setProformaAgentConfig] = useState<{ agentId: string; agentName: string; projectPath: string } | null>(null);
 
   // Complete + Invoice states
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -519,80 +511,19 @@ export default function ProjectDetailPage() {
   };
 
   // --- Proforma ---
-  const openProformaModal = () => {
-    setProformaClientName(project.client_name || '');
-    setProformaClientEmail(project.client_email || '');
-    setProformaClientPhone(project.client_phone || '');
-    setShowProformaModal(true);
-  };
+  const openProformaChat = async () => {
+    if (!project.digimundo_project_id) return;
+    const digiProject = digiProjects.find((d: any) => d.id === project.digimundo_project_id);
+    if (!digiProject) { toast.error('Proyecto DigiMundo no encontrado'); return; }
 
-  const generateProforma = async () => {
-    if (!proformaSender.trim() || !proformaAmount || !proformaClientName.trim()) return;
-    setGeneratingProforma(true);
     try {
-      const res = await fetch(`/api/projects/${id}/proforma`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderName: proformaSender,
-          targetAmount: Number(proformaAmount),
-          clientName: proformaClientName,
-          clientEmail: proformaClientEmail,
-          clientPhone: proformaClientPhone,
-        }),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-      const { proforma } = await res.json();
-      setProformaPreview(proforma);
-      setShowProformaModal(false);
-      toast.success('Proforma generada exitosamente');
-      fetchProject();
-    } catch (e: any) { toast.error(e.message || 'Error al generar proforma'); }
-    finally { setGeneratingProforma(false); }
-  };
-
-  const loadExistingProforma = async () => {
-    try {
-      const res = await fetch(`/api/projects/${id}/proforma`);
-      if (res.ok) {
-        const { proforma } = await res.json();
-        if (proforma) setProformaPreview(proforma);
-      }
-    } catch { /* ignore */ }
-  };
-
-  const openProformaInNewTab = () => {
-    if (!proformaPreview) return;
-    const w = window.open('', '_blank');
-    if (w) { w.document.write(proformaPreview); w.document.close(); }
-  };
-
-  const openSendProformaModal = () => {
-    setSendProformaEmails(project.client_email || '');
-    setShowSendProformaModal(true);
-  };
-
-  const sendProformaByEmail = async () => {
-    if (!sendProformaEmails.trim()) return;
-    setSendingProforma(true);
-    try {
-      const res = await fetch(`/api/projects/${id}/proforma`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          emails: sendProformaEmails,
-          clientName: proformaClientName || project.client_name || 'Cliente',
-          projectTitle: project.title,
-          targetAmount: proformaAmount ? Number(proformaAmount) : 0,
-          senderName: proformaSender || 'Grupo Corazones Cruzados',
-        }),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-      const { emailsSent } = await res.json();
-      setShowSendProformaModal(false);
-      toast.success(`Proforma enviada a ${emailsSent} correo${emailsSent > 1 ? 's' : ''}`);
-    } catch (e: any) { toast.error(e.message || 'Error al enviar'); }
-    finally { setSendingProforma(false); }
+      const linksRes = await fetch('/api/agent-links');
+      const links = await linksRes.json();
+      const agentConfig = links[digiProject.agentId];
+      if (!agentConfig?.projectPath) { toast.error('Configura el path del proyecto en el chat del agente primero'); return; }
+      setProformaAgentConfig({ agentId: digiProject.agentId, agentName: digiProject.name, projectPath: agentConfig.projectPath });
+      setShowProformaChat(true);
+    } catch { toast.error('Error cargando configuracion del agente'); }
   };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando proyecto..." /></div>;
@@ -1602,64 +1533,26 @@ export default function ProjectDetailPage() {
 
           {/* Proforma (solo localhost) */}
           {project.digimundo_project_id && chat.isLocalhost && (
-            <div className="pixel-card" style={{ borderColor: (project.has_proforma || proformaPreview) ? 'var(--color-accent)' : undefined }}>
+            <div className="pixel-card" style={{ borderColor: project.has_proforma ? 'var(--color-accent)' : undefined }}>
               <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Proforma</h3>
-              {proformaPreview ? (
-                <div className="space-y-2">
-                  <div className="border border-digi-border/50 rounded overflow-hidden" style={{ height: '160px' }}>
-                    <iframe
-                      srcDoc={proformaPreview}
-                      className="w-full h-full border-0"
-                      sandbox="allow-same-origin"
-                      title="Proforma preview"
-                      style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '286%', height: '286%' }}
-                    />
-                  </div>
-                  <div className="flex gap-1.5 flex-wrap">
-                    <button onClick={openProformaInNewTab}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
-                      Abrir
-                    </button>
-                    <button onClick={() => window.open(`/api/projects/${id}/proforma?format=pdf`, '_blank')}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors" style={pf}>
-                      PDF
-                    </button>
-                    <button onClick={openSendProformaModal}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-blue-400 border border-blue-700/50 hover:bg-blue-900/20 transition-colors" style={pf}>
-                      Enviar
-                    </button>
-                    <button onClick={openProformaModal}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
-                      Regenerar
-                    </button>
-                  </div>
-                </div>
-              ) : project.has_proforma ? (
+              {project.has_proforma ? (
                 <div className="space-y-2">
                   <p className="text-[9px] text-green-400" style={pf}>Proforma guardada</p>
                   <div className="flex gap-1.5 flex-wrap">
-                    <button onClick={loadExistingProforma}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
-                      Ver
-                    </button>
                     <button onClick={() => window.open(`/api/projects/${id}/proforma?format=pdf`, '_blank')}
                       className="flex-1 px-2 py-1.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors" style={pf}>
                       PDF
                     </button>
-                    <button onClick={openSendProformaModal}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-blue-400 border border-blue-700/50 hover:bg-blue-900/20 transition-colors" style={pf}>
-                      Enviar
-                    </button>
-                    <button onClick={openProformaModal}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors" style={pf}>
+                    <button onClick={openProformaChat}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                       Regenerar
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-[9px] text-digi-muted" style={mf}>Genera una proforma profesional basada en el contexto del proyecto.</p>
-                  <button onClick={openProformaModal}
+                  <p className="text-[9px] text-digi-muted" style={mf}>Genera una proforma profesional con asistencia de IA.</p>
+                  <button onClick={openProformaChat}
                     className="w-full px-2 py-2 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                     Generar Proforma
                   </button>
@@ -1795,115 +1688,20 @@ export default function ProjectDetailPage() {
         </div>
       </PixelModal>
 
-      {/* Proforma Modal */}
-      <PixelModal open={showProformaModal} onClose={() => !generatingProforma && setShowProformaModal(false)} title="Generar Proforma" size="sm">
-        <div className="space-y-3">
-          {generatingProforma ? (
-            <div className="py-6 space-y-4">
-              <div className="flex justify-center">
-                <BrandLoader size="md" label="" />
-              </div>
-              <div className="text-center space-y-2">
-                <p className="text-[10px] text-accent-glow" style={pf}>Generando proforma...</p>
-                <p className="text-[8px] text-digi-muted" style={mf}>Claude esta analizando el proyecto y generando la proforma. Esto puede tomar 3-5 minutos.</p>
-              </div>
-              <div className="space-y-1.5">
-                {['Leyendo estructura del proyecto...', 'Analizando codigo fuente...', 'Generando desglose profesional...', 'Construyendo documento HTML...'].map((step, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[8px]" style={mf}>
-                    <span className={`${i < 3 ? 'text-green-400' : 'text-accent-glow animate-pulse'}`}>{i < 3 ? '\u2713' : '\u25CF'}</span>
-                    <span className={i < 3 ? 'text-digi-muted' : 'text-digi-text'}>{step}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <>
-              <p className="text-[9px] text-digi-muted" style={mf}>
-                Claude CLI leera el proyecto vinculado para generar la proforma automaticamente.
-              </p>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Nombre del remitente *</label>
-                <input value={proformaSender} onChange={(e) => setProformaSender(e.target.value)} placeholder="Ej: Fernando Gonzalez"
-                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-              </div>
-              <div className="border-t border-digi-border/30 pt-3">
-                <p className="text-[9px] text-digi-muted mb-2" style={pf}>Datos del cliente</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Nombre del cliente *</label>
-                <input value={proformaClientName} onChange={(e) => setProformaClientName(e.target.value)} placeholder="Nombre completo del cliente"
-                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Email</label>
-                  <input value={proformaClientEmail} onChange={(e) => setProformaClientEmail(e.target.value)} placeholder="email@ejemplo.com"
-                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Telefono</label>
-                  <input value={proformaClientPhone} onChange={(e) => setProformaClientPhone(e.target.value)} placeholder="+593..."
-                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-                </div>
-              </div>
-              <div className="border-t border-digi-border/30 pt-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Monto objetivo (USD) *</label>
-                  <input value={proformaAmount} onChange={(e) => setProformaAmount(e.target.value)} type="number" placeholder="2000" min="1" step="0.01"
-                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-                  <span className="text-[8px] text-digi-muted" style={mf}>Los items se ajustaran para sumar este monto.</span>
-                </div>
-              </div>
-              <button onClick={generateProforma} disabled={!proformaSender.trim() || !proformaAmount || !proformaClientName.trim()}
-                className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-                Generar Proforma
-              </button>
-            </>
-          )}
-        </div>
-      </PixelModal>
-
-      {/* Send Proforma Modal */}
-      <PixelModal open={showSendProformaModal} onClose={() => !sendingProforma && setShowSendProformaModal(false)} title="Enviar Proforma" size="sm">
-        <div className="space-y-3">
-          <p className="text-[9px] text-digi-muted" style={mf}>
-            La proforma se enviara como PDF adjunto a los correos indicados.
-          </p>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Correos destinatarios *</label>
-            <input value={sendProformaEmails} onChange={(e) => setSendProformaEmails(e.target.value)} placeholder="email1@ejemplo.com, email2@ejemplo.com"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-            <span className="text-[8px] text-digi-muted" style={mf}>Separa multiples correos con comas.</span>
-          </div>
-          <button onClick={sendProformaByEmail} disabled={sendingProforma || !sendProformaEmails.trim()}
-            className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-            {sendingProforma ? 'Enviando...' : 'Enviar Proforma'}
-          </button>
-        </div>
-      </PixelModal>
-
-      {/* Proforma Preview Overlay */}
-      {proformaPreview && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setProformaPreview(null)}>
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-              <span className="text-sm font-semibold text-gray-800">Vista previa de proforma</span>
-              <div className="flex gap-2">
-                <button onClick={openProformaInNewTab}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-gray-800 rounded-md hover:bg-gray-700 transition-colors">
-                  Abrir en nueva pestana
-                </button>
-                <button onClick={() => setProformaPreview(null)}
-                  className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
-                  Cerrar
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <iframe srcDoc={proformaPreview} className="w-full h-full border-0" title="Proforma" />
-            </div>
-          </div>
-        </div>
+      {/* Proforma Chat */}
+      {showProformaChat && proformaAgentConfig && (
+        <ProformaChatPanel
+          projectId={id as string}
+          agentId={proformaAgentConfig.agentId}
+          agentName={proformaAgentConfig.agentName}
+          projectPath={proformaAgentConfig.projectPath}
+          clientName={project.client_name}
+          clientEmail={project.client_email}
+          clientPhone={project.client_phone}
+          projectTitle={project.title}
+          onClose={() => setShowProformaChat(false)}
+          onSaved={() => { setShowProformaChat(false); fetchProject(); }}
+        />
       )}
 
       {/* Floating Chat */}
