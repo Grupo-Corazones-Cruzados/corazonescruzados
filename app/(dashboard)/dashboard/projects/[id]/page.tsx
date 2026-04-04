@@ -1545,7 +1545,7 @@ export default function ProjectDetailPage() {
                     </button>
                     <button onClick={openProformaChat}
                       className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
-                      Regenerar
+                      Editar / Actualizar
                     </button>
                   </div>
                 </div>
@@ -1699,6 +1699,7 @@ export default function ProjectDetailPage() {
           clientEmail={project.client_email}
           clientPhone={project.client_phone}
           projectTitle={project.title}
+          hasProforma={!!project.has_proforma}
           onClose={() => setShowProformaChat(false)}
           onSaved={() => { setShowProformaChat(false); fetchProject(); }}
         />

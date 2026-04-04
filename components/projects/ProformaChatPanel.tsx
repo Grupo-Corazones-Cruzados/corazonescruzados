@@ -18,11 +18,23 @@ interface ProformaChatPanelProps {
   clientEmail?: string;
   clientPhone?: string;
   projectTitle: string;
+  hasProforma?: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
 
-type Step = 'form' | 'chat';
+type Step = 'choice' | 'form' | 'chat';
+
+interface SavedChatState {
+  blocks: ChatBlock[];
+  latestHtml: string | null;
+  hasDocumentation: boolean;
+  sender: string;
+  amount: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+}
 
 let blockCounter = 0;
 function newId() { return `pb-${Date.now()}-${blockCounter++}`; }
@@ -30,15 +42,32 @@ function newId() { return `pb-${Date.now()}-${blockCounter++}`; }
 export default function ProformaChatPanel({
   projectId, agentId, agentName, projectPath,
   clientName: initialClientName, clientEmail: initialClientEmail, clientPhone: initialClientPhone,
-  projectTitle, onClose, onSaved,
+  projectTitle, hasProforma, onClose, onSaved,
 }: ProformaChatPanelProps) {
+  const storageKey = `proforma-chat-${projectId}`;
+  const proformaAgentId = `proforma-${agentId}`;
+
+  // Check for saved state on mount
+  const getSavedState = (): SavedChatState | null => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as SavedChatState;
+      if (!saved.blocks?.length) return null;
+      return saved;
+    } catch { return null; }
+  };
+
+  const savedState = useRef(getSavedState());
+  const hasSavedContext = !!savedState.current;
+
   // Form state
-  const [step, setStep] = useState<Step>('form');
-  const [sender, setSender] = useState('');
-  const [amount, setAmount] = useState('');
-  const [clientName, setClientName] = useState(initialClientName || '');
-  const [clientEmail, setClientEmail] = useState(initialClientEmail || '');
-  const [clientPhone, setClientPhone] = useState(initialClientPhone || '');
+  const [step, setStep] = useState<Step>(hasSavedContext ? 'choice' : 'form');
+  const [sender, setSender] = useState(savedState.current?.sender || '');
+  const [amount, setAmount] = useState(savedState.current?.amount || '');
+  const [clientName, setClientName] = useState(savedState.current?.clientName || initialClientName || '');
+  const [clientEmail, setClientEmail] = useState(savedState.current?.clientEmail || initialClientEmail || '');
+  const [clientPhone, setClientPhone] = useState(savedState.current?.clientPhone || initialClientPhone || '');
 
   // Chat state
   const [blocks, setBlocks] = useState<ChatBlock[]>([]);
@@ -57,7 +86,48 @@ export default function ProformaChatPanel({
   const eventIndexRef = useRef(0);
   const streamingRef = useRef(false);
   const textStateRef = useRef({ currentTextBlockId: null as string | null, accumulatedText: '' });
-  const proformaAgentId = `proforma-${agentId}`;
+
+  // Save state on every meaningful change (blocks update)
+  useEffect(() => {
+    if (step !== 'chat' || blocks.length === 0) return;
+    try {
+      const state: SavedChatState = {
+        blocks, latestHtml, hasDocumentation,
+        sender, amount, clientName, clientEmail, clientPhone,
+      };
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    } catch {}
+  }, [blocks, latestHtml, hasDocumentation, step, storageKey, sender, amount, clientName, clientEmail, clientPhone]);
+
+  // Resume from saved context
+  const resumeFromSaved = () => {
+    const saved = savedState.current;
+    if (!saved) return;
+    setBlocks(saved.blocks);
+    setLatestHtml(saved.latestHtml);
+    setHasDocumentation(saved.hasDocumentation);
+    setSender(saved.sender);
+    setAmount(saved.amount);
+    setClientName(saved.clientName);
+    setClientEmail(saved.clientEmail);
+    setClientPhone(saved.clientPhone);
+    setStep('chat');
+  };
+
+  // Start fresh: clear saved state and server session
+  const startFresh = async () => {
+    localStorage.removeItem(storageKey);
+    savedState.current = null;
+    await fetch('/api/chat/clear-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: proformaAgentId }),
+    }).catch(() => {});
+    setBlocks([]);
+    setLatestHtml(null);
+    setHasDocumentation(false);
+    setStep('form');
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -196,13 +266,6 @@ export default function ProformaChatPanel({
   // --- Start proforma generation ---
   const startGeneration = async () => {
     if (!sender.trim() || !amount || !clientName.trim()) return;
-
-    // Clear previous session for fresh context
-    await fetch('/api/chat/clear-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: proformaAgentId }),
-    }).catch(() => {});
 
     setStep('chat');
 
@@ -510,6 +573,40 @@ REGLAS DE RESPUESTA CRITICAS:
   };
 
   // =========== RENDER ===========
+
+  const savedHasDoc = savedState.current?.hasDocumentation;
+  const contextLabel = savedHasDoc ? 'documentacion y proforma' : 'proforma';
+
+  // --- Choice Step (saved context exists) ---
+  if (step === 'choice') {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="bg-digi-card border-2 border-digi-border rounded-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-digi-border">
+            <h3 className="text-[11px] text-accent-glow" style={pf}>Proforma y Documentacion</h3>
+            <button onClick={onClose} className="text-digi-muted hover:text-digi-text text-xs">&times;</button>
+          </div>
+          <div className="px-4 py-5 space-y-4">
+            <div className="px-3 py-2.5 bg-accent/10 border border-accent/30 rounded">
+              <p className="text-[9px] text-accent-glow" style={pf}>Contexto guardado</p>
+              <p className="text-[10px] text-digi-muted mt-1" style={mf}>
+                Tienes una {contextLabel} generada previamente con {savedState.current?.blocks.filter(b => b.type === 'user').length || 0} mensajes de conversacion.
+                Puedes continuar editando o empezar desde cero.
+              </p>
+            </div>
+            <button onClick={resumeFromSaved}
+              className="pixel-btn pixel-btn-primary w-full">
+              Continuar editando
+            </button>
+            <button onClick={startFresh}
+              className="w-full px-3 py-2.5 text-[9px] text-red-400 border-2 border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
+              {savedHasDoc ? 'Generar documentacion desde cero' : 'Generar proforma desde cero'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // --- Form Step ---
   if (step === 'form') {
