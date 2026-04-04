@@ -215,15 +215,6 @@ export async function POST(req: Request) {
       args.push('--resume', prevSessionId);
       isResume = true;
     }
-    // Build system prompt: persona + database context
-    if (!isResume) {
-      let systemPrompt = persona;
-      if (dbUrl) {
-        systemPrompt += `\n\n[DB] Your project DATABASE_URL: ${dbUrl} — ALWAYS use this for any database operation. NEVER use a DATABASE_URL from .env files or other projects.`;
-      }
-      args.push('--append-system-prompt', systemPrompt);
-    }
-
     // Resolve project directory
     let finalCwd = require('os').tmpdir();
     if (projectPath) {
@@ -231,6 +222,18 @@ export async function POST(req: Request) {
         await fs.access(projectPath);
         finalCwd = projectPath;
       } catch {}
+    }
+
+    // Build system prompt: persona + database context + directory restriction
+    if (!isResume) {
+      let systemPrompt = persona;
+      if (dbUrl) {
+        systemPrompt += `\n\n[DB] Your project DATABASE_URL: ${dbUrl} — ALWAYS use this for any database operation. NEVER use a DATABASE_URL from .env files or other projects.`;
+      }
+      if (projectPath && finalCwd === projectPath) {
+        systemPrompt += `\n\n[SCOPE] Your working directory is "${projectPath}". You MUST only read, search, and access files within this directory and its subdirectories. NEVER navigate to parent directories ("../"), sibling directories, or any path outside "${projectPath}". All find, ls, glob, grep commands must be scoped to this directory.`;
+      }
+      args.push('--append-system-prompt', systemPrompt);
     }
 
     const proc = spawn('claude', args, {
@@ -355,6 +358,9 @@ export async function POST(req: Request) {
         let systemPrompt = persona;
         if (dbUrl) {
           systemPrompt += `\n\n[DB] Your project DATABASE_URL: ${dbUrl} — ALWAYS use this for any database operation. NEVER use a DATABASE_URL from .env files or other projects.`;
+        }
+        if (projectPath && finalCwd === projectPath) {
+          systemPrompt += `\n\n[SCOPE] Your working directory is "${projectPath}". You MUST only read, search, and access files within this directory and its subdirectories. NEVER navigate to parent directories ("../"), sibling directories, or any path outside "${projectPath}". All find, ls, glob, grep commands must be scoped to this directory.`;
         }
 
         const retryArgs = [

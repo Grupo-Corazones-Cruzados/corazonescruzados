@@ -275,6 +275,8 @@ export default function ProformaChatPanel({
 
     const prompt = `IMPORTANTE: NO uses herramientas de escritura (Write, Edit). NO crees archivos. Tu respuesta debe ser UNICAMENTE el HTML puro como texto plano en tu mensaje.
 
+RESTRICCION DE DIRECTORIO CRITICA: Solo debes leer archivos dentro de la carpeta actual del proyecto (${projectPath}). NO navegues a carpetas padre ni hermanas. NO uses rutas como "../" ni accedas a directorios fuera del proyecto. Todos los comandos find, ls, glob y lecturas deben estar limitados a "${projectPath}" y sus subdirectorios.
+
 Analiza este proyecto leyendo su codigo fuente, estructura, README, y cualquier archivo relevante para comprender de que se trata, que tecnologias usa, que funcionalidades tiene y su proposito.
 
 Luego, responde DIRECTAMENTE con el HTML completo de una proforma profesional para este proyecto.
@@ -448,6 +450,8 @@ REGLAS DE RESPUESTA CRITICAS:
   // --- Add documentation ---
   const addDocumentation = () => {
     const docPrompt = `IMPORTANTE: NO uses herramientas de escritura (Write, Edit). NO crees archivos. Responde UNICAMENTE con el HTML puro.
+
+RESTRICCION DE DIRECTORIO CRITICA: Solo debes leer archivos dentro de la carpeta del proyecto (${projectPath}). NO navegues a carpetas padre ni hermanas. NO uses rutas como "../" ni accedas a directorios fuera del proyecto.
 
 Ahora necesito que generes un documento HTML COMPLETO de documentacion profesional del proyecto Y la proforma que ya generaste. El documento final debe ser un solo archivo HTML auto-contenido. Debe ser una documentacion COMPLETA, lista para presentar a un cliente o stakeholder.
 
