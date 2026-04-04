@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '50mb',
     },
   },
-  serverExternalPackages: ['@ffmpeg-installer/ffmpeg'],
+  serverExternalPackages: ['@ffmpeg-installer/ffmpeg', 'puppeteer'],
 };
 
 export default nextConfig;
