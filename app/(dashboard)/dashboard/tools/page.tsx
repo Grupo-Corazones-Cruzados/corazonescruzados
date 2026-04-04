@@ -104,90 +104,38 @@ export default function ToolsPage() {
     }
   };
 
-  // --- Transcribe (same approach as DigiMundo: decode in browser, split into WAV chunks, send to /api/transcribe) ---
+  // --- Transcribe (server-side via /api/tools/transcribe with FFmpeg segmentation) ---
   const handleTranscribe = async () => {
     if (!transcribeFile) return;
     setTranscribePhase('processing'); setTranscribeProgress(0); setTranscribeResult(null);
 
+    const progressInterval = setInterval(() => {
+      setTranscribeProgress(prev => Math.min(prev + Math.random() * 6, 90));
+    }, 500);
+
     try {
-      const MAX_DIRECT = 24 * 1024 * 1024; // 24MB
+      const form = new FormData();
+      form.append('file', transcribeFile);
 
-      if (transcribeFile.size <= MAX_DIRECT) {
-        // Small file: send directly
-        setTranscribeProgress(30);
-        const form = new FormData();
-        form.append('audio', transcribeFile);
-        form.append('mimeType', transcribeFile.type);
-        const res = await fetch('/api/transcribe', { method: 'POST', body: form });
-        const data = await res.json();
-        if (!data.text?.trim()) throw new Error(data.error || 'No se detecto habla en el audio');
-        setTranscribeProgress(100);
-        const blob = new Blob([data.text], { type: 'text/plain;charset=utf-8' });
-        const name = transcribeFile.name.replace(/\.[^.]+$/, '') + '.txt';
-        setTranscribeResult({ blob, name });
-        setTranscribePhase('done');
-        triggerDownload(blob, name);
-        toast.success('Transcripcion completada');
-        return;
+      const res = await fetch('/api/tools/transcribe', { method: 'POST', body: form });
+      clearInterval(progressInterval);
+
+      if (!res.ok) {
+        let msg = 'Error al transcribir';
+        try { const err = await res.json(); msg = err.error || msg; } catch {}
+        throw new Error(msg);
       }
 
-      // Large file: decode in browser → split into 3-min WAV chunks → transcribe each
-      setTranscribeProgress(5);
-      const arrayBuffer = await transcribeFile.arrayBuffer();
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      audioCtx.close();
-
-      const sampleRate = audioBuffer.sampleRate;
-      const chunkSeconds = 180; // 3 minutes per chunk
-      const chunkSamples = chunkSeconds * sampleRate;
-      const totalSamples = audioBuffer.length;
-      const numChunks = Math.ceil(totalSamples / chunkSamples);
-      const channelData = audioBuffer.getChannelData(0); // mono
-
-      let fullText = '';
-      for (let i = 0; i < numChunks; i++) {
-        setTranscribeProgress(Math.round(10 + (i / numChunks) * 85));
-
-        const start = i * chunkSamples;
-        const len = Math.min(chunkSamples, totalSamples - start);
-
-        // Encode as 16-bit mono WAV
-        const dataSize = len * 2;
-        const buf = new ArrayBuffer(44 + dataSize);
-        const v = new DataView(buf);
-        const w = (o: number, s: string) => { for (let j = 0; j < s.length; j++) v.setUint8(o + j, s.charCodeAt(j)); };
-        w(0, 'RIFF'); v.setUint32(4, 36 + dataSize, true); w(8, 'WAVE');
-        w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
-        v.setUint16(22, 1, true); v.setUint32(24, sampleRate, true);
-        v.setUint32(28, sampleRate * 2, true); v.setUint16(32, 2, true);
-        v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, dataSize, true);
-        let off = 44;
-        for (let j = start; j < start + len; j++) {
-          const s = Math.max(-1, Math.min(1, channelData[j]));
-          v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-          off += 2;
-        }
-
-        const wavBlob = new Blob([buf], { type: 'audio/wav' });
-        const form = new FormData();
-        form.append('audio', wavBlob);
-        form.append('mimeType', 'audio/wav');
-        const res = await fetch('/api/transcribe', { method: 'POST', body: form });
-        const data = await res.json();
-        if (data.text) fullText += (fullText ? '\n\n' : '') + data.text;
-      }
-
-      if (!fullText.trim()) throw new Error('No se detecto habla en el audio');
+      const blob = await res.blob();
+      const name = transcribeFile.name.replace(/\.[^.]+$/, '') + '.txt';
 
       setTranscribeProgress(100);
-      const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
-      const name = transcribeFile.name.replace(/\.[^.]+$/, '') + '.txt';
       setTranscribeResult({ blob, name });
       setTranscribePhase('done');
       triggerDownload(blob, name);
       toast.success('Transcripcion completada');
     } catch (err: any) {
+      clearInterval(progressInterval);
       toast.error(err.message || 'Error al transcribir');
       setTranscribeProgress(0);
       setTranscribePhase('idle');
