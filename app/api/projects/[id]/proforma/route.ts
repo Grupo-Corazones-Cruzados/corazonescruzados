@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { Resend } from 'resend';
-import type puppeteer from 'puppeteer';
+// puppeteer loaded dynamically at runtime to avoid webpack bundling
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -197,7 +197,7 @@ function buildProformaEmail(data: {
 }
 
 async function htmlToPdf(html: string): Promise<Buffer> {
-  const puppeteer = (await import('puppeteer')).default;
+  const puppeteer = (await import(/* webpackIgnore: true */ 'puppeteer')).default;
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
