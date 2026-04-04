@@ -197,6 +197,7 @@ function buildProformaEmail(data: {
 }
 
 async function htmlToPdf(html: string): Promise<Buffer> {
+  // @ts-ignore - puppeteer resolved at runtime, not available during Docker build
   const puppeteer = (await import(/* webpackIgnore: true */ 'puppeteer')).default;
   const browser = await puppeteer.launch({
     headless: true,
