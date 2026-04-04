@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { Resend } from 'resend';
-import puppeteer from 'puppeteer';
+import type puppeteer from 'puppeteer';
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -197,6 +197,7 @@ function buildProformaEmail(data: {
 }
 
 async function htmlToPdf(html: string): Promise<Buffer> {
+  const puppeteer = (await import('puppeteer')).default;
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
