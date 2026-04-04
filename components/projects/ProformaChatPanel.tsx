@@ -386,34 +386,91 @@ REGLAS DE RESPUESTA CRITICAS:
   const addDocumentation = () => {
     const docPrompt = `IMPORTANTE: NO uses herramientas de escritura (Write, Edit). NO crees archivos. Responde UNICAMENTE con el HTML puro.
 
-Ahora necesito que generes un documento HTML COMPLETO que incluya documentacion tecnica del proyecto Y la proforma que ya generaste. El documento final debe ser un solo archivo HTML auto-contenido.
+Ahora necesito que generes un documento HTML COMPLETO de documentacion profesional del proyecto Y la proforma que ya generaste. El documento final debe ser un solo archivo HTML auto-contenido. Debe ser una documentacion COMPLETA, lista para presentar a un cliente o stakeholder.
 
-El documento debe tener estas secciones EN ESTE ORDEN, basandote en tu analisis real del proyecto:
+El documento DEBE tener estas secciones BASE en este orden (basandote en tu analisis real del proyecto):
 
-1. **Navegacion fija** (nav bar con links a cada seccion + link a la proforma al final)
-2. **Hero/Portada** - Titulo del proyecto con un subtitulo descriptivo, badge "Propuesta Tecnica", y metricas clave del proyecto (3-4 datos relevantes)
-3. **El problema y la solucion** - Dos cards lado a lado: "Hoy (manual)" vs "Con la solucion". Describe el problema real que resuelve el proyecto
-4. **Como funciona paso a paso** - Steps verticales numerados (3-5 pasos) explicando el flujo del sistema basado en lo que leiste del codigo
-5. **Caracteristicas principales** - Grid de 4-6 features del sistema basadas en funcionalidades reales del codigo
-6. **Diagrama de flujo** - Flujo visual del sistema usando divs estilizados como nodos con flechas (flow-node, flow-arrow)
-7. **Seguridad y privacidad** - Grid 2x2 con medidas de seguridad relevantes al tipo de proyecto
-8. **Stack tecnologico** - Grid con las tecnologias reales que usa el proyecto (las que viste en package.json, etc)
-9. **PROFORMA** - Incluye la proforma EXACTAMENTE como la generaste antes, sin modificarla. Usa la seccion con clase .proforma-page para la proforma
+1. **Navegacion fija** - Nav bar sticky con links a TODAS las secciones del documento. Debe incluir cada seccion que generes, incluyendo las secciones dinamicas que tu agregues segun el tipo de proyecto.
 
-REGLAS:
-- Usa la fuente Inter de Google Fonts
+2. **Hero/Portada** - Titulo del proyecto con subtitulo descriptivo, badge "Propuesta Tecnica y Documentacion", metricas clave del proyecto (4-6 datos: usuarios estimados, endpoints, modulos, lineas de codigo, etc.)
+
+3. **Resumen Ejecutivo** - Parrafo profesional de 3-5 oraciones que resuma que es el proyecto, que problema resuelve, para quien, y cual es el valor principal que entrega. Debe ser entendible por alguien no tecnico.
+
+4. **El problema y la solucion** - Dos cards lado a lado: "Situacion Actual" vs "Con la Solucion". Describe el problema real que resuelve el proyecto con puntos concretos en cada card.
+
+5. **Objetivos del Proyecto** - Lista numerada de 4-6 objetivos SMART (especificos, medibles) del proyecto, basados en lo que hace el codigo. Ejemplo: "Reducir el tiempo de generacion de reportes de 2 horas a 5 minutos".
+
+6. **Usuarios y Audiencia** - Describe los tipos de usuario/roles del sistema (los que encontraste en el codigo), que puede hacer cada uno, y el perfil de audiencia objetivo. Usa cards por cada tipo de usuario.
+
+7. **Como funciona paso a paso** - Steps verticales numerados (4-6 pasos) explicando el flujo principal del sistema basado en el codigo real. Cada paso con icono emoji, titulo y descripcion.
+
+8. **Caracteristicas principales** - Grid de 6-8 features del sistema basadas en funcionalidades REALES del codigo. Cada feature con emoji, titulo y descripcion de 2 lineas.
+
+9. **Arquitectura del Sistema** - Diagrama visual usando divs estilizados que muestre las capas del sistema: Frontend, Backend/API, Base de Datos, Servicios Externos. Conectalos con flechas. Describe brevemente cada capa y que tecnologias usa.
+
+10. **Diagrama de Flujo** - Flujo visual del proceso principal del sistema usando divs estilizados como nodos con flechas (flow-node, flow-arrow). Debe reflejar el flujo real que encontraste en el codigo.
+
+11. **Modelo de Datos** - Tabla o diagrama que muestre las entidades/tablas principales de la base de datos, sus campos clave y relaciones. Basado en lo que encontraste en el codigo (schemas, migrations, queries SQL, modelos ORM, etc). Si no hay BD visible, describe las estructuras de datos principales.
+
+12. **Integraciones y APIs** - Lista de todas las integraciones externas que el proyecto usa (APIs de terceros, webhooks, servicios). Para cada una indica: nombre del servicio, proposito, endpoints principales que consume. Si el proyecto EXPONE una API, documenta los endpoints principales con metodo HTTP, ruta y descripcion.
+
+13. **Seguridad y Privacidad** - Grid con las medidas de seguridad implementadas: autenticacion, autorizacion, encriptacion, validacion de datos, proteccion CSRF/XSS, manejo de tokens, etc. Basado en lo que realmente implementa el codigo.
+
+14. **Stack Tecnologico** - Grid con las tecnologias reales del proyecto (package.json, imports, etc). Agrupa por categoria: Frontend, Backend, Base de Datos, DevOps/Infra, Servicios Externos. Cada una con version si es visible.
+
+15. **Plan de Despliegue e Infraestructura** - Describe como se despliega el proyecto: plataforma de hosting, CI/CD si existe, variables de entorno necesarias (sin valores, solo nombres), proceso de build y deploy.
+
+16. **Cronograma Estimado** - Timeline visual con las fases del proyecto (Diseno, Desarrollo, Testing, Deploy, Ajustes). Usa una barra de progreso horizontal estilizada o tabla con fechas estimadas relativas (Semana 1-2, Semana 3-4, etc).
+
+17. **Riesgos y Mitigaciones** - Tabla con 4-6 riesgos potenciales del proyecto, su nivel de impacto (Alto/Medio/Bajo), probabilidad, y estrategia de mitigacion. Piensa en riesgos tecnicos, de dependencias, de escalabilidad, etc.
+
+18. **Mantenimiento y Soporte** - Describe que incluye el mantenimiento post-entrega: actualizaciones de dependencias, monitoreo, backups, soporte tecnico. Incluye recomendaciones de mantenimiento preventivo.
+
+19. **Estimacion de Costos Operativos** - Tabla profesional con los costos mensuales/anuales de los servicios que el proyecto consume. Analiza el codigo para identificar:
+   - APIs de inteligencia artificial (Claude, OpenAI, etc): estima tokens/llamadas mensuales y costo
+   - Hosting/servidor (Vercel, AWS, Railway, etc): plan estimado segun trafico
+   - Base de datos (Supabase, PlanetScale, MongoDB Atlas, etc): tier estimado
+   - Servicios de email (Resend, SendGrid, etc): volumen estimado
+   - Almacenamiento (S3, Cloudinary, etc): si aplica
+   - Dominios y SSL: si aplica
+   - Cualquier otro servicio de terceros que el codigo integre
+   Columnas: Servicio, Proveedor, Plan/Tier, Costo Mensual, Costo Anual. Incluye totales y nota aclarando que son estimaciones.
+
+20. **PROFORMA** - Incluye la proforma EXACTAMENTE como la generaste antes, sin modificarla. Usa la seccion con clase .proforma-page
+
+=== SECCIONES DINAMICAS (OBLIGATORIO) ===
+Ademas de las secciones base, DEBES agregar secciones adicionales segun lo que detectes en el proyecto. Insertalas donde tenga mas sentido logico en el documento. Ejemplos:
+
+- Si es un proyecto con IA/ML: agrega "Modelos de IA y Pipelines" (que modelos usa, como se entrenan, metricas)
+- Si tiene autenticacion de usuarios: agrega "Gestion de Usuarios y Roles" (flujo de registro, login, permisos)
+- Si maneja pagos: agrega "Procesamiento de Pagos" (pasarelas, flujo de pago, seguridad PCI)
+- Si tiene notificaciones: agrega "Sistema de Notificaciones" (canales: email, push, SMS, triggers)
+- Si es e-commerce: agrega "Catalogo y Gestion de Productos", "Carrito y Checkout"
+- Si tiene reportes/analytics: agrega "Reportes y Analiticas" (que reportes genera, dashboards)
+- Si tiene chat/mensajeria: agrega "Sistema de Comunicacion en Tiempo Real"
+- Si maneja archivos/media: agrega "Gestion de Archivos y Media"
+- Si tiene internacionalizacion: agrega "Soporte Multi-idioma"
+- Si tiene PWA/mobile: agrega "Experiencia Movil y Offline"
+- Si tiene workflows/automaciones: agrega "Automatizaciones y Flujos de Trabajo"
+- Si tiene multi-tenancy: agrega "Arquitectura Multi-tenant"
+
+Usa tu criterio: analiza el codigo y agrega TODAS las secciones que sean relevantes. No te limites a los ejemplos anteriores. El objetivo es que la documentacion sea lo mas completa posible para que el cliente entienda exactamente que esta recibiendo.
+
+REGLAS DE ESTILO:
+- Fuente Inter de Google Fonts
 - Estilo Apple: minimalista, limpio, espaciado generoso
 - Colores: #1d1d1f texto, #86868b subtitulos, #f5f5f7 fondos claros, #e5e5e7 bordes
 - Gradiente azul para highlights: linear-gradient(90deg, #0071e3, #40c8e0)
-- El nav debe tener backdrop-filter blur y ser sticky
-- Usa emojis Unicode como iconos (no necesitas libreria de iconos)
-- La proforma va al final del documento con su propio estilo (prefijos pro- para las clases)
-- Incluye boton de imprimir (class no-print)
+- Nav sticky con backdrop-filter blur
+- Emojis Unicode como iconos (no libreria)
+- La proforma al final con su propio estilo (prefijos pro- para clases)
+- Boton de imprimir (class no-print)
 - No uses acentos ni caracteres especiales
-- El logo usa: <img src="/LogoApp.png" alt="GCC">
+- Logo: <img src="/LogoApp.png" alt="GCC">
 - Empresa: Grupo Corazones Cruzados (subtitulo: GCC)
-- Todo el CSS debe estar en el <style> del head, no inline excepto casos minimos
+- CSS en el <style> del head, no inline excepto casos minimos
 - @media print: ocultar nav y no-print, page-break-before en la proforma
+- Cada seccion debe tener un id para que el nav pueda linkear a ella
 
 REGLAS DE RESPUESTA CRITICAS:
 - NO uses la herramienta Write ni Edit. NO crees ningun archivo.

@@ -9,6 +9,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    if (user.role === 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { id } = await params;
 
     const { rows: [m] } = await pool.query(`SELECT * FROM gcc_world.finance_months WHERE id = $1`, [id]);

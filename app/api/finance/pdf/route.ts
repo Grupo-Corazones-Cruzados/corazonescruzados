@@ -10,6 +10,7 @@ export async function GET() {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    if (user.role === 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     await ensureFinanceTables();
 

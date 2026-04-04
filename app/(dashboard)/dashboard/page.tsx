@@ -21,6 +21,7 @@ interface FinanceItem { id?: number; type: 'income' | 'expense'; description: st
 export default function DashboardHome() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const isClient = user?.role === 'client';
   const [stats, setStats] = useState<Stats | null>(null);
   const [months, setMonths] = useState<FinanceMonth[]>([]);
 
@@ -122,7 +123,7 @@ export default function DashboardHome() {
       <>
         <div className="flex items-center justify-between mb-3">
           <h2 className="pixel-heading text-sm text-white">Estado Financiero Mensual</h2>
-          {months.length > 0 && (
+          {months.length > 0 && !isClient && (
             <button onClick={() => window.open('/api/finance/pdf', '_blank')}
               className="px-3 py-1.5 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
               Descargar Reporte Global
@@ -144,13 +145,13 @@ export default function DashboardHome() {
                 const s = Number(m.total_savings || 0);
                 return <span className={s >= 0 ? 'text-accent-glow' : 'text-red-400'} style={mf}>${s.toFixed(2)}</span>;
               }},
-              { key: 'pdf', header: '', width: '50px', render: (m: any) => (
-                <button onClick={(e) => { e.stopPropagation(); window.open(`/api/finance/${m.id}/pdf`, '_blank'); }}
+              ...(!isClient ? [{ key: 'pdf', header: '', width: '50px', render: (m: any) => (
+                <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`/api/finance/${m.id}/pdf`, '_blank'); }}
                   className="px-1.5 py-0.5 text-[7px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>PDF</button>
-              )},
+              )}] : []),
             ]}
             data={months}
-            onRowClick={(m: any) => openDetail(m)}
+            onRowClick={isClient ? undefined : (m: any) => openDetail(m)}
             emptyTitle="Sin registros"
             emptyDesc="No hay estados financieros aun."
           />
