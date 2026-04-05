@@ -303,7 +303,7 @@ INSTRUCCIONES PARA EL CONTENIDO:
 4. La seccion de "Alcance del entregable" debe listar las funcionalidades reales del proyecto.
 5. Los terminos y condiciones deben ser especificos para este tipo de proyecto.
 6. No uses acentos ni caracteres especiales (usa "Analisis" no "Análisis").
-7. En el header usa una imagen para el logo: <div class="brand-icon"><img src="/LogoApp.png" alt="GCC"></div>
+7. En el header usa una imagen para el logo: <div class="brand-icon"><img src="https://app.grupocc.org/LogoApp.png" alt="GCC"></div>
 
 DEBES usar EXACTAMENTE este template HTML/CSS:
 
@@ -360,25 +360,22 @@ DEBES usar EXACTAMENTE este template HTML/CSS:
     .terms h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: #86868b; margin-bottom: 16px; }
     .terms ol { padding-left: 20px; }
     .terms li { font-size: 12px; color: #6e6e73; line-height: 1.7; margin-bottom: 6px; }
-    .footer { padding-top: 32px; border-top: 1px solid #e5e5e7; display: flex; justify-content: space-between; align-items: flex-end; }
-    .footer-left p { font-size: 11px; color: #86868b; line-height: 1.7; }
-    .footer-right { text-align: right; }
-    .footer-right .signature-line { width: 200px; border-bottom: 1px solid #d2d2d7; margin-bottom: 8px; margin-left: auto; padding-top: 48px; }
-    .footer-right .signature-label { font-size: 10px; color: #86868b; text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+    .footer { padding-top: 32px; border-top: 1px solid #e5e5e7; }
+    .footer p { font-size: 11px; color: #86868b; line-height: 1.7; }
     .print-btn { position: fixed; bottom: 32px; right: 32px; background: #1d1d1f; color: white; border: none; padding: 12px 24px; border-radius: 980px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.15); transition: all 0.2s ease; }
     .print-btn:hover { background: #424245; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
   </style>
 </head>
 <body>
 <div class="page">
-  <!-- Header: Logo (img src="/LogoApp.png") + "Grupo Corazones Cruzados" + subtitulo "GCC" left, "Proforma" + number right -->
+  <!-- Header: Logo (img src="https://app.grupocc.org/LogoApp.png") + "Grupo Corazones Cruzados" + subtitulo "GCC" left, "Proforma" + number right -->
   <!-- Info Grid: "De" (Grupo Corazones Cruzados + remitente + lfgonzalezm0@grupocc.org) left, "Para" (cliente + proyecto) right -->
   <!-- Dates Row: fecha emision, validez 30 dias, moneda USD -->
   <!-- Items Table: # | Descripcion (titulo + desc) | Monto -->
   <!-- Totals: subtotal, impuestos $0.00, total -->
   <!-- Scope: grid 2 cols con checks verdes para incluidos, puntos naranjas para fase 2 -->
   <!-- Terms: ol con terminos especificos -->
-  <!-- Footer: "Grupo Corazones Cruzados" + proforma number left, firma de aceptacion right -->
+  <!-- Footer: "Grupo Corazones Cruzados" + proforma number + info de contacto -->
 </div>
 <button class="print-btn no-print" onclick="window.print()">Imprimir / Guardar PDF</button>
 </body>
@@ -533,7 +530,7 @@ REGLAS DE ESTILO:
 - La proforma al final con su propio estilo (prefijos pro- para clases)
 - Boton de imprimir (class no-print)
 - No uses acentos ni caracteres especiales
-- Logo: <img src="/LogoApp.png" alt="GCC">
+- Logo: <img src="https://app.grupocc.org/LogoApp.png" alt="GCC">
 - Empresa: Grupo Corazones Cruzados (subtitulo: GCC)
 - CSS en el <style> del head, no inline excepto casos minimos
 - @media print: ocultar nav y no-print, page-break-before en la proforma

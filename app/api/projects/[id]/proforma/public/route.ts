@@ -34,7 +34,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'El enlace ha expirado' }, { status: 403 });
     }
 
-    return NextResponse.json({ html: project.proforma });
+    // Inject a <base> tag so relative URLs (e.g. /LogoApp.png) resolve to production domain
+    let html: string = project.proforma;
+    const baseTag = '<base href="https://app.grupocc.org/">';
+    if (!html.includes('<base ')) {
+      if (html.includes('<head>')) {
+        html = html.replace('<head>', `<head>${baseTag}`);
+      } else if (html.includes('<html')) {
+        html = html.replace(/<html[^>]*>/, (m) => `${m}<head>${baseTag}</head>`);
+      }
+    }
+
+    return NextResponse.json({ html });
   } catch (err: any) {
     console.error('Proforma public GET error:', err.message);
     return NextResponse.json({ error: 'Error' }, { status: 500 });
