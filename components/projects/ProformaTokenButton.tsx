@@ -41,7 +41,7 @@ export default function ProformaTokenButton({ projectId, className, label = 'Tok
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error');
-      const url = `${window.location.origin}/proforma/${projectId}?token=${data.token}`;
+      const url = `https://app.grupocc.org/proforma/${projectId}?token=${data.token}`;
       setLink(url);
       setExpiresAt(data.expiresAt);
       toast.success('Token generado');
