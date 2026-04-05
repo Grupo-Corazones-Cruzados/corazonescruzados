@@ -13,6 +13,7 @@ import IncidentDetailPanel from '@/components/projects/IncidentDetailPanel';
 import FloatingChatWindow from '@/components/projects/FloatingChatWindow';
 import TaskQueueIndicator from '@/components/projects/TaskQueueIndicator';
 import ProformaChatPanel from '@/components/projects/ProformaChatPanel';
+import ProformaTokenButton from '@/components/projects/ProformaTokenButton';
 import useAgentChat from '@/hooks/useAgentChat';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
@@ -1547,6 +1548,8 @@ export default function ProjectDetailPage() {
                       className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                       Editar / Actualizar
                     </button>
+                    <ProformaTokenButton projectId={id as string}
+                      className="flex-1 px-2 py-1.5 text-[8px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors" />
                   </div>
                 </div>
               ) : (
