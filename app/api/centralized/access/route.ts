@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const memberId = searchParams.get('member_id');
+    const systemId = searchParams.get('system_id');
 
     if (user.role === 'admin') {
       let query = `
@@ -36,10 +37,10 @@ export async function GET(req: NextRequest) {
         JOIN gcc_world.centralized_systems s ON s.id = a.system_id
       `;
       const params: any[] = [];
-      if (memberId) {
-        query += ` WHERE a.member_id = $1`;
-        params.push(memberId);
-      }
+      const conditions: string[] = [];
+      if (memberId) { conditions.push(`a.member_id = $${params.length + 1}`); params.push(memberId); }
+      if (systemId) { conditions.push(`a.system_id = $${params.length + 1}`); params.push(systemId); }
+      if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
       query += ' ORDER BY a.member_id, a.piso, a.paso, a.created_at DESC';
 
       const { rows } = await pool.query(query, params);
