@@ -10,15 +10,9 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import Link from 'next/link';
-import AccessTab from '@/components/centralized/AccessTab';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
-
-const ALL_TABS = [
-  { value: 'structure', label: 'Estructura' },
-  { value: 'access', label: 'Accesos' },
-];
 
 const STRUCTURE_COLUMNS = [
   { label: 'Fundamentación', key: 'fundamentacion' },
@@ -47,7 +41,6 @@ const TYPE_LABEL: Record<string, string> = {
 
 export default function CentralizedPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('structure');
   const [requests, setRequests] = useState<any[]>([]);
   const [allSystems, setAllSystems] = useState<any[]>([]);
 
@@ -217,8 +210,6 @@ export default function CentralizedPage() {
     return m.name?.toLowerCase().includes(shareSearch.toLowerCase()) || m.email?.toLowerCase().includes(shareSearch.toLowerCase());
   });
 
-  const tabs = ALL_TABS.filter((t) => !('adminOnly' in t) || isAdmin).map(({ value, label }) => ({ value, label }));
-
   const handleReview = async (status: string) => {
     if (!selectedReq) return;
     setReviewing(true);
@@ -243,9 +234,8 @@ export default function CentralizedPage() {
   return (
     <div>
       <PageHeader title="Proyecto Centralizado" description="Movimiento Organizacional" />
-      <PixelTabs tabs={tabs} active={tab} onChange={(t) => { setTab(t); setActiveSystem(null); }} />
 
-      {tab === 'structure' && activeSystem ? (
+      {activeSystem ? (
         /* ── System View ── */
         <div>
           {/* Breadcrumb + Share */}
@@ -351,7 +341,7 @@ export default function CentralizedPage() {
             </div>
           )}
         </div>
-      ) : tab === 'structure' ? (
+      ) : (
         <div className="pixel-card p-4 md:p-6 overflow-x-auto">
           {/* Column headers */}
           <div className="grid grid-cols-[100px_repeat(4,1fr)] md:grid-cols-[140px_repeat(4,1fr)] gap-2 mb-2 min-w-[600px]">
@@ -408,9 +398,7 @@ export default function CentralizedPage() {
             </div>
           ))}
         </div>
-      ) : tab === 'access' ? (
-        <AccessTab isAdmin={isAdmin} />
-      ) : null}
+      )}
 
       {/* Admin Review Modal */}
       <PixelModal open={reviewModal} onClose={() => !reviewing && setReviewModal(false)} title="Revisar Salida Supervisada">
