@@ -10,13 +10,26 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import Link from 'next/link';
+import SystemsTab from '@/components/centralized/SystemsTab';
+import AccessTab from '@/components/centralized/AccessTab';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
 
-const TABS = [
+const ALL_TABS = [
+  { value: 'structure', label: 'Estructura' },
+  { value: 'systems', label: 'Sistemas', adminOnly: true },
+  { value: 'access', label: 'Accesos' },
   { value: 'requests', label: 'Solicitudes' },
   { value: 'reports', label: 'Denuncias' },
+];
+
+const STRUCTURE_COLUMNS = ['Fundamentación', 'Creación', 'Implementación', 'Gestión'];
+const STRUCTURE_ROWS = [
+  { title: 'Global', cells: ['Condiciología', 'Control Psicosocial', 'Centralizado', 'Gestión Psicosocial'] },
+  { title: 'Pilar', cells: ['Academia', 'Tecnología', 'Organización', 'Publicación'] },
+  { title: 'Controlador', cells: ['Conocimiento', 'Herramientas', 'Estrategias', 'Soluciones'] },
+  { title: 'Colaborador', cells: ['Investigador', 'Desarrollador', 'Planificador', 'Líder'] },
 ];
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -33,7 +46,7 @@ const TYPE_LABEL: Record<string, string> = {
 
 export default function CentralizedPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('requests');
+  const [tab, setTab] = useState('structure');
   const [requests, setRequests] = useState<any[]>([]);
 
   // Admin review modal
@@ -54,6 +67,7 @@ export default function CentralizedPage() {
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
   const isAdmin = user?.role === 'admin';
+  const tabs = ALL_TABS.filter((t) => !('adminOnly' in t) || isAdmin).map(({ value, label }) => ({ value, label }));
 
   const handleReview = async (status: string) => {
     if (!selectedReq) return;
@@ -78,10 +92,45 @@ export default function CentralizedPage() {
 
   return (
     <div>
-      <PageHeader title="Proyecto Centralizado" description="Solicitudes y denuncias de proyectos" />
-      <PixelTabs tabs={TABS} active={tab} onChange={setTab} />
+      <PageHeader title="Proyecto Centralizado" description="Movimiento Organizacional" />
+      <PixelTabs tabs={tabs} active={tab} onChange={setTab} />
 
-      {tab === 'requests' ? (
+      {tab === 'structure' ? (
+        <div className="pixel-card p-4 md:p-6 overflow-x-auto">
+          {/* Column headers */}
+          <div className="grid grid-cols-[100px_repeat(4,1fr)] md:grid-cols-[140px_repeat(4,1fr)] gap-2 mb-2 min-w-[600px]">
+            <div />
+            {STRUCTURE_COLUMNS.map((col) => (
+              <div key={col} className="text-center py-2 px-1 border border-accent/40 bg-accent/10">
+                <span className="text-[9px] md:text-[11px] text-accent-glow uppercase tracking-wider" style={pf}>{col}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Rows */}
+          {STRUCTURE_ROWS.map((row) => (
+            <div key={row.title} className="grid grid-cols-[100px_repeat(4,1fr)] md:grid-cols-[140px_repeat(4,1fr)] gap-2 mb-2 min-w-[600px]">
+              {/* Row title */}
+              <div className="flex items-center justify-center py-3 px-2 border border-accent/40 bg-accent/10">
+                <span className="text-[9px] md:text-[11px] text-accent-glow uppercase tracking-wider text-center" style={pf}>{row.title}</span>
+              </div>
+              {/* Cells */}
+              {row.cells.map((cell, i) => (
+                <div
+                  key={`${row.title}-${i}`}
+                  className="flex items-center justify-center py-3 px-2 border border-digi-border/50 bg-digi-darker hover:border-accent/60 hover:bg-accent/5 transition-all cursor-default group"
+                >
+                  <span className="text-[10px] md:text-xs text-digi-text group-hover:text-accent-glow transition-colors text-center" style={mf}>{cell}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : tab === 'systems' && isAdmin ? (
+        <SystemsTab />
+      ) : tab === 'access' ? (
+        <AccessTab isAdmin={isAdmin} />
+      ) : tab === 'requests' ? (
         <PixelDataTable
           columns={[
             { key: 'id', header: 'ID', render: (r: any) => `#${r.id}`, width: '60px' },
