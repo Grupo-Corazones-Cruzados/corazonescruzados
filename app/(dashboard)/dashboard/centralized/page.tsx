@@ -24,12 +24,17 @@ const ALL_TABS = [
   { value: 'reports', label: 'Denuncias' },
 ];
 
-const STRUCTURE_COLUMNS = ['Fundamentación', 'Creación', 'Implementación', 'Gestión'];
+const STRUCTURE_COLUMNS = [
+  { label: 'Fundamentación', key: 'fundamentacion' },
+  { label: 'Creación', key: 'creacion' },
+  { label: 'Implementación', key: 'implementacion' },
+  { label: 'Gestión', key: 'gestion' },
+];
 const STRUCTURE_ROWS = [
-  { title: 'Global', cells: ['Condiciología', 'Control Psicosocial', 'Centralizado', 'Gestión Psicosocial'] },
-  { title: 'Pilar', cells: ['Academia', 'Tecnología', 'Organización', 'Publicación'] },
-  { title: 'Controlador', cells: ['Conocimiento', 'Herramientas', 'Estrategias', 'Soluciones'] },
-  { title: 'Colaborador', cells: ['Investigador', 'Desarrollador', 'Planificador', 'Líder'] },
+  { title: 'Global', piso: 'global', cells: ['Condiciología', 'Control Psicosocial', 'Centralizado', 'Gestión Psicosocial'] },
+  { title: 'Pilar', piso: 'pilar', cells: ['Academia', 'Tecnología', 'Organización', 'Publicación'] },
+  { title: 'Controlador', piso: 'controlador', cells: ['Conocimiento', 'Herramientas', 'Estrategias', 'Soluciones'] },
+  { title: 'Colaborador', piso: 'colaborador', cells: ['Investigador', 'Desarrollador', 'Planificador', 'Líder'] },
 ];
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -48,6 +53,7 @@ export default function CentralizedPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState('structure');
   const [requests, setRequests] = useState<any[]>([]);
+  const [allSystems, setAllSystems] = useState<any[]>([]);
 
   // Admin review modal
   const [reviewModal, setReviewModal] = useState(false);
@@ -64,7 +70,18 @@ export default function CentralizedPage() {
     } catch { setRequests([]); }
   }, []);
 
-  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+  const fetchSystems = useCallback(async () => {
+    try {
+      const res = await fetch('/api/centralized/systems');
+      const data = await res.json();
+      setAllSystems(data.data || []);
+    } catch { setAllSystems([]); }
+  }, []);
+
+  useEffect(() => { fetchRequests(); fetchSystems(); }, [fetchRequests, fetchSystems]);
+
+  const getSystemsFor = (piso: string, paso: string) =>
+    allSystems.filter((s: any) => s.piso === piso && s.paso === paso && s.is_active);
 
   const isAdmin = user?.role === 'admin';
   const tabs = ALL_TABS.filter((t) => !('adminOnly' in t) || isAdmin).map(({ value, label }) => ({ value, label }));
@@ -101,8 +118,8 @@ export default function CentralizedPage() {
           <div className="grid grid-cols-[100px_repeat(4,1fr)] md:grid-cols-[140px_repeat(4,1fr)] gap-2 mb-2 min-w-[600px]">
             <div />
             {STRUCTURE_COLUMNS.map((col) => (
-              <div key={col} className="text-center py-2 px-1 border border-accent/40 bg-accent/10">
-                <span className="text-[9px] md:text-[11px] text-accent-glow uppercase tracking-wider" style={pf}>{col}</span>
+              <div key={col.key} className="text-center py-2 px-1 border border-accent/40 bg-accent/10">
+                <span className="text-[9px] md:text-[11px] text-accent-glow uppercase tracking-wider" style={pf}>{col.label}</span>
               </div>
             ))}
           </div>
@@ -114,15 +131,31 @@ export default function CentralizedPage() {
               <div className="flex items-center justify-center py-3 px-2 border border-accent/40 bg-accent/10">
                 <span className="text-[9px] md:text-[11px] text-accent-glow uppercase tracking-wider text-center" style={pf}>{row.title}</span>
               </div>
-              {/* Cells */}
-              {row.cells.map((cell, i) => (
-                <div
-                  key={`${row.title}-${i}`}
-                  className="flex items-center justify-center py-3 px-2 border border-digi-border/50 bg-digi-darker hover:border-accent/60 hover:bg-accent/5 transition-all cursor-default group"
-                >
-                  <span className="text-[10px] md:text-xs text-digi-text group-hover:text-accent-glow transition-colors text-center" style={mf}>{cell}</span>
-                </div>
-              ))}
+              {/* Cells with systems */}
+              {row.cells.map((cell, i) => {
+                const paso = STRUCTURE_COLUMNS[i].key;
+                const cellSystems = getSystemsFor(row.piso, paso);
+                return (
+                  <div
+                    key={`${row.title}-${i}`}
+                    className="flex flex-col border border-digi-border/50 bg-digi-darker hover:border-accent/60 hover:bg-accent/5 transition-all cursor-default group"
+                  >
+                    <div className="flex items-center justify-center py-2.5 px-2">
+                      <span className="text-[10px] md:text-xs text-digi-text group-hover:text-accent-glow transition-colors text-center font-bold" style={mf}>{cell}</span>
+                    </div>
+                    {cellSystems.length > 0 && (
+                      <div className="border-t border-digi-border/30 px-2 py-1.5 space-y-0.5">
+                        {cellSystems.map((sys: any) => (
+                          <div key={sys.id} className="flex items-center gap-1">
+                            <span className="text-[6px] text-accent-glow">&#9654;</span>
+                            <span className="text-[8px] md:text-[9px] text-digi-muted group-hover:text-digi-text transition-colors" style={mf}>{sys.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
