@@ -10,7 +10,6 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import Link from 'next/link';
-import SystemsTab from '@/components/centralized/SystemsTab';
 import AccessTab from '@/components/centralized/AccessTab';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
@@ -18,7 +17,6 @@ const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
 
 const ALL_TABS = [
   { value: 'structure', label: 'Estructura' },
-  { value: 'systems', label: 'Sistemas', adminOnly: true },
   { value: 'access', label: 'Accesos' },
   { value: 'requests', label: 'Solicitudes' },
   { value: 'reports', label: 'Denuncias' },
@@ -55,6 +53,17 @@ export default function CentralizedPage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [allSystems, setAllSystems] = useState<any[]>([]);
 
+  // Cell systems modal (admin)
+  const [cellModal, setCellModal] = useState(false);
+  const [cellPiso, setCellPiso] = useState('');
+  const [cellPaso, setCellPaso] = useState('');
+  const [cellLabel, setCellLabel] = useState('');
+  const [sysName, setSysName] = useState('');
+  const [sysDesc, setSysDesc] = useState('');
+  const [editingSys, setEditingSys] = useState<any>(null);
+  const [savingSys, setSavingSys] = useState(false);
+  const [deletingSysId, setDeletingSysId] = useState<number | null>(null);
+
   // Admin review modal
   const [reviewModal, setReviewModal] = useState(false);
   const [selectedReq, setSelectedReq] = useState<any>(null);
@@ -84,6 +93,56 @@ export default function CentralizedPage() {
     allSystems.filter((s: any) => s.piso === piso && s.paso === paso && s.is_active);
 
   const isAdmin = user?.role === 'admin';
+
+  const openCellModal = (piso: string, paso: string, label: string) => {
+    setCellPiso(piso); setCellPaso(paso); setCellLabel(label);
+    setSysName(''); setSysDesc(''); setEditingSys(null);
+    setCellModal(true);
+  };
+
+  const handleSaveSys = async () => {
+    if (!sysName.trim()) { toast.error('El nombre es requerido'); return; }
+    setSavingSys(true);
+    try {
+      if (editingSys) {
+        const res = await fetch(`/api/centralized/systems/${editingSys.id}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: sysName, description: sysDesc }),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+        toast.success('Sistema actualizado');
+      } else {
+        const res = await fetch('/api/centralized/systems', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: sysName, description: sysDesc, piso: cellPiso, paso: cellPaso }),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+        toast.success('Sistema creado');
+      }
+      setSysName(''); setSysDesc(''); setEditingSys(null);
+      fetchSystems();
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setSavingSys(false); }
+  };
+
+  const handleDeleteSys = async (id: number) => {
+    setDeletingSysId(id);
+    try {
+      const res = await fetch(`/api/centralized/systems/${id}`, { method: 'DELETE' });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      toast.success('Sistema eliminado');
+      fetchSystems();
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setDeletingSysId(null); }
+  };
+
+  const startEditSys = (sys: any) => {
+    setEditingSys(sys); setSysName(sys.name); setSysDesc(sys.description || '');
+  };
+
+  const cancelEditSys = () => {
+    setEditingSys(null); setSysName(''); setSysDesc('');
+  };
   const tabs = ALL_TABS.filter((t) => !('adminOnly' in t) || isAdmin).map(({ value, label }) => ({ value, label }));
 
   const handleReview = async (status: string) => {
@@ -138,7 +197,8 @@ export default function CentralizedPage() {
                 return (
                   <div
                     key={`${row.title}-${i}`}
-                    className="flex flex-col border border-digi-border/50 bg-digi-darker hover:border-accent/60 hover:bg-accent/5 transition-all cursor-default group"
+                    onClick={isAdmin ? () => openCellModal(row.piso, paso, cell) : undefined}
+                    className={`flex flex-col border border-digi-border/50 bg-digi-darker hover:border-accent/60 hover:bg-accent/5 transition-all group ${isAdmin ? 'cursor-pointer' : 'cursor-default'}`}
                   >
                     <div className="flex items-center justify-center py-2.5 px-2">
                       <span className="text-[10px] md:text-xs text-digi-text group-hover:text-accent-glow transition-colors text-center font-bold" style={mf}>{cell}</span>
@@ -153,14 +213,17 @@ export default function CentralizedPage() {
                         ))}
                       </div>
                     )}
+                    {isAdmin && cellSystems.length === 0 && (
+                      <div className="border-t border-digi-border/20 px-2 py-1 text-center">
+                        <span className="text-[7px] text-digi-muted/50 group-hover:text-accent/40 transition-colors" style={pf}>+ sistemas</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           ))}
         </div>
-      ) : tab === 'systems' && isAdmin ? (
-        <SystemsTab />
       ) : tab === 'access' ? (
         <AccessTab isAdmin={isAdmin} />
       ) : tab === 'requests' ? (
@@ -256,6 +319,74 @@ export default function CentralizedPage() {
             </div>
           </div>
         )}
+      </PixelModal>
+
+      {/* Cell Systems Modal (admin) */}
+      <PixelModal open={cellModal} onClose={() => { setCellModal(false); cancelEditSys(); }} title={`Sistemas — ${cellLabel}`}>
+        <div className="space-y-3">
+          {/* Existing systems list */}
+          {getSystemsFor(cellPiso, cellPaso).length > 0 ? (
+            <div className="border border-digi-border/50 bg-digi-darker max-h-52 overflow-y-auto">
+              {getSystemsFor(cellPiso, cellPaso).map((sys: any) => (
+                <div key={sys.id} className="flex items-center justify-between px-3 py-2 border-b border-digi-border/20 last:border-b-0">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] text-digi-text block" style={mf}>{sys.name}</span>
+                    {sys.description && <span className="text-[8px] text-digi-muted block truncate" style={mf}>{sys.description}</span>}
+                  </div>
+                  <div className="flex gap-1 ml-2 flex-shrink-0">
+                    <button
+                      onClick={() => startEditSys(sys)}
+                      className="text-[8px] text-accent-glow border border-accent/40 px-1.5 py-0.5 hover:bg-accent/10 transition-colors"
+                      style={pf}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSys(sys.id)}
+                      disabled={deletingSysId === sys.id}
+                      className="text-[8px] text-red-400 border border-red-500/30 px-1.5 py-0.5 hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                      style={pf}
+                    >
+                      {deletingSysId === sys.id ? '...' : 'Eliminar'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[10px] text-digi-muted text-center py-3 border border-digi-border/30 bg-digi-darker" style={mf}>
+              No hay sistemas registrados en esta celda.
+            </p>
+          )}
+
+          {/* Create / Edit form */}
+          <div className="border-t border-digi-border/30 pt-3">
+            <p className="text-[9px] text-accent-glow mb-2" style={pf}>
+              {editingSys ? 'Editar sistema' : 'Agregar sistema'}
+            </p>
+            <div className="space-y-2">
+              <PixelInput label="Nombre" value={sysName} onChange={(e) => setSysName(e.target.value)} placeholder="Nombre del sistema" />
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Descripción (opcional)</label>
+                <textarea
+                  value={sysDesc} onChange={(e) => setSysDesc(e.target.value)} rows={2}
+                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none"
+                  style={mf} placeholder="Descripción..."
+                />
+              </div>
+              <div className="flex gap-2">
+                {editingSys && (
+                  <button onClick={cancelEditSys} className="pixel-btn pixel-btn-secondary text-[9px] flex-1" style={pf}>
+                    Cancelar
+                  </button>
+                )}
+                <button onClick={handleSaveSys} disabled={savingSys} className="pixel-btn pixel-btn-primary text-[9px] flex-1 disabled:opacity-50" style={pf}>
+                  {savingSys ? '...' : editingSys ? 'Actualizar' : 'Crear'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </PixelModal>
     </div>
   );
