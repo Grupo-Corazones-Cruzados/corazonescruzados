@@ -18,8 +18,6 @@ const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
 const ALL_TABS = [
   { value: 'structure', label: 'Estructura' },
   { value: 'access', label: 'Accesos' },
-  { value: 'requests', label: 'Solicitudes' },
-  { value: 'reports', label: 'Denuncias' },
 ];
 
 const STRUCTURE_COLUMNS = [
@@ -52,6 +50,10 @@ export default function CentralizedPage() {
   const [tab, setTab] = useState('structure');
   const [requests, setRequests] = useState<any[]>([]);
   const [allSystems, setAllSystems] = useState<any[]>([]);
+
+  // System view
+  const [activeSystem, setActiveSystem] = useState<any>(null);
+  const [sysSubTab, setSysSubTab] = useState('');
 
   // Cell systems modal (admin)
   const [cellModal, setCellModal] = useState(false);
@@ -169,9 +171,106 @@ export default function CentralizedPage() {
   return (
     <div>
       <PageHeader title="Proyecto Centralizado" description="Movimiento Organizacional" />
-      <PixelTabs tabs={tabs} active={tab} onChange={setTab} />
+      <PixelTabs tabs={tabs} active={tab} onChange={(t) => { setTab(t); setActiveSystem(null); }} />
 
-      {tab === 'structure' ? (
+      {tab === 'structure' && activeSystem ? (
+        /* ── System View ── */
+        <div>
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              onClick={() => setActiveSystem(null)}
+              className="text-[9px] text-accent-glow border border-accent/40 px-2 py-0.5 hover:bg-accent/10 transition-colors"
+              style={pf}
+            >
+              ← Estructura
+            </button>
+            <span className="text-[9px] text-digi-muted" style={mf}>/</span>
+            <span className="text-[9px] text-digi-muted" style={mf}>{activeSystem.cell_name}</span>
+            <span className="text-[9px] text-digi-muted" style={mf}>/</span>
+            <span className="text-[10px] text-accent-glow" style={pf}>{activeSystem.name}</span>
+          </div>
+
+          {/* System-specific content */}
+          {activeSystem.cell_name === 'Centralizado' && activeSystem.name === 'Solicitudes y Denuncias' ? (
+            <div>
+              <PixelTabs
+                tabs={[
+                  { value: 'requests', label: 'Solicitudes' },
+                  { value: 'reports', label: 'Denuncias' },
+                ]}
+                active={sysSubTab || 'requests'}
+                onChange={setSysSubTab}
+              />
+              {(sysSubTab || 'requests') === 'requests' ? (
+                <PixelDataTable
+                  columns={[
+                    { key: 'id', header: 'ID', render: (r: any) => `#${r.id}`, width: '60px' },
+                    ...(isAdmin ? [{ key: 'member', header: 'Miembro', render: (r: any) => (
+                      <div className="flex items-center gap-1.5">
+                        {r.photo_url ? (
+                          <img src={r.photo_url} alt={r.member_name} className="w-5 h-5 rounded-full object-cover border border-digi-border" />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center">
+                            <span className="text-[7px] text-accent-glow" style={pf}>{r.member_name?.charAt(0)}</span>
+                          </div>
+                        )}
+                        <span className="text-[10px] text-digi-text" style={mf}>{r.member_name}</span>
+                      </div>
+                    ), width: '140px' }] : []),
+                    { key: 'project', header: 'Proyecto', render: (r: any) => (
+                      <Link href={`/dashboard/projects/${r.project_id}`} className="text-accent-glow hover:underline text-[10px]" style={mf}>
+                        {r.project_title}
+                      </Link>
+                    )},
+                    { key: 'type', header: 'Tipo', render: (r: any) => (
+                      <PixelBadge variant={r.type === 'withdrawal' ? 'info' : 'warning'}>
+                        {TYPE_LABEL[r.type] || r.type}
+                      </PixelBadge>
+                    ), width: '140px' },
+                    { key: 'status', header: 'Estado', render: (r: any) => (
+                      <PixelBadge variant={STATUS_V[r.status] || 'default'}>
+                        {STATUS_LABEL[r.status] || r.status}
+                      </PixelBadge>
+                    ), width: '130px' },
+                    { key: 'date', header: 'Fecha', render: (r: any) => (
+                      <span className="text-[10px] text-digi-muted" style={mf}>
+                        {new Date(r.created_at).toLocaleDateString('es-EC')}
+                      </span>
+                    ), width: '100px' },
+                    ...(isAdmin ? [{ key: 'actions', header: '', width: '80px', render: (r: any) => (
+                      r.status === 'pending' && r.type === 'supervised_exit' ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedReq(r); setReviewNote(''); setFeeAmount(''); setReviewModal(true); }}
+                          className="text-[9px] text-accent-glow border border-accent/40 px-2 py-0.5 hover:bg-accent/10 transition-colors"
+                          style={pf}
+                        >
+                          Revisar
+                        </button>
+                      ) : null
+                    )}] : []),
+                  ]}
+                  data={requests}
+                  emptyTitle="Sin solicitudes"
+                  emptyDesc="No hay solicitudes registradas."
+                />
+              ) : (
+                <div className="pixel-card text-center py-12">
+                  <p className="text-sm text-digi-muted" style={pf}>Proximamente</p>
+                  <p className="text-[10px] text-digi-muted mt-1" style={mf}>El modulo de denuncias estara disponible pronto.</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Default: system without specific interface yet */
+            <div className="pixel-card text-center py-12">
+              <p className="text-sm text-accent-glow mb-1" style={pf}>{activeSystem.name}</p>
+              {activeSystem.description && <p className="text-[10px] text-digi-muted mb-3" style={mf}>{activeSystem.description}</p>}
+              <p className="text-[10px] text-digi-muted" style={mf}>La interfaz de este sistema estará disponible pronto.</p>
+            </div>
+          )}
+        </div>
+      ) : tab === 'structure' ? (
         <div className="pixel-card p-4 md:p-6 overflow-x-auto">
           {/* Column headers */}
           <div className="grid grid-cols-[100px_repeat(4,1fr)] md:grid-cols-[140px_repeat(4,1fr)] gap-2 mb-2 min-w-[600px]">
@@ -206,9 +305,13 @@ export default function CentralizedPage() {
                     {cellSystems.length > 0 && (
                       <div className="border-t border-digi-border/30 px-2 py-1.5 space-y-0.5">
                         {cellSystems.map((sys: any) => (
-                          <div key={sys.id} className="flex items-center gap-1">
+                          <div
+                            key={sys.id}
+                            onClick={(e) => { e.stopPropagation(); setActiveSystem(sys); setSysSubTab(''); }}
+                            className="flex items-center gap-1 cursor-pointer hover:bg-accent/10 px-1 py-0.5 -mx-1 transition-colors rounded-sm"
+                          >
                             <span className="text-[6px] text-accent-glow">&#9654;</span>
-                            <span className="text-[8px] md:text-[9px] text-digi-muted group-hover:text-digi-text transition-colors" style={mf}>{sys.name}</span>
+                            <span className="text-[8px] md:text-[9px] text-digi-muted hover:text-accent-glow transition-colors" style={mf}>{sys.name}</span>
                           </div>
                         ))}
                       </div>
@@ -226,64 +329,7 @@ export default function CentralizedPage() {
         </div>
       ) : tab === 'access' ? (
         <AccessTab isAdmin={isAdmin} />
-      ) : tab === 'requests' ? (
-        <PixelDataTable
-          columns={[
-            { key: 'id', header: 'ID', render: (r: any) => `#${r.id}`, width: '60px' },
-            ...(isAdmin ? [{ key: 'member', header: 'Miembro', render: (r: any) => (
-              <div className="flex items-center gap-1.5">
-                {r.photo_url ? (
-                  <img src={r.photo_url} alt={r.member_name} className="w-5 h-5 rounded-full object-cover border border-digi-border" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center">
-                    <span className="text-[7px] text-accent-glow" style={pf}>{r.member_name?.charAt(0)}</span>
-                  </div>
-                )}
-                <span className="text-[10px] text-digi-text" style={mf}>{r.member_name}</span>
-              </div>
-            ), width: '140px' }] : []),
-            { key: 'project', header: 'Proyecto', render: (r: any) => (
-              <Link href={`/dashboard/projects/${r.project_id}`} className="text-accent-glow hover:underline text-[10px]" style={mf}>
-                {r.project_title}
-              </Link>
-            )},
-            { key: 'type', header: 'Tipo', render: (r: any) => (
-              <PixelBadge variant={r.type === 'withdrawal' ? 'info' : 'warning'}>
-                {TYPE_LABEL[r.type] || r.type}
-              </PixelBadge>
-            ), width: '140px' },
-            { key: 'status', header: 'Estado', render: (r: any) => (
-              <PixelBadge variant={STATUS_V[r.status] || 'default'}>
-                {STATUS_LABEL[r.status] || r.status}
-              </PixelBadge>
-            ), width: '130px' },
-            { key: 'date', header: 'Fecha', render: (r: any) => (
-              <span className="text-[10px] text-digi-muted" style={mf}>
-                {new Date(r.created_at).toLocaleDateString('es-EC')}
-              </span>
-            ), width: '100px' },
-            ...(isAdmin ? [{ key: 'actions', header: '', width: '80px', render: (r: any) => (
-              r.status === 'pending' && r.type === 'supervised_exit' ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setSelectedReq(r); setReviewNote(''); setFeeAmount(''); setReviewModal(true); }}
-                  className="text-[9px] text-accent-glow border border-accent/40 px-2 py-0.5 hover:bg-accent/10 transition-colors"
-                  style={pf}
-                >
-                  Revisar
-                </button>
-              ) : null
-            )}] : []),
-          ]}
-          data={requests}
-          emptyTitle="Sin solicitudes"
-          emptyDesc="No hay solicitudes registradas."
-        />
-      ) : (
-        <div className="pixel-card text-center py-12">
-          <p className="text-sm text-digi-muted" style={pf}>Proximamente</p>
-          <p className="text-[10px] text-digi-muted mt-1" style={mf}>El modulo de denuncias estara disponible pronto.</p>
-        </div>
-      )}
+      ) : null}
 
       {/* Admin Review Modal */}
       <PixelModal open={reviewModal} onClose={() => !reviewing && setReviewModal(false)} title="Revisar Salida Supervisada">
