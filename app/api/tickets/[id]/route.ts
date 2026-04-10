@@ -13,10 +13,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       id SERIAL PRIMARY KEY, ticket_id INT NOT NULL, date DATE NOT NULL,
       start_time TEXT, end_time TEXT, status VARCHAR(20) DEFAULT 'scheduled', created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.ticket_actions (
+      id SERIAL PRIMARY KEY, ticket_id INT NOT NULL, description TEXT NOT NULL,
+      cost NUMERIC(12,2) NOT NULL DEFAULT 0, created_by TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
     const { rows } = await pool.query(
       `SELECT t.*, c.name as client_name, c.email as client_email,
               m.name as member_name, s.name as service_name,
-              (SELECT json_agg(ts ORDER BY ts.date) FROM gcc_world.ticket_time_slots ts WHERE ts.ticket_id = t.id) as time_slots
+              (SELECT json_agg(ts ORDER BY ts.date) FROM gcc_world.ticket_time_slots ts WHERE ts.ticket_id = t.id) as time_slots,
+              (SELECT json_agg(ta ORDER BY ta.created_at) FROM gcc_world.ticket_actions ta WHERE ta.ticket_id = t.id) as actions,
+              (SELECT COALESCE(SUM(cost), 0) FROM gcc_world.ticket_actions WHERE ticket_id = t.id) as actions_total
        FROM gcc_world.tickets t
        LEFT JOIN gcc_world.clients c ON c.id = t.client_id
        LEFT JOIN gcc_world.members m ON m.id = t.member_id
@@ -45,7 +51,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     let idx = 1;
 
     for (const [key, val] of Object.entries(body)) {
-      if (['title', 'description', 'status', 'member_id', 'client_id', 'service_id', 'deadline', 'estimated_hours', 'estimated_cost', 'meet_link', 'cancellation_reason'].includes(key)) {
+      if (['title', 'description', 'status', 'member_id', 'client_id', 'service_id', 'deadline', 'estimated_hours', 'estimated_cost', 'cancellation_reason'].includes(key)) {
         fields.push(`${key} = $${idx++}`);
         values.push(val);
       }

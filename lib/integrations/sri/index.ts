@@ -382,6 +382,105 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
 }
 
 /**
+ * Create a manual invoice from a ticket (no project linking)
+ */
+interface TicketInvoiceOptions {
+  ticketId: string;
+  ticketTitle: string;
+  clientIdType?: string;
+  clientName: string;
+  clientRuc: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  paymentCode?: string;
+  invoiceItems: { description: string; quantity: number; unitPrice: number; ivaRate: number; discount?: number }[];
+  additionalFields?: { name: string; value: string }[];
+  currency?: string;
+  exchangeRate?: number;
+}
+
+export async function createManualInvoiceFromTicket(options: TicketInvoiceOptions): Promise<{ invoiceId: number; total: number }> {
+  await ensureSriColumns();
+  await pool.query(`
+    ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS ruc VARCHAR(13);
+    ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS address TEXT;
+  `);
+
+  const items: InvoiceItem[] = options.invoiceItems.map(it => ({
+    description: it.description,
+    quantity: it.quantity,
+    unitPrice: it.unitPrice,
+    ivaRate: it.ivaRate,
+    discount: it.discount || 0,
+  }));
+
+  if (items.length === 0) throw new Error('Sin items para facturar');
+
+  const currency = options.currency || 'USD';
+  const exchangeRate = options.exchangeRate || 1;
+
+  const secuencial = await getNextSecuencial();
+  const fecha = new Date();
+
+  const isConsumidorFinal = !options.clientRuc || options.clientRuc === '9999999999999' || options.clientIdType === '07';
+
+  const baseAdditionalFields = options.additionalFields?.filter(f => f.name && f.value) || [];
+  if (currency !== 'USD' && exchangeRate > 0) {
+    const totalUsd = items.reduce((s, i) => s + i.quantity * i.unitPrice - (i.discount || 0), 0);
+    const totalConverted = (totalUsd * exchangeRate).toFixed(2);
+    baseAdditionalFields.push(
+      { name: 'monedaCliente', value: currency },
+      { name: 'tasaCambio', value: `1 USD = ${exchangeRate} ${currency}` },
+      { name: `equivalente${currency}`, value: `${totalConverted} ${currency}` },
+    );
+  }
+
+  const invoiceData: InvoiceData = {
+    secuencial,
+    fecha,
+    clienteIdTipo: isConsumidorFinal ? '07' : options.clientIdType,
+    clienteRuc: isConsumidorFinal ? '9999999999999' : options.clientRuc,
+    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (options.clientName || 'CONSUMIDOR FINAL'),
+    clienteDireccion: options.clientAddress || 'N/A',
+    clienteEmail: options.clientEmail || '',
+    clienteTelefono: options.clientPhone || '',
+    items,
+    payments: options.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
+    additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
+  };
+
+  const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
+
+  const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
+  const totalUsd = subtotal0 + subtotalIva + ivaMonto;
+
+  const { rows: [invoice] } = await pool.query(
+    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
+     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'generated', $15, true, $16, $17, $18) RETURNING id`,
+    [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
+     SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
+     invoiceData.clienteRuc, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
+     currency, exchangeRate, totalUsd.toFixed(2)]
+  );
+
+  for (const item of items) {
+    const sub = Math.round(item.quantity * item.unitPrice * 100) / 100;
+    const iva = Math.round(sub * (item.ivaRate / 100) * 100) / 100;
+    await pool.query(
+      `INSERT INTO gcc_world.invoice_items_sri (invoice_id, description, quantity, unit_price, subtotal, iva_rate, iva_amount)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [invoice.id, item.description, item.quantity, item.unitPrice, sub, item.ivaRate, iva]
+    );
+  }
+
+  return { invoiceId: invoice.id, total: totalUsd };
+}
+
+/**
  * Sign and send invoice to SRI
  */
 export async function sendInvoiceToSri(invoiceId: number): Promise<{

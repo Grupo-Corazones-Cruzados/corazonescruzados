@@ -58,6 +58,27 @@ export default function TicketDetailPage() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Actions (work log)
+  const [actionForm, setActionForm] = useState<{ description: string; cost: string }>({ description: '', cost: '' });
+  const [savingAction, setSavingAction] = useState(false);
+
+  // Complete + invoice modal
+  const [completeModal, setCompleteModal] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [invoiceForm, setInvoiceForm] = useState<any>({
+    items_mode: 'title',
+    client_id_type: '07',
+    client_name: 'CONSUMIDOR FINAL',
+    client_ruc: '9999999999999',
+    client_email: '',
+    client_phone: '',
+    client_address: '',
+    payment_code: '20',
+    currency: 'USD',
+    exchange_rate: '1',
+    send_email: true,
+  });
+
   const fetchTicket = useCallback(async () => {
     try {
       const res = await fetch(`/api/tickets/${id}`);
@@ -96,7 +117,6 @@ export default function TicketDetailPage() {
       deadline: ticket.deadline ? ticket.deadline.split('T')[0] : '',
       estimated_hours: ticket.estimated_hours ? String(ticket.estimated_hours) : '',
       estimated_cost: ticket.estimated_cost ? String(ticket.estimated_cost) : '',
-      meet_link: ticket.meet_link || '',
     });
     setEditing(true);
     const [sRes, mRes, cRes] = await Promise.all([
@@ -124,7 +144,6 @@ export default function TicketDetailPage() {
           deadline: form.deadline || null,
           estimated_hours: form.estimated_hours ? Number(form.estimated_hours) : null,
           estimated_cost: form.estimated_cost ? Number(form.estimated_cost) : null,
-          meet_link: form.meet_link || null,
         }),
       });
       if (!res.ok) throw new Error();
@@ -133,6 +152,80 @@ export default function TicketDetailPage() {
       fetchTicket();
     } catch { toast.error('Error al guardar'); }
     finally { setSaving(false); }
+  };
+
+  const handleAddAction = async () => {
+    const desc = actionForm.description.trim();
+    const costNum = Number(actionForm.cost);
+    if (!desc) { toast.error('Descripcion requerida'); return; }
+    if (!Number.isFinite(costNum) || costNum < 0) { toast.error('Costo invalido'); return; }
+    setSavingAction(true);
+    try {
+      const res = await fetch(`/api/tickets/${id}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc, cost: costNum }),
+      });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.error || 'Error al guardar accion'); return; }
+      toast.success('Accion agregada');
+      setActionForm({ description: '', cost: '' });
+      fetchTicket();
+    } catch { toast.error('Error al guardar accion'); }
+    finally { setSavingAction(false); }
+  };
+
+  const openCompleteModal = () => {
+    setInvoiceForm((f: any) => ({
+      ...f,
+      client_name: ticket?.client_name || f.client_name,
+      client_email: ticket?.client_email || f.client_email,
+    }));
+    setCompleteModal(true);
+  };
+
+  const handleCompleteWithInvoice = async () => {
+    if (!invoiceForm.client_name?.trim()) { toast.error('Nombre del cliente requerido'); return; }
+    setCompleting(true);
+    try {
+      const res = await fetch('/api/invoices/from-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ticket_id: id,
+          items_mode: invoiceForm.items_mode,
+          client_id_type: invoiceForm.client_id_type,
+          client_name: invoiceForm.client_name,
+          client_ruc: invoiceForm.client_ruc,
+          client_email: invoiceForm.client_email,
+          client_phone: invoiceForm.client_phone,
+          client_address: invoiceForm.client_address,
+          payment_code: invoiceForm.payment_code,
+          currency: invoiceForm.currency,
+          exchange_rate: Number(invoiceForm.exchange_rate) || 1,
+          send_email: invoiceForm.send_email,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.error || 'Error al generar factura'); return; }
+      if (json.sriResult?.authorized) {
+        toast.success('Factura autorizada y ticket completado');
+      } else {
+        toast.error(json.sriResult?.error || 'SRI no autorizo la factura');
+      }
+      setCompleteModal(false);
+      fetchTicket();
+    } catch { toast.error('Error al generar factura'); }
+    finally { setCompleting(false); }
+  };
+
+  const handleDeleteAction = async (actionId: number) => {
+    try {
+      const res = await fetch(`/api/tickets/${id}/actions/${actionId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      toast.success('Accion eliminada');
+      fetchTicket();
+    } catch { toast.error('Error al eliminar accion'); }
   };
 
   const handleDelete = async () => {
@@ -337,7 +430,6 @@ export default function TicketDetailPage() {
             <PixelInput label="Horas estimadas" type="number" value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} />
             <PixelInput label="Costo estimado (USD)" type="number" value={form.estimated_cost} onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} />
           </div>
-          <PixelInput label="Enlace de reunion" value={form.meet_link} onChange={(e) => setForm({ ...form, meet_link: e.target.value })} placeholder="https://meet.google.com/..." />
           <div className="flex gap-2">
             <button onClick={() => setEditing(false)} className="flex-1 py-2 text-[10px] text-digi-muted border border-digi-border hover:bg-digi-darker transition-colors" style={pf}>Cancelar</button>
             <button onClick={handleSave} disabled={saving || !form.title?.trim()} className="flex-1 pixel-btn pixel-btn-primary disabled:opacity-50">
@@ -371,7 +463,7 @@ export default function TicketDetailPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {timeSlots.map((slot: any, i: number) => (
                     <div key={i} className="px-2 py-1.5 border border-digi-border/50 text-center">
-                      <p className="text-xs text-digi-text" style={mf}>{new Date(slot.date).toLocaleDateString()}</p>
+                      <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
                       {slot.start_time && <p className="text-[9px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
                     </div>
                   ))}
@@ -381,13 +473,84 @@ export default function TicketDetailPage() {
               )}
             </div>
 
-            {ticket.meet_link && (
-              <div className="pixel-card">
-                <h3 className="text-[10px] text-accent-glow mb-2" style={pf}>Enlace de Reunion</h3>
-                <a href={ticket.meet_link} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-accent-glow hover:underline break-all" style={mf}>{ticket.meet_link}</a>
-              </div>
-            )}
+            {/* Acciones realizadas (member work log) - solo despues de que el miembro acepto */}
+            {!isPending && ticket.status !== 'withdrawn' && (() => {
+              const estimated = Number(ticket.estimated_cost) || 0;
+              const actions = ticket.actions || [];
+              const total = Number(ticket.actions_total) || 0;
+              const remaining = Math.max(0, estimated - total);
+              const canManageActions =
+                (isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id)) && !isClosed;
+              const budgetExhausted = estimated > 0 && remaining <= 0;
+              return (
+                <div className="pixel-card">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-[10px] text-accent-glow" style={pf}>Acciones Realizadas</h3>
+                    {estimated > 0 && (
+                      <span className="text-[9px] text-digi-muted" style={mf}>
+                        ${total.toFixed(2)} / ${estimated.toFixed(2)} (disp. ${remaining.toFixed(2)})
+                      </span>
+                    )}
+                  </div>
+
+                  {actions.length > 0 ? (
+                    <div className="space-y-2 mb-3">
+                      {actions.map((a: any) => (
+                        <div key={a.id} className="flex items-start justify-between gap-2 px-2 py-1.5 border border-digi-border/50">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-digi-text break-words" style={mf}>{a.description}</p>
+                            <p className="text-[9px] text-digi-muted" style={mf}>
+                              {new Date(a.created_at).toLocaleDateString()} - ${Number(a.cost).toFixed(2)}
+                            </p>
+                          </div>
+                          {canManageActions && (
+                            <button onClick={() => handleDeleteAction(a.id)}
+                              className="text-[9px] text-red-400 hover:text-red-300 px-1" style={pf}>x</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-digi-muted/50 mb-3" style={mf}>Sin acciones registradas</p>
+                  )}
+
+                  {canManageActions && (
+                    estimated <= 0 ? (
+                      <p className="text-[9px] text-amber-400" style={mf}>
+                        Define un costo estimado en el ticket para registrar acciones.
+                      </p>
+                    ) : budgetExhausted ? (
+                      <p className="text-[9px] text-amber-400" style={mf}>
+                        Presupuesto agotado. No puedes agregar mas acciones.
+                      </p>
+                    ) : (
+                      <div className="space-y-2 border-t border-digi-border/30 pt-3">
+                        <PixelInput
+                          label="Descripcion de la accion"
+                          value={actionForm.description}
+                          onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })}
+                          placeholder="Que se hizo..."
+                        />
+                        <PixelInput
+                          label={`Costo (USD) - max $${remaining.toFixed(2)}`}
+                          type="number"
+                          value={actionForm.cost}
+                          onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })}
+                          placeholder="0.00"
+                        />
+                        <button
+                          onClick={handleAddAction}
+                          disabled={savingAction || !actionForm.description.trim() || !actionForm.cost}
+                          className="pixel-btn pixel-btn-primary w-full text-[9px] disabled:opacity-50">
+                          {savingAction ? 'Guardando...' : 'Agregar Accion'}
+                        </button>
+                      </div>
+                    )
+                  )}
+                </div>
+              );
+            })()}
+
           </div>
 
           {/* Sidebar */}
@@ -412,13 +575,10 @@ export default function TicketDetailPage() {
                   {(ticket.status === 'pending' || ticket.status === 'withdrawn') && (
                     <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary w-full text-[9px]">Confirmar</button>
                   )}
-                  {ticket.status === 'confirmed' && (
-                    <button onClick={() => updateStatus('in_progress')} className="pixel-btn pixel-btn-primary w-full text-[9px]">En Progreso</button>
+                  {ticket.status === 'confirmed' && isMember && user?.member_id && ticket.member_id === user.member_id && (
+                    <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary w-full text-[9px]">Completar</button>
                   )}
-                  {(ticket.status === 'confirmed' || ticket.status === 'in_progress') && (
-                    <button onClick={() => updateStatus('completed')} className="pixel-btn pixel-btn-primary w-full text-[9px]">Completar</button>
-                  )}
-                  {ticket.status !== 'cancelled' && (
+                  {isAdmin && ticket.status !== 'cancelled' && (
                     <button onClick={() => updateStatus('cancelled')}
                       className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
                       Cancelar Ticket
@@ -428,7 +588,7 @@ export default function TicketDetailPage() {
               </div>
             )}
 
-            {canEdit && (
+            {isAdmin && (
               <div className="pixel-card">
                 <button onClick={() => setDeleteModal(true)}
                   className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
@@ -439,6 +599,72 @@ export default function TicketDetailPage() {
           </div>
         </div>
       )}
+
+      <PixelModal open={completeModal} onClose={() => !completing && setCompleteModal(false)} title="Completar y Facturar Ticket">
+        <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+          <div>
+            <label className="text-[10px] text-accent-glow opacity-70 block mb-1" style={pf}>Items de la factura</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setInvoiceForm({ ...invoiceForm, items_mode: 'title' })}
+                className={`py-2 text-[9px] border transition-colors ${invoiceForm.items_mode === 'title' ? 'border-accent bg-accent/20 text-white' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
+                Titulo del ticket<br /><span className="text-[8px] opacity-70">${Number(ticket.estimated_cost || 0).toFixed(2)}</span>
+              </button>
+              <button type="button" onClick={() => setInvoiceForm({ ...invoiceForm, items_mode: 'breakdown' })}
+                className={`py-2 text-[9px] border transition-colors ${invoiceForm.items_mode === 'breakdown' ? 'border-accent bg-accent/20 text-white' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
+                Desglose de acciones<br /><span className="text-[8px] opacity-70">{(ticket.actions || []).length} items - ${Number(ticket.actions_total || 0).toFixed(2)}</span>
+              </button>
+            </div>
+          </div>
+
+          <PixelSelect label="Tipo de identificacion" value={invoiceForm.client_id_type}
+            onChange={(e) => setInvoiceForm({ ...invoiceForm, client_id_type: e.target.value })}
+            options={[
+              { value: '07', label: 'Consumidor final' },
+              { value: '04', label: 'RUC' },
+              { value: '05', label: 'Cedula' },
+              { value: '06', label: 'Pasaporte' },
+            ]} />
+          <PixelInput label="Nombre / Razon social *" value={invoiceForm.client_name}
+            onChange={(e) => setInvoiceForm({ ...invoiceForm, client_name: e.target.value })} />
+          <PixelInput label="RUC / Cedula" value={invoiceForm.client_ruc}
+            onChange={(e) => setInvoiceForm({ ...invoiceForm, client_ruc: e.target.value })} />
+          <PixelInput label="Email" type="email" value={invoiceForm.client_email}
+            onChange={(e) => setInvoiceForm({ ...invoiceForm, client_email: e.target.value })} />
+          <PixelInput label="Telefono" value={invoiceForm.client_phone}
+            onChange={(e) => setInvoiceForm({ ...invoiceForm, client_phone: e.target.value })} />
+          <PixelInput label="Direccion" value={invoiceForm.client_address}
+            onChange={(e) => setInvoiceForm({ ...invoiceForm, client_address: e.target.value })} />
+          <PixelSelect label="Metodo de pago" value={invoiceForm.payment_code}
+            onChange={(e) => setInvoiceForm({ ...invoiceForm, payment_code: e.target.value })}
+            options={[
+              { value: '20', label: 'Otros con utilizacion del sistema financiero' },
+              { value: '01', label: 'Sin utilizacion del sistema financiero' },
+              { value: '16', label: 'Tarjeta de debito' },
+              { value: '19', label: 'Tarjeta de credito' },
+              { value: '17', label: 'Dinero electronico' },
+            ]} />
+          <div className="grid grid-cols-2 gap-2">
+            <PixelInput label="Moneda" value={invoiceForm.currency}
+              onChange={(e) => setInvoiceForm({ ...invoiceForm, currency: e.target.value.toUpperCase() })} />
+            <PixelInput label="Tasa cambio" type="number" value={invoiceForm.exchange_rate}
+              onChange={(e) => setInvoiceForm({ ...invoiceForm, exchange_rate: e.target.value })} />
+          </div>
+          <label className="flex items-center gap-2 text-[10px] text-digi-text" style={mf}>
+            <input type="checkbox" checked={invoiceForm.send_email}
+              onChange={(e) => setInvoiceForm({ ...invoiceForm, send_email: e.target.checked })} />
+            Enviar factura por correo al cliente
+          </label>
+
+          <div className="flex gap-2 pt-2 border-t border-digi-border/30">
+            <button onClick={() => setCompleteModal(false)} disabled={completing}
+              className="flex-1 py-2 text-[10px] text-digi-muted border border-digi-border hover:bg-digi-darker transition-colors disabled:opacity-50" style={pf}>Cancelar</button>
+            <button onClick={handleCompleteWithInvoice} disabled={completing || !invoiceForm.client_name?.trim()}
+              className="flex-1 pixel-btn pixel-btn-primary disabled:opacity-50">
+              {completing ? 'Generando...' : 'Facturar y Completar'}
+            </button>
+          </div>
+        </div>
+      </PixelModal>
 
       <PixelModal open={deleteModal} onClose={() => setDeleteModal(false)} title="Eliminar Ticket">
         <div className="space-y-4">

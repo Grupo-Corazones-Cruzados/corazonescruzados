@@ -24,6 +24,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       status VARCHAR(20) DEFAULT 'scheduled',
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
+    // Legacy schemas had start_time/end_time as NOT NULL — make them nullable
+    await pool.query(`ALTER TABLE gcc_world.ticket_time_slots ALTER COLUMN start_time DROP NOT NULL`);
+    await pool.query(`ALTER TABLE gcc_world.ticket_time_slots ALTER COLUMN end_time DROP NOT NULL`);
+    // Legacy schemas also had a restrictive CHECK constraint on status — drop it
+    await pool.query(`ALTER TABLE gcc_world.ticket_time_slots DROP CONSTRAINT IF EXISTS ticket_time_slots_status_check`);
 
     // Delete existing slots and re-insert
     await pool.query(`DELETE FROM gcc_world.ticket_time_slots WHERE ticket_id = $1`, [id]);
