@@ -2,30 +2,12 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import DigimonWalkers from '@/components/landing/DigimonWalkers';
-import DigimonPopups from '@/components/landing/DigimonPopups';
-import DigimonHeroParade from '@/components/landing/DigimonHeroParade';
 import PixelStars from '@/components/landing/PixelStars';
 import BrandLoader from '@/components/ui/BrandLoader';
-import useDigimonConfigs from '@/components/landing/useDigimonConfigs';
 
 export default function LandingPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
     <div className="landing-page">
-      {/* Ambient Digimon walking across */}
-      {mounted && (
-        <>
-          <DigimonWalkers />
-          <DigimonPopups />
-        </>
-      )}
-
       {/* ====== HERO ====== */}
       <section className="relative min-h-[90vh] flex items-center justify-center text-center px-6 overflow-hidden">
         <PixelStars count={50} />
@@ -93,8 +75,6 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Digimon parade under hero */}
-          <DigimonHeroParade />
         </div>
       </section>
 
@@ -243,9 +223,6 @@ export default function LandingPage() {
               </button>
             </Link>
           </div>
-
-          {/* Digimon waving at bottom */}
-          <CtaDigimon />
         </div>
       </section>
 
@@ -465,32 +442,3 @@ function MemberGallery() {
   );
 }
 
-/* ─── CTA Digimon (linked to world config) ─── */
-function CtaDigimon() {
-  const configs = useDigimonConfigs();
-  if (configs.length === 0) return null;
-
-  // Show first 3 Digimon from the world
-  const show = configs.slice(0, 3);
-
-  return (
-    <div className="flex items-end justify-center gap-6 mt-12">
-      {show.map((digi, i) => (
-        <div
-          key={digi.sprite}
-          className="pixel-render"
-          style={{
-            width: 64,
-            height: 64,
-            backgroundImage: `url(${digi.walkSrc})`,
-            backgroundSize: '256px 256px',
-            backgroundPositionY: 0,
-            imageRendering: 'pixelated',
-            '--sw': '-256px',
-            animation: `spriteWalk 0.6s steps(4) infinite, digiBounce 1s ease-in-out ${i * 0.2}s infinite`,
-          } as React.CSSProperties}
-        />
-      ))}
-    </div>
-  );
-}
