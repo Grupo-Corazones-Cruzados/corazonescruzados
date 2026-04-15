@@ -291,6 +291,40 @@ export default function MarketplacePage() {
             { key: 'price', header: 'Precio', width: '100px', render: (p: any) => (
               <span className="text-accent-glow" style={mf}>${Number(p.final_cost || 0).toFixed(2)}</span>
             )},
+            { key: 'docs', header: 'Docs', width: '70px', render: (p: any) => {
+              if (!p.public_docs_token) return <span className="text-digi-muted/30 text-[9px]">-</span>;
+              const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org';
+              const url = `${base}/docs/${p.public_docs_token}`;
+              return (
+                <div className="flex items-center gap-1">
+                  <a
+                    href={`/docs/${p.public_docs_token}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    title="Ver documentacion publica"
+                    className="flex items-center justify-center w-6 h-6 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    </svg>
+                  </a>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try { await navigator.clipboard.writeText(url); toast.success('Enlace copiado'); }
+                      catch { toast.error('No se pudo copiar'); }
+                    }}
+                    title="Copiar enlace"
+                    className="flex items-center justify-center w-6 h-6 border border-purple-500/40 text-purple-400 hover:bg-purple-900/20 transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            }},
             { key: 'actions', header: '', width: '90px', render: (p: any) => (
               <button
                 onClick={(e) => {

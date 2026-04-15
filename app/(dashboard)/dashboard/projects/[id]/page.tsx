@@ -14,6 +14,10 @@ import FloatingChatWindow from '@/components/projects/FloatingChatWindow';
 import TaskQueueIndicator from '@/components/projects/TaskQueueIndicator';
 import ProformaChatPanel from '@/components/projects/ProformaChatPanel';
 import ProformaTokenButton from '@/components/projects/ProformaTokenButton';
+import VideoScriptPanel from '@/components/projects/VideoScriptPanel';
+import PublicDocsPanel from '@/components/projects/PublicDocsPanel';
+import ScriptStoryboardEditor from '@/components/projects/ScriptStoryboardEditor';
+import type { StoryboardSegment } from '@/components/projects/ScriptStoryboardEditor';
 import useAgentChat from '@/hooks/useAgentChat';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
@@ -42,6 +46,24 @@ export default function ProjectDetailPage() {
   const [linking, setLinking] = useState(false);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [incidentFilter, setIncidentFilter] = useState('all');
+
+  // Project images states
+  const [projectImages, setProjectImages] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [deletingImageIdx, setDeletingImageIdx] = useState<number | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Content (video script + video) states
+  const [showScriptPanel, setShowScriptPanel] = useState(false);
+  const [videoScript, setVideoScript] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [generatingVideo, setGeneratingVideo] = useState(false);
+  const [videoStep, setVideoStep] = useState('');
+  const [scriptAgentConfig, setScriptAgentConfig] = useState<{ agentId: string; agentName: string; projectPath: string } | null>(null);
+  const [showStoryboard, setShowStoryboard] = useState(false);
+  const [storyboard, setStoryboard] = useState<StoryboardSegment[] | null>(null);
+  const [showPublicDocs, setShowPublicDocs] = useState(false);
+  const [publicDocsToken, setPublicDocsToken] = useState<string | null>(null);
 
   // Withdrawal/exit request states
   const [projectRequests, setProjectRequests] = useState<any[]>([]);
@@ -139,7 +161,36 @@ export default function ProjectDetailPage() {
     } catch { /* ignore */ }
   }, [id]);
 
-  useEffect(() => { fetchProject(); fetchProjectRequests(); }, [fetchProject, fetchProjectRequests]);
+  const fetchProjectImages = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/images`);
+      if (!res.ok) return;
+      const { data } = await res.json();
+      setProjectImages(data.images || []);
+    } catch { /* ignore */ }
+  }, [id]);
+
+  const fetchContent = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/content`);
+      if (!res.ok) return;
+      const { data } = await res.json();
+      setVideoScript(data.video_script || null);
+      setVideoUrl(data.video_url || null);
+      setStoryboard(data.image_metadata?.storyboard || null);
+    } catch { /* ignore */ }
+  }, [id]);
+
+  const fetchPublicDocs = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/public-docs`);
+      if (!res.ok) return;
+      const { data } = await res.json();
+      setPublicDocsToken(data?.public_docs_token || null);
+    } catch { /* ignore */ }
+  }, [id]);
+
+  useEffect(() => { fetchProject(); fetchProjectRequests(); fetchProjectImages(); fetchContent(); fetchPublicDocs(); }, [fetchProject, fetchProjectRequests, fetchProjectImages, fetchContent, fetchPublicDocs]);
   useEffect(() => {
     if (!isAdmin) return;
     fetch('/api/digimundo/projects').then(r => r.json()).then(d => setDigiProjects(d.data || [])).catch(() => {});
@@ -414,9 +465,13 @@ export default function ProjectDetailPage() {
   };
 
   const deleteRequirement = async (reqId: number) => {
-    await fetch(`/api/projects/${id}/requirements`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requirement_id: reqId }) });
-    toast.success('Requerimiento eliminado');
-    fetchProject();
+    try {
+      const res = await fetch(`/api/projects/${id}/requirements`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requirement_id: reqId }) });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(json.error || 'Error al eliminar requerimiento'); return; }
+      toast.success('Requerimiento eliminado');
+      fetchProject();
+    } catch (e: any) { toast.error(e.message || 'Error al eliminar requerimiento'); }
   };
 
   const toggleReqComplete = async (reqId: number, completed: boolean) => {
@@ -511,6 +566,127 @@ export default function ProjectDetailPage() {
     fetchProject();
   };
 
+  // --- Project Images ---
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remaining = 30 - projectImages.length;
+    if (remaining <= 0) { toast.error('Maximo 30 imagenes alcanzado'); return; }
+    if (files.length > remaining) { toast.error(`Solo puedes subir ${remaining} imagenes mas`); return; }
+
+    setUploadingImages(true);
+    try {
+      const base64Promises = Array.from(files).slice(0, remaining).map(file => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      });
+      const base64Images = await Promise.all(base64Promises);
+
+      const res = await fetch(`/api/projects/${id}/images`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images: base64Images }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      const { data } = await res.json();
+      setProjectImages(data.images);
+      toast.success(`${base64Images.length} imagen(es) subida(s)`);
+    } catch (err: any) { toast.error(err.message || 'Error al subir imagenes'); }
+    finally { setUploadingImages(false); e.target.value = ''; }
+  };
+
+  const handleImageDelete = async (index: number) => {
+    setDeletingImageIdx(index);
+    try {
+      const res = await fetch(`/api/projects/${id}/images`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      const { data } = await res.json();
+      setProjectImages(data.images);
+      toast.success('Imagen eliminada');
+    } catch (err: any) { toast.error(err.message || 'Error al eliminar imagen'); }
+    finally { setDeletingImageIdx(null); }
+  };
+
+  const openPublicDocsPanel = async () => {
+    if (!project.digimundo_project_id) return;
+    const digiProject = digiProjects.find((d: any) => d.id === project.digimundo_project_id);
+    if (!digiProject) { toast.error('Proyecto DigiMundo no encontrado'); return; }
+    try {
+      const linksRes = await fetch('/api/agent-links');
+      const links = await linksRes.json();
+      const agentConfig = links[digiProject.agentId];
+      if (!agentConfig?.projectPath) { toast.error('Configura el path del proyecto en el chat del agente primero'); return; }
+      setScriptAgentConfig({ agentId: digiProject.agentId, agentName: digiProject.name, projectPath: agentConfig.projectPath });
+      setShowPublicDocs(true);
+    } catch { toast.error('Error cargando configuracion del agente'); }
+  };
+
+  // --- Content (Script + Video) ---
+  const openScriptPanel = async () => {
+    if (!project.digimundo_project_id) return;
+    const digiProject = digiProjects.find((d: any) => d.id === project.digimundo_project_id);
+    if (!digiProject) { toast.error('Proyecto DigiMundo no encontrado'); return; }
+    try {
+      const linksRes = await fetch('/api/agent-links');
+      const links = await linksRes.json();
+      const agentConfig = links[digiProject.agentId];
+      if (!agentConfig?.projectPath) { toast.error('Configura el path del proyecto en el chat del agente primero'); return; }
+      setScriptAgentConfig({ agentId: digiProject.agentId, agentName: digiProject.name, projectPath: agentConfig.projectPath });
+      setShowScriptPanel(true);
+    } catch { toast.error('Error cargando configuracion del agente'); }
+  };
+
+  const handleGenerateVideo = async () => {
+    if (!videoScript) { toast.error('Primero genera el guion'); return; }
+    if (projectImages.length === 0) { toast.error('Sube imagenes al proyecto primero'); return; }
+    setGeneratingVideo(true);
+    setVideoStep('Analizando imagenes...');
+    try {
+      const res = await fetch(`/api/projects/${id}/video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ script: videoScript, storyboard: storyboard || undefined }),
+      });
+
+      // Stream progress updates
+      if (res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.step) setVideoStep(parsed.step);
+              if (parsed.video_url) setVideoUrl(parsed.video_url);
+              if (parsed.error) throw new Error(parsed.error);
+            } catch (e: any) { if (e.message !== 'Unexpected end of JSON input') throw e; }
+          }
+        }
+        toast.success('Video generado exitosamente');
+        fetchContent();
+      }
+    } catch (err: any) { toast.error(err.message || 'Error generando video'); }
+    finally { setGeneratingVideo(false); setVideoStep(''); }
+  };
+
   // --- Proforma ---
   const openProformaChat = async () => {
     if (!project.digimundo_project_id) return;
@@ -556,6 +732,10 @@ export default function ProjectDetailPage() {
   }, 0);
   const isTerminal = ['completed', 'closed', 'cancelled'].includes(project.status);
   const hasReqs = reqs.length > 0;
+  // Images: visible when project is not draft; editable by owner or accepted participant
+  const showImages = project.status !== 'draft';
+  const isAcceptedParticipant = isMember && !isOwner && bids.some((b: any) => String(b.member_id) === String(memberId) && b.status === 'accepted');
+  const canEditImages = showImages && (isOwner || isAcceptedParticipant);
   const myBid = bids.find((b: any) => String(b.member_id) === String(memberId));
   const canBidNew = isMember && !isOwner && !myBid && (project.status === 'open' || (project.status === 'draft' && !project.is_private));
   const canBidInvited = isMember && !isOwner && myBid?.status === 'invited';
@@ -1413,6 +1593,125 @@ export default function ProjectDetailPage() {
             );
           })()}
 
+          {/* Project Images */}
+          {showImages && (
+            <div className="pixel-card">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[10px] text-accent-glow" style={pf}>Imagenes del Proyecto ({projectImages.length}/30)</h3>
+                {canEditImages && projectImages.length < 30 && (
+                  <label className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors cursor-pointer" style={pf}>
+                    {uploadingImages ? 'Subiendo...' : '+ Subir'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      disabled={uploadingImages}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {projectImages.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-[9px] text-digi-muted" style={mf}>Sin imagenes aun</p>
+                  {canEditImages && (
+                    <label className="inline-block mt-2 px-3 py-1.5 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors cursor-pointer" style={pf}>
+                      {uploadingImages ? 'Subiendo...' : 'Subir primera imagen'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        disabled={uploadingImages}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {projectImages.map((img, idx) => (
+                    <div key={idx} className="relative group aspect-square border border-digi-border/50 overflow-hidden bg-digi-darker">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={`Imagen ${idx + 1}`}
+                        className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setPreviewImage(img)}
+                      />
+                      {canEditImages && (
+                        <button
+                          onClick={() => handleImageDelete(idx)}
+                          disabled={deletingImageIdx === idx}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center bg-red-900/80 text-red-300 text-[8px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-800"
+                          style={pf}
+                          title="Eliminar imagen"
+                        >
+                          {deletingImageIdx === idx ? '...' : 'x'}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Image Preview Modal */}
+          {previewImage && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+              onClick={() => setPreviewImage(null)}
+            >
+              <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setPreviewImage(null)}
+                  className="absolute -top-3 -right-3 w-7 h-7 flex items-center justify-center bg-digi-card border-2 border-digi-border text-digi-muted hover:text-white transition-colors z-10"
+                  style={pf}
+                >
+                  X
+                </button>
+                {/* Navigation buttons */}
+                {projectImages.length > 1 && (() => {
+                  const currentIdx = projectImages.indexOf(previewImage);
+                  return (
+                    <>
+                      {currentIdx > 0 && (
+                        <button
+                          onClick={() => setPreviewImage(projectImages[currentIdx - 1])}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-card/80 border border-digi-border text-digi-muted hover:text-white transition-colors z-10"
+                          style={pf}
+                        >
+                          &lt;
+                        </button>
+                      )}
+                      {currentIdx < projectImages.length - 1 && (
+                        <button
+                          onClick={() => setPreviewImage(projectImages[currentIdx + 1])}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-card/80 border border-digi-border text-digi-muted hover:text-white transition-colors z-10"
+                          style={pf}
+                        >
+                          &gt;
+                        </button>
+                      )}
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-digi-card/80 border border-digi-border text-[8px] text-digi-muted z-10" style={mf}>
+                        {currentIdx + 1} / {projectImages.length}
+                      </div>
+                    </>
+                  );
+                })()}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewImage}
+                  alt="Preview"
+                  className="max-w-[90vw] max-h-[90vh] object-contain border-2 border-digi-border"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           {(isOwner || isMember) && (
             <div className="pixel-card">
@@ -1532,8 +1831,8 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          {/* Proforma (solo localhost) */}
-          {project.digimundo_project_id && chat.isLocalhost && (
+          {/* Proforma */}
+          {project.digimundo_project_id && (project.has_proforma || chat.isLocalhost) && (
             <div className="pixel-card" style={{ borderColor: project.has_proforma ? 'var(--color-accent)' : undefined }}>
               <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Proforma</h3>
               {project.has_proforma ? (
@@ -1544,15 +1843,17 @@ export default function ProjectDetailPage() {
                       className="flex-1 px-2 py-1.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors" style={pf}>
                       PDF
                     </button>
-                    <button onClick={openProformaChat}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
-                      Editar / Actualizar
-                    </button>
+                    {chat.isLocalhost && (
+                      <button onClick={openProformaChat}
+                        className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
+                        Editar / Actualizar
+                      </button>
+                    )}
                     <ProformaTokenButton projectId={id as string}
                       className="flex-1 px-2 py-1.5 text-[8px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors" />
                   </div>
                 </div>
-              ) : (
+              ) : chat.isLocalhost ? (
                 <div className="space-y-2">
                   <p className="text-[9px] text-digi-muted" style={mf}>Genera una proforma profesional con asistencia de IA.</p>
                   <button onClick={openProformaChat}
@@ -1560,7 +1861,137 @@ export default function ProjectDetailPage() {
                     Generar Proforma
                   </button>
                 </div>
-              )}
+              ) : null}
+            </div>
+          )}
+
+          {/* Content (Script + Video) - Completed projects, admin */}
+          {isAdmin && project.status === 'completed' && project.digimundo_project_id && (
+            <div className="pixel-card" style={{ borderColor: (videoScript || videoUrl) ? 'var(--color-accent)' : undefined }}>
+              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Contenido</h3>
+              <div className="space-y-2">
+                {/* Script */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] text-digi-muted" style={mf}>Guion</span>
+                  <div className="flex gap-1">
+                    {videoScript && (
+                      <button
+                        onClick={() => {
+                          const blob = new Blob([videoScript], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url; a.download = `guion-${project.title.replace(/\s+/g, '-').toLowerCase()}.txt`;
+                          a.click(); URL.revokeObjectURL(url);
+                        }}
+                        className="px-2 py-0.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors"
+                        style={pf}
+                      >
+                        Descargar
+                      </button>
+                    )}
+                    {chat.isLocalhost && (
+                      <button
+                        onClick={openScriptPanel}
+                        className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors"
+                        style={pf}
+                      >
+                        {videoScript ? 'Regenerar' : 'Generar Guion'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {videoScript && (
+                  <div className="max-h-32 overflow-y-auto px-2 py-1.5 border border-digi-border/30 bg-digi-darker">
+                    <p className="text-[9px] text-digi-text whitespace-pre-wrap" style={mf}>{videoScript.slice(0, 500)}{videoScript.length > 500 ? '...' : ''}</p>
+                  </div>
+                )}
+
+                {/* Storyboard */}
+                {videoScript && projectImages.length > 0 && (
+                  <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] text-digi-muted" style={mf}>Storyboard</span>
+                      {storyboard && (
+                        <span className="text-[7px] text-accent-glow/60" style={mf}>
+                          ({storyboard.filter(s => s.imageIndex !== null).length}/{storyboard.length} asignados)
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setShowStoryboard(true)}
+                      className="px-2 py-0.5 text-[8px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors"
+                      style={pf}
+                    >
+                      {storyboard ? 'Editar' : 'Configurar'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Video */}
+                <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
+                  <span className="text-[9px] text-digi-muted" style={mf}>Video</span>
+                  <div className="flex gap-1">
+                    {videoUrl && (
+                      <button
+                        onClick={() => window.open(`/api/projects/${id}/video?download=true`, '_blank')}
+                        className="px-2 py-0.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors"
+                        style={pf}
+                      >
+                        Descargar
+                      </button>
+                    )}
+                    {chat.isLocalhost && videoScript && (
+                      <button
+                        onClick={handleGenerateVideo}
+                        disabled={generatingVideo || projectImages.length === 0}
+                        className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors disabled:opacity-40"
+                        style={pf}
+                      >
+                        {generatingVideo ? videoStep || 'Generando...' : videoUrl ? 'Regenerar Video' : 'Generar Video'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {!videoScript && !chat.isLocalhost && (
+                  <p className="text-[9px] text-digi-muted text-center py-2" style={mf}>Sin contenido generado aun</p>
+                )}
+                {chat.isLocalhost && !videoScript && projectImages.length === 0 && (
+                  <p className="text-[8px] text-yellow-400/70 mt-1" style={mf}>Sube imagenes al proyecto antes de generar contenido</p>
+                )}
+
+                {/* Public Docs */}
+                {chat.isLocalhost && (
+                  <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
+                    <span className="text-[9px] text-digi-muted" style={mf}>Docs publicas</span>
+                    <div className="flex gap-1 items-center">
+                      {publicDocsToken && (
+                        <>
+                          <span className="text-[8px] text-green-400" style={pf}>ACTIVA</span>
+                          <button
+                            onClick={async () => {
+                              const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org';
+                              const url = `${base}/docs/${publicDocsToken}`;
+                              try { await navigator.clipboard.writeText(url); toast.success('Enlace copiado'); }
+                              catch { toast.error('No se pudo copiar'); }
+                            }}
+                            className="px-2 py-0.5 text-[8px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors"
+                            style={pf}
+                          >
+                            Copiar
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={openPublicDocsPanel}
+                        className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors"
+                        style={pf}
+                      >
+                        {publicDocsToken ? 'Gestionar' : 'Generar'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -1705,6 +2136,49 @@ export default function ProjectDetailPage() {
           hasProforma={!!project.has_proforma}
           onClose={() => setShowProformaChat(false)}
           onSaved={() => { setShowProformaChat(false); fetchProject(); }}
+        />
+      )}
+
+      {/* Video Script Panel */}
+      {showScriptPanel && scriptAgentConfig && (
+        <VideoScriptPanel
+          projectId={id as string}
+          agentId={scriptAgentConfig.agentId}
+          agentName={scriptAgentConfig.agentName}
+          projectPath={scriptAgentConfig.projectPath}
+          projectTitle={project.title}
+          projectDescription={project.description}
+          projectImages={projectImages}
+          existingScript={videoScript}
+          onClose={() => setShowScriptPanel(false)}
+          onSaved={(script: string) => { setVideoScript(script); setShowScriptPanel(false); fetchContent(); }}
+        />
+      )}
+
+      {/* Public Docs Panel */}
+      {showPublicDocs && scriptAgentConfig && (
+        <PublicDocsPanel
+          projectId={id as string}
+          agentId={scriptAgentConfig.agentId}
+          agentName={scriptAgentConfig.agentName}
+          projectPath={scriptAgentConfig.projectPath}
+          projectTitle={project.title}
+          projectDescription={project.description}
+          projectImages={projectImages}
+          onClose={() => setShowPublicDocs(false)}
+          onSaved={(token: string) => { setPublicDocsToken(token); }}
+        />
+      )}
+
+      {/* Storyboard Editor */}
+      {showStoryboard && videoScript && (
+        <ScriptStoryboardEditor
+          projectId={id as string}
+          script={videoScript}
+          projectImages={projectImages}
+          existingStoryboard={storyboard}
+          onClose={() => setShowStoryboard(false)}
+          onSaved={(sb) => { setStoryboard(sb); setShowStoryboard(false); }}
         />
       )}
 

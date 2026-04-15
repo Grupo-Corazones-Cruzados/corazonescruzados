@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
       ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS is_marketplace_published BOOLEAN DEFAULT false;
       ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS marketplace_published_at TIMESTAMPTZ;
       ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS images TEXT[];
+      ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_docs_token VARCHAR(64);
     `);
 
     let where = `WHERE p.is_marketplace_published = true AND p.status = 'completed'`;
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
     const { rows } = await pool.query(
       `SELECT p.id, p.title, p.description, p.final_cost,
               p.marketplace_published_at, p.created_at,
+              p.public_docs_token,
               COALESCE(p.images, '{}') as images,
               COALESCE(
                 (SELECT json_agg(json_build_object('name', m.name, 'photo_url', m.photo_url))
