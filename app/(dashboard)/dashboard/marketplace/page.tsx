@@ -298,7 +298,7 @@ export default function MarketplacePage() {
               return (
                 <div className="flex items-center gap-1">
                   <a
-                    href={`/docs/${p.public_docs_token}`}
+                    href={url}
                     target="_blank"
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
