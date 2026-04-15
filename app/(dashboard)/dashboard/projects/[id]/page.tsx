@@ -16,6 +16,7 @@ import ProformaChatPanel from '@/components/projects/ProformaChatPanel';
 import ProformaTokenButton from '@/components/projects/ProformaTokenButton';
 import VideoScriptPanel from '@/components/projects/VideoScriptPanel';
 import PublicDocsPanel from '@/components/projects/PublicDocsPanel';
+import SocialCopyPanel from '@/components/projects/SocialCopyPanel';
 import ScriptStoryboardEditor from '@/components/projects/ScriptStoryboardEditor';
 import type { StoryboardSegment } from '@/components/projects/ScriptStoryboardEditor';
 import useAgentChat from '@/hooks/useAgentChat';
@@ -64,6 +65,8 @@ export default function ProjectDetailPage() {
   const [storyboard, setStoryboard] = useState<StoryboardSegment[] | null>(null);
   const [showPublicDocs, setShowPublicDocs] = useState(false);
   const [publicDocsToken, setPublicDocsToken] = useState<string | null>(null);
+  const [showSocialCopy, setShowSocialCopy] = useState(false);
+  const [hasSocialCopy, setHasSocialCopy] = useState(false);
 
   // Withdrawal/exit request states
   const [projectRequests, setProjectRequests] = useState<any[]>([]);
@@ -190,7 +193,16 @@ export default function ProjectDetailPage() {
     } catch { /* ignore */ }
   }, [id]);
 
-  useEffect(() => { fetchProject(); fetchProjectRequests(); fetchProjectImages(); fetchContent(); fetchPublicDocs(); }, [fetchProject, fetchProjectRequests, fetchProjectImages, fetchContent, fetchPublicDocs]);
+  const fetchSocialCopy = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/social`);
+      if (!res.ok) return;
+      const { data } = await res.json();
+      setHasSocialCopy(!!data?.social_copy);
+    } catch { /* ignore */ }
+  }, [id]);
+
+  useEffect(() => { fetchProject(); fetchProjectRequests(); fetchProjectImages(); fetchContent(); fetchPublicDocs(); fetchSocialCopy(); }, [fetchProject, fetchProjectRequests, fetchProjectImages, fetchContent, fetchPublicDocs, fetchSocialCopy]);
   useEffect(() => {
     if (!isAdmin) return;
     fetch('/api/digimundo/projects').then(r => r.json()).then(d => setDigiProjects(d.data || [])).catch(() => {});
@@ -614,6 +626,20 @@ export default function ProjectDetailPage() {
       toast.success('Imagen eliminada');
     } catch (err: any) { toast.error(err.message || 'Error al eliminar imagen'); }
     finally { setDeletingImageIdx(null); }
+  };
+
+  const openSocialCopyPanel = async () => {
+    if (!project.digimundo_project_id) return;
+    const digiProject = digiProjects.find((d: any) => d.id === project.digimundo_project_id);
+    if (!digiProject) { toast.error('Proyecto DigiMundo no encontrado'); return; }
+    try {
+      const linksRes = await fetch('/api/agent-links');
+      const links = await linksRes.json();
+      const agentConfig = links[digiProject.agentId];
+      if (!agentConfig?.projectPath) { toast.error('Configura el path del proyecto en el chat del agente primero'); return; }
+      setScriptAgentConfig({ agentId: digiProject.agentId, agentName: digiProject.name, projectPath: agentConfig.projectPath });
+      setShowSocialCopy(true);
+    } catch { toast.error('Error cargando configuracion del agente'); }
   };
 
   const openPublicDocsPanel = async () => {
@@ -1991,6 +2017,23 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Social Copy */}
+                {chat.isLocalhost && (
+                  <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
+                    <span className="text-[9px] text-digi-muted" style={mf}>Redes sociales</span>
+                    <div className="flex gap-1 items-center">
+                      {hasSocialCopy && <span className="text-[8px] text-green-400" style={pf}>LISTO</span>}
+                      <button
+                        onClick={openSocialCopyPanel}
+                        className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors"
+                        style={pf}
+                      >
+                        {hasSocialCopy ? 'Ver / Regenerar' : 'Generar Copy'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -2152,6 +2195,19 @@ export default function ProjectDetailPage() {
           existingScript={videoScript}
           onClose={() => setShowScriptPanel(false)}
           onSaved={(script: string) => { setVideoScript(script); setShowScriptPanel(false); fetchContent(); }}
+        />
+      )}
+
+      {/* Social Copy Panel */}
+      {showSocialCopy && scriptAgentConfig && (
+        <SocialCopyPanel
+          projectId={id as string}
+          agentId={scriptAgentConfig.agentId}
+          agentName={scriptAgentConfig.agentName}
+          projectPath={scriptAgentConfig.projectPath}
+          projectTitle={project.title}
+          projectDescription={project.description}
+          onClose={() => { setShowSocialCopy(false); fetchSocialCopy(); }}
         />
       )}
 
