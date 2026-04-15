@@ -17,6 +17,10 @@ export default function SettingsPage() {
   const [lastName, setLastName] = useState(user?.last_name || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar_url || '');
+  const [youtube, setYoutube] = useState(user?.youtube_handle || '');
+  const [tiktok, setTiktok] = useState(user?.tiktok_handle || '');
+  const [instagram, setInstagram] = useState(user?.instagram_handle || '');
+  const [facebook, setFacebook] = useState(user?.facebook_handle || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -60,7 +64,15 @@ export default function SettingsPage() {
       const res = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ first_name: firstName, last_name: lastName, phone }),
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          youtube_handle: youtube,
+          tiktok_handle: tiktok,
+          instagram_handle: instagram,
+          facebook_handle: facebook,
+        }),
       });
       if (!res.ok) throw new Error('Error al actualizar');
       await refreshUser();
@@ -124,6 +136,21 @@ export default function SettingsPage() {
             </div>
 
             <PixelInput label="Telefono" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+593999999999" />
+
+            <div className="pt-2 border-t border-digi-border/30 space-y-3">
+              <div>
+                <h4 className="text-[10px] text-accent-glow mb-1" style={pf}>Redes Sociales</h4>
+                <p className="text-[9px] text-digi-muted" style={mf}>
+                  Se usaran al generar copy para promocionar tus proyectos. Formato @usuario o nombre de pagina.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <PixelInput label="YouTube" value={youtube} onChange={(e) => setYoutube(e.target.value)} placeholder="@canal" />
+                <PixelInput label="TikTok" value={tiktok} onChange={(e) => setTiktok(e.target.value)} placeholder="@usuario" />
+                <PixelInput label="Instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@usuario" />
+                <PixelInput label="Facebook" value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder="Nombre de pagina" />
+              </div>
+            </div>
 
             <button
               type="submit"

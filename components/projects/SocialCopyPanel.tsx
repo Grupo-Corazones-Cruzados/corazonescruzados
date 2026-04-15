@@ -7,6 +7,13 @@ import type { ChatBlock } from '@/components/world/ChatPanel';
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
 
+interface SocialHandles {
+  youtube?: string | null;
+  tiktok?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+}
+
 interface SocialCopyPanelProps {
   projectId: string | number;
   agentId: string;
@@ -14,6 +21,7 @@ interface SocialCopyPanelProps {
   projectPath: string;
   projectTitle: string;
   projectDescription?: string;
+  handles?: SocialHandles;
   onClose: () => void;
 }
 
@@ -85,7 +93,7 @@ function tryExtractSocial(text: string): SocialCopyData | null {
 
 export default function SocialCopyPanel({
   projectId, agentId, agentName, projectPath,
-  projectTitle, projectDescription,
+  projectTitle, projectDescription, handles,
   onClose,
 }: SocialCopyPanelProps) {
   const socialAgentId = `social-${agentId}`;
@@ -251,9 +259,39 @@ export default function SocialCopyPanel({
 
   const startGeneration = () => {
     setCopy(null);
+
+    const h = handles || {};
+    const handleLines = [
+      h.youtube ? `- YouTube: ${h.youtube}` : '- YouTube: (no configurado)',
+      h.tiktok ? `- TikTok: ${h.tiktok}` : '- TikTok: (no configurado)',
+      h.instagram ? `- Instagram: ${h.instagram}` : '- Instagram: (no configurado)',
+      h.facebook ? `- Facebook: ${h.facebook}` : '- Facebook: (no configurado)',
+    ].join('\n');
+    const anyHandle = !!(h.youtube || h.tiktok || h.instagram || h.facebook);
+    const handlesBlock = anyHandle
+      ? `CUENTAS REALES DEL AUTOR (usar EXACTAMENTE estas, NO inventar otras):
+${handleLines}
+
+REGLAS DE CUENTAS:
+- Al mencionar redes sociales en las descripciones usa UNICAMENTE las cuentas listadas arriba.
+- NO inventes, adivines ni asumas handles de redes sociales.
+- Si una plataforma dice "(no configurado)", NO la menciones en las descripciones y NO inventes un handle para ella.
+- Al final de la descripcion de cada plataforma, puedes incluir una linea "Sigueme en" mencionando SOLO las otras plataformas que SI estan configuradas, con sus handles reales.`
+      : `CUENTAS REALES DEL AUTOR:
+${handleLines}
+
+REGLAS DE CUENTAS:
+- El autor aun no ha configurado sus cuentas de redes sociales en el perfil.
+- NO menciones handles de redes sociales en las descripciones.
+- NO inventes usuarios ni cuentas.
+- Omite cualquier seccion "sigueme en..." por completo.`;
+
     const prompt = `IMPORTANTE: NO uses herramientas de escritura (Write, Edit). NO crees archivos. Tu UNICA respuesta debe ser una breve intro seguida de un bloque JSON con copy para redes sociales.
 
-OBJETIVO: Generar titulo, descripcion y hashtags para YouTube, TikTok, Instagram y Facebook, promocionando este proyecto como caso de exito / contenido educativo. Enfocado a la audiencia de Fernando Gonzalez y GCC (Grupo Corazones Cruzados) en Ecuador y LATAM.
+${handlesBlock}
+
+
+OBJETIVO: Generar titulo, descripcion y hashtags para YouTube, TikTok, Instagram y Facebook, promocionando este proyecto como caso de exito / contenido educativo. Enfocado a audiencia de Ecuador y LATAM.
 
 FASE 1 — INVESTIGACION OBLIGATORIA:
 Tu proyecto esta UNICAMENTE en: ${projectPath}
@@ -279,7 +317,7 @@ REGLAS POR PLATAFORMA:
 
 YouTube:
 - title: max 70 caracteres, con hook + beneficio o palabra clave fuerte al inicio.
-- description: 600-1500 caracteres. Primeros 125 caracteres deben enganchar (se muestran antes del "mostrar mas"). Despues: que problema resuelve, que hace la solucion, a quien le sirve, llamada a la accion (seguir canal, contactar GCC). Incluir al final "Sigueme en redes" y mencionar TikTok/Instagram/Facebook como referencia.
+- description: 600-1500 caracteres. Primeros 125 caracteres deben enganchar (se muestran antes del "mostrar mas"). Despues: que problema resuelve, que hace la solucion, a quien le sirve, llamada a la accion. Al final, SOLO si hay otras redes configuradas, puedes incluir "Sigueme en" listandolas con sus handles reales.
 - hashtags: 8-15 hashtags relevantes, mezcla de nicho (tema del proyecto) + tendencia (desarrollo, automatizacion, emprendimiento, tech LATAM, etc).
 
 TikTok:

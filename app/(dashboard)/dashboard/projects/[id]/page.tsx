@@ -2207,6 +2207,12 @@ export default function ProjectDetailPage() {
           projectPath={scriptAgentConfig.projectPath}
           projectTitle={project.title}
           projectDescription={project.description}
+          handles={{
+            youtube: user?.youtube_handle,
+            tiktok: user?.tiktok_handle,
+            instagram: user?.instagram_handle,
+            facebook: user?.facebook_handle,
+          }}
           onClose={() => { setShowSocialCopy(false); fetchSocialCopy(); }}
         />
       )}
