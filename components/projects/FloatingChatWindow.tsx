@@ -25,6 +25,7 @@ interface FloatingChatWindowProps {
   projectName?: string;
   isStreaming: boolean;
   justCompleted: boolean;
+  sessionKey?: string;
 }
 
 const DEFAULT_W = 420;
@@ -54,6 +55,7 @@ export default function FloatingChatWindow({
   projectName,
   isStreaming,
   justCompleted,
+  sessionKey,
 }: FloatingChatWindowProps) {
   const saved = loadPos();
   const [pos, setPos] = useState({ x: saved?.x ?? 80, y: saved?.y ?? 80 });
@@ -189,6 +191,7 @@ export default function FloatingChatWindow({
           onBlocksChange={onBlocksChange}
           externalMessage={externalMessage}
           onExternalMessageConsumed={onExternalMessageConsumed}
+          sessionKey={sessionKey}
         />
       </div>
     </div>

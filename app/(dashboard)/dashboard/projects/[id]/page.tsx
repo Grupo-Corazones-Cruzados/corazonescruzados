@@ -2253,6 +2253,7 @@ export default function ProjectDetailPage() {
           onMinimize={() => chat.setChatMinimized(true)} onRestore={() => chat.setChatMinimized(false)}
           queueCount={chat.pendingQueue.length} isLocalhost={chat.isLocalhost}
           projectName={linkedDigiName} isStreaming={chat.isStreaming} justCompleted={chat.justCompleted}
+          sessionKey={`project-${id}`}
         />
       )}
     </div>

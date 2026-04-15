@@ -101,6 +101,7 @@ interface ChatPanelProps {
   onOpenPreview?: (title: string, url: string, projectPath?: string) => void;
   externalMessage?: string | null;
   onExternalMessageConsumed?: () => void;
+  sessionKey?: string;
 }
 
 const TOOL_ICONS: Record<string, typeof Terminal> = {
@@ -129,7 +130,9 @@ function formatToolInput(tool: string, input: any): string {
   return JSON.stringify(input).slice(0, 120);
 }
 
-export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, onOpenPreview, externalMessage, onExternalMessageConsumed }: ChatPanelProps) {
+export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, onOpenPreview, externalMessage, onExternalMessageConsumed, sessionKey }: ChatPanelProps) {
+  const sessionKeyRef = useRef<string | undefined>(sessionKey);
+  useEffect(() => { sessionKeyRef.current = sessionKey; }, [sessionKey]);
   const blocksRef = useRef(blocks);
   // Only sync ref from prop when NOT streaming (to avoid overwriting in-flight updates)
   const streamingRef = useRef(false);
@@ -485,6 +488,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
           agentName: citizenRef.current.name,
           message: fullMessage,
           projectPath: projectPathRef.current || undefined,
+          sessionKey: sessionKeyRef.current,
         }),
       });
 
@@ -691,6 +695,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
             agentName: citizenRef.current.name,
             message: fakeInput,
             projectPath: projectPathRef.current || undefined,
+            sessionKey: sessionKeyRef.current,
           }),
         }).then(async (res) => {
           if (!res.ok) throw new Error('Chat failed');
@@ -713,11 +718,11 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
   const clearChat = () => {
     setBlocks([]);
     setError(null);
-    // Clear the agent's session so next message starts a fresh conversation
+    // Clear the session so next message starts a fresh conversation
     fetch('/api/chat/clear-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: citizen.agentId }),
+      body: JSON.stringify({ agentId: citizen.agentId, sessionKey: sessionKeyRef.current }),
     }).catch(() => {});
   };
 
@@ -747,6 +752,7 @@ export default function ChatPanel({ citizen, onClose, blocks, onBlocksChange, on
           agentName: citizenRef.current.name,
           message,
           projectPath: projectPathRef.current || undefined,
+          sessionKey: sessionKeyRef.current,
         }),
       }).then(async (res) => {
         if (!res.ok) throw new Error('Chat failed');

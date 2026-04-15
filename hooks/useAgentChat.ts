@@ -57,16 +57,9 @@ export default function useAgentChat({ digimundoProjectId, digiProjects }: UseAg
         const citizens: CitizenDef[] = data.citizens || [];
         const found = citizens.find(c => c.agentId === digiProject.agentId);
         setCitizen(found || null);
-
-        // Clear previous session so the agent starts fresh in the correct projectPath
-        if (found) {
-          await fetch('/api/chat/clear-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agentId: found.agentId }),
-          }).catch(() => {});
-          setBlocks([]);
-        }
+        // Keep the shared project-${projectId} session alive so the chat
+        // inherits context from proforma / video / public docs / social copy.
+        // Use the "Clear" button inside the chat if you want a fresh start.
       })
       .catch(() => setCitizen(null))
       .finally(() => setAgentLoading(false));
