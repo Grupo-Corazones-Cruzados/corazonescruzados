@@ -188,6 +188,7 @@ export default function SettingsPage() {
                   { label: 'Disponibilidad', href: '/dashboard/settings/availability' },
                   { label: 'Mi CV', href: '/dashboard/settings/cv' },
                   { label: 'Portafolio', href: '/dashboard/settings/portfolio' },
+                  { label: 'Calendario', href: '/dashboard/settings/calendar' },
                 ].map((link) => (
                   <Link
                     key={link.href}
