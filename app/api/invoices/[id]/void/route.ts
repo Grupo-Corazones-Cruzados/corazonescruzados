@@ -32,10 +32,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Get items
     const { rows: items } = await pool.query(`SELECT * FROM gcc_world.invoice_items_sri WHERE invoice_id = $1`, [id]);
 
-    // Get next credit note sequential
+    // Get next credit note sequential.
+    // NOTE: las notas de crédito se guardan dentro de invoices.sri_response.credit_note.numero
+    // (formato "NC-001-001-000000001"), no como filas independientes — por eso leemos desde ahí.
     const { rows: [{ next }] } = await pool.query(
-      `SELECT COALESCE(MAX(CAST(SPLIT_PART(invoice_number, '-', 3) AS INTEGER)), 0) + 1 as next
-       FROM gcc_world.invoices WHERE invoice_number LIKE 'NC-%'`
+      `SELECT COALESCE(MAX(
+                CAST(SPLIT_PART((sri_response::json->'credit_note'->>'numero'), '-', 4) AS INTEGER)
+              ), 0) + 1 AS next
+       FROM gcc_world.invoices
+       WHERE sri_response IS NOT NULL
+         AND sri_response::text LIKE '%credit_note%'`
     );
     const secuencial = Math.max(next, 1);
 
