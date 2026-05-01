@@ -24,6 +24,12 @@ function loadP12(): Buffer {
  * Uses ec-sri-invoice-signer which implements the exact XAdES-BES format the SRI accepts
  */
 export function signXml(xml: string): string {
+  // Idempotent: if already signed, return as-is. Re-signing breaks the existing signature
+  // and matters when retrying an invoice whose previous send failed mid-flow.
+  if (/<ds:Signature\b/.test(xml) || /<\w+:Signature\b[^>]*xmlns:\w+="http:\/\/www\.w3\.org\/2000\/09\/xmldsig#"/.test(xml)) {
+    return xml;
+  }
+
   const p12 = loadP12();
   const password = process.env.SRI_P12_PASSWORD || '';
 

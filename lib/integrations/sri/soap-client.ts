@@ -1,5 +1,39 @@
 import { SRI_CONFIG, SRI_ENDPOINTS } from './config';
 
+const SRI_FETCH_TIMEOUT_MS = 30_000;
+const SRI_FETCH_RETRIES = 2;
+const SRI_FETCH_RETRY_DELAY_MS = 1500;
+
+/**
+ * Fetch with timeout + retry for SRI endpoints. Retries only on network/timeout
+ * errors (where the request never produced an HTTP response). Once the SRI
+ * answers — even with 5xx — we surface that response so the caller can record
+ * it instead of silently re-sending.
+ */
+async function sriFetch(endpoint: string, body: string): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= SRI_FETCH_RETRIES; attempt++) {
+    try {
+      return await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/xml; charset=utf-8', 'SOAPAction': '' },
+        body,
+        signal: AbortSignal.timeout(SRI_FETCH_TIMEOUT_MS),
+      });
+    } catch (err: any) {
+      lastErr = err;
+      const isTimeout = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+      const isNetwork = err?.message === 'fetch failed' || err?.cause;
+      if (!isTimeout && !isNetwork) throw err;
+      if (attempt < SRI_FETCH_RETRIES) {
+        await new Promise(r => setTimeout(r, SRI_FETCH_RETRY_DELAY_MS * (attempt + 1)));
+      }
+    }
+  }
+  const reason = (lastErr as any)?.message || 'unknown';
+  throw new Error(`SRI no responde tras ${SRI_FETCH_RETRIES + 1} intentos (${reason}). Reintenta en unos minutos.`);
+}
+
 /**
  * Envía el comprobante firmado al SRI para validación
  */
@@ -22,14 +56,7 @@ export async function enviarComprobante(xmlFirmado: string): Promise<{
   </soapenv:Body>
 </soapenv:Envelope>`;
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/xml; charset=utf-8',
-      'SOAPAction': '',
-    },
-    body: soapEnvelope,
-  });
+  const res = await sriFetch(endpoint, soapEnvelope);
 
   const text = await res.text();
 
@@ -82,14 +109,7 @@ export async function consultarAutorizacion(claveAcceso: string): Promise<{
   </soapenv:Body>
 </soapenv:Envelope>`;
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/xml; charset=utf-8',
-      'SOAPAction': '',
-    },
-    body: soapEnvelope,
-  });
+  const res = await sriFetch(endpoint, soapEnvelope);
 
   const text = await res.text();
 
