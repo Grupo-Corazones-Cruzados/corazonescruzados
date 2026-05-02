@@ -10,6 +10,7 @@ import {
   type CharacterConfig,
   type SpriteDirection,
 } from './CharacterCreator';
+import WorldMap, { MAP_W, MAP_H } from './WorldMap';
 
 const SPEED = 2.4;
 
@@ -147,18 +148,28 @@ export default function CharacterGameplay({
   }, [locked]);
 
   // ── Movement loop ────────────────────────────────────────────────
+  // Pos is the character's world coordinate (0,0 = map center). The
+  // map renders centered on the viewport and translates by -pos so
+  // the character stays glued to the centre while the world scrolls.
+  // Bounds clamp keeps the character inside the playable rectangle.
+  const HALF_W = MAP_W / 2;
+  const HALF_H = MAP_H / 2;
+  const MARGIN = 28; // sprite half-width-ish to keep feet inside map
   useEffect(() => {
     if (!walking) return;
     let raf = 0;
     const tick = () => {
       const vx = direction === 'w' ? -SPEED : direction === 'e' ? SPEED : 0;
       const vy = direction === 'n' ? -SPEED : direction === 's' ? SPEED : 0;
-      setPos((p) => ({ x: p.x + vx, y: p.y + vy }));
+      setPos((p) => ({
+        x: Math.max(-HALF_W + MARGIN, Math.min(HALF_W - MARGIN, p.x + vx)),
+        y: Math.max(-HALF_H + MARGIN, Math.min(HALF_H - MARGIN, p.y + vy)),
+      }));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [walking, direction]);
+  }, [walking, direction, HALF_W, HALF_H]);
 
   // ── Poll auth status while overlay is open (catch verify/login from
   //    other tabs or after returning from email link) ───────────────
@@ -203,12 +214,29 @@ export default function CharacterGameplay({
         animation: 'pixelFadeIn 0.6s ease-out',
       }}
     >
+      {/* World map — anchored to viewport center, scrolls opposite to
+          the character so they appear to walk while staying centred. */}
       <div
         style={{
           position: 'absolute',
           left: '50%',
           top: '50%',
-          transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`,
+          width: MAP_W,
+          height: MAP_H,
+          transform: `translate(calc(-50% - ${pos.x}px), calc(-50% - ${pos.y}px))`,
+          willChange: 'transform',
+        }}
+      >
+        <WorldMap />
+      </div>
+
+      {/* Character — fixed at viewport centre. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
           willChange: 'transform',
         }}
       >
