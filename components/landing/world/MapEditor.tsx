@@ -38,6 +38,99 @@ export default function MapEditor({
   const [spawnMode, setSpawnMode] = useState(false);
   const [spawnX, setSpawnX] = useState(initialMap.spawnX ?? 0);
   const [spawnY, setSpawnY] = useState(initialMap.spawnY ?? 0);
+
+  // ── Undo / redo history ────────────────────────────────────────
+  type Snapshot = {
+    tiles: Tile[];
+    width: number;
+    height: number;
+    spawnX: number;
+    spawnY: number;
+  };
+  const initSnap: Snapshot = useMemo(
+    () => ({
+      tiles: initialMap.layers[0]?.tiles ?? [],
+      width: initialMap.width,
+      height: initialMap.height,
+      spawnX: initialMap.spawnX ?? 0,
+      spawnY: initialMap.spawnY ?? 0,
+    }),
+    [initialMap],
+  );
+  const [history, setHistory] = useState<Snapshot[]>([initSnap]);
+  const [historyIdx, setHistoryIdx] = useState(0);
+  const restoringRef = useRef(false);
+
+  const snapKey = (s: Snapshot) =>
+    `${s.width}x${s.height}|${s.spawnX},${s.spawnY}|${JSON.stringify(s.tiles)}`;
+
+  const pushHistory = () => {
+    if (restoringRef.current) return;
+    const snap: Snapshot = { tiles, width, height, spawnX, spawnY };
+    setHistory((prev) => {
+      const truncated = prev.slice(0, historyIdx + 1);
+      const last = truncated[truncated.length - 1];
+      if (last && snapKey(last) === snapKey(snap)) return prev;
+      const next = [...truncated, snap];
+      // Cap at 100 entries to keep memory bounded.
+      const trimmed = next.length > 100 ? next.slice(next.length - 100) : next;
+      setHistoryIdx(trimmed.length - 1);
+      return trimmed;
+    });
+  };
+
+  const restore = (s: Snapshot) => {
+    restoringRef.current = true;
+    setTiles(s.tiles);
+    setWidth(s.width);
+    setHeight(s.height);
+    setSpawnX(s.spawnX);
+    setSpawnY(s.spawnY);
+    // Release the guard on the next tick so dependent effects run free.
+    setTimeout(() => {
+      restoringRef.current = false;
+    }, 0);
+  };
+
+  const undo = () => {
+    if (historyIdx <= 0) return;
+    const newIdx = historyIdx - 1;
+    setHistoryIdx(newIdx);
+    restore(history[newIdx]);
+  };
+  const redo = () => {
+    if (historyIdx >= history.length - 1) return;
+    const newIdx = historyIdx + 1;
+    setHistoryIdx(newIdx);
+    restore(history[newIdx]);
+  };
+
+  // Keyboard shortcuts: Cmd/Ctrl+Z (undo), Cmd/Ctrl+Shift+Z or
+  // Cmd/Ctrl+Y (redo). Skip when typing in inputs.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
+      ) {
+        return;
+      }
+      const meta = e.metaKey || e.ctrlKey;
+      if (!meta) return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((k === 'z' && e.shiftKey) || k === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyIdx, history]);
   const [activeCategory, setActiveCategory] = useState<
     (typeof CATEGORIES)[number]['id']
   >('terreno');
@@ -192,8 +285,11 @@ export default function MapEditor({
     if (cx < 0 || cy < 0 || cx >= width || cy >= height) return;
 
     if (spawnMode) {
+      if (cx === spawnX && cy === spawnY) return;
       setSpawnX(cx);
       setSpawnY(cy);
+      // Defer push so the state has time to settle.
+      window.setTimeout(pushHistory, 0);
       return;
     }
     if (eraseMode) {
@@ -410,9 +506,21 @@ export default function MapEditor({
           }}
         >
           <ToolbarLabel>Tamaño</ToolbarLabel>
-          <NumberInput value={width} min={5} max={500} onChange={setWidth} />
+          <NumberInput
+            value={width}
+            min={5}
+            max={500}
+            onChange={setWidth}
+            onCommit={pushHistory}
+          />
           <span style={{ color: 'rgba(225,215,255,0.5)' }}>×</span>
-          <NumberInput value={height} min={5} max={500} onChange={setHeight} />
+          <NumberInput
+            value={height}
+            min={5}
+            max={500}
+            onChange={setHeight}
+            onCommit={pushHistory}
+          />
 
           <Sep />
 
@@ -447,6 +555,21 @@ export default function MapEditor({
               }
             }}
             label="Posición inicial"
+          />
+
+          <Sep />
+
+          <HistoryButton
+            onClick={undo}
+            disabled={historyIdx <= 0}
+            label="↶ Deshacer"
+            shortcut="⌘Z"
+          />
+          <HistoryButton
+            onClick={redo}
+            disabled={historyIdx >= history.length - 1}
+            label="↷ Rehacer"
+            shortcut="⌘⇧Z"
           />
 
           <Sep />
@@ -524,10 +647,16 @@ export default function MapEditor({
               paintAt(e.clientX, e.clientY);
             }}
             onMouseUp={() => {
-              paintingRef.current = false;
+              if (paintingRef.current) {
+                paintingRef.current = false;
+                pushHistory();
+              }
             }}
             onMouseLeave={() => {
-              paintingRef.current = false;
+              if (paintingRef.current) {
+                paintingRef.current = false;
+                pushHistory();
+              }
             }}
             onMouseMove={(e) => {
               if (paintingRef.current) paintAt(e.clientX, e.clientY);
@@ -670,11 +799,13 @@ function NumberInput({
   min,
   max,
   onChange,
+  onCommit,
 }: {
   value: number;
   min: number;
   max: number;
   onChange: (n: number) => void;
+  onCommit?: () => void;
 }) {
   return (
     <input
@@ -685,6 +816,10 @@ function NumberInput({
       onChange={(e) => {
         const n = parseInt(e.target.value, 10);
         if (Number.isFinite(n)) onChange(Math.max(min, Math.min(max, n)));
+      }}
+      onBlur={onCommit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') onCommit?.();
       }}
       style={{
         width: 70,
@@ -712,6 +847,40 @@ function ToolbarLabel({ children }: { children: React.ReactNode }) {
     >
       {children}
     </span>
+  );
+}
+
+function HistoryButton({
+  onClick,
+  disabled,
+  label,
+  shortcut,
+}: {
+  onClick: () => void;
+  disabled: boolean;
+  label: string;
+  shortcut: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={`${label} (${shortcut})`}
+      style={{
+        padding: '6px 10px',
+        background: '#1a1a1a',
+        color: disabled ? 'rgba(225,215,255,0.3)' : '#e5e5e5',
+        border: '2px solid var(--color-accent)',
+        fontFamily: "'Silkscreen', cursive",
+        fontSize: '0.6rem',
+        letterSpacing: '0.08em',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.45 : 1,
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
