@@ -57,6 +57,26 @@ export async function POST(req: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+
+    // Reject email already used by a different verified account.
+    const taken = await pool.query(
+      `SELECT id FROM gcc_world.clients
+        WHERE LOWER(email) = $1
+          AND email_verified = TRUE
+          AND id <> $2
+        LIMIT 1`,
+      [cleanEmail, row.id],
+    );
+    if (taken.rows.length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            'Ese correo ya está asociado a otra cuenta. Usa "Ya tengo una cuenta" para entrar.',
+        },
+        { status: 409 },
+      );
+    }
+
     const passwordHash = await hashPassword(password);
     const verificationToken = randomBytes(32).toString('hex');
 

@@ -33,6 +33,38 @@ function emailShell(content: string): string {
 </div></body></html>`;
 }
 
+export async function sendCharacterRecoveryCodeEmail(
+  email: string,
+  code: string,
+  alias: string,
+) {
+  const html = emailShell(`
+    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Recupera tu cuenta</h1>
+    <p style="color:#94A3B8;font-size:14px;text-align:center;margin:0 0 24px;">
+      Estás iniciando sesión en un nuevo dispositivo
+    </p>
+    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 18px;">
+      Hola <strong style="color:#7B5FBF;">${alias}</strong>,<br/>
+      Usa este código para confirmar que eres tú e iniciar sesión desde este
+      dispositivo. El código caduca en 15 minutos.
+    </p>
+    <div style="text-align:center;margin:18px 0;">
+      <div style="display:inline-block;background:#0a0a14;color:#fff;padding:18px 32px;font-family:'Courier New',monospace;font-size:32px;letter-spacing:0.6em;font-weight:bold;border:2px solid #7B5FBF;">
+        ${code}
+      </div>
+    </div>
+    <p style="color:#737373;font-size:12px;margin:24px 0 0;">
+      Si no fuiste tú, ignora este correo. Tu contraseña no ha cambiado.
+    </p>
+  `);
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: 'Código de acceso — GCC World',
+    html,
+  });
+}
+
 export async function sendCharacterVerificationEmail(
   email: string,
   token: string,

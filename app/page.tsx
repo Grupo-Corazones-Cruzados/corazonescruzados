@@ -8,6 +8,7 @@ import CharacterCreator, {
 } from '@/components/landing/CharacterCreator';
 import CharacterGameplay from '@/components/landing/CharacterGameplay';
 import SavePointIndicator from '@/components/landing/SavePointIndicator';
+import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 
 const ENTRY_MESSAGES = [
   'Estás por entrar a un lugar en donde los sueños se hacen realidad...',
@@ -326,6 +327,7 @@ export default function LandingPage() {
   } | null>(null);
   const savedCharacterCheckedRef = useRef(false);
   const [savePointTrigger, setSavePointTrigger] = useState(0);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
   const warpRef = useRef<HTMLDivElement | null>(null);
   const planetMusicRef = useRef<HTMLAudioElement | null>(null);
   const peligroMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -2828,9 +2830,49 @@ export default function LandingPage() {
             >
               Entrar
             </button>
+            {!savedCharacter && !windAway && (
+              <button
+                type="button"
+                onClick={() => setRecoveryOpen(true)}
+                disabled={landingLocked}
+                className="pixel-btn pixel-btn-secondary"
+                style={{
+                  ...(landingLocked
+                    ? { opacity: 0.45, cursor: 'not-allowed' }
+                    : { animation: 'breathe 5s ease-in-out infinite' }),
+                }}
+              >
+                Ya tengo una cuenta
+              </button>
+            )}
           </div>
         </div>
       </section>
+
+      {recoveryOpen && (
+        <AccountRecoveryModal
+          onClose={() => setRecoveryOpen(false)}
+          onSuccess={() => {
+            setRecoveryOpen(false);
+            // Re-fetch /me to load the recovered character + auth state.
+            fetch('/api/character/me')
+              .then((r) => r.json())
+              .then((j) => {
+                if (j?.exists && j.characterData) {
+                  setSavedCharacter(j.characterData as CharacterConfig);
+                  setSavedAuth({
+                    hasPassword: !!j.hasPassword,
+                    emailVerified: !!j.emailVerified,
+                    authenticated: !!j.authenticated,
+                    pendingEmail: j.pendingEmail ?? null,
+                  });
+                  setSavePointTrigger((n) => n + 1);
+                }
+              })
+              .catch(() => undefined);
+          }}
+        />
+      )}
 
       {/* Gray lockout overlay (after the 'ignorar' / pureza-fail branches) */}
       {landingLocked && (
