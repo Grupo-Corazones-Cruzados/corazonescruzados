@@ -326,6 +326,7 @@ export default function LandingPage() {
     pendingEmail: string | null;
   } | null>(null);
   const savedCharacterCheckedRef = useRef(false);
+  const [savedCharacterChecked, setSavedCharacterChecked] = useState(false);
   const [savePointTrigger, setSavePointTrigger] = useState(0);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const warpRef = useRef<HTMLDivElement | null>(null);
@@ -1014,7 +1015,8 @@ export default function LandingPage() {
           });
         }
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => setSavedCharacterChecked(true));
   }, []);
 
   // ── Always-on cursor tracker ─────────────────────────────────────
@@ -2830,7 +2832,7 @@ export default function LandingPage() {
             >
               Entrar
             </button>
-            {!savedCharacter && !windAway && (
+            {savedCharacterChecked && !savedCharacter && !windAway && (
               <button
                 type="button"
                 onClick={() => setRecoveryOpen(true)}
