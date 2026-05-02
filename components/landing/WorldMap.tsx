@@ -21,10 +21,10 @@ export default function WorldMap({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
-
-    // Fallback ground while images load.
-    ctx.fillStyle = '#3d2c1a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Keep the canvas transparent so empty cells show the gameplay
+    // background (black) instead of a giant brown rectangle. Drawing
+    // tiles fills only the cells the admin actually painted.
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     let cancelled = false;
     Promise.all(
