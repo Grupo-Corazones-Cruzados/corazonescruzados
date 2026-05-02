@@ -1,67 +1,91 @@
 'use client';
 
-export const TILE = 32;
-export const MAP_COLS = 30;
-export const MAP_ROWS = 22;
-export const MAP_W = MAP_COLS * TILE; // 960
-export const MAP_H = MAP_ROWS * TILE; // 704
+import { useEffect, useRef } from 'react';
+import { SHEETS, TILE_PX, type WorldMapData } from './world/sheets';
 
-type House = {
-  x: number; // tile col
-  y: number; // tile row
-  src: string;
-  wTiles: number;
-  hTiles: number;
-};
+export const TILE = TILE_PX;
 
-// Border houses — top + bottom edges, alternating two facades.
-const HOUSES: House[] = [
-  // Top row (y = 0)
-  { x: 2, y: 0, src: '/world/house1.png', wTiles: 5, hTiles: 9 },
-  { x: 9, y: 0, src: '/world/house2.png', wTiles: 4, hTiles: 9 },
-  { x: 14, y: 0, src: '/world/house1.png', wTiles: 5, hTiles: 9 },
-  { x: 21, y: 0, src: '/world/house2.png', wTiles: 4, hTiles: 9 },
-  // Bottom row (y = MAP_ROWS - house h = 22 - 9 = 13)
-  { x: 2, y: 13, src: '/world/house2.png', wTiles: 4, hTiles: 9 },
-  { x: 8, y: 13, src: '/world/house1.png', wTiles: 5, hTiles: 9 },
-  { x: 15, y: 13, src: '/world/house2.png', wTiles: 4, hTiles: 9 },
-  { x: 21, y: 13, src: '/world/house1.png', wTiles: 5, hTiles: 9 },
-];
+export default function WorldMap({
+  map,
+}: {
+  map: WorldMapData;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-export default function WorldMap() {
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = map.width * TILE;
+    canvas.height = map.height * TILE;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
+
+    // Fallback ground while images load.
+    ctx.fillStyle = '#3d2c1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    let cancelled = false;
+    Promise.all(
+      SHEETS.map(
+        (s) =>
+          new Promise<HTMLImageElement>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = s.url;
+          }),
+      ),
+    ).then((imgs) => {
+      if (cancelled) return;
+      const tiles = (map.layers[0]?.tiles ?? []);
+      for (const t of tiles) {
+        const img = imgs[t.s];
+        if (!img) continue;
+        ctx.drawImage(
+          img,
+          t.sx * TILE,
+          t.sy * TILE,
+          TILE,
+          TILE,
+          t.x * TILE,
+          t.y * TILE,
+          TILE,
+          TILE,
+        );
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [map]);
+
   return (
-    <div
-      aria-hidden="true"
+    <canvas
+      ref={canvasRef}
       style={{
-        width: MAP_W,
-        height: MAP_H,
-        position: 'relative',
-        backgroundImage: 'url(/world/dirt.png)',
-        backgroundRepeat: 'repeat',
-        backgroundSize: `${TILE}px ${TILE}px`,
+        display: 'block',
         imageRendering: 'pixelated',
-        boxShadow:
-          'inset 0 0 0 4px rgba(0,0,0,0.5), 8px 8px 0 rgba(0,0,0,0.55)',
+        width: map.width * TILE,
+        height: map.height * TILE,
       }}
-    >
-      {HOUSES.map((h, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={i}
-          src={h.src}
-          alt=""
-          draggable={false}
-          style={{
-            position: 'absolute',
-            left: h.x * TILE,
-            top: h.y * TILE,
-            width: h.wTiles * TILE,
-            height: h.hTiles * TILE,
-            imageRendering: 'pixelated',
-            pointerEvents: 'none',
-          }}
-        />
-      ))}
-    </div>
+    />
   );
+}
+
+export function buildCollisionGrid(
+  map: WorldMapData,
+): boolean[][] {
+  const grid: boolean[][] = Array.from({ length: map.height }, () =>
+    new Array(map.width).fill(false),
+  );
+  const tiles = map.layers[0]?.tiles ?? [];
+  for (const t of tiles) {
+    if (t.c && t.x >= 0 && t.x < map.width && t.y >= 0 && t.y < map.height) {
+      grid[t.y][t.x] = true;
+    }
+  }
+  return grid;
 }

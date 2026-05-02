@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   startAuthentication,
   startRegistration,
@@ -10,9 +10,17 @@ import {
   type CharacterConfig,
   type SpriteDirection,
 } from './CharacterCreator';
-import WorldMap, { MAP_W, MAP_H } from './WorldMap';
+import WorldMap, { TILE, buildCollisionGrid } from './WorldMap';
+import MapEditor from './world/MapEditor';
+import type { WorldMapData } from './world/sheets';
 
 const SPEED = 2.4;
+const DEFAULT_MAP: WorldMapData = {
+  name: 'default',
+  width: 60,
+  height: 40,
+  layers: [{ tiles: [] }],
+};
 
 type AuthStatus = {
   hasPassword: boolean;
@@ -36,6 +44,20 @@ export default function CharacterGameplay({
   const [frame, setFrame] = useState(0);
   const keysRef = useRef<Set<string>>(new Set());
   const walkAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [worldMap, setWorldMap] = useState<WorldMapData>(DEFAULT_MAP);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Load map + admin flag
+  useEffect(() => {
+    fetch('/api/world/map')
+      .then((r) => r.json())
+      .then((j: WorldMapData & { isAdmin?: boolean }) => {
+        if (j && Array.isArray(j.layers)) setWorldMap(j);
+        setIsAdmin(!!j?.isAdmin);
+      })
+      .catch(() => undefined);
+  }, []);
   const [auth, setAuth] = useState<AuthStatus>(() => {
     const base: AuthStatus = initialAuth ?? {
       hasPassword: false,
@@ -151,25 +173,52 @@ export default function CharacterGameplay({
   // Pos is the character's world coordinate (0,0 = map center). The
   // map renders centered on the viewport and translates by -pos so
   // the character stays glued to the centre while the world scrolls.
-  // Bounds clamp keeps the character inside the playable rectangle.
-  const HALF_W = MAP_W / 2;
-  const HALF_H = MAP_H / 2;
-  const MARGIN = 28; // sprite half-width-ish to keep feet inside map
+  // Bounds clamp + per-tile collision keeps the character inside the
+  // playable area and out of impassable tiles.
+  const MAP_PX_W = worldMap.width * TILE;
+  const MAP_PX_H = worldMap.height * TILE;
+  const HALF_W = MAP_PX_W / 2;
+  const HALF_H = MAP_PX_H / 2;
+  const MARGIN = 28;
+  const collisionGrid = useMemo(
+    () => buildCollisionGrid(worldMap),
+    [worldMap],
+  );
+  const isBlocked = (worldX: number, worldY: number) => {
+    // Convert center-origin world coords → tile coords.
+    const tx = Math.floor((worldX + HALF_W) / TILE);
+    const ty = Math.floor((worldY + HALF_H) / TILE);
+    if (tx < 0 || ty < 0 || tx >= worldMap.width || ty >= worldMap.height)
+      return false;
+    return !!collisionGrid[ty]?.[tx];
+  };
   useEffect(() => {
-    if (!walking) return;
+    if (!walking || editorOpen) return;
     let raf = 0;
     const tick = () => {
       const vx = direction === 'w' ? -SPEED : direction === 'e' ? SPEED : 0;
       const vy = direction === 'n' ? -SPEED : direction === 's' ? SPEED : 0;
-      setPos((p) => ({
-        x: Math.max(-HALF_W + MARGIN, Math.min(HALF_W - MARGIN, p.x + vx)),
-        y: Math.max(-HALF_H + MARGIN, Math.min(HALF_H - MARGIN, p.y + vy)),
-      }));
+      setPos((p) => {
+        // Try X then Y separately so a wall on one axis doesn't
+        // freeze diagonal movement on the other.
+        let nx = Math.max(
+          -HALF_W + MARGIN,
+          Math.min(HALF_W - MARGIN, p.x + vx),
+        );
+        let ny = Math.max(
+          -HALF_H + MARGIN,
+          Math.min(HALF_H - MARGIN, p.y + vy),
+        );
+        if (isBlocked(nx, p.y)) nx = p.x;
+        if (isBlocked(nx, ny)) ny = p.y;
+        return { x: nx, y: ny };
+      });
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [walking, direction, HALF_W, HALF_H]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walking, direction, HALF_W, HALF_H, editorOpen, collisionGrid]);
 
   // ── Poll auth status while overlay is open (catch verify/login from
   //    other tabs or after returning from email link) ───────────────
@@ -221,13 +270,13 @@ export default function CharacterGameplay({
           position: 'absolute',
           left: '50%',
           top: '50%',
-          width: MAP_W,
-          height: MAP_H,
+          width: MAP_PX_W,
+          height: MAP_PX_H,
           transform: `translate(calc(-50% - ${pos.x}px), calc(-50% - ${pos.y}px))`,
           willChange: 'transform',
         }}
       >
-        <WorldMap />
+        <WorldMap map={worldMap} />
       </div>
 
       {/* Character — fixed at viewport centre. */}
@@ -308,6 +357,35 @@ export default function CharacterGameplay({
         loop
         preload="auto"
       />
+
+      {isAdmin && !overlayVisible && !editorOpen && (
+        <button
+          type="button"
+          onClick={() => setEditorOpen(true)}
+          className="pixel-btn pixel-btn-secondary"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: 24,
+            zIndex: 99997,
+            fontSize: '0.6rem',
+            padding: '8px 14px',
+            letterSpacing: '0.14em',
+          }}
+        >
+          ✎ Editor
+        </button>
+      )}
+
+      {editorOpen && (
+        <MapEditor
+          initialMap={worldMap}
+          onClose={() => setEditorOpen(false)}
+          onSaved={(m) => {
+            setWorldMap(m);
+          }}
+        />
+      )}
     </div>
   );
 }
