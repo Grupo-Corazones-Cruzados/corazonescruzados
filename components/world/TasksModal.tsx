@@ -275,9 +275,9 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
               {/* status + severity + actions */}
               <div className="flex items-center gap-2 flex-wrap">
                 {(() => {
-                  const cfg = STATUS_CFG[detail.status];
+                  const cfg = STATUS_CFG[detail.status] || STATUS_CFG.pending;
                   const Icon = cfg.icon;
-                  const sevCfg = SEVERITY_CFG[(detail.severity as IncidentSeverity) || 'medium'];
+                  const sevCfg = SEVERITY_CFG[(detail.severity as IncidentSeverity) || 'medium'] || SEVERITY_CFG.medium;
                   return (
                     <>
                       <span className={cn('flex items-center gap-1 px-2 py-1 rounded border text-[11px] font-medium', cfg.bg, cfg.color)}>
@@ -483,9 +483,9 @@ export default function TasksModal({ open, onClose, activeAgentId, agentProjectM
               ) : (
                 <div className="space-y-1">
                   {pageIncidents.map(inc => {
-                    const cfg = STATUS_CFG[inc.status];
+                    const cfg = STATUS_CFG[inc.status] || STATUS_CFG.pending;
                     const Icon = cfg.icon;
-                    const sevCfg = SEVERITY_CFG[(inc.severity as IncidentSeverity) || 'medium'];
+                    const sevCfg = SEVERITY_CFG[(inc.severity as IncidentSeverity) || 'medium'] || SEVERITY_CFG.medium;
                     const imgCount = inc.imageCount ?? inc.images?.length ?? 0;
                     return (
                       <div

@@ -23,12 +23,12 @@ export async function POST(req: NextRequest) {
       additional_fields, send_email, currency, exchange_rate,
     } = await req.json();
 
-    if (!project_ids?.length) return NextResponse.json({ error: 'Selecciona al menos un proyecto' }, { status: 400 });
     if (!client_name?.trim()) return NextResponse.json({ error: 'Nombre del cliente requerido' }, { status: 400 });
+    if (!invoice_items?.length) return NextResponse.json({ error: 'Agrega al menos un item a la factura' }, { status: 400 });
 
     // Create manual invoice
     const { invoiceId, projectsData } = await createManualInvoice({
-      projectIds: project_ids,
+      projectIds: project_ids || [],
       clientIdType: client_id_type,
       clientName: client_name,
       clientRuc: client_ruc,

@@ -7,6 +7,15 @@ export async function GET() {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
+    // Ensure table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS gcc_world."Project" (
+        id TEXT PRIMARY KEY,
+        "agentId" TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL
+      )
+    `);
+
     const { rows } = await pool.query(
       `SELECT id, name, "agentId" FROM gcc_world."Project" ORDER BY name`
     );

@@ -60,7 +60,14 @@ export async function GET(req: NextRequest) {
     )`);
 
     const dataQ = await pool.query(
-      `SELECT p.*, c.name as client_name,
+      `SELECT p.id, p.title, p.description, p.status, p.is_private,
+              p.budget_min, p.budget_max, p.final_cost, p.deadline,
+              p.client_id, p.assigned_member_id, p.created_by_user_id,
+              p.is_marketplace_published, p.marketplace_source_id,
+              p.digimundo_project_id, p.confirmed_at,
+              p.created_at, p.updated_at,
+              (p.proforma IS NOT NULL) as has_proforma,
+              c.name as client_name,
               inv_info.invoice_id,
               inv_info.invoice_sri_status
        FROM gcc_world.projects p

@@ -113,7 +113,7 @@ export default function TasksPage() {
 
   // ─── Detail view ───
   if (detail) {
-    const cfg = STATUS_CFG[detail.status];
+    const cfg = STATUS_CFG[detail.status] || STATUS_CFG.pending;
     const Icon = cfg.icon;
     const imgCount = detail.imageCount ?? detail.images?.length ?? 0;
     return (
@@ -267,7 +267,7 @@ export default function TasksPage() {
       ) : (
         <div className="space-y-1">
           {filtered.map(inc => {
-            const cfg = STATUS_CFG[inc.status];
+            const cfg = STATUS_CFG[inc.status] || STATUS_CFG.pending;
             const Icon = cfg.icon;
             const imgCount = inc.imageCount ?? inc.images?.length ?? 0;
             return (

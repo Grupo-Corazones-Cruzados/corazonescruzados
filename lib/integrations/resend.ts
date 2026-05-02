@@ -33,6 +33,40 @@ function emailShell(content: string): string {
 </div></body></html>`;
 }
 
+export async function sendCharacterVerificationEmail(
+  email: string,
+  token: string,
+  alias: string,
+) {
+  const url = `${APP_URL}/api/character/auth/verify?token=${token}`;
+  const html = emailShell(`
+    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Confirma tu cuenta</h1>
+    <p style="color:#94A3B8;font-size:14px;text-align:center;margin:0 0 24px;">
+      Para guardar tu progreso en GCC World
+    </p>
+    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 24px;">
+      Hola <strong style="color:#7B5FBF;">${alias}</strong>,<br/>
+      Recibimos tu registro en el juego. Confirma este correo para activar tu
+      cuenta y poder seguir jugando con tu personaje. Hasta que confirmes,
+      tu contraseña no será válida.
+    </p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;font-weight:600;font-size:15px;border:2px solid #7B5FBF;">
+        Confirmar mi cuenta
+      </a>
+    </div>
+    <p style="color:#737373;font-size:12px;margin:24px 0 0;">
+      Este enlace expira en 24 horas. Si no fuiste tú, puedes ignorar este correo.
+    </p>
+  `);
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: 'Confirma tu cuenta — GCC World',
+    html,
+  });
+}
+
 export async function sendVerificationEmail(
   email: string,
   token: string,

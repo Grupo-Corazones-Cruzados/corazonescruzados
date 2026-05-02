@@ -36,6 +36,7 @@ export default function PublicProjectPage() {
   const [error, setError] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is logged in
@@ -289,6 +290,77 @@ export default function PublicProjectPage() {
               ))}
             </div>
           </section>
+        )}
+
+        {/* Project Images */}
+        {p.images?.length > 0 && (
+          <section>
+            <h2 className="text-sm text-white mb-4" style={pf}>Imagenes del Proyecto ({p.images.length})</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {p.images.map((img: string, idx: number) => (
+                <div
+                  key={idx}
+                  className="aspect-square border border-digi-border bg-digi-card overflow-hidden cursor-pointer hover:border-accent/50 transition-colors"
+                  onClick={() => setPreviewImage(img)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover hover:opacity-90 transition-opacity" />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Image Preview Modal */}
+        {previewImage && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={() => setPreviewImage(null)}
+          >
+            <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="absolute -top-3 -right-3 w-7 h-7 flex items-center justify-center bg-digi-card border-2 border-digi-border text-digi-muted hover:text-white transition-colors z-10"
+                style={pf}
+              >
+                X
+              </button>
+              {p.images.length > 1 && (() => {
+                const currentIdx = p.images.indexOf(previewImage);
+                return (
+                  <>
+                    {currentIdx > 0 && (
+                      <button
+                        onClick={() => setPreviewImage(p.images[currentIdx - 1])}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-card/80 border border-digi-border text-digi-muted hover:text-white transition-colors z-10"
+                        style={pf}
+                      >
+                        &lt;
+                      </button>
+                    )}
+                    {currentIdx < p.images.length - 1 && (
+                      <button
+                        onClick={() => setPreviewImage(p.images[currentIdx + 1])}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-card/80 border border-digi-border text-digi-muted hover:text-white transition-colors z-10"
+                        style={pf}
+                      >
+                        &gt;
+                      </button>
+                    )}
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-digi-card/80 border border-digi-border text-[8px] text-digi-muted z-10" style={mf}>
+                      {currentIdx + 1} / {p.images.length}
+                    </div>
+                  </>
+                );
+              })()}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="max-w-[90vw] max-h-[90vh] object-contain border-2 border-digi-border"
+              />
+            </div>
+          </div>
         )}
 
         {/* Invoice */}

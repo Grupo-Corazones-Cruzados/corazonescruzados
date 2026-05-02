@@ -1,4 +1,5 @@
 {
   "agumon": "postgresql://postgres:wIXgRKMgGkvEsqhUZHINjkCiKZgxbVvh@centerbeam.proxy.rlwy.net:43397/railway",
-  "gabumon": "postgresql://postgres:bQwyflbnvPmic4VFvWCbftD*KIRfAY_v@shuttle.proxy.rlwy.net:47664/railway?schema=gcc_world"
+  "gabumon": "postgresql://postgres:bQwyflbnvPmic4VFvWCbftD*KIRfAY_v@shuttle.proxy.rlwy.net:47664/railway?schema=gcc_world",
+  "palmon": "postgresql://postgres:EEUvOXFArMFRbNtUeDciLAgpbKuXUxZs@interchange.proxy.rlwy.net:56604/railway"
 }

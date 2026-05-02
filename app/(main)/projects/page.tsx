@@ -42,13 +42,23 @@ export default function ProjectsPage() {
 
   const save = useCallback(async () => {
     setSaving(true);
-    await fetch('/api/project-structures', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(structures),
-    });
-    setSaving(false);
-    setDirty(false);
+    try {
+      const res = await fetch('/api/project-structures', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(structures),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert('Error al guardar: ' + (data.error || res.statusText));
+        return;
+      }
+      setDirty(false);
+    } catch (e: any) {
+      alert('Error al guardar: ' + e.message);
+    } finally {
+      setSaving(false);
+    }
   }, [structures]);
 
   const update = useCallback((fn: (draft: ProjectStructure[]) => ProjectStructure[]) => {

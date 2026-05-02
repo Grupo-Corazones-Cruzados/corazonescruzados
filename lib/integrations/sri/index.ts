@@ -19,6 +19,7 @@ async function ensureSriColumns() {
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS ruc_emisor VARCHAR(13);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS razon_social_emisor VARCHAR(300);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS client_ruc VARCHAR(13);
+    ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS client_id_type VARCHAR(2);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS client_name_sri VARCHAR(300);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS client_email_sri VARCHAR(255);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS client_phone_sri VARCHAR(20);
@@ -181,11 +182,11 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
 
   // Insert invoice — all amounts in USD, currency/rate stored for reference
   const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, currency, exchange_rate, original_total_usd)
-     VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'generated', $17, $18, $19, $20) RETURNING id`,
+    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, currency, exchange_rate, original_total_usd)
+     VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'generated', $18, $19, $20, $21) RETURNING id`,
     [projectId, project.client_id, (subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
      SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
-     invoiceData.clienteRuc, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+     invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
      subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
      currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
   );
@@ -350,11 +351,11 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
 
   // Insert invoice with is_manual = true, project_id = null
   const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
-     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'generated', $15, true, $16, $17, $18) RETURNING id`,
+    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
+     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19) RETURNING id`,
     [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
      SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
-     invoiceData.clienteRuc, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+     invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
      subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
      currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
   );
@@ -458,11 +459,11 @@ export async function createManualInvoiceFromTicket(options: TicketInvoiceOption
   const totalUsd = subtotal0 + subtotalIva + ivaMonto;
 
   const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
-     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'generated', $15, true, $16, $17, $18) RETURNING id`,
+    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
+     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19) RETURNING id`,
     [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
      SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
-     invoiceData.clienteRuc, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+     invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
      subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
      currency, exchangeRate, totalUsd.toFixed(2)]
   );
@@ -561,5 +562,127 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
     await pool.query(`UPDATE gcc_world.invoices SET sri_status = 'error', sri_response = $1, updated_at = NOW() WHERE id = $2`,
       [err.message, invoiceId]);
     return { ok: false, authorized: false, error: err.message };
+  }
+}
+
+/**
+ * Regenerate a rejected/errored invoice with corrected data, take a new secuencial
+ * and rebuild the XML. Does NOT auto-send to SRI; caller decides when to retry.
+ */
+interface RegenerateInvoiceOptions {
+  clientIdType?: string;
+  clientRuc?: string;
+  clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  items?: { description: string; quantity: number; unitPrice: number; ivaRate: number; discount?: number }[];
+}
+
+export async function regenerateRejectedInvoice(invoiceId: number, options: RegenerateInvoiceOptions): Promise<void> {
+  const { rows: [invoice] } = await pool.query(`SELECT * FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
+  if (!invoice) throw new Error('Factura no encontrada');
+  if (!['rejected', 'error'].includes(invoice.sri_status)) {
+    throw new Error('Solo facturas rechazadas o con error pueden regenerarse');
+  }
+
+  let items: InvoiceItem[];
+  if (options.items && options.items.length > 0) {
+    items = options.items.map(it => ({
+      description: it.description,
+      quantity: Number(it.quantity),
+      unitPrice: Number(it.unitPrice),
+      ivaRate: Number(it.ivaRate),
+      discount: Number(it.discount || 0),
+    }));
+  } else {
+    const { rows: existingItems } = await pool.query(
+      `SELECT description, quantity, unit_price, iva_rate FROM gcc_world.invoice_items_sri WHERE invoice_id = $1 ORDER BY id`,
+      [invoiceId]
+    );
+    if (existingItems.length === 0) throw new Error('Sin items para facturar');
+    items = existingItems.map((it: any) => ({
+      description: it.description,
+      quantity: Number(it.quantity),
+      unitPrice: Number(it.unit_price),
+      ivaRate: Number(it.iva_rate),
+      discount: 0,
+    }));
+  }
+
+  const clientIdType = options.clientIdType ?? invoice.client_id_type ?? (invoice.client_ruc?.length === 13 ? '04' : '05');
+  const clientRuc = options.clientRuc ?? invoice.client_ruc;
+  const clientName = options.clientName ?? invoice.client_name_sri;
+  const clientEmail = options.clientEmail ?? invoice.client_email_sri ?? '';
+  const clientPhone = options.clientPhone ?? invoice.client_phone_sri ?? '';
+  const clientAddress = options.clientAddress ?? invoice.client_address_sri ?? 'N/A';
+
+  const isConsumidorFinal = !clientRuc || clientRuc === '9999999999999' || clientIdType === '07';
+
+  const currency = invoice.currency || 'USD';
+  const exchangeRate = Number(invoice.exchange_rate) || 1;
+
+  const additionalFields: { name: string; value: string }[] = [];
+  if (currency !== 'USD' && exchangeRate > 0) {
+    const totalUsd = items.reduce((s, i) => s + i.quantity * i.unitPrice - (i.discount || 0), 0);
+    const totalConverted = (totalUsd * exchangeRate).toFixed(2);
+    additionalFields.push(
+      { name: 'monedaCliente', value: currency },
+      { name: 'tasaCambio', value: `1 USD = ${exchangeRate} ${currency}` },
+      { name: `equivalente${currency}`, value: `${totalConverted} ${currency}` },
+    );
+  }
+
+  const secuencial = await getNextSecuencial();
+
+  const invoiceData: InvoiceData = {
+    secuencial,
+    fecha: new Date(),
+    clienteIdTipo: isConsumidorFinal ? '07' : clientIdType,
+    clienteRuc: isConsumidorFinal ? '9999999999999' : clientRuc,
+    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (clientName || 'CONSUMIDOR FINAL'),
+    clienteDireccion: clientAddress,
+    clienteEmail: clientEmail,
+    clienteTelefono: clientPhone,
+    items,
+    additionalFields: additionalFields.length > 0 ? additionalFields : undefined,
+  };
+
+  const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
+
+  const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
+  const totalUsd = subtotal0 + subtotalIva + ivaMonto;
+
+  await pool.query(
+    `UPDATE gcc_world.invoices
+       SET invoice_number = $1, access_key = $2, xml_signed = $3,
+           client_ruc = $4, client_id_type = $5, client_name_sri = $6, client_email_sri = $7,
+           client_phone_sri = $8, client_address_sri = $9,
+           subtotal = $10, tax = $11, subtotal_0 = $12, subtotal_iva = $13, iva_amount = $14,
+           original_total_usd = $15,
+           sri_status = 'generated', sri_response = NULL,
+           authorization_number = NULL, authorization_date = NULL,
+           pdf_data = NULL, updated_at = NOW()
+     WHERE id = $16`,
+    [numeroFactura, claveAcceso, xml,
+     invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail,
+     invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+     (subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2),
+     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2),
+     totalUsd.toFixed(2),
+     invoiceId]
+  );
+
+  await pool.query(`DELETE FROM gcc_world.invoice_items_sri WHERE invoice_id = $1`, [invoiceId]);
+  for (const item of items) {
+    const sub = Math.round(item.quantity * item.unitPrice * 100) / 100;
+    const iva = Math.round(sub * (item.ivaRate / 100) * 100) / 100;
+    await pool.query(
+      `INSERT INTO gcc_world.invoice_items_sri (invoice_id, description, quantity, unit_price, subtotal, iva_rate, iva_amount)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [invoiceId, item.description, item.quantity, item.unitPrice, sub, item.ivaRate, iva]
+    );
   }
 }

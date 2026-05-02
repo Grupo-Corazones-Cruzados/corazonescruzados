@@ -46,6 +46,9 @@ export default function ProformaChatPanel({
 }: ProformaChatPanelProps) {
   const storageKey = `proforma-chat-${projectId}`;
   const proformaAgentId = `proforma-${agentId}`;
+  // Shared session key so proforma + video script panels reuse the same
+  // Claude CLI conversation (context carries over across panels and days).
+  const projectSessionKey = `project-${projectId}`;
 
   // Check for saved state on mount
   const getSavedState = (): SavedChatState | null => {
@@ -121,7 +124,7 @@ export default function ProformaChatPanel({
     await fetch('/api/chat/clear-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: proformaAgentId }),
+      body: JSON.stringify({ sessionKey: projectSessionKey }),
     }).catch(() => {});
     setBlocks([]);
     setLatestHtml(null);
@@ -245,6 +248,7 @@ export default function ProformaChatPanel({
           agentName: `${agentName} (Proforma)`,
           message,
           projectPath,
+          sessionKey: projectSessionKey,
         }),
       });
 
@@ -261,7 +265,7 @@ export default function ProformaChatPanel({
       setStreaming(false);
       streamingRef.current = false;
     }
-  }, [proformaAgentId, agentName, projectPath, readSSEStream]);
+  }, [proformaAgentId, projectSessionKey, agentName, projectPath, readSSEStream]);
 
   // --- Start proforma generation ---
   const startGeneration = async () => {
@@ -275,9 +279,15 @@ export default function ProformaChatPanel({
 
     const prompt = `IMPORTANTE: NO uses herramientas de escritura (Write, Edit). NO crees archivos. Tu respuesta debe ser UNICAMENTE el HTML puro como texto plano en tu mensaje.
 
-RESTRICCION DE DIRECTORIO CRITICA: Solo debes leer archivos dentro de la carpeta actual del proyecto (${projectPath}). NO navegues a carpetas padre ni hermanas. NO uses rutas como "../" ni accedas a directorios fuera del proyecto. Todos los comandos find, ls, glob y lecturas deben estar limitados a "${projectPath}" y sus subdirectorios.
+RESTRICCION DE DIRECTORIO — LEE ESTO PRIMERO:
+Tu proyecto esta UNICAMENTE en: ${projectPath}
+- TODAS las rutas que leas DEBEN empezar con "${projectPath}/"
+- PROHIBIDO usar ".." en rutas
+- PROHIBIDO acceder a carpetas padre o hermanas
+- Para explorar el proyecto usa: find "${projectPath}" -type f -name "*.tsx" -o -name "*.ts" | head -50
+- NO leas archivos fuera de "${projectPath}" bajo ninguna circunstancia
 
-Analiza este proyecto leyendo su codigo fuente, estructura, README, y cualquier archivo relevante para comprender de que se trata, que tecnologias usa, que funcionalidades tiene y su proposito.
+Analiza este proyecto leyendo su codigo fuente, estructura, README, y cualquier archivo relevante DENTRO DE "${projectPath}" para comprender de que se trata, que tecnologias usa, que funcionalidades tiene y su proposito.
 
 Luego, responde DIRECTAMENTE con el HTML completo de una proforma profesional para este proyecto.
 
@@ -448,7 +458,7 @@ REGLAS DE RESPUESTA CRITICAS:
   const addDocumentation = () => {
     const docPrompt = `IMPORTANTE: NO uses herramientas de escritura (Write, Edit). NO crees archivos. Responde UNICAMENTE con el HTML puro.
 
-RESTRICCION DE DIRECTORIO CRITICA: Solo debes leer archivos dentro de la carpeta del proyecto (${projectPath}). NO navegues a carpetas padre ni hermanas. NO uses rutas como "../" ni accedas a directorios fuera del proyecto.
+RESTRICCION DE DIRECTORIO — TODAS las rutas DEBEN empezar con "${projectPath}/". PROHIBIDO usar ".." o acceder a carpetas padre/hermanas. NO leas archivos fuera de "${projectPath}".
 
 Ahora necesito que generes un documento HTML COMPLETO de documentacion profesional del proyecto Y la proforma que ya generaste. El documento final debe ser un solo archivo HTML auto-contenido. Debe ser una documentacion COMPLETA, lista para presentar a un cliente o stakeholder.
 

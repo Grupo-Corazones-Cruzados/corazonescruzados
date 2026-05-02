@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ const SRI_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'
 
 export default function InvoiceDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   const [invoice, setInvoice] = useState<any>(null);
   const [sriItems, setSriItems] = useState<any[]>([]);
@@ -33,6 +34,18 @@ export default function InvoiceDetailPage() {
   const [voiding, setVoiding] = useState(false);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [showProof, setShowProof] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [resendingSri, setResendingSri] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    clientIdType: string;
+    clientRuc: string;
+    clientName: string;
+    clientEmail: string;
+    clientPhone: string;
+    clientAddress: string;
+    items: { description: string; quantity: number; unitPrice: number; ivaRate: number }[];
+  }>({ clientIdType: '05', clientRuc: '', clientName: '', clientEmail: '', clientPhone: '', clientAddress: '', items: [] });
 
   const fetchInvoice = useCallback(async () => {
     try {
@@ -93,6 +106,71 @@ export default function InvoiceDetailPage() {
       }
     } catch { toast.error('Error al subir comprobante'); }
     finally { setUploadingProof(false); e.target.value = ''; }
+  };
+
+  const openEditModal = () => {
+    const inferredIdType = (invoice.client_ruc && invoice.client_ruc.length === 13) ? '04' : '05';
+    setEditForm({
+      clientIdType: inferredIdType,
+      clientRuc: invoice.client_ruc || '',
+      clientName: invoice.client_name_sri || '',
+      clientEmail: invoice.client_email_sri || '',
+      clientPhone: invoice.client_phone_sri || '',
+      clientAddress: invoice.client_address_sri || '',
+      items: (sriItems.length > 0 ? sriItems : []).map((it: any) => ({
+        description: it.description,
+        quantity: Number(it.quantity),
+        unitPrice: Number(it.unit_price),
+        ivaRate: Number(it.iva_rate || 0),
+      })),
+    });
+    setShowEdit(true);
+  };
+
+  const handleRegenerate = async () => {
+    if (!editForm.clientName.trim() || editForm.items.length === 0) {
+      toast.error('Datos incompletos');
+      return;
+    }
+    setEditing(true);
+    try {
+      const res = await fetch(`/api/invoices/${id}/regenerate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...editForm, retry: true }),
+      });
+      const data = await res.json();
+      if (res.ok && data.authorized) {
+        toast.success('Factura autorizada por el SRI');
+        setShowEdit(false);
+        fetchInvoice();
+      } else if (res.ok && !data.authorized) {
+        toast.error(data.error || 'SRI rechazó nuevamente la factura');
+        fetchInvoice();
+      } else {
+        toast.error(data.error || 'Error al regenerar');
+      }
+    } catch { toast.error('Error de conexión'); }
+    finally { setEditing(false); }
+  };
+
+  const handleResendToSri = async () => {
+    setResendingSri(true);
+    try {
+      const res = await fetch(`/api/invoices/${id}/send-sri`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.authorized) {
+        toast.success('Factura autorizada por el SRI');
+        fetchInvoice();
+      } else if (res.ok && !data.authorized) {
+        toast.error(data.error || 'SRI rechazó la factura');
+        fetchInvoice();
+      } else {
+        toast.error(data.error || 'Error al reenviar al SRI');
+        fetchInvoice();
+      }
+    } catch { toast.error('Error de conexión'); }
+    finally { setResendingSri(false); }
   };
 
   const handleDeleteProof = async () => {
@@ -222,18 +300,54 @@ export default function InvoiceDetailPage() {
                     className="w-full py-1.5 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
                     Descargar PDF
                   </button>
-                  <button onClick={() => { setResendEmails(invoice.client_email_sri || ''); setShowResend(true); }}
-                    className="w-full py-1.5 text-[9px] text-accent-glow border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
-                    Reenviar por Correo
-                  </button>
-                  <button onClick={() => setShowVoid(true)}
-                    className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
-                    Anular Factura
-                  </button>
+                  {isAdmin && (
+                    <>
+                      <button onClick={() => { setResendEmails(invoice.client_email_sri || ''); setShowResend(true); }}
+                        className="w-full py-1.5 text-[9px] text-accent-glow border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
+                        Reenviar por Correo
+                      </button>
+                      <button onClick={() => setShowVoid(true)}
+                        className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
+                        Anular Factura
+                      </button>
+                    </>
+                  )}
                 </>
               )}
               {invoice.sri_status === 'voided' && (
-                <p className="text-[9px] text-red-400 text-center py-2" style={mf}>Factura anulada</p>
+                <>
+                  <p className="text-[9px] text-red-400 text-center py-2" style={mf}>Factura anulada</p>
+                  {isAdmin && (
+                    <button onClick={() => router.push(`/dashboard/invoices?refactor=${id}`)}
+                      className="w-full py-1.5 text-[9px] text-yellow-400 border border-yellow-500/40 hover:bg-yellow-900/20 transition-colors" style={pf}>
+                      Refacturar
+                    </button>
+                  )}
+                </>
+              )}
+              {(invoice.sri_status === 'rejected' || invoice.sri_status === 'error') && isAdmin && (
+                <>
+                  <div className="px-2 py-1.5 border border-red-700/50 bg-red-900/10 text-[8px] text-red-400 leading-relaxed" style={mf}>
+                    {(() => {
+                      try {
+                        const r = typeof invoice.sri_response === 'string' ? JSON.parse(invoice.sri_response) : invoice.sri_response;
+                        const msgs = r?.comprobantes?.[0]?.mensajes || r?.mensajes;
+                        if (Array.isArray(msgs) && msgs.length > 0) return msgs.map((m: any) => m.mensaje || m.informacionAdicional).filter(Boolean).join(' · ');
+                      } catch {}
+                      return typeof invoice.sri_response === 'string' ? invoice.sri_response : 'Factura rechazada por el SRI';
+                    })()}
+                  </div>
+                  {invoice.sri_status === 'error' && (
+                    <button onClick={handleResendToSri} disabled={resendingSri}
+                      className="w-full py-1.5 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors disabled:opacity-50" style={pf}>
+                      {resendingSri ? 'Reenviando...' : 'Reenviar al SRI'}
+                    </button>
+                  )}
+                  <button onClick={openEditModal}
+                    className="w-full py-1.5 text-[9px] text-yellow-400 border border-yellow-500/40 hover:bg-yellow-900/20 transition-colors" style={pf}>
+                    Editar y Reintentar
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -318,6 +432,107 @@ export default function InvoiceDetailPage() {
               finally { setVoiding(false); }
             }} disabled={voiding || !voidReason.trim()} className="px-4 py-2 text-[9px] border-2 border-red-700 bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-colors disabled:opacity-50" style={pf}>
               {voiding ? 'Procesando...' : 'Confirmar Anulacion'}
+            </button>
+          </div>
+        </div>
+      </PixelModal>
+
+      {/* Edit & Retry Modal */}
+      <PixelModal open={showEdit} onClose={() => !editing && setShowEdit(false)} title="Editar y Reintentar Factura" size="lg">
+        <div className="space-y-4">
+          <div className="px-3 py-2 border border-yellow-700/50 bg-yellow-900/10 text-[9px] text-yellow-400" style={mf}>
+            Corrige los datos del cliente o de los items. Se generará una nueva clave de acceso con un nuevo secuencial y se reenviará al SRI automáticamente.
+          </div>
+
+          <div>
+            <h4 className="text-[10px] text-accent-glow mb-2" style={pf}>Cliente</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tipo ID</label>
+                <select value={editForm.clientIdType} onChange={e => setEditForm({ ...editForm, clientIdType: e.target.value })}
+                  className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                  <option value="04">RUC</option>
+                  <option value="05">Cédula</option>
+                  <option value="06">Pasaporte</option>
+                  <option value="07">Consumidor Final</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>RUC / Cédula</label>
+                <input value={editForm.clientRuc} onChange={e => setEditForm({ ...editForm, clientRuc: e.target.value })}
+                  className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Razón Social / Nombre</label>
+                <input value={editForm.clientName} onChange={e => setEditForm({ ...editForm, clientName: e.target.value })}
+                  className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              </div>
+              <div>
+                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Email</label>
+                <input value={editForm.clientEmail} onChange={e => setEditForm({ ...editForm, clientEmail: e.target.value })}
+                  className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              </div>
+              <div>
+                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Teléfono</label>
+                <input value={editForm.clientPhone} onChange={e => setEditForm({ ...editForm, clientPhone: e.target.value })}
+                  className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Dirección</label>
+                <input value={editForm.clientAddress} onChange={e => setEditForm({ ...editForm, clientAddress: e.target.value })}
+                  className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-[10px] text-accent-glow" style={pf}>Items</h4>
+              <button onClick={() => setEditForm({ ...editForm, items: [...editForm.items, { description: '', quantity: 1, unitPrice: 0, ivaRate: 15 }] })}
+                className="text-[8px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>+ Item</button>
+            </div>
+            <div className="space-y-2">
+              {editForm.items.map((it, idx) => (
+                <div key={idx} className="grid grid-cols-12 gap-1 items-start">
+                  <input value={it.description} onChange={e => {
+                    const items = [...editForm.items]; items[idx] = { ...it, description: e.target.value };
+                    setEditForm({ ...editForm, items });
+                  }} placeholder="Descripción"
+                    className="col-span-5 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                  <input type="number" step="0.01" value={it.quantity} onChange={e => {
+                    const items = [...editForm.items]; items[idx] = { ...it, quantity: Number(e.target.value) };
+                    setEditForm({ ...editForm, items });
+                  }} placeholder="Cant"
+                    className="col-span-2 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                  <input type="number" step="0.01" value={it.unitPrice} onChange={e => {
+                    const items = [...editForm.items]; items[idx] = { ...it, unitPrice: Number(e.target.value) };
+                    setEditForm({ ...editForm, items });
+                  }} placeholder="P.Unit"
+                    className="col-span-2 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                  <select value={it.ivaRate} onChange={e => {
+                    const items = [...editForm.items]; items[idx] = { ...it, ivaRate: Number(e.target.value) };
+                    setEditForm({ ...editForm, items });
+                  }} className="col-span-2 px-1 py-1.5 bg-digi-darker border-2 border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                    <option value={0}>0%</option>
+                    <option value={5}>5%</option>
+                    <option value={12}>12%</option>
+                    <option value={15}>15%</option>
+                  </select>
+                  <button onClick={() => setEditForm({ ...editForm, items: editForm.items.filter((_, i) => i !== idx) })}
+                    className="col-span-1 py-1.5 text-[10px] text-red-400 border-2 border-red-700/50 hover:bg-red-900/20" style={pf}>×</button>
+                </div>
+              ))}
+              {editForm.items.length === 0 && (
+                <p className="text-[9px] text-digi-muted text-center py-2" style={mf}>Sin items. Agrega al menos uno.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
+            <button onClick={() => setShowEdit(false)} disabled={editing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors disabled:opacity-50" style={pf}>Cancelar</button>
+            <button onClick={handleRegenerate} disabled={editing || editForm.items.length === 0 || !editForm.clientName.trim()}
+              className="px-4 py-2 text-[9px] border-2 border-yellow-700 bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/50 transition-colors disabled:opacity-50" style={pf}>
+              {editing ? 'Regenerando...' : 'Regenerar y Reenviar'}
             </button>
           </div>
         </div>

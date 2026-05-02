@@ -1,0 +1,96 @@
+import { pool } from '@/lib/db';
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { randomBytes } from 'crypto';
+import { hashPassword } from '@/lib/auth/password';
+import { sendCharacterVerificationEmail } from '@/lib/integrations/resend';
+import { CLIENT_COOKIE, getClientIp, hashIp } from '@/lib/world/session';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function POST(req: Request) {
+  try {
+    const { email, password } = await req.json();
+
+    if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
+      return NextResponse.json(
+        { error: 'Correo inválido' },
+        { status: 400 },
+      );
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+      return NextResponse.json(
+        { error: 'La contraseña debe tener al menos 8 caracteres' },
+        { status: 400 },
+      );
+    }
+
+    const cookieStore = await cookies();
+    const token = cookieStore.get(CLIENT_COOKIE)?.value || null;
+    const ip = await getClientIp();
+    const ipHash = hashIp(ip);
+
+    let row: { id: number; alias: string | null } | null = null;
+    if (token) {
+      const r = await pool.query(
+        `SELECT id, alias FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
+        [token],
+      );
+      row = r.rows[0] ?? null;
+    }
+    if (!row) {
+      const r = await pool.query(
+        `SELECT id, alias FROM gcc_world.clients
+          WHERE ip_hash = $1 AND character_data IS NOT NULL
+          ORDER BY last_seen_at DESC NULLS LAST
+          LIMIT 1`,
+        [ipHash],
+      );
+      row = r.rows[0] ?? null;
+    }
+
+    if (!row) {
+      return NextResponse.json(
+        { error: 'No se encontró el personaje. Crea uno primero.' },
+        { status: 404 },
+      );
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const passwordHash = await hashPassword(password);
+    const verificationToken = randomBytes(32).toString('hex');
+
+    await pool.query(
+      `UPDATE gcc_world.clients
+          SET pending_email = $1,
+              pending_password_hash = $2,
+              verification_token = $3,
+              verification_expires = NOW() + INTERVAL '24 hours'
+        WHERE id = $4`,
+      [cleanEmail, passwordHash, verificationToken, row.id],
+    );
+
+    try {
+      await sendCharacterVerificationEmail(
+        cleanEmail,
+        verificationToken,
+        row.alias || 'Jugador',
+      );
+    } catch (err) {
+      console.error('Verification email send failed:', err);
+      return NextResponse.json(
+        {
+          error:
+            'No pudimos enviar el correo. Verifica que la dirección sea correcta.',
+        },
+        { status: 502 },
+      );
+    }
+
+    return NextResponse.json({ ok: true, email: cleanEmail });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'unknown error';
+    console.error('Character signup error:', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}

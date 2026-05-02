@@ -49,6 +49,12 @@ export function buildCreditNoteXml(data: CreditNoteData): { xml: string; claveAc
   const fechaEmision = `${dd}/${mm}/${aaaa}`;
 
   const tipoIdComprador = data.clienteIdTipo || getTipoIdentificacion(data.clienteRuc);
+
+  // SRI requires 9999999999999 for exterior (08) identification
+  const idCompradorSri = tipoIdComprador === '08' ? '9999999999999' : data.clienteRuc;
+  // Keep real ID for additional fields
+  const realIdExterior = tipoIdComprador === '08' && data.clienteRuc !== '9999999999999' ? data.clienteRuc : null;
+
   const ivaCodeMap: Record<number, string> = { 0: '0', 5: '5', 15: '4' };
 
   // Parse factura number parts
@@ -122,7 +128,7 @@ export function buildCreditNoteXml(data: CreditNoteData): { xml: string; claveAc
     <dirEstablecimiento>${escapeXml(SRI_CONFIG.dirEstablecimiento)}</dirEstablecimiento>
     <tipoIdentificacionComprador>${tipoIdComprador}</tipoIdentificacionComprador>
     <razonSocialComprador>${escapeXml(data.clienteNombre)}</razonSocialComprador>
-    <identificacionComprador>${data.clienteRuc}</identificacionComprador>
+    <identificacionComprador>${idCompradorSri}</identificacionComprador>
     <obligadoContabilidad>${SRI_CONFIG.obligadoContabilidad}</obligadoContabilidad>
     <codDocModificado>${codDocModificado}</codDocModificado>
     <numDocModificado>${data.facturaNumero}</numDocModificado>
@@ -137,7 +143,8 @@ export function buildCreditNoteXml(data: CreditNoteData): { xml: string; claveAc
   <detalles>${detallesXml}
   </detalles>
   <infoAdicional>
-    <campoAdicional nombre="email">${escapeXml(data.clienteEmail || '')}</campoAdicional>
+    <campoAdicional nombre="email">${escapeXml(data.clienteEmail || '')}</campoAdicional>${realIdExterior ? `
+    <campoAdicional nombre="identificacionExterior">${escapeXml(realIdExterior)}</campoAdicional>` : ''}
   </infoAdicional>
 </notaCredito>`;
 

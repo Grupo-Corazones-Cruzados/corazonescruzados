@@ -12,10 +12,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMPTZ;
     `);
 
+    // Ensure images column exists
+    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS images TEXT[]`);
+
     const { rows } = await pool.query(
       `SELECT p.id, p.title, p.description, p.status, p.budget_min, p.budget_max,
               p.final_cost, p.deadline, p.is_private, p.public_token, p.public_token_expires_at,
               p.created_at, p.updated_at, p.confirmed_at,
+              COALESCE(p.images, '{}') as images,
               c.name as client_name
        FROM gcc_world.projects p
        LEFT JOIN gcc_world.clients c ON c.id = p.client_id

@@ -152,8 +152,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     const { requirement_id } = await req.json();
 
-    // In in_progress: cannot delete requirements that have an assigned owner
-    if (proj?.status === 'in_progress') {
+    // In in_progress: cannot delete requirements that have an assigned owner (admins can bypass)
+    if (proj?.status === 'in_progress' && user.role !== 'admin') {
       const ownerMemberId = await getReqOwnerMemberId(requirement_id);
       if (ownerMemberId) {
         return NextResponse.json({ error: 'No se puede eliminar un requerimiento que ya tiene un miembro asignado' }, { status: 400 });

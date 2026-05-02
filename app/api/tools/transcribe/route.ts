@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       model: 'whisper-1' as const,
       language: 'es',
       temperature: 0,
-      prompt: 'Transcripción de una reunión de trabajo en español.',
+      response_format: 'verbose_json' as const,
     };
 
     // Split into 10-min segments, compress each individually, keep going until end of audio
@@ -98,9 +98,31 @@ export async function POST(req: NextRequest) {
 
       const segBuffer = await fs.readFile(segPath);
       const segFile = await toFile(segBuffer, `segment-${segIndex}.mp3`);
-      const result = await openai.audio.transcriptions.create({ ...whisperOpts, file: segFile });
-      const segText = typeof result === 'string' ? result : result.text || '';
-      if (segText.trim()) texts.push(segText.trim());
+      const result: any = await openai.audio.transcriptions.create({ ...whisperOpts, file: segFile });
+
+      // Filter out clearly bad sub-segments using Whisper's per-segment metadata.
+      // Only drop on strong signals — low-confidence audio (low avg_logprob) is often
+      // legitimate speech with background noise, not hallucination.
+      let segText = '';
+      if (Array.isArray(result?.segments)) {
+        const kept = result.segments.filter((s: any) => {
+          const noSpeech = s.no_speech_prob ?? 0;
+          const compression = s.compression_ratio ?? 0;
+          const logprob = s.avg_logprob ?? 0;
+          // Drop only if Whisper itself is almost certain it's silence
+          if (noSpeech > 0.9) return false;
+          // Drop loop-style hallucinations (very repetitive text compresses heavily)
+          if (compression > 2.4) return false;
+          // Drop the rare combo of "low confidence" AND "no speech detected" — both wrong together
+          if (logprob < -1.0 && noSpeech > 0.6) return false;
+          return true;
+        });
+        segText = kept.map((s: any) => s.text).join(' ').trim();
+      } else {
+        segText = (result?.text || '').trim();
+      }
+
+      if (segText) texts.push(segText);
 
       segIndex++;
 
@@ -123,12 +145,15 @@ export async function POST(req: NextRequest) {
       /suscr[ií]bete a mi canal[.!]*/gi,
       /no te olvides de suscribirte[.!]*/gi,
       /dale like y suscr[ií]bete[.!]*/gi,
+      /hola a todos y bienvenidos a mi canal[.!]*/gi,
     ];
     for (const pattern of hallucinations) {
       fullText = fullText.replace(pattern, '');
     }
-    // Remove any phrase repeated 5+ times consecutively
-    fullText = fullText.replace(/(.{1,40}?)\s*(\1[\s.?!,]*){4,}/gi, (_match, phrase) => phrase.trim());
+    // Remove any phrase (up to 200 chars) repeated 3+ times consecutively
+    fullText = fullText.replace(/(.{5,200}?)(?:[\s.?!,]*\1){2,}/gi, (_match, phrase) => phrase.trim());
+    // Collapse runs of identical sentences separated by punctuation/whitespace
+    fullText = fullText.replace(/([^.!?\n]{10,}[.!?])(\s*\1){1,}/gi, '$1');
     fullText = fullText.split('\n').filter(l => l.trim()).join('\n');
 
     if (!fullText.trim()) {
@@ -136,10 +161,12 @@ export async function POST(req: NextRequest) {
     }
 
     const originalName = file.name.replace(/\.[^.]+$/, '');
+    const asciiName = originalName.normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '_');
+    const encodedName = encodeURIComponent(originalName);
     return new NextResponse(fullText, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${originalName}.txt"`,
+        'Content-Disposition': `attachment; filename="${asciiName}.txt"; filename*=UTF-8''${encodedName}.txt`,
       },
     });
   } catch (err: any) {

@@ -2,7 +2,7 @@
   "agumon": {
     "agentId": "agumon",
     "digimonName": "Agumon",
-    "affinity": 39,
+    "affinity": 45,
     "foodSchedule": {
       "meals": [
         "08:48",
@@ -11,7 +11,7 @@
       ]
     },
     "lastFedDates": [
-      "2026-03-29_2"
+      "2026-04-24_0"
     ],
     "visualDescription": "Agumon is a small, bipedal reptilian Digimon with a distinctly dinosaur-like appearance. Standing about half the height of a human, its body is covered in bright orange scales, complemented by a pale yellow underbelly. It has a large, rounded head with expressive green eyes and a short snout filled with small, sharp teeth. Its arms and legs are stout, ending in three sharp claws, perfect for gripping and digging. Agumon's tail is short and slightly curled upwards, adding to its dynamic look in pixel art. The proportions are chunky, ideal for capturing its sturdy, adventurous personality.",
     "phrases": {
@@ -165,7 +165,7 @@
   "gabumon": {
     "agentId": "gabumon",
     "digimonName": "Gabumon",
-    "affinity": 33,
+    "affinity": 36,
     "foodSchedule": {
       "meals": [
         "08:22",
@@ -174,7 +174,7 @@
       ]
     },
     "lastFedDates": [
-      "2026-03-29_2"
+      "2026-04-07_2"
     ],
     "visualDescription": "Gabumon is a small creature with a dinosaur-like body. It has a light blue skin that resembles scales and wears a rugged yellow and white striped fur pelt draped over its back, reminiscent of a wolf's, with horn-like protrusions on the forehead. Its round head has a small horn on the snout and expressive eyes that suggest intelligence. Its limbs are short and slightly muscular with sharp blue claws on both hands and feet. Gabumon's tail is bushy, peeking out from under the fur pelt, adding to its charming demeanor in pixel art form.",
     "phrases": {
@@ -325,7 +325,7 @@
   "patamon": {
     "agentId": "patamon",
     "digimonName": "Patamon",
-    "affinity": 33,
+    "affinity": 39,
     "foodSchedule": {
       "meals": [
         "09:35",
@@ -334,7 +334,7 @@
       ]
     },
     "lastFedDates": [
-      "2026-03-29_2"
+      "2026-04-22_1"
     ],
     "visualDescription": "Patamon is a small, orange, hamster-like Digimon with large, light blue eyes that convey curiosity and innocence. Its most distinctive feature is its pair of oversized, bat-like ears that resemble wings, enabling it to glide short distances. Patamon has a plump body with a cream-colored underside and small, stubby limbs with three tiny toes on each foot. Its tail is short and rounded, matching its diminutive and cuddly appearance, making it ideal for pixel art with simplistic yet expressive animation capabilities.",
     "phrases": {
@@ -485,7 +485,7 @@
   "gomamon": {
     "agentId": "gomamon",
     "digimonName": "Gomamon",
-    "affinity": 33,
+    "affinity": 42,
     "foodSchedule": {
       "meals": [
         "07:31",
@@ -494,7 +494,7 @@
       ]
     },
     "lastFedDates": [
-      "2026-03-29_2"
+      "2026-04-22_1"
     ],
     "visualDescription": "Gomamon is a small, seal-like Digimon with a white, fuzzy body that radiates a playful and curious energy. It features vibrant purple marks on its forehead and floppy ears that stand out against its pristine fur. Its eyes are bright and inquisitive, always alert to its surroundings. It has two plump orange claws on each of its stubby limbs, perfect for grasping and interacting with its environment. Its tail is short and rounded, adding to its overall cuddly appearance. Gomamon moves with a waddle on land, which is both endearing and comical in a pixel art sprite.",
     "phrases": {
@@ -621,7 +621,7 @@
   "piyomon": {
     "agentId": "piyomon",
     "digimonName": "Piyomon",
-    "affinity": 42,
+    "affinity": 51,
     "foodSchedule": {
       "meals": [
         "09:06",
@@ -630,7 +630,7 @@
       ]
     },
     "lastFedDates": [
-      "2026-03-29_2"
+      "2026-04-24_0"
     ],
     "visualDescription": "Piyomon is a small, bird-like Digimon with a charming, youthful appearance. Its body is covered in soft, pink feathers with a lighter pink tummy. Large, expressive eyes give it a friendly appearance, and it has a small, triangular, orange beak. Its head is slightly oversized, adorned with a single blue feather resembling a quill pen. Piyomon has short, stubby wings that resemble small arms, each ending in three claw-like fingers. Its legs are short, with three sharp, blue talons per foot. The overall look is endearing, with a balanced proportion between head, body, and limbs suited for pixel art representation.",
     "phrases": {
@@ -781,7 +781,7 @@
   "shoutmon": {
     "agentId": "shoutmon",
     "digimonName": "Shoutmon",
-    "affinity": 30,
+    "affinity": 33,
     "foodSchedule": {
       "meals": [
         "07:41",
@@ -790,7 +790,7 @@
       ]
     },
     "lastFedDates": [
-      "2026-03-29_2"
+      "2026-04-07_2"
     ],
     "visualDescription": "Shoutmon is a small, dragon-like Digimon with an energetic and bold appearance. It has a bright red, short, and muscular body that is built for speed and agility. Its head is large and round with expressive, blue eyes and a prominent, toothy grin. He sports a yellow, star-shaped mark on his forehead. Shoutmon has sturdy limbs; his arms end in three sharp claws while his legs are powerful with short claws. Its tail is medium in length and thin, often swaying with energy. Shoutmon's appearance is completed by a small, metallic microphone that it usually holds tightly in one hand.",
     "phrases": {
@@ -1099,7 +1099,7 @@
   "palmon": {
     "agentId": "palmon",
     "digimonName": "Palmon",
-    "affinity": 27,
+    "affinity": 30,
     "foodSchedule": {
       "meals": [
         "07:58",
@@ -1108,7 +1108,7 @@
       ]
     },
     "lastFedDates": [
-      "2026-03-29_2"
+      "2026-04-07_2"
     ],
     "visualDescription": "Palmon is an adorable plant-like Digimon with a green body covered in leafy scales giving her a natural texture. Her head is adorned with a vibrant pink flower with five petals, which sits prominently atop her head, adding a splash of color. Her round, expressive eyes are framed by leaf-like tendrils that fall like hair. She has short, stubby legs and long, flexible arms ending in three-pointed claws, resembling a plant's roots. Her proportions are small and compact, making her perfect for a pixel art sprite with cartoonish charm.",
     "phrases": {
@@ -1392,7 +1392,7 @@
   "guilmon": {
     "agentId": "guilmon",
     "digimonName": "Guilmon",
-    "affinity": 36,
+    "affinity": 39,
     "foodSchedule": {
       "meals": [
         "08:35",
@@ -1401,7 +1401,7 @@
       ]
     },
     "lastFedDates": [
-      "2026-03-29_2"
+      "2026-04-22_1"
     ],
     "visualDescription": "Guilmon is a dinosaur-like Digimon with a stocky, compact frame covered in vivid red scales. His body is adorned with black tribal markings around his eyes, forearms, and chest, adding to his fierce appearance. He has large yellow eyes, sharp claws on his hands and feet, and a long, tapering tail. Guilmon’s face features a short snout with a small horn on his nose, and he has a set of prominent, triangular spikes that run down his back. His overall proportions are somewhat squat, giving him a solid and powerful stance ideal for drawing attention in pixel art.",
     "phrases": {

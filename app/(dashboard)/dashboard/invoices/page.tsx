@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
@@ -29,8 +29,17 @@ const SRI_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 
 };
 
 export default function InvoicesPage() {
+  return (
+    <Suspense fallback={null}>
+      <InvoicesPageInner />
+    </Suspense>
+  );
+}
+
+function InvoicesPageInner() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
@@ -68,6 +77,15 @@ export default function InvoicesPage() {
   const [mCurrency, setMCurrency] = useState('USD');
   const [mExchangeRate, setMExchangeRate] = useState('1');
 
+  // Client history (clients from past invoices, for autofill)
+  const [clientHistory, setClientHistory] = useState<{
+    id_type: string; client_ruc: string; client_name: string;
+    client_email: string; client_phone: string; client_address: string;
+    last_used: string;
+  }[]>([]);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   // Processing
   const [processing, setProcessing] = useState(false);
   const [processStep, setProcessStep] = useState('');
@@ -89,6 +107,45 @@ export default function InvoicesPage() {
   useEffect(() => {
     fetch('/api/exchange-rates').then(r => r.json()).then(d => setCurrencies(d.currencies || [])).catch(() => {});
   }, []);
+
+  // Fetch client history when manual modal opens
+  useEffect(() => {
+    if (!showManual) return;
+    fetch('/api/invoices/clients-history')
+      .then(r => r.json())
+      .then(d => setClientHistory(d.data || []))
+      .catch(() => setClientHistory([]));
+  }, [showManual]);
+
+  const applyPastClient = (c: typeof clientHistory[0]) => {
+    setMIdType(c.id_type);
+    setMClientRuc(c.client_ruc);
+    setMClientName(c.client_name);
+    setMClientEmail(c.client_email);
+    setMClientPhone(c.client_phone);
+    setMClientAddress(c.client_address);
+    setHistoryOpen(false);
+    setHistorySearch('');
+    toast.success(`Datos de ${c.client_name} cargados`);
+  };
+
+  const clearClientFields = () => {
+    setMIdType('07');
+    setMClientRuc('9999999999999');
+    setMClientName('CONSUMIDOR FINAL');
+    setMClientEmail('');
+    setMClientPhone('');
+    setMClientAddress('');
+    setHistoryOpen(false);
+    setHistorySearch('');
+  };
+
+  const filteredHistory = historySearch.trim()
+    ? clientHistory.filter(c => {
+        const q = historySearch.trim().toLowerCase();
+        return c.client_name.toLowerCase().includes(q) || c.client_ruc.toLowerCase().includes(q);
+      })
+    : clientHistory;
 
   // Search projects for manual invoice
   const searchProjects = useCallback(async (q: string) => {
@@ -143,6 +200,65 @@ export default function InvoicesPage() {
     setProcessStep('');
     setShowManual(true);
   };
+
+  // Refactor: prefill modal with data from an existing invoice (e.g. a voided one)
+  const openRefactorModal = useCallback(async (sourceId: string) => {
+    try {
+      const [invRes, itemsRes] = await Promise.all([
+        fetch(`/api/invoices/${sourceId}`),
+        fetch(`/api/invoices/${sourceId}/items`),
+      ]);
+      if (!invRes.ok) { toast.error('No se pudo cargar la factura origen'); return; }
+      const { data: inv } = await invRes.json();
+      const itemsData = itemsRes.ok ? await itemsRes.json() : { data: [] };
+      const items = itemsData.data || [];
+
+      setManualStep('form');
+      setManualType('completo');
+      setMPaidAmount('');
+      setSelectedProjects([]);
+      setProjectSearch('');
+      setProjectResults([]);
+      setMIdType(inv.client_id_type || '07');
+      setMClientName(inv.client_name_sri || 'CONSUMIDOR FINAL');
+      setMClientRuc(inv.client_ruc || '9999999999999');
+      setMClientEmail(inv.client_email_sri || '');
+      setMClientPhone(inv.client_phone_sri || '');
+      setMClientAddress(inv.client_address_sri || '');
+      setMPaymentCode('20');
+      setMItems(items.length > 0
+        ? items.map((it: any) => ({
+            description: it.description,
+            quantity: String(Number(it.quantity) || 1),
+            unitPrice: String(Number(it.unit_price) || 0),
+            ivaRate: String(Number(it.iva_rate) || 0),
+            discount: '0',
+          }))
+        : [{ description: '', quantity: '1', unitPrice: '0', ivaRate: '0', discount: '0' }]);
+      setMAdditionalFields([]);
+      setMSendEmail(true);
+      setMCurrency(inv.currency || 'USD');
+      setMExchangeRate(String(Number(inv.exchange_rate) || 1));
+      setProcessing(false);
+      setProcessStep('');
+      setShowManual(true);
+      toast.success(`Datos de factura ${inv.invoice_number} cargados — edita y envía`);
+    } catch {
+      toast.error('Error cargando datos de la factura');
+    }
+  }, []);
+
+  // Detect ?refactor=<id> param and prefill the modal once
+  const refactorProcessedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const refactorId = searchParams.get('refactor');
+    if (!refactorId || !isAdmin) return;
+    if (refactorProcessedRef.current === refactorId) return;
+    refactorProcessedRef.current = refactorId;
+    openRefactorModal(refactorId);
+    // Clean the URL so reloads don't re-trigger
+    router.replace('/dashboard/invoices');
+  }, [searchParams, isAdmin, openRefactorModal, router]);
 
   // Advance from project selection to client form
   const goToForm = async () => {
@@ -568,7 +684,67 @@ export default function InvoicesPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* LEFT: Adquirente + Pago */}
               <div className="space-y-2">
-                <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1" style={pf}>Adquirente</h4>
+                <div className="flex items-center justify-between border-b border-digi-border pb-1">
+                  <h4 className="text-[9px] text-accent-glow" style={pf}>Adquirente</h4>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setHistoryOpen(o => !o)}
+                      className="text-[8px] px-2 py-0.5 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors"
+                      style={pf}
+                    >
+                      {historyOpen ? 'Cerrar' : `Cliente previo${clientHistory.length ? ` (${clientHistory.length})` : ''}`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearClientFields}
+                      className="text-[8px] px-2 py-0.5 border border-digi-border text-digi-muted hover:text-white transition-colors"
+                      style={pf}
+                      title="Limpiar campos"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                </div>
+
+                {historyOpen && (
+                  <div className="border border-digi-border bg-digi-darker p-2 space-y-2">
+                    <input
+                      autoFocus
+                      value={historySearch}
+                      onChange={e => setHistorySearch(e.target.value)}
+                      placeholder="Buscar por nombre o RUC..."
+                      className="w-full px-2 py-1 bg-digi-dark border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none"
+                      style={mf}
+                    />
+                    <div className="max-h-40 overflow-y-auto border border-digi-border/50">
+                      {filteredHistory.length === 0 ? (
+                        <div className="px-2 py-3 text-center text-[9px] text-digi-muted" style={pf}>
+                          {clientHistory.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}
+                        </div>
+                      ) : (
+                        filteredHistory.slice(0, 50).map((c) => (
+                          <button
+                            key={c.client_ruc}
+                            type="button"
+                            onClick={() => applyPastClient(c)}
+                            className="w-full text-left px-2 py-1.5 border-b border-digi-border/30 last:border-b-0 hover:bg-accent/10 transition-colors"
+                          >
+                            <div className="text-[10px] text-digi-text truncate" style={mf}>{c.client_name}</div>
+                            <div className="text-[8px] text-digi-muted flex gap-2" style={mf}>
+                              <span>{c.client_ruc}</span>
+                              {c.client_email && <span className="truncate">· {c.client_email}</span>}
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                    <div className="text-[8px] text-digi-muted" style={pf}>
+                      Elige uno para rellenar los campos, o cierra y llena manualmente.
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tipo ID <span className="text-red-400">*</span></label>

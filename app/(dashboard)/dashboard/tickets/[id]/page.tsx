@@ -79,6 +79,15 @@ export default function TicketDetailPage() {
     send_email: true,
   });
 
+  // Client history (past invoice clients for autofill)
+  const [clientHistory, setClientHistory] = useState<{
+    id_type: string; client_ruc: string; client_name: string;
+    client_email: string; client_phone: string; client_address: string;
+    last_used: string;
+  }[]>([]);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   const fetchTicket = useCallback(async () => {
     try {
       const res = await fetch(`/api/tickets/${id}`);
@@ -93,6 +102,50 @@ export default function TicketDetailPage() {
   }, [id]);
 
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
+
+  useEffect(() => {
+    if (!completeModal) return;
+    fetch('/api/invoices/clients-history')
+      .then(r => r.json())
+      .then(d => setClientHistory(d.data || []))
+      .catch(() => setClientHistory([]));
+  }, [completeModal]);
+
+  const applyPastClient = (c: typeof clientHistory[0]) => {
+    setInvoiceForm((prev: any) => ({
+      ...prev,
+      client_id_type: c.id_type,
+      client_ruc: c.client_ruc,
+      client_name: c.client_name,
+      client_email: c.client_email,
+      client_phone: c.client_phone,
+      client_address: c.client_address,
+    }));
+    setHistoryOpen(false);
+    setHistorySearch('');
+    toast.success(`Datos de ${c.client_name} cargados`);
+  };
+
+  const clearClientFields = () => {
+    setInvoiceForm((prev: any) => ({
+      ...prev,
+      client_id_type: '07',
+      client_ruc: '9999999999999',
+      client_name: 'CONSUMIDOR FINAL',
+      client_email: '',
+      client_phone: '',
+      client_address: '',
+    }));
+    setHistoryOpen(false);
+    setHistorySearch('');
+  };
+
+  const filteredHistory = historySearch.trim()
+    ? clientHistory.filter(c => {
+        const q = historySearch.trim().toLowerCase();
+        return c.client_name.toLowerCase().includes(q) || c.client_ruc.toLowerCase().includes(q);
+      })
+    : clientHistory;
 
   const updateStatus = async (status: string) => {
     try {
@@ -616,6 +669,67 @@ export default function TicketDetailPage() {
             </div>
           </div>
 
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Adquirente</label>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setHistoryOpen(o => !o)}
+                className="text-[8px] px-2 py-0.5 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors"
+                style={pf}
+              >
+                {historyOpen ? 'Cerrar' : `Cliente previo${clientHistory.length ? ` (${clientHistory.length})` : ''}`}
+              </button>
+              <button
+                type="button"
+                onClick={clearClientFields}
+                className="text-[8px] px-2 py-0.5 border border-digi-border text-digi-muted hover:text-white transition-colors"
+                style={pf}
+                title="Limpiar campos"
+              >
+                Limpiar
+              </button>
+            </div>
+          </div>
+
+          {historyOpen && (
+            <div className="border border-digi-border bg-digi-darker p-2 space-y-2">
+              <input
+                autoFocus
+                value={historySearch}
+                onChange={e => setHistorySearch(e.target.value)}
+                placeholder="Buscar por nombre o RUC..."
+                className="w-full px-2 py-1 bg-digi-dark border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none"
+                style={mf}
+              />
+              <div className="max-h-40 overflow-y-auto border border-digi-border/50">
+                {filteredHistory.length === 0 ? (
+                  <div className="px-2 py-3 text-center text-[9px] text-digi-muted" style={pf}>
+                    {clientHistory.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}
+                  </div>
+                ) : (
+                  filteredHistory.slice(0, 50).map((c) => (
+                    <button
+                      key={c.client_ruc}
+                      type="button"
+                      onClick={() => applyPastClient(c)}
+                      className="w-full text-left px-2 py-1.5 border-b border-digi-border/30 last:border-b-0 hover:bg-accent/10 transition-colors"
+                    >
+                      <div className="text-[10px] text-digi-text truncate" style={mf}>{c.client_name}</div>
+                      <div className="text-[8px] text-digi-muted flex gap-2" style={mf}>
+                        <span>{c.client_ruc}</span>
+                        {c.client_email && <span className="truncate">· {c.client_email}</span>}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+              <div className="text-[8px] text-digi-muted" style={pf}>
+                Elige uno para rellenar los campos, o cierra y llena manualmente.
+              </div>
+            </div>
+          )}
+
           <PixelSelect label="Tipo de identificacion" value={invoiceForm.client_id_type}
             onChange={(e) => setInvoiceForm({ ...invoiceForm, client_id_type: e.target.value })}
             options={[
@@ -623,6 +737,7 @@ export default function TicketDetailPage() {
               { value: '04', label: 'RUC' },
               { value: '05', label: 'Cedula' },
               { value: '06', label: 'Pasaporte' },
+              { value: '08', label: 'ID Exterior' },
             ]} />
           <PixelInput label="Nombre / Razon social *" value={invoiceForm.client_name}
             onChange={(e) => setInvoiceForm({ ...invoiceForm, client_name: e.target.value })} />
@@ -637,11 +752,14 @@ export default function TicketDetailPage() {
           <PixelSelect label="Metodo de pago" value={invoiceForm.payment_code}
             onChange={(e) => setInvoiceForm({ ...invoiceForm, payment_code: e.target.value })}
             options={[
-              { value: '20', label: 'Otros con utilizacion del sistema financiero' },
               { value: '01', label: 'Sin utilizacion del sistema financiero' },
+              { value: '15', label: 'Compensacion de deudas' },
               { value: '16', label: 'Tarjeta de debito' },
-              { value: '19', label: 'Tarjeta de credito' },
               { value: '17', label: 'Dinero electronico' },
+              { value: '18', label: 'Tarjeta prepago' },
+              { value: '19', label: 'Tarjeta de credito' },
+              { value: '20', label: 'Otros con utilizacion del sistema financiero' },
+              { value: '21', label: 'Endoso de titulos' },
             ]} />
           <div className="grid grid-cols-2 gap-2">
             <PixelInput label="Moneda" value={invoiceForm.currency}

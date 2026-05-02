@@ -49,13 +49,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const invDate = new Date(inv.created_at);
     const facturaFecha = `${String(invDate.getDate()).padStart(2, '0')}/${String(invDate.getMonth() + 1).padStart(2, '0')}/${invDate.getFullYear()}`;
 
+    if (!inv.client_id_type) {
+      return NextResponse.json({ error: 'La factura no tiene tipo de identificación registrado. Actualiza el registro en BD antes de anular.' }, { status: 400 });
+    }
+
     // Build credit note XML
     const { xml, claveAcceso, numero } = buildCreditNoteXml({
       secuencial,
       fecha: new Date(),
       facturaNumero: inv.invoice_number,
       facturaFecha,
-      clienteIdTipo: inv.client_ruc === '9999999999999' ? '07' : undefined,
+      clienteIdTipo: inv.client_id_type,
       clienteRuc: inv.client_ruc || '9999999999999',
       clienteNombre: inv.client_name_sri || 'CONSUMIDOR FINAL',
       clienteDireccion: inv.client_address_sri || 'N/A',
@@ -79,7 +83,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const recepcion = await enviarComprobante(signedXml);
     if (!recepcion.ok) {
       const msgs = recepcion.comprobantes[0]?.mensajes?.map(m => m.informacionAdicional || m.mensaje).join('; ') || 'Error';
-      return NextResponse.json({ ok: false, error: `SRI rechazo: ${msgs}` });
+      console.error('[void] SRI recepcion rejected:', JSON.stringify(recepcion, null, 2));
+      return NextResponse.json({ ok: false, error: `SRI rechazo: ${msgs}`, claveAcceso, numero, recepcion });
     }
 
     // Wait and check authorization
@@ -95,7 +100,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ ok: true, creditNote: `NC-${numero}`, autorizacion: auth.numeroAutorizacion });
     } else {
       const msgs = auth.mensajes?.map(m => m.informacionAdicional || m.mensaje).join('; ') || 'No autorizado';
-      return NextResponse.json({ ok: false, error: `SRI no autorizo la nota de credito: ${msgs}` });
+      console.error('[void] SRI authorization failed:', JSON.stringify(auth, null, 2));
+      return NextResponse.json({ ok: false, error: `SRI no autorizo la nota de credito: ${msgs}`, claveAcceso, numero, auth });
     }
   } catch (err: any) {
     console.error('Void error:', err.message);
