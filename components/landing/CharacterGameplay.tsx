@@ -34,6 +34,7 @@ export default function CharacterGameplay({
   const [walking, setWalking] = useState(false);
   const [frame, setFrame] = useState(0);
   const keysRef = useRef<Set<string>>(new Set());
+  const walkAudioRef = useRef<HTMLAudioElement | null>(null);
   const [auth, setAuth] = useState<AuthStatus>(() => {
     const base: AuthStatus = initialAuth ?? {
       hasPassword: false,
@@ -76,16 +77,32 @@ export default function CharacterGameplay({
     prevHasPasswordRef.current = auth.hasPassword;
   }, [auth.hasPassword]);
 
-  // ── Walk frame cycler ────────────────────────────────────────────
+  // ── Walk frame cycler + walking SFX ──────────────────────────────
   useEffect(() => {
+    const sfx = walkAudioRef.current;
     if (!walking) {
       setFrame(0);
+      if (sfx) {
+        sfx.pause();
+        sfx.currentTime = 0;
+      }
       return;
+    }
+    if (sfx) {
+      sfx.loop = true;
+      sfx.volume = 0.4;
+      sfx.play().catch(() => undefined);
     }
     const id = window.setInterval(() => {
       setFrame((f) => (f >= 8 ? 1 : f + 1));
     }, 130);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      if (sfx) {
+        sfx.pause();
+        sfx.currentTime = 0;
+      }
+    };
   }, [walking]);
 
   // ── Keyboard handlers (gated by `locked`) ────────────────────────
@@ -256,6 +273,13 @@ export default function CharacterGameplay({
           registered={passkeyRegistered}
         />
       )}
+
+      <audio
+        ref={walkAudioRef}
+        src="/sounds/music/Efecto%20de%20sonido%20caminando%20272246.mp3"
+        loop
+        preload="auto"
+      />
     </div>
   );
 }
