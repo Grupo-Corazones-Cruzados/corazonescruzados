@@ -17,6 +17,7 @@ import WorldMap, {
 } from './WorldMap';
 import MapEditor from './world/MapEditor';
 import InventoryBar from './world/InventoryBar';
+import NpcEditor, { type NpcRecord } from './world/NpcEditor';
 import { findItem, itemDataUrl } from './world/items';
 import type { WorldMapData } from './world/sheets';
 
@@ -74,6 +75,17 @@ export default function CharacterGameplay({
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [equipped, setEquipped] = useState<string | null>(null);
   const pickingRef = useRef<Set<string>>(new Set());
+  const [npcs, setNpcs] = useState<NpcRecord[]>([]);
+  const [npcEditorOpen, setNpcEditorOpen] = useState(false);
+  const [activeDialogue, setActiveDialogue] = useState<{
+    npcId: number;
+    line: number;
+  } | null>(null);
+  const nearbyNpcRef = useRef<NpcRecord | null>(null);
+  const activeDialogueRef = useRef<typeof activeDialogue>(null);
+  useEffect(() => {
+    activeDialogueRef.current = activeDialogue;
+  }, [activeDialogue]);
 
   // Load map + admin flag
   useEffect(() => {
@@ -105,6 +117,12 @@ export default function CharacterGameplay({
           if (j?.equipped !== undefined) setEquipped(j.equipped);
         },
       )
+      .catch(() => undefined);
+    fetch('/api/world/npcs')
+      .then((r) => r.json())
+      .then((j: { npcs?: NpcRecord[] }) => {
+        if (Array.isArray(j?.npcs)) setNpcs(j.npcs);
+      })
       .catch(() => undefined);
   }, []);
 
@@ -227,6 +245,39 @@ export default function CharacterGameplay({
       ) {
         return;
       }
+      const k = typeof e.key === 'string' ? e.key.toLowerCase() : '';
+      // Talk / advance dialogue with E, Enter, or Space.
+      if (k === 'e' || k === 'enter' || k === ' ') {
+        const dlg = activeDialogueRef.current;
+        if (dlg) {
+          // Advance to next line, or close on the last one.
+          const npc = npcs.find((n) => n.id === dlg.npcId);
+          if (!npc || dlg.line + 1 >= npc.dialogue.length) {
+            setActiveDialogue(null);
+          } else {
+            setActiveDialogue({ npcId: dlg.npcId, line: dlg.line + 1 });
+          }
+          e.preventDefault();
+          return;
+        }
+        const near = nearbyNpcRef.current;
+        if (near && near.dialogue.length > 0) {
+          setActiveDialogue({ npcId: near.id, line: 0 });
+          // Stop walking so the dialogue feels intentional.
+          keysRef.current.clear();
+          setWalking(false);
+          e.preventDefault();
+          return;
+        }
+      }
+      // Close dialogue on Escape.
+      if (k === 'escape' && activeDialogueRef.current) {
+        setActiveDialogue(null);
+        e.preventDefault();
+        return;
+      }
+      // Block movement while a dialogue is open.
+      if (activeDialogueRef.current) return;
       const dir = keyToDir(e.key);
       if (!dir) return;
       e.preventDefault();
@@ -246,7 +297,7 @@ export default function CharacterGameplay({
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [locked]);
+  }, [locked, npcs]);
 
   // ── Movement loop ────────────────────────────────────────────────
   // Pos is the character's world coordinate (0,0 = map center). The
@@ -269,10 +320,30 @@ export default function CharacterGameplay({
     const ty = Math.floor((worldY + HALF_H) / TILE_PX_DISPLAY);
     if (tx < 0 || ty < 0 || tx >= worldMap.width || ty >= worldMap.height)
       return false;
-    return !!collisionGrid[ty]?.[tx];
+    if (collisionGrid[ty]?.[tx]) return true;
+    // NPCs occupy their own tile.
+    return npcs.some((n) => n.x === tx && n.y === ty);
   };
+
+  // Player tile coordinates (used for proximity to NPCs and as the
+  // default "place here" position in the NPC editor).
+  const playerTileX = Math.floor((pos.x + HALF_W) / TILE_PX_DISPLAY);
+  const playerTileY = Math.floor((pos.y + HALF_H) / TILE_PX_DISPLAY);
+
+  // Adjacent NPC (Manhattan distance ≤ 1, including same tile fallback).
+  const nearbyNpc = useMemo(() => {
+    if (!npcs.length) return null;
+    return (
+      npcs.find(
+        (n) => Math.abs(n.x - playerTileX) + Math.abs(n.y - playerTileY) <= 1,
+      ) ?? null
+    );
+  }, [npcs, playerTileX, playerTileY]);
   useEffect(() => {
-    if (!walking || editorOpen) return;
+    nearbyNpcRef.current = nearbyNpc;
+  }, [nearbyNpc]);
+  useEffect(() => {
+    if (!walking || editorOpen || npcEditorOpen || activeDialogue) return;
     let raf = 0;
     const tick = () => {
       const vx = direction === 'w' ? -SPEED : direction === 'e' ? SPEED : 0;
@@ -298,7 +369,17 @@ export default function CharacterGameplay({
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walking, direction, HALF_W, HALF_H, editorOpen, collisionGrid]);
+  }, [
+    walking,
+    direction,
+    HALF_W,
+    HALF_H,
+    editorOpen,
+    npcEditorOpen,
+    activeDialogue,
+    collisionGrid,
+    npcs,
+  ]);
 
   // ── Poll auth status while overlay is open (catch verify/login from
   //    other tabs or after returning from email link) ───────────────
@@ -357,6 +438,45 @@ export default function CharacterGameplay({
         }}
       >
         <WorldMap map={worldMap} hidePickedItems={pickedItems} />
+        {/* NPCs live in the world transform so they scroll with the map. */}
+        {npcs.map((n) => (
+          <div
+            key={n.id}
+            style={{
+              position: 'absolute',
+              left: n.x * TILE_PX_DISPLAY + TILE_PX_DISPLAY / 2,
+              top: n.y * TILE_PX_DISPLAY + TILE_PX_DISPLAY / 2,
+              transform: 'translate(-50%, -50%)',
+              pointerEvents: 'none',
+            }}
+          >
+            <CharacterSprite
+              config={n.config}
+              direction={n.facing}
+              frame={0}
+              scale={3}
+            />
+            {/* Name tag floats above the NPC's head. */}
+            <div
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: -6,
+                transform: 'translate(-50%, -100%)',
+                background: 'rgba(10,10,20,0.85)',
+                border: '1px solid rgba(225,215,255,0.4)',
+                padding: '2px 6px',
+                fontFamily: "'Silkscreen', cursive",
+                fontSize: '0.55rem',
+                color: '#e5e5e5',
+                letterSpacing: '0.1em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {n.name}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Character — fixed at viewport centre. */}
@@ -470,26 +590,142 @@ export default function CharacterGameplay({
         preload="auto"
       />
 
-      {isAdmin && !overlayVisible && !editorOpen && (
-        <button
-          type="button"
-          onClick={() => setEditorOpen(true)}
-          className="pixel-btn pixel-btn-secondary"
+      {isAdmin && !overlayVisible && !editorOpen && !npcEditorOpen && (
+        <div
           style={{
             position: 'fixed',
             bottom: 24,
             left: 24,
             zIndex: 99997,
-            fontSize: '0.6rem',
-            padding: '8px 14px',
-            letterSpacing: '0.14em',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
           }}
         >
-          ✎ Editor
-        </button>
+          <button
+            type="button"
+            onClick={() => setEditorOpen(true)}
+            className="pixel-btn pixel-btn-secondary"
+            style={{
+              fontSize: '0.6rem',
+              padding: '8px 14px',
+              letterSpacing: '0.14em',
+            }}
+          >
+            ✎ Editor
+          </button>
+          <button
+            type="button"
+            onClick={() => setNpcEditorOpen(true)}
+            className="pixel-btn pixel-btn-secondary"
+            style={{
+              fontSize: '0.6rem',
+              padding: '8px 14px',
+              letterSpacing: '0.14em',
+            }}
+          >
+            ☻ NPCs
+          </button>
+        </div>
       )}
 
-      {!overlayVisible && !editorOpen && (
+      {/* "Press E to talk" hint when adjacent to an NPC. */}
+      {nearbyNpc &&
+        !activeDialogue &&
+        !overlayVisible &&
+        !editorOpen &&
+        !npcEditorOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 90,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 99996,
+              padding: '6px 12px',
+              background: 'rgba(19,25,35,0.92)',
+              border: '2px solid var(--color-accent)',
+              boxShadow: '4px 4px 0 rgba(0,0,0,0.55)',
+              fontFamily: "'Silkscreen', cursive",
+              fontSize: '0.6rem',
+              letterSpacing: '0.14em',
+              color: '#e5e5e5',
+            }}
+          >
+            <span style={{ color: '#ffcc00' }}>[E]</span> Hablar con{' '}
+            {nearbyNpc.name}
+          </div>
+        )}
+
+      {/* Dialogue overlay. */}
+      {activeDialogue &&
+        (() => {
+          const npc = npcs.find((n) => n.id === activeDialogue.npcId);
+          if (!npc) return null;
+          const line = npc.dialogue[activeDialogue.line] ?? '';
+          const isLast = activeDialogue.line + 1 >= npc.dialogue.length;
+          return (
+            <div
+              style={{
+                position: 'fixed',
+                left: '50%',
+                bottom: 32,
+                transform: 'translateX(-50%)',
+                zIndex: 99998,
+                width: 'min(640px, 90vw)',
+                padding: 18,
+                background: 'rgba(10,10,20,0.95)',
+                border: '2px solid var(--color-accent)',
+                boxShadow: '6px 6px 0 rgba(0,0,0,0.6)',
+                fontFamily: "'Silkscreen', cursive",
+                color: '#e5e5e5',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.7rem',
+                  letterSpacing: '0.18em',
+                  color: 'var(--color-accent)',
+                  marginBottom: 8,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {npc.name}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.85rem',
+                  lineHeight: 1.6,
+                  letterSpacing: '0.04em',
+                  marginBottom: 14,
+                }}
+              >
+                {line}
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.55rem',
+                  color: 'rgba(225,215,255,0.6)',
+                  letterSpacing: '0.12em',
+                }}
+              >
+                <span>
+                  {activeDialogue.line + 1} / {npc.dialogue.length}
+                </span>
+                <span>
+                  <span style={{ color: '#ffcc00' }}>[E]</span>{' '}
+                  {isLast ? 'Cerrar' : 'Continuar'} ·{' '}
+                  <span style={{ color: '#ffcc00' }}>[Esc]</span> Salir
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+
+      {!overlayVisible && !editorOpen && !npcEditorOpen && !activeDialogue && (
         <InventoryBar
           inventory={inventory}
           equipped={equipped}
@@ -514,6 +750,15 @@ export default function CharacterGameplay({
             setWorldMap(m);
             if (spawnChanged) setPos(spawnToWorld(m));
           }}
+        />
+      )}
+
+      {npcEditorOpen && (
+        <NpcEditor
+          playerTileX={playerTileX}
+          playerTileY={playerTileY}
+          onClose={() => setNpcEditorOpen(false)}
+          onChanged={setNpcs}
         />
       )}
     </div>
