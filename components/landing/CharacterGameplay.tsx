@@ -19,7 +19,7 @@ import MapEditor from './world/MapEditor';
 import type { WorldMapData } from './world/sheets';
 
 const TILE_PX_DISPLAY = TILE * WORLD_SCALE; // 64 px per tile on screen
-const SPEED = 2.4 * WORLD_SCALE;
+const SPEED = 1.2 * WORLD_SCALE;
 const DEFAULT_MAP: WorldMapData = {
   name: 'default',
   width: 60,
