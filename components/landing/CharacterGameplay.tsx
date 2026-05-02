@@ -20,7 +20,19 @@ const DEFAULT_MAP: WorldMapData = {
   width: 60,
   height: 40,
   layers: [{ tiles: [] }],
+  spawnX: 30,
+  spawnY: 20,
 };
+
+// Convert spawn tile coords to character world coords (centered).
+function spawnToWorld(map: WorldMapData) {
+  const mapPxW = map.width * TILE;
+  const mapPxH = map.height * TILE;
+  return {
+    x: map.spawnX * TILE + TILE / 2 - mapPxW / 2,
+    y: map.spawnY * TILE + TILE / 2 - mapPxH / 2,
+  };
+}
 
 type AuthStatus = {
   hasPassword: boolean;
@@ -38,7 +50,8 @@ export default function CharacterGameplay({
   initialAuth?: AuthStatus;
   isReturning?: boolean;
 }) {
-  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [pos, setPos] = useState(spawnToWorld(DEFAULT_MAP));
+  const spawnAppliedRef = useRef(false);
   const [direction, setDirection] = useState<SpriteDirection>('n');
   const [walking, setWalking] = useState(false);
   const [frame, setFrame] = useState(0);
@@ -53,7 +66,14 @@ export default function CharacterGameplay({
     fetch('/api/world/map')
       .then((r) => r.json())
       .then((j: WorldMapData & { isAdmin?: boolean }) => {
-        if (j && Array.isArray(j.layers)) setWorldMap(j);
+        if (j && Array.isArray(j.layers)) {
+          setWorldMap(j);
+          // Place character at spawn the first time the map loads.
+          if (!spawnAppliedRef.current) {
+            spawnAppliedRef.current = true;
+            setPos(spawnToWorld(j));
+          }
+        }
         setIsAdmin(!!j?.isAdmin);
       })
       .catch(() => undefined);
@@ -382,7 +402,10 @@ export default function CharacterGameplay({
           initialMap={worldMap}
           onClose={() => setEditorOpen(false)}
           onSaved={(m) => {
+            const spawnChanged =
+              m.spawnX !== worldMap.spawnX || m.spawnY !== worldMap.spawnY;
             setWorldMap(m);
+            if (spawnChanged) setPos(spawnToWorld(m));
           }}
         />
       )}

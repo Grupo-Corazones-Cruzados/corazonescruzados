@@ -35,6 +35,9 @@ export default function MapEditor({
   const [brush, setBrush] = useState<Brush | null>(null);
   const [collide, setCollide] = useState(false);
   const [eraseMode, setEraseMode] = useState(false);
+  const [spawnMode, setSpawnMode] = useState(false);
+  const [spawnX, setSpawnX] = useState(initialMap.spawnX ?? 0);
+  const [spawnY, setSpawnY] = useState(initialMap.spawnY ?? 0);
   const [activeCategory, setActiveCategory] = useState<
     (typeof CATEGORIES)[number]['id']
   >('terreno');
@@ -145,7 +148,37 @@ export default function MapEditor({
       ctx.lineTo(width * TILE_PX, y * TILE_PX + 0.5);
       ctx.stroke();
     }
-  }, [tiles, imgs, width, height, showCollisions]);
+
+    // Spawn marker — green star + ring
+    if (
+      spawnX >= 0 &&
+      spawnY >= 0 &&
+      spawnX < width &&
+      spawnY < height
+    ) {
+      const cx = spawnX * TILE_PX + TILE_PX / 2;
+      const cy = spawnY * TILE_PX + TILE_PX / 2;
+      ctx.fillStyle = 'rgba(60, 200, 90, 0.4)';
+      ctx.fillRect(spawnX * TILE_PX, spawnY * TILE_PX, TILE_PX, TILE_PX);
+      ctx.strokeStyle = '#3bd16f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        spawnX * TILE_PX + 1,
+        spawnY * TILE_PX + 1,
+        TILE_PX - 2,
+        TILE_PX - 2,
+      );
+      ctx.beginPath();
+      ctx.fillStyle = '#3bd16f';
+      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0a0a14';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('P', cx, cy + 1);
+    }
+  }, [tiles, imgs, width, height, showCollisions, spawnX, spawnY]);
 
   // ── Painting ──────────────────────────────────────────────────
   const paintingRef = useRef(false);
@@ -158,6 +191,11 @@ export default function MapEditor({
     const cy = Math.floor((clientY - rect.top) / (TILE_PX * VIEW_SCALE));
     if (cx < 0 || cy < 0 || cx >= width || cy >= height) return;
 
+    if (spawnMode) {
+      setSpawnX(cx);
+      setSpawnY(cy);
+      return;
+    }
     if (eraseMode) {
       const idx = tileIdxByCell.get(`${cx},${cy}`);
       if (idx == null) return;
@@ -192,7 +230,7 @@ export default function MapEditor({
       const r = await fetch('/api/world/map', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ width, height, layers }),
+        body: JSON.stringify({ width, height, layers, spawnX, spawnY }),
       });
       const j = await r.json();
       if (!r.ok) {
@@ -200,7 +238,7 @@ export default function MapEditor({
         return;
       }
       setSavedAt(Date.now());
-      onSaved({ name: 'default', width, height, layers });
+      onSaved({ name: 'default', width, height, layers, spawnX, spawnY });
     } finally {
       setSaving(false);
     }
@@ -392,9 +430,23 @@ export default function MapEditor({
             checked={eraseMode}
             onChange={(v) => {
               setEraseMode(v);
-              if (v) setBrush(null);
+              if (v) {
+                setBrush(null);
+                setSpawnMode(false);
+              }
             }}
             label="Borrar"
+          />
+          <Toggle
+            checked={spawnMode}
+            onChange={(v) => {
+              setSpawnMode(v);
+              if (v) {
+                setBrush(null);
+                setEraseMode(false);
+              }
+            }}
+            label="Posición inicial"
           />
 
           <Sep />
@@ -442,6 +494,17 @@ export default function MapEditor({
               ✕ MODO BORRAR
             </span>
           )}
+          {spawnMode && (
+            <span
+              style={{
+                fontSize: '0.55rem',
+                color: '#3bd16f',
+                letterSpacing: '0.1em',
+              }}
+            >
+              ▶ MODO POSICIÓN INICIAL · ({spawnX},{spawnY})
+            </span>
+          )}
         </div>
 
         {/* Canvas */}
@@ -475,9 +538,11 @@ export default function MapEditor({
               height: height * TILE_PX * VIEW_SCALE,
               cursor: eraseMode
                 ? 'not-allowed'
-                : brush
-                  ? 'crosshair'
-                  : 'default',
+                : spawnMode
+                  ? 'cell'
+                  : brush
+                    ? 'crosshair'
+                    : 'default',
               boxShadow: '6px 6px 0 rgba(0,0,0,0.5)',
             }}
           />

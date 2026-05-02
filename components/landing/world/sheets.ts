@@ -100,5 +100,7 @@ export type WorldMapData = {
   width: number;
   height: number;
   layers: LayerData[];
+  spawnX: number; // tile col where the player appears
+  spawnY: number; // tile row where the player appears
   isAdmin?: boolean;
 };

@@ -18,7 +18,7 @@ type LayerData = { tiles: Tile[] };
 export async function GET() {
   try {
     const r = await pool.query(
-      `SELECT id, name, width, height, layers, updated_at
+      `SELECT id, name, width, height, layers, spawn_x, spawn_y, updated_at
          FROM gcc_world.world_maps
         WHERE name = $1
         LIMIT 1`,
@@ -31,6 +31,8 @@ export async function GET() {
         width: 60,
         height: 40,
         layers: [],
+        spawnX: 30,
+        spawnY: 20,
       });
     }
     const me = await getAuthedClient();
@@ -39,6 +41,8 @@ export async function GET() {
       width: row.width,
       height: row.height,
       layers: row.layers,
+      spawnX: row.spawn_x,
+      spawnY: row.spawn_y,
       updatedAt: row.updated_at,
       isAdmin: !!me?.isAdmin,
     });
@@ -68,16 +72,27 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'height inválido' }, { status: 400 });
     }
     const layers: LayerData[] = Array.isArray(body?.layers) ? body.layers : [];
+    const spawnX = Math.max(
+      0,
+      Math.min(width - 1, Math.floor(Number(body?.spawnX) || 0)),
+    );
+    const spawnY = Math.max(
+      0,
+      Math.min(height - 1, Math.floor(Number(body?.spawnY) || 0)),
+    );
 
     await pool.query(
-      `INSERT INTO gcc_world.world_maps (name, width, height, layers, updated_at)
-       VALUES ($1, $2, $3, $4::jsonb, NOW())
+      `INSERT INTO gcc_world.world_maps
+          (name, width, height, layers, spawn_x, spawn_y, updated_at)
+       VALUES ($1, $2, $3, $4::jsonb, $5, $6, NOW())
        ON CONFLICT (name) DO UPDATE
           SET width = EXCLUDED.width,
               height = EXCLUDED.height,
               layers = EXCLUDED.layers,
+              spawn_x = EXCLUDED.spawn_x,
+              spawn_y = EXCLUDED.spawn_y,
               updated_at = NOW()`,
-      [DEFAULT_MAP, width, height, JSON.stringify(layers)],
+      [DEFAULT_MAP, width, height, JSON.stringify(layers), spawnX, spawnY],
     );
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
