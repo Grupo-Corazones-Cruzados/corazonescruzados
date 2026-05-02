@@ -340,7 +340,8 @@ export default function CharacterCreator({
 
   // ── Keyboard control ──────────────────────────────────────────
   useEffect(() => {
-    const keyToDir = (key: string): Direction | null => {
+    const keyToDir = (key: string | undefined): Direction | null => {
+      if (typeof key !== 'string') return null;
       const k = key.toLowerCase();
       if (k === 'arrowup' || k === 'w') return 'n';
       if (k === 'arrowdown' || k === 's') return 's';

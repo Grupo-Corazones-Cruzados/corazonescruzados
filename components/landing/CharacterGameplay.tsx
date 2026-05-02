@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
+  startAuthentication,
+  startRegistration,
+} from '@simplewebauthn/browser';
+import {
   CharacterSprite,
   type CharacterConfig,
   type SpriteDirection,
@@ -30,19 +34,24 @@ export default function CharacterGameplay({
   const [walking, setWalking] = useState(false);
   const [frame, setFrame] = useState(0);
   const keysRef = useRef<Set<string>>(new Set());
-  const [auth, setAuth] = useState<AuthStatus>(
-    initialAuth ?? {
+  const [auth, setAuth] = useState<AuthStatus>(() => {
+    const base: AuthStatus = initialAuth ?? {
       hasPassword: false,
       emailVerified: false,
       authenticated: true,
-    },
-  );
+    };
+    // Returning players must always re-enter their password on each
+    // entry to the world, even if the auth cookie is still valid.
+    return isReturning ? { ...base, authenticated: false } : base;
+  });
 
   // Brand-new player (just created character this session) plays freely.
   // Returning players must set up password (1st return) or log in (subsequent).
+  const [passkeyOffer, setPasskeyOffer] = useState(false);
+  const [passkeyRegistered, setPasskeyRegistered] = useState(false);
   const showSetup = isReturning && !auth.hasPassword;
   const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
-  const overlayVisible = showSetup || showLogin;
+  const overlayVisible = showSetup || showLogin || passkeyOffer;
   const locked = overlayVisible;
 
   // ── Walk frame cycler ────────────────────────────────────────────
@@ -59,7 +68,8 @@ export default function CharacterGameplay({
 
   // ── Keyboard handlers (gated by `locked`) ────────────────────────
   useEffect(() => {
-    const keyToDir = (key: string): SpriteDirection | null => {
+    const keyToDir = (key: string | undefined): SpriteDirection | null => {
+      if (typeof key !== 'string') return null;
       const k = key.toLowerCase();
       if (k === 'arrowup' || k === 'w') return 'n';
       if (k === 'arrowdown' || k === 's') return 's';
@@ -120,12 +130,15 @@ export default function CharacterGameplay({
         const r = await fetch('/api/character/me');
         const j = await r.json();
         if (j?.exists) {
-          setAuth({
+          setAuth((prev) => ({
             hasPassword: !!j.hasPassword,
             emailVerified: !!j.emailVerified,
-            authenticated: !!j.authenticated,
+            // Polling must NOT auto-grant authenticated state, even if
+            // a stale auth cookie is still valid on the server. Login
+            // can only succeed via the explicit LoginForm submission.
+            authenticated: prev.authenticated,
             pendingEmail: j.pendingEmail ?? null,
-          });
+          }));
         }
       } catch {
         /* noop */
@@ -185,16 +198,120 @@ export default function CharacterGameplay({
 
       {showLogin && (
         <LoginForm
-          onLoggedIn={() =>
+          onLoggedIn={async () => {
             setAuth({
               hasPassword: true,
               emailVerified: true,
               authenticated: true,
-            })
-          }
+            });
+            // After password login, offer to register a passkey on
+            // this device if the browser supports WebAuthn and the
+            // account doesn't already have one.
+            try {
+              if (
+                typeof window !== 'undefined' &&
+                'PublicKeyCredential' in window
+              ) {
+                const status = await fetch(
+                  '/api/character/auth/passkey/status',
+                ).then((r) => r.json());
+                if (!status?.hasPasskeys) setPasskeyOffer(true);
+              }
+            } catch {
+              /* noop */
+            }
+          }}
+        />
+      )}
+
+      {passkeyOffer && (
+        <PasskeyOfferDialog
+          onSkip={() => setPasskeyOffer(false)}
+          onRegistered={() => {
+            setPasskeyRegistered(true);
+            window.setTimeout(() => setPasskeyOffer(false), 1200);
+          }}
+          registered={passkeyRegistered}
         />
       )}
     </div>
+  );
+}
+
+function PasskeyOfferDialog({
+  onSkip,
+  onRegistered,
+  registered,
+}: {
+  onSkip: () => void;
+  onRegistered: () => void;
+  registered: boolean;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const register = async () => {
+    setBusy(true);
+    setError(null);
+    const res = await tryRegisterPasskey();
+    setBusy(false);
+    if (res.ok) onRegistered();
+    else setError(res.error);
+  };
+  return (
+    <FormShell
+      title={registered ? '¡Passkey registrada!' : 'Usa tu huella o Face ID'}
+      subtitle={
+        registered
+          ? 'La próxima vez podrás entrar sin contraseña'
+          : 'Asocia este dispositivo para entrar más rápido la próxima vez'
+      }
+    >
+      {!registered && (
+        <p
+          style={{
+            fontSize: '0.7rem',
+            lineHeight: 1.6,
+            margin: '0 0 16px',
+            color: '#cbd5e1',
+          }}
+        >
+          Usa el sensor biométrico de tu dispositivo (Touch ID, Face ID,
+          huella, PIN) para crear una passkey. Después podrás iniciar sesión
+          en un solo paso.
+        </p>
+      )}
+      {error && (
+        <div
+          style={{
+            fontSize: '0.62rem',
+            color: '#ff6f6f',
+            marginBottom: 10,
+          }}
+        >
+          {error}
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {!registered && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={register}
+            className="pixel-btn pixel-btn-primary"
+            style={{ opacity: busy ? 0.6 : 1 }}
+          >
+            {busy ? 'Registrando...' : 'Registrar passkey'}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onSkip}
+          className="pixel-btn pixel-btn-secondary"
+        >
+          {registered ? 'Continuar' : 'Ahora no'}
+        </button>
+      </div>
+    </FormShell>
   );
 }
 
@@ -437,6 +554,15 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
   const [pwd, setPwd] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasPasskeys, setHasPasskeys] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/character/auth/passkey/status')
+      .then((r) => r.json())
+      .then((j) => setHasPasskeys(!!j?.hasPasskeys))
+      .catch(() => undefined);
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -461,11 +587,80 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
     }
   };
 
+  const loginWithPasskey = async () => {
+    setError(null);
+    setPasskeyBusy(true);
+    try {
+      const begin = await fetch('/api/character/auth/passkey/login/begin', {
+        method: 'POST',
+      });
+      const opts = await begin.json();
+      if (!begin.ok) {
+        setError(opts?.error ?? 'No se pudo iniciar passkey');
+        return;
+      }
+      const credential = await startAuthentication({ optionsJSON: opts });
+      const finish = await fetch('/api/character/auth/passkey/login/finish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credential),
+      });
+      const fJson = await finish.json();
+      if (!finish.ok) {
+        setError(fJson?.error ?? 'Passkey rechazada');
+        return;
+      }
+      onLoggedIn();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error de passkey';
+      // User canceled the prompt → quietly ignore (no scary red text).
+      if (!/cancel|abort|timeout|allowed/i.test(msg)) {
+        setError(msg);
+      }
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
   return (
     <FormShell
       title="Continúa tu partida"
-      subtitle="Ingresa con tu correo y contraseña"
+      subtitle="Usa tu passkey o ingresa con correo + contraseña"
     >
+      {hasPasskeys && (
+        <button
+          type="button"
+          onClick={loginWithPasskey}
+          disabled={passkeyBusy}
+          className="pixel-btn pixel-btn-primary"
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            marginBottom: 10,
+            opacity: passkeyBusy ? 0.6 : 1,
+          }}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="square"
+            aria-hidden="true"
+          >
+            <path d="M12 2a5 5 0 0 1 5 5v3" />
+            <path d="M12 2a5 5 0 0 0-5 5v3" />
+            <rect x="5" y="10" width="14" height="11" rx="1" />
+            <path d="M12 14v4" />
+          </svg>
+          {passkeyBusy ? 'Autenticando...' : 'Usar passkey'}
+        </button>
+      )}
       <form
         onSubmit={submit}
         style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
@@ -476,7 +671,7 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Correo electrónico"
           autoComplete="email"
-          autoFocus
+          autoFocus={!hasPasskeys}
           style={input()}
         />
         <input
@@ -501,12 +696,41 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
         <button
           type="submit"
           disabled={submitting}
-          className="pixel-btn pixel-btn-primary"
+          className="pixel-btn pixel-btn-secondary"
           style={{ marginTop: 6, opacity: submitting ? 0.6 : 1 }}
         >
-          {submitting ? 'Entrando...' : 'Entrar'}
+          {submitting ? 'Entrando...' : 'Entrar con contraseña'}
         </button>
       </form>
     </FormShell>
   );
+}
+
+export async function tryRegisterPasskey(): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  try {
+    const begin = await fetch(
+      '/api/character/auth/passkey/register/begin',
+      {
+        method: 'POST',
+      },
+    );
+    const opts = await begin.json();
+    if (!begin.ok) return { ok: false, error: opts?.error ?? 'No autorizado' };
+    const attestation = await startRegistration({ optionsJSON: opts });
+    const finish = await fetch(
+      '/api/character/auth/passkey/register/finish',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(attestation),
+      },
+    );
+    const j = await finish.json();
+    if (!finish.ok) return { ok: false, error: j?.error ?? 'Falló registro' };
+    return { ok: true };
+  } catch (e: unknown) {
+    return { ok: false, error: e instanceof Error ? e.message : 'unknown' };
+  }
 }
