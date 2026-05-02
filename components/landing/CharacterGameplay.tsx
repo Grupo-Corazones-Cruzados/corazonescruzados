@@ -10,11 +10,16 @@ import {
   type CharacterConfig,
   type SpriteDirection,
 } from './CharacterCreator';
-import WorldMap, { TILE, buildCollisionGrid } from './WorldMap';
+import WorldMap, {
+  TILE,
+  WORLD_SCALE,
+  buildCollisionGrid,
+} from './WorldMap';
 import MapEditor from './world/MapEditor';
 import type { WorldMapData } from './world/sheets';
 
-const SPEED = 2.4;
+const TILE_PX_DISPLAY = TILE * WORLD_SCALE; // 64 px per tile on screen
+const SPEED = 2.4 * WORLD_SCALE;
 const DEFAULT_MAP: WorldMapData = {
   name: 'default',
   width: 60,
@@ -24,13 +29,15 @@ const DEFAULT_MAP: WorldMapData = {
   spawnY: 20,
 };
 
-// Convert spawn tile coords to character world coords (centered).
+// Convert spawn tile coords to character world coords (centered),
+// using the on-screen scaled pixel size so the character lands on
+// the correct tile at the gameplay zoom level.
 function spawnToWorld(map: WorldMapData) {
-  const mapPxW = map.width * TILE;
-  const mapPxH = map.height * TILE;
+  const mapPxW = map.width * TILE_PX_DISPLAY;
+  const mapPxH = map.height * TILE_PX_DISPLAY;
   return {
-    x: map.spawnX * TILE + TILE / 2 - mapPxW / 2,
-    y: map.spawnY * TILE + TILE / 2 - mapPxH / 2,
+    x: map.spawnX * TILE_PX_DISPLAY + TILE_PX_DISPLAY / 2 - mapPxW / 2,
+    y: map.spawnY * TILE_PX_DISPLAY + TILE_PX_DISPLAY / 2 - mapPxH / 2,
   };
 }
 
@@ -195,8 +202,8 @@ export default function CharacterGameplay({
   // the character stays glued to the centre while the world scrolls.
   // Bounds clamp + per-tile collision keeps the character inside the
   // playable area and out of impassable tiles.
-  const MAP_PX_W = worldMap.width * TILE;
-  const MAP_PX_H = worldMap.height * TILE;
+  const MAP_PX_W = worldMap.width * TILE_PX_DISPLAY;
+  const MAP_PX_H = worldMap.height * TILE_PX_DISPLAY;
   const HALF_W = MAP_PX_W / 2;
   const HALF_H = MAP_PX_H / 2;
   const MARGIN = 28;
@@ -205,9 +212,9 @@ export default function CharacterGameplay({
     [worldMap],
   );
   const isBlocked = (worldX: number, worldY: number) => {
-    // Convert center-origin world coords → tile coords.
-    const tx = Math.floor((worldX + HALF_W) / TILE);
-    const ty = Math.floor((worldY + HALF_H) / TILE);
+    // Convert center-origin scaled world coords → tile coords.
+    const tx = Math.floor((worldX + HALF_W) / TILE_PX_DISPLAY);
+    const ty = Math.floor((worldY + HALF_H) / TILE_PX_DISPLAY);
     if (tx < 0 || ty < 0 || tx >= worldMap.width || ty >= worldMap.height)
       return false;
     return !!collisionGrid[ty]?.[tx];

@@ -4,11 +4,14 @@ import { useEffect, useRef } from 'react';
 import { SHEETS, TILE_PX, type WorldMapData } from './world/sheets';
 
 export const TILE = TILE_PX;
+export const WORLD_SCALE = 2; // 1 source px → 2 screen px (matches editor)
 
 export default function WorldMap({
   map,
+  scale = WORLD_SCALE,
 }: {
   map: WorldMapData;
+  scale?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -68,8 +71,8 @@ export default function WorldMap({
       style={{
         display: 'block',
         imageRendering: 'pixelated',
-        width: map.width * TILE,
-        height: map.height * TILE,
+        width: map.width * TILE * scale,
+        height: map.height * TILE * scale,
       }}
     />
   );
