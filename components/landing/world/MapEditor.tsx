@@ -5,10 +5,12 @@ import {
   CATEGORIES,
   SHEETS,
   TILE_PX,
+  type ItemPlacement,
   type LayerData,
   type Tile,
   type WorldMapData,
 } from './sheets';
+import { ITEMS, ITEM_CATEGORIES, findItem, itemDataUrl } from './items';
 
 type Brush = {
   sheetIdx: number;
@@ -38,10 +40,16 @@ export default function MapEditor({
   const [spawnMode, setSpawnMode] = useState(false);
   const [spawnX, setSpawnX] = useState(initialMap.spawnX ?? 0);
   const [spawnY, setSpawnY] = useState(initialMap.spawnY ?? 0);
+  const [items, setItems] = useState<ItemPlacement[]>(
+    initialMap.items ?? [],
+  );
+  const [itemBrush, setItemBrush] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'tiles' | 'items'>('tiles');
 
   // ── Undo / redo history ────────────────────────────────────────
   type Snapshot = {
     tiles: Tile[];
+    items: ItemPlacement[];
     width: number;
     height: number;
     spawnX: number;
@@ -50,6 +58,7 @@ export default function MapEditor({
   const initSnap: Snapshot = useMemo(
     () => ({
       tiles: initialMap.layers[0]?.tiles ?? [],
+      items: initialMap.items ?? [],
       width: initialMap.width,
       height: initialMap.height,
       spawnX: initialMap.spawnX ?? 0,
@@ -62,11 +71,18 @@ export default function MapEditor({
   const restoringRef = useRef(false);
 
   const snapKey = (s: Snapshot) =>
-    `${s.width}x${s.height}|${s.spawnX},${s.spawnY}|${JSON.stringify(s.tiles)}`;
+    `${s.width}x${s.height}|${s.spawnX},${s.spawnY}|${JSON.stringify(s.tiles)}|${JSON.stringify(s.items)}`;
 
   const pushHistory = () => {
     if (restoringRef.current) return;
-    const snap: Snapshot = { tiles, width, height, spawnX, spawnY };
+    const snap: Snapshot = {
+      tiles,
+      items,
+      width,
+      height,
+      spawnX,
+      spawnY,
+    };
     setHistory((prev) => {
       const truncated = prev.slice(0, historyIdx + 1);
       const last = truncated[truncated.length - 1];
@@ -82,6 +98,7 @@ export default function MapEditor({
   const restore = (s: Snapshot) => {
     restoringRef.current = true;
     setTiles(s.tiles);
+    setItems(s.items);
     setWidth(s.width);
     setHeight(s.height);
     setSpawnX(s.spawnX);
@@ -150,6 +167,18 @@ export default function MapEditor({
   const [imgs, setImgs] = useState<(HTMLImageElement | null)[]>(
     () => SHEETS.map(() => null),
   );
+  const [itemImgs, setItemImgs] = useState<Map<string, HTMLImageElement>>(
+    () => new Map(),
+  );
+  useEffect(() => {
+    const map = new Map<string, HTMLImageElement>();
+    for (const it of ITEMS) {
+      const img = new Image();
+      img.src = itemDataUrl(it);
+      map.set(it.id, img);
+    }
+    setItemImgs(map);
+  }, []);
   useEffect(() => {
     let cancelled = false;
     Promise.all(
@@ -242,6 +271,30 @@ export default function MapEditor({
       ctx.stroke();
     }
 
+    // Items overlay
+    for (const placement of items) {
+      const def = findItem(placement.itemId);
+      if (!def) continue;
+      // Draw a light tile background so items pop against terrain.
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(
+        placement.x * TILE_PX,
+        placement.y * TILE_PX,
+        TILE_PX,
+        TILE_PX,
+      );
+      const img = itemImgs.get(def.id);
+      if (img && img.complete) {
+        ctx.drawImage(
+          img,
+          placement.x * TILE_PX + 4,
+          placement.y * TILE_PX + 4,
+          TILE_PX - 8,
+          TILE_PX - 8,
+        );
+      }
+    }
+
     // Spawn marker — green star + ring
     if (
       spawnX >= 0 &&
@@ -271,7 +324,7 @@ export default function MapEditor({
       ctx.textBaseline = 'middle';
       ctx.fillText('P', cx, cy + 1);
     }
-  }, [tiles, imgs, width, height, showCollisions, spawnX, spawnY]);
+  }, [tiles, items, imgs, width, height, showCollisions, spawnX, spawnY, itemImgs]);
 
   // ── Painting ──────────────────────────────────────────────────
   const paintingRef = useRef(false);
@@ -293,9 +346,28 @@ export default function MapEditor({
       return;
     }
     if (eraseMode) {
+      // Erase top-most: remove item placement at this cell first;
+      // if no item, remove the tile at this cell.
+      const itemIdx = items.findIndex((it) => it.x === cx && it.y === cy);
+      if (itemIdx >= 0) {
+        setItems((prev) => prev.filter((_, i) => i !== itemIdx));
+        return;
+      }
       const idx = tileIdxByCell.get(`${cx},${cy}`);
       if (idx == null) return;
       setTiles((prev) => prev.filter((_, i) => i !== idx));
+      return;
+    }
+    if (activeTab === 'items' && itemBrush) {
+      // Replace any existing item at this cell.
+      const without = items.filter((it) => !(it.x === cx && it.y === cy));
+      const newItem: ItemPlacement = {
+        id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+        itemId: itemBrush,
+        x: cx,
+        y: cy,
+      };
+      setItems([...without, newItem]);
       return;
     }
     if (!brush) return;
@@ -326,7 +398,14 @@ export default function MapEditor({
       const r = await fetch('/api/world/map', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ width, height, layers, spawnX, spawnY }),
+        body: JSON.stringify({
+          width,
+          height,
+          layers,
+          items,
+          spawnX,
+          spawnY,
+        }),
       });
       const j = await r.json();
       if (!r.ok) {
@@ -334,7 +413,15 @@ export default function MapEditor({
         return;
       }
       setSavedAt(Date.now());
-      onSaved({ name: 'default', width, height, layers, spawnX, spawnY });
+      onSaved({
+        name: 'default',
+        width,
+        height,
+        layers,
+        items,
+        spawnX,
+        spawnY,
+      });
     } finally {
       setSaving(false);
     }
@@ -407,6 +494,43 @@ export default function MapEditor({
         <div
           style={{
             display: 'flex',
+            gap: 4,
+            padding: '8px 10px 4px',
+            borderBottom: '1px solid rgba(75,45,142,0.3)',
+          }}
+        >
+          {(['tiles', 'items'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => {
+                setActiveTab(t);
+                if (t === 'items') setBrush(null);
+                else setItemBrush(null);
+              }}
+              style={{
+                flex: 1,
+                padding: '6px 8px',
+                background:
+                  activeTab === t ? 'var(--color-accent)' : '#1a1a1a',
+                color: activeTab === t ? '#0a0a14' : '#e5e5e5',
+                border: '2px solid var(--color-accent)',
+                fontFamily: "'Silkscreen', cursive",
+                fontSize: '0.6rem',
+                letterSpacing: '0.12em',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+              }}
+            >
+              {t === 'tiles' ? 'Tiles' : 'Items'}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'tiles' && (
+        <div
+          style={{
+            display: 'flex',
             flexWrap: 'wrap',
             gap: 4,
             padding: 10,
@@ -434,6 +558,7 @@ export default function MapEditor({
             </button>
           ))}
         </div>
+        )}
 
         <div
           style={{
@@ -445,7 +570,81 @@ export default function MapEditor({
             gap: 16,
           }}
         >
-          {visibleSheets
+          {activeTab === 'items' &&
+            ITEM_CATEGORIES.map((cat) => {
+              const itemsInCat = ITEMS.filter(
+                (it) =>
+                  it.category === cat.id &&
+                  (!filteredQuery ||
+                    it.label.toLowerCase().includes(filteredQuery) ||
+                    it.id.toLowerCase().includes(filteredQuery)),
+              );
+              if (itemsInCat.length === 0) return null;
+              return (
+                <div key={cat.id}>
+                  <div
+                    style={{
+                      fontSize: '0.55rem',
+                      letterSpacing: '0.16em',
+                      color: 'rgba(225,215,255,0.65)',
+                      textTransform: 'uppercase',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {cat.label}
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, 48px)',
+                      gap: 6,
+                    }}
+                  >
+                    {itemsInCat.map((it) => {
+                      const active = itemBrush === it.id;
+                      return (
+                        <button
+                          key={it.id}
+                          type="button"
+                          onClick={() => {
+                            setItemBrush(it.id);
+                            setEraseMode(false);
+                            setSpawnMode(false);
+                          }}
+                          title={it.label}
+                          style={{
+                            width: 48,
+                            height: 48,
+                            background: '#0a0a14',
+                            border: active
+                              ? '2px solid #ffcc00'
+                              : '2px solid rgba(75,45,142,0.5)',
+                            cursor: 'pointer',
+                            padding: 4,
+                            boxShadow: active
+                              ? '0 0 8px #ffcc00'
+                              : 'none',
+                          }}
+                        >
+                          <img
+                            src={itemDataUrl(it)}
+                            alt={it.label}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              imageRendering: 'pixelated',
+                              display: 'block',
+                            }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          {activeTab === 'tiles' &&
+            visibleSheets
             .filter(
               (s) =>
                 !filteredQuery ||

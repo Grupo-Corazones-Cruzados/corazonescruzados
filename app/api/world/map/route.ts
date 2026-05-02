@@ -18,7 +18,8 @@ type LayerData = { tiles: Tile[] };
 export async function GET() {
   try {
     const r = await pool.query(
-      `SELECT id, name, width, height, layers, spawn_x, spawn_y, updated_at
+      `SELECT id, name, width, height, layers, items,
+              spawn_x, spawn_y, updated_at
          FROM gcc_world.world_maps
         WHERE name = $1
         LIMIT 1`,
@@ -31,6 +32,7 @@ export async function GET() {
         width: 60,
         height: 40,
         layers: [],
+        items: [],
         spawnX: 30,
         spawnY: 20,
       });
@@ -41,6 +43,7 @@ export async function GET() {
       width: row.width,
       height: row.height,
       layers: row.layers,
+      items: row.items ?? [],
       spawnX: row.spawn_x,
       spawnY: row.spawn_y,
       updatedAt: row.updated_at,
@@ -72,6 +75,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'height inválido' }, { status: 400 });
     }
     const layers: LayerData[] = Array.isArray(body?.layers) ? body.layers : [];
+    const items = Array.isArray(body?.items) ? body.items : [];
     const spawnX = Math.max(
       0,
       Math.min(width - 1, Math.floor(Number(body?.spawnX) || 0)),
@@ -83,16 +87,25 @@ export async function PUT(req: Request) {
 
     await pool.query(
       `INSERT INTO gcc_world.world_maps
-          (name, width, height, layers, spawn_x, spawn_y, updated_at)
-       VALUES ($1, $2, $3, $4::jsonb, $5, $6, NOW())
+          (name, width, height, layers, items, spawn_x, spawn_y, updated_at)
+       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, NOW())
        ON CONFLICT (name) DO UPDATE
           SET width = EXCLUDED.width,
               height = EXCLUDED.height,
               layers = EXCLUDED.layers,
+              items = EXCLUDED.items,
               spawn_x = EXCLUDED.spawn_x,
               spawn_y = EXCLUDED.spawn_y,
               updated_at = NOW()`,
-      [DEFAULT_MAP, width, height, JSON.stringify(layers), spawnX, spawnY],
+      [
+        DEFAULT_MAP,
+        width,
+        height,
+        JSON.stringify(layers),
+        JSON.stringify(items),
+        spawnX,
+        spawnY,
+      ],
     );
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

@@ -16,6 +16,8 @@ import WorldMap, {
   buildCollisionGrid,
 } from './WorldMap';
 import MapEditor from './world/MapEditor';
+import InventoryBar from './world/InventoryBar';
+import { findItem, itemDataUrl } from './world/items';
 import type { WorldMapData } from './world/sheets';
 
 const TILE_PX_DISPLAY = TILE * WORLD_SCALE; // 64 px per tile on screen
@@ -25,6 +27,7 @@ const DEFAULT_MAP: WorldMapData = {
   width: 60,
   height: 40,
   layers: [{ tiles: [] }],
+  items: [],
   spawnX: 30,
   spawnY: 20,
 };
@@ -67,6 +70,10 @@ export default function CharacterGameplay({
   const [worldMap, setWorldMap] = useState<WorldMapData>(DEFAULT_MAP);
   const [editorOpen, setEditorOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [inventory, setInventory] = useState<Record<string, number>>({});
+  const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
+  const [equipped, setEquipped] = useState<string | null>(null);
+  const pickingRef = useRef<Set<string>>(new Set());
 
   // Load map + admin flag
   useEffect(() => {
@@ -74,17 +81,62 @@ export default function CharacterGameplay({
       .then((r) => r.json())
       .then((j: WorldMapData & { isAdmin?: boolean }) => {
         if (j && Array.isArray(j.layers)) {
-          setWorldMap(j);
-          // Place character at spawn the first time the map loads.
+          // Ensure items field exists (older payloads may omit it).
+          const m: WorldMapData = { ...j, items: j.items ?? [] };
+          setWorldMap(m);
           if (!spawnAppliedRef.current) {
             spawnAppliedRef.current = true;
-            setPos(spawnToWorld(j));
+            setPos(spawnToWorld(m));
           }
         }
         setIsAdmin(!!j?.isAdmin);
       })
       .catch(() => undefined);
+    fetch('/api/world/inventory')
+      .then((r) => r.json())
+      .then(
+        (j: {
+          inventory?: Record<string, number>;
+          pickedItems?: string[];
+          equipped?: string | null;
+        }) => {
+          if (j?.inventory) setInventory(j.inventory);
+          if (j?.pickedItems) setPickedItems(new Set(j.pickedItems));
+          if (j?.equipped !== undefined) setEquipped(j.equipped);
+        },
+      )
+      .catch(() => undefined);
   }, []);
+
+  // Pick up any item under the player's tile (called every frame).
+  const pickupCheck = (worldX: number, worldY: number) => {
+    const tx = Math.floor((worldX + HALF_W) / TILE_PX_DISPLAY);
+    const ty = Math.floor((worldY + HALF_H) / TILE_PX_DISPLAY);
+    const item = (worldMap.items ?? []).find(
+      (it) => it.x === tx && it.y === ty && !pickedItems.has(it.id),
+    );
+    if (!item || pickingRef.current.has(item.id)) return;
+    pickingRef.current.add(item.id);
+    fetch('/api/world/inventory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        placementId: item.id,
+        itemId: item.itemId,
+      }),
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j?.ok) {
+          setInventory(j.inventory ?? {});
+          setPickedItems(new Set(j.pickedItems ?? []));
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        pickingRef.current.delete(item.id);
+      });
+  };
   const [auth, setAuth] = useState<AuthStatus>(() => {
     const base: AuthStatus = initialAuth ?? {
       hasPassword: false,
@@ -238,6 +290,7 @@ export default function CharacterGameplay({
         );
         if (isBlocked(nx, p.y)) nx = p.x;
         if (isBlocked(nx, ny)) ny = p.y;
+        pickupCheck(nx, ny);
         return { x: nx, y: ny };
       });
       raf = requestAnimationFrame(tick);
@@ -303,7 +356,7 @@ export default function CharacterGameplay({
           willChange: 'transform',
         }}
       >
-        <WorldMap map={worldMap} />
+        <WorldMap map={worldMap} hidePickedItems={pickedItems} />
       </div>
 
       {/* Character — fixed at viewport centre. */}
@@ -322,6 +375,38 @@ export default function CharacterGameplay({
           frame={frame}
           scale={3}
         />
+        {equipped &&
+          (() => {
+            const def = findItem(equipped);
+            if (!def) return null;
+            // Anchor the held item near the character's hip on the
+            // side they're facing. Not animated frame-by-frame yet,
+            // but reads as "carrying" the item.
+            const offsetMap = {
+              n: { x: -36, y: 18, scaleX: 1 },
+              s: { x: 36, y: 18, scaleX: -1 },
+              w: { x: -56, y: 18, scaleX: 1 },
+              e: { x: 56, y: 18, scaleX: -1 },
+            } as const;
+            const o = offsetMap[direction];
+            return (
+              <img
+                src={itemDataUrl(def)}
+                alt=""
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  width: 56,
+                  height: 56,
+                  imageRendering: 'pixelated',
+                  pointerEvents: 'none',
+                  transform: `translate(calc(-50% + ${o.x}px), calc(-50% + ${o.y}px)) scaleX(${o.scaleX})`,
+                  filter: 'drop-shadow(2px 2px 0 rgba(0,0,0,0.5))',
+                }}
+              />
+            );
+          })()}
       </div>
 
       {showSetup && (
@@ -402,6 +487,21 @@ export default function CharacterGameplay({
         >
           ✎ Editor
         </button>
+      )}
+
+      {!overlayVisible && !editorOpen && (
+        <InventoryBar
+          inventory={inventory}
+          equipped={equipped}
+          onEquip={(id) => {
+            setEquipped(id);
+            fetch('/api/world/inventory', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ equipped: id }),
+            }).catch(() => undefined);
+          }}
+        />
       )}
 
       {editorOpen && (

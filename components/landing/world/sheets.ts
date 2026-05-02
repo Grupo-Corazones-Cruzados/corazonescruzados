@@ -95,11 +95,19 @@ export type Tile = {
 
 export type LayerData = { tiles: Tile[] };
 
+export type ItemPlacement = {
+  id: string; // unique within map (e.g. "abc123")
+  itemId: string; // ITEMS catalog id
+  x: number; // tile col
+  y: number; // tile row
+};
+
 export type WorldMapData = {
   name: string;
   width: number;
   height: number;
   layers: LayerData[];
+  items: ItemPlacement[];
   spawnX: number; // tile col where the player appears
   spawnY: number; // tile row where the player appears
   isAdmin?: boolean;

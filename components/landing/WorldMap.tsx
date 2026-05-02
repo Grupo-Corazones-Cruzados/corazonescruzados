@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { SHEETS, TILE_PX, type WorldMapData } from './world/sheets';
+import { ITEMS, findItem, itemDataUrl } from './world/items';
 
 export const TILE = TILE_PX;
 export const WORLD_SCALE = 2; // 1 source px → 2 screen px (matches editor)
@@ -9,9 +10,11 @@ export const WORLD_SCALE = 2; // 1 source px → 2 screen px (matches editor)
 export default function WorldMap({
   map,
   scale = WORLD_SCALE,
+  hidePickedItems,
 }: {
   map: WorldMapData;
   scale?: number;
+  hidePickedItems?: Set<string>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -24,13 +27,12 @@ export default function WorldMap({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
-    // Keep the canvas transparent so empty cells show the gameplay
-    // background (black) instead of a giant brown rectangle. Drawing
-    // tiles fills only the cells the admin actually painted.
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     let cancelled = false;
-    Promise.all(
+
+    // Load tile sheets + item icons in parallel.
+    const sheetPromise = Promise.all(
       SHEETS.map(
         (s) =>
           new Promise<HTMLImageElement>((resolve, reject) => {
@@ -40,9 +42,25 @@ export default function WorldMap({
             img.src = s.url;
           }),
       ),
-    ).then((imgs) => {
+    );
+    const itemImgs = new Map<string, HTMLImageElement>();
+    const itemPromises = ITEMS.map(
+      (it) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            itemImgs.set(it.id, img);
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = itemDataUrl(it);
+        }),
+    );
+
+    Promise.all([sheetPromise, ...itemPromises]).then((vals) => {
       if (cancelled) return;
-      const tiles = (map.layers[0]?.tiles ?? []);
+      const imgs = vals[0] as HTMLImageElement[];
+      const tiles = map.layers[0]?.tiles ?? [];
       for (const t of tiles) {
         const img = imgs[t.s];
         if (!img) continue;
@@ -58,12 +76,39 @@ export default function WorldMap({
           TILE,
         );
       }
+      // Items on top of tiles.
+      const items = map.items ?? [];
+      for (const placement of items) {
+        if (hidePickedItems?.has(placement.id)) continue;
+        const def = findItem(placement.itemId);
+        if (!def) continue;
+        const img = itemImgs.get(def.id);
+        if (!img) continue;
+        // Subtle highlight beneath the item so it pops on any terrain.
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.beginPath();
+        ctx.arc(
+          placement.x * TILE + TILE / 2,
+          placement.y * TILE + TILE / 2 + 1,
+          TILE / 2 - 4,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+        ctx.drawImage(
+          img,
+          placement.x * TILE + 4,
+          placement.y * TILE + 4,
+          TILE - 8,
+          TILE - 8,
+        );
+      }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [map]);
+  }, [map, hidePickedItems]);
 
   return (
     <canvas
