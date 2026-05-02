@@ -49,10 +49,32 @@ export default function CharacterGameplay({
   // Returning players must set up password (1st return) or log in (subsequent).
   const [passkeyOffer, setPasskeyOffer] = useState(false);
   const [passkeyRegistered, setPasskeyRegistered] = useState(false);
-  const showSetup = isReturning && !auth.hasPassword;
+  // Brand-new players are now also forced to create an account before
+  // they can play, to lock in their progress before they leave the page.
+  const showSetup = !auth.hasPassword;
   const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
   const overlayVisible = showSetup || showLogin || passkeyOffer;
   const locked = overlayVisible;
+
+  // After the signup → email verification flow completes, hasPassword
+  // transitions from false → true. Use that edge to offer a passkey.
+  const prevHasPasswordRef = useRef(auth.hasPassword);
+  useEffect(() => {
+    if (
+      !prevHasPasswordRef.current &&
+      auth.hasPassword &&
+      typeof window !== 'undefined' &&
+      'PublicKeyCredential' in window
+    ) {
+      fetch('/api/character/auth/passkey/status')
+        .then((r) => r.json())
+        .then((j) => {
+          if (!j?.hasPasskeys) setPasskeyOffer(true);
+        })
+        .catch(() => undefined);
+    }
+    prevHasPasswordRef.current = auth.hasPassword;
+  }, [auth.hasPassword]);
 
   // ── Walk frame cycler ────────────────────────────────────────────
   useEffect(() => {
