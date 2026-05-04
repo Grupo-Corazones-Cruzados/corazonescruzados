@@ -4,6 +4,15 @@ import { getAuthedClient } from '@/lib/world/auth';
 
 const DEFAULT_MAP = 'default';
 const VALID_FACINGS = new Set(['n', 's', 'e', 'w']);
+const VALID_ANIMATIONS = new Set([
+  'idle',
+  'walk',
+  'cast',
+  'thrust',
+  'slash',
+  'shoot',
+  'hurt',
+]);
 
 type NpcRow = {
   id: number;
@@ -13,6 +22,7 @@ type NpcRow = {
   x: number;
   y: number;
   facing: string;
+  animation: string;
   dialogue: unknown;
 };
 
@@ -25,6 +35,7 @@ function rowToJson(row: NpcRow) {
     x: row.x,
     y: row.y,
     facing: row.facing,
+    animation: row.animation ?? 'idle',
     dialogue: row.dialogue ?? [],
   };
 }
@@ -32,7 +43,7 @@ function rowToJson(row: NpcRow) {
 export async function GET() {
   try {
     const r = await pool.query(
-      `SELECT id, map_name, name, config, x, y, facing, dialogue
+      `SELECT id, map_name, name, config, x, y, facing, animation, dialogue
          FROM gcc_world.npcs
         WHERE map_name = $1
         ORDER BY id ASC`,
@@ -64,6 +75,11 @@ export async function POST(req: Request) {
       typeof body?.facing === 'string' && VALID_FACINGS.has(body.facing)
         ? body.facing
         : 's';
+    const animation =
+      typeof body?.animation === 'string' &&
+      VALID_ANIMATIONS.has(body.animation)
+        ? body.animation
+        : 'idle';
     const dialogue = Array.isArray(body?.dialogue)
       ? body.dialogue.filter((s: unknown) => typeof s === 'string')
       : [];
@@ -80,9 +96,9 @@ export async function POST(req: Request) {
 
     const r = await pool.query(
       `INSERT INTO gcc_world.npcs
-          (map_name, name, config, x, y, facing, dialogue)
-       VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7::jsonb)
-       RETURNING id, map_name, name, config, x, y, facing, dialogue`,
+          (map_name, name, config, x, y, facing, animation, dialogue)
+       VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, $8::jsonb)
+       RETURNING id, map_name, name, config, x, y, facing, animation, dialogue`,
       [
         DEFAULT_MAP,
         name,
@@ -90,6 +106,7 @@ export async function POST(req: Request) {
         x,
         y,
         facing,
+        animation,
         JSON.stringify(dialogue),
       ],
     );

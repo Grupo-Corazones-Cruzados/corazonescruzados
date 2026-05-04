@@ -77,6 +77,15 @@ export default function CharacterGameplay({
   const pickingRef = useRef<Set<string>>(new Set());
   const [npcs, setNpcs] = useState<NpcRecord[]>([]);
   const [npcEditorOpen, setNpcEditorOpen] = useState(false);
+  // Single ever-incrementing frame counter; each NPC's sprite mods it
+  // by the length of its chosen animation. Ticks at a fixed cadence
+  // that's slow enough to look natural across walk / cast / hurt /
+  // etc. without burning CPU on a per-NPC interval.
+  const [npcFrame, setNpcFrame] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setNpcFrame((f) => f + 1), 130);
+    return () => window.clearInterval(id);
+  }, []);
   const [activeDialogue, setActiveDialogue] = useState<{
     npcId: number;
     line: number;
@@ -453,7 +462,8 @@ export default function CharacterGameplay({
             <CharacterSprite
               config={n.config}
               direction={n.facing}
-              frame={0}
+              animation={n.animation}
+              frame={npcFrame}
               scale={3}
             />
             {/* Name tag floats above the NPC's head. */}

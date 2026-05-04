@@ -3,6 +3,15 @@ import { NextResponse } from 'next/server';
 import { getAuthedClient } from '@/lib/world/auth';
 
 const VALID_FACINGS = new Set(['n', 's', 'e', 'w']);
+const VALID_ANIMATIONS = new Set([
+  'idle',
+  'walk',
+  'cast',
+  'thrust',
+  'slash',
+  'shoot',
+  'hurt',
+]);
 
 export async function PUT(
   req: Request,
@@ -30,18 +39,24 @@ export async function PUT(
       typeof body?.facing === 'string' && VALID_FACINGS.has(body.facing)
         ? body.facing
         : null;
+    const animation =
+      typeof body?.animation === 'string' &&
+      VALID_ANIMATIONS.has(body.animation)
+        ? body.animation
+        : null;
     const dialogue = Array.isArray(body?.dialogue)
       ? body.dialogue.filter((s: unknown) => typeof s === 'string')
       : null;
 
     await pool.query(
       `UPDATE gcc_world.npcs
-          SET name     = COALESCE($2, name),
-              config   = COALESCE($3::jsonb, config),
-              x        = COALESCE($4, x),
-              y        = COALESCE($5, y),
-              facing   = COALESCE($6, facing),
-              dialogue = COALESCE($7::jsonb, dialogue),
+          SET name      = COALESCE($2, name),
+              config    = COALESCE($3::jsonb, config),
+              x         = COALESCE($4, x),
+              y         = COALESCE($5, y),
+              facing    = COALESCE($6, facing),
+              animation = COALESCE($7, animation),
+              dialogue  = COALESCE($8::jsonb, dialogue),
               updated_at = NOW()
         WHERE id = $1`,
       [
@@ -51,6 +66,7 @@ export async function PUT(
         x,
         y,
         facing,
+        animation,
         dialogue ? JSON.stringify(dialogue) : null,
       ],
     );

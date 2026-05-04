@@ -179,6 +179,49 @@ const NAKED_CONFIG: CharacterConfig = {
 type Direction = 'n' | 'w' | 's' | 'e';
 const DIR_ROW: Record<Direction, number> = { n: 8, w: 9, s: 10, e: 11 };
 
+// LPC Universal sheet animations that exist across every layer
+// (body, head, eyes, hair, clothes, shoes, etc.). Extended animations
+// like sit / jump / climb only ship on a subset of layers and are
+// intentionally left out for now to avoid a half-rendered character.
+export type CharacterAnimation =
+  | 'idle'
+  | 'walk'
+  | 'cast'
+  | 'thrust'
+  | 'slash'
+  | 'shoot'
+  | 'hurt';
+
+type AnimationDef = {
+  // Either a per-direction row map, or a single row used for every
+  // direction (hurt is south-only in LPC).
+  rows: Record<Direction, number> | number;
+  frames: number;
+  fps: number;
+};
+
+export const ANIMATIONS: Record<CharacterAnimation, AnimationDef> = {
+  // Frame 0 of the walk row is the "standing" pose.
+  idle:   { rows: { n: 8,  w: 9,  s: 10, e: 11 }, frames: 1,  fps: 1 },
+  walk:   { rows: { n: 8,  w: 9,  s: 10, e: 11 }, frames: 9,  fps: 8 },
+  cast:   { rows: { n: 0,  w: 1,  s: 2,  e: 3  }, frames: 7,  fps: 8 },
+  thrust: { rows: { n: 4,  w: 5,  s: 6,  e: 7  }, frames: 8,  fps: 10 },
+  slash:  { rows: { n: 12, w: 13, s: 14, e: 15 }, frames: 6,  fps: 12 },
+  shoot:  { rows: { n: 16, w: 17, s: 18, e: 19 }, frames: 13, fps: 12 },
+  // Hurt only has the south-facing row.
+  hurt:   { rows: 20,                              frames: 6,  fps: 6 },
+};
+
+export const ANIMATION_OPTIONS: { id: CharacterAnimation; label: string }[] = [
+  { id: 'idle',   label: 'Quieto' },
+  { id: 'walk',   label: 'Caminar' },
+  { id: 'hurt',   label: 'Herido' },
+  { id: 'cast',   label: 'Conjurar' },
+  { id: 'thrust', label: 'Estocada' },
+  { id: 'slash',  label: 'Tajo' },
+  { id: 'shoot',  label: 'Disparar' },
+];
+
 type LayerKey =
   | 'body'
   | 'head'
@@ -760,20 +803,24 @@ export function CharacterSprite({
   config,
   direction,
   frame,
+  animation = 'walk',
   revealed = ALL_LAYERS,
   scale = 6,
 }: {
   config: CharacterConfig;
   direction: Direction;
   frame: number;
+  animation?: CharacterAnimation;
   revealed?: Set<LayerKey>;
   scale?: number;
 }) {
   const FRAME = 64;
   const SCALE = scale;
   const SHEET_W = 832;
-  const COL = frame; // 0 = idle, 1-8 = walk cycle
-  const ROW = DIR_ROW[direction];
+  const animDef = ANIMATIONS[animation];
+  const COL = animDef.frames > 0 ? frame % animDef.frames : 0;
+  const ROW =
+    typeof animDef.rows === 'number' ? animDef.rows : animDef.rows[direction];
 
   const baseGenderSheet = config.gender === 'masculino' ? 'male' : 'female';
   // Always use the standard male/female body so clothes/shoes/pants

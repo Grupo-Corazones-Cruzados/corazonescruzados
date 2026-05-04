@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CharacterSprite,
   type CharacterConfig,
+  type CharacterAnimation,
   type SpriteDirection,
+  ANIMATIONS,
+  ANIMATION_OPTIONS,
   SKIN_TONES,
   HAIR_COLORS,
   HAIR_STYLES,
@@ -28,6 +31,7 @@ export type NpcRecord = {
   x: number;
   y: number;
   facing: SpriteDirection;
+  animation: CharacterAnimation;
   dialogue: string[];
 };
 
@@ -59,6 +63,7 @@ type Draft = {
   x: number;
   y: number;
   facing: SpriteDirection;
+  animation: CharacterAnimation;
   dialogueText: string; // newline-separated for the textarea
 };
 
@@ -70,6 +75,7 @@ function npcToDraft(n: NpcRecord): Draft {
     x: n.x,
     y: n.y,
     facing: n.facing,
+    animation: n.animation ?? 'idle',
     dialogueText: (n.dialogue ?? []).join('\n'),
   };
 }
@@ -82,6 +88,7 @@ function newDraft(playerX: number, playerY: number): Draft {
     x: playerX,
     y: playerY,
     facing: 's',
+    animation: 'idle',
     dialogueText: '¡Hola, viajero!\nQué bueno verte por aquí.',
   };
 }
@@ -101,6 +108,28 @@ export default function NpcEditor({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Cycles the preview's animation frame at the chosen FPS so the
+  // admin can see the pose actually move while editing.
+  const [previewFrame, setPreviewFrame] = useState(0);
+  const previewFpsRef = useRef(8);
+  useEffect(() => {
+    previewFpsRef.current = draft ? ANIMATIONS[draft.animation].fps : 8;
+  }, [draft?.animation]);
+  useEffect(() => {
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const fps = previewFpsRef.current;
+      const interval = 1000 / Math.max(1, fps);
+      if (now - last >= interval) {
+        setPreviewFrame((f) => f + 1);
+        last = now;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   const refresh = async () => {
     const r = await fetch('/api/world/npcs');
@@ -131,6 +160,7 @@ export default function NpcEditor({
         x: draft.x,
         y: draft.y,
         facing: draft.facing,
+        animation: draft.animation,
         dialogue,
       });
       const url =
@@ -335,28 +365,62 @@ export default function NpcEditor({
                 <CharacterSprite
                   config={draft.config}
                   direction={draft.facing}
-                  frame={0}
+                  animation={draft.animation}
+                  frame={previewFrame}
                   scale={3}
                 />
               </div>
 
               <Field label="Mira hacia">
                 <div style={{ display: 'flex', gap: 4 }}>
-                  {(['n', 'w', 's', 'e'] as const).map((d) => (
+                  {(['n', 'w', 's', 'e'] as const).map((d) => {
+                    // Hurt only renders south in LPC, so lock the
+                    // facing dropdown when that pose is selected.
+                    const disabled = draft.animation === 'hurt' && d !== 's';
+                    return (
+                      <PillButton
+                        key={d}
+                        active={draft.facing === d}
+                        disabled={disabled}
+                        onClick={() =>
+                          !disabled && setDraft({ ...draft, facing: d })
+                        }
+                      >
+                        {d === 'n'
+                          ? '↑'
+                          : d === 's'
+                            ? '↓'
+                            : d === 'w'
+                              ? '←'
+                              : '→'}
+                      </PillButton>
+                    );
+                  })}
+                </div>
+              </Field>
+
+              <Field label="Animación / pose">
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 4,
+                  }}
+                >
+                  {ANIMATION_OPTIONS.map((a) => (
                     <PillButton
-                      key={d}
-                      active={draft.facing === d}
+                      key={a.id}
+                      active={draft.animation === a.id}
                       onClick={() =>
-                        setDraft({ ...draft, facing: d })
+                        setDraft({
+                          ...draft,
+                          animation: a.id,
+                          // Hurt is south-only.
+                          facing: a.id === 'hurt' ? 's' : draft.facing,
+                        })
                       }
                     >
-                      {d === 'n'
-                        ? '↑'
-                        : d === 's'
-                          ? '↓'
-                          : d === 'w'
-                            ? '←'
-                            : '→'}
+                      {a.label}
                     </PillButton>
                   ))}
                 </div>
@@ -798,14 +862,25 @@ function pillStyle(active: boolean): React.CSSProperties {
 function PillButton({
   active,
   onClick,
+  disabled,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <button type="button" onClick={onClick} style={pillStyle(active)}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        ...pillStyle(active),
+        opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
       {children}
     </button>
   );
