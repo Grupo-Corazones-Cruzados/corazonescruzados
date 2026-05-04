@@ -12,6 +12,7 @@ const VALID_ANIMATIONS = new Set([
   'slash',
   'shoot',
   'hurt',
+  'sit',
 ]);
 
 type NpcRow = {

@@ -11,8 +11,11 @@ export type BodyType =
   | 'muy_obeso';
 export type CharHeight = 'bajo' | 'medio' | 'alto';
 
-type Opt = { id: string; label: string; preview?: string };
-type HairOpt = Opt & { file: string | null; gendered?: boolean };
+type Opt = { id: string; label: string; preview?: string; supportsSit?: boolean };
+type HairOpt = Opt & {
+  file: string | null;
+  gendered?: boolean;
+};
 
 export const SKIN_TONES: Opt[] = [
   { id: 'light', label: 'Muy clara', preview: '#F4D6BA' },
@@ -59,9 +62,9 @@ export const CLOTHING_COLORS: Opt[] = [
 ];
 
 export const HAIR_STYLES: HairOpt[] = [
-  { id: 'none', label: 'Rapado', file: null },
-  { id: 'buzzcut', label: 'Buzzcut', file: 'buzzcut' },
-  { id: 'bob', label: 'Bob', file: 'bob' },
+  { id: 'none', label: 'Rapado', file: null, supportsSit: true },
+  { id: 'buzzcut', label: 'Buzzcut', file: 'buzzcut', supportsSit: true },
+  { id: 'bob', label: 'Bob', file: 'bob', supportsSit: true },
   { id: 'bedhead', label: 'Despeinado', file: 'bedhead', gendered: true },
   { id: 'ponytail', label: 'Cola', file: 'ponytail', gendered: true },
   { id: 'long', label: 'Largo', file: 'long', gendered: true },
@@ -69,7 +72,10 @@ export const HAIR_STYLES: HairOpt[] = [
 ];
 
 export const CLOTHING_STYLES: Opt[] = [
-  { id: 'none', label: 'Sin ropa' },
+  { id: 'none', label: 'Sin ropa', supportsSit: true },
+  // Only sit-compatible clothing in LPC base assets is the female
+  // tshirt; shown to all but rendered as female sprites under the hood.
+  { id: 'tshirt', label: 'T-Shirt (♀)', supportsSit: true },
   { id: 'shortsleeve', label: 'Camiseta' },
   { id: 'longsleeve', label: 'Manga larga' },
   { id: 'sleeveless', label: 'Sin mangas' },
@@ -119,7 +125,8 @@ export const GLASSES_COLORS: Opt[] = [
 ];
 
 export const SHOES_STYLES: Opt[] = [
-  { id: 'none', label: 'Descalzo' },
+  { id: 'none', label: 'Descalzo', supportsSit: true },
+  { id: 'shoes2', label: 'Zapatos (sit)', supportsSit: true },
   { id: 'shoes', label: 'Zapatos' },
   { id: 'boots', label: 'Botas' },
   { id: 'sandals', label: 'Sandalias' },
@@ -190,7 +197,13 @@ export type CharacterAnimation =
   | 'thrust'
   | 'slash'
   | 'shoot'
-  | 'hurt';
+  | 'hurt'
+  | 'sit';
+
+// Animations that live past row 20 of the LPC sheet. Most accessory
+// layers (clothes, shoes, hair) only ship the base 21 rows, so we
+// gate them at render time to avoid showing the wrong frame.
+export const EXTENDED_ANIMATIONS = new Set<CharacterAnimation>(['sit']);
 
 type AnimationDef = {
   // Either a per-direction row map, or a single row used for every
@@ -210,11 +223,16 @@ export const ANIMATIONS: Record<CharacterAnimation, AnimationDef> = {
   shoot:  { rows: { n: 16, w: 17, s: 18, e: 19 }, frames: 13, fps: 12 },
   // Hurt only has the south-facing row.
   hurt:   { rows: 20,                              frames: 6,  fps: 6 },
+  // Sit lives in the universal sheet's extended block (rows 30-33).
+  // Only items with `supportsSit` show up; the rest are skipped at
+  // render time to avoid a half-finished pose.
+  sit:    { rows: { n: 30, w: 31, s: 32, e: 33 }, frames: 3,  fps: 4 },
 };
 
 export const ANIMATION_OPTIONS: { id: CharacterAnimation; label: string }[] = [
   { id: 'idle',   label: 'Quieto' },
   { id: 'walk',   label: 'Caminar' },
+  { id: 'sit',    label: 'Sentado' },
   { id: 'hurt',   label: 'Herido' },
   { id: 'cast',   label: 'Conjurar' },
   { id: 'thrust', label: 'Estocada' },
@@ -821,6 +839,7 @@ export function CharacterSprite({
   const COL = animDef.frames > 0 ? frame % animDef.frames : 0;
   const ROW =
     typeof animDef.rows === 'number' ? animDef.rows : animDef.rows[direction];
+  const isExtended = EXTENDED_ANIMATIONS.has(animation);
 
   const baseGenderSheet = config.gender === 'masculino' ? 'male' : 'female';
   // Always use the standard male/female body so clothes/shoes/pants
@@ -840,11 +859,19 @@ export function CharacterSprite({
     config.eyebrowStyle !== 'none'
       ? `/character/eyebrows/${config.eyebrowStyle}/${config.hairColor}.png`
       : null;
+  // tshirt only ships in the female sheet; render it as female regardless
+  // of the configured gender so sit-compatible characters stay sittable.
+  const clothesGenderSheet =
+    config.clothingStyle === 'tshirt' ? 'female' : baseGenderSheet;
+  const clothesOpt = CLOTHING_STYLES.find(
+    (c) => c.id === config.clothingStyle,
+  );
   const clothesUrl =
     config.clothingStyle !== 'none'
-      ? `/character/clothes/${config.clothingStyle}/${baseGenderSheet}/${config.clothingColor}.png`
+      ? `/character/clothes/${config.clothingStyle}/${clothesGenderSheet}/${config.clothingColor}.png`
       : null;
   const pantsUrl = `/character/pants/${baseGenderSheet}/${config.pantsColor || 'navy'}.png`;
+  const shoesOpt = SHOES_STYLES.find((s) => s.id === config.shoesStyle);
   const shoesUrl =
     config.shoesStyle && config.shoesStyle !== 'none'
       ? `/character/shoes/${config.shoesStyle}/${baseGenderSheet}/${config.shoesColor || 'black'}.png`
@@ -870,12 +897,21 @@ export function CharacterSprite({
       ? `/character/glasses/${glassesOpt.file}/${config.glassesColor}.png`
       : null;
 
+  // For extended animations (sit, etc.) we hide accessory layers whose
+  // sheet doesn't carry frames past row 20 — otherwise the renderer
+  // would sample garbage / transparency and the character would look
+  // half-finished. Body / head / eyes / pants / eyebrows / beard /
+  // glasses all ship the full 46-row universal sheet so they stay.
+  const hideClothes = isExtended && !clothesOpt?.supportsSit;
+  const hideShoes = isExtended && !shoesOpt?.supportsSit;
+  const hideHair = isExtended && !hairOpt?.supportsSit;
+
   const layers: { url: string; key: LayerKey }[] = [];
   if (revealed.has('body')) layers.push({ url: bodyUrl, key: 'body' });
   if (revealed.has('pants')) layers.push({ url: pantsUrl, key: 'pants' });
-  if (revealed.has('shoes') && shoesUrl)
+  if (revealed.has('shoes') && shoesUrl && !hideShoes)
     layers.push({ url: shoesUrl, key: 'shoes' });
-  if (revealed.has('clothes') && clothesUrl)
+  if (revealed.has('clothes') && clothesUrl && !hideClothes)
     layers.push({ url: clothesUrl, key: 'clothes' });
   if (revealed.has('head')) layers.push({ url: headUrl, key: 'head' });
   if (revealed.has('eyes')) layers.push({ url: eyesUrl, key: 'eyes' });
@@ -883,7 +919,7 @@ export function CharacterSprite({
     layers.push({ url: eyebrowsUrl, key: 'eyebrows' });
   if (revealed.has('beard') && beardUrl)
     layers.push({ url: beardUrl, key: 'beard' });
-  if (revealed.has('hair') && hairUrl)
+  if (revealed.has('hair') && hairUrl && !hideHair)
     layers.push({ url: hairUrl, key: 'hair' });
   if (revealed.has('glasses') && glassesUrl)
     layers.push({ url: glassesUrl, key: 'glasses' });

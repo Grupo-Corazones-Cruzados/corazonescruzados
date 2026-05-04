@@ -11,6 +11,7 @@ const VALID_ANIMATIONS = new Set([
   'slash',
   'shoot',
   'hurt',
+  'sit',
 ]);
 
 export async function PUT(
