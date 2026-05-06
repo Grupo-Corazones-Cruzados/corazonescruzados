@@ -252,6 +252,9 @@ export default function CharacterGameplay({
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (locked) return;
+      // While the editor or NPC editor is open, hand control over to
+      // them so their hotkeys (Q/W/E/R/1/A/S/⌘S) don't double-fire here.
+      if (editorOpen || npcEditorOpen) return;
       const target = e.target as HTMLElement | null;
       if (
         target &&
@@ -261,6 +264,7 @@ export default function CharacterGameplay({
       }
       const k = typeof e.key === 'string' ? e.key.toLowerCase() : '';
       // Talk / advance dialogue with E, Enter, or Space.
+      // Priority: dialogue advance → talk to nearby NPC → admin opens editor.
       if (k === 'e' || k === 'enter' || k === ' ') {
         const dlg = activeDialogueRef.current;
         if (dlg) {
@@ -278,6 +282,14 @@ export default function CharacterGameplay({
         if (near && near.dialogue.length > 0) {
           setActiveDialogue({ npcId: near.id, line: 0 });
           // Stop walking so the dialogue feels intentional.
+          keysRef.current.clear();
+          setWalking(false);
+          e.preventDefault();
+          return;
+        }
+        // No NPC to talk to: admin uses E to enter the world editor.
+        if (k === 'e' && isAdmin) {
+          setEditorOpen(true);
           keysRef.current.clear();
           setWalking(false);
           e.preventDefault();
@@ -322,7 +334,7 @@ export default function CharacterGameplay({
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [locked, npcs]);
+  }, [locked, npcs, editorOpen, npcEditorOpen, isAdmin]);
 
   // ── Movement loop ────────────────────────────────────────────────
   // Pos is the character's world coordinate (0,0 = map center). The
@@ -632,13 +644,14 @@ export default function CharacterGameplay({
             type="button"
             onClick={() => setEditorOpen(true)}
             className="pixel-btn pixel-btn-secondary"
+            title="Editor (E)"
             style={{
               fontSize: '0.6rem',
               padding: '8px 14px',
               letterSpacing: '0.14em',
             }}
           >
-            ✎ Editor
+            ✎ Editor [E]
           </button>
           <button
             type="button"

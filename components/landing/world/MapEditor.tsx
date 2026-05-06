@@ -38,9 +38,11 @@ export default function MapEditor({
     initialMap.layers[0]?.tiles ?? [],
   );
   const [brush, setBrush] = useState<Brush | null>(null);
-  const [collide, setCollide] = useState(false);
-  const [eraseMode, setEraseMode] = useState(false);
-  const [spawnMode, setSpawnMode] = useState(false);
+  // Mutually-exclusive editor modes. `paint` lays tiles (no collision
+  // baked in); `collision` toggles the c flag on existing tiles;
+  // `erase` removes the top-most thing; `spawn` sets the player spawn.
+  type EditorMode = 'paint' | 'collision' | 'erase' | 'spawn';
+  const [mode, setMode] = useState<EditorMode>('paint');
   const [spawnX, setSpawnX] = useState(initialMap.spawnX ?? 0);
   const [spawnY, setSpawnY] = useState(initialMap.spawnY ?? 0);
   const [items, setItems] = useState<ItemPlacement[]>(
@@ -48,6 +50,10 @@ export default function MapEditor({
   );
   const [itemBrush, setItemBrush] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tiles' | 'items'>('tiles');
+  // Tracks the last cell affected by the current drag so that
+  // collision-mode toggling doesn't flip the same cell back-and-forth
+  // while the cursor sits on it.
+  const lastDragCellRef = useRef<{ x: number; y: number } | null>(null);
 
   // ── Undo / redo history ────────────────────────────────────────
   type Snapshot = {
@@ -125,8 +131,16 @@ export default function MapEditor({
     restore(history[newIdx]);
   };
 
-  // Keyboard shortcuts: Cmd/Ctrl+Z (undo), Cmd/Ctrl+Shift+Z or
-  // Cmd/Ctrl+Y (redo). Skip when typing in inputs.
+  // Keyboard shortcuts.
+  //   Q/W/E/R: switch mode (paint / collision / erase / spawn).
+  //   1: toggle showCollisions.
+  //   A / S: undo / redo.
+  //   ⌘S / Ctrl+S: save the map.
+  //   ⌘Z / Ctrl+Z (+ Shift / Y): undo / redo with the platform combo.
+  // Inputs stay focusable — typing in the width/height boxes won't
+  // trigger any of this. `save` is read through a ref because it's
+  // declared later in the component.
+  const saveRef = useRef<() => void>(() => undefined);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -136,15 +150,50 @@ export default function MapEditor({
       ) {
         return;
       }
+      const k = typeof e.key === 'string' ? e.key.toLowerCase() : '';
       const meta = e.metaKey || e.ctrlKey;
-      if (!meta) return;
-      const k = e.key.toLowerCase();
-      if (k === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      } else if ((k === 'z' && e.shiftKey) || k === 'y') {
-        e.preventDefault();
-        redo();
+      if (meta) {
+        if (k === 's') {
+          e.preventDefault();
+          saveRef.current();
+        } else if (k === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+        } else if ((k === 'z' && e.shiftKey) || k === 'y') {
+          e.preventDefault();
+          redo();
+        }
+        return;
+      }
+      switch (k) {
+        case 'q':
+          e.preventDefault();
+          setMode('paint');
+          return;
+        case 'w':
+          e.preventDefault();
+          setMode('collision');
+          return;
+        case 'e':
+          e.preventDefault();
+          setMode('erase');
+          return;
+        case 'r':
+          e.preventDefault();
+          setMode('spawn');
+          return;
+        case '1':
+          e.preventDefault();
+          setShowCollisions((v) => !v);
+          return;
+        case 'a':
+          e.preventDefault();
+          undo();
+          return;
+        case 's':
+          e.preventDefault();
+          redo();
+          return;
       }
     };
     window.addEventListener('keydown', onKey);
@@ -343,7 +392,7 @@ export default function MapEditor({
     const cy = Math.floor((clientY - rect.top) / (TILE_PX * VIEW_SCALE));
     if (cx < 0 || cy < 0 || cx >= width || cy >= height) return;
 
-    if (spawnMode) {
+    if (mode === 'spawn') {
       if (cx === spawnX && cy === spawnY) return;
       setSpawnX(cx);
       setSpawnY(cy);
@@ -351,7 +400,7 @@ export default function MapEditor({
       window.setTimeout(pushHistory, 0);
       return;
     }
-    if (eraseMode) {
+    if (mode === 'erase') {
       // Erase top-most: items first, then overlay tiles, then ground.
       const itemIdx = items.findIndex((it) => it.x === cx && it.y === cy);
       if (itemIdx >= 0) {
@@ -375,6 +424,36 @@ export default function MapEditor({
       });
       return;
     }
+    if (mode === 'collision') {
+      // Toggle the c flag on the top-most tile at (cx, cy). During a
+      // drag, skip cells we just toggled so the same cell doesn't
+      // flip on every mousemove tick.
+      const last = lastDragCellRef.current;
+      if (last && last.x === cx && last.y === cy) return;
+      lastDragCellRef.current = { x: cx, y: cy };
+      setTiles((prev) => {
+        let target = -1;
+        let bestZ = -1;
+        prev.forEach((t, i) => {
+          if (t.x === cx && t.y === cy) {
+            const z = tileZ(t.s);
+            if (z > bestZ) {
+              bestZ = z;
+              target = i;
+            }
+          }
+        });
+        if (target < 0) return prev;
+        const next = prev.slice();
+        const t = next[target];
+        const flipped: Tile = { ...t };
+        if (t.c) delete flipped.c;
+        else flipped.c = 1;
+        next[target] = flipped;
+        return next;
+      });
+      return;
+    }
     if (activeTab === 'items' && itemBrush) {
       // Replace any existing item at this cell.
       const without = items.filter((it) => !(it.x === cx && it.y === cy));
@@ -391,6 +470,8 @@ export default function MapEditor({
     // Stamp the w × h selection starting at (cx, cy). Each painted
     // cell only replaces the existing tile at the SAME z-layer, so
     // dropping a building on grass leaves the grass intact underneath.
+    // Collision is no longer baked in here — switch to mode `w` to
+    // mark tiles as colliding.
     const brushZ = tileZ(brush.sheetIdx);
     setTiles((prev) => {
       let next = prev;
@@ -407,7 +488,6 @@ export default function MapEditor({
             sx: brush.sx + dx,
             sy: brush.sy + dy,
           };
-          if (collide) newTile.c = 1;
           const idx = next.findIndex(
             (t) => t.x === tx && t.y === ty && tileZ(t.s) === brushZ,
           );
@@ -416,6 +496,9 @@ export default function MapEditor({
               next = next.slice();
               mutated = true;
             }
+            // Preserve the existing tile's collision flag — re-painting
+            // shouldn't undo a collision the user already added.
+            if (next[idx].c) newTile.c = 1;
             next[idx] = newTile;
           } else {
             if (!mutated) {
@@ -466,6 +549,10 @@ export default function MapEditor({
       setSaving(false);
     }
   };
+  // Keep the save function reference fresh for the ⌘S handler.
+  useEffect(() => {
+    saveRef.current = save;
+  });
 
   // ── Palette ────────────────────────────────────────────────────
   const visibleSheets = SHEETS.filter((s) => s.category === activeCategory);
@@ -648,8 +735,7 @@ export default function MapEditor({
                           type="button"
                           onClick={() => {
                             setItemBrush(it.id);
-                            setEraseMode(false);
-                            setSpawnMode(false);
+                            setMode('paint');
                           }}
                           title={it.label}
                           style={{
@@ -715,7 +801,7 @@ export default function MapEditor({
                     }
                     onPick={(b) => {
                       setBrush(b);
-                      setEraseMode(false);
+                      setMode('paint');
                     }}
                   />
                 </div>
@@ -763,52 +849,60 @@ export default function MapEditor({
 
           <Sep />
 
-          <Toggle
-            checked={collide}
-            onChange={setCollide}
-            label="Pintar con colisión"
+          <IconButton
+            icon="✎"
+            hotkey="Q"
+            label="Pintar"
+            active={mode === 'paint'}
+            onClick={() => setMode('paint')}
           />
-          <Toggle
-            checked={showCollisions}
-            onChange={setShowCollisions}
-            label="Mostrar colisiones"
+          <IconButton
+            icon="▥"
+            hotkey="W"
+            label="Colisión (clic en tile pintado)"
+            active={mode === 'collision'}
+            onClick={() => setMode('collision')}
           />
-          <Toggle
-            checked={eraseMode}
-            onChange={(v) => {
-              setEraseMode(v);
-              if (v) {
-                setBrush(null);
-                setSpawnMode(false);
-              }
-            }}
+          <IconButton
+            icon="✕"
+            hotkey="E"
             label="Borrar"
+            active={mode === 'erase'}
+            onClick={() => setMode('erase')}
           />
-          <Toggle
-            checked={spawnMode}
-            onChange={(v) => {
-              setSpawnMode(v);
-              if (v) {
-                setBrush(null);
-                setEraseMode(false);
-              }
-            }}
+          <IconButton
+            icon="◎"
+            hotkey="R"
             label="Posición inicial"
+            active={mode === 'spawn'}
+            onClick={() => setMode('spawn')}
           />
 
           <Sep />
 
-          <HistoryButton
-            onClick={undo}
-            disabled={historyIdx <= 0}
-            label="↶ Deshacer"
-            shortcut="⌘Z"
+          <IconButton
+            icon="◉"
+            hotkey="1"
+            label="Mostrar colisiones"
+            active={showCollisions}
+            onClick={() => setShowCollisions((v) => !v)}
           />
-          <HistoryButton
-            onClick={redo}
+
+          <Sep />
+
+          <IconButton
+            icon="↶"
+            hotkey="A"
+            label="Deshacer"
+            disabled={historyIdx <= 0}
+            onClick={undo}
+          />
+          <IconButton
+            icon="↷"
+            hotkey="S"
+            label="Rehacer"
             disabled={historyIdx >= history.length - 1}
-            label="↷ Rehacer"
-            shortcut="⌘⇧Z"
+            onClick={redo}
           />
 
           <Sep />
@@ -818,9 +912,10 @@ export default function MapEditor({
             onClick={save}
             disabled={saving}
             className="pixel-btn pixel-btn-primary"
+            title="Guardar (⌘S / Ctrl+S)"
             style={{ padding: '6px 14px', fontSize: '0.62rem' }}
           >
-            {saving ? 'Guardando…' : 'Guardar mapa'}
+            {saving ? 'Guardando…' : 'Guardar (⌘S)'}
           </button>
           <button
             type="button"
@@ -842,10 +937,8 @@ export default function MapEditor({
               ✓ Guardado
             </span>
           )}
-          {brush && !eraseMode && (
-            <BrushPreview brush={brush} />
-          )}
-          {eraseMode && (
+          {brush && mode === 'paint' && <BrushPreview brush={brush} />}
+          {mode === 'erase' && (
             <span
               style={{
                 fontSize: '0.55rem',
@@ -856,7 +949,18 @@ export default function MapEditor({
               ✕ MODO BORRAR
             </span>
           )}
-          {spawnMode && (
+          {mode === 'collision' && (
+            <span
+              style={{
+                fontSize: '0.55rem',
+                color: '#ff8080',
+                letterSpacing: '0.1em',
+              }}
+            >
+              ▥ MODO COLISIÓN · clic en tile pintado
+            </span>
+          )}
+          {mode === 'spawn' && (
             <span
               style={{
                 fontSize: '0.55rem',
@@ -864,7 +968,7 @@ export default function MapEditor({
                 letterSpacing: '0.1em',
               }}
             >
-              ▶ MODO POSICIÓN INICIAL · ({spawnX},{spawnY})
+              ◎ MODO POSICIÓN INICIAL · ({spawnX},{spawnY})
             </span>
           )}
         </div>
@@ -883,17 +987,20 @@ export default function MapEditor({
             ref={canvasRef}
             onMouseDown={(e) => {
               paintingRef.current = true;
+              lastDragCellRef.current = null;
               paintAt(e.clientX, e.clientY);
             }}
             onMouseUp={() => {
               if (paintingRef.current) {
                 paintingRef.current = false;
+                lastDragCellRef.current = null;
                 pushHistory();
               }
             }}
             onMouseLeave={() => {
               if (paintingRef.current) {
                 paintingRef.current = false;
+                lastDragCellRef.current = null;
                 pushHistory();
               }
             }}
@@ -904,13 +1011,16 @@ export default function MapEditor({
               imageRendering: 'pixelated',
               width: width * TILE_PX * VIEW_SCALE,
               height: height * TILE_PX * VIEW_SCALE,
-              cursor: eraseMode
-                ? 'not-allowed'
-                : spawnMode
-                  ? 'cell'
-                  : brush
-                    ? 'crosshair'
-                    : 'default',
+              cursor:
+                mode === 'erase'
+                  ? 'not-allowed'
+                  : mode === 'spawn'
+                    ? 'cell'
+                    : mode === 'collision'
+                      ? 'crosshair'
+                      : brush
+                        ? 'crosshair'
+                        : 'default',
               boxShadow: '6px 6px 0 rgba(0,0,0,0.5)',
             }}
           />
@@ -1065,35 +1175,63 @@ function BrushPreview({ brush }: { brush: Brush }) {
   );
 }
 
-function Toggle({
-  checked,
-  onChange,
+function IconButton({
+  icon,
+  hotkey,
   label,
+  active = false,
+  disabled = false,
+  onClick,
 }: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
+  icon: string;
+  hotkey: string;
   label: string;
+  active?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
 }) {
   return (
-    <label
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={`${label} (${hotkey})`}
       style={{
+        position: 'relative',
+        width: 38,
+        height: 38,
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        cursor: 'pointer',
-        fontSize: '0.55rem',
-        letterSpacing: '0.1em',
-        color: '#e5e5e5',
+        justifyContent: 'center',
+        background: active ? 'var(--color-accent)' : '#1a1a1a',
+        color: active
+          ? '#0a0a14'
+          : disabled
+            ? 'rgba(225,215,255,0.3)'
+            : '#e5e5e5',
+        border: active ? '2px solid #ffcc00' : '2px solid var(--color-accent)',
+        boxShadow: active ? '0 0 6px #ffcc00' : 'none',
+        fontFamily: "'Silkscreen', cursive",
+        fontSize: '1.05rem',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
+        padding: 0,
       }}
     >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        style={{ accentColor: '#7B5FBF' }}
-      />
-      {label}
-    </label>
+      <span style={{ lineHeight: 1, paddingBottom: 4 }}>{icon}</span>
+      <span
+        style={{
+          position: 'absolute',
+          bottom: 2,
+          right: 3,
+          fontSize: '0.5rem',
+          letterSpacing: '0.04em',
+          color: active ? '#0a0a14' : 'rgba(225,215,255,0.6)',
+        }}
+      >
+        {hotkey}
+      </span>
+    </button>
   );
 }
 
@@ -1150,40 +1288,6 @@ function ToolbarLabel({ children }: { children: React.ReactNode }) {
     >
       {children}
     </span>
-  );
-}
-
-function HistoryButton({
-  onClick,
-  disabled,
-  label,
-  shortcut,
-}: {
-  onClick: () => void;
-  disabled: boolean;
-  label: string;
-  shortcut: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={`${label} (${shortcut})`}
-      style={{
-        padding: '6px 10px',
-        background: '#1a1a1a',
-        color: disabled ? 'rgba(225,215,255,0.3)' : '#e5e5e5',
-        border: '2px solid var(--color-accent)',
-        fontFamily: "'Silkscreen', cursive",
-        fontSize: '0.6rem',
-        letterSpacing: '0.08em',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.45 : 1,
-      }}
-    >
-      {label}
-    </button>
   );
 }
 
