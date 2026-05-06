@@ -75,6 +75,11 @@ export default function CharacterGameplay({
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [equipped, setEquipped] = useState<string | null>(null);
   const pickingRef = useRef<Set<string>>(new Set());
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const inventoryOpenRef = useRef(false);
+  useEffect(() => {
+    inventoryOpenRef.current = inventoryOpen;
+  }, [inventoryOpen]);
   const [npcs, setNpcs] = useState<NpcRecord[]>([]);
   const [npcEditorOpen, setNpcEditorOpen] = useState(false);
   // Single ever-incrementing frame counter; each NPC's sprite mods it
@@ -282,6 +287,17 @@ export default function CharacterGameplay({
       // Close dialogue on Escape.
       if (k === 'escape' && activeDialogueRef.current) {
         setActiveDialogue(null);
+        e.preventDefault();
+        return;
+      }
+      // Toggle inventory with I; Escape also closes it.
+      if (k === 'i') {
+        setInventoryOpen((o) => !o);
+        e.preventDefault();
+        return;
+      }
+      if (k === 'escape' && inventoryOpenRef.current) {
+        setInventoryOpen(false);
         e.preventDefault();
         return;
       }
@@ -735,20 +751,51 @@ export default function CharacterGameplay({
           );
         })()}
 
-      {!overlayVisible && !editorOpen && !npcEditorOpen && !activeDialogue && (
-        <InventoryBar
-          inventory={inventory}
-          equipped={equipped}
-          onEquip={(id) => {
-            setEquipped(id);
-            fetch('/api/world/inventory', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ equipped: id }),
-            }).catch(() => undefined);
-          }}
-        />
-      )}
+      {inventoryOpen &&
+        !overlayVisible &&
+        !editorOpen &&
+        !npcEditorOpen &&
+        !activeDialogue && (
+          <InventoryBar
+            inventory={inventory}
+            equipped={equipped}
+            onEquip={(id) => {
+              setEquipped(id);
+              fetch('/api/world/inventory', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ equipped: id }),
+              }).catch(() => undefined);
+            }}
+          />
+        )}
+
+      {/* "[I] Inventario" hint when nothing else is on screen. */}
+      {!inventoryOpen &&
+        !overlayVisible &&
+        !editorOpen &&
+        !npcEditorOpen &&
+        !activeDialogue && (
+          <div
+            style={{
+              position: 'fixed',
+              right: 16,
+              bottom: 16,
+              zIndex: 99996,
+              padding: '6px 10px',
+              background: 'rgba(19,25,35,0.85)',
+              border: '2px solid var(--color-accent)',
+              boxShadow: '3px 3px 0 rgba(0,0,0,0.5)',
+              fontFamily: "'Silkscreen', cursive",
+              fontSize: '0.55rem',
+              letterSpacing: '0.14em',
+              color: 'rgba(225,215,255,0.85)',
+              pointerEvents: 'none',
+            }}
+          >
+            <span style={{ color: '#ffcc00' }}>[I]</span> Inventario
+          </div>
+        )}
 
       {editorOpen && (
         <MapEditor
