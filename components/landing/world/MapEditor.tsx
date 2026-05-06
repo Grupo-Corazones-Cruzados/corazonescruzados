@@ -13,13 +13,101 @@ import {
 } from './sheets';
 import { ITEMS, ITEM_CATEGORIES, findItem, itemDataUrl } from './items';
 
-type Brush = {
-  sheetIdx: number;
+// One painted cell relative to the brush origin. `dx`/`dy` are tile
+// offsets from the top-left of the brush rectangle.
+type BrushTile = {
+  dx: number;
+  dy: number;
+  s: number;
   sx: number;
   sy: number;
-  w: number; // selection width in tiles, default 1
-  h: number; // selection height in tiles, default 1
+  c?: 1;
 };
+
+type Brush = {
+  // Bounding box in tiles.
+  w: number;
+  h: number;
+  // Where the cells came from. `sheet` brushes are contiguous selections
+  // from a tilesheet palette; `map` brushes are arbitrary captures from
+  // already-painted regions of the canvas (which can mix sheets and have
+  // gaps).
+  source: 'sheet' | 'map';
+  // Cells to stamp.
+  tiles: BrushTile[];
+  // Stable key used to dedupe entries inside the history panel.
+  key: string;
+  // For the inline preview shown next to the toolbar — only set on
+  // `sheet` brushes since they map to a single source rectangle.
+  sheetIdx?: number;
+  sx?: number;
+  sy?: number;
+};
+
+function sheetBrush(
+  sheetIdx: number,
+  sx: number,
+  sy: number,
+  w: number,
+  h: number,
+): Brush {
+  const tiles: BrushTile[] = [];
+  for (let dy = 0; dy < h; dy++) {
+    for (let dx = 0; dx < w; dx++) {
+      tiles.push({ dx, dy, s: sheetIdx, sx: sx + dx, sy: sy + dy });
+    }
+  }
+  return {
+    w,
+    h,
+    source: 'sheet',
+    tiles,
+    key: `sheet:${sheetIdx}:${sx}:${sy}:${w}:${h}`,
+    sheetIdx,
+    sx,
+    sy,
+  };
+}
+
+function mapBrush(
+  originX: number,
+  originY: number,
+  w: number,
+  h: number,
+  allTiles: Tile[],
+): Brush {
+  const tiles: BrushTile[] = [];
+  for (const t of allTiles) {
+    if (
+      t.x >= originX &&
+      t.x < originX + w &&
+      t.y >= originY &&
+      t.y < originY + h
+    ) {
+      const cell: BrushTile = {
+        dx: t.x - originX,
+        dy: t.y - originY,
+        s: t.s,
+        sx: t.sx,
+        sy: t.sy,
+      };
+      if (t.c) cell.c = 1;
+      tiles.push(cell);
+    }
+  }
+  // Capture order doesn't matter for dedup — the captured payload itself
+  // is the identity.
+  const sig = tiles
+    .map((c) => `${c.dx},${c.dy},${c.s},${c.sx},${c.sy},${c.c ?? 0}`)
+    .join('|');
+  return {
+    w,
+    h,
+    source: 'map',
+    tiles,
+    key: `map:${w}x${h}:${sig}`,
+  };
+}
 
 const VIEW_SCALE = 2; // 1 source px = 2 screen px in editor
 
@@ -40,9 +128,21 @@ export default function MapEditor({
   const [brush, setBrush] = useState<Brush | null>(null);
   // Mutually-exclusive editor modes. `paint` lays tiles (no collision
   // baked in); `collision` toggles the c flag on existing tiles;
-  // `erase` removes the top-most thing; `spawn` sets the player spawn.
-  type EditorMode = 'paint' | 'collision' | 'erase' | 'spawn';
+  // `erase` removes the top-most thing; `spawn` sets the player spawn;
+  // `copy` lets the user drag a rectangle on the canvas to capture the
+  // already-painted region as a reusable brush.
+  type EditorMode = 'paint' | 'collision' | 'erase' | 'spawn' | 'copy';
   const [mode, setMode] = useState<EditorMode>('paint');
+  const [brushHistory, setBrushHistory] = useState<Brush[]>([]);
+  // Cells under the cursor while painting / copying — used both for the
+  // copy-rectangle overlay and for the paint hover preview.
+  const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const [copyDrag, setCopyDrag] = useState<{
+    start: { x: number; y: number };
+    now: { x: number; y: number };
+  } | null>(null);
   const [spawnX, setSpawnX] = useState(initialMap.spawnX ?? 0);
   const [spawnY, setSpawnY] = useState(initialMap.spawnY ?? 0);
   const [items, setItems] = useState<ItemPlacement[]>(
@@ -181,6 +281,10 @@ export default function MapEditor({
         case 'r':
           e.preventDefault();
           setMode('spawn');
+          return;
+        case 'c':
+          e.preventDefault();
+          setMode('copy');
           return;
         case '1':
           e.preventDefault();
@@ -381,16 +485,45 @@ export default function MapEditor({
     }
   }, [tiles, items, imgs, width, height, showCollisions, spawnX, spawnY, itemImgs]);
 
+  // ── Brush activation + history ──────────────────────────────────
+  // Anything that becomes the active brush also lands at the top of
+  // the right-side history panel. Sheet brushes dedupe by their key
+  // (so re-picking the same selection doesn't pile up duplicates);
+  // map captures get a unique key and always join the history.
+  const HISTORY_LIMIT = 30;
+  const activateBrush = (b: Brush) => {
+    setBrush(b);
+    setMode('paint');
+    setBrushHistory((prev) => {
+      const without = prev.filter((p) => p.key !== b.key);
+      const next = [b, ...without];
+      return next.length > HISTORY_LIMIT ? next.slice(0, HISTORY_LIMIT) : next;
+    });
+  };
+
   // ── Painting ──────────────────────────────────────────────────
   const paintingRef = useRef(false);
 
-  const paintAt = (clientX: number, clientY: number) => {
+  // Convert a client (mouse) coordinate to a tile coord on the canvas.
+  // Returns null if outside the map.
+  const cellFromClient = (
+    clientX: number,
+    clientY: number,
+  ): { x: number; y: number } | null => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
     const cx = Math.floor((clientX - rect.left) / (TILE_PX * VIEW_SCALE));
     const cy = Math.floor((clientY - rect.top) / (TILE_PX * VIEW_SCALE));
-    if (cx < 0 || cy < 0 || cx >= width || cy >= height) return;
+    if (cx < 0 || cy < 0 || cx >= width || cy >= height) return null;
+    return { x: cx, y: cy };
+  };
+
+  const paintAt = (clientX: number, clientY: number) => {
+    const cell = cellFromClient(clientX, clientY);
+    if (!cell) return;
+    const cx = cell.x;
+    const cy = cell.y;
 
     if (mode === 'spawn') {
       if (cx === spawnX && cy === spawnY) return;
@@ -467,46 +600,44 @@ export default function MapEditor({
       return;
     }
     if (!brush) return;
-    // Stamp the w × h selection starting at (cx, cy). Each painted
+    // Stamp every cell in the brush starting at (cx, cy). Each painted
     // cell only replaces the existing tile at the SAME z-layer, so
     // dropping a building on grass leaves the grass intact underneath.
-    // Collision is no longer baked in here — switch to mode `w` to
-    // mark tiles as colliding.
-    const brushZ = tileZ(brush.sheetIdx);
+    // Collision flags from the brush carry through (so a copied region
+    // keeps its collisions); existing collisions are preserved when a
+    // new tile lands on top.
     setTiles((prev) => {
       let next = prev;
       let mutated = false;
-      for (let dy = 0; dy < brush.h; dy++) {
-        for (let dx = 0; dx < brush.w; dx++) {
-          const tx = cx + dx;
-          const ty = cy + dy;
-          if (tx < 0 || ty < 0 || tx >= width || ty >= height) continue;
-          const newTile: Tile = {
-            x: tx,
-            y: ty,
-            s: brush.sheetIdx,
-            sx: brush.sx + dx,
-            sy: brush.sy + dy,
-          };
-          const idx = next.findIndex(
-            (t) => t.x === tx && t.y === ty && tileZ(t.s) === brushZ,
-          );
-          if (idx >= 0) {
-            if (!mutated) {
-              next = next.slice();
-              mutated = true;
-            }
-            // Preserve the existing tile's collision flag — re-painting
-            // shouldn't undo a collision the user already added.
-            if (next[idx].c) newTile.c = 1;
-            next[idx] = newTile;
-          } else {
-            if (!mutated) {
-              next = next.slice();
-              mutated = true;
-            }
-            next.push(newTile);
+      for (const bt of brush.tiles) {
+        const tx = cx + bt.dx;
+        const ty = cy + bt.dy;
+        if (tx < 0 || ty < 0 || tx >= width || ty >= height) continue;
+        const z = tileZ(bt.s);
+        const newTile: Tile = {
+          x: tx,
+          y: ty,
+          s: bt.s,
+          sx: bt.sx,
+          sy: bt.sy,
+        };
+        if (bt.c) newTile.c = 1;
+        const idx = next.findIndex(
+          (t) => t.x === tx && t.y === ty && tileZ(t.s) === z,
+        );
+        if (idx >= 0) {
+          if (!mutated) {
+            next = next.slice();
+            mutated = true;
           }
+          if (next[idx].c && !newTile.c) newTile.c = 1;
+          next[idx] = newTile;
+        } else {
+          if (!mutated) {
+            next = next.slice();
+            mutated = true;
+          }
+          next.push(newTile);
         }
       }
       return next;
@@ -568,7 +699,7 @@ export default function MapEditor({
         color: '#e5e5e5',
         fontFamily: "'Silkscreen', cursive",
         display: 'grid',
-        gridTemplateColumns: '300px 1fr',
+        gridTemplateColumns: '300px 1fr 220px',
         animation: 'pixelFadeIn 0.4s ease-out',
       }}
     >
@@ -797,11 +928,15 @@ export default function MapEditor({
                     sheet={sheet}
                     sheetIdx={sheetIdx}
                     selected={
-                      brush?.sheetIdx === sheetIdx ? brush : null
+                      brush?.source === 'sheet' &&
+                      brush.sheetIdx === sheetIdx &&
+                      brush.sx != null &&
+                      brush.sy != null
+                        ? { sx: brush.sx, sy: brush.sy, w: brush.w, h: brush.h }
+                        : null
                     }
                     onPick={(b) => {
-                      setBrush(b);
-                      setMode('paint');
+                      activateBrush(b);
                     }}
                   />
                 </div>
@@ -877,6 +1012,13 @@ export default function MapEditor({
             active={mode === 'spawn'}
             onClick={() => setMode('spawn')}
           />
+          <IconButton
+            icon="▭"
+            hotkey="C"
+            label="Copiar región del mapa"
+            active={mode === 'copy'}
+            onClick={() => setMode('copy')}
+          />
 
           <Sep />
 
@@ -937,7 +1079,9 @@ export default function MapEditor({
               ✓ Guardado
             </span>
           )}
-          {brush && mode === 'paint' && <BrushPreview brush={brush} />}
+          {brush && mode === 'paint' && (
+            <BrushPreview brush={brush} imgs={imgs} />
+          )}
           {mode === 'erase' && (
             <span
               style={{
@@ -971,6 +1115,17 @@ export default function MapEditor({
               ◎ MODO POSICIÓN INICIAL · ({spawnX},{spawnY})
             </span>
           )}
+          {mode === 'copy' && (
+            <span
+              style={{
+                fontSize: '0.55rem',
+                color: '#9bd1ff',
+                letterSpacing: '0.1em',
+              }}
+            >
+              ▭ MODO COPIAR · arrastra para capturar una región
+            </span>
+          )}
         </div>
 
         {/* Canvas */}
@@ -983,49 +1138,218 @@ export default function MapEditor({
             padding: 24,
           }}
         >
-          <canvas
-            ref={canvasRef}
-            onMouseDown={(e) => {
-              paintingRef.current = true;
-              lastDragCellRef.current = null;
-              paintAt(e.clientX, e.clientY);
-            }}
-            onMouseUp={() => {
-              if (paintingRef.current) {
-                paintingRef.current = false;
-                lastDragCellRef.current = null;
-                pushHistory();
-              }
-            }}
-            onMouseLeave={() => {
-              if (paintingRef.current) {
-                paintingRef.current = false;
-                lastDragCellRef.current = null;
-                pushHistory();
-              }
-            }}
-            onMouseMove={(e) => {
-              if (paintingRef.current) paintAt(e.clientX, e.clientY);
-            }}
+          <div
             style={{
-              imageRendering: 'pixelated',
+              position: 'relative',
               width: width * TILE_PX * VIEW_SCALE,
               height: height * TILE_PX * VIEW_SCALE,
-              cursor:
-                mode === 'erase'
-                  ? 'not-allowed'
-                  : mode === 'spawn'
-                    ? 'cell'
-                    : mode === 'collision'
-                      ? 'crosshair'
-                      : brush
-                        ? 'crosshair'
-                        : 'default',
-              boxShadow: '6px 6px 0 rgba(0,0,0,0.5)',
             }}
-          />
+          >
+            <canvas
+              ref={canvasRef}
+              onMouseDown={(e) => {
+                if (mode === 'copy') {
+                  const c = cellFromClient(e.clientX, e.clientY);
+                  if (!c) return;
+                  setCopyDrag({ start: c, now: c });
+                  return;
+                }
+                paintingRef.current = true;
+                lastDragCellRef.current = null;
+                paintAt(e.clientX, e.clientY);
+              }}
+              onMouseUp={() => {
+                if (mode === 'copy' && copyDrag) {
+                  const { start, now } = copyDrag;
+                  const ox = Math.min(start.x, now.x);
+                  const oy = Math.min(start.y, now.y);
+                  const w = Math.abs(now.x - start.x) + 1;
+                  const h = Math.abs(now.y - start.y) + 1;
+                  const captured = mapBrush(ox, oy, w, h, tiles);
+                  setCopyDrag(null);
+                  if (captured.tiles.length > 0) {
+                    activateBrush(captured);
+                  }
+                  return;
+                }
+                if (paintingRef.current) {
+                  paintingRef.current = false;
+                  lastDragCellRef.current = null;
+                  pushHistory();
+                }
+              }}
+              onMouseLeave={() => {
+                setHoverCell(null);
+                if (mode === 'copy') {
+                  setCopyDrag(null);
+                  return;
+                }
+                if (paintingRef.current) {
+                  paintingRef.current = false;
+                  lastDragCellRef.current = null;
+                  pushHistory();
+                }
+              }}
+              onMouseMove={(e) => {
+                const c = cellFromClient(e.clientX, e.clientY);
+                if (c) setHoverCell(c);
+                if (mode === 'copy') {
+                  if (c && copyDrag) setCopyDrag({ ...copyDrag, now: c });
+                  return;
+                }
+                if (paintingRef.current) paintAt(e.clientX, e.clientY);
+              }}
+              style={{
+                imageRendering: 'pixelated',
+                width: width * TILE_PX * VIEW_SCALE,
+                height: height * TILE_PX * VIEW_SCALE,
+                cursor:
+                  mode === 'erase'
+                    ? 'not-allowed'
+                    : mode === 'spawn'
+                      ? 'cell'
+                      : mode === 'copy' || mode === 'collision'
+                        ? 'crosshair'
+                        : brush
+                          ? 'crosshair'
+                          : 'default',
+                boxShadow: '6px 6px 0 rgba(0,0,0,0.5)',
+                display: 'block',
+              }}
+            />
+            {/* Hover preview overlay — pinned over the main canvas. Shows
+                a transparent ghost of the brush in paint mode, and the
+                in-progress selection rectangle in copy mode. */}
+            <PreviewOverlay
+              brush={brush}
+              mode={mode}
+              hoverCell={hoverCell}
+              copyDrag={copyDrag}
+              imgs={imgs}
+              width={width}
+              height={height}
+            />
+          </div>
         </div>
       </main>
+
+      {/* ── Right panel: brush history ── */}
+      <aside
+        style={{
+          background: '#131923',
+          borderLeft: '2px solid var(--color-accent)',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+        }}
+      >
+        <div
+          style={{
+            padding: '14px 14px 8px',
+            borderBottom: '2px solid rgba(75,45,142,0.4)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.85rem',
+              letterSpacing: '0.2em',
+              color: 'var(--color-accent)',
+              textTransform: 'uppercase',
+            }}
+          >
+            Historial
+          </div>
+          <div
+            style={{
+              fontSize: '0.5rem',
+              letterSpacing: '0.12em',
+              color: 'rgba(225,215,255,0.5)',
+            }}
+          >
+            Brochas usadas (palette + copia)
+          </div>
+        </div>
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
+          {brushHistory.length === 0 ? (
+            <div
+              style={{
+                fontSize: '0.55rem',
+                color: 'rgba(225,215,255,0.4)',
+                textAlign: 'center',
+                padding: '12px 4px',
+              }}
+            >
+              Aún no has usado ninguna brocha
+            </div>
+          ) : (
+            brushHistory.map((b) => {
+              const active = brush?.key === b.key;
+              return (
+                <button
+                  key={b.key}
+                  type="button"
+                  onClick={() => activateBrush(b)}
+                  title={
+                    b.source === 'sheet' && b.sheetIdx != null
+                      ? `${SHEETS[b.sheetIdx].id} ${b.w}×${b.h}`
+                      : `Copia del mapa ${b.w}×${b.h}`
+                  }
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: 6,
+                    background: active ? 'var(--color-accent)' : '#1a1a1a',
+                    color: active ? '#0a0a14' : '#e5e5e5',
+                    border: '2px solid var(--color-accent)',
+                    cursor: 'pointer',
+                    fontFamily: "'Silkscreen', cursive",
+                    fontSize: '0.5rem',
+                    letterSpacing: '0.05em',
+                    textAlign: 'left',
+                  }}
+                >
+                  <BrushThumbnail
+                    brush={b}
+                    imgs={imgs}
+                    tileSize={Math.max(
+                      4,
+                      Math.min(10, Math.floor(60 / Math.max(b.w, b.h))),
+                    )}
+                  />
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                      minWidth: 0,
+                    }}
+                  >
+                    <span style={{ opacity: 0.85 }}>
+                      {b.source === 'sheet' ? 'palette' : 'mapa'}
+                    </span>
+                    <span style={{ fontSize: '0.55rem' }}>
+                      {b.w}×{b.h}
+                    </span>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </aside>
     </div>
   );
 }
@@ -1038,7 +1362,7 @@ function SheetPalette({
 }: {
   sheet: (typeof SHEETS)[number];
   sheetIdx: number;
-  selected: Brush | null;
+  selected: { sx: number; sy: number; w: number; h: number } | null;
   onPick: (b: Brush) => void;
 }) {
   const PALETTE_TILE = 24;
@@ -1106,7 +1430,7 @@ function SheetPalette({
         const sy = Math.min(dragStart.sy, dragNow.sy);
         const w = Math.abs(dragNow.sx - dragStart.sx) + 1;
         const h = Math.abs(dragNow.sy - dragStart.sy) + 1;
-        onPick({ sheetIdx, sx, sy, w, h });
+        onPick(sheetBrush(sheetIdx, sx, sy, w, h));
         setDragStart(null);
         setDragNow(null);
       }}
@@ -1116,7 +1440,7 @@ function SheetPalette({
           const sy = Math.min(dragStart.sy, dragNow.sy);
           const w = Math.abs(dragNow.sx - dragStart.sx) + 1;
           const h = Math.abs(dragNow.sy - dragStart.sy) + 1;
-          onPick({ sheetIdx, sx, sy, w, h });
+          onPick(sheetBrush(sheetIdx, sx, sy, w, h));
         }
         setDragStart(null);
         setDragNow(null);
@@ -1140,12 +1464,128 @@ function SheetPalette({
   );
 }
 
-function BrushPreview({ brush }: { brush: Brush }) {
-  const sheet = SHEETS[brush.sheetIdx];
+// Overlay canvas pinned at (0, 0) over the editor canvas. It draws a
+// translucent ghost of the active brush at the cursor cell while in
+// paint mode, and a yellow selection rectangle while dragging in copy
+// mode. The container's CSS scaling stretches it to match the visible
+// editor canvas size, so the math stays in source pixels.
+function PreviewOverlay({
+  brush,
+  mode,
+  hoverCell,
+  copyDrag,
+  imgs,
+  width,
+  height,
+}: {
+  brush: Brush | null;
+  mode: 'paint' | 'collision' | 'erase' | 'spawn' | 'copy';
+  hoverCell: { x: number; y: number } | null;
+  copyDrag: {
+    start: { x: number; y: number };
+    now: { x: number; y: number };
+  } | null;
+  imgs: (HTMLImageElement | null)[];
+  width: number;
+  height: number;
+}) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    canvas.width = width * TILE_PX;
+    canvas.height = height * TILE_PX;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (mode === 'copy' && copyDrag) {
+      const ox = Math.min(copyDrag.start.x, copyDrag.now.x);
+      const oy = Math.min(copyDrag.start.y, copyDrag.now.y);
+      const w = Math.abs(copyDrag.now.x - copyDrag.start.x) + 1;
+      const h = Math.abs(copyDrag.now.y - copyDrag.start.y) + 1;
+      ctx.fillStyle = 'rgba(255, 204, 0, 0.18)';
+      ctx.fillRect(ox * TILE_PX, oy * TILE_PX, w * TILE_PX, h * TILE_PX);
+      ctx.strokeStyle = '#ffcc00';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        ox * TILE_PX + 1,
+        oy * TILE_PX + 1,
+        w * TILE_PX - 2,
+        h * TILE_PX - 2,
+      );
+      return;
+    }
+
+    if (mode !== 'paint' || !brush || !hoverCell) return;
+    ctx.globalAlpha = 0.55;
+    const drawCell = (bt: BrushTile) => {
+      const tx = hoverCell.x + bt.dx;
+      const ty = hoverCell.y + bt.dy;
+      if (tx < 0 || ty < 0 || tx >= width || ty >= height) return;
+      const img = imgs[bt.s];
+      if (!img) return;
+      ctx.drawImage(
+        img,
+        bt.sx * TILE_PX,
+        bt.sy * TILE_PX,
+        TILE_PX,
+        TILE_PX,
+        tx * TILE_PX,
+        ty * TILE_PX,
+        TILE_PX,
+        TILE_PX,
+      );
+    };
+    for (const bt of brush.tiles) if (tileZ(bt.s) === 0) drawCell(bt);
+    for (const bt of brush.tiles) if (tileZ(bt.s) === 1) drawCell(bt);
+    ctx.globalAlpha = 1;
+    // Outline the brush footprint so empty cells in the brush still show
+    // where the stamp will land.
+    ctx.strokeStyle = 'rgba(255, 204, 0, 0.85)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(
+      hoverCell.x * TILE_PX + 0.5,
+      hoverCell.y * TILE_PX + 0.5,
+      brush.w * TILE_PX - 1,
+      brush.h * TILE_PX - 1,
+    );
+  }, [brush, mode, hoverCell, copyDrag, imgs, width, height]);
+  return (
+    <canvas
+      ref={ref}
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: '100%',
+        height: '100%',
+        imageRendering: 'pixelated',
+        pointerEvents: 'none',
+      }}
+    />
+  );
+}
+
+function BrushPreview({
+  brush,
+  imgs,
+}: {
+  brush: Brush;
+  imgs: (HTMLImageElement | null)[];
+}) {
   // Cap the preview size so a huge selection doesn't blow up the toolbar.
-  const PREVIEW_TILE = Math.max(6, Math.min(16, Math.floor(64 / Math.max(brush.w, brush.h))));
-  const previewW = brush.w * PREVIEW_TILE;
-  const previewH = brush.h * PREVIEW_TILE;
+  const PREVIEW_TILE = Math.max(
+    6,
+    Math.min(16, Math.floor(64 / Math.max(brush.w, brush.h))),
+  );
+  const labelText =
+    brush.source === 'sheet' && brush.sheetIdx != null
+      ? `${SHEETS[brush.sheetIdx].id} (${brush.sx},${brush.sy})${
+          brush.w > 1 || brush.h > 1 ? ` ${brush.w}×${brush.h}` : ''
+        }`
+      : `mapa ${brush.w}×${brush.h}`;
   return (
     <div
       style={{
@@ -1158,20 +1598,65 @@ function BrushPreview({ brush }: { brush: Brush }) {
       }}
     >
       Brocha:
-      <div
-        style={{
-          width: previewW,
-          height: previewH,
-          background: `url(${sheet.url}) -${brush.sx * PREVIEW_TILE}px -${brush.sy * PREVIEW_TILE}px / ${sheet.cols * PREVIEW_TILE}px ${sheet.rows * PREVIEW_TILE}px no-repeat`,
-          imageRendering: 'pixelated',
-          border: '2px solid var(--color-accent)',
-        }}
-      />
-      <span style={{ fontFamily: 'monospace' }}>
-        {sheet.id} ({brush.sx},{brush.sy})
-        {(brush.w > 1 || brush.h > 1) && ` ${brush.w}×${brush.h}`}
-      </span>
+      <BrushThumbnail brush={brush} imgs={imgs} tileSize={PREVIEW_TILE} />
+      <span style={{ fontFamily: 'monospace' }}>{labelText}</span>
     </div>
+  );
+}
+
+// Small composited canvas of any Brush. Works for both sheet and map
+// brushes since both expose the same `tiles[]` representation.
+function BrushThumbnail({
+  brush,
+  imgs,
+  tileSize,
+}: {
+  brush: Brush;
+  imgs: (HTMLImageElement | null)[];
+  tileSize: number;
+}) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    canvas.width = brush.w * TILE_PX;
+    canvas.height = brush.h * TILE_PX;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Draw ground first, overlay second so transparent decoration tiles
+    // composite correctly even inside the thumbnail.
+    const drawCell = (bt: BrushTile) => {
+      const img = imgs[bt.s];
+      if (!img) return;
+      ctx.drawImage(
+        img,
+        bt.sx * TILE_PX,
+        bt.sy * TILE_PX,
+        TILE_PX,
+        TILE_PX,
+        bt.dx * TILE_PX,
+        bt.dy * TILE_PX,
+        TILE_PX,
+        TILE_PX,
+      );
+    };
+    for (const bt of brush.tiles) if (tileZ(bt.s) === 0) drawCell(bt);
+    for (const bt of brush.tiles) if (tileZ(bt.s) === 1) drawCell(bt);
+  }, [brush, imgs]);
+  return (
+    <canvas
+      ref={ref}
+      style={{
+        width: brush.w * tileSize,
+        height: brush.h * tileSize,
+        imageRendering: 'pixelated',
+        border: '2px solid var(--color-accent)',
+        background: '#0a0a14',
+        display: 'block',
+      }}
+    />
   );
 }
 
