@@ -951,6 +951,10 @@ export default function MapEditor({
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
+          // Without min-width: 0 a wide canvas inside this 1fr column
+          // would push the column past its track and shove the right
+          // history panel off-screen.
+          minWidth: 0,
         }}
       >
         {/* Toolbar */}
