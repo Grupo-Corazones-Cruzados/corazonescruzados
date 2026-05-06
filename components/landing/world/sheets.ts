@@ -93,6 +93,15 @@ export type Tile = {
   c?: 1; // collides
 };
 
+// Z-layer derived from the sheet's category. Ground (terreno, agua)
+// goes underneath; everything else (edificios, decoracion, interiores)
+// stacks on top so transparent decoration tiles still see the grass /
+// stone they were painted over.
+export function tileZ(sheetIdx: number): 0 | 1 {
+  const cat = SHEETS[sheetIdx]?.category;
+  return cat === 'terreno' || cat === 'agua' ? 0 : 1;
+}
+
 export type LayerData = { tiles: Tile[] };
 
 export type ItemPlacement = {

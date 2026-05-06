@@ -5,6 +5,7 @@ import {
   CATEGORIES,
   SHEETS,
   TILE_PX,
+  tileZ,
   type ItemPlacement,
   type LayerData,
   type Tile,
@@ -16,6 +17,8 @@ type Brush = {
   sheetIdx: number;
   sx: number;
   sy: number;
+  w: number; // selection width in tiles, default 1
+  h: number; // selection height in tiles, default 1
 };
 
 const VIEW_SCALE = 2; // 1 source px = 2 screen px in editor
@@ -221,10 +224,11 @@ export default function MapEditor({
     ctx.fillStyle = '#1a1f2e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    for (const t of tiles) {
+    // Two-pass render: ground (z=0) first, then overlay (z=1) on top.
+    const drawTile = (t: Tile) => {
       const sheet = SHEETS[t.s];
       const img = imgs[t.s];
-      if (!sheet || !img) continue;
+      if (!sheet || !img) return;
       ctx.drawImage(
         img,
         t.sx * TILE_PX,
@@ -253,7 +257,9 @@ export default function MapEditor({
           TILE_PX - 1,
         );
       }
-    }
+    };
+    for (const t of tiles) if (tileZ(t.s) === 0) drawTile(t);
+    for (const t of tiles) if (tileZ(t.s) === 1) drawTile(t);
 
     // grid lines
     ctx.strokeStyle = 'rgba(255,255,255,0.08)';
@@ -346,16 +352,27 @@ export default function MapEditor({
       return;
     }
     if (eraseMode) {
-      // Erase top-most: remove item placement at this cell first;
-      // if no item, remove the tile at this cell.
+      // Erase top-most: items first, then overlay tiles, then ground.
       const itemIdx = items.findIndex((it) => it.x === cx && it.y === cy);
       if (itemIdx >= 0) {
         setItems((prev) => prev.filter((_, i) => i !== itemIdx));
         return;
       }
-      const idx = tileIdxByCell.get(`${cx},${cy}`);
-      if (idx == null) return;
-      setTiles((prev) => prev.filter((_, i) => i !== idx));
+      setTiles((prev) => {
+        let target = -1;
+        let bestZ = -1;
+        prev.forEach((t, i) => {
+          if (t.x === cx && t.y === cy) {
+            const z = tileZ(t.s);
+            if (z > bestZ) {
+              bestZ = z;
+              target = i;
+            }
+          }
+        });
+        if (target < 0) return prev;
+        return prev.filter((_, i) => i !== target);
+      });
       return;
     }
     if (activeTab === 'items' && itemBrush) {
@@ -371,22 +388,45 @@ export default function MapEditor({
       return;
     }
     if (!brush) return;
-    const newTile: Tile = {
-      x: cx,
-      y: cy,
-      s: brush.sheetIdx,
-      sx: brush.sx,
-      sy: brush.sy,
-    };
-    if (collide) newTile.c = 1;
+    // Stamp the w × h selection starting at (cx, cy). Each painted
+    // cell only replaces the existing tile at the SAME z-layer, so
+    // dropping a building on grass leaves the grass intact underneath.
+    const brushZ = tileZ(brush.sheetIdx);
     setTiles((prev) => {
-      const idx = prev.findIndex((t) => t.x === cx && t.y === cy);
-      if (idx >= 0) {
-        const copy = prev.slice();
-        copy[idx] = newTile;
-        return copy;
+      let next = prev;
+      let mutated = false;
+      for (let dy = 0; dy < brush.h; dy++) {
+        for (let dx = 0; dx < brush.w; dx++) {
+          const tx = cx + dx;
+          const ty = cy + dy;
+          if (tx < 0 || ty < 0 || tx >= width || ty >= height) continue;
+          const newTile: Tile = {
+            x: tx,
+            y: ty,
+            s: brush.sheetIdx,
+            sx: brush.sx + dx,
+            sy: brush.sy + dy,
+          };
+          if (collide) newTile.c = 1;
+          const idx = next.findIndex(
+            (t) => t.x === tx && t.y === ty && tileZ(t.s) === brushZ,
+          );
+          if (idx >= 0) {
+            if (!mutated) {
+              next = next.slice();
+              mutated = true;
+            }
+            next[idx] = newTile;
+          } else {
+            if (!mutated) {
+              next = next.slice();
+              mutated = true;
+            }
+            next.push(newTile);
+          }
+        }
       }
-      return [...prev, newTile];
+      return next;
     });
   };
 
@@ -891,7 +931,35 @@ function SheetPalette({
   selected: Brush | null;
   onPick: (b: Brush) => void;
 }) {
-  const PALETTE_TILE = 24; // shrunk for palette display
+  const PALETTE_TILE = 24;
+  const [dragStart, setDragStart] = useState<{ sx: number; sy: number } | null>(
+    null,
+  );
+  const [dragNow, setDragNow] = useState<{ sx: number; sy: number } | null>(
+    null,
+  );
+
+  const cellAt = (e: React.MouseEvent, el: HTMLDivElement) => {
+    const rect = el.getBoundingClientRect();
+    const sx = Math.floor((e.clientX - rect.left) / PALETTE_TILE);
+    const sy = Math.floor((e.clientY - rect.top) / PALETTE_TILE);
+    if (sx < 0 || sy < 0 || sx >= sheet.cols || sy >= sheet.rows) return null;
+    return { sx, sy };
+  };
+
+  // Highlight rectangle: live drag if dragging, otherwise the saved
+  // brush selection (when this palette matches the active sheet).
+  const highlight = dragStart && dragNow
+    ? {
+        sx: Math.min(dragStart.sx, dragNow.sx),
+        sy: Math.min(dragStart.sy, dragNow.sy),
+        w: Math.abs(dragNow.sx - dragStart.sx) + 1,
+        h: Math.abs(dragNow.sy - dragStart.sy) + 1,
+      }
+    : selected
+      ? { sx: selected.sx, sy: selected.sy, w: selected.w, h: selected.h }
+      : null;
+
   return (
     <div
       style={{
@@ -904,23 +972,54 @@ function SheetPalette({
         backgroundSize: `${sheet.cols * PALETTE_TILE}px ${sheet.rows * PALETTE_TILE}px`,
         imageRendering: 'pixelated',
         height: sheet.rows * PALETTE_TILE,
+        cursor: 'crosshair',
+        userSelect: 'none',
       }}
-      onClick={(e) => {
-        const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-        const sx = Math.floor((e.clientX - rect.left) / PALETTE_TILE);
-        const sy = Math.floor((e.clientY - rect.top) / PALETTE_TILE);
-        if (sx < 0 || sy < 0 || sx >= sheet.cols || sy >= sheet.rows) return;
-        onPick({ sheetIdx, sx, sy });
+      onMouseDown={(e) => {
+        const c = cellAt(e, e.currentTarget as HTMLDivElement);
+        if (!c) return;
+        setDragStart(c);
+        setDragNow(c);
+      }}
+      onMouseMove={(e) => {
+        if (!dragStart) return;
+        const c = cellAt(e, e.currentTarget as HTMLDivElement);
+        if (c) setDragNow(c);
+      }}
+      onMouseUp={() => {
+        if (!dragStart || !dragNow) {
+          setDragStart(null);
+          setDragNow(null);
+          return;
+        }
+        const sx = Math.min(dragStart.sx, dragNow.sx);
+        const sy = Math.min(dragStart.sy, dragNow.sy);
+        const w = Math.abs(dragNow.sx - dragStart.sx) + 1;
+        const h = Math.abs(dragNow.sy - dragStart.sy) + 1;
+        onPick({ sheetIdx, sx, sy, w, h });
+        setDragStart(null);
+        setDragNow(null);
+      }}
+      onMouseLeave={() => {
+        if (dragStart && dragNow) {
+          const sx = Math.min(dragStart.sx, dragNow.sx);
+          const sy = Math.min(dragStart.sy, dragNow.sy);
+          const w = Math.abs(dragNow.sx - dragStart.sx) + 1;
+          const h = Math.abs(dragNow.sy - dragStart.sy) + 1;
+          onPick({ sheetIdx, sx, sy, w, h });
+        }
+        setDragStart(null);
+        setDragNow(null);
       }}
     >
-      {selected && (
+      {highlight && (
         <div
           style={{
             position: 'absolute',
-            left: selected.sx * PALETTE_TILE,
-            top: selected.sy * PALETTE_TILE,
-            width: PALETTE_TILE,
-            height: PALETTE_TILE,
+            left: highlight.sx * PALETTE_TILE,
+            top: highlight.sy * PALETTE_TILE,
+            width: highlight.w * PALETTE_TILE,
+            height: highlight.h * PALETTE_TILE,
             border: '2px solid #ffcc00',
             boxShadow: '0 0 6px #ffcc00',
             pointerEvents: 'none',
@@ -933,6 +1032,10 @@ function SheetPalette({
 
 function BrushPreview({ brush }: { brush: Brush }) {
   const sheet = SHEETS[brush.sheetIdx];
+  // Cap the preview size so a huge selection doesn't blow up the toolbar.
+  const PREVIEW_TILE = Math.max(6, Math.min(16, Math.floor(64 / Math.max(brush.w, brush.h))));
+  const previewW = brush.w * PREVIEW_TILE;
+  const previewH = brush.h * PREVIEW_TILE;
   return (
     <div
       style={{
@@ -947,15 +1050,16 @@ function BrushPreview({ brush }: { brush: Brush }) {
       Brocha:
       <div
         style={{
-          width: 32,
-          height: 32,
-          background: `url(${sheet.url}) -${brush.sx * TILE_PX}px -${brush.sy * TILE_PX}px / ${sheet.cols * TILE_PX}px ${sheet.rows * TILE_PX}px no-repeat`,
+          width: previewW,
+          height: previewH,
+          background: `url(${sheet.url}) -${brush.sx * PREVIEW_TILE}px -${brush.sy * PREVIEW_TILE}px / ${sheet.cols * PREVIEW_TILE}px ${sheet.rows * PREVIEW_TILE}px no-repeat`,
           imageRendering: 'pixelated',
           border: '2px solid var(--color-accent)',
         }}
       />
       <span style={{ fontFamily: 'monospace' }}>
         {sheet.id} ({brush.sx},{brush.sy})
+        {(brush.w > 1 || brush.h > 1) && ` ${brush.w}×${brush.h}`}
       </span>
     </div>
   );

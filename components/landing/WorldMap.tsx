@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { SHEETS, TILE_PX, type WorldMapData } from './world/sheets';
+import {
+  SHEETS,
+  TILE_PX,
+  tileZ,
+  type WorldMapData,
+} from './world/sheets';
 import { ITEMS, findItem, itemDataUrl } from './world/items';
 
 export const TILE = TILE_PX;
@@ -61,9 +66,11 @@ export default function WorldMap({
       if (cancelled) return;
       const imgs = vals[0] as HTMLImageElement[];
       const tiles = map.layers[0]?.tiles ?? [];
-      for (const t of tiles) {
+      // Two-pass render: ground (z=0) first, then overlays (z=1) on top
+      // so transparent decoration / building tiles see the terrain.
+      const drawTile = (t: (typeof tiles)[number]) => {
         const img = imgs[t.s];
-        if (!img) continue;
+        if (!img) return;
         ctx.drawImage(
           img,
           t.sx * TILE,
@@ -75,7 +82,9 @@ export default function WorldMap({
           TILE,
           TILE,
         );
-      }
+      };
+      for (const t of tiles) if (tileZ(t.s) === 0) drawTile(t);
+      for (const t of tiles) if (tileZ(t.s) === 1) drawTile(t);
       // Items on top of tiles.
       const items = map.items ?? [];
       for (const placement of items) {
