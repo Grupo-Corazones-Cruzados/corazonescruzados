@@ -134,6 +134,15 @@ export default function MapEditor({
   type EditorMode = 'paint' | 'collision' | 'erase' | 'spawn' | 'copy';
   const [mode, setMode] = useState<EditorMode>('paint');
   const [brushHistory, setBrushHistory] = useState<Brush[]>([]);
+  // Layer focus controls. `activeLayer` null = work on every layer
+  // (current behavior); 0 isolates the ground layer (terreno / agua),
+  // 1 isolates the overlay (decoracion / edificios / interiores).
+  // Tiles outside the active layer dim to 0.3 alpha so the user can
+  // still see the surrounding map without losing focus. Visibility
+  // toggles hide a layer entirely.
+  const [activeLayer, setActiveLayer] = useState<0 | 1 | null>(null);
+  const [layer0Visible, setLayer0Visible] = useState(true);
+  const [layer1Visible, setLayer1Visible] = useState(true);
   // Cells under the cursor while painting / copying — used both for the
   // copy-rectangle overlay and for the paint hover preview.
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(
@@ -377,11 +386,24 @@ export default function MapEditor({
     ctx.fillStyle = '#1a1f2e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Compute the alpha each layer renders at so that hiding / focusing
+    // a layer is purely a visualization concern — the map data isn't
+    // mutated, just the editor's view of it.
+    const alphaForLayer = (z: 0 | 1) => {
+      const visible = z === 0 ? layer0Visible : layer1Visible;
+      if (!visible) return 0;
+      if (activeLayer == null) return 1;
+      return activeLayer === z ? 1 : 0.3;
+    };
+    const a0 = alphaForLayer(0);
+    const a1 = alphaForLayer(1);
+
     // Two-pass render: ground (z=0) first, then overlay (z=1) on top.
-    const drawTile = (t: Tile) => {
+    const drawTile = (t: Tile, alpha: number) => {
       const sheet = SHEETS[t.s];
       const img = imgs[t.s];
       if (!sheet || !img) return;
+      ctx.globalAlpha = alpha;
       ctx.drawImage(
         img,
         t.sx * TILE_PX,
@@ -410,9 +432,14 @@ export default function MapEditor({
           TILE_PX - 1,
         );
       }
+      ctx.globalAlpha = 1;
     };
-    for (const t of tiles) if (tileZ(t.s) === 0) drawTile(t);
-    for (const t of tiles) if (tileZ(t.s) === 1) drawTile(t);
+    if (a0 > 0) {
+      for (const t of tiles) if (tileZ(t.s) === 0) drawTile(t, a0);
+    }
+    if (a1 > 0) {
+      for (const t of tiles) if (tileZ(t.s) === 1) drawTile(t, a1);
+    }
 
     // grid lines
     ctx.strokeStyle = 'rgba(255,255,255,0.08)';
@@ -483,7 +510,20 @@ export default function MapEditor({
       ctx.textBaseline = 'middle';
       ctx.fillText('P', cx, cy + 1);
     }
-  }, [tiles, items, imgs, width, height, showCollisions, spawnX, spawnY, itemImgs]);
+  }, [
+    tiles,
+    items,
+    imgs,
+    width,
+    height,
+    showCollisions,
+    spawnX,
+    spawnY,
+    itemImgs,
+    activeLayer,
+    layer0Visible,
+    layer1Visible,
+  ]);
 
   // ── Brush activation + history ──────────────────────────────────
   // Anything that becomes the active brush also lands at the top of
@@ -534,22 +574,28 @@ export default function MapEditor({
       return;
     }
     if (mode === 'erase') {
-      // Erase top-most: items first, then overlay tiles, then ground.
-      const itemIdx = items.findIndex((it) => it.x === cx && it.y === cy);
-      if (itemIdx >= 0) {
-        setItems((prev) => prev.filter((_, i) => i !== itemIdx));
-        return;
+      // Erase target depends on the layer focus. With a layer pinned,
+      // only that layer is touched (so you can wipe overlay decoration
+      // without disturbing the grass underneath, and vice versa). With
+      // no layer pinned, peel the top-most thing: items first, then
+      // overlay tiles, then ground.
+      if (activeLayer == null) {
+        const itemIdx = items.findIndex((it) => it.x === cx && it.y === cy);
+        if (itemIdx >= 0) {
+          setItems((prev) => prev.filter((_, i) => i !== itemIdx));
+          return;
+        }
       }
       setTiles((prev) => {
         let target = -1;
         let bestZ = -1;
         prev.forEach((t, i) => {
-          if (t.x === cx && t.y === cy) {
-            const z = tileZ(t.s);
-            if (z > bestZ) {
-              bestZ = z;
-              target = i;
-            }
+          if (t.x !== cx || t.y !== cy) return;
+          const z = tileZ(t.s);
+          if (activeLayer != null && z !== activeLayer) return;
+          if (z > bestZ) {
+            bestZ = z;
+            target = i;
           }
         });
         if (target < 0) return prev;
@@ -558,7 +604,8 @@ export default function MapEditor({
       return;
     }
     if (mode === 'collision') {
-      // Toggle the c flag on the top-most tile at (cx, cy). During a
+      // Toggle the c flag on the top-most tile at (cx, cy) — but
+      // restricted to the active layer when one is pinned. During a
       // drag, skip cells we just toggled so the same cell doesn't
       // flip on every mousemove tick.
       const last = lastDragCellRef.current;
@@ -568,12 +615,12 @@ export default function MapEditor({
         let target = -1;
         let bestZ = -1;
         prev.forEach((t, i) => {
-          if (t.x === cx && t.y === cy) {
-            const z = tileZ(t.s);
-            if (z > bestZ) {
-              bestZ = z;
-              target = i;
-            }
+          if (t.x !== cx || t.y !== cy) return;
+          const z = tileZ(t.s);
+          if (activeLayer != null && z !== activeLayer) return;
+          if (z > bestZ) {
+            bestZ = z;
+            target = i;
           }
         });
         if (target < 0) return prev;
@@ -1032,6 +1079,41 @@ export default function MapEditor({
             label="Mostrar colisiones"
             active={showCollisions}
             onClick={() => setShowCollisions((v) => !v)}
+          />
+
+          <Sep />
+
+          {/* Layer focus + visibility. Active-layer chip dims the
+              other layers; the eye toggles hide a layer entirely. */}
+          <ToolbarLabel>Capa</ToolbarLabel>
+          <LayerChip
+            label="Todo"
+            active={activeLayer == null}
+            onClick={() => setActiveLayer(null)}
+          />
+          <LayerChip
+            label="Suelo"
+            active={activeLayer === 0}
+            onClick={() => setActiveLayer(0)}
+          />
+          <LayerChip
+            label="Overlay"
+            active={activeLayer === 1}
+            onClick={() => setActiveLayer(1)}
+          />
+          <IconButton
+            icon={layer0Visible ? '◐' : '○'}
+            hotkey=""
+            label="Mostrar / ocultar suelo"
+            active={layer0Visible}
+            onClick={() => setLayer0Visible((v) => !v)}
+          />
+          <IconButton
+            icon={layer1Visible ? '◑' : '○'}
+            hotkey=""
+            label="Mostrar / ocultar overlay"
+            active={layer1Visible}
+            onClick={() => setLayer1Visible((v) => !v)}
           />
 
           <Sep />
@@ -1762,6 +1844,37 @@ function NumberInput({
         outline: 'none',
       }}
     />
+  );
+}
+
+function LayerChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: '6px 9px',
+        background: active ? 'var(--color-accent)' : '#1a1a1a',
+        color: active ? '#0a0a14' : '#e5e5e5',
+        border: active ? '2px solid #ffcc00' : '2px solid var(--color-accent)',
+        boxShadow: active ? '0 0 6px #ffcc00' : 'none',
+        fontFamily: "'Silkscreen', cursive",
+        fontSize: '0.55rem',
+        letterSpacing: '0.1em',
+        cursor: 'pointer',
+        textTransform: 'uppercase',
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
