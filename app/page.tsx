@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import PixelStars from '@/components/landing/PixelStars';
 import PointerCursor from '@/components/landing/PointerCursor';
 import CharacterCreator, {
@@ -998,26 +998,106 @@ export default function LandingPage() {
     };
   }, [planetExiting]);
 
-  // ── On mount: detect returning player by cookie / IP ─────────────
+  // ── Saved-character recognition ───────────────────────────────────
+  // The initial /me check on mount can fail silently — flaky network,
+  // a cookie that hasn't propagated yet, server cold-start. When that
+  // happens the user gets pushed into the "create new account" flow
+  // even though they already have one. To recover, we expose a
+  // refresh helper and re-run it at several decision points: right
+  // after the entry dialogue ends, when the tab regains focus, when
+  // the network reports back online, and one last time before the
+  // creator opens.
+  const savedCharacterRef = useRef<CharacterConfig | null>(null);
   useEffect(() => {
-    if (savedCharacterCheckedRef.current) return;
-    savedCharacterCheckedRef.current = true;
-    fetch('/api/character/me')
-      .then((r) => r.json())
-      .then((j) => {
+    savedCharacterRef.current = savedCharacter;
+  }, [savedCharacter]);
+
+  const refreshSavedCharacter =
+    useCallback(async (): Promise<CharacterConfig | null> => {
+      try {
+        const r = await fetch('/api/character/me', { cache: 'no-store' });
+        const j = await r.json();
         if (j?.exists && j.characterData) {
-          setSavedCharacter(j.characterData as CharacterConfig);
+          const cfg = j.characterData as CharacterConfig;
+          setSavedCharacter(cfg);
           setSavedAuth({
             hasPassword: !!j.hasPassword,
             emailVerified: !!j.emailVerified,
             authenticated: !!j.authenticated,
             pendingEmail: j.pendingEmail ?? null,
           });
+          return cfg;
         }
-      })
-      .catch(() => undefined)
-      .finally(() => setSavedCharacterChecked(true));
+      } catch {
+        /* swallow — another re-check moment will try again */
+      }
+      return null;
+    }, []);
+
+  // Skip / dismiss the intro and jump straight into gameplay as a
+  // returning player. Mirrors the timing of the original Entrar
+  // returning-player branch (wind fades, bulb dims, then mount).
+  const enterAsReturning = useCallback((cfg: CharacterConfig) => {
+    setCharacterCreatorVisible(false);
+    setPlanetQuestionVisible(false);
+    setCharacterConfig(cfg);
+    const stop = (audio: HTMLAudioElement | null) => {
+      if (!audio || audio.paused) return;
+      audio.pause();
+      audio.currentTime = 0;
+    };
+    window.setTimeout(() => {
+      stop(windAudioRef.current);
+      stop(planetMusicRef.current);
+      stop(peligroMusicRef.current);
+      setBulbOff(true);
+    }, 1100);
+    window.setTimeout(() => {
+      setGameplayActive(true);
+    }, 2200);
   }, []);
+
+  // ── On mount: detect returning player by cookie / IP ─────────────
+  useEffect(() => {
+    if (savedCharacterCheckedRef.current) return;
+    savedCharacterCheckedRef.current = true;
+    refreshSavedCharacter().finally(() => setSavedCharacterChecked(true));
+  }, [refreshSavedCharacter]);
+
+  // If a saved character is discovered AFTER the user pressed Entrar
+  // (windAway = true) and gameplay hasn't mounted yet, dismiss any
+  // intro screens and enter as returning. Covers every refresh path.
+  useEffect(() => {
+    if (!savedCharacter || !windAway || gameplayActive) return;
+    enterAsReturning(savedCharacter);
+  }, [savedCharacter, windAway, gameplayActive, enterAsReturning]);
+
+  // Re-validate when the user becomes interactable with the page again
+  // (tab focus, network online). Cheap and idempotent — the effect bails
+  // out as soon as the saved character is known or gameplay has started.
+  useEffect(() => {
+    if (savedCharacter || gameplayActive || !windAway) return;
+    const check = () => {
+      refreshSavedCharacter();
+    };
+    const onVis = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    window.addEventListener('online', check);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('online', check);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [savedCharacter, gameplayActive, windAway, refreshSavedCharacter]);
+
+  // After the entry dialogue finishes ("Bien, te pondré a prueba…"),
+  // re-check before letting the user touch the planet / creator. This
+  // is the explicit moment requested when the initial check missed.
+  useEffect(() => {
+    if (!worldChatComplete || savedCharacter || gameplayActive) return;
+    refreshSavedCharacter();
+  }, [worldChatComplete, savedCharacter, gameplayActive, refreshSavedCharacter]);
 
   // ── Always-on cursor tracker ─────────────────────────────────────
   useEffect(() => {
@@ -2780,25 +2860,12 @@ export default function LandingPage() {
                 if (landingLocked || windAway) return;
                 setWindAway(true);
 
-                // Returning player: skip the whole intro flow,
-                // go straight to bulb-off → gameplay with saved character.
-                if (savedCharacter) {
-                  // Quiet the wind audio quickly so the bulb-off feels clean.
-                  const fadeOut = (audio: HTMLAudioElement | null) => {
-                    if (!audio || audio.paused) return;
-                    audio.pause();
-                    audio.currentTime = 0;
-                  };
-                  window.setTimeout(() => {
-                    fadeOut(windAudioRef.current);
-                    setBulbOff(true);
-                  }, 1100);
-                  window.setTimeout(() => {
-                    setCharacterConfig(savedCharacter);
-                    setGameplayActive(true);
-                  }, 2200);
-                  return;
-                }
+                // Returning player: the savedCharacter useEffect picks
+                // this up and routes through enterAsReturning. We still
+                // kick off the first-time path below; if the network
+                // catches up mid-intro, the same useEffect interrupts
+                // it cleanly.
+                if (savedCharacter) return;
 
                 // First-time visitor: original flow (chat → planet → creator).
                 cameraEnabledRef.current = true;
@@ -2856,22 +2923,9 @@ export default function LandingPage() {
           onClose={() => setRecoveryOpen(false)}
           onSuccess={() => {
             setRecoveryOpen(false);
-            // Re-fetch /me to load the recovered character + auth state.
-            fetch('/api/character/me')
-              .then((r) => r.json())
-              .then((j) => {
-                if (j?.exists && j.characterData) {
-                  setSavedCharacter(j.characterData as CharacterConfig);
-                  setSavedAuth({
-                    hasPassword: !!j.hasPassword,
-                    emailVerified: !!j.emailVerified,
-                    authenticated: !!j.authenticated,
-                    pendingEmail: j.pendingEmail ?? null,
-                  });
-                  setSavePointTrigger((n) => n + 1);
-                }
-              })
-              .catch(() => undefined);
+            refreshSavedCharacter().then((found) => {
+              if (found) setSavePointTrigger((n) => n + 1);
+            });
           }}
         />
       )}
@@ -3414,7 +3468,14 @@ export default function LandingPage() {
                           gain.gain.setValueAtTime(gain.gain.value, now);
                           gain.gain.linearRampToValueAtTime(0, now + 0.7);
                         }
+                        // Last-chance re-validation before opening the
+                        // creator. If the network finally surfaces a
+                        // saved character, the savedCharacter useEffect
+                        // routes us into gameplay and the timer below
+                        // bails out via the savedCharacterRef check.
+                        refreshSavedCharacter();
                         window.setTimeout(() => {
+                          if (savedCharacterRef.current) return;
                           setCharacterCreatorVisible(true);
                         }, 950);
                       }}
@@ -3467,7 +3528,15 @@ export default function LandingPage() {
       {/* ====== CHARACTER CREATOR ====== */}
       {characterCreatorVisible && (
         <CharacterCreator
-          onConfirm={(cfg) => {
+          onConfirm={async (cfg) => {
+            // Final guard: re-check before persisting a new character.
+            // If the network finally surfaces an existing account, route
+            // the user into it instead of creating a duplicate.
+            const existing = await refreshSavedCharacter();
+            if (existing) {
+              enterAsReturning(existing);
+              return;
+            }
             setCharacterConfig(cfg);
             setCharacterCreatorVisible(false);
             setGameplayActive(true);
