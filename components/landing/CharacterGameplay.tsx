@@ -19,7 +19,11 @@ import MapEditor from './world/MapEditor';
 import InventoryBar from './world/InventoryBar';
 import NpcEditor, { type NpcRecord } from './world/NpcEditor';
 import LightOverlay from './world/LightOverlay';
-import { findItem, itemDataUrl } from './world/items';
+import {
+  EQUIPPED_LIGHT_TEMPLATES,
+  findItem,
+  itemDataUrl,
+} from './world/items';
 import type { LightSource } from './world/lights';
 import type { WorldMapData } from './world/sheets';
 
@@ -376,6 +380,27 @@ export default function CharacterGameplay({
   const playerTileX = Math.floor((pos.x + HALF_W) / TILE_PX_DISPLAY);
   const playerTileY = Math.floor((pos.y + HALF_H) / TILE_PX_DISPLAY);
 
+  // Append a synthetic light at the player's tile when they have an
+  // item equipped that grants one (e.g. lantern). Uses a stable
+  // negative id so it never collides with a real /api/world/lights row.
+  const lightsWithEquipped = useMemo<LightSource[]>(() => {
+    const tpl = equipped ? EQUIPPED_LIGHT_TEMPLATES[equipped] : null;
+    if (!tpl) return lights;
+    return [
+      ...lights,
+      {
+        id: -1,
+        x: playerTileX,
+        y: playerTileY,
+        radius: tpl.radius,
+        color: tpl.color,
+        mode: tpl.mode,
+        periodMs: tpl.periodMs,
+        intensity: tpl.intensity,
+      },
+    ];
+  }, [lights, equipped, playerTileX, playerTileY]);
+
   // Adjacent NPC (Manhattan distance ≤ 1, including same tile fallback).
   const nearbyNpc = useMemo(() => {
     if (!npcs.length) return null;
@@ -597,7 +622,7 @@ export default function CharacterGameplay({
           height={worldMap.height}
           tilePx={TILE_PX_DISPLAY}
           ambientDarkness={worldMap.ambientDarkness ?? 0}
-          lights={lights}
+          lights={lightsWithEquipped}
         />
       </div>
 

@@ -173,7 +173,46 @@ export const ITEMS: ItemDef[] = [
       <rect x='7' y='5' width='2' height='4' fill='#fff'/>
     `),
   },
+  {
+    id: 'lantern',
+    label: 'Linterna',
+    category: 'herramienta',
+    icon: svg(`
+      <rect x='7' y='1' width='2' height='1' fill='#888'/>
+      <rect x='6' y='2' width='4' height='1' fill='#444'/>
+      <rect x='5' y='3' width='6' height='1' fill='#666'/>
+      <rect x='5' y='4' width='1' height='8' fill='#444'/>
+      <rect x='10' y='4' width='1' height='8' fill='#444'/>
+      <rect x='6' y='4' width='4' height='8' fill='#fff7c2'/>
+      <rect x='7' y='6' width='2' height='4' fill='#ffd97a'/>
+      <rect x='5' y='12' width='6' height='1' fill='#666'/>
+      <rect x='6' y='13' width='4' height='1' fill='#444'/>
+    `),
+  },
 ];
+
+// Items that, when equipped, attach a glowing light to the player.
+// Map an item id to the synthetic LightSource template (id is filled
+// in by the renderer with a stable negative number so it never
+// collides with a real /api/world/lights row).
+export const EQUIPPED_LIGHT_TEMPLATES: Record<
+  string,
+  {
+    radius: number;
+    color: string;
+    mode: 'steady' | 'flicker';
+    periodMs: number;
+    intensity: number;
+  }
+> = {
+  lantern: {
+    radius: 5,
+    color: '#ffd27a',
+    mode: 'flicker',
+    periodMs: 700,
+    intensity: 1,
+  },
+};
 
 export function itemDataUrl(item: ItemDef): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(item.icon)}`;

@@ -113,38 +113,52 @@ export function paintLightingFrame(
   nowMs: number,
 ) {
   ctx.save();
-  // 1. Fill the canvas with ambient darkness.
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = `rgba(5, 6, 18, ${Math.max(0, Math.min(1, ambientDarkness))})`;
-  ctx.fillRect(0, 0, pxW, pxH);
+  const darkness = Math.max(0, Math.min(1, ambientDarkness));
 
-  // 2. Punch holes in the darkness for each light using a radial
-  //    gradient with destination-out (subtracts alpha from the dark).
-  ctx.globalCompositeOperation = 'destination-out';
+  // Pre-compute each light's animated alpha + colour and cached centre /
+  // radius so we don't recompute three times across the passes below.
   const punchFrames: { x: number; y: number; r: number; frame: LightFrame }[] = [];
   for (const light of lights) {
     const frame = computeLightFrame(light, nowMs);
     if (frame.alpha <= 0) continue;
-    const cx = light.x * tilePx + tilePx / 2;
-    const cy = light.y * tilePx + tilePx / 2;
-    const r = light.radius * tilePx;
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    grad.addColorStop(0, `rgba(255,255,255,${frame.alpha})`);
-    grad.addColorStop(0.6, `rgba(255,255,255,${frame.alpha * 0.55})`);
-    grad.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-    punchFrames.push({ x: cx, y: cy, r, frame });
+    punchFrames.push({
+      x: light.x * tilePx + tilePx / 2,
+      y: light.y * tilePx + tilePx / 2,
+      r: light.radius * tilePx,
+      frame,
+    });
   }
 
-  // 3. Add a colored tint at the punched holes so coloured lights
-  //    tint the lit area instead of just punching neutral light.
+  // 1. Fill the canvas with ambient darkness.
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = `rgba(5, 6, 18, ${darkness})`;
+  ctx.fillRect(0, 0, pxW, pxH);
+
+  // 2. Punch holes in the darkness for each light using a radial
+  //    gradient with destination-out (subtracts alpha from the dark).
+  if (darkness > 0) {
+    ctx.globalCompositeOperation = 'destination-out';
+    for (const p of punchFrames) {
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+      grad.addColorStop(0, `rgba(255,255,255,${p.frame.alpha})`);
+      grad.addColorStop(0.6, `rgba(255,255,255,${p.frame.alpha * 0.55})`);
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 3. Always add a coloured bloom on top with `lighter`, regardless
+  //    of ambient darkness, so a torch in broad daylight still feels
+  //    like a torch and a coloured lamp tints whatever's beneath it.
   ctx.globalCompositeOperation = 'lighter';
   for (const p of punchFrames) {
     const [r, g, b] = hexToRgb(p.frame.color);
-    const tintAlpha = p.frame.alpha * 0.35;
+    // Bloom is stronger when the world is dark (so lights actually
+    // glow), softer when it's bright (so they don't blow out detail).
+    const tintAlpha = p.frame.alpha * (0.35 + 0.4 * darkness);
     if (tintAlpha <= 0) continue;
     const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
     grad.addColorStop(0, `rgba(${r},${g},${b},${tintAlpha})`);
