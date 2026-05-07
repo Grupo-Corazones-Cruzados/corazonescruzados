@@ -12,6 +12,12 @@ import {
   type WorldMapData,
 } from './sheets';
 import { ITEMS, ITEM_CATEGORIES, findItem, itemDataUrl } from './items';
+import {
+  LIGHT_MODE_OPTIONS,
+  paintLightingFrame,
+  type LightSource,
+  type LightMode,
+} from './lights';
 
 // One painted cell relative to the brush origin. `dx`/`dy` are tile
 // offsets from the top-left of the brush rectangle.
@@ -130,8 +136,15 @@ export default function MapEditor({
   // baked in); `collision` toggles the c flag on existing tiles;
   // `erase` removes the top-most thing; `spawn` sets the player spawn;
   // `copy` lets the user drag a rectangle on the canvas to capture the
-  // already-painted region as a reusable brush.
-  type EditorMode = 'paint' | 'collision' | 'erase' | 'spawn' | 'copy';
+  // already-painted region as a reusable brush; `light` places /
+  // selects light sources for editing.
+  type EditorMode =
+    | 'paint'
+    | 'collision'
+    | 'erase'
+    | 'spawn'
+    | 'copy'
+    | 'light';
   const [mode, setMode] = useState<EditorMode>('paint');
   const [brushHistory, setBrushHistory] = useState<Brush[]>([]);
   // Layer focus controls. `activeLayer` null = work on every layer
@@ -143,6 +156,27 @@ export default function MapEditor({
   const [activeLayer, setActiveLayer] = useState<0 | 1 | null>(null);
   const [layer0Visible, setLayer0Visible] = useState(true);
   const [layer1Visible, setLayer1Visible] = useState(true);
+
+  // Lights live in the database (managed via /api/world/lights). The
+  // editor keeps a local mirror so the map preview can animate without
+  // refetching. CRUD calls update both server and local state.
+  const [lights, setLights] = useState<LightSource[]>([]);
+  const [editingLight, setEditingLight] = useState<LightSource | null>(null);
+  const [ambientDarkness, setAmbientDarkness] = useState<number>(
+    initialMap.ambientDarkness ?? 0,
+  );
+  // Live in-editor preview of the lighting overlay so the admin can
+  // see darkness + lights while building. Pure visualization toggle.
+  const [lightingPreview, setLightingPreview] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/world/lights')
+      .then((r) => r.json())
+      .then((j: { lights?: LightSource[] }) => {
+        if (Array.isArray(j?.lights)) setLights(j.lights);
+      })
+      .catch(() => undefined);
+  }, []);
   // Cells under the cursor while painting / copying — used both for the
   // copy-rectangle overlay and for the paint hover preview.
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(
@@ -294,6 +328,10 @@ export default function MapEditor({
         case 'c':
           e.preventDefault();
           setMode('copy');
+          return;
+        case 'l':
+          e.preventDefault();
+          setMode('light');
           return;
         case '1':
           e.preventDefault();
@@ -510,6 +548,38 @@ export default function MapEditor({
       ctx.textBaseline = 'middle';
       ctx.fillText('P', cx, cy + 1);
     }
+
+    // Light markers — small dot in the light's colour at each light's
+    // tile, plus a faint radius ring when that light is selected. Kept
+    // visible even when the live lighting preview is off so the admin
+    // can find the lights they've placed.
+    for (const l of lights) {
+      const lcx = l.x * TILE_PX + TILE_PX / 2;
+      const lcy = l.y * TILE_PX + TILE_PX / 2;
+      const isSelected = editingLight?.id === l.id;
+      if (isSelected) {
+        ctx.strokeStyle = `${l.color}88`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(lcx, lcy, l.radius * TILE_PX, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#0a0a14';
+      ctx.beginPath();
+      ctx.arc(lcx, lcy, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = l.color;
+      ctx.beginPath();
+      ctx.arc(lcx, lcy, 5, 0, Math.PI * 2);
+      ctx.fill();
+      if (isSelected) {
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(lcx, lcy, 9, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
   }, [
     tiles,
     items,
@@ -523,7 +593,42 @@ export default function MapEditor({
     activeLayer,
     layer0Visible,
     layer1Visible,
+    lights,
+    editingLight,
   ]);
+
+  // ── Live lighting preview ────────────────────────────────────────
+  // Pinned over the editor canvas as a separate overlay so it can
+  // animate with RAF without re-running the heavy tile render.
+  const lightingPreviewRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = lightingPreviewRef.current;
+    if (!canvas) return;
+    canvas.width = width * TILE_PX;
+    canvas.height = height * TILE_PX;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    if (!lightingPreview) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+    let raf = 0;
+    const tick = (now: number) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      paintLightingFrame(
+        ctx,
+        canvas.width,
+        canvas.height,
+        TILE_PX,
+        ambientDarkness,
+        lights,
+        now,
+      );
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [width, height, ambientDarkness, lights, lightingPreview]);
 
   // ── Brush activation + history ──────────────────────────────────
   // Anything that becomes the active brush also lands at the top of
@@ -539,6 +644,52 @@ export default function MapEditor({
       const next = [b, ...without];
       return next.length > HISTORY_LIMIT ? next.slice(0, HISTORY_LIMIT) : next;
     });
+  };
+
+  // ── Lights CRUD ────────────────────────────────────────────────
+  const createLight = async (x: number, y: number) => {
+    const r = await fetch('/api/world/lights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        x,
+        y,
+        radius: 4,
+        color: '#ffd27a',
+        mode: 'steady',
+        periodMs: 1000,
+        intensity: 1,
+      }),
+    });
+    const j = await r.json();
+    if (j?.light) {
+      setLights((prev) => [...prev, j.light as LightSource]);
+      setEditingLight(j.light as LightSource);
+    }
+  };
+  const updateLight = async (light: LightSource) => {
+    setLights((prev) => prev.map((l) => (l.id === light.id ? light : l)));
+    setEditingLight((cur) => (cur && cur.id === light.id ? light : cur));
+    await fetch(`/api/world/lights/${light.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        x: light.x,
+        y: light.y,
+        radius: light.radius,
+        color: light.color,
+        mode: light.mode,
+        periodMs: light.periodMs,
+        intensity: light.intensity,
+      }),
+    }).catch(() => undefined);
+  };
+  const deleteLight = async (id: number) => {
+    setLights((prev) => prev.filter((l) => l.id !== id));
+    setEditingLight(null);
+    await fetch(`/api/world/lights/${id}`, { method: 'DELETE' }).catch(
+      () => undefined,
+    );
   };
 
   // ── Painting ──────────────────────────────────────────────────
@@ -571,6 +722,17 @@ export default function MapEditor({
       setSpawnY(cy);
       // Defer push so the state has time to settle.
       window.setTimeout(pushHistory, 0);
+      return;
+    }
+    if (mode === 'light') {
+      // Click on an existing light selects it for editing, click on
+      // empty space creates a new light at the cursor.
+      const existing = lights.find((l) => l.x === cx && l.y === cy);
+      if (existing) {
+        setEditingLight(existing);
+      } else {
+        void createLight(cx, cy);
+      }
       return;
     }
     if (mode === 'erase') {
@@ -706,6 +868,7 @@ export default function MapEditor({
           items,
           spawnX,
           spawnY,
+          ambientDarkness,
         }),
       });
       const j = await r.json();
@@ -722,6 +885,7 @@ export default function MapEditor({
         items,
         spawnX,
         spawnY,
+        ambientDarkness,
       });
     } finally {
       setSaving(false);
@@ -1070,6 +1234,13 @@ export default function MapEditor({
             active={mode === 'copy'}
             onClick={() => setMode('copy')}
           />
+          <IconButton
+            icon="☼"
+            hotkey="L"
+            label="Luces (clic para crear / editar)"
+            active={mode === 'light'}
+            onClick={() => setMode('light')}
+          />
 
           <Sep />
 
@@ -1114,6 +1285,39 @@ export default function MapEditor({
             label="Mostrar / ocultar overlay"
             active={layer1Visible}
             onClick={() => setLayer1Visible((v) => !v)}
+          />
+
+          <Sep />
+
+          {/* Ambient darkness + lighting preview toggle. The slider
+              feeds the same `paintLightingFrame` used in gameplay so
+              what the admin sees in the preview is what players see. */}
+          <ToolbarLabel>Oscuridad</ToolbarLabel>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={ambientDarkness}
+            onChange={(e) => setAmbientDarkness(Number(e.target.value))}
+            style={{ width: 110, accentColor: '#7B5FBF' }}
+          />
+          <span
+            style={{
+              fontSize: '0.55rem',
+              color: 'rgba(225,215,255,0.6)',
+              fontFamily: 'monospace',
+              minWidth: 32,
+            }}
+          >
+            {Math.round(ambientDarkness * 100)}%
+          </span>
+          <IconButton
+            icon={lightingPreview ? '☀' : '☾'}
+            hotkey=""
+            label="Mostrar / ocultar preview de luces"
+            active={lightingPreview}
+            onClick={() => setLightingPreview((v) => !v)}
           />
 
           <Sep />
@@ -1212,6 +1416,17 @@ export default function MapEditor({
               ▭ MODO COPIAR · arrastra para capturar una región
             </span>
           )}
+          {mode === 'light' && (
+            <span
+              style={{
+                fontSize: '0.55rem',
+                color: '#ffd27a',
+                letterSpacing: '0.1em',
+              }}
+            >
+              ☼ MODO LUCES · clic en vacío crea, clic en luz edita
+            </span>
+          )}
         </div>
 
         {/* Canvas */}
@@ -1238,6 +1453,11 @@ export default function MapEditor({
                   const c = cellFromClient(e.clientX, e.clientY);
                   if (!c) return;
                   setCopyDrag({ start: c, now: c });
+                  return;
+                }
+                if (mode === 'light') {
+                  // Lights are click-only — no drag painting.
+                  paintAt(e.clientX, e.clientY);
                   return;
                 }
                 paintingRef.current = true;
@@ -1294,13 +1514,30 @@ export default function MapEditor({
                     ? 'not-allowed'
                     : mode === 'spawn'
                       ? 'cell'
-                      : mode === 'copy' || mode === 'collision'
+                      : mode === 'copy' ||
+                          mode === 'collision' ||
+                          mode === 'light'
                         ? 'crosshair'
                         : brush
                           ? 'crosshair'
                           : 'default',
                 boxShadow: '6px 6px 0 rgba(0,0,0,0.5)',
                 display: 'block',
+              }}
+            />
+            {/* Live lighting preview — sits above the map but below the
+                brush hover preview so the admin can still see where their
+                stamp will land in dark areas. */}
+            <canvas
+              ref={lightingPreviewRef}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: '100%',
+                height: '100%',
+                imageRendering: 'pixelated',
+                pointerEvents: 'none',
               }}
             />
             {/* Hover preview overlay — pinned over the main canvas. Shows
@@ -1436,9 +1673,254 @@ export default function MapEditor({
           )}
         </div>
       </aside>
+
+      {editingLight && (
+        <LightEditModal
+          light={editingLight}
+          onChange={(l) => updateLight(l)}
+          onClose={() => setEditingLight(null)}
+          onDelete={() => deleteLight(editingLight.id)}
+        />
+      )}
     </div>
   );
 }
+
+function LightEditModal({
+  light,
+  onChange,
+  onClose,
+  onDelete,
+}: {
+  light: LightSource;
+  onChange: (l: LightSource) => void;
+  onClose: () => void;
+  onDelete: () => void;
+}) {
+  // Local edit state with debounced server commits — typing in the
+  // sliders shouldn't fire 60 PUTs/s.
+  const [draft, setDraft] = useState<LightSource>(light);
+  // Reset whenever the parent picks a different light.
+  useEffect(() => {
+    setDraft(light);
+  }, [light]);
+  const commitTimer = useRef<number | null>(null);
+  const update = (patch: Partial<LightSource>) => {
+    const next = { ...draft, ...patch };
+    setDraft(next);
+    if (commitTimer.current) window.clearTimeout(commitTimer.current);
+    commitTimer.current = window.setTimeout(() => {
+      onChange(next);
+      commitTimer.current = null;
+    }, 200);
+  };
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 200001,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(420px, 92vw)',
+          background: '#0f1320',
+          border: '2px solid var(--color-accent)',
+          padding: 20,
+          fontFamily: "'Silkscreen', cursive",
+          color: '#e5e5e5',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 14,
+          boxShadow: '6px 6px 0 rgba(0,0,0,0.6)',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '0.85rem',
+            letterSpacing: '0.2em',
+            color: 'var(--color-accent)',
+            textTransform: 'uppercase',
+          }}
+        >
+          Luz #{light.id} · ({light.x},{light.y})
+        </div>
+
+        <ModalField label="Color">
+          <input
+            type="color"
+            value={draft.color}
+            onChange={(e) => update({ color: e.target.value })}
+            style={{
+              width: 60,
+              height: 32,
+              padding: 0,
+              border: '2px solid var(--color-accent)',
+              background: '#0a0a14',
+              cursor: 'pointer',
+            }}
+          />
+          <span
+            style={{
+              fontFamily: 'monospace',
+              fontSize: '0.65rem',
+              color: 'rgba(225,215,255,0.7)',
+              marginLeft: 8,
+            }}
+          >
+            {draft.color}
+          </span>
+        </ModalField>
+
+        <ModalField label={`Radio · ${draft.radius.toFixed(1)} tiles`}>
+          <input
+            type="range"
+            min={0.5}
+            max={20}
+            step={0.5}
+            value={draft.radius}
+            onChange={(e) => update({ radius: Number(e.target.value) })}
+            style={{ flex: 1, accentColor: '#7B5FBF' }}
+          />
+        </ModalField>
+
+        <ModalField label={`Intensidad · ${Math.round(draft.intensity * 100)}%`}>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={draft.intensity}
+            onChange={(e) => update({ intensity: Number(e.target.value) })}
+            style={{ flex: 1, accentColor: '#7B5FBF' }}
+          />
+        </ModalField>
+
+        <ModalField label="Modo">
+          <select
+            value={draft.mode}
+            onChange={(e) => update({ mode: e.target.value as LightMode })}
+            style={{
+              padding: '6px 8px',
+              background: '#0a0a14',
+              border: '2px solid var(--color-accent)',
+              color: '#e5e5e5',
+              fontFamily: "'Silkscreen', cursive",
+              fontSize: '0.65rem',
+            }}
+          >
+            {LIGHT_MODE_OPTIONS.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </ModalField>
+
+        {draft.mode !== 'steady' && (
+          <ModalField label={`Periodo · ${draft.periodMs} ms`}>
+            <input
+              type="range"
+              min={100}
+              max={5000}
+              step={50}
+              value={draft.periodMs}
+              onChange={(e) => update({ periodMs: Number(e.target.value) })}
+              style={{ flex: 1, accentColor: '#7B5FBF' }}
+            />
+          </ModalField>
+        )}
+
+        <ModalField label="Posición (tile)">
+          <input
+            type="number"
+            value={draft.x}
+            onChange={(e) =>
+              update({ x: Math.floor(Number(e.target.value) || 0) })
+            }
+            style={modalNumStyle}
+          />
+          <input
+            type="number"
+            value={draft.y}
+            onChange={(e) =>
+              update({ y: Math.floor(Number(e.target.value) || 0) })
+            }
+            style={modalNumStyle}
+          />
+        </ModalField>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="pixel-btn pixel-btn-primary"
+            style={{ flex: 1, padding: '8px 12px', fontSize: '0.62rem' }}
+          >
+            Listo
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="pixel-btn pixel-btn-secondary"
+            style={{
+              padding: '8px 12px',
+              fontSize: '0.62rem',
+              background: '#3a1a1a',
+              color: '#ff8080',
+            }}
+          >
+            Borrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span
+        style={{
+          fontSize: '0.55rem',
+          letterSpacing: '0.16em',
+          color: 'rgba(225,215,255,0.6)',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const modalNumStyle: React.CSSProperties = {
+  width: 70,
+  padding: '6px 8px',
+  background: '#0a0a14',
+  border: '2px solid var(--color-accent)',
+  color: '#e5e5e5',
+  fontFamily: "'Silkscreen', cursive",
+  fontSize: '0.65rem',
+  outline: 'none',
+};
 
 function SheetPalette({
   sheet,
@@ -1565,7 +2047,7 @@ function PreviewOverlay({
   height,
 }: {
   brush: Brush | null;
-  mode: 'paint' | 'collision' | 'erase' | 'spawn' | 'copy';
+  mode: 'paint' | 'collision' | 'erase' | 'spawn' | 'copy' | 'light';
   hoverCell: { x: number; y: number } | null;
   copyDrag: {
     start: { x: number; y: number };

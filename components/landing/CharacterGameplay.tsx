@@ -18,7 +18,9 @@ import WorldMap, {
 import MapEditor from './world/MapEditor';
 import InventoryBar from './world/InventoryBar';
 import NpcEditor, { type NpcRecord } from './world/NpcEditor';
+import LightOverlay from './world/LightOverlay';
 import { findItem, itemDataUrl } from './world/items';
+import type { LightSource } from './world/lights';
 import type { WorldMapData } from './world/sheets';
 
 const TILE_PX_DISPLAY = TILE * WORLD_SCALE; // 64 px per tile on screen
@@ -82,6 +84,7 @@ export default function CharacterGameplay({
   }, [inventoryOpen]);
   const [npcs, setNpcs] = useState<NpcRecord[]>([]);
   const [npcEditorOpen, setNpcEditorOpen] = useState(false);
+  const [lights, setLights] = useState<LightSource[]>([]);
   // Single ever-incrementing frame counter; each NPC's sprite mods it
   // by the length of its chosen animation. Ticks at a fixed cadence
   // that's slow enough to look natural across walk / cast / hurt /
@@ -136,6 +139,12 @@ export default function CharacterGameplay({
       .then((r) => r.json())
       .then((j: { npcs?: NpcRecord[] }) => {
         if (Array.isArray(j?.npcs)) setNpcs(j.npcs);
+      })
+      .catch(() => undefined);
+    fetch('/api/world/lights')
+      .then((r) => r.json())
+      .then((j: { lights?: LightSource[] }) => {
+        if (Array.isArray(j?.lights)) setLights(j.lights);
       })
       .catch(() => undefined);
   }, []);
@@ -565,6 +574,31 @@ export default function CharacterGameplay({
               />
             );
           })()}
+      </div>
+
+      {/* Lighting layer — same world transform as the tile container,
+          rendered above the player so the dark / lit zones cover them
+          too. Pinned at zIndex above world+player but below all UI. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          width: MAP_PX_W,
+          height: MAP_PX_H,
+          transform: `translate(calc(-50% - ${pos.x}px), calc(-50% - ${pos.y}px))`,
+          willChange: 'transform',
+          pointerEvents: 'none',
+          zIndex: 10,
+        }}
+      >
+        <LightOverlay
+          width={worldMap.width}
+          height={worldMap.height}
+          tilePx={TILE_PX_DISPLAY}
+          ambientDarkness={worldMap.ambientDarkness ?? 0}
+          lights={lights}
+        />
       </div>
 
       {showSetup && (

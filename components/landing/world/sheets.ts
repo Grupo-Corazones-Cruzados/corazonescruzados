@@ -119,5 +119,7 @@ export type WorldMapData = {
   items: ItemPlacement[];
   spawnX: number; // tile col where the player appears
   spawnY: number; // tile row where the player appears
+  // 0 = full daylight, 1 = pitch black before lights are applied.
+  ambientDarkness?: number;
   isAdmin?: boolean;
 };

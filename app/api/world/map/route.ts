@@ -19,7 +19,7 @@ export async function GET() {
   try {
     const r = await pool.query(
       `SELECT id, name, width, height, layers, items,
-              spawn_x, spawn_y, updated_at
+              spawn_x, spawn_y, ambient_darkness, updated_at
          FROM gcc_world.world_maps
         WHERE name = $1
         LIMIT 1`,
@@ -35,6 +35,7 @@ export async function GET() {
         items: [],
         spawnX: 30,
         spawnY: 20,
+        ambientDarkness: 0,
       });
     }
     const me = await getAuthedClient();
@@ -46,6 +47,7 @@ export async function GET() {
       items: row.items ?? [],
       spawnX: row.spawn_x,
       spawnY: row.spawn_y,
+      ambientDarkness: Number(row.ambient_darkness) || 0,
       updatedAt: row.updated_at,
       isAdmin: !!me?.isAdmin,
     });
@@ -84,11 +86,16 @@ export async function PUT(req: Request) {
       0,
       Math.min(height - 1, Math.floor(Number(body?.spawnY) || 0)),
     );
+    const ambientDarkness = Math.max(
+      0,
+      Math.min(1, Number(body?.ambientDarkness) || 0),
+    );
 
     await pool.query(
       `INSERT INTO gcc_world.world_maps
-          (name, width, height, layers, items, spawn_x, spawn_y, updated_at)
-       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, NOW())
+          (name, width, height, layers, items, spawn_x, spawn_y,
+           ambient_darkness, updated_at)
+       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, NOW())
        ON CONFLICT (name) DO UPDATE
           SET width = EXCLUDED.width,
               height = EXCLUDED.height,
@@ -96,6 +103,7 @@ export async function PUT(req: Request) {
               items = EXCLUDED.items,
               spawn_x = EXCLUDED.spawn_x,
               spawn_y = EXCLUDED.spawn_y,
+              ambient_darkness = EXCLUDED.ambient_darkness,
               updated_at = NOW()`,
       [
         DEFAULT_MAP,
@@ -105,6 +113,7 @@ export async function PUT(req: Request) {
         JSON.stringify(items),
         spawnX,
         spawnY,
+        ambientDarkness,
       ],
     );
     return NextResponse.json({ ok: true });
