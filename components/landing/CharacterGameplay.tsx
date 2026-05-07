@@ -842,6 +842,31 @@ export default function CharacterGameplay({
           />
         )}
 
+      {/* Lighting status badge — small diagnostic showing how many
+          lights the overlay is currently painting (static + equipped).
+          Helps confirm the lantern attaches its synthetic light. */}
+      {!overlayVisible && !editorOpen && !npcEditorOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 12,
+            right: 12,
+            zIndex: 99996,
+            padding: '4px 8px',
+            background: 'rgba(19,25,35,0.78)',
+            border: '1px solid rgba(225,215,255,0.25)',
+            fontFamily: "'Silkscreen', cursive",
+            fontSize: '0.5rem',
+            letterSpacing: '0.12em',
+            color: 'rgba(225,215,255,0.7)',
+            pointerEvents: 'none',
+          }}
+        >
+          ☼ {lightsWithEquipped.length} · oscuridad{' '}
+          {Math.round((worldMap.ambientDarkness ?? 0) * 100)}%
+        </div>
+      )}
+
       {/* "[I] Inventario" hint when nothing else is on screen. */}
       {!inventoryOpen &&
         !overlayVisible &&
