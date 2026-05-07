@@ -117,6 +117,47 @@ function mapBrush(
 
 const VIEW_SCALE = 2; // 1 source px = 2 screen px in editor
 
+// Bring an incoming map's `layers` array up to the multi-layer model
+// the editor uses today. Always returns at least one layer so the
+// editor never has to handle an empty list.
+//
+// - 0 layers → one empty "Capa 1".
+// - 1 legacy layer with a mix of ground + overlay tiles → split into
+//   "Suelo" and "Overlay" so existing maps keep their look without
+//   forcing the user to manually re-organize.
+// - Anything else → fill in missing id / name / visible defaults.
+function migrateLayers(initial: LayerData[] | undefined): LayerData[] {
+  const src = initial ?? [];
+  if (src.length === 0) {
+    return [{ id: 'layer-1', name: 'Capa 1', visible: true, tiles: [] }];
+  }
+  if (src.length === 1) {
+    const sole = src[0];
+    const ground = sole.tiles.filter((t) => tileZ(t.s) === 0);
+    const overlay = sole.tiles.filter((t) => tileZ(t.s) === 1);
+    if (ground.length > 0 && overlay.length > 0) {
+      return [
+        { id: 'suelo', name: 'Suelo', visible: true, tiles: ground },
+        { id: 'overlay', name: 'Overlay', visible: true, tiles: overlay },
+      ];
+    }
+    return [
+      {
+        id: sole.id ?? 'layer-1',
+        name: sole.name ?? 'Capa 1',
+        visible: sole.visible !== false,
+        tiles: sole.tiles,
+      },
+    ];
+  }
+  return src.map((l, i) => ({
+    id: l.id ?? `layer-${i + 1}`,
+    name: l.name ?? `Capa ${i + 1}`,
+    visible: l.visible !== false,
+    tiles: l.tiles,
+  }));
+}
+
 export default function MapEditor({
   initialMap,
   onClose,
@@ -128,8 +169,15 @@ export default function MapEditor({
 }) {
   const [width, setWidth] = useState(initialMap.width);
   const [height, setHeight] = useState(initialMap.height);
-  const [tiles, setTiles] = useState<Tile[]>(
-    initialMap.layers[0]?.tiles ?? [],
+  // Multi-layer model — each layer paints independently and the
+  // canvas composites bottom → top. Legacy maps with a single layer
+  // (or no layer metadata) get auto-split into Suelo / Overlay so
+  // existing maps preserve their look.
+  const [layers, setLayers] = useState<LayerData[]>(() =>
+    migrateLayers(initialMap.layers),
+  );
+  const [activeLayerId, setActiveLayerId] = useState<string>(
+    () => migrateLayers(initialMap.layers)[0]?.id ?? 'layer-1',
   );
   const [brush, setBrush] = useState<Brush | null>(null);
   // Mutually-exclusive editor modes. `paint` lays tiles (no collision
@@ -147,15 +195,21 @@ export default function MapEditor({
     | 'light';
   const [mode, setMode] = useState<EditorMode>('paint');
   const [brushHistory, setBrushHistory] = useState<Brush[]>([]);
-  // Layer focus controls. `activeLayer` null = work on every layer
-  // (current behavior); 0 isolates the ground layer (terreno / agua),
-  // 1 isolates the overlay (decoracion / edificios / interiores).
-  // Tiles outside the active layer dim to 0.3 alpha so the user can
-  // still see the surrounding map without losing focus. Visibility
-  // toggles hide a layer entirely.
-  const [activeLayer, setActiveLayer] = useState<0 | 1 | null>(null);
-  const [layer0Visible, setLayer0Visible] = useState(true);
-  const [layer1Visible, setLayer1Visible] = useState(true);
+
+  // Convenience: tiles of the active layer (used by paint / erase /
+  // collision / copy). When the active layer somehow doesn't exist
+  // we fall back to an empty list rather than crashing.
+  const activeLayer = layers.find((l) => l.id === activeLayerId) ?? layers[0];
+  const tiles = activeLayer?.tiles ?? [];
+  const setTiles = (next: Tile[] | ((prev: Tile[]) => Tile[])) => {
+    setLayers((prev) =>
+      prev.map((l) => {
+        if (l.id !== activeLayerId) return l;
+        const newTiles = typeof next === 'function' ? next(l.tiles) : next;
+        return { ...l, tiles: newTiles };
+      }),
+    );
+  };
 
   // Lights live in the database (managed via /api/world/lights). The
   // editor keeps a local mirror so the map preview can animate without
@@ -200,7 +254,7 @@ export default function MapEditor({
 
   // ── Undo / redo history ────────────────────────────────────────
   type Snapshot = {
-    tiles: Tile[];
+    layers: LayerData[];
     items: ItemPlacement[];
     width: number;
     height: number;
@@ -209,7 +263,7 @@ export default function MapEditor({
   };
   const initSnap: Snapshot = useMemo(
     () => ({
-      tiles: initialMap.layers[0]?.tiles ?? [],
+      layers: migrateLayers(initialMap.layers),
       items: initialMap.items ?? [],
       width: initialMap.width,
       height: initialMap.height,
@@ -223,12 +277,12 @@ export default function MapEditor({
   const restoringRef = useRef(false);
 
   const snapKey = (s: Snapshot) =>
-    `${s.width}x${s.height}|${s.spawnX},${s.spawnY}|${JSON.stringify(s.tiles)}|${JSON.stringify(s.items)}`;
+    `${s.width}x${s.height}|${s.spawnX},${s.spawnY}|${JSON.stringify(s.layers)}|${JSON.stringify(s.items)}`;
 
   const pushHistory = () => {
     if (restoringRef.current) return;
     const snap: Snapshot = {
-      tiles,
+      layers,
       items,
       width,
       height,
@@ -249,12 +303,16 @@ export default function MapEditor({
 
   const restore = (s: Snapshot) => {
     restoringRef.current = true;
-    setTiles(s.tiles);
+    setLayers(s.layers);
     setItems(s.items);
     setWidth(s.width);
     setHeight(s.height);
     setSpawnX(s.spawnX);
     setSpawnY(s.spawnY);
+    // Make sure the active layer still exists after the restore.
+    if (!s.layers.some((l) => l.id === activeLayerId) && s.layers[0]) {
+      setActiveLayerId(s.layers[0].id ?? 'layer-1');
+    }
     // Release the guard on the next tick so dependent effects run free.
     setTimeout(() => {
       restoringRef.current = false;
@@ -424,19 +482,11 @@ export default function MapEditor({
     ctx.fillStyle = '#1a1f2e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Compute the alpha each layer renders at so that hiding / focusing
-    // a layer is purely a visualization concern — the map data isn't
-    // mutated, just the editor's view of it.
-    const alphaForLayer = (z: 0 | 1) => {
-      const visible = z === 0 ? layer0Visible : layer1Visible;
-      if (!visible) return 0;
-      if (activeLayer == null) return 1;
-      return activeLayer === z ? 1 : 0.3;
-    };
-    const a0 = alphaForLayer(0);
-    const a1 = alphaForLayer(1);
-
-    // Two-pass render: ground (z=0) first, then overlay (z=1) on top.
+    // Render every visible layer in array order (bottom → top). Within
+    // each layer we still split into ground (z=0) then overlay (z=1)
+    // so legacy maps with mixed-category tiles in a single layer keep
+    // their stacking. Non-active layers dim slightly to keep focus on
+    // the layer the user is actually painting.
     const drawTile = (t: Tile, alpha: number) => {
       const sheet = SHEETS[t.s];
       const img = imgs[t.s];
@@ -472,11 +522,11 @@ export default function MapEditor({
       }
       ctx.globalAlpha = 1;
     };
-    if (a0 > 0) {
-      for (const t of tiles) if (tileZ(t.s) === 0) drawTile(t, a0);
-    }
-    if (a1 > 0) {
-      for (const t of tiles) if (tileZ(t.s) === 1) drawTile(t, a1);
+    for (const layer of layers) {
+      if (layer.visible === false) continue;
+      const alpha = layer.id === activeLayerId ? 1 : 0.55;
+      for (const t of layer.tiles) if (tileZ(t.s) === 0) drawTile(t, alpha);
+      for (const t of layer.tiles) if (tileZ(t.s) === 1) drawTile(t, alpha);
     }
 
     // grid lines
@@ -581,7 +631,8 @@ export default function MapEditor({
       }
     }
   }, [
-    tiles,
+    layers,
+    activeLayerId,
     items,
     imgs,
     width,
@@ -590,9 +641,6 @@ export default function MapEditor({
     spawnX,
     spawnY,
     itemImgs,
-    activeLayer,
-    layer0Visible,
-    layer1Visible,
     lights,
     editingLight,
   ]);
@@ -629,6 +677,58 @@ export default function MapEditor({
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [width, height, ambientDarkness, lights, lightingPreview]);
+
+  // ── Layers CRUD ────────────────────────────────────────────────
+  const newLayerId = () =>
+    `layer-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const addLayer = () => {
+    const id = newLayerId();
+    setLayers((prev) => {
+      const next = [
+        ...prev,
+        {
+          id,
+          name: `Capa ${prev.length + 1}`,
+          visible: true,
+          tiles: [] as Tile[],
+        },
+      ];
+      return next;
+    });
+    setActiveLayerId(id);
+    window.setTimeout(pushHistory, 0);
+  };
+  const deleteLayer = (id: string) => {
+    if (layers.length <= 1) return;
+    const filtered = layers.filter((l) => l.id !== id);
+    setLayers(filtered);
+    if (activeLayerId === id) {
+      setActiveLayerId(filtered[0]?.id ?? 'layer-1');
+    }
+    window.setTimeout(pushHistory, 0);
+  };
+  const renameLayer = (id: string, name: string) => {
+    setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l)));
+  };
+  const toggleLayerVisible = (id: string) => {
+    setLayers((prev) =>
+      prev.map((l) =>
+        l.id === id ? { ...l, visible: l.visible === false } : l,
+      ),
+    );
+  };
+  const moveLayer = (id: string, dir: -1 | 1) => {
+    setLayers((prev) => {
+      const idx = prev.findIndex((l) => l.id === id);
+      const newIdx = idx + dir;
+      if (idx < 0 || newIdx < 0 || newIdx >= prev.length) return prev;
+      const next = prev.slice();
+      const [moved] = next.splice(idx, 1);
+      next.splice(newIdx, 0, moved);
+      return next;
+    });
+    window.setTimeout(pushHistory, 0);
+  };
 
   // ── Brush activation + history ──────────────────────────────────
   // Anything that becomes the active brush also lands at the top of
@@ -736,17 +836,16 @@ export default function MapEditor({
       return;
     }
     if (mode === 'erase') {
-      // Erase target depends on the layer focus. With a layer pinned,
-      // only that layer is touched (so you can wipe overlay decoration
-      // without disturbing the grass underneath, and vice versa). With
-      // no layer pinned, peel the top-most thing: items first, then
-      // overlay tiles, then ground.
-      if (activeLayer == null) {
-        const itemIdx = items.findIndex((it) => it.x === cx && it.y === cy);
-        if (itemIdx >= 0) {
-          setItems((prev) => prev.filter((_, i) => i !== itemIdx));
-          return;
-        }
+      // Erase removes the top-most tile from the ACTIVE layer at the
+      // cursor cell. Items live outside the layer system so they get
+      // peeled first if there's nothing in the active layer to remove.
+      const itemIdx = items.findIndex((it) => it.x === cx && it.y === cy);
+      const hasActiveTileHere = tiles.some(
+        (t) => t.x === cx && t.y === cy,
+      );
+      if (itemIdx >= 0 && !hasActiveTileHere) {
+        setItems((prev) => prev.filter((_, i) => i !== itemIdx));
+        return;
       }
       setTiles((prev) => {
         let target = -1;
@@ -754,7 +853,6 @@ export default function MapEditor({
         prev.forEach((t, i) => {
           if (t.x !== cx || t.y !== cy) return;
           const z = tileZ(t.s);
-          if (activeLayer != null && z !== activeLayer) return;
           if (z > bestZ) {
             bestZ = z;
             target = i;
@@ -766,10 +864,9 @@ export default function MapEditor({
       return;
     }
     if (mode === 'collision') {
-      // Toggle the c flag on the top-most tile at (cx, cy) — but
-      // restricted to the active layer when one is pinned. During a
-      // drag, skip cells we just toggled so the same cell doesn't
-      // flip on every mousemove tick.
+      // Toggle the c flag on the top-most tile of the ACTIVE layer at
+      // (cx, cy). During a drag, skip cells we just toggled so the
+      // same cell doesn't flip on every mousemove tick.
       const last = lastDragCellRef.current;
       if (last && last.x === cx && last.y === cy) return;
       lastDragCellRef.current = { x: cx, y: cy };
@@ -779,7 +876,6 @@ export default function MapEditor({
         prev.forEach((t, i) => {
           if (t.x !== cx || t.y !== cy) return;
           const z = tileZ(t.s);
-          if (activeLayer != null && z !== activeLayer) return;
           if (z > bestZ) {
             bestZ = z;
             target = i;
@@ -857,7 +953,6 @@ export default function MapEditor({
   const save = async () => {
     setSaving(true);
     try {
-      const layers: LayerData[] = [{ tiles }];
       const r = await fetch('/api/world/map', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1254,38 +1349,20 @@ export default function MapEditor({
 
           <Sep />
 
-          {/* Layer focus + visibility. Active-layer chip dims the
-              other layers; the eye toggles hide a layer entirely. */}
-          <ToolbarLabel>Capa</ToolbarLabel>
-          <LayerChip
-            label="Todo"
-            active={activeLayer == null}
-            onClick={() => setActiveLayer(null)}
-          />
-          <LayerChip
-            label="Suelo"
-            active={activeLayer === 0}
-            onClick={() => setActiveLayer(0)}
-          />
-          <LayerChip
-            label="Overlay"
-            active={activeLayer === 1}
-            onClick={() => setActiveLayer(1)}
-          />
-          <IconButton
-            icon={layer0Visible ? '◐' : '○'}
-            hotkey=""
-            label="Mostrar / ocultar suelo"
-            active={layer0Visible}
-            onClick={() => setLayer0Visible((v) => !v)}
-          />
-          <IconButton
-            icon={layer1Visible ? '◑' : '○'}
-            hotkey=""
-            label="Mostrar / ocultar overlay"
-            active={layer1Visible}
-            onClick={() => setLayer1Visible((v) => !v)}
-          />
+          {/* Active-layer indicator — full layer management lives in
+              the right-side panel; this is just a quick read of which
+              layer is currently catching paint. */}
+          <ToolbarLabel>Capa activa</ToolbarLabel>
+          <span
+            style={{
+              fontSize: '0.6rem',
+              letterSpacing: '0.1em',
+              color: '#ffcc00',
+              padding: '0 4px',
+            }}
+          >
+            {activeLayer?.name ?? '—'}
+          </span>
 
           <Sep />
 
@@ -1556,7 +1633,7 @@ export default function MapEditor({
         </div>
       </main>
 
-      {/* ── Right panel: brush history ── */}
+      {/* ── Right panel: layers + brush history ── */}
       <aside
         style={{
           background: '#131923',
@@ -1566,9 +1643,20 @@ export default function MapEditor({
           minHeight: 0,
         }}
       >
+        <LayersPanel
+          layers={layers}
+          activeLayerId={activeLayerId}
+          onActivate={setActiveLayerId}
+          onAdd={addLayer}
+          onDelete={deleteLayer}
+          onRename={renameLayer}
+          onToggleVisible={toggleLayerVisible}
+          onMove={moveLayer}
+        />
         <div
           style={{
             padding: '14px 14px 8px',
+            borderTop: '2px solid rgba(75,45,142,0.4)',
             borderBottom: '2px solid rgba(75,45,142,0.4)',
             display: 'flex',
             flexDirection: 'column',
@@ -2328,6 +2416,268 @@ function NumberInput({
     />
   );
 }
+
+function LayersPanel({
+  layers,
+  activeLayerId,
+  onActivate,
+  onAdd,
+  onDelete,
+  onRename,
+  onToggleVisible,
+  onMove,
+}: {
+  layers: LayerData[];
+  activeLayerId: string;
+  onActivate: (id: string) => void;
+  onAdd: () => void;
+  onDelete: (id: string) => void;
+  onRename: (id: string, name: string) => void;
+  onToggleVisible: (id: string) => void;
+  onMove: (id: string, dir: -1 | 1) => void;
+}) {
+  // Top → bottom in the panel = top → bottom in the visible stack,
+  // which means we render the array reversed (last layer = paints
+  // on top of everything).
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const reversed = [...layers].reverse();
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        maxHeight: '45vh',
+      }}
+    >
+      <div
+        style={{
+          padding: '14px 14px 8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 6,
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.85rem',
+              letterSpacing: '0.2em',
+              color: 'var(--color-accent)',
+              textTransform: 'uppercase',
+            }}
+          >
+            Capas
+          </div>
+          <button
+            type="button"
+            onClick={onAdd}
+            title="Agregar capa nueva (vacía, encima de las demás)"
+            style={{
+              padding: '4px 8px',
+              background: 'var(--color-accent)',
+              color: '#0a0a14',
+              border: '2px solid var(--color-accent)',
+              fontFamily: "'Silkscreen', cursive",
+              fontSize: '0.55rem',
+              letterSpacing: '0.08em',
+              cursor: 'pointer',
+            }}
+          >
+            + Nueva
+          </button>
+        </div>
+        <div
+          style={{
+            fontSize: '0.5rem',
+            letterSpacing: '0.12em',
+            color: 'rgba(225,215,255,0.5)',
+          }}
+        >
+          Estilo Photoshop · clic para activar
+        </div>
+      </div>
+      <div
+        style={{
+          overflowY: 'auto',
+          padding: '0 8px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+        }}
+      >
+        {reversed.map((l) => {
+          const isActive = l.id === activeLayerId;
+          const isVisible = l.visible !== false;
+          const tileCount = l.tiles.length;
+          return (
+            <div
+              key={l.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: 6,
+                background: isActive ? 'var(--color-accent)' : '#1a1a1a',
+                color: isActive ? '#0a0a14' : '#e5e5e5',
+                border: '2px solid var(--color-accent)',
+              }}
+            >
+              <button
+                type="button"
+                title={isVisible ? 'Ocultar' : 'Mostrar'}
+                onClick={() => l.id && onToggleVisible(l.id)}
+                style={{
+                  width: 22,
+                  height: 22,
+                  background: isVisible ? '#0a0a14' : '#3a1a1a',
+                  border: '1px solid rgba(75,45,142,0.6)',
+                  color: isVisible ? '#e5e5e5' : 'rgba(225,215,255,0.4)',
+                  fontFamily: "'Silkscreen', cursive",
+                  fontSize: '0.6rem',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {isVisible ? '◉' : '○'}
+              </button>
+              <button
+                type="button"
+                onClick={() => l.id && onActivate(l.id)}
+                onDoubleClick={() => l.id && setEditingId(l.id)}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  textAlign: 'left',
+                  fontFamily: "'Silkscreen', cursive",
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.06em',
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                  minWidth: 0,
+                }}
+              >
+                {editingId === l.id ? (
+                  <input
+                    type="text"
+                    autoFocus
+                    defaultValue={l.name ?? ''}
+                    onBlur={(e) => {
+                      if (l.id) onRename(l.id, e.target.value || 'Capa');
+                      setEditingId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') setEditingId(null);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '2px 4px',
+                      background: '#0a0a14',
+                      border: '1px solid var(--color-accent)',
+                      color: '#e5e5e5',
+                      fontFamily: "'Silkscreen', cursive",
+                      fontSize: '0.6rem',
+                      outline: 'none',
+                    }}
+                  />
+                ) : (
+                  <>
+                    <span>{l.name ?? '(sin nombre)'}</span>
+                    <span
+                      style={{
+                        fontSize: '0.45rem',
+                        opacity: 0.65,
+                      }}
+                    >
+                      {tileCount} tiles
+                    </span>
+                  </>
+                )}
+              </button>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                }}
+              >
+                <button
+                  type="button"
+                  title="Subir capa"
+                  onClick={() => l.id && onMove(l.id, 1)}
+                  style={miniButtonStyle}
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  title="Bajar capa"
+                  onClick={() => l.id && onMove(l.id, -1)}
+                  style={miniButtonStyle}
+                >
+                  ▼
+                </button>
+              </div>
+              <button
+                type="button"
+                title="Borrar capa"
+                onClick={() => {
+                  if (!l.id) return;
+                  if (
+                    layers.length > 1 &&
+                    window.confirm(`¿Borrar "${l.name ?? 'capa'}"?`)
+                  ) {
+                    onDelete(l.id);
+                  }
+                }}
+                disabled={layers.length <= 1}
+                style={{
+                  ...miniButtonStyle,
+                  width: 22,
+                  height: 22,
+                  color: layers.length > 1 ? '#ff8080' : 'rgba(255,128,128,0.3)',
+                  cursor: layers.length > 1 ? 'pointer' : 'not-allowed',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const miniButtonStyle: React.CSSProperties = {
+  width: 22,
+  height: 11,
+  background: 'rgba(10,10,20,0.85)',
+  border: '1px solid rgba(75,45,142,0.6)',
+  color: '#e5e5e5',
+  fontFamily: "'Silkscreen', cursive",
+  fontSize: '0.45rem',
+  cursor: 'pointer',
+  padding: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
 
 function LayerChip({
   label,

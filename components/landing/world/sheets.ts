@@ -102,7 +102,16 @@ export function tileZ(sheetIdx: number): 0 | 1 {
   return cat === 'terreno' || cat === 'agua' ? 0 : 1;
 }
 
-export type LayerData = { tiles: Tile[] };
+// Each layer is an independent paint surface — tiles in different
+// layers never overwrite each other. Layers stack in array order
+// (first = bottom, last = top). `id` is stable within a map and is
+// used by the editor for active-layer selection across reorders.
+export type LayerData = {
+  id?: string;
+  name?: string;
+  visible?: boolean;
+  tiles: Tile[];
+};
 
 export type ItemPlacement = {
   id: string; // unique within map (e.g. "abc123")

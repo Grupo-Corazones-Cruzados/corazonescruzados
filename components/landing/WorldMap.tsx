@@ -65,10 +65,11 @@ export default function WorldMap({
     Promise.all([sheetPromise, ...itemPromises]).then((vals) => {
       if (cancelled) return;
       const imgs = vals[0] as HTMLImageElement[];
-      const tiles = map.layers[0]?.tiles ?? [];
-      // Two-pass render: ground (z=0) first, then overlays (z=1) on top
-      // so transparent decoration / building tiles see the terrain.
-      const drawTile = (t: (typeof tiles)[number]) => {
+      // Render every layer in array order (bottom to top). Within each
+      // layer, two-pass on tileZ so overlay-category tiles still draw
+      // above ground-category tiles painted on the same layer (e.g.
+      // legacy maps that haven't been split yet).
+      const drawTile = (t: { s: number; sx: number; sy: number; x: number; y: number }) => {
         const img = imgs[t.s];
         if (!img) return;
         ctx.drawImage(
@@ -83,8 +84,13 @@ export default function WorldMap({
           TILE,
         );
       };
-      for (const t of tiles) if (tileZ(t.s) === 0) drawTile(t);
-      for (const t of tiles) if (tileZ(t.s) === 1) drawTile(t);
+      const layers = map.layers ?? [];
+      for (const layer of layers) {
+        if (layer.visible === false) continue;
+        const tiles = layer.tiles ?? [];
+        for (const t of tiles) if (tileZ(t.s) === 0) drawTile(t);
+        for (const t of tiles) if (tileZ(t.s) === 1) drawTile(t);
+      }
       // Items on top of tiles.
       const items = map.items ?? [];
       for (const placement of items) {
@@ -138,10 +144,20 @@ export function buildCollisionGrid(
   const grid: boolean[][] = Array.from({ length: map.height }, () =>
     new Array(map.width).fill(false),
   );
-  const tiles = map.layers[0]?.tiles ?? [];
-  for (const t of tiles) {
-    if (t.c && t.x >= 0 && t.x < map.width && t.y >= 0 && t.y < map.height) {
-      grid[t.y][t.x] = true;
+  // Aggregate collision flags across every layer — a tile that's
+  // marked as colliding on any layer blocks the player. Hidden
+  // layers still contribute (visibility is an editor concern).
+  for (const layer of map.layers ?? []) {
+    for (const t of layer.tiles ?? []) {
+      if (
+        t.c &&
+        t.x >= 0 &&
+        t.x < map.width &&
+        t.y >= 0 &&
+        t.y < map.height
+      ) {
+        grid[t.y][t.x] = true;
+      }
     }
   }
   return grid;
