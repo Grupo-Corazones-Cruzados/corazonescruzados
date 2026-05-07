@@ -249,6 +249,7 @@ type LayerKey =
   | 'beard'
   | 'glasses'
   | 'clothes'
+  | 'backpack'
   | 'pants'
   | 'shoes';
 
@@ -824,6 +825,7 @@ export function CharacterSprite({
   animation = 'walk',
   revealed = ALL_LAYERS,
   scale = 6,
+  withBackpack = false,
 }: {
   config: CharacterConfig;
   direction: Direction;
@@ -831,6 +833,10 @@ export function CharacterSprite({
   animation?: CharacterAnimation;
   revealed?: Set<LayerKey>;
   scale?: number;
+  // Render the leather backpack strapped to the character's back.
+  // Off in the creator wizard / NPC editor preview; on in gameplay
+  // so the player always carries it.
+  withBackpack?: boolean;
 }) {
   const FRAME = 64;
   const SCALE = scale;
@@ -897,6 +903,10 @@ export function CharacterSprite({
       ? `/character/glasses/${glassesOpt.file}/${config.glassesColor}.png`
       : null;
 
+  const backpackUrl = withBackpack
+    ? `/character/backpack/${baseGenderSheet}/leather.png`
+    : null;
+
   // For extended animations (sit, etc.) we hide accessory layers whose
   // sheet doesn't carry frames past row 20 — otherwise the renderer
   // would sample garbage / transparency and the character would look
@@ -921,6 +931,12 @@ export function CharacterSprite({
     layers.push({ url: beardUrl, key: 'beard' });
   if (revealed.has('hair') && hairUrl && !hideHair)
     layers.push({ url: hairUrl, key: 'hair' });
+  // Backpack draws over hair / clothes (matches LPC's zPos 110) so it
+  // looks correct from every facing — strap visible across the chest,
+  // pack visible from behind. Like clothes / shoes, it only ships the
+  // base 21 rows so we hide it during extended animations (sit etc.).
+  if (backpackUrl && !isExtended)
+    layers.push({ url: backpackUrl, key: 'backpack' });
   if (revealed.has('glasses') && glassesUrl)
     layers.push({ url: glassesUrl, key: 'glasses' });
 

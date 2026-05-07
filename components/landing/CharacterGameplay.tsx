@@ -77,15 +77,25 @@ export default function CharacterGameplay({
   const [worldMap, setWorldMap] = useState<WorldMapData>(DEFAULT_MAP);
   const [editorOpen, setEditorOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Inventory is permanent — no toggle. Caps at MAX_INVENTORY_SLOTS
+  // distinct items; further pickups of an item already in inventory
+  // bump its quantity, but a pickup of a brand-new item silently
+  // drops on the floor (stays available to grab once you free a slot).
+  const MAX_INVENTORY_SLOTS = 10;
   const [inventory, setInventory] = useState<Record<string, number>>({});
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [equipped, setEquipped] = useState<string | null>(null);
   const pickingRef = useRef<Set<string>>(new Set());
-  const [inventoryOpen, setInventoryOpen] = useState(false);
-  const inventoryOpenRef = useRef(false);
+  // Refs for the keyboard handler so it always reads the latest
+  // inventory / equipped without having to re-bind the listener.
+  const inventoryRef = useRef(inventory);
+  const equippedRef = useRef(equipped);
   useEffect(() => {
-    inventoryOpenRef.current = inventoryOpen;
-  }, [inventoryOpen]);
+    inventoryRef.current = inventory;
+  }, [inventory]);
+  useEffect(() => {
+    equippedRef.current = equipped;
+  }, [equipped]);
   const [npcs, setNpcs] = useState<NpcRecord[]>([]);
   const [npcEditorOpen, setNpcEditorOpen] = useState(false);
   const [lights, setLights] = useState<LightSource[]>([]);
@@ -154,6 +164,8 @@ export default function CharacterGameplay({
   }, []);
 
   // Pick up any item under the player's tile (called every frame).
+  // A pickup is rejected when it would introduce an 11th distinct
+  // item; existing stacks always grow.
   const pickupCheck = (worldX: number, worldY: number) => {
     const tx = Math.floor((worldX + HALF_W) / TILE_PX_DISPLAY);
     const ty = Math.floor((worldY + HALF_H) / TILE_PX_DISPLAY);
@@ -161,6 +173,14 @@ export default function CharacterGameplay({
       (it) => it.x === tx && it.y === ty && !pickedItems.has(it.id),
     );
     if (!item || pickingRef.current.has(item.id)) return;
+    const isNewSlot = !(item.itemId in inventoryRef.current);
+    const slotsUsed = Object.keys(inventoryRef.current).filter(
+      (k) => (inventoryRef.current[k] ?? 0) > 0,
+    ).length;
+    if (isNewSlot && slotsUsed >= MAX_INVENTORY_SLOTS) {
+      // Inventory full; leave the item on the ground.
+      return;
+    }
     pickingRef.current.add(item.id);
     fetch('/api/world/inventory', {
       method: 'POST',
@@ -315,15 +335,25 @@ export default function CharacterGameplay({
         e.preventDefault();
         return;
       }
-      // Toggle inventory with I; Escape also closes it.
-      if (k === 'i') {
-        setInventoryOpen((o) => !o);
-        e.preventDefault();
-        return;
-      }
-      if (k === 'escape' && inventoryOpenRef.current) {
-        setInventoryOpen(false);
-        e.preventDefault();
+      // Hotbar selection — keys 1-9 pick slot 0..8, key 0 picks slot 9.
+      // Re-pressing the slot of the currently equipped item unequips it.
+      if (k.length === 1 && k >= '0' && k <= '9') {
+        const slot = k === '0' ? 9 : Number(k) - 1;
+        const entries = Object.entries(inventoryRef.current).filter(
+          ([, qty]) => qty > 0,
+        );
+        const target = entries[slot];
+        if (target) {
+          const [id] = target;
+          const next = equippedRef.current === id ? null : id;
+          setEquipped(next);
+          fetch('/api/world/inventory', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ equipped: next }),
+          }).catch(() => undefined);
+          e.preventDefault();
+        }
         return;
       }
       // Block movement while a dialogue is open.
@@ -566,19 +596,21 @@ export default function CharacterGameplay({
           direction={direction}
           frame={frame}
           scale={3}
+          withBackpack
         />
         {equipped &&
           (() => {
             const def = findItem(equipped);
             if (!def) return null;
-            // Anchor the held item near the character's hip on the
-            // side they're facing. Not animated frame-by-frame yet,
-            // but reads as "carrying" the item.
+            // Sit the equipped item right at the character's near-hand
+            // so it reads as "in hand" rather than "floating beside".
+            // Each facing has its own offset, mirror flag, and a tilt
+            // so the item feels carried instead of just stuck on.
             const offsetMap = {
-              n: { x: -36, y: 18, scaleX: 1 },
-              s: { x: 36, y: 18, scaleX: -1 },
-              w: { x: -56, y: 18, scaleX: 1 },
-              e: { x: 56, y: 18, scaleX: -1 },
+              n: { x: -22, y: 32, scaleX: 1, rotate: -20 },
+              s: { x: 26, y: 32, scaleX: -1, rotate: -25 },
+              w: { x: -36, y: 22, scaleX: 1, rotate: -15 },
+              e: { x: 36, y: 22, scaleX: -1, rotate: -15 },
             } as const;
             const o = offsetMap[direction];
             return (
@@ -589,12 +621,16 @@ export default function CharacterGameplay({
                   position: 'absolute',
                   left: '50%',
                   top: '50%',
-                  width: 56,
-                  height: 56,
+                  width: 40,
+                  height: 40,
                   imageRendering: 'pixelated',
                   pointerEvents: 'none',
-                  transform: `translate(calc(-50% + ${o.x}px), calc(-50% + ${o.y}px)) scaleX(${o.scaleX})`,
-                  filter: 'drop-shadow(2px 2px 0 rgba(0,0,0,0.5))',
+                  transform: `translate(calc(-50% + ${o.x}px), calc(-50% + ${o.y}px)) scaleX(${o.scaleX}) rotate(${o.rotate}deg)`,
+                  transformOrigin: 'center center',
+                  filter: 'drop-shadow(2px 2px 0 rgba(0,0,0,0.55))',
+                  // Hide behind body when player faces north (back
+                  // turned) so the item peeks from over the shoulder.
+                  zIndex: direction === 'n' ? -1 : 1,
                 }}
               />
             );
@@ -823,14 +859,17 @@ export default function CharacterGameplay({
           );
         })()}
 
-      {inventoryOpen &&
-        !overlayVisible &&
+      {/* Inventory hotbar — always present at the bottom of the
+          screen (hidden only while a modal-style overlay covers it).
+          Shows numbered slots so players can pick with 1-9 / 0 keys. */}
+      {!overlayVisible &&
         !editorOpen &&
         !npcEditorOpen &&
         !activeDialogue && (
           <InventoryBar
             inventory={inventory}
             equipped={equipped}
+            maxSlots={MAX_INVENTORY_SLOTS}
             onEquip={(id) => {
               setEquipped(id);
               fetch('/api/world/inventory', {
@@ -840,58 +879,6 @@ export default function CharacterGameplay({
               }).catch(() => undefined);
             }}
           />
-        )}
-
-      {/* Lighting status badge — small diagnostic showing how many
-          lights the overlay is currently painting (static + equipped).
-          Helps confirm the lantern attaches its synthetic light. */}
-      {!overlayVisible && !editorOpen && !npcEditorOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 12,
-            right: 12,
-            zIndex: 99996,
-            padding: '4px 8px',
-            background: 'rgba(19,25,35,0.78)',
-            border: '1px solid rgba(225,215,255,0.25)',
-            fontFamily: "'Silkscreen', cursive",
-            fontSize: '0.5rem',
-            letterSpacing: '0.12em',
-            color: 'rgba(225,215,255,0.7)',
-            pointerEvents: 'none',
-          }}
-        >
-          ☼ {lightsWithEquipped.length} · oscuridad{' '}
-          {Math.round((worldMap.ambientDarkness ?? 0) * 100)}%
-        </div>
-      )}
-
-      {/* "[I] Inventario" hint when nothing else is on screen. */}
-      {!inventoryOpen &&
-        !overlayVisible &&
-        !editorOpen &&
-        !npcEditorOpen &&
-        !activeDialogue && (
-          <div
-            style={{
-              position: 'fixed',
-              right: 16,
-              bottom: 16,
-              zIndex: 99996,
-              padding: '6px 10px',
-              background: 'rgba(19,25,35,0.85)',
-              border: '2px solid var(--color-accent)',
-              boxShadow: '3px 3px 0 rgba(0,0,0,0.5)',
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.55rem',
-              letterSpacing: '0.14em',
-              color: 'rgba(225,215,255,0.85)',
-              pointerEvents: 'none',
-            }}
-          >
-            <span style={{ color: '#ffcc00' }}>[I]</span> Inventario
-          </div>
         )}
 
       {editorOpen && (
