@@ -14,6 +14,43 @@ type SceneRow = {
   updated_at: string;
 };
 
+type MapRow = {
+  name: string;
+  width: number;
+  height: number;
+  layers: unknown;
+  items: unknown;
+  spawn_x: number;
+  spawn_y: number;
+  ambient_darkness: number | string;
+  transitions: unknown;
+  updated_at: string;
+};
+
+type NpcRow = {
+  id: number;
+  map_name: string;
+  name: string;
+  config: unknown;
+  x: number;
+  y: number;
+  facing: string;
+  animation: string | null;
+  dialogue: unknown;
+};
+
+type LightRow = {
+  id: number;
+  map_name: string;
+  x: number;
+  y: number;
+  radius: number;
+  color: string;
+  mode: string;
+  period_ms: number;
+  intensity: number;
+};
+
 function rowToMeta(row: SceneRow) {
   return {
     slug: row.slug,
@@ -62,7 +99,7 @@ export async function GET(
 
     // kind = 'map' → join paired world_maps row + npcs + lights.
     const [mapRes, npcsRes, lightsRes] = await Promise.all([
-      pool.query(
+      pool.query<MapRow>(
         `SELECT name, width, height, layers, items, spawn_x, spawn_y,
                 ambient_darkness, transitions, updated_at
            FROM gcc_world.world_maps
@@ -70,14 +107,14 @@ export async function GET(
           LIMIT 1`,
         [slug],
       ),
-      pool.query(
+      pool.query<NpcRow>(
         `SELECT id, map_name, name, config, x, y, facing, animation, dialogue
            FROM gcc_world.npcs
           WHERE map_name = $1
           ORDER BY id ASC`,
         [slug],
       ),
-      pool.query(
+      pool.query<LightRow>(
         `SELECT id, map_name, x, y, radius, color, mode, period_ms, intensity
            FROM gcc_world.lights
           WHERE map_name = $1
