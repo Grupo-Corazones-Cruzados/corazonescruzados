@@ -37,8 +37,8 @@ export async function GET() {
          FROM gcc_world.scenes
         ORDER BY order_idx ASC, slug ASC`,
     );
-    const scenes = r.rows.map(rowToMeta);
-    const firstMap = scenes.find((s) => s.kind === 'map');
+    const scenes = (r.rows as SceneRow[]).map(rowToMeta);
+    const firstMap = scenes.find((s: ReturnType<typeof rowToMeta>) => s.kind === 'map');
     return NextResponse.json({
       scenes,
       activeSlug: firstMap?.slug ?? null,
