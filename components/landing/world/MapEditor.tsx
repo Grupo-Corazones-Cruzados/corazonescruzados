@@ -2568,7 +2568,7 @@ function PreviewOverlay({
   height,
 }: {
   brush: Brush | null;
-  mode: 'paint' | 'collision' | 'erase' | 'spawn' | 'copy' | 'light';
+  mode: 'paint' | 'collision' | 'erase' | 'spawn' | 'copy' | 'light' | 'transition';
   hoverCell: { x: number; y: number } | null;
   copyDrag: {
     start: { x: number; y: number };
