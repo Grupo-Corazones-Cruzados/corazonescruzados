@@ -2,7 +2,14 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { getAuthedClient } from '@/lib/world/auth';
 
-const DEFAULT_MAP = 'default';
+const DEFAULT_SCENE = 'main';
+const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,62}$/;
+
+function pickSlug(raw: string | null | undefined): string {
+  const v = (raw ?? '').trim();
+  return SLUG_REGEX.test(v) ? v : DEFAULT_SCENE;
+}
+
 const VALID_MODES = new Set([
   'steady',
   'blink',
@@ -42,14 +49,16 @@ function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const url = new URL(req.url);
+    const slug = pickSlug(url.searchParams.get('scene'));
     const r = await pool.query(
       `SELECT id, map_name, x, y, radius, color, mode, period_ms, intensity
          FROM gcc_world.lights
         WHERE map_name = $1
         ORDER BY id ASC`,
-      [DEFAULT_MAP],
+      [slug],
     );
     return NextResponse.json({ lights: r.rows.map(rowToJson) });
   } catch (err: unknown) {
@@ -68,7 +77,9 @@ export async function POST(req: Request) {
         { status: 403 },
       );
     }
+    const url = new URL(req.url);
     const body = await req.json();
+    const slug = pickSlug(body?.scene ?? url.searchParams.get('scene'));
     const x = Math.floor(Number(body?.x));
     const y = Math.floor(Number(body?.y));
     const radius = clamp(Number(body?.radius) || 4, 0.5, 50);
@@ -96,7 +107,7 @@ export async function POST(req: Request) {
           (map_name, x, y, radius, color, mode, period_ms, intensity)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, map_name, x, y, radius, color, mode, period_ms, intensity`,
-      [DEFAULT_MAP, x, y, radius, color, mode, periodMs, intensity],
+      [slug, x, y, radius, color, mode, periodMs, intensity],
     );
     return NextResponse.json({ ok: true, light: rowToJson(r.rows[0]) });
   } catch (err: unknown) {

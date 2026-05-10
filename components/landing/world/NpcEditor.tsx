@@ -96,14 +96,19 @@ function newDraft(playerX: number, playerY: number): Draft {
 export default function NpcEditor({
   playerTileX,
   playerTileY,
+  sceneSlug,
   onClose,
   onChanged,
 }: {
   playerTileX: number;
   playerTileY: number;
+  // Scene this editor edits NPCs for. Optional for back-compat; defaults
+  // to 'main' which is the only seeded scene after migration 015.
+  sceneSlug?: string;
   onClose: () => void;
   onChanged: (npcs: NpcRecord[]) => void;
 }) {
+  const slug = sceneSlug ?? 'main';
   const [npcs, setNpcs] = useState<NpcRecord[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -132,7 +137,7 @@ export default function NpcEditor({
   }, []);
 
   const refresh = async () => {
-    const r = await fetch('/api/world/npcs');
+    const r = await fetch(`/api/world/npcs?scene=${encodeURIComponent(slug)}`);
     const j = await r.json();
     if (Array.isArray(j?.npcs)) {
       setNpcs(j.npcs);
@@ -143,7 +148,7 @@ export default function NpcEditor({
   useEffect(() => {
     refresh().catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [slug]);
 
   const save = async () => {
     if (!draft) return;
@@ -155,6 +160,7 @@ export default function NpcEditor({
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
       const body = JSON.stringify({
+        scene: slug,
         name: draft.name,
         config: draft.config,
         x: draft.x,

@@ -8,7 +8,9 @@ import {
   tileZ,
   type ItemPlacement,
   type LayerData,
+  type SceneMeta,
   type Tile,
+  type Transition,
   type WorldMapData,
 } from './sheets';
 import { ITEMS, ITEM_CATEGORIES, findItem, itemDataUrl } from './items';
@@ -160,13 +162,32 @@ function migrateLayers(initial: LayerData[] | undefined): LayerData[] {
 
 export default function MapEditor({
   initialMap,
+  scene,
+  scenes,
+  embedded,
   onClose,
   onSaved,
+  onSceneMetaChanged,
 }: {
   initialMap: WorldMapData;
+  // The scene this editor is editing. Optional so the component can
+  // still be mounted standalone for backwards-compatible callers.
+  scene?: SceneMeta;
+  // Sibling scenes — used to populate the "target scene" select in
+  // transition popovers. Only kind='map' entries are valid targets.
+  scenes?: SceneMeta[];
+  // When true the outer container uses absolute (not fixed) positioning
+  // so a parent can host it inside a flex layout (SceneManagerEditor).
+  embedded?: boolean;
   onClose: () => void;
   onSaved: (map: WorldMapData) => void;
+  // Called after a save that updated scene-level metadata (music, etc.)
+  // so a parent shell can refresh its scene list.
+  onSceneMetaChanged?: () => void;
 }) {
+  // Slug of the scene we're editing — drives the per-scene fetches
+  // for npcs/lights and the scene query param on map PUT.
+  const sceneSlug = scene?.slug ?? 'main';
   const [width, setWidth] = useState(initialMap.width);
   const [height, setHeight] = useState(initialMap.height);
   // Multi-layer model — each layer paints independently and the
@@ -192,7 +213,8 @@ export default function MapEditor({
     | 'erase'
     | 'spawn'
     | 'copy'
-    | 'light';
+    | 'light'
+    | 'transition';
   const [mode, setMode] = useState<EditorMode>('paint');
   const [brushHistory, setBrushHistory] = useState<Brush[]>([]);
 
@@ -219,18 +241,27 @@ export default function MapEditor({
   const [ambientDarkness, setAmbientDarkness] = useState<number>(
     initialMap.ambientDarkness ?? 0,
   );
+  // Transitions (doors) — saved alongside the map, drive scene
+  // switches in the runtime. Painted with the new 'transition' editor
+  // mode (Phase 2).
+  const [transitions, setTransitions] = useState<Transition[]>(
+    initialMap.transitions ?? [],
+  );
+  const [editingTransitionId, setEditingTransitionId] = useState<string | null>(
+    null,
+  );
   // Live in-editor preview of the lighting overlay so the admin can
   // see darkness + lights while building. Pure visualization toggle.
   const [lightingPreview, setLightingPreview] = useState(true);
 
   useEffect(() => {
-    fetch('/api/world/lights')
+    fetch(`/api/world/lights?scene=${encodeURIComponent(sceneSlug)}`)
       .then((r) => r.json())
       .then((j: { lights?: LightSource[] }) => {
         if (Array.isArray(j?.lights)) setLights(j.lights);
       })
       .catch(() => undefined);
-  }, []);
+  }, [sceneSlug]);
   // Cells under the cursor while painting / copying — used both for the
   // copy-rectangle overlay and for the paint hover preview.
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(
@@ -390,6 +421,10 @@ export default function MapEditor({
         case 'l':
           e.preventDefault();
           setMode('light');
+          return;
+        case 't':
+          e.preventDefault();
+          setMode('transition');
           return;
         case '1':
           e.preventDefault();
@@ -630,6 +665,46 @@ export default function MapEditor({
         ctx.stroke();
       }
     }
+
+    // Transition rectangles — translucent magenta with the target slug
+    // labelled inside. Highlighted when selected for editing.
+    for (const t of transitions) {
+      const isSel = editingTransitionId === t.id;
+      ctx.fillStyle = isSel
+        ? 'rgba(255, 128, 240, 0.45)'
+        : 'rgba(255, 128, 240, 0.25)';
+      ctx.fillRect(
+        t.x * TILE_PX,
+        t.y * TILE_PX,
+        t.w * TILE_PX,
+        t.h * TILE_PX,
+      );
+      ctx.strokeStyle = isSel ? '#ffcc00' : '#ff80f0';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        t.x * TILE_PX + 1,
+        t.y * TILE_PX + 1,
+        t.w * TILE_PX - 2,
+        t.h * TILE_PX - 2,
+      );
+      ctx.fillStyle = '#0a0a14';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const labelX = (t.x + t.w / 2) * TILE_PX;
+      const labelY = (t.y + t.h / 2) * TILE_PX;
+      const label = `→ ${t.targetScene || '(?)'}`;
+      const metrics = ctx.measureText(label);
+      ctx.fillStyle = 'rgba(10, 10, 20, 0.75)';
+      ctx.fillRect(
+        labelX - metrics.width / 2 - 3,
+        labelY - 6,
+        metrics.width + 6,
+        12,
+      );
+      ctx.fillStyle = '#ff80f0';
+      ctx.fillText(label, labelX, labelY + 1);
+    }
   }, [
     layers,
     activeLayerId,
@@ -643,6 +718,8 @@ export default function MapEditor({
     itemImgs,
     lights,
     editingLight,
+    transitions,
+    editingTransitionId,
   ]);
 
   // ── Live lighting preview ────────────────────────────────────────
@@ -752,6 +829,7 @@ export default function MapEditor({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        scene: sceneSlug,
         x,
         y,
         radius: 4,
@@ -833,6 +911,38 @@ export default function MapEditor({
       } else {
         void createLight(cx, cy);
       }
+      return;
+    }
+    if (mode === 'transition') {
+      // Click on an existing transition rect selects it; otherwise
+      // create a new 1×1 transition at the cursor and open the
+      // editor popover.
+      const hit = transitions.find(
+        (t) =>
+          cx >= t.x && cx < t.x + t.w && cy >= t.y && cy < t.y + t.h,
+      );
+      if (hit) {
+        setEditingTransitionId(hit.id);
+        return;
+      }
+      const targetSlug =
+        scenes?.find((s) => s.kind === 'map' && s.slug !== sceneSlug)?.slug ??
+        '';
+      const newId = `tr-${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 6)}`;
+      const next: Transition = {
+        id: newId,
+        x: cx,
+        y: cy,
+        w: 1,
+        h: 1,
+        targetScene: targetSlug,
+        fadeMs: 250,
+      };
+      setTransitions((prev) => [...prev, next]);
+      setEditingTransitionId(newId);
+      window.setTimeout(pushHistory, 0);
       return;
     }
     if (mode === 'erase') {
@@ -957,6 +1067,7 @@ export default function MapEditor({
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          scene: sceneSlug,
           width,
           height,
           layers,
@@ -964,6 +1075,7 @@ export default function MapEditor({
           spawnX,
           spawnY,
           ambientDarkness,
+          transitions,
         }),
       });
       const j = await r.json();
@@ -973,7 +1085,7 @@ export default function MapEditor({
       }
       setSavedAt(Date.now());
       onSaved({
-        name: 'default',
+        name: sceneSlug,
         width,
         height,
         layers,
@@ -981,6 +1093,7 @@ export default function MapEditor({
         spawnX,
         spawnY,
         ambientDarkness,
+        transitions,
       });
     } finally {
       setSaving(false);
@@ -998,15 +1111,15 @@ export default function MapEditor({
   return (
     <div
       style={{
-        position: 'fixed',
+        position: embedded ? 'absolute' : 'fixed',
         inset: 0,
-        zIndex: 200000,
+        zIndex: embedded ? undefined : 200000,
         background: '#0a0a14',
         color: '#e5e5e5',
         fontFamily: "'Silkscreen', cursive",
         display: 'grid',
         gridTemplateColumns: '300px 1fr 220px',
-        animation: 'pixelFadeIn 0.4s ease-out',
+        animation: embedded ? undefined : 'pixelFadeIn 0.4s ease-out',
       }}
     >
       {/* ── Side panel ── */}
@@ -1336,6 +1449,13 @@ export default function MapEditor({
             active={mode === 'light'}
             onClick={() => setMode('light')}
           />
+          <IconButton
+            icon="↦"
+            hotkey="T"
+            label="Transiciones (puertas a otra escena)"
+            active={mode === 'transition'}
+            onClick={() => setMode('transition')}
+          />
 
           <Sep />
 
@@ -1504,6 +1624,17 @@ export default function MapEditor({
               ☼ MODO LUCES · clic en vacío crea, clic en luz edita
             </span>
           )}
+          {mode === 'transition' && (
+            <span
+              style={{
+                fontSize: '0.55rem',
+                color: '#ff80f0',
+                letterSpacing: '0.1em',
+              }}
+            >
+              ↦ MODO TRANSICIONES · clic en vacío crea, clic en transición edita
+            </span>
+          )}
         </div>
 
         {/* Canvas */}
@@ -1532,8 +1663,8 @@ export default function MapEditor({
                   setCopyDrag({ start: c, now: c });
                   return;
                 }
-                if (mode === 'light') {
-                  // Lights are click-only — no drag painting.
+                if (mode === 'light' || mode === 'transition') {
+                  // Click-only modes (no drag painting).
                   paintAt(e.clientX, e.clientY);
                   return;
                 }
@@ -1593,7 +1724,8 @@ export default function MapEditor({
                       ? 'cell'
                       : mode === 'copy' ||
                           mode === 'collision' ||
-                          mode === 'light'
+                          mode === 'light' ||
+                          mode === 'transition'
                         ? 'crosshair'
                         : brush
                           ? 'crosshair'
@@ -1770,9 +1902,310 @@ export default function MapEditor({
           onDelete={() => deleteLight(editingLight.id)}
         />
       )}
+
+      {editingTransitionId && (() => {
+        const tr = transitions.find((t) => t.id === editingTransitionId);
+        if (!tr) return null;
+        return (
+          <TransitionEditModal
+            transition={tr}
+            mapWidth={width}
+            mapHeight={height}
+            currentScene={sceneSlug}
+            scenes={scenes ?? []}
+            onChange={(next) =>
+              setTransitions((prev) =>
+                prev.map((t) => (t.id === next.id ? next : t)),
+              )
+            }
+            onClose={() => {
+              setEditingTransitionId(null);
+              window.setTimeout(pushHistory, 0);
+            }}
+            onDelete={() => {
+              setTransitions((prev) =>
+                prev.filter((t) => t.id !== editingTransitionId),
+              );
+              setEditingTransitionId(null);
+              window.setTimeout(pushHistory, 0);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
+
+function TransitionEditModal({
+  transition,
+  mapWidth,
+  mapHeight,
+  currentScene,
+  scenes,
+  onChange,
+  onClose,
+  onDelete,
+}: {
+  transition: Transition;
+  mapWidth: number;
+  mapHeight: number;
+  currentScene: string;
+  scenes: SceneMeta[];
+  onChange: (t: Transition) => void;
+  onClose: () => void;
+  onDelete: () => void;
+}) {
+  const targets = scenes.filter(
+    (s) => s.kind === 'map' && s.slug !== currentScene,
+  );
+  const [draft, setDraft] = useState<Transition>(transition);
+  useEffect(() => {
+    setDraft(transition);
+  }, [transition]);
+  const update = (patch: Partial<Transition>) => {
+    const next = { ...draft, ...patch };
+    setDraft(next);
+    onChange(next);
+  };
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(10,10,20,0.55)',
+        zIndex: 200500,
+        display: 'grid',
+        placeItems: 'center',
+        fontFamily: "'Silkscreen', cursive",
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#131923',
+          border: '2px solid var(--color-accent)',
+          padding: 18,
+          width: 360,
+          color: '#e5e5e5',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+      >
+        <div
+          style={{
+            fontSize: '0.85rem',
+            letterSpacing: '0.18em',
+            color: 'var(--color-accent)',
+            textTransform: 'uppercase',
+          }}
+        >
+          Transición ↦
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 8,
+          }}
+        >
+          <Field label={`X (0..${mapWidth - 1})`}>
+            <input
+              type="number"
+              value={draft.x}
+              min={0}
+              max={mapWidth - 1}
+              onChange={(e) =>
+                update({
+                  x: Math.max(
+                    0,
+                    Math.min(mapWidth - 1, Math.floor(Number(e.target.value))),
+                  ),
+                })
+              }
+              style={inputStyle}
+            />
+          </Field>
+          <Field label={`Y (0..${mapHeight - 1})`}>
+            <input
+              type="number"
+              value={draft.y}
+              min={0}
+              max={mapHeight - 1}
+              onChange={(e) =>
+                update({
+                  y: Math.max(
+                    0,
+                    Math.min(mapHeight - 1, Math.floor(Number(e.target.value))),
+                  ),
+                })
+              }
+              style={inputStyle}
+            />
+          </Field>
+          <Field label="Ancho (tiles)">
+            <input
+              type="number"
+              value={draft.w}
+              min={1}
+              max={mapWidth}
+              onChange={(e) =>
+                update({ w: Math.max(1, Math.floor(Number(e.target.value))) })
+              }
+              style={inputStyle}
+            />
+          </Field>
+          <Field label="Alto (tiles)">
+            <input
+              type="number"
+              value={draft.h}
+              min={1}
+              max={mapHeight}
+              onChange={(e) =>
+                update({ h: Math.max(1, Math.floor(Number(e.target.value))) })
+              }
+              style={inputStyle}
+            />
+          </Field>
+        </div>
+        <Field label="Escena destino">
+          <select
+            value={draft.targetScene}
+            onChange={(e) => update({ targetScene: e.target.value })}
+            style={inputStyle}
+          >
+            <option value="">— elegir —</option>
+            {targets.map((s) => (
+              <option key={s.slug} value={s.slug}>
+                {s.name} ({s.slug})
+              </option>
+            ))}
+          </select>
+        </Field>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 8,
+          }}
+        >
+          <Field label="Spawn X destino (vacío = default)">
+            <input
+              type="number"
+              value={draft.targetSpawnX ?? ''}
+              onChange={(e) =>
+                update({
+                  targetSpawnX:
+                    e.target.value === ''
+                      ? undefined
+                      : Math.max(0, Math.floor(Number(e.target.value))),
+                })
+              }
+              style={inputStyle}
+            />
+          </Field>
+          <Field label="Spawn Y destino (vacío = default)">
+            <input
+              type="number"
+              value={draft.targetSpawnY ?? ''}
+              onChange={(e) =>
+                update({
+                  targetSpawnY:
+                    e.target.value === ''
+                      ? undefined
+                      : Math.max(0, Math.floor(Number(e.target.value))),
+                })
+              }
+              style={inputStyle}
+            />
+          </Field>
+        </div>
+        <Field label={`Fade (ms): ${draft.fadeMs ?? 250}`}>
+          <input
+            type="range"
+            min={0}
+            max={1500}
+            step={50}
+            value={draft.fadeMs ?? 250}
+            onChange={(e) => update({ fadeMs: Number(e.target.value) })}
+            style={{ width: '100%', accentColor: '#7B5FBF' }}
+          />
+        </Field>
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <button
+            type="button"
+            onClick={onDelete}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              background: '#3a1a1a',
+              color: '#ff8080',
+              border: '2px solid #6f2a2a',
+              fontFamily: "'Silkscreen', cursive",
+              fontSize: '0.6rem',
+              letterSpacing: '0.1em',
+              cursor: 'pointer',
+            }}
+          >
+            Borrar
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              background: '#1a1a1a',
+              color: '#e5e5e5',
+              border: '2px solid var(--color-accent)',
+              fontFamily: "'Silkscreen', cursive",
+              fontSize: '0.6rem',
+              letterSpacing: '0.1em',
+              cursor: 'pointer',
+            }}
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <span
+        style={{
+          fontSize: '0.5rem',
+          color: 'rgba(225,215,255,0.65)',
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  background: '#0a0a14',
+  color: '#e5e5e5',
+  border: '2px solid rgba(75,45,142,0.6)',
+  fontFamily: "'Silkscreen', cursive",
+  fontSize: '0.6rem',
+  padding: '4px 6px',
+  outline: 'none',
+};
 
 function LightEditModal({
   light,

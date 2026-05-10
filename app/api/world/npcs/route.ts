@@ -2,8 +2,14 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { getAuthedClient } from '@/lib/world/auth';
 
-const DEFAULT_MAP = 'default';
+const DEFAULT_SCENE = 'main';
+const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,62}$/;
 const VALID_FACINGS = new Set(['n', 's', 'e', 'w']);
+
+function pickSlug(raw: string | null | undefined): string {
+  const v = (raw ?? '').trim();
+  return SLUG_REGEX.test(v) ? v : DEFAULT_SCENE;
+}
 const VALID_ANIMATIONS = new Set([
   'idle',
   'walk',
@@ -41,14 +47,16 @@ function rowToJson(row: NpcRow) {
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const url = new URL(req.url);
+    const slug = pickSlug(url.searchParams.get('scene'));
     const r = await pool.query(
       `SELECT id, map_name, name, config, x, y, facing, animation, dialogue
          FROM gcc_world.npcs
         WHERE map_name = $1
         ORDER BY id ASC`,
-      [DEFAULT_MAP],
+      [slug],
     );
     return NextResponse.json({ npcs: r.rows.map(rowToJson) });
   } catch (err: unknown) {
@@ -67,7 +75,9 @@ export async function POST(req: Request) {
         { status: 403 },
       );
     }
+    const url = new URL(req.url);
     const body = await req.json();
+    const slug = pickSlug(body?.scene ?? url.searchParams.get('scene'));
     const name = typeof body?.name === 'string' ? body.name.trim() : '';
     const config = body?.config;
     const x = Math.floor(Number(body?.x));
@@ -101,7 +111,7 @@ export async function POST(req: Request) {
        VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, $8::jsonb)
        RETURNING id, map_name, name, config, x, y, facing, animation, dialogue`,
       [
-        DEFAULT_MAP,
+        slug,
         name,
         JSON.stringify(config),
         x,

@@ -120,6 +120,22 @@ export type ItemPlacement = {
   y: number; // tile row
 };
 
+// A door / trigger inside a map scene. When the player walks onto a tile
+// covered by the rectangle, the runtime swaps to `targetScene`. If
+// `targetSpawnX/Y` are present they override the destination map's
+// default spawn (otherwise the destination's `spawnX/Y` is used).
+export type Transition = {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  targetScene: string;
+  targetSpawnX?: number;
+  targetSpawnY?: number;
+  fadeMs?: number;
+};
+
 export type WorldMapData = {
   name: string;
   width: number;
@@ -130,5 +146,58 @@ export type WorldMapData = {
   spawnY: number; // tile row where the player appears
   // 0 = full daylight, 1 = pitch black before lights are applied.
   ambientDarkness?: number;
+  transitions?: Transition[];
   isAdmin?: boolean;
+};
+
+// ── Scenes (game-engine-style) ──────────────────────────────────────
+// A scene is the unit of "what's loaded right now". `map` scenes own
+// a matching `world_maps` row (keyed by `slug`); cinematic scenes have
+// no world_maps row — all their data lives in `CinematicData`.
+export type SceneKind = 'map' | 'cinematic';
+
+export type SceneMeta = {
+  slug: string;
+  kind: SceneKind;
+  name: string;
+  orderIdx: number;
+  musicUrl?: string | null;
+  musicVolume?: number;
+  eventTrigger?: string | null;
+  updatedAt?: string;
+};
+
+// Cinematic frame coordinate space is fixed at 1280×720; the player
+// view scales it to fit the viewport.
+export type CinematicBackdrop =
+  | { kind: 'color'; color: string }
+  | { kind: 'image'; url: string };
+
+export type CinematicCharacter = {
+  id: string;
+  spriteUrl: string;
+  x: number;
+  y: number;
+  flip?: boolean;
+  scale?: number;
+};
+
+export type CinematicDialog = {
+  speaker: string;
+  text: string;
+  portraitUrl?: string;
+};
+
+export type CinematicFrame = {
+  id: string;
+  backdrop: CinematicBackdrop;
+  characters: CinematicCharacter[];
+  dialog?: CinematicDialog;
+  // ms; undefined = wait for click/Space/Enter.
+  duration?: number;
+  transition?: 'cut' | 'fade';
+};
+
+export type CinematicData = {
+  frames: CinematicFrame[];
 };

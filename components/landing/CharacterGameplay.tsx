@@ -15,28 +15,41 @@ import WorldMap, {
   WORLD_SCALE,
   buildCollisionGrid,
 } from './WorldMap';
-import MapEditor from './world/MapEditor';
+import SceneManagerEditor from './world/SceneManagerEditor';
 import InventoryBar from './world/InventoryBar';
 import NpcEditor, { type NpcRecord } from './world/NpcEditor';
 import LightOverlay from './world/LightOverlay';
+import CinematicPlayer from '@/components/world/CinematicPlayer';
+import {
+  hasPlayedCinematic,
+  markCinematicPlayed,
+  type GameEventName,
+} from '@/lib/world/events';
 import {
   EQUIPPED_LIGHT_TEMPLATES,
   findItem,
   itemDataUrl,
 } from './world/items';
 import type { LightSource } from './world/lights';
-import type { WorldMapData } from './world/sheets';
+import type {
+  CinematicData,
+  SceneMeta,
+  Transition,
+  WorldMapData,
+} from './world/sheets';
 
 const TILE_PX_DISPLAY = TILE * WORLD_SCALE; // 64 px per tile on screen
 const SPEED = 1.2 * WORLD_SCALE;
+const DEFAULT_SCENE_SLUG = 'main';
 const DEFAULT_MAP: WorldMapData = {
-  name: 'default',
+  name: DEFAULT_SCENE_SLUG,
   width: 60,
   height: 40,
   layers: [{ tiles: [] }],
   items: [],
   spawnX: 30,
   spawnY: 20,
+  transitions: [],
 };
 
 // Convert spawn tile coords to character world coords (centered),
@@ -118,21 +131,111 @@ export default function CharacterGameplay({
     activeDialogueRef.current = activeDialogue;
   }, [activeDialogue]);
 
-  // Load map + admin flag
+  // Active scene + transitions (Phase 2). `currentScene` drives every
+  // scene-scoped fetch. `pendingSpawnRef` carries spawn coords through
+  // a transition swap (when set, applied on next loadScene).
+  const [currentScene, setCurrentScene] = useState<string>(DEFAULT_SCENE_SLUG);
+  const [sceneMeta, setSceneMeta] = useState<SceneMeta | null>(null);
+  const [transitions, setTransitions] = useState<Transition[]>([]);
+  const transitionsRef = useRef<Transition[]>([]);
   useEffect(() => {
-    fetch('/api/world/map')
+    transitionsRef.current = transitions;
+  }, [transitions]);
+  const pendingSpawnRef = useRef<{ x?: number; y?: number } | null>(null);
+  const transitioningRef = useRef(false);
+  // After a transition lands, ignore the destination tile if it itself
+  // contains a transition (prevents instant ping-pong loops).
+  const ignoreTransitionTileRef = useRef<{ x: number; y: number } | null>(null);
+  // Phase 3: pending cinematic to play (set by triggerGameEvent when
+  // the cinematic for an event hasn't already been seen).
+  const [cinematicPlaying, setCinematicPlaying] = useState<
+    { meta: SceneMeta; data: CinematicData } | null
+  >(null);
+  // Cached list of scene metadata (used to resolve event triggers
+  // without an extra round-trip per event).
+  const sceneListRef = useRef<SceneMeta[]>([]);
+
+  // Loads the named scene and populates worldMap/transitions/npcs/lights.
+  // For cinematic kind, queues it for playback instead of swapping the
+  // gameplay map.
+  const loadScene = async (
+    slug: string,
+    opts?: { spawnX?: number; spawnY?: number },
+  ) => {
+    const r = await fetch(`/api/world/scenes/${encodeURIComponent(slug)}`);
+    if (!r.ok) return;
+    const j = await r.json();
+    if (j?.kind === 'cinematic') {
+      setCinematicPlaying({ meta: j.meta, data: j.data });
+      return;
+    }
+    if (j?.kind !== 'map') return;
+    const m: WorldMapData = {
+      ...j.map,
+      items: j.map.items ?? [],
+      transitions: j.map.transitions ?? [],
+    };
+    // Apply pending spawn override (from a transition) before locking
+    // the player into the destination's default spawn.
+    const spawnX = opts?.spawnX ?? pendingSpawnRef.current?.x;
+    const spawnY = opts?.spawnY ?? pendingSpawnRef.current?.y;
+    pendingSpawnRef.current = null;
+    if (typeof spawnX === 'number') m.spawnX = spawnX;
+    if (typeof spawnY === 'number') m.spawnY = spawnY;
+    setWorldMap(m);
+    setTransitions(m.transitions ?? []);
+    setSceneMeta(j.meta);
+    setCurrentScene(slug);
+    setIsAdmin(!!j.meta?.isAdmin);
+    setNpcs(Array.isArray(j.npcs) ? j.npcs : []);
+    setLights(Array.isArray(j.lights) ? j.lights : []);
+    // Re-spawn player to the (possibly overridden) spawn point.
+    spawnAppliedRef.current = true;
+    setPos(spawnToWorld(m));
+    // After landing, suppress the very tile we arrived on for one
+    // movement check so we don't immediately retrigger.
+    ignoreTransitionTileRef.current = { x: m.spawnX, y: m.spawnY };
+  };
+
+  // Resolve a game event to a cinematic scene (cached) and play it if
+  // it hasn't been seen yet. Safe to call at any point; no-ops when:
+  //   - the scene list isn't loaded yet,
+  //   - no cinematic is bound to the event,
+  //   - the player already saw it (localStorage),
+  //   - or another cinematic is currently playing.
+  const triggerGameEvent = (name: GameEventName) => {
+    if (cinematicPlaying) return;
+    if (hasPlayedCinematic(name)) return;
+    const cinematic = sceneListRef.current.find(
+      (s) => s.kind === 'cinematic' && s.eventTrigger === name,
+    );
+    if (!cinematic) return;
+    fetch(`/api/world/scenes/${encodeURIComponent(cinematic.slug)}`)
       .then((r) => r.json())
-      .then((j: WorldMapData & { isAdmin?: boolean }) => {
-        if (j && Array.isArray(j.layers)) {
-          // Ensure items field exists (older payloads may omit it).
-          const m: WorldMapData = { ...j, items: j.items ?? [] };
-          setWorldMap(m);
-          if (!spawnAppliedRef.current) {
-            spawnAppliedRef.current = true;
-            setPos(spawnToWorld(m));
-          }
+      .then((j) => {
+        if (j?.kind === 'cinematic' && j.data) {
+          setCinematicPlaying({ meta: j.meta, data: j.data });
         }
-        setIsAdmin(!!j?.isAdmin);
+      })
+      .catch(() => undefined);
+  };
+  // Stable ref so RAF-style closures can call it without re-binding.
+  const triggerGameEventRef = useRef(triggerGameEvent);
+  useEffect(() => {
+    triggerGameEventRef.current = triggerGameEvent;
+  });
+
+  // Initial load: pick the active map scene + inventory + scene list.
+  useEffect(() => {
+    fetch('/api/world/scenes')
+      .then((r) => r.json())
+      .then(async (j: { scenes?: SceneMeta[]; activeSlug?: string | null }) => {
+        if (Array.isArray(j?.scenes)) sceneListRef.current = j.scenes;
+        const slug = j?.activeSlug ?? DEFAULT_SCENE_SLUG;
+        await loadScene(slug);
+        // After landing, fire the 'intro' event so any intro cinematic
+        // plays once per player (localStorage gated).
+        triggerGameEventRef.current('intro');
       })
       .catch(() => undefined);
     fetch('/api/world/inventory')
@@ -149,18 +252,7 @@ export default function CharacterGameplay({
         },
       )
       .catch(() => undefined);
-    fetch('/api/world/npcs')
-      .then((r) => r.json())
-      .then((j: { npcs?: NpcRecord[] }) => {
-        if (Array.isArray(j?.npcs)) setNpcs(j.npcs);
-      })
-      .catch(() => undefined);
-    fetch('/api/world/lights')
-      .then((r) => r.json())
-      .then((j: { lights?: LightSource[] }) => {
-        if (Array.isArray(j?.lights)) setLights(j.lights);
-      })
-      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Pick up any item under the player's tile (called every frame).
@@ -195,6 +287,7 @@ export default function CharacterGameplay({
         if (j?.ok) {
           setInventory(j.inventory ?? {});
           setPickedItems(new Set(j.pickedItems ?? []));
+          triggerGameEventRef.current('first_pickup');
         }
       })
       .catch(() => undefined)
@@ -314,6 +407,7 @@ export default function CharacterGameplay({
         const near = nearbyNpcRef.current;
         if (near && near.dialogue.length > 0) {
           setActiveDialogue({ npcId: near.id, line: 0 });
+          triggerGameEventRef.current('first_npc_talk');
           // Stop walking so the dialogue feels intentional.
           keysRef.current.clear();
           setWalking(false);
@@ -444,7 +538,15 @@ export default function CharacterGameplay({
     nearbyNpcRef.current = nearbyNpc;
   }, [nearbyNpc]);
   useEffect(() => {
-    if (!walking || editorOpen || npcEditorOpen || activeDialogue) return;
+    if (
+      !walking ||
+      editorOpen ||
+      npcEditorOpen ||
+      activeDialogue ||
+      cinematicPlaying
+    ) {
+      return;
+    }
     let raf = 0;
     const tick = () => {
       const vx = direction === 'w' ? -SPEED : direction === 'e' ? SPEED : 0;
@@ -463,6 +565,30 @@ export default function CharacterGameplay({
         if (isBlocked(nx, p.y)) nx = p.x;
         if (isBlocked(nx, ny)) ny = p.y;
         pickupCheck(nx, ny);
+        // Transition check — only when we're not already mid-swap and
+        // the player isn't standing on the suppression tile that was
+        // set when they arrived from another scene.
+        if (!transitioningRef.current) {
+          const tx = Math.floor((nx + HALF_W) / TILE_PX_DISPLAY);
+          const ty = Math.floor((ny + HALF_H) / TILE_PX_DISPLAY);
+          const ignore = ignoreTransitionTileRef.current;
+          if (ignore && (ignore.x !== tx || ignore.y !== ty)) {
+            ignoreTransitionTileRef.current = null;
+          }
+          if (
+            !ignoreTransitionTileRef.current ||
+            ignoreTransitionTileRef.current.x !== tx ||
+            ignoreTransitionTileRef.current.y !== ty
+          ) {
+            const hit = transitionsRef.current.find(
+              (t) =>
+                tx >= t.x && tx < t.x + t.w && ty >= t.y && ty < t.y + t.h,
+            );
+            if (hit && hit.targetScene) {
+              triggerTransition(hit);
+            }
+          }
+        }
         return { x: nx, y: ny };
       });
       raf = requestAnimationFrame(tick);
@@ -478,9 +604,53 @@ export default function CharacterGameplay({
     editorOpen,
     npcEditorOpen,
     activeDialogue,
+    cinematicPlaying,
     collisionGrid,
     npcs,
   ]);
+
+  // Fade overlay opacity for scene transitions. 0 = transparent, 1 =
+  // black; pumped by triggerTransition during the swap.
+  const [fadeAlpha, setFadeAlpha] = useState(0);
+  const fadeAlphaRef = useRef(0);
+  useEffect(() => {
+    fadeAlphaRef.current = fadeAlpha;
+  }, [fadeAlpha]);
+
+  const triggerTransition = (hit: Transition) => {
+    if (transitioningRef.current) return;
+    transitioningRef.current = true;
+    const fadeMs = Math.max(0, hit.fadeMs ?? 250);
+    const halfMs = Math.max(1, fadeMs);
+    // Fade to black, swap scene, fade back in.
+    const startTs = performance.now();
+    const fadeOut = (now: number) => {
+      const dt = Math.min(1, (now - startTs) / halfMs);
+      setFadeAlpha(dt);
+      if (dt < 1) requestAnimationFrame(fadeOut);
+      else {
+        pendingSpawnRef.current = {
+          x: hit.targetSpawnX,
+          y: hit.targetSpawnY,
+        };
+        loadScene(hit.targetScene)
+          .catch(() => undefined)
+          .finally(() => {
+            const startIn = performance.now();
+            const fadeIn = (n2: number) => {
+              const dt2 = Math.min(1, (n2 - startIn) / halfMs);
+              setFadeAlpha(1 - dt2);
+              if (dt2 < 1) requestAnimationFrame(fadeIn);
+              else {
+                transitioningRef.current = false;
+              }
+            };
+            requestAnimationFrame(fadeIn);
+          });
+      }
+    };
+    requestAnimationFrame(fadeOut);
+  };
 
   // ── Poll auth status while overlay is open (catch verify/login from
   //    other tabs or after returning from email link) ───────────────
@@ -881,15 +1051,29 @@ export default function CharacterGameplay({
           />
         )}
 
+      {/* Scene transition fade overlay. Sits above the world but
+          below modal editors so transitions don't black out the
+          editor when it's open. */}
+      {fadeAlpha > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            pointerEvents: 'none',
+            background: '#000',
+            opacity: fadeAlpha,
+            zIndex: 100000,
+          }}
+        />
+      )}
+
       {editorOpen && (
-        <MapEditor
-          initialMap={worldMap}
-          onClose={() => setEditorOpen(false)}
-          onSaved={(m) => {
-            const spawnChanged =
-              m.spawnX !== worldMap.spawnX || m.spawnY !== worldMap.spawnY;
-            setWorldMap(m);
-            if (spawnChanged) setPos(spawnToWorld(m));
+        <SceneManagerEditor
+          onClose={() => {
+            setEditorOpen(false);
+            // Re-load the active scene so any edits to it land in the
+            // gameplay view (tiles, NPCs, lights, transitions, music).
+            loadScene(currentScene).catch(() => undefined);
           }}
         />
       )}
@@ -898,11 +1082,76 @@ export default function CharacterGameplay({
         <NpcEditor
           playerTileX={playerTileX}
           playerTileY={playerTileY}
+          sceneSlug={currentScene}
           onClose={() => setNpcEditorOpen(false)}
           onChanged={setNpcs}
         />
       )}
+
+      {cinematicPlaying && (
+        <CinematicPlayer
+          data={cinematicPlaying.data}
+          onDone={() => {
+            if (cinematicPlaying.meta.eventTrigger) {
+              markCinematicPlayed(cinematicPlaying.meta.eventTrigger);
+            }
+            setCinematicPlaying(null);
+          }}
+        />
+      )}
+
+      {/* Per-scene background music. Swaps src whenever the active
+          scene changes; the browser handles the actual playback. */}
+      <SceneAudio
+        url={sceneMeta?.musicUrl ?? null}
+        volume={
+          typeof sceneMeta?.musicVolume === 'number'
+            ? sceneMeta.musicVolume
+            : 0.5
+        }
+        muted={!!cinematicPlaying}
+      />
     </div>
+  );
+}
+
+function SceneAudio({
+  url,
+  volume,
+  muted,
+}: {
+  url: string | null;
+  volume: number;
+  muted: boolean;
+}) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.volume = Math.max(0, Math.min(1, volume));
+  }, [volume]);
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (!url) {
+      a.pause();
+      a.removeAttribute('src');
+      return;
+    }
+    if (a.src !== url) {
+      a.src = url;
+      // Browsers block autoplay until user interaction. Fail silently
+      // when blocked — the player can interact later to start music.
+      a.play().catch(() => undefined);
+    }
+  }, [url]);
+  return (
+    <audio
+      ref={audioRef}
+      loop
+      muted={muted}
+      style={{ display: 'none' }}
+    />
   );
 }
 
@@ -1004,7 +1253,7 @@ function FormShell({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
-        zIndex: 1,
+        zIndex: 100001,
         animation: 'pixelFadeIn 0.5s ease-out',
       }}
     >

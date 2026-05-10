@@ -2,7 +2,8 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { getAuthedClient } from '@/lib/world/auth';
 
-const DEFAULT_MAP = 'default';
+const DEFAULT_SCENE = 'main';
+const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,62}$/;
 
 type Tile = {
   x: number;
@@ -15,20 +16,38 @@ type Tile = {
 
 type LayerData = { tiles: Tile[] };
 
-export async function GET() {
+function pickSlug(raw: string | null | undefined): string {
+  const v = (raw ?? '').trim();
+  return SLUG_REGEX.test(v) ? v : DEFAULT_SCENE;
+}
+
+async function ensureMapKind(slug: string): Promise<'ok' | 'cinematic' | 'missing'> {
+  const r = await pool.query<{ kind: string }>(
+    `SELECT kind FROM gcc_world.scenes WHERE slug = $1 LIMIT 1`,
+    [slug],
+  );
+  const k = r.rows[0]?.kind;
+  if (!k) return 'missing';
+  if (k !== 'map') return 'cinematic';
+  return 'ok';
+}
+
+export async function GET(req: Request) {
   try {
+    const url = new URL(req.url);
+    const slug = pickSlug(url.searchParams.get('scene'));
     const r = await pool.query(
       `SELECT id, name, width, height, layers, items,
-              spawn_x, spawn_y, ambient_darkness, updated_at
+              spawn_x, spawn_y, ambient_darkness, transitions, updated_at
          FROM gcc_world.world_maps
         WHERE name = $1
         LIMIT 1`,
-      [DEFAULT_MAP],
+      [slug],
     );
     const row = r.rows[0];
     if (!row) {
       return NextResponse.json({
-        name: DEFAULT_MAP,
+        name: slug,
         width: 60,
         height: 40,
         layers: [],
@@ -36,6 +55,7 @@ export async function GET() {
         spawnX: 30,
         spawnY: 20,
         ambientDarkness: 0,
+        transitions: [],
       });
     }
     const me = await getAuthedClient();
@@ -48,6 +68,7 @@ export async function GET() {
       spawnX: row.spawn_x,
       spawnY: row.spawn_y,
       ambientDarkness: Number(row.ambient_darkness) || 0,
+      transitions: row.transitions ?? [],
       updatedAt: row.updated_at,
       isAdmin: !!me?.isAdmin,
     });
@@ -67,7 +88,20 @@ export async function PUT(req: Request) {
         { status: 403 },
       );
     }
+    const url = new URL(req.url);
     const body = await req.json();
+    const slug = pickSlug(body?.scene ?? url.searchParams.get('scene'));
+
+    // Reject writes targeting a cinematic scene — they have no
+    // world_maps row by design.
+    const kind = await ensureMapKind(slug);
+    if (kind === 'cinematic') {
+      return NextResponse.json(
+        { error: 'no se puede editar el mapa de una escena cinemática' },
+        { status: 400 },
+      );
+    }
+
     const width = Number(body?.width);
     const height = Number(body?.height);
     if (!Number.isFinite(width) || width < 5 || width > 500) {
@@ -78,6 +112,9 @@ export async function PUT(req: Request) {
     }
     const layers: LayerData[] = Array.isArray(body?.layers) ? body.layers : [];
     const items = Array.isArray(body?.items) ? body.items : [];
+    const transitions = Array.isArray(body?.transitions)
+      ? body.transitions
+      : [];
     const spawnX = Math.max(
       0,
       Math.min(width - 1, Math.floor(Number(body?.spawnX) || 0)),
@@ -94,8 +131,8 @@ export async function PUT(req: Request) {
     await pool.query(
       `INSERT INTO gcc_world.world_maps
           (name, width, height, layers, items, spawn_x, spawn_y,
-           ambient_darkness, updated_at)
-       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, NOW())
+           ambient_darkness, transitions, updated_at)
+       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9::jsonb, NOW())
        ON CONFLICT (name) DO UPDATE
           SET width = EXCLUDED.width,
               height = EXCLUDED.height,
@@ -104,9 +141,10 @@ export async function PUT(req: Request) {
               spawn_x = EXCLUDED.spawn_x,
               spawn_y = EXCLUDED.spawn_y,
               ambient_darkness = EXCLUDED.ambient_darkness,
+              transitions = EXCLUDED.transitions,
               updated_at = NOW()`,
       [
-        DEFAULT_MAP,
+        slug,
         width,
         height,
         JSON.stringify(layers),
@@ -114,6 +152,7 @@ export async function PUT(req: Request) {
         spawnX,
         spawnY,
         ambientDarkness,
+        JSON.stringify(transitions),
       ],
     );
     return NextResponse.json({ ok: true });
