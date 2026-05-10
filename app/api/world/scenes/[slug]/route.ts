@@ -145,7 +145,7 @@ export async function GET(
         updatedAt: m.updated_at,
         isAdmin: !!me?.isAdmin,
       },
-      npcs: npcsRes.rows.map((row) => ({
+      npcs: (npcsRes.rows as NpcRow[]).map((row: NpcRow) => ({
         id: row.id,
         map: row.map_name,
         name: row.name,
@@ -156,7 +156,7 @@ export async function GET(
         animation: row.animation ?? 'idle',
         dialogue: row.dialogue ?? [],
       })),
-      lights: lightsRes.rows.map((row) => ({
+      lights: (lightsRes.rows as LightRow[]).map((row: LightRow) => ({
         id: row.id,
         map: row.map_name,
         x: row.x,
