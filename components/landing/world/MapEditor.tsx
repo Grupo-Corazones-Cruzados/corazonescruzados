@@ -8,10 +8,13 @@ import {
   tileZ,
   type ItemPlacement,
   type LayerData,
+  type PropLight,
+  type PropTrigger,
   type SceneMeta,
   type Tile,
   type Transition,
   type WorldMapData,
+  type WorldProp,
 } from './sheets';
 import { ITEMS, ITEM_CATEGORIES, findItem, itemDataUrl } from './items';
 import {
@@ -214,7 +217,8 @@ export default function MapEditor({
     | 'spawn'
     | 'copy'
     | 'light'
-    | 'transition';
+    | 'transition'
+    | 'prop';
   const [mode, setMode] = useState<EditorMode>('paint');
   const [brushHistory, setBrushHistory] = useState<Brush[]>([]);
 
@@ -250,6 +254,13 @@ export default function MapEditor({
   const [editingTransitionId, setEditingTransitionId] = useState<string | null>(
     null,
   );
+  // Props (objetos del mundo) — non-collectible scenery. `propBrushItemId`
+  // is the sprite the user will stamp on click; null = no sprite selected
+  // (cursor still selects existing props). `editingPropId` opens the
+  // configuration drawer for an existing prop.
+  const [props, setProps] = useState<WorldProp[]>(initialMap.props ?? []);
+  const [propBrushItemId, setPropBrushItemId] = useState<string | null>(null);
+  const [editingPropId, setEditingPropId] = useState<string | null>(null);
   // Live in-editor preview of the lighting overlay so the admin can
   // see darkness + lights while building. Pure visualization toggle.
   const [lightingPreview, setLightingPreview] = useState(true);
@@ -277,7 +288,9 @@ export default function MapEditor({
     initialMap.items ?? [],
   );
   const [itemBrush, setItemBrush] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tiles' | 'items'>('tiles');
+  const [activeTab, setActiveTab] = useState<'tiles' | 'items' | 'props'>(
+    'tiles',
+  );
   // Tracks the last cell affected by the current drag so that
   // collision-mode toggling doesn't flip the same cell back-and-forth
   // while the cursor sits on it.
@@ -287,6 +300,7 @@ export default function MapEditor({
   type Snapshot = {
     layers: LayerData[];
     items: ItemPlacement[];
+    props: WorldProp[];
     width: number;
     height: number;
     spawnX: number;
@@ -296,6 +310,7 @@ export default function MapEditor({
     () => ({
       layers: migrateLayers(initialMap.layers),
       items: initialMap.items ?? [],
+      props: initialMap.props ?? [],
       width: initialMap.width,
       height: initialMap.height,
       spawnX: initialMap.spawnX ?? 0,
@@ -308,13 +323,14 @@ export default function MapEditor({
   const restoringRef = useRef(false);
 
   const snapKey = (s: Snapshot) =>
-    `${s.width}x${s.height}|${s.spawnX},${s.spawnY}|${JSON.stringify(s.layers)}|${JSON.stringify(s.items)}`;
+    `${s.width}x${s.height}|${s.spawnX},${s.spawnY}|${JSON.stringify(s.layers)}|${JSON.stringify(s.items)}|${JSON.stringify(s.props)}`;
 
   const pushHistory = () => {
     if (restoringRef.current) return;
     const snap: Snapshot = {
       layers,
       items,
+      props,
       width,
       height,
       spawnX,
@@ -336,6 +352,7 @@ export default function MapEditor({
     restoringRef.current = true;
     setLayers(s.layers);
     setItems(s.items);
+    setProps(s.props);
     setWidth(s.width);
     setHeight(s.height);
     setSpawnX(s.spawnX);
@@ -425,6 +442,10 @@ export default function MapEditor({
         case 't':
           e.preventDefault();
           setMode('transition');
+          return;
+        case 'p':
+          e.preventDefault();
+          setMode('prop');
           return;
         case '1':
           e.preventDefault();
@@ -604,6 +625,43 @@ export default function MapEditor({
       }
     }
 
+    // Props — drawn full-tile (no halo) so they read as scenery. Each
+    // prop gets a thin colored corner badge that hints at its config:
+    // amber for solid, sky for light, magenta for trigger. The prop
+    // currently being edited gets a bright yellow outline.
+    for (const p of props) {
+      const def = findItem(p.itemId);
+      if (!def) continue;
+      const img = itemImgs.get(def.id);
+      if (img && img.complete) {
+        ctx.drawImage(
+          img,
+          p.x * TILE_PX,
+          p.y * TILE_PX,
+          TILE_PX,
+          TILE_PX,
+        );
+      }
+      const badges: string[] = [];
+      if (p.solid) badges.push('#ffb84d');
+      if (p.light) badges.push('#7ec8ff');
+      if (p.trigger) badges.push('#ff80f0');
+      badges.forEach((c, i) => {
+        ctx.fillStyle = c;
+        ctx.fillRect(p.x * TILE_PX + 2 + i * 6, p.y * TILE_PX + 2, 4, 4);
+      });
+      if (editingPropId === p.id) {
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+          p.x * TILE_PX + 1,
+          p.y * TILE_PX + 1,
+          TILE_PX - 2,
+          TILE_PX - 2,
+        );
+      }
+    }
+
     // Spawn marker — green star + ring
     if (
       spawnX >= 0 &&
@@ -720,6 +778,8 @@ export default function MapEditor({
     editingLight,
     transitions,
     editingTransitionId,
+    props,
+    editingPropId,
   ]);
 
   // ── Live lighting preview ────────────────────────────────────────
@@ -913,6 +973,26 @@ export default function MapEditor({
       }
       return;
     }
+    if (mode === 'prop') {
+      // Click on an existing prop opens its config drawer. Click on an
+      // empty cell with a sprite brush selected creates a new prop with
+      // sensible defaults (not solid, no light, no trigger).
+      const existing = props.find((p) => p.x === cx && p.y === cy);
+      if (existing) {
+        setEditingPropId(existing.id);
+        return;
+      }
+      if (!propBrushItemId) return;
+      const id = `prop-${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 6)}`;
+      setProps((prev) => [
+        ...prev,
+        { id, x: cx, y: cy, itemId: propBrushItemId },
+      ]);
+      window.setTimeout(pushHistory, 0);
+      return;
+    }
     if (mode === 'transition') {
       // Click on an existing transition rect selects it; otherwise
       // create a new 1×1 transition at the cursor and open the
@@ -947,12 +1027,18 @@ export default function MapEditor({
     }
     if (mode === 'erase') {
       // Erase removes the top-most tile from the ACTIVE layer at the
-      // cursor cell. Items live outside the layer system so they get
-      // peeled first if there's nothing in the active layer to remove.
+      // cursor cell. Props and items live outside the layer system so
+      // they get peeled first if there's nothing in the active layer
+      // to remove. Props before items (props are usually placed last).
+      const propIdx = props.findIndex((p) => p.x === cx && p.y === cy);
       const itemIdx = items.findIndex((it) => it.x === cx && it.y === cy);
       const hasActiveTileHere = tiles.some(
         (t) => t.x === cx && t.y === cy,
       );
+      if (propIdx >= 0 && !hasActiveTileHere) {
+        setProps((prev) => prev.filter((_, i) => i !== propIdx));
+        return;
+      }
       if (itemIdx >= 0 && !hasActiveTileHere) {
         setItems((prev) => prev.filter((_, i) => i !== itemIdx));
         return;
@@ -1076,6 +1162,7 @@ export default function MapEditor({
           spawnY,
           ambientDarkness,
           transitions,
+          props,
         }),
       });
       const j = await r.json();
@@ -1094,6 +1181,7 @@ export default function MapEditor({
         spawnY,
         ambientDarkness,
         transitions,
+        props,
       });
     } finally {
       setSaving(false);
@@ -1176,14 +1264,23 @@ export default function MapEditor({
             borderBottom: '1px solid rgba(75,45,142,0.3)',
           }}
         >
-          {(['tiles', 'items'] as const).map((t) => (
+          {(['tiles', 'items', 'props'] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => {
                 setActiveTab(t);
-                if (t === 'items') setBrush(null);
-                else setItemBrush(null);
+                if (t === 'tiles') {
+                  setItemBrush(null);
+                  setPropBrushItemId(null);
+                } else if (t === 'items') {
+                  setBrush(null);
+                  setPropBrushItemId(null);
+                } else {
+                  setBrush(null);
+                  setItemBrush(null);
+                  setMode('prop');
+                }
               }}
               style={{
                 flex: 1,
@@ -1199,7 +1296,7 @@ export default function MapEditor({
                 textTransform: 'uppercase',
               }}
             >
-              {t === 'tiles' ? 'Tiles' : 'Items'}
+              {t === 'tiles' ? 'Tiles' : t === 'items' ? 'Items' : 'Props'}
             </button>
           ))}
         </div>
@@ -1319,6 +1416,94 @@ export default function MapEditor({
                 </div>
               );
             })}
+          {activeTab === 'props' && (
+            <>
+              <div
+                style={{
+                  fontSize: '0.55rem',
+                  letterSpacing: '0.12em',
+                  color: 'rgba(225,215,255,0.7)',
+                  lineHeight: 1.5,
+                  marginBottom: 4,
+                }}
+              >
+                Elige un sprite y haz clic en el mapa para colocar un
+                prop. Clic sobre un prop existente para configurarlo
+                (sólido, luz, trigger).
+              </div>
+              {ITEM_CATEGORIES.map((cat) => {
+                const itemsInCat = ITEMS.filter(
+                  (it) =>
+                    it.category === cat.id &&
+                    (!filteredQuery ||
+                      it.label.toLowerCase().includes(filteredQuery) ||
+                      it.id.toLowerCase().includes(filteredQuery)),
+                );
+                if (itemsInCat.length === 0) return null;
+                return (
+                  <div key={cat.id}>
+                    <div
+                      style={{
+                        fontSize: '0.55rem',
+                        letterSpacing: '0.16em',
+                        color: 'rgba(225,215,255,0.65)',
+                        textTransform: 'uppercase',
+                        marginBottom: 6,
+                      }}
+                    >
+                      {cat.label}
+                    </div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, 48px)',
+                        gap: 6,
+                      }}
+                    >
+                      {itemsInCat.map((it) => {
+                        const active = propBrushItemId === it.id;
+                        return (
+                          <button
+                            key={it.id}
+                            type="button"
+                            onClick={() => {
+                              setPropBrushItemId(it.id);
+                              setMode('prop');
+                            }}
+                            title={it.label}
+                            style={{
+                              width: 48,
+                              height: 48,
+                              background: '#0a0a14',
+                              border: active
+                                ? '2px solid #ffcc00'
+                                : '2px solid rgba(75,45,142,0.5)',
+                              cursor: 'pointer',
+                              padding: 4,
+                              boxShadow: active
+                                ? '0 0 8px #ffcc00'
+                                : 'none',
+                            }}
+                          >
+                            <img
+                              src={itemDataUrl(it)}
+                              alt={it.label}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                imageRendering: 'pixelated',
+                                display: 'block',
+                              }}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
           {activeTab === 'tiles' &&
             visibleSheets
             .filter(
@@ -1455,6 +1640,13 @@ export default function MapEditor({
             label="Transiciones (puertas a otra escena)"
             active={mode === 'transition'}
             onClick={() => setMode('transition')}
+          />
+          <IconButton
+            icon="◆"
+            hotkey="P"
+            label="Props (objetos del mundo — lámparas, decoración, triggers)"
+            active={mode === 'prop'}
+            onClick={() => setMode('prop')}
           />
 
           <Sep />
@@ -1932,6 +2124,30 @@ export default function MapEditor({
           />
         );
       })()}
+
+      {editingPropId && (() => {
+        const p = props.find((x) => x.id === editingPropId);
+        if (!p) return null;
+        return (
+          <PropEditModal
+            prop={p}
+            layers={layers}
+            scenes={scenes ?? []}
+            onChange={(next) =>
+              setProps((prev) => prev.map((x) => (x.id === next.id ? next : x)))
+            }
+            onClose={() => {
+              setEditingPropId(null);
+              window.setTimeout(pushHistory, 0);
+            }}
+            onDelete={() => {
+              setProps((prev) => prev.filter((x) => x.id !== editingPropId));
+              setEditingPropId(null);
+              window.setTimeout(pushHistory, 0);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -2132,6 +2348,573 @@ function TransitionEditModal({
             style={{ width: '100%', accentColor: '#7B5FBF' }}
           />
         </Field>
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <button
+            type="button"
+            onClick={onDelete}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              background: '#3a1a1a',
+              color: '#ff8080',
+              border: '2px solid #6f2a2a',
+              fontFamily: "'Silkscreen', cursive",
+              fontSize: '0.6rem',
+              letterSpacing: '0.1em',
+              cursor: 'pointer',
+            }}
+          >
+            Borrar
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              background: '#1a1a1a',
+              color: '#e5e5e5',
+              border: '2px solid var(--color-accent)',
+              fontFamily: "'Silkscreen', cursive",
+              fontSize: '0.6rem',
+              letterSpacing: '0.1em',
+              cursor: 'pointer',
+            }}
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PropEditModal({
+  prop,
+  layers,
+  scenes,
+  onChange,
+  onClose,
+  onDelete,
+}: {
+  prop: WorldProp;
+  layers: LayerData[];
+  scenes: SceneMeta[];
+  onChange: (p: WorldProp) => void;
+  onClose: () => void;
+  onDelete: () => void;
+}) {
+  const [draft, setDraft] = useState<WorldProp>(prop);
+  useEffect(() => {
+    setDraft(prop);
+  }, [prop]);
+  const update = (patch: Partial<WorldProp>) => {
+    const next = { ...draft, ...patch };
+    setDraft(next);
+    onChange(next);
+  };
+
+  const def = findItem(draft.itemId);
+  const cinematicScenes = scenes.filter((s) => s.kind === 'cinematic');
+
+  const defaultLight = (): PropLight => ({
+    radius: 4,
+    color: '#ffcc66',
+    mode: 'flicker',
+    periodMs: 1000,
+    intensity: 0.85,
+  });
+  const defaultTrigger = (): PropTrigger => ({
+    kind: 'cinematic',
+    activation: 'interact',
+    cinematicSlug: cinematicScenes[0]?.slug ?? '',
+  });
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(10,10,20,0.55)',
+        zIndex: 200500,
+        display: 'grid',
+        placeItems: 'center',
+        fontFamily: "'Silkscreen', cursive",
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#131923',
+          border: '2px solid var(--color-accent)',
+          padding: 18,
+          width: 420,
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          color: '#e5e5e5',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          {def && (
+            <img
+              src={itemDataUrl(def)}
+              alt=""
+              style={{
+                width: 40,
+                height: 40,
+                imageRendering: 'pixelated',
+                background: '#0a0a14',
+                border: '2px solid rgba(75,45,142,0.5)',
+                padding: 3,
+              }}
+            />
+          )}
+          <div>
+            <div
+              style={{
+                fontSize: '0.85rem',
+                letterSpacing: '0.18em',
+                color: 'var(--color-accent)',
+                textTransform: 'uppercase',
+              }}
+            >
+              Prop ◆
+            </div>
+            <div
+              style={{
+                fontSize: '0.6rem',
+                color: 'rgba(225,215,255,0.6)',
+                letterSpacing: '0.1em',
+              }}
+            >
+              {def?.label ?? draft.itemId} · ({draft.x}, {draft.y})
+            </div>
+          </div>
+        </div>
+
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 8px',
+            background: '#0a0a14',
+            border: '2px solid rgba(75,45,142,0.4)',
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={!!draft.solid}
+            onChange={(e) => update({ solid: e.target.checked })}
+          />
+          <span style={{ fontSize: '0.65rem', letterSpacing: '0.12em' }}>
+            Sólido (bloquea al jugador)
+          </span>
+        </label>
+
+        {/* Light */}
+        <div
+          style={{
+            border: '2px solid rgba(75,45,142,0.4)',
+            padding: 10,
+            background: '#0a0a14',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={!!draft.light}
+              onChange={(e) =>
+                update({ light: e.target.checked ? defaultLight() : null })
+              }
+            />
+            <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em' }}>
+              Emite luz
+            </span>
+          </label>
+          {draft.light && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 8,
+              }}
+            >
+              <Field label={`Radio: ${draft.light.radius} tiles`}>
+                <input
+                  type="range"
+                  min={1}
+                  max={20}
+                  step={0.5}
+                  value={draft.light.radius}
+                  onChange={(e) =>
+                    update({
+                      light: { ...draft.light!, radius: Number(e.target.value) },
+                    })
+                  }
+                  style={{ width: '100%', accentColor: '#7B5FBF' }}
+                />
+              </Field>
+              <Field label="Color">
+                <input
+                  type="color"
+                  value={draft.light.color}
+                  onChange={(e) =>
+                    update({
+                      light: { ...draft.light!, color: e.target.value },
+                    })
+                  }
+                  style={{ width: '100%', height: 24, border: 'none' }}
+                />
+              </Field>
+              <Field label="Modo">
+                <select
+                  value={draft.light.mode}
+                  onChange={(e) =>
+                    update({
+                      light: {
+                        ...draft.light!,
+                        mode: e.target.value as PropLight['mode'],
+                      },
+                    })
+                  }
+                  style={inputStyle}
+                >
+                  {LIGHT_MODE_OPTIONS.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={`Intensidad: ${draft.light.intensity.toFixed(2)}`}>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={draft.light.intensity}
+                  onChange={(e) =>
+                    update({
+                      light: {
+                        ...draft.light!,
+                        intensity: Number(e.target.value),
+                      },
+                    })
+                  }
+                  style={{ width: '100%', accentColor: '#7B5FBF' }}
+                />
+              </Field>
+              <Field label={`Periodo: ${draft.light.periodMs} ms`}>
+                <input
+                  type="range"
+                  min={100}
+                  max={5000}
+                  step={50}
+                  value={draft.light.periodMs}
+                  onChange={(e) =>
+                    update({
+                      light: {
+                        ...draft.light!,
+                        periodMs: Number(e.target.value),
+                      },
+                    })
+                  }
+                  style={{ width: '100%', accentColor: '#7B5FBF' }}
+                />
+              </Field>
+            </div>
+          )}
+        </div>
+
+        {/* Trigger */}
+        <div
+          style={{
+            border: '2px solid rgba(75,45,142,0.4)',
+            padding: 10,
+            background: '#0a0a14',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={!!draft.trigger}
+              onChange={(e) =>
+                update({ trigger: e.target.checked ? defaultTrigger() : null })
+              }
+            />
+            <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em' }}>
+              Trigger (cambio en el mapa)
+            </span>
+          </label>
+          {draft.trigger && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 8,
+                }}
+              >
+                <Field label="Se activa">
+                  <select
+                    value={draft.trigger.activation}
+                    onChange={(e) =>
+                      update({
+                        trigger: {
+                          ...draft.trigger!,
+                          activation: e.target.value as
+                            | 'interact'
+                            | 'step',
+                        },
+                      })
+                    }
+                    style={inputStyle}
+                  >
+                    <option value="interact">Al presionar E</option>
+                    <option value="step">Al pisar el tile</option>
+                  </select>
+                </Field>
+                <Field label="Tipo de efecto">
+                  <select
+                    value={draft.trigger.kind}
+                    onChange={(e) => {
+                      const kind = e.target.value as PropTrigger['kind'];
+                      const activation = draft.trigger!.activation;
+                      if (kind === 'cinematic') {
+                        update({
+                          trigger: {
+                            kind,
+                            activation,
+                            cinematicSlug: cinematicScenes[0]?.slug ?? '',
+                          },
+                        });
+                      } else if (kind === 'tile-change') {
+                        update({
+                          trigger: {
+                            kind,
+                            activation,
+                            layerId: layers[0]?.id ?? '',
+                            tileX: draft.x,
+                            tileY: draft.y,
+                            newTile: null,
+                          },
+                        });
+                      } else {
+                        update({
+                          trigger: {
+                            kind,
+                            activation,
+                            layerId: layers[0]?.id ?? '',
+                          },
+                        });
+                      }
+                    }}
+                    style={inputStyle}
+                  >
+                    <option value="cinematic">Reproducir cinemática</option>
+                    <option value="tile-change">Cambiar un tile</option>
+                    <option value="layer-toggle">
+                      Mostrar / ocultar capa
+                    </option>
+                  </select>
+                </Field>
+              </div>
+              {draft.trigger.kind === 'cinematic' && (
+                <Field label="Cinemática a reproducir">
+                  <select
+                    value={draft.trigger.cinematicSlug}
+                    onChange={(e) =>
+                      update({
+                        trigger: {
+                          ...draft.trigger!,
+                          kind: 'cinematic',
+                          cinematicSlug: e.target.value,
+                        },
+                      })
+                    }
+                    style={inputStyle}
+                  >
+                    <option value="">— elegir —</option>
+                    {cinematicScenes.map((s) => (
+                      <option key={s.slug} value={s.slug}>
+                        {s.name} ({s.slug})
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              {draft.trigger.kind === 'tile-change' && (
+                <>
+                  <Field label="Capa a modificar">
+                    <select
+                      value={draft.trigger.layerId}
+                      onChange={(e) =>
+                        update({
+                          trigger: {
+                            ...draft.trigger!,
+                            kind: 'tile-change',
+                            layerId: e.target.value,
+                          },
+                        })
+                      }
+                      style={inputStyle}
+                    >
+                      {layers.map((l) => (
+                        <option key={l.id ?? ''} value={l.id ?? ''}>
+                          {l.name ?? l.id ?? '(sin nombre)'}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 8,
+                    }}
+                  >
+                    <Field label="Tile X destino">
+                      <input
+                        type="number"
+                        value={draft.trigger.tileX}
+                        onChange={(e) =>
+                          update({
+                            trigger: {
+                              ...draft.trigger!,
+                              kind: 'tile-change',
+                              tileX: Math.max(
+                                0,
+                                Math.floor(Number(e.target.value) || 0),
+                              ),
+                            },
+                          })
+                        }
+                        style={inputStyle}
+                      />
+                    </Field>
+                    <Field label="Tile Y destino">
+                      <input
+                        type="number"
+                        value={draft.trigger.tileY}
+                        onChange={(e) =>
+                          update({
+                            trigger: {
+                              ...draft.trigger!,
+                              kind: 'tile-change',
+                              tileY: Math.max(
+                                0,
+                                Math.floor(Number(e.target.value) || 0),
+                              ),
+                            },
+                          })
+                        }
+                        style={inputStyle}
+                      />
+                    </Field>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '0.55rem',
+                      color: 'rgba(225,215,255,0.55)',
+                      letterSpacing: '0.1em',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Cambio: BORRAR el tile destino. (En v1 sólo se
+                    soporta borrar; para pintar un sprite distinto, usa
+                    una capa visible/oculta con el trigger
+                    &ldquo;mostrar / ocultar capa&rdquo;.)
+                  </div>
+                </>
+              )}
+              {draft.trigger.kind === 'layer-toggle' && (
+                <Field label="Capa a togglear">
+                  <select
+                    value={draft.trigger.layerId}
+                    onChange={(e) =>
+                      update({
+                        trigger: {
+                          ...draft.trigger!,
+                          kind: 'layer-toggle',
+                          layerId: e.target.value,
+                        },
+                      })
+                    }
+                    style={inputStyle}
+                  >
+                    {layers.map((l) => (
+                      <option key={l.id ?? ''} value={l.id ?? ''}>
+                        {l.name ?? l.id ?? '(sin nombre)'}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={!!draft.trigger.repeat}
+                  onChange={(e) =>
+                    update({
+                      trigger: {
+                        ...draft.trigger!,
+                        repeat: e.target.checked,
+                      },
+                    })
+                  }
+                />
+                Se puede activar más de una vez por sesión
+              </label>
+            </div>
+          )}
+        </div>
+
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button
             type="button"
@@ -2568,7 +3351,15 @@ function PreviewOverlay({
   height,
 }: {
   brush: Brush | null;
-  mode: 'paint' | 'collision' | 'erase' | 'spawn' | 'copy' | 'light' | 'transition';
+  mode:
+    | 'paint'
+    | 'collision'
+    | 'erase'
+    | 'spawn'
+    | 'copy'
+    | 'light'
+    | 'transition'
+    | 'prop';
   hoverCell: { x: number; y: number } | null;
   copyDrag: {
     start: { x: number; y: number };

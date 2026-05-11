@@ -38,7 +38,7 @@ export async function GET(req: Request) {
     const slug = pickSlug(url.searchParams.get('scene'));
     const r = await pool.query(
       `SELECT id, name, width, height, layers, items,
-              spawn_x, spawn_y, ambient_darkness, transitions, updated_at
+              spawn_x, spawn_y, ambient_darkness, transitions, props, updated_at
          FROM gcc_world.world_maps
         WHERE name = $1
         LIMIT 1`,
@@ -56,6 +56,7 @@ export async function GET(req: Request) {
         spawnY: 20,
         ambientDarkness: 0,
         transitions: [],
+        props: [],
       });
     }
     const me = await getAuthedClient();
@@ -69,6 +70,7 @@ export async function GET(req: Request) {
       spawnY: row.spawn_y,
       ambientDarkness: Number(row.ambient_darkness) || 0,
       transitions: row.transitions ?? [],
+      props: row.props ?? [],
       updatedAt: row.updated_at,
       isAdmin: !!me?.isAdmin,
     });
@@ -115,6 +117,7 @@ export async function PUT(req: Request) {
     const transitions = Array.isArray(body?.transitions)
       ? body.transitions
       : [];
+    const props = Array.isArray(body?.props) ? body.props : [];
     const spawnX = Math.max(
       0,
       Math.min(width - 1, Math.floor(Number(body?.spawnX) || 0)),
@@ -131,8 +134,9 @@ export async function PUT(req: Request) {
     await pool.query(
       `INSERT INTO gcc_world.world_maps
           (name, width, height, layers, items, spawn_x, spawn_y,
-           ambient_darkness, transitions, updated_at)
-       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9::jsonb, NOW())
+           ambient_darkness, transitions, props, updated_at)
+       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9::jsonb,
+               $10::jsonb, NOW())
        ON CONFLICT (name) DO UPDATE
           SET width = EXCLUDED.width,
               height = EXCLUDED.height,
@@ -142,6 +146,7 @@ export async function PUT(req: Request) {
               spawn_y = EXCLUDED.spawn_y,
               ambient_darkness = EXCLUDED.ambient_darkness,
               transitions = EXCLUDED.transitions,
+              props = EXCLUDED.props,
               updated_at = NOW()`,
       [
         slug,
@@ -153,6 +158,7 @@ export async function PUT(req: Request) {
         spawnY,
         ambientDarkness,
         JSON.stringify(transitions),
+        JSON.stringify(props),
       ],
     );
     return NextResponse.json({ ok: true });

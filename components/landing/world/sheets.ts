@@ -120,6 +120,56 @@ export type ItemPlacement = {
   y: number; // tile row
 };
 
+// A non-collectible world object placed on a tile. Reuses the items
+// catalog for its sprite. Optionally emits light and/or fires a trigger
+// when the player interacts (E) or steps onto its tile.
+export type PropLight = {
+  radius: number; // tiles
+  color: string; // hex
+  mode: 'steady' | 'blink' | 'pulse' | 'flicker' | 'rainbow';
+  periodMs: number;
+  intensity: number; // 0..1
+};
+
+export type PropTriggerActivation = 'interact' | 'step';
+
+// `tile-change` mutates one tile (paint a new sprite, or clear it).
+// `cinematic` plays a cinematic by slug (one-shot per session unless
+// the prop's `repeat` flag is set). `layer-toggle` flips the
+// `visible` flag on a named layer.
+export type PropTrigger =
+  | {
+      kind: 'tile-change';
+      activation: PropTriggerActivation;
+      layerId: string;
+      tileX: number;
+      tileY: number;
+      newTile: Tile | null; // null = erase
+      repeat?: boolean;
+    }
+  | {
+      kind: 'cinematic';
+      activation: PropTriggerActivation;
+      cinematicSlug: string;
+      repeat?: boolean;
+    }
+  | {
+      kind: 'layer-toggle';
+      activation: PropTriggerActivation;
+      layerId: string;
+      repeat?: boolean;
+    };
+
+export type WorldProp = {
+  id: string;
+  x: number;
+  y: number;
+  itemId: string; // ITEMS catalog id (sprite)
+  solid?: boolean;
+  light?: PropLight | null;
+  trigger?: PropTrigger | null;
+};
+
 // A door / trigger inside a map scene. When the player walks onto a tile
 // covered by the rectangle, the runtime swaps to `targetScene`. If
 // `targetSpawnX/Y` are present they override the destination map's
@@ -147,6 +197,7 @@ export type WorldMapData = {
   // 0 = full daylight, 1 = pitch black before lights are applied.
   ambientDarkness?: number;
   transitions?: Transition[];
+  props?: WorldProp[];
   isAdmin?: boolean;
 };
 

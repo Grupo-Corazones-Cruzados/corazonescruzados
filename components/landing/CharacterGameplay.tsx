@@ -36,6 +36,7 @@ import type {
   SceneMeta,
   Transition,
   WorldMapData,
+  WorldProp,
 } from './world/sheets';
 
 const TILE_PX_DISPLAY = TILE * WORLD_SCALE; // 64 px per tile on screen
@@ -189,6 +190,11 @@ export default function CharacterGameplay({
     setIsAdmin(!!j.meta?.isAdmin);
     setNpcs(Array.isArray(j.npcs) ? j.npcs : []);
     setLights(Array.isArray(j.lights) ? j.lights : []);
+    // Reset per-scene prop trigger state so a fresh scene visit can
+    // re-fire its non-repeat triggers, and the spawn tile itself
+    // doesn't accidentally fire a step trigger on landing.
+    firedPropTriggersRef.current.clear();
+    lastStepTileRef.current = { x: m.spawnX, y: m.spawnY };
     // Re-spawn player to the (possibly overridden) spawn point.
     spawnAppliedRef.current = true;
     setPos(spawnToWorld(m));
@@ -414,7 +420,14 @@ export default function CharacterGameplay({
           e.preventDefault();
           return;
         }
-        // No NPC to talk to: admin uses E to enter the world editor.
+        // Nearby prop with interact-trigger fires before the editor fallback.
+        const nearProp = nearbyInteractPropRef.current;
+        if (nearProp) {
+          runPropTriggerRef.current(nearProp);
+          e.preventDefault();
+          return;
+        }
+        // No NPC / prop: admin uses E to enter the world editor.
         if (k === 'e' && isAdmin) {
           setEditorOpen(true);
           keysRef.current.clear();
@@ -504,14 +517,30 @@ export default function CharacterGameplay({
   const playerTileX = Math.floor((pos.x + HALF_W) / TILE_PX_DISPLAY);
   const playerTileY = Math.floor((pos.y + HALF_H) / TILE_PX_DISPLAY);
 
-  // Append a synthetic light at the player's tile when they have an
-  // item equipped that grants one (e.g. lantern). Uses a stable
-  // negative id so it never collides with a real /api/world/lights row.
+  // Real lights (from DB) + per-prop synthetic lights + the equipped
+  // item's light (if any). Synthetic ids are negative so they never
+  // collide with real /api/world/lights rows.
   const lightsWithEquipped = useMemo<LightSource[]>(() => {
+    const propLights: LightSource[] = [];
+    let nextId = -2;
+    for (const p of worldMap.props ?? []) {
+      if (!p.light) continue;
+      propLights.push({
+        id: nextId--,
+        x: p.x,
+        y: p.y,
+        radius: p.light.radius,
+        color: p.light.color,
+        mode: p.light.mode,
+        periodMs: p.light.periodMs,
+        intensity: p.light.intensity,
+      });
+    }
+    const base = [...lights, ...propLights];
     const tpl = equipped ? EQUIPPED_LIGHT_TEMPLATES[equipped] : null;
-    if (!tpl) return lights;
+    if (!tpl) return base;
     return [
-      ...lights,
+      ...base,
       {
         id: -1,
         x: playerTileX,
@@ -523,7 +552,7 @@ export default function CharacterGameplay({
         intensity: tpl.intensity,
       },
     ];
-  }, [lights, equipped, playerTileX, playerTileY]);
+  }, [lights, worldMap.props, equipped, playerTileX, playerTileY]);
 
   // Adjacent NPC (Manhattan distance ≤ 1, including same tile fallback).
   const nearbyNpc = useMemo(() => {
@@ -537,6 +566,87 @@ export default function CharacterGameplay({
   useEffect(() => {
     nearbyNpcRef.current = nearbyNpc;
   }, [nearbyNpc]);
+
+  // Mirror props in a ref so the RAF loop can read them without
+  // re-binding when the map changes.
+  const propsRef = useRef<WorldProp[]>([]);
+  useEffect(() => {
+    propsRef.current = worldMap.props ?? [];
+  }, [worldMap.props]);
+  // Last tile we ran step-trigger detection for. Prevents the trigger
+  // from re-firing every frame while the player stands on the tile.
+  const lastStepTileRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Closest prop within Manhattan 1 that has an `interact` trigger.
+  // Used by the E-key handler.
+  const nearbyInteractPropRef = useRef<WorldProp | null>(null);
+  const nearbyInteractProp = useMemo(() => {
+    const list = worldMap.props ?? [];
+    if (list.length === 0) return null;
+    return (
+      list.find(
+        (p) =>
+          p.trigger?.activation === 'interact' &&
+          Math.abs(p.x - playerTileX) + Math.abs(p.y - playerTileY) <= 1,
+      ) ?? null
+    );
+  }, [worldMap.props, playerTileX, playerTileY]);
+  useEffect(() => {
+    nearbyInteractPropRef.current = nearbyInteractProp;
+  }, [nearbyInteractProp]);
+
+  // Tracks which prop triggers have already fired this session, so
+  // non-repeating triggers don't loop. Resets on a full page reload.
+  const firedPropTriggersRef = useRef<Set<string>>(new Set());
+
+  // Executes a prop's trigger. No-op if the prop has no trigger, or if
+  // it already fired this session and isn't marked `repeat`.
+  const runPropTrigger = (prop: WorldProp) => {
+    const t = prop.trigger;
+    if (!t) return;
+    if (firedPropTriggersRef.current.has(prop.id) && !t.repeat) return;
+    firedPropTriggersRef.current.add(prop.id);
+    if (t.kind === 'cinematic' && t.cinematicSlug) {
+      fetch(`/api/world/scenes/${encodeURIComponent(t.cinematicSlug)}`)
+        .then((r) => r.json())
+        .then((j) => {
+          if (j?.kind === 'cinematic' && j.data) {
+            setCinematicPlaying({ meta: j.meta, data: j.data });
+          }
+        })
+        .catch(() => undefined);
+      return;
+    }
+    if (t.kind === 'tile-change') {
+      setWorldMap((m) => {
+        const nextLayers = (m.layers ?? []).map((l) => {
+          if ((l.id ?? '') !== t.layerId) return l;
+          return {
+            ...l,
+            tiles: (l.tiles ?? []).filter(
+              (tile) => !(tile.x === t.tileX && tile.y === t.tileY),
+            ),
+          };
+        });
+        return { ...m, layers: nextLayers };
+      });
+      return;
+    }
+    if (t.kind === 'layer-toggle') {
+      setWorldMap((m) => {
+        const nextLayers = (m.layers ?? []).map((l) => {
+          if ((l.id ?? '') !== t.layerId) return l;
+          return { ...l, visible: l.visible === false ? true : false };
+        });
+        return { ...m, layers: nextLayers };
+      });
+      return;
+    }
+  };
+  const runPropTriggerRef = useRef(runPropTrigger);
+  useEffect(() => {
+    runPropTriggerRef.current = runPropTrigger;
+  });
   useEffect(() => {
     if (
       !walking ||
@@ -588,6 +698,21 @@ export default function CharacterGameplay({
               triggerTransition(hit);
             }
           }
+        }
+        // Step-trigger props — fire only when the player's tile
+        // actually changes, so the trigger doesn't loop every frame.
+        const stx = Math.floor((nx + HALF_W) / TILE_PX_DISPLAY);
+        const sty = Math.floor((ny + HALF_H) / TILE_PX_DISPLAY);
+        const last = lastStepTileRef.current;
+        if (!last || last.x !== stx || last.y !== sty) {
+          lastStepTileRef.current = { x: stx, y: sty };
+          const stepHit = propsRef.current.find(
+            (pp) =>
+              pp.trigger?.activation === 'step' &&
+              pp.x === stx &&
+              pp.y === sty,
+          );
+          if (stepHit) runPropTriggerRef.current(stepHit);
         }
         return { x: nx, y: ny };
       });

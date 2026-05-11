@@ -24,6 +24,7 @@ type MapRow = {
   spawn_y: number;
   ambient_darkness: number | string;
   transitions: unknown;
+  props: unknown;
   updated_at: string;
 };
 
@@ -101,7 +102,7 @@ export async function GET(
     const [mapRes, npcsRes, lightsRes] = await Promise.all([
       pool.query<MapRow>(
         `SELECT name, width, height, layers, items, spawn_x, spawn_y,
-                ambient_darkness, transitions, updated_at
+                ambient_darkness, transitions, props, updated_at
            FROM gcc_world.world_maps
           WHERE name = $1
           LIMIT 1`,
@@ -142,6 +143,7 @@ export async function GET(
         spawnY: m.spawn_y,
         ambientDarkness: Number(m.ambient_darkness) || 0,
         transitions: m.transitions ?? [],
+        props: m.props ?? [],
         updatedAt: m.updated_at,
         isAdmin: !!me?.isAdmin,
       },

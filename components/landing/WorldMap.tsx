@@ -118,6 +118,16 @@ export default function WorldMap({
           TILE - 8,
         );
       }
+      // Props — non-collectible world objects. Drawn at full tile size
+      // (no halo) so they read as scenery rather than loot.
+      const props = map.props ?? [];
+      for (const p of props) {
+        const def = findItem(p.itemId);
+        if (!def) continue;
+        const img = itemImgs.get(def.id);
+        if (!img) continue;
+        ctx.drawImage(img, p.x * TILE, p.y * TILE, TILE, TILE);
+      }
     });
 
     return () => {
@@ -158,6 +168,17 @@ export function buildCollisionGrid(
       ) {
         grid[t.y][t.x] = true;
       }
+    }
+  }
+  for (const p of map.props ?? []) {
+    if (
+      p.solid &&
+      p.x >= 0 &&
+      p.x < map.width &&
+      p.y >= 0 &&
+      p.y < map.height
+    ) {
+      grid[p.y][p.x] = true;
     }
   }
   return grid;
