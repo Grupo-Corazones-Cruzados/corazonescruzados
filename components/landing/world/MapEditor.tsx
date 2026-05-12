@@ -293,9 +293,9 @@ export default function MapEditor({
     initialMap.items ?? [],
   );
   const [itemBrush, setItemBrush] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    'tiles' | 'items' | 'props' | 'layers'
-  >('tiles');
+  const [activeTab, setActiveTab] = useState<'tiles' | 'items' | 'props'>(
+    'tiles',
+  );
   // Tracks the last cell affected by the current drag so that
   // collision-mode toggling doesn't flip the same cell back-and-forth
   // while the cursor sits on it.
@@ -1217,7 +1217,7 @@ export default function MapEditor({
         color: '#e5e5e5',
         fontFamily: "'Silkscreen', cursive",
         display: 'grid',
-        gridTemplateColumns: asideVisible ? '300px 1fr' : '1fr',
+        gridTemplateColumns: asideVisible ? '300px 1fr 220px' : '1fr 220px',
         animation: embedded ? undefined : 'pixelFadeIn 0.4s ease-out',
       }}
     >
@@ -1274,7 +1274,7 @@ export default function MapEditor({
             borderBottom: '1px solid rgba(75,45,142,0.3)',
           }}
         >
-          {(['tiles', 'items', 'props', 'layers'] as const).map((t) => (
+          {(['tiles', 'items', 'props'] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -1286,14 +1286,10 @@ export default function MapEditor({
                 } else if (t === 'items') {
                   setBrush(null);
                   setPropBrushItemId(null);
-                } else if (t === 'props') {
-                  setBrush(null);
-                  setItemBrush(null);
-                  setMode('prop');
                 } else {
                   setBrush(null);
                   setItemBrush(null);
-                  setPropBrushItemId(null);
+                  setMode('prop');
                 }
               }}
               style={{
@@ -1304,19 +1300,13 @@ export default function MapEditor({
                 color: activeTab === t ? '#0a0a14' : '#e5e5e5',
                 border: '2px solid var(--color-accent)',
                 fontFamily: "'Silkscreen', cursive",
-                fontSize: '0.55rem',
-                letterSpacing: '0.1em',
+                fontSize: '0.6rem',
+                letterSpacing: '0.12em',
                 cursor: 'pointer',
                 textTransform: 'uppercase',
               }}
             >
-              {t === 'tiles'
-                ? 'Tiles'
-                : t === 'items'
-                  ? 'Items'
-                  : t === 'props'
-                    ? 'Props'
-                    : 'Capas'}
+              {t === 'tiles' ? 'Tiles' : t === 'items' ? 'Items' : 'Props'}
             </button>
           ))}
         </div>
@@ -1357,24 +1347,12 @@ export default function MapEditor({
           </div>
         )}
 
-        {activeTab === 'layers' && (
-          <LayersPanel
-            layers={layers}
-            activeLayerId={activeLayerId}
-            onActivate={setActiveLayerId}
-            onAdd={addLayer}
-            onDelete={deleteLayer}
-            onRename={renameLayer}
-            onToggleVisible={toggleLayerVisible}
-            onMove={moveLayer}
-          />
-        )}
         <div
           style={{
             flex: 1,
             overflowY: 'auto',
             padding: 12,
-            display: activeTab === 'layers' ? 'none' : 'flex',
+            display: 'flex',
             flexDirection: 'column',
             gap: 16,
           }}
@@ -1696,36 +1674,68 @@ export default function MapEditor({
 
           <Sep />
 
-          {/* Ambient darkness + lighting preview toggle. The slider
-              feeds the same `paintLightingFrame` used in gameplay so
-              what the admin sees in the preview is what players see. */}
-          <ToolbarLabel>Oscuridad</ToolbarLabel>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={ambientDarkness}
-            onChange={(e) => setAmbientDarkness(Number(e.target.value))}
-            style={{ width: 110, accentColor: '#7B5FBF' }}
-          />
-          <span
-            style={{
-              fontSize: '0.55rem',
-              color: 'rgba(225,215,255,0.6)',
-              fontFamily: 'monospace',
-              minWidth: 32,
-            }}
-          >
-            {Math.round(ambientDarkness * 100)}%
-          </span>
-          <IconButton
-            icon={lightingPreview ? '☀' : '☾'}
-            hotkey=""
-            label="Mostrar / ocultar preview de luces"
-            active={lightingPreview}
-            onClick={() => setLightingPreview((v) => !v)}
-          />
+          {/* Darkness toggle. When active, a floating popover hangs
+              below the button with the slider + percentage so the
+              toolbar stays compact when darkness isn't being tuned. */}
+          <div style={{ position: 'relative' }}>
+            <IconButton
+              icon={lightingPreview ? '☾' : '☀'}
+              hotkey=""
+              label="Activar oscuridad ambiente"
+              active={lightingPreview}
+              onClick={() => setLightingPreview((v) => !v)}
+            />
+            {lightingPreview && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  left: 0,
+                  background: '#131923',
+                  border: '2px solid var(--color-accent)',
+                  padding: '8px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  zIndex: 50,
+                  boxShadow: '4px 4px 0 rgba(0,0,0,0.55)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.55rem',
+                    letterSpacing: '0.1em',
+                    color: 'rgba(225,215,255,0.7)',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Oscuridad
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={ambientDarkness}
+                  onChange={(e) =>
+                    setAmbientDarkness(Number(e.target.value))
+                  }
+                  style={{ width: 130, accentColor: '#7B5FBF' }}
+                />
+                <span
+                  style={{
+                    fontSize: '0.55rem',
+                    color: 'rgba(225,215,255,0.7)',
+                    fontFamily: 'monospace',
+                    minWidth: 32,
+                  }}
+                >
+                  {Math.round(ambientDarkness * 100)}%
+                </span>
+              </div>
+            )}
+          </div>
 
           <Sep />
 
@@ -1751,18 +1761,16 @@ export default function MapEditor({
             onClick={save}
             disabled={saving}
             className="pixel-btn pixel-btn-primary"
-            title="Guardar (⌘S / Ctrl+S)"
-            style={{ padding: '6px 14px', fontSize: '0.62rem' }}
+            title={saving ? 'Guardando…' : 'Guardar (⌘S / Ctrl+S)'}
+            aria-label="Guardar"
+            style={{
+              padding: '6px 10px',
+              fontSize: '1rem',
+              lineHeight: 1,
+              opacity: saving ? 0.6 : 1,
+            }}
           >
-            {saving ? 'Guardando…' : 'Guardar (⌘S)'}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="pixel-btn pixel-btn-secondary"
-            style={{ padding: '6px 14px', fontSize: '0.62rem' }}
-          >
-            Salir del editor
+            💾
           </button>
           {savedAt && (
             <span
@@ -1908,6 +1916,28 @@ export default function MapEditor({
           </div>
         </div>
       </main>
+
+      {/* ── Right aside: Layers (always visible) ── */}
+      <aside
+        style={{
+          background: '#131923',
+          borderLeft: '2px solid var(--color-accent)',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+        }}
+      >
+        <LayersPanel
+          layers={layers}
+          activeLayerId={activeLayerId}
+          onActivate={setActiveLayerId}
+          onAdd={addLayer}
+          onDelete={deleteLayer}
+          onRename={renameLayer}
+          onToggleVisible={toggleLayerVisible}
+          onMove={moveLayer}
+        />
+      </aside>
 
       {editingLight && (
         <LightEditModal
