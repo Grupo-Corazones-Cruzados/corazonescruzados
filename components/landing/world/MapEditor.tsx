@@ -2584,15 +2584,15 @@ function PropEditModal({
                 <Field label="Cinemática a reproducir">
                   <select
                     value={draft.trigger.cinematicSlug}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const tc = draft.trigger as Extract<
+                        PropTrigger,
+                        { kind: 'cinematic' }
+                      >;
                       update({
-                        trigger: {
-                          ...draft.trigger!,
-                          kind: 'cinematic',
-                          cinematicSlug: e.target.value,
-                        },
-                      })
-                    }
+                        trigger: { ...tc, cinematicSlug: e.target.value },
+                      });
+                    }}
                     style={inputStyle}
                   >
                     <option value="">— elegir —</option>
@@ -2609,15 +2609,15 @@ function PropEditModal({
                   <Field label="Capa a modificar">
                     <select
                       value={draft.trigger.layerId}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const tc = draft.trigger as Extract<
+                          PropTrigger,
+                          { kind: 'tile-change' }
+                        >;
                         update({
-                          trigger: {
-                            ...draft.trigger!,
-                            kind: 'tile-change',
-                            layerId: e.target.value,
-                          },
-                        })
-                      }
+                          trigger: { ...tc, layerId: e.target.value },
+                        });
+                      }}
                       style={inputStyle}
                     >
                       {layers.map((l) => (
@@ -2638,18 +2638,21 @@ function PropEditModal({
                       <input
                         type="number"
                         value={draft.trigger.tileX}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const tc = draft.trigger as Extract<
+                            PropTrigger,
+                            { kind: 'tile-change' }
+                          >;
                           update({
                             trigger: {
-                              ...draft.trigger!,
-                              kind: 'tile-change',
+                              ...tc,
                               tileX: Math.max(
                                 0,
                                 Math.floor(Number(e.target.value) || 0),
                               ),
                             },
-                          })
-                        }
+                          });
+                        }}
                         style={inputStyle}
                       />
                     </Field>
@@ -2657,18 +2660,21 @@ function PropEditModal({
                       <input
                         type="number"
                         value={draft.trigger.tileY}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const tc = draft.trigger as Extract<
+                            PropTrigger,
+                            { kind: 'tile-change' }
+                          >;
                           update({
                             trigger: {
-                              ...draft.trigger!,
-                              kind: 'tile-change',
+                              ...tc,
                               tileY: Math.max(
                                 0,
                                 Math.floor(Number(e.target.value) || 0),
                               ),
                             },
-                          })
-                        }
+                          });
+                        }}
                         style={inputStyle}
                       />
                     </Field>
@@ -2692,15 +2698,15 @@ function PropEditModal({
                 <Field label="Capa a togglear">
                   <select
                     value={draft.trigger.layerId}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const tc = draft.trigger as Extract<
+                        PropTrigger,
+                        { kind: 'layer-toggle' }
+                      >;
                       update({
-                        trigger: {
-                          ...draft.trigger!,
-                          kind: 'layer-toggle',
-                          layerId: e.target.value,
-                        },
-                      })
-                    }
+                        trigger: { ...tc, layerId: e.target.value },
+                      });
+                    }}
                     style={inputStyle}
                   >
                     {layers.map((l) => (
