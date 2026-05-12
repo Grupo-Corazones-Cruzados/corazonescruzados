@@ -171,6 +171,7 @@ export default function MapEditor({
   onClose,
   onSaved,
   onSceneMetaChanged,
+  sidebarTab,
 }: {
   initialMap: WorldMapData;
   // The scene this editor is editing. Optional so the component can
@@ -187,6 +188,10 @@ export default function MapEditor({
   // Called after a save that updated scene-level metadata (music, etc.)
   // so a parent shell can refresh its scene list.
   onSceneMetaChanged?: () => void;
+  // Lateral tab state owned by SceneManagerEditor. When set to a value
+  // other than 'assets', the asset/layers palette is hidden so the
+  // canvas takes the full width.
+  sidebarTab?: 'scenes' | 'assets';
 }) {
   // Slug of the scene we're editing — drives the per-scene fetches
   // for npcs/lights and the scene query param on map PUT.
@@ -288,9 +293,9 @@ export default function MapEditor({
     initialMap.items ?? [],
   );
   const [itemBrush, setItemBrush] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tiles' | 'items' | 'props'>(
-    'tiles',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'tiles' | 'items' | 'props' | 'layers'
+  >('tiles');
   // Tracks the last cell affected by the current drag so that
   // collision-mode toggling doesn't flip the same cell back-and-forth
   // while the cursor sits on it.
@@ -1196,6 +1201,12 @@ export default function MapEditor({
   const visibleSheets = SHEETS.filter((s) => s.category === activeCategory);
   const filteredQuery = search.trim().toLowerCase();
 
+  // When SceneManagerEditor's lateral tab is anywhere other than
+  // 'assets', the aside collapses entirely and the canvas takes the
+  // full editor width. Default to showing the aside for callers that
+  // don't pass `sidebarTab` (standalone mounts of MapEditor).
+  const asideVisible = sidebarTab === undefined || sidebarTab === 'assets';
+
   return (
     <div
       style={{
@@ -1206,16 +1217,15 @@ export default function MapEditor({
         color: '#e5e5e5',
         fontFamily: "'Silkscreen', cursive",
         display: 'grid',
-        gridTemplateColumns: '300px 1fr 220px',
+        gridTemplateColumns: asideVisible ? '300px 1fr' : '1fr',
         animation: embedded ? undefined : 'pixelFadeIn 0.4s ease-out',
       }}
     >
-      {/* ── Side panel ── */}
       <aside
         style={{
           background: '#131923',
           borderRight: '2px solid var(--color-accent)',
-          display: 'flex',
+          display: asideVisible ? 'flex' : 'none',
           flexDirection: 'column',
           minHeight: 0,
         }}
@@ -1264,7 +1274,7 @@ export default function MapEditor({
             borderBottom: '1px solid rgba(75,45,142,0.3)',
           }}
         >
-          {(['tiles', 'items', 'props'] as const).map((t) => (
+          {(['tiles', 'items', 'props', 'layers'] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -1276,10 +1286,14 @@ export default function MapEditor({
                 } else if (t === 'items') {
                   setBrush(null);
                   setPropBrushItemId(null);
-                } else {
+                } else if (t === 'props') {
                   setBrush(null);
                   setItemBrush(null);
                   setMode('prop');
+                } else {
+                  setBrush(null);
+                  setItemBrush(null);
+                  setPropBrushItemId(null);
                 }
               }}
               style={{
@@ -1290,56 +1304,77 @@ export default function MapEditor({
                 color: activeTab === t ? '#0a0a14' : '#e5e5e5',
                 border: '2px solid var(--color-accent)',
                 fontFamily: "'Silkscreen', cursive",
-                fontSize: '0.6rem',
-                letterSpacing: '0.12em',
+                fontSize: '0.55rem',
+                letterSpacing: '0.1em',
                 cursor: 'pointer',
                 textTransform: 'uppercase',
               }}
             >
-              {t === 'tiles' ? 'Tiles' : t === 'items' ? 'Items' : 'Props'}
+              {t === 'tiles'
+                ? 'Tiles'
+                : t === 'items'
+                  ? 'Items'
+                  : t === 'props'
+                    ? 'Props'
+                    : 'Capas'}
             </button>
           ))}
         </div>
 
         {activeTab === 'tiles' && (
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 4,
-            padding: 10,
-            borderBottom: '2px solid rgba(75,45,142,0.4)',
-          }}
-        >
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setActiveCategory(c.id)}
+          <div
+            style={{
+              padding: 10,
+              borderBottom: '2px solid rgba(75,45,142,0.4)',
+            }}
+          >
+            <select
+              value={activeCategory}
+              onChange={(e) =>
+                setActiveCategory(
+                  e.target.value as (typeof CATEGORIES)[number]['id'],
+                )
+              }
               style={{
-                padding: '5px 8px',
-                background:
-                  activeCategory === c.id ? 'var(--color-accent)' : '#1a1a1a',
-                color: activeCategory === c.id ? '#0a0a14' : '#e5e5e5',
+                width: '100%',
+                padding: '6px 8px',
+                background: '#0f1320',
+                color: '#e5e5e5',
                 border: '2px solid var(--color-accent)',
                 fontFamily: "'Silkscreen', cursive",
-                fontSize: '0.55rem',
+                fontSize: '0.6rem',
                 letterSpacing: '0.08em',
+                outline: 'none',
                 cursor: 'pointer',
               }}
             >
-              {c.label}
-            </button>
-          ))}
-        </div>
+              {CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
 
+        {activeTab === 'layers' && (
+          <LayersPanel
+            layers={layers}
+            activeLayerId={activeLayerId}
+            onActivate={setActiveLayerId}
+            onAdd={addLayer}
+            onDelete={deleteLayer}
+            onRename={renameLayer}
+            onToggleVisible={toggleLayerVisible}
+            onMove={moveLayer}
+          />
+        )}
         <div
           style={{
             flex: 1,
             overflowY: 'auto',
             padding: 12,
-            display: 'flex',
+            display: activeTab === 'layers' ? 'none' : 'flex',
             flexDirection: 'column',
             gap: 16,
           }}
@@ -1661,23 +1696,6 @@ export default function MapEditor({
 
           <Sep />
 
-          {/* Active-layer indicator — full layer management lives in
-              the right-side panel; this is just a quick read of which
-              layer is currently catching paint. */}
-          <ToolbarLabel>Capa activa</ToolbarLabel>
-          <span
-            style={{
-              fontSize: '0.6rem',
-              letterSpacing: '0.1em',
-              color: '#ffcc00',
-              padding: '0 4px',
-            }}
-          >
-            {activeLayer?.name ?? '—'}
-          </span>
-
-          <Sep />
-
           {/* Ambient darkness + lighting preview toggle. The slider
               feeds the same `paintLightingFrame` used in gameplay so
               what the admin sees in the preview is what players see. */}
@@ -1760,72 +1778,6 @@ export default function MapEditor({
           )}
           {brush && mode === 'paint' && (
             <BrushPreview brush={brush} imgs={imgs} />
-          )}
-          {mode === 'erase' && (
-            <span
-              style={{
-                fontSize: '0.55rem',
-                color: '#ff8080',
-                letterSpacing: '0.1em',
-              }}
-            >
-              ✕ MODO BORRAR
-            </span>
-          )}
-          {mode === 'collision' && (
-            <span
-              style={{
-                fontSize: '0.55rem',
-                color: '#ff8080',
-                letterSpacing: '0.1em',
-              }}
-            >
-              ▥ MODO COLISIÓN · clic en tile pintado
-            </span>
-          )}
-          {mode === 'spawn' && (
-            <span
-              style={{
-                fontSize: '0.55rem',
-                color: '#3bd16f',
-                letterSpacing: '0.1em',
-              }}
-            >
-              ◎ MODO POSICIÓN INICIAL · ({spawnX},{spawnY})
-            </span>
-          )}
-          {mode === 'copy' && (
-            <span
-              style={{
-                fontSize: '0.55rem',
-                color: '#9bd1ff',
-                letterSpacing: '0.1em',
-              }}
-            >
-              ▭ MODO COPIAR · arrastra para capturar una región
-            </span>
-          )}
-          {mode === 'light' && (
-            <span
-              style={{
-                fontSize: '0.55rem',
-                color: '#ffd27a',
-                letterSpacing: '0.1em',
-              }}
-            >
-              ☼ MODO LUCES · clic en vacío crea, clic en luz edita
-            </span>
-          )}
-          {mode === 'transition' && (
-            <span
-              style={{
-                fontSize: '0.55rem',
-                color: '#ff80f0',
-                letterSpacing: '0.1em',
-              }}
-            >
-              ↦ MODO TRANSICIONES · clic en vacío crea, clic en transición edita
-            </span>
           )}
         </div>
 
@@ -1956,135 +1908,6 @@ export default function MapEditor({
           </div>
         </div>
       </main>
-
-      {/* ── Right panel: layers + brush history ── */}
-      <aside
-        style={{
-          background: '#131923',
-          borderLeft: '2px solid var(--color-accent)',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
-        }}
-      >
-        <LayersPanel
-          layers={layers}
-          activeLayerId={activeLayerId}
-          onActivate={setActiveLayerId}
-          onAdd={addLayer}
-          onDelete={deleteLayer}
-          onRename={renameLayer}
-          onToggleVisible={toggleLayerVisible}
-          onMove={moveLayer}
-        />
-        <div
-          style={{
-            padding: '14px 14px 8px',
-            borderTop: '2px solid rgba(75,45,142,0.4)',
-            borderBottom: '2px solid rgba(75,45,142,0.4)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-          }}
-        >
-          <div
-            style={{
-              fontSize: '0.85rem',
-              letterSpacing: '0.2em',
-              color: 'var(--color-accent)',
-              textTransform: 'uppercase',
-            }}
-          >
-            Historial
-          </div>
-          <div
-            style={{
-              fontSize: '0.5rem',
-              letterSpacing: '0.12em',
-              color: 'rgba(225,215,255,0.5)',
-            }}
-          >
-            Brochas usadas (palette + copia)
-          </div>
-        </div>
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: 10,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-          }}
-        >
-          {brushHistory.length === 0 ? (
-            <div
-              style={{
-                fontSize: '0.55rem',
-                color: 'rgba(225,215,255,0.4)',
-                textAlign: 'center',
-                padding: '12px 4px',
-              }}
-            >
-              Aún no has usado ninguna brocha
-            </div>
-          ) : (
-            brushHistory.map((b) => {
-              const active = brush?.key === b.key;
-              return (
-                <button
-                  key={b.key}
-                  type="button"
-                  onClick={() => activateBrush(b)}
-                  title={
-                    b.source === 'sheet' && b.sheetIdx != null
-                      ? `${SHEETS[b.sheetIdx].id} ${b.w}×${b.h}`
-                      : `Copia del mapa ${b.w}×${b.h}`
-                  }
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: 6,
-                    background: active ? 'var(--color-accent)' : '#1a1a1a',
-                    color: active ? '#0a0a14' : '#e5e5e5',
-                    border: '2px solid var(--color-accent)',
-                    cursor: 'pointer',
-                    fontFamily: "'Silkscreen', cursive",
-                    fontSize: '0.5rem',
-                    letterSpacing: '0.05em',
-                    textAlign: 'left',
-                  }}
-                >
-                  <BrushThumbnail
-                    brush={b}
-                    imgs={imgs}
-                    tileSize={Math.max(
-                      4,
-                      Math.min(10, Math.floor(60 / Math.max(b.w, b.h))),
-                    )}
-                  />
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                      minWidth: 0,
-                    }}
-                  >
-                    <span style={{ opacity: 0.85 }}>
-                      {b.source === 'sheet' ? 'palette' : 'mapa'}
-                    </span>
-                    <span style={{ fontSize: '0.55rem' }}>
-                      {b.w}×{b.h}
-                    </span>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
-      </aside>
 
       {editingLight && (
         <LightEditModal
@@ -3670,62 +3493,35 @@ function LayersPanel({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: '45vh',
+        flex: 1,
+        minHeight: 0,
       }}
     >
       <div
         style={{
-          padding: '14px 14px 8px',
+          padding: '10px 12px 6px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
+          alignItems: 'center',
+          justifyContent: 'flex-end',
         }}
       >
-        <div
+        <button
+          type="button"
+          onClick={onAdd}
+          title="Agregar capa nueva (vacía, encima de las demás)"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 6,
+            padding: '4px 10px',
+            background: 'var(--color-accent)',
+            color: '#0a0a14',
+            border: '2px solid var(--color-accent)',
+            fontFamily: "'Silkscreen', cursive",
+            fontSize: '0.55rem',
+            letterSpacing: '0.08em',
+            cursor: 'pointer',
           }}
         >
-          <div
-            style={{
-              fontSize: '0.85rem',
-              letterSpacing: '0.2em',
-              color: 'var(--color-accent)',
-              textTransform: 'uppercase',
-            }}
-          >
-            Capas
-          </div>
-          <button
-            type="button"
-            onClick={onAdd}
-            title="Agregar capa nueva (vacía, encima de las demás)"
-            style={{
-              padding: '4px 8px',
-              background: 'var(--color-accent)',
-              color: '#0a0a14',
-              border: '2px solid var(--color-accent)',
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.55rem',
-              letterSpacing: '0.08em',
-              cursor: 'pointer',
-            }}
-          >
-            + Nueva
-          </button>
-        </div>
-        <div
-          style={{
-            fontSize: '0.5rem',
-            letterSpacing: '0.12em',
-            color: 'rgba(225,215,255,0.5)',
-          }}
-        >
-          Estilo Photoshop · clic para activar
-        </div>
+          + Nueva capa
+        </button>
       </div>
       <div
         style={{

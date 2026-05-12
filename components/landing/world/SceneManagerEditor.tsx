@@ -34,6 +34,10 @@ export default function SceneManagerEditor({
   const [creating, setCreating] = useState<null | SceneKind>(null);
   const [renamingSlug, setRenamingSlug] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  // Lateral sidebar tab — toggles between the scenes list and the
+  // map-editor's asset/layers panel. Default 'scenes' so the user
+  // sees the scene list first when they open the editor.
+  const [sidebarTab, setSidebarTab] = useState<'scenes' | 'assets'>('scenes');
 
   const refreshList = async () => {
     const r = await fetch('/api/world/scenes');
@@ -165,14 +169,50 @@ export default function SceneManagerEditor({
         animation: 'pixelFadeIn 0.4s ease-out',
       }}
     >
-      {/* ── Sidebar: scene list ── */}
+      {/* ── Lateral tab strip — toggles which sidebar is visible ── */}
+      <nav
+        style={{
+          width: 52,
+          flex: '0 0 52px',
+          background: '#0a0d17',
+          borderRight: '2px solid var(--color-accent)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '12px 0',
+          gap: 8,
+        }}
+      >
+        <SidebarTabButton
+          active={sidebarTab === 'scenes'}
+          icon="🗂"
+          label="Escenas"
+          onClick={() => setSidebarTab('scenes')}
+        />
+        <SidebarTabButton
+          active={sidebarTab === 'assets'}
+          icon="🎨"
+          label="Assets / Capas del mapa"
+          onClick={() => setSidebarTab('assets')}
+        />
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+        <SidebarTabButton
+          active={false}
+          icon="←"
+          label="Cerrar editor"
+          onClick={onClose}
+        />
+      </nav>
+
+      {/* ── Sidebar: scene list (visible only when 'scenes' tab is active) ── */}
       <aside
         style={{
           width: 220,
           flex: '0 0 220px',
           background: '#0d111c',
           borderRight: '2px solid var(--color-accent)',
-          display: 'flex',
+          display: sidebarTab === 'scenes' ? 'flex' : 'none',
           flexDirection: 'column',
           minHeight: 0,
         }}
@@ -375,23 +415,6 @@ export default function SceneManagerEditor({
             );
           })}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            margin: 10,
-            padding: '8px 10px',
-            background: '#1a1a1a',
-            color: '#e5e5e5',
-            border: '2px solid var(--color-accent)',
-            fontFamily: "'Silkscreen', cursive",
-            fontSize: '0.6rem',
-            letterSpacing: '0.12em',
-            cursor: 'pointer',
-          }}
-        >
-          ← Cerrar editor
-        </button>
       </aside>
 
       {/* ── Workspace ── */}
@@ -416,6 +439,7 @@ export default function SceneManagerEditor({
             scene={activePayload.meta}
             scenes={sortedScenes}
             embedded
+            sidebarTab={sidebarTab}
             onClose={onClose}
             onSaved={() => {
               // Bump scene meta after save so the list reflects update.
@@ -454,6 +478,42 @@ function PlaceholderMessage({ text }: { text: string }) {
     >
       {text}
     </div>
+  );
+}
+
+function SidebarTabButton({
+  active,
+  icon,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  icon: string;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      style={{
+        width: 38,
+        height: 38,
+        display: 'grid',
+        placeItems: 'center',
+        background: active ? 'var(--color-accent)' : '#1a1a1a',
+        color: active ? '#0a0a14' : '#e5e5e5',
+        border: '2px solid var(--color-accent)',
+        fontFamily: "'Silkscreen', cursive",
+        fontSize: '1.1rem',
+        cursor: 'pointer',
+        padding: 0,
+      }}
+    >
+      {icon}
+    </button>
   );
 }
 
