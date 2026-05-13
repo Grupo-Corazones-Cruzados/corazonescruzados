@@ -208,8 +208,8 @@ export default function NpcEditor({
         position: 'fixed',
         inset: 0,
         zIndex: 200000,
-        background: '#1e2230',
-        color: '#ffffff',
+        background: '#faf9f8',
+        color: '#323130',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'grid',
         gridTemplateColumns: '260px 1fr',
@@ -219,8 +219,8 @@ export default function NpcEditor({
       {/* List */}
       <aside
         style={{
-          background: '#262b3a',
-          borderRight: '2px solid #4f87ff',
+          background: '#ffffff',
+          borderRight: '1px solid #d1d1d1',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
@@ -229,7 +229,7 @@ export default function NpcEditor({
         <div
           style={{
             padding: '14px 14px 10px',
-            borderBottom: '2px solid rgba(79,135,255,0.4)',
+            borderBottom: '1px solid #edebe9',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
@@ -239,7 +239,7 @@ export default function NpcEditor({
             style={{
               fontSize: '0.85rem',
               letterSpacing: '0.2em',
-              color: '#4f87ff',
+              color: '#0078d4',
               textTransform: 'uppercase',
             }}
           >
@@ -251,8 +251,8 @@ export default function NpcEditor({
             style={{
               padding: '6px 12px',
               fontSize: '0.75rem',
-              background: '#4f87ff',
-              color: '#ffffff',
+              background: '#0078d4',
+              color: '#323130',
               border: 'none',
               borderRadius: 4,
               fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
@@ -268,7 +268,7 @@ export default function NpcEditor({
             <div
               style={{
                 fontSize: '0.6rem',
-                color: 'rgba(255,255,255,0.45)',
+                color: 'rgba(50,49,48,0.45)',
                 padding: '12px 6px',
                 textAlign: 'center',
               }}
@@ -289,9 +289,9 @@ export default function NpcEditor({
                     textAlign: 'left',
                     padding: '8px 10px',
                     margin: '0 0 4px',
-                    background: active ? '#4f87ff' : '#323847',
-                    color: active ? '#1e2230' : '#ffffff',
-                    border: '2px solid #4f87ff',
+                    background: active ? '#0078d4' : '#ffffff',
+                    color: active ? '#faf9f8' : '#ffffff',
+                    border: '1px solid #d1d1d1',
                     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
                     fontSize: '0.62rem',
                     letterSpacing: '0.1em',
@@ -317,7 +317,7 @@ export default function NpcEditor({
         <div
           style={{
             padding: 10,
-            borderTop: '2px solid rgba(79,135,255,0.4)',
+            borderTop: '1px solid #edebe9',
           }}
         >
           <button
@@ -327,9 +327,9 @@ export default function NpcEditor({
               width: '100%',
               padding: '6px 10px',
               fontSize: '0.75rem',
-              background: '#323847',
-              color: '#ffffff',
-              border: '1px solid rgba(79,135,255,0.4)',
+              background: '#ffffff',
+              color: '#323130',
+              border: '1px solid rgba(0,120,212,0.4)',
               borderRadius: 4,
               fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
               cursor: 'pointer',
@@ -352,7 +352,7 @@ export default function NpcEditor({
           <div
             style={{
               fontSize: '0.7rem',
-              color: 'rgba(255,255,255,0.55)',
+              color: 'rgba(50,49,48,0.55)',
               letterSpacing: '0.1em',
             }}
           >
@@ -377,8 +377,8 @@ export default function NpcEditor({
             >
               <div
                 style={{
-                  background: '#2a2f3d',
-                  border: '2px solid #4f87ff',
+                  background: '#f3f2f1',
+                  border: '1px solid #d1d1d1',
                   padding: 16,
                   display: 'flex',
                   justifyContent: 'center',
@@ -518,7 +518,7 @@ export default function NpcEditor({
                 <div
                   style={{
                     fontSize: '0.6rem',
-                    color: '#ef4444',
+                    color: '#a4262c',
                     letterSpacing: '0.1em',
                   }}
                 >
@@ -535,8 +535,8 @@ export default function NpcEditor({
                     flex: 1,
                     padding: '8px 12px',
                     fontSize: '0.78rem',
-                    background: '#4f87ff',
-                    color: '#ffffff',
+                    background: '#0078d4',
+                    color: '#323130',
                     border: 'none',
                     borderRadius: 4,
                     fontFamily:
@@ -556,9 +556,9 @@ export default function NpcEditor({
                     style={{
                       padding: '8px 12px',
                       fontSize: '0.78rem',
-                      background: '#4a1d1d',
-                      color: '#ef4444',
-                      border: '1px solid #8b3b3b',
+                      background: '#fde7e9',
+                      color: '#a4262c',
+                      border: '1px solid #a4262c',
                       borderRadius: 4,
                       fontFamily:
                         'system-ui, -apple-system, "Segoe UI", sans-serif',
@@ -607,8 +607,8 @@ function AppearanceEditor({
         display: 'flex',
         flexDirection: 'column',
         gap: 14,
-        background: '#2a2f3d',
-        border: '2px solid #4f87ff',
+        background: '#f3f2f1',
+        border: '1px solid #d1d1d1',
         padding: 16,
         maxHeight: 'calc(100vh - 80px)',
         overflowY: 'auto',
@@ -823,7 +823,7 @@ function Field({
         style={{
           fontSize: '0.55rem',
           letterSpacing: '0.16em',
-          color: 'rgba(255,255,255,0.6)',
+          color: 'rgba(50,49,48,0.6)',
           textTransform: 'uppercase',
         }}
       >
@@ -847,7 +847,7 @@ function Group({
         style={{
           fontSize: '0.55rem',
           letterSpacing: '0.16em',
-          color: 'rgba(255,255,255,0.6)',
+          color: 'rgba(50,49,48,0.6)',
           textTransform: 'uppercase',
         }}
       >
@@ -866,9 +866,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: '0.75rem',
         letterSpacing: '0.22em',
-        color: '#4f87ff',
+        color: '#0078d4',
         textTransform: 'uppercase',
-        borderBottom: '1px solid rgba(79,135,255,0.4)',
+        borderBottom: '1px solid rgba(0,120,212,0.4)',
         paddingBottom: 6,
       }}
     >
@@ -879,9 +879,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 const inputStyle: React.CSSProperties = {
   padding: '8px 10px',
-  background: '#1e2230',
-  border: '2px solid #4f87ff',
-  color: '#ffffff',
+  background: '#faf9f8',
+  border: '1px solid #d1d1d1',
+  color: '#323130',
   fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
   fontSize: '0.7rem',
   outline: 'none',
@@ -890,9 +890,9 @@ const inputStyle: React.CSSProperties = {
 function pillStyle(active: boolean): React.CSSProperties {
   return {
     padding: '5px 9px',
-    background: active ? '#4f87ff' : '#323847',
-    color: active ? '#1e2230' : '#ffffff',
-    border: '2px solid #4f87ff',
+    background: active ? '#0078d4' : '#ffffff',
+    color: active ? '#faf9f8' : '#ffffff',
+    border: '1px solid #d1d1d1',
     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.55rem',
     letterSpacing: '0.08em',
@@ -946,9 +946,9 @@ function SwatchButton({
       style={{
         width: 28,
         height: 28,
-        background: color ?? '#1c1f28',
-        border: active ? '2px solid #ffcc00' : '2px solid rgba(79,135,255,0.5)',
-        boxShadow: active ? '0 0 6px #ffcc00' : 'none',
+        background: color ?? '#edebe9',
+        border: active ? '1px solid #d1d1d1' : '1px solid #d1d1d1',
+        boxShadow: active ? '0 0 6px #0078d4' : 'none',
         cursor: 'pointer',
         padding: 0,
       }}

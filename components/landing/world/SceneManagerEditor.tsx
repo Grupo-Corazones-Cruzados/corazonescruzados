@@ -162,8 +162,8 @@ export default function SceneManagerEditor({
         position: 'fixed',
         inset: 0,
         zIndex: 200000,
-        background: '#1e2230',
-        color: '#ffffff',
+        background: '#faf9f8',
+        color: '#323130',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'flex',
         animation: 'pixelFadeIn 0.4s ease-out',
@@ -174,8 +174,8 @@ export default function SceneManagerEditor({
         style={{
           width: 52,
           flex: '0 0 52px',
-          background: '#1c1f2a',
-          borderRight: '2px solid #4f87ff',
+          background: '#faf9f8',
+          borderRight: '1px solid #d1d1d1',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -210,8 +210,8 @@ export default function SceneManagerEditor({
         style={{
           width: 220,
           flex: '0 0 220px',
-          background: '#21263a',
-          borderRight: '2px solid #4f87ff',
+          background: '#faf9f8',
+          borderRight: '1px solid #d1d1d1',
           display: sidebarTab === 'scenes' ? 'flex' : 'none',
           flexDirection: 'column',
           minHeight: 0,
@@ -220,7 +220,7 @@ export default function SceneManagerEditor({
         <div
           style={{
             padding: '14px 12px 10px',
-            borderBottom: '2px solid rgba(79,135,255,0.4)',
+            borderBottom: '1px solid #edebe9',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
@@ -230,7 +230,7 @@ export default function SceneManagerEditor({
             style={{
               fontSize: '0.78rem',
               letterSpacing: '0.22em',
-              color: '#4f87ff',
+              color: '#0078d4',
               textTransform: 'uppercase',
             }}
           >
@@ -259,7 +259,7 @@ export default function SceneManagerEditor({
           {sortedScenes.length === 0 && (
             <div
               style={{
-                color: 'rgba(255,255,255,0.55)',
+                color: 'rgba(50,49,48,0.55)',
                 fontSize: '0.55rem',
                 padding: '12px 8px',
                 lineHeight: 1.5,
@@ -280,9 +280,9 @@ export default function SceneManagerEditor({
                   gap: 2,
                   padding: '6px 8px',
                   margin: '2px 4px',
-                  background: active ? 'rgba(79,135,255,0.35)' : 'transparent',
+                  background: active ? 'rgba(0,120,212,0.35)' : 'transparent',
                   border: active
-                    ? '1px solid #4f87ff'
+                    ? '1px solid #0078d4'
                     : '1px solid transparent',
                   cursor: 'pointer',
                 }}
@@ -321,9 +321,9 @@ export default function SceneManagerEditor({
                       }}
                       style={{
                         flex: 1,
-                        background: '#1e2230',
-                        color: '#ffffff',
-                        border: '1px solid #4f87ff',
+                        background: '#faf9f8',
+                        color: '#323130',
+                        border: '1px solid #0078d4',
                         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
                         fontSize: '0.6rem',
                         padding: '2px 4px',
@@ -349,13 +349,13 @@ export default function SceneManagerEditor({
                     display: 'flex',
                     gap: 3,
                     fontSize: '0.5rem',
-                    color: 'rgba(255,255,255,0.55)',
+                    color: 'rgba(50,49,48,0.55)',
                     paddingLeft: 20,
                   }}
                 >
                   <span>{s.slug}</span>
                   {s.eventTrigger && (
-                    <span style={{ color: '#ffcc00' }}>
+                    <span style={{ color: '#0078d4' }}>
                       ⚡{s.eventTrigger}
                     </span>
                   )}
@@ -470,7 +470,7 @@ function PlaceholderMessage({ text }: { text: string }) {
         inset: 0,
         display: 'grid',
         placeItems: 'center',
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(50,49,48,0.5)',
         fontSize: '0.8rem',
         letterSpacing: '0.15em',
         textTransform: 'uppercase',
@@ -503,9 +503,9 @@ function SidebarTabButton({
         height: 38,
         display: 'grid',
         placeItems: 'center',
-        background: active ? '#4f87ff' : '#323847',
-        color: active ? '#1e2230' : '#ffffff',
-        border: '2px solid #4f87ff',
+        background: active ? '#0078d4' : '#ffffff',
+        color: active ? '#faf9f8' : '#ffffff',
+        border: '1px solid #d1d1d1',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         fontSize: '1.1rem',
         cursor: 'pointer',
@@ -521,9 +521,9 @@ function btnStyle(): React.CSSProperties {
   return {
     flex: 1,
     padding: '6px 6px',
-    background: '#323847',
-    color: '#ffffff',
-    border: '2px solid #4f87ff',
+    background: '#ffffff',
+    color: '#323130',
+    border: '1px solid #d1d1d1',
     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.55rem',
     letterSpacing: '0.1em',
@@ -537,9 +537,9 @@ function smallBtn(disabled = false): React.CSSProperties {
     width: 22,
     height: 20,
     padding: 0,
-    background: '#323847',
-    color: disabled ? 'rgba(255,255,255,0.3)' : '#ffffff',
-    border: '1px solid rgba(79,135,255,0.6)',
+    background: '#ffffff',
+    color: disabled ? 'rgba(50,49,48,0.3)' : '#ffffff',
+    border: '1px solid rgba(0,120,212,0.6)',
     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.55rem',
     cursor: disabled ? 'not-allowed' : 'pointer',

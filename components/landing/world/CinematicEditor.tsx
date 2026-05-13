@@ -26,7 +26,7 @@ function newId(prefix: string) {
 function emptyFrame(): CinematicFrame {
   return {
     id: newId('fr'),
-    backdrop: { kind: 'color', color: '#1e2230' },
+    backdrop: { kind: 'color', color: '#faf9f8' },
     characters: [],
     transition: 'cut',
   };
@@ -157,8 +157,8 @@ export default function CinematicEditor({
       style={{
         position: 'absolute',
         inset: 0,
-        background: '#1e2230',
-        color: '#ffffff',
+        background: '#faf9f8',
+        color: '#323130',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'grid',
         gridTemplateRows: 'auto 1fr',
@@ -168,8 +168,8 @@ export default function CinematicEditor({
       <div
         style={{
           padding: '10px 16px',
-          background: '#262b3a',
-          borderBottom: '2px solid #4f87ff',
+          background: '#ffffff',
+          borderBottom: '1px solid #d1d1d1',
           display: 'flex',
           gap: 14,
           alignItems: 'center',
@@ -180,7 +180,7 @@ export default function CinematicEditor({
           style={{
             fontSize: '0.75rem',
             letterSpacing: '0.18em',
-            color: '#4f87ff',
+            color: '#0078d4',
             textTransform: 'uppercase',
           }}
         >
@@ -223,7 +223,7 @@ export default function CinematicEditor({
             step={0.05}
             value={musicVolume}
             onChange={(e) => setMusicVolume(Number(e.target.value))}
-            style={{ width: 110, accentColor: '#4f87ff' }}
+            style={{ width: 110, accentColor: '#0078d4' }}
           />
         </Field>
         <div style={{ flex: 1 }} />
@@ -248,8 +248,8 @@ export default function CinematicEditor({
             padding: '6px 12px',
             fontSize: '1rem',
             lineHeight: 1,
-            background: '#4f87ff',
-            color: '#ffffff',
+            background: '#0078d4',
+            color: '#323130',
             border: 'none',
             borderRadius: 4,
             fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
@@ -265,9 +265,9 @@ export default function CinematicEditor({
           style={{
             padding: '6px 12px',
             fontSize: '0.78rem',
-            background: '#323847',
-            color: '#ffffff',
-            border: '1px solid rgba(79,135,255,0.4)',
+            background: '#ffffff',
+            color: '#323130',
+            border: '1px solid rgba(0,120,212,0.4)',
             borderRadius: 4,
             fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
             cursor: 'pointer',
@@ -288,8 +288,8 @@ export default function CinematicEditor({
         {/* Frames list */}
         <aside
           style={{
-            background: '#21263a',
-            borderRight: '2px solid rgba(79,135,255,0.4)',
+            background: '#faf9f8',
+            borderRight: '1px solid #edebe9',
             display: 'flex',
             flexDirection: 'column',
             minHeight: 0,
@@ -298,7 +298,7 @@ export default function CinematicEditor({
           <div
             style={{
               padding: 10,
-              borderBottom: '1px solid rgba(79,135,255,0.4)',
+              borderBottom: '1px solid rgba(0,120,212,0.4)',
               display: 'flex',
               gap: 6,
             }}
@@ -322,9 +322,9 @@ export default function CinematicEditor({
                   style={{
                     padding: '6px 8px',
                     margin: '2px 4px',
-                    background: active ? 'rgba(79,135,255,0.35)' : 'transparent',
+                    background: active ? 'rgba(0,120,212,0.35)' : 'transparent',
                     border: active
-                      ? '1px solid #4f87ff'
+                      ? '1px solid #0078d4'
                       : '1px solid transparent',
                     cursor: 'pointer',
                     fontSize: '0.6rem',
@@ -334,7 +334,7 @@ export default function CinematicEditor({
                   }}
                 >
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <span style={{ color: '#ffcc00', minWidth: 20 }}>
+                    <span style={{ color: '#0078d4', minWidth: 20 }}>
                       #{i + 1}
                     </span>
                     <span
@@ -353,7 +353,7 @@ export default function CinematicEditor({
                       display: 'flex',
                       gap: 3,
                       fontSize: '0.5rem',
-                      color: 'rgba(255,255,255,0.55)',
+                      color: 'rgba(50,49,48,0.55)',
                     }}
                   >
                     <span>{f.backdrop.kind}</span>
@@ -409,7 +409,7 @@ export default function CinematicEditor({
           style={{
             display: 'grid',
             placeItems: 'center',
-            background: '#1a1d28',
+            background: '#edebe9',
             padding: 24,
             overflow: 'auto',
           }}
@@ -427,8 +427,8 @@ export default function CinematicEditor({
         {/* Inspector */}
         <aside
           style={{
-            background: '#262b3a',
-            borderLeft: '2px solid #4f87ff',
+            background: '#ffffff',
+            borderLeft: '1px solid #d1d1d1',
             padding: 14,
             overflowY: 'auto',
             display: 'flex',
@@ -469,7 +469,7 @@ function FramePreview({
           frame.backdrop.kind === 'color'
             ? frame.backdrop.color
             : '#000',
-        border: '2px solid rgba(79,135,255,0.6)',
+        border: '1px solid #d1d1d1',
         boxShadow: '6px 6px 0 rgba(0,0,0,0.5)',
         overflow: 'hidden',
         userSelect: 'none',
@@ -550,13 +550,13 @@ function FramePreview({
             bottom: 30 * PREVIEW_SCALE,
             padding: 14,
             background: 'rgba(10, 10, 20, 0.85)',
-            border: '2px solid #4f87ff',
-            color: '#ffffff',
+            border: '1px solid #d1d1d1',
+            color: '#323130',
             fontSize: 14 * PREVIEW_SCALE,
           }}
         >
           {frame.dialog.speaker && (
-            <div style={{ color: '#ffcc00', marginBottom: 6 }}>
+            <div style={{ color: '#0078d4', marginBottom: 6 }}>
               {frame.dialog.speaker}
             </div>
           )}
@@ -588,7 +588,7 @@ function FrameInspector({
           onChange={(e) => {
             const kind = e.target.value as 'color' | 'image';
             if (kind === 'color') {
-              onUpdate({ backdrop: { kind: 'color', color: '#1e2230' } });
+              onUpdate({ backdrop: { kind: 'color', color: '#faf9f8' } });
             } else {
               onUpdate({ backdrop: { kind: 'image', url: '' } });
             }
@@ -631,8 +631,8 @@ function FrameInspector({
               key={c.id}
               style={{
                 padding: 8,
-                background: '#1e2230',
-                border: '1px solid rgba(79,135,255,0.6)',
+                background: '#faf9f8',
+                border: '1px solid rgba(0,120,212,0.6)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 6,
@@ -679,7 +679,7 @@ function FrameInspector({
                     onChange={(e) =>
                       onUpdateCharacter(c.id, { scale: Number(e.target.value) })
                     }
-                    style={{ width: '100%', accentColor: '#4f87ff' }}
+                    style={{ width: '100%', accentColor: '#0078d4' }}
                   />
                 </Field>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.55rem' }}>
@@ -696,7 +696,7 @@ function FrameInspector({
               <button
                 type="button"
                 onClick={() => onRemoveCharacter(c.id)}
-                style={{ ...btn(), background: '#4a1d1d', color: '#ef4444', borderColor: '#8b3b3b' }}
+                style={{ ...btn(), background: '#fde7e9', color: '#a4262c', borderColor: '#a4262c' }}
               >
                 Borrar personaje
               </button>
@@ -786,7 +786,7 @@ function FrameInspector({
               onChange={(e) =>
                 onUpdate({ duration: Number(e.target.value) })
               }
-              style={{ width: '100%', accentColor: '#4f87ff' }}
+              style={{ width: '100%', accentColor: '#0078d4' }}
             />
           </Field>
         )}
@@ -820,9 +820,9 @@ function Section({
         style={{
           fontSize: '0.7rem',
           letterSpacing: '0.18em',
-          color: '#4f87ff',
+          color: '#0078d4',
           textTransform: 'uppercase',
-          borderBottom: '1px solid rgba(79,135,255,0.4)',
+          borderBottom: '1px solid rgba(0,120,212,0.4)',
           paddingBottom: 4,
         }}
       >
@@ -854,7 +854,7 @@ function Field({
       <span
         style={{
           fontSize: '0.5rem',
-          color: 'rgba(255,255,255,0.65)',
+          color: 'rgba(50,49,48,0.65)',
           letterSpacing: '0.1em',
           textTransform: 'uppercase',
           whiteSpace: 'nowrap',
@@ -870,9 +870,9 @@ function Field({
 function inputStyle(width: number | string = 'auto'): React.CSSProperties {
   return {
     width,
-    background: '#1e2230',
-    color: '#ffffff',
-    border: '2px solid rgba(79,135,255,0.6)',
+    background: '#faf9f8',
+    color: '#323130',
+    border: '1px solid #d1d1d1',
     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.6rem',
     padding: '4px 6px',
@@ -883,9 +883,9 @@ function inputStyle(width: number | string = 'auto'): React.CSSProperties {
 function btn(): React.CSSProperties {
   return {
     padding: '6px 10px',
-    background: '#323847',
-    color: '#ffffff',
-    border: '2px solid #4f87ff',
+    background: '#ffffff',
+    color: '#323130',
+    border: '1px solid #d1d1d1',
     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.6rem',
     letterSpacing: '0.1em',
@@ -899,9 +899,9 @@ function smallBtn(disabled = false): React.CSSProperties {
     width: 22,
     height: 20,
     padding: 0,
-    background: '#323847',
-    color: disabled ? 'rgba(255,255,255,0.3)' : '#ffffff',
-    border: '1px solid rgba(79,135,255,0.6)',
+    background: '#ffffff',
+    color: disabled ? 'rgba(50,49,48,0.3)' : '#ffffff',
+    border: '1px solid rgba(0,120,212,0.6)',
     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.55rem',
     cursor: disabled ? 'not-allowed' : 'pointer',
