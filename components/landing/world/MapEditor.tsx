@@ -320,6 +320,20 @@ export default function MapEditor({
   // Color brush — when set and the user paints, a solid-color tile
   // of this hex is stamped instead of a sheet sprite.
   const [colorBrushHex, setColorBrushHex] = useState<string | null>(null);
+  // Expanded section keys for the asset palette (sheet ids in the
+  // Tiles tab; item-category ids in Items/Props). Empty by default →
+  // every section starts collapsed so the panel stays scannable.
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const toggleSection = (key: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
   // Tracks the last cell affected by the current drag so that
   // collision-mode toggling doesn't flip the same cell back-and-forth
   // while the cursor sits on it.
@@ -1396,19 +1410,20 @@ export default function MapEditor({
                     it.id.toLowerCase().includes(filteredQuery)),
               );
               if (itemsInCat.length === 0) return null;
+              const key = `item:${cat.id}`;
+              // When the user is actively searching, force-expand
+              // matching sections so results stay visible.
+              const expanded =
+                !!filteredQuery || expandedSections.has(key);
               return (
                 <div key={cat.id}>
-                  <div
-                    style={{
-                      fontSize: '0.72rem',
-                      letterSpacing: '0.16em',
-                      color: 'rgba(50,49,48,0.65)',
-                      textTransform: 'uppercase',
-                      marginBottom: 6,
-                    }}
-                  >
-                    {cat.label}
-                  </div>
+                  <CollapseHeader
+                    label={cat.label}
+                    count={itemsInCat.length}
+                    expanded={expanded}
+                    onToggle={() => toggleSection(key)}
+                  />
+                  {expanded && (
                   <div
                     style={{
                       display: 'grid',
@@ -1453,6 +1468,7 @@ export default function MapEditor({
                       );
                     })}
                   </div>
+                  )}
                 </div>
               );
             })}
@@ -1480,19 +1496,18 @@ export default function MapEditor({
                       it.id.toLowerCase().includes(filteredQuery)),
                 );
                 if (itemsInCat.length === 0) return null;
+                const key = `prop:${cat.id}`;
+                const expanded =
+                  !!filteredQuery || expandedSections.has(key);
                 return (
                   <div key={cat.id}>
-                    <div
-                      style={{
-                        fontSize: '0.72rem',
-                        letterSpacing: '0.16em',
-                        color: 'rgba(50,49,48,0.65)',
-                        textTransform: 'uppercase',
-                        marginBottom: 6,
-                      }}
-                    >
-                      {cat.label}
-                    </div>
+                    <CollapseHeader
+                      label={cat.label}
+                      count={itemsInCat.length}
+                      expanded={expanded}
+                      onToggle={() => toggleSection(key)}
+                    />
+                    {expanded && (
                     <div
                       style={{
                         display: 'grid',
@@ -1539,6 +1554,7 @@ export default function MapEditor({
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 );
               })}
@@ -1582,34 +1598,38 @@ export default function MapEditor({
             )
             .map((sheet) => {
               const sheetIdx = SHEETS.indexOf(sheet);
+              const key = `sheet:${sheet.id}`;
+              const expanded =
+                !!filteredQuery || expandedSections.has(key);
               return (
                 <div key={sheet.id}>
-                  <div
-                    style={{
-                      fontSize: '0.72rem',
-                      letterSpacing: '0.16em',
-                      color: 'rgba(50,49,48,0.65)',
-                      textTransform: 'uppercase',
-                      marginBottom: 6,
-                    }}
-                  >
-                    {sheet.name} · {sheet.cols}×{sheet.rows}
-                  </div>
-                  <SheetPalette
-                    sheet={sheet}
-                    sheetIdx={sheetIdx}
-                    selected={
-                      brush?.source === 'sheet' &&
-                      brush.sheetIdx === sheetIdx &&
-                      brush.sx != null &&
-                      brush.sy != null
-                        ? { sx: brush.sx, sy: brush.sy, w: brush.w, h: brush.h }
-                        : null
-                    }
-                    onPick={(b) => {
-                      activateBrush(b);
-                    }}
+                  <CollapseHeader
+                    label={`${sheet.name} · ${sheet.cols}×${sheet.rows}`}
+                    expanded={expanded}
+                    onToggle={() => toggleSection(key)}
                   />
+                  {expanded && (
+                    <SheetPalette
+                      sheet={sheet}
+                      sheetIdx={sheetIdx}
+                      selected={
+                        brush?.source === 'sheet' &&
+                        brush.sheetIdx === sheetIdx &&
+                        brush.sx != null &&
+                        brush.sy != null
+                          ? {
+                              sx: brush.sx,
+                              sy: brush.sy,
+                              w: brush.w,
+                              h: brush.h,
+                            }
+                          : null
+                      }
+                      onPick={(b) => {
+                        activateBrush(b);
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -3460,6 +3480,87 @@ function ColorsPalette({
         </div>
       ))}
     </div>
+  );
+}
+
+// Section header shared by the Tiles / Items / Props tabs. Behaves
+// like a Word-style accordion: chevron + label + optional count
+// badge, full-width clickable area, subtle hover wash. Active search
+// queries force-expand sections from the outside (handled by callers).
+function CollapseHeader({
+  label,
+  count,
+  expanded,
+  onToggle,
+}: {
+  label: string;
+  count?: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '6px 8px',
+        marginBottom: 6,
+        background: hover ? '#f3f2f1' : 'transparent',
+        border: 'none',
+        borderRadius: 2,
+        cursor: 'pointer',
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+        textAlign: 'left',
+      }}
+    >
+      <span
+        style={{
+          width: 16,
+          display: 'inline-grid',
+          placeItems: 'center',
+          color: '#605e5c',
+          fontSize: '0.7rem',
+          transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+          transition: 'transform 120ms ease',
+        }}
+      >
+        ▶
+      </span>
+      <span
+        style={{
+          flex: 1,
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          color: '#323130',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >
+        {label}
+      </span>
+      {typeof count === 'number' && (
+        <span
+          style={{
+            fontSize: '0.72rem',
+            color: '#605e5c',
+            padding: '0 6px',
+            background: '#edebe9',
+            borderRadius: 10,
+            minWidth: 18,
+            textAlign: 'center',
+          }}
+        >
+          {count}
+        </span>
+      )}
+    </button>
   );
 }
 
