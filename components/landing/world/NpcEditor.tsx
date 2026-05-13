@@ -208,9 +208,9 @@ export default function NpcEditor({
         position: 'fixed',
         inset: 0,
         zIndex: 200000,
-        background: '#0a0a14',
-        color: '#e5e5e5',
-        fontFamily: "'Silkscreen', cursive",
+        background: '#1e2230',
+        color: '#ffffff',
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'grid',
         gridTemplateColumns: '260px 1fr',
         animation: 'pixelFadeIn 0.4s ease-out',
@@ -219,8 +219,8 @@ export default function NpcEditor({
       {/* List */}
       <aside
         style={{
-          background: '#131923',
-          borderRight: '2px solid var(--color-accent)',
+          background: '#262b3a',
+          borderRight: '2px solid #4f87ff',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
@@ -229,7 +229,7 @@ export default function NpcEditor({
         <div
           style={{
             padding: '14px 14px 10px',
-            borderBottom: '2px solid rgba(75,45,142,0.4)',
+            borderBottom: '2px solid rgba(79,135,255,0.4)',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
@@ -239,7 +239,7 @@ export default function NpcEditor({
             style={{
               fontSize: '0.85rem',
               letterSpacing: '0.2em',
-              color: 'var(--color-accent)',
+              color: '#4f87ff',
               textTransform: 'uppercase',
             }}
           >
@@ -248,8 +248,17 @@ export default function NpcEditor({
           <button
             type="button"
             onClick={() => setDraft(newDraft(playerTileX, playerTileY))}
-            className="pixel-btn pixel-btn-primary"
-            style={{ padding: '6px 10px', fontSize: '0.6rem' }}
+            style={{
+              padding: '6px 12px',
+              fontSize: '0.75rem',
+              background: '#4f87ff',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 4,
+              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
           >
             + Nuevo NPC
           </button>
@@ -259,7 +268,7 @@ export default function NpcEditor({
             <div
               style={{
                 fontSize: '0.6rem',
-                color: 'rgba(225,215,255,0.45)',
+                color: 'rgba(255,255,255,0.45)',
                 padding: '12px 6px',
                 textAlign: 'center',
               }}
@@ -280,10 +289,10 @@ export default function NpcEditor({
                     textAlign: 'left',
                     padding: '8px 10px',
                     margin: '0 0 4px',
-                    background: active ? 'var(--color-accent)' : '#1a1a1a',
-                    color: active ? '#0a0a14' : '#e5e5e5',
-                    border: '2px solid var(--color-accent)',
-                    fontFamily: "'Silkscreen', cursive",
+                    background: active ? '#4f87ff' : '#323847',
+                    color: active ? '#1e2230' : '#ffffff',
+                    border: '2px solid #4f87ff',
+                    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
                     fontSize: '0.62rem',
                     letterSpacing: '0.1em',
                     cursor: 'pointer',
@@ -308,14 +317,23 @@ export default function NpcEditor({
         <div
           style={{
             padding: 10,
-            borderTop: '2px solid rgba(75,45,142,0.4)',
+            borderTop: '2px solid rgba(79,135,255,0.4)',
           }}
         >
           <button
             type="button"
             onClick={onClose}
-            className="pixel-btn pixel-btn-secondary"
-            style={{ width: '100%', padding: '6px 10px', fontSize: '0.6rem' }}
+            style={{
+              width: '100%',
+              padding: '6px 10px',
+              fontSize: '0.75rem',
+              background: '#323847',
+              color: '#ffffff',
+              border: '1px solid rgba(79,135,255,0.4)',
+              borderRadius: 4,
+              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+              cursor: 'pointer',
+            }}
           >
             Cerrar
           </button>
@@ -334,7 +352,7 @@ export default function NpcEditor({
           <div
             style={{
               fontSize: '0.7rem',
-              color: 'rgba(225,215,255,0.55)',
+              color: 'rgba(255,255,255,0.55)',
               letterSpacing: '0.1em',
             }}
           >
@@ -359,8 +377,8 @@ export default function NpcEditor({
             >
               <div
                 style={{
-                  background: '#0f1320',
-                  border: '2px solid var(--color-accent)',
+                  background: '#2a2f3d',
+                  border: '2px solid #4f87ff',
                   padding: 16,
                   display: 'flex',
                   justifyContent: 'center',
@@ -500,7 +518,7 @@ export default function NpcEditor({
                 <div
                   style={{
                     fontSize: '0.6rem',
-                    color: '#ff8080',
+                    color: '#ef4444',
                     letterSpacing: '0.1em',
                   }}
                 >
@@ -513,8 +531,20 @@ export default function NpcEditor({
                   type="button"
                   onClick={save}
                   disabled={busy}
-                  className="pixel-btn pixel-btn-primary"
-                  style={{ flex: 1, padding: '8px 12px', fontSize: '0.62rem' }}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    fontSize: '0.78rem',
+                    background: '#4f87ff',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: 4,
+                    fontFamily:
+                      'system-ui, -apple-system, "Segoe UI", sans-serif',
+                    cursor: busy ? 'wait' : 'pointer',
+                    fontWeight: 600,
+                    opacity: busy ? 0.6 : 1,
+                  }}
                 >
                   {busy ? 'Guardando…' : draft.id ? 'Guardar' : 'Crear'}
                 </button>
@@ -523,12 +553,17 @@ export default function NpcEditor({
                     type="button"
                     onClick={remove}
                     disabled={busy}
-                    className="pixel-btn pixel-btn-secondary"
                     style={{
                       padding: '8px 12px',
-                      fontSize: '0.62rem',
-                      background: '#3a1a1a',
-                      color: '#ff8080',
+                      fontSize: '0.78rem',
+                      background: '#4a1d1d',
+                      color: '#ef4444',
+                      border: '1px solid #8b3b3b',
+                      borderRadius: 4,
+                      fontFamily:
+                        'system-ui, -apple-system, "Segoe UI", sans-serif',
+                      cursor: busy ? 'wait' : 'pointer',
+                      opacity: busy ? 0.6 : 1,
                     }}
                   >
                     Borrar
@@ -572,8 +607,8 @@ function AppearanceEditor({
         display: 'flex',
         flexDirection: 'column',
         gap: 14,
-        background: '#0f1320',
-        border: '2px solid var(--color-accent)',
+        background: '#2a2f3d',
+        border: '2px solid #4f87ff',
         padding: 16,
         maxHeight: 'calc(100vh - 80px)',
         overflowY: 'auto',
@@ -788,7 +823,7 @@ function Field({
         style={{
           fontSize: '0.55rem',
           letterSpacing: '0.16em',
-          color: 'rgba(225,215,255,0.6)',
+          color: 'rgba(255,255,255,0.6)',
           textTransform: 'uppercase',
         }}
       >
@@ -812,7 +847,7 @@ function Group({
         style={{
           fontSize: '0.55rem',
           letterSpacing: '0.16em',
-          color: 'rgba(225,215,255,0.6)',
+          color: 'rgba(255,255,255,0.6)',
           textTransform: 'uppercase',
         }}
       >
@@ -831,9 +866,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: '0.75rem',
         letterSpacing: '0.22em',
-        color: 'var(--color-accent)',
+        color: '#4f87ff',
         textTransform: 'uppercase',
-        borderBottom: '1px solid rgba(75,45,142,0.4)',
+        borderBottom: '1px solid rgba(79,135,255,0.4)',
         paddingBottom: 6,
       }}
     >
@@ -844,10 +879,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 const inputStyle: React.CSSProperties = {
   padding: '8px 10px',
-  background: '#0a0a14',
-  border: '2px solid var(--color-accent)',
-  color: '#e5e5e5',
-  fontFamily: "'Silkscreen', cursive",
+  background: '#1e2230',
+  border: '2px solid #4f87ff',
+  color: '#ffffff',
+  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
   fontSize: '0.7rem',
   outline: 'none',
 };
@@ -855,10 +890,10 @@ const inputStyle: React.CSSProperties = {
 function pillStyle(active: boolean): React.CSSProperties {
   return {
     padding: '5px 9px',
-    background: active ? 'var(--color-accent)' : '#1a1a1a',
-    color: active ? '#0a0a14' : '#e5e5e5',
-    border: '2px solid var(--color-accent)',
-    fontFamily: "'Silkscreen', cursive",
+    background: active ? '#4f87ff' : '#323847',
+    color: active ? '#1e2230' : '#ffffff',
+    border: '2px solid #4f87ff',
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.55rem',
     letterSpacing: '0.08em',
     cursor: 'pointer',
@@ -911,8 +946,8 @@ function SwatchButton({
       style={{
         width: 28,
         height: 28,
-        background: color ?? '#222',
-        border: active ? '2px solid #ffcc00' : '2px solid rgba(75,45,142,0.5)',
+        background: color ?? '#1c1f28',
+        border: active ? '2px solid #ffcc00' : '2px solid rgba(79,135,255,0.5)',
         boxShadow: active ? '0 0 6px #ffcc00' : 'none',
         cursor: 'pointer',
         padding: 0,

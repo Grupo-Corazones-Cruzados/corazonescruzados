@@ -540,7 +540,7 @@ export default function MapEditor({
 
     ctx.imageSmoothingEnabled = false;
     // background = grid
-    ctx.fillStyle = '#1a1f2e';
+    ctx.fillStyle = '#2a2f3d';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Render every visible layer in array order (bottom → top). Within
@@ -690,7 +690,7 @@ export default function MapEditor({
       ctx.fillStyle = '#3bd16f';
       ctx.arc(cx, cy, 6, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#0a0a14';
+      ctx.fillStyle = '#1e2230';
       ctx.font = 'bold 10px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -712,7 +712,7 @@ export default function MapEditor({
         ctx.arc(lcx, lcy, l.radius * TILE_PX, 0, Math.PI * 2);
         ctx.stroke();
       }
-      ctx.fillStyle = '#0a0a14';
+      ctx.fillStyle = '#1e2230';
       ctx.beginPath();
       ctx.arc(lcx, lcy, 7, 0, Math.PI * 2);
       ctx.fill();
@@ -750,7 +750,7 @@ export default function MapEditor({
         t.w * TILE_PX - 2,
         t.h * TILE_PX - 2,
       );
-      ctx.fillStyle = '#0a0a14';
+      ctx.fillStyle = '#1e2230';
       ctx.font = 'bold 10px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1213,9 +1213,9 @@ export default function MapEditor({
         position: embedded ? 'absolute' : 'fixed',
         inset: 0,
         zIndex: embedded ? undefined : 200000,
-        background: '#0a0a14',
-        color: '#e5e5e5',
-        fontFamily: "'Silkscreen', cursive",
+        background: '#1e2230',
+        color: '#ffffff',
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'grid',
         gridTemplateColumns: asideVisible ? '300px 1fr 220px' : '1fr 220px',
         animation: embedded ? undefined : 'pixelFadeIn 0.4s ease-out',
@@ -1223,8 +1223,8 @@ export default function MapEditor({
     >
       <aside
         style={{
-          background: '#131923',
-          borderRight: '2px solid var(--color-accent)',
+          background: '#262b3a',
+          borderRight: '2px solid #4f87ff',
           display: asideVisible ? 'flex' : 'none',
           flexDirection: 'column',
           minHeight: 0,
@@ -1233,7 +1233,7 @@ export default function MapEditor({
         <div
           style={{
             padding: '14px 14px 8px',
-            borderBottom: '2px solid rgba(75,45,142,0.4)',
+            borderBottom: '2px solid rgba(79,135,255,0.4)',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
@@ -1241,9 +1241,9 @@ export default function MapEditor({
         >
           <div
             style={{
-              fontSize: '0.9rem',
+              fontSize: '1.05rem',
               letterSpacing: '0.22em',
-              color: 'var(--color-accent)',
+              color: '#4f87ff',
               textTransform: 'uppercase',
             }}
           >
@@ -1256,11 +1256,11 @@ export default function MapEditor({
             onChange={(e) => setSearch(e.target.value)}
             style={{
               padding: '8px 10px',
-              background: '#0f1320',
-              border: '2px solid var(--color-accent)',
-              color: '#e5e5e5',
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.7rem',
+              background: '#2a2f3d',
+              border: '2px solid #4f87ff',
+              color: '#ffffff',
+              fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+              fontSize: '0.85rem',
               outline: 'none',
             }}
           />
@@ -1271,7 +1271,7 @@ export default function MapEditor({
             display: 'flex',
             gap: 4,
             padding: '8px 10px 4px',
-            borderBottom: '1px solid rgba(75,45,142,0.3)',
+            borderBottom: '1px solid rgba(79,135,255,0.3)',
           }}
         >
           {(['tiles', 'items', 'props'] as const).map((t) => (
@@ -1296,11 +1296,11 @@ export default function MapEditor({
                 flex: 1,
                 padding: '6px 8px',
                 background:
-                  activeTab === t ? 'var(--color-accent)' : '#1a1a1a',
-                color: activeTab === t ? '#0a0a14' : '#e5e5e5',
-                border: '2px solid var(--color-accent)',
-                fontFamily: "'Silkscreen', cursive",
-                fontSize: '0.6rem',
+                  activeTab === t ? '#4f87ff' : '#323847',
+                color: activeTab === t ? '#1e2230' : '#ffffff',
+                border: '2px solid #4f87ff',
+                fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                fontSize: '0.78rem',
                 letterSpacing: '0.12em',
                 cursor: 'pointer',
                 textTransform: 'uppercase',
@@ -1315,7 +1315,7 @@ export default function MapEditor({
           <div
             style={{
               padding: 10,
-              borderBottom: '2px solid rgba(75,45,142,0.4)',
+              borderBottom: '2px solid rgba(79,135,255,0.4)',
             }}
           >
             <select
@@ -1328,11 +1328,11 @@ export default function MapEditor({
               style={{
                 width: '100%',
                 padding: '6px 8px',
-                background: '#0f1320',
-                color: '#e5e5e5',
-                border: '2px solid var(--color-accent)',
-                fontFamily: "'Silkscreen', cursive",
-                fontSize: '0.6rem',
+                background: '#2a2f3d',
+                color: '#ffffff',
+                border: '2px solid #4f87ff',
+                fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                fontSize: '0.78rem',
                 letterSpacing: '0.08em',
                 outline: 'none',
                 cursor: 'pointer',
@@ -1371,9 +1371,9 @@ export default function MapEditor({
                 <div key={cat.id}>
                   <div
                     style={{
-                      fontSize: '0.55rem',
+                      fontSize: '0.72rem',
                       letterSpacing: '0.16em',
-                      color: 'rgba(225,215,255,0.65)',
+                      color: 'rgba(255,255,255,0.65)',
                       textTransform: 'uppercase',
                       marginBottom: 6,
                     }}
@@ -1401,10 +1401,10 @@ export default function MapEditor({
                           style={{
                             width: 48,
                             height: 48,
-                            background: '#0a0a14',
+                            background: '#1e2230',
                             border: active
                               ? '2px solid #ffcc00'
-                              : '2px solid rgba(75,45,142,0.5)',
+                              : '2px solid rgba(79,135,255,0.5)',
                             cursor: 'pointer',
                             padding: 4,
                             boxShadow: active
@@ -1433,9 +1433,9 @@ export default function MapEditor({
             <>
               <div
                 style={{
-                  fontSize: '0.55rem',
+                  fontSize: '0.72rem',
                   letterSpacing: '0.12em',
-                  color: 'rgba(225,215,255,0.7)',
+                  color: 'rgba(255,255,255,0.7)',
                   lineHeight: 1.5,
                   marginBottom: 4,
                 }}
@@ -1457,9 +1457,9 @@ export default function MapEditor({
                   <div key={cat.id}>
                     <div
                       style={{
-                        fontSize: '0.55rem',
+                        fontSize: '0.72rem',
                         letterSpacing: '0.16em',
-                        color: 'rgba(225,215,255,0.65)',
+                        color: 'rgba(255,255,255,0.65)',
                         textTransform: 'uppercase',
                         marginBottom: 6,
                       }}
@@ -1487,10 +1487,10 @@ export default function MapEditor({
                             style={{
                               width: 48,
                               height: 48,
-                              background: '#0a0a14',
+                              background: '#1e2230',
                               border: active
                                 ? '2px solid #ffcc00'
-                                : '2px solid rgba(75,45,142,0.5)',
+                                : '2px solid rgba(79,135,255,0.5)',
                               cursor: 'pointer',
                               padding: 4,
                               boxShadow: active
@@ -1532,9 +1532,9 @@ export default function MapEditor({
                 <div key={sheet.id}>
                   <div
                     style={{
-                      fontSize: '0.55rem',
+                      fontSize: '0.72rem',
                       letterSpacing: '0.16em',
-                      color: 'rgba(225,215,255,0.65)',
+                      color: 'rgba(255,255,255,0.65)',
                       textTransform: 'uppercase',
                       marginBottom: 6,
                     }}
@@ -1578,12 +1578,12 @@ export default function MapEditor({
         <div
           style={{
             padding: '10px 14px',
-            borderBottom: '2px solid rgba(75,45,142,0.4)',
+            borderBottom: '2px solid rgba(79,135,255,0.4)',
             display: 'flex',
             alignItems: 'center',
             gap: 10,
             flexWrap: 'wrap',
-            background: '#0f1320',
+            background: '#2a2f3d',
           }}
         >
           <ToolbarLabel>Tamaño</ToolbarLabel>
@@ -1594,7 +1594,7 @@ export default function MapEditor({
             onChange={setWidth}
             onCommit={pushHistory}
           />
-          <span style={{ color: 'rgba(225,215,255,0.5)' }}>×</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}>×</span>
           <NumberInput
             value={height}
             min={5}
@@ -1691,8 +1691,8 @@ export default function MapEditor({
                   position: 'absolute',
                   top: 'calc(100% + 6px)',
                   left: 0,
-                  background: '#131923',
-                  border: '2px solid var(--color-accent)',
+                  background: '#262b3a',
+                  border: '2px solid #4f87ff',
                   padding: '8px 10px',
                   display: 'flex',
                   alignItems: 'center',
@@ -1704,9 +1704,9 @@ export default function MapEditor({
               >
                 <span
                   style={{
-                    fontSize: '0.55rem',
+                    fontSize: '0.72rem',
                     letterSpacing: '0.1em',
-                    color: 'rgba(225,215,255,0.7)',
+                    color: 'rgba(255,255,255,0.7)',
                     textTransform: 'uppercase',
                   }}
                 >
@@ -1721,12 +1721,12 @@ export default function MapEditor({
                   onChange={(e) =>
                     setAmbientDarkness(Number(e.target.value))
                   }
-                  style={{ width: 130, accentColor: '#7B5FBF' }}
+                  style={{ width: 130, accentColor: '#4f87ff' }}
                 />
                 <span
                   style={{
-                    fontSize: '0.55rem',
-                    color: 'rgba(225,215,255,0.7)',
+                    fontSize: '0.72rem',
+                    color: 'rgba(255,255,255,0.7)',
                     fontFamily: 'monospace',
                     minWidth: 32,
                   }}
@@ -1760,13 +1760,18 @@ export default function MapEditor({
             type="button"
             onClick={save}
             disabled={saving}
-            className="pixel-btn pixel-btn-primary"
             title={saving ? 'Guardando…' : 'Guardar (⌘S / Ctrl+S)'}
             aria-label="Guardar"
             style={{
-              padding: '6px 10px',
+              padding: '6px 12px',
               fontSize: '1rem',
               lineHeight: 1,
+              background: '#4f87ff',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 4,
+              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+              cursor: saving ? 'wait' : 'pointer',
               opacity: saving ? 0.6 : 1,
             }}
           >
@@ -1775,7 +1780,7 @@ export default function MapEditor({
           {savedAt && (
             <span
               style={{
-                fontSize: '0.55rem',
+                fontSize: '0.72rem',
                 color: 'rgba(150,220,150,0.85)',
                 letterSpacing: '0.12em',
                 marginLeft: 'auto',
@@ -1795,7 +1800,7 @@ export default function MapEditor({
           style={{
             flex: 1,
             overflow: 'auto',
-            background: '#05060d',
+            background: '#1a1d28',
             padding: 24,
           }}
         >
@@ -1920,8 +1925,8 @@ export default function MapEditor({
       {/* ── Right aside: Layers (always visible) ── */}
       <aside
         style={{
-          background: '#131923',
-          borderLeft: '2px solid var(--color-accent)',
+          background: '#262b3a',
+          borderLeft: '2px solid #4f87ff',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
@@ -2045,18 +2050,18 @@ function TransitionEditModal({
         zIndex: 200500,
         display: 'grid',
         placeItems: 'center',
-        fontFamily: "'Silkscreen', cursive",
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
       }}
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#131923',
-          border: '2px solid var(--color-accent)',
+          background: '#262b3a',
+          border: '2px solid #4f87ff',
           padding: 18,
           width: 360,
-          color: '#e5e5e5',
+          color: '#ffffff',
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
@@ -2064,9 +2069,9 @@ function TransitionEditModal({
       >
         <div
           style={{
-            fontSize: '0.85rem',
+            fontSize: '1rem',
             letterSpacing: '0.18em',
-            color: 'var(--color-accent)',
+            color: '#4f87ff',
             textTransform: 'uppercase',
           }}
         >
@@ -2198,7 +2203,7 @@ function TransitionEditModal({
             step={50}
             value={draft.fadeMs ?? 250}
             onChange={(e) => update({ fadeMs: Number(e.target.value) })}
-            style={{ width: '100%', accentColor: '#7B5FBF' }}
+            style={{ width: '100%', accentColor: '#4f87ff' }}
           />
         </Field>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
@@ -2208,11 +2213,11 @@ function TransitionEditModal({
             style={{
               flex: 1,
               padding: '6px 10px',
-              background: '#3a1a1a',
-              color: '#ff8080',
-              border: '2px solid #6f2a2a',
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.6rem',
+              background: '#4a1d1d',
+              color: '#ef4444',
+              border: '2px solid #8b3b3b',
+              fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+              fontSize: '0.78rem',
               letterSpacing: '0.1em',
               cursor: 'pointer',
             }}
@@ -2225,11 +2230,11 @@ function TransitionEditModal({
             style={{
               flex: 1,
               padding: '6px 10px',
-              background: '#1a1a1a',
-              color: '#e5e5e5',
-              border: '2px solid var(--color-accent)',
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.6rem',
+              background: '#323847',
+              color: '#ffffff',
+              border: '2px solid #4f87ff',
+              fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+              fontSize: '0.78rem',
               letterSpacing: '0.1em',
               cursor: 'pointer',
             }}
@@ -2292,20 +2297,20 @@ function PropEditModal({
         zIndex: 200500,
         display: 'grid',
         placeItems: 'center',
-        fontFamily: "'Silkscreen', cursive",
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
       }}
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#131923',
-          border: '2px solid var(--color-accent)',
+          background: '#262b3a',
+          border: '2px solid #4f87ff',
           padding: 18,
           width: 420,
           maxHeight: '90vh',
           overflowY: 'auto',
-          color: '#e5e5e5',
+          color: '#ffffff',
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
@@ -2326,8 +2331,8 @@ function PropEditModal({
                 width: 40,
                 height: 40,
                 imageRendering: 'pixelated',
-                background: '#0a0a14',
-                border: '2px solid rgba(75,45,142,0.5)',
+                background: '#1e2230',
+                border: '2px solid rgba(79,135,255,0.5)',
                 padding: 3,
               }}
             />
@@ -2335,9 +2340,9 @@ function PropEditModal({
           <div>
             <div
               style={{
-                fontSize: '0.85rem',
+                fontSize: '1rem',
                 letterSpacing: '0.18em',
-                color: 'var(--color-accent)',
+                color: '#4f87ff',
                 textTransform: 'uppercase',
               }}
             >
@@ -2345,8 +2350,8 @@ function PropEditModal({
             </div>
             <div
               style={{
-                fontSize: '0.6rem',
-                color: 'rgba(225,215,255,0.6)',
+                fontSize: '0.78rem',
+                color: 'rgba(255,255,255,0.6)',
                 letterSpacing: '0.1em',
               }}
             >
@@ -2361,8 +2366,8 @@ function PropEditModal({
             alignItems: 'center',
             gap: 8,
             padding: '6px 8px',
-            background: '#0a0a14',
-            border: '2px solid rgba(75,45,142,0.4)',
+            background: '#1e2230',
+            border: '2px solid rgba(79,135,255,0.4)',
             cursor: 'pointer',
           }}
         >
@@ -2371,7 +2376,7 @@ function PropEditModal({
             checked={!!draft.solid}
             onChange={(e) => update({ solid: e.target.checked })}
           />
-          <span style={{ fontSize: '0.65rem', letterSpacing: '0.12em' }}>
+          <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em' }}>
             Sólido (bloquea al jugador)
           </span>
         </label>
@@ -2379,9 +2384,9 @@ function PropEditModal({
         {/* Light */}
         <div
           style={{
-            border: '2px solid rgba(75,45,142,0.4)',
+            border: '2px solid rgba(79,135,255,0.4)',
             padding: 10,
-            background: '#0a0a14',
+            background: '#1e2230',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
@@ -2402,7 +2407,7 @@ function PropEditModal({
                 update({ light: e.target.checked ? defaultLight() : null })
               }
             />
-            <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em' }}>
+            <span style={{ fontSize: '0.85rem', letterSpacing: '0.12em' }}>
               Emite luz
             </span>
           </label>
@@ -2426,7 +2431,7 @@ function PropEditModal({
                       light: { ...draft.light!, radius: Number(e.target.value) },
                     })
                   }
-                  style={{ width: '100%', accentColor: '#7B5FBF' }}
+                  style={{ width: '100%', accentColor: '#4f87ff' }}
                 />
               </Field>
               <Field label="Color">
@@ -2476,7 +2481,7 @@ function PropEditModal({
                       },
                     })
                   }
-                  style={{ width: '100%', accentColor: '#7B5FBF' }}
+                  style={{ width: '100%', accentColor: '#4f87ff' }}
                 />
               </Field>
               <Field label={`Periodo: ${draft.light.periodMs} ms`}>
@@ -2494,7 +2499,7 @@ function PropEditModal({
                       },
                     })
                   }
-                  style={{ width: '100%', accentColor: '#7B5FBF' }}
+                  style={{ width: '100%', accentColor: '#4f87ff' }}
                 />
               </Field>
             </div>
@@ -2504,9 +2509,9 @@ function PropEditModal({
         {/* Trigger */}
         <div
           style={{
-            border: '2px solid rgba(75,45,142,0.4)',
+            border: '2px solid rgba(79,135,255,0.4)',
             padding: 10,
-            background: '#0a0a14',
+            background: '#1e2230',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
@@ -2527,7 +2532,7 @@ function PropEditModal({
                 update({ trigger: e.target.checked ? defaultTrigger() : null })
               }
             />
-            <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em' }}>
+            <span style={{ fontSize: '0.85rem', letterSpacing: '0.12em' }}>
               Trigger (cambio en el mapa)
             </span>
           </label>
@@ -2711,8 +2716,8 @@ function PropEditModal({
                   </div>
                   <div
                     style={{
-                      fontSize: '0.55rem',
-                      color: 'rgba(225,215,255,0.55)',
+                      fontSize: '0.72rem',
+                      color: 'rgba(255,255,255,0.55)',
                       letterSpacing: '0.1em',
                       lineHeight: 1.5,
                     }}
@@ -2752,7 +2757,7 @@ function PropEditModal({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  fontSize: '0.6rem',
+                  fontSize: '0.78rem',
                   letterSpacing: '0.1em',
                 }}
               >
@@ -2781,11 +2786,11 @@ function PropEditModal({
             style={{
               flex: 1,
               padding: '6px 10px',
-              background: '#3a1a1a',
-              color: '#ff8080',
-              border: '2px solid #6f2a2a',
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.6rem',
+              background: '#4a1d1d',
+              color: '#ef4444',
+              border: '2px solid #8b3b3b',
+              fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+              fontSize: '0.78rem',
               letterSpacing: '0.1em',
               cursor: 'pointer',
             }}
@@ -2798,11 +2803,11 @@ function PropEditModal({
             style={{
               flex: 1,
               padding: '6px 10px',
-              background: '#1a1a1a',
-              color: '#e5e5e5',
-              border: '2px solid var(--color-accent)',
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.6rem',
+              background: '#323847',
+              color: '#ffffff',
+              border: '2px solid #4f87ff',
+              fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+              fontSize: '0.78rem',
               letterSpacing: '0.1em',
               cursor: 'pointer',
             }}
@@ -2827,7 +2832,7 @@ function Field({
       <span
         style={{
           fontSize: '0.5rem',
-          color: 'rgba(225,215,255,0.65)',
+          color: 'rgba(255,255,255,0.65)',
           letterSpacing: '0.1em',
           textTransform: 'uppercase',
         }}
@@ -2840,11 +2845,11 @@ function Field({
 }
 
 const inputStyle: React.CSSProperties = {
-  background: '#0a0a14',
-  color: '#e5e5e5',
-  border: '2px solid rgba(75,45,142,0.6)',
-  fontFamily: "'Silkscreen', cursive",
-  fontSize: '0.6rem',
+  background: '#1e2230',
+  color: '#ffffff',
+  border: '2px solid rgba(79,135,255,0.6)',
+  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+  fontSize: '0.78rem',
   padding: '4px 6px',
   outline: 'none',
 };
@@ -2894,11 +2899,11 @@ function LightEditModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 'min(420px, 92vw)',
-          background: '#0f1320',
-          border: '2px solid var(--color-accent)',
+          background: '#2a2f3d',
+          border: '2px solid #4f87ff',
           padding: 20,
-          fontFamily: "'Silkscreen', cursive",
-          color: '#e5e5e5',
+          fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+          color: '#ffffff',
           display: 'flex',
           flexDirection: 'column',
           gap: 14,
@@ -2907,9 +2912,9 @@ function LightEditModal({
       >
         <div
           style={{
-            fontSize: '0.85rem',
+            fontSize: '1rem',
             letterSpacing: '0.2em',
-            color: 'var(--color-accent)',
+            color: '#4f87ff',
             textTransform: 'uppercase',
           }}
         >
@@ -2925,16 +2930,16 @@ function LightEditModal({
               width: 60,
               height: 32,
               padding: 0,
-              border: '2px solid var(--color-accent)',
-              background: '#0a0a14',
+              border: '2px solid #4f87ff',
+              background: '#1e2230',
               cursor: 'pointer',
             }}
           />
           <span
             style={{
               fontFamily: 'monospace',
-              fontSize: '0.65rem',
-              color: 'rgba(225,215,255,0.7)',
+              fontSize: '0.8rem',
+              color: 'rgba(255,255,255,0.7)',
               marginLeft: 8,
             }}
           >
@@ -2950,7 +2955,7 @@ function LightEditModal({
             step={0.5}
             value={draft.radius}
             onChange={(e) => update({ radius: Number(e.target.value) })}
-            style={{ flex: 1, accentColor: '#7B5FBF' }}
+            style={{ flex: 1, accentColor: '#4f87ff' }}
           />
         </ModalField>
 
@@ -2962,7 +2967,7 @@ function LightEditModal({
             step={0.05}
             value={draft.intensity}
             onChange={(e) => update({ intensity: Number(e.target.value) })}
-            style={{ flex: 1, accentColor: '#7B5FBF' }}
+            style={{ flex: 1, accentColor: '#4f87ff' }}
           />
         </ModalField>
 
@@ -2972,11 +2977,11 @@ function LightEditModal({
             onChange={(e) => update({ mode: e.target.value as LightMode })}
             style={{
               padding: '6px 8px',
-              background: '#0a0a14',
-              border: '2px solid var(--color-accent)',
-              color: '#e5e5e5',
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.65rem',
+              background: '#1e2230',
+              border: '2px solid #4f87ff',
+              color: '#ffffff',
+              fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+              fontSize: '0.8rem',
             }}
           >
             {LIGHT_MODE_OPTIONS.map((o) => (
@@ -2996,7 +3001,7 @@ function LightEditModal({
               step={50}
               value={draft.periodMs}
               onChange={(e) => update({ periodMs: Number(e.target.value) })}
-              style={{ flex: 1, accentColor: '#7B5FBF' }}
+              style={{ flex: 1, accentColor: '#4f87ff' }}
             />
           </ModalField>
         )}
@@ -3024,20 +3029,33 @@ function LightEditModal({
           <button
             type="button"
             onClick={onClose}
-            className="pixel-btn pixel-btn-primary"
-            style={{ flex: 1, padding: '8px 12px', fontSize: '0.62rem' }}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              fontSize: '0.9rem',
+              background: '#4f87ff',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 4,
+              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
           >
             Listo
           </button>
           <button
             type="button"
             onClick={onDelete}
-            className="pixel-btn pixel-btn-secondary"
             style={{
               padding: '8px 12px',
-              fontSize: '0.62rem',
-              background: '#3a1a1a',
-              color: '#ff8080',
+              fontSize: '0.9rem',
+              background: '#4a1d1d',
+              color: '#ef4444',
+              border: '1px solid #8b3b3b',
+              borderRadius: 4,
+              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+              cursor: 'pointer',
             }}
           >
             Borrar
@@ -3059,9 +3077,9 @@ function ModalField({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <span
         style={{
-          fontSize: '0.55rem',
+          fontSize: '0.72rem',
           letterSpacing: '0.16em',
-          color: 'rgba(225,215,255,0.6)',
+          color: 'rgba(255,255,255,0.6)',
           textTransform: 'uppercase',
         }}
       >
@@ -3077,11 +3095,11 @@ function ModalField({
 const modalNumStyle: React.CSSProperties = {
   width: 70,
   padding: '6px 8px',
-  background: '#0a0a14',
-  border: '2px solid var(--color-accent)',
-  color: '#e5e5e5',
-  fontFamily: "'Silkscreen', cursive",
-  fontSize: '0.65rem',
+  background: '#1e2230',
+  border: '2px solid #4f87ff',
+  color: '#ffffff',
+  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+  fontSize: '0.8rem',
   outline: 'none',
 };
 
@@ -3131,8 +3149,8 @@ function SheetPalette({
         position: 'relative',
         width: sheet.cols * PALETTE_TILE,
         maxWidth: '100%',
-        background: '#0a0a14',
-        border: '1px solid rgba(75,45,142,0.4)',
+        background: '#1e2230',
+        border: '1px solid rgba(79,135,255,0.4)',
         backgroundImage: `url(${sheet.url})`,
         backgroundSize: `${sheet.cols * PALETTE_TILE}px ${sheet.rows * PALETTE_TILE}px`,
         imageRendering: 'pixelated',
@@ -3332,8 +3350,8 @@ function BrushPreview({
         display: 'flex',
         alignItems: 'center',
         gap: 8,
-        fontSize: '0.55rem',
-        color: 'rgba(225,215,255,0.7)',
+        fontSize: '0.72rem',
+        color: 'rgba(255,255,255,0.7)',
       }}
     >
       Brocha:
@@ -3391,8 +3409,8 @@ function BrushThumbnail({
         width: brush.w * tileSize,
         height: brush.h * tileSize,
         imageRendering: 'pixelated',
-        border: '2px solid var(--color-accent)',
-        background: '#0a0a14',
+        border: '2px solid #4f87ff',
+        background: '#1e2230',
         display: 'block',
       }}
     />
@@ -3427,15 +3445,15 @@ function IconButton({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: active ? 'var(--color-accent)' : '#1a1a1a',
+        background: active ? '#4f87ff' : '#323847',
         color: active
-          ? '#0a0a14'
+          ? '#1e2230'
           : disabled
-            ? 'rgba(225,215,255,0.3)'
-            : '#e5e5e5',
-        border: active ? '2px solid #ffcc00' : '2px solid var(--color-accent)',
+            ? 'rgba(255,255,255,0.3)'
+            : '#ffffff',
+        border: active ? '2px solid #ffcc00' : '2px solid #4f87ff',
         boxShadow: active ? '0 0 6px #ffcc00' : 'none',
-        fontFamily: "'Silkscreen', cursive",
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         fontSize: '1.05rem',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
@@ -3450,7 +3468,7 @@ function IconButton({
           right: 3,
           fontSize: '0.5rem',
           letterSpacing: '0.04em',
-          color: active ? '#0a0a14' : 'rgba(225,215,255,0.6)',
+          color: active ? '#1e2230' : 'rgba(255,255,255,0.6)',
         }}
       >
         {hotkey}
@@ -3489,11 +3507,11 @@ function NumberInput({
       style={{
         width: 70,
         padding: '4px 6px',
-        background: '#0f1320',
-        border: '2px solid var(--color-accent)',
-        color: '#e5e5e5',
-        fontFamily: "'Silkscreen', cursive",
-        fontSize: '0.65rem',
+        background: '#2a2f3d',
+        border: '2px solid #4f87ff',
+        color: '#ffffff',
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+        fontSize: '0.8rem',
         outline: 'none',
       }}
     />
@@ -3547,11 +3565,11 @@ function LayersPanel({
           title="Agregar capa nueva (vacía, encima de las demás)"
           style={{
             padding: '4px 10px',
-            background: 'var(--color-accent)',
-            color: '#0a0a14',
-            border: '2px solid var(--color-accent)',
-            fontFamily: "'Silkscreen', cursive",
-            fontSize: '0.55rem',
+            background: '#4f87ff',
+            color: '#1e2230',
+            border: '2px solid #4f87ff',
+            fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+            fontSize: '0.72rem',
             letterSpacing: '0.08em',
             cursor: 'pointer',
           }}
@@ -3580,9 +3598,9 @@ function LayersPanel({
                 alignItems: 'center',
                 gap: 4,
                 padding: 6,
-                background: isActive ? 'var(--color-accent)' : '#1a1a1a',
-                color: isActive ? '#0a0a14' : '#e5e5e5',
-                border: '2px solid var(--color-accent)',
+                background: isActive ? '#4f87ff' : '#323847',
+                color: isActive ? '#1e2230' : '#ffffff',
+                border: '2px solid #4f87ff',
               }}
             >
               <button
@@ -3592,11 +3610,11 @@ function LayersPanel({
                 style={{
                   width: 22,
                   height: 22,
-                  background: isVisible ? '#0a0a14' : '#3a1a1a',
-                  border: '1px solid rgba(75,45,142,0.6)',
-                  color: isVisible ? '#e5e5e5' : 'rgba(225,215,255,0.4)',
-                  fontFamily: "'Silkscreen', cursive",
-                  fontSize: '0.6rem',
+                  background: isVisible ? '#1e2230' : '#4a1d1d',
+                  border: '1px solid rgba(79,135,255,0.6)',
+                  color: isVisible ? '#ffffff' : 'rgba(255,255,255,0.4)',
+                  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                  fontSize: '0.78rem',
                   cursor: 'pointer',
                   padding: 0,
                   display: 'flex',
@@ -3616,8 +3634,8 @@ function LayersPanel({
                   border: 'none',
                   color: 'inherit',
                   textAlign: 'left',
-                  fontFamily: "'Silkscreen', cursive",
-                  fontSize: '0.6rem',
+                  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                  fontSize: '0.78rem',
                   letterSpacing: '0.06em',
                   cursor: 'pointer',
                   padding: '2px 4px',
@@ -3643,11 +3661,11 @@ function LayersPanel({
                     style={{
                       width: '100%',
                       padding: '2px 4px',
-                      background: '#0a0a14',
-                      border: '1px solid var(--color-accent)',
-                      color: '#e5e5e5',
-                      fontFamily: "'Silkscreen', cursive",
-                      fontSize: '0.6rem',
+                      background: '#1e2230',
+                      border: '1px solid #4f87ff',
+                      color: '#ffffff',
+                      fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                      fontSize: '0.78rem',
                       outline: 'none',
                     }}
                   />
@@ -3706,7 +3724,7 @@ function LayersPanel({
                   ...miniButtonStyle,
                   width: 22,
                   height: 22,
-                  color: layers.length > 1 ? '#ff8080' : 'rgba(255,128,128,0.3)',
+                  color: layers.length > 1 ? '#ef4444' : 'rgba(255,128,128,0.3)',
                   cursor: layers.length > 1 ? 'pointer' : 'not-allowed',
                 }}
               >
@@ -3724,9 +3742,9 @@ const miniButtonStyle: React.CSSProperties = {
   width: 22,
   height: 11,
   background: 'rgba(10,10,20,0.85)',
-  border: '1px solid rgba(75,45,142,0.6)',
-  color: '#e5e5e5',
-  fontFamily: "'Silkscreen', cursive",
+  border: '1px solid rgba(79,135,255,0.6)',
+  color: '#ffffff',
+  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
   fontSize: '0.45rem',
   cursor: 'pointer',
   padding: 0,
@@ -3750,12 +3768,12 @@ function LayerChip({
       onClick={onClick}
       style={{
         padding: '6px 9px',
-        background: active ? 'var(--color-accent)' : '#1a1a1a',
-        color: active ? '#0a0a14' : '#e5e5e5',
-        border: active ? '2px solid #ffcc00' : '2px solid var(--color-accent)',
+        background: active ? '#4f87ff' : '#323847',
+        color: active ? '#1e2230' : '#ffffff',
+        border: active ? '2px solid #ffcc00' : '2px solid #4f87ff',
         boxShadow: active ? '0 0 6px #ffcc00' : 'none',
-        fontFamily: "'Silkscreen', cursive",
-        fontSize: '0.55rem',
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+        fontSize: '0.72rem',
         letterSpacing: '0.1em',
         cursor: 'pointer',
         textTransform: 'uppercase',
@@ -3770,9 +3788,9 @@ function ToolbarLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{
-        fontSize: '0.55rem',
+        fontSize: '0.72rem',
         letterSpacing: '0.18em',
-        color: 'rgba(225,215,255,0.6)',
+        color: 'rgba(255,255,255,0.6)',
         textTransform: 'uppercase',
       }}
     >
@@ -3787,7 +3805,7 @@ function Sep() {
       style={{
         width: 1,
         height: 22,
-        background: 'rgba(75,45,142,0.5)',
+        background: 'rgba(79,135,255,0.5)',
         margin: '0 4px',
       }}
     />

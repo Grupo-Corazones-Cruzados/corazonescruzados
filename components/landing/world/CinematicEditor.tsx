@@ -26,7 +26,7 @@ function newId(prefix: string) {
 function emptyFrame(): CinematicFrame {
   return {
     id: newId('fr'),
-    backdrop: { kind: 'color', color: '#0a0a14' },
+    backdrop: { kind: 'color', color: '#1e2230' },
     characters: [],
     transition: 'cut',
   };
@@ -157,9 +157,9 @@ export default function CinematicEditor({
       style={{
         position: 'absolute',
         inset: 0,
-        background: '#0a0a14',
-        color: '#e5e5e5',
-        fontFamily: "'Silkscreen', cursive",
+        background: '#1e2230',
+        color: '#ffffff',
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'grid',
         gridTemplateRows: 'auto 1fr',
       }}
@@ -168,8 +168,8 @@ export default function CinematicEditor({
       <div
         style={{
           padding: '10px 16px',
-          background: '#131923',
-          borderBottom: '2px solid var(--color-accent)',
+          background: '#262b3a',
+          borderBottom: '2px solid #4f87ff',
           display: 'flex',
           gap: 14,
           alignItems: 'center',
@@ -180,7 +180,7 @@ export default function CinematicEditor({
           style={{
             fontSize: '0.75rem',
             letterSpacing: '0.18em',
-            color: 'var(--color-accent)',
+            color: '#4f87ff',
             textTransform: 'uppercase',
           }}
         >
@@ -223,7 +223,7 @@ export default function CinematicEditor({
             step={0.05}
             value={musicVolume}
             onChange={(e) => setMusicVolume(Number(e.target.value))}
-            style={{ width: 110, accentColor: '#7B5FBF' }}
+            style={{ width: 110, accentColor: '#4f87ff' }}
           />
         </Field>
         <div style={{ flex: 1 }} />
@@ -242,16 +242,36 @@ export default function CinematicEditor({
           type="button"
           onClick={save}
           disabled={saving}
-          className="pixel-btn pixel-btn-primary"
-          style={{ padding: '6px 14px', fontSize: '0.62rem' }}
+          title="Guardar"
+          aria-label="Guardar"
+          style={{
+            padding: '6px 12px',
+            fontSize: '1rem',
+            lineHeight: 1,
+            background: '#4f87ff',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 4,
+            fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+            cursor: saving ? 'wait' : 'pointer',
+            opacity: saving ? 0.6 : 1,
+          }}
         >
-          {saving ? 'Guardando…' : 'Guardar'}
+          💾
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="pixel-btn pixel-btn-secondary"
-          style={{ padding: '6px 14px', fontSize: '0.62rem' }}
+          style={{
+            padding: '6px 12px',
+            fontSize: '0.78rem',
+            background: '#323847',
+            color: '#ffffff',
+            border: '1px solid rgba(79,135,255,0.4)',
+            borderRadius: 4,
+            fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+            cursor: 'pointer',
+          }}
         >
           Salir
         </button>
@@ -268,8 +288,8 @@ export default function CinematicEditor({
         {/* Frames list */}
         <aside
           style={{
-            background: '#0d111c',
-            borderRight: '2px solid rgba(75,45,142,0.4)',
+            background: '#21263a',
+            borderRight: '2px solid rgba(79,135,255,0.4)',
             display: 'flex',
             flexDirection: 'column',
             minHeight: 0,
@@ -278,7 +298,7 @@ export default function CinematicEditor({
           <div
             style={{
               padding: 10,
-              borderBottom: '1px solid rgba(75,45,142,0.4)',
+              borderBottom: '1px solid rgba(79,135,255,0.4)',
               display: 'flex',
               gap: 6,
             }}
@@ -302,9 +322,9 @@ export default function CinematicEditor({
                   style={{
                     padding: '6px 8px',
                     margin: '2px 4px',
-                    background: active ? 'rgba(75,45,142,0.35)' : 'transparent',
+                    background: active ? 'rgba(79,135,255,0.35)' : 'transparent',
                     border: active
-                      ? '1px solid var(--color-accent)'
+                      ? '1px solid #4f87ff'
                       : '1px solid transparent',
                     cursor: 'pointer',
                     fontSize: '0.6rem',
@@ -333,7 +353,7 @@ export default function CinematicEditor({
                       display: 'flex',
                       gap: 3,
                       fontSize: '0.5rem',
-                      color: 'rgba(225,215,255,0.55)',
+                      color: 'rgba(255,255,255,0.55)',
                     }}
                   >
                     <span>{f.backdrop.kind}</span>
@@ -389,7 +409,7 @@ export default function CinematicEditor({
           style={{
             display: 'grid',
             placeItems: 'center',
-            background: '#05060d',
+            background: '#1a1d28',
             padding: 24,
             overflow: 'auto',
           }}
@@ -407,8 +427,8 @@ export default function CinematicEditor({
         {/* Inspector */}
         <aside
           style={{
-            background: '#131923',
-            borderLeft: '2px solid var(--color-accent)',
+            background: '#262b3a',
+            borderLeft: '2px solid #4f87ff',
             padding: 14,
             overflowY: 'auto',
             display: 'flex',
@@ -449,7 +469,7 @@ function FramePreview({
           frame.backdrop.kind === 'color'
             ? frame.backdrop.color
             : '#000',
-        border: '2px solid rgba(75,45,142,0.6)',
+        border: '2px solid rgba(79,135,255,0.6)',
         boxShadow: '6px 6px 0 rgba(0,0,0,0.5)',
         overflow: 'hidden',
         userSelect: 'none',
@@ -530,8 +550,8 @@ function FramePreview({
             bottom: 30 * PREVIEW_SCALE,
             padding: 14,
             background: 'rgba(10, 10, 20, 0.85)',
-            border: '2px solid var(--color-accent)',
-            color: '#e5e5e5',
+            border: '2px solid #4f87ff',
+            color: '#ffffff',
             fontSize: 14 * PREVIEW_SCALE,
           }}
         >
@@ -568,7 +588,7 @@ function FrameInspector({
           onChange={(e) => {
             const kind = e.target.value as 'color' | 'image';
             if (kind === 'color') {
-              onUpdate({ backdrop: { kind: 'color', color: '#0a0a14' } });
+              onUpdate({ backdrop: { kind: 'color', color: '#1e2230' } });
             } else {
               onUpdate({ backdrop: { kind: 'image', url: '' } });
             }
@@ -611,8 +631,8 @@ function FrameInspector({
               key={c.id}
               style={{
                 padding: 8,
-                background: '#0a0a14',
-                border: '1px solid rgba(75,45,142,0.6)',
+                background: '#1e2230',
+                border: '1px solid rgba(79,135,255,0.6)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 6,
@@ -659,7 +679,7 @@ function FrameInspector({
                     onChange={(e) =>
                       onUpdateCharacter(c.id, { scale: Number(e.target.value) })
                     }
-                    style={{ width: '100%', accentColor: '#7B5FBF' }}
+                    style={{ width: '100%', accentColor: '#4f87ff' }}
                   />
                 </Field>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.55rem' }}>
@@ -676,7 +696,7 @@ function FrameInspector({
               <button
                 type="button"
                 onClick={() => onRemoveCharacter(c.id)}
-                style={{ ...btn(), background: '#3a1a1a', color: '#ff8080', borderColor: '#6f2a2a' }}
+                style={{ ...btn(), background: '#4a1d1d', color: '#ef4444', borderColor: '#8b3b3b' }}
               >
                 Borrar personaje
               </button>
@@ -766,7 +786,7 @@ function FrameInspector({
               onChange={(e) =>
                 onUpdate({ duration: Number(e.target.value) })
               }
-              style={{ width: '100%', accentColor: '#7B5FBF' }}
+              style={{ width: '100%', accentColor: '#4f87ff' }}
             />
           </Field>
         )}
@@ -800,9 +820,9 @@ function Section({
         style={{
           fontSize: '0.7rem',
           letterSpacing: '0.18em',
-          color: 'var(--color-accent)',
+          color: '#4f87ff',
           textTransform: 'uppercase',
-          borderBottom: '1px solid rgba(75,45,142,0.4)',
+          borderBottom: '1px solid rgba(79,135,255,0.4)',
           paddingBottom: 4,
         }}
       >
@@ -834,7 +854,7 @@ function Field({
       <span
         style={{
           fontSize: '0.5rem',
-          color: 'rgba(225,215,255,0.65)',
+          color: 'rgba(255,255,255,0.65)',
           letterSpacing: '0.1em',
           textTransform: 'uppercase',
           whiteSpace: 'nowrap',
@@ -850,10 +870,10 @@ function Field({
 function inputStyle(width: number | string = 'auto'): React.CSSProperties {
   return {
     width,
-    background: '#0a0a14',
-    color: '#e5e5e5',
-    border: '2px solid rgba(75,45,142,0.6)',
-    fontFamily: "'Silkscreen', cursive",
+    background: '#1e2230',
+    color: '#ffffff',
+    border: '2px solid rgba(79,135,255,0.6)',
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.6rem',
     padding: '4px 6px',
     outline: 'none',
@@ -863,10 +883,10 @@ function inputStyle(width: number | string = 'auto'): React.CSSProperties {
 function btn(): React.CSSProperties {
   return {
     padding: '6px 10px',
-    background: '#1a1a1a',
-    color: '#e5e5e5',
-    border: '2px solid var(--color-accent)',
-    fontFamily: "'Silkscreen', cursive",
+    background: '#323847',
+    color: '#ffffff',
+    border: '2px solid #4f87ff',
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.6rem',
     letterSpacing: '0.1em',
     cursor: 'pointer',
@@ -879,10 +899,10 @@ function smallBtn(disabled = false): React.CSSProperties {
     width: 22,
     height: 20,
     padding: 0,
-    background: '#1a1a1a',
-    color: disabled ? 'rgba(225,215,255,0.3)' : '#e5e5e5',
-    border: '1px solid rgba(75,45,142,0.6)',
-    fontFamily: "'Silkscreen', cursive",
+    background: '#323847',
+    color: disabled ? 'rgba(255,255,255,0.3)' : '#ffffff',
+    border: '1px solid rgba(79,135,255,0.6)',
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.55rem',
     cursor: disabled ? 'not-allowed' : 'pointer',
   };

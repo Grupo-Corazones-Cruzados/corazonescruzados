@@ -162,9 +162,9 @@ export default function SceneManagerEditor({
         position: 'fixed',
         inset: 0,
         zIndex: 200000,
-        background: '#0a0a14',
-        color: '#e5e5e5',
-        fontFamily: "'Silkscreen', cursive",
+        background: '#1e2230',
+        color: '#ffffff',
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'flex',
         animation: 'pixelFadeIn 0.4s ease-out',
       }}
@@ -174,8 +174,8 @@ export default function SceneManagerEditor({
         style={{
           width: 52,
           flex: '0 0 52px',
-          background: '#0a0d17',
-          borderRight: '2px solid var(--color-accent)',
+          background: '#1c1f2a',
+          borderRight: '2px solid #4f87ff',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -210,8 +210,8 @@ export default function SceneManagerEditor({
         style={{
           width: 220,
           flex: '0 0 220px',
-          background: '#0d111c',
-          borderRight: '2px solid var(--color-accent)',
+          background: '#21263a',
+          borderRight: '2px solid #4f87ff',
           display: sidebarTab === 'scenes' ? 'flex' : 'none',
           flexDirection: 'column',
           minHeight: 0,
@@ -220,7 +220,7 @@ export default function SceneManagerEditor({
         <div
           style={{
             padding: '14px 12px 10px',
-            borderBottom: '2px solid rgba(75,45,142,0.4)',
+            borderBottom: '2px solid rgba(79,135,255,0.4)',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
@@ -230,7 +230,7 @@ export default function SceneManagerEditor({
             style={{
               fontSize: '0.78rem',
               letterSpacing: '0.22em',
-              color: 'var(--color-accent)',
+              color: '#4f87ff',
               textTransform: 'uppercase',
             }}
           >
@@ -259,7 +259,7 @@ export default function SceneManagerEditor({
           {sortedScenes.length === 0 && (
             <div
               style={{
-                color: 'rgba(225,215,255,0.55)',
+                color: 'rgba(255,255,255,0.55)',
                 fontSize: '0.55rem',
                 padding: '12px 8px',
                 lineHeight: 1.5,
@@ -280,9 +280,9 @@ export default function SceneManagerEditor({
                   gap: 2,
                   padding: '6px 8px',
                   margin: '2px 4px',
-                  background: active ? 'rgba(75,45,142,0.35)' : 'transparent',
+                  background: active ? 'rgba(79,135,255,0.35)' : 'transparent',
                   border: active
-                    ? '1px solid var(--color-accent)'
+                    ? '1px solid #4f87ff'
                     : '1px solid transparent',
                   cursor: 'pointer',
                 }}
@@ -321,10 +321,10 @@ export default function SceneManagerEditor({
                       }}
                       style={{
                         flex: 1,
-                        background: '#0a0a14',
-                        color: '#e5e5e5',
-                        border: '1px solid var(--color-accent)',
-                        fontFamily: "'Silkscreen', cursive",
+                        background: '#1e2230',
+                        color: '#ffffff',
+                        border: '1px solid #4f87ff',
+                        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
                         fontSize: '0.6rem',
                         padding: '2px 4px',
                         outline: 'none',
@@ -349,7 +349,7 @@ export default function SceneManagerEditor({
                     display: 'flex',
                     gap: 3,
                     fontSize: '0.5rem',
-                    color: 'rgba(225,215,255,0.55)',
+                    color: 'rgba(255,255,255,0.55)',
                     paddingLeft: 20,
                   }}
                 >
@@ -470,7 +470,7 @@ function PlaceholderMessage({ text }: { text: string }) {
         inset: 0,
         display: 'grid',
         placeItems: 'center',
-        color: 'rgba(225,215,255,0.5)',
+        color: 'rgba(255,255,255,0.5)',
         fontSize: '0.8rem',
         letterSpacing: '0.15em',
         textTransform: 'uppercase',
@@ -503,10 +503,10 @@ function SidebarTabButton({
         height: 38,
         display: 'grid',
         placeItems: 'center',
-        background: active ? 'var(--color-accent)' : '#1a1a1a',
-        color: active ? '#0a0a14' : '#e5e5e5',
-        border: '2px solid var(--color-accent)',
-        fontFamily: "'Silkscreen', cursive",
+        background: active ? '#4f87ff' : '#323847',
+        color: active ? '#1e2230' : '#ffffff',
+        border: '2px solid #4f87ff',
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         fontSize: '1.1rem',
         cursor: 'pointer',
         padding: 0,
@@ -521,10 +521,10 @@ function btnStyle(): React.CSSProperties {
   return {
     flex: 1,
     padding: '6px 6px',
-    background: '#1a1a1a',
-    color: '#e5e5e5',
-    border: '2px solid var(--color-accent)',
-    fontFamily: "'Silkscreen', cursive",
+    background: '#323847',
+    color: '#ffffff',
+    border: '2px solid #4f87ff',
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.55rem',
     letterSpacing: '0.1em',
     cursor: 'pointer',
@@ -537,10 +537,10 @@ function smallBtn(disabled = false): React.CSSProperties {
     width: 22,
     height: 20,
     padding: 0,
-    background: '#1a1a1a',
-    color: disabled ? 'rgba(225,215,255,0.3)' : '#e5e5e5',
-    border: '1px solid rgba(75,45,142,0.6)',
-    fontFamily: "'Silkscreen', cursive",
+    background: '#323847',
+    color: disabled ? 'rgba(255,255,255,0.3)' : '#ffffff',
+    border: '1px solid rgba(79,135,255,0.6)',
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.55rem',
     cursor: disabled ? 'not-allowed' : 'pointer',
   };
