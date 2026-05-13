@@ -319,7 +319,7 @@ export default function MapEditor({
   >('tiles');
   // Color brush — when set and the user paints, a solid-color tile
   // of this hex is stamped instead of a sheet sprite.
-  const [colorBrush, setColorBrushState] = useState<string | null>(null);
+  const [colorBrushHex, setColorBrushHex] = useState<string | null>(null);
   // Tracks the last cell affected by the current drag so that
   // collision-mode toggling doesn't flip the same cell back-and-forth
   // while the cursor sits on it.
@@ -1297,17 +1297,17 @@ export default function MapEditor({
                 if (t === 'tiles') {
                   setItemBrush(null);
                   setPropBrushItemId(null);
-                  setColorBrushState(null);
+                  setColorBrushHex(null);
                   setMode('paint');
                 } else if (t === 'items') {
                   setBrush(null);
                   setPropBrushItemId(null);
-                  setColorBrushState(null);
+                  setColorBrushHex(null);
                   setMode('paint');
                 } else if (t === 'props') {
                   setBrush(null);
                   setItemBrush(null);
-                  setColorBrushState(null);
+                  setColorBrushHex(null);
                   setMode('prop');
                 } else {
                   setItemBrush(null);
@@ -1546,9 +1546,9 @@ export default function MapEditor({
           )}
           {activeTab === 'colors' && (
             <ColorsPalette
-              activeColor={colorBrush}
+              activeColor={colorBrushHex}
               onPick={(c) => {
-                setColorBrushState(c);
+                setColorBrushHex(c);
                 setBrush(colorBrush(c));
                 setItemBrush(null);
                 setPropBrushItemId(null);

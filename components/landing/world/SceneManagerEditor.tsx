@@ -53,6 +53,28 @@ export default function SceneManagerEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ESC closes the editor — but stay out of the way if the user is
+  // typing in an input or textarea (rename fields, search boxes, hex
+  // pickers). They likely want ESC to blur / clear the field instead
+  // of nuking the whole editor.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT'
+      ) {
+        return;
+      }
+      e.preventDefault();
+      onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   // Load active scene payload whenever the active slug changes.
   useEffect(() => {
     if (!activeSlug) return;
