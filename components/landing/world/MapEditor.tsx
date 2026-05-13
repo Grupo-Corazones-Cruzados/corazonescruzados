@@ -392,11 +392,11 @@ export default function MapEditor({
   };
 
   // Keyboard shortcuts.
-  //   Q/W/E/R: switch mode (paint / collision / erase / spawn).
-  //   1: toggle showCollisions.
-  //   A / S: undo / redo.
-  //   ⌘S / Ctrl+S: save the map.
-  //   ⌘Z / Ctrl+Z (+ Shift / Y): undo / redo with the platform combo.
+  //   Q W E R T Y: paint / erase / copy / collision / view-collisions
+  //                / spawn (top-row QWERTY layout).
+  //   L: light. P: prop.
+  //   ⌘S / Ctrl+S: save.
+  //   ⌘Z / Ctrl+Z: undo. ⌘⇧Z / Ctrl+⇧Z: redo.
   // Inputs stay focusable — typing in the width/height boxes won't
   // trigger any of this. `save` is read through a ref because it's
   // declared later in the component.
@@ -426,49 +426,39 @@ export default function MapEditor({
         return;
       }
       switch (k) {
+        // QWERTY row mapped to the most-used tools.
         case 'q':
           e.preventDefault();
           setMode('paint');
           return;
         case 'w':
           e.preventDefault();
-          setMode('collision');
+          setMode('erase');
           return;
         case 'e':
           e.preventDefault();
-          setMode('erase');
+          setMode('copy');
           return;
         case 'r':
           e.preventDefault();
+          setMode('collision');
+          return;
+        case 't':
+          e.preventDefault();
+          setShowCollisions((v) => !v);
+          return;
+        case 'y':
+          e.preventDefault();
           setMode('spawn');
           return;
-        case 'c':
-          e.preventDefault();
-          setMode('copy');
-          return;
+        // Other modes (less frequent — Insertar tab):
         case 'l':
           e.preventDefault();
           setMode('light');
           return;
-        case 't':
-          e.preventDefault();
-          setMode('transition');
-          return;
         case 'p':
           e.preventDefault();
           setMode('prop');
-          return;
-        case '1':
-          e.preventDefault();
-          setShowCollisions((v) => !v);
-          return;
-        case 'a':
-          e.preventDefault();
-          undo();
-          return;
-        case 's':
-          e.preventDefault();
-          redo();
           return;
       }
     };
@@ -1700,14 +1690,14 @@ export default function MapEditor({
                 <RibbonButton
                   icon="✕"
                   label="Borrar"
-                  hotkey="E"
+                  hotkey="W"
                   active={mode === 'erase'}
                   onClick={() => setMode('erase')}
                 />
                 <RibbonButton
                   icon="▭"
                   label="Copiar"
-                  hotkey="C"
+                  hotkey="E"
                   active={mode === 'copy'}
                   onClick={() => setMode('copy')}
                 />
@@ -1716,14 +1706,14 @@ export default function MapEditor({
                 <RibbonButton
                   icon="▥"
                   label="Colisión"
-                  hotkey="W"
+                  hotkey="R"
                   active={mode === 'collision'}
                   onClick={() => setMode('collision')}
                 />
                 <RibbonButton
                   icon="◉"
                   label="Ver colisiones"
-                  hotkey="1"
+                  hotkey="T"
                   active={showCollisions}
                   onClick={() => setShowCollisions((v) => !v)}
                 />
@@ -1732,7 +1722,7 @@ export default function MapEditor({
                 <RibbonButton
                   icon="◎"
                   label="Posición inicial"
-                  hotkey="R"
+                  hotkey="Y"
                   active={mode === 'spawn'}
                   onClick={() => setMode('spawn')}
                 />
@@ -1761,7 +1751,7 @@ export default function MapEditor({
                 <RibbonButton
                   icon="↦"
                   label="Transición"
-                  hotkey="T"
+                  hotkey=""
                   active={mode === 'transition'}
                   onClick={() => setMode('transition')}
                 />
@@ -1818,7 +1808,7 @@ export default function MapEditor({
                 <RibbonButton
                   icon="◉"
                   label="Mostrar colisiones"
-                  hotkey="1"
+                  hotkey="T"
                   active={showCollisions}
                   onClick={() => setShowCollisions((v) => !v)}
                 />
