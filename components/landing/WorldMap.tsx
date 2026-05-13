@@ -8,6 +8,7 @@ import {
   type WorldMapData,
 } from './world/sheets';
 import { ITEMS, findItem, itemDataUrl } from './world/items';
+import { loadChromaKeyedSheet } from './world/sheetLoader';
 
 export const TILE = TILE_PX;
 export const WORLD_SCALE = 2; // 1 source px → 2 screen px (matches editor)
@@ -36,18 +37,9 @@ export default function WorldMap({
 
     let cancelled = false;
 
-    // Load tile sheets + item icons in parallel.
-    const sheetPromise = Promise.all(
-      SHEETS.map(
-        (s) =>
-          new Promise<HTMLImageElement>((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = s.url;
-          }),
-      ),
-    );
+    // Load tile sheets + item icons in parallel. Sheets pass through
+    // the chroma-key loader so near-white pixels become transparent.
+    const sheetPromise = Promise.all(SHEETS.map((s) => loadChromaKeyedSheet(s.url)));
     const itemImgs = new Map<string, HTMLImageElement>();
     const itemPromises = ITEMS.map(
       (it) =>
@@ -69,7 +61,19 @@ export default function WorldMap({
       // layer, two-pass on tileZ so overlay-category tiles still draw
       // above ground-category tiles painted on the same layer (e.g.
       // legacy maps that haven't been split yet).
-      const drawTile = (t: { s: number; sx: number; sy: number; x: number; y: number }) => {
+      const drawTile = (t: {
+        s: number;
+        sx: number;
+        sy: number;
+        x: number;
+        y: number;
+        color?: string;
+      }) => {
+        if (t.color) {
+          ctx.fillStyle = t.color;
+          ctx.fillRect(t.x * TILE, t.y * TILE, TILE, TILE);
+          return;
+        }
         const img = imgs[t.s];
         if (!img) return;
         ctx.drawImage(

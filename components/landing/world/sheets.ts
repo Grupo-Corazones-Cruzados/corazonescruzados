@@ -32,6 +32,30 @@ export const SHEETS: SheetDef[] = [
     rows: 9,
   },
   {
+    id: 'outdoor_32',
+    name: 'Exterior básico',
+    category: 'terreno',
+    url: '/tiles/outdoor_32.png',
+    cols: 9,
+    rows: 8,
+  },
+  {
+    id: 'light_forest',
+    name: 'Bosque claro',
+    category: 'terreno',
+    url: '/tiles/light_forest.png',
+    cols: 8,
+    rows: 19,
+  },
+  {
+    id: 'dark_forest',
+    name: 'Bosque oscuro',
+    category: 'terreno',
+    url: '/tiles/dark_forest.png',
+    cols: 8,
+    rows: 19,
+  },
+  {
     id: 'water',
     name: 'Agua animada',
     category: 'agua',
@@ -71,6 +95,14 @@ export const SHEETS: SheetDef[] = [
     cols: 32,
     rows: 32,
   },
+  {
+    id: 'dungeon_utumno',
+    name: 'Dungeon Crawl (RPG completo)',
+    category: 'decoracion',
+    url: '/tiles/DungeonCrawl_ProjectUtumno.png',
+    cols: 64,
+    rows: 48,
+  },
 ];
 
 export const CATEGORIES: {
@@ -87,10 +119,14 @@ export const CATEGORIES: {
 export type Tile = {
   x: number;
   y: number;
-  s: number; // sheet index
+  s: number; // sheet index (ignored when `color` is set)
   sx: number;
   sy: number;
   c?: 1; // collides
+  // Solid-color tile. When set, the renderer paints a filled rect of
+  // this color instead of looking up the sheet sprite, and `s/sx/sy`
+  // are ignored. Used by the Colores palette.
+  color?: string;
 };
 
 // Z-layer derived from the sheet's category. Ground (terreno, agua)

@@ -17,6 +17,7 @@ import {
   type WorldProp,
 } from './sheets';
 import { ITEMS, ITEM_CATEGORIES, findItem, itemDataUrl } from './items';
+import { loadChromaKeyedSheet } from './sheetLoader';
 import {
   LIGHT_MODE_OPTIONS,
   paintLightingFrame,
@@ -33,6 +34,7 @@ type BrushTile = {
   sx: number;
   sy: number;
   c?: 1;
+  color?: string; // solid color tile (overrides sheet)
 };
 
 type Brush = {
@@ -77,6 +79,19 @@ function sheetBrush(
     sheetIdx,
     sx,
     sy,
+  };
+}
+
+// Solid-color brush — stamps a single tile of `color` at the cursor.
+// Uses sentinel sheet/sx/sy of 0 because the renderer ignores those
+// fields when `color` is set on a tile.
+function colorBrush(color: string): Brush {
+  return {
+    w: 1,
+    h: 1,
+    source: 'sheet',
+    tiles: [{ dx: 0, dy: 0, s: 0, sx: 0, sy: 0, color }],
+    key: `color:${color}`,
   };
 }
 
@@ -299,9 +314,12 @@ export default function MapEditor({
     initialMap.items ?? [],
   );
   const [itemBrush, setItemBrush] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tiles' | 'items' | 'props'>(
-    'tiles',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'tiles' | 'items' | 'props' | 'colors'
+  >('tiles');
+  // Color brush — when set and the user paints, a solid-color tile
+  // of this hex is stamped instead of a sheet sprite.
+  const [colorBrush, setColorBrushState] = useState<string | null>(null);
   // Tracks the last cell affected by the current drag so that
   // collision-mode toggling doesn't flip the same cell back-and-forth
   // while the cursor sits on it.
@@ -499,18 +517,7 @@ export default function MapEditor({
   }, []);
   useEffect(() => {
     let cancelled = false;
-    Promise.all(
-      SHEETS.map(
-        (s) =>
-          new Promise<HTMLImageElement>((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = s.url;
-          }),
-      ),
-    ).then((loaded) => {
+    Promise.all(SHEETS.map((s) => loadChromaKeyedSheet(s.url))).then((loaded) => {
       if (!cancelled) setImgs(loaded);
     });
     return () => {
@@ -545,21 +552,31 @@ export default function MapEditor({
     // their stacking. Non-active layers dim slightly to keep focus on
     // the layer the user is actually painting.
     const drawTile = (t: Tile, alpha: number) => {
-      const sheet = SHEETS[t.s];
-      const img = imgs[t.s];
-      if (!sheet || !img) return;
       ctx.globalAlpha = alpha;
-      ctx.drawImage(
-        img,
-        t.sx * TILE_PX,
-        t.sy * TILE_PX,
-        TILE_PX,
-        TILE_PX,
-        t.x * TILE_PX,
-        t.y * TILE_PX,
-        TILE_PX,
-        TILE_PX,
-      );
+      if (t.color) {
+        // Solid-color tile painted from the Colores palette. Skip the
+        // sheet lookup entirely.
+        ctx.fillStyle = t.color;
+        ctx.fillRect(t.x * TILE_PX, t.y * TILE_PX, TILE_PX, TILE_PX);
+      } else {
+        const sheet = SHEETS[t.s];
+        const img = imgs[t.s];
+        if (!sheet || !img) {
+          ctx.globalAlpha = 1;
+          return;
+        }
+        ctx.drawImage(
+          img,
+          t.sx * TILE_PX,
+          t.sy * TILE_PX,
+          TILE_PX,
+          TILE_PX,
+          t.x * TILE_PX,
+          t.y * TILE_PX,
+          TILE_PX,
+          TILE_PX,
+        );
+      }
       if (t.c && showCollisions) {
         ctx.fillStyle = 'rgba(255, 60, 60, 0.32)';
         ctx.fillRect(
@@ -1124,6 +1141,7 @@ export default function MapEditor({
           sy: bt.sy,
         };
         if (bt.c) newTile.c = 1;
+        if (bt.color) newTile.color = bt.color;
         const idx = next.findIndex(
           (t) => t.x === tx && t.y === ty && tileZ(t.s) === z,
         );
@@ -1270,7 +1288,7 @@ export default function MapEditor({
             borderBottom: '1px solid rgba(0,120,212,0.3)',
           }}
         >
-          {(['tiles', 'items', 'props'] as const).map((t) => (
+          {(['tiles', 'items', 'props', 'colors'] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -1279,30 +1297,45 @@ export default function MapEditor({
                 if (t === 'tiles') {
                   setItemBrush(null);
                   setPropBrushItemId(null);
+                  setColorBrushState(null);
+                  setMode('paint');
                 } else if (t === 'items') {
                   setBrush(null);
                   setPropBrushItemId(null);
-                } else {
+                  setColorBrushState(null);
+                  setMode('paint');
+                } else if (t === 'props') {
                   setBrush(null);
                   setItemBrush(null);
+                  setColorBrushState(null);
                   setMode('prop');
+                } else {
+                  setItemBrush(null);
+                  setPropBrushItemId(null);
+                  setMode('paint');
                 }
               }}
               style={{
                 flex: 1,
                 padding: '6px 8px',
-                background:
-                  activeTab === t ? '#0078d4' : '#ffffff',
+                background: activeTab === t ? '#0078d4' : '#ffffff',
                 color: activeTab === t ? '#ffffff' : '#323130',
                 border: '1px solid #d1d1d1',
-                fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                fontSize: '0.78rem',
-                letterSpacing: '0.12em',
+                fontFamily:
+                  "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                fontSize: '0.72rem',
+                letterSpacing: '0.08em',
                 cursor: 'pointer',
                 textTransform: 'uppercase',
               }}
             >
-              {t === 'tiles' ? 'Tiles' : t === 'items' ? 'Items' : 'Props'}
+              {t === 'tiles'
+                ? 'Tiles'
+                : t === 'items'
+                  ? 'Items'
+                  : t === 'props'
+                    ? 'Props'
+                    : 'Colores'}
             </button>
           ))}
         </div>
@@ -1510,6 +1543,33 @@ export default function MapEditor({
                 );
               })}
             </>
+          )}
+          {activeTab === 'colors' && (
+            <ColorsPalette
+              activeColor={colorBrush}
+              onPick={(c) => {
+                setColorBrushState(c);
+                setBrush(colorBrush(c));
+                setItemBrush(null);
+                setPropBrushItemId(null);
+                setMode('paint');
+              }}
+            />
+          )}
+          {activeTab === 'tiles' && (
+            <div
+              style={{
+                fontSize: '0.72rem',
+                color: '#605e5c',
+                lineHeight: 1.5,
+                padding: '0 2px 4px',
+              }}
+            >
+              <strong style={{ color: '#323130' }}>Tip:</strong> arrastra
+              dentro de un sheet para seleccionar varios tiles a la vez
+              (ej: un árbol de 2×3). Suelta y clic en el mapa para
+              estamparlo completo.
+            </div>
           )}
           {activeTab === 'tiles' &&
             visibleSheets
@@ -3235,6 +3295,174 @@ const modalNumStyle: React.CSSProperties = {
   outline: 'none',
 };
 
+// Curated swatch palette grouped by use case. Hex values follow
+// Microsoft Fluent and common map-building conventions. The user can
+// also pick any custom hex via the <input type="color"> below.
+const COLOR_GROUPS: { label: string; colors: string[] }[] = [
+  {
+    label: 'Terreno',
+    colors: [
+      '#5fa84a', // grass
+      '#3e7733', // dark grass
+      '#a8c98f', // pale grass
+      '#8b5a2b', // dirt
+      '#5a3a1a', // dark dirt
+      '#e6d59c', // sand
+      '#c0a96f', // dark sand
+      '#4d3f2a', // mud
+    ],
+  },
+  {
+    label: 'Piedra',
+    colors: [
+      '#bdbdbd',
+      '#8a8a8a',
+      '#5e5e5e',
+      '#3a3a3a',
+      '#1c1c1c',
+      '#c2b5a3',
+    ],
+  },
+  {
+    label: 'Agua',
+    colors: ['#6ec6ff', '#1e88e5', '#0d47a1', '#00897b', '#26c6da'],
+  },
+  {
+    label: 'Madera',
+    colors: ['#a87c4d', '#6b4a26', '#3a2812', '#d2a679', '#f0d8b3'],
+  },
+  {
+    label: 'Acentos',
+    colors: [
+      '#e53935', // red
+      '#fb8c00', // orange
+      '#ffd54f', // yellow
+      '#9ccc65', // light green
+      '#6a1b9a', // purple
+      '#f06292', // pink
+    ],
+  },
+  {
+    label: 'Neutros',
+    colors: ['#ffffff', '#f4f4f4', '#d8d4c8', '#7a7a7a', '#000000'],
+  },
+];
+
+function ColorsPalette({
+  activeColor,
+  onPick,
+}: {
+  activeColor: string | null;
+  onPick: (color: string) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div
+        style={{
+          fontSize: '0.78rem',
+          color: '#605e5c',
+          lineHeight: 1.5,
+        }}
+      >
+        Elige un color y clic en el mapa para pintar un tile sólido.
+        Funciona con la herramienta Pintar y respeta la capa activa.
+      </div>
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          background: '#f3f2f1',
+          padding: '8px 12px',
+          border: '1px solid #d1d1d1',
+          borderRadius: 2,
+        }}
+      >
+        <span
+          style={{
+            fontSize: '0.78rem',
+            color: '#323130',
+            fontWeight: 500,
+          }}
+        >
+          Color personalizado
+        </span>
+        <input
+          type="color"
+          value={activeColor ?? '#5fa84a'}
+          onChange={(e) => onPick(e.target.value)}
+          style={{
+            width: 40,
+            height: 28,
+            border: '1px solid #d1d1d1',
+            padding: 0,
+            cursor: 'pointer',
+            background: 'transparent',
+          }}
+        />
+        <span
+          style={{
+            flex: 1,
+            fontFamily: 'monospace',
+            fontSize: '0.85rem',
+            color: '#323130',
+          }}
+        >
+          {activeColor ?? '#5fa84a'}
+        </span>
+      </label>
+      {COLOR_GROUPS.map((g) => (
+        <div key={g.label}>
+          <div
+            style={{
+              fontSize: '0.72rem',
+              letterSpacing: '0.04em',
+              color: '#605e5c',
+              fontWeight: 600,
+              marginBottom: 6,
+            }}
+          >
+            {g.label}
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, 40px)',
+              gap: 6,
+            }}
+          >
+            {g.colors.map((c) => {
+              const active =
+                !!activeColor &&
+                activeColor.toLowerCase() === c.toLowerCase();
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  title={c}
+                  aria-label={c}
+                  onClick={() => onPick(c)}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    background: c,
+                    border: active
+                      ? '2px solid #0078d4'
+                      : '1px solid #d1d1d1',
+                    cursor: 'pointer',
+                    padding: 0,
+                    borderRadius: 2,
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SheetPalette({
   sheet,
   sheetIdx,
@@ -3413,6 +3641,11 @@ function PreviewOverlay({
       const tx = hoverCell.x + bt.dx;
       const ty = hoverCell.y + bt.dy;
       if (tx < 0 || ty < 0 || tx >= width || ty >= height) return;
+      if (bt.color) {
+        ctx.fillStyle = bt.color;
+        ctx.fillRect(tx * TILE_PX, ty * TILE_PX, TILE_PX, TILE_PX);
+        return;
+      }
       const img = imgs[bt.s];
       if (!img) return;
       ctx.drawImage(
