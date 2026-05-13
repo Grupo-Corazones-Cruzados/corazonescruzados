@@ -172,15 +172,15 @@ export default function SceneManagerEditor({
       {/* ── Lateral tab strip — toggles which sidebar is visible ── */}
       <nav
         style={{
-          width: 52,
-          flex: '0 0 52px',
+          width: 44,
+          flex: '0 0 44px',
           background: '#faf9f8',
-          borderRight: '1px solid #d1d1d1',
+          borderRight: '1px solid #edebe9',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          padding: '12px 0',
-          gap: 8,
+          alignItems: 'stretch',
+          padding: '8px 0',
+          gap: 2,
         }}
       >
         <SidebarTabButton
@@ -271,144 +271,165 @@ export default function SceneManagerEditor({
           {sortedScenes.map((s, i) => {
             const active = s.slug === activeSlug;
             const isRenaming = renamingSlug === s.slug;
+            const kindIcon = s.kind === 'map' ? '🗺' : '🎬';
             return (
               <div
                 key={s.slug}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
-                  padding: '6px 8px',
-                  margin: '2px 4px',
-                  background: active ? 'rgba(0,120,212,0.35)' : 'transparent',
-                  border: active
-                    ? '1px solid #0078d4'
-                    : '1px solid transparent',
-                  cursor: 'pointer',
-                }}
                 onClick={() => {
                   if (!isRenaming) setActiveSlug(s.slug);
                 }}
+                style={{
+                  position: 'relative',
+                  padding: '8px 8px 8px 12px',
+                  margin: '1px 0',
+                  background: active ? '#deecf9' : 'transparent',
+                  borderLeft: active
+                    ? '3px solid #0078d4'
+                    : '3px solid transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
                   <span
                     style={{
-                      fontSize: '0.7rem',
-                      width: 14,
-                      textAlign: 'center',
+                      fontSize: '1rem',
+                      lineHeight: 1,
                     }}
-                    title={s.kind}
+                    title={s.kind === 'map' ? 'Mapa' : 'Cinemática'}
                   >
-                    {s.kind === 'map' ? '□' : '▶'}
+                    {kindIcon}
                   </span>
-                  {isRenaming ? (
-                    <input
-                      autoFocus
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      onBlur={() => {
-                        renameScene(s.slug, renameValue);
-                        setRenamingSlug(null);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 1,
+                    }}
+                  >
+                    {isRenaming ? (
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onBlur={() => {
                           renameScene(s.slug, renameValue);
                           setRenamingSlug(null);
-                        } else if (e.key === 'Escape') {
-                          setRenamingSlug(null);
-                        }
-                      }}
-                      style={{
-                        flex: 1,
-                        background: '#faf9f8',
-                        color: '#323130',
-                        border: '1px solid #0078d4',
-                        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                        fontSize: '0.6rem',
-                        padding: '2px 4px',
-                        outline: 'none',
-                      }}
-                    />
-                  ) : (
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            renameScene(s.slug, renameValue);
+                            setRenamingSlug(null);
+                          } else if (e.key === 'Escape') {
+                            setRenamingSlug(null);
+                          }
+                        }}
+                        style={{
+                          width: '100%',
+                          background: '#ffffff',
+                          color: '#323130',
+                          border: '1px solid #0078d4',
+                          fontFamily:
+                            "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                          fontSize: '0.85rem',
+                          padding: '4px 6px',
+                          outline: 'none',
+                          borderRadius: 2,
+                        }}
+                      />
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: '0.85rem',
+                          fontWeight: active ? 600 : 500,
+                          color: '#323130',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {s.name}
+                      </span>
+                    )}
                     <span
                       style={{
-                        flex: 1,
-                        fontSize: '0.65rem',
+                        fontSize: '0.72rem',
+                        color: '#605e5c',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                       }}
                     >
-                      {s.name}
+                      {s.slug}
+                      {s.eventTrigger && (
+                        <span
+                          style={{
+                            color: '#0078d4',
+                            marginLeft: 6,
+                            fontWeight: 600,
+                          }}
+                        >
+                          ⚡{s.eventTrigger}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 3,
-                    fontSize: '0.5rem',
-                    color: 'rgba(50,49,48,0.55)',
-                    paddingLeft: 20,
-                  }}
-                >
-                  <span>{s.slug}</span>
-                  {s.eventTrigger && (
-                    <span style={{ color: '#0078d4' }}>
-                      ⚡{s.eventTrigger}
-                    </span>
-                  )}
+                  </div>
                 </div>
                 {active && (
-                  <div style={{ display: 'flex', gap: 3, paddingLeft: 20, marginTop: 4 }}>
-                    <button
-                      type="button"
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 4,
+                      paddingLeft: 24,
+                    }}
+                  >
+                    <RowAction
+                      icon="✎"
+                      title="Renombrar"
                       onClick={(e) => {
                         e.stopPropagation();
                         setRenamingSlug(s.slug);
                         setRenameValue(s.name);
                       }}
-                      style={smallBtn()}
-                      title="Renombrar"
-                    >
-                      ✎
-                    </button>
-                    <button
-                      type="button"
+                    />
+                    <RowAction
+                      icon="↑"
+                      title="Subir"
+                      disabled={i === 0}
                       onClick={(e) => {
                         e.stopPropagation();
                         moveScene(s.slug, -1);
                       }}
-                      disabled={i === 0}
-                      style={smallBtn(i === 0)}
-                      title="Subir"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
+                    />
+                    <RowAction
+                      icon="↓"
+                      title="Bajar"
+                      disabled={i === sortedScenes.length - 1}
                       onClick={(e) => {
                         e.stopPropagation();
                         moveScene(s.slug, 1);
                       }}
-                      disabled={i === sortedScenes.length - 1}
-                      style={smallBtn(i === sortedScenes.length - 1)}
-                      title="Bajar"
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
+                    />
+                    <RowAction
+                      icon="🗑"
+                      title="Borrar"
+                      danger
                       onClick={(e) => {
                         e.stopPropagation();
                         removeScene(s.slug);
                       }}
-                      style={smallBtn()}
-                      title="Borrar"
-                    >
-                      ✕
-                    </button>
+                    />
                   </div>
                 )}
               </div>
@@ -492,24 +513,35 @@ function SidebarTabButton({
   label: string;
   onClick: () => void;
 }) {
+  const [hover, setHover] = useState(false);
   return (
     <button
       type="button"
       onClick={onClick}
       title={label}
       aria-label={label}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
-        width: 38,
-        height: 38,
+        width: '100%',
+        height: 40,
         display: 'grid',
         placeItems: 'center',
-        background: active ? '#0078d4' : '#ffffff',
-        color: active ? '#faf9f8' : '#ffffff',
-        border: '1px solid #d1d1d1',
+        background: active
+          ? '#deecf9'
+          : hover
+            ? '#f3f2f1'
+            : 'transparent',
+        color: active ? '#0078d4' : '#323130',
+        border: 'none',
+        borderLeft: active
+          ? '3px solid #0078d4'
+          : '3px solid transparent',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-        fontSize: '1.1rem',
+        fontSize: '1.2rem',
         cursor: 'pointer',
         padding: 0,
+        borderRadius: 0,
       }}
     >
       {icon}
@@ -520,28 +552,70 @@ function SidebarTabButton({
 function btnStyle(): React.CSSProperties {
   return {
     flex: 1,
-    padding: '6px 6px',
-    background: '#ffffff',
-    color: '#323130',
-    border: '1px solid #d1d1d1',
+    padding: '7px 10px',
+    background: '#0078d4',
+    color: '#ffffff',
+    border: '1px solid #0078d4',
+    borderRadius: 2,
     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-    fontSize: '0.55rem',
-    letterSpacing: '0.1em',
+    fontSize: '0.78rem',
+    fontWeight: 500,
+    letterSpacing: '0.02em',
     cursor: 'pointer',
-    textTransform: 'uppercase',
   };
 }
 
-function smallBtn(disabled = false): React.CSSProperties {
-  return {
-    width: 22,
-    height: 20,
-    padding: 0,
-    background: '#ffffff',
-    color: disabled ? 'rgba(50,49,48,0.3)' : '#ffffff',
-    border: '1px solid rgba(0,120,212,0.6)',
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-    fontSize: '0.55rem',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-  };
+// Compact icon button used inline next to list items (rename / move /
+// delete). Subtle ghost button — hover bg lifts it out without
+// dominating the row.
+function RowAction({
+  icon,
+  title,
+  onClick,
+  disabled = false,
+  danger = false,
+}: {
+  icon: string;
+  title: string;
+  onClick: (e: React.MouseEvent) => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={title}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: 26,
+        height: 24,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 0,
+        background: !disabled && hover
+          ? danger
+            ? '#fde7e9'
+            : '#f3f2f1'
+          : '#ffffff',
+        color: disabled
+          ? '#a19f9d'
+          : danger
+            ? '#a4262c'
+            : '#323130',
+        border: '1px solid #d1d1d1',
+        borderRadius: 2,
+        fontSize: '0.85rem',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+        lineHeight: 1,
+      }}
+    >
+      {icon}
+    </button>
+  );
 }

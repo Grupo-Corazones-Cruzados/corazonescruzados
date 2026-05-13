@@ -1303,7 +1303,7 @@ export default function MapEditor({
                 padding: '6px 8px',
                 background:
                   activeTab === t ? '#0078d4' : '#ffffff',
-                color: activeTab === t ? '#faf9f8' : '#ffffff',
+                color: activeTab === t ? '#ffffff' : '#323130',
                 border: '1px solid #d1d1d1',
                 fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
                 fontSize: '0.78rem',
@@ -1407,15 +1407,13 @@ export default function MapEditor({
                           style={{
                             width: 48,
                             height: 48,
-                            background: '#faf9f8',
+                            background: active ? '#deecf9' : '#faf9f8',
                             border: active
-                              ? '1px solid #d1d1d1'
+                              ? '2px solid #0078d4'
                               : '1px solid #d1d1d1',
                             cursor: 'pointer',
-                            padding: 4,
-                            boxShadow: active
-                              ? '0 0 8px #0078d4'
-                              : 'none',
+                            padding: active ? 3 : 4,
+                            boxShadow: 'none',
                           }}
                         >
                           <img
@@ -3591,12 +3589,12 @@ function IconButton({
         justifyContent: 'center',
         background: active ? '#0078d4' : '#ffffff',
         color: active
-          ? '#faf9f8'
+          ? '#ffffff'
           : disabled
             ? 'rgba(50,49,48,0.3)'
-            : '#ffffff',
-        border: active ? '1px solid #d1d1d1' : '1px solid #d1d1d1',
-        boxShadow: active ? '0 0 6px #0078d4' : 'none',
+            : '#323130',
+        border: active ? '1px solid #0078d4' : '1px solid #d1d1d1',
+        boxShadow: 'none',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         fontSize: '1.05rem',
         cursor: disabled ? 'not-allowed' : 'pointer',
@@ -3612,7 +3610,7 @@ function IconButton({
           right: 3,
           fontSize: '0.5rem',
           letterSpacing: '0.04em',
-          color: active ? '#faf9f8' : 'rgba(50,49,48,0.6)',
+          color: active ? '#ffffff' : 'rgba(50,49,48,0.6)',
         }}
       >
         {hotkey}
@@ -3697,183 +3695,190 @@ function LayersPanel({
     >
       <div
         style={{
-          padding: '10px 12px 6px',
+          padding: '8px 12px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid #edebe9',
         }}
       >
+        <span
+          style={{
+            fontSize: '0.78rem',
+            color: '#605e5c',
+            fontWeight: 600,
+            letterSpacing: '0.02em',
+          }}
+        >
+          {reversed.length} capa{reversed.length === 1 ? '' : 's'}
+        </span>
         <button
           type="button"
           onClick={onAdd}
           title="Agregar capa nueva (vacía, encima de las demás)"
           style={{
-            padding: '4px 10px',
+            padding: '5px 12px',
             background: '#0078d4',
-            color: '#faf9f8',
-            border: '1px solid #d1d1d1',
-            fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-            fontSize: '0.72rem',
-            letterSpacing: '0.08em',
+            color: '#ffffff',
+            border: '1px solid #0078d4',
+            borderRadius: 2,
+            fontFamily:
+              'system-ui, -apple-system, "Segoe UI", sans-serif',
+            fontSize: '0.78rem',
+            fontWeight: 500,
             cursor: 'pointer',
           }}
         >
-          + Nueva capa
+          + Nueva
         </button>
       </div>
       <div
         style={{
           overflowY: 'auto',
-          padding: '0 8px 12px',
+          padding: '4px 0 12px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 4,
         }}
       >
-        {reversed.map((l) => {
+        {reversed.map((l, idx) => {
           const isActive = l.id === activeLayerId;
           const isVisible = l.visible !== false;
           const tileCount = l.tiles.length;
+          // Layer index in the actual stack (bottom = 0).
+          const stackIdx = layers.length - 1 - idx;
+          const canMoveUp = stackIdx < layers.length - 1;
+          const canMoveDown = stackIdx > 0;
           return (
             <div
               key={l.id}
+              onClick={() => l.id && onActivate(l.id)}
               style={{
+                position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 4,
-                padding: 6,
-                background: isActive ? '#0078d4' : '#ffffff',
-                color: isActive ? '#faf9f8' : '#ffffff',
-                border: '1px solid #d1d1d1',
+                gap: 8,
+                padding: '8px 8px 8px 12px',
+                background: isActive ? '#deecf9' : 'transparent',
+                borderLeft: isActive
+                  ? '3px solid #0078d4'
+                  : '3px solid transparent',
+                cursor: 'pointer',
               }}
             >
-              <button
-                type="button"
-                title={isVisible ? 'Ocultar' : 'Mostrar'}
-                onClick={() => l.id && onToggleVisible(l.id)}
-                style={{
-                  width: 22,
-                  height: 22,
-                  background: isVisible ? '#faf9f8' : '#fde7e9',
-                  border: '1px solid rgba(0,120,212,0.6)',
-                  color: isVisible ? '#ffffff' : 'rgba(50,49,48,0.4)',
-                  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                  fontSize: '0.78rem',
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+              <RowAction
+                icon={isVisible ? '👁' : '⊘'}
+                title={isVisible ? 'Ocultar capa' : 'Mostrar capa'}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (l.id) onToggleVisible(l.id);
                 }}
-              >
-                {isVisible ? '◉' : '○'}
-              </button>
-              <button
-                type="button"
-                onClick={() => l.id && onActivate(l.id)}
-                onDoubleClick={() => l.id && setEditingId(l.id)}
+              />
+              <div
                 style={{
                   flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'inherit',
-                  textAlign: 'left',
-                  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.06em',
-                  cursor: 'pointer',
-                  padding: '2px 4px',
+                  minWidth: 0,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 1,
-                  minWidth: 0,
                 }}
+                onDoubleClick={() => l.id && setEditingId(l.id)}
               >
                 {editingId === l.id ? (
                   <input
                     type="text"
                     autoFocus
                     defaultValue={l.name ?? ''}
+                    onClick={(e) => e.stopPropagation()}
                     onBlur={(e) => {
                       if (l.id) onRename(l.id, e.target.value || 'Capa');
                       setEditingId(null);
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Enter')
+                        (e.target as HTMLInputElement).blur();
                       if (e.key === 'Escape') setEditingId(null);
                     }}
                     style={{
                       width: '100%',
-                      padding: '2px 4px',
-                      background: '#faf9f8',
+                      padding: '3px 6px',
+                      background: '#ffffff',
                       border: '1px solid #0078d4',
                       color: '#323130',
-                      fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                      fontSize: '0.78rem',
+                      fontFamily:
+                        'system-ui, -apple-system, "Segoe UI", sans-serif',
+                      fontSize: '0.85rem',
                       outline: 'none',
+                      borderRadius: 2,
                     }}
                   />
                 ) : (
                   <>
-                    <span>{l.name ?? '(sin nombre)'}</span>
                     <span
                       style={{
-                        fontSize: '0.45rem',
-                        opacity: 0.65,
+                        fontSize: '0.85rem',
+                        fontWeight: isActive ? 600 : 500,
+                        color: isVisible ? '#323130' : '#a19f9d',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                     >
-                      {tileCount} tiles
+                      {l.name ?? '(sin nombre)'}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        color: '#605e5c',
+                      }}
+                    >
+                      {tileCount} tile{tileCount === 1 ? '' : 's'}
                     </span>
                   </>
                 )}
-              </button>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 1,
-                }}
-              >
-                <button
-                  type="button"
-                  title="Subir capa"
-                  onClick={() => l.id && onMove(l.id, 1)}
-                  style={miniButtonStyle}
-                >
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  title="Bajar capa"
-                  onClick={() => l.id && onMove(l.id, -1)}
-                  style={miniButtonStyle}
-                >
-                  ▼
-                </button>
               </div>
-              <button
-                type="button"
-                title="Borrar capa"
-                onClick={() => {
-                  if (!l.id) return;
-                  if (
-                    layers.length > 1 &&
-                    window.confirm(`¿Borrar "${l.name ?? 'capa'}"?`)
-                  ) {
-                    onDelete(l.id);
-                  }
-                }}
-                disabled={layers.length <= 1}
-                style={{
-                  ...miniButtonStyle,
-                  width: 22,
-                  height: 22,
-                  color: layers.length > 1 ? '#a4262c' : 'rgba(255,128,128,0.3)',
-                  cursor: layers.length > 1 ? 'pointer' : 'not-allowed',
-                }}
-              >
-                ✕
-              </button>
+              <div style={{ display: 'flex', gap: 2 }}>
+                <RowAction
+                  icon="✎"
+                  title="Renombrar"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (l.id) setEditingId(l.id);
+                  }}
+                />
+                <RowAction
+                  icon="↑"
+                  title="Subir capa"
+                  disabled={!canMoveUp}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (l.id) onMove(l.id, 1);
+                  }}
+                />
+                <RowAction
+                  icon="↓"
+                  title="Bajar capa"
+                  disabled={!canMoveDown}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (l.id) onMove(l.id, -1);
+                  }}
+                />
+                <RowAction
+                  icon="🗑"
+                  title="Borrar capa"
+                  danger
+                  disabled={layers.length <= 1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!l.id || layers.length <= 1) return;
+                    if (
+                      window.confirm(`¿Borrar "${l.name ?? 'capa'}"?`)
+                    ) {
+                      onDelete(l.id);
+                    }
+                  }}
+                />
+              </div>
             </div>
           );
         })}
@@ -3882,20 +3887,60 @@ function LayersPanel({
   );
 }
 
-const miniButtonStyle: React.CSSProperties = {
-  width: 22,
-  height: 11,
-  background: 'rgba(10,10,20,0.85)',
-  border: '1px solid rgba(0,120,212,0.6)',
-  color: '#323130',
-  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-  fontSize: '0.45rem',
-  cursor: 'pointer',
-  padding: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
+// Compact icon action used inside layer rows (visibility / rename /
+// move / delete). Same shape as the SceneManagerEditor version so
+// the editor reads consistently.
+function RowAction({
+  icon,
+  title,
+  onClick,
+  disabled = false,
+  danger = false,
+}: {
+  icon: string;
+  title: string;
+  onClick: (e: React.MouseEvent) => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={title}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: 26,
+        height: 24,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 0,
+        background: !disabled && hover
+          ? danger
+            ? '#fde7e9'
+            : '#f3f2f1'
+          : '#ffffff',
+        color: disabled
+          ? '#a19f9d'
+          : danger
+            ? '#a4262c'
+            : '#323130',
+        border: '1px solid #d1d1d1',
+        borderRadius: 2,
+        fontSize: '0.85rem',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+        lineHeight: 1,
+      }}
+    >
+      {icon}
+    </button>
+  );
+}
 
 function LayerChip({
   label,
@@ -3913,9 +3958,9 @@ function LayerChip({
       style={{
         padding: '6px 9px',
         background: active ? '#0078d4' : '#ffffff',
-        color: active ? '#faf9f8' : '#ffffff',
-        border: active ? '1px solid #d1d1d1' : '1px solid #d1d1d1',
-        boxShadow: active ? '0 0 6px #0078d4' : 'none',
+        color: active ? '#ffffff' : '#323130',
+        border: active ? '1px solid #0078d4' : '1px solid #d1d1d1',
+        boxShadow: 'none',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         fontSize: '0.72rem',
         letterSpacing: '0.1em',

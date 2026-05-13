@@ -290,7 +290,7 @@ export default function NpcEditor({
                     padding: '8px 10px',
                     margin: '0 0 4px',
                     background: active ? '#0078d4' : '#ffffff',
-                    color: active ? '#faf9f8' : '#ffffff',
+                    color: active ? '#ffffff' : '#323130',
                     border: '1px solid #d1d1d1',
                     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
                     fontSize: '0.62rem',
@@ -891,7 +891,7 @@ function pillStyle(active: boolean): React.CSSProperties {
   return {
     padding: '5px 9px',
     background: active ? '#0078d4' : '#ffffff',
-    color: active ? '#faf9f8' : '#ffffff',
+    color: active ? '#ffffff' : '#323130',
     border: '1px solid #d1d1d1',
     fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
     fontSize: '0.55rem',
