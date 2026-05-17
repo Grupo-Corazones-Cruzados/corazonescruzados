@@ -388,6 +388,26 @@ html {
   cursor: none !important;
 }
 
+/* Auth screens: use the normal OS cursor (no game pointer here). Higher
+   specificity than `.landing-page *` so it overrides the rule above. */
+.landing-page.auth-screen,
+.landing-page.auth-screen *,
+.landing-page.auth-screen *::before,
+.landing-page.auth-screen *::after {
+  cursor: auto !important;
+}
+.landing-page.auth-screen a,
+.landing-page.auth-screen button,
+.landing-page.auth-screen [role='button'],
+.landing-page.auth-screen label[for] {
+  cursor: pointer !important;
+}
+.landing-page.auth-screen input,
+.landing-page.auth-screen textarea,
+.landing-page.auth-screen select {
+  cursor: text !important;
+}
+
 .landing-page::before {
   content: '';
   position: fixed;

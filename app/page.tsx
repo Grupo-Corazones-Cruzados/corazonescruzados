@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import PixelStars from '@/components/landing/PixelStars';
 import PointerCursor from '@/components/landing/PointerCursor';
 import CharacterCreator, {
@@ -9,6 +10,7 @@ import CharacterCreator, {
 import CharacterGameplay from '@/components/landing/CharacterGameplay';
 import SavePointIndicator from '@/components/landing/SavePointIndicator';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 const ENTRY_MESSAGES = [
   'Estás por entrar a un lugar en donde los sueños se hacen realidad...',
@@ -272,6 +274,37 @@ type PacienciaParticle = {
 };
 
 export default function LandingPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  // Rol detectado por IP/dispositivo (best-effort): el visitante de esta
+  // red corresponde a un client del mundo cuyo email coincide con un user
+  // de staff. Sólo controla la visibilidad del botón; el acceso real lo
+  // protege el login en /auth.
+  const [ipRole, setIpRole] = useState<'admin' | 'member' | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/auth/landing-role')
+      .then((r) => (r.ok ? r.json() : { role: null }))
+      .then((d) => {
+        if (!cancelled && (d?.role === 'admin' || d?.role === 'member')) {
+          setIpRole(d.role);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // El botón de colaborador se muestra a usuarios con rol "member" o
+  // "admin", ya sea por sesión iniciada o por detección de IP/dispositivo.
+  const sessionRole = user?.role;
+  const canEnterAsCollaborator =
+    sessionRole === 'member' ||
+    sessionRole === 'admin' ||
+    ipRole === 'member' ||
+    ipRole === 'admin';
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [windAway, setWindAway] = useState(false);
   const heroSectionRef = useRef<HTMLElement | null>(null);
@@ -2854,7 +2887,8 @@ export default function LandingPage() {
             Proyecto de Desarrollo Humano
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mt-10">
+          <div className="flex flex-col items-center gap-3 mt-10">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => {
                 if (landingLocked || windAway) return;
@@ -2912,6 +2946,46 @@ export default function LandingPage() {
                 }}
               >
                 Ya tengo una cuenta
+              </button>
+            )}
+            </div>
+            {canEnterAsCollaborator && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (landingLocked || windAway) return;
+                  // Reusa la transición "windBlowAway". Si ya hay sesión
+                  // de staff va directo al dashboard; si no, pide iniciar
+                  // sesión y /auth redirige al dashboard tras el login.
+                  const dest =
+                    sessionRole === 'member' || sessionRole === 'admin'
+                      ? '/dashboard'
+                      : '/auth?redirect=/dashboard';
+                  setWindAway(true);
+                  window.setTimeout(() => {
+                    router.push(dest);
+                  }, 1400);
+                }}
+                disabled={landingLocked || windAway}
+                className="pixel-btn pixel-btn-secondary"
+                style={{
+                  ...(landingLocked && !windAway
+                    ? { opacity: 0.45, cursor: 'not-allowed' }
+                    : {}),
+                  ...(windAway
+                    ? {
+                        animation:
+                          'windBlowAway 1.15s ease-in 0.4s forwards',
+                        willChange: 'transform, opacity, filter',
+                        cursor: 'default',
+                      }
+                    : {
+                        animation: 'breathe 5s ease-in-out infinite',
+                        willChange: 'transform',
+                      }),
+                }}
+              >
+                Ingresar como Colaborador
               </button>
             )}
           </div>

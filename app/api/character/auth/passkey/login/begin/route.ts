@@ -7,7 +7,7 @@ import {
   getClientIp,
   hashIp,
 } from '@/lib/world/session';
-import { RP_ID } from '@/lib/world/webauthn';
+import { getWebAuthnRP } from '@/lib/world/webauthn';
 
 export async function POST() {
   try {
@@ -52,8 +52,9 @@ export async function POST() {
       );
     }
 
+    const { rpId } = await getWebAuthnRP();
     const options = await generateAuthenticationOptions({
-      rpID: RP_ID,
+      rpID: rpId,
       allowCredentials: passkeys.rows.map(
         (p: { credential_id: string; transports: string[] | null }) => ({
           id: p.credential_id,

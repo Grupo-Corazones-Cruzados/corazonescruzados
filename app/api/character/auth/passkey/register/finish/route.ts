@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import { AUTH_COOKIE } from '@/lib/world/session';
-import { RP_ID, RP_ORIGIN } from '@/lib/world/webauthn';
+import { getWebAuthnRP } from '@/lib/world/webauthn';
 
 export async function POST(req: Request) {
   try {
@@ -32,11 +32,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Reto inválido' }, { status: 400 });
     }
 
+    const { rpId, origin } = await getWebAuthnRP();
     const verification = await verifyRegistrationResponse({
       response: body,
       expectedChallenge: row.webauthn_challenge,
-      expectedOrigin: RP_ORIGIN,
-      expectedRPID: RP_ID,
+      expectedOrigin: origin,
+      expectedRPID: rpId,
       requireUserVerification: false,
     });
 

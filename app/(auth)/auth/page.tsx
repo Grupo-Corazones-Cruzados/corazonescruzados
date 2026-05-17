@@ -2,24 +2,23 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { startAuthentication } from "@simplewebauthn/browser";
 import { toast } from "sonner";
+import Link from "next/link";
 import BrandLoader from "@/components/ui/BrandLoader";
 
 function AuthForm() {
   const params = useSearchParams();
-  const initialTab = params.get("tab") === "register" ? "register" : "login";
   const redirect = params.get("redirect") || "/dashboard";
 
-  const [tab, setTab] = useState<"login" | "register" | "reset">(initialTab);
+  const [tab, setTab] = useState<"login" | "reset">("login");
   const [loading, setLoading] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
 
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, resetPassword, refreshUser } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,13 +29,6 @@ function AuthForm() {
       if (tab === "login") {
         await signIn(email, password);
         router.push(redirect);
-      } else if (tab === "register") {
-        await signUp(email, password, {
-          first_name: firstName || undefined,
-          last_name: lastName || undefined,
-        });
-        toast.success("Cuenta creada. Revisa tu correo para verificar.");
-        setTab("login");
       } else {
         await resetPassword(email);
         toast.info(
@@ -44,15 +36,56 @@ function AuthForm() {
         );
       }
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Ocurrió un error"
-      );
+      toast.error(err instanceof Error ? err.message : "Ocurrió un error");
     } finally {
       setLoading(false);
     }
   };
 
+  const handlePasskey = async () => {
+    // El correo es opcional: si está vacío el servidor resuelve por
+    // cookie/IP (igual que el passkey del juego).
+    setPasskeyBusy(true);
+    try {
+      const begin = await fetch("/api/auth/passkey/begin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const opts = await begin.json();
+      if (!begin.ok) {
+        toast.error(opts?.error ?? "No se pudo iniciar passkey");
+        return;
+      }
+
+      const credential = await startAuthentication({ optionsJSON: opts });
+
+      const finish = await fetch("/api/auth/passkey/finish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, credential }),
+      });
+      const fJson = await finish.json();
+      if (!finish.ok) {
+        toast.error(fJson?.error ?? "Passkey rechazada");
+        return;
+      }
+
+      await refreshUser();
+      router.push(redirect);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error de passkey";
+      // El usuario canceló el prompt → ignorar en silencio.
+      if (!/cancel|abort|timeout|allowed/i.test(msg)) {
+        toast.error(msg);
+      }
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
   const pixelFont = { fontFamily: "'Silkscreen', cursive" } as const;
+  const busy = loading || passkeyBusy;
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -63,42 +96,19 @@ function AuthForm() {
 
       {/* Auth Card */}
       <div className="pixel-card w-full">
-        <h1
-          className="pixel-heading text-lg text-white text-center mb-1"
-        >
-          {tab === "login" && "Iniciar Sesion"}
-          {tab === "register" && "Crear Cuenta"}
-          {tab === "reset" && "Restablecer"}
+        <h1 className="pixel-heading text-lg text-white text-center mb-1">
+          {tab === "login" ? "Iniciar Sesion" : "Restablecer"}
         </h1>
         <p
           className="text-center text-xs mb-6 opacity-50"
           style={{ ...pixelFont, color: "#94A3B8" }}
         >
-          {tab === "login" && "Ingresa a tu cuenta"}
-          {tab === "register" && "Crea una cuenta para comenzar"}
-          {tab === "reset" && "Te enviaremos un enlace por correo"}
+          {tab === "login"
+            ? "Ingresa a tu cuenta"
+            : "Te enviaremos un enlace por correo"}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {tab === "register" && (
-            <div className="grid grid-cols-2 gap-3">
-              <PixelInput
-                label="Nombre"
-                name="first_name"
-                value={firstName}
-                onChange={setFirstName}
-                placeholder="Juan"
-              />
-              <PixelInput
-                label="Apellido"
-                name="last_name"
-                value={lastName}
-                onChange={setLastName}
-                placeholder="Perez"
-              />
-            </div>
-          )}
-
           <PixelInput
             label="Correo electronico"
             name="email"
@@ -109,7 +119,7 @@ function AuthForm() {
             placeholder="tu@correo.com"
           />
 
-          {tab !== "reset" && (
+          {tab === "login" && (
             <PixelInput
               label="Contrasena"
               name="password"
@@ -124,52 +134,72 @@ function AuthForm() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={busy}
             className="pixel-btn pixel-btn-primary w-full mt-2 disabled:opacity-50"
           >
-            {loading ? "Cargando..." : (
-              <>
-                {tab === "login" && "Iniciar Sesion"}
-                {tab === "register" && "Crear Cuenta"}
-                {tab === "reset" && "Enviar Enlace"}
-              </>
-            )}
+            {loading
+              ? "Cargando..."
+              : tab === "login"
+                ? "Iniciar Sesion"
+                : "Enviar Enlace"}
           </button>
         </form>
 
+        {tab === "login" && (
+          <>
+            <div className="flex items-center gap-3 my-4">
+              <span className="flex-1 h-px bg-digi-border" />
+              <span
+                className="text-[9px] opacity-40"
+                style={{ ...pixelFont, color: "#94A3B8" }}
+              >
+                o
+              </span>
+              <span className="flex-1 h-px bg-digi-border" />
+            </div>
+            <button
+              type="button"
+              onClick={handlePasskey}
+              disabled={busy}
+              className="pixel-btn pixel-btn-primary w-full"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                opacity: busy ? 0.6 : 1,
+              }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="square"
+                aria-hidden="true"
+              >
+                <path d="M12 2a5 5 0 0 1 5 5v3" />
+                <path d="M12 2a5 5 0 0 0-5 5v3" />
+                <rect x="5" y="10" width="14" height="11" rx="1" />
+                <path d="M12 14v4" />
+              </svg>
+              {passkeyBusy ? "Autenticando..." : "Usar passkey"}
+            </button>
+          </>
+        )}
+
         <div className="mt-5 text-center space-y-2">
-          {tab === "login" && (
-            <>
-              <button
-                className="text-[10px] text-accent-glow opacity-60 hover:opacity-100 transition-opacity"
-                style={pixelFont}
-                onClick={() => setTab("reset")}
-              >
-                Olvidaste tu contrasena?
-              </button>
-              <p className="text-[10px] opacity-40" style={{ ...pixelFont, color: "#94A3B8" }}>
-                No tienes cuenta?{" "}
-                <button
-                  className="text-accent-glow opacity-80 hover:opacity-100"
-                  onClick={() => setTab("register")}
-                >
-                  Registrate
-                </button>
-              </p>
-            </>
-          )}
-          {tab === "register" && (
-            <p className="text-[10px] opacity-40" style={{ ...pixelFont, color: "#94A3B8" }}>
-              Ya tienes cuenta?{" "}
-              <button
-                className="text-accent-glow opacity-80 hover:opacity-100"
-                onClick={() => setTab("login")}
-              >
-                Inicia sesion
-              </button>
-            </p>
-          )}
-          {tab === "reset" && (
+          {tab === "login" ? (
+            <button
+              className="text-[10px] text-accent-glow opacity-60 hover:opacity-100 transition-opacity"
+              style={pixelFont}
+              onClick={() => setTab("reset")}
+            >
+              Olvidaste tu contrasena?
+            </button>
+          ) : (
             <button
               className="text-[10px] text-accent-glow opacity-60 hover:opacity-100 transition-opacity"
               style={pixelFont}

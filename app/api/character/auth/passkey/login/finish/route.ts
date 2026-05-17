@@ -10,7 +10,7 @@ import {
   getClientIp,
   hashIp,
 } from '@/lib/world/session';
-import { RP_ID, RP_ORIGIN } from '@/lib/world/webauthn';
+import { getWebAuthnRP } from '@/lib/world/webauthn';
 
 export async function POST(req: Request) {
   try {
@@ -80,11 +80,12 @@ export async function POST(req: Request) {
     }
     const stored = passkey.rows[0];
 
+    const { rpId, origin } = await getWebAuthnRP();
     const verification = await verifyAuthenticationResponse({
       response: body,
       expectedChallenge: client.webauthn_challenge,
-      expectedOrigin: RP_ORIGIN,
-      expectedRPID: RP_ID,
+      expectedOrigin: origin,
+      expectedRPID: rpId,
       credential: {
         id: stored.credential_id as string,
         publicKey: new Uint8Array(stored.credential_public_key as Buffer),

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { generateRegistrationOptions } from '@simplewebauthn/server';
 import { AUTH_COOKIE } from '@/lib/world/session';
-import { RP_ID, RP_NAME } from '@/lib/world/webauthn';
+import { RP_NAME, getWebAuthnRP } from '@/lib/world/webauthn';
 
 export async function POST() {
   try {
@@ -37,9 +37,10 @@ export async function POST() {
 
     const userId = new TextEncoder().encode(`client-${row.id}`);
 
+    const { rpId } = await getWebAuthnRP();
     const options = await generateRegistrationOptions({
       rpName: RP_NAME,
-      rpID: RP_ID,
+      rpID: rpId,
       userID: userId,
       userName: row.email || row.alias || `client-${row.id}`,
       userDisplayName: row.alias || row.email || `Jugador ${row.id}`,
