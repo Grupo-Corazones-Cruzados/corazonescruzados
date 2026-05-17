@@ -455,6 +455,7 @@ export default function InvoiceDetailPage() {
                   <option value="05">Cédula</option>
                   <option value="06">Pasaporte</option>
                   <option value="07">Consumidor Final</option>
+                  <option value="08">Identificación del Exterior</option>
                 </select>
               </div>
               <div>

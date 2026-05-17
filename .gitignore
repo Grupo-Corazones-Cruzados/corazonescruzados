@@ -6,3 +6,6 @@ data/uploads/
 data/*.p12
 certificates/
 /lib/generated/prisma
+
+# Claude Code local tooling state (no es parte de la app)
+.claude/

@@ -1,6 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import type { CSSProperties } from 'react';
 import {
   CATEGORIES,
   SHEETS,
@@ -135,7 +143,14 @@ function mapBrush(
   };
 }
 
-const VIEW_SCALE = 2; // 1 source px = 2 screen px in editor
+// Zoom is dynamic in the editor: it opens fitting the whole map to the
+// viewport and the user can zoom in/out from the status bar. These bound
+// how far the slider/buttons can push it. 1 unit = 1 source px → 1 screen px.
+const DEFAULT_VIEW_SCALE = 2;
+const MIN_VIEW_SCALE = 0.1;
+const MAX_VIEW_SCALE = 6;
+const ZOOM_STEP = 1.25; // multiplicative factor per +/- click
+const CANVAS_PAD = 24; // padding around the canvas inside the scroll container
 
 // Bring an incoming map's `layers` array up to the multi-layer model
 // the editor uses today. Always returns at least one layer so the
@@ -304,6 +319,15 @@ export default function MapEditor({
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(
     null,
   );
+  // Live zoom factor for the editor canvas. Starts at the default but the
+  // mount effect immediately recomputes it to fit the whole map.
+  const [viewScale, setViewScale] = useState(DEFAULT_VIEW_SCALE);
+  // Last cell the user clicked while editing — the zoom controls recenter
+  // the viewport on this cell so zooming homes in on the area being worked.
+  const lastClickCellRef = useRef<{ x: number; y: number } | null>(null);
+  // Pending recenter target consumed by the layout effect once `viewScale`
+  // has been applied to the DOM (we need the post-zoom scroll dimensions).
+  const zoomFocusRef = useRef<{ x: number; y: number } | null>(null);
   const [copyDrag, setCopyDrag] = useState<{
     start: { x: number; y: number };
     now: { x: number; y: number };
@@ -542,6 +566,86 @@ export default function MapEditor({
   // ── Canvas render ──────────────────────────────────────────────
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Zoom / viewport ───────────────────────────────────────────
+  // Tile under the centre of the visible viewport, in fractional tile
+  // coords. Used as the zoom focus when the user hasn't clicked yet.
+  const viewCenterTile = useCallback(() => {
+    const c = containerRef.current;
+    if (!c) return { x: width / 2 - 0.5, y: height / 2 - 0.5 };
+    const px = c.scrollLeft + c.clientWidth / 2 - CANVAS_PAD;
+    const py = c.scrollTop + c.clientHeight / 2 - CANVAS_PAD;
+    return {
+      x: Math.min(Math.max(px / (TILE_PX * viewScale) - 0.5, 0), width - 1),
+      y: Math.min(Math.max(py / (TILE_PX * viewScale) - 0.5, 0), height - 1),
+    };
+  }, [viewScale, width, height]);
+
+  // Scroll so `focus` (a tile coord) sits at the viewport centre for the
+  // given scale. The browser clamps scrollLeft/Top into range for us.
+  const recenterOn = useCallback(
+    (focus: { x: number; y: number }, scale: number) => {
+      const c = containerRef.current;
+      if (!c) return;
+      c.scrollLeft =
+        CANVAS_PAD + (focus.x + 0.5) * TILE_PX * scale - c.clientWidth / 2;
+      c.scrollTop =
+        CANVAS_PAD + (focus.y + 0.5) * TILE_PX * scale - c.clientHeight / 2;
+    },
+    [],
+  );
+
+  // Set the zoom, clamped, and remember where to recenter once the new
+  // size has been laid out (see the layout effect below).
+  const applyZoom = useCallback(
+    (next: number, focus?: { x: number; y: number }) => {
+      const clamped = Math.min(
+        Math.max(next, MIN_VIEW_SCALE),
+        MAX_VIEW_SCALE,
+      );
+      zoomFocusRef.current =
+        focus ?? lastClickCellRef.current ?? viewCenterTile();
+      setViewScale(clamped);
+    },
+    [viewCenterTile],
+  );
+
+  // Zoom level that makes the whole map fit inside the viewport, then
+  // centre it. Returns false if the container isn't measurable yet.
+  const fitToScreen = useCallback(() => {
+    const c = containerRef.current;
+    if (!c || c.clientWidth === 0 || c.clientHeight === 0) return false;
+    const scale = Math.min(
+      (c.clientWidth - CANVAS_PAD * 2) / (width * TILE_PX),
+      (c.clientHeight - CANVAS_PAD * 2) / (height * TILE_PX),
+    );
+    applyZoom(scale, { x: width / 2 - 0.5, y: height / 2 - 0.5 });
+    return true;
+  }, [width, height, applyZoom]);
+
+  // After a zoom changes the canvas size, apply the pending recenter so
+  // the focus point stays under the user's eye instead of drifting.
+  useLayoutEffect(() => {
+    const focus = zoomFocusRef.current;
+    if (!focus) return;
+    zoomFocusRef.current = null;
+    recenterOn(focus, viewScale);
+  }, [viewScale, recenterOn]);
+
+  // On open, fit the whole map to the viewport. The container may not be
+  // measurable on the first frame (hidden / still laying out), so retry
+  // on the next few animation frames until it is.
+  useEffect(() => {
+    let raf = 0;
+    let tries = 0;
+    const attempt = () => {
+      if (fitToScreen() || tries++ > 30) return;
+      raf = requestAnimationFrame(attempt);
+    };
+    attempt();
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -974,8 +1078,8 @@ export default function MapEditor({
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
-    const cx = Math.floor((clientX - rect.left) / (TILE_PX * VIEW_SCALE));
-    const cy = Math.floor((clientY - rect.top) / (TILE_PX * VIEW_SCALE));
+    const cx = Math.floor((clientX - rect.left) / (TILE_PX * viewScale));
+    const cy = Math.floor((clientY - rect.top) / (TILE_PX * viewScale));
     if (cx < 0 || cy < 0 || cx >= width || cy >= height) return null;
     return { x: cx, y: cy };
   };
@@ -983,6 +1087,9 @@ export default function MapEditor({
   const paintAt = (clientX: number, clientY: number) => {
     const cell = cellFromClient(clientX, clientY);
     if (!cell) return;
+    // Remember where the user is working so the zoom controls can home
+    // in on this area instead of the map centre.
+    lastClickCellRef.current = cell;
     const cx = cell.x;
     const cy = cell.y;
 
@@ -1976,14 +2083,14 @@ export default function MapEditor({
             flex: 1,
             overflow: 'auto',
             background: '#edebe9',
-            padding: 24,
+            padding: CANVAS_PAD,
           }}
         >
           <div
             style={{
               position: 'relative',
-              width: width * TILE_PX * VIEW_SCALE,
-              height: height * TILE_PX * VIEW_SCALE,
+              width: width * TILE_PX * viewScale,
+              height: height * TILE_PX * viewScale,
             }}
           >
             <canvas
@@ -1992,6 +2099,7 @@ export default function MapEditor({
                 if (mode === 'copy') {
                   const c = cellFromClient(e.clientX, e.clientY);
                   if (!c) return;
+                  lastClickCellRef.current = c;
                   setCopyDrag({ start: c, now: c });
                   return;
                 }
@@ -2047,8 +2155,8 @@ export default function MapEditor({
               }}
               style={{
                 imageRendering: 'pixelated',
-                width: width * TILE_PX * VIEW_SCALE,
-                height: height * TILE_PX * VIEW_SCALE,
+                width: width * TILE_PX * viewScale,
+                height: height * TILE_PX * viewScale,
                 cursor:
                   mode === 'erase'
                     ? 'not-allowed'
@@ -2131,6 +2239,57 @@ export default function MapEditor({
           <span style={{ opacity: 0.9 }}>
             Modo: <strong style={{ color: '#ffffff' }}>{modeLabel(mode)}</strong>
           </span>
+          <StatusSep />
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            title="El editor abre mostrando todo el mapa. Acercá/alejá con
+estos controles: el zoom se centra en la última celda en la que hiciste clic."
+          >
+            <button
+              type="button"
+              onClick={() => fitToScreen()}
+              title="Ajustar todo el mapa a la pantalla"
+              style={zoomBtnStyle}
+            >
+              Ajustar
+            </button>
+            <button
+              type="button"
+              onClick={() => applyZoom(viewScale / ZOOM_STEP)}
+              title="Alejar (zoom sobre la última celda clickeada)"
+              aria-label="Alejar"
+              style={zoomIconBtnStyle}
+            >
+              −
+            </button>
+            <input
+              type="range"
+              min={MIN_VIEW_SCALE}
+              max={MAX_VIEW_SCALE}
+              step={0.05}
+              value={viewScale}
+              onChange={(e) => applyZoom(Number(e.target.value))}
+              title="Nivel de zoom"
+              style={{ width: 110, accentColor: '#ffffff', cursor: 'pointer' }}
+            />
+            <button
+              type="button"
+              onClick={() => applyZoom(viewScale * ZOOM_STEP)}
+              title="Acercar (zoom sobre la última celda clickeada)"
+              aria-label="Acercar"
+              style={zoomIconBtnStyle}
+            >
+              +
+            </button>
+            <button
+              type="button"
+              onClick={() => applyZoom(1)}
+              title="Zoom 100 %"
+              style={{ ...zoomBtnStyle, minWidth: 46, textAlign: 'center' }}
+            >
+              {Math.round(viewScale * 100)}%
+            </button>
+          </div>
         </div>
       </main>
 
@@ -4309,6 +4468,27 @@ function StatusSep() {
     />
   );
 }
+
+// Zoom control buttons live on the (blue) status bar, so they style as
+// translucent white chips to match the rest of that bar.
+const zoomBtnStyle: CSSProperties = {
+  background: 'rgba(255,255,255,0.15)',
+  color: '#ffffff',
+  border: '1px solid rgba(255,255,255,0.45)',
+  borderRadius: 3,
+  padding: '1px 7px',
+  fontSize: '0.72rem',
+  lineHeight: 1.4,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+const zoomIconBtnStyle: CSSProperties = {
+  ...zoomBtnStyle,
+  padding: '0 6px',
+  minWidth: 20,
+  fontSize: '0.95rem',
+  fontWeight: 700,
+};
 
 // Local helpers so the status-bar reads cleanly. `worldMapItems` is a
 // no-op pass-through but lets the JSX type-narrow when items is null.
