@@ -22,7 +22,7 @@ export default function PublicCalendarPage() {
   const token = search.get('token') || '';
   const memberId = params.memberId;
 
-  const [view, setView] = useState<CalendarViewMode>('month');
+  const [view, setView] = useState<CalendarViewMode>('week');
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [memberName, setMemberName] = useState<string>('');
