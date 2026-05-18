@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import type { EventInstance } from '@/lib/calendar/recurrence';
-import { DAY_LABELS_ES_SHORT, colorForEvent } from '@/lib/calendar/recurrence';
+import { DAY_LABELS_ES_SHORT, colorForEvent, EVENT_COLORS } from '@/lib/calendar/recurrence';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
@@ -46,6 +46,54 @@ function endOfDay(d: Date) {
 function formatTime(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Minutos por tipo dedicados a un día (porción de cada evento dentro del día;
+// excluye propuestas no confirmadas).
+function dayTotals(instances: EventInstance[], day: Date): { work: number; personal: number } {
+  const ds = startOfDay(day).getTime();
+  const de = endOfDay(day).getTime() + 1;
+  let work = 0;
+  let personal = 0;
+  for (const ev of instances) {
+    if (ev.status === 'proposed') continue;
+    const s = Math.max(ev.instanceStart.getTime(), ds);
+    const e = Math.min(ev.instanceEnd.getTime(), de);
+    if (e <= s) continue;
+    const minutes = (e - s) / 60000;
+    if (ev.event_type === 'work') work += minutes;
+    else personal += minutes;
+  }
+  return { work: Math.round(work), personal: Math.round(personal) };
+}
+
+function fmtDur(min: number): string {
+  if (min <= 0) return '';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h${m}`;
+}
+
+function DayTotals({ totals }: { totals: { work: number; personal: number } }) {
+  if (totals.work <= 0 && totals.personal <= 0) return null;
+  return (
+    <div className="flex items-center gap-1.5 text-[8px] leading-none" style={pf}>
+      {totals.work > 0 && (
+        <span className="flex items-center gap-0.5" style={{ color: EVENT_COLORS.work }}>
+          <span className="w-1.5 h-1.5" style={{ backgroundColor: EVENT_COLORS.work }} />
+          {fmtDur(totals.work)}
+        </span>
+      )}
+      {totals.personal > 0 && (
+        <span className="flex items-center gap-0.5" style={{ color: EVENT_COLORS.personal }}>
+          <span className="w-1.5 h-1.5" style={{ backgroundColor: EVENT_COLORS.personal }} />
+          {fmtDur(totals.personal)}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) {
@@ -93,11 +141,14 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) 
                 inMonth ? '' : 'opacity-40'
               } ${isToday ? 'bg-accent/5' : ''}`}
             >
-              <div
-                className={`text-[10px] mb-1 ${isToday ? 'text-accent-glow' : 'text-digi-text'}`}
-                style={pf}
-              >
-                {day.getDate()}
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <span
+                  className={`text-[10px] ${isToday ? 'text-accent-glow' : 'text-digi-text'}`}
+                  style={pf}
+                >
+                  {day.getDate()}
+                </span>
+                <DayTotals totals={dayTotals(instances, day)} />
               </div>
               <div className="space-y-0.5">
                 {dayEvents.slice(0, 3).map((ev, i) => {
@@ -172,6 +223,9 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick }: Props) {
               <div className={`text-sm ${isToday ? 'text-accent-glow' : 'text-digi-text'}`} style={pf}>
                 {day.getDate()}
               </div>
+              <div className="flex justify-center mt-0.5">
+                <DayTotals totals={dayTotals(instances, day)} />
+              </div>
             </div>
           );
         })}
@@ -209,10 +263,11 @@ function DayView({ currentDate, instances, onDayClick, onEventClick }: Props) {
     <div className="border-2 border-digi-border bg-digi-darker">
       <div className="grid" style={{ gridTemplateColumns: '56px 1fr' }}>
         <div className="border-r border-b-2 border-digi-border" />
-        <div className="px-3 py-2 border-b-2 border-digi-border">
+        <div className="px-3 py-2 border-b-2 border-digi-border flex items-center justify-between gap-2">
           <div className="text-[10px] text-accent-glow" style={pf}>
             {DAY_LABELS_ES_SHORT[currentDate.getDay()].toUpperCase()} {currentDate.getDate()}
           </div>
+          <DayTotals totals={dayTotals(instances, currentDate)} />
         </div>
       </div>
       <div className="grid" style={{ gridTemplateColumns: '56px 1fr' }}>
