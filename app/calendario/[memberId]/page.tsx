@@ -9,6 +9,7 @@ import {
   type CalendarEvent,
   type EventInstance,
   expandEvents,
+  EVENT_COLORS,
   MONTH_LABELS_ES,
 } from '@/lib/calendar/recurrence';
 
@@ -230,6 +231,25 @@ export default function PublicCalendarPage() {
               onDayClick={() => {}}
               onEventClick={(ev) => setDetail(ev)}
             />
+          </div>
+
+          <div className="flex flex-wrap gap-4 text-[10px] text-digi-muted pt-3" style={pf}>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.work, backgroundColor: `${EVENT_COLORS.work}30` }} />
+              LABORAL
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.personal, backgroundColor: `${EVENT_COLORS.personal}30` }} />
+              PERSONAL
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.task, backgroundColor: `${EVENT_COLORS.task}30` }} />
+              TAREA
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span>☐ pendiente</span>
+              <span>· ✓ completada</span>
+            </div>
           </div>
         </div>
 

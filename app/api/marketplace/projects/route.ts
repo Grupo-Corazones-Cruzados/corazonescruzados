@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       `SELECT p.id, p.title, p.description, p.final_cost,
               p.marketplace_published_at, p.created_at,
               p.public_docs_token,
-              COALESCE(p.images, '{}') as images,
+              COALESCE(array_length(p.images, 1), 0)::int as image_count,
               COALESCE(
                 (SELECT json_agg(json_build_object('name', m.name, 'photo_url', m.photo_url))
                  FROM gcc_world.project_bids pb

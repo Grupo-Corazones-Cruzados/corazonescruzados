@@ -53,6 +53,7 @@ export default function MarketplacePage() {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [galleryTitle, setGalleryTitle] = useState('');
+  const [galleryLoading, setGalleryLoading] = useState(false);
 
   // Order detail modal
   const [orderModal, setOrderModal] = useState(false);
@@ -114,8 +115,41 @@ export default function MarketplacePage() {
   );
 
   // --- Gallery ---
-  const openGallery = (item: any, e: React.MouseEvent) => {
+  const openGallery = async (item: any, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Proyectos de marketplace: la lista solo trae metadatos (image_count).
+    // Las imágenes se cargan recién aquí, solo del proyecto seleccionado.
+    if (item.source_type === 'project' && !item.images) {
+      if (!item.image_count) {
+        toast.info('Este proyecto no tiene imagenes');
+        return;
+      }
+      setGalleryTitle(item.title || '');
+      setGalleryImages([]);
+      setGalleryIndex(0);
+      setGalleryLoading(true);
+      setGalleryOpen(true);
+      try {
+        const res = await fetch(`/api/marketplace/projects/${item.id}`);
+        const data = await res.json();
+        const imgs: string[] = data?.data?.images || [];
+        if (imgs.length === 0) {
+          toast.info('Este proyecto no tiene imagenes');
+          setGalleryOpen(false);
+          return;
+        }
+        setGalleryImages(imgs);
+      } catch {
+        toast.error('No se pudieron cargar las imagenes');
+        setGalleryOpen(false);
+      } finally {
+        setGalleryLoading(false);
+      }
+      return;
+    }
+
+    // Portfolio / otros: las imágenes ya vienen en el item.
     const imgs: string[] = [];
     if (item.images?.length > 0) {
       imgs.push(...item.images);
@@ -178,6 +212,7 @@ export default function MarketplacePage() {
   // --- Image count helper ---
   const imageCount = (item: any) => {
     if (item.images?.length > 0) return item.images.length;
+    if (typeof item.image_count === 'number') return item.image_count;
     return item.image_url ? 1 : 0;
   };
 
@@ -235,20 +270,20 @@ export default function MarketplacePage() {
             {
               key: 'images', header: 'Fotos', width: '70px',
               render: (p: any) => {
-                const imgs = p.images || [];
+                const count = imageCount(p);
                 return (
                   <button
                     onClick={(e) => openGallery(p, e)}
                     className={`flex items-center gap-1 px-1.5 py-0.5 border transition-colors ${
-                      imgs.length > 0 ? 'border-accent/40 text-accent-glow hover:bg-accent/10' : 'border-digi-border/30 text-digi-muted/40 cursor-default'
+                      count > 0 ? 'border-accent/40 text-accent-glow hover:bg-accent/10' : 'border-digi-border/30 text-digi-muted/40 cursor-default'
                     }`}
-                    disabled={imgs.length === 0}
-                    title={imgs.length > 0 ? `Ver ${imgs.length} foto(s)` : 'Sin fotos'}
+                    disabled={count === 0}
+                    title={count > 0 ? `Ver ${count} foto(s)` : 'Sin fotos'}
                   >
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <rect x="1" y="3" width="14" height="10" rx="1" /><circle cx="5.5" cy="7" r="1.5" /><path d="M14 13L10.5 9L7.5 12L5.5 10.5L2 13" />
                     </svg>
-                    <span className="text-[9px]" style={mf}>{imgs.length}</span>
+                    <span className="text-[9px]" style={mf}>{count}</span>
                   </button>
                 );
               },
@@ -413,6 +448,11 @@ export default function MarketplacePage() {
 
       {/* ========== IMAGE GALLERY MODAL ========== */}
       <PixelModal open={galleryOpen} onClose={() => setGalleryOpen(false)} title={galleryTitle || 'Galeria'} size="lg">
+        {galleryLoading && galleryImages.length === 0 && (
+          <div className="flex items-center justify-center min-h-[200px]">
+            <span className="text-[10px] text-digi-muted animate-pulse" style={mf}>Cargando imagenes...</span>
+          </div>
+        )}
         {galleryImages.length > 0 && (
           <div className="space-y-3">
             {/* Main image */}

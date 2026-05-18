@@ -49,6 +49,7 @@ export function findOverlappingInstances(
     recurrence_until: candidate.recurrence_until,
     color: null,
     status: 'confirmed',
+    task_status: null,
   };
   const candidateInstances = expandEvents([candidateAsEvent], rangeStart, rangeEnd);
 

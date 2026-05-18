@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
-    const { action, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
+    const { action, skip_invoice, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
 
     let invoiceId: number | null = null;
     let sriResult: any = null;
@@ -71,7 +71,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }
       } catch (finErr: any) { console.error('Finance registration error:', finErr.message); }
 
-      // Auto-generate SRI invoice (skip if project already has one from manual invoice)
+      // Auto-generate SRI invoice — skipped if the project already has a
+      // manual invoice, or if the user chose "Completar sin Facturar".
+      if (skip_invoice) {
+        sriResult = { ok: true, authorized: false, skipped: true, message: 'Completado sin factura' };
+      } else {
       const existingInvoice = await projectHasInvoice(id);
       try {
         if (existingInvoice.hasInvoice) {
@@ -156,6 +160,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } catch (err: any) {
         console.error('Error auto-generating invoice:', err.message);
       }
+      } // close else (skip_invoice)
     } else if (action === 'request_review') {
       await pool.query(`UPDATE gcc_world.projects SET status = 'review', review_deadline = $1, updated_at = NOW() WHERE id = $2`, [review_deadline, id]);
     } else if (action === 'more_requirements') {

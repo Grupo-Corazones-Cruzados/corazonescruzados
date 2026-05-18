@@ -102,13 +102,15 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) 
               <div className="space-y-0.5">
                 {dayEvents.slice(0, 3).map((ev, i) => {
                   const proposed = ev.status === 'proposed';
+                  const isTask = ev.event_type === 'task';
+                  const taskDone = isTask && ev.task_status === 'done';
                   return (
                     <div
                       key={`${ev.id}-${i}`}
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
                       className={`text-[9px] px-1 py-0.5 truncate border-l-2 hover:opacity-80 transition-opacity ${
                         proposed ? 'border-dashed italic opacity-75' : ''
-                      }`}
+                      } ${taskDone ? 'opacity-60' : ''}`}
                       style={{
                         ...mf,
                         borderLeftColor: proposed ? '#f59e0b' : colorForEvent(ev),
@@ -118,8 +120,9 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) 
                       title={proposed ? `Propuesta: ${ev.title}` : ev.title}
                     >
                       {proposed && '⏳ '}
+                      {isTask && (taskDone ? '✓ ' : '☐ ')}
                       {!ev.all_day && formatTime(ev.instanceStart) + ' '}
-                      {ev.title}
+                      <span className={taskDone ? 'line-through' : ''}>{ev.title}</span>
                     </div>
                   );
                 })}
@@ -298,6 +301,8 @@ function DayColumn({
         const top = ((startMin - gridStart) / 60) * HOUR_PX;
         const height = Math.max(18, ((endMin - startMin) / 60) * HOUR_PX - 2);
         const proposed = ev.status === 'proposed';
+        const isTask = ev.event_type === 'task';
+        const taskDone = isTask && ev.task_status === 'done';
         const color = proposed ? '#f59e0b' : colorForEvent(ev);
         return (
           <div
@@ -305,7 +310,7 @@ function DayColumn({
             onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
             className={`absolute left-1 right-1 px-1.5 py-1 text-[9px] overflow-hidden hover:opacity-80 transition-opacity border-l-2 ${
               proposed ? 'border-dashed' : ''
-            }`}
+            } ${taskDone ? 'opacity-60' : ''}`}
             style={{
               ...mf,
               top,
@@ -319,7 +324,8 @@ function DayColumn({
           >
             <div className="font-semibold truncate">
               {proposed && '⏳ '}
-              {ev.title}
+              {isTask && (taskDone ? '✓ ' : '☐ ')}
+              <span className={taskDone ? 'line-through' : ''}>{ev.title}</span>
             </div>
             <div className="text-[8px] opacity-70">
               {proposed && '(propuesta) · '}

@@ -9,6 +9,9 @@ interface FinanceMonthData {
   totalSavings: number;
   incomeItems: { description: string; amount: number }[];
   expenseItems: { description: string; amount: number }[];
+  // Ahorro acumulado de todos los meses ANTERIORES a este. Si está
+  // definido, el PDF agrega los indicadores "a la fecha" y "global".
+  priorSavings?: number;
 }
 
 export async function generateFinancePdf(months: FinanceMonthData[], title: string): Promise<Buffer> {
@@ -108,14 +111,36 @@ export async function generateFinancePdf(months: FinanceMonthData[], title: stri
       doc.text(`$${m.totalExpense.toFixed(2)}`, L + colW - 50, y, { width: 46, align: 'right' });
       y += 14;
 
-      // Savings
+      // Savings (mes actual)
       const savColor = m.totalSavings >= 0 ? '#1a1a7a' : '#cc0000';
       doc.rect(L, y, PW, 14).fill('#e8e8e8');
       doc.fillColor(savColor).font('Helvetica-Bold').fontSize(8);
-      doc.text('AHORRO:', L + 4, y + 3, { width: PW * 0.6 });
+      doc.text('AHORRO (MES ACTUAL):', L + 4, y + 3, { width: PW * 0.6 });
       doc.text(`$${m.totalSavings.toFixed(2)}`, L + PW * 0.6, y + 3, { width: PW * 0.38, align: 'right' });
       doc.rect(L, y, PW, 14).stroke('#ccc');
-      y += 24;
+      y += 18;
+
+      // Ahorro a la fecha (mes anterior) + Ahorro global a la fecha
+      if (m.priorSavings !== undefined) {
+        if (y > doc.page.height - 90) { doc.addPage(); y = 40; }
+        const prior = m.priorSavings;
+        const global = prior + m.totalSavings;
+
+        doc.rect(L, y, PW, 14).fill('#f0f0f0');
+        doc.fillColor(prior >= 0 ? '#1a7a1a' : '#cc0000').font('Helvetica-Bold').fontSize(8);
+        doc.text('AHORRO A LA FECHA (MES ANTERIOR):', L + 4, y + 3, { width: PW * 0.6 });
+        doc.text(`$${prior.toFixed(2)}`, L + PW * 0.6, y + 3, { width: PW * 0.38, align: 'right' });
+        doc.rect(L, y, PW, 14).stroke('#ccc');
+        y += 16;
+
+        doc.rect(L, y, PW, 14).fill('#dcdcdc');
+        doc.fillColor(global >= 0 ? '#1a7a1a' : '#cc0000').font('Helvetica-Bold').fontSize(8);
+        doc.text('AHORRO GLOBAL (A LA FECHA):', L + 4, y + 3, { width: PW * 0.6 });
+        doc.text(`$${global.toFixed(2)}`, L + PW * 0.6, y + 3, { width: PW * 0.38, align: 'right' });
+        doc.rect(L, y, PW, 14).stroke('#ccc');
+        y += 16;
+      }
+      y += 8;
 
       // Separator between months
       if (mi < months.length - 1) {

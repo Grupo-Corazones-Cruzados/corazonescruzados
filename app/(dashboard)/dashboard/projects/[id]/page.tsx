@@ -358,18 +358,19 @@ export default function ProjectDetailPage() {
     setShowCompleteModal(true);
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async (skipInvoice = false) => {
     setCompleting(true);
     setCompleteStep('Completando proyecto...');
     try {
       setCompleteStep('Guardando datos del cliente...');
       await new Promise(r => setTimeout(r, 300));
 
-      setCompleteStep('Generando factura electronica...');
+      setCompleteStep(skipInvoice ? 'Finalizando proyecto...' : 'Generando factura electronica...');
       const res = await fetch(`/api/projects/${id}/complete`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'confirm_completion',
+          skip_invoice: skipInvoice,
           send_email: completeSendEmail,
           client_id_type: completeIdType,
           client_name: completeClientName,
@@ -407,9 +408,9 @@ export default function ProjectDetailPage() {
 
       toast.success(
         'Proyecto completado' +
-        (data.invoiceId ? ' — Factura generada' : '') +
-        (sriOk ? ' y autorizada por el SRI' : '') +
-        (completeSendEmail && completeClientEmail && sriOk ? ' — Enviada por correo' : '')
+        (skipInvoice ? ' (sin factura)' : (data.invoiceId ? ' — Factura generada' : '')) +
+        (!skipInvoice && sriOk ? ' y autorizada por el SRI' : '') +
+        (!skipInvoice && completeSendEmail && completeClientEmail && sriOk ? ' — Enviada por correo' : '')
       );
       if (sriError && !sriOk) {
         toast.error(`SRI: ${sriError}`);
@@ -1442,7 +1443,10 @@ export default function ProjectDetailPage() {
                       </label>
                       <div className="flex gap-2">
                         <button onClick={() => setShowCompleteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
-                        <button onClick={handleComplete} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                        <button onClick={() => handleComplete(true)} disabled={completing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-text hover:border-accent hover:text-white transition-colors disabled:opacity-50" style={pf}>
+                          Completar sin Facturar
+                        </button>
+                        <button onClick={() => handleComplete(false)} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
                           Completar y Facturar
                         </button>
                       </div>

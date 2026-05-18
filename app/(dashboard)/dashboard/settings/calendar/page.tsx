@@ -10,7 +10,9 @@ import ProposalsPanel from '@/components/calendar/ProposalsPanel';
 import {
   type CalendarEvent,
   type EventInstance,
+  type EventType,
   expandEvents,
+  EVENT_COLORS,
   MONTH_LABELS_ES,
 } from '@/lib/calendar/recurrence';
 
@@ -26,6 +28,7 @@ export default function CalendarSettingsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [initialDate, setInitialDate] = useState<Date | null>(null);
+  const [initialType, setInitialType] = useState<EventType>('work');
   const [shareOpen, setShareOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -106,6 +109,14 @@ export default function CalendarSettingsPage() {
   const handleDayClick = (date: Date) => {
     setEditingEvent(null);
     setInitialDate(date);
+    setInitialType('work');
+    setModalOpen(true);
+  };
+
+  const openNew = (type: EventType) => {
+    setEditingEvent(null);
+    setInitialDate(new Date());
+    setInitialType(type);
     setModalOpen(true);
   };
   const handleEventClick = (inst: EventInstance) => {
@@ -143,7 +154,7 @@ export default function CalendarSettingsPage() {
 
   return (
     <div className="max-w-6xl">
-      <PageHeader title="Calendario" description="Organiza tus eventos laborales y personales" />
+      <PageHeader title="Calendario" description="Organiza tus eventos y tareas laborales y personales" />
 
       <div className="pixel-card space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -199,7 +210,14 @@ export default function CalendarSettingsPage() {
               COMPARTIR
             </button>
             <button
-              onClick={() => { setEditingEvent(null); setInitialDate(new Date()); setModalOpen(true); }}
+              onClick={() => openNew('task')}
+              className="px-3 py-1.5 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors"
+              style={pf}
+            >
+              + TAREA
+            </button>
+            <button
+              onClick={() => openNew('work')}
               className="px-3 py-1.5 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors"
               style={pf}
             >
@@ -231,6 +249,10 @@ export default function CalendarSettingsPage() {
             <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: '#22c55e', backgroundColor: '#22c55e30' }} />
             PERSONAL
           </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.task, backgroundColor: `${EVENT_COLORS.task}30` }} />
+            TAREA
+          </div>
           <div className="ml-auto">Zona horaria: América/Guayaquil (GMT-5)</div>
         </div>
       </div>
@@ -244,6 +266,7 @@ export default function CalendarSettingsPage() {
         onDelete={handleDelete}
         event={editingEvent}
         initialDate={initialDate}
+        initialType={initialType}
         clients={clients}
       />
 

@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
-import type { CalendarEvent, RecurrenceType } from '@/lib/calendar/recurrence';
-import { DAY_LABELS_ES_SHORT } from '@/lib/calendar/recurrence';
+import type { CalendarEvent, RecurrenceType, EventType, TaskStatus } from '@/lib/calendar/recurrence';
+import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES } from '@/lib/calendar/recurrence';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
@@ -15,7 +15,8 @@ export interface ClientOption { id: string; name: string; }
 export interface EventFormPayload {
   title: string;
   description: string | null;
-  event_type: 'work' | 'personal';
+  event_type: EventType;
+  task_status: TaskStatus | null;
   client_id: string | null;
   start_at: string;
   end_at: string;
@@ -35,6 +36,7 @@ interface Props {
   onDelete?: (id: string) => Promise<void>;
   event: CalendarEvent | null;
   initialDate: Date | null;
+  initialType?: EventType;
   clients: ClientOption[];
 }
 
@@ -52,7 +54,7 @@ function toLocalDate(iso: string | Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function defaultPayload(base: Date | null): EventFormPayload {
+function defaultPayload(base: Date | null, type: EventType = 'work'): EventFormPayload {
   const start = base ? new Date(base) : new Date();
   start.setMinutes(0, 0, 0);
   if (!base) start.setHours(start.getHours() + 1);
@@ -61,7 +63,8 @@ function defaultPayload(base: Date | null): EventFormPayload {
   return {
     title: '',
     description: '',
-    event_type: 'work',
+    event_type: type,
+    task_status: type === 'task' ? 'pending' : null,
     client_id: null,
     start_at: start.toISOString(),
     end_at: end.toISOString(),
@@ -75,8 +78,8 @@ function defaultPayload(base: Date | null): EventFormPayload {
   };
 }
 
-export default function EventModal({ open, onClose, onSave, onDelete, event, initialDate, clients }: Props) {
-  const [form, setForm] = useState<EventFormPayload>(() => defaultPayload(initialDate));
+export default function EventModal({ open, onClose, onSave, onDelete, event, initialDate, initialType, clients }: Props) {
+  const [form, setForm] = useState<EventFormPayload>(() => defaultPayload(initialDate, initialType));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +90,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         title: event.title,
         description: event.description || '',
         event_type: event.event_type,
+        task_status: event.task_status ?? (event.event_type === 'task' ? 'pending' : null),
         client_id: event.client_id,
         start_at: event.start_at,
         end_at: event.end_at,
@@ -99,13 +103,22 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         color: event.color,
       });
     } else {
-      setForm(defaultPayload(initialDate));
+      setForm(defaultPayload(initialDate, initialType));
     }
     setError(null);
-  }, [open, event, initialDate]);
+  }, [open, event, initialDate, initialType]);
 
   const update = <K extends keyof EventFormPayload>(k: K, v: EventFormPayload[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
+  };
+
+  const setEventType = (t: EventType) => {
+    setForm((f) => ({
+      ...f,
+      event_type: t,
+      client_id: t === 'work' ? f.client_id : null,
+      task_status: t === 'task' ? (f.task_status ?? 'pending') : null,
+    }));
   };
 
   const setStart = (local: string) => {
@@ -168,7 +181,11 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
     <PixelModal
       open={open}
       onClose={onClose}
-      title={event ? 'Editar evento' : 'Nuevo evento'}
+      title={
+        form.event_type === 'task'
+          ? (event ? 'Editar tarea' : 'Nueva tarea')
+          : (event ? 'Editar evento' : 'Nuevo evento')
+      }
       size="lg"
     >
       <div className="space-y-4">
@@ -176,17 +193,21 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
           label="TÍTULO"
           value={form.title}
           onChange={(e) => update('title', e.target.value)}
-          placeholder="Reunión con cliente, clase de yoga…"
+          placeholder={
+            form.event_type === 'task'
+              ? 'Enviar propuesta, revisar diseño…'
+              : 'Reunión con cliente, clase de yoga…'
+          }
         />
 
         <div>
           <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>TIPO</div>
           <div className="flex gap-2">
-            {(['work', 'personal'] as const).map((t) => (
+            {(['work', 'personal', 'task'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
-                onClick={() => update('event_type', t)}
+                onClick={() => setEventType(t)}
                 className={`flex-1 px-3 py-2 text-[10px] border-2 transition-colors ${
                   form.event_type === t
                     ? 'border-accent bg-accent/10 text-accent-glow'
@@ -194,11 +215,37 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
                 }`}
                 style={pf}
               >
-                {t === 'work' ? 'LABORAL' : 'PERSONAL'}
+                {EVENT_TYPE_LABELS_ES[t]}
               </button>
             ))}
           </div>
         </div>
+
+        {form.event_type === 'task' && (
+          <div>
+            <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>ESTADO</div>
+            <div className="flex gap-2">
+              {([
+                ['pending', '⏳ PENDIENTE'],
+                ['done', '✓ COMPLETADA'],
+              ] as const).map(([s, lbl]) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => update('task_status', s)}
+                  className={`flex-1 px-3 py-2 text-[10px] border-2 transition-colors ${
+                    form.task_status === s
+                      ? 'border-accent bg-accent/10 text-accent-glow'
+                      : 'border-digi-border text-digi-muted hover:text-digi-text'
+                  }`}
+                  style={pf}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {form.event_type === 'work' && (
           <PixelSelect

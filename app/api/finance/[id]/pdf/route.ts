@@ -19,6 +19,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       `SELECT * FROM gcc_world.finance_items WHERE month_id = $1 ORDER BY type, sort_order, id`, [id]
     );
 
+    // Ahorro acumulado de todos los meses anteriores a este.
+    const { rows: [priorRow] } = await pool.query(
+      `SELECT COALESCE(SUM(total_savings), 0) AS prior
+         FROM gcc_world.finance_months
+        WHERE year < $1 OR (year = $1 AND month < $2)`,
+      [m.year, m.month]
+    );
+    const priorSavings = Number(priorRow?.prior) || 0;
+
     const monthName = MONTH_NAMES[m.month - 1];
     const data = [{
       year: m.year,
@@ -27,6 +36,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       totalIncome: Number(m.total_income) || 0,
       totalExpense: Number(m.total_expense) || 0,
       totalSavings: Number(m.total_savings) || 0,
+      priorSavings,
       incomeItems: items.filter((i: any) => i.type === 'income').map((i: any) => ({ description: i.description, amount: Number(i.amount) || 0 })),
       expenseItems: items.filter((i: any) => i.type === 'expense').map((i: any) => ({ description: i.description, amount: Number(i.amount) || 0 })),
     }];

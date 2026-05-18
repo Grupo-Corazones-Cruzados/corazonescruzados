@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
          c.name AS client_name,
          e.start_at, e.end_at, e.all_day, e.timezone,
          e.recurrence_type, e.recurrence_days, e.recurrence_interval, e.recurrence_until,
-         e.color, e.status
+         e.color, e.status, e.task_status
        FROM gcc_world.member_calendar_events e
        LEFT JOIN gcc_world.clients c ON c.id = e.client_id
        WHERE e.member_id = $1 AND e.status <> 'cancelled'

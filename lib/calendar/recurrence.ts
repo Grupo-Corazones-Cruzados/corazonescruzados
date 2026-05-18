@@ -1,6 +1,7 @@
-export type EventType = 'work' | 'personal';
+export type EventType = 'work' | 'personal' | 'task';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
 export type EventStatus = 'confirmed' | 'proposed' | 'cancelled';
+export type TaskStatus = 'pending' | 'done';
 
 export interface CalendarEvent {
   id: string;
@@ -19,6 +20,7 @@ export interface CalendarEvent {
   recurrence_until: string | null;
   color: string | null;
   status: EventStatus;
+  task_status: TaskStatus | null;
 }
 
 export interface EventInstance extends CalendarEvent {
@@ -122,9 +124,21 @@ function startOfWeek(d: Date): Date {
   return r;
 }
 
+export const EVENT_COLORS: Record<EventType, string> = {
+  work: '#7B5FBF',
+  personal: '#22c55e',
+  task: '#06b6d4',
+};
+
+export const EVENT_TYPE_LABELS_ES: Record<EventType, string> = {
+  work: 'LABORAL',
+  personal: 'PERSONAL',
+  task: 'TAREA',
+};
+
 export function colorForEvent(ev: CalendarEvent): string {
   if (ev.color) return ev.color;
-  return ev.event_type === 'work' ? '#7B5FBF' : '#22c55e';
+  return EVENT_COLORS[ev.event_type] || EVENT_COLORS.personal;
 }
 
 export const DAY_LABELS_ES_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];

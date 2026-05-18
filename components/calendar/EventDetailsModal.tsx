@@ -2,7 +2,7 @@
 
 import PixelModal from '@/components/ui/PixelModal';
 import type { EventInstance } from '@/lib/calendar/recurrence';
-import { colorForEvent, MONTH_LABELS_ES } from '@/lib/calendar/recurrence';
+import { colorForEvent, MONTH_LABELS_ES, EVENT_TYPE_LABELS_ES } from '@/lib/calendar/recurrence';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
@@ -35,7 +35,9 @@ export default function EventDetailsModal({ open, onClose, event, hideClientName
           <div className="flex-1">
             <div className="text-sm text-digi-text mb-1" style={pf}>{event.title}</div>
             <div className="text-[10px] text-digi-muted" style={pf}>
-              {event.event_type === 'work' ? 'LABORAL' : 'PERSONAL'}
+              {EVENT_TYPE_LABELS_ES[event.event_type] || 'EVENTO'}
+              {event.event_type === 'task' &&
+                (event.task_status === 'done' ? ' · ✓ COMPLETADA' : ' · ⏳ PENDIENTE')}
               {event.isRecurring && ' · RECURRENTE'}
             </div>
           </div>

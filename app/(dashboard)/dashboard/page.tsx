@@ -93,6 +93,18 @@ export default function DashboardHome() {
   const detailIncome = incomeItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const detailExpense = expenseItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const detailSavings = detailIncome - detailExpense;
+  // Ahorro a la fecha hasta el mes ANTERIOR al que se está viendo
+  // (suma del ahorro guardado de todos los meses previos).
+  const priorSavings = detailMonth
+    ? months
+        .filter(m =>
+          m.year < detailMonth.year ||
+          (m.year === detailMonth.year && m.month < detailMonth.month)
+        )
+        .reduce((s, m) => s + Number(m.total_savings || 0), 0)
+    : 0;
+  // Ahorro global a la fecha = acumulado anterior +/- ahorro (en vivo) de este mes.
+  const cumulativeSavings = priorSavings + detailSavings;
 
   const greeting = user?.first_name ? `Hola, ${user.first_name}` : 'Bienvenido';
 
@@ -224,8 +236,24 @@ export default function DashboardHome() {
             <div className={`mt-4 flex justify-between px-3 py-2 border-2 text-xs ${
               detailSavings >= 0 ? 'border-accent/50 text-accent-glow' : 'border-red-500/50 text-red-400'
             }`} style={mf}>
-              <span className="font-bold" style={pf}>Ahorro:</span>
+              <span className="font-bold" style={pf}>Ahorro (mes actual):</span>
               <span className="font-bold">${detailSavings.toFixed(2)}</span>
+            </div>
+
+            {/* Ahorro acumulado hasta el mes anterior */}
+            <div className={`mt-2 flex justify-between px-3 py-2 border-2 text-xs ${
+              priorSavings >= 0 ? 'border-accent/40 text-accent-glow' : 'border-red-500/50 text-red-400'
+            }`} style={mf}>
+              <span className="font-bold" style={pf}>Ahorro a la fecha (mes anterior):</span>
+              <span className="font-bold">${priorSavings.toFixed(2)}</span>
+            </div>
+
+            {/* Ahorro global a la fecha (mes anterior +/- mes actual) */}
+            <div className={`mt-2 flex justify-between px-3 py-2 border-2 text-xs ${
+              cumulativeSavings >= 0 ? 'border-green-500/50 text-green-400' : 'border-red-500/50 text-red-400'
+            }`} style={mf}>
+              <span className="font-bold" style={pf}>Ahorro Global (a la fecha):</span>
+              <span className="font-bold">${cumulativeSavings.toFixed(2)}</span>
             </div>
 
             {/* Actions */}

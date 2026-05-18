@@ -17,7 +17,7 @@ const SELECT_SQL = `
     c.name AS client_name,
     e.start_at, e.end_at, e.all_day, e.timezone,
     e.recurrence_type, e.recurrence_days, e.recurrence_interval, e.recurrence_until,
-    e.color, e.status, e.created_at, e.updated_at
+    e.color, e.status, e.task_status, e.created_at, e.updated_at
   FROM gcc_world.member_calendar_events e
   LEFT JOIN gcc_world.clients c ON c.id = e.client_id
 `;
@@ -64,11 +64,17 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
 
     if (typeof b.title === 'string') push('title', b.title);
     if ('description' in b) push('description', b.description);
-    if (b.event_type && ['work', 'personal'].includes(b.event_type)) {
+    if (b.event_type && ['work', 'personal', 'task'].includes(b.event_type)) {
       push('event_type', b.event_type);
       push('client_id', b.event_type === 'work' ? (b.client_id || null) : null);
+      push('task_status', b.event_type === 'task' ? (b.task_status === 'done' ? 'done' : 'pending') : null);
     } else if ('client_id' in b) {
       push('client_id', b.client_id);
+    }
+    // Permite alternar el estado de una tarea sin reenviar todo el formulario.
+    if (!b.event_type && 'task_status' in b) {
+      const ts = b.task_status === 'done' ? 'done' : b.task_status === 'pending' ? 'pending' : null;
+      push('task_status', ts);
     }
     if (b.start_at) push('start_at', b.start_at);
     if (b.end_at) push('end_at', b.end_at);
