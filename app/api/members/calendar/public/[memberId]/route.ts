@@ -10,7 +10,8 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
     if (!token) return NextResponse.json({ error: 'Token requerido' }, { status: 401 });
 
     const memberRes = await pool.query(
-      `SELECT id, name, email, calendar_public_token
+      `SELECT id, name, email, calendar_public_token,
+              availability_status, availability_updated_at
        FROM gcc_world.members
        WHERE id = $1 AND calendar_public_token = $2 LIMIT 1`,
       [memberId, token],
@@ -33,7 +34,12 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
     );
 
     return NextResponse.json({
-      member: { id: member.id, name: member.name },
+      member: {
+        id: member.id,
+        name: member.name,
+        availability_status: member.availability_status || 'conectado',
+        availability_updated_at: member.availability_updated_at || null,
+      },
       events,
     });
   } catch (err: any) {

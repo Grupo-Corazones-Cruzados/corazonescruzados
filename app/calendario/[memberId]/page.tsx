@@ -12,6 +12,7 @@ import {
   EVENT_COLORS,
   MONTH_LABELS_ES,
 } from '@/lib/calendar/recurrence';
+import { type AvailabilityStatus, AVAILABILITY } from '@/lib/calendar/availability';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 
@@ -25,6 +26,7 @@ export default function PublicCalendarPage() {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [memberName, setMemberName] = useState<string>('');
+  const [memberStatus, setMemberStatus] = useState<AvailabilityStatus>('conectado');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,6 +96,7 @@ export default function PublicCalendarPage() {
       }
       const data = await res.json();
       setMemberName(data.member?.name || 'Miembro');
+      setMemberStatus(data.member?.availability_status || 'conectado');
       setEvents(data.events || []);
       setError(null);
     } catch (err: any) {
@@ -181,6 +184,15 @@ export default function PublicCalendarPage() {
             <div>
               <div className="text-[10px] text-digi-muted" style={pf}>CALENDARIO PÚBLICO</div>
               <div className="text-lg text-accent-glow" style={pf}>{memberName}</div>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span
+                  className="w-2.5 h-2.5 border border-digi-border"
+                  style={{ backgroundColor: AVAILABILITY[memberStatus].color }}
+                />
+                <span className="text-[10px] text-digi-text" style={pf}>
+                  {AVAILABILITY[memberStatus].label.toUpperCase()}
+                </span>
+              </div>
             </div>
             <div className="text-[10px] text-digi-muted" style={pf}>GMT-5 · Ecuador</div>
           </div>

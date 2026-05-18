@@ -15,6 +15,11 @@ import {
   EVENT_COLORS,
   MONTH_LABELS_ES,
 } from '@/lib/calendar/recurrence';
+import {
+  type AvailabilityStatus,
+  AVAILABILITY,
+  AVAILABILITY_ORDER,
+} from '@/lib/calendar/availability';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 
@@ -30,18 +35,25 @@ export default function CalendarSettingsPage() {
   const [initialDate, setInitialDate] = useState<Date | null>(null);
   const [initialType, setInitialType] = useState<EventType>('work');
   const [shareOpen, setShareOpen] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilityStatus>('conectado');
+  const [savingAvail, setSavingAvail] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [evRes, clRes] = await Promise.all([
+      const [evRes, clRes, avRes] = await Promise.all([
         fetch('/api/members/calendar/events'),
         fetch('/api/clients'),
+        fetch('/api/members/calendar/availability'),
       ]);
       const evData = await evRes.json();
       const clData = await clRes.json();
       setEvents(evData.data || []);
       setClients((clData.data || []).map((c: any) => ({ id: c.id, name: c.name })));
+      if (avRes.ok) {
+        const avData = await avRes.json();
+        if (avData.status) setAvailability(avData.status);
+      }
     } catch {
       toast.error('Error al cargar el calendario');
     } finally {
@@ -142,6 +154,31 @@ export default function CalendarSettingsPage() {
     await load();
   };
 
+  const changeAvailability = async (status: AvailabilityStatus) => {
+    if (status === availability || savingAvail) return;
+    setSavingAvail(true);
+    const prev = availability;
+    setAvailability(status);
+    try {
+      const res = await fetch('/api/members/calendar/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Error al actualizar disponibilidad');
+      }
+      toast.success(`Disponibilidad: ${AVAILABILITY[status].label}`);
+      await load();
+    } catch (err: any) {
+      setAvailability(prev);
+      toast.error(err?.message || 'Error al actualizar disponibilidad');
+    } finally {
+      setSavingAvail(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     const res = await fetch(`/api/members/calendar/events/${id}`, { method: 'DELETE' });
     if (!res.ok) {
@@ -201,6 +238,29 @@ export default function CalendarSettingsPage() {
                   {v === 'month' ? 'MES' : v === 'week' ? 'SEMANA' : 'DÍA'}
                 </button>
               ))}
+            </div>
+            <div
+              className="flex items-center gap-1.5 border-2 border-digi-border px-2 py-1"
+              title="Disponibilidad"
+            >
+              <span
+                className="w-2.5 h-2.5 border border-digi-border"
+                style={{ backgroundColor: AVAILABILITY[availability].color }}
+              />
+              <select
+                value={availability}
+                disabled={savingAvail}
+                onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)}
+                className="bg-transparent text-[10px] text-digi-text focus:outline-none cursor-pointer disabled:opacity-50"
+                style={pf}
+                aria-label="Disponibilidad"
+              >
+                {AVAILABILITY_ORDER.map((s) => (
+                  <option key={s} value={s} className="bg-digi-darker text-digi-text">
+                    {AVAILABILITY[s].label.toUpperCase()}
+                  </option>
+                ))}
+              </select>
             </div>
             <button
               onClick={() => setShareOpen(true)}
