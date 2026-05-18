@@ -29,6 +29,25 @@ export default function PublicCalendarPage() {
   const [memberStatus, setMemberStatus] = useState<AvailabilityStatus>('conectado');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+
+  const syncKey = `calsync:${memberId}`;
+
+  // Muestra la última sincronización previa (de otra visita) hasta que
+  // la carga automática traiga datos frescos.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = window.localStorage.getItem(syncKey);
+    if (saved) {
+      const d = new Date(saved);
+      if (!Number.isNaN(d.getTime())) setLastSync(d);
+    }
+  }, [syncKey]);
+
+  const fmtSync = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getDate()} ${MONTH_LABELS_ES[d.getMonth()].slice(0, 3)} ${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
 
   const [detail, setDetail] = useState<EventInstance | null>(null);
 
@@ -99,6 +118,11 @@ export default function PublicCalendarPage() {
       setMemberStatus(data.member?.availability_status || 'conectado');
       setEvents(data.events || []);
       setError(null);
+      const now = new Date();
+      setLastSync(now);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(`calsync:${memberId}`, now.toISOString());
+      }
     } catch (err: any) {
       setError(err.message || 'Error al cargar el calendario');
     } finally {
@@ -194,7 +218,12 @@ export default function PublicCalendarPage() {
                 </span>
               </div>
             </div>
-            <div className="text-[10px] text-digi-muted" style={pf}>GMT-5 · Ecuador</div>
+            <div className="text-right">
+              <div className="text-[10px] text-digi-muted" style={pf}>GMT-5 · Ecuador</div>
+              <div className="text-[9px] text-digi-muted mt-1" style={pf}>
+                {lastSync ? `ACTUALIZADO: ${fmtSync(lastSync)}` : 'SIN SINCRONIZAR'}
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -226,6 +255,15 @@ export default function PublicCalendarPage() {
                   </button>
                 ))}
               </div>
+              <button
+                onClick={() => load()}
+                disabled={loading}
+                className="px-3 py-1.5 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors disabled:opacity-50"
+                style={pf}
+                title={lastSync ? `Última actualización: ${fmtSync(lastSync)}` : 'Sincronizar calendario'}
+              >
+                {loading ? 'SINCRONIZANDO…' : '↻ SINCRONIZAR'}
+              </button>
               <BookingCTA
                 meLoaded={meLoaded}
                 me={me}
