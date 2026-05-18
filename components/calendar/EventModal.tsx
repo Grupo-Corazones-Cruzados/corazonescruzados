@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
-import type { CalendarEvent, RecurrenceType, EventType, TaskStatus } from '@/lib/calendar/recurrence';
+import type { CalendarEvent, RecurrenceType, EventType } from '@/lib/calendar/recurrence';
 import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES } from '@/lib/calendar/recurrence';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
@@ -16,7 +16,6 @@ export interface EventFormPayload {
   title: string;
   description: string | null;
   event_type: EventType;
-  task_status: TaskStatus | null;
   client_id: string | null;
   start_at: string;
   end_at: string;
@@ -80,7 +79,6 @@ function defaultPayload(base: Date | null, type: EventType = 'work'): EventFormP
     title: '',
     description: '',
     event_type: type,
-    task_status: type === 'task' ? 'pending' : null,
     client_id: null,
     start_at: start.toISOString(),
     end_at: end.toISOString(),
@@ -108,7 +106,6 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         title: event.title,
         description: event.description || '',
         event_type: event.event_type,
-        task_status: event.task_status ?? (event.event_type === 'task' ? 'pending' : null),
         client_id: event.client_id,
         start_at: event.start_at,
         end_at: event.end_at,
@@ -136,7 +133,6 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
       ...f,
       event_type: t,
       client_id: t === 'work' ? f.client_id : null,
-      task_status: t === 'task' ? (f.task_status ?? 'pending') : null,
     }));
   };
 
@@ -223,7 +219,6 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
   const submit = async () => {
     setError(null);
     if (!form.title.trim()) { setError('El título es requerido'); return; }
-    if (form.event_type === 'work' && !form.client_id) { setError('Selecciona un cliente'); return; }
     if (new Date(form.end_at).getTime() < new Date(form.start_at).getTime()) {
       setError('La fecha fin no puede ser anterior al inicio');
       return;
@@ -269,11 +264,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
     <PixelModal
       open={open}
       onClose={onClose}
-      title={
-        form.event_type === 'task'
-          ? (event ? 'Editar tarea' : 'Nueva tarea')
-          : (event ? 'Editar evento' : 'Nuevo evento')
-      }
+      title={event ? 'Editar evento' : 'Nuevo evento'}
       size="lg"
     >
       <div className="space-y-4">
@@ -281,17 +272,13 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
           label="TÍTULO"
           value={form.title}
           onChange={(e) => update('title', e.target.value)}
-          placeholder={
-            form.event_type === 'task'
-              ? 'Enviar propuesta, revisar diseño…'
-              : 'Reunión con cliente, clase de yoga…'
-          }
+          placeholder="Reunión con cliente, clase de yoga…"
         />
 
         <div>
           <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>TIPO</div>
           <div className="flex gap-2">
-            {(['work', 'personal', 'task'] as const).map((t) => (
+            {(['work', 'personal'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
@@ -309,38 +296,12 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
           </div>
         </div>
 
-        {form.event_type === 'task' && (
-          <div>
-            <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>ESTADO</div>
-            <div className="flex gap-2">
-              {([
-                ['pending', '⏳ PENDIENTE'],
-                ['done', '✓ COMPLETADA'],
-              ] as const).map(([s, lbl]) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => update('task_status', s)}
-                  className={`flex-1 px-3 py-2 text-[10px] border-2 transition-colors ${
-                    form.task_status === s
-                      ? 'border-accent bg-accent/10 text-accent-glow'
-                      : 'border-digi-border text-digi-muted hover:text-digi-text'
-                  }`}
-                  style={pf}
-                >
-                  {lbl}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {form.event_type === 'work' && (
           <PixelSelect
-            label="CLIENTE"
+            label="CLIENTE (OPCIONAL)"
             value={form.client_id || ''}
             onChange={(e) => update('client_id', e.target.value || null)}
-            placeholder="Selecciona un cliente"
+            placeholder="Sin cliente"
             options={clients.map((c) => ({ value: c.id, label: c.name }))}
           />
         )}

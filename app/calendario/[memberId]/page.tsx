@@ -254,14 +254,6 @@ export default function PublicCalendarPage() {
               <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.personal, backgroundColor: `${EVENT_COLORS.personal}30` }} />
               PERSONAL
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.task, backgroundColor: `${EVENT_COLORS.task}30` }} />
-              TAREA
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span>☐ pendiente</span>
-              <span>· ✓ completada</span>
-            </div>
           </div>
         </div>
 

@@ -68,22 +68,22 @@ export async function POST(req: NextRequest) {
     );
 
     let createdEvent = null;
-    if (meta.createsTask) {
+    if (meta.createsEvent) {
       const { rows } = await client.query(
         `INSERT INTO gcc_world.member_calendar_events (
            member_id, title, description, event_type, client_id,
            start_at, end_at, all_day, timezone,
            recurrence_type, recurrence_days, recurrence_interval, recurrence_until,
-           color, status, created_by, task_status,
+           color, status, created_by,
            availability_status, availability_open
          ) VALUES (
-           $1, $2, NULL, 'task', NULL,
+           $1, $2, NULL, 'personal', NULL,
            NOW(), NOW() + INTERVAL '1 hour', FALSE, 'America/Guayaquil',
            'none', NULL, 1, NULL,
-           $3, 'confirmed', $4, 'pending',
+           $3, 'confirmed', $4,
            $5, TRUE
          ) RETURNING id, title, start_at, end_at, color`,
-        [memberId, meta.taskTitle, meta.color, user.userId, status],
+        [memberId, meta.eventTitle, meta.color, user.userId, status],
       );
       createdEvent = rows[0];
     }

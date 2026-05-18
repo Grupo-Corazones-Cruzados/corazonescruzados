@@ -30,7 +30,6 @@ const SELECT_SQL = `
     e.recurrence_until,
     e.color,
     e.status,
-    e.task_status,
     e.created_at,
     e.updated_at
   FROM gcc_world.member_calendar_events e
@@ -82,7 +81,6 @@ export async function POST(req: NextRequest) {
       recurrence_interval = 1,
       recurrence_until = null,
       color = null,
-      task_status = null,
     } = body;
 
     const { rows } = await pool.query(
@@ -90,12 +88,12 @@ export async function POST(req: NextRequest) {
          member_id, title, description, event_type, client_id,
          start_at, end_at, all_day, timezone,
          recurrence_type, recurrence_days, recurrence_interval, recurrence_until,
-         color, status, created_by, task_status
+         color, status, created_by
        ) VALUES (
          $1, $2, $3, $4, $5,
          $6, $7, $8, $9,
          $10, $11, $12, $13,
-         $14, 'confirmed', $15, $16
+         $14, 'confirmed', $15
        ) RETURNING id`,
       [
         memberId, title, description, event_type,
@@ -107,7 +105,6 @@ export async function POST(req: NextRequest) {
         recurrence_until,
         color,
         user.userId,
-        event_type === 'task' ? (task_status === 'done' ? 'done' : 'pending') : null,
       ],
     );
 
@@ -130,11 +127,7 @@ export async function POST(req: NextRequest) {
 function validateEventPayload(b: any): string | null {
   if (!b || typeof b !== 'object') return 'Payload inválido';
   if (!b.title || typeof b.title !== 'string' || !b.title.trim()) return 'Título requerido';
-  if (!['work', 'personal', 'task'].includes(b.event_type)) return 'Tipo inválido';
-  if (b.event_type === 'work' && !b.client_id) return 'Cliente requerido para eventos laborales';
-  if (b.task_status != null && !['pending', 'done'].includes(b.task_status)) {
-    return 'Estado de tarea inválido';
-  }
+  if (!['work', 'personal'].includes(b.event_type)) return 'Tipo inválido';
   if (!b.start_at || !b.end_at) return 'Fechas de inicio y fin requeridas';
   if (new Date(b.end_at).getTime() < new Date(b.start_at).getTime()) {
     return 'La fecha fin no puede ser anterior al inicio';

@@ -12,7 +12,6 @@ import {
   type EventInstance,
   type EventType,
   expandEvents,
-  EVENT_COLORS,
   MONTH_LABELS_ES,
 } from '@/lib/calendar/recurrence';
 import {
@@ -270,13 +269,6 @@ export default function CalendarSettingsPage() {
               COMPARTIR
             </button>
             <button
-              onClick={() => openNew('task')}
-              className="px-3 py-1.5 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors"
-              style={pf}
-            >
-              + TAREA
-            </button>
-            <button
               onClick={() => openNew('work')}
               className="px-3 py-1.5 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors"
               style={pf}
@@ -308,10 +300,6 @@ export default function CalendarSettingsPage() {
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: '#22c55e', backgroundColor: '#22c55e30' }} />
             PERSONAL
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.task, backgroundColor: `${EVENT_COLORS.task}30` }} />
-            TAREA
           </div>
           <div className="ml-auto">Zona horaria: América/Guayaquil (GMT-5)</div>
         </div>
