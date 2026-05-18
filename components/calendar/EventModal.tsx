@@ -47,6 +47,22 @@ function toLocalInput(iso: string | Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function toLocalTime(iso: string | Date): string {
+  const d = typeof iso === 'string' ? new Date(iso) : iso;
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function parseTimeStr(t: string): [number, number] {
+  const [h, m] = t.split(':').map((x) => parseInt(x, 10));
+  return [Number.isFinite(h) ? h : 0, Number.isFinite(m) ? m : 0];
+}
+
+function isoFrom(y: number, mo: number, d: number, hh: number, mm: number): string {
+  return new Date(y, mo, d, hh, mm, 0, 0).toISOString();
+}
+
 function toLocalDate(iso: string | Date): string {
   const d = typeof iso === 'string' ? new Date(iso) : iso;
   if (Number.isNaN(d.getTime())) return '';
@@ -82,6 +98,8 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
   const [form, setForm] = useState<EventFormPayload>(() => defaultPayload(initialDate, initialType));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 'forever' = se repite sin fecha fin; 'date' = termina en recurrence_until.
+  const [untilMode, setUntilMode] = useState<'forever' | 'date'>('forever');
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +123,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
     } else {
       setForm(defaultPayload(initialDate, initialType));
     }
+    setUntilMode(event?.recurrence_until ? 'date' : 'forever');
     setError(null);
   }, [open, event, initialDate, initialType]);
 
@@ -142,6 +161,65 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
     update('recurrence_days', next);
   };
 
+  // Para eventos recurrentes: inicio y fin viven en el mismo día.
+  // La fecha sólo define cuándo empieza la serie / qué día del mes.
+  const setRecurringDate = (dateStr: string) => {
+    const [y, mo, d] = dateStr.split('-').map((x) => parseInt(x, 10));
+    if (!y || !mo || !d) return;
+    setForm((f) => {
+      const s = new Date(f.start_at);
+      const e = new Date(f.end_at);
+      return {
+        ...f,
+        start_at: isoFrom(y, mo - 1, d, s.getHours(), s.getMinutes()),
+        end_at: isoFrom(y, mo - 1, d, e.getHours(), e.getMinutes()),
+      };
+    });
+  };
+
+  const setMonthDay = (day: number) => {
+    const d = Math.min(31, Math.max(1, day || 1));
+    setForm((f) => {
+      const s = new Date(f.start_at);
+      const e = new Date(f.end_at);
+      return {
+        ...f,
+        start_at: isoFrom(s.getFullYear(), s.getMonth(), d, s.getHours(), s.getMinutes()),
+        end_at: isoFrom(s.getFullYear(), s.getMonth(), d, e.getHours(), e.getMinutes()),
+      };
+    });
+  };
+
+  const setStartTime = (t: string) => {
+    const [hh, mm] = parseTimeStr(t);
+    setForm((f) => {
+      const s = new Date(f.start_at);
+      return { ...f, start_at: isoFrom(s.getFullYear(), s.getMonth(), s.getDate(), hh, mm) };
+    });
+  };
+
+  const setEndTime = (t: string) => {
+    const [hh, mm] = parseTimeStr(t);
+    setForm((f) => {
+      const s = new Date(f.start_at); // mismo día que el inicio
+      return { ...f, end_at: isoFrom(s.getFullYear(), s.getMonth(), s.getDate(), hh, mm) };
+    });
+  };
+
+  const setRecurrence = (type: RecurrenceType) => {
+    setForm((f) => {
+      if (type === 'none') return { ...f, recurrence_type: type };
+      const s = new Date(f.start_at);
+      const e = new Date(f.end_at);
+      const start = isoFrom(s.getFullYear(), s.getMonth(), s.getDate(), s.getHours(), s.getMinutes());
+      let end = isoFrom(s.getFullYear(), s.getMonth(), s.getDate(), e.getHours(), e.getMinutes());
+      if (new Date(end).getTime() <= new Date(start).getTime()) {
+        end = new Date(new Date(start).getTime() + 60 * 60 * 1000).toISOString();
+      }
+      return { ...f, recurrence_type: type, all_day: false, start_at: start, end_at: end };
+    });
+  };
+
   const submit = async () => {
     setError(null);
     if (!form.title.trim()) { setError('El título es requerido'); return; }
@@ -154,9 +232,19 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
       setError('Selecciona al menos un día de la semana');
       return;
     }
+    if (form.recurrence_type !== 'none' && untilMode === 'date' && !form.recurrence_until) {
+      setError('Elige la fecha hasta la que se repite, o selecciona "Siempre"');
+      return;
+    }
     setSaving(true);
     try {
-      await onSave({ ...form, description: form.description?.trim() || null }, event?.id);
+      const recurrence_until = form.recurrence_type === 'none' || untilMode === 'forever'
+        ? null
+        : form.recurrence_until;
+      await onSave(
+        { ...form, recurrence_until, description: form.description?.trim() || null },
+        event?.id,
+      );
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Error al guardar');
@@ -268,55 +356,93 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
           />
         </div>
 
-        <label className="flex items-center gap-2 text-[10px] text-digi-text cursor-pointer" style={pf}>
-          <input
-            type="checkbox"
-            checked={form.all_day}
-            onChange={(e) => update('all_day', e.target.checked)}
-            className="accent-accent"
-          />
-          TODO EL DÍA
-        </label>
+        {form.recurrence_type === 'none' ? (
+          <>
+            <label className="flex items-center gap-2 text-[10px] text-digi-text cursor-pointer" style={pf}>
+              <input
+                type="checkbox"
+                checked={form.all_day}
+                onChange={(e) => update('all_day', e.target.checked)}
+                className="accent-accent"
+              />
+              TODO EL DÍA
+            </label>
 
-        <div className="grid grid-cols-2 gap-3">
-          {form.all_day ? (
-            <>
+            <div className="grid grid-cols-2 gap-3">
+              {form.all_day ? (
+                <>
+                  <PixelInput
+                    type="date"
+                    label="FECHA INICIO"
+                    value={toLocalDate(form.start_at)}
+                    onChange={(e) => setStart(`${e.target.value}T00:00`)}
+                  />
+                  <PixelInput
+                    type="date"
+                    label="FECHA FIN"
+                    value={toLocalDate(form.end_at)}
+                    onChange={(e) => setEnd(`${e.target.value}T23:59`)}
+                  />
+                </>
+              ) : (
+                <>
+                  <PixelInput
+                    type="datetime-local"
+                    label="INICIO"
+                    value={toLocalInput(form.start_at)}
+                    onChange={(e) => setStart(e.target.value)}
+                  />
+                  <PixelInput
+                    type="datetime-local"
+                    label="FIN"
+                    value={toLocalInput(form.end_at)}
+                    onChange={(e) => setEnd(e.target.value)}
+                  />
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="space-y-3">
+            {form.recurrence_type === 'monthly' ? (
+              <PixelInput
+                type="number"
+                min={1}
+                max={31}
+                label="DÍA DEL MES"
+                value={new Date(form.start_at).getDate()}
+                onChange={(e) => setMonthDay(parseInt(e.target.value, 10))}
+              />
+            ) : (
               <PixelInput
                 type="date"
-                label="FECHA INICIO"
+                label="FECHA DE INICIO"
                 value={toLocalDate(form.start_at)}
-                onChange={(e) => setStart(`${e.target.value}T00:00`)}
+                onChange={(e) => setRecurringDate(e.target.value)}
+              />
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <PixelInput
+                type="time"
+                label="HORA INICIO"
+                value={toLocalTime(form.start_at)}
+                onChange={(e) => setStartTime(e.target.value)}
               />
               <PixelInput
-                type="date"
-                label="FECHA FIN"
-                value={toLocalDate(form.end_at)}
-                onChange={(e) => setEnd(`${e.target.value}T23:59`)}
+                type="time"
+                label="HORA FIN"
+                value={toLocalTime(form.end_at)}
+                onChange={(e) => setEndTime(e.target.value)}
               />
-            </>
-          ) : (
-            <>
-              <PixelInput
-                type="datetime-local"
-                label="INICIO"
-                value={toLocalInput(form.start_at)}
-                onChange={(e) => setStart(e.target.value)}
-              />
-              <PixelInput
-                type="datetime-local"
-                label="FIN"
-                value={toLocalInput(form.end_at)}
-                onChange={(e) => setEnd(e.target.value)}
-              />
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
 
         <div>
           <PixelSelect
             label="RECURRENCIA"
             value={form.recurrence_type}
-            onChange={(e) => update('recurrence_type', e.target.value as RecurrenceType)}
+            onChange={(e) => setRecurrence(e.target.value as RecurrenceType)}
             options={[
               { value: 'none', label: 'No se repite' },
               { value: 'daily', label: 'Diariamente' },
@@ -353,21 +479,42 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         )}
 
         {form.recurrence_type !== 'none' && (
-          <div className="grid grid-cols-2 gap-3">
-            <PixelInput
-              type="number"
-              min={1}
-              max={30}
-              label="REPETIR CADA"
-              value={form.recurrence_interval}
-              onChange={(e) => update('recurrence_interval', Math.max(1, parseInt(e.target.value) || 1))}
-            />
-            <PixelInput
-              type="date"
-              label="HASTA (OPCIONAL)"
-              value={form.recurrence_until || ''}
-              onChange={(e) => update('recurrence_until', e.target.value || null)}
-            />
+          <div className="space-y-3">
+            <div>
+              <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>¿HASTA CUÁNDO?</div>
+              <div className="flex gap-2">
+                {([
+                  ['forever', 'SIEMPRE'],
+                  ['date', 'HASTA UNA FECHA'],
+                ] as const).map(([m, lbl]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setUntilMode(m);
+                      if (m === 'forever') update('recurrence_until', null);
+                    }}
+                    className={`flex-1 px-3 py-2 text-[10px] border-2 transition-colors ${
+                      untilMode === m
+                        ? 'border-accent bg-accent/10 text-accent-glow'
+                        : 'border-digi-border text-digi-muted hover:text-digi-text'
+                    }`}
+                    style={pf}
+                  >
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {untilMode === 'date' && (
+              <PixelInput
+                type="date"
+                label="FECHA FINAL"
+                value={form.recurrence_until || ''}
+                onChange={(e) => update('recurrence_until', e.target.value || null)}
+              />
+            )}
           </div>
         )}
 

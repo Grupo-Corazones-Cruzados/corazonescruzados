@@ -188,7 +188,10 @@ export default function SettingsPage() {
                   { label: 'Disponibilidad', href: '/dashboard/settings/availability' },
                   { label: 'Mi CV', href: '/dashboard/settings/cv' },
                   { label: 'Portafolio', href: '/dashboard/settings/portfolio' },
-                  { label: 'Calendario', href: '/dashboard/settings/calendar' },
+                  // El calendario requiere member_id; solo rol 'member' lo tiene.
+                  ...(user?.role === 'member'
+                    ? [{ label: 'Calendario', href: '/dashboard/settings/calendar' }]
+                    : []),
                 ].map((link) => (
                   <Link
                     key={link.href}
