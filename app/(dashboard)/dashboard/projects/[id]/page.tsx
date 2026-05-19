@@ -8,6 +8,7 @@ import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import IncidentDetailPanel from '@/components/projects/IncidentDetailPanel';
 import FloatingChatWindow from '@/components/projects/FloatingChatWindow';
@@ -43,6 +44,7 @@ export default function ProjectDetailPage() {
   const { user } = useAuth();
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [digiProjects, setDigiProjects] = useState<any[]>([]);
   const [linking, setLinking] = useState(false);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
@@ -1766,15 +1768,7 @@ export default function ProjectDetailPage() {
                 )}
                 {isAdmin && (
                   <button
-                    onClick={async () => {
-                      if (!confirm('Estas seguro de eliminar este proyecto? Esta accion no se puede deshacer.')) return;
-                      try {
-                        const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-                        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-                        toast.success('Proyecto eliminado');
-                        window.location.href = '/dashboard/projects';
-                      } catch (e: any) { toast.error(e.message || 'Error al eliminar'); }
-                    }}
+                    onClick={() => setConfirmDeleteProject(true)}
                     className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors"
                     style={pf}
                   >
@@ -2260,6 +2254,24 @@ export default function ProjectDetailPage() {
           sessionKey={`project-${id}`}
         />
       )}
+
+      <PixelConfirm
+        open={confirmDeleteProject}
+        title="Eliminar proyecto"
+        message="¿Estás seguro de eliminar este proyecto? Esta acción no se puede deshacer."
+        confirmLabel="Sí, eliminar"
+        danger
+        onConfirm={async () => {
+          setConfirmDeleteProject(false);
+          try {
+            const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+            if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+            toast.success('Proyecto eliminado');
+            window.location.href = '/dashboard/projects';
+          } catch (e: any) { toast.error(e.message || 'Error al eliminar'); }
+        }}
+        onCancel={() => setConfirmDeleteProject(false)}
+      />
     </div>
   );
 }

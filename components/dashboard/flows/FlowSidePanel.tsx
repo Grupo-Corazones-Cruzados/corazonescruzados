@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
@@ -132,10 +133,10 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
         setSendResult({ sent: data.sent, failed: data.failed, total: data.total });
         fetchCampaigns();
       } else {
-        alert(data.error || 'Error al enviar');
+        toast.error(data.error || 'Error al enviar');
       }
     } catch {
-      alert('Error de conexion');
+      toast.error('Error de conexion');
     } finally {
       setSending(false);
     }
@@ -148,7 +149,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
       setStatsData(data);
       setView('stats');
     } catch {
-      alert('Error al cargar estadisticas');
+      toast.error('Error al cargar estadisticas');
     }
   };
 
@@ -616,7 +617,7 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
         .filter(c => c.name && c.email);
 
       if (contacts.length === 0) {
-        alert('No se encontraron contactos validos. Asegurate de que el archivo tenga columnas "nombre" y "correo".');
+        toast.error('No se encontraron contactos validos. Asegurate de que el archivo tenga columnas "nombre" y "correo".');
         return;
       }
 
@@ -631,10 +632,10 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
         fetchLists();
       } else {
         const err = await res.json();
-        alert(err.error || 'Error al importar');
+        toast.error(err.error || 'Error al importar');
       }
     } catch {
-      alert('Error al leer el archivo');
+      toast.error('Error al leer el archivo');
     } finally {
       setImportingContacts(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -939,7 +940,7 @@ function AttachmentsManager({
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (file.size > 10 * 1024 * 1024) {
-          alert(`${file.name} supera el limite de 10MB`);
+          toast.error(`${file.name} supera el limite de 10MB`);
           continue;
         }
         const buffer = await file.arrayBuffer();
@@ -950,7 +951,7 @@ function AttachmentsManager({
       }
       onChange([...attachments, ...newAttachments]);
     } catch {
-      alert('Error al leer archivos');
+      toast.error('Error al leer archivos');
     } finally {
       setAdding(false);
       if (inputRef.current) inputRef.current.value = '';

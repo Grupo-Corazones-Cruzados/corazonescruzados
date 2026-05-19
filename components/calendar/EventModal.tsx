@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import type { CalendarEvent, RecurrenceType, EventType } from '@/lib/calendar/recurrence';
@@ -96,6 +97,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
   const [form, setForm] = useState<EventFormPayload>(() => defaultPayload(initialDate, initialType));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   // 'forever' = se repite sin fecha fin; 'date' = termina en recurrence_until.
   const [untilMode, setUntilMode] = useState<'forever' | 'date'>('forever');
 
@@ -121,6 +123,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
       setForm(defaultPayload(initialDate, initialType));
     }
     setUntilMode(event?.recurrence_until ? 'date' : 'forever');
+    setConfirmDelete(false);
     setError(null);
   }, [open, event, initialDate, initialType]);
 
@@ -250,7 +253,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
 
   const handleDelete = async () => {
     if (!event || !onDelete) return;
-    if (!confirm('¿Eliminar este evento?')) return;
+    setConfirmDelete(false);
     setSaving(true);
     try {
       await onDelete(event.id);
@@ -490,7 +493,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
             {event && onDelete && (
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => setConfirmDelete(true)}
                 disabled={saving}
                 className="px-3 py-2 text-[10px] border-2 border-red-500/50 text-red-400 hover:bg-red-950/30 transition-colors disabled:opacity-50"
                 style={pf}
@@ -521,6 +524,16 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
           </div>
         </div>
       </div>
+
+      <PixelConfirm
+        open={confirmDelete}
+        title="Eliminar evento"
+        message="¿Eliminar este evento? Esta acción no se puede deshacer."
+        confirmLabel="Sí, eliminar"
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </PixelModal>
   );
 }

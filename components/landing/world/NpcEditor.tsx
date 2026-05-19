@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import {
   CharacterSprite,
   type CharacterConfig,
@@ -113,6 +114,7 @@ export default function NpcEditor({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   // Cycles the preview's animation frame at the chosen FPS so the
   // admin can see the pose actually move while editing.
   const [previewFrame, setPreviewFrame] = useState(0);
@@ -191,7 +193,7 @@ export default function NpcEditor({
 
   const remove = async () => {
     if (!draft?.id) return;
-    if (!window.confirm(`¿Borrar a "${draft.name}"?`)) return;
+    setConfirmRemove(false);
     setBusy(true);
     try {
       await fetch(`/api/world/npcs/${draft.id}`, { method: 'DELETE' });
@@ -551,7 +553,7 @@ export default function NpcEditor({
                 {draft.id != null && (
                   <button
                     type="button"
-                    onClick={remove}
+                    onClick={() => setConfirmRemove(true)}
                     disabled={busy}
                     style={{
                       padding: '8px 12px',
@@ -580,6 +582,16 @@ export default function NpcEditor({
           </div>
         )}
       </main>
+
+      <PixelConfirm
+        open={confirmRemove}
+        title="Borrar NPC"
+        message={`¿Borrar a "${draft?.name ?? ''}"?`}
+        confirmLabel="Sí, borrar"
+        danger
+        onConfirm={remove}
+        onCancel={() => setConfirmRemove(false)}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
@@ -27,6 +28,7 @@ export default function ProformaTokenButton({ projectId, className, label = 'Tok
   const [generating, setGenerating] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
 
   const reset = () => { setLink(null); setExpiresAt(null); setHours(24); };
 
@@ -61,7 +63,7 @@ export default function ProformaTokenButton({ projectId, className, label = 'Tok
   };
 
   const revoke = async () => {
-    if (!confirm('Revocar el token actual? El enlace dejara de funcionar.')) return;
+    setConfirmRevoke(false);
     try {
       const res = await fetch(`/api/projects/${projectId}/proforma/token`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error');
@@ -132,7 +134,7 @@ export default function ProformaTokenButton({ projectId, className, label = 'Tok
                 className="flex-1 px-3 py-1.5 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                 Abrir
               </button>
-              <button onClick={revoke}
+              <button onClick={() => setConfirmRevoke(true)}
                 className="px-3 py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
                 Revocar
               </button>
@@ -144,6 +146,16 @@ export default function ProformaTokenButton({ projectId, className, label = 'Tok
           </div>
         )}
       </PixelModal>
+
+      <PixelConfirm
+        open={confirmRevoke}
+        title="Revocar token"
+        message="¿Revocar el token actual? El enlace dejará de funcionar."
+        confirmLabel="Sí, revocar"
+        danger
+        onConfirm={revoke}
+        onCancel={() => setConfirmRevoke(false)}
+      />
     </>
   );
 }

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import MapEditor from './MapEditor';
 import CinematicEditor from './CinematicEditor';
 import type {
@@ -34,6 +36,7 @@ export default function SceneManagerEditor({
   const [creating, setCreating] = useState<null | SceneKind>(null);
   const [renamingSlug, setRenamingSlug] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [confirmRemoveSlug, setConfirmRemoveSlug] = useState<string | null>(null);
   // Lateral sidebar tab — toggles between the scenes list and the
   // map-editor's asset/layers panel. Default 'scenes' so the user
   // sees the scene list first when they open the editor.
@@ -116,7 +119,7 @@ export default function SceneManagerEditor({
     });
     const j = await r.json();
     if (!r.ok) {
-      alert(j?.error ?? 'No se pudo crear');
+      toast.error(j?.error ?? 'No se pudo crear');
       return;
     }
     await refreshList();
@@ -124,11 +127,11 @@ export default function SceneManagerEditor({
   };
 
   const removeScene = async (slug: string) => {
-    if (!window.confirm(`¿Borrar la escena "${slug}"? (incluye sus NPCs y luces)`)) return;
+    setConfirmRemoveSlug(null);
     const r = await fetch(`/api/world/scenes/${slug}`, { method: 'DELETE' });
     const j = await r.json();
     if (!r.ok) {
-      alert(j?.error ?? 'No se pudo borrar');
+      toast.error(j?.error ?? 'No se pudo borrar');
       return;
     }
     await refreshList();
@@ -449,7 +452,7 @@ export default function SceneManagerEditor({
                       danger
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeScene(s.slug);
+                        setConfirmRemoveSlug(s.slug);
                       }}
                     />
                   </div>
@@ -501,6 +504,16 @@ export default function SceneManagerEditor({
           />
         )}
       </main>
+
+      <PixelConfirm
+        open={confirmRemoveSlug !== null}
+        title="Borrar escena"
+        message={`¿Borrar la escena "${confirmRemoveSlug ?? ''}"? Incluye sus NPCs y luces.`}
+        confirmLabel="Sí, borrar"
+        danger
+        onConfirm={() => { if (confirmRemoveSlug) removeScene(confirmRemoveSlug); }}
+        onCancel={() => setConfirmRemoveSlug(null)}
+      />
     </div>
   );
 }

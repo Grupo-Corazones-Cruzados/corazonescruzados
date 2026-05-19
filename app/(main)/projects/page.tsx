@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import {
   Plus, Trash2, ChevronRight, ChevronDown,
   FolderTree, Box, Layers, FileText,
@@ -50,12 +51,12 @@ export default function ProjectsPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert('Error al guardar: ' + (data.error || res.statusText));
+        toast.error('Error al guardar: ' + (data.error || res.statusText));
         return;
       }
       setDirty(false);
     } catch (e: any) {
-      alert('Error al guardar: ' + e.message);
+      toast.error('Error al guardar: ' + e.message);
     } finally {
       setSaving(false);
     }

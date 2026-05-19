@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
@@ -91,8 +92,8 @@ export default function WhatsAppFlowPanel({ flow, onClose }: { flow: Flow; onClo
       });
       const data = await res.json();
       if (res.ok) { setSendResult(data); fetchCampaigns(); }
-      else alert(data.error || 'Error al enviar');
-    } catch { alert('Error de conexion'); }
+      else toast.error(data.error || 'Error al enviar');
+    } catch { toast.error('Error de conexion'); }
     finally { setSending(false); }
   };
 
@@ -117,7 +118,7 @@ export default function WhatsAppFlowPanel({ flow, onClose }: { flow: Flow; onClo
       const data = await res.json();
       setStatsData(data);
       setView('stats');
-    } catch { alert('Error al cargar estadisticas'); }
+    } catch { toast.error('Error al cargar estadisticas'); }
   };
 
   return (
@@ -453,12 +454,12 @@ function WaCreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; 
           phone: (row['telefono'] || row['Telefono'] || row['phone'] || row['Phone'] || '').toString().trim(),
         }))
         .filter(c => c.name && c.phone);
-      if (contactsData.length === 0) { alert('No se encontraron contactos. Columnas: "nombre" y "telefono"'); return; }
+      if (contactsData.length === 0) { toast.error('No se encontraron contactos. Columnas: "nombre" y "telefono"'); return; }
       const res = await fetch(`/api/admin/flows/${flowId}/contact-lists/${expandedListId}/contacts`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(contactsData),
       });
       if (res.ok) { fetchContacts(expandedListId); fetchLists(); }
-    } catch { alert('Error al leer el archivo'); }
+    } catch { toast.error('Error al leer el archivo'); }
     finally { setImportingContacts(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
   };
 
@@ -670,7 +671,7 @@ function WaTemplateForm({ flowId, onDone, onCancel, initial }: {
     const file = e.target.files?.[0];
     if (!file) return;
     const maxSize = headerType === 'video' ? 16 * 1024 * 1024 : 5 * 1024 * 1024;
-    if (file.size > maxSize) { alert(`Archivo supera el limite de ${headerType === 'video' ? '16' : '5'}MB`); return; }
+    if (file.size > maxSize) { toast.error(`Archivo supera el limite de ${headerType === 'video' ? '16' : '5'}MB`); return; }
     const buffer = await file.arrayBuffer();
     const base64 = btoa(new Uint8Array(buffer).reduce((d, b) => d + String.fromCharCode(b), ''));
     const mimePrefix = file.type ? `data:${file.type};base64,` : 'data:application/octet-stream;base64,';

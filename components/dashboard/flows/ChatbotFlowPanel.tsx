@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
@@ -31,6 +33,7 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [confirmDeleteAgent, setConfirmDeleteAgent] = useState<Agent | null>(null);
 
   const fetchAgents = useCallback(async () => {
     try { const res = await fetch(`/api/admin/flows/${flow.id}/agents`); const data = await res.json(); setAgents(data.data || []); }
@@ -68,7 +71,7 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
   };
 
   const handleDeleteAgent = async (agent: Agent) => {
-    if (!confirm(`Eliminar agente "${agent.name}"?`)) return;
+    setConfirmDeleteAgent(null);
     await fetch(`/api/admin/flows/${flow.id}/agents/${agent.id}`, { method: 'DELETE' });
     fetchAgents();
   };
@@ -139,7 +142,7 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
                           {a.status === 'active' ? 'Pausar' : 'Activar'}
                         </button>
                         <button onClick={() => { setSelectedAgent(a); setView('agent-detail'); }} className="px-2 py-0.5 text-[8px] border border-accent/50 text-accent-glow hover:bg-accent/10 transition-colors" style={pf}>Ver</button>
-                        <button onClick={() => handleDeleteAgent(a)} className="px-2 py-0.5 text-[8px] border border-red-700/50 text-red-400 hover:bg-red-900/20 transition-colors" style={pf}>X</button>
+                        <button onClick={() => setConfirmDeleteAgent(a)} className="px-2 py-0.5 text-[8px] border border-red-700/50 text-red-400 hover:bg-red-900/20 transition-colors" style={pf}>X</button>
                       </div>
                     )},
                   ]}
@@ -157,6 +160,16 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
           ) : null}
         </div>
       </div>
+
+      <PixelConfirm
+        open={confirmDeleteAgent !== null}
+        title="Eliminar agente"
+        message={`¿Eliminar agente "${confirmDeleteAgent?.name ?? ''}"?`}
+        confirmLabel="Sí, eliminar"
+        danger
+        onConfirm={() => { if (confirmDeleteAgent) handleDeleteAgent(confirmDeleteAgent); }}
+        onCancel={() => setConfirmDeleteAgent(null)}
+      />
     </div>
   );
 }
@@ -195,11 +208,11 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        if (file.size > 10 * 1024 * 1024) { alert(`${file.name} supera 10MB`); continue; }
+        if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name} supera 10MB`); continue; }
         const text = await file.text();
         setKnowledgeFiles(prev => [...prev, { filename: file.name, content: text, file_type: file.type || 'text/plain', file_size: file.size }]);
       }
-    } catch { alert('Error al leer archivo'); }
+    } catch { toast.error('Error al leer archivo'); }
     finally { setUploadingFile(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
   };
 

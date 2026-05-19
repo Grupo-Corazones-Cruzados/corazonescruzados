@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import type { ChatBlock } from '@/components/world/ChatPanel';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
@@ -105,6 +106,7 @@ export default function SocialCopyPanel({
   const [copy, setCopy] = useState<SocialCopyData | null>(null);
   const [activeTab, setActiveTab] = useState<PlatformKey>('youtube');
   const [loadingExisting, setLoadingExisting] = useState(true);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const runIdRef = useRef<string | null>(null);
@@ -389,7 +391,7 @@ REGLAS DEL JSON:
   };
 
   const revokeCopy = async () => {
-    if (!confirm('Eliminar el copy generado?')) return;
+    setConfirmRevoke(false);
     setSaving(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/social`, { method: 'DELETE' });
@@ -563,7 +565,7 @@ REGLAS DEL JSON:
                       Regenerar
                     </button>
                     <button
-                      onClick={revokeCopy}
+                      onClick={() => setConfirmRevoke(true)}
                       disabled={saving}
                       className="px-2 py-1 text-[8px] text-red-400 border border-red-700/50 hover:bg-red-900/20 transition-colors disabled:opacity-40"
                       style={pf}
@@ -577,6 +579,16 @@ REGLAS DEL JSON:
           </div>
         )}
       </div>
+
+      <PixelConfirm
+        open={confirmRevoke}
+        title="Eliminar copy"
+        message="¿Eliminar el copy generado?"
+        confirmLabel="Sí, eliminar"
+        danger
+        onConfirm={revokeCopy}
+        onCancel={() => setConfirmRevoke(false)}
+      />
     </div>
   );
 }

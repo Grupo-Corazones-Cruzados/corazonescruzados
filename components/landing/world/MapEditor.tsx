@@ -9,6 +9,8 @@ import {
   useState,
 } from 'react';
 import type { CSSProperties } from 'react';
+import { toast } from 'sonner';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import {
   CATEGORIES,
   SHEETS,
@@ -1307,7 +1309,7 @@ export default function MapEditor({
       });
       const j = await r.json();
       if (!r.ok) {
-        alert(j?.error ?? 'No se pudo guardar');
+        toast.error(j?.error ?? 'No se pudo guardar');
         return;
       }
       setSavedAt(Date.now());
@@ -4166,6 +4168,7 @@ function LayersPanel({
   // which means we render the array reversed (last layer = paints
   // on top of everything).
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const reversed = [...layers].reverse();
   return (
     <div
@@ -4354,11 +4357,7 @@ function LayersPanel({
                   onClick={(e) => {
                     e.stopPropagation();
                     if (!l.id || layers.length <= 1) return;
-                    if (
-                      window.confirm(`¿Borrar "${l.name ?? 'capa'}"?`)
-                    ) {
-                      onDelete(l.id);
-                    }
+                    setConfirmDelete({ id: l.id, name: l.name ?? 'capa' });
                   }}
                 />
               </div>
@@ -4366,6 +4365,19 @@ function LayersPanel({
           );
         })}
       </div>
+
+      <PixelConfirm
+        open={confirmDelete !== null}
+        title="Borrar capa"
+        message={`¿Borrar "${confirmDelete?.name ?? 'capa'}"?`}
+        confirmLabel="Sí, borrar"
+        danger
+        onConfirm={() => {
+          if (confirmDelete) onDelete(confirmDelete.id);
+          setConfirmDelete(null);
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

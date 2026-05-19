@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
@@ -18,6 +19,7 @@ export default function ShareDialog({ open, onClose }: Props) {
   const [token, setToken] = useState<string | null>(null);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -58,7 +60,7 @@ export default function ShareDialog({ open, onClose }: Props) {
   };
 
   const revoke = async () => {
-    if (!confirm('¿Revocar el enlace? Los clientes perderán acceso al calendario.')) return;
+    setConfirmRevoke(false);
     setSaving(true);
     try {
       const res = await fetch('/api/members/calendar/public-link', { method: 'DELETE' });
@@ -130,7 +132,7 @@ export default function ShareDialog({ open, onClose }: Props) {
                 REGENERAR
               </button>
               <button
-                onClick={revoke}
+                onClick={() => setConfirmRevoke(true)}
                 disabled={saving}
                 className="flex-1 px-3 py-2 text-[10px] border-2 border-red-500/50 text-red-400 hover:bg-red-950/30 transition-colors disabled:opacity-50"
                 style={pf}
@@ -153,6 +155,16 @@ export default function ShareDialog({ open, onClose }: Props) {
           </div>
         )}
       </div>
+
+      <PixelConfirm
+        open={confirmRevoke}
+        title="Revocar enlace"
+        message="¿Revocar el enlace? Los clientes perderán acceso al calendario."
+        confirmLabel="Sí, revocar"
+        danger
+        onConfirm={revoke}
+        onCancel={() => setConfirmRevoke(false)}
+      />
     </PixelModal>
   );
 }

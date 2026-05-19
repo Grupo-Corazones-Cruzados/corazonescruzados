@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { EventInstance } from '@/lib/calendar/recurrence';
 import { DAY_LABELS_ES_SHORT, colorForEvent, EVENT_COLORS } from '@/lib/calendar/recurrence';
 
@@ -47,6 +47,34 @@ function formatTime(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+// Hora actual del miembro en Ecuador (America/Guayaquil, GMT-5, sin DST),
+// independiente de la zona horaria del navegador del visitante.
+type NowParts = { y: number; mo0: number; d: number; minutes: number };
+
+function ecuadorNowParts(): NowParts {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Guayaquil',
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+  const hour = get('hour') % 24;
+  return { y: get('year'), mo0: get('month') - 1, d: get('day'), minutes: hour * 60 + get('minute') };
+}
+
+// null hasta montar (evita desajuste de hidratación SSR); luego refresca cada minuto.
+function useEcuadorNow(): NowParts | null {
+  const [now, setNow] = useState<NowParts | null>(null);
+  useEffect(() => {
+    setNow(ecuadorNowParts());
+    const id = setInterval(() => setNow(ecuadorNowParts()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+const NOW_COLOR = '#22d3ee';
 
 // Minutos por tipo dedicados a un día (porción de cada evento dentro del día;
 // excluye propuestas no confirmadas).
@@ -202,6 +230,7 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick }: Props) {
 
   const hours = Array.from({ length: WEEK_HOUR_END - WEEK_HOUR_START + 1 }, (_, i) => i + WEEK_HOUR_START);
   const today = new Date();
+  const now = useEcuadorNow();
 
   return (
     <div className="border-2 border-digi-border bg-digi-darker">
@@ -248,6 +277,7 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick }: Props) {
             day={day}
             instances={instances}
             hours={hours}
+            now={now}
             onDayClick={onDayClick}
             onEventClick={onEventClick}
           />
@@ -259,6 +289,7 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick }: Props) {
 
 function DayView({ currentDate, instances, onDayClick, onEventClick }: Props) {
   const hours = Array.from({ length: WEEK_HOUR_END - WEEK_HOUR_START + 1 }, (_, i) => i + WEEK_HOUR_START);
+  const now = useEcuadorNow();
   return (
     <div className="border-2 border-digi-border bg-digi-darker">
       <div className="grid" style={{ gridTemplateColumns: '56px 1fr' }}>
@@ -286,6 +317,7 @@ function DayView({ currentDate, instances, onDayClick, onEventClick }: Props) {
           day={currentDate}
           instances={instances}
           hours={hours}
+          now={now}
           onDayClick={onDayClick}
           onEventClick={onEventClick}
         />
@@ -298,12 +330,14 @@ function DayColumn({
   day,
   instances,
   hours,
+  now,
   onDayClick,
   onEventClick,
 }: {
   day: Date;
   instances: EventInstance[];
   hours: number[];
+  now?: NowParts | null;
   onDayClick: (d: Date) => void;
   onEventClick: (ev: EventInstance) => void;
 }) {
@@ -311,6 +345,15 @@ function DayColumn({
   const dayEnd = endOfDay(day);
   const gridStart = WEEK_HOUR_START * 60;
   const gridEnd = (WEEK_HOUR_END + 1) * 60;
+
+  const showNow =
+    !!now &&
+    day.getFullYear() === now.y &&
+    day.getMonth() === now.mo0 &&
+    day.getDate() === now.d &&
+    now.minutes >= gridStart &&
+    now.minutes <= gridEnd;
+  const nowTop = showNow ? ((now!.minutes - gridStart) / 60) * HOUR_PX : 0;
 
   const dayEvents = instances.filter((ev) => ev.instanceEnd >= dayStart && ev.instanceStart <= dayEnd);
 
@@ -383,6 +426,23 @@ function DayColumn({
           </div>
         );
       })}
+      {showNow && (
+        <div
+          className="absolute left-0 right-0 pointer-events-none"
+          style={{ top: nowTop, height: 0, zIndex: 30 }}
+        >
+          <span
+            className="absolute -left-[3px] -top-[4px] w-2 h-2 rounded-full"
+            style={{ backgroundColor: NOW_COLOR, boxShadow: `0 0 5px ${NOW_COLOR}` }}
+          />
+          <div
+            style={{
+              borderTop: `2px dashed ${NOW_COLOR}`,
+              filter: `drop-shadow(0 0 3px ${NOW_COLOR})`,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

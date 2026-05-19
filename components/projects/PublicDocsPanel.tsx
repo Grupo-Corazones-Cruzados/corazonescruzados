@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import type { ChatBlock } from '@/components/world/ChatPanel';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
@@ -87,6 +88,7 @@ export default function PublicDocsPanel({
   const [loadingExisting, setLoadingExisting] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [editSections, setEditSections] = useState<PublicDocsSection[]>([]);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const runIdRef = useRef<string | null>(null);
@@ -399,7 +401,7 @@ Recuerda: vale mas una doc corta y verificada que una larga con invenciones. Si 
   };
 
   const revokeDocs = async () => {
-    if (!confirm('Revocar la documentacion publica? El enlace dejara de funcionar.')) return;
+    setConfirmRevoke(false);
     setSaving(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/public-docs`, { method: 'DELETE' });
@@ -616,7 +618,7 @@ Recuerda: vale mas una doc corta y verificada que una larga con invenciones. Si 
                 </button>
               </div>
               <button
-                onClick={revokeDocs}
+                onClick={() => setConfirmRevoke(true)}
                 disabled={saving || editMode}
                 className="px-2 py-1 text-[8px] text-red-400 border border-red-700/50 hover:bg-red-900/20 transition-colors disabled:opacity-40"
                 style={pf}
@@ -628,6 +630,16 @@ Recuerda: vale mas una doc corta y verificada que una larga con invenciones. Si 
           </div>
         )}
       </div>
+
+      <PixelConfirm
+        open={confirmRevoke}
+        title="Revocar documentación"
+        message="¿Revocar la documentación pública? El enlace dejará de funcionar."
+        confirmLabel="Sí, revocar"
+        danger
+        onConfirm={revokeDocs}
+        onCancel={() => setConfirmRevoke(false)}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { GAME_EVENTS } from '@/lib/world/events';
 import type {
   CinematicCharacter,
@@ -142,7 +143,7 @@ export default function CinematicEditor({
       });
       const j = await r.json();
       if (!r.ok) {
-        alert(j?.error ?? 'No se pudo guardar');
+        toast.error(j?.error ?? 'No se pudo guardar');
         return;
       }
       setSavedAt(Date.now());
