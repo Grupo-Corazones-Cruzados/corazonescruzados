@@ -628,7 +628,7 @@ export default function TicketDetailPage() {
                   {(ticket.status === 'pending' || ticket.status === 'withdrawn') && (
                     <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary w-full text-[9px]">Confirmar</button>
                   )}
-                  {ticket.status === 'confirmed' && isMember && user?.member_id && ticket.member_id === user.member_id && (
+                  {ticket.status === 'confirmed' && (isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id)) && (
                     <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary w-full text-[9px]">Completar</button>
                   )}
                   {isAdmin && ticket.status !== 'cancelled' && (
