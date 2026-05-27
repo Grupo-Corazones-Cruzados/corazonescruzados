@@ -26,17 +26,14 @@ export async function POST(req: NextRequest) {
 
     const {
       ticket_id,
-      items_mode, // 'title' | 'breakdown'
+      skip_invoice,
+      invoice_items: rawItems,
       client_id_type, client_name, client_ruc, client_email,
       client_phone, client_address, payment_code,
       additional_fields, send_email, currency, exchange_rate,
     } = await req.json();
 
     if (!ticket_id) return NextResponse.json({ error: 'ticket_id requerido' }, { status: 400 });
-    if (!client_name?.trim()) return NextResponse.json({ error: 'Nombre del cliente requerido' }, { status: 400 });
-    if (!['title', 'breakdown'].includes(items_mode)) {
-      return NextResponse.json({ error: 'items_mode invalido' }, { status: 400 });
-    }
 
     // Load ticket
     const { rows: [ticket] } = await pool.query(
@@ -60,33 +57,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
-    // Build items based on mode
-    let invoice_items: { description: string; quantity: number; unitPrice: number; ivaRate: number; discount?: number }[] = [];
-    if (items_mode === 'title') {
-      const estimated = Number(ticket.estimated_cost) || 0;
-      if (estimated <= 0) {
-        return NextResponse.json({ error: 'El ticket no tiene costo estimado' }, { status: 400 });
-      }
-      invoice_items = [{
-        description: ticket.title,
-        quantity: 1,
-        unitPrice: estimated,
-        ivaRate: 0,
-      }];
-    } else {
-      const { rows: actions } = await pool.query(
-        `SELECT description, cost FROM gcc_world.ticket_actions WHERE ticket_id = $1 ORDER BY created_at ASC`,
-        [ticket_id]
-      );
-      if (actions.length === 0) {
-        return NextResponse.json({ error: 'No hay acciones registradas para desglosar' }, { status: 400 });
-      }
-      invoice_items = actions.map((a: any) => ({
-        description: a.description,
-        quantity: 1,
-        unitPrice: Number(a.cost) || 0,
-        ivaRate: 0,
-      }));
+    // Skip invoice flow: just mark completed and exit
+    if (skip_invoice) {
+      await pool.query(`UPDATE gcc_world.tickets SET status = 'completed', updated_at = NOW() WHERE id = $1`, [ticket_id]);
+      try {
+        const estimated = Number(ticket.estimated_cost) || 0;
+        if (estimated > 0) await addTicketIncomeToFinance(String(ticket.id), ticket.title, estimated);
+      } catch (finErr: any) { console.error('Finance ticket registration error:', finErr.message); }
+      return NextResponse.json({ ok: true, invoiceId: null, sriResult: { ok: true, authorized: false, skipped: true } });
+    }
+
+    if (!client_name?.trim()) return NextResponse.json({ error: 'Nombre del cliente requerido' }, { status: 400 });
+
+    // Normalize editable items array sent from the modal
+    const invoice_items = Array.isArray(rawItems)
+      ? rawItems
+          .map((it: any) => ({
+            description: String(it.description || '').trim(),
+            quantity: Number(it.quantity) || 0,
+            unitPrice: Number(it.unitPrice) || 0,
+            ivaRate: Number(it.ivaRate) || 0,
+            discount: Number(it.discount) || 0,
+          }))
+          .filter(it => it.description && it.quantity > 0)
+      : [];
+
+    if (invoice_items.length === 0) {
+      return NextResponse.json({ error: 'Agrega al menos un item para facturar' }, { status: 400 });
     }
 
     // Create SRI invoice
