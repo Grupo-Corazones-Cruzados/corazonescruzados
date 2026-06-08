@@ -8,8 +8,8 @@ import PageHeader from '@/components/ui/PageHeader';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
@@ -104,12 +104,12 @@ export default function SettingsPage() {
                 )}
                 {uploading && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                    <span className="text-[8px] text-white animate-pulse" style={pf}>...</span>
+                    <span className="text-[8px] text-digi-text animate-pulse" style={pf}>...</span>
                   </div>
                 )}
               </div>
               <div className="flex-1">
-                <p className="text-xs text-white mb-0.5" style={pf}>{user?.email}</p>
+                <p className="text-xs text-digi-text mb-0.5" style={pf}>{user?.email}</p>
                 <p className="text-[9px] text-digi-muted mb-3" style={mf}>ID: {user?.id?.slice(0, 8)}...</p>
                 <input
                   ref={fileRef}

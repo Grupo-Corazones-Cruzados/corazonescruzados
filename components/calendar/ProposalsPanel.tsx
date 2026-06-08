@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { MONTH_LABELS_ES } from '@/lib/calendar/recurrence';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface Proposal {
   id: string;

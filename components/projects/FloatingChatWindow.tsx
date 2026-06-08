@@ -7,8 +7,8 @@ import type { ChatBlock } from '@/components/world/ChatPanel';
 
 const ChatPanel = dynamic(() => import('@/components/world/ChatPanel'), { ssr: false });
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface FloatingChatWindowProps {
   citizen: CitizenDef;
@@ -127,7 +127,7 @@ export default function FloatingChatWindow({
         style={{ left: pos.x, top: pos.y, width: 320 }}
       >
         <p className="text-sm text-red-400 mb-2" style={pf}>Prohibido</p>
-        <p className="text-[10px] text-digi-muted" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+        <p className="text-[10px] text-digi-muted" style={{ fontFamily: 'var(--font-body)' }}>
           El chat con agentes solo esta disponible en entorno local (localhost).
         </p>
         <button onClick={onClose} className="mt-4 text-[9px] text-digi-muted border border-digi-border px-3 py-1 hover:border-accent transition-colors" style={pf}>

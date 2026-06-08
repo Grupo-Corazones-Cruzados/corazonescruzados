@@ -37,13 +37,27 @@ export async function GET(req: NextRequest) {
       where += ` AND t.client_id IN (SELECT id FROM gcc_world.clients WHERE user_id = $${params.length})`;
     }
 
+    // Ensure invoice source columns exist for the invoice LEFT JOIN (additive, safe)
+    await pool.query(`
+      ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_type VARCHAR(20);
+      ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_id TEXT;
+    `);
+
     const countQ = await pool.query(`SELECT COUNT(*) FROM gcc_world.tickets t ${where}`, params);
     params.push(limit, offset);
     const dataQ = await pool.query(
-      `SELECT t.*, c.name as client_name, m.name as member_name
+      `SELECT t.*, c.name as client_name, m.name as member_name,
+              inv_info.invoice_id, inv_info.invoice_sri_status, inv_info.invoice_total
        FROM gcc_world.tickets t
        LEFT JOIN gcc_world.clients c ON c.id = t.client_id
        LEFT JOIN gcc_world.members m ON m.id = t.member_id
+       LEFT JOIN LATERAL (
+         SELECT id as invoice_id, sri_status as invoice_sri_status, original_total_usd as invoice_total
+         FROM gcc_world.invoices
+         WHERE source_type = 'ticket' AND source_id = CAST(t.id AS TEXT) AND status != 'cancelled'
+         ORDER BY CASE sri_status WHEN 'authorized' THEN 0 ELSE 1 END
+         LIMIT 1
+       ) inv_info ON true
        ${where}
        ORDER BY t.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,

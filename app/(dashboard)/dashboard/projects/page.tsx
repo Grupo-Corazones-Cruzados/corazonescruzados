@@ -4,14 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import PageHeader from '@/components/ui/PageHeader';
-import PixelTabs from '@/components/ui/PixelTabs';
+import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const BASE_TABS = [
   { value: 'all', label: 'Todos' },
@@ -140,27 +139,18 @@ export default function ProjectsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Proyectos"
-        description="Gestiona tus proyectos"
+      <ModuleToolbar
+        tabs={tabs}
+        activeTab={tab}
+        onTabChange={setTab}
+        search={search}
+        onSearchChange={setSearch}
         action={
           <button onClick={() => setShowCreate(true)} className="pixel-btn pixel-btn-primary text-[9px]">
             + Nuevo Proyecto
           </button>
         }
       />
-
-      <div className="mb-4">
-        <input
-          placeholder="Buscar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none w-full max-w-xs"
-          style={mf}
-        />
-      </div>
-
-      <PixelTabs tabs={tabs} active={tab} onChange={setTab} />
 
       <PixelDataTable
         columns={[
@@ -189,17 +179,6 @@ export default function ProjectsPage() {
               </div>
             );
           }},
-          { key: 'actions', header: '', width: '40px', render: (p: any) => (
-            isOwnerOf(p) && !['completed', 'closed', 'cancelled'].includes(p.status) ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); openEdit(p); }}
-                className="text-[8px] text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent px-1.5 py-0.5 transition-colors"
-                style={pf}
-              >
-                Editar
-              </button>
-            ) : null
-          )},
         ]}
         data={projects}
         onRowClick={(p: any) => router.push(`/dashboard/projects/${p.id}`)}

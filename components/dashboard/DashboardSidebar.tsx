@@ -5,32 +5,30 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import BrandLoader from '@/components/ui/BrandLoader';
-
-/*
- * Logo sprite sheet: /logo-spritesheet.png (1024×1024)
- * WALK row = row 1, 6 frames → each frame ≈ 170×165px
- * Display at 36px: scale = 36/170 ≈ 0.212
- * bg-size: 217px, y-offset for WALK row ≈ -35px, --sw: -217px
- */
+import {
+  Home, Ticket, FolderKanban, Store, ReceiptText, Network, Wrench,
+  Settings, LifeBuoy, ShieldCheck, Menu, ChevronsLeft, ChevronsRight,
+  LogOut, type LucideIcon,
+} from 'lucide-react';
 
 interface NavItem {
   label: string;
   href: string;
-  icon: string;
+  icon: LucideIcon;
   roles?: string[];
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Inicio', href: '/dashboard', icon: '~' },
-  { label: 'Tickets', href: '/dashboard/tickets', icon: '#' },
-  { label: 'Proyectos', href: '/dashboard/projects', icon: '>' },
-  { label: 'Marketplace', href: '/dashboard/marketplace', icon: '$' },
-  { label: 'Facturas', href: '/dashboard/invoices', icon: '%' },
-  { label: 'Centralizado', href: '/dashboard/centralized', icon: '@', roles: ['member', 'admin'] },
-  { label: 'Herramientas', href: '/dashboard/tools', icon: '&' },
-  { label: 'Configuracion', href: '/dashboard/settings', icon: '*' },
-  { label: 'Soporte', href: '/dashboard/support', icon: '?' },
-  { label: 'Admin', href: '/dashboard/admin', icon: '!', roles: ['admin'] },
+  { label: 'Inicio', href: '/dashboard', icon: Home },
+  { label: 'Tickets', href: '/dashboard/tickets', icon: Ticket },
+  { label: 'Proyectos', href: '/dashboard/projects', icon: FolderKanban },
+  { label: 'Marketplace', href: '/dashboard/marketplace', icon: Store },
+  { label: 'Facturas', href: '/dashboard/invoices', icon: ReceiptText },
+  { label: 'Centralizado', href: '/dashboard/centralized', icon: Network, roles: ['member', 'admin'] },
+  { label: 'Herramientas', href: '/dashboard/tools', icon: Wrench },
+  { label: 'Configuracion', href: '/dashboard/settings', icon: Settings },
+  { label: 'Soporte', href: '/dashboard/support', icon: LifeBuoy },
+  { label: 'Admin', href: '/dashboard/admin', icon: ShieldCheck, roles: ['admin'] },
 ];
 
 export default function DashboardSidebar() {
@@ -47,17 +45,17 @@ export default function DashboardSidebar() {
     (item) => !item.roles || item.roles.includes(user?.role || '')
   );
 
-  const pf = { fontFamily: "'Silkscreen', cursive" } as const;
+  const pf = { fontFamily: 'var(--font-display)' } as const;
 
   return (
     <>
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-3 left-3 z-50 lg:hidden w-10 h-10 flex items-center justify-center border-2 border-digi-border bg-digi-card text-accent-glow hover:border-accent transition-colors"
-        style={pf}
+        className="fixed top-3 left-3 z-30 lg:hidden w-10 h-10 flex items-center justify-center border-2 border-digi-border bg-digi-card text-accent-glow hover:border-accent transition-colors"
+        aria-label="Abrir menú"
       >
-        =
+        <Menu className="w-5 h-5" />
       </button>
 
       {/* Backdrop */}
@@ -101,7 +99,7 @@ export default function DashboardSidebar() {
                 style={pf}
                 title={collapsed ? item.label : undefined}
               >
-                <span className="w-5 text-center text-xs shrink-0">{item.icon}</span>
+                <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
                 {!collapsed && <span className="truncate">{item.label}</span>}
               </Link>
             );
@@ -131,20 +129,21 @@ export default function DashboardSidebar() {
             </div>
           )}
 
-          <div className="flex gap-1">
+          <div className="flex flex-col gap-1.5">
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className="hidden lg:flex flex-1 items-center justify-center py-1.5 text-[9px] text-digi-muted border border-digi-border hover:border-accent hover:text-accent-glow transition-colors"
-              style={pf}
+              className="hidden lg:flex items-center justify-center py-1.5 text-[9px] text-digi-muted border border-digi-border hover:border-accent hover:text-accent-glow transition-colors"
+              aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
             >
-              {collapsed ? '>>' : '<<'}
+              {collapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
             </button>
             <button
               onClick={signOut}
-              className="flex-1 py-1.5 text-[9px] text-digi-muted border border-digi-border hover:border-red-500/50 hover:text-red-400 transition-colors"
+              className="flex items-center justify-center gap-1.5 py-1.5 text-[9px] text-red-400 border border-red-400/40 hover:bg-red-400/10 hover:border-red-400 transition-colors"
               style={pf}
             >
-              {collapsed ? 'X' : 'Salir'}
+              <LogOut className="w-3.5 h-3.5" />
+              {!collapsed && 'Salir'}
             </button>
           </div>
         </div>

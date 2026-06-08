@@ -31,6 +31,26 @@ Stack estándar de la casa, con particularidades de este repo:
 - Trabajo reciente (may-2026): módulo **Tickets** (admin completa/factura tickets, modal
   estandarizado con el de proyectos) y **Calendario** (disponibilidad de miembro, vista
   semanal 24h, hora actual, color "fuera de casa", calendario público con sincronización).
+- **2026-06-07:**
+  - Limpieza de repo: eliminado código muerto (componentes huérfanos), migraciones SQL ya
+    aplicadas (`sql/migrations/`), scripts one-off y assets sin uso. Commit `94cfcee`.
+  - Nueva feature: en el modal **"Completar Proyecto y Generar Factura"**
+    (`app/(dashboard)/dashboard/projects/[id]/page.tsx`) se agregó **"Cliente previo"** —
+    selector que autocompleta los datos del adquiriente (tipo id, identificación, razón
+    social, dirección, email, teléfono) desde clientes ya facturados. Verificado (tsc OK),
+    **sin commitear aún**. Ver `Aprendizaje.md`.
+  - **Rediseño visual del dashboard: pixelart → corporativo (Microsoft/SharePoint, Fluent).**
+    Tema **light** (fondo `#faf9f8`, texto `#242424`), acento morado de marca `#4B2D8E`, fuente
+    **Segoe UI**. **Solo `/dashboard/`** (landing/auth/portal/mundo conservan pixelart). Trabajo grande,
+    **TODO sin commitear** (un solo bloque, ~60+ archivos). Fases:
+    1. Recoloreo por tokens scoped `.corp`.
+    2. Rediseño de la forma de todos los controles y modales a Fluent (campos, selects, tabs, tabla, diálogos).
+    3. Formularios como **panel lateral derecho** (md/lg) vs diálogo centrado (sm).
+    4. Arreglo de contraste de colores claros sobre blanco.
+    5. **Quitado el bloque título+descripción** (`PageHeader`) de todos los módulos; la home perdió su saludo.
+    6. **`ModuleToolbar`**: pestañas+buscador+acción en una fila (+ layout móvil + overflow menu, ver lecciones).
+    7. **Sidebar**: íconos lucide por módulo, logo sin borde negro, botones inferiores en 2 filas (salir en rojo).
+    Verificado en cada paso (tsc OK, compila). Ver `Aprendizaje.md` y "Lecciones técnicas → Theming corporativo".
 
 ## Arquitectura y módulos
 Rutas en `app/`, agrupadas por layout: `(auth)`, `(dashboard)`, `(main)`, `(public)`.
@@ -56,6 +76,111 @@ Módulos principales:
   versión correcta y en uso. Se eliminó la rama `origin/rebuild/v2`. El trabajo continúa aquí.
 
 ## Lecciones técnicas
+- **Theming corporativo del dashboard (scope `.corp`):** el look pixelart está centralizado en
+  `app/globals.css` (tokens `@theme` `--color-digi-*`/`--color-accent*`, fuentes, clases `.pixel-*`).
+  Para dar al dashboard un tema **light corporativo** sin afectar landing/auth/portal/mundo (que
+  comparten esos estilos), se montó la clase **`.corp`** en `app/(dashboard)/layout.tsx` y dentro de
+  ella se **redefinen las CSS vars** → todas las utilidades Tailwind `digi-*`/`accent` y las clases
+  `.pixel-*` heredan el color corporativo **sin editar las 22 páginas** (las páginas casi no usan hex
+  hardcodeado). Detalles:
+  - Las fuentes que se fijaban inline (`fontFamily: "'Silkscreen'…"` / JetBrains) se migraron a
+    `var(--font-display)` / `var(--font-body)` (theme-aware): por defecto = pixel; bajo `.corp` = Segoe UI.
+  - `text-white` (no overrideable por var) → `text-digi-text` en el scope del dashboard, **salvo** sobre
+    color sólido (p.ej. badge `bg-red-600`, que sigue blanco).
+  - **`.pixel-scope`**: clase que **revierte localmente** los tokens a los valores dark/pixel. Se usa en
+    "islas" que deben seguir oscuras dentro del dashboard: previews de WhatsApp/chatbot
+    (`components/dashboard/flows/*`) y `ProformaChatPanel` (GitHub-dark). Si creas otra isla con fondo
+    hardcodeado oscuro, envuélvela en `.pixel-scope`.
+  - `PixelBadge` usa `data-variant` + clase base `pixel-badge`; los colores claros (Fluent) de los
+    badges viven en `.corp .pixel-badge[data-variant=…]`.
+  - **Forma de los controles (fase 2):** los componentes compartidos llevan **clases base semánticas**
+    y su diseño Fluent vive en `app/globals.css` → "CORPORATE CONTROLS" (`.corp .<clase>`):
+    `field-control`/`field-label`/`field-select` (inputs/selects), `modal-surface/header/title/close/body`
+    (PixelModal), `pivot`/`pivot-tab`/`pivot-count` (PixelTabs), `data-table`/`dt-th`/`dt-td`/`dt-row`
+    (PixelDataTable), `dlg-btn`/`dlg-btn--primary|--danger` (PixelConfirm), `page-title` (PageHeader).
+    El chevron del `<select>` se movió del inline a la clase `.field-select` para poder tematizarlo.
+    Para restilizar un control en el dashboard, edita su `.corp .<clase>` (no toques el componente, así
+    auth/portal siguen pixel). Regla global: `.corp input/select/textarea` también estiliza campos sueltos.
+  - **Formularios = panel lateral derecho (fase 3, estilo Azure/SharePoint Fluent Panel):** `PixelModal`
+    pone `data-size={size}` en el surface. En `.corp`, `data-size='md'|'lg'` → panel `position:fixed` a la
+    **derecha**, alto completo, ancho 644/840px, slide-in `panelSlideInRight`; `data-size='sm'` → diálogo
+    centrado pequeño (lo usa solo `PixelConfirm`). Como 43 de 44 modales son `md`/`lg`, los formularios se
+    volvieron panel **sin tocar las llamadas**. Pendiente opcional: footer sticky con botones.
+  - **Quitar título+descripción de módulos (fase 5):** `PageHeader` (solo dashboard) se reescribió: NO
+    renderiza título/descripción; si hay `action` la deja como barra delgada, si no, renderiza `null`. Las
+    44 llamadas no cambian. La home perdió su bloque "Welcome". **Efecto:** las páginas de detalle
+    (`projects/[id]`, `tickets/[id]`, `support/[id]`) también perdieron su título de registro (pendiente
+    confirmar si se restaura ahí).
+  - **Barra de módulo en una fila (fase 6):** `components/ui/ModuleToolbar.tsx` agrupa pestañas + buscador +
+    acción (command bar). El layout vive ahí (un solo punto). `PixelTabs` tiene prop `flush` (sin borde/margen
+    propios). Aplicado a projects/tickets/invoices/marketplace/support/portfolio; faltan admin,
+    admin/incidents, centralized. **Móvil (< lg):** la barra sube (`-mt-12`) a la altura del hamburguesa y las
+    pestañas van a su lado (`pl-12`), con buscador+acción en 2ª fila; en `lg` vuelve a una fila. Pestañas
+    alineadas: **derecha en móvil, izquierda en escritorio** (`.corp .pivot--flush` flex-end; `@media (min-width:1024px)` flex-start).
+  - **Pestañas colapsables = overflow menu, NO scroll (fase 6.1):** `PixelTabs` mide anchos (capa oculta +
+    `ResizeObserver`) y muestra las que caben; las demás van a un botón **⋯** (`MoreHorizontal`) que despliega
+    un dropdown hacia abajo. Reemplazó el `overflow-x-auto` por `overflow-hidden` → eliminó el gotcha del scroll
+    vertical (overflow-x:auto forzaba overflow-y:auto). El subrayado activo no se corta gracias a
+    `.corp .pivot--flush .pivot-tab { margin-bottom:0 }`.
+  - **Sidebar (fase 7):** íconos de módulo con **lucide-react** (ya instalado) en `DashboardSidebar`
+    (`NavItem.icon: LucideIcon`); hamburguesa (`Menu`)/colapsar/salir con lucide. El botón hamburguesa móvil
+    es **z-30** (debajo del sidebar/backdrop z-40) para que al abrir el menú el panel lo cubra, no se superponga. Botones inferiores en 2 filas
+    (colapsar arriba, **cerrar sesión abajo en rojo** `text-red-400`). **`BrandLoader`** (logo rotatorio en todas
+    las pantallas de carga): el arte tiene borde negro irregular; se separó el clip circular del sprite y se
+    escala el sprite `transform: scale(1.18)` para recortarlo (factor ajustable).
+  - **Rediseño de páginas de detalle (fase 9, estilo Microsoft/Fluent + Monday):** shell reutilizable
+    `components/ui/DetailHeader.tsx` (breadcrumb + título + status + chips `HeaderChip` + command bar con
+    acciones + menú overflow ⋯) y `components/ui/PropertyRail.tsx` (panel lateral sticky de metadatos).
+    Patrón por página: DetailHeader + `PixelTabs` (Pivot) + PropertyRail + sección de tareas/acciones estilo
+    **Monday** (barra de presupuesto + filas + "+ agregar" inline). **Ticket (`tickets/[id]`) HECHO** (tabs
+    Resumen/Acciones). **Proyecto (`projects/[id]`) — etapa 1 HECHA:** DetailHeader + command bar (acción
+    primaria por estado + ⋯ Editar nombre/Cancelar/Eliminar), título editable preservado, tarjeta "Acciones"
+    adelgazada (sin duplicar). **Etapa 2 HECHA:** Pivot en la columna izquierda con 3 pestañas — **Resumen**
+    (descripción + detalles con edición inline + solicitudes + progreso + acciones), **Requerimientos**
+    (jerárquicos + subitems + asignaciones + participantes/bids), **Imágenes**. Truco: se envuelven SOLO las
+    secciones en `{ptab==='x' && (<>…</>)}` y los **modales anidados** (Invite/Bid/Complete/ImagePreview) quedan
+    SIN envolver → se renderizan siempre, sin moverlos. La columna derecha conserva integraciones
+    (DigiMundo/Proforma/Contenido IA/Incidencias). **Etapa 3 HECHA:** Pivot movido arriba del grid (full width)
+    con 4 pestañas — Resumen · Requerimientos · **DigiMundo** (agrupa DigiMundo+Proforma+Contenido IA+Incidencias)
+    · Imágenes; **panel Propiedades** sticky a la derecha (como tickets) con edición inline de presupuesto/límite/
+    visibilidad preservada (Details se movió ahí). El contenido de cada pestaña (incl. DigiMundo) va en la
+    columna IZQUIERDA (área principal, col-span-2) y el panel Propiedades queda fijo a la DERECHA (col-span-1).
+    **Requerimientos estilo Monday HECHO:** checkboxes reales (cuadro + ✓ lucide `Check`, morado al completar),
+    cada requerimiento como card con barra de color a la izquierda (verde=completado / morado=pendiente),
+    título semibold tachado al completar, subitems con checkbox pequeño, barra de progreso redondeada.
+    Ver `Aprendizaje.md` fase 9.
+  - **Tablas de altura fija + scroll interno (fase 8):** `PixelDataTable` mide su `top` y fija
+    `height = innerHeight − top − 16` (mín 220) → llena el alto disponible; el cuerpo scrollea **internamente**
+    (no la página), con **thead sticky** y paginador fijo abajo. Recalcula en resize / cambio de datos /
+    `ResizeObserver` sobre `document.body` (guarda anti-bucle por umbral de 1px). Aplica a todos los módulos.
+    Nota: asume que la tabla es el último contenido de la página; si hay algo debajo, quedaría bajo el fold.
+  - **KPI cards del home (fase 8):** `StatCard` dejó de usar `.pixel-card` (padding 24px) → ahora card compacta
+    `bg-digi-card border rounded-lg px-4 py-3 shadow-sm`, etiqueta mayúscula pequeña + número grande (estilo Power BI).
+  - **Contraste sobre blanco (fase 4):** las variantes claras de la paleta Tailwind (`text-*-300/400`,
+    p.ej. amarillo) no contrastan sobre el fondo blanco. Se **redefinen las vars de paleta v4**
+    (`--color-red-400`, `--color-green-400`, `--color-yellow-400`, …) dentro de `.corp` a equivalentes
+    legibles; eso arregla texto/bordes/opacidades de golpe. `.pixel-scope` restaura los oklch originales
+    para las islas oscuras. Si aparece un color de texto ilegible nuevo, remapea su shade en el bloque
+    "Contrast fixes" de `globals.css`.
+- **Vínculo ticket → factura (2026-06-07):** antes NO existía (la factura de ticket se creaba con
+  `project_id=NULL`, sin referencia). Se añadió `invoices.source_type`/`source_id` (additivo, `ADD COLUMN
+  IF NOT EXISTS` en `ensureSriColumns` y en el GET de tickets). `createManualInvoiceFromTicket` ahora guarda
+  `source_type='ticket', source_id=<ticketId>`. El GET `/api/tickets` une la factura por ese origen (LATERAL,
+  como projects) y devuelve `invoice_id`/`invoice_sri_status`; la tabla de tickets muestra columna **Factura**
+  (■ + botón PDF si `authorized`). **Backfill hecho (2026-06-07):** los 6 tickets completados existentes se
+  asociaron a su factura autorizada por monto + cercanía de tiempo (`invoice.created_at ≈ ticket.updated_at`):
+  facturas #27→t10, #24→t7, #23→t6, #22→t5, #20→t4, #16→t3 (las manuales 1500/630/120/1800 no eran de tickets).
+  Para nuevos tickets el vínculo se guarda solo. (Projects usa otro mecanismo: `invoices.project_id` + `invoice_projects`.)
+- **Autocompletar adquirente desde clientes ya facturados:** el endpoint
+  `GET /api/invoices/clients-history` devuelve adquirentes distintos de `gcc_world.invoices`
+  (excluye consumidor final `9999999999999`) con el `id_type` ya inferido. El patrón de UI
+  "Cliente previo" (botón + buscador + lista que rellena los campos) está en
+  `dashboard/invoices/page.tsx` y se replicó en `dashboard/projects/[id]/page.tsx`. Si se
+  estandariza el modal de **tickets**, aplicar el mismo patrón ahí (pendiente).
+- Datos del adquiriente en factura: columnas `client_*_sri` en `gcc_world.invoices`
+  (`client_id_type`, `client_ruc`, `client_name_sri`, `client_email_sri`, `client_phone_sri`,
+  `client_address_sri`). Códigos SRI tipo id en `lib/integrations/sri/config.ts`
+  (04 RUC, 05 cédula, 06 pasaporte, 07 consumidor final, 08 exterior).
 - El cliente Prisma vive en `lib/generated/prisma` — importar desde `@/lib/generated/prisma/client`,
   NO desde `@prisma/client`.
 - `prisma generate` corre en `postinstall` y en `build`; tras tocar `schema.prisma` regenerar.
@@ -74,4 +199,14 @@ Módulos principales:
     verificando cada candidato a mano. Ver `Estado actual`.
 
 ## Pendientes / preguntas abiertas
-- ¿Próximo foco? (último trabajo fue Tickets + Calendario en may-2026).
+- **Commit del rediseño corporativo (fases 1–7):** TODO sin commitear; es un bloque grande (~60+ archivos).
+  Falta la luz verde del usuario tras revisión visual.
+- **Confirmación visual del usuario:** el dashboard requiere login; las verificaciones de la sesión fueron
+  `tsc`/compilación, no visuales. Hay que validar en vivo cada cambio.
+- `ModuleToolbar` en los **3 módulos restantes**: `admin` (sub-tabs anidados), `admin/incidents`, `centralized`.
+- **¿Restaurar el título de registro en páginas de detalle** (`projects/[id]`, `tickets/[id]`, `support/[id]`)?
+  Hoy se quitó junto con el resto vía `PageHeader`.
+- Ajustes finos pendientes de feedback visual: factor de recorte del logo (`scale(1.18)`), punto de colapso del
+  overflow de pestañas (reserva 44px), íconos elegidos por módulo, nivel del rojo en "Salir".
+- Opcional (fidelidad Azure): **footer sticky** con botones primario/secundario en los paneles de formulario.
+- **"Cliente previo"** (feature de may/jun): replicar el patrón en el modal de **tickets** (quedó pendiente).

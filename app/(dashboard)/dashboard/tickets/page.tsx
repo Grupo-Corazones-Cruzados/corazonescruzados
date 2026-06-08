@@ -4,8 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import PageHeader from '@/components/ui/PageHeader';
-import PixelTabs from '@/components/ui/PixelTabs';
+import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
@@ -31,7 +30,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' 
 
 const PER_PAGE = 15;
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
 
 // Selected dates as ISO strings (YYYY-MM-DD)
 type SelectedDates = string[];
@@ -157,27 +156,18 @@ export default function TicketsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Tickets"
-        description="Gestiona tus tickets de servicio"
+      <ModuleToolbar
+        tabs={STATUS_TABS}
+        activeTab={tab}
+        onTabChange={setTab}
+        search={search}
+        onSearchChange={setSearch}
         action={
           <button onClick={openCreateModal} className="pixel-btn pixel-btn-primary">
             + Nuevo Ticket
           </button>
         }
       />
-
-      <div className="mb-4">
-        <input
-          placeholder="Buscar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none w-full max-w-xs"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        />
-      </div>
-
-      <PixelTabs tabs={STATUS_TABS} active={tab} onChange={setTab} />
 
       <PixelDataTable
         columns={[
@@ -187,8 +177,23 @@ export default function TicketsPage() {
             <PixelBadge variant={STATUS_VARIANT[t.status] || 'default'}>{t.status}</PixelBadge>
           )},
           { key: 'client', header: 'Cliente', render: (t: any) => t.client_name || '-' },
-          { key: 'member', header: 'Miembro', render: (t: any) => t.member_name || '-' },
+          { key: 'final_cost', header: 'Costo Final', render: (t: any) => {
+            const v = t.invoice_total ?? t.estimated_cost;
+            return v != null && v !== '' ? `$${Number(v).toFixed(2)}` : '-';
+          }},
           { key: 'deadline', header: 'Limite', render: (t: any) => t.deadline ? new Date(t.deadline).toLocaleDateString() : '-' },
+          { key: 'invoice', header: 'Factura', width: '80px', render: (t: any) => {
+            if (!t.invoice_id) return <span className="text-digi-muted text-[8px]">-</span>;
+            return (
+              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                <span className="text-green-400 text-[10px]" title="Factura generada">&#9632;</span>
+                {t.invoice_sri_status === 'authorized' && (
+                  <button onClick={() => window.open(`/api/invoices/${t.invoice_id}/pdf`, '_blank')}
+                    className="px-1.5 py-0.5 text-[7px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>PDF</button>
+                )}
+              </div>
+            );
+          }},
         ]}
         data={tickets}
         onRowClick={(t: any) => router.push(`/dashboard/tickets/${t.id}`)}
@@ -218,7 +223,7 @@ export default function TicketsPage() {
               rows={3}
               placeholder="Describe el trabajo a realizar..."
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              style={{ fontFamily: 'var(--font-body)' }}
             />
           </div>
 
@@ -269,7 +274,7 @@ export default function TicketsPage() {
                   onChange={(e) => setForm({ ...form, client_email: e.target.value })}
                   placeholder="correo@cliente.com"
                   className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                  style={{ fontFamily: 'var(--font-body)' }}
                 />
               )}
             </div>
@@ -314,12 +319,12 @@ export default function TicketsPage() {
                   Dias de trabajo {user?.role === 'member' ? '*' : ''}
                 </label>
                 {!form.deadline && (
-                  <p className="text-[9px] text-amber-400 mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <p className="text-[9px] text-amber-400 mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
                     Primero elige la fecha limite
                   </p>
                 )}
                 {form.deadline && selectedDates.length > 0 && (
-                  <p className="text-[9px] text-digi-muted mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <p className="text-[9px] text-digi-muted mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
                     {selectedDates.length} dia(s) seleccionados
                   </p>
                 )}
@@ -376,7 +381,7 @@ export default function TicketsPage() {
               {/* Month nav */}
               <div className="flex items-center justify-between">
                 <button onClick={prevMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&lt;</button>
-                <span className="text-xs text-white" style={pf}>{monthNames[month]} {year}</span>
+                <span className="text-xs text-digi-text" style={pf}>{monthNames[month]} {year}</span>
                 <button onClick={nextMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&gt;</button>
               </div>
 
@@ -401,12 +406,12 @@ export default function TicketsPage() {
                       disabled={isOutOfRange}
                       className={`py-1.5 text-[10px] text-center border transition-colors ${
                         isSelected
-                          ? 'bg-accent/30 border-accent text-white'
+                          ? 'bg-accent/30 border-accent text-digi-text'
                           : isOutOfRange
                             ? 'border-transparent text-digi-muted/30 cursor-default'
                             : 'border-digi-border/30 text-digi-text hover:border-accent/50 hover:bg-accent/10'
                       }`}
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                      style={{ fontFamily: 'var(--font-body)' }}
                     >
                       {day}
                     </button>
@@ -420,7 +425,7 @@ export default function TicketsPage() {
                   <p className="text-[9px] text-digi-muted mb-1" style={pf}>{selectedDates.length} dia(s) seleccionados:</p>
                   <div className="flex flex-wrap gap-1">
                     {selectedDates.map(d => (
-                      <span key={d} className="text-[9px] px-1.5 py-0.5 bg-accent/20 border border-accent/30 text-accent-glow flex items-center gap-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span key={d} className="text-[9px] px-1.5 py-0.5 bg-accent/20 border border-accent/30 text-accent-glow flex items-center gap-1" style={{ fontFamily: 'var(--font-body)' }}>
                         {new Date(d + 'T12:00:00').toLocaleDateString('es', { day: '2-digit', month: 'short' })}
                         <button onClick={() => toggleDate(d)} className="text-red-400 hover:text-red-300 text-[8px]">x</button>
                       </span>

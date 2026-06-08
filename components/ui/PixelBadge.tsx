@@ -17,8 +17,9 @@ export default function PixelBadge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9px] border ${VARIANTS[variant] || VARIANTS.default} ${className}`}
-      style={{ fontFamily: "'Silkscreen', cursive" }}
+      data-variant={variant}
+      className={`pixel-badge inline-flex items-center gap-1 px-2 py-0.5 text-[9px] border ${VARIANTS[variant] || VARIANTS.default} ${className}`}
+      style={{ fontFamily: 'var(--font-display)' }}
     >
       {children}
     </span>

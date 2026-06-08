@@ -8,8 +8,8 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 /* ─── Types ─── */
 interface Flow {
@@ -162,11 +162,11 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
       <div className="relative ml-auto w-full max-w-4xl bg-digi-darker border-l-2 border-digi-border overflow-y-auto animate-[slideInRight_0.3s_ease-out]">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-digi-darker border-b-2 border-digi-border px-6 py-4 flex items-center gap-4">
-          <button onClick={onClose} className="text-digi-muted hover:text-white transition-colors" style={pf}>
+          <button onClick={onClose} className="text-digi-muted hover:text-digi-text transition-colors" style={pf}>
             &lt; Volver
           </button>
           <div className="flex-1">
-            <h2 className="pixel-heading text-sm text-white">{flow.name}</h2>
+            <h2 className="pixel-heading text-sm text-digi-text">{flow.name}</h2>
             <p className="text-[10px] text-digi-muted mt-0.5" style={mf}>{flow.description || 'Email masivo'}</p>
           </div>
         </div>
@@ -205,10 +205,10 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
           {view === 'resend-edit' && resendCampaign && (
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => { setView('campaigns'); setResendEditing(false); setResendCampaign(null); }} className="text-digi-muted hover:text-white text-[9px] transition-colors" style={pf}>
+                <button onClick={() => { setView('campaigns'); setResendEditing(false); setResendCampaign(null); }} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>
                   &lt; Campanas
                 </button>
-                <h3 className="pixel-heading text-xs text-white">Editar correo para reenvio</h3>
+                <h3 className="pixel-heading text-xs text-digi-text">Editar correo para reenvio</h3>
               </div>
 
               <div className="space-y-4">
@@ -242,7 +242,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
                 <AttachmentsManager attachments={resendOverrides.attachments} onChange={a => setResendOverrides(p => ({ ...p, attachments: a }))} />
 
                 <div className="flex justify-between pt-4 border-t-2 border-digi-border">
-                  <button onClick={() => { setView('campaigns'); setResendEditing(false); setResendCampaign(null); }} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-white transition-colors" style={pf}>
+                  <button onClick={() => { setView('campaigns'); setResendEditing(false); setResendCampaign(null); }} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>
                     Cancelar
                   </button>
                   <button
@@ -280,7 +280,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
               <div className="grid grid-cols-2 gap-3 text-xs" style={mf}>
                 <div>
                   <span className="text-digi-muted block text-[9px] mb-0.5" style={pf}>Remitente</span>
-                  <span className="text-white">{resendEditing ? resendOverrides.from_email : (confirmSendFull?.from_email || confirmSend?.from_email)}</span>
+                  <span className="text-digi-text">{resendEditing ? resendOverrides.from_email : (confirmSendFull?.from_email || confirmSend?.from_email)}</span>
                 </div>
                 <div>
                   <span className="text-digi-muted block text-[9px] mb-0.5" style={pf}>Lista</span>
@@ -289,7 +289,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
                 </div>
                 <div className="col-span-2">
                   <span className="text-digi-muted block text-[9px] mb-0.5" style={pf}>Asunto</span>
-                  <span className="text-white font-medium">{resendEditing ? resendOverrides.subject : confirmSend?.subject}</span>
+                  <span className="text-digi-text font-medium">{resendEditing ? resendOverrides.subject : confirmSend?.subject}</span>
                 </div>
                 {confirmSend?.status === 'sent' && (
                   <div className="col-span-2">
@@ -321,7 +321,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-                <button onClick={() => { setConfirmSend(null); setConfirmSendFull(null); setResendEditing(false); }} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
+                <button onClick={() => { setConfirmSend(null); setConfirmSendFull(null); setResendEditing(false); }} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
                 <button onClick={handleSendCampaign} disabled={sending || loadingPreview} className="pixel-btn-primary px-4 py-2 text-[9px]" style={pf}>
                   {sending ? 'Enviando...' : `Enviar a ${confirmSend?.total_contacts} contactos`}
                 </button>
@@ -350,7 +350,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
       <PixelModal open={!!resendChoice && !resendEditing && !confirmSend} onClose={() => setResendChoice(null)} title="Reenviar Campana" size="sm">
         <div className="space-y-4">
           <p className="text-xs text-digi-muted" style={mf}>
-            Como deseas reenviar <span className="text-white">{resendChoice?.subject}</span>?
+            Como deseas reenviar <span className="text-digi-text">{resendChoice?.subject}</span>?
           </p>
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -372,7 +372,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
               }}
               className="pixel-card py-6 text-center hover:border-accent transition-colors cursor-pointer"
             >
-              <p className="text-sm text-white mb-1" style={pf}>Mismo correo</p>
+              <p className="text-sm text-digi-text mb-1" style={pf}>Mismo correo</p>
               <p className="text-[9px] text-digi-muted" style={mf}>Reenviar con el mismo contenido</p>
             </button>
             <button
@@ -398,12 +398,12 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
               }}
               className="pixel-card py-6 text-center hover:border-accent transition-colors cursor-pointer"
             >
-              <p className="text-sm text-white mb-1" style={pf}>Correo diferente</p>
+              <p className="text-sm text-digi-text mb-1" style={pf}>Correo diferente</p>
               <p className="text-[9px] text-digi-muted" style={mf}>Editar el contenido antes de enviar</p>
             </button>
           </div>
           <div className="flex justify-end pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setResendChoice(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
+            <button onClick={() => setResendChoice(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
           </div>
         </div>
       </PixelModal>
@@ -428,7 +428,7 @@ function CampaignsView({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="pixel-heading text-xs text-white">Campanas</h3>
+        <h3 className="pixel-heading text-xs text-digi-text">Campanas</h3>
         <button onClick={onCreateNew} className="pixel-btn-primary px-3 py-1.5 text-[9px]" style={pf}>
           + Nueva Campana
         </button>
@@ -436,7 +436,7 @@ function CampaignsView({
 
       <PixelDataTable
         columns={[
-          { key: 'subject', header: 'Asunto', render: (c: Campaign) => <span className="text-white">{c.subject}</span> },
+          { key: 'subject', header: 'Asunto', render: (c: Campaign) => <span className="text-digi-text">{c.subject}</span> },
           { key: 'list', header: 'Lista', render: (c: Campaign) => <span className="text-accent-glow">{c.list_name || '-'}</span> },
           { key: 'contacts', header: 'Contactos', render: (c: Campaign) => String(c.total_contacts || 0) },
           { key: 'status', header: 'Estado', render: (c: Campaign) => (
@@ -678,7 +678,7 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
     <div>
       {/* Steps indicator */}
       <div className="flex items-center gap-2 mb-6">
-        <button onClick={onCancel} className="text-digi-muted hover:text-white text-[9px] transition-colors" style={pf}>
+        <button onClick={onCancel} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>
           &lt; Campanas
         </button>
         <div className="flex-1 flex items-center gap-2 justify-center">
@@ -691,7 +691,7 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
       {step === 1 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="pixel-heading text-xs text-white">Listas de Contactos</h3>
+            <h3 className="pixel-heading text-xs text-digi-text">Listas de Contactos</h3>
             <button onClick={() => setShowCreateList(true)} className="pixel-btn-primary px-3 py-1.5 text-[9px]" style={pf}>
               + Nueva Lista
             </button>
@@ -736,11 +736,11 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
                 }`}>
                   {/* List header */}
                   <div className="flex items-center gap-3 px-4 py-3">
-                    <button onClick={() => toggleExpand(list.id)} className="text-digi-muted hover:text-white transition-colors text-xs" style={pf}>
+                    <button onClick={() => toggleExpand(list.id)} className="text-digi-muted hover:text-digi-text transition-colors text-xs" style={pf}>
                       {expandedListId === list.id ? 'v' : '>'}
                     </button>
                     <div className="flex-1">
-                      <span className="text-sm text-white" style={mf}>{list.name}</span>
+                      <span className="text-sm text-digi-text" style={mf}>{list.name}</span>
                       <span className="text-[9px] text-digi-muted ml-2" style={pf}>{list.contact_count} contactos</span>
                     </div>
                     <button
@@ -860,7 +860,7 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
 
       {step === 2 && (
         <div>
-          <h3 className="pixel-heading text-xs text-white mb-4">Configuracion del Correo</h3>
+          <h3 className="pixel-heading text-xs text-digi-text mb-4">Configuracion del Correo</h3>
 
           <div className="space-y-4">
             {/* From email */}
@@ -906,7 +906,7 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
 
             {/* Actions */}
             <div className="flex justify-between pt-4 border-t-2 border-digi-border">
-              <button onClick={() => setStep(1)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-white transition-colors" style={pf}>
+              <button onClick={() => setStep(1)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>
                 &lt; Anterior
               </button>
               <button onClick={handleSaveCampaign} disabled={saving} className="pixel-btn-primary px-6 py-2 text-[9px]" style={pf}>
@@ -1098,7 +1098,7 @@ function HtmlEditor({
             key={btn.label}
             onClick={btn.action}
             title={btn.title}
-            className="px-2 py-1 text-[8px] text-digi-muted hover:text-white hover:bg-accent/10 border border-transparent hover:border-digi-border transition-colors"
+            className="px-2 py-1 text-[8px] text-digi-muted hover:text-digi-text hover:bg-accent/10 border border-transparent hover:border-digi-border transition-colors"
             style={pf}
           >
             {btn.label}
@@ -1108,7 +1108,7 @@ function HtmlEditor({
         <button
           onClick={() => setPreview(!preview)}
           className={`px-2 py-1 text-[8px] border transition-colors ${
-            preview ? 'border-accent text-accent-glow bg-accent/10' : 'border-transparent text-digi-muted hover:text-white'
+            preview ? 'border-accent text-accent-glow bg-accent/10' : 'border-transparent text-digi-muted hover:text-digi-text'
           }`}
           style={pf}
         >
@@ -1165,16 +1165,16 @@ function StatsView({ stats, onBack }: { stats: CampaignStats; onBack: () => void
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={onBack} className="text-digi-muted hover:text-white text-[9px] transition-colors" style={pf}>
+        <button onClick={onBack} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>
           &lt; Campanas
         </button>
-        <h3 className="pixel-heading text-xs text-white">Estadisticas: {stats.campaign.subject}</h3>
+        <h3 className="pixel-heading text-xs text-digi-text">Estadisticas: {stats.campaign.subject}</h3>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         {[
-          { label: 'Total', value: stats.summary.total, color: 'text-white' },
+          { label: 'Total', value: stats.summary.total, color: 'text-digi-text' },
           { label: 'Enviados', value: stats.summary.sent, color: 'text-green-400' },
           { label: 'Entregados', value: stats.summary.delivered, color: 'text-blue-400' },
           { label: 'Rebotados', value: stats.summary.bounced, color: 'text-yellow-400' },

@@ -5,8 +5,8 @@ import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import type { ChatBlock } from '@/components/world/ChatPanel';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface SocialHandles {
   youtube?: string | null;

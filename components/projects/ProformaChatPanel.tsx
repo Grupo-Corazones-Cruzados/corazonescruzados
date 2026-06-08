@@ -6,8 +6,8 @@ import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import type { ChatBlock } from '@/components/world/ChatPanel';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface ProformaChatPanelProps {
   projectId: string | number;
@@ -677,7 +677,7 @@ REGLAS DE RESPUESTA CRITICAS:
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-      <div className="bg-[#0d1117] border border-[#21262d] rounded-lg w-full max-w-2xl h-[85vh] flex flex-col">
+      <div className="pixel-scope bg-[#0d1117] border border-[#21262d] rounded-lg w-full max-w-2xl h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#21262d] bg-[#161b22] rounded-t-lg">
           <div className="flex items-center gap-2">

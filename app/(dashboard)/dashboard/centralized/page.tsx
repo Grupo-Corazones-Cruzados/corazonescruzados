@@ -11,8 +11,8 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import Link from 'next/link';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const STRUCTURE_COLUMNS = [
   { label: 'Fundamentación', key: 'fundamentacion' },
@@ -406,11 +406,11 @@ export default function CentralizedPage() {
           <div className="space-y-3">
             <div className="flex justify-between text-[10px] py-1 border-b border-digi-border/30" style={mf}>
               <span className="text-digi-muted">Miembro</span>
-              <span className="text-white">{selectedReq.member_name}</span>
+              <span className="text-digi-text">{selectedReq.member_name}</span>
             </div>
             <div className="flex justify-between text-[10px] py-1 border-b border-digi-border/30" style={mf}>
               <span className="text-digi-muted">Proyecto</span>
-              <span className="text-white">{selectedReq.project_title}</span>
+              <span className="text-digi-text">{selectedReq.project_title}</span>
             </div>
             <div>
               <span className="text-[9px] text-digi-muted block mb-1" style={pf}>Motivo del miembro</span>

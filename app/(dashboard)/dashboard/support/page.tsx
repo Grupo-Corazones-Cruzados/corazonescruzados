@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import PageHeader from '@/components/ui/PageHeader';
-import PixelTabs from '@/components/ui/PixelTabs';
+import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 
@@ -42,9 +41,7 @@ export default function SupportPage() {
 
   return (
     <div>
-      <PageHeader title="Soporte" description="Tickets de soporte y ayuda" />
-
-      <PixelTabs tabs={TABS} active={tab} onChange={setTab} />
+      <ModuleToolbar tabs={TABS} activeTab={tab} onTabChange={setTab} />
 
       <PixelDataTable
         columns={[

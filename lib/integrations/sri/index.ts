@@ -37,6 +37,8 @@ async function ensureSriColumns() {
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS original_total_usd NUMERIC(12,2);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS payment_proof BYTEA;
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS payment_proof_type VARCHAR(50);
+    ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_type VARCHAR(20);
+    ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_id TEXT;
     CREATE TABLE IF NOT EXISTS gcc_world.invoice_items_sri (
       id SERIAL PRIMARY KEY,
       invoice_id INT NOT NULL,
@@ -459,13 +461,13 @@ export async function createManualInvoiceFromTicket(options: TicketInvoiceOption
   const totalUsd = subtotal0 + subtotalIva + ivaMonto;
 
   const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
-     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19) RETURNING id`,
+    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd, source_type, source_id)
+     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19, 'ticket', $20) RETURNING id`,
     [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
      SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
      invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
      subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-     currency, exchangeRate, totalUsd.toFixed(2)]
+     currency, exchangeRate, totalUsd.toFixed(2), options.ticketId]
   );
 
   for (const item of items) {

@@ -6,8 +6,8 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
 import PixelInput from '@/components/ui/PixelInput';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface EduEntry { institution: string; degree: string; field: string; start_year: string; end_year: string; }
 interface ExpEntry { company: string; position: string; description: string; start_year: string; end_year: string; }

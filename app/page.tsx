@@ -2985,7 +2985,7 @@ export default function LandingPage() {
                       }),
                 }}
               >
-                Ingresar como Colaborador
+                Colaborar
               </button>
             )}
           </div>

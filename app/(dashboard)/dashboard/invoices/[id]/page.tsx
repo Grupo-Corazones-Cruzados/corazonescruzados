@@ -9,8 +9,8 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   pending: 'warning', sent: 'info', paid: 'success', cancelled: 'error',
@@ -200,7 +200,7 @@ export default function InvoiceDetailPage() {
       </div>
 
       <div className="flex items-start justify-between gap-3 mb-6">
-        <h1 className="pixel-heading text-lg text-white">{invoice.invoice_number || `Factura #${invoice.id}`}</h1>
+        <h1 className="pixel-heading text-lg text-digi-text">{invoice.invoice_number || `Factura #${invoice.id}`}</h1>
         <div className="flex gap-2">
           {invoice.sri_status && <PixelBadge variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {invoice.sri_status}</PixelBadge>}
           <PixelBadge variant={STATUS_V[invoice.status] || 'default'}>{invoice.status}</PixelBadge>
@@ -230,14 +230,14 @@ export default function InvoiceDetailPage() {
                     <td className="px-2 py-2 text-center text-digi-muted" style={mf}>{Number(item.quantity).toFixed(2)}</td>
                     <td className="px-2 py-2 text-right text-digi-muted" style={mf}>${Number(item.unit_price).toFixed(2)}</td>
                     <td className="px-2 py-2 text-right text-digi-muted" style={mf}>{Number(item.iva_rate || 0)}%</td>
-                    <td className="px-4 py-2 text-right text-white" style={mf}>${Number(item.subtotal || (Number(item.quantity) * Number(item.unit_price))).toFixed(2)}</td>
+                    <td className="px-4 py-2 text-right text-digi-text" style={mf}>${Number(item.subtotal || (Number(item.quantity) * Number(item.unit_price))).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-digi-border">
                   <td colSpan={4} className="px-4 py-2 text-right text-[9px] text-digi-muted" style={pf}>Subtotal</td>
-                  <td className="px-4 py-2 text-right text-white" style={mf}>${subtotal.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right text-digi-text" style={mf}>${subtotal.toFixed(2)}</td>
                 </tr>
                 {totalIva > 0 && (
                   <tr>
@@ -366,7 +366,7 @@ export default function InvoiceDetailPage() {
                     className="w-full py-1.5 text-[9px] text-accent-glow border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
                     Abrir en Nueva Pestaña
                   </button>
-                  <label className="block w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-white hover:border-accent/30 transition-colors text-center cursor-pointer" style={pf}>
+                  <label className="block w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors text-center cursor-pointer" style={pf}>
                     {uploadingProof ? 'Subiendo...' : 'Reemplazar'}
                     <input type="file" accept="image/*" onChange={handleUploadProof} className="hidden" disabled={uploadingProof} />
                   </label>
@@ -411,7 +411,7 @@ export default function InvoiceDetailPage() {
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setShowVoid(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
+            <button onClick={() => setShowVoid(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
             <button onClick={async () => {
               if (!voidReason.trim()) return;
               setVoiding(true);
@@ -530,7 +530,7 @@ export default function InvoiceDetailPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setShowEdit(false)} disabled={editing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors disabled:opacity-50" style={pf}>Cancelar</button>
+            <button onClick={() => setShowEdit(false)} disabled={editing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50" style={pf}>Cancelar</button>
             <button onClick={handleRegenerate} disabled={editing || editForm.items.length === 0 || !editForm.clientName.trim()}
               className="px-4 py-2 text-[9px] border-2 border-yellow-700 bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/50 transition-colors disabled:opacity-50" style={pf}>
               {editing ? 'Regenerando...' : 'Regenerar y Reenviar'}
@@ -552,7 +552,7 @@ export default function InvoiceDetailPage() {
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setShowResend(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
+            <button onClick={() => setShowResend(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
             <button onClick={handleResend} disabled={sending || !resendEmails.trim()} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
               {sending ? 'Enviando...' : 'Enviar'}
             </button>

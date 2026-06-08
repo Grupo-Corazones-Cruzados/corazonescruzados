@@ -17,8 +17,8 @@ const defaultSchedule = (): Record<string, DaySchedule> => {
   return s;
 };
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function AvailabilityPage() {
   const [schedule, setSchedule] = useState(defaultSchedule());

@@ -2,8 +2,8 @@
 
 import PixelModal from './PixelModal';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface Props {
   open: boolean;
@@ -37,7 +37,7 @@ export default function PixelConfirm({
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-2 text-[10px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors"
+            className="dlg-btn px-3 py-2 text-[10px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors"
             style={pf}
           >
             {cancelLabel}
@@ -45,7 +45,7 @@ export default function PixelConfirm({
           <button
             type="button"
             onClick={onConfirm}
-            className={`px-4 py-2 text-[10px] border-2 transition-colors ${
+            className={`dlg-btn ${danger ? 'dlg-btn--danger' : 'dlg-btn--primary'} px-4 py-2 text-[10px] border-2 transition-colors ${
               danger
                 ? 'border-red-500/60 text-red-400 hover:bg-red-950/30'
                 : 'border-accent bg-accent/20 text-accent-glow hover:bg-accent/30'

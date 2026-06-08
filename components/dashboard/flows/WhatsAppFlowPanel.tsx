@@ -8,10 +8,10 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
-const CANCEL_CLS = 'px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-white transition-colors';
+const CANCEL_CLS = 'px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors';
 
 interface Flow { id: number; name: string; type: string; description: string; status: string; config: Record<string, any>; }
 interface ContactList { id: number; flow_id: number; name: string; contact_count: number; created_at: string; }
@@ -126,9 +126,9 @@ export default function WhatsAppFlowPanel({ flow, onClose }: { flow: Flow; onClo
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative ml-auto w-full max-w-4xl bg-digi-darker border-l-2 border-digi-border overflow-y-auto animate-[slideInRight_0.3s_ease-out]">
         <div className="sticky top-0 z-10 bg-digi-darker border-b-2 border-digi-border px-6 py-4 flex items-center gap-4">
-          <button onClick={onClose} className="text-digi-muted hover:text-white transition-colors" style={pf}>&lt; Volver</button>
+          <button onClick={onClose} className="text-digi-muted hover:text-digi-text transition-colors" style={pf}>&lt; Volver</button>
           <div className="flex-1">
-            <h2 className="pixel-heading text-sm text-white">{flow.name}</h2>
+            <h2 className="pixel-heading text-sm text-digi-text">{flow.name}</h2>
             <p className="text-[10px] text-digi-muted mt-0.5" style={mf}>WhatsApp Business</p>
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function WhatsAppFlowPanel({ flow, onClose }: { flow: Flow; onClo
                 </div>
                 <div>
                   <span className="text-digi-muted text-[9px] block mb-0.5" style={pf}>Plantilla</span>
-                  <span className="text-white">{sendTemplate?.name || '-'}</span>
+                  <span className="text-digi-text">{sendTemplate?.name || '-'}</span>
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
@@ -216,12 +216,12 @@ export default function WhatsAppFlowPanel({ flow, onClose }: { flow: Flow; onClo
           <div className="grid grid-cols-2 gap-3">
             <button onClick={() => { if (!resendChoice) return; openSendPreview(resendChoice); setResendChoice(null); }}
               className="pixel-card py-6 text-center hover:border-accent transition-colors cursor-pointer">
-              <p className="text-sm text-white mb-1" style={pf}>Misma plantilla</p>
+              <p className="text-sm text-digi-text mb-1" style={pf}>Misma plantilla</p>
               <p className="text-[9px] text-digi-muted" style={mf}>Usar la misma configuracion</p>
             </button>
             <button onClick={() => setResendPickTemplate(true)}
               className="pixel-card py-6 text-center hover:border-accent transition-colors cursor-pointer">
-              <p className="text-sm text-white mb-1" style={pf}>Otra plantilla</p>
+              <p className="text-sm text-digi-text mb-1" style={pf}>Otra plantilla</p>
               <p className="text-[9px] text-digi-muted" style={mf}>Seleccionar una plantilla diferente</p>
             </button>
           </div>
@@ -270,7 +270,7 @@ function WaConfigForm({ config, onChange, onSave, saving }: {
 
   return (
     <div>
-      <h3 className="pixel-heading text-xs text-white mb-1">Configuracion de WhatsApp Business API</h3>
+      <h3 className="pixel-heading text-xs text-digi-text mb-1">Configuracion de WhatsApp Business API</h3>
       <p className="text-[9px] text-digi-muted mb-4" style={mf}>Ingresa las credenciales de tu cuenta Meta Business para poder enviar mensajes.</p>
       <div className="space-y-3">
         {fields.map(f => (
@@ -309,15 +309,15 @@ function WaCampaignsView({ campaigns, loading, onCreateNew, onSend, onResend, on
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="pixel-heading text-xs text-white">Campanas WhatsApp</h3>
+        <h3 className="pixel-heading text-xs text-digi-text">Campanas WhatsApp</h3>
         <div className="flex gap-2">
-          <button onClick={onEditConfig} className="px-3 py-1.5 text-[9px] border border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Config API</button>
+          <button onClick={onEditConfig} className="px-3 py-1.5 text-[9px] border border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Config API</button>
           <button onClick={onCreateNew} className="pixel-btn-primary px-3 py-1.5 text-[9px]" style={pf}>+ Nueva Campana</button>
         </div>
       </div>
       <PixelDataTable
         columns={[
-          { key: 'template', header: 'Plantilla', render: (c: Campaign) => <span className="text-white">{c.wa_template_name || '-'}</span> },
+          { key: 'template', header: 'Plantilla', render: (c: Campaign) => <span className="text-digi-text">{c.wa_template_name || '-'}</span> },
           { key: 'list', header: 'Lista', render: (c: Campaign) => <span className="text-accent-glow">{c.list_name || '-'}</span> },
           { key: 'contacts', header: 'Contactos', render: (c: Campaign) => String(c.total_contacts || 0) },
           { key: 'status', header: 'Estado', render: (c: Campaign) => <PixelBadge variant={CAMP_STATUS_V[c.status] || 'default'}>{CAMP_STATUS_L[c.status] || c.status}</PixelBadge> },
@@ -480,7 +480,7 @@ function WaCreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; 
   return (
     <div>
       <div className="flex items-center gap-2 mb-6">
-        <button onClick={onCancel} className="text-digi-muted hover:text-white text-[9px] transition-colors" style={pf}>&lt; Campanas</button>
+        <button onClick={onCancel} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>&lt; Campanas</button>
         <div className="flex-1 flex items-center gap-2 justify-center">
           <StepDot num={1} active={step === 1} done={step > 1} label="Contactos" onClick={() => setStep(1)} />
           <div className={`w-8 h-0.5 ${step > 1 ? 'bg-accent' : 'bg-digi-border'}`} />
@@ -492,7 +492,7 @@ function WaCreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; 
       {step === 1 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="pixel-heading text-xs text-white">Listas de Contactos</h3>
+            <h3 className="pixel-heading text-xs text-digi-text">Listas de Contactos</h3>
             <button onClick={() => setShowCreateList(true)} className="pixel-btn-primary px-3 py-1.5 text-[9px]" style={pf}>+ Nueva Lista</button>
           </div>
 
@@ -518,9 +518,9 @@ function WaCreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; 
               {contactLists.map(list => (
                 <div key={list.id} className={`border-2 transition-colors ${selectedListId === list.id ? 'border-accent bg-accent/5' : 'border-digi-border'}`}>
                   <div className="flex items-center gap-3 px-4 py-3">
-                    <button onClick={() => toggleExpand(list.id)} className="text-digi-muted hover:text-white text-xs" style={pf}>{expandedListId === list.id ? 'v' : '>'}</button>
+                    <button onClick={() => toggleExpand(list.id)} className="text-digi-muted hover:text-digi-text text-xs" style={pf}>{expandedListId === list.id ? 'v' : '>'}</button>
                     <div className="flex-1">
-                      <span className="text-sm text-white" style={mf}>{list.name}</span>
+                      <span className="text-sm text-digi-text" style={mf}>{list.name}</span>
                       <span className="text-[9px] text-digi-muted ml-2" style={pf}>{list.contact_count} contactos</span>
                     </div>
                     <button onClick={() => setSelectedListId(selectedListId === list.id ? null : list.id)}
@@ -599,7 +599,7 @@ function WaCreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; 
           ) : (
             <>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="pixel-heading text-xs text-white">Plantillas de Mensaje</h3>
+                <h3 className="pixel-heading text-xs text-digi-text">Plantillas de Mensaje</h3>
                 <button onClick={() => setShowCreateTemplate(true)} className="pixel-btn-primary px-3 py-1.5 text-[9px]" style={pf}>+ Nueva Plantilla</button>
               </div>
 
@@ -616,7 +616,7 @@ function WaCreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; 
                       onClick={() => setSelectedTemplateId(selectedTemplateId === t.id ? null : t.id)}>
                       <div className="flex items-center gap-3">
                         <div className="flex-1">
-                          <span className="text-sm text-white" style={mf}>{t.name}</span>
+                          <span className="text-sm text-digi-text" style={mf}>{t.name}</span>
                           {t.header_type !== 'none' && <PixelBadge variant="info" className="ml-2">{t.header_type}</PixelBadge>}
                         </div>
                         <span className="text-[9px] text-digi-muted" style={pf}>{t.language}</span>
@@ -695,7 +695,7 @@ function WaTemplateForm({ flowId, onDone, onCancel, initial }: {
 
   return (
     <div>
-      <h3 className="pixel-heading text-xs text-white mb-4">{initial ? 'Editar' : 'Nueva'} Plantilla</h3>
+      <h3 className="pixel-heading text-xs text-digi-text mb-4">{initial ? 'Editar' : 'Nueva'} Plantilla</h3>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -796,7 +796,7 @@ function WaTemplatePickerInline({ flowId, onSelect, onCancel }: { flowId: number
           {templates.map(t => (
             <button key={t.id} onClick={() => onSelect(t.id)}
               className="w-full text-left border-2 border-digi-border px-4 py-3 hover:border-accent transition-colors">
-              <span className="text-sm text-white block" style={mf}>{t.name}</span>
+              <span className="text-sm text-digi-text block" style={mf}>{t.name}</span>
               <span className="text-xs text-digi-muted truncate block" style={mf}>{t.body}</span>
             </button>
           ))}
@@ -814,7 +814,7 @@ function WaMessagePreview({ template }: { template: WaTemplate }) {
   return (
     <div>
       <span className="text-digi-muted block text-[9px] mb-2" style={pf}>Previsualizacion del mensaje</span>
-      <div className="border-2 border-digi-border rounded p-4" style={{ background: '#0b141a' }}>
+      <div className="pixel-scope border-2 border-digi-border rounded p-4" style={{ background: '#0b141a' }}>
         <div className="max-w-[320px] mx-auto">
           <div className="rounded-lg overflow-hidden" style={{ background: '#1f2c34' }}>
             {/* Header media */}
@@ -840,7 +840,7 @@ function WaMessagePreview({ template }: { template: WaTemplate }) {
             )}
             {template.header_type === 'text' && template.header_content && (
               <div className="px-3 pt-2">
-                <p className="text-sm font-bold text-white">{template.header_content}</p>
+                <p className="text-sm font-bold text-digi-text">{template.header_content}</p>
               </div>
             )}
 
@@ -873,12 +873,12 @@ function WaStatsView({ stats, onBack }: { stats: CampaignStats; onBack: () => vo
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={onBack} className="text-digi-muted hover:text-white text-[9px] transition-colors" style={pf}>&lt; Campanas</button>
-        <h3 className="pixel-heading text-xs text-white">Estadisticas</h3>
+        <button onClick={onBack} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>&lt; Campanas</button>
+        <h3 className="pixel-heading text-xs text-digi-text">Estadisticas</h3>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         {[
-          { label: 'Total', value: stats.summary.total, color: 'text-white' },
+          { label: 'Total', value: stats.summary.total, color: 'text-digi-text' },
           { label: 'Enviados', value: stats.summary.sent, color: 'text-green-400' },
           { label: 'Entregados', value: stats.summary.delivered, color: 'text-blue-400' },
           { label: 'Rebotados', value: stats.summary.bounced, color: 'text-yellow-400' },

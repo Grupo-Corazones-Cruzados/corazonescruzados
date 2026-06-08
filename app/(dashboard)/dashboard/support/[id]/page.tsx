@@ -9,8 +9,8 @@ import PageHeader from '@/components/ui/PageHeader';
 import PixelBadge from '@/components/ui/PixelBadge';
 import BrandLoader from '@/components/ui/BrandLoader';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   open: 'warning', in_progress: 'info', resolved: 'success', closed: 'default',

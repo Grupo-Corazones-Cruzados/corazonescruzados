@@ -29,29 +29,31 @@ export default function PixelModal({ open, onClose, title, size = 'md', children
       onClick={(e) => { if (e.target === dialogRef.current) onClose(); }}
       className="fixed inset-0 z-50 m-0 w-full h-full bg-transparent backdrop:bg-black/60 backdrop:backdrop-blur-sm"
     >
-      <div className="flex items-center justify-center min-h-full p-4">
+      <div className="modal-overlay flex items-center justify-center min-h-full p-4">
         <div
-          className={`pixel-card w-full ${SIZES[size]} animate-[pixelFadeIn_0.2s_ease-out]`}
+          data-size={size}
+          className={`modal-surface pixel-card w-full ${SIZES[size]} animate-[pixelFadeIn_0.2s_ease-out]`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-digi-border">
+          <div className="modal-header flex items-center justify-between mb-4 pb-3 border-b-2 border-digi-border">
             <h2
-              className="pixel-heading text-sm text-white"
+              className="modal-title pixel-heading text-sm text-digi-text"
             >
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center text-digi-muted hover:text-white border-2 border-digi-border hover:border-accent transition-colors"
-              style={{ fontFamily: "'Silkscreen', cursive" }}
+              aria-label="Cerrar"
+              className="modal-close w-8 h-8 flex items-center justify-center text-digi-muted hover:text-digi-text border-2 border-digi-border hover:border-accent transition-colors"
+              style={{ fontFamily: 'var(--font-display)' }}
             >
               X
             </button>
           </div>
 
           {/* Body */}
-          <div className="max-h-[70vh] overflow-y-auto">
+          <div className="modal-body max-h-[70vh] overflow-y-auto">
             {children}
           </div>
         </div>

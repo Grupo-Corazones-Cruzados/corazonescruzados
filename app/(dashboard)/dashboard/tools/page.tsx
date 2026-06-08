@@ -6,8 +6,8 @@ import PageHeader from '@/components/ui/PageHeader';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const TOOLS = [
   { id: 'convert', name: 'Convertir Archivos', description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.)' },
@@ -165,7 +165,7 @@ export default function ToolsPage() {
 
       <PixelDataTable
         columns={[
-          { key: 'name', header: 'Herramienta', render: (t: any) => <span className="text-white">{t.name}</span> },
+          { key: 'name', header: 'Herramienta', render: (t: any) => <span className="text-digi-text">{t.name}</span> },
           { key: 'description', header: 'Descripcion', render: (t: any) => <span className="text-digi-muted">{t.description}</span> },
           { key: 'action', header: '', width: '100px', render: (t: any) => (
             <button onClick={(e) => { e.stopPropagation(); openTool(t.id); }}
@@ -201,7 +201,7 @@ export default function ToolsPage() {
                   Descargar {convertResult.name}
                 </button>
                 <button onClick={closeConvert}
-                  className="w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-white transition-colors" style={pf}>
+                  className="w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-digi-text transition-colors" style={pf}>
                   Cerrar
                 </button>
               </div>
@@ -285,7 +285,7 @@ export default function ToolsPage() {
                 Descargar {transcribeResult.name}
               </button>
               <button onClick={closeTranscribe}
-                className="w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-white transition-colors" style={pf}>
+                className="w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-digi-text transition-colors" style={pf}>
                 Cerrar
               </button>
             </div>

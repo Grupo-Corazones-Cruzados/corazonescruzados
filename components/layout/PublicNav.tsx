@@ -16,7 +16,7 @@ export default function PublicNav() {
   return (
     <header className="bg-[#111111] border-b border-[#2a2a2a] shrink-0">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-12">
-        <span className="text-sm font-bold tracking-wide" style={{ fontFamily: 'Silkscreen, cursive' }}>
+        <span className="text-sm font-bold tracking-wide" style={{ fontFamily: 'var(--font-display)' }}>
           GCC World
         </span>
         <nav className="flex gap-1">

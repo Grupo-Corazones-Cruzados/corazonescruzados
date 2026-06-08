@@ -15,8 +15,8 @@ const PixelInput = forwardRef<HTMLInputElement, PixelInputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="text-[10px] text-accent-glow opacity-70"
-            style={{ fontFamily: "'Silkscreen', cursive" }}
+            className="field-label text-[10px] text-accent-glow opacity-70"
+            style={{ fontFamily: 'var(--font-display)' }}
           >
             {label}
           </label>
@@ -25,14 +25,14 @@ const PixelInput = forwardRef<HTMLInputElement, PixelInputProps>(
           ref={ref}
           id={inputId}
           name={name}
-          className={`w-full px-3 py-2.5 bg-digi-darker border-2 text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none transition-colors ${
+          className={`field-control w-full px-3 py-2.5 bg-digi-darker border-2 text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none transition-colors ${
             error ? 'border-red-500/60' : 'border-digi-border'
           } ${className}`}
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          style={{ fontFamily: 'var(--font-body)' }}
           {...props}
         />
         {error && (
-          <span className="text-[10px] text-red-400" style={{ fontFamily: "'Silkscreen', cursive" }}>
+          <span className="text-[10px] text-red-400" style={{ fontFamily: 'var(--font-display)' }}>
             {error}
           </span>
         )}

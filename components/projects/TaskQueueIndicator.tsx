@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
 
 export default function TaskQueueIndicator({
   count,
@@ -35,7 +35,7 @@ export default function TaskQueueIndicator({
         <div className="absolute top-full right-0 mt-1 w-48 bg-digi-card border-2 border-digi-border p-2 z-10">
           <p className="text-[8px] text-accent-glow mb-1" style={pf}>En cola:</p>
           {items.map((item, i) => (
-            <p key={item.id} className="text-[9px] text-digi-muted truncate" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <p key={item.id} className="text-[9px] text-digi-muted truncate" style={{ fontFamily: 'var(--font-body)' }}>
               {i + 1}. {item.title}
             </p>
           ))}

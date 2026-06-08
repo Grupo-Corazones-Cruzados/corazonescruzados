@@ -4,8 +4,8 @@ import { useMemo, useState, useEffect } from 'react';
 import type { EventInstance } from '@/lib/calendar/recurrence';
 import { DAY_LABELS_ES_SHORT, colorForEvent, EVENT_COLORS } from '@/lib/calendar/recurrence';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export type CalendarViewMode = 'month' | 'week' | 'day';
 

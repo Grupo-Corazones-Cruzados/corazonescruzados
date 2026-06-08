@@ -4,14 +4,13 @@ import { Suspense, useCallback, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import PageHeader from '@/components/ui/PageHeader';
-import PixelTabs from '@/components/ui/PixelTabs';
+import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const TABS = [
   { value: 'all', label: 'Todas' },
@@ -499,9 +498,12 @@ function InvoicesPageInner() {
 
   return (
     <div>
-      <PageHeader
-        title="Facturas"
-        description="Gestiona tus facturas"
+      <ModuleToolbar
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={setTab}
+        search={search}
+        onSearchChange={setSearch}
         action={isAdmin ? (
           <button onClick={openManualModal} className="pixel-btn pixel-btn-primary text-[9px]">
             + Factura Manual
@@ -509,23 +511,11 @@ function InvoicesPageInner() {
         ) : undefined}
       />
 
-      <div className="mb-4">
-        <input
-          placeholder="Buscar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none w-full max-w-xs"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        />
-      </div>
-
-      <PixelTabs tabs={TABS} active={tab} onChange={setTab} />
-
       <PixelDataTable
         columns={[
           { key: 'number', header: 'No. Factura', render: (i: any) => (
             <div className="flex items-center gap-1.5">
-              <span className="text-white">{i.invoice_number || `#${i.id}`}</span>
+              <span className="text-digi-text">{i.invoice_number || `#${i.id}`}</span>
               {i.is_manual && <span className="text-[6px] px-1 py-0.5 border border-purple-500/40 text-purple-400 leading-none" style={pf}>MANUAL</span>}
             </div>
           ), width: '160px' },
@@ -670,7 +660,7 @@ function InvoicesPageInner() {
 
             {/* Next button */}
             <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
-              <button onClick={() => setManualStep('type')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Atras</button>
+              <button onClick={() => setManualStep('type')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Atras</button>
               <button onClick={goToForm} disabled={selectedProjects.length === 0}
                 className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
                 Siguiente
@@ -698,7 +688,7 @@ function InvoicesPageInner() {
                     <button
                       type="button"
                       onClick={clearClientFields}
-                      className="text-[8px] px-2 py-0.5 border border-digi-border text-digi-muted hover:text-white transition-colors"
+                      className="text-[8px] px-2 py-0.5 border border-digi-border text-digi-muted hover:text-digi-text transition-colors"
                       style={pf}
                       title="Limpiar campos"
                     >
@@ -924,10 +914,10 @@ function InvoicesPageInner() {
                   return (
                     <div className="border-2 border-digi-border p-2 text-[9px] space-y-0.5" style={mf}>
                       {Object.entries(ivaByRate).map(([rate, base]) => (
-                        <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-white">${base.toFixed(2)}</span></div>
+                        <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${base.toFixed(2)}</span></div>
                       ))}
-                      {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-white">${totalDiscount.toFixed(2)}</span></div>}
-                      {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-white">${totalIva.toFixed(2)}</span></div>}
+                      {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${totalDiscount.toFixed(2)}</span></div>}
+                      {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${totalIva.toFixed(2)}</span></div>}
                       <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent-glow font-bold">Total:</span><span className="text-accent-glow font-bold">${(subtotal + totalIva).toFixed(2)}</span></div>
                     </div>
                   );
@@ -948,7 +938,7 @@ function InvoicesPageInner() {
                   <span className="text-[9px] text-digi-muted" style={mf}>Enviar por correo</span>
                 </label>
                 <div className="flex gap-2">
-                  <button onClick={() => setManualStep('projects')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Atras</button>
+                  <button onClick={() => setManualStep('projects')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Atras</button>
                   {manualType === 'con_fallo' ? (
                     <button onClick={() => setManualStep('paid')} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
                       Siguiente
@@ -1028,7 +1018,7 @@ function InvoicesPageInner() {
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-digi-border">
-              <button onClick={() => setManualStep('form')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Atras</button>
+              <button onClick={() => setManualStep('form')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Atras</button>
               <button onClick={applyDiscountsAndSubmit}
                 disabled={!Number(mPaidAmount) || Number(mPaidAmount) <= 0 || Number(mPaidAmount) >= itemsTotalUsd}
                 className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>

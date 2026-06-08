@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef, useState, useEffect } from 'react';
+
 interface Column<T> {
   key: string;
   header: string;
@@ -18,6 +20,9 @@ interface PixelDataTableProps<T> {
   onPageChange?: (page: number) => void;
 }
 
+const BOTTOM_GAP = 16; // breathing room below the table
+const MIN_HEIGHT = 220;
+
 export default function PixelDataTable<T>({
   columns,
   data,
@@ -28,11 +33,38 @@ export default function PixelDataTable<T>({
   totalPages,
   onPageChange,
 }: PixelDataTableProps<T>) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [fillH, setFillH] = useState<number>();
+
+  // Fixed height = from the table's top to the bottom of the viewport, so the
+  // table fills the available screen space and scrolls INTERNALLY (the page
+  // itself doesn't scroll). Recomputes on resize / data change.
+  useEffect(() => {
+    const compute = () => {
+      const el = wrapRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top;
+      const h = Math.max(window.innerHeight - top - BOTTOM_GAP, MIN_HEIGHT);
+      setFillH((prev) => (prev === undefined || Math.abs(prev - h) > 1 ? h : prev));
+    };
+    // run after layout settles (content above may still be rendering)
+    const raf = requestAnimationFrame(compute);
+    window.addEventListener('resize', compute);
+    // recompute if content above the table changes height (e.g. async loads)
+    const ro = new ResizeObserver(() => requestAnimationFrame(compute));
+    ro.observe(document.body);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', compute);
+      ro.disconnect();
+    };
+  }, [data.length]);
+
   if (data.length === 0) {
     return (
       <div className="pixel-card text-center py-12">
         <p className="pixel-heading text-sm text-digi-muted">{emptyTitle}</p>
-        <p className="text-xs text-digi-muted/60 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+        <p className="text-xs text-digi-muted/60 mt-1" style={{ fontFamily: 'var(--font-body)' }}>
           {emptyDesc}
         </p>
       </div>
@@ -40,16 +72,16 @@ export default function PixelDataTable<T>({
   }
 
   return (
-    <div className="border-2 border-digi-border overflow-hidden">
-      <div className="overflow-x-auto">
+    <div ref={wrapRef} className="data-table border-2 border-digi-border overflow-hidden flex flex-col" style={{ height: fillH }}>
+      <div className="flex-1 min-h-0 overflow-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-digi-card border-b-2 border-digi-border">
+            <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="px-3 py-2.5 text-left text-[9px] text-digi-muted uppercase tracking-wider"
-                  style={{ fontFamily: "'Silkscreen', cursive", width: col.width }}
+                  className="dt-th sticky top-0 z-10 bg-digi-card border-b-2 border-digi-border px-3 py-2.5 text-left text-[9px] text-digi-muted uppercase tracking-wider"
+                  style={{ fontFamily: 'var(--font-display)', width: col.width }}
                 >
                   {col.header}
                 </th>
@@ -61,15 +93,15 @@ export default function PixelDataTable<T>({
               <tr
                 key={i}
                 onClick={() => onRowClick?.(item)}
-                className={`border-b border-digi-border/50 transition-colors ${
+                className={`dt-row border-b border-digi-border/50 transition-colors ${
                   onRowClick ? 'cursor-pointer hover:bg-accent/5' : ''
                 }`}
               >
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className="px-3 py-2.5 text-xs text-digi-text"
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    className="dt-td px-3 py-2.5 text-xs text-digi-text"
+                    style={{ fontFamily: 'var(--font-body)' }}
                   >
                     {col.render(item)}
                   </td>
@@ -81,8 +113,8 @@ export default function PixelDataTable<T>({
       </div>
 
       {totalPages && totalPages > 1 && onPageChange && (
-        <div className="flex items-center justify-between px-3 py-2 bg-digi-card border-t-2 border-digi-border">
-          <span className="text-[9px] text-digi-muted" style={{ fontFamily: "'Silkscreen', cursive" }}>
+        <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-digi-card border-t-2 border-digi-border">
+          <span className="text-[9px] text-digi-muted" style={{ fontFamily: 'var(--font-display)' }}>
             Pag {page}/{totalPages}
           </span>
           <div className="flex gap-1">
@@ -90,7 +122,7 @@ export default function PixelDataTable<T>({
               onClick={() => onPageChange((page || 1) - 1)}
               disabled={page === 1}
               className="px-2 py-1 text-[10px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow disabled:opacity-30 transition-colors"
-              style={{ fontFamily: "'Silkscreen', cursive" }}
+              style={{ fontFamily: 'var(--font-display)' }}
             >
               &lt;
             </button>
@@ -98,7 +130,7 @@ export default function PixelDataTable<T>({
               onClick={() => onPageChange((page || 1) + 1)}
               disabled={page === totalPages}
               className="px-2 py-1 text-[10px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow disabled:opacity-30 transition-colors"
-              style={{ fontFamily: "'Silkscreen', cursive" }}
+              style={{ fontFamily: 'var(--font-display)' }}
             >
               &gt;
             </button>

@@ -5,9 +5,12 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import PageHeader from '@/components/ui/PageHeader';
+import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
+import PropertyRail from '@/components/ui/PropertyRail';
+import PixelTabs from '@/components/ui/PixelTabs';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
+import { Check } from 'lucide-react';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import IncidentDetailPanel from '@/components/projects/IncidentDetailPanel';
@@ -22,8 +25,8 @@ import ScriptStoryboardEditor from '@/components/projects/ScriptStoryboardEditor
 import type { StoryboardSegment } from '@/components/projects/ScriptStoryboardEditor';
 import useAgentChat from '@/hooks/useAgentChat';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   draft: 'default', open: 'info', in_progress: 'warning', review: 'warning',
@@ -44,6 +47,7 @@ export default function ProjectDetailPage() {
   const { user } = useAuth();
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [ptab, setPtab] = useState<'resumen' | 'requerimientos' | 'digimundo' | 'imagenes'>('resumen');
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [digiProjects, setDigiProjects] = useState<any[]>([]);
   const [linking, setLinking] = useState(false);
@@ -84,6 +88,7 @@ export default function ProjectDetailPage() {
   const [reqCost, setReqCost] = useState('');
   const [savingReq, setSavingReq] = useState(false);
   const [newItemText, setNewItemText] = useState<Record<number, string>>({});
+  const [subtaskReqId, setSubtaskReqId] = useState<number | null>(null);
 
   // Inline edit states
   const [editingTitle, setEditingTitle] = useState(false);
@@ -139,6 +144,13 @@ export default function ProjectDetailPage() {
   const [completeCurrency, setCompleteCurrency] = useState('USD');
   const [completeExchangeRate, setCompleteExchangeRate] = useState('1');
   const [currencies, setCurrencies] = useState<{ code: string; symbol: string; name: string; rate: number }[]>([]);
+  const [clientHistory, setClientHistory] = useState<{
+    id_type: string; client_ruc: string; client_name: string;
+    client_email: string; client_phone: string; client_address: string;
+    last_used: string;
+  }[]>([]);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin';
   const isMember = user?.role === 'member';
@@ -210,6 +222,15 @@ export default function ProjectDetailPage() {
     fetch('/api/digimundo/projects').then(r => r.json()).then(d => setDigiProjects(d.data || [])).catch(() => {});
     fetch('/api/exchange-rates').then(r => r.json()).then(d => setCurrencies(d.currencies || [])).catch(() => {});
   }, [isAdmin]);
+
+  // Carga clientes ya facturados al abrir el modal de completar (para autocompletar adquirente)
+  useEffect(() => {
+    if (!showCompleteModal) return;
+    fetch('/api/invoices/clients-history')
+      .then(r => r.json())
+      .then(d => setClientHistory(d.data || []))
+      .catch(() => setClientHistory([]));
+  }, [showCompleteModal]);
 
   // Fetch members for assignment dropdown (accepted + all active)
   useEffect(() => {
@@ -357,8 +378,30 @@ export default function ProjectDetailPage() {
     setCompleteItems(reqItems.length > 0 ? reqItems : [{ description: `Servicios: ${project.title}`, quantity: '1', unitPrice: String(Number(project.final_cost) || 0), ivaRate: '0', discount: '0' }]);
     setCompleteAdditionalFields([]);
     setCompleteSendEmail(true);
+    setHistoryOpen(false);
+    setHistorySearch('');
     setShowCompleteModal(true);
   };
+
+  // Autocompleta el adquirente desde un cliente ya facturado
+  const applyPastClient = (c: typeof clientHistory[0]) => {
+    setCompleteIdType(c.id_type);
+    setCompleteClientRuc(c.client_ruc);
+    setCompleteClientName(c.client_name);
+    setCompleteClientEmail(c.client_email);
+    setCompleteClientPhone(c.client_phone);
+    setCompleteClientAddress(c.client_address);
+    setHistoryOpen(false);
+    setHistorySearch('');
+    toast.success(`Datos de ${c.client_name} cargados`);
+  };
+
+  const filteredHistory = historySearch.trim()
+    ? clientHistory.filter(c => {
+        const q = historySearch.trim().toLowerCase();
+        return c.client_name.toLowerCase().includes(q) || c.client_ruc.toLowerCase().includes(q);
+      })
+    : clientHistory;
 
   const handleComplete = async (skipInvoice = false) => {
     setCompleting(true);
@@ -490,26 +533,45 @@ export default function ProjectDetailPage() {
   };
 
   const toggleReqComplete = async (reqId: number, completed: boolean) => {
-    await fetch(`/api/projects/${id}/requirements`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requirement_id: reqId, completed }) });
-    fetchProject();
+    setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => r.id === reqId ? { ...r, is_completed: completed } : r) } : p);
+    try {
+      const res = await fetch(`/api/projects/${id}/requirements`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requirement_id: reqId, completed }) });
+      if (!res.ok) throw new Error('No se pudo actualizar');
+    } catch (e: any) { toast.error(e.message || 'Error'); fetchProject(); }
   };
 
   const addSubItem = async (reqId: number) => {
     const title = newItemText[reqId]?.trim();
     if (!title) return;
-    await fetch(`/api/projects/${id}/requirements/items`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requirement_id: reqId, title }) });
     setNewItemText(prev => ({ ...prev, [reqId]: '' }));
-    fetchProject();
+    const tempId = -Date.now();
+    setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => r.id === reqId ? { ...r, items: [...(r.items || []), { id: tempId, title, is_completed: false }] } : r) } : p);
+    try {
+      const res = await fetch(`/api/projects/${id}/requirements/items`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requirement_id: reqId, title }) });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'No se pudo agregar la sub-tarea'); }
+      const d = await res.json().catch(() => ({}));
+      if (d?.data) setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => r.id === reqId ? { ...r, items: (r.items || []).map((it: any) => it.id === tempId ? d.data : it) } : r) } : p);
+    } catch (e: any) {
+      setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => r.id === reqId ? { ...r, items: (r.items || []).filter((it: any) => it.id !== tempId) } : r) } : p);
+      setNewItemText(prev => ({ ...prev, [reqId]: title }));
+      toast.error(e.message || 'Error al agregar sub-tarea');
+    }
   };
 
   const toggleSubItem = async (itemId: number, completed: boolean) => {
-    await fetch(`/api/projects/${id}/requirements/items`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_id: itemId, is_completed: completed }) });
-    fetchProject();
+    setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => ({ ...r, items: (r.items || []).map((it: any) => it.id === itemId ? { ...it, is_completed: completed } : it) })) } : p);
+    try {
+      const res = await fetch(`/api/projects/${id}/requirements/items`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_id: itemId, is_completed: completed }) });
+      if (!res.ok) throw new Error('No se pudo actualizar');
+    } catch (e: any) { toast.error(e.message || 'Error'); fetchProject(); }
   };
 
   const deleteSubItem = async (itemId: number) => {
-    await fetch(`/api/projects/${id}/requirements/items`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_id: itemId }) });
-    fetchProject();
+    setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => ({ ...r, items: (r.items || []).filter((it: any) => it.id !== itemId) })) } : p);
+    try {
+      const res = await fetch(`/api/projects/${id}/requirements/items`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_id: itemId }) });
+      if (!res.ok) throw new Error('No se pudo eliminar');
+    } catch (e: any) { toast.error(e.message || 'Error'); fetchProject(); }
   };
 
   const openAssignModal = (reqId: number) => {
@@ -772,59 +834,86 @@ export default function ProjectDetailPage() {
 
   return (
     <div>
-      <div className="mb-4">
-        <Link href="/dashboard/projects" className="text-[10px] text-accent-glow opacity-60 hover:opacity-100" style={pf}>&lt; Volver a proyectos</Link>
-      </div>
-
-      {/* Editable title */}
-      <div className="flex items-start justify-between gap-3 mb-6">
-        <div className="flex-1 min-w-0">
-          {editingTitle ? (
-            <div className="flex items-center gap-2">
-              <input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
-                autoFocus
-                className="flex-1 px-2 py-1 bg-digi-darker border-2 border-accent text-lg text-white focus:outline-none"
-                style={pf}
-              />
-              <button onClick={saveTitle} className="text-[8px] text-green-400 border border-green-500/30 px-1.5 py-0.5 hover:bg-green-900/20" style={pf}>OK</button>
-              <button onClick={() => setEditingTitle(false)} className="text-[8px] text-digi-muted border border-digi-border px-1.5 py-0.5" style={pf}>X</button>
-            </div>
-          ) : (
-            <h1
-              className="pixel-heading text-lg text-white cursor-pointer hover:text-accent-glow transition-colors"
-              onClick={() => { if (isOwner && !isTerminal) { setEditTitle(project.title); setEditingTitle(true); } }}
-              title={isOwner && !isTerminal ? 'Click para editar' : undefined}
-            >
-              {project.title}
-            </h1>
-          )}
+      {editingTitle ? (
+        <div className="mb-5 flex items-center gap-2">
+          <input
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
+            autoFocus
+            className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-accent text-lg text-digi-text focus:outline-none"
+            style={pf}
+          />
+          <button onClick={saveTitle} className="pixel-btn pixel-btn-primary text-[10px]">Guardar</button>
+          <button onClick={() => setEditingTitle(false)} className="pixel-btn pixel-btn-secondary text-[10px]">Cancelar</button>
         </div>
-        <div className="flex items-center gap-2">
-          {project.marketplace_source_id && (
-            <Link href={`/dashboard/projects/${project.marketplace_source_id}`}>
-              <PixelBadge variant="info">Marketplace</PixelBadge>
-            </Link>
-          )}
-          {project.is_marketplace_published && (
-            <PixelBadge variant="success">En Marketplace</PixelBadge>
-          )}
-          <PixelBadge variant={STATUS_V[project.status] || 'default'}>{project.status}</PixelBadge>
-        </div>
-      </div>
+      ) : (
+        <DetailHeader
+          breadcrumb={{ label: 'Proyectos', href: '/dashboard/projects' }}
+          title={project.title}
+          status={
+            <span className="flex items-center gap-2">
+              {project.marketplace_source_id && (
+                <Link href={`/dashboard/projects/${project.marketplace_source_id}`}><PixelBadge variant="info">Marketplace</PixelBadge></Link>
+              )}
+              {project.is_marketplace_published && <PixelBadge variant="success">En Marketplace</PixelBadge>}
+              <PixelBadge variant={STATUS_V[project.status] || 'default'}>{project.status}</PixelBadge>
+            </span>
+          }
+          chips={
+            <>
+              {project.client_name && <HeaderChip>{project.client_name}</HeaderChip>}
+              {(project.final_cost || project.budget_max) && <HeaderChip>${Number(project.final_cost || project.budget_max).toFixed(2)}</HeaderChip>}
+              {project.deadline && <HeaderChip>Límite {new Date(project.deadline).toLocaleDateString()}</HeaderChip>}
+            </>
+          }
+          actions={
+            <>
+              {project.status === 'draft' && isOwner && <button onClick={() => updateStatus('open')} className="pixel-btn pixel-btn-primary text-[10px]">Publicar</button>}
+              {project.status === 'open' && isOwner && <button onClick={() => updateStatus('in_progress')} className="pixel-btn pixel-btn-primary text-[10px]">Iniciar</button>}
+              {project.status === 'in_progress' && isOwner && (() => {
+                const reqs = project.requirements || [];
+                const allDone = reqs.length > 0 && reqs.every((r: any) => r.is_completed || r.completed_at);
+                return (
+                  <button onClick={() => updateStatus('review')} disabled={!allDone}
+                    className={`pixel-btn text-[10px] ${allDone ? 'pixel-btn-primary' : 'pixel-btn-secondary opacity-50 cursor-not-allowed'}`}
+                    title={!allDone ? 'Todos los requerimientos deben estar completados' : ''}>Enviar a revisión</button>
+                );
+              })()}
+              {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary text-[10px]">Completar y facturar</button>}
+            </>
+          }
+          overflow={[
+            ...(isOwner && !isTerminal ? [{ label: 'Editar nombre', onClick: () => { setEditTitle(project.title); setEditingTitle(true); } }] : []),
+            ...(isOwner && !isTerminal ? [{ label: 'Cancelar proyecto', onClick: () => updateStatus('cancelled'), danger: true }] : []),
+            ...(isAdmin ? [{ label: 'Eliminar proyecto', onClick: () => setConfirmDeleteProject(true), danger: true }] : []),
+          ]}
+        />
+      )}
 
+      <PixelTabs
+        tabs={[
+          { value: 'resumen', label: 'Resumen' },
+          { value: 'requerimientos', label: 'Requerimientos' },
+          { value: 'digimundo', label: 'DigiMundo' },
+          { value: 'imagenes', label: 'Imágenes' },
+        ]}
+        active={ptab}
+        onChange={(v) => setPtab(v as any)}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* ====== LEFT ====== */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 min-w-0 space-y-4">
+          {ptab === 'resumen' && (<>
           {project.description && (
             <div className="pixel-card">
               <h3 className="text-[10px] text-accent-glow mb-2" style={pf}>Descripcion</h3>
               <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{project.description}</p>
             </div>
           )}
+          </>)}
 
+          {ptab === 'requerimientos' && (<>
           {/* Requirements */}
           <div className="pixel-card">
             <div className="flex items-center justify-between mb-3">
@@ -832,7 +921,7 @@ export default function ProjectDetailPage() {
               <div className="flex items-center gap-2">
                 {reqs.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <div className="w-20 h-2 bg-digi-border"><div className="h-full bg-accent transition-all" style={{ width: `${reqs.length ? (completedReqs / reqs.length) * 100 : 0}%` }} /></div>
+                    <div className="w-24 h-1.5 rounded-full bg-[#edebe9] overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? (completedReqs / reqs.length) * 100 : 0}%` }} /></div>
                     <span className="text-[9px] text-digi-muted" style={mf}>{reqs.length ? Math.round((completedReqs / reqs.length) * 100) : 0}%</span>
                   </div>
                 )}
@@ -852,18 +941,18 @@ export default function ProjectDetailPage() {
                   const canEditThis = canMemberEditReq(r.id);
                   const assignedMemberName = assignments.find((a: any) => a.status === 'accepted')?.member_name;
                   return (
-                    <div key={r.id} className="px-2.5 py-2 border border-digi-border/50">
-                      <div className="flex items-start gap-2">
+                    <div key={r.id} className={`relative group/req rounded-md border border-digi-border border-l-[3px] bg-digi-card hover:bg-[#faf9f8] transition-colors px-3 py-2.5 ${r.is_completed ? 'border-l-[#107c10]' : 'border-l-accent'}`}>
+                      <div className="flex items-start gap-2.5">
                         <button
                           onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
-                          className={`text-[10px] mt-0.5 ${r.is_completed ? 'text-green-400' : 'text-digi-muted'} ${canEditThis ? 'cursor-pointer hover:text-accent-glow' : ''}`}
-                          style={pf}
                           disabled={!canEditThis}
+                          aria-label={r.is_completed ? 'Marcar incompleto' : 'Marcar completo'}
+                          className={`mt-0.5 w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : 'cursor-default'}`}
                         >
-                          {r.is_completed ? '[x]' : '[ ]'}
+                          {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
                         </button>
                         <div className="min-w-0 flex-1">
-                          <p className={`text-xs ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</p>
+                          <p className={`text-[13px] font-medium ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</p>
                           {r.description && <p className="text-[10px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
                           {(() => {
                             const acceptedAssignments = assignments.filter((a: any) => a.status === 'accepted');
@@ -871,17 +960,19 @@ export default function ProjectDetailPage() {
                             return (
                               <div className="flex items-center gap-1 mt-1">
                                 {acceptedAssignments.map((a: any) => (
-                                  <div key={a.id} className="relative group/avatar">
+                                  <div key={a.id} tabIndex={0} className="relative group/avatar cursor-pointer outline-none">
                                     {a.photo_url ? (
                                       // eslint-disable-next-line @next/next/no-img-element
-                                      <img src={a.photo_url} alt="" className="w-5 h-5 rounded-full border border-accent/50 object-cover" />
+                                      <img src={a.photo_url} alt="" className="w-6 h-6 rounded-full border border-accent/50 object-cover" />
                                     ) : (
-                                      <div className="w-5 h-5 rounded-full border border-accent/50 bg-accent/20 flex items-center justify-center text-[7px] text-accent-glow" style={pf}>
+                                      <div className="w-6 h-6 rounded-full border border-accent/50 bg-accent/20 flex items-center justify-center text-[8px] text-accent-glow" style={pf}>
                                         {(a.member_name || '?')[0].toUpperCase()}
                                       </div>
                                     )}
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-digi-card border border-digi-border text-[8px] text-white whitespace-nowrap opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none z-10" style={mf}>
-                                      {a.member_name}
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-digi-card border border-digi-border rounded shadow-lg opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 transition-opacity pointer-events-none z-20 min-w-max text-[10px]" style={mf}>
+                                      <div className="font-semibold text-digi-text">{a.member_name}</div>
+                                      <div className="text-digi-muted mt-0.5">Propuesto: ${a.proposed_cost}{a.member_cost != null ? ` → $${a.member_cost}` : ''}</div>
+                                      <div className="text-green-400 mt-0.5">● {a.status}</div>
                                     </div>
                                   </div>
                                 ))}
@@ -892,14 +983,14 @@ export default function ProjectDetailPage() {
                         <div className="flex items-center gap-1 shrink-0">
                           {r.cost && <span className="text-[9px] text-accent-glow" style={mf}>${r.cost}</span>}
                           {isOwner && (
-                            <button onClick={() => deleteRequirement(r.id)} className="text-[8px] text-red-400/50 hover:text-red-400 transition-colors" style={pf}>x</button>
+                            <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="text-digi-muted/60 hover:text-red-400 transition-colors text-[18px] leading-none px-1">×</button>
                           )}
                         </div>
                       </div>
 
-                      {/* Assignments + assign button */}
+                      {/* Assignments + assign button (accepted ones are shown via the avatar tooltip above) */}
                       <div className="mt-1.5 ml-5 space-y-1">
-                        {assignments.map((a: any) => (
+                        {assignments.filter((a: any) => a.status !== 'accepted').map((a: any) => (
                           <div key={a.id} className="flex items-center gap-1.5 flex-wrap px-1.5 py-1 border border-accent/20 bg-accent/5">
                             <div className="relative group/asgn">
                               {a.photo_url ? (
@@ -910,7 +1001,7 @@ export default function ProjectDetailPage() {
                                   {(a.member_name || '?')[0].toUpperCase()}
                                 </div>
                               )}
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-digi-card border border-digi-border text-[8px] text-white whitespace-nowrap opacity-0 group-hover/asgn:opacity-100 transition-opacity pointer-events-none z-10" style={mf}>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-digi-card border border-digi-border text-[8px] text-digi-text whitespace-nowrap opacity-0 group-hover/asgn:opacity-100 transition-opacity pointer-events-none z-10" style={mf}>
                                 {a.member_name}
                               </div>
                             </div>
@@ -945,47 +1036,29 @@ export default function ProjectDetailPage() {
                           </div>
                         ))}
 
-                        {/* Assign button (owner only) */}
-                        {isOwner && (isAdmin || project.confirmed_at || isMemberCreator) && (
-                          <button onClick={() => openAssignModal(r.id)} className="text-[8px] text-digi-muted hover:text-accent-glow border border-digi-border/30 hover:border-accent/30 px-1.5 py-0.5 transition-colors" style={pf}>
-                            + Asignar miembro
-                          </button>
-                        )}
+                        {/* Action buttons row */}
+                        <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                          {isOwner && (isAdmin || project.confirmed_at || isMemberCreator) && (
+                            <button onClick={() => openAssignModal(r.id)} className="text-[10px] text-digi-muted hover:text-accent border border-digi-border rounded px-2 py-1 hover:border-accent transition-colors" style={pf}>+ Asignar miembro</button>
+                          )}
+                          {canEditThis && (
+                            <button onClick={() => setSubtaskReqId(r.id)} className="text-[10px] text-digi-muted hover:text-accent border border-digi-border rounded px-2 py-1 hover:border-accent transition-colors" style={pf}>+ Agregar subtarea{items.length > 0 ? ` (${items.length})` : ''}</button>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Sub-items */}
+                      {/* Subtasks — floating preview on requirement hover */}
                       {items.length > 0 && (
-                        <div className="mt-1.5 ml-5 space-y-0.5">
-                          {items.map((item: any) => (
-                            <div key={item.id} className="flex items-center gap-1.5 group">
-                              <button
-                                onClick={() => canEditThis && toggleSubItem(item.id, !item.is_completed)}
-                                className={`text-[8px] ${item.is_completed ? 'text-green-400' : 'text-digi-muted'}`}
-                                style={pf}
-                                disabled={!canEditThis}
-                              >
-                                {item.is_completed ? '[x]' : '[ ]'}
-                              </button>
-                              <span className={`text-[9px] flex-1 ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
-                              {canEditThis && (
-                                <button onClick={() => deleteSubItem(item.id)} className="text-[7px] text-red-400/0 group-hover:text-red-400/60 hover:!text-red-400 transition-colors" style={pf}>x</button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Add sub-item input */}
-                      {canEditThis && (
-                        <div className="mt-1.5 ml-5 flex gap-1">
-                          <input
-                            value={newItemText[r.id] || ''}
-                            onChange={(e) => setNewItemText(prev => ({ ...prev, [r.id]: e.target.value }))}
-                            onKeyDown={(e) => e.key === 'Enter' && addSubItem(r.id)}
-                            placeholder="+ sub-tarea..."
-                            className="flex-1 px-1.5 py-0.5 bg-transparent border-b border-digi-border/30 text-[9px] text-digi-text placeholder:text-digi-muted/30 focus:border-accent/50 focus:outline-none"
-                            style={mf}
-                          />
+                        <div className="absolute left-5 top-full -mt-1 z-30 w-72 max-w-[90vw] bg-digi-card border border-digi-border rounded shadow-lg p-3 opacity-0 invisible group-hover/req:opacity-100 group-hover/req:visible transition-opacity pointer-events-none" style={mf}>
+                          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={pf}>Subtareas ({items.filter((it: any) => it.is_completed).length}/{items.length})</p>
+                          <ol className="space-y-1">
+                            {items.map((item: any, i: number) => (
+                              <li key={item.id} className={`text-[11px] flex gap-1.5 ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`}>
+                                <span className="text-digi-muted shrink-0">{i + 1}.</span>
+                                <span className="break-words">{item.title}</span>
+                              </li>
+                            ))}
+                          </ol>
                         </div>
                       )}
                     </div>
@@ -1072,6 +1145,7 @@ export default function ProjectDetailPage() {
               <p className="text-[9px] text-digi-muted text-center py-2" style={mf}>Sin participantes aun</p>
             )}
           </div>
+          </>)}
 
           {/* Invite Modal */}
           <PixelModal open={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invitar Miembros" size="md">
@@ -1102,7 +1176,7 @@ export default function ProjectDetailPage() {
                 )}
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-                <button onClick={() => setShowInviteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
+                <button onClick={() => setShowInviteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
                 <button onClick={sendInvites} disabled={inviting || selectedInvites.size === 0} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
                   {inviting ? 'Invitando...' : `Invitar (${selectedInvites.size})`}
                 </button>
@@ -1191,7 +1265,7 @@ export default function ProjectDetailPage() {
               )}
 
               <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-                <button onClick={() => setShowBidModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
+                <button onClick={() => setShowBidModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
                 <button onClick={submitBid} disabled={submittingBid || !bidProposal.trim() || bidReqIds.length === 0} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
                   {submittingBid ? 'Enviando...' : 'Enviar Propuesta'}
                 </button>
@@ -1238,7 +1312,55 @@ export default function ProjectDetailPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* ─── LEFT: Adquirente + Pago ─── */}
                 <div className="space-y-2">
-                  <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1" style={pf}>Adquirente</h4>
+                  <div className="flex items-center justify-between border-b border-digi-border pb-1">
+                    <h4 className="text-[9px] text-accent-glow" style={pf}>Adquirente</h4>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryOpen(o => !o)}
+                      className="text-[8px] px-2 py-0.5 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors"
+                      style={pf}
+                    >
+                      {historyOpen ? 'Cerrar' : `Cliente previo${clientHistory.length ? ` (${clientHistory.length})` : ''}`}
+                    </button>
+                  </div>
+
+                  {historyOpen && (
+                    <div className="border border-digi-border bg-digi-darker p-2 space-y-2">
+                      <input
+                        autoFocus
+                        value={historySearch}
+                        onChange={e => setHistorySearch(e.target.value)}
+                        placeholder="Buscar por nombre o RUC..."
+                        className="w-full px-2 py-1 bg-digi-dark border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none"
+                        style={mf}
+                      />
+                      <div className="max-h-40 overflow-y-auto border border-digi-border/50">
+                        {filteredHistory.length === 0 ? (
+                          <div className="px-2 py-3 text-center text-[9px] text-digi-muted" style={pf}>
+                            {clientHistory.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}
+                          </div>
+                        ) : (
+                          filteredHistory.slice(0, 50).map((c) => (
+                            <button
+                              key={c.client_ruc}
+                              type="button"
+                              onClick={() => applyPastClient(c)}
+                              className="w-full text-left px-2 py-1.5 border-b border-digi-border/30 last:border-b-0 hover:bg-accent/10 transition-colors"
+                            >
+                              <div className="text-[10px] text-digi-text truncate" style={mf}>{c.client_name}</div>
+                              <div className="text-[8px] text-digi-muted flex gap-2" style={mf}>
+                                <span>{c.client_ruc}</span>
+                                {c.client_email && <span className="truncate">· {c.client_email}</span>}
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                      <div className="text-[8px] text-digi-muted" style={pf}>
+                        Elige uno para rellenar los campos, o cierra y llena manualmente.
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tipo ID <span className="text-red-400">*</span></label>
@@ -1412,10 +1534,10 @@ export default function ProjectDetailPage() {
                     return (
                       <div className="border-2 border-digi-border p-2 text-[9px] space-y-0.5" style={mf}>
                         {Object.entries(ivaByRate).map(([rate, base]) => (
-                          <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-white">${base.toFixed(2)}</span></div>
+                          <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${base.toFixed(2)}</span></div>
                         ))}
-                        {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-white">${totalDiscount.toFixed(2)}</span></div>}
-                        {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-white">${totalIva.toFixed(2)}</span></div>}
+                        {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${totalDiscount.toFixed(2)}</span></div>}
+                        {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${totalIva.toFixed(2)}</span></div>}
                         <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent-glow font-bold">Total:</span><span className="text-accent-glow font-bold">${(subtotal + totalIva).toFixed(2)}</span></div>
                       </div>
                     );
@@ -1444,8 +1566,8 @@ export default function ProjectDetailPage() {
                         <span className="text-[9px] text-digi-muted" style={mf}>Enviar por correo</span>
                       </label>
                       <div className="flex gap-2">
-                        <button onClick={() => setShowCompleteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
-                        <button onClick={() => handleComplete(true)} disabled={completing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-text hover:border-accent hover:text-white transition-colors disabled:opacity-50" style={pf}>
+                        <button onClick={() => setShowCompleteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
+                        <button onClick={() => handleComplete(true)} disabled={completing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-text hover:border-accent hover:text-digi-text transition-colors disabled:opacity-50" style={pf}>
                           Completar sin Facturar
                         </button>
                         <button onClick={() => handleComplete(false)} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
@@ -1460,81 +1582,7 @@ export default function ProjectDetailPage() {
             )}
           </PixelModal>
 
-          {/* Details */}
-          <div className="pixel-card">
-            <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Detalles</h3>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px]" style={mf}>
-              <DetailRow label="Cliente" value={project.client_name || '-'} />
-              <DetailRow label="Miembro" value={project.assigned_member_name || '-'} />
-              {/* Editable Budget */}
-              <div className="flex justify-between py-1 border-b border-digi-border/30">
-                <span className="text-digi-muted">Presupuesto</span>
-                {editingBudget ? (
-                  <div className="flex items-center gap-1">
-                    <input value={editBudgetMin} onChange={(e) => setEditBudgetMin(e.target.value)} type="number" placeholder="Min"
-                      className="w-14 px-1 py-0.5 bg-digi-darker border border-accent text-[9px] text-digi-text focus:outline-none text-right" style={mf} />
-                    <span className="text-digi-muted">-</span>
-                    <input value={editBudgetMax} onChange={(e) => setEditBudgetMax(e.target.value)} type="number" placeholder="Max"
-                      className="w-14 px-1 py-0.5 bg-digi-darker border border-accent text-[9px] text-digi-text focus:outline-none text-right" style={mf} />
-                    <button onClick={saveBudget} className="text-[7px] text-green-400 border border-green-500/30 px-1 hover:bg-green-900/20" style={pf}>OK</button>
-                    <button onClick={() => setEditingBudget(false)} className="text-[7px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
-                  </div>
-                ) : (
-                  <span
-                    className={`text-digi-text text-right ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent-glow' : ''}`}
-                    onClick={() => { if (isOwner && !isTerminal) { setEditBudgetMin(project.budget_min || ''); setEditBudgetMax(project.budget_max || ''); setEditingBudget(true); } }}
-                  >
-                    {project.budget_min ? `$${project.budget_min}${project.budget_max ? ` - $${project.budget_max}` : ''}` : '-'}
-                  </span>
-                )}
-              </div>
-              <DetailRow label="Costo Final" value={totalAcceptedCost > 0 ? `$${totalAcceptedCost.toFixed(2)}` : '$0.00'} />
-              {/* Editable Deadline */}
-              <div className="flex justify-between py-1 border-b border-digi-border/30">
-                <span className="text-digi-muted">Limite</span>
-                {editingDeadline ? (
-                  <div className="flex items-center gap-1">
-                    <input value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} type="date"
-                      className="px-1 py-0.5 bg-digi-darker border border-accent text-[9px] text-digi-text focus:outline-none" style={mf} />
-                    <button onClick={saveDeadline} className="text-[7px] text-green-400 border border-green-500/30 px-1 hover:bg-green-900/20" style={pf}>OK</button>
-                    <button onClick={() => setEditingDeadline(false)} className="text-[7px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
-                  </div>
-                ) : (
-                  <span
-                    className={`text-digi-text text-right ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent-glow' : ''}`}
-                    onClick={() => { if (isOwner && !isTerminal) { setEditDeadline(project.deadline?.split('T')[0] || ''); setEditingDeadline(true); } }}
-                  >
-                    {project.deadline ? new Date(project.deadline).toLocaleDateString() : '-'}
-                  </span>
-                )}
-              </div>
-              <DetailRow label="Creado" value={new Date(project.created_at).toLocaleDateString()} />
-              <div className="flex justify-between py-1 border-b border-digi-border/30 col-span-2">
-                <span className="text-digi-muted">Visibilidad</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-digi-text">{project.is_private ? 'Privado' : 'Publico'}</span>
-                  {isOwner && !isTerminal && hasReqs && (
-                    <button
-                      onClick={async () => {
-                        await fetch(`/api/projects/${id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ is_private: !project.is_private }),
-                        });
-                        toast.success(project.is_private ? 'Proyecto ahora es publico' : 'Proyecto ahora es privado');
-                        fetchProject();
-                      }}
-                      className="text-[7px] text-accent-glow border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors"
-                      style={pf}
-                    >
-                      {project.is_private ? 'Hacer Publico' : 'Hacer Privado'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
+          {ptab === 'resumen' && (<>
           {/* Withdrawal Requests */}
           {projectRequests.length > 0 && (
             <div className="pixel-card">
@@ -1624,7 +1672,9 @@ export default function ProjectDetailPage() {
               </div>
             );
           })()}
+          </>)}
 
+          {ptab === 'imagenes' && (<>
           {/* Project Images */}
           {showImages && (
             <div className="pixel-card">
@@ -1690,8 +1740,9 @@ export default function ProjectDetailPage() {
               )}
             </div>
           )}
+          </>)}
 
-          {/* Image Preview Modal */}
+          {/* Image Preview Modal (always rendered) */}
           {previewImage && (
             <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
@@ -1700,7 +1751,7 @@ export default function ProjectDetailPage() {
               <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => setPreviewImage(null)}
-                  className="absolute -top-3 -right-3 w-7 h-7 flex items-center justify-center bg-digi-card border-2 border-digi-border text-digi-muted hover:text-white transition-colors z-10"
+                  className="absolute -top-3 -right-3 w-7 h-7 flex items-center justify-center bg-digi-card border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors z-10"
                   style={pf}
                 >
                   X
@@ -1713,7 +1764,7 @@ export default function ProjectDetailPage() {
                       {currentIdx > 0 && (
                         <button
                           onClick={() => setPreviewImage(projectImages[currentIdx - 1])}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-card/80 border border-digi-border text-digi-muted hover:text-white transition-colors z-10"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-card/80 border border-digi-border text-digi-muted hover:text-digi-text transition-colors z-10"
                           style={pf}
                         >
                           &lt;
@@ -1722,7 +1773,7 @@ export default function ProjectDetailPage() {
                       {currentIdx < projectImages.length - 1 && (
                         <button
                           onClick={() => setPreviewImage(projectImages[currentIdx + 1])}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-card/80 border border-digi-border text-digi-muted hover:text-white transition-colors z-10"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-card/80 border border-digi-border text-digi-muted hover:text-digi-text transition-colors z-10"
                           style={pf}
                         >
                           &gt;
@@ -1744,37 +1795,13 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
+          {ptab === 'resumen' && (<>
           {/* Actions */}
           {(isOwner || isMember) && (
             <div className="pixel-card">
               <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Acciones</h3>
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
-                {project.status === 'draft' && isOwner && <button onClick={() => updateStatus('open')} className="pixel-btn pixel-btn-primary text-[9px]">Publicar</button>}
-                {project.status === 'open' && isOwner && <button onClick={() => updateStatus('in_progress')} className="pixel-btn pixel-btn-primary text-[9px]">Iniciar</button>}
-                {project.status === 'in_progress' && isOwner && (() => {
-                  const reqs = project.requirements || [];
-                  const allDone = reqs.length > 0 && reqs.every((r: any) => r.is_completed || r.completed_at);
-                  return (
-                    <button onClick={() => updateStatus('review')} disabled={!allDone}
-                      className={`pixel-btn text-[9px] ${allDone ? 'pixel-btn-primary' : 'opacity-40 cursor-not-allowed border border-digi-border text-digi-muted'}`}
-                      title={!allDone ? 'Todos los requerimientos deben estar completados' : ''}
-                    >Enviar a Revision</button>
-                  );
-                })()}
-                {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary text-[9px]">Completar</button>}
-                {isOwner && !['completed', 'closed', 'cancelled'].includes(project.status) && (
-                  <button onClick={() => updateStatus('cancelled')} className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>Cancelar</button>
-                )}
-                {isAdmin && (
-                  <button
-                    onClick={() => setConfirmDeleteProject(true)}
-                    className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors"
-                    style={pf}
-                  >
-                    Eliminar
-                  </button>
-                )}
                 {/* Participant: Desistir / Salida Supervisada */}
                 {isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && (() => {
                   const myReqs = projectRequests.filter((r: any) => String(r.member_id) === String(memberId));
@@ -1828,10 +1855,8 @@ export default function ProjectDetailPage() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* ====== RIGHT ====== */}
-        <div className="space-y-4">
+          </>)}
+          {ptab === 'digimundo' && (<>
           {isAdmin && (
             <div className="pixel-card" style={{ borderColor: project.digimundo_project_id ? 'var(--color-accent)' : undefined }}>
               <div className="flex items-center justify-between mb-3">
@@ -2081,8 +2106,111 @@ export default function ProjectDetailPage() {
               )}
             </div>
           )}
+          </>)}
+        </div>
+
+        {/* ====== RIGHT (Propiedades + DigiMundo) ====== */}
+        <div className="space-y-4">
+          {/* Propiedades */}
+          <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm lg:sticky lg:top-4">
+            <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Propiedades</h3>
+            <dl className="space-y-2.5 text-[12px]" style={mf}>
+              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Cliente</dt><dd className="text-digi-text text-right break-words min-w-0">{project.client_name || '-'}</dd></div>
+              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Miembro</dt><dd className="text-digi-text text-right break-words min-w-0">{project.assigned_member_name || '-'}</dd></div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="text-digi-muted shrink-0">Presupuesto</dt>
+                <dd className="text-right min-w-0">
+                  {editingBudget ? (
+                    <div className="flex items-center gap-1 justify-end flex-wrap">
+                      <input value={editBudgetMin} onChange={(e) => setEditBudgetMin(e.target.value)} type="number" placeholder="Min" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
+                      <span className="text-digi-muted">-</span>
+                      <input value={editBudgetMax} onChange={(e) => setEditBudgetMax(e.target.value)} type="number" placeholder="Max" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
+                      <button onClick={saveBudget} className="text-[9px] text-green-400 border border-green-500/30 px-1 hover:bg-green-900/20" style={pf}>OK</button>
+                      <button onClick={() => setEditingBudget(false)} className="text-[9px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
+                    </div>
+                  ) : (
+                    <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditBudgetMin(project.budget_min || ''); setEditBudgetMax(project.budget_max || ''); setEditingBudget(true); } }}>{project.budget_min ? `$${project.budget_min}${project.budget_max ? ` - $${project.budget_max}` : ''}` : '-'}</span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Costo final</dt><dd className="text-digi-text text-right">{totalAcceptedCost > 0 ? `$${totalAcceptedCost.toFixed(2)}` : '$0.00'}</dd></div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="text-digi-muted shrink-0">Límite</dt>
+                <dd className="text-right min-w-0">
+                  {editingDeadline ? (
+                    <div className="flex items-center gap-1 justify-end flex-wrap">
+                      <input value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} type="date" className="px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none" style={mf} />
+                      <button onClick={saveDeadline} className="text-[9px] text-green-400 border border-green-500/30 px-1 hover:bg-green-900/20" style={pf}>OK</button>
+                      <button onClick={() => setEditingDeadline(false)} className="text-[9px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
+                    </div>
+                  ) : (
+                    <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditDeadline(project.deadline?.split('T')[0] || ''); setEditingDeadline(true); } }}>{project.deadline ? new Date(project.deadline).toLocaleDateString() : '-'}</span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="text-digi-muted shrink-0">Visibilidad</dt>
+                <dd className="text-right flex items-center gap-2 justify-end flex-wrap">
+                  <span className="text-digi-text">{project.is_private ? 'Privado' : 'Público'}</span>
+                  {isOwner && !isTerminal && hasReqs && (
+                    <button onClick={async () => { await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_private: !project.is_private }) }); toast.success(project.is_private ? 'Proyecto ahora es publico' : 'Proyecto ahora es privado'); fetchProject(); }} className="text-[9px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>{project.is_private ? 'Hacer público' : 'Hacer privado'}</button>
+                  )}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Creado</dt><dd className="text-digi-text text-right">{new Date(project.created_at).toLocaleDateString()}</dd></div>
+            </dl>
+          </div>
+
         </div>
       </div>
+
+      {/* Subtasks Modal (centered) */}
+      <PixelModal open={subtaskReqId != null} onClose={() => setSubtaskReqId(null)} title="Subtareas" size="sm">
+        {(() => {
+          const r = reqs.find((x: any) => x.id === subtaskReqId);
+          if (!r) return null;
+          const items = r.items || [];
+          const canEditThis = canMemberEditReq(r.id);
+          return (
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Requerimiento</p>
+                <p className="text-sm font-medium text-digi-text mt-0.5" style={mf}>{r.title}</p>
+                {r.description && <p className="text-xs text-digi-muted mt-1" style={mf}>{r.description}</p>}
+              </div>
+              <div className="space-y-1">
+                {items.length > 0 ? items.map((item: any) => (
+                  <div key={item.id} className="flex items-center gap-2.5 group px-2 py-1.5 rounded hover:bg-[#f3f2f1]">
+                    <button onClick={() => canEditThis && toggleSubItem(item.id, !item.is_completed)} disabled={!canEditThis} aria-label={item.is_completed ? 'Marcar incompleto' : 'Marcar completo'} className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${item.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : ''}`}>
+                      {item.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
+                    </button>
+                    <span className={`text-[13px] flex-1 ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
+                    {canEditThis && (
+                      <button onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" className="text-digi-muted/60 hover:text-red-400 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
+                    )}
+                  </div>
+                )) : (
+                  <p className="text-xs text-digi-muted py-2" style={mf}>Sin subtareas aún.</p>
+                )}
+              </div>
+              {canEditThis && (
+                <div className="flex gap-2 items-center border-t border-digi-border pt-3">
+                  <input
+                    value={newItemText[r.id] || ''}
+                    onChange={(e) => setNewItemText(prev => ({ ...prev, [r.id]: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSubItem(r.id); } }}
+                    placeholder="Nueva subtarea..."
+                    autoFocus
+                    className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                    style={mf}
+                  />
+                  <button onClick={() => addSubItem(r.id)} disabled={!(newItemText[r.id] || '').trim()} className="pixel-btn pixel-btn-primary text-[10px] disabled:opacity-50 shrink-0">Agregar</button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </PixelModal>
 
       {/* Add Requirement Modal */}
       {/* Withdraw/Exit Modal */}

@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import PageHeader from '@/components/ui/PageHeader';
-import PixelTabs from '@/components/ui/PixelTabs';
+import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
@@ -16,8 +15,8 @@ const TABS = [
   { value: 'automation', label: 'Automatizaciones' },
 ];
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const emptyForm = { title: '', description: '', price: '', tags: '', project_url: '', images: [''] };
 
@@ -227,17 +226,16 @@ export default function PortfolioPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Portafolio"
-        description="Gestiona tus proyectos, productos y automatizaciones"
+      <ModuleToolbar
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={setTab}
         action={
           <button onClick={openCreate} className="pixel-btn pixel-btn-primary">
             + Nuevo
           </button>
         }
       />
-
-      <PixelTabs tabs={TABS} active={tab} onChange={setTab} />
 
       <PixelDataTable
         columns={[
@@ -268,7 +266,7 @@ export default function PortfolioPage() {
             },
           },
           { key: 'title', header: 'Titulo', render: (item: any) => (
-            <span className="text-white">{item.title}</span>
+            <span className="text-digi-text">{item.title}</span>
           )},
           {
             key: 'tags', header: 'Tags', render: (item: any) => (
@@ -338,7 +336,7 @@ export default function PortfolioPage() {
                   );
                 },
               },
-              { key: 'title', header: 'Proyecto', render: (p: any) => <span className="text-white">{p.title}</span> },
+              { key: 'title', header: 'Proyecto', render: (p: any) => <span className="text-digi-text">{p.title}</span> },
               { key: 'team', header: 'Equipo', render: (p: any) => {
                 const team = p.team || [];
                 return (

@@ -20,7 +20,7 @@ import {
   AVAILABILITY_ORDER,
 } from '@/lib/calendar/availability';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
 
 export default function CalendarSettingsPage() {
   const [view, setView] = useState<CalendarViewMode>('month');

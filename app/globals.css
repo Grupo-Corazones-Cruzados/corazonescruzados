@@ -19,6 +19,12 @@
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-pixel: 'Silkscreen', cursive;
+
+  /* Theme-aware fonts: components reference these vars instead of hardcoding a
+     family, so a scope (e.g. `.corp`) can swap the whole typography. Defaults
+     keep the pixel-art look everywhere outside the corporate scope. */
+  --font-display: 'Silkscreen', cursive;
+  --font-body: 'JetBrains Mono', monospace;
 }
 
 /* Scrollbar styling */
@@ -671,4 +677,363 @@ html {
     font-size: 0.7rem;
     padding: 10px 20px;
   }
+}
+
+/* =====================================================
+   CORPORATE THEME — Microsoft / SharePoint (Fluent) look
+   Scoped to `.corp` (mounted on the dashboard shell) so the
+   landing, auth, client portal and gamified world keep their
+   pixel-art identity untouched. Works by REDEFINING the design
+   tokens (CSS custom properties) inside the scope: every Tailwind
+   `digi-*` / `accent` utility and every `var(--…)` reference picks
+   up the corporate value automatically, with no per-page edits.
+   ===================================================== */
+.corp {
+  /* Surfaces & text — light Fluent neutrals */
+  --color-digi-green: #107c10;   /* success green (was pure white) */
+  --color-digi-dark: #faf9f8;    /* page background */
+  --color-digi-darker: #ffffff;  /* deepest surface (inputs) */
+  --color-digi-card: #ffffff;    /* cards / table header / sidebar */
+  --color-digi-border: #e1dfdd;  /* neutral border */
+  --color-digi-text: #242424;    /* primary text */
+  --color-digi-muted: #605e5c;   /* secondary text */
+
+  /* Accent — GCC brand purple, tuned for light backgrounds */
+  --color-accent: #4B2D8E;
+  --color-accent-hover: #3A1F7A; /* darken on hover (light bg) */
+  --color-accent-light: #EDEBFA;
+  --color-accent-dark: #2E1860;
+  --color-accent-glow: #4B2D8E;  /* readable purple text on white (was light #7B5FBF) */
+
+  /* Typography — Segoe UI (Microsoft) */
+  --font-display: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+  background: var(--color-digi-dark);
+  color: var(--color-digi-text);
+  min-height: 100vh;
+}
+
+/* Light, thin scrollbars inside the dashboard */
+.corp ::-webkit-scrollbar-track { background: transparent; }
+.corp ::-webkit-scrollbar-thumb { background: #c8c6c4; }
+.corp ::-webkit-scrollbar-thumb:hover { background: #a19f9d; }
+
+/* Headings: drop the pixel font / hard text-shadow */
+.corp .pixel-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-shadow: none;
+}
+.corp .pixel-glow { text-shadow: none; }
+.corp .retro-text,
+.corp .retro-text-muted { color: inherit; text-shadow: none; }
+
+/* Buttons: flat Fluent style — soft radius, no hard drop shadow / uppercase */
+.corp .pixel-btn {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-width: 1px;
+  border-radius: 4px;
+  text-transform: none;
+  letter-spacing: normal;
+  image-rendering: auto;
+}
+.corp .pixel-btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+  box-shadow: none;
+}
+.corp .pixel-btn-primary:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  transform: none;
+  box-shadow: none;
+}
+.corp .pixel-btn-primary:active {
+  background: var(--color-accent-dark);
+  transform: none;
+  box-shadow: none;
+}
+.corp .pixel-btn-secondary {
+  background: #ffffff;
+  border-color: var(--color-digi-border);
+  color: var(--color-digi-text);
+  box-shadow: none;
+}
+.corp .pixel-btn-secondary:hover {
+  background: #f3f2f1;
+  border-color: var(--color-digi-border);
+  transform: none;
+  box-shadow: none;
+}
+.corp .pixel-btn-secondary:active {
+  background: #edebe9;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Cards: white surface, subtle Fluent depth, no lift/glow/double-border */
+.corp .pixel-card {
+  background: #ffffff;
+  border: 1px solid var(--color-digi-border);
+  border-radius: 6px;
+  padding: 24px;
+  box-shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.10), 0 0.3px 0.9px rgba(0, 0, 0, 0.07);
+}
+.corp .pixel-card::before { content: none; }
+.corp .pixel-card:hover {
+  border-color: var(--color-digi-border);
+  transform: none;
+  box-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.12), 0 0.6px 1.8px rgba(0, 0, 0, 0.08);
+}
+.corp .pixel-card.pixel-card--no-hover:hover {
+  box-shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.10), 0 0.3px 0.9px rgba(0, 0, 0, 0.07);
+}
+
+/* Disable retro overlays / decorative pixel bits inside the dashboard */
+.corp .scanlines::after { content: none; }
+.corp .pixel-grid-bg { background-image: none; }
+.corp .pixel-divider {
+  height: 1px;
+  background: var(--color-digi-border);
+  opacity: 1;
+}
+
+/* Status badges: Fluent-style pills (light tinted bg + readable dark text).
+   Overrides the dark-tuned Tailwind colors only inside the corporate scope. */
+.corp .pixel-badge[data-variant="success"] { background: #dff6dd; color: #0e700e; border-color: #a7d8a7; }
+.corp .pixel-badge[data-variant="warning"] { background: #fff4ce; color: #835c00; border-color: #f2df9b; }
+.corp .pixel-badge[data-variant="error"]   { background: #fde7e9; color: #a4262c; border-color: #f1bcc0; }
+.corp .pixel-badge[data-variant="info"]    { background: var(--color-accent-light); color: var(--color-accent); border-color: rgba(75, 45, 142, 0.30); }
+.corp .pixel-badge[data-variant="default"] { background: #f3f2f1; color: var(--color-digi-muted); border-color: var(--color-digi-border); }
+
+/* =====================================================
+   CORPORATE CONTROLS — Fluent-style form fields, tabs,
+   tables and dialogs. The `.field-select` chevron rule is
+   global (the chevron was moved out of the component's inline
+   style so it can be themed); everything else is scoped to `.corp`.
+   ===================================================== */
+
+/* Native <select> chevron — default (pixel) look, used everywhere */
+.field-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237B5FBF' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* Base typography for the whole dashboard scope */
+.corp { font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif; }
+
+/* Form fields — Fluent text field / dropdown */
+.corp .field-control,
+.corp input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+.corp select,
+.corp textarea {
+  border-width: 1px;
+  border-radius: 4px;
+  font-size: 0.875rem;            /* 14px */
+}
+.corp .field-control,
+.corp select { min-height: 34px; }
+.corp .field-control:focus,
+.corp input:focus,
+.corp select:focus,
+.corp textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+  outline: none;
+}
+.corp .field-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23605e5c' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+.corp .field-label {
+  font-family: var(--font-display);
+  font-size: 0.75rem;             /* 12px */
+  font-weight: 600;
+  color: var(--color-digi-text);
+  opacity: 1;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Modal — Fluent dialog (header / body / close split, soft elevation) */
+.corp .modal-surface {
+  padding: 0;
+  border-radius: 8px;
+  box-shadow: 0 6.4px 14.4px rgba(0, 0, 0, 0.13), 0 1.2px 3.6px rgba(0, 0, 0, 0.11);
+}
+.corp .modal-header {
+  margin: 0;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-digi-border);
+}
+.corp .modal-title { font-size: 1.0625rem; font-weight: 600; letter-spacing: normal; }
+.corp .modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--color-digi-muted);
+}
+.corp .modal-close:hover { background: #f3f2f1; color: var(--color-digi-text); }
+.corp .modal-body { padding: 20px 24px 24px; }
+
+/* Forms (size md/lg) open as an Azure/SharePoint-style side panel that slides in
+   from the right with the page dimmed behind. Confirmations (size sm) stay as a
+   small centered dialog. */
+@keyframes panelSlideInRight {
+  from { transform: translateX(100%); opacity: 0.5; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.corp .modal-surface[data-size='md'],
+.corp .modal-surface[data-size='lg'] {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  max-height: 100vh;
+  width: 644px;                 /* Fluent Panel "medium" */
+  max-width: 100vw;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 16px rgba(0, 0, 0, 0.18), -1.2px 0 3.6px rgba(0, 0, 0, 0.11);
+  animation: panelSlideInRight 0.27s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+.corp .modal-surface[data-size='lg'] { width: 840px; }  /* Fluent Panel "large" */
+.corp .modal-surface[data-size='md'] .modal-header,
+.corp .modal-surface[data-size='lg'] .modal-header { flex: 0 0 auto; }
+.corp .modal-surface[data-size='md'] .modal-body,
+.corp .modal-surface[data-size='lg'] .modal-body {
+  flex: 1 1 auto;
+  max-height: none;             /* override the centered-dialog 70vh cap */
+}
+
+/* Tabs — Fluent pivot */
+.corp .pivot { border-bottom: 1px solid var(--color-digi-border); gap: 4px; }
+.corp .pivot--flush { border-bottom: none; margin-bottom: 0; justify-content: flex-end; }
+/* Tabs: right-aligned on phone/tablet, left-aligned on desktop (≥ lg). */
+@media (min-width: 1024px) {
+  .corp .pivot--flush { justify-content: flex-start; }
+}
+/* In a toolbar the tabs have no container border to overlap, so drop the -2px
+   bottom margin — it pushed the active underline 2px past the scroll box and,
+   because overflow-x:auto forces overflow-y:auto, triggered a vertical scrollbar. */
+.corp .pivot--flush .pivot-tab { margin-bottom: 0; }
+.corp .pivot-tab {
+  font-family: var(--font-display);
+  font-size: 0.875rem;            /* 14px */
+  font-weight: 600;
+  padding: 10px 12px;
+  color: var(--color-digi-muted);
+}
+.corp .pivot-tab.is-active { color: var(--color-accent); border-color: var(--color-accent); }
+.corp .pivot-count {
+  border-radius: 9999px;
+  font-size: 0.6875rem;           /* 11px */
+  padding: 1px 7px;
+  font-family: var(--font-body);
+}
+
+/* Data table — Fluent DetailsList */
+.corp .data-table { border: 1px solid var(--color-digi-border); border-radius: 6px; }
+.corp .dt-th {
+  font-family: var(--font-display);
+  font-size: 0.75rem;             /* 12px */
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-digi-muted);
+  padding: 11px 14px;
+}
+.corp .dt-td { font-size: 0.8125rem; padding: 11px 14px; }
+.corp .dt-row:hover { background: #f3f2f1; }
+
+/* Confirm-dialog buttons — solid Fluent */
+.corp .dlg-btn {
+  border-width: 1px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 7px 16px;
+}
+.corp .dlg-btn--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.corp .dlg-btn--primary:hover { background: var(--color-accent-hover); }
+.corp .dlg-btn--danger {
+  background: #a4262c;
+  border-color: #a4262c;
+  color: #fff;
+}
+.corp .dlg-btn--danger:hover { background: #8a1f24; }
+
+/* Page title */
+.corp .page-title { font-size: 1.5rem; font-weight: 600; color: var(--color-digi-text); }
+
+/* Soften bespoke pixel-isms across the dashboard: full 2px box borders → 1px
+   (directional borders like border-l-2 / border-b-2 used for active states are
+   left intact), and round bare buttons (those without an explicit rounded-*). */
+.corp .border-2 { border-width: 1px; }
+.corp button:not([class*='rounded']) { border-radius: 4px; }
+
+/* Contrast fixes: the light Tailwind palette shades (300/400) were tuned for a
+   dark UI and fail WCAG on the white corporate background. Remap them to darker,
+   readable equivalents — overriding the palette vars fixes text, borders AND the
+   opacity modifiers (/60, /70…) in one place. Restored to the bright originals
+   inside `.pixel-scope` (dark islands). */
+.corp {
+  --color-red-400: #b3261e;
+  --color-red-300: #b3261e;
+  --color-green-400: #0e700e;
+  --color-yellow-400: #8a6116;
+  --color-amber-400: #8a6116;
+  --color-amber-300: #8a6116;
+  --color-orange-400: #c2410c;
+  --color-blue-400: #0f6cbd;
+  --color-purple-400: #5c2e91;
+  --color-purple-300: #5c2e91;
+  --color-pink-400: #be185d;
+}
+
+/* Dark "island" inside the corporate dashboard: re-establishes the original
+   dark/pixel tokens locally. Use on subtrees that must stay dark regardless of
+   the corporate theme — e.g. the WhatsApp / chatbot message previews, which
+   hardcode dark chat backgrounds but color their text via `digi-*` tokens. */
+.pixel-scope {
+  --color-digi-green: #ffffff;
+  --color-digi-dark: #0a0a0a;
+  --color-digi-darker: #000000;
+  --color-digi-card: #1a1a1a;
+  --color-digi-border: #2a2a2a;
+  --color-digi-text: #e5e5e5;
+  --color-digi-muted: #737373;
+  --color-accent: #4B2D8E;
+  --color-accent-hover: #5A3BA0;
+  --color-accent-light: #EDEBFA;
+  --color-accent-dark: #3A1F7A;
+  --color-accent-glow: #7B5FBF;
+  --font-display: 'Silkscreen', cursive;
+  --font-body: 'JetBrains Mono', monospace;
+  /* Restore the bright Tailwind palette inside dark islands (undo the corp contrast remap) */
+  --color-red-400: oklch(70.4% 0.191 22.216);
+  --color-red-300: oklch(80.8% 0.114 19.571);
+  --color-green-400: oklch(79.2% 0.209 151.711);
+  --color-yellow-400: oklch(85.2% 0.199 91.936);
+  --color-amber-400: oklch(82.8% 0.189 84.429);
+  --color-amber-300: oklch(87.9% 0.169 91.605);
+  --color-orange-400: oklch(75% 0.183 55.934);
+  --color-blue-400: oklch(70.7% 0.165 254.624);
+  --color-purple-400: oklch(71.4% 0.203 305.504);
+  --color-purple-300: oklch(82.7% 0.119 306.383);
+  --color-pink-400: oklch(71.8% 0.202 349.761);
 }

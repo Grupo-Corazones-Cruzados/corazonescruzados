@@ -4,16 +4,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import Link from 'next/link';
-import PageHeader from '@/components/ui/PageHeader';
+import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
+import PropertyRail from '@/components/ui/PropertyRail';
+import PixelTabs from '@/components/ui/PixelTabs';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   pending: 'warning', confirmed: 'info', in_progress: 'info',
@@ -37,6 +38,7 @@ export default function TicketDetailPage() {
   const { user } = useAuth();
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'resumen' | 'acciones'>('resumen');
 
   // Edit state
   const [editing, setEditing] = useState(false);
@@ -368,25 +370,38 @@ export default function TicketDetailPage() {
   const timeSlots = ticket.time_slots || [];
   // Is this a request from a client to this member?
   const isRequestForMe = isPending && isMember && user?.member_id && ticket.member_id === user.member_id;
+  const showActions = !isPending && ticket.status !== 'withdrawn';
+  const activeTab = tab === 'acciones' && showActions ? 'acciones' : 'resumen';
+  const canCompleteTicket = ticket.status === 'confirmed' && (isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id));
 
   return (
-    <div className="max-w-4xl">
-      <div className="mb-4">
-        <Link href="/dashboard/tickets" className="text-[10px] text-accent-glow opacity-60 hover:opacity-100" style={pf}>&lt; Volver a tickets</Link>
-      </div>
-
-      <PageHeader
-        title={editing ? 'Editando Ticket' : (ticket.title || `Ticket #${ticket.id}`)}
-        action={
-          <div className="flex items-center gap-2">
-            <PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{ticket.status}</PixelBadge>
-            {canEdit && !editing && !editingSlots && (
-              <button onClick={startEdit} className="text-[9px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>
-                Editar
-              </button>
+    <div className="max-w-5xl">
+      <DetailHeader
+        breadcrumb={{ label: 'Tickets', href: '/dashboard/tickets' }}
+        title={editing ? 'Editando ticket' : (ticket.title || `Ticket #${ticket.id}`)}
+        status={!editing ? <PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{ticket.status}</PixelBadge> : undefined}
+        chips={!editing ? (
+          <>
+            {ticket.client_name && <HeaderChip>{ticket.client_name}</HeaderChip>}
+            {ticket.estimated_cost != null && ticket.estimated_cost !== '' && <HeaderChip>${Number(ticket.estimated_cost).toFixed(2)}</HeaderChip>}
+            {ticket.deadline && <HeaderChip>Límite {new Date(ticket.deadline).toLocaleDateString()}</HeaderChip>}
+          </>
+        ) : undefined}
+        actions={!editing && !editingSlots ? (
+          <>
+            {(ticket.status === 'pending' || ticket.status === 'withdrawn') && canEdit && !isRequestForMe && (
+              <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary text-[10px]">Confirmar</button>
             )}
-          </div>
-        }
+            {canCompleteTicket && (
+              <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary text-[10px]">Completar y facturar</button>
+            )}
+            {canEdit && <button onClick={startEdit} className="pixel-btn pixel-btn-secondary text-[10px]">Editar</button>}
+          </>
+        ) : undefined}
+        overflow={!editing && !editingSlots ? [
+          ...(isAdmin && ticket.status !== 'cancelled' ? [{ label: 'Cancelar ticket', onClick: () => updateStatus('cancelled'), danger: true }] : []),
+          ...(isAdmin ? [{ label: 'Eliminar ticket', onClick: () => setDeleteModal(true), danger: true }] : []),
+        ] : []}
       />
 
       {/* ========== PENDING REQUEST BANNER ========== */}
@@ -431,7 +446,7 @@ export default function TicketDetailPage() {
             </h3>
             <div className="flex items-center justify-between mb-2">
               <button onClick={prevMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&lt;</button>
-              <span className="text-xs text-white" style={pf}>{monthNames[month]} {year}</span>
+              <span className="text-xs text-digi-text" style={pf}>{monthNames[month]} {year}</span>
               <button onClick={nextMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&gt;</button>
             </div>
             <div className="grid grid-cols-7 gap-1 mb-1">
@@ -445,8 +460,8 @@ export default function TicketDetailPage() {
                 const isOutOfRange = dateStr < todayStr || (!!deadlineStr && dateStr > deadlineStr);
                 return (
                   <button key={dateStr} onClick={() => !isOutOfRange && toggleDate(dateStr)} disabled={isOutOfRange}
-                    className={`py-1.5 text-[10px] text-center border transition-colors ${isSelected ? 'bg-accent/30 border-accent text-white' : isOutOfRange ? 'border-transparent text-digi-muted/30 cursor-default' : 'border-digi-border/30 text-digi-text hover:border-accent/50 hover:bg-accent/10'}`}
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}>{day}</button>
+                    className={`py-1.5 text-[10px] text-center border transition-colors ${isSelected ? 'bg-accent/30 border-accent text-digi-text' : isOutOfRange ? 'border-transparent text-digi-muted/30 cursor-default' : 'border-digi-border/30 text-digi-text hover:border-accent/50 hover:bg-accent/10'}`}
+                    style={{ fontFamily: 'var(--font-body)' }}>{day}</button>
                 );
               })}
             </div>
@@ -505,44 +520,51 @@ export default function TicketDetailPage() {
             </button>
           </div>
         </div>
-      ) : (
-        /* ========== VIEW MODE ========== */
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 space-y-4">
-            {ticket.description && (
-              <div className="pixel-card">
-                <h3 className="text-[10px] text-accent-glow mb-2" style={pf}>Descripcion</h3>
-                <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{ticket.description}</p>
+      ) : !editingSlots && (
+        /* ========== VIEW MODE (tabs + property rail) ========== */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 min-w-0">
+            <PixelTabs
+              tabs={[
+                { value: 'resumen', label: 'Resumen' },
+                ...(showActions ? [{ value: 'acciones', label: 'Acciones', count: (ticket.actions || []).length }] : []),
+              ]}
+              active={activeTab}
+              onChange={(v) => setTab(v as 'resumen' | 'acciones')}
+            />
+
+            {activeTab === 'resumen' && (
+              <div className="space-y-4">
+                {ticket.description && (
+                  <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
+                    <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-2" style={pf}>Descripción</h3>
+                    <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{ticket.description}</p>
+                  </div>
+                )}
+                <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Días de trabajo</h3>
+                    {canEdit && !isClosed && (
+                      <button onClick={startEditSlots} className="text-[10px] text-accent border border-digi-border rounded px-2 py-1 hover:bg-accent/5 transition-colors" style={pf}>Editar días</button>
+                    )}
+                  </div>
+                  {timeSlots.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {timeSlots.map((slot: any, i: number) => (
+                        <div key={i} className="px-2.5 py-1.5 border border-digi-border rounded bg-[#faf9f8] text-center">
+                          <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
+                          {slot.start_time && <p className="text-[9px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-digi-muted" style={mf}>Sin días asignados</p>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Work days */}
-            <div className="pixel-card">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[10px] text-accent-glow" style={pf}>Dias de Trabajo</h3>
-                {canEdit && !isClosed && !editingSlots && (
-                  <button onClick={startEditSlots}
-                    className="text-[9px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>
-                    Editar dias
-                  </button>
-                )}
-              </div>
-              {timeSlots.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {timeSlots.map((slot: any, i: number) => (
-                    <div key={i} className="px-2 py-1.5 border border-digi-border/50 text-center">
-                      <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
-                      {slot.start_time && <p className="text-[9px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[10px] text-digi-muted/50" style={mf}>Sin dias asignados</p>
-              )}
-            </div>
-
-            {/* Acciones realizadas (member work log) - solo despues de que el miembro acepto */}
-            {!isPending && ticket.status !== 'withdrawn' && (() => {
+            {activeTab === 'acciones' && (() => {
               const estimated = Number(ticket.estimated_cost) || 0;
               const actions = ticket.actions || [];
               const total = Number(ticket.actions_total) || 0;
@@ -550,121 +572,78 @@ export default function TicketDetailPage() {
               const canManageActions =
                 (isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id)) && !isClosed;
               const budgetExhausted = estimated > 0 && remaining <= 0;
+              const pct = estimated > 0 ? Math.min(100, (total / estimated) * 100) : 0;
               return (
-                <div className="pixel-card">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-[10px] text-accent-glow" style={pf}>Acciones Realizadas</h3>
-                    {estimated > 0 && (
-                      <span className="text-[9px] text-digi-muted" style={mf}>
-                        ${total.toFixed(2)} / ${estimated.toFixed(2)} (disp. ${remaining.toFixed(2)})
-                      </span>
+                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
+                  {estimated > 0 && (
+                    <div className="px-4 pt-4">
+                      <div className="flex items-center justify-between text-[11px] mb-1.5" style={mf}>
+                        <span className="text-digi-muted">Presupuesto</span>
+                        <span className="text-digi-text">${total.toFixed(2)} / ${estimated.toFixed(2)} · disp. <span className={remaining <= 0 ? 'text-red-400' : 'text-green-400'}>${remaining.toFixed(2)}</span></span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#edebe9] overflow-hidden">
+                        <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-2">
+                    {actions.length > 0 ? actions.map((a: any) => (
+                      <div key={a.id} className="group flex items-center gap-3 px-3 py-2 rounded hover:bg-[#f3f2f1] transition-colors">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] text-digi-text break-words" style={mf}>{a.description}</p>
+                          <p className="text-[10px] text-digi-muted" style={mf}>{new Date(a.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${Number(a.cost).toFixed(2)}</span>
+                        {canManageActions && (
+                          <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity shrink-0 text-[12px]">✕</button>
+                        )}
+                      </div>
+                    )) : (
+                      <p className="text-[11px] text-digi-muted px-3 py-5 text-center" style={mf}>Sin acciones registradas</p>
                     )}
                   </div>
-
-                  {actions.length > 0 ? (
-                    <div className="space-y-2 mb-3">
-                      {actions.map((a: any) => (
-                        <div key={a.id} className="flex items-start justify-between gap-2 px-2 py-1.5 border border-digi-border/50">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-digi-text break-words" style={mf}>{a.description}</p>
-                            <p className="text-[9px] text-digi-muted" style={mf}>
-                              {new Date(a.created_at).toLocaleDateString()} - ${Number(a.cost).toFixed(2)}
-                            </p>
-                          </div>
-                          {canManageActions && (
-                            <button onClick={() => handleDeleteAction(a.id)}
-                              className="text-[9px] text-red-400 hover:text-red-300 px-1" style={pf}>x</button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-digi-muted/50 mb-3" style={mf}>Sin acciones registradas</p>
-                  )}
-
                   {canManageActions && (
                     estimated <= 0 ? (
-                      <p className="text-[9px] text-amber-400" style={mf}>
-                        Define un costo estimado en el ticket para registrar acciones.
-                      </p>
+                      <p className="text-[11px] text-amber-400 px-4 pb-4" style={mf}>Define un costo estimado en el ticket para registrar acciones.</p>
                     ) : budgetExhausted ? (
-                      <p className="text-[9px] text-amber-400" style={mf}>
-                        Presupuesto agotado. No puedes agregar mas acciones.
-                      </p>
+                      <p className="text-[11px] text-amber-400 px-4 pb-4" style={mf}>Presupuesto agotado. No puedes agregar más acciones.</p>
                     ) : (
-                      <div className="space-y-2 border-t border-digi-border/30 pt-3">
-                        <PixelInput
-                          label="Descripcion de la accion"
-                          value={actionForm.description}
-                          onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })}
-                          placeholder="Que se hizo..."
-                        />
-                        <PixelInput
-                          label={`Costo (USD) - max $${remaining.toFixed(2)}`}
-                          type="number"
-                          value={actionForm.cost}
-                          onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })}
-                          placeholder="0.00"
-                        />
-                        <button
-                          onClick={handleAddAction}
-                          disabled={savingAction || !actionForm.description.trim() || !actionForm.cost}
-                          className="pixel-btn pixel-btn-primary w-full text-[9px] disabled:opacity-50">
-                          {savingAction ? 'Guardando...' : 'Agregar Accion'}
-                        </button>
+                      <div className="border-t border-digi-border p-3 flex flex-col sm:flex-row gap-2 sm:items-end">
+                        <div className="flex-1"><PixelInput label="Nueva acción" value={actionForm.description} onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })} placeholder="Qué se hizo..." /></div>
+                        <div className="w-full sm:w-36"><PixelInput label={`Costo (máx $${remaining.toFixed(2)})`} type="number" value={actionForm.cost} onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })} placeholder="0.00" /></div>
+                        <button onClick={handleAddAction} disabled={savingAction || !actionForm.description.trim() || !actionForm.cost} className="pixel-btn pixel-btn-primary text-[10px] disabled:opacity-50 shrink-0">{savingAction ? '...' : 'Agregar'}</button>
                       </div>
                     )
                   )}
                 </div>
               );
             })()}
-
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-4">
-            <div className="pixel-card">
-              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Detalles</h3>
-              <div className="space-y-2 text-[10px]" style={mf}>
-                <DetailRow label="Cliente" value={ticket.client_name || '-'} />
-                <DetailRow label="Miembro" value={ticket.member_name || '-'} />
-                <DetailRow label="Servicio" value={ticket.service_name || '-'} />
-                <DetailRow label="Limite" value={ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : '-'} />
-                <DetailRow label="Horas est." value={ticket.estimated_hours ? `${ticket.estimated_hours}h` : '-'} />
-                <DetailRow label="Costo est." value={ticket.estimated_cost ? `$${ticket.estimated_cost}` : '-'} />
-                <DetailRow label="Creado" value={new Date(ticket.created_at).toLocaleDateString()} />
-              </div>
-            </div>
-
-            {canEdit && !isClosed && !isRequestForMe && (
-              <div className="pixel-card">
-                <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Acciones rapidas</h3>
-                <div className="space-y-1.5">
-                  {(ticket.status === 'pending' || ticket.status === 'withdrawn') && (
-                    <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary w-full text-[9px]">Confirmar</button>
-                  )}
-                  {ticket.status === 'confirmed' && (isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id)) && (
-                    <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary w-full text-[9px]">Completar</button>
-                  )}
-                  {isAdmin && ticket.status !== 'cancelled' && (
-                    <button onClick={() => updateStatus('cancelled')}
-                      className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
-                      Cancelar Ticket
-                    </button>
-                  )}
-                </div>
+          <PropertyRail
+            items={[
+              { label: 'Cliente', value: ticket.client_name || '-' },
+              { label: 'Miembro', value: ticket.member_name || '-' },
+              { label: 'Servicio', value: ticket.service_name || '-' },
+              { label: 'Límite', value: ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : '-' },
+              { label: 'Horas est.', value: ticket.estimated_hours ? `${ticket.estimated_hours}h` : '-' },
+              { label: 'Costo est.', value: ticket.estimated_cost ? `$${Number(ticket.estimated_cost).toFixed(2)}` : '-' },
+              { label: 'Creado', value: new Date(ticket.created_at).toLocaleDateString() },
+            ]}
+          >
+            {canEdit && !isClosed && !isRequestForMe && ((ticket.status === 'pending' || ticket.status === 'withdrawn') || canCompleteTicket) && (
+              <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm space-y-2">
+                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Acciones rápidas</h3>
+                {(ticket.status === 'pending' || ticket.status === 'withdrawn') && (
+                  <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary w-full text-[10px]">Confirmar</button>
+                )}
+                {canCompleteTicket && (
+                  <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary w-full text-[10px]">Completar y facturar</button>
+                )}
               </div>
             )}
-
-            {isAdmin && (
-              <div className="pixel-card">
-                <button onClick={() => setDeleteModal(true)}
-                  className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
-                  Eliminar Ticket
-                </button>
-              </div>
-            )}
-          </div>
+          </PropertyRail>
         </div>
       )}
 
@@ -702,11 +681,11 @@ export default function TicketDetailPage() {
             <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mb-2" style={pf}>Items de la factura</h4>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => applyItemsMode('title')}
-                className={`py-2 text-[9px] border transition-colors ${itemsMode === 'title' ? 'border-accent bg-accent/20 text-white' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
+                className={`py-2 text-[9px] border transition-colors ${itemsMode === 'title' ? 'border-accent bg-accent/20 text-digi-text' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
                 Titulo del ticket<br /><span className="text-[8px] opacity-70">${Number(ticket.estimated_cost || 0).toFixed(2)}</span>
               </button>
               <button type="button" onClick={() => applyItemsMode('breakdown')} disabled={(ticket.actions || []).length === 0}
-                className={`py-2 text-[9px] border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${itemsMode === 'breakdown' ? 'border-accent bg-accent/20 text-white' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
+                className={`py-2 text-[9px] border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${itemsMode === 'breakdown' ? 'border-accent bg-accent/20 text-digi-text' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
                 Desglose de acciones<br /><span className="text-[8px] opacity-70">{(ticket.actions || []).length} items - ${Number(ticket.actions_total || 0).toFixed(2)}</span>
               </button>
             </div>
@@ -890,10 +869,10 @@ export default function TicketDetailPage() {
                 return (
                   <div className="border-2 border-digi-border p-2 text-[9px] space-y-0.5" style={mf}>
                     {Object.entries(ivaByRate).map(([rate, base]) => (
-                      <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-white">${base.toFixed(2)}</span></div>
+                      <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${base.toFixed(2)}</span></div>
                     ))}
-                    {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-white">${totalDiscount.toFixed(2)}</span></div>}
-                    {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-white">${totalIva.toFixed(2)}</span></div>}
+                    {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${totalDiscount.toFixed(2)}</span></div>}
+                    {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${totalIva.toFixed(2)}</span></div>}
                     <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent-glow font-bold">Total:</span><span className="text-accent-glow font-bold">${(subtotal + totalIva).toFixed(2)}</span></div>
                   </div>
                 );
@@ -922,8 +901,8 @@ export default function TicketDetailPage() {
                     <span className="text-[9px] text-digi-muted" style={mf}>Enviar por correo</span>
                   </label>
                   <div className="flex gap-2">
-                    <button onClick={() => setCompleteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Cancelar</button>
-                    <button onClick={() => handleComplete(true)} disabled={completing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-text hover:border-accent hover:text-white transition-colors disabled:opacity-50" style={pf}>
+                    <button onClick={() => setCompleteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
+                    <button onClick={() => handleComplete(true)} disabled={completing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-text hover:border-accent hover:text-digi-text transition-colors disabled:opacity-50" style={pf}>
                       Completar sin Facturar
                     </button>
                     <button onClick={() => handleComplete(false)} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>

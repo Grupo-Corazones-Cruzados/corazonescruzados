@@ -8,8 +8,8 @@ import PixelSelect from '@/components/ui/PixelSelect';
 import type { CalendarEvent, RecurrenceType, EventType } from '@/lib/calendar/recurrence';
 import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES } from '@/lib/calendar/recurrence';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export interface ClientOption { id: string; name: string; }
 

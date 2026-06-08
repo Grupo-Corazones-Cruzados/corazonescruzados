@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import PixelBadge from '@/components/ui/PixelBadge';
 import BrandLoader from '@/components/ui/BrandLoader';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const SEV_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   low: 'default', medium: 'warning', high: 'error', critical: 'error',

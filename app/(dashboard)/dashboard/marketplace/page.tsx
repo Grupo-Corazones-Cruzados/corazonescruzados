@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import PageHeader from '@/components/ui/PageHeader';
-import PixelTabs from '@/components/ui/PixelTabs';
+import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
@@ -25,8 +24,8 @@ const ORDER_STATUS: Record<string, 'default' | 'info' | 'success' | 'warning' | 
   cancelled: 'error',
 };
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 // Map tab value to API item_type
 const TAB_TO_TYPE: Record<string, string> = {
@@ -221,19 +220,13 @@ export default function MarketplacePage() {
 
   return (
     <div>
-      <PageHeader title="Marketplace" description="Explora servicios y productos" />
-
-      <div className="mb-4">
-        <input
-          placeholder="Buscar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none w-full max-w-xs"
-          style={mf}
-        />
-      </div>
-
-      <PixelTabs tabs={TABS} active={tab} onChange={setTab} />
+      <ModuleToolbar
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={setTab}
+        search={search}
+        onSearchChange={setSearch}
+      />
 
       {/* ========== ORDERS TAB ========== */}
       {tab === 'orders' ? (
@@ -289,7 +282,7 @@ export default function MarketplacePage() {
               },
             },
             { key: 'title', header: 'Proyecto', render: (p: any) => (
-              <span className="text-white">{p.title}</span>
+              <span className="text-digi-text">{p.title}</span>
             )},
             { key: 'team', header: 'Equipo', render: (p: any) => {
               const team = p.team || [];
@@ -409,7 +402,7 @@ export default function MarketplacePage() {
               },
             },
             { key: 'title', header: 'Titulo', render: (item: any) => (
-              <span className="text-white">{item.title}</span>
+              <span className="text-digi-text">{item.title}</span>
             )},
             {
               key: 'tags', header: 'Tags', render: (item: any) => (
@@ -524,7 +517,7 @@ export default function MarketplacePage() {
             )}
 
             <div>
-              <h3 className="text-xs text-white mb-1" style={pf}>{selectedItem.title}</h3>
+              <h3 className="text-xs text-digi-text mb-1" style={pf}>{selectedItem.title}</h3>
               <p className="text-[10px] text-digi-muted" style={mf}>{selectedItem.description}</p>
             </div>
 
@@ -553,7 +546,7 @@ export default function MarketplacePage() {
             <div className="pixel-card !bg-accent/5 !border-accent/30">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] text-accent-glow" style={pf}>Total a pagar</span>
-                <span className="text-sm text-white font-bold" style={mf}>${total.toFixed(2)}</span>
+                <span className="text-sm text-digi-text font-bold" style={mf}>${total.toFixed(2)}</span>
               </div>
             </div>
 
@@ -586,7 +579,7 @@ export default function MarketplacePage() {
         {selectedProject && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-xs text-white mb-1" style={pf}>{selectedProject.title}</h3>
+              <h3 className="text-xs text-digi-text mb-1" style={pf}>{selectedProject.title}</h3>
               {selectedProject.description && (
                 <p className="text-[10px] text-digi-muted" style={mf}>{selectedProject.description}</p>
               )}
@@ -620,7 +613,7 @@ export default function MarketplacePage() {
             <div className="pixel-card !bg-accent/5 !border-accent/30">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] text-accent-glow" style={pf}>Costo del proyecto</span>
-                <span className="text-sm text-white font-bold" style={mf}>${Number(selectedProject.final_cost || 0).toFixed(2)}</span>
+                <span className="text-sm text-digi-text font-bold" style={mf}>${Number(selectedProject.final_cost || 0).toFixed(2)}</span>
               </div>
             </div>
 
@@ -675,7 +668,7 @@ export default function MarketplacePage() {
             </div>
             <div className="flex justify-between text-[10px] py-1 border-b border-digi-border/30" style={mf}>
               <span className="text-digi-muted">Total</span>
-              <span className="text-white">${Number(selectedOrder.total || 0).toFixed(2)}</span>
+              <span className="text-digi-text">${Number(selectedOrder.total || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-[10px] py-1 border-b border-digi-border/30" style={mf}>
               <span className="text-digi-muted">Fecha</span>
@@ -690,7 +683,7 @@ export default function MarketplacePage() {
                     <div key={item.id} className="pixel-card !py-2 !px-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="text-[10px] text-white" style={pf}>{item.product_title || `Producto #${item.product_id}`}</p>
+                          <p className="text-[10px] text-digi-text" style={pf}>{item.product_title || `Producto #${item.product_id}`}</p>
                           {item.member_name && (
                             <p className="text-[9px] text-digi-muted mt-0.5" style={mf}>por {item.member_name}</p>
                           )}
@@ -699,7 +692,7 @@ export default function MarketplacePage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-white" style={mf}>${Number(item.subtotal || 0).toFixed(2)}</p>
+                          <p className="text-xs text-digi-text" style={mf}>${Number(item.subtotal || 0).toFixed(2)}</p>
                           {item.member_confirmed === true && <PixelBadge variant="success">Confirmado</PixelBadge>}
                           {item.member_confirmed === false && <PixelBadge variant="error">Rechazado</PixelBadge>}
                           {item.member_confirmed === null && <PixelBadge variant="warning">Pendiente</PixelBadge>}

@@ -8,9 +8,9 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
-const CANCEL_CLS = 'px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-white transition-colors';
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
+const CANCEL_CLS = 'px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors';
 
 interface Flow { id: number; name: string; type: string; description: string; config: Record<string, any>; }
 interface Agent { id: number; flow_id: number; name: string; description: string; ai_provider: string; ai_model: string; wait_seconds: number; status: string; knowledge_count: number; conversation_count: number; created_at: string; }
@@ -83,9 +83,9 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative ml-auto w-full max-w-4xl bg-digi-darker border-l-2 border-digi-border overflow-y-auto animate-[slideInRight_0.3s_ease-out]">
         <div className="sticky top-0 z-10 bg-digi-darker border-b-2 border-digi-border px-6 py-4 flex items-center gap-4">
-          <button onClick={onClose} className="text-digi-muted hover:text-white transition-colors" style={pf}>&lt; Volver</button>
+          <button onClick={onClose} className="text-digi-muted hover:text-digi-text transition-colors" style={pf}>&lt; Volver</button>
           <div className="flex-1">
-            <h2 className="pixel-heading text-sm text-white">{flow.name}</h2>
+            <h2 className="pixel-heading text-sm text-digi-text">{flow.name}</h2>
             <p className="text-[10px] text-digi-muted mt-0.5" style={mf}>Chatbot via YCloud</p>
           </div>
         </div>
@@ -93,7 +93,7 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
         <div className="p-6">
           {!configSaved ? (
             <div>
-              <h3 className="pixel-heading text-xs text-white mb-1">Configurar YCloud API</h3>
+              <h3 className="pixel-heading text-xs text-digi-text mb-1">Configurar YCloud API</h3>
               <p className="text-[9px] text-digi-muted mb-4" style={mf}>Ingresa tu API key de YCloud para conectarte a WhatsApp Business.</p>
               <div className="space-y-3">
                 <div>
@@ -111,9 +111,9 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
           ) : view === 'agents' ? (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="pixel-heading text-xs text-white">Agentes</h3>
+                <h3 className="pixel-heading text-xs text-digi-text">Agentes</h3>
                 <div className="flex gap-2">
-                  <button onClick={() => setConfigSaved(false)} className="px-3 py-1.5 text-[9px] border border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Config API</button>
+                  <button onClick={() => setConfigSaved(false)} className="px-3 py-1.5 text-[9px] border border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Config API</button>
                   <button onClick={() => setView('create-agent')} className="pixel-btn-primary px-3 py-1.5 text-[9px]" style={pf}>+ Crear Agente</button>
                 </div>
               </div>
@@ -121,7 +121,7 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
               {loading ? <div className="flex justify-center py-12"><BrandLoader size="md" /></div> : (
                 <PixelDataTable
                   columns={[
-                    { key: 'name', header: 'Nombre', render: (a: Agent) => <span className="text-white">{a.name}</span> },
+                    { key: 'name', header: 'Nombre', render: (a: Agent) => <span className="text-digi-text">{a.name}</span> },
                     { key: 'provider', header: 'IA', render: (a: Agent) => <span className="text-accent-glow">{a.ai_provider}</span> },
                     { key: 'knowledge', header: 'Archivos', render: (a: Agent) => String(a.knowledge_count) },
                     { key: 'convs', header: 'Chats', render: (a: Agent) => String(a.conversation_count) },
@@ -283,7 +283,7 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
   return (
     <div>
       <div className="flex items-center gap-2 mb-6">
-        <button onClick={onCancel} className="text-digi-muted hover:text-white text-[9px] transition-colors" style={pf}>&lt; Agentes</button>
+        <button onClick={onCancel} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>&lt; Agentes</button>
         <div className="flex-1 flex items-center gap-2 justify-center">
           <StepDot num={1} active={step === 1} done={step > 1} label="Config" />
           <div className={`w-8 h-0.5 ${step > 1 ? 'bg-accent' : 'bg-digi-border'}`} />
@@ -293,7 +293,7 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
 
       {step === 1 && (
         <div className="space-y-4">
-          <h3 className="pixel-heading text-xs text-white">Configuracion del Agente</h3>
+          <h3 className="pixel-heading text-xs text-digi-text">Configuracion del Agente</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Nombre <span className="text-red-400">*</span></label>
@@ -314,7 +314,7 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
           </div>
 
           <div className="border-t-2 border-digi-border pt-4">
-            <h4 className="pixel-heading text-[10px] text-white mb-3">Proveedor de IA</h4>
+            <h4 className="pixel-heading text-[10px] text-digi-text mb-3">Proveedor de IA</h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Proveedor</label>
@@ -340,7 +340,7 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
 
           <div className="border-t-2 border-digi-border pt-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="pixel-heading text-[10px] text-white">Archivos de Conocimiento</h4>
+              <h4 className="pixel-heading text-[10px] text-digi-text">Archivos de Conocimiento</h4>
               <div>
                 <input ref={fileInputRef} type="file" multiple accept=".txt,.csv,.json,.md,.pdf,.docx" onChange={handleUploadKnowledge} className="hidden" />
                 <button onClick={() => fileInputRef.current?.click()} disabled={uploadingFile}
@@ -376,7 +376,7 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
 
       {step === 2 && (
         <div className="space-y-4">
-          <h3 className="pixel-heading text-xs text-white">Preguntas y Respuestas</h3>
+          <h3 className="pixel-heading text-xs text-digi-text">Preguntas y Respuestas</h3>
           <p className="text-[9px] text-digi-muted" style={mf}>Define como debe responder el chatbot segun el contexto. Puedes omitir este paso si prefieres.</p>
 
           <div>
@@ -490,9 +490,9 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
   return (
     <div>
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={onBack} className="text-digi-muted hover:text-white text-[9px] transition-colors" style={pf}>&lt; Agentes</button>
+        <button onClick={onBack} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>&lt; Agentes</button>
         <div className="flex-1">
-          <h3 className="pixel-heading text-xs text-white">{agent.name}</h3>
+          <h3 className="pixel-heading text-xs text-digi-text">{agent.name}</h3>
           <p className="text-[9px] text-digi-muted" style={mf}>{agent.description || 'Sin descripcion'}</p>
         </div>
         <PixelBadge variant={agent.status === 'active' ? 'success' : 'warning'}>{agent.status}</PixelBadge>
@@ -503,7 +503,7 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
         <label className="block text-[8px] text-digi-muted mb-1" style={pf}>Webhook URL (configurar en YCloud)</label>
         <div className="flex gap-2">
           <input value={webhookUrl} readOnly className="flex-1 px-2 py-1.5 bg-digi-darker border border-digi-border text-[10px] text-accent-glow focus:outline-none" style={mf} />
-          <button onClick={() => navigator.clipboard.writeText(webhookUrl)} className="px-2 py-1 text-[8px] border border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>Copiar</button>
+          <button onClick={() => navigator.clipboard.writeText(webhookUrl)} className="px-2 py-1 text-[8px] border border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Copiar</button>
         </div>
       </div>
 
@@ -522,7 +522,7 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
         <>
           <PixelDataTable
             columns={[
-              { key: 'name', header: 'Contacto', render: (c: Conversation) => <span className="text-white">{c.contact_name || c.contact_phone}</span> },
+              { key: 'name', header: 'Contacto', render: (c: Conversation) => <span className="text-digi-text">{c.contact_name || c.contact_phone}</span> },
               { key: 'phone', header: 'Telefono', render: (c: Conversation) => <span className="text-green-400">{c.contact_phone}</span> },
               { key: 'msgs', header: 'Mensajes', render: (c: Conversation) => String(c.message_count) },
               { key: 'last', header: 'Ultimo', render: (c: Conversation) => c.last_message_at ? new Date(c.last_message_at).toLocaleString() : '-' },
@@ -546,12 +546,12 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
 
           {/* Message viewer modal */}
           <PixelModal open={!!selectedConv} onClose={() => setSelectedConv(null)} title={`Chat: ${selectedConv?.conversation?.contact_name || selectedConv?.conversation?.contact_phone}`} size="lg">
-            <div className="space-y-2 max-h-96 overflow-y-auto p-2" style={{ background: '#0b141a' }}>
+            <div className="pixel-scope space-y-2 max-h-96 overflow-y-auto p-2" style={{ background: '#0b141a' }}>
               {selectedConv?.messages?.length === 0 ? (
                 <p className="text-center text-[9px] text-digi-muted py-4" style={pf}>Sin mensajes</p>
               ) : selectedConv?.messages?.map((m: any, i: number) => (
                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
-                  <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${m.role === 'user' ? 'bg-[#1f2c34] text-gray-200' : 'bg-[#005c4b] text-white'}`} style={{ fontFamily: 'sans-serif' }}>
+                  <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${m.role === 'user' ? 'bg-[#1f2c34] text-gray-200' : 'bg-[#005c4b] text-digi-text'}`} style={{ fontFamily: 'sans-serif' }}>
                     <p className="whitespace-pre-wrap">{m.content}</p>
                     <p className="text-[9px] text-gray-500 mt-1 text-right">{new Date(m.created_at).toLocaleTimeString()}</p>
                   </div>
@@ -566,7 +566,7 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
       {tab === 'knowledge' && (
         <PixelDataTable
           columns={[
-            { key: 'name', header: 'Archivo', render: (k: KnowledgeFile) => <span className="text-white">{k.filename}</span> },
+            { key: 'name', header: 'Archivo', render: (k: KnowledgeFile) => <span className="text-digi-text">{k.filename}</span> },
             { key: 'type', header: 'Tipo', render: (k: KnowledgeFile) => k.file_type },
             { key: 'size', header: 'Tamano', render: (k: KnowledgeFile) => k.file_size < 1024 ? `${k.file_size} B` : `${(k.file_size / 1024).toFixed(1)} KB` },
             { key: 'date', header: 'Fecha', render: (k: KnowledgeFile) => new Date(k.created_at).toLocaleDateString() },
@@ -587,7 +587,7 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
           ) : qaLists.map(list => (
             <div key={list.id} className={`border-2 px-4 py-3 flex items-center gap-3 ${list.selected ? 'border-accent bg-accent/5' : 'border-digi-border'}`}>
               <div className="flex-1">
-                <span className="text-sm text-white" style={mf}>{list.name}</span>
+                <span className="text-sm text-digi-text" style={mf}>{list.name}</span>
                 <span className="text-[9px] text-digi-muted ml-2" style={pf}>{list.item_count} preguntas</span>
               </div>
               <button onClick={() => handleSelectQaList(list)}

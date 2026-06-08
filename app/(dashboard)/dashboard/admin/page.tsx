@@ -13,8 +13,8 @@ import FlowSidePanel from '@/components/dashboard/flows/FlowSidePanel';
 import WhatsAppFlowPanel from '@/components/dashboard/flows/WhatsAppFlowPanel';
 import ChatbotFlowPanel from '@/components/dashboard/flows/ChatbotFlowPanel';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const MAIN_TABS = [
   { value: 'team', label: 'Equipo' },
@@ -215,7 +215,7 @@ function DigiDashboard() {
       ].map(s => (
         <div key={s.label} className="pixel-card py-4 text-center">
           <p className="text-[9px] text-digi-muted mb-1" style={pf}>{s.label}</p>
-          <p className={`text-2xl font-bold ${s.color || 'text-white'}`} style={mf}>{s.value}</p>
+          <p className={`text-2xl font-bold ${s.color || 'text-digi-text'}`} style={mf}>{s.value}</p>
         </div>
       ))}
     </div>
@@ -478,7 +478,7 @@ function FlujosSection() {
       <PixelDataTable
         columns={[
           { key: 'name', header: 'Nombre', render: (f: Flow) => (
-            <span className="text-white font-medium">{f.name}</span>
+            <span className="text-digi-text font-medium">{f.name}</span>
           )},
           { key: 'type', header: 'Tipo', render: (f: Flow) => {
             const t = FLOW_TYPES[f.type] || FLOW_TYPES.custom;
@@ -590,7 +590,7 @@ function FlujosSection() {
           {formError && <p className="text-xs text-red-400" style={mf}>{formError}</p>}
 
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setModalOpen(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-white transition-colors" style={pf}>
+            <button onClick={() => setModalOpen(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>
               Cancelar
             </button>
             <button onClick={handleSave} disabled={saving} className="pixel-btn-primary px-4 py-2 text-[9px]" style={pf}>
@@ -604,10 +604,10 @@ function FlujosSection() {
       <PixelModal open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="Eliminar Flujo" size="sm">
         <div className="space-y-4">
           <p className="text-xs text-digi-muted" style={mf}>
-            Estas seguro de eliminar <span className="text-white">{confirmDelete?.name}</span>? Esta accion no se puede deshacer.
+            Estas seguro de eliminar <span className="text-digi-text">{confirmDelete?.name}</span>? Esta accion no se puede deshacer.
           </p>
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-white transition-colors" style={pf}>
+            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>
               Cancelar
             </button>
             <button

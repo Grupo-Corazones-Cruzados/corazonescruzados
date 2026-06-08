@@ -3,15 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import PixelBadge from '@/components/ui/PixelBadge';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
+const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
-const ROLE_LABELS: Record<string, string> = { admin: 'Administrador', member: 'Miembro', client: 'Cliente' };
-const ROLE_VARIANTS: Record<string, 'info' | 'success' | 'default'> = { admin: 'info', member: 'success', client: 'default' };
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 interface Stats { open_tickets: number; active_projects: number; users?: number; active_members?: number; clients?: number; }
@@ -106,21 +103,8 @@ export default function DashboardHome() {
   // Ahorro global a la fecha = acumulado anterior +/- ahorro (en vivo) de este mes.
   const cumulativeSavings = priorSavings + detailSavings;
 
-  const greeting = user?.first_name ? `Hola, ${user.first_name}` : 'Bienvenido';
-
   return (
     <div className="max-w-5xl">
-      {/* Welcome */}
-      <div className="flex items-center gap-3 mb-8">
-        <div>
-          <h1 className="pixel-heading text-xl text-white">{greeting}</h1>
-          <p className="text-xs text-digi-muted mt-1" style={mf}>Panel de control de GCC World</p>
-        </div>
-        {user?.role && (
-          <PixelBadge variant={ROLE_VARIANTS[user.role] || 'default'}>{ROLE_LABELS[user.role] || user.role}</PixelBadge>
-        )}
-      </div>
-
       {/* Stats + Finance indicators */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
         <StatCard label="Tickets Abiertos" value={stats?.open_tickets} />
@@ -134,7 +118,7 @@ export default function DashboardHome() {
       {/* Finance Table - visible to all, editable by admin */}
       <>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="pixel-heading text-sm text-white">Estado Financiero Mensual</h2>
+          <h2 className="pixel-heading text-sm text-digi-text">Estado Financiero Mensual</h2>
           {months.length > 0 && !isClient && (
             <button onClick={() => window.open('/api/finance/pdf', '_blank')}
               className="px-3 py-1.5 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
@@ -145,7 +129,7 @@ export default function DashboardHome() {
           <PixelDataTable
             columns={[
               { key: 'period', header: 'Periodo', render: (m: any) => (
-                <span className="text-white">{MONTH_NAMES[m.month - 1]} {m.year}</span>
+                <span className="text-digi-text">{MONTH_NAMES[m.month - 1]} {m.year}</span>
               )},
               { key: 'income', header: 'Ingresos', render: (m: any) => (
                 <span className="text-green-400" style={mf}>${Number(m.total_income || 0).toFixed(2)}</span>
@@ -263,7 +247,7 @@ export default function DashboardHome() {
                 Descargar PDF
               </button>
               <div className="flex gap-2">
-              <button onClick={() => setDetailMonth(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-white transition-colors" style={pf}>{isAdmin ? 'Cancelar' : 'Cerrar'}</button>
+              <button onClick={() => setDetailMonth(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>{isAdmin ? 'Cancelar' : 'Cerrar'}</button>
               {isAdmin && (
                 <button onClick={saveDetail} disabled={saving} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
                   {saving ? 'Guardando...' : 'Guardar'}
@@ -280,12 +264,12 @@ export default function DashboardHome() {
 
 function StatCard({ label, value, color }: { label: string; value?: number | string; color?: string }) {
   return (
-    <div className="pixel-card py-4 px-4">
-      <p className="text-[8px] text-digi-muted mb-2" style={pf}>{label}</p>
+    <div className="bg-digi-card border border-digi-border rounded-lg px-4 py-3 shadow-sm">
+      <p className="text-[10px] uppercase tracking-wider text-digi-muted mb-1.5 truncate" style={pf}>{label}</p>
       {value !== undefined ? (
-        <p className={`text-lg font-bold ${color || 'text-white'}`} style={mf}>{value}</p>
+        <p className={`text-xl font-bold leading-none ${color || 'text-digi-text'}`} style={mf}>{value}</p>
       ) : (
-        <div className="h-7 w-12 bg-digi-border/30 animate-pulse" />
+        <div className="h-6 w-14 bg-digi-border/40 animate-pulse rounded" />
       )}
     </div>
   );

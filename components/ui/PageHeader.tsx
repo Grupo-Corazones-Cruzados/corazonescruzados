@@ -7,17 +7,11 @@ export default function PageHeader({
   description?: string;
   action?: React.ReactNode;
 }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-      <div>
-        <h1 className="pixel-heading text-lg text-white">{title}</h1>
-        {description && (
-          <p className="text-xs text-digi-muted mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            {description}
-          </p>
-        )}
-      </div>
-      {action && <div>{action}</div>}
-    </div>
-  );
+  // Corporate dashboard: the big page title + description block is removed so the
+  // content (tabs, tables, controls) sits at the top. Any action (e.g. a "New…"
+  // button) is preserved as a slim top toolbar; with no action, nothing renders.
+  void title;
+  void description;
+  if (!action) return null;
+  return <div className="flex justify-end mb-4">{action}</div>;
 }
