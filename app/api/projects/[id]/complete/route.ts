@@ -26,33 +26,42 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       // Ensure marketplace columns exist and prevent re-publishing marketplace-derived projects
       await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS marketplace_source_id BIGINT`);
       await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS is_marketplace_published BOOLEAN DEFAULT false`);
+      // Relax/widen client columns: passport/foreign IDs (SRI 06/08) can exceed 13 chars;
+      // email may be absent (consumidor final) and has a UNIQUE index, so it must allow NULL.
+      await pool.query(`ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS ruc VARCHAR(13)`).catch(() => {});
+      await pool.query(`ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS address TEXT`).catch(() => {});
+      await pool.query(`ALTER TABLE gcc_world.clients ALTER COLUMN ruc TYPE VARCHAR(20)`).catch(() => {});
+      await pool.query(`ALTER TABLE gcc_world.clients ALTER COLUMN email DROP NOT NULL`).catch(() => {});
 
       // Ensure client exists and is linked to project
       const { rows: [proj] } = await pool.query(`SELECT client_id, marketplace_source_id FROM gcc_world.projects WHERE id = $1`, [id]);
       let clientId = proj?.client_id;
+      const emailNorm = (client_email || '').trim() || null;
 
       if (!clientId && client_name) {
-        // Ensure columns exist
-        await pool.query(`
-          ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS ruc VARCHAR(13);
-          ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS address TEXT;
-        `);
-        // Create client
-        const { rows: [newClient] } = await pool.query(
-          `INSERT INTO gcc_world.clients (name, email, phone, ruc, address) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-          [client_name, client_email || null, client_phone || null, client_ruc || null, client_address || null]
-        );
-        clientId = newClient.id;
+        // Find an existing client by email (the email column is UNIQUE) to avoid a duplicate-key error
+        if (emailNorm) {
+          const { rows: [ex] } = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [emailNorm]);
+          if (ex) clientId = ex.id;
+        }
+        if (clientId) {
+          await pool.query(
+            `UPDATE gcc_world.clients SET name = $1, phone = $2, ruc = $3, address = $4 WHERE id = $5`,
+            [client_name, client_phone || null, client_ruc || null, client_address || null, clientId]
+          );
+        } else {
+          const { rows: [newClient] } = await pool.query(
+            `INSERT INTO gcc_world.clients (name, email, phone, ruc, address) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [client_name, emailNorm, client_phone || null, client_ruc || null, client_address || null]
+          );
+          clientId = newClient.id;
+        }
         await pool.query(`UPDATE gcc_world.projects SET client_id = $1 WHERE id = $2`, [clientId, id]);
       } else if (clientId && client_name) {
-        // Update existing client data
-        await pool.query(`
-          ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS ruc VARCHAR(13);
-          ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS address TEXT;
-        `);
+        // Update existing client data (email left untouched to avoid the UNIQUE conflict)
         await pool.query(
-          `UPDATE gcc_world.clients SET name = $1, email = $2, phone = $3, ruc = $4, address = $5 WHERE id = $6`,
-          [client_name, client_email || null, client_phone || null, client_ruc || null, client_address || null, clientId]
+          `UPDATE gcc_world.clients SET name = $1, phone = $2, ruc = $3, address = $4 WHERE id = $5`,
+          [client_name, client_phone || null, client_ruc || null, client_address || null, clientId]
         );
       }
 
@@ -170,6 +179,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { rows } = await pool.query(`SELECT * FROM gcc_world.projects WHERE id = $1`, [id]);
     return NextResponse.json({ data: rows[0], invoiceId, sriResult });
   } catch (err: any) {
+    console.error('Project complete error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

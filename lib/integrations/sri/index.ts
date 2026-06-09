@@ -19,6 +19,7 @@ async function ensureSriColumns() {
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS ruc_emisor VARCHAR(13);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS razon_social_emisor VARCHAR(300);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS client_ruc VARCHAR(13);
+    ALTER TABLE gcc_world.invoices ALTER COLUMN client_ruc TYPE VARCHAR(20);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS client_id_type VARCHAR(2);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS client_name_sri VARCHAR(300);
     ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS client_email_sri VARCHAR(255);

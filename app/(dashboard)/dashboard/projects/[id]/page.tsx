@@ -436,7 +436,8 @@ export default function ProjectDetailPage() {
           exchange_rate: Number(completeExchangeRate) || 1,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'No se pudo completar el proyecto');
 
       const sriOk = data.sriResult?.authorized;
       const sriError = data.sriResult?.error;
@@ -462,7 +463,7 @@ export default function ProjectDetailPage() {
       }
       setShowCompleteModal(false);
       fetchProject();
-    } catch { toast.error('Error al completar'); }
+    } catch (e: any) { toast.error(e.message || 'Error al completar'); }
     finally { setCompleting(false); setCompleteStep(''); }
   };
 

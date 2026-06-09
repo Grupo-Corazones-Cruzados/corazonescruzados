@@ -75,6 +75,13 @@ export default function TicketDetailPage() {
   const [completeClientEmail, setCompleteClientEmail] = useState('');
   const [completeClientPhone, setCompleteClientPhone] = useState('');
   const [completeClientAddress, setCompleteClientAddress] = useState('');
+  const [clientHistory, setClientHistory] = useState<{
+    id_type: string; client_ruc: string; client_name: string;
+    client_email: string; client_phone: string; client_address: string;
+    last_used: string;
+  }[]>([]);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [completePaymentCode, setCompletePaymentCode] = useState('20');
   const [completeItems, setCompleteItems] = useState<{ description: string; quantity: string; unitPrice: string; ivaRate: string; discount: string }[]>([]);
   const [completeAdditionalFields, setCompleteAdditionalFields] = useState<{ name: string; value: string }[]>([]);
@@ -97,6 +104,34 @@ export default function TicketDetailPage() {
   }, [id]);
 
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
+
+  // Carga clientes ya facturados al abrir el modal de completar (para autocompletar adquirente)
+  useEffect(() => {
+    if (!completeModal) return;
+    fetch('/api/invoices/clients-history')
+      .then(r => r.json())
+      .then(d => setClientHistory(d.data || []))
+      .catch(() => setClientHistory([]));
+  }, [completeModal]);
+
+  const applyPastClient = (c: typeof clientHistory[0]) => {
+    setCompleteIdType(c.id_type);
+    setCompleteClientRuc(c.client_ruc);
+    setCompleteClientName(c.client_name);
+    setCompleteClientEmail(c.client_email);
+    setCompleteClientPhone(c.client_phone);
+    setCompleteClientAddress(c.client_address);
+    setHistoryOpen(false);
+    setHistorySearch('');
+    toast.success(`Datos de ${c.client_name} cargados`);
+  };
+
+  const filteredHistory = historySearch.trim()
+    ? clientHistory.filter(c => {
+        const q = historySearch.trim().toLowerCase();
+        return c.client_name.toLowerCase().includes(q) || c.client_ruc.toLowerCase().includes(q);
+      })
+    : clientHistory;
 
   useEffect(() => {
     fetch('/api/exchange-rates').then(r => r.json()).then(d => setCurrencies(d.currencies || [])).catch(() => {});
@@ -695,7 +730,33 @@ export default function TicketDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* ─── LEFT: Adquirente + Pago ─── */}
             <div className="space-y-2">
-              <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1" style={pf}>Adquirente</h4>
+              <div className="flex items-center justify-between border-b border-digi-border pb-1">
+                <h4 className="text-[9px] text-accent-glow" style={pf}>Adquirente</h4>
+                <button type="button" onClick={() => setHistoryOpen(o => !o)} className="text-[8px] px-2 py-0.5 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors" style={pf}>
+                  {historyOpen ? 'Cerrar' : `Cliente previo${clientHistory.length ? ` (${clientHistory.length})` : ''}`}
+                </button>
+              </div>
+              {historyOpen && (
+                <div className="border border-digi-border bg-digi-darker p-2 space-y-2">
+                  <input autoFocus value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="Buscar por nombre o RUC..." className="w-full px-2 py-1 bg-digi-dark border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                  <div className="max-h-40 overflow-y-auto border border-digi-border/50">
+                    {filteredHistory.length === 0 ? (
+                      <div className="px-2 py-3 text-center text-[9px] text-digi-muted" style={pf}>{clientHistory.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}</div>
+                    ) : (
+                      filteredHistory.slice(0, 50).map((c) => (
+                        <button key={c.client_ruc} type="button" onClick={() => applyPastClient(c)} className="w-full text-left px-2 py-1.5 border-b border-digi-border/30 last:border-b-0 hover:bg-accent/10 transition-colors">
+                          <div className="text-[10px] text-digi-text truncate" style={mf}>{c.client_name}</div>
+                          <div className="text-[8px] text-digi-muted flex gap-2" style={mf}>
+                            <span>{c.client_ruc}</span>
+                            {c.client_email && <span className="truncate">· {c.client_email}</span>}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                  <div className="text-[8px] text-digi-muted" style={pf}>Elige uno para rellenar los campos, o cierra y llena manualmente.</div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tipo ID <span className="text-red-400">*</span></label>

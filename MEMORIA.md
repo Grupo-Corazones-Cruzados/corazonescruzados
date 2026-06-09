@@ -209,4 +209,4 @@ Módulos principales:
 - Ajustes finos pendientes de feedback visual: factor de recorte del logo (`scale(1.18)`), punto de colapso del
   overflow de pestañas (reserva 44px), íconos elegidos por módulo, nivel del rojo en "Salir".
 - Opcional (fidelidad Azure): **footer sticky** con botones primario/secundario en los paneles de formulario.
-- **"Cliente previo"** (feature de may/jun): replicar el patrón en el modal de **tickets** (quedó pendiente).
+- **"Cliente previo"**: ya replicado en el modal de completar/facturar **tickets** (`tickets/[id]`) además de proyectos. ✅
