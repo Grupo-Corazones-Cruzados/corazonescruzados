@@ -121,6 +121,15 @@ Módulos principales:
   cobrada/completada (no hay estado 'completed' en facturas; ese es de proyectos/tickets).
 
 ## Lecciones técnicas
+- **Postgres "inconsistent types deduced for parameter $N" (2026-06-11):** ocurre cuando un mismo
+  parámetro `$N` se usa en dos contextos que deducen tipos distintos en la misma query (ej. `sri_status = $2`
+  → varchar y `CASE WHEN $2 = 'rejected'` → text). Fix: castear explícitamente (`$2::text`) en todos los usos.
+  Pasó en `sendInvoiceToSri` al introducir el estado 'failed'. node-pg envía params sin tipo y deja deducir a PG.
+- **Diagnóstico SRI con scripts (2026-06-11):** se pueden compilar módulos SRI self-contained
+  (`soap-client.ts`+`config.ts`, o `ride-pdf.ts`+`config.ts`) con `npx tsc --outDir .ridetmp --module commonjs`
+  y requerirlos desde un `.cjs` para consultar el SRI (`consultarAutorizacion(claveAcceso)`) o regenerar RIDEs
+  sin levantar la app. El `.p12` se inspecciona con `node-forge` (vigencia del cert). "FIRMA INVALIDA" del SRI
+  = la firma del comprobante no validó (no es problema de datos del cliente).
 - **RIDE PDF — overflow de Razón Social larga (2026-06-11):** en `lib/integrations/sri/ride-pdf.ts` la
   sección de cliente dibujaba `data.clienteNombre` **sin `width`** con `continued:true`, así que un nombre
   largo (ej. "GESTIÓN DE PROYECTOS Y ADMINISTRACIÓN… MEDICINA NUCLEAR S.A.S") fluía por todo el ancho y se
