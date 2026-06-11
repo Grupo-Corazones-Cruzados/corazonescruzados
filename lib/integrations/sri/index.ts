@@ -674,6 +674,53 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
 }
 
 /**
+ * Re-render ONLY the visual RIDE PDF of an already-authorized invoice from its
+ * stored data (no SRI calls). The RIDE is a derived representation, so this is
+ * safe and lets older invoices pick up template fixes. Returns the PDF buffer;
+ * if `persist` is true it also overwrites `pdf_data`.
+ */
+export async function regenerateRidePdf(invoiceId: number, persist = false): Promise<Buffer> {
+  const { rows: [invoice] } = await pool.query(`SELECT * FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
+  if (!invoice) throw new Error('Factura no encontrada');
+  if (!invoice.authorization_number) throw new Error('La factura no está autorizada; no hay RIDE que regenerar');
+
+  const { rows: items } = await pool.query(`SELECT * FROM gcc_world.invoice_items_sri WHERE invoice_id = $1 ORDER BY id`, [invoiceId]);
+  const pdfBuffer = await generateRidePdf({
+    claveAcceso: invoice.access_key,
+    numeroAutorizacion: invoice.authorization_number,
+    fechaAutorizacion: invoice.authorization_date ? new Date(invoice.authorization_date).toISOString() : new Date(invoice.created_at).toISOString(),
+    numeroFactura: invoice.invoice_number,
+    fechaEmision: new Date(invoice.created_at).toLocaleDateString('es-EC'),
+    clienteNombre: invoice.client_name_sri,
+    clienteRuc: invoice.client_ruc,
+    clienteDireccion: invoice.client_address_sri || '',
+    clienteEmail: invoice.client_email_sri || '',
+    clienteTelefono: invoice.client_phone_sri || '',
+    formaPago: '20',
+    items: items.map((it: any) => ({
+      description: it.description,
+      quantity: Number(it.quantity),
+      unitPrice: Number(it.unit_price),
+      subtotal: Number(it.subtotal),
+      ivaRate: Number(it.iva_rate),
+      discount: Number(it.iva_amount) === 0 ? 0 : undefined,
+    })),
+    subtotal0: Number(invoice.subtotal_0),
+    subtotalIva: Number(invoice.subtotal_iva),
+    ivaMonto: Number(invoice.iva_amount),
+    total: Number(invoice.total),
+    currency: invoice.currency || 'USD',
+    currencySymbol: CURRENCY_SYMBOLS[invoice.currency] || '$',
+    exchangeRate: Number(invoice.exchange_rate) || 1,
+  });
+
+  if (persist) {
+    await pool.query(`UPDATE gcc_world.invoices SET pdf_data = $1, updated_at = NOW() WHERE id = $2`, [pdfBuffer, invoiceId]);
+  }
+  return pdfBuffer;
+}
+
+/**
  * Regenerate a rejected/errored invoice with corrected data, take a new secuencial
  * and rebuild the XML. Does NOT auto-send to SRI; caller decides when to retry.
  */

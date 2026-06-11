@@ -115,6 +115,13 @@ Módulos principales:
   la columna derecha se dibuja en **slots fijos top-aligned** (`cTop`, `cTop+11`); `y` final = `max(leftBottom,
   rightBottom)+8`. Verificado generando un PDF de prueba con el nombre real (wrap a 2 líneas, sin solape).
   Patrón general para PDFKit: todo `text()` en layout de 2 columnas debe llevar `width` acotado a su columna.
+- **El RIDE se RE-RENDERIZA al descargar (2026-06-11):** antes `GET /api/invoices/[id]/pdf` servía el
+  `pdf_data` guardado (horneado al emitir) → las facturas viejas conservaban el diseño antiguo aunque se
+  arreglara la plantilla. Ahora, para facturas **autorizadas**, el endpoint llama
+  `regenerateRidePdf(invoiceId)` (`lib/integrations/sri/index.ts`): re-renderiza el RIDE desde los datos
+  guardados (clave/autorización/XML NO cambian — el RIDE es derivado), con **fallback** al `pdf_data`
+  almacenado si fallara. Así toda factura (vieja o nueva) se descarga con la plantilla actual. Nota de tipos:
+  `NextResponse` ya no acepta `Buffer<ArrayBufferLike>` directo → pasar `new Uint8Array(buffer)`.
 - **Theming corporativo del dashboard (scope `.corp`):** el look pixelart está centralizado en
   `app/globals.css` (tokens `@theme` `--color-digi-*`/`--color-accent*`, fuentes, clases `.pixel-*`).
   Para dar al dashboard un tema **light corporativo** sin afectar landing/auth/portal/mundo (que
