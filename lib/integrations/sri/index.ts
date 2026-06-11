@@ -58,6 +58,24 @@ async function ensureSriColumns() {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_invoice_projects_unique ON gcc_world.invoice_projects (invoice_id, project_id);
   `);
+
+  // Allow the 'failed' status (facturas cuyo proceso SRI fue rechazado/erró). Idempotent:
+  // only rebuilds the CHECK when it doesn't already include 'failed'.
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'gcc_world.invoices'::regclass AND conname = 'invoices_status_check')
+         AND NOT EXISTS (
+           SELECT 1 FROM pg_constraint
+            WHERE conrelid = 'gcc_world.invoices'::regclass AND conname = 'invoices_status_check'
+              AND pg_get_constraintdef(oid) LIKE '%failed%'
+         ) THEN
+        ALTER TABLE gcc_world.invoices DROP CONSTRAINT invoices_status_check;
+        ALTER TABLE gcc_world.invoices ADD CONSTRAINT invoices_status_check
+          CHECK (status IN ('pending','sent','paid','cancelled','failed'));
+      END IF;
+    END $$;
+  `);
 }
 
 /**
@@ -608,7 +626,10 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
 
     // Send to SRI
     const recepcion = await enviarComprobante(xmlSigned);
-    await pool.query(`UPDATE gcc_world.invoices SET sri_response = $1, sri_status = $2, updated_at = NOW() WHERE id = $3`,
+    await pool.query(
+      `UPDATE gcc_world.invoices SET sri_response = $1, sri_status = $2,
+              status = CASE WHEN $2 = 'rejected' AND status NOT IN ('paid','cancelled') THEN 'failed' ELSE status END,
+              updated_at = NOW() WHERE id = $3`,
       [JSON.stringify(recepcion), recepcion.ok ? 'sent' : 'rejected', invoiceId]);
 
     if (!recepcion.ok) {
@@ -622,7 +643,8 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
     const auth = await consultarAutorizacion(invoice.access_key);
     if (auth.autorizado) {
       await pool.query(
-        `UPDATE gcc_world.invoices SET authorization_number = $1, authorization_date = $2, sri_status = 'authorized', updated_at = NOW() WHERE id = $3`,
+        `UPDATE gcc_world.invoices SET authorization_number = $1, authorization_date = $2, sri_status = 'authorized',
+                status = CASE WHEN status = 'failed' THEN 'pending' ELSE status END, updated_at = NOW() WHERE id = $3`,
         [auth.numeroAutorizacion, auth.fechaAutorizacion || new Date().toISOString(), invoiceId]
       );
 
@@ -662,12 +684,18 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
       return { ok: true, authorized: true, authNumber: auth.numeroAutorizacion };
     } else {
       const msgs = auth.mensajes?.map(m => m.mensaje).join('; ') || 'No autorizado';
-      await pool.query(`UPDATE gcc_world.invoices SET sri_response = $1, sri_status = 'rejected', updated_at = NOW() WHERE id = $2`,
+      await pool.query(
+        `UPDATE gcc_world.invoices SET sri_response = $1, sri_status = 'rejected',
+                status = CASE WHEN status NOT IN ('paid','cancelled') THEN 'failed' ELSE status END,
+                updated_at = NOW() WHERE id = $2`,
         [JSON.stringify(auth), invoiceId]);
       return { ok: true, authorized: false, error: msgs };
     }
   } catch (err: any) {
-    await pool.query(`UPDATE gcc_world.invoices SET sri_status = 'error', sri_response = $1, updated_at = NOW() WHERE id = $2`,
+    await pool.query(
+      `UPDATE gcc_world.invoices SET sri_status = 'error', sri_response = $1,
+              status = CASE WHEN status NOT IN ('paid','cancelled') THEN 'failed' ELSE status END,
+              updated_at = NOW() WHERE id = $2`,
       [err.message, invoiceId]);
     return { ok: false, authorized: false, error: err.message };
   }

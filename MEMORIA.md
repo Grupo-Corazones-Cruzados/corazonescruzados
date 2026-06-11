@@ -106,6 +106,13 @@ Módulos principales:
     `finance_items` y su `finance_source_log` y recalcula el mes) → así el dashboard deja de contarlo y un
     re-cobro futuro genera factura+ingreso limpios.
 
+- **Estado 'failed' para facturas con error/rechazo SRI (2026-06-11):** las facturas cuyo proceso SRI fue
+  **rechazado** (`sri_status='rejected'`) o **erró** (`sri_status='error'`) ya no quedan en `pending`: pasan a
+  `status='failed'` ("Fallida", badge rojo). `sendInvoiceToSri` setea `failed` en recepción rechazada,
+  no-autorizado y catch (guarda `NOT IN ('paid','cancelled')`); si luego se reintenta y **autoriza**, vuelve
+  `failed → pending`. El enum `status` es **varchar con CHECK** `invoices_status_check` (valores
+  pending/sent/paid/cancelled) → se amplió a incluir `failed` (DDL idempotente en `ensureSriColumns`, y
+  aplicado en prod). Backfill: #13 (rejected) y #19 (error) → failed. UI: pestaña "Fallidas" + STATUS_LABEL.
 - **Estado de factura ligado al comprobante de pago (2026-06-11):** `status` de `gcc_world.invoices`
   (enum `pending`/`sent`/`paid`/`cancelled`) ahora se sincroniza con el comprobante: subir comprobante
   (`POST /api/invoices/[id]/proof`) pone `status='paid'` (salvo `cancelled`); quitarlo (`DELETE`) revierte

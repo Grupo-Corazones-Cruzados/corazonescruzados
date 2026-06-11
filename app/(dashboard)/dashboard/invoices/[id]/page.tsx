@@ -13,10 +13,10 @@ const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  pending: 'warning', sent: 'info', paid: 'success', cancelled: 'error',
+  pending: 'warning', sent: 'info', paid: 'success', cancelled: 'error', failed: 'error',
 };
 const STATUS_LABEL: Record<string, string> = {
-  pending: 'Pendiente', sent: 'Enviada', paid: 'Pagada', cancelled: 'Anulada',
+  pending: 'Pendiente', sent: 'Enviada', paid: 'Pagada', cancelled: 'Anulada', failed: 'Fallida',
 };
 const SRI_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   generated: 'default', signed: 'info', sent: 'info', authorized: 'success', rejected: 'error', error: 'error',
