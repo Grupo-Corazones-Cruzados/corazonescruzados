@@ -107,6 +107,14 @@ Módulos principales:
     re-cobro futuro genera factura+ingreso limpios.
 
 ## Lecciones técnicas
+- **RIDE PDF — overflow de Razón Social larga (2026-06-11):** en `lib/integrations/sri/ride-pdf.ts` la
+  sección de cliente dibujaba `data.clienteNombre` **sin `width`** con `continued:true`, así que un nombre
+  largo (ej. "GESTIÓN DE PROYECTOS Y ADMINISTRACIÓN… MEDICINA NUCLEAR S.A.S") fluía por todo el ancho y se
+  montaba sobre la columna derecha (RUC/CI, Guía de Remisión). Fix: el bloque izquierdo (Razón Social +
+  Fecha Emisión) se limita a `width=PW*0.62` (hace **wrap** antes de la columna derecha en `L+PW*0.65`), y
+  la columna derecha se dibuja en **slots fijos top-aligned** (`cTop`, `cTop+11`); `y` final = `max(leftBottom,
+  rightBottom)+8`. Verificado generando un PDF de prueba con el nombre real (wrap a 2 líneas, sin solape).
+  Patrón general para PDFKit: todo `text()` en layout de 2 columnas debe llevar `width` acotado a su columna.
 - **Theming corporativo del dashboard (scope `.corp`):** el look pixelart está centralizado en
   `app/globals.css` (tokens `@theme` `--color-digi-*`/`--color-accent*`, fuentes, clases `.pixel-*`).
   Para dar al dashboard un tema **light corporativo** sin afectar landing/auth/portal/mundo (que

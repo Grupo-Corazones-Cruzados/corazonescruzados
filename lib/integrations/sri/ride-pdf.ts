@@ -104,14 +104,27 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     y = Math.max(leftBottomY, boxStartY + boxH) + 10;
 
     // ════════════ CLIENT SECTION ════════════
-    doc.fontSize(7).font('Helvetica-Bold').fillColor('black');
-    doc.text('Razon Social / Nombres y Apellidos: ', L, y, { continued: true }).font('Helvetica').text(data.clienteNombre);
+    doc.fontSize(7).fillColor('black');
     const clientRightX = L + PW * 0.65;
-    doc.font('Helvetica-Bold').text('RUC / CI: ', clientRightX, y, { continued: true }).font('Helvetica').text(data.clienteRuc);
-    y = doc.y + 3;
-    doc.font('Helvetica-Bold').text('Fecha Emision: ', L, y, { continued: true }).font('Helvetica').text(data.fechaEmision);
-    doc.font('Helvetica-Bold').text('Guia de Remision:', clientRightX, y);
-    y = doc.y + 8;
+    const clientLeftW = PW * 0.62;   // left block wraps within this → long names never invade the right column
+    const clientRightW = PW * 0.35;  // right column (RUC / CI, Guia de Remision)
+    const cTop = y;
+
+    // Right column first, fixed top-aligned slots (so the left block can grow downward freely)
+    doc.font('Helvetica-Bold').text('RUC / CI: ', clientRightX, cTop, { width: clientRightW, continued: true })
+      .font('Helvetica').text(data.clienteRuc || '', { width: clientRightW });
+    doc.font('Helvetica-Bold').text('Guia de Remision:', clientRightX, cTop + 11, { width: clientRightW });
+    const rightBottom = cTop + 22;
+
+    // Left column — Razon Social wraps within clientLeftW (handles very long business names)
+    doc.font('Helvetica-Bold').text('Razon Social / Nombres y Apellidos: ', L, cTop, { width: clientLeftW, continued: true })
+      .font('Helvetica').text(data.clienteNombre || '', { width: clientLeftW });
+    const fechaY = doc.y + 3;
+    doc.font('Helvetica-Bold').text('Fecha Emision: ', L, fechaY, { width: clientLeftW, continued: true })
+      .font('Helvetica').text(data.fechaEmision || '', { width: clientLeftW });
+    const leftBottom = doc.y;
+
+    y = Math.max(leftBottom, rightBottom) + 8;
 
     // ════════════ DETAIL TABLE ════════════
     const tCols = [
