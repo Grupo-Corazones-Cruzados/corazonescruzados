@@ -97,6 +97,14 @@ Módulos principales:
   - Nota 2026-06-11: la 1ª factura de prueba (#30, suscripción "Servidor", periodo 2026-06) se emitió
     ANTES del cambio, **autorizada por SRI** con desglose IVA (4.35+0.65=5.00). El total ($5) es correcto;
     revertir SOLO el desglose de esa factura requeriría nota de crédito. La suscripción #1 ya quedó a 0%.
+  - **Anular factura de suscripción → mes vuelve a pendiente (2026-06-11):** el endpoint
+    `POST /api/invoices/[id]/void` (emite nota de crédito; al autorizar SRI marca la factura
+    `status='cancelled'/sri_status='voided'`) ahora, si la factura es `source_type='subscription'`, llama
+    `revertSubscriptionPaymentForVoidedInvoice(invoiceId)` (`lib/subscriptions.ts`): borra la fila de
+    `subscription_payments` (el mes vuelve a **pendiente**) y quita el ingreso con
+    `removeIncomeFromFinance('subscription', '<subId>-<YYYY-MM>')` (`lib/finance.ts`: elimina el
+    `finance_items` y su `finance_source_log` y recalcula el mes) → así el dashboard deja de contarlo y un
+    re-cobro futuro genera factura+ingreso limpios.
 
 ## Lecciones técnicas
 - **Theming corporativo del dashboard (scope `.corp`):** el look pixelart está centralizado en

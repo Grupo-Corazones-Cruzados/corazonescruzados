@@ -114,4 +114,24 @@ export async function addSubscriptionIncomeToFinance(sourceId: string, descripti
   await addIncomeToFinance('subscription', sourceId, description, totalCost, date);
 }
 
+/**
+ * Remove a previously-registered income (item + source_log entry) so it stops
+ * counting in the dashboard AND a future registration of the same source can be
+ * re-added. Used when a source document is reverted (e.g. an invoice is voided).
+ */
+export async function removeIncomeFromFinance(sourceType: string, sourceId: string) {
+  await ensureFinanceTables();
+  const { rows } = await pool.query(
+    `SELECT DISTINCT month_id FROM gcc_world.finance_items WHERE source_type = $1 AND source_id = $2`,
+    [sourceType, sourceId]
+  );
+  await pool.query(
+    `DELETE FROM gcc_world.finance_items WHERE source_type = $1 AND source_id = $2`, [sourceType, sourceId]
+  );
+  await pool.query(
+    `DELETE FROM gcc_world.finance_source_log WHERE source_type = $1 AND source_id = $2`, [sourceType, sourceId]
+  );
+  for (const r of rows) await recalcMonth(r.month_id);
+}
+
 export { ensureFinanceTables, ensureMonth, recalcMonth };

@@ -140,6 +140,14 @@ facturación electrónica SRI Ecuador** y en el sistema de diseño corporativo `
   Suscripciones existentes actualizadas a 0% vía UPDATE. (La 1ª factura #30 ya se emitió con IVA y quedó
   autorizada en SRI; su total $5 es correcto, revertir el desglose requeriría nota de crédito.)
 
+## Anular factura de suscripción → revertir el mes (2026-06-11)
+Requisito del usuario: al **anular** (nota de crédito) una factura que provino de una suscripción, el mes
+correspondiente debe volver a **pendiente de pago**. Implementado: `POST /api/invoices/[id]/void`, tras
+autorizar la NC y marcar la factura `voided`, si `source_type='subscription'` llama
+`revertSubscriptionPaymentForVoidedInvoice(invoiceId)` → borra la marca de pago (mes → pendiente) y
+`removeIncomeFromFinance('subscription','<subId>-<YYYY-MM>')` (quita el ingreso del dashboard + log).
+Esto cierra el ciclo: anular → mes pendiente → se puede volver a cobrar (nueva factura + ingreso limpios).
+
 ## Decisión sobre DESMARCAR un mes (política fiscal)
 Una factura electrónica **autorizada por el SRI no se puede anular** sin nota de crédito. Por eso:
 - "Marcar pagado" genera la factura, la envía por email y registra el ingreso **solo si el SRI autoriza**

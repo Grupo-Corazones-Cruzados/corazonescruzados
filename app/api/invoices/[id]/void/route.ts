@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { signCreditNoteXml } from 'ec-sri-invoice-signer';
 import { buildCreditNoteXml } from '@/lib/integrations/sri/credit-note-builder';
 import { enviarComprobante, consultarAutorizacion } from '@/lib/integrations/sri/soap-client';
+import { revertSubscriptionPaymentForVoidedInvoice } from '@/lib/subscriptions';
 import fs from 'fs';
 
 function loadP12(): Buffer {
@@ -97,7 +98,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         `UPDATE gcc_world.invoices SET status = 'cancelled', sri_status = 'voided', sri_response = $1, updated_at = NOW() WHERE id = $2`,
         [JSON.stringify({ credit_note: { numero: `NC-${numero}`, claveAcceso, autorizacion: auth.numeroAutorizacion, motivo: motivo.trim() } }), id]
       );
-      return NextResponse.json({ ok: true, creditNote: `NC-${numero}`, autorizacion: auth.numeroAutorizacion });
+
+      // If this invoice came from a subscription month, revert that month back to
+      // pending (and drop its income) so it can be charged again.
+      let subscriptionReverted = false;
+      if (inv.source_type === 'subscription') {
+        try {
+          subscriptionReverted = await revertSubscriptionPaymentForVoidedInvoice(Number(id));
+        } catch (e: any) {
+          console.error('[void] subscription revert error:', e.message);
+        }
+      }
+
+      return NextResponse.json({ ok: true, creditNote: `NC-${numero}`, autorizacion: auth.numeroAutorizacion, subscriptionReverted });
     } else {
       const msgs = auth.mensajes?.map(m => m.informacionAdicional || m.mensaje).join('; ') || 'No autorizado';
       console.error('[void] SRI authorization failed:', JSON.stringify(auth, null, 2));

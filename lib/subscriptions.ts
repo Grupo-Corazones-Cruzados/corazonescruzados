@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { removeIncomeFromFinance } from '@/lib/finance';
 
 /**
  * Suscripciones — cobros mensuales recurrentes a clientes.
@@ -186,6 +187,29 @@ export interface SubscriptionSummary {
   pendingCount: number;
   nextDue: PeriodInfo | null;   // earliest unpaid period
   alert: 'overdue' | 'due_soon' | 'none';
+}
+
+/**
+ * When a subscription invoice is voided (credit note authorized), revert its month:
+ * remove the paid mark → the month goes back to "pendiente", and drop the income
+ * (item + source_log) so the dashboard stops counting it and a future re-charge can
+ * re-register cleanly. Returns true if a payment row was reverted.
+ */
+export async function revertSubscriptionPaymentForVoidedInvoice(invoiceId: number): Promise<boolean> {
+  await ensureSubscriptionTables();
+  const { rows: [pay] } = await pool.query(
+    `SELECT id, subscription_id, period FROM gcc_world.subscription_payments WHERE invoice_id = $1`,
+    [invoiceId]
+  );
+  if (!pay) return false;
+  await pool.query(`DELETE FROM gcc_world.subscription_payments WHERE id = $1`, [pay.id]);
+  const period = toYMD(pay.period).slice(0, 7); // 'YYYY-MM'
+  try {
+    await removeIncomeFromFinance('subscription', `${pay.subscription_id}-${period}`);
+  } catch (e: any) {
+    console.error('revertSubscriptionPaymentForVoidedInvoice finance error:', e.message);
+  }
+  return true;
 }
 
 /** Compact summary used by the list view (alert badge + next charge). */
