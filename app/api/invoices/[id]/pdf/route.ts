@@ -34,6 +34,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="RIDE-${invoice.invoice_number}.pdf"`,
         'Content-Length': String(buffer.length),
+        // Always fetch a freshly re-rendered RIDE (never a cached old layout)
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     });
   } catch (err: any) {
