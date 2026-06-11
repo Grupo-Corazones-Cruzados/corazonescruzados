@@ -201,9 +201,10 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     doc.fillColor('black').font('Helvetica-Bold').fontSize(6).text('Informacion Adicional', L + 3, y + 3);
     y += 12;
     doc.font('Helvetica').fontSize(6);
-    if (data.clienteDireccion) { doc.font('Helvetica-Bold').text('DIRECCION', L + 3, y + 2, { continued: true }).font('Helvetica').text(`     ${data.clienteDireccion}`); y = doc.y + 2; }
-    if (data.clienteTelefono) { doc.font('Helvetica-Bold').text('TELEFONO', L + 3, y + 2, { continued: true }).font('Helvetica').text(`     ${data.clienteTelefono}`); y = doc.y + 2; }
-    if (data.clienteEmail) { doc.font('Helvetica-Bold').text('EMAIL', L + 3, y + 2, { continued: true }).font('Helvetica').text(`     ${data.clienteEmail}`); y = doc.y + 2; }
+    // width acotado al recuadro izquierdo → los valores largos (dirección) hacen wrap y no invaden los totales
+    if (data.clienteDireccion) { doc.font('Helvetica-Bold').text('DIRECCION', L + 3, y + 2, { width: botLeftW - 6, continued: true }).font('Helvetica').text(`     ${data.clienteDireccion}`); y = doc.y + 2; }
+    if (data.clienteTelefono) { doc.font('Helvetica-Bold').text('TELEFONO', L + 3, y + 2, { width: botLeftW - 6, continued: true }).font('Helvetica').text(`     ${data.clienteTelefono}`); y = doc.y + 2; }
+    if (data.clienteEmail) { doc.font('Helvetica-Bold').text('EMAIL', L + 3, y + 2, { width: botLeftW - 6, continued: true }).font('Helvetica').text(`     ${data.clienteEmail}`); y = doc.y + 2; }
     doc.rect(L, botY + 12, botLeftW, y - botY - 12).stroke('#ccc');
 
     // ─── RIGHT: Totals ───
