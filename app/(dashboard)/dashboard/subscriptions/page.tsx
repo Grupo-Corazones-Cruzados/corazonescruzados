@@ -7,6 +7,7 @@ import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 
 const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -77,6 +78,9 @@ export default function SubscriptionsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [busyPeriod, setBusyPeriod] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // App-level confirmation dialog (replaces window.confirm)
+  const [confirmCfg, setConfirmCfg] = useState<{ title: string; message: string; confirmLabel: string; danger: boolean; onConfirm: () => void } | null>(null);
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
@@ -186,9 +190,18 @@ export default function SubscriptionsPage() {
     setDetail(data.data || null);
   };
 
-  const markPaid = async (period: string, periodLabel: string) => {
+  const requestMarkPaid = (period: string, periodLabel: string) => {
+    setConfirmCfg({
+      title: 'Marcar como pagado',
+      message: `¿Marcar "${periodLabel}" como pagado? Se generará la factura electrónica para el cliente, se le enviará por correo y se registrará el ingreso.`,
+      confirmLabel: 'Marcar pagado',
+      danger: false,
+      onConfirm: () => doMarkPaid(period, periodLabel),
+    });
+  };
+
+  const doMarkPaid = async (period: string, periodLabel: string) => {
     if (!detail) return;
-    if (!confirm(`¿Marcar "${periodLabel}" como pagado? Se generará la factura electrónica para el cliente, se le enviará por correo y se registrará el ingreso.`)) return;
     setBusyPeriod(period);
     try {
       const res = await fetch(`/api/subscriptions/${detail.id}/pay`, {
@@ -205,9 +218,18 @@ export default function SubscriptionsPage() {
     finally { setBusyPeriod(null); }
   };
 
-  const unmarkPaid = async (period: string, periodLabel: string) => {
+  const requestUnmarkPaid = (period: string, periodLabel: string) => {
+    setConfirmCfg({
+      title: 'Desmarcar mes',
+      message: `¿Desmarcar "${periodLabel}" como pagado?`,
+      confirmLabel: 'Desmarcar',
+      danger: false,
+      onConfirm: () => doUnmarkPaid(period, periodLabel),
+    });
+  };
+
+  const doUnmarkPaid = async (period: string, periodLabel: string) => {
     if (!detail) return;
-    if (!confirm(`¿Desmarcar "${periodLabel}"?`)) return;
     setBusyPeriod(period);
     try {
       const res = await fetch(`/api/subscriptions/${detail.id}/pay`, {
@@ -241,9 +263,19 @@ export default function SubscriptionsPage() {
     finally { setUpdatingStatus(false); }
   };
 
-  const deleteSubscription = async () => {
+  const requestDelete = () => {
     if (!detail) return;
-    if (!confirm(`¿Eliminar la suscripción "${detail.title}"? Esto borra la suscripción y su historial de marcas (las facturas ya emitidas se conservan).`)) return;
+    setConfirmCfg({
+      title: 'Eliminar suscripción',
+      message: `¿Eliminar la suscripción "${detail.title}"? Esto borra la suscripción y su historial de marcas (las facturas ya emitidas se conservan).`,
+      confirmLabel: 'Eliminar',
+      danger: true,
+      onConfirm: () => doDeleteSubscription(),
+    });
+  };
+
+  const doDeleteSubscription = async () => {
+    if (!detail) return;
     try {
       const res = await fetch(`/api/subscriptions/${detail.id}`, { method: 'DELETE' });
       if (!res.ok) { const e = await res.json(); toast.error(e.error || 'Error'); return; }
@@ -451,13 +483,13 @@ export default function SubscriptionsPage() {
                             <button onClick={() => window.open(`/api/invoices/${p.invoiceId}/pdf`, '_blank')}
                               className="px-1.5 py-0.5 text-[8px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>PDF</button>
                           )}
-                          <button onClick={() => unmarkPaid(p.period, p.label)} disabled={busy}
+                          <button onClick={() => requestUnmarkPaid(p.period, p.label)} disabled={busy}
                             className="px-2 py-0.5 text-[8px] border border-digi-border text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50" style={pf}>
                             {busy ? '...' : 'Desmarcar'}
                           </button>
                         </>
                       ) : (
-                        <button onClick={() => markPaid(p.period, p.label)} disabled={busy || detail.status === 'cancelled'}
+                        <button onClick={() => requestMarkPaid(p.period, p.label)} disabled={busy || detail.status === 'cancelled'}
                           className="pixel-btn pixel-btn-primary text-[8px] disabled:opacity-50" style={pf}>
                           {busy ? 'Procesando…' : 'Marcar pagado'}
                         </button>
@@ -476,7 +508,7 @@ export default function SubscriptionsPage() {
 
             {user?.role === 'admin' && (
               <div className="pt-2 border-t border-digi-border">
-                <button onClick={deleteSubscription} className="text-[8px] px-2 py-1 border border-red-700/50 text-red-400 hover:bg-red-900/20 transition-colors" style={pf}>
+                <button onClick={requestDelete} className="text-[8px] px-2 py-1 border border-red-700/50 text-red-400 hover:bg-red-900/20 transition-colors" style={pf}>
                   Eliminar suscripción
                 </button>
               </div>
@@ -484,6 +516,16 @@ export default function SubscriptionsPage() {
           </div>
         )}
       </PixelModal>
+
+      <PixelConfirm
+        open={!!confirmCfg}
+        title={confirmCfg?.title}
+        message={confirmCfg?.message || ''}
+        confirmLabel={confirmCfg?.confirmLabel}
+        danger={confirmCfg?.danger}
+        onConfirm={() => { const fn = confirmCfg?.onConfirm; setConfirmCfg(null); fn?.(); }}
+        onCancel={() => setConfirmCfg(null)}
+      />
     </div>
   );
 }
