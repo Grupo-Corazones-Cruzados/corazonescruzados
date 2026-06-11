@@ -15,6 +15,9 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   pending: 'warning', sent: 'info', paid: 'success', cancelled: 'error',
 };
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Pendiente', sent: 'Enviada', paid: 'Pagada', cancelled: 'Anulada',
+};
 const SRI_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   generated: 'default', signed: 'info', sent: 'info', authorized: 'success', rejected: 'error', error: 'error',
 };
@@ -203,7 +206,7 @@ export default function InvoiceDetailPage() {
         <h1 className="pixel-heading text-lg text-digi-text">{invoice.invoice_number || `Factura #${invoice.id}`}</h1>
         <div className="flex gap-2">
           {invoice.sri_status && <PixelBadge variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {invoice.sri_status}</PixelBadge>}
-          <PixelBadge variant={STATUS_V[invoice.status] || 'default'}>{invoice.status}</PixelBadge>
+          <PixelBadge variant={STATUS_V[invoice.status] || 'default'}>{STATUS_LABEL[invoice.status] || invoice.status}</PixelBadge>
         </div>
       </div>
 

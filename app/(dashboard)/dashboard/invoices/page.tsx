@@ -23,6 +23,9 @@ const TABS = [
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   pending: 'warning', sent: 'info', paid: 'success', cancelled: 'error',
 };
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Pendiente', sent: 'Enviada', paid: 'Pagada', cancelled: 'Anulada',
+};
 const SRI_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   generated: 'default', signed: 'info', sent: 'info', authorized: 'success', rejected: 'error', error: 'error', voided: 'error',
 };
@@ -525,7 +528,7 @@ function InvoicesPageInner() {
             <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{i.sri_status}</PixelBadge>
           ) : <span className="text-digi-muted">-</span> },
           { key: 'status', header: 'Estado', render: (i: any) => (
-            <PixelBadge variant={STATUS_V[i.status] || 'default'}>{i.status}</PixelBadge>
+            <PixelBadge variant={STATUS_V[i.status] || 'default'}>{STATUS_LABEL[i.status] || i.status}</PixelBadge>
           )},
           { key: 'date', header: 'Fecha', render: (i: any) => i.created_at ? new Date(i.created_at).toLocaleDateString() : '-' },
           { key: 'actions', header: '', width: '160px', render: (i: any) => (

@@ -22,8 +22,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await pool.query(`ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS payment_proof BYTEA`);
     await pool.query(`ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS payment_proof_type VARCHAR(50)`);
 
+    // Subir el comprobante marca la factura como PAGADA (salvo que esté anulada).
     await pool.query(
-      `UPDATE gcc_world.invoices SET payment_proof = $1, payment_proof_type = $2, updated_at = NOW() WHERE id = $3`,
+      `UPDATE gcc_world.invoices
+          SET payment_proof = $1, payment_proof_type = $2,
+              status = CASE WHEN status = 'cancelled' THEN status ELSE 'paid' END,
+              updated_at = NOW()
+        WHERE id = $3`,
       [buffer, file.type, id]
     );
 
@@ -62,8 +67,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { id } = await params;
 
+    // Quitar el comprobante revierte el estado pagado → pendiente (no toca anuladas).
     await pool.query(
-      `UPDATE gcc_world.invoices SET payment_proof = NULL, payment_proof_type = NULL, updated_at = NOW() WHERE id = $1`, [id]
+      `UPDATE gcc_world.invoices
+          SET payment_proof = NULL, payment_proof_type = NULL,
+              status = CASE WHEN status = 'paid' THEN 'pending' ELSE status END,
+              updated_at = NOW()
+        WHERE id = $1`, [id]
     );
     return NextResponse.json({ ok: true });
   } catch (err: any) {

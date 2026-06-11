@@ -106,6 +106,13 @@ Módulos principales:
     `finance_items` y su `finance_source_log` y recalcula el mes) → así el dashboard deja de contarlo y un
     re-cobro futuro genera factura+ingreso limpios.
 
+- **Estado de factura ligado al comprobante de pago (2026-06-11):** `status` de `gcc_world.invoices`
+  (enum `pending`/`sent`/`paid`/`cancelled`) ahora se sincroniza con el comprobante: subir comprobante
+  (`POST /api/invoices/[id]/proof`) pone `status='paid'` (salvo `cancelled`); quitarlo (`DELETE`) revierte
+  `paid → pending`. Las 9 facturas que ya tenían comprobante se backfilearon a `paid`. Badge muestra
+  etiqueta ES (`STATUS_LABEL`: Pendiente/Enviada/Pagada/Anulada) en lista y detalle. "Pagada" = factura
+  cobrada/completada (no hay estado 'completed' en facturas; ese es de proyectos/tickets).
+
 ## Lecciones técnicas
 - **RIDE PDF — overflow de Razón Social larga (2026-06-11):** en `lib/integrations/sri/ride-pdf.ts` la
   sección de cliente dibujaba `data.clienteNombre` **sin `width`** con `continued:true`, así que un nombre
