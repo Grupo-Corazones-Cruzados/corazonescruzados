@@ -52,6 +52,17 @@ Stack estándar de la casa, con particularidades de este repo:
     7. **Sidebar**: íconos lucide por módulo, logo sin borde negro, botones inferiores en 2 filas (salir en rojo).
     Verificado en cada paso (tsc OK, compila). Ver `Aprendizaje.md` y "Lecciones técnicas → Theming corporativo".
 
+- **2026-06-11:** Nuevo módulo **Suscripciones** (cobros mensuales recurrentes). Sidebar **debajo de
+  Proyectos** (`roles:['member','admin']`). Tablas nuevas `gcc_world.subscriptions` y
+  `subscription_payments` (creadas con `CREATE TABLE IF NOT EXISTS` en `ensureSubscriptionTables()`,
+  `lib/subscriptions.ts`). Lógica de meses/alertas en `lib/subscriptions.ts` (`computePeriods`,
+  `summarizeSubscription`, helper `toYMD`). Endpoints `app/api/subscriptions/{route,[id]/route,[id]/pay/route}.ts`.
+  Factura SRI vía `createManualInvoiceFromSubscription` (`lib/integrations/sri/index.ts`,
+  `source_type='subscription'`, `source_id='<subId>-<YYYY-MM>'`). Ingreso vía
+  `addSubscriptionIncomeToFinance` (`lib/finance.ts`). UI `app/(dashboard)/dashboard/subscriptions/page.tsx`
+  (tabla + panel lateral de meses, estilo `.corp` calcado de projects/invoices). Verificado: tsc + `next build` OK.
+  **Sin commitear.** Ver `Aprendizaje.md` (objetivo actual).
+
 ## Arquitectura y módulos
 Rutas en `app/`, agrupadas por layout: `(auth)`, `(dashboard)`, `(main)`, `(public)`.
 API en `app/api/` (~40 grupos). Lógica en `lib/`, componentes en `components/`.
@@ -74,6 +85,13 @@ Módulos principales:
 - **Facturación = Ecuador / SRI**: firma electrónica con `.p12`; respetar formato XML SRI.
 - **Rebuild v2 descartado** (2026-06-07): el usuario confirmó que `main` de este repo es la
   versión correcta y en uso. Se eliminó la rama `origin/rebuild/v2`. El trabajo continúa aquí.
+- **Suscripciones (reglas, 2026-06-11):** cobro **por mes calendario** (una fila por mes desde el mes de
+  inicio hasta hoy; vencimiento = día de corte = día de `start_date`, clamp al último día en meses cortos;
+  un mes aparece al iniciar el mes calendario). **IVA**: el costo mensual es **precio final con IVA 15%
+  incluido** (se desglosa: `unitPrice = costo/1.15`, `ivaRate=15`). **Alerta** 7 días antes (ámbar ≤7d,
+  roja si venció e impago). **Marcar pagado** ⇒ genera factura SRI + email al cliente + ingreso del mes
+  actual, **solo si el SRI autoriza**. **Desmarcar** permitido solo si el mes aún no tiene factura emitida
+  (una factura autorizada requeriría nota de crédito → 409).
 
 ## Lecciones técnicas
 - **Theming corporativo del dashboard (scope `.corp`):** el look pixelart está centralizado en

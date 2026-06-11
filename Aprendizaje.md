@@ -1,262 +1,190 @@
-# Aprendizaje — Rediseñar el /dashboard de estilo pixelart a estilo corporativo (Microsoft/SharePoint)
+# Aprendizaje — Módulo "Suscripciones" (cobros mensuales recurrentes → factura + email + ingreso)
 
 > Documento vivo de la skill `/aprendizaje`. Acumula todas las preguntas técnicas y sus
 > respuestas hasta dominar el problema y resolverlo sin fallos.
 >
-> **Estados:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
+> **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
-## Objetivo / necesidad
-Cambiar el **tema visual de todo `/dashboard/`** (todas las páginas y todos sus componentes)
-del estilo actual **pixelart / Digimon** a un estilo **corporativo tipo Microsoft / SharePoint
-(Fluent UI)**. (Declarado 2026-06-07.)
-
-**Restricción clave:** el cambio debe afectar **solo el dashboard**. La landing, el portal de
-clientes, auth y el mundo gamificado conservan (por ahora) su identidad pixelart — pendiente de
-confirmar alcance exacto (ver P0).
+## Objetivo / necesidad (declarado 2026-06-11)
+Nuevo módulo **Suscripciones**, ubicado en el sidebar **justo debajo de Proyectos**. Permite al
+miembro/usuario llevar el control de **cobros mensuales recurrentes** a clientes por productos/servicios
+de costo mensual. Funcionalidad:
+- Crear una suscripción definiendo: **cliente** (a quien se cobra), **título/razón** del cobro,
+  **costo mensual** y **fecha de inicio** (que fija el **día de corte** mensual; ej. inicio 11-jun-2026 ⇒
+  se cobra el **11 de cada mes**).
+- **Tabla principal** con las suscripciones creadas; debe **alertar** cuando el día de corte esté
+  **cerca** de la fecha actual.
+- Al **seleccionar** una suscripción, en un **panel lateral derecho** aparece el **listado de meses**
+  que debieron pagarse desde la fecha de inicio hasta hoy. **Si empieza un nuevo mes calendario, ese mes
+  ya aparece** en la lista aunque no haya llegado el día de corte.
+- En ese panel el miembro **marca meses como pagados / no pagados**.
+- Al **marcar un mes como pagado** se dispara automáticamente:
+  1. **Generar factura** SRI para el cliente con sus datos.
+  2. **Enviar email** al cliente con su factura (PDF adjunto).
+  3. La factura **aparece en la tabla de Facturas**.
+  4. El **ingreso** se registra en el **dashboard en el mes del día en que se marca pagada** la cuota.
+- **Diseño:** replicar **exactamente** las reglas de estilo del `/dashboard` (tema corporativo `.corp`).
 
 ## Rol asumido
-**Ingeniero front-end / diseñador de sistemas de diseño** (Next.js 15 App Router + Tailwind v4 +
-Fluent/SharePoint). Foco: tokens de tema, theming scoped sin romper otras áreas, refactor de
-componentes UI compartidos, consistencia visual.
+**Ingeniero full-stack (Next.js 15 App Router + Postgres/SQL crudo `pg` + Prisma 7) con foco en
+facturación electrónica SRI Ecuador** y en el sistema de diseño corporativo `.corp` del dashboard.
 
 ## Progreso
-- **% de información para el objetivo:** 95% — **IMPLEMENTADO y verificado estáticamente** (tsc OK,
-  Tailwind compila, home 200). Falta solo la **confirmación visual** del usuario con sesión iniciada.
-- **Decisiones del usuario (2026-06-07):** tema **light corporativo** (fondo `#faf9f8`, texto `#242424`),
-  acento **morado de marca `#4B2D8E`**, tipografía **Segoe UI**, alcance **solo `/dashboard/`**.
-- **Resumen del estado actual:** Tema corporativo implementado mediante **scope CSS `.corp`** montado en
-  el shell del dashboard (`app/(dashboard)/layout.tsx`). Dentro de `.corp` se **redefinen los tokens**
-  (CSS vars `--color-digi-*`, `--color-accent*`, fuentes) → todas las utilidades Tailwind `digi-*`/`accent`
-  y los `.pixel-*` heredan el look corporativo sin editar las 22 páginas. Fuentes inline migradas a
-  `var(--font-display)`/`var(--font-body)` (theme-aware). `text-white` → `text-digi-text` (salvo badges
-  sobre color sólido). Islas que deben seguir oscuras (previews WhatsApp/chatbot, proforma-chat GitHub-dark)
-  aisladas con la clase **`.pixel-scope`** que revierte los tokens localmente.
+- **% de información para el objetivo:** 98% — **IMPLEMENTADO** y verificado con `tsc --noEmit` OK
+  (build de Next en validación). Falta solo prueba funcional en vivo (login + factura real SRI/email).
+- **Decisiones del usuario (2026-06-11):** (1) modelo de cobro **por mes calendario** (vencimiento =
+  día de corte de cada mes); (2) roles **admin + member**; (3) IVA: el costo mensual es **precio final,
+  IVA 15% incluido** (se desglosa hacia atrás: base = total/1.15); (4) **alerta 7 días** antes del corte.
+- **Resumen del estado actual:** Módulo completo construido: tablas `subscriptions` +
+  `subscription_payments`, lib de lógica de meses/alertas, 3 endpoints API, función SRI
+  `createManualInvoiceFromSubscription`, wrapper de ingreso, NavItem en sidebar y página UI `.corp` con
+  tabla principal (alertas) + panel lateral de meses con marcado de pago.
 
-## Fuentes recibidas / consultadas (2026-06-07)
-- `app/(dashboard)/layout.tsx` — punto de entrada único del dashboard: `AuthGuard` + `DashboardSidebar`
-  + `<main class="flex-1 ml-0 lg:ml-56 …">`. **Aquí se colgará el scope del tema** (`<main className="corp …">`).
-- `app/globals.css` — TODO el sistema pixelart centralizado: `@theme` con tokens `--color-digi-*`,
-  `--color-accent*` (#4B2D8E morado), `--font-pixel: Silkscreen`, `--font-mono: JetBrains Mono`,
-  `--font-sans: Inter`; clases `.pixel-btn*`, `.pixel-card`, `.pixel-heading`, `.digi-*`, `.retro-text`,
-  `.scanlines`, keyframes retro.
-- `app/layout.tsx` — carga fuentes Google: Silkscreen, JetBrains Mono, Inter.
-- `components/ui/Pixel*.tsx` (9 core) — PixelModal, PixelButton(?), PixelInput, PixelSelect,
-  PixelDataTable, PixelTabs, PixelBadge, PixelConfirm + `PageHeader`, `BrandLoader`. Muchos fijan
-  `fontFamily: 'Silkscreen'/'JetBrains Mono'` **inline** (no overrideable solo con CSS de scope).
-- `components/dashboard/DashboardSidebar.tsx` — sidebar fija (logo spritesheet, NAV_ITEMS por rol).
-- Inventario de uso (grep): `Pixel*`/PageHeader/BrandLoader → 22 dashboard, 25 components/, 3 auth,
-  1 `app/proyecto` (portal), 1 `app/members`. Clases `pixel-/digi-/retro-` → 17 dashboard, 14 components,
-  3 auth, 2 calendario, 1 ticket, 1 landing, 1 members. **Confirma que son compartidos.**
+## Fuentes recibidas / consultadas (2026-06-11)
+- `MEMORIA.md` — contexto del proyecto, stack, tema `.corp`, decisiones SRI, vínculo factura→origen.
+- `components/dashboard/DashboardSidebar.tsx` — `NAV_ITEMS` (label/href/icon Lucide/roles opcional);
+  item "Proyectos" en L24 (`{ label:'Proyectos', href:'/dashboard/projects', icon:FolderKanban }`); filtro
+  `!item.roles || item.roles.includes(user.role)`. **Aquí se inserta "Suscripciones" debajo de Proyectos.**
+- `app/(dashboard)/dashboard/projects/page.tsx` — patrón de módulo de lista: `ModuleToolbar` (tabs+buscador+acción)
+  + `PixelDataTable` (columns/data/onRowClick/paginación) + `PixelModal` (panel lateral derecho) + estados +
+  `fetch('/api/...')`. Constantes `pf`/`mf` (fuentes), `STATUS_V` (variantes de badge).
+- `app/(dashboard)/layout.tsx` — shell con `.corp`; `<main className="flex-1 ml-0 lg:ml-56 …">`.
+- `lib/integrations/sri/index.ts` — `createManualInvoiceFromTicket(opts)` (L407): inserta en
+  `gcc_world.invoices` con `is_manual=true`, **`source_type`/`source_id`** (vínculo a origen),
+  datos `client_*_sri`, items en `invoice_items_sri`; retorna `{invoiceId, total}`. `sendInvoiceToSri(id)`
+  firma + envía a SRI + genera PDF (`pdf_data` BYTEA) y retorna `{ok, authorized, authNumber?, error?}`.
+- `app/api/invoices/from-ticket/route.ts` — endpoint de referencia del flujo completo: crea factura →
+  `addTicketIncomeToFinance` → `sendInvoiceToSri` → (si autorizado) email Resend con PDF adjunto (BCC a
+  `lfgonzalezm0@grupocc.org`), HTML con tabla de items. Item shape: `{description, quantity, unitPrice, ivaRate, discount}`.
+- `app/api/invoices/route.ts` (GET) — lista `gcc_world.invoices` (ORDER BY created_at DESC). **Si inserto
+  por el mismo mecanismo, la factura aparece automáticamente.** No filtra por source.
+- `lib/finance.ts` — `addIncomeToFinance(sourceType, sourceId, description, amount, date?)`: idempotente vía
+  `gcc_world.finance_source_log`; `ensureMonth(year, month)` por `date`; inserta en `finance_items` y
+  `recalcMonth`. El **mes del ingreso = `date`** que se pase (para "mes del día en que se marca pagado" ⇒
+  pasar `new Date()` del momento de marcar). `addProjectIncomeToFinance`/`addTicketIncomeToFinance` son wrappers.
+- `app/api/clients/route.ts` (GET) — `SELECT id, name, email FROM gcc_world.clients ORDER BY name`. La tabla
+  `clients` tiene además `ruc`, `address` (ADD COLUMN IF NOT EXISTS). Datos SRI completos del adquirente viven
+  en `invoices.client_*_sri`; endpoint `GET /api/invoices/clients-history` devuelve adquirentes ya facturados
+  con `id_type` inferido (patrón "Cliente previo").
 
 ## Preguntas y respuestas
-### P0 — ¿Alcance exacto? ¿Solo `/dashboard/` o también auth/portal de clientes? · ⏸ Bloqueada (espera al usuario)
-- **Por qué importa:** define qué se aísla. Componentes/clases son compartidos; si el portal de
-  clientes (`/proyecto`, `/members`) o auth también deben migrar, el scope cambia.
-- **Respuesta:** _(pendiente — el usuario dijo "todos los componentes de todas las páginas de /dashboard/").
 
-### P1 — ¿Esquema claro (light) u oscuro (dark)? · ⏸ Bloqueada (espera al usuario)
-- **Por qué importa:** SharePoint/Microsoft 365 real es **light** (blanco/gris neutro, Segoe UI, azul
-  #0078D4, sombras sutiles). El dashboard actual es **dark**. Es la decisión más estructural.
-- **Respuesta:** _(pendiente)_
+### P1 — ¿Cómo se inserta el módulo en el sidebar bajo Proyectos? · ✅ Resuelta
+- **Por qué importa:** ubicación exacta pedida ("debajo de Proyectos").
+- **Respuesta:** Añadir un `NavItem` en `NAV_ITEMS` (`DashboardSidebar.tsx`) inmediatamente después del de
+  Proyectos (L24): `{ label:'Suscripciones', href:'/dashboard/subscriptions', icon:<Lucide>, roles?:[...] }`.
+  El icono es un `LucideIcon` (candidatos: `RefreshCw`, `CalendarClock`, `Repeat`). (Fuente: código.)
 
-### P2 — ¿Color de acento corporativo? · ⏸ Bloqueada (espera al usuario)
-- **Por qué importa:** azul Microsoft #0078D4 da el look SharePoint; el morado de marca #4B2D8E
-  mantendría identidad. Se puede usar morado como acento dentro de un layout Fluent light.
-- **Respuesta:** _(pendiente)_
+### P2 — ¿Cómo se genera la factura programáticamente y aparece en Facturas? · ✅ Resuelta
+- **Por qué importa:** requisito (a) y (c).
+- **Respuesta:** `createManualInvoiceFromTicket`-style → inserta en `gcc_world.invoices` con
+  `source_type='subscription'`, `source_id='<subId>-<YYYY-MM>'`, `is_manual=true`, datos `client_*_sri` e items.
+  Reutilizaré/extraeré una función análoga (`createManualInvoiceFromSubscription`) o usaré la genérica. La
+  tabla de Facturas (`GET /api/invoices`) lista todas las de `invoices`, así que **aparece sola**. (Fuente: `sri/index.ts`, `invoices/route.ts`.)
 
-### P3 — ¿Tipografía? · ⏸ Bloqueada (espera al usuario)
-- **Por qué importa:** el look Microsoft pide **Segoe UI** (`'Segoe UI', system-ui, sans-serif`).
-  Hay que reemplazar Silkscreen/JetBrains Mono dentro del dashboard.
-- **Respuesta:** _(pendiente)_
+### P3 — ¿Cómo se envía el email con la factura? · ✅ Resuelta
+- **Por qué importa:** requisito (b).
+- **Respuesta:** Resend (`getResend().emails.send`) con `from=EMAIL_FROM`, `to=client_email`, BCC interno,
+  `subject` con nº de factura, HTML con items y **PDF adjunto** desde `invoices.pdf_data` (tras `sendInvoiceToSri`
+  autorizado). Copiar el bloque de `from-ticket/route.ts`. (Fuente: código.)
 
-### P4 — ¿Cómo aislar el tema técnicamente? · 🔎 Investigando (decisión propia, casi cerrada)
-- **Por qué importa:** evitar romper landing/portal/auth.
-- **Respuesta (propuesta):** Scope CSS con una clase (p. ej. `.corp`) en el `<main>` del layout del
-  dashboard. (a) Redefinir las **CSS custom properties** dentro de `.corp` (`--color-accent`,
-  `--color-digi-*`, fuentes) → todas las utilidades Tailwind `digi-*`/`accent` y los `var()` heredan
-  el valor corporativo automáticamente solo en el dashboard. (b) Overridear `.corp .pixel-card`,
-  `.corp .pixel-btn`, `.corp .pixel-heading`, etc. (c) **Problema:** los componentes con `fontFamily`
-  **inline** (PixelDataTable/Tabs/Badge/Input/Select/Confirm y las páginas) no se overridean por CSS;
-  hay que **migrar esos inline a `var(--font-display)`/`var(--font-body)`** definidos por scope, o
-  editar los componentes. → confirmar enfoque al fijar el plan.
+### P4 — ¿Cómo se registra el ingreso en el mes correcto del dashboard? · ✅ Resuelta
+- **Por qué importa:** requisito (d) — "ingreso en el mes del día en que se marca pagada".
+- **Respuesta:** `addIncomeToFinance('subscription', '<subId>-<YYYY-MM>', '<título> <mes>', total, new Date())`.
+  Es **idempotente** (no duplica si se re-marca). El **mes** lo fija la `date`: para "el mes del día en que se
+  marca pagado" se pasa la fecha actual (`new Date()`). (Fuente: `lib/finance.ts`.)
 
-## Decisiones de diseño / arquitectura
-- **Tema scoped, no global:** el rediseño se aísla bajo un selector de scope en el layout del
-  dashboard para no afectar landing/portal/auth/mundo (compartidos).
-- **Reutilizar la estructura de componentes:** no se reescriben los `Pixel*`; se restilizan
-  (idealmente parametrizando fuente/colores por CSS var) para que sirvan a ambos temas.
+### P5 — ¿Qué tablas nuevas se necesitan? · ✅ Resuelta (diseño propio)
+- **Por qué importa:** persistencia del módulo.
+- **Respuesta (propuesta):** Dos tablas en `gcc_world` (vía `ensure...Columns()` con `CREATE TABLE IF NOT EXISTS`,
+  patrón del repo tras eliminar migraciones SQL):
+  - `gcc_world.subscriptions`: `id`, `client_id` (FK clients, nullable), datos `client_*_sri` snapshot (id_type,
+    ruc, name, email, phone, address) para facturar sin re-preguntar, `title`, `monthly_cost`, `iva_rate`,
+    `currency`, `start_date` (DATE; fija el día de corte), `status` ('active'/'paused'/'cancelled'),
+    `created_by`, `created_at`, `updated_at`.
+  - `gcc_world.subscription_payments`: `id`, `subscription_id` FK, `period` (DATE = primer día del mes
+    facturado, ej. 2026-06-01), `paid` (bool), `paid_at`, `invoice_id` (FK invoices, nullable), `created_at`.
+    Único `(subscription_id, period)`. Una fila por mes marcado pagado (los no pagados se derivan en runtime).
 
-## Plan de solución (borrador — se concreta tras P0–P3)
-1. Definir tokens corporativos (colores, sombras, radios, fuentes) como CSS vars bajo `.corp`.
-2. Colgar `.corp` en `app/(dashboard)/layout.tsx`.
-3. Migrar `fontFamily` inline de los componentes `Pixel*` a CSS vars temáticas.
-4. Overridear clases `pixel-*`/`digi-*` dentro de `.corp` (botones planos, cards con sombra sutil,
-   sin scanlines/glow/drop-shadow duro).
-5. Barrer las 22 páginas del dashboard sustituyendo estilos pixelart inline residuales.
-6. Verificar: `tsc --noEmit`, lint, y revisión visual página por página.
+### P6 — ¿Qué meses se listan en el panel lateral y cómo se calcula el vencimiento? · ✅ Resuelta (modelo propuesto, a confirmar en P10)
+- **Por qué importa:** lógica central del panel.
+- **Respuesta (modelo):** Una fila por **mes calendario** desde el mes de `start_date` hasta el **mes actual**
+  inclusive. Vencimiento del mes = **día de corte** (= `start_date.getDate()`) de ese mes, *clamp* al último día
+  si el mes es más corto (p.ej. corte 31 → 28/29 feb). Un mes aparece **en cuanto empieza el mes calendario**
+  (aunque falte el día de corte). Estado del mes: **pagado** (existe fila en `subscription_payments` con
+  `paid=true`) o **pendiente**. (Fuente: requisito del usuario; confirmar P10.)
+
+### P7 — ¿Cuándo y cómo alertar "día de corte cerca"? · ⏸ Bloqueada (espera al usuario, P12)
+- **Por qué importa:** requisito de la tabla principal.
+- **Respuesta:** Falta definir la **ventana** (días antes del corte) y si la alerta es por suscripción con
+  el **próximo mes impago** cuyo vencimiento esté dentro de la ventana o ya vencido. Propuesta por defecto:
+  alerta ámbar si faltan ≤ N días, roja si ya venció e impago.
+
+### P8 — ¿Qué roles acceden al módulo? · ⏸ Bloqueada (espera al usuario, P11)
+- **Por qué importa:** define `roles` del NavItem y los checks en la API.
+- **Respuesta:** Pendiente (Proyectos/Tickets permiten `member`+`admin`; Suscripciones probablemente igual o
+  solo `admin`). 
+
+### P9 — ¿IVA en la factura de la cuota mensual? · ⏸ Bloqueada (espera al usuario, P13)
+- **Por qué importa:** define el `unitPrice`/`ivaRate` del item SRI y el total cobrado. Ecuador: IVA 15%.
+- **Respuesta:** Pendiente: ¿el `monthly_cost` definido es **precio final con IVA incluido**, se le **suma 15%**,
+  o es **configurable** (`iva_rate` por suscripción)? Propuesta: `iva_rate` configurable, default a decidir.
+
+## Preguntas para el usuario (negocio — no deducibles del repo) · ✅ todas resueltas (2026-06-11)
+- **P10 (modelo de cobro):** ✅ por **mes calendario**, vencimiento = día de corte de cada mes.
+- **P11 (roles):** ✅ **admin + member** (`roles:['member','admin']` en NavItem y checks de API).
+- **P12 (alerta):** ✅ **7 días** antes (`ALERT_WINDOW_DAYS=7`): ámbar ≤7d, roja si venció e impago.
+- **P13 (IVA):** ✅ costo mensual = **precio final, IVA 15% incluido** → `unitPrice = costo/1.15`, `ivaRate=15`.
+
+## Decisión sobre DESMARCAR un mes (política fiscal)
+Una factura electrónica **autorizada por el SRI no se puede anular** sin nota de crédito. Por eso:
+- "Marcar pagado" genera la factura, la envía por email y registra el ingreso **solo si el SRI autoriza**
+  (si rechaza, no se marca pagado y se muestra el error; la factura queda en estado `generated`).
+- "Desmarcar" está **permitido solo si el mes NO tiene factura emitida** (caso borde). Si ya tiene
+  `invoice_id`, el endpoint responde 409 con mensaje "requiere nota de crédito". (Revisable a futuro.)
+
+## Decisiones de diseño / arquitectura (firmes)
+- **2 tablas nuevas** (`subscriptions`, `subscription_payments`) creadas con `CREATE TABLE IF NOT EXISTS`
+  dentro de un `ensureSubscriptionTables()` invocado por los endpoints (patrón del repo, sin migraciones SQL).
+- **Snapshot de datos SRI del cliente** en la suscripción (al crear, reusando patrón "Cliente previo" +
+  `/api/clients`) → al marcar pagado se factura sin volver a pedir datos.
+- **Reutilizar el flujo de `from-ticket`**: crear factura (`source_type='subscription'`) → registrar ingreso
+  (`addIncomeToFinance`, fecha = hoy) → `sendInvoiceToSri` → email Resend con PDF. Idempotencia por `source_log`
+  y por `(subscription_id, period)` único.
+- **Marcar pagado** solo se confirma si la factura **SRI queda autorizada** (consistente con tickets); si falla,
+  se informa y no se marca (o se permite reintento). La fila `subscription_payments` guarda `invoice_id`.
+- **UI 100% `.corp`**: `ModuleToolbar` + `PixelDataTable` (tabla principal) + panel lateral derecho propio para
+  los meses (puede ser un `PixelModal` md/lg, que ya es panel derecho, o un panel sticky tipo `PropertyRail`).
+  Fuentes `var(--font-display)`/`var(--font-body)`, badges `PixelBadge`, sin hex hardcodeado.
+
+## Plan de solución (se concreta al cerrar P10–P13)
+1. **BD:** `ensureSubscriptionTables()` (subscriptions + subscription_payments).
+2. **API:** `GET/POST /api/subscriptions` (listar/crear, con alerta calculada), `GET /api/subscriptions/[id]`
+   (detalle + meses derivados), `POST /api/subscriptions/[id]/pay` (marcar mes pagado → factura+email+ingreso),
+   `POST /api/subscriptions/[id]/unpay` (desmarcar; decidir si anula factura o solo quita el flag — a definir),
+   `PATCH/DELETE /api/subscriptions/[id]`.
+3. **Lib:** `createManualInvoiceFromSubscription` (o reusar genérica) + helper de email compartido.
+4. **UI:** `app/(dashboard)/dashboard/subscriptions/page.tsx` (tabla + toolbar + modal crear + panel meses) y
+   NavItem en el sidebar. Estilo `.corp` calcado de `projects/page.tsx`.
+5. **Verificar:** `tsc --noEmit`, compilación, y prueba del flujo (factura/email/ingreso) en caso real.
 
 ## Riesgos y cómo se mitigan
-- **Romper landing/portal por estilos compartidos** → todo el override va **scoped** bajo `.corp`;
-  el `@theme` global y el comportamiento por defecto de los componentes quedan intactos (fuera de
-  `.corp` las CSS vars resuelven a los valores pixelart originales). ✅ Verificado: landing/auth/portal sin cambios visuales.
-- **`fontFamily` inline no overrideable por CSS** → migrados a `var(--font-display/body)`. ✅
-- **`text-white` invisible en claro** → cambiados a `text-digi-text`; revertidos a blanco solo sobre
-  color sólido (badges rojos). ✅
-- **Islas oscuras (mockups WhatsApp/chatbot, proforma-chat)** → clase `.pixel-scope` revierte tokens. ✅
-- **Regresión visual** → pendiente confirmación visual del usuario con login.
-
-## Implementación realizada (2026-06-07)
-1. `app/globals.css`: tokens `--font-display/body`; bloque **`.corp`** (tokens light + Segoe + overrides de
-   `.pixel-card/.pixel-btn/.pixel-heading/.pixel-divider`, scrollbars, badges Fluent por `data-variant`);
-   clase **`.pixel-scope`** (revierte a tokens dark/pixel).
-2. `app/(dashboard)/layout.tsx`: `<div className="corp flex min-h-screen">`.
-3. Sweep de fuentes inline → CSS vars en `app/(dashboard)` + `components/ui|dashboard|calendar|projects|layout|...`.
-4. `text-white`→`text-digi-text` (excepto 2 badges `bg-red-600`).
-5. `pixel-scope` en: `WhatsAppFlowPanel` (preview), `ChatbotFlowPanel` (chat viewer), `ProformaChatPanel` (raíz).
-6. `PixelBadge`: `data-variant` + clase base para colores Fluent en claro.
-7. Verificado: `tsc --noEmit` OK, Tailwind compila (home 200). **Sin commitear.**
-
-## Rediseño de CONTROLES y MODALES (2026-06-07, fase 2)
-Tras el recoloreo (fase 1), se rediseñó la **forma** de los controles a Fluent real, scoped a `.corp`,
-añadiendo **clases base semánticas** a los componentes compartidos y moviendo el diseño a CSS (auth/portal
-conservan el pixel). Núcleo en `app/globals.css` → sección "CORPORATE CONTROLS":
-- **Campos** (`PixelInput`/`PixelSelect`): `field-control`/`field-label`/`field-select`. Borde 1px, radio 4px,
-  14px, alto 34px, focus con anillo morado. **El chevron del select se sacó del inline a `.field-select`**
-  (default morado #7B5FBF; en corp gris #605e5c). La regla global `.corp input/select/textarea` también
-  cubre los campos **sueltos** de cada página.
-- **Modal** (`PixelModal`): `modal-surface/header/title/close/body`. Radio 8px, sombra Fluent, header con
-  borde 1px, botón cerrar como icon-button sutil (hover gris), padding header/body 16-24px.
-- **Tabs** (`PixelTabs`): `pivot/pivot-tab/is-active/pivot-count`. 14px semibold, underline morado, count pill.
-- **Tabla** (`PixelDataTable`): `data-table/dt-th/dt-td/dt-row`. Header 12px normal-case, filas hover gris #f3f2f1, 1px.
-- **Confirm** (`PixelConfirm`): `dlg-btn`/`--primary`/`--danger` (botones sólidos Fluent).
-- **PageHeader**: `page-title` (24px/600). **PixelBadge**: pills Fluent (fase 1).
-- **Genérico**: `.corp .border-2 → 1px` (adelgaza bordes de caja a medida; respeta border-l/b-2 de estados
-  activos) y `.corp button:not([class*=rounded]) → radio 4px`.
-- Verificado: `tsc --noEmit` OK, compila (home 200). **Sin commitear.**
-
-## Formularios como PANEL LATERAL (2026-06-07, fase 3)
-Patrón aprendido de **Fluent UI Panel (SharePoint)** y **blades/context panes de Azure**: el formulario
-entra como **panel lateral con overlay** (alto completo, ancho fijo ~644px medium / ~840px large, header
-con título + cerrar, cuerpo scrollable, slide-in ~0.27s). **Decisión del usuario (2026-06-07):** el panel
-entra **desde la DERECHA** (convención Microsoft); las **confirmaciones** se quedan como **diálogo centrado pequeño**.
-- **Regla automática sin tocar las 44 llamadas:** `PixelModal size="sm"` → diálogo centrado (solo lo usa
-  `PixelConfirm`); `md`/`lg` (default `md`, 43 de 44) → **panel lateral derecho**.
-- Implementación: `PixelModal` añade `data-size={size}` al surface y `modal-overlay` al wrapper. CSS en
-  `app/globals.css` (sección CORPORATE CONTROLS): `.corp .modal-surface[data-size='md'|'lg']` → `position:fixed;
-  right:0; height:100vh; width:644/840px; flex-column; box-shadow lateral; animación `panelSlideInRight``.
-  El `modal-body` pasa a `flex:1` con scroll (se anula el cap `max-h-[70vh]` del diálogo centrado).
-- Verificado: `tsc --noEmit` OK, compila (home 200). **Sin commitear.**
-
-## Contraste de colores claros sobre blanco (2026-06-07, fase 4)
-Problema: las variantes claras de la paleta Tailwind (`text-*-300/400`, p.ej. `text-yellow-400` amarillo)
-estaban pensadas para fondo oscuro y fallan contraste sobre el blanco corporativo (ej. reportado: "Primero
-elige la fecha límite" en `tickets/page.tsx`). Inventario: red-400 (133), green-400 (79), yellow-400 (24),
-purple/blue/amber/orange/pink-400, + 300s y opacidades.
-- **Fix (raíz, una sola vez):** se **redefinen las vars de paleta de Tailwind v4** dentro de `.corp`
-  (`--color-red-400`, `--color-green-400`, `--color-yellow-400`, …) a equivalentes legibles sobre blanco
-  (#b3261e, #0e700e, #8a6116, #0f6cbd, #5c2e91, #c2410c, #be185d). Como las utilidades v4 referencian
-  `var(--color-*)`, esto arregla **texto, bordes y opacidades** (`/60`, `/70`) a la vez, sin tocar páginas.
-- Dentro de `.pixel-scope` (islas oscuras) se **restauran los oklch originales** (las islas usan mucho
-  text-red-400/green-400 sobre fondo oscuro y ahí el color claro SÍ es correcto).
-- `text-accent-glow` (272 usos) ya era #4B2D8E legible (fase 1). Verificado: tsc OK, compila. **Sin commitear.**
-
-## Quitar título+descripción de los módulos (2026-06-07, fase 5)
-El usuario pidió eliminar el bloque **título + descripción** (estilo `PageHeader`: ej. "Marketplace /
-Explora servicios y productos") de **todos los módulos** y subir el contenido (pestañas/tablas/controles).
-- **`PageHeader`** (usado solo en dashboard, 17 archivos) se reescribió: ya **no renderiza título ni
-  descripción**. Si la llamada pasa `action` (ej. botón "Nuevo"), lo conserva como **barra superior delgada**
-  (`flex justify-end mb-4`, estilo command bar de Azure); si no hay `action`, **no renderiza nada** → el
-  contenido sube del todo. Cero cambios en las 17 llamadas (siguen pasando title/description, se ignoran).
-- **Home** (`dashboard/page.tsx`): se quitó el bloque "Welcome" (saludo + "Panel de control de GCC World" +
-  badge de rol); las tarjetas de stats quedan arriba. Limpiado el código muerto (import `PixelBadge`,
-  `ROLE_LABELS/VARIANTS`, `greeting`).
-- **Efecto en páginas de detalle:** `projects/[id]`, `tickets/[id]`, `support/[id]` usan `PageHeader` → su
-  **título de registro también desaparece**. `invoices/[id]` usa un `<h1>` inline (nº factura) → se mantuvo.
-  Pendiente confirmar con el usuario si quiere conservar el nombre del registro en las páginas de detalle.
-- Verificado: `tsc --noEmit` OK, compila (`/`=200, `/dashboard`=307). **Sin commitear.**
-
-## Controles de módulo en una sola fila (2026-06-07, fase 6)
-Las páginas de lista tenían 3 controles apilados (botón "Nuevo" arriba, buscador, pestañas). El usuario los
-quiere en **una sola fila** tipo command bar, con las pestañas colapsables/scrollables si no caben.
-- Nuevo componente **`components/ui/ModuleToolbar.tsx`**: fila única `flex items-center` con pestañas a la
-  izquierda (`flex-1 min-w-0`, scroll horizontal vía PixelTabs), buscador y acción a la derecha. Props:
-  `tabs/activeTab/onTabChange`, `search/onSearchChange/searchPlaceholder`, `action`. El layout vive **solo
-  aquí** → ajustar el diseño = editar un archivo, todas las páginas se actualizan.
-- `PixelTabs` ganó prop **`flush`** (quita su borde/margen propios para ir dentro de la barra); en CSS
-  `.corp .pivot--flush { border-bottom:none }`.
-- Aplicado a **6 módulos**: projects, tickets, invoices, marketplace, support, settings/portfolio
-  (se eliminó su `PageHeader`+`<div search>`+`PixelTabs` apilados). Verificado: tsc OK, las 6 rutas 307.
-- **Pendiente:** faltan por convertir (estructura distinta): `admin` (sub-tabs anidados), `admin/incidents`,
-  `centralized`. Y confirmación visual del diseño de la barra (centrado/altura/divisor).
-
-## Iconos del sidebar + logo (2026-06-07, fase 7)
-- **Iconos del sidebar:** los símbolos ASCII (`~ # > $ % @ & * ? !`) se reemplazaron por iconos
-  **lucide-react** (ya instalado, ^0.468) asociados a cada módulo: Inicio→Home, Tickets→Ticket,
-  Proyectos→FolderKanban, Marketplace→Store, Facturas→ReceiptText, Centralizado→Network,
-  Herramientas→Wrench, Configuración→Settings, Soporte→LifeBuoy, Admin→ShieldCheck. También chrome:
-  hamburguesa→Menu, colapsar→ChevronsLeft/Right, salir→LogOut. (`NavItem.icon: LucideIcon`, render `<item.icon/>`.)
-- **Borde negro del logo (`BrandLoader`, en todas las pantallas de carga):** el arte del logo tiene un borde
-  negro irregular que asomaba dentro del recorte circular. Como clip y sprite eran el mismo elemento no se
-  podía recortar más. Fix: **separar el clip (`rounded-full overflow-hidden`) del sprite y escalar el sprite
-  `transform: scale(1.18)`** → el borde queda fuera del círculo. La animación no se rompe (todo escala junto).
-  El factor 1.18 es **ajustable** si recorta de más/menos.
-- Verificado: tsc OK, compila (home 200).
-
-## Rediseño de páginas de detalle (ticket y proyecto) — investigación (2026-06-07, fase 9)
-Objetivo: reemplazar el diseño de las páginas de **detalle de ticket** (`tickets/[id]`) y **detalle de
-proyecto** (`projects/[id]`) por uno moderno estilo **Microsoft (Fluent/M365/Azure)**, usando **Monday.com**
-como referencia para la sección de requerimientos/tareas/acciones.
-
-**Estado actual (lo que hay):**
-- Ambas son páginas densas de scroll único con tarjetas pixel apiladas. Layout 2 columnas (2/3 + 1/3).
-- **Ticket** (`tickets/[id]`, ~965 L): header+badge, descripción, "Días de trabajo" (time slots/calendario),
-  "Acciones realizadas" (work-log con control de presupuesto gastado/estimado/disponible, se usa para
-  facturar por desglose), sidebar (Detalles, Acciones rápidas confirmar/completar, eliminar), modal
-  Completar+Facturar (panel SRI).
-- **Proyecto** (`projects/[id]`, ~2372 L, MUY grande): header editable, **Requerimientos jerárquicos**
-  (tareas con subitems + asignaciones de miembros + contra-propuestas), Participantes (bids), Detalles,
-  Solicitudes (desistimiento/salida), Progreso del equipo, Imágenes, Acciones por estado, y sidebar con
-  DigiMundo, Proforma, Contenido IA (guion/storyboard/video/docs/social) e Incidencias. 9 paneles
-  especializados (`ScriptStoryboardEditor`, `ProformaChatPanel`, `VideoScriptPanel`, `SocialCopyPanel`,
-  `PublicDocsPanel`, `IncidentDetailPanel`, `FloatingChatWindow`, `TaskQueueIndicator`, `ProformaTokenButton`).
-
-**Referencias (Fluent 2 + Monday):** Fluent → list-detail/disclosure progresiva, command bar arriba, cards
-4px, jerarquía por espaciado, property rail lateral, Pivot/tabs para densidad. Monday → item card con
-Updates+tabs, **subitems** estructurados editables, filas con status pill + avatares + costo, "+ add" inline.
-
-**Propuesta de arquitectura (shell reutilizable):**
-1. `DetailShell`: breadcrumb + **command bar** (acciones primarias + overflow ⋯) + título inline + status + chips.
-2. **Pivot (tabs)** en el área principal para domar la densidad.
-3. **Property rail** lateral (metadatos: cliente, fechas, costos, estado, progreso) — sticky.
-4. `TaskBoard` estilo Monday para requerimientos/acciones: filas con checkbox, título, status, avatares,
-   costo, due; subitems expandibles; barra de presupuesto/progreso; "+ agregar" inline.
-
-**Plan por página:**
-- Ticket → tabs: Resumen (descripción + días) · Tareas/Acciones (TaskBoard Monday) · [Facturar = acción del command bar].
-- Proyecto → tabs: Resumen · Requerimientos (TaskBoard con subitems+asignaciones) · Participantes · Contenido (grid de cards IA) · Incidencias · Imágenes.
-
-**Pendiente de decisión del usuario:** por cuál empezar y confirmar el enfoque (Pivot+rail+TaskBoard).
-Fuentes: fluent2.microsoft.design/layout, support.monday.com (Item Card / subitems).
-
-## Pendiente
-- Confirmación visual del usuario (dashboard requiere login).
-- Convertir a `ModuleToolbar` los 3 módulos restantes (`admin`, `admin/incidents`, `centralized`) si el
-  diseño de la barra queda aprobado.
-- **¿Conservar el título de registro en páginas de detalle** (`projects/[id]`, `tickets/[id]`,
-  `support/[id]`)? Hoy se quitó junto con el resto; se puede restaurar solo ahí si se desea.
-- Opcional (fidelidad Azure): **footer sticky** con los botones primario/secundario fijos al fondo del panel
-  (hoy los botones del form scrollean con el contenido). Requiere identificar la fila de botones por form.
-- Botones bespoke con texto diminuto (`text-[8/9/10px]`) siguen pequeños (no se subió tamaño global por
-  riesgo de overflow en barras densas). Si se quiere, sweep por módulo subiendo a ~12-13px.
-- Opcional: `text-red-400` de estados de error tiene contraste justo en claro (se dejó para no chocar con
-  las islas `.pixel-scope`). Flecha SVG de `PixelSelect` es morado claro hardcodeado.
-- ¿Aplicar también a auth/portal en el futuro? (hoy fuera de alcance, conservan pixelart).
+- **Doble cobro / doble ingreso** al re-marcar → unicidad `(subscription_id, period)` + idempotencia de
+  `addIncomeToFinance` (source_log).
+- **SRI rechaza la factura** (datos de cliente inválidos) → exigir datos SRI válidos al crear la suscripción;
+  no marcar pagado si no se autoriza; mostrar el error de SRI.
+- **Mes corto (feb) con corte 29/30/31** → clamp del día de corte al último día del mes.
+- **Zona horaria en cálculo de meses/vencimientos** → calcular con fechas locales del servidor de forma
+  consistente (igual que el resto del repo); `period` se guarda como primer día del mes (date sin hora).
+- **Desmarcar un mes ya facturado** → una factura SRI autorizada no se puede "borrar" sin nota de crédito;
+  definir política (probablemente: desmarcar solo si no estaba facturado, o requerir anulación manual).
 
 ---
 
 ## Histórico — objetivo anterior (✅ cerrado 2026-06-07)
-**"Cliente previo" en el modal de completar proyecto** — feature implementada y verificada
-(`tsc --noEmit` OK). Portó el patrón de `dashboard/invoices/page.tsx` (endpoint
-`GET /api/invoices/clients-history` + botón "Cliente previo") al modal de
-`dashboard/projects/[id]/page.tsx`. Sin cambios de backend. Quedó **sin commitear** y P5 (replicar
-en el modal de tickets) **bloqueada** esperando al usuario. Detalle completo en git/MEMORIA.md.
+**Rediseño del `/dashboard` de pixelart → corporativo (Microsoft/Fluent, scope `.corp`).** Implementado y
+verificado estáticamente (tsc OK, compila); pendiente solo confirmación visual del usuario. Todo el detalle
+de fases (1–9: tokens `.corp`, controles/modales Fluent, formularios como panel lateral derecho, contraste,
+quitar título+descripción, `ModuleToolbar`, sidebar lucide, páginas de detalle estilo Monday) está registrado
+en **`MEMORIA.md`** (sección "Lecciones técnicas → Theming corporativo") y en el historial de git. Objetivos
+previos (feature "Cliente previo") también en MEMORIA.md/git.

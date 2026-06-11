@@ -105,4 +105,13 @@ export async function addTicketIncomeToFinance(ticketId: string, ticketTitle: st
   await addIncomeToFinance('ticket', ticketId, ticketTitle, totalCost, date);
 }
 
+/**
+ * Register the income of a paid subscription month. `sourceId` must be unique per
+ * billed period (e.g. `<subscriptionId>-<YYYY-MM>`) so a month can't be double-counted.
+ * `date` defaults to now → the income lands in the month the cuota is marked paid.
+ */
+export async function addSubscriptionIncomeToFinance(sourceId: string, description: string, totalCost: number, date?: Date) {
+  await addIncomeToFinance('subscription', sourceId, description, totalCost, date);
+}
+
 export { ensureFinanceTables, ensureMonth, recalcMonth };
