@@ -627,8 +627,8 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
     // Send to SRI
     const recepcion = await enviarComprobante(xmlSigned);
     await pool.query(
-      `UPDATE gcc_world.invoices SET sri_response = $1, sri_status = $2,
-              status = CASE WHEN $2 = 'rejected' AND status NOT IN ('paid','cancelled') THEN 'failed' ELSE status END,
+      `UPDATE gcc_world.invoices SET sri_response = $1, sri_status = $2::text,
+              status = CASE WHEN $2::text = 'rejected' AND status NOT IN ('paid','cancelled') THEN 'failed' ELSE status END,
               updated_at = NOW() WHERE id = $3`,
       [JSON.stringify(recepcion), recepcion.ok ? 'sent' : 'rejected', invoiceId]);
 
