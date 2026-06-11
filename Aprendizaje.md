@@ -134,7 +134,11 @@ facturación electrónica SRI Ecuador** y en el sistema de diseño corporativo `
 - **P10 (modelo de cobro):** ✅ por **mes calendario**, vencimiento = día de corte de cada mes.
 - **P11 (roles):** ✅ **admin + member** (`roles:['member','admin']` en NavItem y checks de API).
 - **P12 (alerta):** ✅ **7 días** antes (`ALERT_WINDOW_DAYS=7`): ámbar ≤7d, roja si venció e impago.
-- **P13 (IVA):** ✅ costo mensual = **precio final, IVA 15% incluido** → `unitPrice = costo/1.15`, `ivaRate=15`.
+- **P13 (IVA):** ✅ **CORREGIDO 2026-06-11 → SIN IVA (0%)**. El usuario aclaró que GCC todavía no cobra IVA;
+  el costo mensual es el **valor neto** (ej. $5 son netos, no recalcular $0.65 como IVA). `iva_rate=0` por
+  defecto (tabla/POST/UI). Se conserva la columna `iva_rate` por suscripción por si en el futuro se activa.
+  Suscripciones existentes actualizadas a 0% vía UPDATE. (La 1ª factura #30 ya se emitió con IVA y quedó
+  autorizada en SRI; su total $5 es correcto, revertir el desglose requeriría nota de crédito.)
 
 ## Decisión sobre DESMARCAR un mes (política fiscal)
 Una factura electrónica **autorizada por el SRI no se puede anular** sin nota de crédito. Por eso:

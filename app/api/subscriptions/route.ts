@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const title = String(body.title || '').trim();
     const monthlyCost = Number(body.monthly_cost);
-    const ivaRate = body.iva_rate != null ? Number(body.iva_rate) : 15;
+    const ivaRate = body.iva_rate != null ? Number(body.iva_rate) : 0;
     const startDate = String(body.start_date || '').split('T')[0];
     const idType = String(body.client_id_type || '07');
     const isConsumidorFinal = idType === '07';

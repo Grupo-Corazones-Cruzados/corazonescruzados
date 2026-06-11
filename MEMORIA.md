@@ -87,11 +87,16 @@ Módulos principales:
   versión correcta y en uso. Se eliminó la rama `origin/rebuild/v2`. El trabajo continúa aquí.
 - **Suscripciones (reglas, 2026-06-11):** cobro **por mes calendario** (una fila por mes desde el mes de
   inicio hasta hoy; vencimiento = día de corte = día de `start_date`, clamp al último día en meses cortos;
-  un mes aparece al iniciar el mes calendario). **IVA**: el costo mensual es **precio final con IVA 15%
-  incluido** (se desglosa: `unitPrice = costo/1.15`, `ivaRate=15`). **Alerta** 7 días antes (ámbar ≤7d,
-  roja si venció e impago). **Marcar pagado** ⇒ genera factura SRI + email al cliente + ingreso del mes
-  actual, **solo si el SRI autoriza**. **Desmarcar** permitido solo si el mes aún no tiene factura emitida
-  (una factura autorizada requeriría nota de crédito → 409).
+  un mes aparece al iniciar el mes calendario). **IVA: SIN IVA (0%)** — corregido el 2026-06-11: el costo
+  mensual es el **valor neto** que cobra GCC, se factura tarifa 0% (`iva_rate=0`, default 0 en tabla/POST/UI).
+  GCC **no cobra IVA por ahora**. Se mantiene la columna `iva_rate` por suscripción por si en el futuro se
+  pide activar IVA (entonces `unitPrice = costo/(1+iva/100)`). **Alerta** 7 días antes (ámbar ≤7d, roja si
+  venció e impago). **Marcar pagado** ⇒ genera factura SRI + email al cliente + ingreso del mes actual,
+  **solo si el SRI autoriza**. **Desmarcar** permitido solo si el mes aún no tiene factura emitida (una
+  factura autorizada requeriría nota de crédito → 409).
+  - Nota 2026-06-11: la 1ª factura de prueba (#30, suscripción "Servidor", periodo 2026-06) se emitió
+    ANTES del cambio, **autorizada por SRI** con desglose IVA (4.35+0.65=5.00). El total ($5) es correcto;
+    revertir SOLO el desglose de esa factura requeriría nota de crédito. La suscripción #1 ya quedó a 0%.
 
 ## Lecciones técnicas
 - **Theming corporativo del dashboard (scope `.corp`):** el look pixelart está centralizado en

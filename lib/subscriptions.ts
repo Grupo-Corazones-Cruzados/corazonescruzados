@@ -20,7 +20,7 @@ export async function ensureSubscriptionTables() {
       client_id INT,
       title TEXT NOT NULL,
       monthly_cost NUMERIC(12,2) NOT NULL DEFAULT 0,
-      iva_rate NUMERIC(5,2) NOT NULL DEFAULT 15,
+      iva_rate NUMERIC(5,2) NOT NULL DEFAULT 0,
       currency VARCHAR(3) NOT NULL DEFAULT 'USD',
       start_date DATE NOT NULL,
       status VARCHAR(20) NOT NULL DEFAULT 'active',

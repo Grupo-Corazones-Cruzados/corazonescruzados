@@ -149,7 +149,7 @@ export default function SubscriptionsPage() {
           client_id: cClientId || null,
           title: cTitle,
           monthly_cost: Number(cCost),
-          iva_rate: 15,
+          iva_rate: 0,
           start_date: cStart,
           client_id_type: cIdType,
           client_ruc: cRuc,
@@ -388,7 +388,7 @@ export default function SubscriptionsPage() {
             <div className="flex flex-col gap-1">
               <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Costo mensual ($) *</label>
               <input value={cCost} onChange={e => setCCost(e.target.value)} type="number" min="0" step="0.01" placeholder="0.00" className={inputCls} style={mf} />
-              <span className="text-[8px] text-digi-muted" style={pf}>IVA 15% incluido</span>
+              <span className="text-[8px] text-digi-muted" style={pf}>Valor neto · sin IVA</span>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Fecha de inicio *</label>
@@ -412,7 +412,7 @@ export default function SubscriptionsPage() {
             {/* Meta */}
             <div className="grid grid-cols-2 gap-2 text-[10px]" style={mf}>
               <div><span className="text-digi-muted">Cliente:</span> <span className="text-digi-text">{detail.client_name || '-'}</span></div>
-              <div><span className="text-digi-muted">Costo:</span> <span className="text-digi-text">${Number(detail.monthly_cost).toFixed(2)} <span className="text-digi-muted">(IVA incl.)</span></span></div>
+              <div><span className="text-digi-muted">Costo:</span> <span className="text-digi-text">${Number(detail.monthly_cost).toFixed(2)} <span className="text-digi-muted">{Number(detail.iva_rate) > 0 ? '(IVA incl.)' : '(neto, sin IVA)'}</span></span></div>
               <div><span className="text-digi-muted">Día de corte:</span> <span className="text-digi-text">Día {detail.cut_day} de cada mes</span></div>
               <div><span className="text-digi-muted">Inicio:</span> <span className="text-digi-text">{detail.start_date}</span></div>
             </div>
