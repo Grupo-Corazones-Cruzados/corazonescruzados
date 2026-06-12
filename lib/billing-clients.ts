@@ -31,6 +31,11 @@ export async function ensureBillingClientsTable() {
   `);
   await pool.query(`ALTER TABLE gcc_world.billing_clients ADD COLUMN IF NOT EXISTS aliases TEXT[] NOT NULL DEFAULT '{}'`);
   await pool.query(`ALTER TABLE gcc_world.billing_clients ADD COLUMN IF NOT EXISTS country VARCHAR(100)`);
+  // Unificación con la tabla del portal `clients`: ruc/id_type pueden ser null (clientes del
+  // portal sin datos de facturación) y `portal_client_id` enlaza con su registro en `clients`.
+  await pool.query(`ALTER TABLE gcc_world.billing_clients ALTER COLUMN ruc DROP NOT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE gcc_world.billing_clients ALTER COLUMN id_type DROP NOT NULL`).catch(() => {});
+  await pool.query(`ALTER TABLE gcc_world.billing_clients ADD COLUMN IF NOT EXISTS portal_client_id INT`);
 
   // Siembra idempotente desde las facturas existentes (no sobrescribe ediciones).
   // Excluye identificaciones que ya son alias de algún cliente (fusionadas) para no recrearlas.
@@ -61,6 +66,30 @@ export async function ensureBillingClientsTable() {
     INSERT INTO gcc_world.billing_clients (id_type, ruc, name)
     VALUES ('07', '9999999999999', 'CONSUMIDOR FINAL')
     ON CONFLICT (ruc) DO NOTHING
+  `);
+
+  // Siembra idempotente desde la tabla del portal `clients` (lista unificada): trae los
+  // clientes del portal que aún no estén representados (por enlace, ruc o nombre). Así un
+  // cliente creado en tickets/proyectos aparece también en el módulo de Clientes.
+  await pool.query(`
+    INSERT INTO gcc_world.billing_clients (id_type, ruc, name, email, portal_client_id)
+    SELECT CASE
+             WHEN regexp_replace(COALESCE(c.ruc,''), '[^0-9A-Za-z]', '', 'g') ~ '^[0-9]{13}$' THEN '04'
+             WHEN regexp_replace(COALESCE(c.ruc,''), '[^0-9A-Za-z]', '', 'g') ~ '^[0-9]{10}$' THEN '05'
+             WHEN regexp_replace(COALESCE(c.ruc,''), '[^0-9A-Za-z]', '', 'g') <> '' THEN '06'
+             ELSE NULL END,
+           NULLIF(regexp_replace(COALESCE(c.ruc,''), '[^0-9A-Za-z]', '', 'g'), ''),
+           c.name, c.email, c.id
+      FROM gcc_world.clients c
+     WHERE c.name IS NOT NULL AND c.name <> ''
+       AND NOT EXISTS (
+         SELECT 1 FROM gcc_world.billing_clients bc
+          WHERE bc.portal_client_id = c.id
+             OR LOWER(bc.name) = LOWER(c.name)
+             OR (bc.ruc IS NOT NULL AND bc.ruc <> ''
+                 AND regexp_replace(bc.ruc, '[^0-9A-Za-z]', '', 'g') = regexp_replace(COALESCE(c.ruc,''), '[^0-9A-Za-z]', '', 'g')
+                 AND regexp_replace(COALESCE(c.ruc,''), '[^0-9A-Za-z]', '', 'g') <> '')
+       )
   `);
 
   _init = true;

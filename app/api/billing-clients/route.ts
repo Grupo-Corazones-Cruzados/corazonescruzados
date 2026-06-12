@@ -79,6 +79,34 @@ export async function POST(req: NextRequest) {
       [idType, ruc, name, String(b.email || '').trim() || null, String(b.phone || '').trim() || null,
        String(b.address || '').trim() || null, String(b.notes || '').trim() || null, String(b.country || '').trim() || null]
     );
+
+    // Reflejar en la tabla del portal `clients` (lista unificada) para que aparezca en los
+    // selectores de tickets/proyectos. Consumidor Final no se refleja.
+    if (!isCF) {
+      try {
+        const normRuc = ruc.replace(/[^0-9A-Za-z]/g, '');
+        const { rows: [existing] } = await pool.query(
+          `SELECT id FROM gcc_world.clients
+            WHERE LOWER(name) = LOWER($1)
+               OR ($2 <> '' AND ruc IS NOT NULL AND regexp_replace(ruc,'[^0-9A-Za-z]','','g') = $2)
+            LIMIT 1`,
+          [name, normRuc]
+        );
+        let portalId = existing?.id;
+        if (!portalId) {
+          const ins = await pool.query(
+            `INSERT INTO gcc_world.clients (name, email, ruc, address, phone) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+            [name, String(b.email || '').trim() || null, ruc || null, String(b.address || '').trim() || null, String(b.phone || '').trim() || null]
+          ).catch((e: any) => {
+            if (e.code === '23505') return pool.query(`INSERT INTO gcc_world.clients (name, ruc, address) VALUES ($1,$2,$3) RETURNING id`, [name, ruc || null, String(b.address || '').trim() || null]);
+            throw e;
+          });
+          portalId = ins.rows[0]?.id;
+        }
+        if (portalId) await pool.query(`UPDATE gcc_world.billing_clients SET portal_client_id = $1 WHERE id = $2`, [portalId, c.id]);
+      } catch (mirrorErr: any) { console.error('Mirror billing_client → clients error:', mirrorErr.message); }
+    }
+
     return NextResponse.json({ data: { id: c.id } });
   } catch (err: any) {
     console.error('Billing client create error:', err.message);

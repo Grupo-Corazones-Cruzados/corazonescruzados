@@ -140,6 +140,18 @@ Módulos principales:
   etiqueta ES (`STATUS_LABEL`: Pendiente/Enviada/Pagada/Anulada) en lista y detalle. "Pagada" = factura
   cobrada/completada (no hay estado 'completed' en facturas; ese es de proyectos/tickets).
 
+- **Dos tablas de clientes UNIFICADAS por contenido (2026-06-12):** `gcc_world.clients` (PORTAL: login de
+  clientes, passkeys, gamificación; la que ven los selectores de tickets/proyectos/calendario vía `/api/clients`)
+  y `gcc_world.billing_clients` (módulo Clientes, por RUC). El usuario quería una sola lista en todos lados.
+  En vez de re-apuntar el almacenamiento (riesgoso: el portal controla acceso por `clients.id`/`user_id`), se
+  **unificó el CONTENIDO**: se importaron en cada tabla los clientes que le faltaban (match por **RUC o nombre**;
+  NO por email — el admin reusa su correo en varios clientes → causaba enlaces erróneos). `billing_clients` ganó
+  `ruc`/`id_type` nullable + `portal_client_id` (enlace al registro del portal). Consumidor Final solo vive en
+  billing (no se refleja en selectores). **Sincronización hacia adelante (código):** `ensureBillingClientsTable`
+  siembra idempotente desde `clients` (portal→módulo), y el POST de `/api/billing-clients` refleja el nuevo
+  cliente en `clients` (módulo→selectores). Así ambas listas se mantienen iguales. Selectores siguen leyendo
+  `clients` (sin tocar portal/joins).
+
 ## Lecciones técnicas
 - **Toasts (sonner) ocultos detrás de modales `<dialog>` (2026-06-11):** `PixelModal` abre un
   `<dialog>` con `showModal()`, que el navegador coloca en el **top layer** (por encima de TODO, incluso
