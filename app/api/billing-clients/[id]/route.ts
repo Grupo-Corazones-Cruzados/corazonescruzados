@@ -37,7 +37,7 @@ async function loadDetail(id: number) {
 
   return {
     id: c.id, id_type: c.id_type, ruc: c.ruc, name: c.name, email: c.email,
-    phone: c.phone, address: c.address, notes: c.notes, aliases: c.aliases || [],
+    phone: c.phone, address: c.address, notes: c.notes, aliases: c.aliases || [], country: c.country,
     is_consumidor_final: c.ruc === CONSUMIDOR_FINAL_RUC,
     invoices: invList,
     summary: {
@@ -94,6 +94,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (b.phone != null) set('phone', String(b.phone).trim() || null);
     if (b.address != null) set('address', String(b.address).trim() || null);
     if (b.notes != null) set('notes', String(b.notes).trim() || null);
+    if (b.country != null) set('country', String(b.country).trim() || null);
 
     if (!fields.length) return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 });
     fields.push(`updated_at = NOW()`);

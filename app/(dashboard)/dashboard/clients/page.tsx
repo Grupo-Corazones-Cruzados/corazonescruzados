@@ -9,6 +9,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import { PAISES } from '@/lib/countries';
 
 const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -27,6 +28,36 @@ function fechaEs(ymd: string | null): string {
   return `${d} ${MESES[m - 1]} ${y}`;
 }
 
+/** Selector de país con buscador (lista desplegable en línea, no se recorta en el panel). */
+function CountrySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const filtered = q ? PAISES.filter(p => p.toLowerCase().includes(q.toLowerCase())) : PAISES;
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen(o => !o)} className={`${smallInputCls} text-left flex items-center justify-between`} style={mf}>
+        <span className={value ? 'text-digi-text' : 'text-digi-muted'}>{value || 'Seleccionar país…'}</span>
+        <span className="text-digi-muted text-[8px]">▾</span>
+      </button>
+      {open && (
+        <div className="mt-1 border border-digi-border bg-digi-darker">
+          <input autoFocus value={q} onChange={ev => setQ(ev.target.value)} placeholder="Buscar país…"
+            className="w-full px-2 py-1 bg-digi-dark border-b border-digi-border text-[10px] text-digi-text focus:outline-none" style={mf} />
+          <div className="max-h-48 overflow-y-auto">
+            {value && <button type="button" onClick={() => { onChange(''); setOpen(false); setQ(''); }} className="w-full text-left px-2 py-1 text-[9px] text-digi-muted hover:bg-accent/10 transition-colors" style={mf}>— Sin país —</button>}
+            {filtered.length === 0 ? (
+              <div className="px-2 py-2 text-[9px] text-digi-muted" style={mf}>Sin resultados</div>
+            ) : filtered.map(p => (
+              <button key={p} type="button" onClick={() => { onChange(p); setOpen(false); setQ(''); }}
+                className={`w-full text-left px-2 py-1 text-[10px] hover:bg-accent/10 transition-colors ${p === value ? 'text-accent-glow' : 'text-digi-text'}`} style={mf}>{p}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ClientsPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -42,6 +73,7 @@ export default function ClientsPage() {
   const [cEmail, setCEmail] = useState('');
   const [cPhone, setCPhone] = useState('');
   const [cAddress, setCAddress] = useState('');
+  const [cCountry, setCCountry] = useState('');
 
   // Detail / edit
   const [selected, setSelected] = useState<any>(null);
@@ -64,7 +96,7 @@ export default function ClientsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const resetCreate = () => { setCIdType('04'); setCRuc(''); setCName(''); setCEmail(''); setCPhone(''); setCAddress(''); };
+  const resetCreate = () => { setCIdType('04'); setCRuc(''); setCName(''); setCEmail(''); setCPhone(''); setCAddress(''); setCCountry(''); };
 
   const createClient = async () => {
     if (cIdType !== '07' && !cRuc.trim()) { toast.error('Ingresa la identificación'); return; }
@@ -73,7 +105,7 @@ export default function ClientsPage() {
     try {
       const res = await fetch('/api/billing-clients', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_type: cIdType, ruc: cRuc, name: cName, email: cEmail, phone: cPhone, address: cAddress }),
+        body: JSON.stringify({ id_type: cIdType, ruc: cRuc, name: cName, email: cEmail, phone: cPhone, address: cAddress, country: cCountry }),
       });
       if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Error'); return; }
       toast.success('Cliente creado');
@@ -88,7 +120,7 @@ export default function ClientsPage() {
       const res = await fetch(`/api/billing-clients/${c.id}`);
       const data = await res.json();
       setDetail(data.data || null);
-      if (data.data) setE({ id_type: data.data.id_type, ruc: data.data.ruc, name: data.data.name, email: data.data.email || '', phone: data.data.phone || '', address: data.data.address || '', notes: data.data.notes || '' });
+      if (data.data) setE({ id_type: data.data.id_type, ruc: data.data.ruc, name: data.data.name, email: data.data.email || '', phone: data.data.phone || '', address: data.data.address || '', notes: data.data.notes || '', country: data.data.country || '' });
     } catch { toast.error('No se pudo cargar el detalle'); }
     finally { setLoadingDetail(false); }
   };
@@ -176,13 +208,10 @@ export default function ClientsPage() {
               {c.is_consumidor_final && <PixelBadge variant="info" className="shrink-0">CF</PixelBadge>}
             </span>
           )},
-          { key: 'id', header: 'Identificación', width: '160px', render: (c: any) => (
-            <span className="text-[10px]" style={mf}><span className="text-digi-muted">{ID_TYPE_LABEL[c.id_type] || c.id_type}</span> {c.ruc}</span>
-          )},
-          { key: 'email', header: 'Email', render: (c: any) => c.email || '-' },
-          { key: 'facturas', header: 'Facturas', width: '90px', render: (c: any) => (
-            <span className="text-[10px]" style={mf}>{c.facturas}{c.autorizadas ? <span className="text-green-400"> ({c.autorizadas} aut.)</span> : ''}</span>
-          )},
+          { key: 'id', header: 'Identificación', render: (c: any) => <span className="text-[10px]" style={mf}>{c.ruc}</span> },
+          { key: 'email', header: 'Email', width: '150px', render: (c: any) => c.email || '-' },
+          { key: 'facturas', header: 'Facturas', width: '80px', render: (c: any) => <span className="text-[10px]" style={mf}>{c.facturas}</span> },
+          { key: 'id_type', header: 'Tipo ID', width: '100px', render: (c: any) => <span className="text-[10px]" style={mf}>{ID_TYPE_LABEL[c.id_type] || c.id_type}</span> },
           { key: 'total', header: 'Total Facturado', width: '120px', render: (c: any) => `$${Number(c.total).toFixed(2)}` },
           { key: 'ultima', header: 'Última factura', width: '150px', render: (c: any) => fechaEs(c.ultima) },
         ]}
@@ -226,6 +255,7 @@ export default function ClientsPage() {
             <div className="flex flex-col gap-1"><label className="text-[8px] text-digi-muted" style={pf}>Teléfono</label><input value={cPhone} onChange={ev => setCPhone(ev.target.value)} className={smallInputCls} style={mf} /></div>
           </div>
           <div className="flex flex-col gap-1"><label className="text-[8px] text-digi-muted" style={pf}>Dirección</label><input value={cAddress} onChange={ev => setCAddress(ev.target.value)} className={smallInputCls} style={mf} /></div>
+          <div className="flex flex-col gap-1"><label className="text-[8px] text-digi-muted" style={pf}>País</label><CountrySelect value={cCountry} onChange={setCCountry} /></div>
           <button onClick={createClient} disabled={creating} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">{creating ? '...' : 'Crear Cliente'}</button>
         </div>
       </PixelModal>
@@ -261,6 +291,7 @@ export default function ClientsPage() {
                 <div className="flex flex-col gap-1"><label className="text-[8px] text-digi-muted" style={pf}>Teléfono</label><input value={e.phone} onChange={ev => setE({ ...e, phone: ev.target.value })} className={smallInputCls} style={mf} /></div>
               </div>
               <div className="flex flex-col gap-1 mt-2"><label className="text-[8px] text-digi-muted" style={pf}>Dirección</label><input value={e.address} onChange={ev => setE({ ...e, address: ev.target.value })} className={smallInputCls} style={mf} /></div>
+              <div className="flex flex-col gap-1 mt-2"><label className="text-[8px] text-digi-muted" style={pf}>País</label><CountrySelect value={e.country || ''} onChange={(v) => setE({ ...e, country: v })} /></div>
               <div className="flex flex-col gap-1 mt-2"><label className="text-[8px] text-digi-muted" style={pf}>Notas</label><textarea value={e.notes} onChange={ev => setE({ ...e, notes: ev.target.value })} rows={2} className={`${smallInputCls} resize-none`} style={mf} /></div>
               {detail.aliases?.length > 0 && (
                 <div className="mt-2 text-[8px] text-digi-muted" style={mf}>

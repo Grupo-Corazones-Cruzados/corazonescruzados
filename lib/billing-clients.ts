@@ -30,6 +30,7 @@ export async function ensureBillingClientsTable() {
     );
   `);
   await pool.query(`ALTER TABLE gcc_world.billing_clients ADD COLUMN IF NOT EXISTS aliases TEXT[] NOT NULL DEFAULT '{}'`);
+  await pool.query(`ALTER TABLE gcc_world.billing_clients ADD COLUMN IF NOT EXISTS country VARCHAR(100)`);
 
   // Siembra idempotente desde las facturas existentes (no sobrescribe ediciones).
   // Excluye identificaciones que ya son alias de algún cliente (fusionadas) para no recrearlas.

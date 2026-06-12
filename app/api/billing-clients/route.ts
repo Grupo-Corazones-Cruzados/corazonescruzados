@@ -20,11 +20,11 @@ export async function GET(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `SELECT bc.id, bc.id_type, bc.ruc, bc.name, bc.email, bc.phone, bc.address, bc.notes, bc.aliases,
+      `SELECT bc.id, bc.id_type, bc.ruc, bc.name, bc.email, bc.phone, bc.address, bc.notes, bc.aliases, bc.country,
               COALESCE(s.facturas, 0) AS facturas,
               COALESCE(s.total, 0) AS total,
               COALESCE(s.autorizadas, 0) AS autorizadas,
-              s.ultima
+              to_char(s.ultima, 'YYYY-MM-DD') AS ultima
          FROM gcc_world.billing_clients bc
          LEFT JOIN LATERAL (
            SELECT COUNT(*)::int AS facturas,
@@ -35,15 +35,15 @@ export async function GET(req: NextRequest) {
             WHERE i.client_ruc = bc.ruc OR i.client_ruc = ANY(bc.aliases)
          ) s ON true
          ${where}
-         ORDER BY (bc.ruc = '9999999999999') DESC, s.facturas DESC NULLS LAST, bc.name`,
+         ORDER BY LOWER(bc.name) ASC`,
       params
     );
 
     const data = rows.map((r: any) => ({
       id: r.id, id_type: r.id_type, ruc: r.ruc, name: r.name, email: r.email,
-      phone: r.phone, address: r.address, notes: r.notes, aliases: r.aliases || [],
+      phone: r.phone, address: r.address, notes: r.notes, aliases: r.aliases || [], country: r.country,
       facturas: Number(r.facturas), total: Number(r.total), autorizadas: Number(r.autorizadas),
-      ultima: r.ultima ? String(r.ultima).split('T')[0] : null,
+      ultima: r.ultima || null,
       is_consumidor_final: r.ruc === '9999999999999',
     }));
 
@@ -74,10 +74,10 @@ export async function POST(req: NextRequest) {
     if (exists) return NextResponse.json({ error: 'Ya existe un cliente con esa identificación' }, { status: 409 });
 
     const { rows: [c] } = await pool.query(
-      `INSERT INTO gcc_world.billing_clients (id_type, ruc, name, email, phone, address, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      `INSERT INTO gcc_world.billing_clients (id_type, ruc, name, email, phone, address, notes, country)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
       [idType, ruc, name, String(b.email || '').trim() || null, String(b.phone || '').trim() || null,
-       String(b.address || '').trim() || null, String(b.notes || '').trim() || null]
+       String(b.address || '').trim() || null, String(b.notes || '').trim() || null, String(b.country || '').trim() || null]
     );
     return NextResponse.json({ data: { id: c.id } });
   } catch (err: any) {
