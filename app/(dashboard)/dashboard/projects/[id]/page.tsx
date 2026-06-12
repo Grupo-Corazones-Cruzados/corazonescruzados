@@ -1207,7 +1207,7 @@ export default function ProjectDetailPage() {
                     Requerimientos que puedes atender <span className="text-red-400">*</span>
                   </label>
                   <p className="text-[8px] text-digi-muted mb-2" style={mf}>Selecciona y especifica tu costo para cada uno</p>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  <div className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
                     {reqs.map((r: any) => {
                       const selected = bidReqIds.includes(r.id);
                       return (
