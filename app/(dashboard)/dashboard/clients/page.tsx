@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
@@ -63,6 +63,38 @@ export default function ClientsPage() {
   const router = useRouter();
   const [clients, setClients] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const onSort = (key: string) => {
+    if (key === sortBy) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortBy(key); setSortDir('asc'); }
+  };
+
+  const sortedClients = useMemo(() => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    const arr = [...clients];
+    arr.sort((a, b) => {
+      if (sortBy === 'name' || sortBy === 'country') {
+        const av = (a[sortBy] || '').toString().trim().toLowerCase();
+        const bv = (b[sortBy] || '').toString().trim().toLowerCase();
+        if (!av && bv) return 1; // vacíos al final
+        if (av && !bv) return -1;
+        return av.localeCompare(bv) * dir;
+      }
+      if (sortBy === 'facturas' || sortBy === 'total') {
+        return (Number(a[sortBy] || 0) - Number(b[sortBy] || 0)) * dir;
+      }
+      if (sortBy === 'ultima') {
+        const av = a.ultima || ''; const bv = b.ultima || '';
+        if (!av && bv) return 1;
+        if (av && !bv) return -1;
+        return (av < bv ? -1 : av > bv ? 1 : 0) * dir;
+      }
+      return 0;
+    });
+    return arr;
+  }, [clients, sortBy, sortDir]);
 
   // Create
   const [showCreate, setShowCreate] = useState(false);
@@ -201,21 +233,25 @@ export default function ClientsPage() {
       <PixelDataTable
         singleLine
         bottomReserve={48}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSort={onSort}
         columns={[
-          { key: 'name', header: 'Cliente', width: '190px', render: (c: any) => (
+          { key: 'name', header: 'Cliente', width: '190px', sortKey: 'name', render: (c: any) => (
             <span className="flex items-center gap-2 min-w-0">
               <span className="truncate">{c.name}</span>
               {c.is_consumidor_final && <PixelBadge variant="info" className="shrink-0">CF</PixelBadge>}
             </span>
           )},
-          { key: 'id', header: 'Identificación', render: (c: any) => <span className="text-[10px]" style={mf}>{c.ruc}</span> },
+          { key: 'id', header: 'Identificación', width: '150px', render: (c: any) => <span className="text-[10px]" style={mf}>{c.ruc}</span> },
           { key: 'email', header: 'Email', width: '150px', render: (c: any) => c.email || '-' },
-          { key: 'facturas', header: 'Facturas', width: '80px', render: (c: any) => <span className="text-[10px]" style={mf}>{c.facturas}</span> },
+          { key: 'country', header: 'País', width: '130px', sortKey: 'country', render: (c: any) => c.country || '-' },
+          { key: 'facturas', header: 'Facturas', width: '90px', sortKey: 'facturas', render: (c: any) => <span className="text-[10px]" style={mf}>{c.facturas}</span> },
           { key: 'id_type', header: 'Tipo ID', width: '100px', render: (c: any) => <span className="text-[10px]" style={mf}>{ID_TYPE_LABEL[c.id_type] || c.id_type}</span> },
-          { key: 'total', header: 'Total Facturado', width: '120px', render: (c: any) => `$${Number(c.total).toFixed(2)}` },
-          { key: 'ultima', header: 'Última factura', width: '150px', render: (c: any) => fechaEs(c.ultima) },
+          { key: 'total', header: 'Total Facturado', width: '120px', sortKey: 'total', render: (c: any) => `$${Number(c.total).toFixed(2)}` },
+          { key: 'ultima', header: 'Última factura', width: '150px', sortKey: 'ultima', render: (c: any) => fechaEs(c.ultima) },
         ]}
-        data={clients}
+        data={sortedClients}
         onRowClick={(c: any) => openDetail(c)}
         emptyTitle="Sin clientes"
         emptyDesc="No hay clientes de facturación registrados aún."

@@ -1,12 +1,15 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 interface Column<T> {
   key: string;
   header: string;
   render: (item: T) => React.ReactNode;
   width?: string;
+  /** Si se define, la columna es ordenable por esta clave (clic en el encabezado). */
+  sortKey?: string;
 }
 
 interface PixelDataTableProps<T> {
@@ -22,6 +25,10 @@ interface PixelDataTableProps<T> {
   singleLine?: boolean;
   /** Píxeles extra a reservar bajo la tabla (p. ej. para una barra de resumen fija). */
   bottomReserve?: number;
+  /** Ordenamiento por columna (estilo SharePoint): encabezado clicable + chevron. */
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+  onSort?: (key: string) => void;
 }
 
 const BOTTOM_GAP = 16; // breathing room below the table
@@ -38,6 +45,9 @@ export default function PixelDataTable<T>({
   onPageChange,
   singleLine = false,
   bottomReserve = 0,
+  sortBy,
+  sortDir,
+  onSort,
 }: PixelDataTableProps<T>) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [fillH, setFillH] = useState<number>();
@@ -83,15 +93,32 @@ export default function PixelDataTable<T>({
         <table className="w-full text-sm" style={singleLine ? { tableLayout: 'fixed' } : undefined}>
           <thead>
             <tr>
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  className={`dt-th sticky top-0 z-10 bg-digi-card border-b-2 border-digi-border px-3 py-2.5 text-left text-[9px] text-digi-muted uppercase tracking-wider ${singleLine ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}
-                  style={{ fontFamily: 'var(--font-display)', width: col.width }}
-                >
-                  {col.header}
-                </th>
-              ))}
+              {columns.map((col) => {
+                const sortable = !!col.sortKey && !!onSort;
+                const active = sortable && sortBy === col.sortKey;
+                return (
+                  <th
+                    key={col.key}
+                    className={`dt-th sticky top-0 z-10 bg-digi-card border-b-2 border-digi-border px-3 py-2.5 text-left text-[9px] text-digi-muted uppercase tracking-wider ${singleLine ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}
+                    style={{ fontFamily: 'var(--font-display)', width: col.width }}
+                  >
+                    {sortable ? (
+                      <button
+                        type="button"
+                        onClick={() => onSort!(col.sortKey!)}
+                        className="flex items-center justify-between gap-1 w-full uppercase tracking-wider hover:text-digi-text transition-colors"
+                        style={{ fontFamily: 'var(--font-display)' }}
+                        title="Ordenar"
+                      >
+                        <span className="truncate">{col.header}</span>
+                        {active
+                          ? (sortDir === 'asc' ? <ChevronUp size={12} className="shrink-0 text-accent-glow" /> : <ChevronDown size={12} className="shrink-0 text-accent-glow" />)
+                          : <ChevronsUpDown size={12} className="shrink-0 opacity-30" />}
+                      </button>
+                    ) : col.header}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
