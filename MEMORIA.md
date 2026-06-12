@@ -63,6 +63,18 @@ Stack estándar de la casa, con particularidades de este repo:
   (tabla + panel lateral de meses, estilo `.corp` calcado de projects/invoices). Verificado: tsc + `next build` OK.
   **Sin commitear.** Ver `Aprendizaje.md` (objetivo actual).
 
+- **2026-06-11:** Nuevo módulo **Clientes** (de facturación), en el sidebar **debajo de Marketplace**
+  (`roles:['member','admin']`). Identidad de cliente centrada en `client_ruc` de las facturas (la tabla
+  `gcc_world.clients` es el portal/auth, concepto distinto, no se toca). Tabla nueva
+  `gcc_world.billing_clients` (id_type, ruc UNIQUE, name, email, phone, address, notes) **sembrada
+  idempotentemente desde las facturas** (`ensureBillingClientsTable` en `lib/billing-clients.ts`) + registro
+  **Consumidor Final** (`ruc='9999999999999'`, agrupa esas facturas; no editable/borrable). Endpoints
+  `app/api/billing-clients/{route,[id]/route}.ts`: lista con totales por cliente (LATERAL sobre invoices por
+  `client_ruc`), detalle = datos editables + facturas del cliente con su **origen** (`invoiceOrigin`: ticket/
+  project/subscription → botones "Ver factura"/"Ver origen"). UI `app/(dashboard)/dashboard/clients/page.tsx`
+  (tabla + panel editable + facturas + totales). **Gotcha:** join ticket por `t.id::text = i.source_id` (NO
+  `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
+
 ## Arquitectura y módulos
 Rutas en `app/`, agrupadas por layout: `(auth)`, `(dashboard)`, `(main)`, `(public)`.
 API en `app/api/` (~40 grupos). Lógica en `lib/`, componentes en `components/`.

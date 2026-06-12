@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import BrandLoader from '@/components/ui/BrandLoader';
 import {
-  Home, Ticket, FolderKanban, CalendarClock, Store, ReceiptText, Network, Wrench,
+  Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Menu, ChevronsLeft, ChevronsRight,
   LogOut, type LucideIcon,
 } from 'lucide-react';
@@ -24,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Proyectos', href: '/dashboard/projects', icon: FolderKanban },
   { label: 'Suscripciones', href: '/dashboard/subscriptions', icon: CalendarClock, roles: ['member', 'admin'] },
   { label: 'Marketplace', href: '/dashboard/marketplace', icon: Store },
+  { label: 'Clientes', href: '/dashboard/clients', icon: Users, roles: ['member', 'admin'] },
   { label: 'Facturas', href: '/dashboard/invoices', icon: ReceiptText },
   { label: 'Centralizado', href: '/dashboard/centralized', icon: Network, roles: ['member', 'admin'] },
   { label: 'Herramientas', href: '/dashboard/tools', icon: Wrench },
