@@ -20,6 +20,8 @@ interface PixelDataTableProps<T> {
   onPageChange?: (page: number) => void;
   /** Filas de una sola línea: respeta los anchos (table-layout fixed) y trunca el texto con … sin crecer la altura. */
   singleLine?: boolean;
+  /** Píxeles extra a reservar bajo la tabla (p. ej. para una barra de resumen fija). */
+  bottomReserve?: number;
 }
 
 const BOTTOM_GAP = 16; // breathing room below the table
@@ -35,6 +37,7 @@ export default function PixelDataTable<T>({
   totalPages,
   onPageChange,
   singleLine = false,
+  bottomReserve = 0,
 }: PixelDataTableProps<T>) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [fillH, setFillH] = useState<number>();
@@ -47,7 +50,7 @@ export default function PixelDataTable<T>({
       const el = wrapRef.current;
       if (!el) return;
       const top = el.getBoundingClientRect().top;
-      const h = Math.max(window.innerHeight - top - BOTTOM_GAP, MIN_HEIGHT);
+      const h = Math.max(window.innerHeight - top - BOTTOM_GAP - bottomReserve, MIN_HEIGHT);
       setFillH((prev) => (prev === undefined || Math.abs(prev - h) > 1 ? h : prev));
     };
     // run after layout settles (content above may still be rendering)

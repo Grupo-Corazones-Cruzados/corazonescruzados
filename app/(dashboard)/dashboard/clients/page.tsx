@@ -142,6 +142,7 @@ export default function ClientsPage() {
 
       <PixelDataTable
         singleLine
+        bottomReserve={48}
         columns={[
           { key: 'name', header: 'Cliente', width: '190px', render: (c: any) => (
             <span className="flex items-center gap-2 min-w-0">
@@ -164,6 +165,16 @@ export default function ClientsPage() {
         emptyTitle="Sin clientes"
         emptyDesc="No hay clientes de facturación registrados aún."
       />
+
+      {/* Resumen fijo al fondo */}
+      <div className="fixed bottom-0 left-0 lg:left-56 right-0 z-20 bg-digi-card border-t-2 border-digi-border px-4 md:px-6 py-2.5 flex items-center justify-between">
+        <span className="text-[10px] text-digi-muted" style={mf}>
+          {clients.length} cliente{clients.length === 1 ? '' : 's'} · {clients.reduce((s, c) => s + Number(c.facturas || 0), 0)} facturas
+        </span>
+        <span className="text-xs text-digi-text" style={pf}>
+          Total facturado: <span className="text-accent-glow font-semibold">${clients.reduce((s, c) => s + Number(c.total || 0), 0).toFixed(2)}</span>
+        </span>
+      </div>
 
       {/* Create Modal */}
       <PixelModal open={showCreate} onClose={() => setShowCreate(false)} title="Nuevo Cliente">
