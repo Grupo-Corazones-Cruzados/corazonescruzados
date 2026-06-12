@@ -141,6 +141,14 @@ Módulos principales:
   cobrada/completada (no hay estado 'completed' en facturas; ese es de proyectos/tickets).
 
 ## Lecciones técnicas
+- **Toasts (sonner) ocultos detrás de modales `<dialog>` (2026-06-11):** `PixelModal` abre un
+  `<dialog>` con `showModal()`, que el navegador coloca en el **top layer** (por encima de TODO, incluso
+  de elementos `position:fixed` fuera del diálogo). Los toasts de sonner se renderizan en un portal a nivel
+  de body → quedan **detrás** del diálogo y no se ven mientras el modal está abierto. Por eso una acción
+  que dispara `toast.success` y **deja el modal abierto** (p.ej. "Guardar cambios" en el panel de cliente)
+  parece no notificar. Soluciones: cerrar el modal antes del toast, o mostrar **confirmación en línea dentro
+  del panel** (se hizo en clientes: estado `savedOk` + "✓ Cambios guardados"). El mismo patrón aplica a
+  otros paneles que guardan sin cerrar (suscripciones "marcar pagado", etc.).
 - **Postgres "inconsistent types deduced for parameter $N" (2026-06-11):** ocurre cuando un mismo
   parámetro `$N` se usa en dos contextos que deducen tipos distintos en la misma query (ej. `sri_status = $2`
   → varchar y `CASE WHEN $2 = 'rejected'` → text). Fix: castear explícitamente (`$2::text`) en todos los usos.

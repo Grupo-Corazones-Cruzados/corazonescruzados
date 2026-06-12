@@ -113,6 +113,7 @@ export default function ClientsPage() {
   const [detail, setDetail] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedOk, setSavedOk] = useState(false);
   const [e, setE] = useState<any>({ id_type: '04', ruc: '', name: '', email: '', phone: '', address: '', notes: '' });
   const [confirmCfg, setConfirmCfg] = useState<{ title: string; message: string; confirmLabel: string; danger: boolean; onConfirm: () => void } | null>(null);
   const [detailTab, setDetailTab] = useState<'datos' | 'consumos'>('datos');
@@ -148,7 +149,7 @@ export default function ClientsPage() {
   };
 
   const openDetail = async (c: any) => {
-    setSelected(c); setDetail(null); setDetailTab('datos'); setLoadingDetail(true);
+    setSelected(c); setDetail(null); setDetailTab('datos'); setSavedOk(false); setLoadingDetail(true);
     try {
       const res = await fetch(`/api/billing-clients/${c.id}`);
       const data = await res.json();
@@ -168,7 +169,11 @@ export default function ClientsPage() {
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Error'); return; }
-      setDetail(data.data); toast.success('Cliente actualizado'); fetchData();
+      setDetail(data.data);
+      setSavedOk(true);
+      setTimeout(() => setSavedOk(false), 3000);
+      toast.success('Cliente actualizado');
+      fetchData();
     } catch { toast.error('Error'); }
     finally { setSaving(false); }
   };
@@ -319,7 +324,8 @@ export default function ClientsPage() {
                   <span className="text-accent-glow" style={pf}>Identificaciones fusionadas: </span>{detail.aliases.join(', ')}
                 </div>
               )}
-              <button onClick={saveClient} disabled={saving} className="pixel-btn pixel-btn-primary w-full mt-3 disabled:opacity-50">{saving ? '...' : 'Guardar cambios'}</button>
+              <button onClick={saveClient} disabled={saving} className="pixel-btn pixel-btn-primary w-full mt-3 disabled:opacity-50">{saving ? '...' : savedOk ? '✓ Cambios guardados' : 'Guardar cambios'}</button>
+              {savedOk && <p className="text-[9px] text-green-400 text-center mt-1" style={pf}>✓ Cambios guardados correctamente</p>}
             </div>
             </div>
             )}
