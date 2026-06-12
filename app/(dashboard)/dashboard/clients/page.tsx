@@ -36,9 +36,9 @@ function CountrySelect({ value, onChange }: { value: string; onChange: (v: strin
   const filtered = q ? PAISES.filter(p => p.toLowerCase().includes(q.toLowerCase())) : PAISES;
   return (
     <div>
-      <button type="button" onClick={() => setOpen(o => !o)} className={`${smallInputCls} text-left flex items-center justify-between`} style={mf}>
+      <button type="button" onClick={() => setOpen(o => !o)} className={`${smallInputCls} field-control text-left flex items-center justify-between`} style={mf}>
         <span className={value ? 'text-digi-text' : 'text-digi-muted'}>{value || 'Seleccionar país…'}</span>
-        <span className="text-digi-muted text-[8px]">▾</span>
+        <span className="text-digi-muted text-[10px]">▾</span>
       </button>
       {open && (
         <div className="mt-1 border border-digi-border bg-digi-darker">
