@@ -133,6 +133,17 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const { rows: [c] } = await pool.query(`SELECT ruc, portal_client_id FROM gcc_world.billing_clients WHERE id = $1`, [id]);
     if (!c) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
     if (c.ruc === CONSUMIDOR_FINAL_RUC) return NextResponse.json({ error: 'No se puede eliminar Consumidor Final' }, { status: 400 });
+    // No permitir borrar un cliente con tickets/proyectos activos (evita dejarlos sin cliente).
+    if (c.portal_client_id) {
+      const { rows: [refs] } = await pool.query(
+        `SELECT (SELECT COUNT(*) FROM gcc_world.tickets WHERE client_id = $1)::int AS t,
+                (SELECT COUNT(*) FROM gcc_world.projects WHERE client_id = $1)::int AS p`,
+        [c.portal_client_id]
+      );
+      if (refs.t > 0 || refs.p > 0) {
+        return NextResponse.json({ error: `No se puede eliminar: el cliente tiene ${refs.t} ticket(s) y ${refs.p} proyecto(s) asociados. Reasígnalos o ciérralos primero.` }, { status: 409 });
+      }
+    }
     // Elimina el registro del cliente. Las facturas (documentos fiscales) se conservan.
     await pool.query(`DELETE FROM gcc_world.billing_clients WHERE id = $1`, [id]);
     // Propagar a la tabla del portal (lista unificada): borrar también su registro en `clients`,
