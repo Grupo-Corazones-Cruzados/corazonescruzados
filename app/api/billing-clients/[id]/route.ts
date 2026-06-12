@@ -106,6 +106,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       throw e;
     }
 
+    // Propagar a la tabla del portal (lista unificada) para que tickets/proyectos vean los mismos datos.
+    try {
+      const { rows: [bc] } = await pool.query(`SELECT portal_client_id, name, email, ruc, address, phone FROM gcc_world.billing_clients WHERE id = $1`, [id]);
+      if (bc?.portal_client_id) {
+        await pool.query(`UPDATE gcc_world.clients SET name = $1, ruc = $2, address = $3, phone = $4 WHERE id = $5`,
+          [bc.name, bc.ruc, bc.address, bc.phone, bc.portal_client_id]);
+        if (bc.email) await pool.query(`UPDATE gcc_world.clients SET email = $1 WHERE id = $2`, [bc.email, bc.portal_client_id]).catch(() => {});
+      }
+    } catch (propErr: any) { console.error('Propagate update to clients error:', propErr.message); }
+
     const detail = await loadDetail(Number(id));
     return NextResponse.json({ data: detail });
   } catch (err: any) {
@@ -120,11 +130,16 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     await ensureBillingClientsTable();
     const { id } = await params;
-    const { rows: [c] } = await pool.query(`SELECT ruc FROM gcc_world.billing_clients WHERE id = $1`, [id]);
+    const { rows: [c] } = await pool.query(`SELECT ruc, portal_client_id FROM gcc_world.billing_clients WHERE id = $1`, [id]);
     if (!c) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
     if (c.ruc === CONSUMIDOR_FINAL_RUC) return NextResponse.json({ error: 'No se puede eliminar Consumidor Final' }, { status: 400 });
-    // Solo elimina el registro del cliente; las facturas (documentos fiscales) se conservan.
+    // Elimina el registro del cliente. Las facturas (documentos fiscales) se conservan.
     await pool.query(`DELETE FROM gcc_world.billing_clients WHERE id = $1`, [id]);
+    // Propagar a la tabla del portal (lista unificada): borrar también su registro en `clients`,
+    // así desaparece de los selectores de tickets/proyectos y la siembra no lo resucita.
+    if (c.portal_client_id) {
+      await pool.query(`DELETE FROM gcc_world.clients WHERE id = $1`, [c.portal_client_id]).catch((e: any) => console.error('cascade delete clients:', e.message));
+    }
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error('Billing client delete error:', err.message);
