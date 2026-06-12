@@ -24,12 +24,15 @@ export async function ensureBillingClientsTable() {
       phone VARCHAR(30),
       address TEXT,
       notes TEXT,
+      aliases TEXT[] NOT NULL DEFAULT '{}',
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  await pool.query(`ALTER TABLE gcc_world.billing_clients ADD COLUMN IF NOT EXISTS aliases TEXT[] NOT NULL DEFAULT '{}'`);
 
   // Siembra idempotente desde las facturas existentes (no sobrescribe ediciones).
+  // Excluye identificaciones que ya son alias de algún cliente (fusionadas) para no recrearlas.
   await pool.query(`
     INSERT INTO gcc_world.billing_clients (id_type, ruc, name, email, phone, address)
     SELECT DISTINCT ON (client_ruc)
@@ -45,6 +48,9 @@ export async function ensureBillingClientsTable() {
       NULLIF(client_address_sri, '')
     FROM gcc_world.invoices
     WHERE client_ruc IS NOT NULL AND client_ruc <> ''
+      AND client_ruc NOT IN (
+        SELECT unnest(aliases) FROM gcc_world.billing_clients WHERE array_length(aliases, 1) > 0
+      )
     ORDER BY client_ruc, created_at DESC
     ON CONFLICT (ruc) DO NOTHING
   `);

@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `SELECT bc.id, bc.id_type, bc.ruc, bc.name, bc.email, bc.phone, bc.address, bc.notes,
+      `SELECT bc.id, bc.id_type, bc.ruc, bc.name, bc.email, bc.phone, bc.address, bc.notes, bc.aliases,
               COALESCE(s.facturas, 0) AS facturas,
               COALESCE(s.total, 0) AS total,
               COALESCE(s.autorizadas, 0) AS autorizadas,
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
                   COUNT(*) FILTER (WHERE sri_status = 'authorized')::int AS autorizadas,
                   MAX(created_at) AS ultima
              FROM gcc_world.invoices i
-            WHERE i.client_ruc = bc.ruc
+            WHERE i.client_ruc = bc.ruc OR i.client_ruc = ANY(bc.aliases)
          ) s ON true
          ${where}
          ORDER BY (bc.ruc = '9999999999999') DESC, s.facturas DESC NULLS LAST, bc.name`,
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     const data = rows.map((r: any) => ({
       id: r.id, id_type: r.id_type, ruc: r.ruc, name: r.name, email: r.email,
-      phone: r.phone, address: r.address, notes: r.notes,
+      phone: r.phone, address: r.address, notes: r.notes, aliases: r.aliases || [],
       facturas: Number(r.facturas), total: Number(r.total), autorizadas: Number(r.autorizadas),
       ultima: r.ultima ? String(r.ultima).split('T')[0] : null,
       is_consumidor_final: r.ruc === '9999999999999',

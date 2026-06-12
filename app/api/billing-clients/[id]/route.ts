@@ -14,9 +14,9 @@ async function loadDetail(id: number) {
        FROM gcc_world.invoices i
        LEFT JOIN gcc_world.tickets t ON i.source_type = 'ticket' AND t.id::text = i.source_id
        LEFT JOIN gcc_world.projects p ON p.id = i.project_id
-      WHERE i.client_ruc = $1
+      WHERE i.client_ruc = $1 OR i.client_ruc = ANY($2::text[])
       ORDER BY i.created_at DESC`,
-    [c.ruc]
+    [c.ruc, c.aliases || []]
   );
 
   const invList = invoices.map((i: any) => {
@@ -37,7 +37,7 @@ async function loadDetail(id: number) {
 
   return {
     id: c.id, id_type: c.id_type, ruc: c.ruc, name: c.name, email: c.email,
-    phone: c.phone, address: c.address, notes: c.notes,
+    phone: c.phone, address: c.address, notes: c.notes, aliases: c.aliases || [],
     is_consumidor_final: c.ruc === CONSUMIDOR_FINAL_RUC,
     invoices: invList,
     summary: {

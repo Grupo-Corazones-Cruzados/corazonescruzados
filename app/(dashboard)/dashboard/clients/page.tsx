@@ -49,7 +49,8 @@ export default function ClientsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [e, setE] = useState<any>({ id_type: '04', ruc: '', name: '', email: '', phone: '', address: '', notes: '' });
-  const [confirmCfg, setConfirmCfg] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const [confirmCfg, setConfirmCfg] = useState<{ title: string; message: string; confirmLabel: string; danger: boolean; onConfirm: () => void } | null>(null);
+  const [mergeSource, setMergeSource] = useState('');
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
@@ -110,6 +111,7 @@ export default function ClientsPage() {
   const deleteClient = () => {
     if (!detail) return;
     setConfirmCfg({
+      title: 'Eliminar cliente', confirmLabel: 'Eliminar', danger: true,
       message: `¿Eliminar el cliente "${detail.name}"? Solo se borra el registro; las facturas se conservan.`,
       onConfirm: async () => {
         try {
@@ -117,6 +119,30 @@ export default function ClientsPage() {
           if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Error'); return; }
           toast.success('Cliente eliminado'); setSelected(null); setDetail(null); fetchData();
         } catch { toast.error('Error al eliminar'); }
+      },
+    });
+  };
+
+  const requestMerge = () => {
+    if (!detail || !mergeSource) return;
+    const src = clients.find((c: any) => String(c.id) === mergeSource);
+    setConfirmCfg({
+      title: 'Fusionar clientes', confirmLabel: 'Fusionar', danger: false,
+      message: `¿Fusionar "${src?.name || 'el cliente'}" (${src?.ruc || ''}) dentro de "${detail.name}"? Su identificación quedará como alias de este cliente y sus facturas se agruparán aquí. El registro fusionado se elimina (las facturas se conservan).`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/billing-clients/${detail.id}/merge`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_id: Number(mergeSource) }),
+          });
+          const data = await res.json();
+          if (!res.ok) { toast.error(data.error || 'Error'); return; }
+          toast.success('Clientes fusionados');
+          setMergeSource('');
+          const r2 = await fetch(`/api/billing-clients/${detail.id}`);
+          setDetail((await r2.json()).data);
+          fetchData();
+        } catch { toast.error('Error al fusionar'); }
       },
     });
   };
@@ -236,8 +262,30 @@ export default function ClientsPage() {
               </div>
               <div className="flex flex-col gap-1 mt-2"><label className="text-[8px] text-digi-muted" style={pf}>Dirección</label><input value={e.address} onChange={ev => setE({ ...e, address: ev.target.value })} className={smallInputCls} style={mf} /></div>
               <div className="flex flex-col gap-1 mt-2"><label className="text-[8px] text-digi-muted" style={pf}>Notas</label><textarea value={e.notes} onChange={ev => setE({ ...e, notes: ev.target.value })} rows={2} className={`${smallInputCls} resize-none`} style={mf} /></div>
+              {detail.aliases?.length > 0 && (
+                <div className="mt-2 text-[8px] text-digi-muted" style={mf}>
+                  <span className="text-accent-glow" style={pf}>Identificaciones fusionadas: </span>{detail.aliases.join(', ')}
+                </div>
+              )}
               <button onClick={saveClient} disabled={saving} className="pixel-btn pixel-btn-primary w-full mt-3 disabled:opacity-50">{saving ? '...' : 'Guardar cambios'}</button>
             </div>
+
+            {/* Fusionar otro cliente en este (duplicados por identificación distinta) */}
+            {!detail.is_consumidor_final && (
+              <div>
+                <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mb-2" style={pf}>Fusionar duplicado</h4>
+                <p className="text-[8px] text-digi-muted mb-2" style={pf}>Une otro registro (mismo cliente con identificación distinta) dentro de este. Sus facturas se agruparán aquí.</p>
+                <div className="flex items-center gap-2">
+                  <select value={mergeSource} onChange={ev => setMergeSource(ev.target.value)} className={`${smallInputCls} flex-1`} style={mf}>
+                    <option value="">— Selecciona el cliente a fusionar —</option>
+                    {clients.filter((c: any) => String(c.id) !== String(detail.id) && !c.is_consumidor_final).map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name} · {c.ruc} ({c.facturas} fact.)</option>
+                    ))}
+                  </select>
+                  <button onClick={requestMerge} disabled={!mergeSource} className="px-3 py-1 text-[9px] border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors disabled:opacity-40 shrink-0" style={pf}>Fusionar</button>
+                </div>
+              </div>
+            )}
 
             {/* Totales */}
             <div className="grid grid-cols-3 gap-2">
@@ -287,10 +335,10 @@ export default function ClientsPage() {
 
       <PixelConfirm
         open={!!confirmCfg}
-        title="Eliminar cliente"
+        title={confirmCfg?.title}
         message={confirmCfg?.message || ''}
-        confirmLabel="Eliminar"
-        danger
+        confirmLabel={confirmCfg?.confirmLabel}
+        danger={confirmCfg?.danger}
         onConfirm={() => { const fn = confirmCfg?.onConfirm; setConfirmCfg(null); fn?.(); }}
         onCancel={() => setConfirmCfg(null)}
       />
