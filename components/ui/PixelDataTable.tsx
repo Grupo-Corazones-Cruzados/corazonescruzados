@@ -18,6 +18,8 @@ interface PixelDataTableProps<T> {
   page?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
+  /** Filas de una sola línea: respeta los anchos (table-layout fixed) y trunca el texto con … sin crecer la altura. */
+  singleLine?: boolean;
 }
 
 const BOTTOM_GAP = 16; // breathing room below the table
@@ -32,6 +34,7 @@ export default function PixelDataTable<T>({
   page,
   totalPages,
   onPageChange,
+  singleLine = false,
 }: PixelDataTableProps<T>) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [fillH, setFillH] = useState<number>();
@@ -74,13 +77,13 @@ export default function PixelDataTable<T>({
   return (
     <div ref={wrapRef} className="data-table border-2 border-digi-border overflow-hidden flex flex-col" style={{ height: fillH }}>
       <div className="flex-1 min-h-0 overflow-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" style={singleLine ? { tableLayout: 'fixed' } : undefined}>
           <thead>
             <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="dt-th sticky top-0 z-10 bg-digi-card border-b-2 border-digi-border px-3 py-2.5 text-left text-[9px] text-digi-muted uppercase tracking-wider"
+                  className={`dt-th sticky top-0 z-10 bg-digi-card border-b-2 border-digi-border px-3 py-2.5 text-left text-[9px] text-digi-muted uppercase tracking-wider ${singleLine ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}
                   style={{ fontFamily: 'var(--font-display)', width: col.width }}
                 >
                   {col.header}
@@ -100,8 +103,8 @@ export default function PixelDataTable<T>({
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className="dt-td px-3 py-2.5 text-xs text-digi-text"
-                    style={{ fontFamily: 'var(--font-body)' }}
+                    className={`dt-td px-3 py-2.5 text-xs text-digi-text ${singleLine ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}
+                    style={{ fontFamily: 'var(--font-body)', width: singleLine ? col.width : undefined }}
                   >
                     {col.render(item)}
                   </td>

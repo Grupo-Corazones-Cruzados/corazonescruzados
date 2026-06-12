@@ -19,6 +19,14 @@ const ID_TYPE_LABEL: Record<string, string> = { '04': 'RUC', '05': 'Cédula', '0
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = { pending: 'warning', sent: 'info', paid: 'success', cancelled: 'error', failed: 'error' };
 const STATUS_LABEL: Record<string, string> = { pending: 'Pendiente', sent: 'Enviada', paid: 'Pagada', cancelled: 'Anulada', failed: 'Fallida' };
 
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+function fechaEs(ymd: string | null): string {
+  if (!ymd) return '-';
+  const [y, m, d] = String(ymd).split('-').map(Number);
+  if (!y || !m || !d) return ymd;
+  return `${d} ${MESES[m - 1]} ${y}`;
+}
+
 export default function ClientsPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -133,22 +141,23 @@ export default function ClientsPage() {
       />
 
       <PixelDataTable
+        singleLine
         columns={[
-          { key: 'name', header: 'Cliente', render: (c: any) => (
-            <span className="flex items-center gap-2">
-              <span>{c.name}</span>
-              {c.is_consumidor_final && <PixelBadge variant="info">Consumidor Final</PixelBadge>}
+          { key: 'name', header: 'Cliente', width: '190px', render: (c: any) => (
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="truncate">{c.name}</span>
+              {c.is_consumidor_final && <PixelBadge variant="info" className="shrink-0">CF</PixelBadge>}
             </span>
           )},
-          { key: 'id', header: 'Identificación', render: (c: any) => (
+          { key: 'id', header: 'Identificación', width: '160px', render: (c: any) => (
             <span className="text-[10px]" style={mf}><span className="text-digi-muted">{ID_TYPE_LABEL[c.id_type] || c.id_type}</span> {c.ruc}</span>
           )},
           { key: 'email', header: 'Email', render: (c: any) => c.email || '-' },
-          { key: 'facturas', header: 'Facturas', width: '80px', render: (c: any) => (
+          { key: 'facturas', header: 'Facturas', width: '90px', render: (c: any) => (
             <span className="text-[10px]" style={mf}>{c.facturas}{c.autorizadas ? <span className="text-green-400"> ({c.autorizadas} aut.)</span> : ''}</span>
           )},
           { key: 'total', header: 'Total Facturado', width: '120px', render: (c: any) => `$${Number(c.total).toFixed(2)}` },
-          { key: 'ultima', header: 'Última', width: '90px', render: (c: any) => c.ultima || '-' },
+          { key: 'ultima', header: 'Última factura', width: '150px', render: (c: any) => fechaEs(c.ultima) },
         ]}
         data={clients}
         onRowClick={(c: any) => openDetail(c)}
