@@ -5,6 +5,7 @@ import { signCreditNoteXml } from 'ec-sri-invoice-signer';
 import { buildCreditNoteXml } from '@/lib/integrations/sri/credit-note-builder';
 import { enviarComprobante, consultarAutorizacion } from '@/lib/integrations/sri/soap-client';
 import { revertSubscriptionPaymentForVoidedInvoice } from '@/lib/subscriptions';
+import { removeIncomeFromFinance } from '@/lib/finance';
 import fs from 'fs';
 
 function loadP12(): Buffer {
@@ -107,6 +108,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           subscriptionReverted = await revertSubscriptionPaymentForVoidedInvoice(Number(id));
         } catch (e: any) {
           console.error('[void] subscription revert error:', e.message);
+        }
+      } else if (inv.source_type === 'ticket' && inv.source_id) {
+        // Voiding a ticket invoice → ticket goes back to billable + drop its income.
+        try {
+          await pool.query(
+            `UPDATE gcc_world.tickets SET status = 'confirmed', updated_at = NOW() WHERE id = $1 AND status = 'completed'`,
+            [inv.source_id]
+          );
+          await removeIncomeFromFinance('ticket', String(inv.source_id));
+        } catch (e: any) {
+          console.error('[void] ticket revert error:', e.message);
         }
       }
 

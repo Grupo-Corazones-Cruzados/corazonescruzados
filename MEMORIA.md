@@ -105,6 +105,14 @@ Módulos principales:
     `removeIncomeFromFinance('subscription', '<subId>-<YYYY-MM>')` (`lib/finance.ts`: elimina el
     `finance_items` y su `finance_source_log` y recalcula el mes) → así el dashboard deja de contarlo y un
     re-cobro futuro genera factura+ingreso limpios.
+  - **Anular factura de TICKET → ticket vuelve a facturable (2026-06-11):** análogo a suscripciones; el void
+    (`app/api/invoices/[id]/void`), si `source_type='ticket'`, regresa el ticket de `completed` a `confirmed`
+    y quita su ingreso (`removeIncomeFromFinance('ticket', source_id)`). Antes el ticket quedaba "completado"
+    colgado con su factura anulada (Factura/Cliente en blanco en la tabla).
+  - **Tabla de tickets — Cliente con fallback a la factura (2026-06-11):** `GET /api/tickets` usaba `c.name`
+    (vía `tickets.client_id`); si el ticket no tenía cliente registrado, mostraba "-". Ahora
+    `COALESCE(c.name, inv_info.invoice_client_name)` cae al `client_name_sri` de la factura del ticket
+    (LATERAL) → un ticket facturado muestra el cliente aunque no exista registro en `clients`.
 
 - **Estado 'failed' para facturas con error/rechazo SRI (2026-06-11):** las facturas cuyo proceso SRI fue
   **rechazado** (`sri_status='rejected'`) o **erró** (`sri_status='error'`) ya no quedan en `pending`: pasan a
