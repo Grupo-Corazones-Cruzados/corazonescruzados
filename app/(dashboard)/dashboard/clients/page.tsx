@@ -9,6 +9,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import PixelTabs from '@/components/ui/PixelTabs';
 import { PAISES } from '@/lib/countries';
 
 const pf = { fontFamily: 'var(--font-display)' } as const;
@@ -114,7 +115,7 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false);
   const [e, setE] = useState<any>({ id_type: '04', ruc: '', name: '', email: '', phone: '', address: '', notes: '' });
   const [confirmCfg, setConfirmCfg] = useState<{ title: string; message: string; confirmLabel: string; danger: boolean; onConfirm: () => void } | null>(null);
-  const [mergeSource, setMergeSource] = useState('');
+  const [detailTab, setDetailTab] = useState<'datos' | 'consumos'>('datos');
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
@@ -147,7 +148,7 @@ export default function ClientsPage() {
   };
 
   const openDetail = async (c: any) => {
-    setSelected(c); setDetail(null); setLoadingDetail(true);
+    setSelected(c); setDetail(null); setDetailTab('datos'); setLoadingDetail(true);
     try {
       const res = await fetch(`/api/billing-clients/${c.id}`);
       const data = await res.json();
@@ -183,30 +184,6 @@ export default function ClientsPage() {
           if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Error'); return; }
           toast.success('Cliente eliminado'); setSelected(null); setDetail(null); fetchData();
         } catch { toast.error('Error al eliminar'); }
-      },
-    });
-  };
-
-  const requestMerge = () => {
-    if (!detail || !mergeSource) return;
-    const src = clients.find((c: any) => String(c.id) === mergeSource);
-    setConfirmCfg({
-      title: 'Fusionar clientes', confirmLabel: 'Fusionar', danger: false,
-      message: `¿Fusionar "${src?.name || 'el cliente'}" (${src?.ruc || ''}) dentro de "${detail.name}"? Su identificación quedará como alias de este cliente y sus facturas se agruparán aquí. El registro fusionado se elimina (las facturas se conservan).`,
-      onConfirm: async () => {
-        try {
-          const res = await fetch(`/api/billing-clients/${detail.id}/merge`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source_id: Number(mergeSource) }),
-          });
-          const data = await res.json();
-          if (!res.ok) { toast.error(data.error || 'Error'); return; }
-          toast.success('Clientes fusionados');
-          setMergeSource('');
-          const r2 = await fetch(`/api/billing-clients/${detail.id}`);
-          setDetail((await r2.json()).data);
-          fetchData();
-        } catch { toast.error('Error al fusionar'); }
       },
     });
   };
@@ -301,7 +278,15 @@ export default function ClientsPage() {
         {loadingDetail || !detail ? (
           <div className="py-10 text-center text-[10px] text-digi-muted" style={pf}>Cargando…</div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
+            <PixelTabs
+              tabs={[{ value: 'datos', label: 'Datos del cliente' }, { value: 'consumos', label: 'Consumos', count: detail.invoices.length }]}
+              active={detailTab}
+              onChange={(v) => setDetailTab(v as 'datos' | 'consumos')}
+            />
+
+            {detailTab === 'datos' && (
+            <div className="space-y-4">
             {/* Datos de facturación (editable) */}
             <div>
               <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mb-2" style={pf}>Datos de facturación</h4>
@@ -336,24 +321,11 @@ export default function ClientsPage() {
               )}
               <button onClick={saveClient} disabled={saving} className="pixel-btn pixel-btn-primary w-full mt-3 disabled:opacity-50">{saving ? '...' : 'Guardar cambios'}</button>
             </div>
-
-            {/* Fusionar otro cliente en este (duplicados por identificación distinta) */}
-            {!detail.is_consumidor_final && (
-              <div>
-                <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mb-2" style={pf}>Fusionar duplicado</h4>
-                <p className="text-[8px] text-digi-muted mb-2" style={pf}>Une otro registro (mismo cliente con identificación distinta) dentro de este. Sus facturas se agruparán aquí.</p>
-                <div className="flex items-center gap-2">
-                  <select value={mergeSource} onChange={ev => setMergeSource(ev.target.value)} className={`${smallInputCls} flex-1`} style={mf}>
-                    <option value="">— Selecciona el cliente a fusionar —</option>
-                    {clients.filter((c: any) => String(c.id) !== String(detail.id) && !c.is_consumidor_final).map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name} · {c.ruc} ({c.facturas} fact.)</option>
-                    ))}
-                  </select>
-                  <button onClick={requestMerge} disabled={!mergeSource} className="px-3 py-1 text-[9px] border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors disabled:opacity-40 shrink-0" style={pf}>Fusionar</button>
-                </div>
-              </div>
+            </div>
             )}
 
+            {detailTab === 'consumos' && (
+            <div className="space-y-4">
             {/* Totales */}
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-digi-card border border-digi-border rounded-lg px-3 py-2"><div className="text-[8px] text-digi-muted uppercase" style={pf}>Facturas</div><div className="text-base text-digi-text" style={pf}>{detail.summary.count}</div></div>
@@ -390,6 +362,9 @@ export default function ClientsPage() {
                 </div>
               )}
             </div>
+
+            </div>
+            )}
 
             {user?.role === 'admin' && !detail.is_consumidor_final && (
               <div className="pt-2 border-t border-digi-border">
