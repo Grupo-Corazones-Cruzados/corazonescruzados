@@ -28,9 +28,16 @@ const STATUS_LABEL: Record<string, string> = {
 
 const PER_PAGE = 15;
 const inputCls = 'w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none';
-const smallInputCls = 'w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none';
 
-type PastClient = { id_type: string; client_ruc: string; client_name: string; client_email: string; client_phone: string; client_address: string };
+const ID_TYPE_LABEL: Record<string, string> = {
+  '04': 'RUC', '05': 'Cédula', '06': 'Pasaporte', '07': 'Consumidor Final', '08': 'ID Exterior',
+};
+
+type BillingClient = {
+  id: number; id_type: string; ruc: string; name: string;
+  email: string | null; phone: string | null; address: string | null;
+  is_consumidor_final: boolean;
+};
 
 function alertBadge(alert: string, label: string) {
   if (alert === 'overdue') return <PixelBadge variant="error">{label}</PixelBadge>;
@@ -52,25 +59,17 @@ export default function SubscriptionsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Reference data for the create form
-  const [clients, setClients] = useState<{ id: number; name: string; email: string }[]>([]);
-  const [history, setHistory] = useState<PastClient[]>([]);
+  // Reference data for the create form: registered clients (billing module, incl. Consumidor Final)
+  const [billingClients, setBillingClients] = useState<BillingClient[]>([]);
 
-  // Create modal
+  // Create modal — only client / title / cost / start are user-editable;
+  // billing (SRI) data is auto-filled read-only from the selected client.
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [cClientId, setCClientId] = useState('');
+  const [cBillingId, setCBillingId] = useState('');
   const [cTitle, setCTitle] = useState('');
   const [cCost, setCCost] = useState('');
   const [cStart, setCStart] = useState(() => new Date().toISOString().split('T')[0]);
-  const [cIdType, setCIdType] = useState('07');
-  const [cRuc, setCRuc] = useState('9999999999999');
-  const [cName, setCName] = useState('CONSUMIDOR FINAL');
-  const [cEmail, setCEmail] = useState('');
-  const [cPhone, setCPhone] = useState('');
-  const [cAddress, setCAddress] = useState('');
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [historySearch, setHistorySearch] = useState('');
 
   // Detail panel (months)
   const [selected, setSelected] = useState<any>(null);
@@ -98,69 +97,39 @@ export default function SubscriptionsPage() {
   useEffect(() => { setPage(1); }, [tab, search]);
 
   useEffect(() => {
-    fetch('/api/clients').then(r => r.json()).then(d => setClients(d.data || [])).catch(() => {});
-    fetch('/api/invoices/clients-history').then(r => r.json()).then(d => setHistory(d.data || [])).catch(() => {});
+    fetch('/api/billing-clients').then(r => r.json()).then(d => setBillingClients(d.data || [])).catch(() => {});
   }, []);
 
-  const filteredHistory = useMemo(() => {
-    const q = historySearch.trim().toLowerCase();
-    if (!q) return history;
-    return history.filter(c => c.client_name.toLowerCase().includes(q) || (c.client_ruc || '').includes(q));
-  }, [history, historySearch]);
+  const selectedClient = useMemo(
+    () => billingClients.find(c => String(c.id) === cBillingId) || null,
+    [billingClients, cBillingId]
+  );
 
   const resetCreate = () => {
-    setCClientId(''); setCTitle(''); setCCost(''); setCStart(new Date().toISOString().split('T')[0]);
-    setCIdType('07'); setCRuc('9999999999999'); setCName('CONSUMIDOR FINAL'); setCEmail(''); setCPhone(''); setCAddress('');
-    setHistoryOpen(false); setHistorySearch('');
-  };
-
-  const onPickClient = (cid: string) => {
-    setCClientId(cid);
-    const c = clients.find(x => String(x.id) === cid);
-    if (c) {
-      if (c.email) setCEmail(c.email);
-      if (cIdType !== '07' && (!cName || cName === 'CONSUMIDOR FINAL')) setCName(c.name);
-    }
-  };
-
-  const applyPastClient = (c: PastClient) => {
-    setCIdType(c.id_type || '04');
-    setCRuc(c.client_ruc || '');
-    setCName(c.client_name || '');
-    setCEmail(c.client_email || '');
-    setCPhone(c.client_phone || '');
-    setCAddress(c.client_address || '');
-    setHistoryOpen(false);
-  };
-
-  const onIdTypeChange = (t: string) => {
-    setCIdType(t);
-    if (t === '07') { setCRuc('9999999999999'); setCName('CONSUMIDOR FINAL'); }
-    else { if (cRuc === '9999999999999') setCRuc(''); if (cName === 'CONSUMIDOR FINAL') setCName(''); }
+    setCBillingId(''); setCTitle(''); setCCost(''); setCStart(new Date().toISOString().split('T')[0]);
   };
 
   const createSubscription = async () => {
+    if (!selectedClient) { toast.error('Selecciona un cliente'); return; }
     if (!cTitle.trim()) { toast.error('Ingresa el título de la suscripción'); return; }
     if (!cCost || Number(cCost) <= 0) { toast.error('Ingresa un costo mensual válido'); return; }
-    if (cIdType !== '07' && !cName.trim()) { toast.error('Ingresa la razón social del cliente'); return; }
-    if (cIdType !== '07' && !cRuc.trim()) { toast.error('Ingresa la identificación del cliente'); return; }
     setCreating(true);
     try {
       const res = await fetch('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_id: cClientId || null,
+          client_id: null,
           title: cTitle,
           monthly_cost: Number(cCost),
           iva_rate: 0,
           start_date: cStart,
-          client_id_type: cIdType,
-          client_ruc: cRuc,
-          client_name_sri: cName,
-          client_email_sri: cEmail,
-          client_phone_sri: cPhone,
-          client_address_sri: cAddress,
+          client_id_type: selectedClient.id_type,
+          client_ruc: selectedClient.ruc,
+          client_name_sri: selectedClient.name,
+          client_email_sri: selectedClient.email || '',
+          client_phone_sri: selectedClient.phone || '',
+          client_address_sri: selectedClient.address || '',
         }),
       });
       if (!res.ok) { const e = await res.json(); toast.error(e.error || 'Error'); return; }
@@ -339,77 +308,35 @@ export default function SubscriptionsPage() {
       <PixelModal open={showCreate} onClose={() => setShowCreate(false)} title="Nueva Suscripción">
         <div className="space-y-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Cliente (registrado)</label>
-            <select value={cClientId} onChange={e => onPickClient(e.target.value)} className={inputCls} style={mf}>
-              <option value="">— Sin vincular —</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Cliente *</label>
+            <select value={cBillingId} onChange={e => setCBillingId(e.target.value)} className={inputCls} style={mf}>
+              <option value="">— Selecciona un cliente —</option>
+              {billingClients.map(c => (
+                <option key={c.id} value={c.id}>{c.name}{!c.is_consumidor_final && c.ruc ? ` · ${c.ruc}` : ''}</option>
+              ))}
             </select>
+            <span className="text-[8px] text-digi-muted" style={pf}>De la lista de clientes registrados (incluye Consumidor Final)</span>
           </div>
 
-          <div className="flex items-center justify-between border-b border-digi-border pb-1">
-            <h4 className="text-[9px] text-accent-glow" style={pf}>Datos de facturación (Adquirente)</h4>
-            <button type="button" onClick={() => setHistoryOpen(o => !o)}
-              className="text-[8px] px-2 py-0.5 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors" style={pf}>
-              {historyOpen ? 'Cerrar' : `Cliente previo${history.length ? ` (${history.length})` : ''}`}
-            </button>
-          </div>
-
-          {historyOpen && (
-            <div className="border border-digi-border bg-digi-darker p-2 space-y-2">
-              <input autoFocus value={historySearch} onChange={e => setHistorySearch(e.target.value)}
-                placeholder="Buscar por nombre o RUC..." className={smallInputCls} style={mf} />
-              <div className="max-h-40 overflow-y-auto border border-digi-border/50">
-                {filteredHistory.length === 0 ? (
-                  <div className="px-2 py-3 text-center text-[9px] text-digi-muted" style={pf}>
-                    {history.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}
-                  </div>
-                ) : filteredHistory.slice(0, 50).map(c => (
-                  <button key={c.client_ruc} type="button" onClick={() => applyPastClient(c)}
-                    className="w-full text-left px-2 py-1.5 border-b border-digi-border/30 last:border-b-0 hover:bg-accent/10 transition-colors">
-                    <div className="text-[10px] text-digi-text truncate" style={mf}>{c.client_name}</div>
-                    <div className="text-[8px] text-digi-muted flex gap-2" style={mf}>
-                      <span>{c.client_ruc}</span>{c.client_email && <span className="truncate">· {c.client_email}</span>}
-                    </div>
-                  </button>
-                ))}
+          {/* Datos de facturación — autocompletados, solo lectura */}
+          {selectedClient && (
+            <div className="border border-digi-border bg-digi-darker p-2.5 space-y-1.5">
+              <div className="text-[8px] text-accent-glow uppercase tracking-wide" style={pf}>
+                Datos de facturación (automáticos)
               </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]" style={mf}>
+                <div><span className="text-digi-muted">Tipo ID:</span> <span className="text-digi-text">{ID_TYPE_LABEL[selectedClient.id_type] || selectedClient.id_type}</span></div>
+                <div><span className="text-digi-muted">Identificación:</span> <span className="text-digi-text">{selectedClient.ruc}</span></div>
+                <div className="col-span-2"><span className="text-digi-muted">Razón Social:</span> <span className="text-digi-text">{selectedClient.name}</span></div>
+                <div><span className="text-digi-muted">Email:</span> <span className="text-digi-text">{selectedClient.email || '—'}</span></div>
+                <div><span className="text-digi-muted">Teléfono:</span> <span className="text-digi-text">{selectedClient.phone || '—'}</span></div>
+                <div className="col-span-2"><span className="text-digi-muted">Dirección:</span> <span className="text-digi-text">{selectedClient.address || '—'}</span></div>
+              </div>
+              <p className="text-[8px] text-digi-muted leading-relaxed" style={pf}>
+                Estos datos provienen del cliente seleccionado. Para modificarlos, edita el cliente en el módulo Clientes.
+              </p>
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col gap-1">
-              <label className="text-[8px] text-digi-muted" style={pf}>Tipo ID <span className="text-red-400">*</span></label>
-              <select value={cIdType} onChange={e => onIdTypeChange(e.target.value)} className={smallInputCls} style={mf}>
-                <option value="04">RUC</option><option value="05">Cédula</option><option value="06">Pasaporte</option>
-                <option value="07">Consumidor Final</option><option value="08">ID Exterior</option>
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[8px] text-digi-muted" style={pf}>Identificación <span className="text-red-400">*</span></label>
-              <input value={cRuc} onChange={e => setCRuc(e.target.value)} disabled={cIdType === '07'}
-                placeholder={cIdType === '04' ? '0900000000001' : '0900000000'}
-                className={`${smallInputCls} disabled:opacity-50`} style={mf} />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[8px] text-digi-muted" style={pf}>Razón Social <span className="text-red-400">*</span></label>
-            <input value={cName} onChange={e => setCName(e.target.value)} disabled={cIdType === '07'}
-              className={`${smallInputCls} disabled:opacity-50`} style={mf} />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col gap-1">
-              <label className="text-[8px] text-digi-muted" style={pf}>Email {cIdType !== '07' && <span className="text-red-400">*</span>}</label>
-              <input value={cEmail} onChange={e => setCEmail(e.target.value)} type="email" placeholder="correo@ejemplo.com" className={smallInputCls} style={mf} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[8px] text-digi-muted" style={pf}>Teléfono</label>
-              <input value={cPhone} onChange={e => setCPhone(e.target.value)} placeholder="0999999999" className={smallInputCls} style={mf} />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[8px] text-digi-muted" style={pf}>Dirección</label>
-            <input value={cAddress} onChange={e => setCAddress(e.target.value)} placeholder="Dirección" className={smallInputCls} style={mf} />
-          </div>
 
           <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-2" style={pf}>Suscripción</h4>
           <div className="flex flex-col gap-1">
@@ -429,7 +356,7 @@ export default function SubscriptionsPage() {
             </div>
           </div>
 
-          <button onClick={createSubscription} disabled={creating || !cTitle.trim() || !cCost} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+          <button onClick={createSubscription} disabled={creating || !cBillingId || !cTitle.trim() || !cCost} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
             {creating ? '...' : 'Crear Suscripción'}
           </button>
         </div>

@@ -97,6 +97,16 @@ Módulos principales:
 - **Facturación = Ecuador / SRI**: firma electrónica con `.p12`; respetar formato XML SRI.
 - **Rebuild v2 descartado** (2026-06-07): el usuario confirmó que `main` de este repo es la
   versión correcta y en uso. Se eliminó la rama `origin/rebuild/v2`. El trabajo continúa aquí.
+- **Suscripciones — alta vinculada a cliente registrado (2026-06-15):** al **crear** una suscripción
+  (`app/(dashboard)/dashboard/subscriptions/page.tsx`) el cliente se **asigna obligatoriamente** desde la
+  lista de clientes registrados del módulo Clientes (`GET /api/billing-clients`, que **incluye Consumidor
+  Final**, `ruc='9999999999999'`). Al elegir cliente, los **datos de facturación** (tipo id, identificación,
+  razón social, email, teléfono, dirección) se **autocompletan y se muestran en SOLO LECTURA** (no editables a
+  mano); para cambiarlos se edita el cliente en su módulo. El POST envía `client_id_type/client_ruc/
+  client_name_sri/...` tomados del cliente seleccionado y `client_id: null` (el `client_name` de la tabla cae a
+  `client_name_sri`). **Se eliminó la función "Cliente previo"** (botón + buscador de historial de adquirentes
+  vía `/api/invoices/clients-history`) del modal. **Campos editables por el usuario: solo cliente, razón/título
+  del cobro, costo mensual y fecha de inicio.** Verificado tsc OK. **Sin commitear.**
 - **Suscripciones (reglas, 2026-06-11):** cobro **por mes calendario** (una fila por mes desde el mes de
   inicio hasta hoy; vencimiento = día de corte = día de `start_date`, clamp al último día en meses cortos;
   un mes aparece al iniciar el mes calendario). **IVA: SIN IVA (0%)** — corregido el 2026-06-11: el costo
