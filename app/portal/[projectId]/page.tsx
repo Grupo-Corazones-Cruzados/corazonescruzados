@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import {
   Send, ImagePlus, X, Clock, CheckCircle, XCircle, Loader2,
   AlertTriangle, ChevronDown, ChevronUp, Plus, Pencil, Check,
-  Image as ImageIcon,
+  Image as ImageIcon, Mic, Square, Keyboard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Incident, IncidentStatus, IncidentSeverity } from '@/types/incidents';
@@ -49,6 +49,14 @@ export default function PortalPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // description input mode: typed text vs. voice dictation (Whisper → text)
+  const [descMode, setDescMode] = useState<'text' | 'voice'>('text');
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // editing state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -108,6 +116,58 @@ export default function PortalPage() {
     });
   }, [projectId]);
 
+  // Voice dictation: record mic audio, send to Whisper (/api/transcribe), append text.
+  const toggleMic = async () => {
+    setMicError(null);
+    if (recording) {
+      const recorder = mediaRecorderRef.current;
+      mediaRecorderRef.current = null;
+      recorder?.stop();
+      setRecording(false);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const opts: MediaRecorderOptions = {};
+      if (MediaRecorder.isTypeSupported('audio/webm')) opts.mimeType = 'audio/webm';
+      const recorder = new MediaRecorder(stream, opts);
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const chunks = audioChunksRef.current;
+        if (chunks.length === 0) return;
+        const blob = new Blob(chunks, { type: recorder.mimeType });
+        setTranscribing(true);
+        try {
+          const form = new FormData();
+          form.append('audio', blob);
+          form.append('mimeType', recorder.mimeType);
+          const res = await fetch('/api/transcribe', { method: 'POST', body: form });
+          const data = await res.json();
+          if (data.text) {
+            const t = String(data.text).trim();
+            setDescription(prev => prev.trim() ? `${prev.trim()} ${t}` : t);
+          } else {
+            setMicError(data.error || 'No se pudo transcribir el audio. Intenta de nuevo.');
+          }
+        } catch {
+          setMicError('Error al transcribir el audio. Revisa tu conexión e intenta de nuevo.');
+        } finally {
+          setTranscribing(false);
+        }
+      };
+
+      recorder.start();
+      setRecording(true);
+    } catch {
+      setMicError('No se pudo acceder al micrófono. Concede el permiso en tu navegador.');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
@@ -150,6 +210,8 @@ export default function PortalPage() {
     setSelectedSection('');
     setSelectedSubsection('');
     setFiles([]);
+    setDescMode('text');
+    setMicError(null);
     setSubmitting(false);
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 3000);
@@ -468,12 +530,72 @@ export default function PortalPage() {
             )}
 
             <div>
-              <label className="block text-[11px] text-[#737373] mb-1.5">Descripcion *</label>
+              <div className="flex items-center justify-between mb-1.5 gap-2">
+                <label className="block text-[11px] text-[#737373]">Descripcion *</label>
+                {/* elegir cómo ingresar la descripción: texto o voz */}
+                <div className="flex items-center gap-0.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setDescMode('text')}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors",
+                      descMode === 'text' ? "bg-[#2a2a2a] text-white" : "text-[#737373] hover:text-white"
+                    )}
+                  >
+                    <Keyboard size={11} /> Texto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDescMode('voice')}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors",
+                      descMode === 'voice' ? "bg-[#2a2a2a] text-white" : "text-[#737373] hover:text-white"
+                    )}
+                  >
+                    <Mic size={11} /> Voz
+                  </button>
+                </div>
+              </div>
               {modules.length > 0 && !selectedModule && (
                 <p className="text-[10px] text-yellow-400/70 mb-1.5 flex items-center gap-1">
                   <AlertTriangle size={10} /> Selecciona un módulo primero
                 </p>
               )}
+
+              {descMode === 'voice' && (
+                <div className="mb-2">
+                  <button
+                    type="button"
+                    onClick={toggleMic}
+                    disabled={transcribing || (modules.length > 0 && !selectedModule)}
+                    className={cn(
+                      "w-full flex items-center justify-center gap-2 px-3 py-2 rounded text-xs border transition-colors",
+                      recording
+                        ? "bg-red-500/15 border-red-500/40 text-red-300"
+                        : "bg-[#1a1a1a] border-dashed border-[#2a2a2a] text-[#737373] hover:text-white hover:border-[#4a4a4a]",
+                      (transcribing || (modules.length > 0 && !selectedModule)) && "opacity-40 cursor-not-allowed"
+                    )}
+                  >
+                    {transcribing ? (
+                      <><Loader2 size={14} className="animate-spin" /> Transcribiendo…</>
+                    ) : recording ? (
+                      <><Square size={12} className="fill-current" /> Detener y transcribir
+                        <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" /></>
+                    ) : (
+                      <><Mic size={14} /> Grabar mensaje de voz</>
+                    )}
+                  </button>
+                  <p className="text-[10px] text-[#737373] mt-1">
+                    Graba tu mensaje y lo convertimos a texto. Puedes grabar varias veces y luego editar el resultado.
+                  </p>
+                  {micError && (
+                    <p className="text-[10px] text-red-400 mt-1 flex items-center gap-1">
+                      <AlertTriangle size={10} /> {micError}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
@@ -483,7 +605,9 @@ export default function PortalPage() {
                   "w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors resize-none",
                   modules.length > 0 && !selectedModule && "opacity-40 cursor-not-allowed"
                 )}
-                placeholder="Describe con detalle la incidencia encontrada... (puedes pegar imágenes aquí)"
+                placeholder={descMode === 'voice'
+                  ? "Aquí aparecerá lo que dictes por voz. Puedes editarlo libremente."
+                  : "Describe con detalle la incidencia encontrada... (puedes pegar imágenes aquí)"}
                 required
                 disabled={modules.length > 0 && !selectedModule}
               />

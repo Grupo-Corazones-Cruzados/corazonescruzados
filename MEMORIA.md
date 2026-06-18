@@ -75,6 +75,18 @@ Stack estándar de la casa, con particularidades de este repo:
   (tabla + panel editable + facturas + totales). **Gotcha:** join ticket por `t.id::text = i.source_id` (NO
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
+## Decisiones recientes (feature)
+- **Portal de incidencias — descripción por texto o por voz (2026-06-18):** en el portal del cliente
+  (`app/portal/[projectId]/page.tsx`) el cliente puede **elegir cómo ingresar la descripción**: escribir texto
+  (modo por defecto) o **dictar por voz**. Decisión del usuario: **dictado voz→texto** (NO se guarda el audio,
+  NO hay cambios de BD). Se graba con `MediaRecorder` (`audio/webm`) y se envía a `POST /api/transcribe`
+  (Whisper `whisper-1`, `language:es`, ya existente) → el texto cae en el mismo `description` y queda
+  **editable** (se puede grabar varias veces; cada transcripción se anexa). Toggle "Texto/Voz" sobre el
+  textarea; botón Grabar/Detener con estado "Transcribiendo…" y errores en línea (`micError`). Requiere
+  contexto seguro (HTTPS/localhost) para `getUserMedia` — prod (Railway) es HTTPS. El mismo patrón de grabación
+  vive inline en `components/world/ChatPanel.tsx` (`toggleMic`); no hay hook compartido aún. Verificado tsc OK.
+  **Sin commitear.**
+
 ## Arquitectura y módulos
 Rutas en `app/`, agrupadas por layout: `(auth)`, `(dashboard)`, `(main)`, `(public)`.
 API en `app/api/` (~40 grupos). Lógica en `lib/`, componentes en `components/`.
@@ -163,6 +175,24 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **SRI "FECHA EMISION EXTEMPORANEA" = bug de zona horaria (2026-06-15):** la clave de acceso
+  (`generateAccessKey`, `access-key.ts`) y `fechaEmision` (`xml-builder.ts`) construían la fecha con
+  `new Date().getDate()/getMonth()/getFullYear()` → **hora local del servidor**. En Railway el contenedor
+  corre en **UTC**, así que cualquier factura emitida entre las **19:00 y medianoche de Ecuador** (00:00–05:00
+  UTC del día siguiente) salía con fecha **un día en el futuro** respecto al servidor del SRI (Ecuador, UTC-5)
+  y el SRI la **rechazaba/DEVOLVÍA** con "FECHA EMISION EXTEMPORANEA … es mayor a la fecha del servidor".
+  Afectaba a TODAS las facturas (tickets/proyectos/manuales/suscripciones), no solo Consumidor Final; se
+  detectó al marcar pagada una suscripción Consumidor Final ($5) a las 19:32 EC. **Fix:** helper
+  `ecuadorDateParts(fecha)` en `access-key.ts` (resta 5h fijas — Ecuador no tiene DST — y lee `getUTC*`),
+  usado por `generateAccessKey` y `buildFacturaXml`. Diagnóstico: el `sri_response` guardado en
+  `gcc_world.invoices` trae el mensaje exacto del SRI (consultable con un script `pg` de solo lectura).
+  Las facturas #49/#50 (suscripción #2) quedaron `failed`/`rejected`; reintentar el cobro crea una nueva con
+  secuencial y fecha correctos.
+- **El motivo de un rechazo del SRI quedaba invisible en Suscripciones (2026-06-15):** "Marcar pagado" hacía
+  `toast.error(...)` pero el panel de meses es un `<dialog>` en top layer → el toast queda **detrás** (mismo
+  gotcha que abajo). Por eso "parece que carga pero no pasa nada". Se añadió un **banner de error en línea**
+  dentro del panel (estado `payError`) además del toast. Patrón a replicar en cualquier acción que falle con
+  el modal abierto.
 - **Toasts (sonner) ocultos detrás de modales `<dialog>` (2026-06-11):** `PixelModal` abre un
   `<dialog>` con `showModal()`, que el navegador coloca en el **top layer** (por encima de TODO, incluso
   de elementos `position:fixed` fuera del diálogo). Los toasts de sonner se renderizan en un portal a nivel
