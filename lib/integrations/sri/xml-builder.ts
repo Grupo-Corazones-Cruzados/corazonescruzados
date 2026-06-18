@@ -1,5 +1,5 @@
 import { SRI_CONFIG, getTipoIdentificacion } from './config';
-import { generateAccessKey, formatInvoiceNumber } from './access-key';
+import { generateAccessKey, formatInvoiceNumber, ecuadorDateParts } from './access-key';
 
 export interface InvoiceItem {
   codigoPrincipal?: string;
@@ -52,9 +52,7 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
   const claveAcceso = generateAccessKey(data.fecha, data.secuencial);
   const numeroFactura = formatInvoiceNumber(data.secuencial);
 
-  const dd = String(data.fecha.getDate()).padStart(2, '0');
-  const mm = String(data.fecha.getMonth() + 1).padStart(2, '0');
-  const aaaa = String(data.fecha.getFullYear());
+  const { dd, mm, aaaa } = ecuadorDateParts(data.fecha);
   const fechaEmision = `${dd}/${mm}/${aaaa}`;
 
   const tipoIdComprador = data.clienteIdTipo || getTipoIdentificacion(data.clienteRuc);

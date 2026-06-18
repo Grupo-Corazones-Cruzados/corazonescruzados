@@ -77,6 +77,9 @@ export default function SubscriptionsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [busyPeriod, setBusyPeriod] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  // Inline error: los toasts de sonner quedan ocultos detrás del <dialog> del modal,
+  // así que el motivo de un rechazo del SRI se muestra dentro del propio panel.
+  const [payError, setPayError] = useState<string | null>(null);
 
   // App-level confirmation dialog (replaces window.confirm)
   const [confirmCfg, setConfirmCfg] = useState<{ title: string; message: string; confirmLabel: string; danger: boolean; onConfirm: () => void } | null>(null);
@@ -144,6 +147,7 @@ export default function SubscriptionsPage() {
   const openDetail = async (sub: any) => {
     setSelected(sub);
     setDetail(null);
+    setPayError(null);
     setLoadingDetail(true);
     try {
       const res = await fetch(`/api/subscriptions/${sub.id}`);
@@ -172,6 +176,7 @@ export default function SubscriptionsPage() {
   const doMarkPaid = async (period: string, periodLabel: string) => {
     if (!detail) return;
     setBusyPeriod(period);
+    setPayError(null);
     try {
       const res = await fetch(`/api/subscriptions/${detail.id}/pay`, {
         method: 'POST',
@@ -179,11 +184,19 @@ export default function SubscriptionsPage() {
         body: JSON.stringify({ action: 'pay', period, send_email: true }),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'No se pudo facturar'); return; }
+      if (!res.ok) {
+        const msg = data.error || 'No se pudo facturar';
+        setPayError(msg);
+        toast.error(msg);
+        return;
+      }
       toast.success(`Pagado · factura generada${data.emailed ? ' y enviada' : ''}`);
       await refreshDetail(detail.id);
       fetchData();
-    } catch { toast.error('Error al procesar el cobro'); }
+    } catch {
+      setPayError('Error al procesar el cobro');
+      toast.error('Error al procesar el cobro');
+    }
     finally { setBusyPeriod(null); }
   };
 
@@ -386,6 +399,15 @@ export default function SubscriptionsPage() {
               </div>
               <span className="text-[10px] text-digi-muted" style={mf}>{detail.summary?.paidCount}/{detail.summary?.totalPeriods} pagados</span>
             </div>
+
+            {payError && (
+              <div className="border border-red-700/50 bg-red-900/15 px-3 py-2 flex items-start justify-between gap-2">
+                <div className="text-[10px] text-red-300 leading-relaxed" style={mf}>
+                  <span className="font-semibold">No se pudo facturar:</span> {payError}
+                </div>
+                <button onClick={() => setPayError(null)} className="text-[10px] text-red-400 hover:text-red-300 shrink-0" style={pf}>✕</button>
+              </div>
+            )}
 
             {/* Meses */}
             <div className="space-y-2">
