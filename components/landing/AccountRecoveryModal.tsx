@@ -1,6 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import BrandLoader from '@/components/ui/BrandLoader';
+
+const PIXEL = "'Silkscreen', cursive";
+const BODY = "'Inter', system-ui, -apple-system, sans-serif";
 
 export default function AccountRecoveryModal({
   onClose,
@@ -65,192 +69,180 @@ export default function AccountRecoveryModal({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 300,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(3px)',
-        WebkitBackdropFilter: 'blur(3px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-        animation: 'pixelFadeIn 0.45s ease-out',
-        fontFamily: "'Silkscreen', cursive",
-        color: '#e5e5e5',
-      }}
-    >
+    <div role="dialog" aria-modal="true" style={overlay}>
       <div
         style={{
           width: '100%',
           maxWidth: 440,
-          background: '#131923',
-          border: '2px solid var(--color-accent)',
-          padding: '28px 26px',
-          boxShadow: '6px 6px 0 rgba(0,0,0,0.55), 0 0 28px rgba(75,45,142,0.35)',
-          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 18,
         }}
       >
-        <button
-          type="button"
-          aria-label="Cerrar"
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            background: 'transparent',
-            border: 0,
-            color: 'rgba(225,215,255,0.6)',
-            fontFamily: "'Silkscreen', cursive",
-            fontSize: '0.85rem',
-            cursor: 'pointer',
-            padding: 6,
-          }}
-        >
-          ✕
-        </button>
-
-        <div
-          style={{
-            fontSize: '0.8rem',
-            letterSpacing: '0.22em',
-            color: 'var(--color-accent)',
-            textTransform: 'uppercase',
-            textAlign: 'center',
-            marginBottom: 6,
-            textShadow: '1px 1px 0 rgba(0,0,0,0.6)',
-          }}
-        >
-          {step === 'creds' ? 'Ya tengo una cuenta' : 'Confirma el código'}
-        </div>
-        <div
-          style={{
-            fontSize: '0.6rem',
-            letterSpacing: '0.1em',
-            color: 'rgba(225,215,255,0.7)',
-            textAlign: 'center',
-            marginBottom: 18,
-          }}
-        >
-          {step === 'creds'
-            ? 'Inicia sesión y vincula este dispositivo'
-            : `Te enviamos un código a ${masked ?? 'tu correo'}`}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <BrandLoader size="md" />
+          <span
+            style={{ fontFamily: PIXEL, fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
+          >
+            GCC WORLD
+          </span>
         </div>
 
-        {step === 'creds' ? (
-          <form
-            onSubmit={submitCreds}
-            style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
-          >
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Correo electrónico"
-              autoComplete="email"
-              autoFocus
-              style={inputStyle()}
-            />
-            <input
-              type="password"
-              value={pwd}
-              onChange={(e) => setPwd(e.target.value)}
-              placeholder="Contraseña"
-              autoComplete="current-password"
-              style={inputStyle()}
-            />
-            {error && <ErrorMsg>{error}</ErrorMsg>}
-            <button
-              type="submit"
-              disabled={busy}
-              className="pixel-btn pixel-btn-primary"
-              style={{ marginTop: 6, opacity: busy ? 0.6 : 1 }}
-            >
-              {busy ? 'Enviando código...' : 'Enviar código'}
-            </button>
-          </form>
-        ) : (
-          <form
-            onSubmit={submitCode}
-            style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
-          >
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))
-              }
-              placeholder="Código de 6 dígitos"
-              autoFocus
-              style={{
-                ...inputStyle(),
-                textAlign: 'center',
-                letterSpacing: '0.45em',
-                fontSize: '1.1rem',
-              }}
-            />
-            {error && <ErrorMsg>{error}</ErrorMsg>}
-            <button
-              type="submit"
-              disabled={busy || code.length !== 6}
-              className="pixel-btn pixel-btn-primary"
-              style={{
-                marginTop: 6,
-                opacity: busy || code.length !== 6 ? 0.5 : 1,
-              }}
-            >
-              {busy ? 'Verificando...' : 'Confirmar y entrar'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setStep('creds');
-                setError(null);
-                setCode('');
-              }}
-              className="pixel-btn pixel-btn-secondary"
-              style={{ marginTop: 4 }}
-            >
-              ← Volver
-            </button>
-          </form>
-        )}
+        <div style={panel}>
+          <button type="button" aria-label="Cerrar" onClick={onClose} style={closeBtn}>
+            ✕
+          </button>
+
+          <h2 style={title}>{step === 'creds' ? 'Ya tengo una cuenta' : 'Confirma el código'}</h2>
+          <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: '#b9b2cf', margin: '0 0 16px' }}>
+            {step === 'creds'
+              ? 'Inicia sesión y vincula este dispositivo.'
+              : `Te enviamos un código a ${masked ?? 'tu correo'}.`}
+          </p>
+
+          {step === 'creds' ? (
+            <form onSubmit={submitCreds} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Correo electrónico"
+                autoComplete="email"
+                autoFocus
+                style={input}
+              />
+              <input
+                type="password"
+                value={pwd}
+                onChange={(e) => setPwd(e.target.value)}
+                placeholder="Contraseña"
+                autoComplete="current-password"
+                style={input}
+              />
+              {error && <ErrorMsg>{error}</ErrorMsg>}
+              <button
+                type="submit"
+                disabled={busy}
+                className="pixel-btn pixel-btn-primary"
+                style={{ marginTop: 4, opacity: busy ? 0.6 : 1 }}
+              >
+                {busy ? 'Enviando código...' : 'Enviar código'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={submitCode} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                placeholder="Código de 6 dígitos"
+                autoFocus
+                style={{
+                  ...input,
+                  textAlign: 'center',
+                  letterSpacing: '0.45em',
+                  fontSize: '1.1rem',
+                }}
+              />
+              {error && <ErrorMsg>{error}</ErrorMsg>}
+              <button
+                type="submit"
+                disabled={busy || code.length !== 6}
+                className="pixel-btn pixel-btn-primary"
+                style={{ marginTop: 4, opacity: busy || code.length !== 6 ? 0.5 : 1 }}
+              >
+                {busy ? 'Verificando...' : 'Confirmar y entrar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('creds');
+                  setError(null);
+                  setCode('');
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  cursor: 'pointer',
+                  fontFamily: BODY,
+                  fontSize: '0.78rem',
+                  color: '#c9b6ff',
+                  textDecoration: 'underline',
+                  marginTop: 2,
+                }}
+              >
+                ← Volver
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function inputStyle(): React.CSSProperties {
-  return {
-    width: '100%',
-    padding: '10px 12px',
-    background: '#0f1320',
-    color: '#e5e5e5',
-    border: '2px solid var(--color-accent)',
-    fontFamily: "'Silkscreen', cursive",
-    fontSize: '0.78rem',
-    letterSpacing: '0.05em',
-    outline: 'none',
-  };
-}
-
 function ErrorMsg({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        fontSize: '0.62rem',
-        letterSpacing: '0.05em',
-        color: '#ff6f6f',
-      }}
-    >
-      {children}
-    </div>
+    <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: '#ff8f8f' }}>{children}</div>
   );
 }
+
+const overlay: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 300,
+  background: 'rgba(6,7,12,0.82)',
+  backdropFilter: 'blur(4px)',
+  WebkitBackdropFilter: 'blur(4px)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 20,
+  animation: 'pixelFadeIn 0.45s ease-out',
+};
+
+const panel: React.CSSProperties = {
+  position: 'relative',
+  width: '100%',
+  background: '#121722',
+  border: '1px solid rgba(255,255,255,0.10)',
+  borderRadius: 12,
+  boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+  padding: '26px 24px',
+};
+
+const closeBtn: React.CSSProperties = {
+  position: 'absolute',
+  top: 10,
+  right: 12,
+  background: 'transparent',
+  border: 0,
+  color: 'rgba(225,215,255,0.6)',
+  fontFamily: PIXEL,
+  fontSize: '0.85rem',
+  cursor: 'pointer',
+  padding: 6,
+};
+
+const title: React.CSSProperties = {
+  fontFamily: PIXEL,
+  fontSize: '1rem',
+  color: '#f1eefb',
+  margin: '0 0 6px',
+  textShadow: '1px 1px 0 rgba(0,0,0,0.6)',
+};
+
+const input: React.CSSProperties = {
+  width: '100%',
+  padding: '11px 13px',
+  background: '#0d1119',
+  color: '#e9e6f5',
+  border: '1px solid rgba(255,255,255,0.14)',
+  borderRadius: 6,
+  fontFamily: BODY,
+  fontSize: '0.9rem',
+  outline: 'none',
+};
