@@ -2990,8 +2990,12 @@ export default function LandingPage() {
           onClose={() => setRecoveryOpen(false)}
           onSuccess={() => {
             // Cuenta anexada a este dispositivo (IP actualizada por el endpoint).
+            // Entra al juego de inmediato como jugador recurrente: al setear
+            // windAway + cargar el personaje, el useEffect de savedCharacter
+            // dispara enterAsReturning.
             setRecoveryOpen(false);
             setOnboardingOpen(false);
+            setWindAway(true);
             refreshSavedCharacter().then((found) => {
               if (found) setSavePointTrigger((n) => n + 1);
             });
