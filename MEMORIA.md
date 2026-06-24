@@ -503,6 +503,27 @@ Stack estándar de la casa, con particularidades de este repo:
     - **Contexto:** el admin `lfgonzalezm0@outlook.com` había entrado por "Ya tengo cuenta" a un personaje
       y quedó en **pantalla negra** del juego. La separación evita la confusión. (Si la pantalla negra
       persiste con member-login, es un bug aparte del render del personaje, a investigar.)
+  - **Login unificado: 2FA por código + passkey (2026-06-24):**
+    - **Opción "Soy candidato"** en `EntryChoiceModal` (login de candidato existente) separada de
+      **"Quiero postularme como candidato"** (solo cuentas NUEVAS; se quitó el botón "Ya tengo una cuenta"
+      del modal de sliders). "Soy candidato" abre `AccountRecoveryModal` (rediseñado al estilo limpio con logo).
+    - **2FA (código por correo) en TODOS los logins de entrada:**
+      - **Candidato:** `AccountRecoveryModal` → recover/begin (credenciales) → recover/verify (código). Ya existía.
+      - **Miembro/admin (juego):** `member-login` ahora en 2 pasos: **`member-login/begin`** (valida
+        `gcc_world.users` + envía código a `login_code`/`login_code_exp`) → **`member-login/verify`** (valida
+        código → abre sesión del personaje o autentica como staff si no tiene). El `member-login` de 1 paso → 410.
+      - **Cliente (dashboard):** `ClientLoginModal` ahora 2 pasos: **`/api/auth/login/begin`** + **`/verify`**.
+      - Columnas nuevas en `gcc_world.users`: `login_code`, `login_code_exp` (ADD COLUMN IF NOT EXISTS).
+    - **Passkey ("Ingresar con passkey", entra DIRECTO sin código):** botón en `AccountRecoveryModal`
+      (candidato) y `MemberLoginModal` usando los endpoints existentes
+      `/api/character/auth/passkey/login/{begin,finish}` (device-bound por cookie/IP) +
+      `startAuthentication` de `@simplewebauthn/browser`. El **registro** de passkey se ofrece dentro del
+      juego (`PasskeyOfferDialog`) tras iniciar sesión.
+    - **PENDIENTE:** (1) passkey para **cliente** (es `gcc_world.users`; el passkey de personaje no aplica —
+      hay passkey de staff en `app/(auth)/auth/page.tsx`, sistema aparte). (2) 2FA en el login de **staff por
+      `/auth`** (la página `/auth` y `useAuth.signIn` aún usan `/api/auth/login` de 1 paso; el `ClientLoginModal`
+      sí usa begin/verify). (3) Botón explícito "Configurar passkey" dentro del modal de login (hoy el registro
+      se ofrece post-login en el juego).
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**
