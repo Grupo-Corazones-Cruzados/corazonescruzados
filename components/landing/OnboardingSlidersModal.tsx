@@ -1185,11 +1185,14 @@ const SLIDES: Slide[] = [
 export default function OnboardingSlidersModal({
   onComplete,
   onClose,
+  onHaveAccount,
 }: {
   /** Se llama al enviar la postulación con los datos del candidato. */
   onComplete: (data: PostulacionData) => void;
   /** Cancela el onboarding y vuelve a la landing. */
   onClose: () => void;
+  /** Abre el flujo "Ya tengo una cuenta" (anexar cuenta por código). */
+  onHaveAccount: () => void;
 }) {
   // index 0..N-1 => sliders informativos; index === N => formulario de postulación.
   const [index, setIndex] = useState(0);
@@ -1242,6 +1245,28 @@ export default function OnboardingSlidersModal({
         {/* Cerrar */}
         <button type="button" aria-label="Cerrar" onClick={onClose} style={closeBtn}>
           ✕
+        </button>
+
+        {/* Ya tengo una cuenta (anexar cuenta por código) */}
+        <button
+          type="button"
+          onClick={onHaveAccount}
+          style={{
+            position: 'absolute',
+            top: 12,
+            left: 14,
+            zIndex: 2,
+            background: 'transparent',
+            border: '1px solid rgba(123,95,191,0.5)',
+            borderRadius: 6,
+            color: '#c9b6ff',
+            fontFamily: BODY,
+            fontSize: '0.72rem',
+            cursor: 'pointer',
+            padding: '6px 11px',
+          }}
+        >
+          Ya tengo una cuenta
         </button>
 
         {/* Logo */}

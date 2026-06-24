@@ -71,7 +71,7 @@ export default function AccountRecoveryModal({
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 200,
+        zIndex: 300,
         background: 'rgba(0,0,0,0.7)',
         backdropFilter: 'blur(3px)',
         WebkitBackdropFilter: 'blur(3px)',

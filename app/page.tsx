@@ -2566,6 +2566,7 @@ export default function LandingPage() {
     clientSignupOpen ||
     clientLoginOpen ||
     onboardingOpen ||
+    recoveryOpen ||
     !!proposalPending;
 
   return (
@@ -2980,21 +2981,6 @@ export default function LandingPage() {
               Colaborar
             </button>
             </div>
-            {savedCharacterChecked && !savedCharacter && !windAway && (
-              <button
-                type="button"
-                onClick={() => setRecoveryOpen(true)}
-                disabled={landingLocked}
-                className="pixel-btn pixel-btn-secondary"
-                style={{
-                  ...(landingLocked
-                    ? { opacity: 0.45, cursor: 'not-allowed' }
-                    : { animation: 'breathe 5s ease-in-out infinite' }),
-                }}
-              >
-                Ya tengo una cuenta
-              </button>
-            )}
           </div>
         </div>
       </section>
@@ -3003,7 +2989,9 @@ export default function LandingPage() {
         <AccountRecoveryModal
           onClose={() => setRecoveryOpen(false)}
           onSuccess={() => {
+            // Cuenta anexada a este dispositivo (IP actualizada por el endpoint).
             setRecoveryOpen(false);
+            setOnboardingOpen(false);
             refreshSavedCharacter().then((found) => {
               if (found) setSavePointTrigger((n) => n + 1);
             });
@@ -3048,6 +3036,7 @@ export default function LandingPage() {
       {onboardingOpen && (
         <OnboardingSlidersModal
           onClose={() => setOnboardingOpen(false)}
+          onHaveAccount={() => setRecoveryOpen(true)}
           onComplete={async (postulacion) => {
             // Registra la propuesta (queda en espera de aprobación del admin
             // global). El candidato NO entra al juego hasta ser aprobado.
