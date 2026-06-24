@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { verifyPassword } from '@/lib/auth/password';
+import { createToken, setAuthCookie } from '@/lib/auth/jwt';
 import {
   AUTH_COOKIE,
   AUTH_COOKIE_MAX_AGE,
@@ -47,23 +48,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
     }
 
-    // 2) Personaje del juego asociado por correo.
+    // 2) Personaje del juego asociado por correo o por user_id.
     const c = await pool.query(
       `SELECT id, client_token FROM gcc_world.clients
-        WHERE LOWER(email) = $1 AND character_data IS NOT NULL
+        WHERE (LOWER(email) = $1 OR user_id = $2) AND character_data IS NOT NULL
         ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
-      [cleanEmail],
+      [cleanEmail, user.id],
     );
     const character = c.rows[0];
+
     if (!character) {
-      return NextResponse.json(
-        { error: 'No tienes un personaje en el juego todavía.', noCharacter: true },
-        { status: 404 },
-      );
+      // Sin personaje: lo autenticamos como STAFF (JWT) y el frontend arranca
+      // el intro del juego → al crear el personaje, /api/character/save lo
+      // vincula a su cuenta (user_id/email).
+      const jwt = await createToken({
+        userId: String(user.id),
+        email: cleanEmail,
+        role: user.role,
+      });
+      await setAuthCookie(jwt);
+      return NextResponse.json({ ok: true, hasCharacter: false });
     }
 
-    // 3) Abre la sesión del personaje en este dispositivo. Los miembros entran
-    //    sin gate de aprobación: se marca approved=true.
+    // 3) Tiene personaje: abre su sesión en este dispositivo. Los miembros
+    //    entran sin gate de aprobación: se marca approved=true.
     const ip = await getClientIp();
     const ipHash = hashIp(ip);
     const clientToken = character.client_token || randomBytes(24).toString('hex');
@@ -75,6 +83,7 @@ export async function POST(req: Request) {
               auth_token = $3,
               auth_expires = NOW() + INTERVAL '30 days',
               approved = true,
+              email_verified = true,
               last_seen_at = NOW()
         WHERE id = $4`,
       [ipHash, clientToken, authToken, character.id],
@@ -96,7 +105,7 @@ export async function POST(req: Request) {
       maxAge: AUTH_COOKIE_MAX_AGE,
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, hasCharacter: true });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'unknown error';
     console.error('Member login error:', msg);

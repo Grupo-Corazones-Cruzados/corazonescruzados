@@ -19,7 +19,8 @@ export default function MemberLoginModal({
   onLoggedIn,
 }: {
   onClose: () => void;
-  onLoggedIn: () => void;
+  /** hasCharacter=false → el miembro aún no tiene personaje (debe crearlo). */
+  onLoggedIn: (hasCharacter: boolean) => void;
 }) {
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
@@ -41,7 +42,7 @@ export default function MemberLoginModal({
         setError(j?.error ?? 'No se pudo iniciar sesión');
         return;
       }
-      onLoggedIn();
+      onLoggedIn(!!j.hasCharacter);
     } catch {
       setError('Error de red');
     } finally {

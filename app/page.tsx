@@ -3135,12 +3135,28 @@ export default function LandingPage() {
       {memberLoginOpen && (
         <MemberLoginModal
           onClose={() => setMemberLoginOpen(false)}
-          onLoggedIn={async () => {
-            // Miembro/admin entra al juego con su personaje (ya quedó approved).
+          onLoggedIn={async (hasCharacter) => {
             setMemberLoginOpen(false);
-            const found = await refreshSavedCharacter();
-            if (found) setSavePointTrigger((n) => n + 1);
-            setWindAway(true); // el useEffect de savedCharacter dispara enterAsReturning
+            if (hasCharacter) {
+              // Tiene personaje (ya quedó approved): entra directo al juego.
+              const found = await refreshSavedCharacter();
+              if (found) setSavePointTrigger((n) => n + 1);
+              setWindAway(true); // useEffect de savedCharacter → enterAsReturning
+              return;
+            }
+            // Sin personaje: arranca el intro del juego (chat → planeta →
+            // creador de personaje). Está autenticado como staff, así que al
+            // guardar el personaje queda vinculado a su cuenta.
+            setWindAway(true);
+            cameraEnabledRef.current = true;
+            setCameraEnabled(true);
+            if (worldChatTimeoutRef.current) {
+              window.clearTimeout(worldChatTimeoutRef.current);
+            }
+            worldChatTimeoutRef.current = window.setTimeout(() => {
+              setWorldChatVisible(true);
+              worldChatTimeoutRef.current = null;
+            }, 6000);
           }}
         />
       )}

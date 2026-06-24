@@ -42,6 +42,11 @@ export async function POST(req: Request) {
     let clientId: number | null = null;
 
     if (user) {
+      // Personaje de un miembro/admin (staff): queda aprobado y verificado
+      // (no pasa por el gate de aprobación de candidatos).
+      await pool.query(
+        `ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false`,
+      );
       const { rows } = await pool.query(
         `SELECT id FROM gcc_world.clients WHERE user_id = $1 LIMIT 1`,
         [user.id],
@@ -53,6 +58,8 @@ export async function POST(req: Request) {
                   character_data = $2::jsonb,
                   client_token = $3,
                   ip_hash = $4,
+                  approved = true,
+                  email_verified = true,
                   last_seen_at = NOW()
             WHERE id = $5
           RETURNING id`,
@@ -63,8 +70,8 @@ export async function POST(req: Request) {
         const inserted = await pool.query(
           `INSERT INTO gcc_world.clients
               (name, email, user_id, alias, character_data,
-               client_token, ip_hash, last_seen_at)
-           VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, NOW())
+               client_token, ip_hash, approved, email_verified, last_seen_at)
+           VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, true, true, NOW())
            RETURNING id`,
           [alias, user.email, user.id, alias, json, token, ipHash],
         );
