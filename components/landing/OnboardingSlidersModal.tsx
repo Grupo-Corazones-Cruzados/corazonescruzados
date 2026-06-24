@@ -1256,14 +1256,17 @@ export default function OnboardingSlidersModal({
             top: 12,
             left: 14,
             zIndex: 2,
-            background: 'transparent',
-            border: '1px solid rgba(123,95,191,0.5)',
+            background:
+              'linear-gradient(135deg, var(--color-accent-glow, #7B5FBF), var(--color-accent, #4B2D8E))',
+            border: '1px solid var(--color-accent-glow, #7B5FBF)',
             borderRadius: 6,
-            color: '#c9b6ff',
+            color: '#fff',
             fontFamily: BODY,
             fontSize: '0.72rem',
+            fontWeight: 600,
             cursor: 'pointer',
             padding: '6px 11px',
+            boxShadow: '0 3px 12px rgba(123,95,191,0.4)',
           }}
         >
           Ya tengo una cuenta
