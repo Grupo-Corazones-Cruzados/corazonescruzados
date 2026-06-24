@@ -1,11 +1,8 @@
 'use client';
 
 /**
- * MemberLoginModal
- * ----------------
- * Inicio de sesión para MIEMBROS y ADMINISTRADORES que quieren ENTRAR AL JUEGO.
- * Valida contra gcc_world.users (rol member/admin) vía /api/character/auth/member-login
- * y abre la sesión de su personaje. No es el flujo de candidato.
+ * MemberLoginModal — login de MIEMBROS/ADMIN para entrar al juego, en 2 pasos:
+ * credenciales (gcc_world.users) → código de verificación por correo (2FA).
  */
 
 import { useState } from 'react';
@@ -22,24 +19,51 @@ export default function MemberLoginModal({
   /** hasCharacter=false → el miembro aún no tiene personaje (debe crearlo). */
   onLoggedIn: (hasCharacter: boolean) => void;
 }) {
+  const [step, setStep] = useState<'creds' | 'code'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
+  const [code, setCode] = useState('');
+  const [masked, setMasked] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = async (e: React.FormEvent) => {
+  const submitCreds = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      const r = await fetch('/api/character/auth/member-login', {
+      const r = await fetch('/api/character/auth/member-login/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password: pwd }),
       });
       const j = await r.json();
       if (!r.ok) {
-        setError(j?.error ?? 'No se pudo iniciar sesión');
+        setError(j?.error ?? 'No se pudo enviar el código');
+        return;
+      }
+      setMasked(j?.masked ?? null);
+      setStep('code');
+    } catch {
+      setError('Error de red');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const r = await fetch('/api/character/auth/member-login/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        setError(j?.error ?? 'Código incorrecto');
         return;
       }
       onLoggedIn(!!j.hasCharacter);
@@ -76,45 +100,95 @@ export default function MemberLoginModal({
             ✕
           </button>
 
-          <h2 style={title}>Ingresar como miembro</h2>
+          <h2 style={title}>
+            {step === 'creds' ? 'Ingresar como miembro' : 'Confirma el código'}
+          </h2>
           <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: '#b9b2cf', margin: '0 0 16px' }}>
-            Inicia sesión con tu cuenta de miembro o administrador para entrar al juego.
+            {step === 'creds'
+              ? 'Inicia sesión con tu cuenta de miembro o administrador para entrar al juego.'
+              : `Te enviamos un código a ${masked ?? 'tu correo'}.`}
           </p>
 
-          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Correo electrónico"
-              autoComplete="email"
-              autoFocus
-              style={input}
-            />
-            <input
-              type="password"
-              value={pwd}
-              onChange={(e) => setPwd(e.target.value)}
-              placeholder="Contraseña"
-              autoComplete="current-password"
-              style={input}
-            />
-            {error && (
-              <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: '#ff8f8f' }}>{error}</div>
-            )}
-            <button
-              type="submit"
-              disabled={busy}
-              className="pixel-btn pixel-btn-primary"
-              style={{ marginTop: 4, opacity: busy ? 0.6 : 1 }}
-            >
-              {busy ? 'Ingresando...' : 'Entrar al juego'}
-            </button>
-          </form>
+          {step === 'creds' ? (
+            <form onSubmit={submitCreds} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Correo electrónico"
+                autoComplete="email"
+                autoFocus
+                style={input}
+              />
+              <input
+                type="password"
+                value={pwd}
+                onChange={(e) => setPwd(e.target.value)}
+                placeholder="Contraseña"
+                autoComplete="current-password"
+                style={input}
+              />
+              {error && <ErrorMsg>{error}</ErrorMsg>}
+              <button
+                type="submit"
+                disabled={busy}
+                className="pixel-btn pixel-btn-primary"
+                style={{ marginTop: 4, opacity: busy ? 0.6 : 1 }}
+              >
+                {busy ? 'Enviando código...' : 'Enviar código'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={submitCode} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                placeholder="Código de 6 dígitos"
+                autoFocus
+                style={{ ...input, textAlign: 'center', letterSpacing: '0.45em', fontSize: '1.1rem' }}
+              />
+              {error && <ErrorMsg>{error}</ErrorMsg>}
+              <button
+                type="submit"
+                disabled={busy || code.length !== 6}
+                className="pixel-btn pixel-btn-primary"
+                style={{ marginTop: 4, opacity: busy || code.length !== 6 ? 0.5 : 1 }}
+              >
+                {busy ? 'Verificando...' : 'Entrar al juego'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('creds');
+                  setError(null);
+                  setCode('');
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  cursor: 'pointer',
+                  fontFamily: BODY,
+                  fontSize: '0.78rem',
+                  color: '#c9b6ff',
+                  textDecoration: 'underline',
+                  marginTop: 2,
+                }}
+              >
+                ← Volver
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+function ErrorMsg({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: '#ff8f8f' }}>{children}</div>;
 }
 
 const overlay: React.CSSProperties = {
