@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
     const { id } = await params;
     const body = await req.json();
@@ -35,7 +35,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
     const { id } = await params;
     const { rowCount } = await pool.query(`DELETE FROM gcc_world.flows WHERE id = $1`, [id]);

@@ -6,7 +6,8 @@ import { sendVerificationEmail } from "@/lib/integrations/resend";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, first_name, last_name } = await req.json();
+    const { email, password, first_name, last_name, phone, country, address } =
+      await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -35,11 +36,26 @@ export async function POST(req: NextRequest) {
 
     const hash = await hashPassword(password);
 
+    // Columnas opcionales de datos de cliente (idempotente).
+    await pool.query(
+      `ALTER TABLE gcc_world.users
+         ADD COLUMN IF NOT EXISTS country text,
+         ADD COLUMN IF NOT EXISTS address text`
+    );
+
     const result = await pool.query(
-      `INSERT INTO gcc_world.users (email, password_hash, first_name, last_name, role)
-       VALUES ($1, $2, $3, $4, 'client')
+      `INSERT INTO gcc_world.users (email, password_hash, first_name, last_name, role, phone, country, address)
+       VALUES ($1, $2, $3, $4, 'client', $5, $6, $7)
        RETURNING id, email, first_name, last_name, role`,
-      [email.toLowerCase(), hash, first_name || null, last_name || null]
+      [
+        email.toLowerCase(),
+        hash,
+        first_name || null,
+        last_name || null,
+        phone || null,
+        country || null,
+        address || null,
+      ]
     );
     const user = result.rows[0];
 

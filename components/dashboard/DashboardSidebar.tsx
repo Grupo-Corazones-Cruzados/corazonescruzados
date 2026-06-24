@@ -7,7 +7,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import BrandLoader from '@/components/ui/BrandLoader';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
-  Settings, LifeBuoy, ShieldCheck, Menu, ChevronsLeft, ChevronsRight,
+  Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
   LogOut, type LucideIcon,
 } from 'lucide-react';
 
@@ -18,16 +18,20 @@ interface NavItem {
   roles?: string[];
 }
 
+// Cliente (rol 'client') ve SOLO: Marketplace, Tickets, Proyectos, Suscripciones,
+// Automatizaciones, Configuracion y Soporte. El resto queda a member/admin.
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Inicio', href: '/dashboard', icon: Home },
+  { label: 'Inicio', href: '/dashboard', icon: Home, roles: ['member', 'admin'] },
   { label: 'Tickets', href: '/dashboard/tickets', icon: Ticket },
   { label: 'Proyectos', href: '/dashboard/projects', icon: FolderKanban },
-  { label: 'Suscripciones', href: '/dashboard/subscriptions', icon: CalendarClock, roles: ['member', 'admin'] },
+  { label: 'Suscripciones', href: '/dashboard/subscriptions', icon: CalendarClock, roles: ['member', 'admin', 'client'] },
   { label: 'Marketplace', href: '/dashboard/marketplace', icon: Store },
+  // Accesible para todos los roles (cliente/miembro/admin).
+  { label: 'Automatizaciones', href: '/dashboard/automatizaciones', icon: Workflow },
   { label: 'Clientes', href: '/dashboard/clients', icon: Users, roles: ['member', 'admin'] },
-  { label: 'Facturas', href: '/dashboard/invoices', icon: ReceiptText },
+  { label: 'Facturas', href: '/dashboard/invoices', icon: ReceiptText, roles: ['member', 'admin'] },
   { label: 'Centralizado', href: '/dashboard/centralized', icon: Network, roles: ['member', 'admin'] },
-  { label: 'Herramientas', href: '/dashboard/tools', icon: Wrench },
+  { label: 'Herramientas', href: '/dashboard/tools', icon: Wrench, roles: ['member', 'admin'] },
   { label: 'Configuracion', href: '/dashboard/settings', icon: Settings },
   { label: 'Soporte', href: '/dashboard/support', icon: LifeBuoy },
   { label: 'Admin', href: '/dashboard/admin', icon: ShieldCheck, roles: ['admin'] },

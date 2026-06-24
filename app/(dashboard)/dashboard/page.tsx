@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -17,10 +18,16 @@ interface FinanceItem { id?: number; type: 'income' | 'expense'; description: st
 
 export default function DashboardHome() {
   const { user } = useAuth();
+  const router = useRouter();
   const isAdmin = user?.role === 'admin';
   const isClient = user?.role === 'client';
   const [stats, setStats] = useState<Stats | null>(null);
   const [months, setMonths] = useState<FinanceMonth[]>([]);
+
+  // El inicio del cliente es el Marketplace, no el panel financiero.
+  useEffect(() => {
+    if (isClient) router.replace('/dashboard/marketplace');
+  }, [isClient, router]);
 
   // Detail modal
   const [detailMonth, setDetailMonth] = useState<FinanceMonth | null>(null);

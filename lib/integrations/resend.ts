@@ -99,6 +99,36 @@ export async function sendCharacterVerificationEmail(
   });
 }
 
+export async function sendCandidateProposalVerificationEmail(
+  email: string,
+  token: string,
+) {
+  const url = `${APP_URL}/api/candidate/verify?token=${token}`;
+  const html = emailShell(`
+    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Verifica tu correo</h1>
+    <p style="color:#94A3B8;font-size:14px;text-align:center;margin:0 0 24px;">Tu postulación al Grupo Corazones Cruzados</p>
+    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 24px;">
+      Recibimos tu postulación como candidato. Confirma este correo para validarlo.
+      Tu propuesta quedará <strong style="color:#7B5FBF;">en espera de aprobación</strong> por
+      parte del administrador del proyecto. Te avisaremos cuando sea aprobada.
+    </p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;font-weight:600;font-size:15px;border:2px solid #7B5FBF;">
+        Verificar mi correo
+      </a>
+    </div>
+    <p style="color:#737373;font-size:12px;margin:24px 0 0;">
+      Si no fuiste tú quien se postuló, puedes ignorar este correo.
+    </p>
+  `);
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: 'Verifica tu correo — Postulación GCC',
+    html,
+  });
+}
+
 export async function sendVerificationEmail(
   email: string,
   token: string,

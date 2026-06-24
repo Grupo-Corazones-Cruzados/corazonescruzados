@@ -9,6 +9,197 @@ de software en Ecuador. Centraliza documentación de proyectos, tickets/soporte,
 facturación electrónica (SRI Ecuador), calendario/disponibilidad de miembros, portal de
 clientes, y un "mundo" gamificado estilo Digimon (sprites, mapas, NPCs).
 
+## Fundamentos del proyecto — Grupo Corazones Cruzados (BASE CONCEPTUAL, no omitir)
+> Documentado el 2026-06-23 a partir del relato del usuario (líder del grupo). Es la **base
+> filosófica y organizativa** del proyecto; se usa, entre otros, para el onboarding de candidatos
+> (8 sliders) de la landing. **No omitir ni reinterpretar**: registrar tal cual lo expresó.
+
+**Líder / autor:** **Luis Fernando González Muyulema** (Guayaquil, Ecuador). Líder del **Grupo
+Corazones Cruzados (GCC)** y autor de la investigación **Condiciología**. Como proyecto
+centralizado, **el control total lo tiene el líder**.
+
+**Qué es:** una organización que es un **proyecto de desarrollo humano**.
+
+### Modelo de Grupo — "Modelo 4P" (4 Pisos + 4 Pasos)
+Modelo con **4 pisos** (roles, siempre expertos en su área) y **4 pasos** (etapas en orden).
+**Cada uno de los 4 pasos contiene los 4 pisos**: cada piso, con su rol, resuelve la necesidad del
+paso para avanzar el proyecto.
+
+**Los 4 Pisos (roles):**
+1. **Global** — toma decisiones en la administración de los **sistemas fundamentales** para el
+   crecimiento de un paso.
+2. **Pilar** — **crea y gestiona los proyectos aprobados** para ejecutar en un paso.
+3. **Controlador** — **asigna las tareas** asociadas al desarrollo de los proyectos aprobados.
+4. **Colaborador** — **ejecuta las tareas específicas** asignadas por un controlador.
+
+**Los 4 Pasos (etapas, en orden):**
+1. **Fundamentación** (1º) — fundamenta y respalda el **porqué** y la **base de conocimiento** de
+   un proyecto en desarrollo.
+2. **Creación** (2º) — **crea el planteamiento** ya fundamentado en el paso anterior.
+3. **Implementación** (3º) — el producto/proyecto ya creado se **implementa internamente** en la
+   organización: configura parámetros de **gestión interna**, establece **políticas y lógicas de
+   negocio internas** y **asigna roles** de administración o responsabilidad.
+4. **Gestión** (4º) — se encarga de la **publicación, marketing y monetización** del proyecto/producto.
+
+### Herramientas (4 — base de uso continuo para todos los miembros)
+1. **Metodología Condiciológica** — metodología de **6 pasos**: **Reconocer → Controlar → Predecir
+   → Experimentar → Convertir → Cambiar**. Su función es validar/justificar la existencia de la
+   **Condiciología**: va desde reconocer las condiciones hasta cambiarlas.
+   - **Condiciología:** investigación de Luis Fernando González Muyulema (Guayaquil, Ecuador) que
+     estudia las **condiciones**.
+   - **Condición:** conjunto de **factores que se manifiestan en una instancia de la realidad**.
+     Ejemplo: al mover la mano, en esa instancia de tiempo intervienen factores de las dimensiones
+     **corporal, ambiental y cognitiva**. Una instancia **no estudiada NO es una condición** (no se
+     la ha reconocido); cuando se la **estudia y se reconoce por qué se ejecutó**, se convierte en
+     condición.
+   - Aplica a **sujetos, objetos e ideas abstractas**: un proyecto tiene varias condiciones y,
+     según su efectividad/aprovechamiento, se toman **decisiones estratégicas**. Se **extrapola a
+     todo** y se estandariza en la organización vía lógica de negocio, sistemas y apps de
+     autoayuda/desarrollo humano. Los miembros usan una **app que evalúa constantemente las
+     condiciones** de su día a día.
+2. **Sistema de Control Psicosocial** — establece **controles sobre los espacios** para garantizar
+   seguridad y crecimiento (global e individual). Usa datos —muchas veces privados— para
+   monitorear situaciones que hoy no se controlan con certeza. Ejemplo del robo: hoy se llama al
+   911 y muchas veces el delincuente se sale con la suya; la propuesta usa tecnología y
+   **equipamiento táctico** (cámaras + robots lanzados de inmediato): una cámara interpreta el acto
+   por audio/voz, lanza un robot que verifica y, de confirmarse, inicia operación policial
+   inmediata sin tanto trámite. Busca que **las leyes existentes no puedan saltarse** mediante un
+   control más estricto que los miembros **aceptan** (cada teléfono registrado aporta logs de
+   ubicación y otros datos) **sin violar la intimidad más profunda del hogar**. Predice
+   movimientos/intenciones apoyándose en la condiciología para **actuar en el acto** (p.ej.
+   controlar/desarmar a un delincuente en un bus al mínimo acto o intención).
+3. **Proyecto Centralizado** — **todos los proyectos** que surjan son **recursos del Grupo
+   Corazones Cruzados**. Aunque alguien sea **dueño legal** (conserva su beneficio), el grupo tiene
+   **derecho a usar el proyecto** como parte de una estrategia global que beneficia a todos los
+   proyectos. Todos **cumplen indicaciones y comandos sin discusión ni cuestionamientos**: el
+   **control total lo tiene el líder, Luis Fernando González Muyulema**.
+4. **Violeta** — herramienta con **filosofía** de base: el violeta resulta de **combinar dos
+   colores distintos** (rojo + azul; o turquesa + morado) → **une lo distinto en uno solo** para
+   alcanzar algo más grande ("la unión hace la fuerza"). Es el **color que representa al GCC**. Tres
+   dimensiones:
+   - **Marca:** el violeta debe estar de forma **estándar en TODOS los proyectos** (sin importar su
+     dueño) para que los clientes reconozcan que pertenecen al grupo. **Quien no lo cumpla queda
+     fuera del grupo.**
+   - **Filosofía individual:** cada persona debe **sentirse afín** al sentimiento del violeta; no es
+     obligatorio sentirlo, pero **sí creer en la filosofía** para ser aceptado.
+   - **Acción:** **ayudar y esperar ser ayudado** (el apoyo de hoy se devuelve mañana). Se
+     **comparte el conocimiento** entre generaciones y proyectos, con **competencia sana**; si un
+     proyecto cae, el **talento se reutiliza** en otro con mejores resultados → crecimiento
+     constante, más experiencia y mayor confianza/preferencia de los clientes por todo el grupo.
+
+### Motivos — el "porqué" del proyecto (Slider 3 del onboarding)
+Listado de motivos que dan razón a la existencia del proyecto (dictados por el líder, base verbatim):
+1. **Un corazón puede cruzar el mundo.** Vivimos en sociedades apartadas por divisiones
+   territoriales y símbolos patrios que han causado división entre las personas. Crecemos en
+   entornos diferentes, pero **los valores deben ser compartidos**; un corazón / una organización
+   debe representar la **alianza única que existe en la humanidad**. El GCC busca **unir al mundo**
+   a través de sus valores y un sistema que represente lo que necesitamos; y lo que más
+   necesitamos es **una razón para trabajar juntos** por un futuro mejor.
+2. **Una realidad imposible, contra una disciplina centralizada.** El líder sueña con un futuro en
+   que la humanidad trabaje en conjunto por objetivos más grandes y con que las próximas
+   generaciones (sus hijos) no sufran en un país donde corrupción y mafias gobiernan dañando a
+   personas con potencial de cambiar el mundo. Los jóvenes heredan las consecuencias de adultos que
+   ignoraron las problemáticas sociales y prefirieron creerlas imposibles antes que intentarlo. La
+   única forma de confrontar esa **"realidad imposible"** (donde los valores se unen y la
+   organización se fortalece por encima de la separación) es una **disciplina centralizada**: un
+   **sueño único y compartido**, trabajado a diario, que resuelve las problemáticas sociales poco a
+   poco hasta limpiar las calles y el mundo de lo que está mal.
+3. **El poder se construye, no se decide.** Crítica a la democracia por voto: ha terminado en
+   fracasos, corrupción y poder entregado a quien no lo merece. Tener acceso a recursos no ganados,
+   concedidos por el pueblo solo por confianza, es **poder ilegítimo**. El poder **se gana, se
+   construye** y se obtiene cuando **la gente reconoce a su líder**, no por elegir entre opciones
+   que no la representan (el voto nulo es solo vacío, nunca ayudó a elegir algo distinto). El poder
+   debe conseguirse por la **imposición de una causa social** que una persona/grupo desarrolla con
+   acciones que hacen que la gente se sienta representada. Quien **logra movilizar** a esas personas
+   es **líder nato**; quien no mueve a la gente, no lo es. Las elecciones no deberían basarse en
+   votaciones sino en **acciones naturales** que demuestren el poder del líder. Si hay preferencias
+   divididas, el líder debe ganarse el corazón de todos; si no es posible, **hay dos líderes, no
+   uno**. El liderazgo es **variable** (un grupo puede sentirse representado y parte de otro no, y
+   encontrar otro líder): nace por imposición de poder, moviendo a su gente de forma natural, **sin
+   falsos positivos de gente comprada** — no por ser elegido en votaciones.
+
+### Onboarding — 3 reglas del proyecto (Slider 4 del onboarding)
+Reglas que se aplican en TODO el proyecto y deben respetarse. **Cualquier intento de faltar a una
+sola implica DESTITUCIÓN del candidato** (y aplica igual a otros roles de miembros). **No hay
+segunda oportunidad**; solo los fallos **no intencionales** se evalúan y pueden no acarrear
+destitución (base verbatim):
+1. **¿Quiénes somos?** Comprender quién es la persona que representa al proyecto y cómo se asocia a
+   esa pregunta. Las características de cada uno definen quiénes somos: si el candidato es
+   delincuente, el grupo es delincuente; si es mentiroso, el grupo es mentiroso. Candidatos y
+   miembros **representan lo que somos**. Un solo fallo a los valores ⇒ destitución, porque: **no
+   nos rendimos, no somos cobardes, no tenemos malas intenciones ni causamos daño, no perdemos la
+   fe ante lo imposible, no caemos en la desesperación, no postergamos objetivos ni traicionamos la
+   palabra, no manipulamos lo que mostramos, no esperamos a que otros resuelvan nuestros problemas,
+   no ignoramos los sentimientos de otros**. Los candidatos están **en desarrollo** de estos
+   valores: **Determinación, Coraje, Pureza, Fe, Paciencia, Seriedad, Espontaneidad, Autonomía,
+   Empatía** (cada uno se relaciona con los "no" anteriores). Cuando un candidato logra
+   representarlos, **un miembro Global del paso de Implementación decide convertirlo en miembro**.
+2. **Comandos.** La gobernanza **escucha, decide y recibe correcciones DESPUÉS de un resultado**.
+   Vía metodología condiciológica se **miden resultados** para evaluar las condiciones que más
+   benefician. Para aplicar una condición, el **líder decide** tras escuchar propuestas/discusiones;
+   luego se **ejecuta, se mide y solo se cambia si el resultado fue negativo** (si fue positivo, se
+   avanza a otro paso de crecimiento). Todos deben **seguir el comando** enviado; quien no lo acata
+   **afecta el cálculo de la metodología** y es **destituido**. Los comandos se **ejecutan sin
+   cuestionamientos** y solo se corrigen en discusión tras ver el resultado del comando escogido.
+3. **Opciones de crecimiento.** Todos pueden **crecer desde el primer momento**; el crecimiento se
+   **adapta a la necesidad** de cada uno, valorando su talento y dándole los recursos requeridos.
+   La **confianza** depende de la **proactividad y afinidad** con el proyecto: más afín ⇒ más
+   confianza y más opción de recursos para objetivos personales. Es **confianza ciega, sin reclamo
+   ni sospecha** (más allá del análisis que se hace a todos). Si la opción de crecimiento se usa con
+   **abuso** o para fines no acordados ⇒ **destitución** (la confianza se obtiene **una vez** y no
+   se recupera tras una traición). También pueden solicitarse necesidades que no sean de desarrollo
+   humano/crecimiento; por eso **no hay excusa para mentir o abusar** de los recursos: con mantener
+   buenas intenciones, las opciones de crecimiento se entregan.
+
+### Método de crecimiento — 4 aspectos clave en jerarquía (Slider 5 del onboarding)
+El crecimiento de una persona se analiza con un **método de 4 aspectos clave, ordenados por
+importancia** (de mayor a menor). En el slider se grafica como **pirámide jerárquica** (solo
+títulos); al pasar el puntero o hacer clic en un nivel se muestra su justificación (base verbatim):
+1. **Talento** (mayor importancia) — origen del **potencial de crecimiento**; da valor social y
+   acerca al éxito. Si no se aprovecha, falta la base principal.
+2. **Valores** — características que **fortalecen al sujeto** frente al mundo; aceptar su naturaleza
+   hace que la gente sea más afín y confíe en apoyar su talento.
+3. **Dimensiones de desarrollo humano** — las 4 dimensiones: **laboral, corporal, social y mental**.
+   Quien tiene talento + valores tiende a desarrollarlas. Si faltan esas dos bases, el desarrollo se
+   afecta (malestar mental/físico/social/laboral). Si las bases están bien pero el desarrollo falla,
+   hay **problemas/estancamientos** no superados → se analiza cada dimensión: problemas, situaciones
+   asociadas, causas, y se definen **logros y objetivos** para resolverlos.
+4. **Red de apoyo** (menor importancia) — nadie la necesita para tener éxito; es un **complemento**.
+   Tras muchos fracasos se suele culpar a su ausencia (trabajo/estudios/consejos) y envidiar a quien
+   sí la tuvo, pero el origen del crecimiento está en talento + valores + dimensiones. Aun así, una
+   buena red **fortalece** a quien tiene bases y **ayuda** a quien no; quien no tiene red ni bases
+   está en una situación de crecimiento muy baja, abordable con este método.
+
+### Lideración sobre Acciones — ciclo triangular (Slider 6 del onboarding)
+Diagrama triangular (SVG) que representa el ciclo de liderazgo por acciones. Tres nodos en los
+ángulos del triángulo, con flechas que forman el ciclo **Líder → GCC → Miembros → Líder**:
+- **Ángulo superior — Líder:** "Escucha y Decide" (nodo resaltado).
+- **Ángulo derecho — GCC:** "Ejecuta sin cuestionamientos".
+- **Ángulo izquierdo — Miembros:** "Discuten y Corrigen".
+Flujo: del Líder (arriba) sale flecha al ángulo derecho (GCC); de GCC, flecha al ángulo izquierdo
+(Miembros); de Miembros, flecha de vuelta al ángulo superior (Líder).
+
+### Afiliación — proceso candidato → miembro (Slider 7 del onboarding)
+Proceso por el que un candidato se convierte en miembro (presentado como **indicaciones ordenadas**;
+base verbatim):
+- **Meta del candidato:** demostrar y representar los valores esperados. Al cumplir, **un miembro
+  Global del paso de Implementación realiza la afiliación** del nuevo miembro.
+- **Pulsera = grado de afiliación.** Cada miembro recibe una **pulsera del GCC**; el tipo/color
+  representa el grado: **Candidato, Colaborador, Controlador, Pilar, Global o Líder**. El candidato
+  recibe la **pulsera GRIS** (único color especificado) + acceso al sitio como **usuario candidato**,
+  con uso de las herramientas del grupo para su desarrollo humano (detalles dentro del sitio).
+- **Pasos:** (1) postularse en el formulario → si es elegido, **correo de confirmación**; (2) recibe
+  invitación + acceso + pulsera gris; (3) recibe una **pizarra de visión personal** que debe llevar a
+  **todas las reuniones semanales presenciales** con los **controladores**; (4) en esas reuniones
+  recibe las indicaciones de cómo demostrar su afiliación y los comandos; (5) demuestra los valores;
+  (6) se convierte en miembro.
+- **La afiliación NO se mide en puntos ni cuantificación:** es una **cualificación** basada en logros
+  y resultados positivos de las acciones que el candidato ejecuta en los comandos indicados por los
+  controladores.
+- **Nota importante:** desde la afiliación el candidato recibe **beneficios para su desarrollo
+  humano en todas sus dimensiones**; **no se abusa de su tiempo ni hay trabajos no remunerados** —
+  toda acción tiene propósito y beneficio para el candidato.
+
 ## Stack
 Stack estándar de la casa, con particularidades de este repo:
 - **App**: Next.js 15 (App Router) + TypeScript + React 19 + Tailwind v4.
@@ -76,6 +267,217 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Onboarding de candidato en la landing — modal de 8 sliders + postulación (2026-06-23):** al
+  pulsar **"Entrar"** un visitante **NUEVO** (sin `savedCharacter`) ya **no entra directo al mundo**:
+  primero se abre `OnboardingSlidersModal` (`components/landing/OnboardingSlidersModal.tsx`), un modal
+  estilo carrusel ("deslizados") que **presenta el proyecto** en sliders y termina con un formulario
+  que pregunta **"¿Por qué quieres ser candidato de este proyecto?"** (postulación). Solo al enviar la
+  motivación se arranca el flujo original (chat → planeta → CharacterCreator). Los **recurrentes** no
+  ven el modal (mantienen el flujo de `enterAsReturning`).
+  - **Arquitectura:** componente **data-driven** por la lista `SLIDES` (crecerá hasta **8 sliders**);
+    el formulario de postulación es siempre el **último paso**. Estilo pixelart de la landing (overlay
+    `zIndex:250`, borde/acento `var(--color-accent)` #4B2D8E, títulos en **Silkscreen**, cuerpos
+    largos en **Inter** por legibilidad). Transiciones por keyframes propios (`onbInRight/Left`,
+    `onbFadeUp`). Slider 2 usa **acordeón** (las 4 herramientas con texto largo).
+  - **Hook en `app/page.tsx`:** estado `onboardingOpen`; el `onClick` de "Entrar" abre el modal para
+    nuevos; `onComplete(candidateReason)` cierra el modal, arranca `windAway`+cámara+chat (flujo de
+    primer ingreso) y **guarda la motivación en `localStorage('gcc_candidate_reason')`**.
+  - **PENDIENTE:** persistir la postulación en **backend** (no existe endpoint aún; hoy solo
+    localStorage). Y **desarrollar slider 8** (el usuario lo dictará). Sliders **1–7 ya
+    desarrollados** con todo el contenido (ver "Fundamentos del proyecto").
+    - Slider 1 = **Modelo de Grupo** (Modelo 4P: 4 pisos + 4 pasos).
+    - Slider 2 = **Herramientas** (Metodología Condiciológica, Sistema de Control Psicosocial,
+      Proyecto Centralizado, Violeta).
+    - Slider 3 = **Motivos** (Un corazón puede cruzar el mundo · Una realidad imposible vs.
+      disciplina centralizada · El poder se construye, no se decide).
+    - Slider 4 = **Onboarding** (3 reglas: ¿Quiénes somos? · Comandos · Opciones de crecimiento;
+      faltar a una = destitución, sin segunda oportunidad salvo fallo no intencional). Incluye
+      `warnBox` (caja de advertencia roja) y los 9 valores mapeados a su compromiso ("no").
+    - Slider 5 = **Método de crecimiento** (pirámide interactiva: Talento · Valores · Dimensiones de
+      desarrollo humano · Red de apoyo; **clic** muestra la justificación de cada nivel — se quitó el
+      hover a pedido del usuario).
+    - Slider 6 = **Lideración sobre Acciones** (diagrama triangular SVG: ciclo Líder → GCC →
+      Miembros → Líder).
+    - Slider 7 = **Afiliación** (indicaciones del proceso candidato→miembro: 6 pasos + pulsera/grado
+      [Candidato gris → … → Líder] + nota de beneficios/sin trabajos no remunerados).
+  - **Redacción:** a pedido del usuario (2026-06-23), el copy de los sliders se pulió a **tono
+    editorial/profesional** (lectura pública para miles de usuarios) **manteniendo fielmente las
+    ideas**; la base verbatim queda en "Fundamentos del proyecto". El acordeón está extraído a un
+    componente reutilizable `Accordion` (lo usan Herramientas y Motivos).
+  - **Aceptación de términos / "Entendido" por slider (2026-06-23):** cada slider (1–7, no el
+    formulario) muestra una **casilla** (`AcceptTerms`) entre el cuerpo y el footer; **no se puede
+    avanzar** ("Siguiente/Postularme") sin marcarla (estado `accepted: boolean[]` por índice). El
+    texto depende del campo **`consent`** del slider:
+    - `'terms'` (gestiona permisos/accesos/condiciones): **Herramientas, Onboarding, Afiliación** →
+      el texto **se centra en explicar QUÉ se acepta** (campo `consentSummary` por slider), sin la
+      cláusula legal.
+    - `'ack'` (solo informativo, sin términos): **Modelo, Motivos, Método de crecimiento,
+      Lideración** → "**Entendido.** He leído y comprendido la información de este apartado."
+    - **Aceptación final (modo `'final'`, 2026-06-23):** la **cláusula de no revocación** ("los
+      permisos otorgados **no podrán ser revocados**, salvo desafiliación voluntaria o por incumplir
+      las reglas; en ambos casos se retiran los permisos") se movió al **formulario de postulación**
+      (último paso): `CandidateForm` muestra un `AcceptTerms mode="final" inline` y el botón
+      "Comenzar mi aventura" exige **motivación (≥10) + aceptación final** (`finalAccepted`). El texto
+      final incluye **hipervínculo a `/legal`** (target=_blank, `stopPropagation` para no togglear la
+      casilla) y **autoriza el tratamiento de datos** conforme a la política.
+    (Hoy solo gatea la UI; **no se persiste** aún en backend — pendiente junto con la postulación.)
+  - **Página legal `/legal` + inventario de datos (2026-06-23):** se creó `app/legal/page.tsx`
+    (pública; el middleware no la protege) con **Términos y Condiciones + Política de Privacidad**
+    redactada conforme a la **LOPDP del Ecuador** (responsable, datos, finalidades, base de
+    consentimiento, datos sensibles/geolocalización con consentimiento explícito separado,
+    encargados/transferencias, conservación, seguridad, derechos del titular, desafiliación →
+    retiro de permisos, Superintendencia de Protección de Datos). **AVISO:** es plantilla orientada
+    al cumplimiento, **NO** asesoría legal; debe revisarla un **abogado ecuatoriano** antes de
+    producción. **Datos del responsable cargados (2026-06-23):** Luis Fernando González Muyulema,
+    **RUC `0930095922001`**, dirección **Tabacundo, 090102, Ecuador**, contacto
+    **`lfgonzalezm0@grupocc.org`**. **Versión ampliada (2026-06-23)** alineada con la política
+    oficial de la **SPDP** y guías LOPDP: 21 secciones (antecedentes, responsable + contacto de
+    protección de datos, **definiciones**, principios, categorías de datos, momento de recolección,
+    finalidades, base de licitud, Control Psicosocial/geolocalización, **cookies**, **decisiones
+    automatizadas/perfiles**, encargados + transferencias internacionales, conservación, derechos
+    del titular con **respuesta en 15 días** + reclamo SPDP, seguridad, **vulneraciones/brechas con
+    notificación en 5 días**, permisos/desafiliación, menores, términos de uso, modificaciones,
+    autoridad de control). Fuentes: spdp.gob.ec, guías LOPDP.
+    - **Datos que el sistema requiere (inventario):** (1) postulación: motivación (texto) + registro
+      de aceptaciones; (2) cuenta/perfil: alias, `character_data`/avatar, email, contraseña (hash) —
+      vía `gcc_world` tabla del personaje (`alias, character_data, password_hash, email_verified,
+      pending_email, auth_token, last_seen_at`, ver `app/api/character/me/route.ts`); (3) técnicos:
+      cookie/token de sesión + IP (nuevo vs recurrente); (4) comunicación (reuniones/contacto).
+      **Sistema de Control Psicosocial (2026-06-23):** cada herramienta de ese sistema pedirá su
+      **propio consentimiento** explícito y separado. **Por ahora la ÚNICA dato que usa es la
+      ubicación aproximada del usuario a partir de su IP** (sin GPS ni otros datos). Reflejado en
+      `/legal` §7 y en el `consentSummary` del slider Herramientas.
+    - **Responsabilidad / minimización:** los datos de **postulación** solo se obtienen **al
+      completar el formulario** (antes vive solo en `localStorage` `gcc_postulacion`, no se
+      transmite). **No se captura ningún dato personal antes del formulario.** Mantener esta regla
+      cuando se implemente la persistencia en backend.
+    - **Campos del formulario de postulación (2026-06-23):** `CandidateForm` ahora pide **nombre
+      completo, correo (validado), país, dirección, contacto telefónico** y **motivación** (≥10). El
+      botón "Comenzar mi aventura" exige todos los campos + correo válido + aceptación final
+      (`formOk`). `onComplete` pasa un objeto `PostulacionData` (tipo exportado); `app/page.tsx` lo
+      guarda en `localStorage('gcc_postulacion')` como JSON.
+    - **Consentimiento generalista (2026-06-23):** los permisos a datos específicos del Sistema de
+      Control Psicosocial se piden **antes de acceder a cada herramienta**, no de forma anticipada.
+      El `consentSummary` de Herramientas y la §9 de `/legal` se volvieron generalistas (hoy el
+      sistema **no recopila datos** del usuario por el sitio).
+  - **Elección de ingreso Candidato vs Cliente + tipo de cuenta (2026-06-23):** al pulsar **"Entrar"**
+    (visitante nuevo) ahora aparece primero `EntryChoiceModal` (`components/landing/EntryChoiceModal.tsx`)
+    con dos opciones; guarda `localStorage('gcc_account_type')` = `'candidate'` | `'client'`:
+    - **Candidato** → abre los **sliders** (onboarding) y se postula (con su motivación).
+    - **Cliente** → **salta los sliders y la pregunta de motivación**, va directo a la creación de
+      cuenta (mismo `SignupForm`). Su finalidad es adquirir productos/servicios, no participar.
+    - Se **quitó el texto "Slider N"** del encabezado de los sliders (solo el form muestra "Postulación").
+    - **Marketing (2026-06-23):** la postulación añade un **checkbox OPCIONAL** (`AcceptTerms mode="marketing"`)
+      para recibir publicidad/novedades; si no se marca, no se le enviará publicidad. `PostulacionData` =
+      `{ reason, marketing }` (los datos personales ya **no** se piden aquí).
+    - **Datos personales movidos al `SignupForm`** (creación de cuenta, `components/landing/CharacterGameplay.tsx`):
+      ahora pide **nombre completo, correo, país, dirección, teléfono** + contraseña. `POST
+      /api/character/auth/signup` persiste `full_name/country/address/phone/account_type` en
+      **`gcc_world.clients`** (columnas `ADD COLUMN IF NOT EXISTS`; `account_type` default `'candidate'`).
+      El body lleva `accountType` leído de `localStorage('gcc_account_type')`.
+  - **Cuentas: tabla y tipos (revisión 2026-06-23):** la tabla de **cuentas de juego/portal** es
+    **`gcc_world.clients`** (auth de jugadores/clientes; alias, character_data, email, password_hash,
+    passkeys, y ahora **`account_type`** = candidate/client). `gcc_world.billing_clients` es **facturación**
+    (otro concepto). La "separación de clientes" se resuelve con el **discriminador `account_type`** en
+    `clients` (no se creó tabla aparte; revisar a futuro si se desea split físico).
+  - **Flujos objetivo (DISEÑO acordado; backend mayormente PENDIENTE):**
+    - **Candidato:** sliders → motivación → juego → CharacterCreator → SignupForm → verificación de correo
+      (existente). **Pendiente:** la cuenta debe ser **aprobada por un administrador Global**; al aprobar,
+      llega **correo de aprobación**; al ingresar valida su correo (ya existe) y recién entra al **juego**.
+    - **Cliente:** sin sliders ni motivación → creación de cuenta (mismo form, `account_type='client'`) →
+      **verificación de correo**. **Pendiente:** su inicio **NO es el juego** sino el **marketplace**; tendrá
+      acceso a una vista de **`/dashboard` restringida** a: **Marketplace, Tickets, Proyectos, Suscripciones,
+      Automatizaciones, y Perfil/Configuración**. El cliente **publica requerimientos** de tickets y
+      proyectos, **ve suscripciones asignadas**, y en automatizaciones **solo ve lo compartido para editar**
+      (NO crea flujos). Detalle fino a definir más adelante por el usuario.
+  - **Propuestas de candidato (tabla temporal + espera de aprobación, 2026-06-23):** el formulario de
+    postulación pide ahora **correo electrónico** (+ motivación + marketing). Al enviar se registra en la
+    **tabla temporal `gcc_world.candidate_proposals`** (`email UNIQUE, reason, marketing, ip_hash, status
+    'pending', email_verified, verification_token, created_at, decided_at, decided_by`) vía
+    **`POST /api/candidate/proposal`**: **bloquea reutilización del correo** (UNIQUE → 409), **registra
+    `ip_hash`**, **envía correo de verificación** (`sendCandidateProposalVerificationEmail` →
+    `GET /api/candidate/verify?token=` marca `email_verified` y redirige a `/?candidato=correo-verificado`).
+    La propuesta queda **en espera de aprobación** del **admin global** (correo objetivo
+    **`lfgonzalezm0@outlook.com`**). **Reconocimiento por IP:** Entrar → "candidato" hace
+    `GET /api/candidate/proposal` por `ip_hash`; si ya hay propuesta muestra **`ProposalPendingModal`**
+    ("en revisión" + estado de verificación de correo) en vez de repetir sliders. Tras enviar la propuesta,
+    el candidato **NO entra al juego**: ve ese modal.
+    - **HECHO:** tabla, POST/GET propuesta, verificación de correo, modal de espera, campo email, IP.
+    - **PENDIENTE (ver `Aprendizaje.md`):** (1) **aprobación por el admin global** (endpoint/UI que ponga
+      `status='approved'` + correo de aprobación); (2) tras aprobación+verificación → permitir **comenzar la
+      aventura**; (3) al **crear cuenta** (email+contraseña en `SignupForm`) y confirmar → **borrar la fila de
+      `candidate_proposals`** y **crear el candidato en `gcc_world.clients` con IP + datos**
+      (`account_type='candidate'`); (4) reconocimiento por IP de **cuenta ya creada** para pedir login antes de
+      entrar. **Nota:** falta correr `next build` (solo `tsc`).
+  - **Cliente → creación de cuenta directa (2026-06-23):** elegir **"Soy cliente"** ya **NO** lleva al
+    juego; abre **`ClientSignupModal`** (`components/landing/ClientSignupModal.tsx`, con el **logo
+    `/LogoApp.png` arriba**) que pide nombre/correo/país/dirección/teléfono + contraseña + términos
+    (opcional marketing) y llama **`POST /api/client/signup`**: crea **directamente** una fila en
+    `gcc_world.clients` (sin personaje) con `account_type='client'`, `pending_email/pending_password_hash/
+    verification_token`, `client_token` (cookie) e `ip_hash`; envía correo de verificación (reusa
+    `sendCharacterVerificationEmail` → el verify genérico `/api/character/auth/verify` activa la cuenta).
+    **Pendiente:** tras verificar, su inicio = **marketplace** + `/dashboard` restringido.
+  - **Cliente: login por IP + botón "Colaborar" (2026-06-23):**
+    - El registro de cliente guarda `ip_hash`. Al elegir **"Soy cliente"**, `GET /api/client/status`
+      consulta por IP si **ya existe cuenta de cliente**; si sí → abre **`ClientLoginModal`** (login con
+      `/api/character/auth/login`, exige correo verificado) en vez de `ClientSignupModal`.
+    - **`EntryChoiceModal`** ahora tiene 3 opciones: Candidato · Cliente · **Colaborar**. "Colaborar" =
+      `router.push('/auth?redirect=/dashboard')` (solo **iniciar sesión** como miembro/candidato → panel;
+      no se crean cuentas ahí).
+    - **PENDIENTE:** destino real del cliente tras login = **marketplace** + **/dashboard restringido**;
+      hoy `onLoggedIn` hace `router.push('/dashboard')`, pero el **middleware exige JWT de staff**
+      (`auth_token`), así que un cliente (cookie `gcc_player_auth`) sería **rebotado a `/auth`** hasta
+      implementar el acceso de cliente al dashboard. Igual, "Colaborar" para una **cuenta de candidato**
+      (auth de personaje, no staff) requeriría soporte de login de candidato en `/auth` (hoy `/auth` es staff).
+  - **CLIENTE = usuario `gcc_world.users` rol `'client'` (PIVOTE 2026-06-24):** el dashboard ya soportaba
+    el rol **`client`** nativamente (lo crea `/api/auth/register`, login `/api/auth/login` con JWT; el home
+    del dashboard ya tenía `isClient`). Por eso el signup/login del cliente se **repuntó a esa auth de
+    usuarios** (antes apuntaba a `gcc_world.clients`/character-auth, que NO da acceso al dashboard):
+    - **`ClientSignupModal`** → `POST /api/auth/register` (crea user rol `client` + token + correo de
+      verificación). Se **extendió `register`** para aceptar/guardar `phone`, `country`, `address`
+      (`ALTER TABLE gcc_world.users ADD COLUMN IF NOT EXISTS country/address`). El `fullName` va a
+      `first_name`. Tiene enlace **"¿Ya tienes cuenta? Inicia sesión"** (`onLogin`).
+    - **`ClientLoginModal`** → `POST /api/auth/login` (setea JWT). `onLoggedIn` →
+      `window.location.href = '/dashboard/marketplace'` (recarga para refrescar `AuthProvider`).
+    - Login exige **correo verificado** (register manda verificación a `/auth/verify`).
+    - **Acceso al dashboard:** el middleware valida el JWT (`auth_token`) → el cliente entra **solo con
+      sesión**. **`/dashboard/marketplace` es su inicio** (redirect en `app/(dashboard)/dashboard/page.tsx`:
+      si `role==='client'` → `router.replace('/dashboard/marketplace')`).
+    - **Sidebar filtrado por rol:** el cliente ve SOLO **Marketplace, Tickets, Proyectos, Suscripciones,
+      Automatizaciones, Configuracion, Soporte**. Se restringieron Inicio/Facturas/Herramientas a
+      `['member','admin']` y Suscripciones se amplió a `['member','admin','client']`.
+    - **"Colaborar"** (landing → `/auth?redirect=/dashboard`) sirve ahora para **cliente Y member/admin**
+      (todos son `gcc_world.users`).
+    - **OBSOLETO:** `/api/client/signup`, `/api/client/status` y el reconocimiento por IP del cliente (eran
+      para el modelo `gcc_world.clients`); quedan sin uso en el flujo de cliente (no se borraron). El
+      **candidato sigue** usando `gcc_world.clients`/character-auth (otro flujo).
+    - **Marketplace ya exige sesión** (página bajo `/dashboard` + `/api/marketplace/*` con `getCurrentUser`);
+      **no hay ruta pública de marketplace** (se confirmó). Las rutas públicas `(main)`/`(public)` son dev
+      tooling (editores de estructura/world/sprites), no marketplace.
+    - **PENDIENTE:** control de acceso **por página** para el cliente (hoy solo el sidebar lo oculta; un
+      cliente podría navegar a una URL restringida; sus APIs igual lo bloquean por rol, pero falta gate de UI).
+  - **Módulo "Automatizaciones" extraído de Admin→Flujos (2026-06-23):** la tabla de flujos se sacó de
+    `app/(dashboard)/dashboard/admin/page.tsx` (se eliminó la pestaña **Flujos** + `FlujosSection` +
+    constantes + imports de los 3 panels) a un componente autocontenido
+    **`components/dashboard/flows/FlowsTable.tsx`**, montado en el nuevo módulo
+    **`app/(dashboard)/dashboard/automatizaciones/page.tsx`**. Sidebar: nuevo item **Automatizaciones**
+    (`/dashboard/automatizaciones`, icono `Workflow`, **sin `roles`** → visible para todos los roles del
+    dashboard). El endpoint **`/api/admin/flows`** (+ `[id]`) se **relajó de solo-admin a cualquier usuario
+    autenticado** (GET/POST/PUT/DELETE: `if (!user) 401`). Tabla `gcc_world.flows` sin cambios. Los side
+    panels (`FlowSidePanel`/`WhatsAppFlowPanel`/`ChatbotFlowPanel`) y sus subrutas `/api/admin/flows/[id]/...`
+    **siguen con sus propios guards** (revisar si deben relajarse también).
+    - **PENDIENTE (depende del acceso de cliente al dashboard):** que **cliente/candidato** vean este módulo
+      requiere primero resolver su **autenticación al `/dashboard`** (hoy middleware exige JWT staff). Para
+      staff (member/admin) ya funciona.
+  - **Marketplace como inicio del cliente + dashboard restringido (PENDIENTE, diseño 2026-06-23):** al
+    ingresar/loguear un cliente, su **primera página debe ser `/dashboard/marketplace`** (la vista de la
+    imagen que envió el usuario: tabs Proyectos/Productos/Automatizaciones/Mis Pedidos). El cliente debe tener
+    acceso SOLO a: **Marketplace, Tickets, Proyectos, Suscripciones, Automatizaciones, Configuración, Soporte**.
+    Falta: (1) auth de cliente en middleware/layout del dashboard; (2) sidebar filtrado por rol cliente;
+    (3) redirección de inicio del cliente a marketplace; (4) permisos por rol en cada módulo.
+  - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
+    **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
+  - Verificado: `tsc --noEmit` OK. **Sin commitear.**
 - **Portal de incidencias — descripción por texto o por voz (2026-06-18):** en el portal del cliente
   (`app/portal/[projectId]/page.tsx`) el cliente puede **elegir cómo ingresar la descripción**: escribir texto
   (modo por defecto) o **dictar por voz**. Decisión del usuario: **dictado voz→texto** (NO se guarda el audio,

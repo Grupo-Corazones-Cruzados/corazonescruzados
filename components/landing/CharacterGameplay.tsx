@@ -1454,6 +1454,10 @@ function SignupForm({
   const [email, setEmail] = useState(pendingEmail ?? '');
   const [pwd, setPwd] = useState('');
   const [pwd2, setPwd2] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [country, setCountry] = useState('');
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(!!pendingEmail);
@@ -1461,8 +1465,24 @@ function SignupForm({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (fullName.trim().length < 2) {
+      setError('Ingresa tu nombre completo');
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('Correo inválido');
+      return;
+    }
+    if (country.trim().length < 2) {
+      setError('Ingresa tu país');
+      return;
+    }
+    if (address.trim().length < 3) {
+      setError('Ingresa tu dirección');
+      return;
+    }
+    if (phone.trim().length < 7) {
+      setError('Ingresa un teléfono válido');
       return;
     }
     if (pwd.length < 8) {
@@ -1478,7 +1498,18 @@ function SignupForm({
       const r = await fetch('/api/character/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password: pwd }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password: pwd,
+          fullName: fullName.trim(),
+          country: country.trim(),
+          address: address.trim(),
+          phone: phone.trim(),
+          accountType:
+            (typeof window !== 'undefined' &&
+              window.localStorage.getItem('gcc_account_type')) ||
+            'candidate',
+        }),
       });
       const j = await r.json();
       if (!r.ok) {
@@ -1543,12 +1574,44 @@ function SignupForm({
         style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
       >
         <input
+          type="text"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="Nombre completo"
+          autoComplete="name"
+          autoFocus
+          style={input()}
+        />
+        <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Correo electrónico"
           autoComplete="email"
-          autoFocus
+          style={input()}
+        />
+        <input
+          type="text"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          placeholder="País"
+          autoComplete="country-name"
+          style={input()}
+        />
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Dirección"
+          autoComplete="street-address"
+          style={input()}
+        />
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Contacto telefónico"
+          autoComplete="tel"
           style={input()}
         />
         <input

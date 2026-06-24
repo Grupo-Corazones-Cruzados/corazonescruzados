@@ -10,7 +10,13 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, fullName, country, address, phone, accountType } =
+      await req.json();
+    const sFullName = typeof fullName === 'string' ? fullName.trim() : '';
+    const sCountry = typeof country === 'string' ? country.trim() : '';
+    const sAddress = typeof address === 'string' ? address.trim() : '';
+    const sPhone = typeof phone === 'string' ? phone.trim() : '';
+    const sAccountType = accountType === 'client' ? 'client' : 'candidate';
 
     if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
       return NextResponse.json(
@@ -80,14 +86,40 @@ export async function POST(req: Request) {
     const passwordHash = await hashPassword(password);
     const verificationToken = randomBytes(32).toString('hex');
 
+    // Columnas de datos de cuenta (idempotente). account_type distingue
+    // 'candidate' (postulante al proyecto) de 'client' (adquiere productos/servicios).
+    await pool.query(
+      `ALTER TABLE gcc_world.clients
+         ADD COLUMN IF NOT EXISTS full_name text,
+         ADD COLUMN IF NOT EXISTS country text,
+         ADD COLUMN IF NOT EXISTS address text,
+         ADD COLUMN IF NOT EXISTS phone text,
+         ADD COLUMN IF NOT EXISTS account_type text DEFAULT 'candidate'`,
+    );
+
     await pool.query(
       `UPDATE gcc_world.clients
           SET pending_email = $1,
               pending_password_hash = $2,
               verification_token = $3,
-              verification_expires = NOW() + INTERVAL '24 hours'
+              verification_expires = NOW() + INTERVAL '24 hours',
+              full_name = COALESCE(NULLIF($5, ''), full_name),
+              country = COALESCE(NULLIF($6, ''), country),
+              address = COALESCE(NULLIF($7, ''), address),
+              phone = COALESCE(NULLIF($8, ''), phone),
+              account_type = $9
         WHERE id = $4`,
-      [cleanEmail, passwordHash, verificationToken, row.id],
+      [
+        cleanEmail,
+        passwordHash,
+        verificationToken,
+        row.id,
+        sFullName,
+        sCountry,
+        sAddress,
+        sPhone,
+        sAccountType,
+      ],
     );
 
     try {

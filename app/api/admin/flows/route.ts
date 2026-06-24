@@ -21,7 +21,8 @@ async function ensureTable() {
 export async function GET() {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ data: [] }, { status: 403 });
+    // Accesible para cualquier usuario autenticado (no solo admin).
+    if (!user) return NextResponse.json({ data: [] }, { status: 401 });
 
     await ensureTable();
 
@@ -41,7 +42,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
     await ensureTable();
 

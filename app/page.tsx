@@ -10,6 +10,11 @@ import CharacterCreator, {
 import CharacterGameplay from '@/components/landing/CharacterGameplay';
 import SavePointIndicator from '@/components/landing/SavePointIndicator';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
+import OnboardingSlidersModal from '@/components/landing/OnboardingSlidersModal';
+import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
+import ProposalPendingModal from '@/components/landing/ProposalPendingModal';
+import ClientSignupModal from '@/components/landing/ClientSignupModal';
+import ClientLoginModal from '@/components/landing/ClientLoginModal';
 import { useAuth } from '@/components/providers/AuthProvider';
 
 const ENTRY_MESSAGES = [
@@ -297,14 +302,9 @@ export default function LandingPage() {
     };
   }, []);
 
-  // El botón de colaborador se muestra a usuarios con rol "member" o
-  // "admin", ya sea por sesión iniciada o por detección de IP/dispositivo.
+  // El botón "Colaborar" usa el rol de sesión para decidir el destino:
+  // staff (member/admin) va directo a /dashboard; el resto pasa por /auth.
   const sessionRole = user?.role;
-  const canEnterAsCollaborator =
-    sessionRole === 'member' ||
-    sessionRole === 'admin' ||
-    ipRole === 'member' ||
-    ipRole === 'admin';
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [windAway, setWindAway] = useState(false);
   const heroSectionRef = useRef<HTMLElement | null>(null);
@@ -362,6 +362,13 @@ export default function LandingPage() {
   const [savedCharacterChecked, setSavedCharacterChecked] = useState(false);
   const [savePointTrigger, setSavePointTrigger] = useState(0);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [entryChoiceOpen, setEntryChoiceOpen] = useState(false);
+  const [proposalPending, setProposalPending] = useState<
+    { email?: string | null; emailVerified?: boolean } | null
+  >(null);
+  const [clientSignupOpen, setClientSignupOpen] = useState(false);
+  const [clientLoginOpen, setClientLoginOpen] = useState(false);
   const warpRef = useRef<HTMLDivElement | null>(null);
   const planetMusicRef = useRef<HTMLAudioElement | null>(null);
   const peligroMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -2551,9 +2558,19 @@ export default function LandingPage() {
         )
       : 0;
 
+  // Mientras se elige candidato/cliente o se llena un formulario (modales),
+  // usar el cursor normal del sistema. El puntero del juego solo se muestra
+  // jugando.
+  const nativeCursor =
+    entryChoiceOpen ||
+    clientSignupOpen ||
+    clientLoginOpen ||
+    onboardingOpen ||
+    !!proposalPending;
+
   return (
-    <div className="landing-page">
-      <PointerCursor />
+    <div className={`landing-page${nativeCursor ? ' auth-screen' : ''}`}>
+      {!nativeCursor && <PointerCursor />}
       <audio
         ref={windAudioRef}
         src="/sounds/music/Efecto%20de%20sonido%20Viento.mp3"
@@ -2892,25 +2909,18 @@ export default function LandingPage() {
             <button
               onClick={() => {
                 if (landingLocked || windAway) return;
-                setWindAway(true);
 
                 // Returning player: the savedCharacter useEffect picks
-                // this up and routes through enterAsReturning. We still
-                // kick off the first-time path below; if the network
-                // catches up mid-intro, the same useEffect interrupts
-                // it cleanly.
-                if (savedCharacter) return;
-
-                // First-time visitor: original flow (chat → planet → creator).
-                cameraEnabledRef.current = true;
-                setCameraEnabled(true);
-                if (worldChatTimeoutRef.current) {
-                  window.clearTimeout(worldChatTimeoutRef.current);
+                // this up and routes through enterAsReturning.
+                if (savedCharacter) {
+                  setWindAway(true);
+                  return;
                 }
-                worldChatTimeoutRef.current = window.setTimeout(() => {
-                  setWorldChatVisible(true);
-                  worldChatTimeoutRef.current = null;
-                }, 6000);
+
+                // First-time visitor: primero pregunta si entra como candidato
+                // o como cliente (EntryChoiceModal). Según la elección se abren
+                // los sliders (candidato) o se va directo a la creación de cuenta.
+                setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
               className="pixel-btn pixel-btn-primary"
@@ -2933,6 +2943,43 @@ export default function LandingPage() {
             >
               Entrar
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (landingLocked || windAway) return;
+                // Colaborar: iniciar sesión (miembro/candidato) → /dashboard.
+                // Si ya hay sesión de staff va directo; si no, /auth redirige.
+                const dest =
+                  sessionRole === 'member' || sessionRole === 'admin'
+                    ? '/dashboard'
+                    : '/auth?redirect=/dashboard';
+                setWindAway(true);
+                window.setTimeout(() => {
+                  router.push(dest);
+                }, 1400);
+              }}
+              disabled={landingLocked || windAway}
+              className="pixel-btn pixel-btn-primary"
+              style={{
+                ...(landingLocked && !windAway
+                  ? { opacity: 0.45, cursor: 'not-allowed' }
+                  : {}),
+                ...(windAway
+                  ? {
+                      animation:
+                        'windBlowAway 1.15s ease-in 0.4s forwards',
+                      willChange: 'transform, opacity, filter',
+                      cursor: 'default',
+                    }
+                  : {
+                      animation: 'breathe 5s ease-in-out infinite',
+                      willChange: 'transform',
+                    }),
+              }}
+            >
+              Colaborar
+            </button>
+            </div>
             {savedCharacterChecked && !savedCharacter && !windAway && (
               <button
                 type="button"
@@ -2948,46 +2995,6 @@ export default function LandingPage() {
                 Ya tengo una cuenta
               </button>
             )}
-            </div>
-            {canEnterAsCollaborator && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (landingLocked || windAway) return;
-                  // Reusa la transición "windBlowAway". Si ya hay sesión
-                  // de staff va directo al dashboard; si no, pide iniciar
-                  // sesión y /auth redirige al dashboard tras el login.
-                  const dest =
-                    sessionRole === 'member' || sessionRole === 'admin'
-                      ? '/dashboard'
-                      : '/auth?redirect=/dashboard';
-                  setWindAway(true);
-                  window.setTimeout(() => {
-                    router.push(dest);
-                  }, 1400);
-                }}
-                disabled={landingLocked || windAway}
-                className="pixel-btn pixel-btn-secondary"
-                style={{
-                  ...(landingLocked && !windAway
-                    ? { opacity: 0.45, cursor: 'not-allowed' }
-                    : {}),
-                  ...(windAway
-                    ? {
-                        animation:
-                          'windBlowAway 1.15s ease-in 0.4s forwards',
-                        willChange: 'transform, opacity, filter',
-                        cursor: 'default',
-                      }
-                    : {
-                        animation: 'breathe 5s ease-in-out infinite',
-                        willChange: 'transform',
-                      }),
-                }}
-              >
-                Colaborar
-              </button>
-            )}
           </div>
         </div>
       </section>
@@ -3000,6 +3007,99 @@ export default function LandingPage() {
             refreshSavedCharacter().then((found) => {
               if (found) setSavePointTrigger((n) => n + 1);
             });
+          }}
+        />
+      )}
+
+      {entryChoiceOpen && (
+        <EntryChoiceModal
+          onClose={() => setEntryChoiceOpen(false)}
+          onCandidate={async () => {
+            setEntryChoiceOpen(false);
+            try {
+              window.localStorage.setItem('gcc_account_type', 'candidate');
+            } catch {
+              /* ignore */
+            }
+            // Si ya tiene una propuesta registrada (reconocido por IP), muestra
+            // el modal de espera de aprobación en vez de repetir los sliders.
+            try {
+              const r = await fetch('/api/candidate/proposal', { cache: 'no-store' });
+              const j = await r.json();
+              if (j?.exists) {
+                setProposalPending({ email: j.email, emailVerified: j.emailVerified });
+                return;
+              }
+            } catch {
+              /* si falla el chequeo, continúa con los sliders */
+            }
+            // Candidato nuevo: conoce el proyecto (sliders) y se postula.
+            setOnboardingOpen(true);
+          }}
+          onClient={() => {
+            setEntryChoiceOpen(false);
+            // Cliente = usuario con rol 'client' (auth de dashboard). Abre la
+            // creación de cuenta; desde ahí puede pasar a iniciar sesión.
+            setClientSignupOpen(true);
+          }}
+        />
+      )}
+
+      {onboardingOpen && (
+        <OnboardingSlidersModal
+          onClose={() => setOnboardingOpen(false)}
+          onComplete={async (postulacion) => {
+            // Registra la propuesta (queda en espera de aprobación del admin
+            // global). El candidato NO entra al juego hasta ser aprobado.
+            const pendingInfo: { email?: string | null; emailVerified?: boolean } = {
+              email: postulacion.email,
+              emailVerified: false,
+            };
+            try {
+              const r = await fetch('/api/candidate/proposal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(postulacion),
+              });
+              // 200 (creada) o 409 (ya existía) → igualmente queda en espera.
+              if (!r.ok && r.status !== 409) {
+                const j = await r.json().catch(() => null);
+                console.error('Proposal submit failed:', j?.error);
+              }
+            } catch (err) {
+              console.error('Proposal submit error:', err);
+            }
+            setOnboardingOpen(false);
+            setProposalPending(pendingInfo);
+          }}
+        />
+      )}
+
+      {proposalPending && (
+        <ProposalPendingModal
+          email={proposalPending.email}
+          emailVerified={proposalPending.emailVerified}
+          onClose={() => setProposalPending(null)}
+        />
+      )}
+
+      {clientSignupOpen && (
+        <ClientSignupModal
+          onClose={() => setClientSignupOpen(false)}
+          onLogin={() => {
+            setClientSignupOpen(false);
+            setClientLoginOpen(true);
+          }}
+        />
+      )}
+
+      {clientLoginOpen && (
+        <ClientLoginModal
+          onClose={() => setClientLoginOpen(false)}
+          onLoggedIn={() => {
+            // Recarga completa para que el AuthProvider tome la nueva sesión.
+            // Inicio del cliente = marketplace.
+            window.location.href = '/dashboard/marketplace';
           }}
         />
       )}

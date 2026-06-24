@@ -5,6 +5,56 @@
 >
 > **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
+## Objetivo ACTUAL (declarado 2026-06-23) — Onboarding de candidato en la landing (8 sliders + postulación)
+**Necesidad:** al pulsar "Entrar" en la landing, un visitante **nuevo** debe ver primero un modal tipo
+carrusel ("deslizados") con **8 sliders** que le **dan a conocer el proyecto**, y al final un formulario
+con la pregunta **"¿Por qué quieres ser candidato de este proyecto?"** (postulación), antes de ingresar al
+juego/mundo.
+- **% de información para el objetivo:** ~30% — **sliders 1 y 2 totalmente especificados e implementados**;
+  **sliders 3–8 pendientes** (el usuario los dictará uno a uno); persistencia de la postulación en backend
+  **sin definir** (hoy solo `localStorage`).
+- **Contenido recibido (verbatim en `MEMORIA.md` → "Fundamentos del proyecto"):**
+  - **Slider 1 · Modelo de Grupo** = Modelo 4P (4 pisos: Global, Pilar, Controlador, Colaborador; 4 pasos:
+    Fundamentación, Creación, Implementación, Gestión). Cada paso contiene los 4 pisos.
+  - **Slider 2 · Herramientas** = Metodología Condiciológica (6 pasos; Condiciología = estudio de las
+    condiciones, de L. F. González Muyulema), Sistema de Control Psicosocial, Proyecto Centralizado, Violeta.
+- **Implementado:** `components/landing/OnboardingSlidersModal.tsx` (data-driven, estilo pixelart, acordeón
+  en slider 2, animaciones) + hook en `app/page.tsx` (estado `onboardingOpen`, intercepta "Entrar" para
+  nuevos, `onComplete` arranca el flujo original y guarda la motivación en localStorage). `tsc` OK, sin commitear.
+- **Preguntas abiertas para el usuario:** (1) contenido de los sliders 3–8; (2) ¿la postulación se guarda en
+  BD / se asocia al personaje creado? ¿hay revisión/aprobación de candidatos?; (3) ¿el modal debe poder
+  saltarse o es obligatorio? (hoy tiene "✕" que cancela y vuelve a la landing).
+
+### Ampliación 2026-06-23 — Candidato vs Cliente, cuentas, aprobación y marketplace (DISEÑO acordado)
+El usuario definió el flujo completo (ver `MEMORIA.md` → feature onboarding):
+- Tras "Entrar": **modal de elección** Candidato/Cliente (`EntryChoiceModal`). **HECHO** (UI + ruteo + `gcc_account_type`).
+- **Candidato:** sliders → motivación → creación de cuenta (datos personales en `SignupForm`) → verificación correo.
+  **PENDIENTE (backend):** aprobación por **admin Global** + correo de aprobación antes de poder ingresar al juego.
+- **Cliente:** sin sliders ni motivación → creación de cuenta (`account_type='client'`) → verificación correo.
+  **PENDIENTE (backend):** inicio = **marketplace**; **/dashboard restringido** (Marketplace, Tickets, Proyectos,
+  Suscripciones, Automatizaciones, Perfil/Config); publica requerimientos de tickets/proyectos; ve suscripciones
+  asignadas; automatizaciones solo-ver-compartido (no crea flujos).
+- **HECHO:** `SignupForm` pide nombre/correo/país/dirección/teléfono + contraseña; `signup` persiste
+  `full_name/country/address/phone/account_type` en `gcc_world.clients`; checkbox de marketing opcional en la
+  postulación; se quitó el texto "Slider N".
+- **HECHO (propuestas 2026-06-23):** tabla `gcc_world.candidate_proposals` + `POST/GET /api/candidate/proposal`
+  (bloqueo de correo UNIQUE, `ip_hash`, estado `pending`) + verificación de correo (`/api/candidate/verify`) +
+  `ProposalPendingModal` (espera de aprobación) + reconocimiento por IP al elegir "candidato". El candidato NO
+  entra al juego tras postularse; queda en espera.
+- **PENDIENTE (flujo de propuesta):** (i) **aprobación del admin global** `lfgonzalezm0@outlook.com` (endpoint
+  `approve`/UI + `status='approved'` + correo de aprobación); (ii) gate post-aprobación para **comenzar la
+  aventura**; (iii) **migración** propuesta→candidato al crear cuenta (borrar fila de `candidate_proposals` y
+  crear registro en `gcc_world.clients` con IP + datos); (iv) reconocimiento por IP de **cuenta ya creada**;
+  (v) correr `next build`.
+- **PENDIENTE / preguntas:** (a) ¿confirmas que clientes y candidatos comparten `gcc_world.clients` con
+  `account_type`, o quieres tabla física separada?; (b) flujo de **aprobación de candidato** (estado en BD +
+  endpoint admin + correo); (c) gating de **acceso del cliente** al juego (no debe entrar) y redirección a
+  marketplace tras verificar; (d) permisos del `/dashboard` para rol cliente; (e) el `SignupForm` hoy vive
+  dentro del juego (requiere personaje) — para el cliente habría que ofrecer creación de cuenta SIN pasar por
+  el juego (rework de flujo, a definir).
+
+---
+
 ## Objetivo / necesidad (declarado 2026-06-11)
 Nuevo módulo **Suscripciones**, ubicado en el sidebar **justo debajo de Proyectos**. Permite al
 miembro/usuario llevar el control de **cobros mensuales recurrentes** a clientes por productos/servicios
