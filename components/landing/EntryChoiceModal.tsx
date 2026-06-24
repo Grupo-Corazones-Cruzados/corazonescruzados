@@ -18,10 +18,12 @@ const BODY = "'Inter', system-ui, -apple-system, sans-serif";
 export default function EntryChoiceModal({
   onCandidate,
   onClient,
+  onMember,
   onClose,
 }: {
   onCandidate: () => void;
   onClient: () => void;
+  onMember: () => void;
   onClose: () => void;
 }) {
   return (
@@ -108,6 +110,11 @@ export default function EntryChoiceModal({
             title="Soy cliente"
             desc="Quiero adquirir los productos, servicios y proyectos del grupo."
             onClick={onClient}
+          />
+          <Option
+            title="Ingresar como miembro"
+            desc="Ya soy miembro o administrador: iniciar sesión y entrar al juego."
+            onClick={onMember}
           />
         </div>
       </div>

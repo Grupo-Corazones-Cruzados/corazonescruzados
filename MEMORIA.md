@@ -490,6 +490,19 @@ Stack estándar de la casa, con particularidades de este repo:
       ya están aprobadas). (2) gate de aprobación **dentro de `CharacterGameplay`** para el flujo de creación
       de cuenta nuevo (hoy el gate cubre las entradas de jugador recurrente; el candidato nuevo no llega al
       CharacterCreator porque su flujo termina en la propuesta/espera).
+  - **Separación candidato vs miembro al entrar al juego (2026-06-24):**
+    - **"Ya tengo una cuenta"** (recuperación por código del personaje) ahora es **SOLO para candidatos**:
+      `recover/begin` rechaza el correo si pertenece a un **miembro/admin** de `gcc_world.users`
+      (`role IN ('member','admin')`) → "Esta es una cuenta de miembro. Usa 'Ingresar como miembro'."
+    - Nueva opción **"Ingresar como miembro"** en `EntryChoiceModal` (3ª opción) → `MemberLoginModal`
+      (correo+contraseña) → **`POST /api/character/auth/member-login`**: valida credenciales contra
+      `gcc_world.users` (member/admin), abre la sesión del **personaje** `gcc_world.clients` asociado por
+      correo (setea cookies, `approved=true`) y entra al juego (`onLoggedIn` → refresh + windAway →
+      enterAsReturning). Si el miembro no tiene personaje → 404 (`noCharacter`). Los **administradores
+      globales** también usan esta opción.
+    - **Contexto:** el admin `lfgonzalezm0@outlook.com` había entrado por "Ya tengo cuenta" a un personaje
+      y quedó en **pantalla negra** del juego. La separación evita la confusión. (Si la pantalla negra
+      persiste con member-login, es un bug aparte del render del personaje, a investigar.)
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**

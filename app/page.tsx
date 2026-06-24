@@ -15,6 +15,7 @@ import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
 import ProposalPendingModal from '@/components/landing/ProposalPendingModal';
 import ClientSignupModal from '@/components/landing/ClientSignupModal';
 import ClientLoginModal from '@/components/landing/ClientLoginModal';
+import MemberLoginModal from '@/components/landing/MemberLoginModal';
 import { useAuth } from '@/components/providers/AuthProvider';
 
 const ENTRY_MESSAGES = [
@@ -370,6 +371,7 @@ export default function LandingPage() {
   >(null);
   const [clientSignupOpen, setClientSignupOpen] = useState(false);
   const [clientLoginOpen, setClientLoginOpen] = useState(false);
+  const [memberLoginOpen, setMemberLoginOpen] = useState(false);
   const warpRef = useRef<HTMLDivElement | null>(null);
   const planetMusicRef = useRef<HTMLAudioElement | null>(null);
   const peligroMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -2593,6 +2595,7 @@ export default function LandingPage() {
     entryChoiceOpen ||
     clientSignupOpen ||
     clientLoginOpen ||
+    memberLoginOpen ||
     onboardingOpen ||
     recoveryOpen ||
     !!proposalPending;
@@ -3061,6 +3064,11 @@ export default function LandingPage() {
             // creación de cuenta; desde ahí puede pasar a iniciar sesión.
             setClientSignupOpen(true);
           }}
+          onMember={() => {
+            setEntryChoiceOpen(false);
+            // Miembro/admin: inicia sesión y entra al juego con su personaje.
+            setMemberLoginOpen(true);
+          }}
         />
       )}
 
@@ -3120,6 +3128,19 @@ export default function LandingPage() {
             // Recarga completa para que el AuthProvider tome la nueva sesión.
             // Inicio del cliente = marketplace.
             window.location.href = '/dashboard/marketplace';
+          }}
+        />
+      )}
+
+      {memberLoginOpen && (
+        <MemberLoginModal
+          onClose={() => setMemberLoginOpen(false)}
+          onLoggedIn={async () => {
+            // Miembro/admin entra al juego con su personaje (ya quedó approved).
+            setMemberLoginOpen(false);
+            const found = await refreshSavedCharacter();
+            if (found) setSavePointTrigger((n) => n + 1);
+            setWindAway(true); // el useEffect de savedCharacter dispara enterAsReturning
           }}
         />
       )}

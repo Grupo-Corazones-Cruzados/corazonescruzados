@@ -26,6 +26,20 @@ export async function POST(req: Request) {
     }
     const cleanEmail = email.trim().toLowerCase();
 
+    // "Ya tengo una cuenta" es SOLO para candidatos. Si el correo pertenece a
+    // un miembro/admin (staff), se rechaza: deben usar "Ingresar como miembro".
+    const memberCheck = await pool.query(
+      `SELECT 1 FROM gcc_world.users
+        WHERE LOWER(email) = $1 AND role IN ('member','admin') LIMIT 1`,
+      [cleanEmail],
+    );
+    if (memberCheck.rows.length > 0) {
+      return NextResponse.json(
+        { error: 'Esta es una cuenta de miembro. Usa "Ingresar como miembro".' },
+        { status: 403 },
+      );
+    }
+
     const r = await pool.query(
       `SELECT id, alias, password_hash, email_verified, email
          FROM gcc_world.clients
