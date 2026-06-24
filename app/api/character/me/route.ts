@@ -17,7 +17,12 @@ export async function GET() {
 
     let row: Record<string, unknown> | null = null;
 
-    const COLS = `id, alias, character_data, password_hash, email_verified,
+    // approved: aprobación del administrador global (gate de entrada al juego).
+    await pool.query(
+      `ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false`,
+    );
+
+    const COLS = `id, alias, character_data, password_hash, email_verified, approved,
                   pending_email, auth_token, auth_expires, last_seen_at`;
     if (token) {
       const r = await pool.query(
@@ -66,6 +71,7 @@ export async function GET() {
       characterData: row.character_data,
       hasPassword: !!row.password_hash,
       emailVerified: !!row.email_verified,
+      approved: !!row.approved,
       pendingEmail: row.pending_email,
       authenticated: !!authValid,
     });

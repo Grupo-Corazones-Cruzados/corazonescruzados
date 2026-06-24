@@ -355,6 +355,7 @@ export default function LandingPage() {
   const [savedAuth, setSavedAuth] = useState<{
     hasPassword: boolean;
     emailVerified: boolean;
+    approved: boolean;
     authenticated: boolean;
     pendingEmail: string | null;
   } | null>(null);
@@ -1051,6 +1052,22 @@ export default function LandingPage() {
   useEffect(() => {
     savedCharacterRef.current = savedCharacter;
   }, [savedCharacter]);
+  // Auth fresca para gatear la entrada al juego de forma síncrona tras refrescar.
+  const savedAuthRef = useRef<{
+    emailVerified: boolean;
+    approved: boolean;
+    pendingEmail: string | null;
+  } | null>(null);
+  // Regla: solo se entra al juego con cuenta APROBADA por el admin global y
+  // correo VERIFICADO. Si no, se muestra el modal de espera.
+  const gateGameEntry = useCallback((): boolean => {
+    const a = savedAuthRef.current;
+    if (a && (!a.approved || !a.emailVerified)) {
+      setProposalPending({ email: a.pendingEmail, emailVerified: a.emailVerified });
+      return false;
+    }
+    return true;
+  }, []);
 
   const refreshSavedCharacter =
     useCallback(async (): Promise<CharacterConfig | null> => {
@@ -1060,9 +1077,15 @@ export default function LandingPage() {
         if (j?.exists && j.characterData) {
           const cfg = j.characterData as CharacterConfig;
           setSavedCharacter(cfg);
+          savedAuthRef.current = {
+            emailVerified: !!j.emailVerified,
+            approved: !!j.approved,
+            pendingEmail: j.pendingEmail ?? null,
+          };
           setSavedAuth({
             hasPassword: !!j.hasPassword,
             emailVerified: !!j.emailVerified,
+            approved: !!j.approved,
             authenticated: !!j.authenticated,
             pendingEmail: j.pendingEmail ?? null,
           });
@@ -1109,8 +1132,13 @@ export default function LandingPage() {
   // intro screens and enter as returning. Covers every refresh path.
   useEffect(() => {
     if (!savedCharacter || !windAway || gameplayActive) return;
+    if (!gateGameEntry()) {
+      // No aprobado / sin verificar: vuelve la landing y muestra el modal.
+      setWindAway(false);
+      return;
+    }
     enterAsReturning(savedCharacter);
-  }, [savedCharacter, windAway, gameplayActive, enterAsReturning]);
+  }, [savedCharacter, windAway, gameplayActive, enterAsReturning, gateGameEntry]);
 
   // Re-validate when the user becomes interactable with the page again
   // (tab focus, network online). Cheap and idempotent — the effect bails
@@ -2911,9 +2939,9 @@ export default function LandingPage() {
               onClick={() => {
                 if (landingLocked || windAway) return;
 
-                // Returning player: the savedCharacter useEffect picks
-                // this up and routes through enterAsReturning.
+                // Returning player: solo entra si está aprobado + verificado.
                 if (savedCharacter) {
+                  if (!gateGameEntry()) return;
                   setWindAway(true);
                   return;
                 }
@@ -2988,17 +3016,16 @@ export default function LandingPage() {
       {recoveryOpen && (
         <AccountRecoveryModal
           onClose={() => setRecoveryOpen(false)}
-          onSuccess={() => {
+          onSuccess={async () => {
             // Cuenta anexada a este dispositivo (IP actualizada por el endpoint).
-            // Entra al juego de inmediato como jugador recurrente: al setear
-            // windAway + cargar el personaje, el useEffect de savedCharacter
-            // dispara enterAsReturning.
             setRecoveryOpen(false);
             setOnboardingOpen(false);
+            const found = await refreshSavedCharacter();
+            if (found) setSavePointTrigger((n) => n + 1);
+            // Solo entra al juego si está APROBADO + correo VERIFICADO; si no,
+            // gateGameEntry muestra el modal de espera de aprobación.
+            if (!gateGameEntry()) return;
             setWindAway(true);
-            refreshSavedCharacter().then((found) => {
-              if (found) setSavePointTrigger((n) => n + 1);
-            });
           }}
         />
       )}
@@ -3701,6 +3728,10 @@ export default function LandingPage() {
             // the user into it instead of creating a duplicate.
             const existing = await refreshSavedCharacter();
             if (existing) {
+              if (!gateGameEntry()) {
+                setCharacterCreatorVisible(false);
+                return;
+              }
               enterAsReturning(existing);
               return;
             }

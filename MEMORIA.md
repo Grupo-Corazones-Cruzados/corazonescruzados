@@ -475,6 +475,21 @@ Stack estándar de la casa, con particularidades de este repo:
     acceso SOLO a: **Marketplace, Tickets, Proyectos, Suscripciones, Automatizaciones, Configuración, Soporte**.
     Falta: (1) auth de cliente en middleware/layout del dashboard; (2) sidebar filtrado por rol cliente;
     (3) redirección de inicio del cliente a marketplace; (4) permisos por rol en cada módulo.
+  - **Gate de entrada al juego: aprobado + correo verificado (2026-06-24):** un candidato **solo entra al
+    juego** si su cuenta está **APROBADA por el admin global** y su **correo verificado**. Se añadió columna
+    **`gcc_world.clients.approved`** (`boolean DEFAULT false`; **backfill: las 12 cuentas existentes →
+    `true`** para no bloquearlas; las nuevas nacen `false`). `/api/character/me` devuelve `approved`;
+    `savedAuth`/`savedAuthRef` lo guardan. Helper **`gateGameEntry()`** (lee `savedAuthRef`): si
+    `!approved || !emailVerified` → muestra `ProposalPendingModal` (espera aprobación / verifica correo) y NO
+    entra. Aplicado en: botón **Entrar** (rama personaje guardado), useEffect de retorno (1110; revierte
+    `windAway`), `CharacterCreator.onConfirm` (rama cuenta existente) y **`onSuccess` de anexar cuenta**
+    (refresca → gatea → solo entonces `windAway`). El botón "Ya tengo una cuenta" del modal de sliders, al
+    validar el código, **entra al juego solo si aprobado+verificado**.
+    - **PENDIENTE:** (1) **mecanismo de aprobación del admin global** (endpoint/UI que ponga `approved=true`;
+      hoy no existe → las cuentas nuevas quedan en espera permanente hasta que se construya; las 12 existentes
+      ya están aprobadas). (2) gate de aprobación **dentro de `CharacterGameplay`** para el flujo de creación
+      de cuenta nuevo (hoy el gate cubre las entradas de jugador recurrente; el candidato nuevo no llega al
+      CharacterCreator porque su flujo termina en la propuesta/espera).
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**
