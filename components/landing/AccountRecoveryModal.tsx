@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { startAuthentication } from '@simplewebauthn/browser';
 import BrandLoader from '@/components/ui/BrandLoader';
 
 const PIXEL = "'Silkscreen', cursive";
@@ -40,6 +41,37 @@ export default function AccountRecoveryModal({
       setStep('code');
     } catch {
       setError('Error de red');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Passkey: si hay una registrada en este dispositivo, entra DIRECTO (sin código).
+  const loginWithPasskey = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      const begin = await fetch('/api/character/auth/passkey/login/begin', { method: 'POST' });
+      const opts = await begin.json();
+      if (!begin.ok) {
+        setError(opts?.error ?? 'No hay passkey en este dispositivo');
+        return;
+      }
+      const credential = await startAuthentication({ optionsJSON: opts });
+      const finish = await fetch('/api/character/auth/passkey/login/finish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credential),
+      });
+      const fj = await finish.json();
+      if (!finish.ok) {
+        setError(fj?.error ?? 'Passkey rechazada');
+        return;
+      }
+      onSuccess();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error de passkey';
+      if (!/cancel|abort|timeout|allowed/i.test(msg)) setError(msg);
     } finally {
       setBusy(false);
     }
@@ -128,6 +160,31 @@ export default function AccountRecoveryModal({
                 style={{ marginTop: 4, opacity: busy ? 0.6 : 1 }}
               >
                 {busy ? 'Enviando código...' : 'Enviar código'}
+              </button>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  margin: '4px 0',
+                  color: 'rgba(225,215,255,0.4)',
+                  fontFamily: BODY,
+                  fontSize: '0.72rem',
+                }}
+              >
+                <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />o
+                <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />
+              </div>
+
+              <button
+                type="button"
+                onClick={loginWithPasskey}
+                disabled={busy}
+                className="pixel-btn pixel-btn-secondary"
+                style={{ opacity: busy ? 0.6 : 1 }}
+              >
+                🔑 Ingresar con passkey
               </button>
             </form>
           ) : (
