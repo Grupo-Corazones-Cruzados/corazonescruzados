@@ -3058,6 +3058,11 @@ export default function LandingPage() {
             // Candidato nuevo: conoce el proyecto (sliders) y se postula.
             setOnboardingOpen(true);
           }}
+          onCandidateLogin={() => {
+            setEntryChoiceOpen(false);
+            // Candidato existente: inicia sesión (credenciales + código) y entra.
+            setRecoveryOpen(true);
+          }}
           onClient={() => {
             setEntryChoiceOpen(false);
             // Cliente = usuario con rol 'client' (auth de dashboard). Abre la
@@ -3075,7 +3080,6 @@ export default function LandingPage() {
       {onboardingOpen && (
         <OnboardingSlidersModal
           onClose={() => setOnboardingOpen(false)}
-          onHaveAccount={() => setRecoveryOpen(true)}
           onComplete={async (postulacion) => {
             // Registra la propuesta (queda en espera de aprobación del admin
             // global). El candidato NO entra al juego hasta ser aprobado.

@@ -17,11 +17,13 @@ const BODY = "'Inter', system-ui, -apple-system, sans-serif";
 
 export default function EntryChoiceModal({
   onCandidate,
+  onCandidateLogin,
   onClient,
   onMember,
   onClose,
 }: {
   onCandidate: () => void;
+  onCandidateLogin: () => void;
   onClient: () => void;
   onMember: () => void;
   onClose: () => void;
@@ -105,6 +107,11 @@ export default function EntryChoiceModal({
             title="Quiero postularme como candidato"
             desc="Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados."
             onClick={onCandidate}
+          />
+          <Option
+            title="Soy candidato"
+            desc="Ya tengo una cuenta de candidato: iniciar sesión y entrar al juego."
+            onClick={onCandidateLogin}
           />
           <Option
             title="Soy cliente"
