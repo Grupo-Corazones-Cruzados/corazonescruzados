@@ -596,14 +596,17 @@ Stack estándar de la casa, con particularidades de este repo:
     "crea tu cuenta" tras login (passkey o contraseña); ahora usa `setAuth(a => ({...a, ...}))`. El
     `save` (staff) además guardaba mal (chocaba con el correo `UNIQUE`): ahora busca por `user_id` **o**
     correo y deja sesión de personaje activa (`AUTH_COOKIE`).
-    - **Sesión persistente (2026-06-25):** se **eliminó** la re-autenticación forzada en cada entrada
-      (antes `isReturning` ponía `authenticated=false` siempre). Ahora se **confía en la sesión**: si el
-      `AUTH_COOKIE` sigue válido (`authenticated` de `/me`), el jugador entra **directo**; solo se
-      re-autentica si la sesión expiró. Así un miembro que ya entró por el modal (o con sesión activa) **no
-      vuelve a autenticarse** (se acabó el doble login). `/api/character/me` también gana un **fallback por
-      sesión de staff (JWT)**: reconoce al miembro por `user_id`/correo aunque la cookie/IP de jugador no
-      coincidan. (Recordar: `isMember` de `/me` ya cae a **coincidencia de correo** con un usuario staff,
-      así que el miembro nunca ve "crea tu cuenta" aunque `clients.user_id` quede null.)
+    - **Login una vez por recarga (2026-06-25):** regla final del re-login del jugador recurrente.
+      `CharacterGameplay` recibe **`freshAuth`** (page.tsx). Si el jugador se autenticó por un **modal en
+      esta carga** (member-login, candidato/recover, passkey) → `freshAuth=true` → entra **directo** (no
+      doble login). Si entra por **"Entrar"** (solo reconocido por cookie/IP, sin modal) → `freshAuth=false`
+      → se le pide login **UNA vez** (LoginForm: código o passkey). `freshAuth` es estado React → **se
+      reinicia al recargar**, así cada **sesión nueva (recarga)** valida el ingreso una sola vez. Init del
+      auth: `isReturning ? {...base, authenticated: freshAuth} : base`. (Antes se probó "forzar siempre"
+      [doble login] y luego "confiar siempre" [no pedía al recargar]; esto es el punto medio correcto.)
+      `/api/character/me` también gana **fallback por sesión de staff (JWT)** y `isMember` cae a
+      **coincidencia de correo** con un usuario staff (el miembro nunca ve "crea tu cuenta" aunque
+      `clients.user_id` quede null).
   - **Passkey: oferta de registro tras el código (2026-06-25):** las passkeys (de personaje y de
     usuario) viven en **`gcc_world.client_passkeys`** (por `client_id` = fila de `gcc_world.clients`).
     Regla: **tras validar el código 2FA**, si la cuenta **NO** tiene passkey → aparece el paso
