@@ -17,8 +17,12 @@ function AuthForm() {
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // 2FA por código
+  const [codeStep, setCodeStep] = useState(false);
+  const [code, setCode] = useState("");
+  const [masked, setMasked] = useState<string | null>(null);
 
-  const { signIn, resetPassword, refreshUser } = useAuth();
+  const { resetPassword, refreshUser } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,14 +30,41 @@ function AuthForm() {
     setLoading(true);
 
     try {
-      if (tab === "login") {
-        await signIn(email, password);
-        router.push(redirect);
-      } else {
+      if (tab === "reset") {
         await resetPassword(email);
         toast.info(
           "Si el correo existe, recibirás un enlace para restablecer tu contraseña."
         );
+        return;
+      }
+
+      // Login con 2FA: paso 1 (credenciales → código), paso 2 (código → entra).
+      if (!codeStep) {
+        const r = await fetch("/api/auth/login/begin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const j = await r.json();
+        if (!r.ok) {
+          toast.error(j?.error ?? "No se pudo iniciar sesión");
+          return;
+        }
+        setMasked(j?.masked ?? null);
+        setCodeStep(true);
+      } else {
+        const r = await fetch("/api/auth/login/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, code }),
+        });
+        const j = await r.json();
+        if (!r.ok) {
+          toast.error(j?.error ?? "Código incorrecto");
+          return;
+        }
+        await refreshUser();
+        router.push(redirect);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Ocurrió un error");
@@ -109,27 +140,48 @@ function AuthForm() {
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <PixelInput
-            label="Correo electronico"
-            name="email"
-            type="email"
-            required
-            value={email}
-            onChange={setEmail}
-            placeholder="tu@correo.com"
-          />
-
-          {tab === "login" && (
-            <PixelInput
-              label="Contrasena"
-              name="password"
-              type="password"
-              required
-              value={password}
-              onChange={setPassword}
-              placeholder="Minimo 8 caracteres"
-              minLength={8}
-            />
+          {tab === "login" && codeStep ? (
+            <>
+              <p
+                className="text-xs text-center opacity-70"
+                style={{ ...pixelFont, color: "#CBD5E1" }}
+              >
+                Te enviamos un código a {masked ?? "tu correo"}.
+              </p>
+              <PixelInput
+                label="Código de 6 dígitos"
+                name="code"
+                type="text"
+                required
+                value={code}
+                onChange={(v) => setCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
+                placeholder="000000"
+              />
+            </>
+          ) : (
+            <>
+              <PixelInput
+                label="Correo electronico"
+                name="email"
+                type="email"
+                required
+                value={email}
+                onChange={setEmail}
+                placeholder="tu@correo.com"
+              />
+              {tab === "login" && (
+                <PixelInput
+                  label="Contrasena"
+                  name="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={setPassword}
+                  placeholder="Minimo 8 caracteres"
+                  minLength={8}
+                />
+              )}
+            </>
           )}
 
           <button
@@ -139,13 +191,29 @@ function AuthForm() {
           >
             {loading
               ? "Cargando..."
-              : tab === "login"
-                ? "Iniciar Sesion"
-                : "Enviar Enlace"}
+              : tab === "reset"
+                ? "Enviar Enlace"
+                : codeStep
+                  ? "Confirmar y entrar"
+                  : "Enviar código"}
           </button>
+
+          {tab === "login" && codeStep && (
+            <button
+              type="button"
+              onClick={() => {
+                setCodeStep(false);
+                setCode("");
+              }}
+              className="text-[10px] text-accent-glow opacity-60 hover:opacity-100 transition-opacity"
+              style={pixelFont}
+            >
+              ← Volver
+            </button>
+          )}
         </form>
 
-        {tab === "login" && (
+        {tab === "login" && !codeStep && (
           <>
             <div className="flex items-center gap-3 my-4">
               <span className="flex-1 h-px bg-digi-border" />

@@ -519,11 +519,16 @@ Stack estándar de la casa, con particularidades de este repo:
       `/api/character/auth/passkey/login/{begin,finish}` (device-bound por cookie/IP) +
       `startAuthentication` de `@simplewebauthn/browser`. El **registro** de passkey se ofrece dentro del
       juego (`PasskeyOfferDialog`) tras iniciar sesión.
-    - **PENDIENTE:** (1) passkey para **cliente** (es `gcc_world.users`; el passkey de personaje no aplica —
-      hay passkey de staff en `app/(auth)/auth/page.tsx`, sistema aparte). (2) 2FA en el login de **staff por
-      `/auth`** (la página `/auth` y `useAuth.signIn` aún usan `/api/auth/login` de 1 paso; el `ClientLoginModal`
-      sí usa begin/verify). (3) Botón explícito "Configurar passkey" dentro del modal de login (hoy el registro
-      se ofrece post-login en el juego).
+    - **Cierre de pendientes (2026-06-24):**
+      - **Passkey de cliente:** `ClientLoginModal` ahora tiene "Ingresar con passkey" usando el passkey de
+        **usuario/staff** (`/api/auth/passkey/begin`+`finish`). ✅ login. **Falta el REGISTRO** de passkey
+        para cliente (solo existe el login); registrarla requeriría una opción en el dashboard/ajustes del
+        cliente (pendiente).
+      - **2FA en `/auth` (staff):** la página `/auth` ya es **2 pasos** (begin → código → verify) usando
+        `/api/auth/login/begin`+`/verify`; ya no usa `useAuth.signIn` de 1 paso para login. ✅
+      - **Registro de passkey "en el login":** para **candidato/miembro** se ofrece **post-login dentro del
+        juego** (`PasskeyOfferDialog`), así que el bucle login→registrar→login-con-passkey funciona. ✅ Para
+        cliente queda pendiente (ver arriba).
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**
