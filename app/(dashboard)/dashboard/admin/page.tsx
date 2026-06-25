@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/components/providers/AuthProvider';
 import PageHeader from '@/components/ui/PageHeader';
@@ -15,6 +15,7 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 const MAIN_TABS = [
   { value: 'team', label: 'Equipo' },
   { value: 'clients', label: 'Clientes' },
+  { value: 'proposals', label: 'Postulaciones' },
   { value: 'digimundo', label: 'DigiMundo' },
 ];
 
@@ -68,6 +69,7 @@ export default function AdminPage() {
 
       {tab === 'team' && <TeamSection />}
       {tab === 'clients' && <ClientsSection />}
+      {tab === 'proposals' && <ProposalsSection />}
       {tab === 'digimundo' && (
         <div>
           {/* DigiMundo sub-tabs */}
@@ -172,6 +174,99 @@ function ClientsSection() {
       emptyTitle="Sin clientes"
       emptyDesc="No hay clientes registrados."
     />
+  );
+}
+
+/* ─── Postulaciones de candidatos ─── */
+const PROP_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
+  pending: 'warning', approved: 'success', rejected: 'error',
+};
+const PROP_STATUS_LABEL: Record<string, string> = {
+  pending: 'Pendiente', approved: 'Aprobada', rejected: 'Rechazada',
+};
+
+function ProposalsSection() {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    fetch('/api/admin/candidate-proposals')
+      .then(r => r.json())
+      .then(d => setData(d.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const approve = async (p: any) => {
+    setBusyId(p.id); setMsg(null);
+    try {
+      const r = await fetch(`/api/admin/candidate-proposals/${p.id}/approve`, { method: 'POST' });
+      const j = await r.json();
+      if (!r.ok) { setMsg(j?.error ?? 'No se pudo aprobar'); return; }
+      setMsg(j.emailSent === false ? 'Aprobado (no se envió el correo).' : `Aprobado: se envió el correo a ${p.email}.`);
+      load();
+    } catch { setMsg('Error de red'); } finally { setBusyId(null); }
+  };
+
+  const reject = async (p: any) => {
+    setBusyId(p.id); setMsg(null);
+    try {
+      const r = await fetch(`/api/admin/candidate-proposals/${p.id}/reject`, { method: 'POST' });
+      if (!r.ok) { const j = await r.json(); setMsg(j?.error ?? 'No se pudo rechazar'); return; }
+      load();
+    } catch { setMsg('Error de red'); } finally { setBusyId(null); }
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando postulaciones..." /></div>;
+
+  return (
+    <div>
+      {msg && <p className="text-xs text-accent-glow mb-3" style={mf}>{msg}</p>}
+      <PixelDataTable
+        columns={[
+          { key: 'email', header: 'Correo', render: (p: any) => p.email },
+          { key: 'reason', header: 'Motivación', render: (p: any) => (
+            <span className="text-digi-muted truncate max-w-[260px] inline-block">{p.reason || '-'}</span>
+          )},
+          { key: 'verified', header: 'Correo', render: (p: any) => (
+            <PixelBadge variant={p.email_verified ? 'success' : 'warning'}>{p.email_verified ? 'Verificado' : 'Sin verificar'}</PixelBadge>
+          )},
+          { key: 'status', header: 'Estado', render: (p: any) => (
+            <PixelBadge variant={PROP_STATUS_V[p.status] || 'default'}>{PROP_STATUS_LABEL[p.status] || p.status}</PixelBadge>
+          )},
+          { key: 'date', header: 'Fecha', render: (p: any) => new Date(p.created_at).toLocaleDateString() },
+          { key: 'actions', header: '', width: '170px', render: (p: any) => (
+            <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+              {p.status !== 'approved' && (
+                <button
+                  onClick={() => approve(p)}
+                  disabled={busyId === p.id}
+                  className="px-2 py-0.5 text-[8px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors disabled:opacity-50"
+                  style={pf}
+                >
+                  {busyId === p.id ? '...' : 'Aprobar'}
+                </button>
+              )}
+              <button
+                onClick={() => reject(p)}
+                disabled={busyId === p.id}
+                className="px-2 py-0.5 text-[8px] border border-red-700/50 text-red-400 hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                style={pf}
+              >
+                Rechazar
+              </button>
+            </div>
+          )},
+        ]}
+        data={data}
+        emptyTitle="Sin postulaciones"
+        emptyDesc="No hay postulaciones de candidatos."
+      />
+    </div>
   );
 }
 

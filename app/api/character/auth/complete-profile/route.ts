@@ -30,17 +30,17 @@ export async function POST(req: Request) {
     const token = cookieStore.get(CLIENT_COOKIE)?.value || null;
     const ipHash = hashIp(await getClientIp());
 
-    let row: { id: number; email_verified: boolean } | null = null;
+    let row: { id: number; email_verified: boolean; email: string | null } | null = null;
     if (token) {
       const r = await pool.query(
-        `SELECT id, email_verified FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
+        `SELECT id, email_verified, email FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
         [token],
       );
       row = r.rows[0] ?? null;
     }
     if (!row) {
       const r = await pool.query(
-        `SELECT id, email_verified FROM gcc_world.clients
+        `SELECT id, email_verified, email FROM gcc_world.clients
           WHERE ip_hash = $1 AND character_data IS NOT NULL
           ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
         [ipHash],
@@ -64,6 +64,9 @@ export async function POST(req: Request) {
     const authToken = randomBytes(32).toString('hex');
 
     await pool.query(
+      `ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false`,
+    );
+    await pool.query(
       `UPDATE gcc_world.clients
           SET password_hash = $1,
               full_name = COALESCE(NULLIF($2, ''), full_name),
@@ -72,6 +75,7 @@ export async function POST(req: Request) {
               phone = COALESCE(NULLIF($5, ''), phone),
               auth_token = $6,
               auth_expires = NOW() + INTERVAL '30 days',
+              profile_completed = true,
               pending_email = NULL,
               pending_password_hash = NULL,
               last_seen_at = NOW()
@@ -86,6 +90,14 @@ export async function POST(req: Request) {
         row.id,
       ],
     );
+
+    // Migración propuesta → candidato finalizada: se elimina la propuesta.
+    if (row.email) {
+      await pool.query(
+        `DELETE FROM gcc_world.candidate_proposals WHERE LOWER(email) = LOWER($1)`,
+        [row.email],
+      ).catch(() => undefined);
+    }
 
     cookieStore.set(AUTH_COOKIE, authToken, {
       httpOnly: true,

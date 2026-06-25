@@ -72,6 +72,7 @@ type AuthStatus = {
   pendingEmail?: string | null;
   email?: string | null;
   isMember?: boolean;
+  profileCompleted?: boolean;
   profile?: { fullName: string; country: string; address: string; phone: string };
 };
 
@@ -321,9 +322,12 @@ export default function CharacterGameplay({
   const [passkeyRegistered, setPasskeyRegistered] = useState(false);
   // Brand-new players are now also forced to create an account before
   // they can play, to lock in their progress before they leave the page.
-  // Los miembros/admin NO ven el formulario de "crear cuenta": ya tienen cuenta
-  // (gcc_world.users). Solo se le pide a candidatos/invitados.
-  const showSetup = !auth.hasPassword && !auth.isMember;
+  // Los miembros/admin NO ven el formulario (ya tienen cuenta en gcc_world.users).
+  // Candidato/invitado: lo ve si no tiene contraseña; o si tiene una temporal
+  // (correo verificado pero perfil sin completar) tras ser aprobado.
+  const showSetup =
+    !auth.isMember &&
+    (!auth.hasPassword || (!!auth.emailVerified && !auth.profileCompleted));
   const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
   const overlayVisible = showSetup || showLogin || passkeyOffer;
   const locked = overlayVisible;

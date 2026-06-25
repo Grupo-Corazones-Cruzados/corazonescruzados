@@ -22,12 +22,13 @@ export async function GET() {
     await pool.query(
       `ALTER TABLE gcc_world.clients
          ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false,
-         ADD COLUMN IF NOT EXISTS user_id uuid`,
+         ADD COLUMN IF NOT EXISTS user_id uuid,
+         ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false`,
     );
 
     const COLS = `id, alias, character_data, password_hash, email_verified, approved,
-                  pending_email, email, user_id, full_name, country, address, phone,
-                  auth_token, auth_expires, last_seen_at`;
+                  profile_completed, pending_email, email, user_id, full_name, country,
+                  address, phone, auth_token, auth_expires, last_seen_at`;
     if (token) {
       const r = await pool.query(
         `SELECT ${COLS} FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
@@ -76,6 +77,7 @@ export async function GET() {
       hasPassword: !!row.password_hash,
       emailVerified: !!row.email_verified,
       approved: !!row.approved,
+      profileCompleted: !!row.profile_completed,
       pendingEmail: row.pending_email,
       email: row.email,
       // Miembro/admin: el personaje está enlazado a un usuario staff → no se le

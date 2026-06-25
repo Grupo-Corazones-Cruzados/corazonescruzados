@@ -361,6 +361,7 @@ export default function LandingPage() {
     pendingEmail: string | null;
     email?: string | null;
     isMember?: boolean;
+    profileCompleted?: boolean;
     profile?: { fullName: string; country: string; address: string; phone: string };
   } | null>(null);
   const savedCharacterCheckedRef = useRef(false);
@@ -1095,6 +1096,7 @@ export default function LandingPage() {
             pendingEmail: j.pendingEmail ?? null,
             email: j.email ?? null,
             isMember: !!j.isMember,
+            profileCompleted: !!j.profileCompleted,
             profile: j.profile ?? undefined,
           });
           return cfg;
@@ -3026,15 +3028,30 @@ export default function LandingPage() {
         <AccountRecoveryModal
           onClose={() => setRecoveryOpen(false)}
           onSuccess={async () => {
-            // Cuenta anexada a este dispositivo (IP actualizada por el endpoint).
+            // Cuenta vinculada a este dispositivo (IP actualizada por el endpoint).
             setRecoveryOpen(false);
             setOnboardingOpen(false);
             const found = await refreshSavedCharacter();
-            if (found) setSavePointTrigger((n) => n + 1);
-            // Solo entra al juego si está APROBADO + correo VERIFICADO; si no,
-            // gateGameEntry muestra el modal de espera de aprobación.
-            if (!gateGameEntry()) return;
+            if (found) {
+              setSavePointTrigger((n) => n + 1);
+              // Solo entra si está APROBADO + correo VERIFICADO; si no,
+              // gateGameEntry muestra el modal de espera de aprobación.
+              if (!gateGameEntry()) return;
+              setWindAway(true); // entra como jugador recurrente
+              return;
+            }
+            // Sin personaje (candidato aprobado en su primer ingreso): arranca el
+            // intro del juego (chat → planeta → creador de personaje).
             setWindAway(true);
+            cameraEnabledRef.current = true;
+            setCameraEnabled(true);
+            if (worldChatTimeoutRef.current) {
+              window.clearTimeout(worldChatTimeoutRef.current);
+            }
+            worldChatTimeoutRef.current = window.setTimeout(() => {
+              setWorldChatVisible(true);
+              worldChatTimeoutRef.current = null;
+            }, 6000);
           }}
         />
       )}

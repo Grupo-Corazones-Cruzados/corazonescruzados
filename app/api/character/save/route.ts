@@ -80,16 +80,33 @@ export async function POST(req: Request) {
         clientId = inserted.rows[0].id;
       }
     } else {
-      const guestEmail = `${alias.toLowerCase()}-${Date.now()}@guest.gcc-world.local`;
-      const inserted = await pool.query(
-        `INSERT INTO gcc_world.clients
-            (name, email, alias, character_data,
-             client_token, ip_hash, last_seen_at)
-         VALUES ($1, $2, $3, $4::jsonb, $5, $6, NOW())
-         RETURNING id`,
-        [alias, guestEmail, alias, json, token, ipHash],
+      // ¿Ya hay una fila para este dispositivo (p.ej. candidato aprobado con
+      // contraseña temporal)? La actualizamos con el personaje, preservando su
+      // email/aprobación/verificación. Si no, creamos un invitado.
+      const existingByToken = await pool.query(
+        `SELECT id FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
+        [token],
       );
-      clientId = inserted.rows[0].id;
+      if (existingByToken.rows.length > 0) {
+        const updated = await pool.query(
+          `UPDATE gcc_world.clients
+              SET alias = $1, character_data = $2::jsonb, ip_hash = $3, last_seen_at = NOW()
+            WHERE id = $4 RETURNING id`,
+          [alias, json, ipHash, existingByToken.rows[0].id],
+        );
+        clientId = updated.rows[0].id;
+      } else {
+        const guestEmail = `${alias.toLowerCase()}-${Date.now()}@guest.gcc-world.local`;
+        const inserted = await pool.query(
+          `INSERT INTO gcc_world.clients
+              (name, email, alias, character_data,
+               client_token, ip_hash, last_seen_at)
+           VALUES ($1, $2, $3, $4::jsonb, $5, $6, NOW())
+           RETURNING id`,
+          [alias, guestEmail, alias, json, token, ipHash],
+        );
+        clientId = inserted.rows[0].id;
+      }
     }
 
     cookieStore.set(CLIENT_COOKIE, token, {
