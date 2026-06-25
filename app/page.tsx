@@ -379,6 +379,10 @@ export default function LandingPage() {
   // El jugador entró como miembro/admin esta sesión → el gameplay no le pide
   // el formulario "crea tu cuenta" (ya tiene cuenta en gcc_world.users).
   const [enteredAsMember, setEnteredAsMember] = useState(false);
+  // Se autenticó por un modal en ESTA carga de página (login/passkey) → no se le
+  // vuelve a pedir login al entrar al juego. Se reinicia al recargar (sesión
+  // nueva): así "Entrar" pide loguearse una sola vez por recarga.
+  const [freshAuth, setFreshAuth] = useState(false);
   const warpRef = useRef<HTMLDivElement | null>(null);
   const planetMusicRef = useRef<HTMLAudioElement | null>(null);
   const peligroMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -3034,6 +3038,7 @@ export default function LandingPage() {
             // Cuenta vinculada a este dispositivo (IP actualizada por el endpoint).
             setRecoveryOpen(false);
             setOnboardingOpen(false);
+            setFreshAuth(true); // ya validó código en el modal → no re-pedir login
             const found = await refreshSavedCharacter();
             if (found) {
               setSavePointTrigger((n) => n + 1);
@@ -3166,6 +3171,7 @@ export default function LandingPage() {
           onLoggedIn={async (hasCharacter) => {
             setMemberLoginOpen(false);
             setEnteredAsMember(true);
+            setFreshAuth(true); // ya se autenticó en el modal → no re-pedir login
             if (hasCharacter) {
               // Tiene personaje (ya quedó approved): entra directo al juego.
               const found = await refreshSavedCharacter();
@@ -3824,6 +3830,7 @@ export default function LandingPage() {
           initialAuth={savedAuth ?? undefined}
           isReturning={!!savedAuth}
           isMemberSession={enteredAsMember}
+          freshAuth={freshAuth}
         />
       )}
 

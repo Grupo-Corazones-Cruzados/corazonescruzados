@@ -81,12 +81,15 @@ export default function CharacterGameplay({
   initialAuth,
   isReturning = false,
   isMemberSession = false,
+  freshAuth = false,
 }: {
   config: CharacterConfig;
   initialAuth?: AuthStatus;
   isReturning?: boolean;
   /** El jugador entró como miembro/admin esta sesión → no se le pide cuenta. */
   isMemberSession?: boolean;
+  /** Se autenticó por un modal en esta carga → no re-pedir login al entrar. */
+  freshAuth?: boolean;
 }) {
   const [pos, setPos] = useState(spawnToWorld(DEFAULT_MAP));
   const spawnAppliedRef = useRef(false);
@@ -314,12 +317,11 @@ export default function CharacterGameplay({
       emailVerified: false,
       authenticated: true,
     };
-    // Confía en la sesión: si el AUTH_COOKIE sigue válido (authenticated, según
-    // /api/character/me) el jugador entra directo. Solo se re-autentica si la
-    // sesión expiró/no existe. Los miembros que ya iniciaron sesión por el modal
-    // (o cuya sesión sigue activa) no vuelven a autenticarse.
-    if (isMemberSession) return { ...base, authenticated: true };
-    return base;
+    // Jugador recurrente: cada carga de página (sesión nueva) pide login UNA
+    // sola vez al entrar al juego — SALVO que ya se haya autenticado por un modal
+    // en esta misma carga (freshAuth: login de miembro/candidato o passkey). Así
+    // no hay doble login, pero al recargar sí se valida la sesión nueva.
+    return isReturning ? { ...base, authenticated: freshAuth } : base;
   });
 
   // Brand-new player (just created character this session) plays freely.
