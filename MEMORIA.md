@@ -529,6 +529,24 @@ Stack estándar de la casa, con particularidades de este repo:
       - **Registro de passkey "en el login":** para **candidato/miembro** se ofrece **post-login dentro del
         juego** (`PasskeyOfferDialog`), así que el bucle login→registrar→login-con-passkey funciona. ✅ Para
         cliente queda pendiente (ver arriba).
+  - **Reconocimiento de postulación + UX del modal de elección (2026-06-24):**
+    - El `EntryChoiceModal` consulta `GET /api/candidate/proposal` al abrir; si ya hay postulación,
+      **reemplaza** "Quiero postularme" por **"Tu postulación está en proceso de aprobación"** (con aviso de
+      verificar correo) → al click abre `ProposalPendingModal`.
+    - **Reconocimiento robusto por COOKIE + IP:** la IP sola fallaba (difiere entre localhost/proxy/
+      x-forwarded-for). La propuesta ahora setea **cookie `gcc_proposal_token`** (columna `device_token` en
+      `candidate_proposals`) y el GET reconoce por **cookie O `ip_hash`**. Correo **único** (409) ya bloqueaba
+      re-postular.
+    - **Sin flash:** mientras carga el estado (`proposal === null`), el modal muestra una tarjeta
+      **"Verificando tu estado de postulación…"** (spinner) en vez de mostrar "Quiero postularme" y cambiar
+      segundos después.
+  - **Cookies (2026-06-24):** se agregó y luego **se quitó** el banner de consentimiento (`CookieConsent`):
+    hoy solo usamos **cookies necesarias/esenciales** (sesión, auth, `gcc_proposal_token`), **exentas de
+    consentimiento**. El componente `components/CookieConsent.tsx` **se conserva sin montar** para cuando se
+    agreguen cookies de analítica/marketing (entonces re-montar en `app/layout.tsx` + categorías). La §10 de
+    `/legal` describe el uso de cookies. **Importante (respuesta al usuario):** rechazar cookies NO rompe el
+    reconocimiento de postulación porque esa cookie es esencial (y el banner solo guardaba la decisión en
+    localStorage, no bloqueaba cookies del servidor).
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**
