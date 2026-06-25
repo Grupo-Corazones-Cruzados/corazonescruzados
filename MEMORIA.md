@@ -607,6 +607,22 @@ Stack estándar de la casa, con particularidades de este repo:
       `/api/character/me` también gana **fallback por sesión de staff (JWT)** y `isMember` cae a
       **coincidencia de correo** con un usuario staff (el miembro nunca ve "crea tu cuenta" aunque
       `clients.user_id` quede null).
+  - **Dos destinos: "Entrar" → JUEGO, "Colaborar" → /dashboard (2026-06-25):** ambos botones abren el
+    **mismo menú** `EntryChoiceModal` (candidato/postular, soy candidato, soy cliente, ingresar como
+    miembro). El estado **`entryDestination`** ('game'|'dashboard') decide a dónde van tras iniciar sesión:
+    "Entrar" al juego, "Colaborar" a `/dashboard`. Los handlers de los modales (cliente/miembro/candidato)
+    ramifican por `entryDestination`.
+    - **Cliente al JUEGO (por "Entrar"):** el cliente (gcc_world.users rol `client`) ahora también **juega**:
+      `ClientLoginModal` → entra al juego (crea/usa personaje vía `save` staff path con su `user_id`), NO al
+      dashboard. **No requiere aprobación**, pero **sí verificación de correo** (login/begin y returning/begin
+      exigen `is_verified`). **No ve "crea tu cuenta"**: `/api/character/me` devuelve **`hasAccount`** (tiene
+      fila en `users`, incl. cliente) y `showSetup` lo salta.
+    - `returning/begin|verify` aceptan cuenta de **cliente** (no solo member/admin); el `LoginForm`
+      (Continúa tu partida) reconoce el tipo `client` y restringe el login a ese tipo (Cambiar tipo de ingreso
+      para otro). El cliente por "Colaborar" sigue yendo a `/dashboard/marketplace`.
+    - **PENDIENTE:** (a) recordar/mostrar al cliente no verificado su **"solicitud en proceso de
+      verificación"** al volver (estilo postulación: una sola solicitud, pide verificar correo); (b) accesos
+      del **candidato/cliente en el dashboard** (el usuario los definirá).
   - **Passkey: oferta de registro tras el código (2026-06-25):** las passkeys (de personaje y de
     usuario) viven en **`gcc_world.client_passkeys`** (por `client_id` = fila de `gcc_world.clients`).
     Regla: **tras validar el código 2FA**, si la cuenta **NO** tiene passkey → aparece el paso
