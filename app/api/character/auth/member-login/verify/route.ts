@@ -80,9 +80,9 @@ export async function POST(req: Request) {
       `UPDATE gcc_world.clients
           SET ip_hash = $1, client_token = $2, auth_token = $3,
               auth_expires = NOW() + INTERVAL '30 days',
-              approved = true, email_verified = true, last_seen_at = NOW()
+              approved = true, email_verified = true, user_id = $5, last_seen_at = NOW()
         WHERE id = $4`,
-      [ipHash, clientToken, authToken, character.id],
+      [ipHash, clientToken, authToken, character.id, user.id],
     );
 
     const cookieStore = await cookies();

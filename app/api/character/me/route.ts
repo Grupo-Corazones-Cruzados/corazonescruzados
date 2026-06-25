@@ -61,6 +61,17 @@ export async function GET() {
       [row.id],
     );
 
+    // Miembro/admin: por user_id enlazado o porque su correo coincide con un
+    // usuario staff (fallback robusto si el personaje no quedó vinculado).
+    let isMember = row.user_id != null;
+    if (!isMember && row.email) {
+      const ur = await pool.query(
+        `SELECT 1 FROM gcc_world.users WHERE LOWER(email) = LOWER($1) AND role IN ('member','admin') LIMIT 1`,
+        [row.email],
+      );
+      isMember = ur.rows.length > 0;
+    }
+
     const authCookie = cookieStore.get(AUTH_COOKIE)?.value || null;
     const authValid =
       !!authCookie &&
@@ -82,7 +93,7 @@ export async function GET() {
       email: row.email,
       // Miembro/admin: el personaje está enlazado a un usuario staff → no se le
       // pide el formulario de "crear cuenta" (ya tiene cuenta en gcc_world.users).
-      isMember: row.user_id != null,
+      isMember,
       profile: {
         fullName: row.full_name ?? '',
         country: row.country ?? '',
