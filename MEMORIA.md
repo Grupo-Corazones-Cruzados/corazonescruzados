@@ -565,6 +565,27 @@ Stack estándar de la casa, con particularidades de este repo:
       añadir un flag **`profile_completed`** (backfill `true` para cuentas existentes con password; las de
       contraseña temporal nacen `false`; `complete-profile` lo pone `true`) y usar
       `showSetup = !isMember && (!hasPassword || (emailVerified && !profileCompleted))`.
+  - **Flujo de APROBACIÓN de candidatos — end-to-end (2026-06-25):** (cierra el gran pendiente)
+    1. **Admin** (`/dashboard/admin` → pestaña **"Postulaciones"**, `ProposalsSection`): lista las
+       `candidate_proposals` y permite **Aprobar / Rechazar** (`GET /api/admin/candidate-proposals`,
+       `POST .../[id]/approve`, `POST .../[id]/reject`; todas exigen `role==='admin'`).
+    2. **Aprobar:** crea (o actualiza) la **cuenta de candidato** en `gcc_world.clients` con **contraseña
+       TEMPORAL** (10 chars), `approved=true`, `email_verified=true`, `account_type='candidate'`,
+       `profile_completed=false`, `client_token`, `ip_hash` (de la propuesta), **sin `character_data`**.
+       Marca la propuesta `status='approved'` y **envía el correo de aprobación** con la contraseña
+       temporal (`sendCandidateApprovalEmail`). **Rechazar:** borra la propuesta (libera el correo).
+    3. **Candidato** entra con **"Soy candidato"** → `AccountRecoveryModal` (correo + **contraseña
+       temporal** → código 2FA). Como **no tiene personaje**, `onSuccess` arranca el **intro → creador
+       de personaje** (no el flujo de recurrente).
+    4. Al crear el personaje, **`/api/character/save` ACTUALIZA la fila del candidato** por `client_token`
+       (no crea invitado duplicado), preservando email/aprobación/verificación.
+    5. Reaparece el formulario **"Crea tu cuenta"** porque `profile_completed=false` y `emailVerified=true`
+       (`showSetup = !isMember && (!hasPassword || (emailVerified && !profileCompleted))`). El correo va
+       **bloqueado**; botón **"Guardar datos"** → **`/api/character/auth/complete-profile`**: fija la
+       **contraseña definitiva** (reemplaza la temporal), guarda datos, `profile_completed=true`, **BORRA la
+       propuesta** y entra al juego.
+    - Columna nueva **`gcc_world.clients.profile_completed`** (backfill `true` donde `password_hash` no es
+      null). `/api/character/me` devuelve `profileCompleted`.
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**
