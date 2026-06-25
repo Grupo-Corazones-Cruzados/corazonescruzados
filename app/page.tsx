@@ -3057,9 +3057,8 @@ export default function LandingPage() {
           }}
           onClient={() => {
             setEntryChoiceOpen(false);
-            // Cliente = usuario con rol 'client' (auth de dashboard). Abre la
-            // creación de cuenta; desde ahí puede pasar a iniciar sesión.
-            setClientSignupOpen(true);
+            // Cliente: primero inicia sesión; desde ahí puede crear cuenta.
+            setClientLoginOpen(true);
           }}
           onMember={() => {
             setEntryChoiceOpen(false);
@@ -3120,6 +3119,10 @@ export default function LandingPage() {
       {clientLoginOpen && (
         <ClientLoginModal
           onClose={() => setClientLoginOpen(false)}
+          onSignup={() => {
+            setClientLoginOpen(false);
+            setClientSignupOpen(true);
+          }}
           onLoggedIn={() => {
             // Recarga completa para que el AuthProvider tome la nueva sesión.
             // Inicio del cliente = marketplace.

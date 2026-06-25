@@ -17,9 +17,12 @@ const BODY = "'Inter', system-ui, -apple-system, sans-serif";
 export default function ClientLoginModal({
   onClose,
   onLoggedIn,
+  onSignup,
 }: {
   onClose: () => void;
   onLoggedIn: () => void;
+  /** Abre el formulario de creación de cuenta de cliente. */
+  onSignup: () => void;
 }) {
   const [step, setStep] = useState<'creds' | 'code'>('creds');
   const [email, setEmail] = useState('');
@@ -202,6 +205,23 @@ export default function ClientLoginModal({
                   <FingerprintIcon />
                   Ingresar con passkey
                 </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onSignup}
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  cursor: 'pointer',
+                  fontFamily: BODY,
+                  fontSize: '0.78rem',
+                  color: '#c9b6ff',
+                  textDecoration: 'underline',
+                  marginTop: 2,
+                }}
+              >
+                ¿No tienes cuenta? Crear cuenta de cliente
               </button>
             </form>
           ) : (
