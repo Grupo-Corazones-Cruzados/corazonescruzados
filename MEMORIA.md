@@ -586,6 +586,16 @@ Stack estándar de la casa, con particularidades de este repo:
        propuesta** y entra al juego.
     - Columna nueva **`gcc_world.clients.profile_completed`** (backfill `true` donde `password_hash` no es
       null). `/api/character/me` devuelve `profileCompleted`.
+  - **"Continúa tu partida" (jugador recurrente reconocido por IP) — login 2FA (2026-06-25):**
+    el `LoginForm` del juego pasó de login directo (1 paso) a **2 pasos con código** igual que los
+    modales: credenciales → **"Enviar código"** → código → **"Entrar"**; **"Usar passkey"** entra directo
+    sin código. Endpoint unificado **`/api/character/auth/returning/begin|verify`** que sirve para
+    **miembro/admin** (valida contra `gcc_world.users`, código en `login_code`) **y candidato** (valida
+    contra el personaje en `clients`, código en `recovery_code`); `verify` abre la sesión del personaje.
+    **Bug arreglado:** el `onLoggedIn` reescribía todo el `auth` y **perdía `isMember`** → el miembro veía
+    "crea tu cuenta" tras login (passkey o contraseña); ahora usa `setAuth(a => ({...a, ...}))`. El
+    `save` (staff) además guardaba mal (chocaba con el correo `UNIQUE`): ahora busca por `user_id` **o**
+    correo y deja sesión de personaje activa (`AUTH_COOKIE`).
   - **Passkey: oferta de registro tras el código (2026-06-25):** las passkeys (de personaje y de
     usuario) viven en **`gcc_world.client_passkeys`** (por `client_id` = fila de `gcc_world.clients`).
     Regla: **tras validar el código 2FA**, si la cuenta **NO** tiene passkey → aparece el paso
