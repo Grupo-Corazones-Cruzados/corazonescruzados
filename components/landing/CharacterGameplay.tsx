@@ -1017,13 +1017,31 @@ export default function CharacterGameplay({
       {showLogin && (
         <LoginForm
           onLoggedIn={async () => {
-            // Preserva isMember/profile (no reescribir todo el auth, o el
-            // miembro vería el formulario "crea tu cuenta").
+            // Re-lee el estado AUTORITATIVO tras el login: la sesión nueva ya
+            // apunta a la fila correcta del jugador, así que isMember/profile son
+            // fiables (evita el "crea tu cuenta" del miembro por una cookie vieja).
+            let me: {
+              isMember?: boolean;
+              hasPassword?: boolean;
+              emailVerified?: boolean;
+              profileCompleted?: boolean;
+              email?: string | null;
+              profile?: { fullName: string; country: string; address: string; phone: string };
+            } | null = null;
+            try {
+              me = await fetch('/api/character/me', { cache: 'no-store' }).then((r) => r.json());
+            } catch {
+              /* usa el auth previo */
+            }
             setAuth((a) => ({
               ...a,
               hasPassword: true,
               emailVerified: true,
               authenticated: true,
+              isMember: me?.isMember ?? a.isMember,
+              profileCompleted: me?.profileCompleted ?? a.profileCompleted,
+              email: me?.email ?? a.email,
+              profile: me?.profile ?? a.profile,
             }));
             // After password login, offer to register a passkey on
             // this device if the browser supports WebAuthn and the
