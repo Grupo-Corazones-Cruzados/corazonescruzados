@@ -67,8 +67,8 @@ export default function CookieConsent() {
           color: '#cfc9e2',
         }}
       >
-        Usamos cookies para el funcionamiento del sitio, tu sesión y la seguridad (por ejemplo, para
-        reconocer tu dispositivo y tu estado de postulación). Consulta nuestra{' '}
+        Usamos cookies necesarias para el funcionamiento del sitio, tu sesión y la seguridad.
+        Consulta nuestra{' '}
         <a
           href="/legal"
           target="_blank"
