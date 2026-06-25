@@ -547,6 +547,24 @@ Stack estándar de la casa, con particularidades de este repo:
     `/legal` describe el uso de cookies. **Importante (respuesta al usuario):** rechazar cookies NO rompe el
     reconocimiento de postulación porque esa cookie es esencial (y el banner solo guardaba la decisión en
     localStorage, no bloqueaba cookies del servidor).
+  - **Formulario "Crea tu cuenta" en el juego — miembro vs candidato (2026-06-25):**
+    - **Bug resuelto:** faltaba la columna **`gcc_world.clients.user_id` (uuid)** (la usan
+      `member-login/verify` y `character/save` para vincular el personaje al usuario staff) → daba
+      `column "user_id" does not exist`. Se agregó la columna + `ADD COLUMN IF NOT EXISTS` en esas rutas.
+    - **Miembros NO ven el formulario:** `/api/character/me` devuelve **`isMember`** (`user_id != null`),
+      `email` y `profile{fullName,country,address,phone}`. En `CharacterGameplay`:
+      **`showSetup = !hasPassword && !isMember`** → el miembro entra al juego sin el form (ya tiene cuenta en
+      `gcc_world.users`).
+    - **Candidato con correo verificado:** el `SignupForm` pre-llena los datos del perfil y el **correo
+      queda de SOLO LECTURA** (no se puede cambiar el que ya postuló); el botón dice **"Guardar datos"** y
+      llama **`POST /api/character/auth/complete-profile`** (guarda contraseña [reemplaza la temporal] +
+      nombre/país/dirección/teléfono, **sin código de correo**, deja sesión activa) → entra al juego.
+    - **PENDIENTE (flujo futuro de aprobación + contraseña temporal):** cuando el candidato aprobado reciba
+      una **contraseña temporal** (en el correo de aprobación), tendrá `hasPassword=true`, y hoy
+      `showSetup=!hasPassword` lo saltaría. Para que el form **re-aparezca** y actualice esa contraseña,
+      añadir un flag **`profile_completed`** (backfill `true` para cuentas existentes con password; las de
+      contraseña temporal nacen `false`; `complete-profile` lo pone `true`) y usar
+      `showSetup = !isMember && (!hasPassword || (emailVerified && !profileCompleted))`.
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**
