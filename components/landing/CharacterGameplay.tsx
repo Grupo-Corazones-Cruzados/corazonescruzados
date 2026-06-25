@@ -1734,8 +1734,11 @@ function SignupForm({
 }
 
 function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
+  const [step, setStep] = useState<'creds' | 'code'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
+  const [code, setCode] = useState('');
+  const [masked, setMasked] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasPasskeys, setHasPasskeys] = useState(false);
@@ -1748,12 +1751,13 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
       .catch(() => undefined);
   }, []);
 
+  // Paso 1: valida credenciales y envía el código (2FA). Sirve para miembro y candidato.
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      const r = await fetch('/api/character/auth/login', {
+      const r = await fetch('/api/character/auth/returning/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password: pwd }),
@@ -1761,6 +1765,31 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
       const j = await r.json();
       if (!r.ok) {
         setError(j?.error ?? 'No se pudo iniciar sesión');
+        return;
+      }
+      setMasked(j?.masked ?? null);
+      setStep('code');
+    } catch {
+      setError('Error de red');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Paso 2: valida el código y entra.
+  const submitCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      const r = await fetch('/api/character/auth/returning/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        setError(j?.error ?? 'Código incorrecto');
         return;
       }
       onLoggedIn();
@@ -1805,6 +1834,52 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
       setPasskeyBusy(false);
     }
   };
+
+  if (step === 'code') {
+    return (
+      <FormShell
+        title="Confirma el código"
+        subtitle={`Te enviamos un código a ${masked ?? 'tu correo'}`}
+      >
+        <form onSubmit={submitCode} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="Código de 6 dígitos"
+            autoComplete="one-time-code"
+            autoFocus
+            style={{ ...input(), textAlign: 'center', letterSpacing: '0.3em' }}
+          />
+          {error && (
+            <div style={{ fontSize: '0.62rem', letterSpacing: '0.05em', color: '#ff6f6f' }}>
+              {error}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="pixel-btn pixel-btn-primary"
+            style={{ marginTop: 6, opacity: submitting ? 0.6 : 1 }}
+          >
+            {submitting ? 'Entrando...' : 'Entrar'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setStep('creds'); setCode(''); setError(null); }}
+            style={{
+              background: 'transparent', border: 0, cursor: 'pointer',
+              fontSize: '0.62rem', letterSpacing: '0.05em', color: '#b9b2cf',
+              textDecoration: 'underline', marginTop: 2,
+            }}
+          >
+            ← Volver
+          </button>
+        </form>
+      </FormShell>
+    );
+  }
 
   return (
     <FormShell
@@ -1883,7 +1958,7 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
           className="pixel-btn pixel-btn-secondary"
           style={{ marginTop: 6, opacity: submitting ? 0.6 : 1 }}
         >
-          {submitting ? 'Entrando...' : 'Entrar con contraseña'}
+          {submitting ? 'Enviando código...' : 'Enviar código'}
         </button>
       </form>
     </FormShell>
