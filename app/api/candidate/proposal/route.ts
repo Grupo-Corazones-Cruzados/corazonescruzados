@@ -1,10 +1,13 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { getClientIp, hashIp } from '@/lib/world/session';
 import { sendCandidateProposalVerificationEmail } from '@/lib/integrations/resend';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Cookie de dispositivo para reconocer al postulante aunque cambie su IP.
+const PROPOSAL_COOKIE = 'gcc_proposal_token';
 
 /**
  * Tabla TEMPORAL de propuestas de candidatos (pendientes de aprobación del
@@ -27,6 +30,9 @@ async function ensureProposalsTable() {
       decided_by TEXT
     )
   `);
+  await pool.query(
+    `ALTER TABLE gcc_world.candidate_proposals ADD COLUMN IF NOT EXISTS device_token TEXT`,
+  );
 }
 
 // POST — registra una nueva propuesta (bloquea reutilización del correo).
@@ -66,13 +72,25 @@ export async function POST(req: Request) {
 
     const ipHash = hashIp(await getClientIp());
     const token = randomBytes(32).toString('hex');
+    const cookieStore = await cookies();
+    const deviceToken =
+      cookieStore.get(PROPOSAL_COOKIE)?.value || randomBytes(24).toString('hex');
 
     await pool.query(
       `INSERT INTO gcc_world.candidate_proposals
-         (email, reason, marketing, ip_hash, status, verification_token)
-       VALUES ($1, $2, $3, $4, 'pending', $5)`,
-      [cleanEmail, cleanReason, marketing === true, ipHash, token],
+         (email, reason, marketing, ip_hash, status, verification_token, device_token)
+       VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+      [cleanEmail, cleanReason, marketing === true, ipHash, token, deviceToken],
     );
+
+    // Cookie de dispositivo (1 año): reconoce al postulante aunque cambie su IP.
+    cookieStore.set(PROPOSAL_COOKIE, deviceToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+    });
 
     // Envío del correo de verificación (best-effort: no bloquea la postulación).
     try {
@@ -89,18 +107,20 @@ export async function POST(req: Request) {
   }
 }
 
-// GET — estado de la propuesta del visitante actual (reconocido por su IP).
+// GET — estado de la propuesta del visitante (por cookie de dispositivo o IP).
 export async function GET() {
   try {
     await ensureProposalsTable();
     const ipHash = hashIp(await getClientIp());
+    const cookieStore = await cookies();
+    const deviceToken = cookieStore.get(PROPOSAL_COOKIE)?.value || null;
     const r = await pool.query(
       `SELECT email, status, email_verified
          FROM gcc_world.candidate_proposals
-        WHERE ip_hash = $1
+        WHERE ($1::text IS NOT NULL AND device_token = $1) OR ip_hash = $2
         ORDER BY created_at DESC
         LIMIT 1`,
-      [ipHash],
+      [deviceToken, ipHash],
     );
     const row = r.rows[0];
     if (!row) return NextResponse.json({ exists: false });
