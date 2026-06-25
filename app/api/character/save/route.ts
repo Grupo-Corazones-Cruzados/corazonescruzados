@@ -49,9 +49,14 @@ export async function POST(req: Request) {
            ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false,
            ADD COLUMN IF NOT EXISTS user_id uuid`,
       );
+      // Busca por user_id O por correo: puede existir ya una fila con su correo
+      // (p.ej. creada por member-login sin user_id) y el correo es UNIQUE, así
+      // que un INSERT fallaría. La actualizamos y la vinculamos (user_id).
       const { rows } = await pool.query(
-        `SELECT id FROM gcc_world.clients WHERE user_id = $1 LIMIT 1`,
-        [user.id],
+        `SELECT id FROM gcc_world.clients
+          WHERE user_id = $1 OR LOWER(email) = LOWER($2)
+          ORDER BY (user_id = $1) DESC LIMIT 1`,
+        [user.id, user.email],
       );
       if (rows.length > 0) {
         const updated = await pool.query(
@@ -60,12 +65,13 @@ export async function POST(req: Request) {
                   character_data = $2::jsonb,
                   client_token = $3,
                   ip_hash = $4,
+                  user_id = $6,
                   approved = true,
                   email_verified = true,
                   last_seen_at = NOW()
             WHERE id = $5
           RETURNING id`,
-          [alias, json, token, ipHash, rows[0].id],
+          [alias, json, token, ipHash, rows[0].id, user.id],
         );
         clientId = updated.rows[0].id;
       } else {
