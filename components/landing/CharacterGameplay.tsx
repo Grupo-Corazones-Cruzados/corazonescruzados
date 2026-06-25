@@ -70,6 +70,9 @@ type AuthStatus = {
   emailVerified: boolean;
   authenticated: boolean;
   pendingEmail?: string | null;
+  email?: string | null;
+  isMember?: boolean;
+  profile?: { fullName: string; country: string; address: string; phone: string };
 };
 
 export default function CharacterGameplay({
@@ -318,7 +321,9 @@ export default function CharacterGameplay({
   const [passkeyRegistered, setPasskeyRegistered] = useState(false);
   // Brand-new players are now also forced to create an account before
   // they can play, to lock in their progress before they leave the page.
-  const showSetup = !auth.hasPassword;
+  // Los miembros/admin NO ven el formulario de "crear cuenta": ya tienen cuenta
+  // (gcc_world.users). Solo se le pide a candidatos/invitados.
+  const showSetup = !auth.hasPassword && !auth.isMember;
   const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
   const overlayVisible = showSetup || showLogin || passkeyOffer;
   const locked = overlayVisible;
@@ -968,7 +973,13 @@ export default function CharacterGameplay({
               pendingEmail: email,
             })
           }
+          onCompleted={() =>
+            setAuth({ hasPassword: true, emailVerified: true, authenticated: true })
+          }
           pendingEmail={auth.pendingEmail ?? null}
+          initialEmail={auth.email ?? auth.pendingEmail ?? ''}
+          emailVerified={!!auth.emailVerified}
+          initialProfile={auth.profile}
         />
       )}
 
@@ -1446,21 +1457,30 @@ function SignupForm({
   alias,
   pendingEmail,
   onSignedUp,
+  onCompleted,
+  initialEmail = '',
+  emailVerified = false,
+  initialProfile,
 }: {
   alias: string;
   pendingEmail: string | null;
   onSignedUp: (email: string) => void;
+  /** Guardado directo (sin código) cuando el correo ya está verificado. */
+  onCompleted: () => void;
+  initialEmail?: string;
+  emailVerified?: boolean;
+  initialProfile?: { fullName: string; country: string; address: string; phone: string };
 }) {
-  const [email, setEmail] = useState(pendingEmail ?? '');
+  const [email, setEmail] = useState(initialEmail || pendingEmail || '');
   const [pwd, setPwd] = useState('');
   const [pwd2, setPwd2] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [country, setCountry] = useState('');
-  const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
+  const [fullName, setFullName] = useState(initialProfile?.fullName ?? '');
+  const [country, setCountry] = useState(initialProfile?.country ?? '');
+  const [address, setAddress] = useState(initialProfile?.address ?? '');
+  const [phone, setPhone] = useState(initialProfile?.phone ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(!!pendingEmail);
+  const [sent, setSent] = useState(!!pendingEmail && !emailVerified);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1495,6 +1515,30 @@ function SignupForm({
     }
     setSubmitting(true);
     try {
+      // Correo ya verificado (candidato aprobado): guarda directo (actualiza la
+      // contraseña temporal + datos), sin código.
+      if (emailVerified) {
+        const r = await fetch('/api/character/auth/complete-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            password: pwd,
+            fullName: fullName.trim(),
+            country: country.trim(),
+            address: address.trim(),
+            phone: phone.trim(),
+          }),
+        });
+        const j = await r.json();
+        if (!r.ok) {
+          setError(j?.error ?? 'No se pudo guardar');
+          return;
+        }
+        onCompleted();
+        return;
+      }
+
+      // Correo sin verificar: envía código de verificación.
       const r = await fetch('/api/character/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1588,7 +1632,9 @@ function SignupForm({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Correo electrónico"
           autoComplete="email"
-          style={input()}
+          readOnly={emailVerified}
+          title={emailVerified ? 'Tu correo ya fue verificado y no se puede cambiar' : undefined}
+          style={{ ...input(), ...(emailVerified ? { opacity: 0.6, cursor: 'not-allowed' } : {}) }}
         />
         <input
           type="text"
@@ -1647,7 +1693,11 @@ function SignupForm({
           className="pixel-btn pixel-btn-primary"
           style={{ marginTop: 6, opacity: submitting ? 0.6 : 1 }}
         >
-          {submitting ? 'Enviando...' : 'Enviar correo'}
+          {submitting
+            ? 'Guardando...'
+            : emailVerified
+              ? 'Guardar datos'
+              : 'Enviar correo'}
         </button>
       </form>
     </FormShell>

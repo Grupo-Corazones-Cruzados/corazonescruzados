@@ -18,12 +18,16 @@ export async function GET() {
     let row: Record<string, unknown> | null = null;
 
     // approved: aprobación del administrador global (gate de entrada al juego).
+    // user_id: si está enlazado a un usuario staff (miembro/admin).
     await pool.query(
-      `ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false`,
+      `ALTER TABLE gcc_world.clients
+         ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false,
+         ADD COLUMN IF NOT EXISTS user_id uuid`,
     );
 
     const COLS = `id, alias, character_data, password_hash, email_verified, approved,
-                  pending_email, auth_token, auth_expires, last_seen_at`;
+                  pending_email, email, user_id, full_name, country, address, phone,
+                  auth_token, auth_expires, last_seen_at`;
     if (token) {
       const r = await pool.query(
         `SELECT ${COLS} FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
@@ -73,6 +77,16 @@ export async function GET() {
       emailVerified: !!row.email_verified,
       approved: !!row.approved,
       pendingEmail: row.pending_email,
+      email: row.email,
+      // Miembro/admin: el personaje está enlazado a un usuario staff → no se le
+      // pide el formulario de "crear cuenta" (ya tiene cuenta en gcc_world.users).
+      isMember: row.user_id != null,
+      profile: {
+        fullName: row.full_name ?? '',
+        country: row.country ?? '',
+        address: row.address ?? '',
+        phone: row.phone ?? '',
+      },
       authenticated: !!authValid,
     });
   } catch (err: unknown) {

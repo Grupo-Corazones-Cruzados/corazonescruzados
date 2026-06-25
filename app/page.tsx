@@ -359,6 +359,9 @@ export default function LandingPage() {
     approved: boolean;
     authenticated: boolean;
     pendingEmail: string | null;
+    email?: string | null;
+    isMember?: boolean;
+    profile?: { fullName: string; country: string; address: string; phone: string };
   } | null>(null);
   const savedCharacterCheckedRef = useRef(false);
   const [savedCharacterChecked, setSavedCharacterChecked] = useState(false);
@@ -1090,6 +1093,9 @@ export default function LandingPage() {
             approved: !!j.approved,
             authenticated: !!j.authenticated,
             pendingEmail: j.pendingEmail ?? null,
+            email: j.email ?? null,
+            isMember: !!j.isMember,
+            profile: j.profile ?? undefined,
           });
           return cfg;
         }
