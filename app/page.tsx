@@ -361,6 +361,7 @@ export default function LandingPage() {
     pendingEmail: string | null;
     email?: string | null;
     isMember?: boolean;
+    hasAccount?: boolean;
     profileCompleted?: boolean;
     profile?: { fullName: string; country: string; address: string; phone: string };
   } | null>(null);
@@ -370,6 +371,9 @@ export default function LandingPage() {
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [entryChoiceOpen, setEntryChoiceOpen] = useState(false);
+  // Destino tras elegir/loguearse en el menú: "Entrar" → juego; "Colaborar" →
+  // /dashboard. Determina a dónde van candidato/cliente/miembro al iniciar sesión.
+  const [entryDestination, setEntryDestination] = useState<'game' | 'dashboard'>('game');
   const [proposalPending, setProposalPending] = useState<
     { email?: string | null; emailVerified?: boolean } | null
   >(null);
@@ -1103,6 +1107,7 @@ export default function LandingPage() {
             pendingEmail: j.pendingEmail ?? null,
             email: j.email ?? null,
             isMember: !!j.isMember,
+            hasAccount: !!j.hasAccount,
             profileCompleted: !!j.profileCompleted,
             profile: j.profile ?? undefined,
           });
@@ -2964,9 +2969,9 @@ export default function LandingPage() {
                   return;
                 }
 
-                // First-time visitor: primero pregunta si entra como candidato
-                // o como cliente (EntryChoiceModal). Según la elección se abren
-                // los sliders (candidato) o se va directo a la creación de cuenta.
+                // First-time visitor: menú "¿Cómo quieres ingresar?". "Entrar"
+                // lleva al JUEGO (candidato/cliente/miembro crean/usan personaje).
+                setEntryDestination('game');
                 setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
@@ -2994,16 +2999,11 @@ export default function LandingPage() {
               type="button"
               onClick={() => {
                 if (landingLocked || windAway) return;
-                // Colaborar: iniciar sesión (miembro/candidato) → /dashboard.
-                // Si ya hay sesión de staff va directo; si no, /auth redirige.
-                const dest =
-                  sessionRole === 'member' || sessionRole === 'admin'
-                    ? '/dashboard'
-                    : '/auth?redirect=/dashboard';
-                setWindAway(true);
-                window.setTimeout(() => {
-                  router.push(dest);
-                }, 1400);
+                // Colaborar: mismo menú de opciones, pero el destino es /dashboard
+                // (candidato/cliente/miembro van al dashboard, no al juego). También
+                // incluye postular y ver el estado de la solicitud.
+                setEntryDestination('dashboard');
+                setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
               className="pixel-btn pixel-btn-primary"
@@ -3038,6 +3038,11 @@ export default function LandingPage() {
             // Cuenta vinculada a este dispositivo (IP actualizada por el endpoint).
             setRecoveryOpen(false);
             setOnboardingOpen(false);
+            if (entryDestination === 'dashboard') {
+              // Colaborar: el candidato va al dashboard.
+              window.location.href = '/dashboard';
+              return;
+            }
             setFreshAuth(true); // ya validó código en el modal → no re-pedir login
             const found = await refreshSavedCharacter();
             if (found) {
@@ -3066,6 +3071,7 @@ export default function LandingPage() {
 
       {entryChoiceOpen && (
         <EntryChoiceModal
+          destination={entryDestination}
           onClose={() => setEntryChoiceOpen(false)}
           onCandidate={() => {
             setEntryChoiceOpen(false);
@@ -3157,10 +3163,34 @@ export default function LandingPage() {
             setClientLoginOpen(false);
             setClientSignupOpen(true);
           }}
-          onLoggedIn={() => {
-            // Recarga completa para que el AuthProvider tome la nueva sesión.
-            // Inicio del cliente = marketplace.
-            window.location.href = '/dashboard/marketplace';
+          onLoggedIn={async () => {
+            setClientLoginOpen(false);
+            if (entryDestination === 'dashboard') {
+              // Colaborar: el cliente va al dashboard (marketplace).
+              window.location.href = '/dashboard/marketplace';
+              return;
+            }
+            // Entrar: el cliente entra al JUEGO. Ya tiene cuenta (no "crea tu
+            // cuenta") y se acaba de autenticar (no re-pedir login).
+            setEnteredAsMember(true);
+            setFreshAuth(true);
+            const found = await refreshSavedCharacter();
+            if (found) {
+              setSavePointTrigger((n) => n + 1);
+              setWindAway(true); // recurrente: entra con su personaje
+              return;
+            }
+            // Sin personaje: arranca el intro → creación de personaje.
+            setWindAway(true);
+            cameraEnabledRef.current = true;
+            setCameraEnabled(true);
+            if (worldChatTimeoutRef.current) {
+              window.clearTimeout(worldChatTimeoutRef.current);
+            }
+            worldChatTimeoutRef.current = window.setTimeout(() => {
+              setWorldChatVisible(true);
+              worldChatTimeoutRef.current = null;
+            }, 6000);
           }}
         />
       )}
@@ -3170,6 +3200,11 @@ export default function LandingPage() {
           onClose={() => setMemberLoginOpen(false)}
           onLoggedIn={async (hasCharacter) => {
             setMemberLoginOpen(false);
+            if (entryDestination === 'dashboard') {
+              // Colaborar: el miembro/admin va al dashboard.
+              window.location.href = '/dashboard';
+              return;
+            }
             setEnteredAsMember(true);
             setFreshAuth(true); // ya se autenticó en el modal → no re-pedir login
             if (hasCharacter) {

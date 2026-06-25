@@ -49,10 +49,10 @@ export async function POST(req: Request) {
     const cleanEmail = email.trim().toLowerCase();
     const cleanCode = code.trim();
 
-    // ¿Miembro/admin?
+    // ¿Tiene cuenta en gcc_world.users? (miembro/admin o cliente).
     const u = await pool.query(
       `SELECT id, role, login_code, login_code_exp FROM gcc_world.users
-        WHERE LOWER(email) = $1 AND role IN ('member','admin') LIMIT 1`,
+        WHERE LOWER(email) = $1 LIMIT 1`,
       [cleanEmail],
     );
     const member = u.rows[0];

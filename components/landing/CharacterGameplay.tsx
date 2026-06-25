@@ -72,6 +72,7 @@ type AuthStatus = {
   pendingEmail?: string | null;
   email?: string | null;
   isMember?: boolean;
+  hasAccount?: boolean;
   profileCompleted?: boolean;
   profile?: { fullName: string; country: string; address: string; phone: string };
 };
@@ -336,8 +337,11 @@ export default function CharacterGameplay({
   // Los miembros/admin NO ven el formulario (ya tienen cuenta en gcc_world.users).
   // Candidato/invitado: lo ve si no tiene contraseña; o si tiene una temporal
   // (correo verificado pero perfil sin completar) tras ser aprobado.
+  // No se pide "crea tu cuenta" si ya tiene cuenta (miembro/admin/CLIENTE:
+  // hasAccount o isMember) o si entró con cuenta esta sesión (isMemberSession).
   const showSetup =
     !auth.isMember &&
+    !auth.hasAccount &&
     !isMemberSession &&
     (!auth.hasPassword || (!!auth.emailVerified && !auth.profileCompleted));
   const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
@@ -1019,7 +1023,7 @@ export default function CharacterGameplay({
 
       {showLogin && (
         <LoginForm
-          expectedKind={auth.isMember ? 'member' : 'candidate'}
+          expectedKind={auth.isMember ? 'member' : auth.hasAccount ? 'client' : 'candidate'}
           onChangeEntryType={onChangeEntryType}
           onLoggedIn={async () => {
             // Re-lee el estado AUTORITATIVO tras el login: la sesión nueva ya
@@ -1027,6 +1031,7 @@ export default function CharacterGameplay({
             // fiables (evita el "crea tu cuenta" del miembro por una cookie vieja).
             let me: {
               isMember?: boolean;
+              hasAccount?: boolean;
               hasPassword?: boolean;
               emailVerified?: boolean;
               profileCompleted?: boolean;
@@ -1044,6 +1049,7 @@ export default function CharacterGameplay({
               emailVerified: true,
               authenticated: true,
               isMember: me?.isMember ?? a.isMember,
+              hasAccount: me?.hasAccount ?? a.hasAccount,
               profileCompleted: me?.profileCompleted ?? a.profileCompleted,
               email: me?.email ?? a.email,
               profile: me?.profile ?? a.profile,
@@ -1768,7 +1774,7 @@ function LoginForm({
 }: {
   onLoggedIn: () => void;
   /** Tipo reconocido: el modal solo acepta este tipo de cuenta. */
-  expectedKind?: 'member' | 'candidate';
+  expectedKind?: 'member' | 'candidate' | 'client';
   onChangeEntryType?: () => void;
 }) {
   const [step, setStep] = useState<'creds' | 'code'>('creds');

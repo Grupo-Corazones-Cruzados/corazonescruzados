@@ -31,32 +31,50 @@ export async function POST(req: Request) {
     const cleanEmail = email.trim().toLowerCase();
     const code = generateCode();
 
-    // ¿Es miembro/admin? Valida contra gcc_world.users.
+    // ¿Tiene cuenta en gcc_world.users? (miembro/admin o CLIENTE). Valida ahí.
     const u = await pool.query(
-      `SELECT id, password_hash, first_name FROM gcc_world.users
-        WHERE LOWER(email) = $1 AND role IN ('member','admin') LIMIT 1`,
+      `SELECT id, password_hash, first_name, role, is_verified FROM gcc_world.users
+        WHERE LOWER(email) = $1 LIMIT 1`,
       [cleanEmail],
     );
-    const member = u.rows[0];
+    const account = u.rows[0];
+    const accountKind: 'member' | 'client' | null = account
+      ? account.role === 'member' || account.role === 'admin'
+        ? 'member'
+        : 'client'
+      : null;
 
-    // Restricción por tipo reconocido: este modal solo acepta el tipo con el que
-    // se reconoció la cuenta. Para usar otro tipo, "Cambiar tipo de ingreso".
-    if (expect === 'candidate' && member) {
+    // Restricción por tipo reconocido: el modal solo acepta el tipo con el que se
+    // reconoció la cuenta. Para usar otro tipo, "Cambiar tipo de ingreso".
+    if (expect && accountKind && expect !== accountKind) {
       return NextResponse.json(
-        { error: 'Esta es una cuenta de miembro. Usa "Cambiar tipo de ingreso".' },
+        { error: `Esta cuenta es de tipo ${accountKind}. Usa "Cambiar tipo de ingreso".` },
         { status: 403 },
       );
     }
-    if (expect === 'member' && !member) {
+    if (expect === 'candidate' && account) {
       return NextResponse.json(
-        { error: 'Esta no es una cuenta de miembro. Usa "Cambiar tipo de ingreso".' },
+        { error: 'Esta no es una cuenta de candidato. Usa "Cambiar tipo de ingreso".' },
+        { status: 403 },
+      );
+    }
+    if ((expect === 'member' || expect === 'client') && !account) {
+      return NextResponse.json(
+        { error: 'No es una cuenta registrada. Usa "Cambiar tipo de ingreso".' },
         { status: 403 },
       );
     }
 
-    if (member && expect !== 'candidate') {
-      if (!member.password_hash || !(await verifyPassword(password, member.password_hash))) {
+    if (account && expect !== 'candidate') {
+      if (!account.password_hash || !(await verifyPassword(password, account.password_hash))) {
         return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
+      }
+      // El cliente debe verificar su correo antes de poder ingresar.
+      if (accountKind === 'client' && !account.is_verified) {
+        return NextResponse.json(
+          { error: 'Debes verificar tu correo electrónico antes de ingresar.' },
+          { status: 403 },
+        );
       }
       await pool.query(
         `ALTER TABLE gcc_world.users
@@ -65,15 +83,19 @@ export async function POST(req: Request) {
       );
       await pool.query(
         `UPDATE gcc_world.users SET login_code = $1, login_code_exp = NOW() + INTERVAL '15 minutes' WHERE id = $2`,
-        [code, member.id],
+        [code, account.id],
       );
       try {
-        await sendCharacterRecoveryCodeEmail(cleanEmail, code, member.first_name || 'Miembro');
+        await sendCharacterRecoveryCodeEmail(
+          cleanEmail,
+          code,
+          account.first_name || (accountKind === 'client' ? 'Cliente' : 'Miembro'),
+        );
       } catch (e) {
-        console.error('Returning member code email failed:', e);
+        console.error('Returning account code email failed:', e);
         return NextResponse.json({ error: 'No se pudo enviar el código' }, { status: 502 });
       }
-      return NextResponse.json({ ok: true, kind: 'member', masked: maskEmail(cleanEmail) });
+      return NextResponse.json({ ok: true, kind: accountKind, masked: maskEmail(cleanEmail) });
     }
 
     // Si no, valida contra el personaje (candidato).

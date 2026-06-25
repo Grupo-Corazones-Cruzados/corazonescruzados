@@ -21,6 +21,7 @@ export default function EntryChoiceModal({
   onMember,
   onProposalPending,
   onClose,
+  destination = 'game',
 }: {
   onCandidate: () => void;
   onCandidateLogin: () => void;
@@ -28,7 +29,10 @@ export default function EntryChoiceModal({
   onMember: () => void;
   onProposalPending: (info: { email?: string | null; emailVerified?: boolean }) => void;
   onClose: () => void;
+  /** Destino tras iniciar sesión: "game" (Entrar) o "dashboard" (Colaborar). */
+  destination?: 'game' | 'dashboard';
 }) {
+  const dest = destination === 'dashboard' ? 'entrar al panel' : 'entrar al juego';
   // ¿Este visitante (por IP) ya tiene una postulación registrada?
   const [proposal, setProposal] = useState<{
     exists: boolean;
@@ -143,17 +147,21 @@ export default function EntryChoiceModal({
           )}
           <Option
             title="Soy candidato"
-            desc="Ya tengo una cuenta de candidato: iniciar sesión y entrar al juego."
+            desc={`Ya tengo una cuenta de candidato: iniciar sesión y ${dest}.`}
             onClick={onCandidateLogin}
           />
           <Option
             title="Soy cliente"
-            desc="Quiero adquirir los productos, servicios y proyectos del grupo."
+            desc={
+              destination === 'dashboard'
+                ? 'Accede al panel para gestionar tus productos, servicios y proyectos del grupo.'
+                : 'Inicia sesión (o crea tu cuenta) y entra al juego.'
+            }
             onClick={onClient}
           />
           <Option
             title="Ingresar como miembro"
-            desc="Ya soy miembro o administrador: iniciar sesión y entrar al juego."
+            desc={`Ya soy miembro o administrador: iniciar sesión y ${dest}.`}
             onClick={onMember}
           />
         </div>

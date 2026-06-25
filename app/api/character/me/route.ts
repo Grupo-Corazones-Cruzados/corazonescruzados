@@ -78,14 +78,20 @@ export async function GET() {
     );
 
     // Miembro/admin: por user_id enlazado o porque su correo coincide con un
-    // usuario staff (fallback robusto si el personaje no quedó vinculado).
+    // usuario staff. hasAccount: tiene cuenta en gcc_world.users (member/admin/
+    // CLIENTE) → no se le pide el formulario "crea tu cuenta".
     let isMember = row.user_id != null;
-    if (!isMember && row.email) {
+    let hasAccount = isMember;
+    if (row.email) {
       const ur = await pool.query(
-        `SELECT 1 FROM gcc_world.users WHERE LOWER(email) = LOWER($1) AND role IN ('member','admin') LIMIT 1`,
+        `SELECT role FROM gcc_world.users WHERE LOWER(email) = LOWER($1) LIMIT 1`,
         [row.email],
       );
-      isMember = ur.rows.length > 0;
+      const role = ur.rows[0]?.role as string | undefined;
+      if (role) {
+        hasAccount = true;
+        if (role === 'member' || role === 'admin') isMember = true;
+      }
     }
 
     const authCookie = cookieStore.get(AUTH_COOKIE)?.value || null;
@@ -110,6 +116,9 @@ export async function GET() {
       // Miembro/admin: el personaje está enlazado a un usuario staff → no se le
       // pide el formulario de "crear cuenta" (ya tiene cuenta en gcc_world.users).
       isMember,
+      // hasAccount: tiene cuenta en gcc_world.users (incl. CLIENTE) → tampoco se
+      // le pide el formulario "crea tu cuenta".
+      hasAccount,
       profile: {
         fullName: row.full_name ?? '',
         country: row.country ?? '',
