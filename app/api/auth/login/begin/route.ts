@@ -19,14 +19,14 @@ function generateCode(): string {
  */
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, expect } = await req.json();
     if (!email || !password) {
       return NextResponse.json({ error: 'Email y contraseña son requeridos' }, { status: 400 });
     }
     const cleanEmail = String(email).trim().toLowerCase();
 
     const r = await pool.query(
-      `SELECT id, password_hash, is_verified, first_name FROM gcc_world.users
+      `SELECT id, password_hash, is_verified, first_name, role FROM gcc_world.users
         WHERE LOWER(email) = $1 LIMIT 1`,
       [cleanEmail],
     );
@@ -41,6 +41,13 @@ export async function POST(req: NextRequest) {
     if (!user.is_verified) {
       return NextResponse.json(
         { error: 'Debes verificar tu correo electrónico antes de iniciar sesión.' },
+        { status: 403 },
+      );
+    }
+    // El login de cliente (expect='client') solo acepta cuentas de cliente.
+    if (expect === 'client' && user.role !== 'client') {
+      return NextResponse.json(
+        { error: 'Esta cuenta no es de cliente. Usa "Ingresar como miembro" o "Soy candidato".' },
         { status: 403 },
       );
     }

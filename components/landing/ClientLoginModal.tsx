@@ -40,7 +40,7 @@ export default function ClientLoginModal({
       const r = await fetch('/api/auth/login/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password: pwd }),
+        body: JSON.stringify({ email: email.trim(), password: pwd, expect: 'client' }),
       });
       const j = await r.json();
       if (!r.ok) {
