@@ -124,7 +124,9 @@ export default function EntryChoiceModal({
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {proposal?.exists ? (
+          {proposal === null ? (
+            <LoadingCard />
+          ) : proposal.exists ? (
             <Option
               title="Tu postulación está en proceso de aprobación"
               desc="Para avanzar más rápido, verifica tu correo con el enlace enviado a tu bandeja de entrada. Una vez seas aprobado podrás ingresar como candidato."
@@ -156,6 +158,40 @@ export default function EntryChoiceModal({
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function LoadingCard() {
+  return (
+    <div
+      aria-busy="true"
+      style={{
+        width: '100%',
+        background: 'rgba(75,45,142,0.12)',
+        border: '1px solid rgba(123,95,191,0.3)',
+        borderRadius: 6,
+        padding: '16px 18px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        animation: 'breathe 1.6s ease-in-out infinite',
+      }}
+    >
+      <span
+        style={{
+          width: 16,
+          height: 16,
+          flexShrink: 0,
+          borderRadius: '50%',
+          border: '2px solid rgba(123,95,191,0.4)',
+          borderTopColor: 'var(--color-accent-glow, #7B5FBF)',
+          animation: 'slowSpin 0.8s linear infinite',
+        }}
+      />
+      <span style={{ fontFamily: BODY, fontSize: '0.85rem', color: 'rgba(225,215,255,0.65)' }}>
+        Verificando tu estado de postulación…
+      </span>
     </div>
   );
 }
