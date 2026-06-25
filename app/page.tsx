@@ -376,6 +376,9 @@ export default function LandingPage() {
   const [clientSignupOpen, setClientSignupOpen] = useState(false);
   const [clientLoginOpen, setClientLoginOpen] = useState(false);
   const [memberLoginOpen, setMemberLoginOpen] = useState(false);
+  // El jugador entró como miembro/admin esta sesión → el gameplay no le pide
+  // el formulario "crea tu cuenta" (ya tiene cuenta en gcc_world.users).
+  const [enteredAsMember, setEnteredAsMember] = useState(false);
   const warpRef = useRef<HTMLDivElement | null>(null);
   const planetMusicRef = useRef<HTMLAudioElement | null>(null);
   const peligroMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -3061,6 +3064,7 @@ export default function LandingPage() {
           onClose={() => setEntryChoiceOpen(false)}
           onCandidate={() => {
             setEntryChoiceOpen(false);
+            setEnteredAsMember(false);
             try {
               window.localStorage.setItem('gcc_account_type', 'candidate');
             } catch {
@@ -3075,11 +3079,13 @@ export default function LandingPage() {
           }}
           onCandidateLogin={() => {
             setEntryChoiceOpen(false);
+            setEnteredAsMember(false);
             // Candidato existente: inicia sesión (credenciales + código) y entra.
             setRecoveryOpen(true);
           }}
           onClient={() => {
             setEntryChoiceOpen(false);
+            setEnteredAsMember(false);
             // Cliente: primero inicia sesión; desde ahí puede crear cuenta.
             setClientLoginOpen(true);
           }}
@@ -3159,6 +3165,7 @@ export default function LandingPage() {
           onClose={() => setMemberLoginOpen(false)}
           onLoggedIn={async (hasCharacter) => {
             setMemberLoginOpen(false);
+            setEnteredAsMember(true);
             if (hasCharacter) {
               // Tiene personaje (ya quedó approved): entra directo al juego.
               const found = await refreshSavedCharacter();
@@ -3816,6 +3823,7 @@ export default function LandingPage() {
           config={characterConfig}
           initialAuth={savedAuth ?? undefined}
           isReturning={!!savedAuth}
+          isMemberSession={enteredAsMember}
         />
       )}
 

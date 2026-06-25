@@ -80,10 +80,13 @@ export default function CharacterGameplay({
   config,
   initialAuth,
   isReturning = false,
+  isMemberSession = false,
 }: {
   config: CharacterConfig;
   initialAuth?: AuthStatus;
   isReturning?: boolean;
+  /** El jugador entró como miembro/admin esta sesión → no se le pide cuenta. */
+  isMemberSession?: boolean;
 }) {
   const [pos, setPos] = useState(spawnToWorld(DEFAULT_MAP));
   const spawnAppliedRef = useRef(false);
@@ -327,6 +330,7 @@ export default function CharacterGameplay({
   // (correo verificado pero perfil sin completar) tras ser aprobado.
   const showSetup =
     !auth.isMember &&
+    !isMemberSession &&
     (!auth.hasPassword || (!!auth.emailVerified && !auth.profileCompleted));
   const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
   const overlayVisible = showSetup || showLogin || passkeyOffer;
