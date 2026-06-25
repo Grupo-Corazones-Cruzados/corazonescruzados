@@ -1012,11 +1012,14 @@ export default function CharacterGameplay({
       {showLogin && (
         <LoginForm
           onLoggedIn={async () => {
-            setAuth({
+            // Preserva isMember/profile (no reescribir todo el auth, o el
+            // miembro vería el formulario "crea tu cuenta").
+            setAuth((a) => ({
+              ...a,
               hasPassword: true,
               emailVerified: true,
               authenticated: true,
-            });
+            }));
             // After password login, offer to register a passkey on
             // this device if the browser supports WebAuthn and the
             // account doesn't already have one.
