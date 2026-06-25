@@ -586,6 +586,15 @@ Stack estándar de la casa, con particularidades de este repo:
        propuesta** y entra al juego.
     - Columna nueva **`gcc_world.clients.profile_completed`** (backfill `true` donde `password_hash` no es
       null). `/api/character/me` devuelve `profileCompleted`.
+  - **Passkey: oferta de registro tras el código (2026-06-25):** las passkeys (de personaje y de
+    usuario) viven en **`gcc_world.client_passkeys`** (por `client_id` = fila de `gcc_world.clients`).
+    Regla: **tras validar el código 2FA**, si la cuenta **NO** tiene passkey → aparece el paso
+    **"Configura tu passkey"** (omitible con "Ahora no"); si **ya** tiene → entra directo sin preguntar.
+    Aplica a **miembro, candidato y cliente**. Los `verify` (`member-login/verify`, `recover/verify`,
+    `auth/login/verify`) devuelven **`hasPasskey`**. El registro usa `/api/character/auth/passkey/register/*`
+    (miembro/candidato, por `AUTH_COOKIE`) y el **nuevo** `/api/auth/passkey/register/begin|finish`
+    (cliente: `getCurrentUser` → resuelve/crea su fila en `clients` por correo → guarda en
+    `client_passkeys`). El botón "Ingresar con passkey" es solo para **usar** una passkey existente.
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**
