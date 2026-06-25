@@ -129,6 +129,38 @@ export async function sendCandidateProposalVerificationEmail(
   });
 }
 
+export async function sendCandidateApprovalEmail(
+  email: string,
+  tempPassword: string,
+) {
+  const html = emailShell(`
+    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">¡Tu postulación fue aprobada!</h1>
+    <p style="color:#94A3B8;font-size:14px;text-align:center;margin:0 0 24px;">Bienvenido al Grupo Corazones Cruzados</p>
+    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 16px;">
+      Felicidades, fuiste aprobado como candidato. Ya puedes ingresar al sitio,
+      elegir <strong style="color:#7B5FBF;">"Soy candidato"</strong> e iniciar sesión con tu
+      correo y esta <strong style="color:#7B5FBF;">contraseña temporal</strong>:
+    </p>
+    <div style="text-align:center;margin:20px 0;">
+      <span style="display:inline-block;background:#0f1320;border:2px solid #7B5FBF;color:#fff;
+        padding:12px 28px;font-size:20px;letter-spacing:0.25em;font-weight:bold;">${tempPassword}</span>
+    </div>
+    <p style="color:#CBD5E1;font-size:14px;line-height:1.6;margin:0 0 8px;">
+      Al ingresar al juego y crear tu personaje, te pediremos completar tus datos y
+      definir tu <strong>contraseña definitiva</strong> (reemplazará esta temporal).
+    </p>
+    <p style="color:#737373;font-size:12px;margin:24px 0 0;">
+      Por seguridad, no compartas esta contraseña con nadie.
+    </p>
+  `);
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: '¡Postulación aprobada! — GCC World',
+    html,
+  });
+}
+
 export async function sendVerificationEmail(
   email: string,
   token: string,

@@ -64,7 +64,9 @@ export default function ClientLoginModal({
       const begin = await fetch('/api/auth/passkey/begin', { method: 'POST' });
       const opts = await begin.json();
       if (!begin.ok) {
-        setError(opts?.error ?? 'No hay passkey en este dispositivo');
+        setError(
+          'Aún no tienes una passkey. Inicia sesión con tu código (botón de arriba) para poder configurarla.',
+        );
         return;
       }
       const credential = await startAuthentication({ optionsJSON: opts });
