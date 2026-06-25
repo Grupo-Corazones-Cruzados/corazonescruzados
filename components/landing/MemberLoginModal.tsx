@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { startAuthentication } from '@simplewebauthn/browser';
+import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import BrandLoader from '@/components/ui/BrandLoader';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
 
@@ -21,7 +21,7 @@ export default function MemberLoginModal({
   /** hasCharacter=false → el miembro aún no tiene personaje (debe crearlo). */
   onLoggedIn: (hasCharacter: boolean) => void;
 }) {
-  const [step, setStep] = useState<'creds' | 'code'>('creds');
+  const [step, setStep] = useState<'creds' | 'code' | 'passkeyOffer'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
   const [code, setCode] = useState('');
@@ -99,9 +99,52 @@ export default function MemberLoginModal({
         setError(j?.error ?? 'Código incorrecto');
         return;
       }
-      onLoggedIn(!!j.hasCharacter);
+      // Con personaje: ofrece configurar passkey antes de entrar. Sin personaje:
+      // entra directo (irá a crear su personaje).
+      if (j.hasCharacter) {
+        setError(null);
+        setStep('passkeyOffer');
+      } else {
+        onLoggedIn(false);
+      }
     } catch {
       setError('Error de red');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Registro de passkey (la sesión ya quedó activa tras el login con código).
+  const registerPasskey = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      const begin = await fetch('/api/character/auth/passkey/register/begin', { method: 'POST' });
+      const opts = await begin.json();
+      if (!begin.ok) {
+        setError(opts?.error ?? 'No se pudo iniciar el registro');
+        return;
+      }
+      const attestation = await startRegistration({ optionsJSON: opts });
+      const finish = await fetch('/api/character/auth/passkey/register/finish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(attestation),
+      });
+      const fj = await finish.json();
+      if (!finish.ok) {
+        setError(fj?.error ?? 'No se pudo registrar la passkey');
+        return;
+      }
+      onLoggedIn(true);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error de passkey';
+      // Si el usuario cancela el prompt, entra igual (sin passkey).
+      if (/cancel|abort|timeout|allowed/i.test(msg)) {
+        onLoggedIn(true);
+        return;
+      }
+      setError(msg);
     } finally {
       setBusy(false);
     }
@@ -134,15 +177,53 @@ export default function MemberLoginModal({
           </button>
 
           <h2 style={title}>
-            {step === 'creds' ? 'Ingresar como miembro' : 'Confirma el código'}
+            {step === 'creds'
+              ? 'Ingresar como miembro'
+              : step === 'code'
+                ? 'Confirma el código'
+                : 'Configura tu passkey'}
           </h2>
           <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: '#b9b2cf', margin: '0 0 16px' }}>
             {step === 'creds'
               ? 'Inicia sesión con tu cuenta de miembro o administrador para entrar al juego.'
-              : `Te enviamos un código a ${masked ?? 'tu correo'}.`}
+              : step === 'code'
+                ? `Te enviamos un código a ${masked ?? 'tu correo'}.`
+                : 'Crea una passkey (huella, Face ID o PIN) para entrar más rápido y seguro la próxima vez, sin código.'}
           </p>
 
-          {step === 'creds' ? (
+          {step === 'passkeyOffer' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {error && <ErrorMsg>{error}</ErrorMsg>}
+              <button
+                type="button"
+                onClick={registerPasskey}
+                disabled={busy}
+                className="pixel-btn pixel-btn-primary"
+                style={{ opacity: busy ? 0.6 : 1 }}
+              >
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <FingerprintIcon />
+                  Configurar passkey
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onLoggedIn(true)}
+                disabled={busy}
+                className="pixel-btn pixel-btn-secondary"
+                style={{ opacity: busy ? 0.6 : 1 }}
+              >
+                Ahora no, entrar al juego
+              </button>
+            </div>
+          ) : step === 'creds' ? (
             <form onSubmit={submitCreds} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <input
                 type="email"

@@ -45,7 +45,9 @@ export async function POST(req: Request) {
       // Personaje de un miembro/admin (staff): queda aprobado y verificado
       // (no pasa por el gate de aprobación de candidatos).
       await pool.query(
-        `ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false`,
+        `ALTER TABLE gcc_world.clients
+           ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false,
+           ADD COLUMN IF NOT EXISTS user_id uuid`,
       );
       const { rows } = await pool.query(
         `SELECT id FROM gcc_world.clients WHERE user_id = $1 LIMIT 1`,

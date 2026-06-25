@@ -52,6 +52,9 @@ export async function POST(req: Request) {
     );
 
     // Personaje del juego asociado por correo o user_id.
+    await pool.query(
+      `ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS user_id uuid`,
+    );
     const c = await pool.query(
       `SELECT id, client_token FROM gcc_world.clients
         WHERE (LOWER(email) = $1 OR user_id = $2) AND character_data IS NOT NULL
