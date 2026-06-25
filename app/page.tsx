@@ -3831,6 +3831,19 @@ export default function LandingPage() {
           isReturning={!!savedAuth}
           isMemberSession={enteredAsMember}
           freshAuth={freshAuth}
+          onChangeEntryType={() => {
+            // Volver al menú "¿Cómo quieres ingresar?" para cambiar el tipo de
+            // cuenta (p.ej. de miembro a candidato).
+            setGameplayActive(false);
+            setCharacterConfig(null);
+            setWindAway(false);
+            setFreshAuth(false);
+            setEnteredAsMember(false);
+            cameraEnabledRef.current = false;
+            setCameraEnabled(false);
+            setWorldChatVisible(false);
+            setEntryChoiceOpen(true);
+          }}
         />
       )}
 

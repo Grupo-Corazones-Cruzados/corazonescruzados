@@ -21,7 +21,7 @@ function generateCode(): string {
  */
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, expect } = await req.json();
     if (typeof email !== 'string' || typeof password !== 'string') {
       return NextResponse.json(
         { error: 'Correo y contraseña son requeridos' },
@@ -38,7 +38,23 @@ export async function POST(req: Request) {
       [cleanEmail],
     );
     const member = u.rows[0];
-    if (member) {
+
+    // Restricción por tipo reconocido: este modal solo acepta el tipo con el que
+    // se reconoció la cuenta. Para usar otro tipo, "Cambiar tipo de ingreso".
+    if (expect === 'candidate' && member) {
+      return NextResponse.json(
+        { error: 'Esta es una cuenta de miembro. Usa "Cambiar tipo de ingreso".' },
+        { status: 403 },
+      );
+    }
+    if (expect === 'member' && !member) {
+      return NextResponse.json(
+        { error: 'Esta no es una cuenta de miembro. Usa "Cambiar tipo de ingreso".' },
+        { status: 403 },
+      );
+    }
+
+    if (member && expect !== 'candidate') {
       if (!member.password_hash || !(await verifyPassword(password, member.password_hash))) {
         return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
       }

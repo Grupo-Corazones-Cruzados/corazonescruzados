@@ -82,6 +82,7 @@ export default function CharacterGameplay({
   isReturning = false,
   isMemberSession = false,
   freshAuth = false,
+  onChangeEntryType,
 }: {
   config: CharacterConfig;
   initialAuth?: AuthStatus;
@@ -90,6 +91,8 @@ export default function CharacterGameplay({
   isMemberSession?: boolean;
   /** Se autenticó por un modal en esta carga → no re-pedir login al entrar. */
   freshAuth?: boolean;
+  /** Volver al menú "¿Cómo quieres ingresar?" para cambiar el tipo de cuenta. */
+  onChangeEntryType?: () => void;
 }) {
   const [pos, setPos] = useState(spawnToWorld(DEFAULT_MAP));
   const spawnAppliedRef = useRef(false);
@@ -1016,6 +1019,8 @@ export default function CharacterGameplay({
 
       {showLogin && (
         <LoginForm
+          expectedKind={auth.isMember ? 'member' : 'candidate'}
+          onChangeEntryType={onChangeEntryType}
           onLoggedIn={async () => {
             // Re-lee el estado AUTORITATIVO tras el login: la sesión nueva ya
             // apunta a la fila correcta del jugador, así que isMember/profile son
@@ -1756,7 +1761,16 @@ function SignupForm({
   );
 }
 
-function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
+function LoginForm({
+  onLoggedIn,
+  expectedKind,
+  onChangeEntryType,
+}: {
+  onLoggedIn: () => void;
+  /** Tipo reconocido: el modal solo acepta este tipo de cuenta. */
+  expectedKind?: 'member' | 'candidate';
+  onChangeEntryType?: () => void;
+}) {
   const [step, setStep] = useState<'creds' | 'code'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
@@ -1783,7 +1797,7 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
       const r = await fetch('/api/character/auth/returning/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password: pwd }),
+        body: JSON.stringify({ email: email.trim(), password: pwd, expect: expectedKind }),
       });
       const j = await r.json();
       if (!r.ok) {
@@ -1984,6 +1998,25 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: () => void }) {
           {submitting ? 'Enviando código...' : 'Enviar código'}
         </button>
       </form>
+      {onChangeEntryType && (
+        <button
+          type="button"
+          onClick={onChangeEntryType}
+          style={{
+            marginTop: 12,
+            width: '100%',
+            background: 'transparent',
+            border: 0,
+            cursor: 'pointer',
+            fontSize: '0.6rem',
+            letterSpacing: '0.06em',
+            color: '#b9b2cf',
+            textDecoration: 'underline',
+          }}
+        >
+          Cambiar tipo de ingreso
+        </button>
+      )}
     </FormShell>
   );
 }
