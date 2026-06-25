@@ -314,9 +314,12 @@ export default function CharacterGameplay({
       emailVerified: false,
       authenticated: true,
     };
-    // Returning players must always re-enter their password on each
-    // entry to the world, even if the auth cookie is still valid.
-    return isReturning ? { ...base, authenticated: false } : base;
+    // Confía en la sesión: si el AUTH_COOKIE sigue válido (authenticated, según
+    // /api/character/me) el jugador entra directo. Solo se re-autentica si la
+    // sesión expiró/no existe. Los miembros que ya iniciaron sesión por el modal
+    // (o cuya sesión sigue activa) no vuelven a autenticarse.
+    if (isMemberSession) return { ...base, authenticated: true };
+    return base;
   });
 
   // Brand-new player (just created character this session) plays freely.

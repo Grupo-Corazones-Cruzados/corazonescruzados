@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getCurrentUser } from '@/lib/auth/jwt';
 import {
   AUTH_COOKIE,
   CLIENT_COOKIE,
@@ -46,6 +47,21 @@ export async function GET() {
         [ipHash],
       );
       row = r.rows[0] ?? null;
+    }
+
+    // Fallback robusto: miembro/admin con sesión de staff (JWT) → reconoce su
+    // personaje por user_id o correo aunque la cookie/IP de jugador no coincidan.
+    if (!row) {
+      const staff = await getCurrentUser();
+      if (staff) {
+        const r = await pool.query(
+          `SELECT ${COLS} FROM gcc_world.clients
+            WHERE (user_id = $1 OR LOWER(email) = LOWER($2)) AND character_data IS NOT NULL
+            ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
+          [staff.userId, staff.email],
+        );
+        row = r.rows[0] ?? null;
+      }
     }
 
     if (!row) {
