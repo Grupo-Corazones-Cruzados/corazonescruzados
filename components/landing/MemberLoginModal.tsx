@@ -101,11 +101,15 @@ export default function MemberLoginModal({
         setError(j?.error ?? 'Código incorrecto');
         return;
       }
-      // Con personaje: ofrece configurar passkey antes de entrar. Sin personaje:
-      // entra directo (irá a crear su personaje).
+      // Con personaje: si NO tiene passkey, ofrece configurarla; si ya tiene,
+      // entra directo. Sin personaje: entra (irá a crear su personaje).
       if (j.hasCharacter) {
-        setError(null);
-        setStep('passkeyOffer');
+        if (j.hasPasskey) {
+          onLoggedIn(true);
+        } else {
+          setError(null);
+          setStep('passkeyOffer');
+        }
       } else {
         onLoggedIn(false);
       }

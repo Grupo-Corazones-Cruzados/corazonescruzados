@@ -89,7 +89,11 @@ export async function POST(req: Request) {
       maxAge: AUTH_COOKIE_MAX_AGE,
     });
 
-    return NextResponse.json({ ok: true });
+    const pk = await pool.query(
+      `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 LIMIT 1`,
+      [row.id],
+    );
+    return NextResponse.json({ ok: true, hasPasskey: pk.rows.length > 0 });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'unknown error';
     console.error('Recovery verify error:', msg);

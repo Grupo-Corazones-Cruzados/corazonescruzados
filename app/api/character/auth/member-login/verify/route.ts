@@ -101,7 +101,15 @@ export async function POST(req: Request) {
       maxAge: AUTH_COOKIE_MAX_AGE,
     });
 
-    return NextResponse.json({ ok: true, hasCharacter: true });
+    const pk = await pool.query(
+      `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 LIMIT 1`,
+      [character.id],
+    );
+    return NextResponse.json({
+      ok: true,
+      hasCharacter: true,
+      hasPasskey: pk.rows.length > 0,
+    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'unknown error';
     console.error('Member login verify error:', msg);

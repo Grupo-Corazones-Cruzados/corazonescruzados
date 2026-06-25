@@ -40,12 +40,27 @@ export async function POST(req: NextRequest) {
     const token = await createToken({ userId: user.id, email: user.email, role: user.role });
     await setAuthCookie(token);
 
+    // La passkey del cliente vive en una fila de gcc_world.clients (por correo).
+    let hasPasskey = false;
+    const cl = await pool.query(
+      `SELECT id FROM gcc_world.clients WHERE LOWER(email) = $1
+        ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
+      [cleanEmail],
+    );
+    if (cl.rows[0]) {
+      const pk = await pool.query(
+        `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 LIMIT 1`,
+        [cl.rows[0].id],
+      );
+      hasPasskey = pk.rows.length > 0;
+    }
+
     const {
       login_code: _c,
       login_code_exp: _e,
       ...safeUser
     } = user;
-    return NextResponse.json({ user: safeUser });
+    return NextResponse.json({ user: safeUser, hasPasskey });
   } catch (error) {
     console.error('Login verify error:', error);
     return NextResponse.json({ error: 'Error al iniciar sesión' }, { status: 500 });

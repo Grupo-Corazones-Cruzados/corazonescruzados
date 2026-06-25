@@ -95,9 +95,13 @@ export default function AccountRecoveryModal({
         setError(j?.error ?? 'Código incorrecto');
         return;
       }
-      // Cuenta vinculada: ofrece configurar passkey antes de entrar.
-      setError(null);
-      setStep('passkeyOffer');
+      // Si NO tiene passkey, ofrece configurarla; si ya tiene, entra directo.
+      if (j.hasPasskey) {
+        onSuccess();
+      } else {
+        setError(null);
+        setStep('passkeyOffer');
+      }
     } catch {
       setError('Error de red');
     } finally {
