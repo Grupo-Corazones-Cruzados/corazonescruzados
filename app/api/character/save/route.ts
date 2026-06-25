@@ -2,7 +2,10 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { randomBytes } from 'crypto';
 import {
+  AUTH_COOKIE,
+  AUTH_COOKIE_MAX_AGE,
   CLIENT_COOKIE,
   COOKIE_MAX_AGE,
   generateClientToken,
@@ -40,6 +43,8 @@ export async function POST(req: Request) {
     if (!token) token = generateClientToken();
 
     let clientId: number | null = null;
+    // Sesión de personaje para el miembro (AUTH_COOKIE) → habilita passkey, etc.
+    const memberAuthToken = user ? randomBytes(32).toString('hex') : null;
 
     if (user) {
       // Personaje de un miembro/admin (staff): queda aprobado y verificado
@@ -66,22 +71,26 @@ export async function POST(req: Request) {
                   client_token = $3,
                   ip_hash = $4,
                   user_id = $6,
+                  auth_token = $7,
+                  auth_expires = NOW() + INTERVAL '30 days',
                   approved = true,
                   email_verified = true,
                   last_seen_at = NOW()
             WHERE id = $5
           RETURNING id`,
-          [alias, json, token, ipHash, rows[0].id, user.id],
+          [alias, json, token, ipHash, rows[0].id, user.id, memberAuthToken],
         );
         clientId = updated.rows[0].id;
       } else {
         const inserted = await pool.query(
           `INSERT INTO gcc_world.clients
               (name, email, user_id, alias, character_data,
-               client_token, ip_hash, approved, email_verified, last_seen_at)
-           VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, true, true, NOW())
+               client_token, ip_hash, auth_token, auth_expires,
+               approved, email_verified, last_seen_at)
+           VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8,
+                   NOW() + INTERVAL '30 days', true, true, NOW())
            RETURNING id`,
-          [alias, user.email, user.id, alias, json, token, ipHash],
+          [alias, user.email, user.id, alias, json, token, ipHash, memberAuthToken],
         );
         clientId = inserted.rows[0].id;
       }
@@ -122,6 +131,16 @@ export async function POST(req: Request) {
       path: '/',
       maxAge: COOKIE_MAX_AGE,
     });
+    // Miembro: deja activa la sesión de personaje (permite registrar passkey).
+    if (memberAuthToken) {
+      cookieStore.set(AUTH_COOKIE, memberAuthToken, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: AUTH_COOKIE_MAX_AGE,
+      });
+    }
 
     return NextResponse.json({
       ok: true,

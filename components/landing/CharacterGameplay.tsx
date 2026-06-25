@@ -356,6 +356,24 @@ export default function CharacterGameplay({
     prevHasPasswordRef.current = auth.hasPassword;
   }, [auth.hasPassword]);
 
+  // Miembro que acaba de crear su personaje (no recurrente): tras guardar (save
+  // deja la sesión de personaje activa), si no tiene passkey, se la ofrecemos.
+  const memberOfferRef = useRef(false);
+  useEffect(() => {
+    if (!isMemberSession || isReturning || memberOfferRef.current) return;
+    if (typeof window === 'undefined' || !('PublicKeyCredential' in window)) return;
+    memberOfferRef.current = true;
+    const t = window.setTimeout(() => {
+      fetch('/api/character/auth/passkey/status')
+        .then((r) => r.json())
+        .then((j) => {
+          if (!j?.hasPasskeys) setPasskeyOffer(true);
+        })
+        .catch(() => undefined);
+    }, 2800);
+    return () => window.clearTimeout(t);
+  }, [isMemberSession, isReturning]);
+
   // ── Walk frame cycler + walking SFX ──────────────────────────────
   useEffect(() => {
     const sfx = walkAudioRef.current;
