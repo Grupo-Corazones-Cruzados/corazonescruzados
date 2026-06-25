@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { startAuthentication } from '@simplewebauthn/browser';
 import BrandLoader from '@/components/ui/BrandLoader';
+import FingerprintIcon from '@/components/landing/FingerprintIcon';
 
 const PIXEL = "'Silkscreen', cursive";
 const BODY = "'Inter', system-ui, -apple-system, sans-serif";
@@ -190,7 +191,17 @@ export default function ClientLoginModal({
                 className="pixel-btn pixel-btn-secondary"
                 style={{ opacity: busy ? 0.6 : 1 }}
               >
-                🔑 Ingresar con passkey
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <FingerprintIcon />
+                  Ingresar con passkey
+                </span>
               </button>
             </form>
           ) : (
