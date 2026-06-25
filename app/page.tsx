@@ -3036,27 +3036,19 @@ export default function LandingPage() {
       {entryChoiceOpen && (
         <EntryChoiceModal
           onClose={() => setEntryChoiceOpen(false)}
-          onCandidate={async () => {
+          onCandidate={() => {
             setEntryChoiceOpen(false);
             try {
               window.localStorage.setItem('gcc_account_type', 'candidate');
             } catch {
               /* ignore */
             }
-            // Si ya tiene una propuesta registrada (reconocido por IP), muestra
-            // el modal de espera de aprobación en vez de repetir los sliders.
-            try {
-              const r = await fetch('/api/candidate/proposal', { cache: 'no-store' });
-              const j = await r.json();
-              if (j?.exists) {
-                setProposalPending({ email: j.email, emailVerified: j.emailVerified });
-                return;
-              }
-            } catch {
-              /* si falla el chequeo, continúa con los sliders */
-            }
-            // Candidato nuevo: conoce el proyecto (sliders) y se postula.
+            // Candidato nuevo (sin postulación previa): conoce el proyecto y se postula.
             setOnboardingOpen(true);
+          }}
+          onProposalPending={(info) => {
+            setEntryChoiceOpen(false);
+            setProposalPending({ email: info.email, emailVerified: info.emailVerified });
           }}
           onCandidateLogin={() => {
             setEntryChoiceOpen(false);

@@ -4,13 +4,12 @@
  * EntryChoiceModal
  * ----------------
  * Aparece tras pulsar "Entrar" en la landing (visitante nuevo) y pregunta cómo
- * quiere ingresar:
- *  - Candidato: conoce el proyecto (sliders de onboarding) y se postula.
- *  - Cliente: va directo a la creación de cuenta para adquirir productos/servicios
- *    (sin sliders ni pregunta de motivación). Su cuenta es de tipo 'client'.
- *
- * Sigue el patrón de overlay pixelart de AccountRecoveryModal.
+ * quiere ingresar. Si por su IP ya hay una postulación de candidato registrada,
+ * la opción "Quiero postularme" se reemplaza por una tarjeta de "en proceso de
+ * aprobación".
  */
+
+import { useEffect, useState } from 'react';
 
 const PIXEL = "'Silkscreen', cursive";
 const BODY = "'Inter', system-ui, -apple-system, sans-serif";
@@ -20,14 +19,36 @@ export default function EntryChoiceModal({
   onCandidateLogin,
   onClient,
   onMember,
+  onProposalPending,
   onClose,
 }: {
   onCandidate: () => void;
   onCandidateLogin: () => void;
   onClient: () => void;
   onMember: () => void;
+  onProposalPending: (info: { email?: string | null; emailVerified?: boolean }) => void;
   onClose: () => void;
 }) {
+  // ¿Este visitante (por IP) ya tiene una postulación registrada?
+  const [proposal, setProposal] = useState<{
+    exists: boolean;
+    email?: string | null;
+    emailVerified?: boolean;
+  } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/candidate/proposal', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive) setProposal(j);
+      })
+      .catch(() => {
+        if (alive) setProposal({ exists: false });
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
   return (
     <div
       role="dialog"
@@ -103,11 +124,21 @@ export default function EntryChoiceModal({
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Option
-            title="Quiero postularme como candidato"
-            desc="Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados."
-            onClick={onCandidate}
-          />
+          {proposal?.exists ? (
+            <Option
+              title="Tu postulación está en proceso de aprobación"
+              desc="Para avanzar más rápido, verifica tu correo con el enlace enviado a tu bandeja de entrada. Una vez seas aprobado podrás ingresar como candidato."
+              onClick={() =>
+                onProposalPending({ email: proposal.email, emailVerified: proposal.emailVerified })
+              }
+            />
+          ) : (
+            <Option
+              title="Quiero postularme como candidato"
+              desc="Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados."
+              onClick={onCandidate}
+            />
+          )}
           <Option
             title="Soy candidato"
             desc="Ya tengo una cuenta de candidato: iniciar sesión y entrar al juego."
