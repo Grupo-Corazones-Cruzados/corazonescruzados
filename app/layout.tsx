@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/components/providers/AuthProvider';
-import CookieConsent from '@/components/CookieConsent';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -26,7 +25,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           {children}
         </AuthProvider>
-        <CookieConsent />
         <Toaster theme="dark" richColors position="bottom-right" />
       </body>
     </html>
