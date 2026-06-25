@@ -3898,12 +3898,11 @@ export default function LandingPage() {
           </p>
         ) : (
           <p
-            className="opacity-30"
             style={{
               fontFamily: "'Silkscreen', cursive",
               fontSize: '0.65rem',
-              color: '#7B5FBF',
-              opacity: windAway ? 0 : undefined,
+              color: '#cfc9e2',
+              opacity: windAway ? 0 : 0.75,
               filter: windAway ? 'blur(3px)' : undefined,
               transition: 'opacity 1.1s ease-out, filter 1.1s ease-out',
             }}
