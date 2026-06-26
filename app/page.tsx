@@ -3885,12 +3885,18 @@ export default function LandingPage() {
           isMemberSession={enteredAsMember}
           freshAuth={freshAuth}
           onAuthOverlayChange={setGameAuthOverlay}
-          onChangeEntryType={() => {
-            // Volver al menú "¿Cómo quieres ingresar?" para cambiar el tipo de
-            // cuenta. La landing usa animaciones "forwards" (no se puede revertir
-            // en sitio de forma fiable), así que recargamos y reabrimos el menú.
+          onChangeEntryType={async () => {
+            // Volver al menú "¿Cómo quieres ingresar?" para cambiar de cuenta.
+            // Primero DESVINCULA el dispositivo (logout): limpia cookies + tokens
+            // e ip_hash, así "Entrar" ya no reconoce la cuenta anterior. Luego
+            // recarga y reabre el menú (la landing usa animaciones irreversibles).
             try {
               window.sessionStorage.setItem('gcc_entry_choice', entryDestination);
+            } catch {
+              /* ignore */
+            }
+            try {
+              await fetch('/api/character/auth/logout', { method: 'POST' });
             } catch {
               /* ignore */
             }
