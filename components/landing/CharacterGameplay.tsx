@@ -84,6 +84,7 @@ export default function CharacterGameplay({
   isMemberSession = false,
   freshAuth = false,
   onChangeEntryType,
+  onAuthOverlayChange,
 }: {
   config: CharacterConfig;
   initialAuth?: AuthStatus;
@@ -94,6 +95,8 @@ export default function CharacterGameplay({
   freshAuth?: boolean;
   /** Volver al menú "¿Cómo quieres ingresar?" para cambiar el tipo de cuenta. */
   onChangeEntryType?: () => void;
+  /** Avisa cuando hay un overlay de auth (login/cuenta/passkey) → cursor normal. */
+  onAuthOverlayChange?: (visible: boolean) => void;
 }) {
   const [pos, setPos] = useState(spawnToWorld(DEFAULT_MAP));
   const spawnAppliedRef = useRef(false);
@@ -347,6 +350,13 @@ export default function CharacterGameplay({
   const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
   const overlayVisible = showSetup || showLogin || passkeyOffer;
   const locked = overlayVisible;
+
+  // Mientras hay overlay de auth (login/cuenta/passkey), usar el cursor normal
+  // del sistema; al entrar al juego vuelve el puntero del juego.
+  useEffect(() => {
+    onAuthOverlayChange?.(overlayVisible);
+    return () => onAuthOverlayChange?.(false);
+  }, [overlayVisible, onAuthOverlayChange]);
 
   // After the signup → email verification flow completes, hasPassword
   // transitions from false → true. Use that edge to offer a passkey.

@@ -387,6 +387,8 @@ export default function LandingPage() {
   // vuelve a pedir login al entrar al juego. Se reinicia al recargar (sesión
   // nueva): así "Entrar" pide loguearse una sola vez por recarga.
   const [freshAuth, setFreshAuth] = useState(false);
+  // El gameplay muestra un overlay de auth (login/cuenta/passkey) → cursor normal.
+  const [gameAuthOverlay, setGameAuthOverlay] = useState(false);
   const warpRef = useRef<HTMLDivElement | null>(null);
   const planetMusicRef = useRef<HTMLAudioElement | null>(null);
   const peligroMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -2633,7 +2635,8 @@ export default function LandingPage() {
     memberLoginOpen ||
     onboardingOpen ||
     recoveryOpen ||
-    !!proposalPending;
+    !!proposalPending ||
+    gameAuthOverlay;
 
   return (
     <div className={`landing-page${nativeCursor ? ' auth-screen' : ''}`}>
@@ -3881,6 +3884,7 @@ export default function LandingPage() {
           isReturning={!!savedAuth}
           isMemberSession={enteredAsMember}
           freshAuth={freshAuth}
+          onAuthOverlayChange={setGameAuthOverlay}
           onChangeEntryType={() => {
             // Volver al menú "¿Cómo quieres ingresar?" para cambiar el tipo de
             // cuenta. La landing usa animaciones "forwards" (no se puede revertir
