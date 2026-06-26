@@ -52,9 +52,18 @@ export default function AccountRecoveryModal({
     setError(null);
     setBusy(true);
     try {
-      const begin = await fetch('/api/character/auth/passkey/login/begin', { method: 'POST' });
+      const begin = await fetch('/api/character/auth/passkey/login/begin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expect: 'candidate' }),
+      });
       const opts = await begin.json();
       if (!begin.ok) {
+        // 403 = la cuenta de este dispositivo no es candidato.
+        if (begin.status === 403) {
+          setError(opts?.error ?? 'Esta cuenta no es de candidato.');
+          return;
+        }
         setError(
           'Aún no tienes una passkey. Inicia sesión con tu código (botón de arriba); al entrar podrás configurar tu passkey para la próxima vez.',
         );
