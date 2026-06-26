@@ -1048,8 +1048,10 @@ export default function CharacterGameplay({
               hasPassword: true,
               emailVerified: true,
               authenticated: true,
-              isMember: me?.isMember ?? a.isMember,
-              hasAccount: me?.hasAccount ?? a.hasAccount,
+              // OR: si ya era cuenta (miembro/cliente) no dejes que un false la
+              // revierta; basta con que cualquiera de los dos lo confirme.
+              isMember: !!me?.isMember || !!a.isMember,
+              hasAccount: !!me?.hasAccount || !!a.hasAccount,
               profileCompleted: me?.profileCompleted ?? a.profileCompleted,
               email: me?.email ?? a.email,
               profile: me?.profile ?? a.profile,

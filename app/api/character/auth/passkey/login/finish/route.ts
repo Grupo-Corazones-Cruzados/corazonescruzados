@@ -7,6 +7,8 @@ import {
   AUTH_COOKIE,
   AUTH_COOKIE_MAX_AGE,
   CLIENT_COOKIE,
+  COOKIE_MAX_AGE,
+  generateClientToken,
   getClientIp,
   hashIp,
 } from '@/lib/world/session';
@@ -23,12 +25,13 @@ export async function POST(req: Request) {
 
     let client: {
       id: number;
+      client_token: string | null;
       webauthn_challenge: string | null;
       webauthn_challenge_exp: string | null;
     } | null = null;
     if (token) {
       const r = await pool.query(
-        `SELECT id, webauthn_challenge, webauthn_challenge_exp
+        `SELECT id, client_token, webauthn_challenge, webauthn_challenge_exp
            FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
         [token],
       );
@@ -36,7 +39,7 @@ export async function POST(req: Request) {
     }
     if (!client) {
       const r = await pool.query(
-        `SELECT id, webauthn_challenge, webauthn_challenge_exp
+        `SELECT id, client_token, webauthn_challenge, webauthn_challenge_exp
            FROM gcc_world.clients
           WHERE ip_hash = $1
           ORDER BY last_seen_at DESC NULLS LAST
@@ -108,6 +111,9 @@ export async function POST(req: Request) {
 
     const newCounter = verification.authenticationInfo.newCounter;
     const authToken = randomBytes(32).toString('hex');
+    // Fija la cookie de cliente a ESTA fila (la que tiene la passkey), para que
+    // /api/character/me reconozca el personaje correcto y no muestre formularios.
+    const clientToken = client.client_token || generateClientToken();
 
     await pool.query(
       `UPDATE gcc_world.client_passkeys
@@ -120,11 +126,12 @@ export async function POST(req: Request) {
           SET auth_token = $1,
               auth_expires = NOW() + INTERVAL '30 days',
               ip_hash = $2,
+              client_token = $4,
               last_seen_at = NOW(),
               webauthn_challenge = NULL,
               webauthn_challenge_exp = NULL
         WHERE id = $3`,
-      [authToken, ipHash, client.id],
+      [authToken, ipHash, client.id, clientToken],
     );
 
     cookieStore.set(AUTH_COOKIE, authToken, {
@@ -133,6 +140,13 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: AUTH_COOKIE_MAX_AGE,
+    });
+    cookieStore.set(CLIENT_COOKIE, clientToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: COOKIE_MAX_AGE,
     });
 
     return NextResponse.json({ ok: true });
