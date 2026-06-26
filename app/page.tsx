@@ -1149,6 +1149,21 @@ export default function LandingPage() {
     refreshSavedCharacter().finally(() => setSavedCharacterChecked(true));
   }, [refreshSavedCharacter]);
 
+  // Tras "Cambiar tipo de ingreso" (recarga): reabre el menú de opciones con el
+  // destino que tenía (juego/dashboard).
+  useEffect(() => {
+    try {
+      const d = window.sessionStorage.getItem('gcc_entry_choice');
+      if (d) {
+        window.sessionStorage.removeItem('gcc_entry_choice');
+        setEntryDestination(d === 'dashboard' ? 'dashboard' : 'game');
+        setEntryChoiceOpen(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // If a saved character is discovered AFTER the user pressed Entrar
   // (windAway = true) and gameplay hasn't mounted yet, dismiss any
   // intro screens and enter as returning. Covers every refresh path.
@@ -3868,16 +3883,14 @@ export default function LandingPage() {
           freshAuth={freshAuth}
           onChangeEntryType={() => {
             // Volver al menú "¿Cómo quieres ingresar?" para cambiar el tipo de
-            // cuenta (p.ej. de miembro a candidato).
-            setGameplayActive(false);
-            setCharacterConfig(null);
-            setWindAway(false);
-            setFreshAuth(false);
-            setEnteredAsMember(false);
-            cameraEnabledRef.current = false;
-            setCameraEnabled(false);
-            setWorldChatVisible(false);
-            setEntryChoiceOpen(true);
+            // cuenta. La landing usa animaciones "forwards" (no se puede revertir
+            // en sitio de forma fiable), así que recargamos y reabrimos el menú.
+            try {
+              window.sessionStorage.setItem('gcc_entry_choice', entryDestination);
+            } catch {
+              /* ignore */
+            }
+            window.location.reload();
           }}
         />
       )}
