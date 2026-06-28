@@ -377,6 +377,8 @@ export default function LandingPage() {
   const [proposalPending, setProposalPending] = useState<
     { email?: string | null; emailVerified?: boolean } | null
   >(null);
+  // Cliente con cuenta creada pero correo sin verificar (no puede ingresar).
+  const [clientPending, setClientPending] = useState<{ email?: string | null } | null>(null);
   const [clientSignupOpen, setClientSignupOpen] = useState(false);
   const [clientLoginOpen, setClientLoginOpen] = useState(false);
   const [memberLoginOpen, setMemberLoginOpen] = useState(false);
@@ -2636,6 +2638,7 @@ export default function LandingPage() {
     onboardingOpen ||
     recoveryOpen ||
     !!proposalPending ||
+    !!clientPending ||
     gameAuthOverlay;
 
   return (
@@ -3106,6 +3109,10 @@ export default function LandingPage() {
             setEntryChoiceOpen(false);
             setProposalPending({ email: info.email, emailVerified: info.emailVerified });
           }}
+          onClientPending={(info) => {
+            setEntryChoiceOpen(false);
+            setClientPending({ email: info.email });
+          }}
           onCandidateLogin={() => {
             setEntryChoiceOpen(false);
             setEnteredAsMember(false);
@@ -3161,6 +3168,15 @@ export default function LandingPage() {
           email={proposalPending.email}
           emailVerified={proposalPending.emailVerified}
           onClose={() => setProposalPending(null)}
+        />
+      )}
+
+      {clientPending && (
+        <ProposalPendingModal
+          mode="client"
+          email={clientPending.email}
+          emailVerified={false}
+          onClose={() => setClientPending(null)}
         />
       )}
 

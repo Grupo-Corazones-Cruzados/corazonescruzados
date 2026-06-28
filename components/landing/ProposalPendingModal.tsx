@@ -16,11 +16,15 @@ export default function ProposalPendingModal({
   email,
   emailVerified,
   onClose,
+  mode = 'candidate',
 }: {
   email?: string | null;
   emailVerified?: boolean;
   onClose: () => void;
+  /** 'candidate' (postulación, requiere aprobación) | 'client' (solo verificar). */
+  mode?: 'candidate' | 'client';
 }) {
+  const isClient = mode === 'client';
   return (
     <div
       role="dialog"
@@ -72,7 +76,7 @@ export default function ProposalPendingModal({
           ✕
         </button>
 
-        <div style={{ fontSize: '2rem', marginBottom: 8 }}>⏳</div>
+        <div style={{ fontSize: '2rem', marginBottom: 8 }}>{isClient ? '📬' : '⏳'}</div>
         <h2
           style={{
             fontFamily: PIXEL,
@@ -82,13 +86,23 @@ export default function ProposalPendingModal({
             textShadow: '1px 1px 0 rgba(0,0,0,0.6)',
           }}
         >
-          Tu postulación está en revisión
+          {isClient ? 'Verifica tu cuenta de cliente' : 'Tu postulación está en revisión'}
         </h2>
 
         <p style={{ fontFamily: BODY, fontSize: '0.9rem', lineHeight: 1.6, color: '#cfc9e2', margin: '0 0 12px' }}>
-          Tu propuesta quedó registrada y está{' '}
-          <strong style={{ color: '#fff' }}>en espera de aprobación</strong> por parte del
-          administrador del proyecto. Te avisaremos cuando sea aprobada.
+          {isClient ? (
+            <>
+              Ya creaste tu cuenta de cliente. Para poder iniciar sesión, primero{' '}
+              <strong style={{ color: '#fff' }}>verifica tu correo</strong>. No necesitas crear otra
+              cuenta.
+            </>
+          ) : (
+            <>
+              Tu propuesta quedó registrada y está{' '}
+              <strong style={{ color: '#fff' }}>en espera de aprobación</strong> por parte del
+              administrador del proyecto. Te avisaremos cuando sea aprobada.
+            </>
+          )}
         </p>
 
         <div

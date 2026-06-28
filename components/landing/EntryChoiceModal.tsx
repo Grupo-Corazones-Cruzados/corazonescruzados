@@ -20,6 +20,7 @@ export default function EntryChoiceModal({
   onClient,
   onMember,
   onProposalPending,
+  onClientPending,
   onClose,
   destination = 'game',
 }: {
@@ -28,6 +29,8 @@ export default function EntryChoiceModal({
   onClient: () => void;
   onMember: () => void;
   onProposalPending: (info: { email?: string | null; emailVerified?: boolean }) => void;
+  /** Cliente con cuenta no verificada → mostrar "requiere verificación". */
+  onClientPending: (info: { email?: string | null }) => void;
   onClose: () => void;
   /** Destino tras iniciar sesión: "game" (Entrar) o "dashboard" (Colaborar). */
   destination?: 'game' | 'dashboard';
@@ -39,6 +42,12 @@ export default function EntryChoiceModal({
     email?: string | null;
     emailVerified?: boolean;
   } | null>(null);
+  // ¿Este visitante ya tiene una cuenta de cliente (y está verificada)?
+  const [client, setClient] = useState<{
+    exists: boolean;
+    email?: string | null;
+    verified?: boolean;
+  } | null>(null);
   useEffect(() => {
     let alive = true;
     fetch('/api/candidate/proposal', { cache: 'no-store' })
@@ -48,6 +57,14 @@ export default function EntryChoiceModal({
       })
       .catch(() => {
         if (alive) setProposal({ exists: false });
+      });
+    fetch('/api/client/status', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive) setClient(j);
+      })
+      .catch(() => {
+        if (alive) setClient({ exists: false });
       });
     return () => {
       alive = false;
@@ -150,15 +167,25 @@ export default function EntryChoiceModal({
             desc={`Ya tengo una cuenta de candidato: iniciar sesión y ${dest}.`}
             onClick={onCandidateLogin}
           />
-          <Option
-            title="Soy cliente"
-            desc={
-              destination === 'dashboard'
-                ? 'Accede al panel para gestionar tus productos, servicios y proyectos del grupo.'
-                : 'Inicia sesión (o crea tu cuenta) y entra al juego.'
-            }
-            onClick={onClient}
-          />
+          {client === null ? (
+            <LoadingCard label="Verificando tu cuenta de cliente…" />
+          ) : client.exists && !client.verified ? (
+            <Option
+              title="Tu cuenta de cliente requiere verificación"
+              desc="Te enviamos un enlace de verificación a tu correo. Verifícalo para poder iniciar sesión. No es necesario crear otra cuenta."
+              onClick={() => onClientPending({ email: client.email })}
+            />
+          ) : (
+            <Option
+              title="Soy cliente"
+              desc={
+                destination === 'dashboard'
+                  ? 'Accede al panel para gestionar tus productos, servicios y proyectos del grupo.'
+                  : 'Inicia sesión (o crea tu cuenta) y entra al juego.'
+              }
+              onClick={onClient}
+            />
+          )}
           <Option
             title="Ingresar como miembro"
             desc={`Ya soy miembro o administrador: iniciar sesión y ${dest}.`}
@@ -170,7 +197,7 @@ export default function EntryChoiceModal({
   );
 }
 
-function LoadingCard() {
+function LoadingCard({ label = 'Verificando tu estado de postulación…' }: { label?: string }) {
   return (
     <div
       aria-busy="true"
@@ -198,7 +225,7 @@ function LoadingCard() {
         }}
       />
       <span style={{ fontFamily: BODY, fontSize: '0.85rem', color: 'rgba(225,215,255,0.65)' }}>
-        Verificando tu estado de postulación…
+        {label}
       </span>
     </div>
   );
