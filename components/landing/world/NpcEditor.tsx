@@ -37,6 +37,7 @@ import {
   EditorButton,
   ListRow,
   EmptyState,
+  PANEL_WIDTH,
 } from './editorUi';
 
 export type NpcRecord = {
@@ -232,7 +233,7 @@ export default function NpcEditor({
         color: '#323130',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'grid',
-        gridTemplateColumns: '260px 1fr',
+        gridTemplateColumns: `${PANEL_WIDTH}px 1fr`,
       }}
     >
       {/* List */}

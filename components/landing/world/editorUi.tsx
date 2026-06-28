@@ -8,6 +8,10 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { useState } from 'react';
 
+// Ancho ÚNICO del panel de cada sección (Escenas / NPCs / Capas). Cambiar aquí
+// ajusta las tres a la vez.
+export const PANEL_WIDTH = 220;
+
 // ── Tokens (fuente única de color/tipografía del editor) ──────────────
 export const E = {
   font: "system-ui, -apple-system, 'Segoe UI', sans-serif",

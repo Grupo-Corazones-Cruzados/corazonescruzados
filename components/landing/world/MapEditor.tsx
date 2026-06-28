@@ -28,7 +28,7 @@ import {
 } from './sheets';
 import { ITEMS, ITEM_CATEGORIES, findItem, itemDataUrl } from './items';
 import { loadChromaKeyedSheet } from './sheetLoader';
-import { PanelHeader, SearchInput, SegmentedTabs } from './editorUi';
+import { PanelHeader, SearchInput, SegmentedTabs, PANEL_WIDTH } from './editorUi';
 import {
   LIGHT_MODE_OPTIONS,
   paintLightingFrame,
@@ -1355,7 +1355,9 @@ export default function MapEditor({
         color: '#323130',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'grid',
-        gridTemplateColumns: asideVisible ? '300px 1fr 220px' : '1fr 220px',
+        gridTemplateColumns: asideVisible
+          ? `${PANEL_WIDTH}px 1fr 220px`
+          : '1fr 220px',
         animation: embedded ? undefined : 'pixelFadeIn 0.4s ease-out',
       }}
     >

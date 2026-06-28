@@ -20,7 +20,7 @@ import {
   IconDelete,
   IconBolt,
 } from './EditorIcons';
-import { PanelHeader, EditorButton, ListRow, EmptyState, E } from './editorUi';
+import { PanelHeader, EditorButton, ListRow, EmptyState, E, PANEL_WIDTH } from './editorUi';
 import type {
   CinematicData,
   SceneKind,
@@ -279,8 +279,8 @@ export default function SceneManagerEditor({
       {/* ── Sidebar: scene list (visible only when 'scenes' tab is active) ── */}
       <aside
         style={{
-          width: 220,
-          flex: '0 0 220px',
+          width: PANEL_WIDTH,
+          flex: `0 0 ${PANEL_WIDTH}px`,
           background: '#faf9f8',
           borderRight: '1px solid #d1d1d1',
           display: sidebarTab === 'scenes' ? 'flex' : 'none',
