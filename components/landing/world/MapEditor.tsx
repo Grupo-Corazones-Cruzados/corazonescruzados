@@ -4408,6 +4408,43 @@ function sigDistance(a: number[], b: number[]): number {
   return s / (a.length * 255);
 }
 
+// Fracción del PERÍMETRO del recuadro que es contenido (no fondo). Un tile de
+// terreno se mosaiquea → llena los bordes (≈1). Un objeto flota con márgenes de
+// fondo → perímetro casi vacío (≈0). Sirve para separar objetos de terreno.
+function perimeterContentRatio(
+  data: Uint8ClampedArray,
+  imgW: number,
+  box: SpriteBox,
+  cellW: number,
+  cellH: number,
+): number {
+  const x0 = Math.floor(box.sx * cellW);
+  const y0 = Math.floor(box.sy * cellH);
+  const x1 = Math.floor((box.sx + box.w) * cellW) - 1;
+  const y1 = Math.floor((box.sy + box.h) * cellH) - 1;
+  let content = 0;
+  let total = 0;
+  const isContent = (x: number, y: number) => {
+    const i = (y * imgW + x) * 4;
+    const a = data[i + 3];
+    if (a < 24) return false;
+    if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240) return false;
+    return true;
+  };
+  const step = 2;
+  for (let x = x0; x <= x1; x += step) {
+    total += 2;
+    if (isContent(x, y0)) content++;
+    if (isContent(x, y1)) content++;
+  }
+  for (let y = y0; y <= y1; y += step) {
+    total += 2;
+    if (isContent(x0, y)) content++;
+    if (isContent(x1, y)) content++;
+  }
+  return total ? content / total : 0;
+}
+
 // Detección pura: componentes conectados (8-vec) de celdas con contenido,
 // limitados a 8×8 (los más grandes son terreno empacado, no objetos).
 const SPRITE_MAX_CELLS = 8;
@@ -4575,6 +4612,13 @@ function useAllSprites(active: boolean) {
             c.box.w > 12 ||
             c.box.h > 12 ||
             c.cells.length > total * 0.33
+          )
+            continue;
+          // Saltar tiles de TERRENO (se mosaiquean → llenan el perímetro). Los
+          // OBJETOS flotan con márgenes de fondo (perímetro casi vacío).
+          if (
+            perimeterContentRatio(px.data, px.w, c.box, px.cellW, px.cellH) >
+            0.6
           )
             continue;
           const sprite: DetectedSprite = {
