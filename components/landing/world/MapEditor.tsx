@@ -162,13 +162,18 @@ function mapBrush(
         sy: t.sy,
       };
       if (t.c) cell.c = 1;
+      // Preservar tiles de color sólido (centinela s/sx/sy = 0 + color). Sin
+      // esto, al copiar un color se renderiza como sheet 0 (0,0) = otro sprite.
+      if (t.color) cell.color = t.color;
       tiles.push(cell);
     }
   }
   // Capture order doesn't matter for dedup — the captured payload itself
   // is the identity.
   const sig = tiles
-    .map((c) => `${c.dx},${c.dy},${c.s},${c.sx},${c.sy},${c.c ?? 0}`)
+    .map(
+      (c) => `${c.dx},${c.dy},${c.s},${c.sx},${c.sy},${c.c ?? 0},${c.color ?? ''}`,
+    )
     .join('|');
   return {
     w,
