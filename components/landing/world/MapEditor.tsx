@@ -311,7 +311,9 @@ export default function MapEditor({
   const [npcFrame, setNpcFrame] = useState(0);
 
   // ── Ventana flotante de paleta ("Pintar") ──────────────────────────
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  // Abierta por defecto: el modo inicial es "Pintar", así que la paleta debe
+  // verse al entrar. El botón "Pintar" la reabre si se cerró.
+  const [paletteOpen, setPaletteOpen] = useState(true);
   const [paletteMin, setPaletteMin] = useState(false);
   const [palettePos, setPalettePos] = useState({ x: 16, y: 70 });
   const paletteDragRef = useRef<{ dx: number; dy: number } | null>(null);
