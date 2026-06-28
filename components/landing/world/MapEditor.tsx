@@ -2003,9 +2003,11 @@ export default function MapEditor({
               style={{
                 display: 'flex',
                 alignItems: 'stretch',
-                gap: 12,
+                gap: 10,
                 width: '100%',
+                height: 80,
                 overflowX: 'auto',
+                overflowY: 'hidden',
                 padding: '2px 4px',
               }}
             >
@@ -2015,23 +2017,24 @@ export default function MapEditor({
                 onClick={() => setNpcDialog('new')}
                 style={{
                   flexShrink: 0,
-                  width: 130,
+                  width: 120,
+                  height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 6,
+                  gap: 4,
                   background: '#f3f9fd',
                   border: '1px dashed #0078d4',
                   borderRadius: 6,
                   color: '#0078d4',
                   cursor: 'pointer',
                   fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
-                  fontSize: '0.78rem',
+                  fontSize: '0.72rem',
                   fontWeight: 600,
                 }}
               >
-                <IconAdd size={26} />
+                <IconAdd size={22} />
                 Crear nuevo NPC
               </button>
 
@@ -2054,12 +2057,13 @@ export default function MapEditor({
                     key={n.id}
                     style={{
                       flexShrink: 0,
-                      width: 120,
+                      width: 110,
+                      height: '100%',
                       display: 'flex',
-                      flexDirection: 'column',
+                      flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 4,
-                      padding: '6px 8px',
+                      gap: 6,
+                      padding: '4px 6px',
                       background: '#ffffff',
                       border:
                         placingNpcId === n.id
@@ -2070,7 +2074,9 @@ export default function MapEditor({
                   >
                     <div
                       style={{
-                        height: 46,
+                        width: 30,
+                        height: 44,
+                        flexShrink: 0,
                         display: 'flex',
                         alignItems: 'flex-end',
                         justifyContent: 'center',
@@ -2082,9 +2088,19 @@ export default function MapEditor({
                         direction={n.facing}
                         animation={n.animation}
                         frame={npcFrame}
-                        scale={0.7}
+                        scale={0.55}
                       />
                     </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: 4,
+                        minWidth: 0,
+                        flex: 1,
+                      }}
+                    >
                     <span
                       style={{
                         fontSize: '0.72rem',
@@ -2120,6 +2136,7 @@ export default function MapEditor({
                       >
                         <IconLocation size={13} />
                       </button>
+                    </div>
                     </div>
                   </div>
                 ))
