@@ -658,6 +658,14 @@ Stack estándar de la casa, con particularidades de este repo:
     - **Cursor normal en overlays del juego:** `CharacterGameplay` avisa con `onAuthOverlayChange` cuando hay
       overlay (login/cuenta/passkey/salir); `page.tsx` lo suma a `nativeCursor` → clase `.auth-screen`
       (`cursor:auto`) y oculta `PointerCursor`. Al entrar al juego vuelve el puntero del juego.
+  - **Login en 2 pasos = doble autenticación obligatoria (2026-06-28):** TODAS las pantallas de login
+    (miembro, candidato, cliente y "Continúa tu partida" in-game) van en 2 pasos: **paso 1** = correo +
+    contraseña (botón **"Continuar"**) → **paso 2** = elegir **"Enviar código"** o **"Ingresar con passkey"**.
+    El passkey ya **no** es de acceso directo: solo aparece tras validar la contraseña (segundo factor). Los
+    `begin` (`member-login`, `auth/login`, `recover`, `returning`) aceptan **`validateOnly: true`**: validan
+    credenciales y devuelven `{ ok, masked }` **sin** enviar el código; el botón "Enviar código" llama al
+    `begin` normal. Cursor del sistema (no el del juego) también en el **editor de escenas/NPC**
+    (`onAuthOverlayChange` incluye `editorOpen/npcEditorOpen`).
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**
