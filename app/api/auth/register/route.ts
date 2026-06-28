@@ -72,7 +72,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const refToken = randomBytes(24).toString("hex");
+    // Reutiliza la cookie de dispositivo si ya existe (igual que la postulación
+    // de candidato), o genera una nueva.
+    const refToken = existingRef || randomBytes(24).toString("hex");
 
     const result = await pool.query(
       `INSERT INTO gcc_world.users (email, password_hash, first_name, last_name, role, phone, country, address, ref_token, ip_hash)
