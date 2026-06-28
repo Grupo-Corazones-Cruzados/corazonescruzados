@@ -100,6 +100,15 @@ export default function CharacterGameplay({
 }) {
   const [pos, setPos] = useState(spawnToWorld(DEFAULT_MAP));
   const spawnAppliedRef = useRef(false);
+  // Tamaño del viewport (para el clamp de cámara en los bordes del mundo).
+  const [viewport, setViewport] = useState({ w: 1920, h: 1080 });
+  useEffect(() => {
+    const update = () =>
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
   const [direction, setDirection] = useState<SpriteDirection>('n');
   const [walking, setWalking] = useState(false);
   const [frame, setFrame] = useState(0);
@@ -569,6 +578,14 @@ export default function CharacterGameplay({
   const HALF_W = MAP_PX_W / 2;
   const HALF_H = MAP_PX_H / 2;
   const MARGIN = 28;
+  // Cámara con CLAMP: sigue al jugador pero nunca muestra más allá del borde del
+  // mundo. Si el mundo es más chico que la pantalla en un eje, se centra (cam=0)
+  // y el jugador se mueve dentro. El jugador se dibuja desfasado del centro por
+  // (pos - cam), así al llegar al borde aparece en el límite y NO queda vacío.
+  const camRangeX = Math.max(0, HALF_W - viewport.w / 2);
+  const camRangeY = Math.max(0, HALF_H - viewport.h / 2);
+  const camX = Math.max(-camRangeX, Math.min(camRangeX, pos.x));
+  const camY = Math.max(-camRangeY, Math.min(camRangeY, pos.y));
   // El sprite se dibuja por su CENTRO, pero el personaje "pisa" más abajo. La
   // colisión se evalúa en los pies (no en el centro) para que no se solape con
   // los tiles sólidos / el borde. Ajustable si hace falta más/menos.
@@ -907,7 +924,7 @@ export default function CharacterGameplay({
           top: '50%',
           width: MAP_PX_W,
           height: MAP_PX_H,
-          transform: `translate(calc(-50% - ${pos.x}px), calc(-50% - ${pos.y}px))`,
+          transform: `translate(calc(-50% - ${camX}px), calc(-50% - ${camY}px))`,
           willChange: 'transform',
           // Suelo del mundo donde no hay tile pintado (en vez de transparente
           // → fondo negro), y marco que hace visible el LÍMITE del mundo.
@@ -958,13 +975,14 @@ export default function CharacterGameplay({
         ))}
       </div>
 
-      {/* Character — fixed at viewport centre. */}
+      {/* Character — sigue al jugador; desfasado del centro por (pos - cam),
+          así en los bordes del mundo aparece en el límite (cámara con clamp). */}
       <div
         style={{
           position: 'absolute',
           left: '50%',
           top: '50%',
-          transform: 'translate(-50%, -50%)',
+          transform: `translate(calc(-50% + ${pos.x - camX}px), calc(-50% + ${pos.y - camY}px))`,
           willChange: 'transform',
         }}
       >
@@ -1024,7 +1042,7 @@ export default function CharacterGameplay({
           top: '50%',
           width: MAP_PX_W,
           height: MAP_PX_H,
-          transform: `translate(calc(-50% - ${pos.x}px), calc(-50% - ${pos.y}px))`,
+          transform: `translate(calc(-50% - ${camX}px), calc(-50% - ${camY}px))`,
           willChange: 'transform',
           pointerEvents: 'none',
           zIndex: 10,
