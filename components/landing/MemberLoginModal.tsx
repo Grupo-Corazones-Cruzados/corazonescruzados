@@ -21,7 +21,7 @@ export default function MemberLoginModal({
   /** hasCharacter=false → el miembro aún no tiene personaje (debe crearlo). */
   onLoggedIn: (hasCharacter: boolean) => void;
 }) {
-  const [step, setStep] = useState<'creds' | 'code' | 'passkeyOffer'>('creds');
+  const [step, setStep] = useState<'creds' | 'factor' | 'code' | 'passkeyOffer'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
   const [code, setCode] = useState('');
@@ -29,8 +29,33 @@ export default function MemberLoginModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Paso 1: valida credenciales (sin enviar código) → muestra opciones.
   const submitCreds = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const r = await fetch('/api/character/auth/member-login/begin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password: pwd, validateOnly: true }),
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        setError(j?.error ?? 'Credenciales incorrectas');
+        return;
+      }
+      setMasked(j?.masked ?? null);
+      setStep('factor');
+    } catch {
+      setError('Error de red');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Paso 2 (opción A): envía el código de verificación.
+  const sendCode = async () => {
     setError(null);
     setBusy(true);
     try {
@@ -194,16 +219,20 @@ export default function MemberLoginModal({
           <h2 style={title}>
             {step === 'creds'
               ? 'Ingresar como miembro'
-              : step === 'code'
-                ? 'Confirma el código'
-                : 'Configura tu passkey'}
+              : step === 'factor'
+                ? 'Elige cómo continuar'
+                : step === 'code'
+                  ? 'Confirma el código'
+                  : 'Configura tu passkey'}
           </h2>
           <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: '#b9b2cf', margin: '0 0 16px' }}>
             {step === 'creds'
               ? 'Inicia sesión con tu cuenta de miembro o administrador para entrar al juego.'
-              : step === 'code'
-                ? `Te enviamos un código a ${masked ?? 'tu correo'}.`
-                : 'Crea una passkey (huella, Face ID o PIN) para entrar más rápido y seguro la próxima vez, sin código.'}
+              : step === 'factor'
+                ? 'Verificamos tus credenciales. Por seguridad, completa un segundo paso.'
+                : step === 'code'
+                  ? `Te enviamos un código a ${masked ?? 'tu correo'}.`
+                  : 'Crea una passkey (huella, Face ID o PIN) para entrar más rápido y seguro la próxima vez, sin código.'}
           </p>
 
           {step === 'passkeyOffer' ? (
@@ -264,24 +293,21 @@ export default function MemberLoginModal({
                 className="pixel-btn pixel-btn-primary"
                 style={{ marginTop: 4, opacity: busy ? 0.6 : 1 }}
               >
+                {busy ? 'Verificando...' : 'Continuar'}
+              </button>
+            </form>
+          ) : step === 'factor' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {error && <ErrorMsg>{error}</ErrorMsg>}
+              <button
+                type="button"
+                onClick={sendCode}
+                disabled={busy}
+                className="pixel-btn pixel-btn-primary"
+                style={{ opacity: busy ? 0.6 : 1 }}
+              >
                 {busy ? 'Enviando código...' : 'Enviar código'}
               </button>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  margin: '4px 0',
-                  color: 'rgba(225,215,255,0.4)',
-                  fontFamily: BODY,
-                  fontSize: '0.72rem',
-                }}
-              >
-                <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />o
-                <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />
-              </div>
-
               <button
                 type="button"
                 onClick={loginWithPasskey}
@@ -301,7 +327,26 @@ export default function MemberLoginModal({
                   Ingresar con passkey
                 </span>
               </button>
-            </form>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('creds');
+                  setError(null);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  cursor: 'pointer',
+                  fontFamily: BODY,
+                  fontSize: '0.78rem',
+                  color: '#b9b2cf',
+                  textDecoration: 'underline',
+                  marginTop: 2,
+                }}
+              >
+                ← Volver
+              </button>
+            </div>
           ) : (
             <form onSubmit={submitCode} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <input

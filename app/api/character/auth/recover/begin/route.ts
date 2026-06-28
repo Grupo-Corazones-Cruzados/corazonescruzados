@@ -17,7 +17,7 @@ function generateCode(): string {
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, validateOnly } = await req.json();
     if (typeof email !== 'string' || typeof password !== 'string') {
       return NextResponse.json(
         { error: 'Correo y contraseña son requeridos' },
@@ -66,6 +66,11 @@ export async function POST(req: Request) {
         { error: 'Credenciales incorrectas' },
         { status: 401 },
       );
+    }
+
+    // validateOnly: solo confirma las credenciales (paso 1) sin enviar el código.
+    if (validateOnly) {
+      return NextResponse.json({ ok: true, masked: maskEmail(row.email) });
     }
 
     const code = generateCode();

@@ -354,12 +354,13 @@ export default function CharacterGameplay({
   const overlayVisible = authOverlay || exitConfirm;
   const locked = overlayVisible;
 
-  // Mientras hay un overlay (auth o confirmación de salida), usar el cursor
-  // normal del sistema; al entrar al juego vuelve el puntero del juego.
+  // Mientras hay un overlay (auth, confirmación de salida o editor de escenas/
+  // NPC), usar el cursor normal del sistema; jugando vuelve el puntero del juego.
+  const systemCursor = overlayVisible || editorOpen || npcEditorOpen;
   useEffect(() => {
-    onAuthOverlayChange?.(overlayVisible);
+    onAuthOverlayChange?.(systemCursor);
     return () => onAuthOverlayChange?.(false);
-  }, [overlayVisible, onAuthOverlayChange]);
+  }, [systemCursor, onAuthOverlayChange]);
 
   // ESC: solo cuando el juego está activo (sin overlays de auth) abre/cierra el
   // modal de confirmación de salida.
@@ -1846,7 +1847,7 @@ function LoginForm({
   expectedKind?: 'member' | 'candidate' | 'client';
   onChangeEntryType?: () => void;
 }) {
-  const [step, setStep] = useState<'creds' | 'code'>('creds');
+  const [step, setStep] = useState<'creds' | 'factor' | 'code'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
   const [code, setCode] = useState('');
@@ -1863,9 +1864,38 @@ function LoginForm({
       .catch(() => undefined);
   }, []);
 
-  // Paso 1: valida credenciales y envía el código (2FA). Sirve para miembro y candidato.
+  // Paso 1: valida credenciales (sin enviar código) → muestra opciones.
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      const r = await fetch('/api/character/auth/returning/begin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: pwd,
+          expect: expectedKind,
+          validateOnly: true,
+        }),
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        setError(j?.error ?? 'Credenciales incorrectas');
+        return;
+      }
+      setMasked(j?.masked ?? null);
+      setStep('factor');
+    } catch {
+      setError('Error de red');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Paso 2 (opción A): envía el código de verificación.
+  const sendCode = async () => {
     setError(null);
     setSubmitting(true);
     try {
@@ -1876,7 +1906,7 @@ function LoginForm({
       });
       const j = await r.json();
       if (!r.ok) {
-        setError(j?.error ?? 'No se pudo iniciar sesión');
+        setError(j?.error ?? 'No se pudo enviar el código');
         return;
       }
       setMasked(j?.masked ?? null);
@@ -1995,45 +2025,89 @@ function LoginForm({
     );
   }
 
+  if (step === 'factor') {
+    return (
+      <FormShell
+        title="Elige cómo continuar"
+        subtitle="Verificamos tus credenciales. Completa un segundo paso."
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button
+            type="button"
+            onClick={sendCode}
+            disabled={submitting}
+            className="pixel-btn pixel-btn-primary"
+            style={{ opacity: submitting ? 0.6 : 1 }}
+          >
+            {submitting ? 'Enviando código...' : 'Enviar código'}
+          </button>
+          {hasPasskeys && (
+            <button
+              type="button"
+              onClick={loginWithPasskey}
+              disabled={passkeyBusy}
+              className="pixel-btn pixel-btn-secondary"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                opacity: passkeyBusy ? 0.6 : 1,
+              }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="square"
+                aria-hidden="true"
+              >
+                <path d="M12 2a5 5 0 0 1 5 5v3" />
+                <path d="M12 2a5 5 0 0 0-5 5v3" />
+                <rect x="5" y="10" width="14" height="11" rx="1" />
+                <path d="M12 14v4" />
+              </svg>
+              {passkeyBusy ? 'Autenticando...' : 'Usar passkey'}
+            </button>
+          )}
+          {error && (
+            <div style={{ fontSize: '0.62rem', letterSpacing: '0.05em', color: '#ff6f6f' }}>
+              {error}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setStep('creds');
+              setError(null);
+            }}
+            style={{
+              background: 'transparent',
+              border: 0,
+              cursor: 'pointer',
+              fontSize: '0.62rem',
+              letterSpacing: '0.05em',
+              color: '#b9b2cf',
+              textDecoration: 'underline',
+              marginTop: 2,
+            }}
+          >
+            ← Volver
+          </button>
+        </div>
+      </FormShell>
+    );
+  }
+
   return (
     <FormShell
       title="Continúa tu partida"
-      subtitle="Usa tu passkey o ingresa con correo + contraseña"
+      subtitle="Ingresa con tu correo y contraseña para continuar"
     >
-      {hasPasskeys && (
-        <button
-          type="button"
-          onClick={loginWithPasskey}
-          disabled={passkeyBusy}
-          className="pixel-btn pixel-btn-primary"
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            marginBottom: 10,
-            opacity: passkeyBusy ? 0.6 : 1,
-          }}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="square"
-            aria-hidden="true"
-          >
-            <path d="M12 2a5 5 0 0 1 5 5v3" />
-            <path d="M12 2a5 5 0 0 0-5 5v3" />
-            <rect x="5" y="10" width="14" height="11" rx="1" />
-            <path d="M12 14v4" />
-          </svg>
-          {passkeyBusy ? 'Autenticando...' : 'Usar passkey'}
-        </button>
-      )}
       <form
         onSubmit={submit}
         style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
@@ -2044,7 +2118,7 @@ function LoginForm({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Correo electrónico"
           autoComplete="email"
-          autoFocus={!hasPasskeys}
+          autoFocus
           style={input()}
         />
         <input
@@ -2069,10 +2143,10 @@ function LoginForm({
         <button
           type="submit"
           disabled={submitting}
-          className="pixel-btn pixel-btn-secondary"
+          className="pixel-btn pixel-btn-primary"
           style={{ marginTop: 6, opacity: submitting ? 0.6 : 1 }}
         >
-          {submitting ? 'Enviando código...' : 'Enviar código'}
+          {submitting ? 'Verificando...' : 'Continuar'}
         </button>
       </form>
       {onChangeEntryType && (

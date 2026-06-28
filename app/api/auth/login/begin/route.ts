@@ -19,7 +19,7 @@ function generateCode(): string {
  */
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, expect } = await req.json();
+    const { email, password, expect, validateOnly } = await req.json();
     if (!email || !password) {
       return NextResponse.json({ error: 'Email y contraseña son requeridos' }, { status: 400 });
     }
@@ -50,6 +50,11 @@ export async function POST(req: NextRequest) {
         { error: 'Esta cuenta no es de cliente. Usa "Ingresar como miembro" o "Soy candidato".' },
         { status: 403 },
       );
+    }
+
+    // validateOnly: solo confirma las credenciales (paso 1) sin enviar el código.
+    if (validateOnly) {
+      return NextResponse.json({ ok: true, masked: maskEmail(cleanEmail) });
     }
 
     await pool.query(

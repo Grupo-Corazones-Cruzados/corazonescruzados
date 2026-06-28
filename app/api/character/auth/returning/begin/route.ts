@@ -21,7 +21,7 @@ function generateCode(): string {
  */
 export async function POST(req: Request) {
   try {
-    const { email, password, expect } = await req.json();
+    const { email, password, expect, validateOnly } = await req.json();
     if (typeof email !== 'string' || typeof password !== 'string') {
       return NextResponse.json(
         { error: 'Correo y contraseña son requeridos' },
@@ -76,6 +76,9 @@ export async function POST(req: Request) {
           { status: 403 },
         );
       }
+      if (validateOnly) {
+        return NextResponse.json({ ok: true, kind: accountKind, masked: maskEmail(cleanEmail) });
+      }
       await pool.query(
         `ALTER TABLE gcc_world.users
            ADD COLUMN IF NOT EXISTS login_code text,
@@ -113,6 +116,9 @@ export async function POST(req: Request) {
     }
     if (!(await verifyPassword(password, row.password_hash))) {
       return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
+    }
+    if (validateOnly) {
+      return NextResponse.json({ ok: true, kind: 'candidate', masked: maskEmail(cleanEmail) });
     }
     await pool.query(
       `UPDATE gcc_world.clients SET recovery_code = $1, recovery_code_exp = NOW() + INTERVAL '15 minutes' WHERE id = $2`,
