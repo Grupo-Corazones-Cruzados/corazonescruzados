@@ -4403,11 +4403,15 @@ function detectSpriteComponents(
         w: maxX - minX + 1,
         h: maxY - minY + 1,
       };
-      if (box.w <= SPRITE_MAX_CELLS && box.h <= SPRITE_MAX_CELLS)
-        out.push({ box, cells });
+      out.push({ box, cells });
     }
   }
   return out;
+}
+
+// ¿El componente es un OBJETO (recuadro pequeño) o terreno empacado (grande)?
+function isObjectBox(box: SpriteBox): boolean {
+  return box.w <= SPRITE_MAX_CELLS && box.h <= SPRITE_MAX_CELLS;
 }
 
 // Carga un sheet y devuelve sus píxeles (o null si CORS/tainted).
@@ -4447,8 +4451,11 @@ function useSheetSprites(sheet: (typeof SHEETS)[number]) {
       if (cancelled || !px) return;
       const comps = detectSpriteComponents(px.data, px.w, sheet.cols, sheet.rows);
       const result = new Map<string, SpriteBox>();
+      // Solo los objetos pequeños mapean su recuadro; el terreno empacado se
+      // selecciona celda a celda (fallback 1×1 en el SheetPalette).
       for (const c of comps)
-        for (const [x, y] of c.cells) result.set(`${x},${y}`, c.box);
+        if (isObjectBox(c.box))
+          for (const [x, y] of c.cells) result.set(`${x},${y}`, c.box);
       setMap(result);
     });
     return () => {
@@ -4477,12 +4484,26 @@ function useAllSprites(active: boolean) {
           sheet.cols,
           sheet.rows,
         );
-        for (const c of comps)
-          all.push({
-            ...c.box,
-            sheetIdx,
-            cat: classifySprite(px.data, px.w, c.box),
-          });
+        for (const c of comps) {
+          if (isObjectBox(c.box)) {
+            // Objeto aislado → un solo sprite con su recuadro.
+            all.push({
+              ...c.box,
+              sheetIdx,
+              cat: classifySprite(px.data, px.w, c.box),
+            });
+          } else {
+            // Terreno empacado → cada celda como tile suelto (1×1).
+            for (const [x, y] of c.cells) {
+              const box = { sx: x, sy: y, w: 1, h: 1 };
+              all.push({
+                ...box,
+                sheetIdx,
+                cat: classifySprite(px.data, px.w, box),
+              });
+            }
+          }
+        }
       });
       if (!cancelled) setSprites(all);
     })();
