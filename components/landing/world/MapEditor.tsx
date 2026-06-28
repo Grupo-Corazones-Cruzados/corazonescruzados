@@ -1510,8 +1510,8 @@ export default function MapEditor({
           left: palettePos.x,
           top: palettePos.y,
           zIndex: 40,
-          width: 268,
-          height: paletteMin ? 'auto' : 'min(72vh, 560px)',
+          width: 320,
+          height: paletteMin ? 'auto' : 'min(78vh, 620px)',
           display: paletteOpen ? 'flex' : 'none',
           flexDirection: 'column',
           background: '#ffffff',
@@ -1675,7 +1675,7 @@ export default function MapEditor({
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, 48px)',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))',
                       gap: 6,
                     }}
                   >
@@ -1690,17 +1690,7 @@ export default function MapEditor({
                             setMode('paint');
                           }}
                           title={it.label}
-                          style={{
-                            width: 48,
-                            height: 48,
-                            background: active ? '#deecf9' : '#faf9f8',
-                            border: active
-                              ? '2px solid #0078d4'
-                              : '1px solid #d1d1d1',
-                            cursor: 'pointer',
-                            padding: active ? 3 : 4,
-                            boxShadow: 'none',
-                          }}
+                          style={paletteCellStyle(active)}
                         >
                           <img
                             src={itemDataUrl(it)}
@@ -1710,6 +1700,7 @@ export default function MapEditor({
                               height: '100%',
                               imageRendering: 'pixelated',
                               display: 'block',
+                              objectFit: 'contain',
                             }}
                           />
                         </button>
@@ -1759,7 +1750,7 @@ export default function MapEditor({
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, 48px)',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))',
                         gap: 6,
                       }}
                     >
@@ -1774,19 +1765,7 @@ export default function MapEditor({
                               setMode('prop');
                             }}
                             title={it.label}
-                            style={{
-                              width: 48,
-                              height: 48,
-                              background: '#faf9f8',
-                              border: active
-                                ? '1px solid #d1d1d1'
-                                : '1px solid #d1d1d1',
-                              cursor: 'pointer',
-                              padding: 4,
-                              boxShadow: active
-                                ? '0 0 8px #0078d4'
-                                : 'none',
-                            }}
+                            style={paletteCellStyle(active)}
                           >
                             <img
                               src={itemDataUrl(it)}
@@ -1796,6 +1775,7 @@ export default function MapEditor({
                                 height: '100%',
                                 imageRendering: 'pixelated',
                                 display: 'block',
+                                objectFit: 'contain',
                               }}
                             />
                           </button>
@@ -5186,3 +5166,21 @@ const paletteTitleBtn: React.CSSProperties = {
   fontSize: '0.8rem',
   lineHeight: 1,
 };
+
+// Celda de la paleta (item/prop): cuadrada, llena su columna del grid, con
+// selección azul clara y consistente.
+function paletteCellStyle(active: boolean): React.CSSProperties {
+  return {
+    width: '100%',
+    aspectRatio: '1 / 1',
+    display: 'grid',
+    placeItems: 'center',
+    background: active ? '#deecf9' : '#faf9f8',
+    border: active ? '2px solid #0078d4' : '1px solid #d1d1d1',
+    borderRadius: 4,
+    cursor: 'pointer',
+    padding: active ? 3 : 4,
+    boxShadow: active ? '0 0 0 2px rgba(0,120,212,0.25)' : 'none',
+    transition: 'border-color 0.12s ease, box-shadow 0.12s ease',
+  };
+}
