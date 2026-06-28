@@ -637,6 +637,27 @@ Stack estándar de la casa, con particularidades de este repo:
     (miembro/candidato, por `AUTH_COOKIE`) y el **nuevo** `/api/auth/passkey/register/begin|finish`
     (cliente: `getCurrentUser` → resuelve/crea su fila en `clients` por correo → guarda en
     `client_passkeys`). El botón "Ingresar con passkey" es solo para **usar** una passkey existente.
+  - **Refinamientos de auth/UX del juego (2026-06-26→28):**
+    - **"Cambiar tipo de ingreso"** (en "Continúa tu partida"): primero llama **`POST
+      /api/character/auth/logout`** (limpia cookies de personaje `gcc_client_token`/`gcc_player_auth` + staff
+      `auth_token`, y borra `client_token`/`auth_token`/`ip_hash` de la fila → **desvincula el dispositivo**),
+      guarda el destino en `sessionStorage` y **recarga**; al montar reabre el `EntryChoiceModal`. Así
+      "Entrar" ya no reconoce la cuenta anterior. (La landing usa animaciones `forwards` irreversibles → el
+      reset fiable es recargar.)
+    - **Login restringido por tipo:** `returning/begin` y **`passkey/login/begin`** aceptan **`expect`**
+      ('member'|'candidate'|'client') y rechazan (403) si la cuenta del dispositivo no es de ese tipo (p.ej.
+      una passkey de admin no entra por "Soy candidato"). El `LoginForm` envía su tipo reconocido
+      (`isMember?member:hasAccount?client:candidate`).
+    - **Passkey resuelve por correo:** `passkey/login/begin|finish` aceptan `email` (del modal) y resuelven la
+      cuenta por **correo → cookie → IP**. Necesario tras desvincular (cookie/IP limpias): se entra por el
+      correo escrito. `passkey/login/finish` **fija el `CLIENT_COOKIE`** a la fila autenticada (la de la
+      passkey) → `/me` reconoce la fila correcta (evita "crea tu cuenta" fantasma).
+    - **ESC → salir del juego:** estando en el juego (sin overlays de auth), **ESC** abre/cierra el modal
+      **"¿Salir del juego?"** (Salir al inicio / Cancelar). Confirmar → `window.location.href='/'`. Mientras
+      está abierto, el juego se pausa (`locked`) y se usa el cursor del sistema.
+    - **Cursor normal en overlays del juego:** `CharacterGameplay` avisa con `onAuthOverlayChange` cuando hay
+      overlay (login/cuenta/passkey/salir); `page.tsx` lo suma a `nativeCursor` → clase `.auth-screen`
+      (`cursor:auto`) y oculta `PointerCursor`. Al entrar al juego vuelve el puntero del juego.
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
   - Verificado: `tsc --noEmit` OK. **Sin commitear.**
