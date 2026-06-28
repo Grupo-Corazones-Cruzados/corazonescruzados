@@ -335,6 +335,8 @@ export default function CharacterGameplay({
   // Returning players must set up password (1st return) or log in (subsequent).
   const [passkeyOffer, setPasskeyOffer] = useState(false);
   const [passkeyRegistered, setPasskeyRegistered] = useState(false);
+  // ESC (jugando, sin overlays) → modal de confirmación para salir del juego.
+  const [exitConfirm, setExitConfirm] = useState(false);
   // Brand-new players are now also forced to create an account before
   // they can play, to lock in their progress before they leave the page.
   // Los miembros/admin NO ven el formulario (ya tienen cuenta en gcc_world.users).
@@ -348,15 +350,29 @@ export default function CharacterGameplay({
     !isMemberSession &&
     (!auth.hasPassword || (!!auth.emailVerified && !auth.profileCompleted));
   const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
-  const overlayVisible = showSetup || showLogin || passkeyOffer;
+  const authOverlay = showSetup || showLogin || passkeyOffer;
+  const overlayVisible = authOverlay || exitConfirm;
   const locked = overlayVisible;
 
-  // Mientras hay overlay de auth (login/cuenta/passkey), usar el cursor normal
-  // del sistema; al entrar al juego vuelve el puntero del juego.
+  // Mientras hay un overlay (auth o confirmación de salida), usar el cursor
+  // normal del sistema; al entrar al juego vuelve el puntero del juego.
   useEffect(() => {
     onAuthOverlayChange?.(overlayVisible);
     return () => onAuthOverlayChange?.(false);
   }, [overlayVisible, onAuthOverlayChange]);
+
+  // ESC: solo cuando el juego está activo (sin overlays de auth) abre/cierra el
+  // modal de confirmación de salida.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (authOverlay) return; // hay un formulario de auth → ESC no aplica
+      e.preventDefault();
+      setExitConfirm((v) => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [authOverlay]);
 
   // After the signup → email verification flow completes, hasPassword
   // transitions from false → true. Use that edge to offer a passkey.
@@ -1097,6 +1113,17 @@ export default function CharacterGameplay({
         />
       )}
 
+      {exitConfirm && (
+        <ExitConfirmDialog
+          onCancel={() => setExitConfirm(false)}
+          onConfirm={() => {
+            // Volver a la pantalla de inicio (recarga: la landing usa animaciones
+            // irreversibles, así que el reset limpio es recargar).
+            window.location.href = '/';
+          }}
+        />
+      )}
+
       <audio
         ref={walkAudioRef}
         src="/sounds/music/Efecto%20de%20sonido%20caminando%20272246.mp3"
@@ -1437,6 +1464,36 @@ function PasskeyOfferDialog({
           className="pixel-btn pixel-btn-secondary"
         >
           {registered ? 'Continuar' : 'Ahora no'}
+        </button>
+      </div>
+    </FormShell>
+  );
+}
+
+function ExitConfirmDialog({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <FormShell title="¿Salir del juego?" subtitle="Tu progreso queda guardado.">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="pixel-btn pixel-btn-primary"
+          autoFocus
+        >
+          Salir al inicio
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="pixel-btn pixel-btn-secondary"
+        >
+          Cancelar
         </button>
       </div>
     </FormShell>
