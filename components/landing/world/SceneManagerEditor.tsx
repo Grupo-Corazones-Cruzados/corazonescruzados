@@ -224,49 +224,14 @@ export default function SceneManagerEditor({
         animation: 'pixelFadeIn 0.4s ease-out',
       }}
     >
-      {/* ── Nav rail estilo Fluent (icono + etiqueta) ── */}
-      <nav
-        style={{
-          width: 72,
-          flex: '0 0 72px',
-          background: '#ffffff',
-          borderRight: '1px solid #edebe9',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          padding: '10px 6px',
-          gap: 4,
-        }}
-      >
-        <SidebarTabButton
-          active={sidebarTab === 'scenes'}
-          icon={<IconScenes />}
-          label="Escenas"
-          onClick={() => setSidebarTab('scenes')}
-        />
-        <SidebarTabButton
-          active={sidebarTab === 'assets'}
-          icon={<IconLayers />}
-          label="Capas"
-          onClick={() => setSidebarTab('assets')}
-        />
-        <div style={{ flex: 1 }} />
-        <SidebarTabButton
-          active={false}
-          icon={<IconClose />}
-          label="Cerrar"
-          onClick={onClose}
-        />
-      </nav>
-
-      {/* ── Sidebar: scene list (visible only when 'scenes' tab is active) ── */}
+      {/* ── Panel de Escenas (única sección; siempre visible) ── */}
       <aside
         style={{
           width: PANEL_WIDTH,
           flex: `0 0 ${PANEL_WIDTH}px`,
           background: '#faf9f8',
           borderRight: '1px solid #d1d1d1',
-          display: sidebarTab === 'scenes' ? 'flex' : 'none',
+          display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
         }}

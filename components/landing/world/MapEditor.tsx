@@ -48,6 +48,7 @@ import {
   IconEyeOff,
   IconNpcs,
   IconLocation,
+  IconClose,
   IconBrush,
   IconEraser,
   IconCopy,
@@ -310,7 +311,7 @@ export default function MapEditor({
   const [npcFrame, setNpcFrame] = useState(0);
 
   // ── Ventana flotante de paleta ("Pintar") ──────────────────────────
-  const [paletteOpen, setPaletteOpen] = useState(true);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteMin, setPaletteMin] = useState(false);
   const [palettePos, setPalettePos] = useState({ x: 16, y: 70 });
   const paletteDragRef = useRef<{ dx: number; dy: number } | null>(null);
@@ -489,6 +490,10 @@ export default function MapEditor({
   );
   const [history, setHistory] = useState<Snapshot[]>([initSnap]);
   const [historyIdx, setHistoryIdx] = useState(0);
+  // Hay cambios sin guardar si el historial avanzó desde el último guardado.
+  useEffect(() => {
+    setDirty(historyIdx !== savedHistoryRef.current);
+  }, [historyIdx]);
   const restoringRef = useRef(false);
 
   const snapKey = (s: Snapshot) =>
@@ -631,6 +636,15 @@ export default function MapEditor({
   const [showCollisions, setShowCollisions] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  // Punto del historial en el último guardado → detecta cambios sin guardar.
+  const savedHistoryRef = useRef(0);
+  const [dirty, setDirty] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  // Cierra el editor; si hay cambios sin guardar, pide confirmación.
+  const requestClose = () => {
+    if (dirty) setConfirmClose(true);
+    else onClose();
+  };
 
   // Map -> { "x,y": index in tiles[] } for fast paint replacement.
   const tileIdxByCell = useMemo(() => {
@@ -1440,6 +1454,8 @@ export default function MapEditor({
         return;
       }
       setSavedAt(Date.now());
+      savedHistoryRef.current = historyIdx;
+      setDirty(false);
       onSaved({
         name: sceneSlug,
         width,
@@ -1912,21 +1928,42 @@ export default function MapEditor({
             onClick={redo}
             disabled={historyIdx >= history.length - 1}
           />
-          <div style={{ flex: 1 }} />
-          {savedAt && (
-            <span
-              style={{
-                fontSize: '0.78rem',
-                color: '#107c10',
-                letterSpacing: '0.02em',
-              }}
-            >
-              ✓ Guardado
-            </span>
-          )}
           {brush && mode === 'paint' && (
             <BrushPreview brush={brush} imgs={imgs} />
           )}
+          <div style={{ flex: 1 }} />
+          {/* Estado de guardado: cambios pendientes / última fecha */}
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: '0.76rem',
+              color: dirty ? '#a4660a' : '#107c10',
+              letterSpacing: '0.02em',
+              marginRight: 4,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: dirty ? '#d29200' : '#107c10',
+              }}
+            />
+            {dirty
+              ? 'Cambios sin guardar'
+              : savedAt
+                ? `Guardado ${new Date(savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : 'Sin cambios'}
+          </span>
+          <QatButton
+            icon={<IconClose size={18} />}
+            label="Cerrar editor"
+            onClick={requestClose}
+          />
         </div>
 
         {/* Ribbon tabs — Word-style. Active tab swaps the ribbon body
@@ -2745,6 +2782,21 @@ estos controles: el zoom se centra en la última celda en la que hiciste clic."
           </button>
         </div>
       )}
+
+      {/* Confirmación de cierre con cambios sin guardar */}
+      <PixelConfirm
+        open={confirmClose}
+        title="Cambios sin guardar"
+        message="Tienes cambios sin guardar en el mapa. ¿Salir sin guardarlos?"
+        confirmLabel="Salir sin guardar"
+        cancelLabel="Seguir editando"
+        danger
+        onConfirm={() => {
+          setConfirmClose(false);
+          onClose();
+        }}
+        onCancel={() => setConfirmClose(false)}
+      />
 
       {/* Diálogo de crear / editar NPC */}
       {npcDialog !== null && (
