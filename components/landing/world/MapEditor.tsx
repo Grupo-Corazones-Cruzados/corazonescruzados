@@ -1861,7 +1861,7 @@ export default function MapEditor({
                 Analizando sprites…
               </div>
             ) : (() => {
-              const list = allSprites.filter(
+              const list = allSprites.list.filter(
                 (s) => spriteCat === 'all' || s.cat === spriteCat,
               );
               if (list.length === 0)
@@ -1874,7 +1874,12 @@ export default function MapEditor({
                       textAlign: 'center',
                     }}
                   >
-                    No hay objetos en esta categoría.
+                    Sin objetos en esta categoría.
+                    <br />
+                    <span style={{ fontSize: '0.7rem' }}>
+                      ({allSprites.loaded}/{SHEETS.length} hojas analizadas,{' '}
+                      {allSprites.list.length} sprites)
+                    </span>
                   </div>
                 );
               return (
@@ -4259,12 +4264,17 @@ function cellHasContent(
   imgW: number,
   cx: number,
   cy: number,
+  cellW: number,
+  cellH: number,
 ): boolean {
-  const x0 = cx * TILE_PX;
-  const y0 = cy * TILE_PX;
+  const x0 = Math.floor(cx * cellW);
+  const y0 = Math.floor(cy * cellH);
+  const w = Math.max(1, Math.floor(cellW));
+  const h = Math.max(1, Math.floor(cellH));
+  const step = Math.max(1, Math.floor(Math.min(w, h) / 8));
   let count = 0;
-  for (let y = 1; y < TILE_PX; y += 2) {
-    for (let x = 1; x < TILE_PX; x += 2) {
+  for (let y = 1; y < h; y += step) {
+    for (let x = 1; x < w; x += step) {
       const i = ((y0 + y) * imgW + (x0 + x)) * 4;
       const a = data[i + 3];
       if (a < 24) continue; // transparente = fondo
@@ -4318,6 +4328,8 @@ function classifySprite(
   data: Uint8ClampedArray,
   imgW: number,
   box: SpriteBox,
+  cellW: number,
+  cellH: number,
 ): SpriteCat {
   const tally: Record<SpriteCat, number> = {
     veg: 0,
@@ -4327,10 +4339,10 @@ function classifySprite(
     light: 0,
     other: 0,
   };
-  const x0 = box.sx * TILE_PX;
-  const y0 = box.sy * TILE_PX;
-  const x1 = (box.sx + box.w) * TILE_PX;
-  const y1 = (box.sy + box.h) * TILE_PX;
+  const x0 = Math.floor(box.sx * cellW);
+  const y0 = Math.floor(box.sy * cellH);
+  const x1 = Math.floor((box.sx + box.w) * cellW);
+  const y1 = Math.floor((box.sy + box.h) * cellH);
   for (let y = y0; y < y1; y += 2) {
     for (let x = x0; x < x1; x += 2) {
       const i = (y * imgW + x) * 4;
@@ -4362,11 +4374,13 @@ function detectSpriteComponents(
   imgW: number,
   cols: number,
   rows: number,
+  cellW: number,
+  cellH: number,
 ): { box: SpriteBox; cells: [number, number][] }[] {
   const occ: boolean[] = new Array(cols * rows);
   for (let cy = 0; cy < rows; cy++)
     for (let cx = 0; cx < cols; cx++)
-      occ[cy * cols + cx] = cellHasContent(data, imgW, cx, cy);
+      occ[cy * cols + cx] = cellHasContent(data, imgW, cx, cy, cellW, cellH);
   const seen = new Array(cols * rows).fill(false);
   const out: { box: SpriteBox; cells: [number, number][] }[] = [];
   for (let cy = 0; cy < rows; cy++) {
@@ -4417,21 +4431,32 @@ function isObjectBox(box: SpriteBox): boolean {
 // Carga un sheet y devuelve sus píxeles (o null si CORS/tainted).
 function loadSheetPixels(
   sheet: (typeof SHEETS)[number],
-): Promise<{ data: Uint8ClampedArray; w: number } | null> {
+): Promise<{
+  data: Uint8ClampedArray;
+  w: number;
+  cellW: number;
+  cellH: number;
+} | null> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Same-origin (/tiles/*): NO usamos crossOrigin para evitar un canvas
+    // "tainted" si el navegador cacheó la imagen en modo no-CORS.
     img.onload = () => {
-      const cv = document.createElement('canvas');
-      cv.width = sheet.cols * TILE_PX;
-      cv.height = sheet.rows * TILE_PX;
-      const ctx = cv.getContext('2d', { willReadFrequently: true });
-      if (!ctx) return resolve(null);
-      ctx.drawImage(img, 0, 0, cv.width, cv.height);
       try {
+        const cv = document.createElement('canvas');
+        // Dibuja a la resolución natural y deriva el tamaño de celda real.
+        const natW = img.naturalWidth || sheet.cols * TILE_PX;
+        const natH = img.naturalHeight || sheet.rows * TILE_PX;
+        cv.width = natW;
+        cv.height = natH;
+        const ctx = cv.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return resolve(null);
+        ctx.drawImage(img, 0, 0);
         resolve({
-          data: ctx.getImageData(0, 0, cv.width, cv.height).data,
-          w: cv.width,
+          data: ctx.getImageData(0, 0, natW, natH).data,
+          w: natW,
+          cellW: natW / sheet.cols,
+          cellH: natH / sheet.rows,
         });
       } catch {
         resolve(null);
@@ -4449,7 +4474,14 @@ function useSheetSprites(sheet: (typeof SHEETS)[number]) {
     let cancelled = false;
     loadSheetPixels(sheet).then((px) => {
       if (cancelled || !px) return;
-      const comps = detectSpriteComponents(px.data, px.w, sheet.cols, sheet.rows);
+      const comps = detectSpriteComponents(
+        px.data,
+        px.w,
+        sheet.cols,
+        sheet.rows,
+        px.cellW,
+        px.cellH,
+      );
       const result = new Map<string, SpriteBox>();
       // Solo los objetos pequeños mapean su recuadro; el terreno empacado se
       // selecciona celda a celda (fallback 1×1 en el SheetPalette).
@@ -4468,21 +4500,28 @@ function useSheetSprites(sheet: (typeof SHEETS)[number]) {
 // Detecta y clasifica TODOS los sprites de TODOS los sheets (una vez, al activar
 // la galería). Devuelve la lista plana + estado de carga.
 function useAllSprites(active: boolean) {
-  const [sprites, setSprites] = useState<DetectedSprite[] | null>(null);
+  const [sprites, setSprites] = useState<{
+    list: DetectedSprite[];
+    loaded: number;
+  } | null>(null);
   useEffect(() => {
     if (!active || sprites) return;
     let cancelled = false;
     (async () => {
       const all: DetectedSprite[] = [];
       const results = await Promise.all(SHEETS.map((s) => loadSheetPixels(s)));
+      let loaded = 0;
       results.forEach((px, sheetIdx) => {
         if (!px) return;
+        loaded++;
         const sheet = SHEETS[sheetIdx];
         const comps = detectSpriteComponents(
           px.data,
           px.w,
           sheet.cols,
           sheet.rows,
+          px.cellW,
+          px.cellH,
         );
         for (const c of comps) {
           if (isObjectBox(c.box)) {
@@ -4490,7 +4529,7 @@ function useAllSprites(active: boolean) {
             all.push({
               ...c.box,
               sheetIdx,
-              cat: classifySprite(px.data, px.w, c.box),
+              cat: classifySprite(px.data, px.w, c.box, px.cellW, px.cellH),
             });
           } else {
             // Terreno empacado → cada celda como tile suelto (1×1).
@@ -4499,13 +4538,13 @@ function useAllSprites(active: boolean) {
               all.push({
                 ...box,
                 sheetIdx,
-                cat: classifySprite(px.data, px.w, box),
+                cat: classifySprite(px.data, px.w, box, px.cellW, px.cellH),
               });
             }
           }
         }
       });
-      if (!cancelled) setSprites(all);
+      if (!cancelled) setSprites({ list: all, loaded });
     })();
     return () => {
       cancelled = true;
