@@ -61,7 +61,7 @@ export default function MemberLoginModal({
       const begin = await fetch('/api/character/auth/passkey/login/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expect: 'member' }),
+        body: JSON.stringify({ expect: 'member', email: email.trim() }),
       });
       const opts = await begin.json();
       if (!begin.ok) {
@@ -79,7 +79,7 @@ export default function MemberLoginModal({
       const finish = await fetch('/api/character/auth/passkey/login/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credential),
+        body: JSON.stringify({ ...credential, email: email.trim() }),
       });
       const fj = await finish.json();
       if (!finish.ok) {

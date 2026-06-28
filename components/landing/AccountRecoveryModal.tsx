@@ -55,7 +55,7 @@ export default function AccountRecoveryModal({
       const begin = await fetch('/api/character/auth/passkey/login/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expect: 'candidate' }),
+        body: JSON.stringify({ expect: 'candidate', email: email.trim() }),
       });
       const opts = await begin.json();
       if (!begin.ok) {
@@ -73,7 +73,7 @@ export default function AccountRecoveryModal({
       const finish = await fetch('/api/character/auth/passkey/login/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credential),
+        body: JSON.stringify({ ...credential, email: email.trim() }),
       });
       const fj = await finish.json();
       if (!finish.ok) {

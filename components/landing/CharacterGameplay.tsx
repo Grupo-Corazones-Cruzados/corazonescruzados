@@ -1862,7 +1862,7 @@ function LoginForm({
       const begin = await fetch('/api/character/auth/passkey/login/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expect: expectedKind }),
+        body: JSON.stringify({ expect: expectedKind, email: email.trim() }),
       });
       const opts = await begin.json();
       if (!begin.ok) {
@@ -1873,7 +1873,7 @@ function LoginForm({
       const finish = await fetch('/api/character/auth/passkey/login/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credential),
+        body: JSON.stringify({ ...credential, email: email.trim() }),
       });
       const fJson = await finish.json();
       if (!finish.ok) {

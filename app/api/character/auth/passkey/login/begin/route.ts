@@ -14,9 +14,13 @@ export async function POST(req: Request) {
     // Tipo esperado: el passkey solo debe autenticar cuentas de ese tipo
     // (p.ej. "Soy candidato" no debe entrar con una passkey de admin).
     let expect: string | null = null;
+    let email: string | null = null;
     try {
       const body = await req.json();
       if (typeof body?.expect === 'string') expect = body.expect;
+      if (typeof body?.email === 'string' && body.email.trim()) {
+        email = body.email.trim().toLowerCase();
+      }
     } catch {
       /* sin cuerpo */
     }
@@ -27,14 +31,24 @@ export async function POST(req: Request) {
     const ipHash = hashIp(ip);
 
     let client: { id: number; email: string | null } | null = null;
-    if (token) {
+    // Si se entrega el correo (login por modal), resuelve por correo: funciona
+    // aunque el dispositivo se haya desvinculado (cookie/IP limpias).
+    if (email) {
+      const r = await pool.query(
+        `SELECT id, email FROM gcc_world.clients WHERE LOWER(email) = $1
+          ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
+        [email],
+      );
+      client = r.rows[0] ?? null;
+    }
+    if (!client && token) {
       const r = await pool.query(
         `SELECT id, email FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
         [token],
       );
       client = r.rows[0] ?? null;
     }
-    if (!client) {
+    if (!client && !email) {
       const r = await pool.query(
         `SELECT id, email FROM gcc_world.clients
           WHERE ip_hash = $1

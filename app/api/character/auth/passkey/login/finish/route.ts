@@ -17,30 +17,42 @@ import { getWebAuthnRP } from '@/lib/world/webauthn';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const email =
+      typeof body?.email === 'string' && body.email.trim()
+        ? body.email.trim().toLowerCase()
+        : null;
 
     const cookieStore = await cookies();
     const token = cookieStore.get(CLIENT_COOKIE)?.value || null;
     const ip = await getClientIp();
     const ipHash = hashIp(ip);
 
+    const COLS = `id, client_token, webauthn_challenge, webauthn_challenge_exp`;
     let client: {
       id: number;
       client_token: string | null;
       webauthn_challenge: string | null;
       webauthn_challenge_exp: string | null;
     } | null = null;
-    if (token) {
+    // Mismo orden que /begin: correo (login por modal) → cookie → IP.
+    if (email) {
       const r = await pool.query(
-        `SELECT id, client_token, webauthn_challenge, webauthn_challenge_exp
-           FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
+        `SELECT ${COLS} FROM gcc_world.clients WHERE LOWER(email) = $1
+          ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
+        [email],
+      );
+      client = r.rows[0] ?? null;
+    }
+    if (!client && token) {
+      const r = await pool.query(
+        `SELECT ${COLS} FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
         [token],
       );
       client = r.rows[0] ?? null;
     }
-    if (!client) {
+    if (!client && !email) {
       const r = await pool.query(
-        `SELECT id, client_token, webauthn_challenge, webauthn_challenge_exp
-           FROM gcc_world.clients
+        `SELECT ${COLS} FROM gcc_world.clients
           WHERE ip_hash = $1
           ORDER BY last_seen_at DESC NULLS LAST
           LIMIT 1`,
