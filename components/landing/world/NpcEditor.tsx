@@ -32,6 +32,12 @@ import {
   IconWarning,
   IconAdd,
 } from './EditorIcons';
+import {
+  PanelHeader,
+  EditorButton,
+  ListRow,
+  EmptyState,
+} from './editorUi';
 
 export type NpcRecord = {
   id: number;
@@ -239,95 +245,28 @@ export default function NpcEditor({
           minHeight: 0,
         }}
       >
-        <div
-          style={{
-            padding: '14px 14px 10px',
-            borderBottom: '1px solid #edebe9',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}
-        >
-          <div
-            style={{
-              fontSize: '0.85rem',
-              letterSpacing: '0.2em',
-              color: '#0078d4',
-              textTransform: 'uppercase',
-            }}
-          >
-            NPCs
-          </div>
-          <button
-            type="button"
+        <PanelHeader title="NPCs">
+          <EditorButton
+            icon={<IconAdd size={15} />}
             onClick={() => setDraft(newDraft(playerTileX, playerTileY))}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 12px',
-              fontSize: '0.75rem',
-              background: '#0078d4',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 4,
-              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
+            style={{ width: '100%' }}
           >
-            <IconAdd size={15} /> Nuevo NPC
-          </button>
-        </div>
+            Nuevo NPC
+          </EditorButton>
+        </PanelHeader>
         <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
           {npcs.length === 0 ? (
-            <div
-              style={{
-                fontSize: '0.6rem',
-                color: 'rgba(50,49,48,0.45)',
-                padding: '12px 6px',
-                textAlign: 'center',
-              }}
-            >
-              (sin NPCs)
-            </div>
+            <EmptyState>Aún no hay NPCs. Crea uno con “Nuevo NPC”.</EmptyState>
           ) : (
-            npcs.map((n) => {
-              const active = draft?.id === n.id;
-              return (
-                <button
-                  key={n.id}
-                  type="button"
-                  onClick={() => setDraft(npcToDraft(n))}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 10px',
-                    margin: '0 0 4px',
-                    background: active ? '#0078d4' : '#ffffff',
-                    color: active ? '#ffffff' : '#323130',
-                    border: '1px solid #d1d1d1',
-                    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                    fontSize: '0.62rem',
-                    letterSpacing: '0.1em',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {n.name}
-                  <span
-                    style={{
-                      display: 'block',
-                      fontSize: '0.5rem',
-                      opacity: 0.7,
-                      marginTop: 2,
-                    }}
-                  >
-                    ({n.x},{n.y})
-                  </span>
-                </button>
-              );
-            })
+            npcs.map((n) => (
+              <ListRow
+                key={n.id}
+                active={draft?.id === n.id}
+                onClick={() => setDraft(npcToDraft(n))}
+                title={n.name}
+                subtitle={`(${n.x}, ${n.y})`}
+              />
+            ))
           )}
         </div>
         {!embedded && (

@@ -1162,21 +1162,6 @@ export default function CharacterGameplay({
           >
             ✎ Editor [E]
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setEditorInitialTab('npcs');
-              setEditorOpen(true);
-            }}
-            className="pixel-btn pixel-btn-secondary"
-            style={{
-              fontSize: '0.6rem',
-              padding: '8px 14px',
-              letterSpacing: '0.14em',
-            }}
-          >
-            ☻ NPCs
-          </button>
         </div>
       )}
 

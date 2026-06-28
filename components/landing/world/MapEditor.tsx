@@ -28,6 +28,7 @@ import {
 } from './sheets';
 import { ITEMS, ITEM_CATEGORIES, findItem, itemDataUrl } from './items';
 import { loadChromaKeyedSheet } from './sheetLoader';
+import { PanelHeader, SearchInput, SegmentedTabs } from './editorUi';
 import {
   LIGHT_MODE_OPTIONS,
   paintLightingFrame,
@@ -1367,100 +1368,47 @@ export default function MapEditor({
           minHeight: 0,
         }}
       >
-        <div
-          style={{
-            padding: '14px 14px 8px',
-            borderBottom: '1px solid #edebe9',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}
-        >
-          <div
-            style={{
-              fontSize: '1.05rem',
-              letterSpacing: '0.22em',
-              color: '#0078d4',
-              textTransform: 'uppercase',
-            }}
-          >
-            Editor del mundo
-          </div>
-          <input
-            type="text"
-            placeholder="Buscar (sheet, categoría)…"
+        <PanelHeader title="Editor del mundo">
+          <SearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              padding: '8px 10px',
-              background: '#f3f2f1',
-              border: '1px solid #d1d1d1',
-              color: '#323130',
-              fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-              fontSize: '0.85rem',
-              outline: 'none',
-            }}
+            onChange={setSearch}
+            placeholder="Buscar (sheet, categoría)…"
           />
-        </div>
+        </PanelHeader>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: 4,
-            padding: '8px 10px 4px',
-            borderBottom: '1px solid rgba(0,120,212,0.3)',
-          }}
-        >
-          {(['tiles', 'items', 'props', 'colors'] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => {
-                setActiveTab(t);
-                if (t === 'tiles') {
-                  setItemBrush(null);
-                  setPropBrushItemId(null);
-                  setColorBrushHex(null);
-                  setMode('paint');
-                } else if (t === 'items') {
-                  setBrush(null);
-                  setPropBrushItemId(null);
-                  setColorBrushHex(null);
-                  setMode('paint');
-                } else if (t === 'props') {
-                  setBrush(null);
-                  setItemBrush(null);
-                  setColorBrushHex(null);
-                  setMode('prop');
-                } else {
-                  setItemBrush(null);
-                  setPropBrushItemId(null);
-                  setMode('paint');
-                }
-              }}
-              style={{
-                flex: 1,
-                padding: '6px 8px',
-                background: activeTab === t ? '#0078d4' : '#ffffff',
-                color: activeTab === t ? '#ffffff' : '#323130',
-                border: '1px solid #d1d1d1',
-                fontFamily:
-                  "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                fontSize: '0.72rem',
-                letterSpacing: '0.08em',
-                cursor: 'pointer',
-                textTransform: 'uppercase',
-              }}
-            >
-              {t === 'tiles'
-                ? 'Tiles'
-                : t === 'items'
-                  ? 'Items'
-                  : t === 'props'
-                    ? 'Props'
-                    : 'Colores'}
-            </button>
-          ))}
+        <div style={{ padding: '8px 10px 6px' }}>
+          <SegmentedTabs
+            value={activeTab}
+            onChange={(t) => {
+              setActiveTab(t);
+              if (t === 'tiles') {
+                setItemBrush(null);
+                setPropBrushItemId(null);
+                setColorBrushHex(null);
+                setMode('paint');
+              } else if (t === 'items') {
+                setBrush(null);
+                setPropBrushItemId(null);
+                setColorBrushHex(null);
+                setMode('paint');
+              } else if (t === 'props') {
+                setBrush(null);
+                setItemBrush(null);
+                setColorBrushHex(null);
+                setMode('prop');
+              } else {
+                setItemBrush(null);
+                setPropBrushItemId(null);
+                setMode('paint');
+              }
+            }}
+            tabs={[
+              { value: 'tiles', label: 'Tiles' },
+              { value: 'items', label: 'Items' },
+              { value: 'props', label: 'Props' },
+              { value: 'colors', label: 'Colores' },
+            ]}
+          />
         </div>
 
         {activeTab === 'tiles' && (

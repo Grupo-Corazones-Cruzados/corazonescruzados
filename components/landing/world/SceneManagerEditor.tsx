@@ -20,6 +20,7 @@ import {
   IconDelete,
   IconBolt,
 } from './EditorIcons';
+import { PanelHeader, EditorButton, ListRow, EmptyState, E } from './editorUi';
 import type {
   CinematicData,
   SceneKind,
@@ -287,56 +288,29 @@ export default function SceneManagerEditor({
           minHeight: 0,
         }}
       >
-        <div
-          style={{
-            padding: '14px 12px 10px',
-            borderBottom: '1px solid #edebe9',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}
-        >
-          <div
-            style={{
-              fontSize: '0.78rem',
-              letterSpacing: '0.22em',
-              color: '#0078d4',
-              textTransform: 'uppercase',
-            }}
-          >
-            Escenas
-          </div>
+        <PanelHeader title="Escenas">
           <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              type="button"
+            <EditorButton
+              icon={<IconAdd size={14} />}
               onClick={() => createScene('map')}
-              style={{ ...btnStyle(), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
               title="Crear escena de mapa"
+              style={{ flex: 1 }}
             >
-              <IconAdd size={14} /> Mapa
-            </button>
-            <button
-              type="button"
+              Mapa
+            </EditorButton>
+            <EditorButton
+              icon={<IconAdd size={14} />}
               onClick={() => createScene('cinematic')}
-              style={{ ...btnStyle(), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
               title="Crear escena cinemática"
+              style={{ flex: 1 }}
             >
-              <IconAdd size={14} /> Cinem.
-            </button>
+              Cinem.
+            </EditorButton>
           </div>
-        </div>
+        </PanelHeader>
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 6px 12px' }}>
           {sortedScenes.length === 0 && (
-            <div
-              style={{
-                color: 'rgba(50,49,48,0.55)',
-                fontSize: '0.55rem',
-                padding: '12px 8px',
-                lineHeight: 1.5,
-              }}
-            >
-              No hay escenas. Crea una para empezar.
-            </div>
+            <EmptyState>No hay escenas. Crea una para empezar.</EmptyState>
           )}
           {sortedScenes.map((s, i) => {
             const active = s.slug === activeSlug;
