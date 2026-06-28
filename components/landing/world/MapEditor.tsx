@@ -446,6 +446,10 @@ export default function MapEditor({
   const [activeTab, setActiveTab] = useState<
     'tiles' | 'items' | 'props' | 'colors'
   >('tiles');
+  // Pestaña Tiles: galería de objetos (categorizada) vs hojas (sheets crudos).
+  const [tileView, setTileView] = useState<'objects' | 'sheets'>('objects');
+  const [spriteCat, setSpriteCat] = useState<SpriteCat | 'all'>('all');
+  const allSprites = useAllSprites(activeTab === 'tiles' && tileView === 'objects');
   // Color brush — when set and the user paints, a solid-color tile
   // of this hex is stamped instead of a sheet sprite.
   const [colorBrushHex, setColorBrushHex] = useState<string | null>(null);
@@ -1607,34 +1611,77 @@ export default function MapEditor({
             style={{
               padding: 10,
               borderBottom: '1px solid #edebe9',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
             }}
           >
-            <select
-              value={activeCategory}
-              onChange={(e) =>
-                setActiveCategory(
-                  e.target.value as (typeof CATEGORIES)[number]['id'],
-                )
-              }
-              style={{
-                width: '100%',
-                padding: '6px 8px',
-                background: '#f3f2f1',
-                color: '#323130',
-                border: '1px solid #d1d1d1',
-                fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                fontSize: '0.78rem',
-                letterSpacing: '0.08em',
-                outline: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            {/* Vista: galería de objetos categorizada vs hojas crudas */}
+            <SegmentedTabs
+              value={tileView}
+              onChange={(v) => setTileView(v)}
+              tabs={[
+                { value: 'objects', label: 'Objetos' },
+                { value: 'sheets', label: 'Hojas' },
+              ]}
+            />
+            {tileView === 'objects' ? (
+              // Chips de categoría (clasificación automática por color).
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {SPRITE_CATEGORIES.map((c) => {
+                  const on = spriteCat === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setSpriteCat(c.id)}
+                      style={{
+                        padding: '3px 9px',
+                        borderRadius: 999,
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        fontFamily:
+                          "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                        cursor: 'pointer',
+                        background: on ? '#0078d4' : '#f3f2f1',
+                        color: on ? '#fff' : '#605e5c',
+                        border: `1px solid ${on ? '#0078d4' : '#d1d1d1'}`,
+                      }}
+                    >
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <select
+                value={activeCategory}
+                onChange={(e) =>
+                  setActiveCategory(
+                    e.target.value as (typeof CATEGORIES)[number]['id'],
+                  )
+                }
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  background: '#f3f2f1',
+                  color: '#323130',
+                  border: '1px solid #d1d1d1',
+                  fontFamily:
+                    "system-ui, -apple-system, 'Segoe UI', sans-serif",
+                  fontSize: '0.78rem',
+                  letterSpacing: '0.08em',
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
@@ -1800,7 +1847,69 @@ export default function MapEditor({
               }}
             />
           )}
-          {activeTab === 'tiles' && (
+          {/* Galería de objetos categorizada (auto-detección + color) */}
+          {activeTab === 'tiles' && tileView === 'objects' && (
+            allSprites === null ? (
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: '#605e5c',
+                  padding: '12px 4px',
+                  textAlign: 'center',
+                }}
+              >
+                Analizando sprites…
+              </div>
+            ) : (() => {
+              const list = allSprites.filter(
+                (s) => spriteCat === 'all' || s.cat === spriteCat,
+              );
+              if (list.length === 0)
+                return (
+                  <div
+                    style={{
+                      fontSize: '0.78rem',
+                      color: '#a19f9d',
+                      padding: '12px 4px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    No hay objetos en esta categoría.
+                  </div>
+                );
+              return (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns:
+                      'repeat(auto-fill, minmax(64px, 1fr))',
+                    gap: 6,
+                  }}
+                >
+                  {list.map((sp, i) => {
+                    const isActive =
+                      brush?.source === 'sheet' &&
+                      brush.sheetIdx === sp.sheetIdx &&
+                      brush.sx === sp.sx &&
+                      brush.sy === sp.sy;
+                    return (
+                      <SpriteThumb
+                        key={`${sp.sheetIdx}:${sp.sx}:${sp.sy}:${i}`}
+                        sprite={sp}
+                        active={!!isActive}
+                        onClick={() =>
+                          activateBrush(
+                            sheetBrush(sp.sheetIdx, sp.sx, sp.sy, sp.w, sp.h),
+                          )
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })()
+          )}
+          {activeTab === 'tiles' && tileView === 'sheets' && (
             <div
               style={{
                 fontSize: '0.72rem',
@@ -1816,7 +1925,7 @@ export default function MapEditor({
               Luego clic en el mapa para estamparlo.
             </div>
           )}
-          {activeTab === 'tiles' &&
+          {activeTab === 'tiles' && tileView === 'sheets' &&
             visibleSheets
             .filter(
               (s) =>
@@ -4169,95 +4278,253 @@ function cellHasContent(
   return false;
 }
 
-// Detecta "sprites" en un sheet: agrupa celdas con contenido conectadas (8-vec)
-// en componentes y devuelve, por cada celda, el recuadro del sprite al que
-// pertenece. Los sheets tienen fondo blanco que separa los sprites.
-function useSheetSprites(sheet: (typeof SHEETS)[number]) {
-  const [map, setMap] = useState<
-    Map<string, { sx: number; sy: number; w: number; h: number }>
-  >(new Map());
-  useEffect(() => {
-    let cancelled = false;
+// Categorías de sprites (clasificación automática por color dominante).
+type SpriteCat = 'veg' | 'water' | 'stone' | 'wood' | 'light' | 'other';
+const SPRITE_CATEGORIES: { id: SpriteCat | 'all'; label: string }[] = [
+  { id: 'all', label: 'Todos' },
+  { id: 'veg', label: 'Vegetación' },
+  { id: 'water', label: 'Agua' },
+  { id: 'stone', label: 'Piedra' },
+  { id: 'wood', label: 'Tierra/Madera' },
+  { id: 'light', label: 'Claro' },
+  { id: 'other', label: 'Otros' },
+];
+
+type SpriteBox = { sx: number; sy: number; w: number; h: number };
+type DetectedSprite = SpriteBox & { sheetIdx: number; cat: SpriteCat };
+
+// Clasifica un píxel por su color (HSV) en una categoría.
+function classifyPixel(r: number, g: number, b: number): SpriteCat {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const v = max / 255;
+  const s = max === 0 ? 0 : (max - min) / max;
+  if (s < 0.18) return v > 0.8 ? 'light' : 'stone'; // gris claro / oscuro
+  const d = max - min;
+  let h: number;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h *= 60;
+  if (h < 0) h += 360;
+  if (h >= 65 && h < 175) return 'veg'; // verde
+  if (h >= 175 && h < 265) return 'water'; // cian/azul
+  if (h >= 20 && h < 65) return 'wood'; // amarillo/naranja/marrón
+  return 'other';
+}
+
+// Categoría dominante de un sprite (voto mayoritario de píxeles no-fondo).
+function classifySprite(
+  data: Uint8ClampedArray,
+  imgW: number,
+  box: SpriteBox,
+): SpriteCat {
+  const tally: Record<SpriteCat, number> = {
+    veg: 0,
+    water: 0,
+    stone: 0,
+    wood: 0,
+    light: 0,
+    other: 0,
+  };
+  const x0 = box.sx * TILE_PX;
+  const y0 = box.sy * TILE_PX;
+  const x1 = (box.sx + box.w) * TILE_PX;
+  const y1 = (box.sy + box.h) * TILE_PX;
+  for (let y = y0; y < y1; y += 2) {
+    for (let x = x0; x < x1; x += 2) {
+      const i = (y * imgW + x) * 4;
+      const a = data[i + 3];
+      if (a < 24) continue;
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      if (r > 240 && g > 240 && b > 240) continue; // fondo blanco
+      tally[classifyPixel(r, g, b)]++;
+    }
+  }
+  let best: SpriteCat = 'other';
+  let bestN = -1;
+  (Object.keys(tally) as SpriteCat[]).forEach((k) => {
+    if (tally[k] > bestN) {
+      bestN = tally[k];
+      best = k;
+    }
+  });
+  return best;
+}
+
+// Detección pura: componentes conectados (8-vec) de celdas con contenido,
+// limitados a 8×8 (los más grandes son terreno empacado, no objetos).
+const SPRITE_MAX_CELLS = 8;
+function detectSpriteComponents(
+  data: Uint8ClampedArray,
+  imgW: number,
+  cols: number,
+  rows: number,
+): { box: SpriteBox; cells: [number, number][] }[] {
+  const occ: boolean[] = new Array(cols * rows);
+  for (let cy = 0; cy < rows; cy++)
+    for (let cx = 0; cx < cols; cx++)
+      occ[cy * cols + cx] = cellHasContent(data, imgW, cx, cy);
+  const seen = new Array(cols * rows).fill(false);
+  const out: { box: SpriteBox; cells: [number, number][] }[] = [];
+  for (let cy = 0; cy < rows; cy++) {
+    for (let cx = 0; cx < cols; cx++) {
+      const idx = cy * cols + cx;
+      if (!occ[idx] || seen[idx]) continue;
+      const stack: [number, number][] = [[cx, cy]];
+      const cells: [number, number][] = [];
+      seen[idx] = true;
+      let minX = cx, minY = cy, maxX = cx, maxY = cy;
+      while (stack.length) {
+        const [x, y] = stack.pop()!;
+        cells.push([x, y]);
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) {
+            if (!dx && !dy) continue;
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+            const ni = ny * cols + nx;
+            if (occ[ni] && !seen[ni]) {
+              seen[ni] = true;
+              stack.push([nx, ny]);
+            }
+          }
+      }
+      const box: SpriteBox = {
+        sx: minX,
+        sy: minY,
+        w: maxX - minX + 1,
+        h: maxY - minY + 1,
+      };
+      if (box.w <= SPRITE_MAX_CELLS && box.h <= SPRITE_MAX_CELLS)
+        out.push({ box, cells });
+    }
+  }
+  return out;
+}
+
+// Carga un sheet y devuelve sus píxeles (o null si CORS/tainted).
+function loadSheetPixels(
+  sheet: (typeof SHEETS)[number],
+): Promise<{ data: Uint8ClampedArray; w: number } | null> {
+  return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      if (cancelled) return;
       const cv = document.createElement('canvas');
       cv.width = sheet.cols * TILE_PX;
       cv.height = sheet.rows * TILE_PX;
       const ctx = cv.getContext('2d', { willReadFrequently: true });
-      if (!ctx) return;
+      if (!ctx) return resolve(null);
       ctx.drawImage(img, 0, 0, cv.width, cv.height);
-      let px: Uint8ClampedArray;
       try {
-        px = ctx.getImageData(0, 0, cv.width, cv.height).data;
+        resolve({
+          data: ctx.getImageData(0, 0, cv.width, cv.height).data,
+          w: cv.width,
+        });
       } catch {
-        return; // canvas "tainted" (CORS) → sin detección; el arrastre sigue.
+        resolve(null);
       }
-      const cols = sheet.cols;
-      const rows = sheet.rows;
-      const occ: boolean[] = new Array(cols * rows);
-      for (let cy = 0; cy < rows; cy++)
-        for (let cx = 0; cx < cols; cx++)
-          occ[cy * cols + cx] = cellHasContent(px, cv.width, cx, cy);
-
-      const result = new Map<
-        string,
-        { sx: number; sy: number; w: number; h: number }
-      >();
-      const seen = new Array(cols * rows).fill(false);
-      for (let cy = 0; cy < rows; cy++) {
-        for (let cx = 0; cx < cols; cx++) {
-          const idx = cy * cols + cx;
-          if (!occ[idx] || seen[idx]) continue;
-          // Flood-fill 8-conexo del componente.
-          const stack = [[cx, cy]];
-          const cells: [number, number][] = [];
-          seen[idx] = true;
-          let minX = cx, minY = cy, maxX = cx, maxY = cy;
-          while (stack.length) {
-            const [x, y] = stack.pop()!;
-            cells.push([x, y]);
-            if (x < minX) minX = x;
-            if (y < minY) minY = y;
-            if (x > maxX) maxX = x;
-            if (y > maxY) maxY = y;
-            for (let dy = -1; dy <= 1; dy++)
-              for (let dx = -1; dx <= 1; dx++) {
-                if (!dx && !dy) continue;
-                const nx = x + dx;
-                const ny = y + dy;
-                if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
-                const ni = ny * cols + nx;
-                if (occ[ni] && !seen[ni]) {
-                  seen[ni] = true;
-                  stack.push([nx, ny]);
-                }
-              }
-          }
-          const bbox = {
-            sx: minX,
-            sy: minY,
-            w: maxX - minX + 1,
-            h: maxY - minY + 1,
-          };
-          // Un objeto razonable cabe en pocas celdas. Si la región conectada es
-          // muy grande (terreno empacado sin huecos blancos), NO se trata como un
-          // único sprite: cada celda se selecciona individualmente.
-          const MAX = 8;
-          if (bbox.w <= MAX && bbox.h <= MAX) {
-            for (const [x, y] of cells) result.set(`${x},${y}`, bbox);
-          }
-        }
-      }
-      if (!cancelled) setMap(result);
     };
+    img.onerror = () => resolve(null);
     img.src = sheet.url;
+  });
+}
+
+// Mapa celda→recuadro del sprite, para el SheetPalette (clic = sprite).
+function useSheetSprites(sheet: (typeof SHEETS)[number]) {
+  const [map, setMap] = useState<Map<string, SpriteBox>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    loadSheetPixels(sheet).then((px) => {
+      if (cancelled || !px) return;
+      const comps = detectSpriteComponents(px.data, px.w, sheet.cols, sheet.rows);
+      const result = new Map<string, SpriteBox>();
+      for (const c of comps)
+        for (const [x, y] of c.cells) result.set(`${x},${y}`, c.box);
+      setMap(result);
+    });
     return () => {
       cancelled = true;
     };
   }, [sheet.url, sheet.cols, sheet.rows]);
   return map;
+}
+
+// Detecta y clasifica TODOS los sprites de TODOS los sheets (una vez, al activar
+// la galería). Devuelve la lista plana + estado de carga.
+function useAllSprites(active: boolean) {
+  const [sprites, setSprites] = useState<DetectedSprite[] | null>(null);
+  useEffect(() => {
+    if (!active || sprites) return;
+    let cancelled = false;
+    (async () => {
+      const all: DetectedSprite[] = [];
+      const results = await Promise.all(SHEETS.map((s) => loadSheetPixels(s)));
+      results.forEach((px, sheetIdx) => {
+        if (!px) return;
+        const sheet = SHEETS[sheetIdx];
+        const comps = detectSpriteComponents(
+          px.data,
+          px.w,
+          sheet.cols,
+          sheet.rows,
+        );
+        for (const c of comps)
+          all.push({
+            ...c.box,
+            sheetIdx,
+            cat: classifySprite(px.data, px.w, c.box),
+          });
+      });
+      if (!cancelled) setSprites(all);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [active, sprites]);
+  return sprites;
+}
+
+// Miniatura de un sprite recortado de su sheet (para la galería por categoría).
+function SpriteThumb({
+  sprite,
+  active,
+  onClick,
+}: {
+  sprite: DetectedSprite;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const sheet = SHEETS[sprite.sheetIdx];
+  const BOX = 60;
+  const scale = BOX / (Math.max(sprite.w, sprite.h) * TILE_PX);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={`${sheet.name} · ${sprite.w}×${sprite.h}`}
+      style={paletteCellStyle(active)}
+    >
+      <div
+        style={{
+          width: sprite.w * TILE_PX * scale,
+          height: sprite.h * TILE_PX * scale,
+          backgroundImage: `url(${sheet.url})`,
+          backgroundSize: `${sheet.cols * TILE_PX * scale}px ${sheet.rows * TILE_PX * scale}px`,
+          backgroundPosition: `-${sprite.sx * TILE_PX * scale}px -${sprite.sy * TILE_PX * scale}px`,
+          imageRendering: 'pixelated',
+        }}
+      />
+    </button>
+  );
 }
 
 function SheetPalette({
