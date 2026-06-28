@@ -1809,10 +1809,11 @@ export default function MapEditor({
                 padding: '0 2px 4px',
               }}
             >
-              <strong style={{ color: '#323130' }}>Tip:</strong> arrastra
-              dentro de un sheet para seleccionar varios tiles a la vez
-              (ej: un árbol de 2×3). Suelta y clic en el mapa para
-              estamparlo completo.
+              <strong style={{ color: '#323130' }}>Tip:</strong> pasa el cursor
+              y haz <strong style={{ color: '#0078d4' }}>clic</strong> para
+              seleccionar el sprite completo (se resalta en azul). O{' '}
+              <strong>arrastra</strong> para elegir un rango de celdas a mano.
+              Luego clic en el mapa para estamparlo.
             </div>
           )}
           {activeTab === 'tiles' &&
@@ -4143,6 +4144,116 @@ function CollapseHeader({
   );
 }
 
+// ¿La celda (cx,cy) del sheet tiene contenido (no es solo fondo blanco/transparente)?
+function cellHasContent(
+  data: Uint8ClampedArray,
+  imgW: number,
+  cx: number,
+  cy: number,
+): boolean {
+  const x0 = cx * TILE_PX;
+  const y0 = cy * TILE_PX;
+  let count = 0;
+  for (let y = 1; y < TILE_PX; y += 2) {
+    for (let x = 1; x < TILE_PX; x += 2) {
+      const i = ((y0 + y) * imgW + (x0 + x)) * 4;
+      const a = data[i + 3];
+      if (a < 24) continue; // transparente = fondo
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      if (r > 240 && g > 240 && b > 240) continue; // casi blanco = fondo
+      if (++count >= 3) return true;
+    }
+  }
+  return false;
+}
+
+// Detecta "sprites" en un sheet: agrupa celdas con contenido conectadas (8-vec)
+// en componentes y devuelve, por cada celda, el recuadro del sprite al que
+// pertenece. Los sheets tienen fondo blanco que separa los sprites.
+function useSheetSprites(sheet: (typeof SHEETS)[number]) {
+  const [map, setMap] = useState<
+    Map<string, { sx: number; sy: number; w: number; h: number }>
+  >(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (cancelled) return;
+      const cv = document.createElement('canvas');
+      cv.width = sheet.cols * TILE_PX;
+      cv.height = sheet.rows * TILE_PX;
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      let px: Uint8ClampedArray;
+      try {
+        px = ctx.getImageData(0, 0, cv.width, cv.height).data;
+      } catch {
+        return; // canvas "tainted" (CORS) → sin detección; el arrastre sigue.
+      }
+      const cols = sheet.cols;
+      const rows = sheet.rows;
+      const occ: boolean[] = new Array(cols * rows);
+      for (let cy = 0; cy < rows; cy++)
+        for (let cx = 0; cx < cols; cx++)
+          occ[cy * cols + cx] = cellHasContent(px, cv.width, cx, cy);
+
+      const result = new Map<
+        string,
+        { sx: number; sy: number; w: number; h: number }
+      >();
+      const seen = new Array(cols * rows).fill(false);
+      for (let cy = 0; cy < rows; cy++) {
+        for (let cx = 0; cx < cols; cx++) {
+          const idx = cy * cols + cx;
+          if (!occ[idx] || seen[idx]) continue;
+          // Flood-fill 8-conexo del componente.
+          const stack = [[cx, cy]];
+          const cells: [number, number][] = [];
+          seen[idx] = true;
+          let minX = cx, minY = cy, maxX = cx, maxY = cy;
+          while (stack.length) {
+            const [x, y] = stack.pop()!;
+            cells.push([x, y]);
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+            for (let dy = -1; dy <= 1; dy++)
+              for (let dx = -1; dx <= 1; dx++) {
+                if (!dx && !dy) continue;
+                const nx = x + dx;
+                const ny = y + dy;
+                if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+                const ni = ny * cols + nx;
+                if (occ[ni] && !seen[ni]) {
+                  seen[ni] = true;
+                  stack.push([nx, ny]);
+                }
+              }
+          }
+          const bbox = {
+            sx: minX,
+            sy: minY,
+            w: maxX - minX + 1,
+            h: maxY - minY + 1,
+          };
+          for (const [x, y] of cells) result.set(`${x},${y}`, bbox);
+        }
+      }
+      if (!cancelled) setMap(result);
+    };
+    img.src = sheet.url;
+    return () => {
+      cancelled = true;
+    };
+  }, [sheet.url, sheet.cols, sheet.rows]);
+  return map;
+}
+
 function SheetPalette({
   sheet,
   sheetIdx,
@@ -4161,6 +4272,10 @@ function SheetPalette({
   const [dragNow, setDragNow] = useState<{ sx: number; sy: number } | null>(
     null,
   );
+  // Sprites detectados (recuadro por celda) + celda bajo el cursor.
+  const sprites = useSheetSprites(sheet);
+  const [hover, setHover] = useState<{ sx: number; sy: number } | null>(null);
+  const draggedRef = useRef(false);
 
   const cellAt = (e: React.MouseEvent, el: HTMLDivElement) => {
     const rect = el.getBoundingClientRect();
@@ -4201,13 +4316,16 @@ function SheetPalette({
       onMouseDown={(e) => {
         const c = cellAt(e, e.currentTarget as HTMLDivElement);
         if (!c) return;
+        draggedRef.current = false;
         setDragStart(c);
         setDragNow(c);
       }}
       onMouseMove={(e) => {
-        if (!dragStart) return;
         const c = cellAt(e, e.currentTarget as HTMLDivElement);
-        if (c) setDragNow(c);
+        setHover(c);
+        if (!dragStart || !c) return;
+        if (c.sx !== dragStart.sx || c.sy !== dragStart.sy) draggedRef.current = true;
+        setDragNow(c);
       }}
       onMouseUp={() => {
         if (!dragStart || !dragNow) {
@@ -4215,16 +4333,25 @@ function SheetPalette({
           setDragNow(null);
           return;
         }
-        const sx = Math.min(dragStart.sx, dragNow.sx);
-        const sy = Math.min(dragStart.sy, dragNow.sy);
-        const w = Math.abs(dragNow.sx - dragStart.sx) + 1;
-        const h = Math.abs(dragNow.sy - dragStart.sy) + 1;
-        onPick(sheetBrush(sheetIdx, sx, sy, w, h));
+        if (!draggedRef.current) {
+          // Clic simple → selecciona el SPRITE completo (recuadro detectado), o
+          // la celda si no se detectó sprite.
+          const bbox = sprites.get(`${dragNow.sx},${dragNow.sy}`);
+          if (bbox) onPick(sheetBrush(sheetIdx, bbox.sx, bbox.sy, bbox.w, bbox.h));
+          else onPick(sheetBrush(sheetIdx, dragNow.sx, dragNow.sy, 1, 1));
+        } else {
+          const sx = Math.min(dragStart.sx, dragNow.sx);
+          const sy = Math.min(dragStart.sy, dragNow.sy);
+          const w = Math.abs(dragNow.sx - dragStart.sx) + 1;
+          const h = Math.abs(dragNow.sy - dragStart.sy) + 1;
+          onPick(sheetBrush(sheetIdx, sx, sy, w, h));
+        }
         setDragStart(null);
         setDragNow(null);
       }}
       onMouseLeave={() => {
-        if (dragStart && dragNow) {
+        setHover(null);
+        if (dragStart && dragNow && draggedRef.current) {
           const sx = Math.min(dragStart.sx, dragNow.sx);
           const sy = Math.min(dragStart.sy, dragNow.sy);
           const w = Math.abs(dragNow.sx - dragStart.sx) + 1;
@@ -4235,6 +4362,24 @@ function SheetPalette({
         setDragNow(null);
       }}
     >
+      {/* Resalte del SPRITE bajo el cursor (auto-detección) */}
+      {!dragStart && hover && sprites.get(`${hover.sx},${hover.sy}`) && (() => {
+        const b = sprites.get(`${hover.sx},${hover.sy}`)!;
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              left: b.sx * PALETTE_TILE,
+              top: b.sy * PALETTE_TILE,
+              width: b.w * PALETTE_TILE,
+              height: b.h * PALETTE_TILE,
+              border: '2px solid #0078d4',
+              background: 'rgba(0,120,212,0.12)',
+              pointerEvents: 'none',
+            }}
+          />
+        );
+      })()}
       {highlight && (
         <div
           style={{
