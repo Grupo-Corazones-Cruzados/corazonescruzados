@@ -5,7 +5,10 @@ import { NextResponse } from 'next/server';
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get('token');
-  const home = new URL('/', req.url);
+  // Usa el dominio PÚBLICO para la redirección. Detrás del proxy (Railway) req.url
+  // apunta al host interno (localhost:8080), así que tomamos NEXT_PUBLIC_APP_URL.
+  const base = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+  const home = new URL('/', base);
 
   if (!token) {
     home.searchParams.set('candidato', 'token-invalido');
