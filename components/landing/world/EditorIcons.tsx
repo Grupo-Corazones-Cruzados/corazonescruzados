@@ -151,6 +151,102 @@ export const IconEyeOff = (p: P) => (
   </Svg>
 );
 
+// Pincel (pintar).
+export const IconBrush = (p: P) => (
+  <Svg {...p}>
+    <path d="M14.5 3.8 16.2 5.5 9 12.7l-2.4.7.7-2.4 7.2-7.2Z" />
+    <path d="M6.4 11.6c-1.8.5-2.6 2-2.9 3.9 1.9-.3 3.4-1.1 3.9-2.9" />
+  </Svg>
+);
+
+// Goma (borrar).
+export const IconEraser = (p: P) => (
+  <Svg {...p}>
+    <path d="M8.5 16H16M4.4 12.5l4.8-4.8 5 5-3.3 3.3H7.7L4.4 12.5Z" />
+    <path d="M7.5 9.4l5 5" />
+  </Svg>
+);
+
+// Copiar.
+export const IconCopy = (p: P) => (
+  <Svg {...p}>
+    <rect x="7" y="7" width="9" height="9" rx="1.4" />
+    <path d="M13 7V5.4A1.4 1.4 0 0 0 11.6 4H5.4A1.4 1.4 0 0 0 4 5.4v6.2A1.4 1.4 0 0 0 5.4 13H7" />
+  </Svg>
+);
+
+// Colisión (muro/rejilla).
+export const IconCollision = (p: P) => (
+  <Svg {...p}>
+    <rect x="3.5" y="4.5" width="13" height="11" rx="1" />
+    <path d="M3.5 8h13M3.5 12h13M8 4.5v3.5M12 8v4M8 12v3.5" />
+  </Svg>
+);
+
+// Ver colisiones (diana).
+export const IconTarget = (p: P) => (
+  <Svg {...p}>
+    <circle cx="10" cy="10" r="6.5" />
+    <circle cx="10" cy="10" r="2.4" />
+  </Svg>
+);
+
+// Posición inicial (spawn).
+export const IconSpawn = (p: P) => (
+  <Svg {...p}>
+    <circle cx="10" cy="10" r="6.5" />
+    <path d="M10 3.5v3M10 13.5v3M3.5 10h3M13.5 10h3" />
+  </Svg>
+);
+
+// Prop / objeto (cubo).
+export const IconCube = (p: P) => (
+  <Svg {...p}>
+    <path d="M10 3.5 16.5 7v6L10 16.5 3.5 13V7L10 3.5Z" />
+    <path d="M3.5 7 10 10.5 16.5 7M10 10.5V16.5" />
+  </Svg>
+);
+
+// Luz (sol).
+export const IconLight = (p: P) => (
+  <Svg {...p}>
+    <circle cx="10" cy="10" r="3.2" />
+    <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4" />
+  </Svg>
+);
+
+// Transición (portal/flecha).
+export const IconTransition = (p: P) => (
+  <Svg {...p}>
+    <path d="M3.5 10h9M9 6.5 12.5 10 9 13.5" />
+    <path d="M14 4.5h2.5v11H14" />
+  </Svg>
+);
+
+// Guardar (disquete).
+export const IconSave = (p: P) => (
+  <Svg {...p}>
+    <path d="M4.5 4.5h8.6L15.5 7v8.5h-11V4.5Z" />
+    <path d="M6.5 4.5v4h6v-4M7 15.5v-3.5h6v3.5" />
+  </Svg>
+);
+
+// Deshacer.
+export const IconUndo = (p: P) => (
+  <Svg {...p}>
+    <path d="M7 6 3.5 9.5 7 13" />
+    <path d="M3.5 9.5H12a4 4 0 0 1 0 8h-1.5" />
+  </Svg>
+);
+
+// Rehacer.
+export const IconRedo = (p: P) => (
+  <Svg {...p}>
+    <path d="M13 6l3.5 3.5L13 13" />
+    <path d="M16.5 9.5H8a4 4 0 0 0 0 8h1.5" />
+  </Svg>
+);
+
 // Advertencia.
 export const IconWarning = (p: P) => (
   <Svg {...p}>

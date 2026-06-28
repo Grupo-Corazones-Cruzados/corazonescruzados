@@ -44,6 +44,18 @@ import {
   IconDelete,
   IconEye,
   IconEyeOff,
+  IconBrush,
+  IconEraser,
+  IconCopy,
+  IconCollision,
+  IconTarget,
+  IconSpawn,
+  IconCube,
+  IconLight,
+  IconTransition,
+  IconSave,
+  IconUndo,
+  IconRedo,
 } from './EditorIcons';
 import {
   LIGHT_MODE_OPTIONS,
@@ -1738,19 +1750,19 @@ export default function MapEditor({
           }}
         >
           <QatButton
-            icon="💾"
+            icon={<IconSave size={18} />}
             label={saving ? 'Guardando…' : 'Guardar (⌘S)'}
             onClick={save}
             disabled={saving}
           />
           <QatButton
-            icon="↶"
+            icon={<IconUndo size={18} />}
             label="Deshacer (⌘Z)"
             onClick={undo}
             disabled={historyIdx <= 0}
           />
           <QatButton
-            icon="↷"
+            icon={<IconRedo size={18} />}
             label="Rehacer (⌘⇧Z)"
             onClick={redo}
             disabled={historyIdx >= history.length - 1}
@@ -1836,21 +1848,21 @@ export default function MapEditor({
             <>
               <RibbonGroup label="Pintar">
                 <RibbonButton
-                  icon="✎"
+                  icon={<IconBrush size={20} />}
                   label="Pintar"
                   hotkey="Q"
                   active={mode === 'paint'}
                   onClick={() => setMode('paint')}
                 />
                 <RibbonButton
-                  icon="✕"
+                  icon={<IconEraser size={20} />}
                   label="Borrar"
                   hotkey="W"
                   active={mode === 'erase'}
                   onClick={() => setMode('erase')}
                 />
                 <RibbonButton
-                  icon="▭"
+                  icon={<IconCopy size={20} />}
                   label="Copiar"
                   hotkey="E"
                   active={mode === 'copy'}
@@ -1859,14 +1871,14 @@ export default function MapEditor({
               </RibbonGroup>
               <RibbonGroup label="Tile">
                 <RibbonButton
-                  icon="▥"
+                  icon={<IconCollision size={20} />}
                   label="Colisión"
                   hotkey="R"
                   active={mode === 'collision'}
                   onClick={() => setMode('collision')}
                 />
                 <RibbonButton
-                  icon="◉"
+                  icon={<IconTarget size={20} />}
                   label="Ver colisiones"
                   hotkey="T"
                   active={showCollisions}
@@ -1875,7 +1887,7 @@ export default function MapEditor({
               </RibbonGroup>
               <RibbonGroup label="Spawn">
                 <RibbonButton
-                  icon="◎"
+                  icon={<IconSpawn size={20} />}
                   label="Posición inicial"
                   hotkey="Y"
                   active={mode === 'spawn'}
@@ -1888,7 +1900,7 @@ export default function MapEditor({
             <>
               <RibbonGroup label="Objetos del mundo">
                 <RibbonButton
-                  icon="◆"
+                  icon={<IconCube size={20} />}
                   label="Prop"
                   hotkey="P"
                   active={mode === 'prop'}
@@ -1897,14 +1909,14 @@ export default function MapEditor({
               </RibbonGroup>
               <RibbonGroup label="Especiales">
                 <RibbonButton
-                  icon="☼"
+                  icon={<IconLight size={20} />}
                   label="Luz"
                   hotkey="L"
                   active={mode === 'light'}
                   onClick={() => setMode('light')}
                 />
                 <RibbonButton
-                  icon="↦"
+                  icon={<IconTransition size={20} />}
                   label="Transición"
                   hotkey=""
                   active={mode === 'transition'}
@@ -1961,7 +1973,7 @@ export default function MapEditor({
             <>
               <RibbonGroup label="Capas y tile">
                 <RibbonButton
-                  icon="◉"
+                  icon={<IconTarget size={20} />}
                   label="Mostrar colisiones"
                   hotkey="T"
                   active={showCollisions}
@@ -1971,7 +1983,7 @@ export default function MapEditor({
               <RibbonGroup label="Iluminación">
                 <div style={{ position: 'relative' }}>
                   <RibbonButton
-                    icon={lightingPreview ? '☾' : '☀'}
+                    icon={<IconLight size={20} />}
                     label="Oscuridad"
                     hotkey=""
                     active={lightingPreview}
@@ -4512,7 +4524,7 @@ function QatButton({
   onClick,
   disabled = false,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   onClick: () => void;
   disabled?: boolean;
@@ -4528,16 +4540,15 @@ function QatButton({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        width: 28,
-        height: 28,
+        width: 30,
+        height: 30,
         display: 'grid',
         placeItems: 'center',
         background:
           !disabled && hover ? '#f3f2f1' : 'transparent',
         border: 'none',
-        borderRadius: 2,
-        color: disabled ? '#a19f9d' : '#323130',
-        fontSize: '0.92rem',
+        borderRadius: 4,
+        color: disabled ? '#a19f9d' : '#605e5c',
         cursor: disabled ? 'not-allowed' : 'pointer',
         padding: 0,
         fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
@@ -4605,7 +4616,7 @@ function RibbonButton({
   disabled = false,
   onClick,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   hotkey?: string;
   active?: boolean;
@@ -4622,12 +4633,12 @@ function RibbonButton({
       onMouseLeave={() => setHover(false)}
       title={hotkey ? `${label} (${hotkey})` : label}
       style={{
-        minWidth: 60,
-        padding: '4px 6px',
+        minWidth: 62,
+        padding: '6px 8px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 2,
+        gap: 5,
         background: active
           ? '#deecf9'
           : !disabled && hover
@@ -4636,14 +4647,14 @@ function RibbonButton({
         border: active
           ? '1px solid #0078d4'
           : '1px solid transparent',
-        borderRadius: 2,
-        color: disabled ? '#a19f9d' : '#323130',
+        borderRadius: 4,
+        color: disabled ? '#a19f9d' : active ? '#0078d4' : '#605e5c',
         cursor: disabled ? 'not-allowed' : 'pointer',
         fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
         opacity: disabled ? 0.5 : 1,
       }}
     >
-      <span style={{ fontSize: '1.25rem', lineHeight: 1.1 }}>{icon}</span>
+      <span style={{ display: 'grid', placeItems: 'center' }}>{icon}</span>
       <span
         style={{
           fontSize: '0.7rem',
