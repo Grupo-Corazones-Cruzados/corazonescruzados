@@ -117,6 +117,7 @@ export default function NpcEditor({
   onClose,
   onChanged,
   embedded = false,
+  initialNpcId,
 }: {
   playerTileX: number;
   playerTileY: number;
@@ -127,6 +128,8 @@ export default function NpcEditor({
   onChanged: (npcs: NpcRecord[]) => void;
   /** Embebido dentro del SceneManagerEditor (no overlay de pantalla completa). */
   embedded?: boolean;
+  /** Abrir directamente en crear ('new') o editar (id) un NPC. */
+  initialNpcId?: 'new' | number;
 }) {
   const slug = sceneSlug ?? 'main';
   const [npcs, setNpcs] = useState<NpcRecord[]>([]);
@@ -161,13 +164,28 @@ export default function NpcEditor({
     const r = await fetch(`/api/world/npcs?scene=${encodeURIComponent(slug)}`);
     const j = await r.json();
     if (Array.isArray(j?.npcs)) {
-      setNpcs(j.npcs);
-      onChanged(j.npcs);
+      setNpcs(j.npcs as NpcRecord[]);
+      onChanged(j.npcs as NpcRecord[]);
+      return j.npcs as NpcRecord[];
     }
+    return [] as NpcRecord[];
   };
 
+  // Abre directo en crear/editar según initialNpcId (una sola vez).
+  const initedRef = useRef(false);
   useEffect(() => {
-    refresh().catch(() => undefined);
+    refresh()
+      .then((list) => {
+        if (initedRef.current) return;
+        initedRef.current = true;
+        if (initialNpcId === 'new') {
+          setDraft(newDraft(playerTileX, playerTileY));
+        } else if (typeof initialNpcId === 'number') {
+          const n = list.find((x) => x.id === initialNpcId);
+          if (n) setDraft(npcToDraft(n));
+        }
+      })
+      .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 

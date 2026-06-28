@@ -5,10 +5,9 @@ import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import MapEditor from './MapEditor';
 import CinematicEditor from './CinematicEditor';
-import NpcEditor, { type NpcRecord } from './NpcEditor';
+import { type NpcRecord } from './NpcEditor';
 import {
   IconScenes,
-  IconNpcs,
   IconLayers,
   IconClose,
   IconMap,
@@ -50,7 +49,7 @@ export default function SceneManagerEditor({
   /** Mantiene vivos los NPCs en pantalla al editarlos. */
   onNpcsChanged?: (npcs: NpcRecord[]) => void;
   /** Pestaña inicial del nav lateral. */
-  initialTab?: 'scenes' | 'npcs' | 'assets';
+  initialTab?: 'scenes' | 'assets';
 }) {
   const [scenes, setScenes] = useState<SceneMeta[]>([]);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
@@ -69,8 +68,8 @@ export default function SceneManagerEditor({
   // Lateral sidebar tab — toggles between the scenes list and the
   // map-editor's asset/layers panel. Default 'scenes' so the user
   // sees the scene list first when they open the editor.
-  const [sidebarTab, setSidebarTab] = useState<'scenes' | 'npcs' | 'assets'>(
-    initialTab,
+  const [sidebarTab, setSidebarTab] = useState<'scenes' | 'assets'>(
+    initialTab === 'assets' ? 'assets' : 'scenes',
   );
 
   const refreshList = async () => {
@@ -246,12 +245,6 @@ export default function SceneManagerEditor({
           onClick={() => setSidebarTab('scenes')}
         />
         <SidebarTabButton
-          active={sidebarTab === 'npcs'}
-          icon={<IconNpcs />}
-          label="NPCs"
-          onClick={() => setSidebarTab('npcs')}
-        />
-        <SidebarTabButton
           active={sidebarTab === 'assets'}
           icon={<IconLayers />}
           label="Capas"
@@ -266,18 +259,6 @@ export default function SceneManagerEditor({
         />
       </nav>
 
-      {sidebarTab === 'npcs' ? (
-        /* ── Sección NPCs (lista + edición, embebida) ── */
-        <NpcEditor
-          embedded
-          sceneSlug={activeSlug ?? 'main'}
-          playerTileX={playerTileX}
-          playerTileY={playerTileY}
-          onChanged={onNpcsChanged ?? (() => undefined)}
-          onClose={onClose}
-        />
-      ) : (
-        <>
       {/* ── Sidebar: scene list (visible only when 'scenes' tab is active) ── */}
       <aside
         style={{
@@ -510,7 +491,10 @@ export default function SceneManagerEditor({
             scene={activePayload.meta}
             scenes={sortedScenes}
             embedded
-            sidebarTab={sidebarTab === 'assets' ? 'assets' : 'scenes'}
+            sidebarTab={sidebarTab}
+            playerTileX={playerTileX}
+            playerTileY={playerTileY}
+            onNpcsChanged={onNpcsChanged}
             onClose={onClose}
             onSaved={() => {
               // Bump scene meta after save so the list reflects update.
@@ -529,8 +513,6 @@ export default function SceneManagerEditor({
           />
         )}
       </main>
-        </>
-      )}
 
       <PixelConfirm
         open={confirmRemoveSlug !== null}

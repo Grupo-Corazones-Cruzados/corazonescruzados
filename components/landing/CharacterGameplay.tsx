@@ -107,8 +107,8 @@ export default function CharacterGameplay({
   const walkAudioRef = useRef<HTMLAudioElement | null>(null);
   const [worldMap, setWorldMap] = useState<WorldMapData>(DEFAULT_MAP);
   const [editorOpen, setEditorOpen] = useState(false);
-  // Pestaña inicial al abrir el editor de escenas (escenas o NPCs).
-  const [editorInitialTab, setEditorInitialTab] = useState<'scenes' | 'npcs'>('scenes');
+  // Pestaña inicial al abrir el editor de escenas.
+  const [editorInitialTab, setEditorInitialTab] = useState<'scenes' | 'assets'>('scenes');
   const [isAdmin, setIsAdmin] = useState(false);
   // Inventory is permanent — no toggle. Caps at MAX_INVENTORY_SLOTS
   // distinct items; further pickups of an item already in inventory

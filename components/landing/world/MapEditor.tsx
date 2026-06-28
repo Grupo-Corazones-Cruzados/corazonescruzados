@@ -36,6 +36,8 @@ import {
   IconButton as GhostBtn,
   PANEL_WIDTH,
 } from './editorUi';
+import NpcEditor, { type NpcRecord } from './NpcEditor';
+import { CharacterSprite, ANIMATIONS } from '../CharacterCreator';
 import {
   IconAdd,
   IconEdit,
@@ -44,6 +46,8 @@ import {
   IconDelete,
   IconEye,
   IconEyeOff,
+  IconNpcs,
+  IconLocation,
   IconBrush,
   IconEraser,
   IconCopy,
@@ -233,6 +237,9 @@ export default function MapEditor({
   onSaved,
   onSceneMetaChanged,
   sidebarTab,
+  playerTileX = 0,
+  playerTileY = 0,
+  onNpcsChanged,
 }: {
   initialMap: WorldMapData;
   // The scene this editor is editing. Optional so the component can
@@ -253,6 +260,11 @@ export default function MapEditor({
   // other than 'assets', the asset/layers palette is hidden so the
   // canvas takes the full width.
   sidebarTab?: 'scenes' | 'assets';
+  /** Posición del jugador (para colocar NPCs nuevos). */
+  playerTileX?: number;
+  playerTileY?: number;
+  /** Mantiene vivos los NPCs en pantalla al editarlos en el juego. */
+  onNpcsChanged?: (npcs: NpcRecord[]) => void;
 }) {
   // Slug of the scene we're editing — drives the per-scene fetches
   // for npcs/lights and the scene query param on map PUT.
@@ -284,14 +296,47 @@ export default function MapEditor({
     | 'copy'
     | 'light'
     | 'transition'
-    | 'prop';
+    | 'prop'
+    | 'npc';
   const [mode, setMode] = useState<EditorMode>('paint');
+
+  // ── NPCs de esta escena ─────────────────────────────────────────────
+  const [npcs, setNpcs] = useState<NpcRecord[]>([]);
+  // Diálogo de creación/edición de NPC: 'new' (crear) | id (editar) | null.
+  const [npcDialog, setNpcDialog] = useState<'new' | number | null>(null);
+  // NPC seleccionado para ubicar por clic en el mapa (modo 'npc').
+  const [placingNpcId, setPlacingNpcId] = useState<number | null>(null);
+  // Frame animado para los sprites de NPC sobre el canvas.
+  const [npcFrame, setNpcFrame] = useState(0);
+
+  const refreshNpcs = useCallback(async () => {
+    try {
+      const r = await fetch(
+        `/api/world/npcs?scene=${encodeURIComponent(scene?.slug ?? 'main')}`,
+      );
+      const j = await r.json();
+      const list = Array.isArray(j?.npcs) ? (j.npcs as NpcRecord[]) : [];
+      setNpcs(list);
+      onNpcsChanged?.(list);
+    } catch {
+      /* ignore */
+    }
+  }, [scene?.slug, onNpcsChanged]);
+
+  useEffect(() => {
+    refreshNpcs();
+  }, [refreshNpcs]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNpcFrame((f) => (f >= 8 ? 1 : f + 1)), 150);
+    return () => window.clearInterval(id);
+  }, []);
   const [brushHistory, setBrushHistory] = useState<Brush[]>([]);
   // Ribbon tab — like Word's tab strip (Inicio / Insertar / Diseño /
   // Vista). The active tab decides which group of commands renders
   // underneath the tab bar.
   const [ribbonTab, setRibbonTab] = useState<
-    'inicio' | 'insertar' | 'diseño' | 'vista'
+    'inicio' | 'insertar' | 'npcs' | 'diseño' | 'vista'
   >('inicio');
 
   // Convenience: tiles of the active layer (used by paint / erase /
@@ -1124,6 +1169,33 @@ export default function MapEditor({
     const cx = cell.x;
     const cy = cell.y;
 
+    if (mode === 'npc') {
+      // Colocar el NPC seleccionado en la celda clicada (guarda y refresca).
+      if (placingNpcId == null) return;
+      const id = placingNpcId;
+      const npc = npcs.find((n) => n.id === id);
+      if (npc) {
+        fetch(`/api/world/npcs/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scene: scene?.slug ?? 'main',
+            name: npc.name,
+            config: npc.config,
+            x: cx,
+            y: cy,
+            facing: npc.facing,
+            animation: npc.animation,
+            dialogue: npc.dialogue,
+          }),
+        })
+          .then(() => refreshNpcs())
+          .catch(() => undefined);
+      }
+      setPlacingNpcId(null);
+      setMode('paint');
+      return;
+    }
     if (mode === 'spawn') {
       if (cx === spawnX && cy === spawnY) return;
       setSpawnX(cx);
@@ -1800,6 +1872,7 @@ export default function MapEditor({
             [
               { id: 'inicio', label: 'Inicio' },
               { id: 'insertar', label: 'Insertar' },
+              { id: 'npcs', label: 'NPCs' },
               { id: 'diseño', label: 'Diseño' },
               { id: 'vista', label: 'Vista' },
             ] as const
@@ -1924,6 +1997,134 @@ export default function MapEditor({
                 />
               </RibbonGroup>
             </>
+          )}
+          {ribbonTab === 'npcs' && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'stretch',
+                gap: 12,
+                width: '100%',
+                overflowX: 'auto',
+                padding: '2px 4px',
+              }}
+            >
+              {/* Crear nuevo NPC — botón grande */}
+              <button
+                type="button"
+                onClick={() => setNpcDialog('new')}
+                style={{
+                  flexShrink: 0,
+                  width: 130,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  background: '#f3f9fd',
+                  border: '1px dashed #0078d4',
+                  borderRadius: 6,
+                  color: '#0078d4',
+                  cursor: 'pointer',
+                  fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                }}
+              >
+                <IconAdd size={26} />
+                Crear nuevo NPC
+              </button>
+
+              {npcs.length === 0 ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: '#a19f9d',
+                    fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+                    fontSize: '0.8rem',
+                    padding: '0 12px',
+                  }}
+                >
+                  Aún no hay NPCs en esta escena.
+                </div>
+              ) : (
+                npcs.map((n) => (
+                  <div
+                    key={n.id}
+                    style={{
+                      flexShrink: 0,
+                      width: 120,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '6px 8px',
+                      background: '#ffffff',
+                      border:
+                        placingNpcId === n.id
+                          ? '1px solid #0078d4'
+                          : '1px solid #d1d1d1',
+                      borderRadius: 6,
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: 46,
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <CharacterSprite
+                        config={n.config}
+                        direction={n.facing}
+                        animation={n.animation}
+                        frame={npcFrame}
+                        scale={0.7}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        color: '#323130',
+                        fontFamily:
+                          'system-ui, -apple-system, "Segoe UI", sans-serif',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100%',
+                      }}
+                    >
+                      {n.name}
+                    </span>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button
+                        type="button"
+                        onClick={() => setNpcDialog(n.id)}
+                        title="Editar NPC"
+                        style={npcCardBtn(false)}
+                      >
+                        <IconEdit size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPlacingNpcId(n.id);
+                          setMode('npc');
+                        }}
+                        title="Ubicar en el mapa (clic en una celda)"
+                        style={npcCardBtn(placingNpcId === n.id)}
+                      >
+                        <IconLocation size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           )}
           {ribbonTab === 'diseño' && (
             <>
@@ -2083,7 +2284,7 @@ export default function MapEditor({
                   setCopyDrag({ start: c, now: c });
                   return;
                 }
-                if (mode === 'light' || mode === 'transition') {
+                if (mode === 'light' || mode === 'transition' || mode === 'npc') {
                   // Click-only modes (no drag painting).
                   paintAt(e.clientX, e.clientY);
                   return;
@@ -2174,13 +2375,63 @@ export default function MapEditor({
                 in-progress selection rectangle in copy mode. */}
             <PreviewOverlay
               brush={brush}
-              mode={mode}
+              mode={mode === 'npc' ? 'spawn' : mode}
               hoverCell={hoverCell}
               copyDrag={copyDrag}
               imgs={imgs}
               width={width}
               height={height}
             />
+
+            {/* NPCs colocados — overlays DOM (no canvas), escalan con el zoom. */}
+            {npcs.map((n) => (
+              <div
+                key={n.id}
+                onClick={(e) => {
+                  // En modo colocar, el clic lo maneja el canvas; aquí dejamos pasar.
+                  if (mode === 'npc') return;
+                  e.stopPropagation();
+                  setNpcDialog(n.id);
+                }}
+                title={`${n.name} (${n.x},${n.y}) — clic para editar`}
+                style={{
+                  position: 'absolute',
+                  left: (n.x + 0.5) * TILE_PX * viewScale,
+                  top: (n.y + 0.5) * TILE_PX * viewScale,
+                  transform: 'translate(-50%, -50%)',
+                  pointerEvents: mode === 'npc' ? 'none' : 'auto',
+                  cursor: 'pointer',
+                  zIndex: 6,
+                  opacity: placingNpcId === n.id ? 0.4 : 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                <CharacterSprite
+                  config={n.config}
+                  direction={n.facing}
+                  animation={n.animation}
+                  frame={npcFrame}
+                  scale={Math.max(0.5, viewScale)}
+                />
+                <span
+                  style={{
+                    marginTop: -2 * viewScale,
+                    padding: '1px 5px',
+                    background: 'rgba(0,0,0,0.65)',
+                    color: '#fff',
+                    borderRadius: 4,
+                    fontSize: Math.max(8, 5 * viewScale),
+                    fontFamily: 'system-ui, sans-serif',
+                    whiteSpace: 'nowrap',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {n.name}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -2357,6 +2608,67 @@ estos controles: el zoom se centra en la última celda en la que hiciste clic."
           />
         );
       })()}
+
+      {/* Aviso de modo "Ubicar NPC" */}
+      {mode === 'npc' && placingNpcId != null && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 100,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 50,
+            background: '#0078d4',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: 6,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          Haz clic en una celda del mapa para ubicar el NPC.
+          <button
+            type="button"
+            onClick={() => {
+              setPlacingNpcId(null);
+              setMode('paint');
+            }}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.5)',
+              color: '#fff',
+              borderRadius: 4,
+              padding: '3px 10px',
+              cursor: 'pointer',
+              fontSize: '0.78rem',
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
+      {/* Diálogo de crear / editar NPC */}
+      {npcDialog !== null && (
+        <NpcEditor
+          sceneSlug={sceneSlug}
+          playerTileX={playerTileX}
+          playerTileY={playerTileY}
+          initialNpcId={npcDialog}
+          onChanged={(list) => {
+            setNpcs(list);
+            onNpcsChanged?.(list);
+          }}
+          onClose={() => {
+            setNpcDialog(null);
+            refreshNpcs();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -4695,4 +5007,20 @@ function Sep() {
       }}
     />
   );
+}
+
+// Botón compacto de las tarjetas de NPC (editar / ubicar).
+function npcCardBtn(active: boolean): React.CSSProperties {
+  return {
+    display: 'grid',
+    placeItems: 'center',
+    width: 26,
+    height: 24,
+    padding: 0,
+    background: active ? '#deecf9' : '#ffffff',
+    color: active ? '#0078d4' : '#605e5c',
+    border: `1px solid ${active ? '#0078d4' : '#d1d1d1'}`,
+    borderRadius: 4,
+    cursor: 'pointer',
+  };
 }
