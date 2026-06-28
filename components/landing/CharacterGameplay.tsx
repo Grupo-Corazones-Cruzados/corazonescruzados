@@ -569,6 +569,10 @@ export default function CharacterGameplay({
   const HALF_W = MAP_PX_W / 2;
   const HALF_H = MAP_PX_H / 2;
   const MARGIN = 28;
+  // El sprite se dibuja por su CENTRO, pero el personaje "pisa" más abajo. La
+  // colisión se evalúa en los pies (no en el centro) para que no se solape con
+  // los tiles sólidos / el borde. Ajustable si hace falta más/menos.
+  const FOOT_OFFSET = TILE_PX_DISPLAY * 0.5;
   const collisionGrid = useMemo(
     () => buildCollisionGrid(worldMap),
     [worldMap],
@@ -744,8 +748,9 @@ export default function CharacterGameplay({
           -HALF_H + MARGIN,
           Math.min(HALF_H - MARGIN, p.y + vy),
         );
-        if (isBlocked(nx, p.y)) nx = p.x;
-        if (isBlocked(nx, ny)) ny = p.y;
+        // Colisión evaluada en los pies (centro + offset hacia abajo).
+        if (isBlocked(nx, p.y + FOOT_OFFSET)) nx = p.x;
+        if (isBlocked(nx, ny + FOOT_OFFSET)) ny = p.y;
         pickupCheck(nx, ny);
         // Transition check — only when we're not already mid-swap and
         // the player isn't standing on the suppression tile that was
@@ -887,7 +892,8 @@ export default function CharacterGameplay({
         position: 'fixed',
         inset: 0,
         zIndex: 100000,
-        background: '#000',
+        // Telón de fondo más allá del límite del mundo (no negro duro).
+        background: '#0e1016',
         overflow: 'hidden',
         animation: 'pixelFadeIn 0.6s ease-out',
       }}
@@ -903,6 +909,10 @@ export default function CharacterGameplay({
           height: MAP_PX_H,
           transform: `translate(calc(-50% - ${pos.x}px), calc(-50% - ${pos.y}px))`,
           willChange: 'transform',
+          // Suelo del mundo donde no hay tile pintado (en vez de transparente
+          // → fondo negro), y marco que hace visible el LÍMITE del mundo.
+          background: '#262a35',
+          boxShadow: '0 0 0 4px #0a0c11, 0 18px 70px rgba(0,0,0,0.6)',
         }}
       >
         <WorldMap map={worldMap} hidePickedItems={pickedItems} />
