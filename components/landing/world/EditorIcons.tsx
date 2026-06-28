@@ -134,6 +134,23 @@ export const IconBolt = (p: P) => (
   </Svg>
 );
 
+// Ojo (capa visible).
+export const IconEye = (p: P) => (
+  <Svg {...p}>
+    <path d="M2.5 10S5 5 10 5s7.5 5 7.5 5-2.5 5-7.5 5-7.5-5-7.5-5Z" />
+    <circle cx="10" cy="10" r="2.3" />
+  </Svg>
+);
+
+// Ojo tachado (capa oculta).
+export const IconEyeOff = (p: P) => (
+  <Svg {...p}>
+    <path d="M7.2 5.5A8 8 0 0 1 10 5c5 0 7.5 5 7.5 5a13 13 0 0 1-2.2 2.7" />
+    <path d="M5 6.8A12.6 12.6 0 0 0 2.5 10S5 15 10 15a7.7 7.7 0 0 0 2.6-.45" />
+    <path d="M8.4 8.5a2.3 2.3 0 0 0 3.1 3.3M3.5 3.5l13 13" />
+  </Svg>
+);
+
 // Advertencia.
 export const IconWarning = (p: P) => (
   <Svg {...p}>

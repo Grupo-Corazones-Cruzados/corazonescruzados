@@ -301,6 +301,59 @@ export function ListRow({
   );
 }
 
+// ── Botón de ícono (ghost cuadrado: editar/mover/ocultar/borrar) ──────
+export function IconButton({
+  icon,
+  title,
+  onClick,
+  disabled = false,
+  active = false,
+  danger = false,
+}: {
+  icon: ReactNode;
+  title: string;
+  onClick: (e: React.MouseEvent) => void;
+  disabled?: boolean;
+  active?: boolean;
+  danger?: boolean;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={title}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: 30,
+        height: 28,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 0,
+        background: disabled
+          ? E.surface
+          : active
+            ? E.selected
+            : hover
+              ? danger
+                ? E.dangerSoft
+                : E.subtle
+              : E.surface,
+        color: disabled ? E.textMuted : danger ? E.danger : active ? E.accent : E.textSoft,
+        border: `1px solid ${E.borderStrong}`,
+        borderRadius: E.radius,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        transition: 'background 0.12s ease, color 0.12s ease',
+      }}
+    >
+      {icon}
+    </button>
+  );
+}
+
 // ── Estado vacío ──────────────────────────────────────────────────────
 export function EmptyState({ children }: { children: ReactNode }) {
   return (

@@ -28,7 +28,23 @@ import {
 } from './sheets';
 import { ITEMS, ITEM_CATEGORIES, findItem, itemDataUrl } from './items';
 import { loadChromaKeyedSheet } from './sheetLoader';
-import { PanelHeader, SearchInput, SegmentedTabs, PANEL_WIDTH } from './editorUi';
+import {
+  PanelHeader,
+  SearchInput,
+  SegmentedTabs,
+  EditorButton,
+  IconButton as GhostBtn,
+  PANEL_WIDTH,
+} from './editorUi';
+import {
+  IconAdd,
+  IconEdit,
+  IconUp,
+  IconDown,
+  IconDelete,
+  IconEye,
+  IconEyeOff,
+} from './EditorIcons';
 import {
   LIGHT_MODE_OPTIONS,
   paintLightingFrame,
@@ -4129,45 +4145,22 @@ function LayersPanel({
         minHeight: 0,
       }}
     >
-      <div
-        style={{
-          padding: '8px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid #edebe9',
-        }}
+      <PanelHeader
+        title="Capas"
+        actions={
+          <EditorButton
+            icon={<IconAdd size={14} />}
+            onClick={onAdd}
+            title="Agregar capa nueva (vacía, encima de las demás)"
+          >
+            Nueva
+          </EditorButton>
+        }
       >
-        <span
-          style={{
-            fontSize: '0.78rem',
-            color: '#605e5c',
-            fontWeight: 600,
-            letterSpacing: '0.02em',
-          }}
-        >
+        <span style={{ fontSize: '0.72rem', color: '#605e5c' }}>
           {reversed.length} capa{reversed.length === 1 ? '' : 's'}
         </span>
-        <button
-          type="button"
-          onClick={onAdd}
-          title="Agregar capa nueva (vacía, encima de las demás)"
-          style={{
-            padding: '5px 12px',
-            background: '#0078d4',
-            color: '#ffffff',
-            border: '1px solid #0078d4',
-            borderRadius: 2,
-            fontFamily:
-              'system-ui, -apple-system, "Segoe UI", sans-serif',
-            fontSize: '0.78rem',
-            fontWeight: 500,
-            cursor: 'pointer',
-          }}
-        >
-          + Nueva
-        </button>
-      </div>
+      </PanelHeader>
       <div
         style={{
           overflowY: 'auto',
@@ -4184,59 +4177,58 @@ function LayersPanel({
           const stackIdx = layers.length - 1 - idx;
           const canMoveUp = stackIdx < layers.length - 1;
           const canMoveDown = stackIdx > 0;
+          const editing = editingId === l.id;
           return (
             <div
               key={l.id}
-              onClick={() => l.id && onActivate(l.id)}
+              onClick={() => !editing && l.id && onActivate(l.id)}
               style={{
                 position: 'relative',
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: 'column',
                 gap: 8,
-                padding: '8px 8px 8px 12px',
+                padding: '9px 10px 9px 12px',
+                margin: '1px 0',
                 background: isActive ? '#deecf9' : 'transparent',
                 borderLeft: isActive
                   ? '3px solid #0078d4'
                   : '3px solid transparent',
-                cursor: 'pointer',
+                cursor: editing ? 'default' : 'pointer',
               }}
             >
-              <RowAction
-                icon={isVisible ? '👁' : '⊘'}
-                title={isVisible ? 'Ocultar capa' : 'Mostrar capa'}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (l.id) onToggleVisible(l.id);
-                }}
-              />
-              <div
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 1,
-                }}
-                onDoubleClick={() => l.id && setEditingId(l.id)}
-              >
-                {editingId === l.id ? (
+              {editing ? (
+                /* ── Formulario de edición de la capa ── */
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                >
+                  <label
+                    style={{
+                      fontSize: '0.62rem',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: '#0078d4',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Nombre de la capa
+                  </label>
                   <input
                     type="text"
                     autoFocus
                     defaultValue={l.name ?? ''}
-                    onClick={(e) => e.stopPropagation()}
-                    onBlur={(e) => {
-                      if (l.id) onRename(l.id, e.target.value || 'Capa');
-                      setEditingId(null);
-                    }}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter')
-                        (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Enter') {
+                        const v = (e.target as HTMLInputElement).value;
+                        if (l.id) onRename(l.id, v || 'Capa');
+                        setEditingId(null);
+                      }
                       if (e.key === 'Escape') setEditingId(null);
                     }}
+                    id={`layer-name-${l.id}`}
                     style={{
                       width: '100%',
-                      padding: '3px 6px',
+                      padding: '7px 9px',
                       background: '#ffffff',
                       border: '1px solid #0078d4',
                       color: '#323130',
@@ -4244,73 +4236,104 @@ function LayersPanel({
                         'system-ui, -apple-system, "Segoe UI", sans-serif',
                       fontSize: '0.85rem',
                       outline: 'none',
-                      borderRadius: 2,
+                      borderRadius: 4,
                     }}
                   />
-                ) : (
-                  <>
-                    <span
-                      style={{
-                        fontSize: '0.85rem',
-                        fontWeight: isActive ? 600 : 500,
-                        color: isVisible ? '#323130' : '#a19f9d',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <EditorButton
+                      onClick={() => {
+                        const input = document.getElementById(
+                          `layer-name-${l.id}`,
+                        ) as HTMLInputElement | null;
+                        if (l.id) onRename(l.id, input?.value || 'Capa');
+                        setEditingId(null);
                       }}
+                      style={{ flex: 1 }}
                     >
-                      {l.name ?? '(sin nombre)'}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '0.7rem',
-                        color: '#605e5c',
+                      Guardar
+                    </EditorButton>
+                    <EditorButton
+                      variant="secondary"
+                      onClick={() => setEditingId(null)}
+                      style={{ flex: 1 }}
+                    >
+                      Cancelar
+                    </EditorButton>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* ── Fila 1: visibilidad + nombre + nº de tiles ── */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <GhostBtn
+                      icon={isVisible ? <IconEye size={16} /> : <IconEyeOff size={16} />}
+                      title={isVisible ? 'Ocultar capa' : 'Mostrar capa'}
+                      active={isVisible}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (l.id) onToggleVisible(l.id);
                       }}
-                    >
-                      {tileCount} tile{tileCount === 1 ? '' : 's'}
-                    </span>
-                  </>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 2 }}>
-                <RowAction
-                  icon="✎"
-                  title="Renombrar"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (l.id) setEditingId(l.id);
-                  }}
-                />
-                <RowAction
-                  icon="↑"
-                  title="Subir capa"
-                  disabled={!canMoveUp}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (l.id) onMove(l.id, 1);
-                  }}
-                />
-                <RowAction
-                  icon="↓"
-                  title="Bajar capa"
-                  disabled={!canMoveDown}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (l.id) onMove(l.id, -1);
-                  }}
-                />
-                <RowAction
-                  icon="🗑"
-                  title="Borrar capa"
-                  danger
-                  disabled={layers.length <= 1}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!l.id || layers.length <= 1) return;
-                    setConfirmDelete({ id: l.id, name: l.name ?? 'capa' });
-                  }}
-                />
-              </div>
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: '0.85rem',
+                          fontWeight: isActive ? 600 : 500,
+                          color: isVisible ? '#323130' : '#a19f9d',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {l.name ?? '(sin nombre)'}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#605e5c' }}>
+                        {tileCount} tile{tileCount === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                  </div>
+                  {/* ── Fila 2: acciones (no aprietan el nombre) ── */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <GhostBtn
+                      icon={<IconEdit size={15} />}
+                      title="Editar capa"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (l.id) setEditingId(l.id);
+                      }}
+                    />
+                    <GhostBtn
+                      icon={<IconUp size={15} />}
+                      title="Subir capa"
+                      disabled={!canMoveUp}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (l.id) onMove(l.id, 1);
+                      }}
+                    />
+                    <GhostBtn
+                      icon={<IconDown size={15} />}
+                      title="Bajar capa"
+                      disabled={!canMoveDown}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (l.id) onMove(l.id, -1);
+                      }}
+                    />
+                    <GhostBtn
+                      icon={<IconDelete size={15} />}
+                      title="Borrar capa"
+                      danger
+                      disabled={layers.length <= 1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!l.id || layers.length <= 1) return;
+                        setConfirmDelete({ id: l.id, name: l.name ?? 'capa' });
+                      }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
