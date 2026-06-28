@@ -309,6 +309,32 @@ export default function MapEditor({
   // Frame animado para los sprites de NPC sobre el canvas.
   const [npcFrame, setNpcFrame] = useState(0);
 
+  // ── Ventana flotante de paleta ("Pintar") ──────────────────────────
+  const [paletteOpen, setPaletteOpen] = useState(true);
+  const [paletteMin, setPaletteMin] = useState(false);
+  const [palettePos, setPalettePos] = useState({ x: 16, y: 70 });
+  const paletteDragRef = useRef<{ dx: number; dy: number } | null>(null);
+  const startPaletteDrag = (e: React.MouseEvent) => {
+    paletteDragRef.current = {
+      dx: e.clientX - palettePos.x,
+      dy: e.clientY - palettePos.y,
+    };
+    const move = (ev: MouseEvent) => {
+      if (!paletteDragRef.current) return;
+      setPalettePos({
+        x: Math.max(0, ev.clientX - paletteDragRef.current.dx),
+        y: Math.max(0, ev.clientY - paletteDragRef.current.dy),
+      });
+    };
+    const up = () => {
+      paletteDragRef.current = null;
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
   const refreshNpcs = useCallback(async () => {
     try {
       const r = await fetch(
@@ -1455,21 +1481,64 @@ export default function MapEditor({
         color: '#323130',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'grid',
-        gridTemplateColumns: asideVisible
-          ? `${PANEL_WIDTH}px 1fr 220px`
-          : '1fr 220px',
+        gridTemplateColumns: '1fr 220px',
         animation: embedded ? undefined : 'pixelFadeIn 0.4s ease-out',
       }}
     >
+      {/* ── Paleta flotante (la abre "Pintar"): movible y minimizable ── */}
       <aside
         style={{
-          background: '#ffffff',
-          borderRight: '1px solid #d1d1d1',
-          display: asideVisible ? 'flex' : 'none',
+          position: 'absolute',
+          left: palettePos.x,
+          top: palettePos.y,
+          zIndex: 40,
+          width: 268,
+          height: paletteMin ? 'auto' : 'min(72vh, 560px)',
+          display: paletteOpen ? 'flex' : 'none',
           flexDirection: 'column',
-          minHeight: 0,
+          background: '#ffffff',
+          border: '1px solid #c8c6c4',
+          borderRadius: 8,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.28)',
+          overflow: 'hidden',
         }}
       >
+        {/* Barra de título (arrastrar / minimizar / cerrar) */}
+        <div
+          onMouseDown={startPaletteDrag}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '7px 8px 7px 12px',
+            background: '#f3f2f1',
+            borderBottom: paletteMin ? 'none' : '1px solid #edebe9',
+            cursor: 'move',
+            userSelect: 'none',
+          }}
+        >
+          <span style={{ flex: 1, fontSize: '0.78rem', fontWeight: 600, color: '#323130' }}>
+            Paleta · Pintar
+          </span>
+          <button
+            type="button"
+            onClick={() => setPaletteMin((v) => !v)}
+            title={paletteMin ? 'Expandir' : 'Minimizar'}
+            style={paletteTitleBtn}
+          >
+            {paletteMin ? '▢' : '—'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(false)}
+            title="Cerrar paleta"
+            style={paletteTitleBtn}
+          >
+            ✕
+          </button>
+        </div>
+
+        {!paletteMin && (
         <PanelHeader title="Editor del mundo">
           <SearchInput
             value={search}
@@ -1477,7 +1546,9 @@ export default function MapEditor({
             placeholder="Buscar (sheet, categoría)…"
           />
         </PanelHeader>
-
+        )}
+        {!paletteMin && (
+        <>
         <div style={{ padding: '8px 10px 6px' }}>
           <SegmentedTabs
             value={activeTab}
@@ -1793,6 +1864,8 @@ export default function MapEditor({
               );
             })}
         </div>
+        </>
+        )}
       </aside>
 
       {/* ── Main editor area ── */}
@@ -1925,7 +1998,11 @@ export default function MapEditor({
                   label="Pintar"
                   hotkey="Q"
                   active={mode === 'paint'}
-                  onClick={() => setMode('paint')}
+                  onClick={() => {
+                    setMode('paint');
+                    setPaletteOpen(true);
+                    setPaletteMin(false);
+                  }}
                 />
                 <RibbonButton
                   icon={<IconEraser size={20} />}
@@ -5041,3 +5118,17 @@ function npcCardBtn(active: boolean): React.CSSProperties {
     cursor: 'pointer',
   };
 }
+
+const paletteTitleBtn: React.CSSProperties = {
+  width: 24,
+  height: 22,
+  display: 'grid',
+  placeItems: 'center',
+  background: 'transparent',
+  border: 'none',
+  borderRadius: 4,
+  color: '#605e5c',
+  cursor: 'pointer',
+  fontSize: '0.8rem',
+  lineHeight: 1,
+};
