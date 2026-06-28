@@ -1887,35 +1887,52 @@ export default function MapEditor({
                     </span>
                   </div>
                 );
+              const CAP = 600;
+              const shown = list.slice(0, CAP);
               return (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns:
-                      'repeat(auto-fill, minmax(64px, 1fr))',
-                    gap: 6,
-                  }}
-                >
-                  {list.map((sp, i) => {
-                    const isActive =
-                      brush?.source === 'sheet' &&
-                      brush.sheetIdx === sp.sheetIdx &&
-                      brush.sx === sp.sx &&
-                      brush.sy === sp.sy;
-                    return (
-                      <SpriteThumb
-                        key={`${sp.sheetIdx}:${sp.sx}:${sp.sy}:${i}`}
-                        sprite={sp}
-                        active={!!isActive}
-                        onClick={() =>
-                          activateBrush(
-                            sheetBrush(sp.sheetIdx, sp.sx, sp.sy, sp.w, sp.h),
-                          )
-                        }
-                      />
-                    );
-                  })}
-                </div>
+                <>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns:
+                        'repeat(auto-fill, minmax(64px, 1fr))',
+                      gap: 6,
+                    }}
+                  >
+                    {shown.map((sp, i) => {
+                      const isActive =
+                        brush?.source === 'sheet' &&
+                        brush.sheetIdx === sp.sheetIdx &&
+                        brush.sx === sp.sx &&
+                        brush.sy === sp.sy;
+                      return (
+                        <SpriteThumb
+                          key={`${sp.sheetIdx}:${sp.sx}:${sp.sy}:${i}`}
+                          sprite={sp}
+                          active={!!isActive}
+                          onClick={() =>
+                            activateBrush(
+                              sheetBrush(sp.sheetIdx, sp.sx, sp.sy, sp.w, sp.h),
+                            )
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                  {list.length > CAP && (
+                    <div
+                      style={{
+                        fontSize: '0.7rem',
+                        color: '#a19f9d',
+                        textAlign: 'center',
+                        padding: '8px 4px',
+                      }}
+                    >
+                      Mostrando {CAP} de {list.length}. Filtra por categoría para
+                      ver más.
+                    </div>
+                  )}
+                </>
               );
             })()
           )}
@@ -4413,6 +4430,88 @@ function sigDistance(a: number[], b: number[]): number {
   return s / (a.length * 255);
 }
 
+// ¿El píxel `i` es contenido (no fondo transparente ni casi blanco)?
+function isContentPixel(data: Uint8ClampedArray, i: number): boolean {
+  const a = data[i + 3];
+  if (a < 32) return false;
+  if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240) return false;
+  return true;
+}
+
+// Detección de OBJETOS por PÍXEL (no por celda): en los sheets los objetos están
+// pegados a nivel de celda, pero separados por píxeles de fondo. El flood-fill a
+// nivel de píxel sí los separa. Devuelve recuadros AJUSTADOS a celdas. Usa
+// downsample (DS) para que sea rápido en el navegador.
+function detectObjectsPixel(
+  data: Uint8ClampedArray,
+  W: number,
+  H: number,
+  cols: number,
+  rows: number,
+): SpriteBox[] {
+  const DS = 2;
+  const w2 = Math.ceil(W / DS);
+  const h2 = Math.ceil(H / DS);
+  const mask = new Uint8Array(w2 * h2);
+  for (let y = 0; y < h2; y++)
+    for (let x = 0; x < w2; x++)
+      mask[y * w2 + x] = isContentPixel(data, (y * DS * W + x * DS) * 4) ? 1 : 0;
+
+  const seen = new Uint8Array(w2 * h2);
+  const stack = new Int32Array(w2 * h2);
+  const cw = W / cols;
+  const ch = H / rows;
+  const boxes: SpriteBox[] = [];
+  const fullArea = W * H;
+  for (let p0 = 0; p0 < w2 * h2; p0++) {
+    if (!mask[p0] || seen[p0]) continue;
+    let sp = 0;
+    stack[sp++] = p0;
+    seen[p0] = 1;
+    let minX = w2, minY = h2, maxX = 0, maxY = 0, n = 0;
+    while (sp > 0) {
+      const p = stack[--sp];
+      n++;
+      const x = p % w2;
+      const y = (p / w2) | 0;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= w2 || ny >= h2) continue;
+          const np = ny * w2 + nx;
+          if (mask[np] && !seen[np]) {
+            seen[np] = 1;
+            stack[sp++] = np;
+          }
+        }
+    }
+    const pxW = (maxX - minX + 1) * DS;
+    const pxH = (maxY - minY + 1) * DS;
+    const area = n * DS * DS;
+    if (area < 100 || pxW < 8 || pxH < 8) continue; // ruido / slivers
+    if (area > fullArea * 0.35) continue; // bloque de terreno
+    const sx = Math.floor((minX * DS) / cw);
+    const sy = Math.floor((minY * DS) / ch);
+    const ex = Math.ceil(((maxX + 1) * DS) / cw);
+    const ey = Math.ceil(((maxY + 1) * DS) / ch);
+    const box: SpriteBox = {
+      sx,
+      sy,
+      w: Math.max(1, ex - sx),
+      h: Math.max(1, ey - sy),
+    };
+    if (box.w > 14 || box.h > 14) continue;
+    boxes.push(box);
+  }
+  return boxes;
+}
+
 // Fracción del recuadro que es contenido (no fondo). Un tile de terreno llena
 // la celda casi por completo (≈1); un objeto deja márgenes de fondo (<0.9).
 function contentDensity(
@@ -4509,6 +4608,7 @@ function loadSheetPixels(
 ): Promise<{
   data: Uint8ClampedArray;
   w: number;
+  h: number;
   cellW: number;
   cellH: number;
 } | null> {
@@ -4530,6 +4630,7 @@ function loadSheetPixels(
         resolve({
           data: ctx.getImageData(0, 0, natW, natH).data,
           w: natW,
+          h: natH,
           cellW: natW / sheet.cols,
           cellH: natH / sheet.rows,
         });
@@ -4590,40 +4691,24 @@ function useAllSprites(active: boolean) {
         if (!px) return;
         loaded++;
         const sheet = SHEETS[sheetIdx];
-        const total = sheet.cols * sheet.rows;
-        const comps = detectSpriteComponents(
+        // Detección por PÍXEL (separa objetos pegados a nivel de celda).
+        const boxes = detectObjectsPixel(
           px.data,
           px.w,
+          px.h,
           sheet.cols,
           sheet.rows,
-          px.cellW,
-          px.cellH,
         );
         // Sprites (con firma) por sheet, para deduplicar frames de animación.
         const perSheet: { sprite: DetectedSprite; sig: number[] }[] = [];
-        for (const c of comps) {
-          // Saltar el "bloque" de terreno empacado (enorme): no es un objeto.
-          if (
-            c.box.w > 14 ||
-            c.box.h > 14 ||
-            c.cells.length > total * 0.4
-          )
-            continue;
-          // Saltar tiles de TERRENO: una sola celda llena casi por completo (se
-          // mosaiquea). Un OBJETO es multi-celda o tiene márgenes transparentes.
-          if (
-            c.box.w === 1 &&
-            c.box.h === 1 &&
-            contentDensity(px.data, px.w, c.box, px.cellW, px.cellH) > 0.9
-          )
-            continue;
+        for (const box of boxes) {
           const sprite: DetectedSprite = {
-            ...c.box,
+            ...box,
             sheetIdx,
-            cat: classifySprite(px.data, px.w, c.box, px.cellW, px.cellH),
+            cat: classifySprite(px.data, px.w, box, px.cellW, px.cellH),
           };
-          const sig = spriteSignature(px.data, px.w, c.box, px.cellW, px.cellH);
-          // Dedup: mismo tamaño + firma muy parecida ⇒ es otro frame del mismo
+          const sig = spriteSignature(px.data, px.w, box, px.cellW, px.cellH);
+          // Dedup: mismo tamaño + firma muy parecida ⇒ otro frame del mismo
           // objeto → no se agrega de nuevo.
           const dup = perSheet.some(
             (p) =>
