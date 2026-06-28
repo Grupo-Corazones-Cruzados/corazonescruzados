@@ -4366,6 +4366,48 @@ function classifySprite(
   return best;
 }
 
+// Firma visual de un sprite: RGB promedio sobre una rejilla 3×3 (27 números).
+// Sirve para deduplicar frames de animación (muy parecidos entre sí).
+function spriteSignature(
+  data: Uint8ClampedArray,
+  imgW: number,
+  box: SpriteBox,
+  cellW: number,
+  cellH: number,
+): number[] {
+  const x0 = box.sx * cellW;
+  const y0 = box.sy * cellH;
+  const bw = (box.w * cellW) / 3;
+  const bh = (box.h * cellH) / 3;
+  const sig: number[] = [];
+  for (let gy = 0; gy < 3; gy++) {
+    for (let gx = 0; gx < 3; gx++) {
+      let r = 0, g = 0, b = 0, n = 0;
+      const rx = x0 + gx * bw;
+      const ry = y0 + gy * bh;
+      for (let y = ry; y < ry + bh; y += 3) {
+        for (let x = rx; x < rx + bw; x += 3) {
+          const i = ((y | 0) * imgW + (x | 0)) * 4;
+          if (data[i + 3] < 24) continue;
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          n++;
+        }
+      }
+      sig.push(n ? r / n : 0, n ? g / n : 0, n ? b / n : 0);
+    }
+  }
+  return sig;
+}
+
+// Distancia normalizada (0..1) entre dos firmas.
+function sigDistance(a: number[], b: number[]): number {
+  let s = 0;
+  for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]);
+  return s / (a.length * 255);
+}
+
 // Detección pura: componentes conectados (8-vec) de celdas con contenido,
 // limitados a 8×8 (los más grandes son terreno empacado, no objetos).
 const SPRITE_MAX_CELLS = 8;
@@ -4515,6 +4557,7 @@ function useAllSprites(active: boolean) {
         if (!px) return;
         loaded++;
         const sheet = SHEETS[sheetIdx];
+        const total = sheet.cols * sheet.rows;
         const comps = detectSpriteComponents(
           px.data,
           px.w,
@@ -4523,26 +4566,34 @@ function useAllSprites(active: boolean) {
           px.cellW,
           px.cellH,
         );
+        // Sprites (con firma) por sheet, para deduplicar frames de animación.
+        const perSheet: { sprite: DetectedSprite; sig: number[] }[] = [];
         for (const c of comps) {
-          if (isObjectBox(c.box)) {
-            // Objeto aislado → un solo sprite con su recuadro.
-            all.push({
-              ...c.box,
-              sheetIdx,
-              cat: classifySprite(px.data, px.w, c.box, px.cellW, px.cellH),
-            });
-          } else {
-            // Terreno empacado → cada celda como tile suelto (1×1).
-            for (const [x, y] of c.cells) {
-              const box = { sx: x, sy: y, w: 1, h: 1 };
-              all.push({
-                ...box,
-                sheetIdx,
-                cat: classifySprite(px.data, px.w, box, px.cellW, px.cellH),
-              });
-            }
-          }
+          // Saltar el "bloque" de terreno empacado (cubre buena parte del sheet
+          // o es enorme): no es un objeto. El terreno se pinta desde "Hojas".
+          if (
+            c.box.w > 12 ||
+            c.box.h > 12 ||
+            c.cells.length > total * 0.33
+          )
+            continue;
+          const sprite: DetectedSprite = {
+            ...c.box,
+            sheetIdx,
+            cat: classifySprite(px.data, px.w, c.box, px.cellW, px.cellH),
+          };
+          const sig = spriteSignature(px.data, px.w, c.box, px.cellW, px.cellH);
+          // Dedup: mismo tamaño + firma muy parecida ⇒ es otro frame del mismo
+          // objeto → no se agrega de nuevo.
+          const dup = perSheet.some(
+            (p) =>
+              p.sprite.w === sprite.w &&
+              p.sprite.h === sprite.h &&
+              sigDistance(p.sig, sig) < 0.07,
+          );
+          if (!dup) perSheet.push({ sprite, sig });
         }
+        for (const p of perSheet) all.push(p.sprite);
       });
       if (!cancelled) setSprites({ list: all, loaded });
     })();
