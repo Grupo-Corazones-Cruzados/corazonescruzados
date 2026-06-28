@@ -620,9 +620,14 @@ Stack estándar de la casa, con particularidades de este repo:
     - `returning/begin|verify` aceptan cuenta de **cliente** (no solo member/admin); el `LoginForm`
       (Continúa tu partida) reconoce el tipo `client` y restringe el login a ese tipo (Cambiar tipo de ingreso
       para otro). El cliente por "Colaborar" sigue yendo a `/dashboard/marketplace`.
-    - **PENDIENTE:** (a) recordar/mostrar al cliente no verificado su **"solicitud en proceso de
-      verificación"** al volver (estilo postulación: una sola solicitud, pide verificar correo); (b) accesos
-      del **candidato/cliente en el dashboard** (el usuario los definirá).
+    - **Cliente no verificado — reconocimiento (2026-06-28, DONE):** al registrarse, `register` setea cookie
+      **`gcc_client_ref`** + **`ip_hash`** en `gcc_world.users`. **`GET /api/client/status`** dice si hay
+      cuenta de cliente en el dispositivo (cookie/IP) y si está verificada. El `EntryChoiceModal`, si existe y
+      **NO** está verificada, reemplaza "Soy cliente" por **"Tu cuenta de cliente requiere verificación"** →
+      `ProposalPendingModal` modo **`client`** (verifica tu correo). **Una sola cuenta de cliente por
+      dispositivo:** `register` rechaza (409) si ya hay una (cookie/IP). El login sigue bloqueado hasta
+      verificar (`login/begin` y `returning/begin` exigen `is_verified`).
+    - **PENDIENTE:** accesos del **candidato/cliente en el dashboard** (el usuario los definirá).
   - **Passkey: oferta de registro tras el código (2026-06-25):** las passkeys (de personaje y de
     usuario) viven en **`gcc_world.client_passkeys`** (por `client_id` = fila de `gcc_world.clients`).
     Regla: **tras validar el código 2FA**, si la cuenta **NO** tiene passkey → aparece el paso
