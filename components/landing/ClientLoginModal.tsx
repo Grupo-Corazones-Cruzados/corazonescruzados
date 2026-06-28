@@ -61,7 +61,11 @@ export default function ClientLoginModal({
     setError(null);
     setBusy(true);
     try {
-      const begin = await fetch('/api/auth/passkey/begin', { method: 'POST' });
+      const begin = await fetch('/api/auth/passkey/begin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
       const opts = await begin.json();
       if (!begin.ok) {
         setError(
@@ -73,7 +77,7 @@ export default function ClientLoginModal({
       const finish = await fetch('/api/auth/passkey/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credential),
+        body: JSON.stringify({ credential, email: email.trim() }),
       });
       const fj = await finish.json();
       if (!finish.ok) {

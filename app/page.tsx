@@ -56,14 +56,14 @@ const PLANET_SCENES: PlanetScene[] = [
     texts: [
       'Observa... Las calles cambian cuando a nadie le interesa poner orden.',
       'Por eso voy a pedirte que me enseñes...',
-      '¿Qué harías para sobrevivir en un lugar así?',
+      '¿Qué harías tú para sobrevivir en un lugar así?',
       '¿Estás listo?',
     ],
   },
 ];
 
 const PLANET_QUESTION =
-  'Estás a punto de ingresar al Mundo Violeta antes de que se convirtiera en lo que es hoy, una vez ingreses necesitarás buscar tus herramientas cuanto antes si deseas sobrevivir';
+  'Estás a punto de ingresar al Mundo Violeta antes de que se convirtiera en lo que es ahora, una vez ingreses necesitarás buscar ayuda antes de que te encuentren si deseas sobrevivir';
 
 type Challenge = 'flee' | 'rapid' | 'flicker' | 'beacon' | 'spaceship' | 'serious';
 
