@@ -63,6 +63,8 @@ export default function SceneManagerEditor({
   const [creating, setCreating] = useState<null | SceneKind>(null);
   const [renamingSlug, setRenamingSlug] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  // Escena en edición (formulario con nombre, música y evento).
+  const [editScene, setEditScene] = useState<SceneMeta | null>(null);
   const [confirmRemoveSlug, setConfirmRemoveSlug] = useState<string | null>(null);
   // Lateral sidebar tab — toggles between the scenes list and the
   // map-editor's asset/layers panel. Default 'scenes' so the user
@@ -445,11 +447,10 @@ export default function SceneManagerEditor({
                   >
                     <RowAction
                       icon={<IconEdit size={15} />}
-                      title="Renombrar"
+                      title="Editar escena"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRenamingSlug(s.slug);
-                        setRenameValue(s.name);
+                        setEditScene(s);
                       }}
                     />
                     <RowAction
@@ -540,6 +541,164 @@ export default function SceneManagerEditor({
         onConfirm={() => { if (confirmRemoveSlug) removeScene(confirmRemoveSlug); }}
         onCancel={() => setConfirmRemoveSlug(null)}
       />
+
+      {editScene && (
+        <SceneEditDialog
+          scene={editScene}
+          onClose={() => setEditScene(null)}
+          onSaved={() => {
+            setEditScene(null);
+            refreshList().catch(() => undefined);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Diálogo modal para editar las propiedades de una escena (no solo el nombre).
+function SceneEditDialog({
+  scene,
+  onClose,
+  onSaved,
+}: {
+  scene: SceneMeta;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState(scene.name ?? '');
+  const [eventTrigger, setEventTrigger] = useState(scene.eventTrigger ?? '');
+  const [musicUrl, setMusicUrl] = useState(scene.musicUrl ?? '');
+  const [musicVolume, setMusicVolume] = useState(
+    typeof scene.musicVolume === 'number' ? scene.musicVolume : 0.5,
+  );
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await fetch(`/api/world/scenes/${scene.slug}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim() || 'Escena',
+          eventTrigger: eventTrigger.trim(),
+          musicUrl: musicUrl.trim(),
+          musicVolume,
+        }),
+      });
+      onSaved();
+    } catch {
+      setBusy(false);
+    }
+  };
+
+  const field: React.CSSProperties = {
+    width: '100%',
+    padding: '8px 10px',
+    background: '#ffffff',
+    border: `1px solid ${E.borderStrong}`,
+    borderRadius: E.radius,
+    color: E.text,
+    fontFamily: E.font,
+    fontSize: '0.85rem',
+    outline: 'none',
+  };
+  const lbl: React.CSSProperties = {
+    fontSize: '0.62rem',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+    color: E.accent,
+    fontWeight: 600,
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 200001,
+        background: 'rgba(0,0,0,0.35)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        fontFamily: E.font,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: 420,
+          background: E.surface,
+          borderRadius: 8,
+          boxShadow: '0 16px 50px rgba(0,0,0,0.3)',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${E.border}` }}>
+          <div style={{ fontSize: '0.95rem', fontWeight: 600, color: E.text }}>
+            Editar escena
+          </div>
+          <div style={{ fontSize: '0.72rem', color: E.textSoft }}>{scene.slug}</div>
+        </div>
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <label style={lbl}>Nombre</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} style={field} autoFocus />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <label style={lbl}>Evento (trigger)</label>
+            <input
+              value={eventTrigger}
+              onChange={(e) => setEventTrigger(e.target.value)}
+              placeholder="(opcional) p. ej. intro"
+              style={field}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <label style={lbl}>Música (URL)</label>
+            <input
+              value={musicUrl}
+              onChange={(e) => setMusicUrl(e.target.value)}
+              placeholder="(opcional) /sounds/music/…"
+              style={field}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <label style={lbl}>Volumen de música · {Math.round(musicVolume * 100)}%</label>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={musicVolume}
+              onChange={(e) => setMusicVolume(Number(e.target.value))}
+              style={{ accentColor: E.accent }}
+            />
+          </div>
+        </div>
+        <div
+          style={{
+            padding: '12px 20px',
+            borderTop: `1px solid ${E.border}`,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 8,
+          }}
+        >
+          <EditorButton variant="secondary" onClick={onClose}>
+            Cancelar
+          </EditorButton>
+          <EditorButton onClick={save} disabled={busy}>
+            {busy ? 'Guardando…' : 'Guardar'}
+          </EditorButton>
+        </div>
+      </div>
     </div>
   );
 }
