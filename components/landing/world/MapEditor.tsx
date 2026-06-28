@@ -4241,7 +4241,13 @@ function useSheetSprites(sheet: (typeof SHEETS)[number]) {
             w: maxX - minX + 1,
             h: maxY - minY + 1,
           };
-          for (const [x, y] of cells) result.set(`${x},${y}`, bbox);
+          // Un objeto razonable cabe en pocas celdas. Si la región conectada es
+          // muy grande (terreno empacado sin huecos blancos), NO se trata como un
+          // único sprite: cada celda se selecciona individualmente.
+          const MAX = 8;
+          if (bbox.w <= MAX && bbox.h <= MAX) {
+            for (const [x, y] of cells) result.set(`${x},${y}`, bbox);
+          }
         }
       }
       if (!cancelled) setMap(result);
@@ -4362,9 +4368,14 @@ function SheetPalette({
         setDragNow(null);
       }}
     >
-      {/* Resalte del SPRITE bajo el cursor (auto-detección) */}
-      {!dragStart && hover && sprites.get(`${hover.sx},${hover.sy}`) && (() => {
-        const b = sprites.get(`${hover.sx},${hover.sy}`)!;
+      {/* Resalte bajo el cursor: el SPRITE detectado, o 1 celda si es terreno. */}
+      {!dragStart && hover && (() => {
+        const b = sprites.get(`${hover.sx},${hover.sy}`) ?? {
+          sx: hover.sx,
+          sy: hover.sy,
+          w: 1,
+          h: 1,
+        };
         return (
           <div
             style={{
