@@ -5,6 +5,21 @@ import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import MapEditor from './MapEditor';
 import CinematicEditor from './CinematicEditor';
+import NpcEditor, { type NpcRecord } from './NpcEditor';
+import {
+  IconScenes,
+  IconNpcs,
+  IconLayers,
+  IconClose,
+  IconMap,
+  IconFilm,
+  IconAdd,
+  IconEdit,
+  IconUp,
+  IconDown,
+  IconDelete,
+  IconBolt,
+} from './EditorIcons';
 import type {
   CinematicData,
   SceneKind,
@@ -22,8 +37,19 @@ import type {
 // and the sidebar; the inner editor fills whatever's left.
 export default function SceneManagerEditor({
   onClose,
+  playerTileX = 0,
+  playerTileY = 0,
+  onNpcsChanged,
+  initialTab = 'scenes',
 }: {
   onClose: () => void;
+  /** Posición del jugador (para el botón "Aquí" al crear NPCs). */
+  playerTileX?: number;
+  playerTileY?: number;
+  /** Mantiene vivos los NPCs en pantalla al editarlos. */
+  onNpcsChanged?: (npcs: NpcRecord[]) => void;
+  /** Pestaña inicial del nav lateral. */
+  initialTab?: 'scenes' | 'npcs' | 'assets';
 }) {
   const [scenes, setScenes] = useState<SceneMeta[]>([]);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
@@ -40,7 +66,9 @@ export default function SceneManagerEditor({
   // Lateral sidebar tab — toggles between the scenes list and the
   // map-editor's asset/layers panel. Default 'scenes' so the user
   // sees the scene list first when they open the editor.
-  const [sidebarTab, setSidebarTab] = useState<'scenes' | 'assets'>('scenes');
+  const [sidebarTab, setSidebarTab] = useState<'scenes' | 'npcs' | 'assets'>(
+    initialTab,
+  );
 
   const refreshList = async () => {
     const r = await fetch('/api/world/scenes');
@@ -194,42 +222,59 @@ export default function SceneManagerEditor({
         animation: 'pixelFadeIn 0.4s ease-out',
       }}
     >
-      {/* ── Lateral tab strip — toggles which sidebar is visible ── */}
+      {/* ── Nav rail estilo Fluent (icono + etiqueta) ── */}
       <nav
         style={{
-          width: 44,
-          flex: '0 0 44px',
-          background: '#faf9f8',
+          width: 72,
+          flex: '0 0 72px',
+          background: '#ffffff',
           borderRight: '1px solid #edebe9',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'stretch',
-          padding: '8px 0',
-          gap: 2,
+          padding: '10px 6px',
+          gap: 4,
         }}
       >
         <SidebarTabButton
           active={sidebarTab === 'scenes'}
-          icon="🗂"
+          icon={<IconScenes />}
           label="Escenas"
           onClick={() => setSidebarTab('scenes')}
         />
         <SidebarTabButton
+          active={sidebarTab === 'npcs'}
+          icon={<IconNpcs />}
+          label="NPCs"
+          onClick={() => setSidebarTab('npcs')}
+        />
+        <SidebarTabButton
           active={sidebarTab === 'assets'}
-          icon="🎨"
-          label="Assets / Capas del mapa"
+          icon={<IconLayers />}
+          label="Capas"
           onClick={() => setSidebarTab('assets')}
         />
-        {/* Spacer */}
         <div style={{ flex: 1 }} />
         <SidebarTabButton
           active={false}
-          icon="←"
-          label="Cerrar editor"
+          icon={<IconClose />}
+          label="Cerrar"
           onClick={onClose}
         />
       </nav>
 
+      {sidebarTab === 'npcs' ? (
+        /* ── Sección NPCs (lista + edición, embebida) ── */
+        <NpcEditor
+          embedded
+          sceneSlug={activeSlug ?? 'main'}
+          playerTileX={playerTileX}
+          playerTileY={playerTileY}
+          onChanged={onNpcsChanged ?? (() => undefined)}
+          onClose={onClose}
+        />
+      ) : (
+        <>
       {/* ── Sidebar: scene list (visible only when 'scenes' tab is active) ── */}
       <aside
         style={{
@@ -265,18 +310,18 @@ export default function SceneManagerEditor({
             <button
               type="button"
               onClick={() => createScene('map')}
-              style={btnStyle()}
+              style={{ ...btnStyle(), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
               title="Crear escena de mapa"
             >
-              + Mapa
+              <IconAdd size={14} /> Mapa
             </button>
             <button
               type="button"
               onClick={() => createScene('cinematic')}
-              style={btnStyle()}
+              style={{ ...btnStyle(), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
               title="Crear escena cinemática"
             >
-              + Cinem.
+              <IconAdd size={14} /> Cinem.
             </button>
           </div>
         </div>
@@ -296,7 +341,6 @@ export default function SceneManagerEditor({
           {sortedScenes.map((s, i) => {
             const active = s.slug === activeSlug;
             const isRenaming = renamingSlug === s.slug;
-            const kindIcon = s.kind === 'map' ? '🗺' : '🎬';
             return (
               <div
                 key={s.slug}
@@ -326,12 +370,13 @@ export default function SceneManagerEditor({
                 >
                   <span
                     style={{
-                      fontSize: '1rem',
-                      lineHeight: 1,
+                      display: 'grid',
+                      placeItems: 'center',
+                      color: active ? '#0078d4' : '#605e5c',
                     }}
                     title={s.kind === 'map' ? 'Mapa' : 'Cinemática'}
                   >
-                    {kindIcon}
+                    {s.kind === 'map' ? <IconMap size={18} /> : <IconFilm size={18} />}
                   </span>
                   <div
                     style={{
@@ -403,9 +448,14 @@ export default function SceneManagerEditor({
                             color: '#0078d4',
                             marginLeft: 6,
                             fontWeight: 600,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            verticalAlign: 'middle',
                           }}
                         >
-                          ⚡{s.eventTrigger}
+                          <IconBolt size={13} />
+                          {s.eventTrigger}
                         </span>
                       )}
                     </span>
@@ -420,7 +470,7 @@ export default function SceneManagerEditor({
                     }}
                   >
                     <RowAction
-                      icon="✎"
+                      icon={<IconEdit size={15} />}
                       title="Renombrar"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -429,7 +479,7 @@ export default function SceneManagerEditor({
                       }}
                     />
                     <RowAction
-                      icon="↑"
+                      icon={<IconUp size={15} />}
                       title="Subir"
                       disabled={i === 0}
                       onClick={(e) => {
@@ -438,7 +488,7 @@ export default function SceneManagerEditor({
                       }}
                     />
                     <RowAction
-                      icon="↓"
+                      icon={<IconDown size={15} />}
                       title="Bajar"
                       disabled={i === sortedScenes.length - 1}
                       onClick={(e) => {
@@ -447,7 +497,7 @@ export default function SceneManagerEditor({
                       }}
                     />
                     <RowAction
-                      icon="🗑"
+                      icon={<IconDelete size={15} />}
                       title="Borrar"
                       danger
                       onClick={(e) => {
@@ -485,7 +535,7 @@ export default function SceneManagerEditor({
             scene={activePayload.meta}
             scenes={sortedScenes}
             embedded
-            sidebarTab={sidebarTab}
+            sidebarTab={sidebarTab === 'assets' ? 'assets' : 'scenes'}
             onClose={onClose}
             onSaved={() => {
               // Bump scene meta after save so the list reflects update.
@@ -504,6 +554,8 @@ export default function SceneManagerEditor({
           />
         )}
       </main>
+        </>
+      )}
 
       <PixelConfirm
         open={confirmRemoveSlug !== null}
@@ -544,7 +596,7 @@ function SidebarTabButton({
   onClick,
 }: {
   active: boolean;
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   onClick: () => void;
 }) {
@@ -555,31 +607,44 @@ function SidebarTabButton({
       onClick={onClick}
       title={label}
       aria-label={label}
+      aria-pressed={active}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
+        position: 'relative',
         width: '100%',
-        height: 40,
-        display: 'grid',
-        placeItems: 'center',
-        background: active
-          ? '#deecf9'
-          : hover
-            ? '#f3f2f1'
-            : 'transparent',
-        color: active ? '#0078d4' : '#323130',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        padding: '9px 2px',
+        background: active ? '#f3f9fd' : hover ? '#f3f2f1' : 'transparent',
+        color: active ? '#0078d4' : '#605e5c',
         border: 'none',
-        borderLeft: active
-          ? '3px solid #0078d4'
-          : '3px solid transparent',
+        borderRadius: 6,
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-        fontSize: '1.2rem',
+        fontSize: '0.62rem',
+        fontWeight: active ? 600 : 500,
         cursor: 'pointer',
-        padding: 0,
-        borderRadius: 0,
       }}
     >
+      {/* Indicador de selección estilo Fluent */}
+      <span
+        style={{
+          position: 'absolute',
+          left: 2,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 3,
+          height: active ? 20 : 0,
+          borderRadius: 2,
+          background: '#0078d4',
+          transition: 'height 0.15s ease',
+        }}
+      />
       {icon}
+      <span>{label}</span>
     </button>
   );
 }
@@ -610,7 +675,7 @@ function RowAction({
   disabled = false,
   danger = false,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   onClick: (e: React.MouseEvent) => void;
   disabled?: boolean;

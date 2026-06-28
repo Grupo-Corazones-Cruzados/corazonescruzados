@@ -17,7 +17,7 @@ import WorldMap, {
 } from './WorldMap';
 import SceneManagerEditor from './world/SceneManagerEditor';
 import InventoryBar from './world/InventoryBar';
-import NpcEditor, { type NpcRecord } from './world/NpcEditor';
+import { type NpcRecord } from './world/NpcEditor';
 import LightOverlay from './world/LightOverlay';
 import CinematicPlayer from '@/components/world/CinematicPlayer';
 import {
@@ -107,6 +107,8 @@ export default function CharacterGameplay({
   const walkAudioRef = useRef<HTMLAudioElement | null>(null);
   const [worldMap, setWorldMap] = useState<WorldMapData>(DEFAULT_MAP);
   const [editorOpen, setEditorOpen] = useState(false);
+  // Pestaña inicial al abrir el editor de escenas (escenas o NPCs).
+  const [editorInitialTab, setEditorInitialTab] = useState<'scenes' | 'npcs'>('scenes');
   const [isAdmin, setIsAdmin] = useState(false);
   // Inventory is permanent — no toggle. Caps at MAX_INVENTORY_SLOTS
   // distinct items; further pickups of an item already in inventory
@@ -1146,7 +1148,10 @@ export default function CharacterGameplay({
         >
           <button
             type="button"
-            onClick={() => setEditorOpen(true)}
+            onClick={() => {
+              setEditorInitialTab('scenes');
+              setEditorOpen(true);
+            }}
             className="pixel-btn pixel-btn-secondary"
             title="Editor (E)"
             style={{
@@ -1159,7 +1164,10 @@ export default function CharacterGameplay({
           </button>
           <button
             type="button"
-            onClick={() => setNpcEditorOpen(true)}
+            onClick={() => {
+              setEditorInitialTab('npcs');
+              setEditorOpen(true);
+            }}
             className="pixel-btn pixel-btn-secondary"
             style={{
               fontSize: '0.6rem',
@@ -1308,22 +1316,16 @@ export default function CharacterGameplay({
 
       {editorOpen && (
         <SceneManagerEditor
+          initialTab={editorInitialTab}
+          playerTileX={playerTileX}
+          playerTileY={playerTileY}
+          onNpcsChanged={setNpcs}
           onClose={() => {
             setEditorOpen(false);
             // Re-load the active scene so any edits to it land in the
             // gameplay view (tiles, NPCs, lights, transitions, music).
             loadScene(currentScene).catch(() => undefined);
           }}
-        />
-      )}
-
-      {npcEditorOpen && (
-        <NpcEditor
-          playerTileX={playerTileX}
-          playerTileY={playerTileY}
-          sceneSlug={currentScene}
-          onClose={() => setNpcEditorOpen(false)}
-          onChanged={setNpcs}
         />
       )}
 

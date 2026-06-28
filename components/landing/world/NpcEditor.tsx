@@ -23,6 +23,15 @@ import {
   FACE_SHAPES_M,
   FACE_SHAPES_F,
 } from '../CharacterCreator';
+import {
+  IconUp,
+  IconDown,
+  IconLeft,
+  IconRight,
+  IconLocation,
+  IconWarning,
+  IconAdd,
+} from './EditorIcons';
 
 export type NpcRecord = {
   id: number;
@@ -100,6 +109,7 @@ export default function NpcEditor({
   sceneSlug,
   onClose,
   onChanged,
+  embedded = false,
 }: {
   playerTileX: number;
   playerTileY: number;
@@ -108,6 +118,8 @@ export default function NpcEditor({
   sceneSlug?: string;
   onClose: () => void;
   onChanged: (npcs: NpcRecord[]) => void;
+  /** Embebido dentro del SceneManagerEditor (no overlay de pantalla completa). */
+  embedded?: boolean;
 }) {
   const slug = sceneSlug ?? 'main';
   const [npcs, setNpcs] = useState<NpcRecord[]>([]);
@@ -207,15 +219,14 @@ export default function NpcEditor({
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 200000,
+        ...(embedded
+          ? { position: 'relative', flex: 1, minWidth: 0, height: '100%' }
+          : { position: 'fixed', inset: 0, zIndex: 200000, animation: 'pixelFadeIn 0.4s ease-out' }),
         background: '#faf9f8',
         color: '#323130',
         fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
         display: 'grid',
         gridTemplateColumns: '260px 1fr',
-        animation: 'pixelFadeIn 0.4s ease-out',
       }}
     >
       {/* List */}
@@ -251,10 +262,13 @@ export default function NpcEditor({
             type="button"
             onClick={() => setDraft(newDraft(playerTileX, playerTileY))}
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
               padding: '6px 12px',
               fontSize: '0.75rem',
               background: '#0078d4',
-              color: '#323130',
+              color: '#ffffff',
               border: 'none',
               borderRadius: 4,
               fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
@@ -262,7 +276,7 @@ export default function NpcEditor({
               fontWeight: 600,
             }}
           >
-            + Nuevo NPC
+            <IconAdd size={15} /> Nuevo NPC
           </button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
@@ -316,30 +330,32 @@ export default function NpcEditor({
             })
           )}
         </div>
-        <div
-          style={{
-            padding: 10,
-            borderTop: '1px solid #edebe9',
-          }}
-        >
-          <button
-            type="button"
-            onClick={onClose}
+        {!embedded && (
+          <div
             style={{
-              width: '100%',
-              padding: '6px 10px',
-              fontSize: '0.75rem',
-              background: '#ffffff',
-              color: '#323130',
-              border: '1px solid rgba(0,120,212,0.4)',
-              borderRadius: 4,
-              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
-              cursor: 'pointer',
+              padding: 10,
+              borderTop: '1px solid #edebe9',
             }}
           >
-            Cerrar
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: '100%',
+                padding: '6px 10px',
+                fontSize: '0.75rem',
+                background: '#ffffff',
+                color: '#323130',
+                border: '1px solid rgba(0,120,212,0.4)',
+                borderRadius: 4,
+                fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+                cursor: 'pointer',
+              }}
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Edit area */}
@@ -412,13 +428,15 @@ export default function NpcEditor({
                           !disabled && setDraft({ ...draft, facing: d })
                         }
                       >
-                        {d === 'n'
-                          ? '↑'
-                          : d === 's'
-                            ? '↓'
-                            : d === 'w'
-                              ? '←'
-                              : '→'}
+                        {d === 'n' ? (
+                          <IconUp size={16} />
+                        ) : d === 's' ? (
+                          <IconDown size={16} />
+                        ) : d === 'w' ? (
+                          <IconLeft size={16} />
+                        ) : (
+                          <IconRight size={16} />
+                        )}
                       </PillButton>
                     );
                   })}
@@ -492,10 +510,15 @@ export default function NpcEditor({
                     onClick={() =>
                       setDraft({ ...draft, x: playerTileX, y: playerTileY })
                     }
-                    style={pillStyle(false)}
+                    style={{
+                      ...pillStyle(false),
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
                     title="Usar mi posición actual"
                   >
-                    📍 Aquí
+                    <IconLocation size={15} /> Aquí
                   </button>
                 </div>
               </Field>
@@ -519,12 +542,14 @@ export default function NpcEditor({
               {error && (
                 <div
                   style={{
-                    fontSize: '0.6rem',
+                    fontSize: '0.72rem',
                     color: '#a4262c',
-                    letterSpacing: '0.1em',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
-                  ⚠ {error}
+                  <IconWarning size={15} /> {error}
                 </div>
               )}
 
@@ -538,7 +563,7 @@ export default function NpcEditor({
                     padding: '8px 12px',
                     fontSize: '0.78rem',
                     background: '#0078d4',
-                    color: '#323130',
+                    color: '#ffffff',
                     border: 'none',
                     borderRadius: 4,
                     fontFamily:
