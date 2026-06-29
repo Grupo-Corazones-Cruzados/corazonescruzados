@@ -189,6 +189,7 @@ export default function CharacterGameplay({
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
+    let lastEmit = 0; // throttle de setNpcAnim a ~30fps (menos re-renders)
     const clamp = (v: number, lo: number, hi: number) =>
       Math.max(lo, Math.min(hi, v));
     const tick = (now: number) => {
@@ -294,11 +295,13 @@ export default function CharacterGameplay({
       }
       for (const id of [...rt.keys()]) if (!ids.has(id)) rt.delete(id);
       npcTilesRef.current = tiles;
-      // Solo re-renderiza si hay NPCs que caminan (o para limpiar una vez al
-      // dejar de haberlos). Evita re-renders por frame sin movimiento, que
-      // bajan los FPS y ralentizan al jugador.
+      // Solo re-renderiza si hay NPCs caminando, y como máximo a ~30fps (no
+      // necesita 60). Evita re-renders por frame que bajan los FPS del juego.
       if (hasWalkers) {
-        setNpcAnim(out);
+        if (now - lastEmit >= 33) {
+          setNpcAnim(out);
+          lastEmit = now;
+        }
         hadWalkersRef.current = true;
       } else if (hadWalkersRef.current) {
         setNpcAnim(out);
@@ -933,7 +936,7 @@ export default function CharacterGameplay({
     const tick = (now: number) => {
       // Movimiento por TIEMPO (no por frame): la velocidad es la misma aunque
       // bajen los FPS. factor = 1 a 60fps. Se acota para evitar saltos grandes.
-      const factor = Math.min(3, (now - last) / (1000 / 60));
+      const factor = Math.min(5, (now - last) / (1000 / 60));
       last = now;
       const vx =
         (direction === 'w' ? -SPEED : direction === 'e' ? SPEED : 0) * factor;

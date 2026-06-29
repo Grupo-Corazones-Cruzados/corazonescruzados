@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import {
   SHEETS,
   TILE_PX,
@@ -13,7 +13,10 @@ import { loadChromaKeyedSheet } from './world/sheetLoader';
 export const TILE = TILE_PX;
 export const WORLD_SCALE = 2; // 1 source px → 2 screen px (matches editor)
 
-export default function WorldMap({
+// Memoizado: el canvas del mundo NO se vuelve a renderizar mientras el mapa /
+// items recogidos no cambien, aunque el padre (CharacterGameplay) se re-renderice
+// en cada frame de movimiento. Clave para mantener buenos FPS al caminar.
+function WorldMap({
   map,
   scale = WORLD_SCALE,
   hidePickedItems,
@@ -187,3 +190,5 @@ export function buildCollisionGrid(
   }
   return grid;
 }
+
+export default memo(WorldMap);
