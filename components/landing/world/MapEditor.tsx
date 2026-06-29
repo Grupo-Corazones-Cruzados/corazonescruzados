@@ -36,7 +36,7 @@ import {
   IconButton as GhostBtn,
   PANEL_WIDTH,
 } from './editorUi';
-import NpcEditor, { type NpcRecord, npcScale } from './NpcEditor';
+import NpcEditor, { type NpcRecord, npcScale, npcBehavior } from './NpcEditor';
 import { CharacterSprite, ANIMATIONS, npcDisplayFrame } from '../CharacterCreator';
 import {
   IconAdd,
@@ -303,7 +303,8 @@ export default function MapEditor({
     | 'light'
     | 'transition'
     | 'prop'
-    | 'npc';
+    | 'npc'
+    | 'npcRoute';
   const [mode, setMode] = useState<EditorMode>('paint');
 
   // ── NPCs de esta escena ─────────────────────────────────────────────
@@ -312,6 +313,9 @@ export default function MapEditor({
   const [npcDialog, setNpcDialog] = useState<'new' | number | null>(null);
   // NPC seleccionado para ubicar por clic en el mapa (modo 'npc').
   const [placingNpcId, setPlacingNpcId] = useState<number | null>(null);
+  // Edición de RUTA de un NPC (modo 'npcRoute'): clic en el mapa añade waypoints.
+  const [routeEditNpc, setRouteEditNpc] = useState<NpcRecord | null>(null);
+  const [routeDraft, setRouteDraft] = useState<{ x: number; y: number }[]>([]);
   // Frame animado para los sprites de NPC sobre el canvas.
   const [npcFrame, setNpcFrame] = useState(0);
 
@@ -1290,6 +1294,15 @@ export default function MapEditor({
       }
       setPlacingNpcId(null);
       setMode('paint');
+      return;
+    }
+    if (mode === 'npcRoute') {
+      // Añadir un waypoint a la ruta en edición (evita duplicar el último).
+      setRouteDraft((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.x === cx && last.y === cy) return prev;
+        return [...prev, { x: cx, y: cy }];
+      });
       return;
     }
     if (mode === 'spawn') {
@@ -2340,6 +2353,19 @@ export default function MapEditor({
                       >
                         <IconLocation size={13} />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRouteEditNpc(n);
+                          setRouteDraft(npcBehavior(n.config).route);
+                          setPlacingNpcId(null);
+                          setMode('npcRoute');
+                        }}
+                        title="Definir ruta de caminata (clic en celdas del mapa)"
+                        style={npcCardBtn(routeEditNpc?.id === n.id)}
+                      >
+                        <IconTransition size={13} />
+                      </button>
                     </div>
                     </div>
                   </div>
@@ -2505,7 +2531,12 @@ export default function MapEditor({
                   setCopyDrag({ start: c, now: c });
                   return;
                 }
-                if (mode === 'light' || mode === 'transition' || mode === 'npc') {
+                if (
+                  mode === 'light' ||
+                  mode === 'transition' ||
+                  mode === 'npc' ||
+                  mode === 'npcRoute'
+                ) {
                   // Click-only modes (no drag painting).
                   paintAt(e.clientX, e.clientY);
                   return;
@@ -2596,7 +2627,7 @@ export default function MapEditor({
                 in-progress selection rectangle in copy mode. */}
             <PreviewOverlay
               brush={brush}
-              mode={mode === 'npc' ? 'spawn' : mode}
+              mode={mode === 'npc' || mode === 'npcRoute' ? 'spawn' : mode}
               hoverCell={hoverCell}
               copyDrag={copyDrag}
               imgs={imgs}
@@ -2604,13 +2635,68 @@ export default function MapEditor({
               height={height}
             />
 
+            {/* Ruta en edición — línea punteada + waypoints numerados. */}
+            {mode === 'npcRoute' && (
+              <>
+                <svg
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    overflow: 'visible',
+                    zIndex: 7,
+                  }}
+                >
+                  <polyline
+                    points={routeDraft
+                      .map(
+                        (p) =>
+                          `${(p.x + 0.5) * TILE_PX * viewScale},${(p.y + 0.5) * TILE_PX * viewScale}`,
+                      )
+                      .join(' ')}
+                    fill="none"
+                    stroke="#0078d4"
+                    strokeWidth={2}
+                    strokeDasharray="5 4"
+                  />
+                </svg>
+                {routeDraft.map((p, i) => (
+                  <div
+                    key={`wp-${i}`}
+                    style={{
+                      position: 'absolute',
+                      left: (p.x + 0.5) * TILE_PX * viewScale,
+                      top: (p.y + 0.5) * TILE_PX * viewScale,
+                      transform: 'translate(-50%, -50%)',
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      background: '#0078d4',
+                      color: '#fff',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      border: '2px solid #fff',
+                      zIndex: 8,
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                ))}
+              </>
+            )}
+
             {/* NPCs colocados — overlays DOM (no canvas), escalan con el zoom. */}
             {npcs.map((n) => (
               <div
                 key={n.id}
                 onClick={(e) => {
-                  // En modo colocar, el clic lo maneja el canvas; aquí dejamos pasar.
-                  if (mode === 'npc') return;
+                  // En modo colocar/ruta, el clic lo maneja el canvas.
+                  if (mode === 'npc' || mode === 'npcRoute') return;
                   e.stopPropagation();
                   setNpcDialog(n.id);
                 }}
@@ -2620,7 +2706,8 @@ export default function MapEditor({
                   left: (n.x + 0.5) * TILE_PX * viewScale,
                   top: (n.y + 0.5) * TILE_PX * viewScale,
                   transform: 'translate(-50%, -50%)',
-                  pointerEvents: mode === 'npc' ? 'none' : 'auto',
+                  pointerEvents:
+                    mode === 'npc' || mode === 'npcRoute' ? 'none' : 'auto',
                   cursor: 'pointer',
                   zIndex: 6,
                   opacity: placingNpcId === n.id ? 0.4 : 1,
@@ -2867,6 +2954,93 @@ estos controles: el zoom se centra en la última celda en la que hiciste clic."
               cursor: 'pointer',
               fontSize: '0.78rem',
             }}
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
+      {/* Editor de RUTA de NPC — barra de control */}
+      {mode === 'npcRoute' && routeEditNpc && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 100,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 50,
+            background: '#0078d4',
+            color: '#fff',
+            padding: '8px 14px',
+            borderRadius: 6,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <span>
+            Ruta de <strong>{routeEditNpc.name}</strong>: clic en celdas para
+            añadir puntos ({routeDraft.length}).
+          </span>
+          <button
+            type="button"
+            onClick={() => setRouteDraft((p) => p.slice(0, -1))}
+            disabled={routeDraft.length === 0}
+            style={routeBtnStyle}
+          >
+            Deshacer
+          </button>
+          <button
+            type="button"
+            onClick={() => setRouteDraft([])}
+            disabled={routeDraft.length === 0}
+            style={routeBtnStyle}
+          >
+            Limpiar
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const n = routeEditNpc;
+              const beh = npcBehavior(n.config);
+              await fetch(`/api/world/npcs/${n.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  scene: scene?.slug ?? 'main',
+                  name: n.name,
+                  config: {
+                    ...n.config,
+                    behavior: { ...beh, mode: 'route', route: routeDraft },
+                  },
+                  x: n.x,
+                  y: n.y,
+                  facing: n.facing,
+                  // Definir una ruta implica que el NPC camina.
+                  animation: 'walk',
+                  dialogue: n.dialogue,
+                }),
+              }).catch(() => undefined);
+              await refreshNpcs();
+              setRouteEditNpc(null);
+              setRouteDraft([]);
+              setMode('paint');
+            }}
+            style={{ ...routeBtnStyle, background: '#fff', color: '#0078d4' }}
+          >
+            Guardar ruta
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setRouteEditNpc(null);
+              setRouteDraft([]);
+              setMode('paint');
+            }}
+            style={routeBtnStyle}
           >
             Cancelar
           </button>
@@ -5879,3 +6053,15 @@ function paletteCellStyle(active: boolean): React.CSSProperties {
     transition: 'border-color 0.12s ease, box-shadow 0.12s ease',
   };
 }
+
+// Botón de la barra de edición de ruta de NPC.
+const routeBtnStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.2)',
+  border: '1px solid rgba(255,255,255,0.5)',
+  color: '#fff',
+  borderRadius: 4,
+  padding: '3px 10px',
+  cursor: 'pointer',
+  fontSize: '0.76rem',
+  fontWeight: 600,
+};
