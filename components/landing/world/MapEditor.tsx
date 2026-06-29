@@ -451,8 +451,10 @@ export default function MapEditor({
   const [activeTab, setActiveTab] = useState<
     'tiles' | 'items' | 'props' | 'colors'
   >('tiles');
-  // Vista de la paleta: objetos (maestro-detalle por categoría) vs hojas crudas.
-  const [tileView, setTileView] = useState<'objects' | 'sheets'>('objects');
+  // Vista de la paleta: objetos / items (maestro-detalle por categoría) / hojas.
+  const [tileView, setTileView] = useState<'objects' | 'items' | 'sheets'>(
+    'objects',
+  );
   // Categoría seleccionada en la vista Objetos (maestro). Su contenido se
   // muestra a la derecha. Vacío = se autoselecciona la primera disponible.
   const [selectedSection, setSelectedSection] = useState<string>('obj:veg');
@@ -1588,10 +1590,11 @@ export default function MapEditor({
             value={tileView}
             onChange={(v) => {
               setTileView(v);
-              if (v === 'objects') setMode('paint');
+              if (v === 'objects' || v === 'items') setMode('paint');
             }}
             tabs={[
               { value: 'objects', label: 'Objetos' },
+              { value: 'items', label: 'Items' },
               { value: 'sheets', label: 'Hojas' },
             ]}
           />
@@ -1646,8 +1649,8 @@ export default function MapEditor({
             gap: 16,
           }}
         >
-          {tileView === 'objects' && (
-            allSprites === null ? (
+          {(tileView === 'objects' || tileView === 'items') && (
+            tileView === 'objects' && allSprites === null ? (
               <div
                 style={{
                   fontSize: '0.78rem',
@@ -1663,13 +1666,16 @@ export default function MapEditor({
                 !filteredQuery ||
                 it.label.toLowerCase().includes(filteredQuery) ||
                 it.id.toLowerCase().includes(filteredQuery);
-              const objSecs = SPRITE_CATEGORIES.filter((c) => c.id !== 'all')
-                .map((c) => ({
-                  key: `obj:${c.id}`,
-                  label: c.label,
-                  count: allSprites.list.filter((s) => s.cat === c.id).length,
-                }))
-                .filter((s) => s.count > 0);
+              const objSecs = allSprites
+                ? SPRITE_CATEGORIES.filter((c) => c.id !== 'all')
+                    .map((c) => ({
+                      key: `obj:${c.id}`,
+                      label: c.label,
+                      count: allSprites.list.filter((s) => s.cat === c.id)
+                        .length,
+                    }))
+                    .filter((s) => s.count > 0)
+                : [];
               const itemSecs = ITEM_CATEGORIES.map((c) => ({
                 key: `item:${c.id}`,
                 label: c.label,
@@ -1685,15 +1691,17 @@ export default function MapEditor({
               const groups: {
                 title: string;
                 secs: { key: string; label: string; count?: number }[];
-              }[] = [
-                { title: 'Objetos', secs: objSecs },
-                { title: 'Ítems', secs: itemSecs },
-                { title: 'Props', secs: propSecs },
-                {
-                  title: '',
-                  secs: [{ key: 'cat:colors', label: 'Colores' }],
-                },
-              ];
+              }[] =
+                tileView === 'items'
+                  ? [{ title: '', secs: itemSecs }]
+                  : [
+                      { title: 'Objetos', secs: objSecs },
+                      { title: 'Props', secs: propSecs },
+                      {
+                        title: '',
+                        secs: [{ key: 'cat:colors', label: 'Colores' }],
+                      },
+                    ];
               const allKeys = groups.flatMap((g) => g.secs.map((s) => s.key));
               const sel = allKeys.includes(selectedSection)
                 ? selectedSection
