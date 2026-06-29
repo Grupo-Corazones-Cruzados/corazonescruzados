@@ -451,10 +451,12 @@ export default function MapEditor({
   const [activeTab, setActiveTab] = useState<
     'tiles' | 'items' | 'props' | 'colors'
   >('tiles');
-  // Pestaña Tiles: galería de objetos (categorizada) vs hojas (sheets crudos).
+  // Vista de la paleta: objetos (maestro-detalle por categoría) vs hojas crudas.
   const [tileView, setTileView] = useState<'objects' | 'sheets'>('objects');
-  const [spriteCat, setSpriteCat] = useState<SpriteCat | 'all'>('all');
-  const allSprites = useAllSprites(activeTab === 'tiles' && tileView === 'objects');
+  // Categoría seleccionada en la vista Objetos (maestro). Su contenido se
+  // muestra a la derecha. Vacío = se autoselecciona la primera disponible.
+  const [selectedSection, setSelectedSection] = useState<string>('obj:veg');
+  const allSprites = useAllSprites(tileView === 'objects');
   // Color brush — when set and the user paints, a solid-color tile
   // of this hex is stamped instead of a sheet sprite.
   const [colorBrushHex, setColorBrushHex] = useState<string | null>(null);
@@ -1524,8 +1526,8 @@ export default function MapEditor({
           left: palettePos.x,
           top: palettePos.y,
           zIndex: 40,
-          width: 320,
-          height: paletteMin ? 'auto' : 'min(78vh, 620px)',
+          width: 420,
+          height: paletteMin ? 'auto' : 'min(80vh, 640px)',
           display: paletteOpen ? 'flex' : 'none',
           flexDirection: 'column',
           background: '#ffffff',
@@ -1644,247 +1646,236 @@ export default function MapEditor({
             gap: 16,
           }}
         >
-          {tileView === 'objects' &&
-            ITEM_CATEGORIES.map((cat) => {
-              const itemsInCat = ITEMS.filter(
-                (it) =>
-                  it.category === cat.id &&
-                  (!filteredQuery ||
-                    it.label.toLowerCase().includes(filteredQuery) ||
-                    it.id.toLowerCase().includes(filteredQuery)),
-              );
-              if (itemsInCat.length === 0) return null;
-              const key = `item:${cat.id}`;
-              // When the user is actively searching, force-expand
-              // matching sections so results stay visible.
-              const expanded =
-                !!filteredQuery || expandedSections.has(key);
+          {tileView === 'objects' && (
+            allSprites === null ? (
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: '#605e5c',
+                  padding: '12px 4px',
+                  textAlign: 'center',
+                }}
+              >
+                Analizando sprites…
+              </div>
+            ) : (() => {
+              const matchQ = (it: (typeof ITEMS)[number]) =>
+                !filteredQuery ||
+                it.label.toLowerCase().includes(filteredQuery) ||
+                it.id.toLowerCase().includes(filteredQuery);
+              const objSecs = SPRITE_CATEGORIES.filter((c) => c.id !== 'all')
+                .map((c) => ({
+                  key: `obj:${c.id}`,
+                  label: c.label,
+                  count: allSprites.list.filter((s) => s.cat === c.id).length,
+                }))
+                .filter((s) => s.count > 0);
+              const itemSecs = ITEM_CATEGORIES.map((c) => ({
+                key: `item:${c.id}`,
+                label: c.label,
+                count: ITEMS.filter((it) => it.category === c.id && matchQ(it))
+                  .length,
+              })).filter((s) => s.count > 0);
+              const propSecs = ITEM_CATEGORIES.map((c) => ({
+                key: `prop:${c.id}`,
+                label: c.label,
+                count: ITEMS.filter((it) => it.category === c.id && matchQ(it))
+                  .length,
+              })).filter((s) => s.count > 0);
+              const groups: {
+                title: string;
+                secs: { key: string; label: string; count?: number }[];
+              }[] = [
+                { title: 'Objetos', secs: objSecs },
+                { title: 'Ítems', secs: itemSecs },
+                { title: 'Props', secs: propSecs },
+                {
+                  title: '',
+                  secs: [{ key: 'cat:colors', label: 'Colores' }],
+                },
+              ];
+              const allKeys = groups.flatMap((g) => g.secs.map((s) => s.key));
+              const sel = allKeys.includes(selectedSection)
+                ? selectedSection
+                : allKeys[0];
+
               return (
-                <div key={`item-${cat.id}`}>
-                  <CollapseHeader
-                    label={`Ítems · ${cat.label}`}
-                    count={itemsInCat.length}
-                    expanded={expanded}
-                    onToggle={() => toggleSection(key)}
-                  />
-                  {expanded && (
+                <div style={{ display: 'flex', gap: 8, flex: 1, minHeight: 0 }}>
+                  {/* Maestro: lista compacta de categorías */}
                   <div
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))',
-                      gap: 6,
+                      width: 132,
+                      flexShrink: 0,
+                      overflowY: 'auto',
+                      borderRight: '1px solid #edebe9',
+                      paddingRight: 4,
                     }}
                   >
-                    {itemsInCat.map((it) => {
-                      const active = itemBrush === it.id;
-                      return (
-                        <button
-                          key={it.id}
-                          type="button"
-                          onClick={() => {
-                            setItemBrush(it.id);
-                            setBrush(null);
-                            setPropBrushItemId(null);
-                            setColorBrushHex(null);
-                            setMode('paint');
-                          }}
-                          title={it.label}
-                          style={paletteCellStyle(active)}
-                        >
-                          <img
-                            src={itemDataUrl(it)}
-                            alt={it.label}
+                    {groups.map((g) => (
+                      <div key={g.title || 'colors'}>
+                        {g.title && (
+                          <div
                             style={{
-                              width: '100%',
-                              height: '100%',
-                              imageRendering: 'pixelated',
-                              display: 'block',
-                              objectFit: 'contain',
+                              fontSize: '0.58rem',
+                              fontWeight: 700,
+                              letterSpacing: '0.1em',
+                              textTransform: 'uppercase',
+                              color: '#a19f9d',
+                              padding: '7px 7px 2px',
                             }}
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
-                  )}
-                </div>
-              );
-            })}
-          {tileView === 'objects' && (
-            <>
-              {ITEM_CATEGORIES.map((cat) => {
-                const itemsInCat = ITEMS.filter(
-                  (it) =>
-                    it.category === cat.id &&
-                    (!filteredQuery ||
-                      it.label.toLowerCase().includes(filteredQuery) ||
-                      it.id.toLowerCase().includes(filteredQuery)),
-                );
-                if (itemsInCat.length === 0) return null;
-                const key = `prop:${cat.id}`;
-                const expanded =
-                  !!filteredQuery || expandedSections.has(key);
-                return (
-                  <div key={`prop-${cat.id}`}>
-                    <CollapseHeader
-                      label={`Props · ${cat.label}`}
-                      count={itemsInCat.length}
-                      expanded={expanded}
-                      onToggle={() => toggleSection(key)}
-                    />
-                    {expanded && (
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))',
-                        gap: 6,
-                      }}
-                    >
-                      {itemsInCat.map((it) => {
-                        const active = propBrushItemId === it.id;
-                        return (
-                          <button
-                            key={it.id}
-                            type="button"
-                            onClick={() => {
-                              setPropBrushItemId(it.id);
-                              setBrush(null);
-                              setItemBrush(null);
-                              setColorBrushHex(null);
-                              setMode('prop');
-                            }}
-                            title={it.label}
-                            style={paletteCellStyle(active)}
                           >
-                            <img
-                              src={itemDataUrl(it)}
-                              alt={it.label}
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                imageRendering: 'pixelated',
-                                display: 'block',
-                                objectFit: 'contain',
-                              }}
-                            />
-                          </button>
+                            {g.title}
+                          </div>
+                        )}
+                        {g.secs.map((s) => (
+                          <CategoryRow
+                            key={s.key}
+                            label={s.label}
+                            count={s.count}
+                            active={sel === s.key}
+                            onClick={() => setSelectedSection(s.key)}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Detalle: ítems de la categoría seleccionada */}
+                  <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
+                    {sel === 'cat:colors' ? (
+                      <ColorsPalette
+                        activeColor={colorBrushHex}
+                        onPick={(c) => {
+                          setColorBrushHex(c);
+                          setBrush(colorBrush(c));
+                          setItemBrush(null);
+                          setPropBrushItemId(null);
+                          setMode('paint');
+                        }}
+                      />
+                    ) : sel.startsWith('obj:') ? (
+                      (() => {
+                        const catId = sel.slice(4);
+                        const items = allSprites.list.filter(
+                          (s) => s.cat === catId,
                         );
-                      })}
-                    </div>
+                        const CAP = 400;
+                        return (
+                          <>
+                            <div
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns:
+                                  'repeat(auto-fill, minmax(60px, 1fr))',
+                                gap: 6,
+                              }}
+                            >
+                              {items.slice(0, CAP).map((sp, i) => {
+                                const isActive =
+                                  brush?.source === 'sheet' &&
+                                  brush.sheetIdx === sp.sheetIdx &&
+                                  brush.sx === sp.sx &&
+                                  brush.sy === sp.sy;
+                                return (
+                                  <SpriteThumb
+                                    key={`${sp.sheetIdx}:${sp.sx}:${sp.sy}:${i}`}
+                                    sprite={sp}
+                                    active={!!isActive}
+                                    onClick={() =>
+                                      activateBrush(
+                                        sheetBrush(
+                                          sp.sheetIdx,
+                                          sp.sx,
+                                          sp.sy,
+                                          sp.w,
+                                          sp.h,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                );
+                              })}
+                            </div>
+                            {items.length > CAP && (
+                              <div
+                                style={{
+                                  fontSize: '0.7rem',
+                                  color: '#a19f9d',
+                                  textAlign: 'center',
+                                  padding: '8px 4px',
+                                }}
+                              >
+                                Mostrando {CAP} de {items.length}.
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()
+                    ) : (
+                      (() => {
+                        const isProp = sel.startsWith('prop:');
+                        const catId = sel.slice(5);
+                        const list = ITEMS.filter(
+                          (it) => it.category === catId && matchQ(it),
+                        );
+                        return (
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns:
+                                'repeat(auto-fill, minmax(56px, 1fr))',
+                              gap: 6,
+                            }}
+                          >
+                            {list.map((it) => {
+                              const active = isProp
+                                ? propBrushItemId === it.id
+                                : itemBrush === it.id;
+                              return (
+                                <button
+                                  key={it.id}
+                                  type="button"
+                                  title={it.label}
+                                  style={paletteCellStyle(active)}
+                                  onClick={() => {
+                                    if (isProp) {
+                                      setPropBrushItemId(it.id);
+                                      setBrush(null);
+                                      setItemBrush(null);
+                                      setColorBrushHex(null);
+                                      setMode('prop');
+                                    } else {
+                                      setItemBrush(it.id);
+                                      setBrush(null);
+                                      setPropBrushItemId(null);
+                                      setColorBrushHex(null);
+                                      setMode('paint');
+                                    }
+                                  }}
+                                >
+                                  <img
+                                    src={itemDataUrl(it)}
+                                    alt={it.label}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      imageRendering: 'pixelated',
+                                      display: 'block',
+                                      objectFit: 'contain',
+                                    }}
+                                  />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()
                     )}
                   </div>
-                );
-              })}
-            </>
-          )}
-          {tileView === 'objects' && (() => {
-            const key = 'cat:colors';
-            const expanded = expandedSections.has(key);
-            return (
-              <div>
-                <CollapseHeader
-                  label="Colores"
-                  expanded={expanded}
-                  onToggle={() => toggleSection(key)}
-                />
-                {expanded && (
-                  <ColorsPalette
-                    activeColor={colorBrushHex}
-                    onPick={(c) => {
-                      setColorBrushHex(c);
-                      setBrush(colorBrush(c));
-                      setItemBrush(null);
-                      setPropBrushItemId(null);
-                      setMode('paint');
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })()}
-          {/* Objetos detectados — una sección colapsable por categoría */}
-          {tileView === 'objects' && allSprites === null && (
-            <div
-              style={{
-                fontSize: '0.78rem',
-                color: '#605e5c',
-                padding: '12px 4px',
-                textAlign: 'center',
-              }}
-            >
-              Analizando sprites…
-            </div>
-          )}
-          {tileView === 'objects' &&
-            allSprites !== null &&
-            SPRITE_CATEGORIES.filter((c) => c.id !== 'all').map((cat) => {
-              const items = allSprites.list.filter((s) => s.cat === cat.id);
-              if (items.length === 0) return null;
-              const key = `obj:${cat.id}`;
-              const expanded = expandedSections.has(key);
-              const CAP = 400;
-              const shown = items.slice(0, CAP);
-              return (
-                <div key={`obj-${cat.id}`}>
-                  <CollapseHeader
-                    label={cat.label}
-                    count={items.length}
-                    expanded={expanded}
-                    onToggle={() => toggleSection(key)}
-                  />
-                  {expanded && (
-                    <>
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns:
-                            'repeat(auto-fill, minmax(64px, 1fr))',
-                          gap: 6,
-                        }}
-                      >
-                        {shown.map((sp, i) => {
-                          const isActive =
-                            brush?.source === 'sheet' &&
-                            brush.sheetIdx === sp.sheetIdx &&
-                            brush.sx === sp.sx &&
-                            brush.sy === sp.sy;
-                          return (
-                            <SpriteThumb
-                              key={`${sp.sheetIdx}:${sp.sx}:${sp.sy}:${i}`}
-                              sprite={sp}
-                              active={!!isActive}
-                              onClick={() =>
-                                activateBrush(
-                                  sheetBrush(
-                                    sp.sheetIdx,
-                                    sp.sx,
-                                    sp.sy,
-                                    sp.w,
-                                    sp.h,
-                                  ),
-                                )
-                              }
-                            />
-                          );
-                        })}
-                      </div>
-                      {items.length > CAP && (
-                        <div
-                          style={{
-                            fontSize: '0.7rem',
-                            color: '#a19f9d',
-                            textAlign: 'center',
-                            padding: '8px 4px',
-                          }}
-                        >
-                          Mostrando {CAP} de {items.length}.
-                        </div>
-                      )}
-                    </>
-                  )}
                 </div>
               );
-            })}
+            })()
+          )}
           {tileView === 'sheets' && (
             <div
               style={{
@@ -4152,6 +4143,74 @@ function ColorsPalette({
 // like a Word-style accordion: chevron + label + optional count
 // badge, full-width clickable area, subtle hover wash. Active search
 // queries force-expand sections from the outside (handled by callers).
+// Fila compacta de categoría (maestro): la seleccionada se marca con relleno de
+// fondo + barra azul a la izquierda. A la derecha se muestran sus ítems.
+function CategoryRow({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count?: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 6,
+        padding: '4px 7px',
+        marginBottom: 2,
+        background: active ? '#deecf9' : hover ? '#f3f2f1' : 'transparent',
+        borderLeft: `3px solid ${active ? '#0078d4' : 'transparent'}`,
+        borderTop: 'none',
+        borderRight: 'none',
+        borderBottom: 'none',
+        borderRadius: 3,
+        cursor: 'pointer',
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+        textAlign: 'left',
+      }}
+    >
+      <span
+        style={{
+          flex: 1,
+          minWidth: 0,
+          fontSize: '0.72rem',
+          fontWeight: 600,
+          color: active ? '#0078d4' : '#323130',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {label}
+      </span>
+      {count != null && (
+        <span
+          style={{
+            fontSize: '0.62rem',
+            color: active ? '#0078d4' : '#a19f9d',
+            fontWeight: 600,
+          }}
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
 function CollapseHeader({
   label,
   count,
