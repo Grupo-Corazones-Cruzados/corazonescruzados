@@ -10,6 +10,7 @@ import {
   ANIMATIONS,
   ANIMATION_OPTIONS,
   npcDisplayFrame,
+  BODY_TYPES,
   SKIN_TONES,
   HAIR_COLORS,
   HAIR_STYLES,
@@ -32,6 +33,8 @@ import {
   IconLocation,
   IconWarning,
   IconAdd,
+  IconSave,
+  IconDelete,
 } from './EditorIcons';
 import {
   PanelHeader,
@@ -634,47 +637,23 @@ export default function NpcEditor({
               )}
 
               <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
+                <EditorButton
                   onClick={save}
                   disabled={busy}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    fontSize: '0.78rem',
-                    background: '#0078d4',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: 4,
-                    fontFamily:
-                      'system-ui, -apple-system, "Segoe UI", sans-serif',
-                    cursor: busy ? 'wait' : 'pointer',
-                    fontWeight: 600,
-                    opacity: busy ? 0.6 : 1,
-                  }}
+                  icon={<IconSave size={15} />}
+                  style={{ flex: 1 }}
                 >
                   {busy ? 'Guardando…' : draft.id ? 'Guardar' : 'Crear'}
-                </button>
+                </EditorButton>
                 {draft.id != null && (
-                  <button
-                    type="button"
+                  <EditorButton
+                    variant="danger"
                     onClick={() => setConfirmRemove(true)}
                     disabled={busy}
-                    style={{
-                      padding: '8px 12px',
-                      fontSize: '0.78rem',
-                      background: '#fde7e9',
-                      color: '#a4262c',
-                      border: '1px solid #a4262c',
-                      borderRadius: 4,
-                      fontFamily:
-                        'system-ui, -apple-system, "Segoe UI", sans-serif',
-                      cursor: busy ? 'wait' : 'pointer',
-                      opacity: busy ? 0.6 : 1,
-                    }}
+                    icon={<IconDelete size={15} />}
                   >
                     Borrar
-                  </button>
+                  </EditorButton>
                 )}
               </div>
             </div>
@@ -698,6 +677,93 @@ export default function NpcEditor({
         onCancel={() => setConfirmRemove(false)}
       />
     </div>
+  );
+}
+
+type ColorOpt = { id: string; label: string; preview?: string };
+
+function hexToRgb(hex: string): [number, number, number] {
+  let h = hex.replace('#', '');
+  if (h.length === 3)
+    h = h
+      .split('')
+      .map((c) => c + c)
+      .join('');
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+// Opción cuyo color predefinido es el más cercano al hex elegido.
+function nearestColorOpt(hex: string, options: ColorOpt[]): ColorOpt {
+  const [r, g, b] = hexToRgb(hex);
+  let best = options[0];
+  let bestD = Infinity;
+  for (const o of options) {
+    if (!o.preview) continue;
+    const [pr, pg, pb] = hexToRgb(o.preview);
+    const d = (r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = o;
+    }
+  }
+  return best;
+}
+
+// Grupo de color: swatches predefinidos + selector libre que se ajusta al color
+// disponible más cercano (los sprites usan sheets por color, no tinte arbitrario).
+function ColorGroup({
+  label,
+  options,
+  value,
+  onPick,
+}: {
+  label: string;
+  options: ColorOpt[];
+  value: string;
+  onPick: (id: string) => void;
+}) {
+  const current = options.find((o) => o.id === value);
+  return (
+    <Group label={label}>
+      {options.map((s) => (
+        <SwatchButton
+          key={s.id}
+          active={value === s.id}
+          color={s.preview}
+          label={s.label}
+          onClick={() => onPick(s.id)}
+        />
+      ))}
+      <label
+        title="Elegir cualquier color (se ajusta al disponible más cercano)"
+        style={{
+          width: 28,
+          height: 28,
+          position: 'relative',
+          display: 'inline-grid',
+          placeItems: 'center',
+          border: '1px dashed #0078d4',
+          borderRadius: 2,
+          cursor: 'pointer',
+        }}
+      >
+        <span style={{ fontSize: '0.85rem', color: '#0078d4', fontWeight: 700, lineHeight: 1 }}>
+          +
+        </span>
+        <input
+          type="color"
+          value={current?.preview ?? '#888888'}
+          onChange={(e) => onPick(nearestColorOpt(e.target.value, options).id)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            opacity: 0,
+            cursor: 'pointer',
+          }}
+        />
+      </label>
+    </Group>
   );
 }
 
@@ -748,17 +814,12 @@ function AppearanceEditor({
         ))}
       </Group>
 
-      <Group label="Piel">
-        {SKIN_TONES.map((s) => (
-          <SwatchButton
-            key={s.id}
-            active={config.skinId === s.id}
-            color={s.preview}
-            label={s.label}
-            onClick={() => set('skinId', s.id)}
-          />
-        ))}
-      </Group>
+      <ColorGroup
+        label="Piel"
+        options={SKIN_TONES}
+        value={config.skinId}
+        onPick={(id) => set('skinId', id)}
+      />
 
       <Group label="Forma del rostro">
         {faceShapes.map((o) => (
@@ -766,6 +827,18 @@ function AppearanceEditor({
             key={o.id}
             active={config.faceShape === o.id}
             onClick={() => set('faceShape', o.id)}
+          >
+            {o.label}
+          </PillButton>
+        ))}
+      </Group>
+
+      <Group label="Contextura">
+        {BODY_TYPES.map((o) => (
+          <PillButton
+            key={o.id}
+            active={config.bodyType === o.id}
+            onClick={() => set('bodyType', o.id as CharacterConfig['bodyType'])}
           >
             {o.label}
           </PillButton>
@@ -784,17 +857,12 @@ function AppearanceEditor({
         ))}
       </Group>
 
-      <Group label="Color de cabello">
-        {HAIR_COLORS.map((s) => (
-          <SwatchButton
-            key={s.id}
-            active={config.hairColor === s.id}
-            color={s.preview}
-            label={s.label}
-            onClick={() => set('hairColor', s.id)}
-          />
-        ))}
-      </Group>
+      <ColorGroup
+        label="Color de cabello"
+        options={HAIR_COLORS}
+        value={config.hairColor}
+        onPick={(id) => set('hairColor', id)}
+      />
 
       <Group label="Cejas">
         {EYEBROW_STYLES.map((o) => (
@@ -808,17 +876,12 @@ function AppearanceEditor({
         ))}
       </Group>
 
-      <Group label="Color de ojos">
-        {EYE_COLORS.map((s) => (
-          <SwatchButton
-            key={s.id}
-            active={config.eyeColor === s.id}
-            color={s.preview}
-            label={s.label}
-            onClick={() => set('eyeColor', s.id)}
-          />
-        ))}
-      </Group>
+      <ColorGroup
+        label="Color de ojos"
+        options={EYE_COLORS}
+        value={config.eyeColor}
+        onPick={(id) => set('eyeColor', id)}
+      />
 
       {config.gender === 'masculino' && (
         <Group label="Barba">
@@ -847,17 +910,12 @@ function AppearanceEditor({
       </Group>
 
       {config.glassesStyle !== 'none' && (
-        <Group label="Color de lentes">
-          {GLASSES_COLORS.map((s) => (
-            <SwatchButton
-              key={s.id}
-              active={config.glassesColor === s.id}
-              color={s.preview}
-              label={s.label}
-              onClick={() => set('glassesColor', s.id)}
-            />
-          ))}
-        </Group>
+        <ColorGroup
+          label="Color de lentes"
+          options={GLASSES_COLORS}
+          value={config.glassesColor}
+          onPick={(id) => set('glassesColor', id)}
+        />
       )}
 
       <Group label="Vestimenta">
@@ -873,30 +931,20 @@ function AppearanceEditor({
       </Group>
 
       {config.clothingStyle !== 'none' && (
-        <Group label="Color de vestimenta">
-          {CLOTHING_COLORS.map((s) => (
-            <SwatchButton
-              key={s.id}
-              active={config.clothingColor === s.id}
-              color={s.preview}
-              label={s.label}
-              onClick={() => set('clothingColor', s.id)}
-            />
-          ))}
-        </Group>
+        <ColorGroup
+          label="Color de vestimenta"
+          options={CLOTHING_COLORS}
+          value={config.clothingColor}
+          onPick={(id) => set('clothingColor', id)}
+        />
       )}
 
-      <Group label="Color de pantalón">
-        {CLOTHING_COLORS.map((s) => (
-          <SwatchButton
-            key={s.id}
-            active={config.pantsColor === s.id}
-            color={s.preview}
-            label={s.label}
-            onClick={() => set('pantsColor', s.id)}
-          />
-        ))}
-      </Group>
+      <ColorGroup
+        label="Color de pantalón"
+        options={CLOTHING_COLORS}
+        value={config.pantsColor}
+        onPick={(id) => set('pantsColor', id)}
+      />
 
       <Group label="Calzado">
         {SHOES_STYLES.map((o) => (
@@ -911,17 +959,12 @@ function AppearanceEditor({
       </Group>
 
       {config.shoesStyle !== 'none' && (
-        <Group label="Color de calzado">
-          {CLOTHING_COLORS.map((s) => (
-            <SwatchButton
-              key={s.id}
-              active={config.shoesColor === s.id}
-              color={s.preview}
-              label={s.label}
-              onClick={() => set('shoesColor', s.id)}
-            />
-          ))}
-        </Group>
+        <ColorGroup
+          label="Color de calzado"
+          options={CLOTHING_COLORS}
+          value={config.shoesColor}
+          onPick={(id) => set('shoesColor', id)}
+        />
       )}
     </div>
   );

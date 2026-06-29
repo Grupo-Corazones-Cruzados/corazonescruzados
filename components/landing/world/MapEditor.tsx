@@ -326,7 +326,12 @@ export default function MapEditor({
   const [paletteMin, setPaletteMin] = useState(false);
   // Maximizada: cubre toda la pantalla para revisar todo a pantalla completa.
   const [paletteMax, setPaletteMax] = useState(false);
-  const [palettePos, setPalettePos] = useState({ x: 16, y: 70 });
+  // Por defecto la paleta arranca a la DERECHA de la pantalla.
+  const [palettePos, setPalettePos] = useState(() =>
+    typeof window !== 'undefined'
+      ? { x: Math.max(16, window.innerWidth - 420 - 24), y: 70 }
+      : { x: 16, y: 70 },
+  );
   // Tamaño de la ventana (redimensionable desde el borde inferior-derecho). El
   // tamaño por defecto es el MÍNIMO; el usuario puede agrandarla.
   const PALETTE_MIN_W = 420;

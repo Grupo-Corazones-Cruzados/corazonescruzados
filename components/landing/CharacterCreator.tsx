@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 export type Gender = 'masculino' | 'femenino';
+// Contextura: ajusta la silueta (ancho) vía scaleX, manteniendo la ropa alineada.
 export type BodyType =
   | 'muy_delgado'
   | 'delgado'
@@ -133,12 +134,12 @@ export const SHOES_STYLES: Opt[] = [
   { id: 'slippers', label: 'Pantuflas' },
 ];
 
-const BODY_TYPES: Opt[] = [
+export const BODY_TYPES: Opt[] = [
   { id: 'muy_delgado', label: 'Muy delgado' },
   { id: 'delgado', label: 'Delgado' },
   { id: 'medio', label: 'Medio' },
-  { id: 'obeso', label: 'Obeso' },
-  { id: 'muy_obeso', label: 'Muy obeso' },
+  { id: 'obeso', label: 'Grueso' },
+  { id: 'muy_obeso', label: 'Muy grueso' },
 ];
 
 export type CharacterConfig = {
