@@ -320,6 +320,8 @@ export default function MapEditor({
   // verse al entrar. El botón "Pintar" la reabre si se cerró.
   const [paletteOpen, setPaletteOpen] = useState(true);
   const [paletteMin, setPaletteMin] = useState(false);
+  // Maximizada: cubre toda la pantalla para revisar todo a pantalla completa.
+  const [paletteMax, setPaletteMax] = useState(false);
   const [palettePos, setPalettePos] = useState({ x: 16, y: 70 });
   // Tamaño de la ventana (redimensionable desde el borde inferior-derecho). El
   // tamaño por defecto es el MÍNIMO; el usuario puede agrandarla.
@@ -1559,23 +1561,23 @@ export default function MapEditor({
       <aside
         style={{
           position: 'absolute',
-          left: palettePos.x,
-          top: palettePos.y,
-          zIndex: 40,
-          width: paletteSize.w,
-          height: paletteMin ? 'auto' : paletteSize.h,
+          left: paletteMax ? 0 : palettePos.x,
+          top: paletteMax ? 0 : palettePos.y,
+          zIndex: paletteMax ? 60 : 40,
+          width: paletteMax ? '100%' : paletteSize.w,
+          height: paletteMax ? '100%' : paletteMin ? 'auto' : paletteSize.h,
           display: paletteOpen ? 'flex' : 'none',
           flexDirection: 'column',
           background: '#ffffff',
           border: '1px solid #c8c6c4',
-          borderRadius: 8,
+          borderRadius: paletteMax ? 0 : 8,
           boxShadow: '0 12px 40px rgba(0,0,0,0.28)',
           overflow: 'hidden',
         }}
       >
-        {/* Barra de título (arrastrar / minimizar / cerrar) */}
+        {/* Barra de título (arrastrar / minimizar / maximizar / cerrar) */}
         <div
-          onMouseDown={startPaletteDrag}
+          onMouseDown={paletteMax ? undefined : startPaletteDrag}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -1583,7 +1585,7 @@ export default function MapEditor({
             padding: '7px 8px 7px 12px',
             background: '#f3f2f1',
             borderBottom: paletteMin ? 'none' : '1px solid #edebe9',
-            cursor: 'move',
+            cursor: paletteMax ? 'default' : 'move',
             userSelect: 'none',
           }}
         >
@@ -1592,11 +1594,25 @@ export default function MapEditor({
           </span>
           <button
             type="button"
-            onClick={() => setPaletteMin((v) => !v)}
+            onClick={() => {
+              setPaletteMin((v) => !v);
+              setPaletteMax(false);
+            }}
             title={paletteMin ? 'Expandir' : 'Minimizar'}
             style={paletteTitleBtn}
           >
             {paletteMin ? '▢' : '—'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPaletteMax((v) => !v);
+              setPaletteMin(false);
+            }}
+            title={paletteMax ? 'Restaurar tamaño' : 'Maximizar (pantalla completa)'}
+            style={paletteTitleBtn}
+          >
+            {paletteMax ? '❐' : '⛶'}
           </button>
           <button
             type="button"
@@ -1984,7 +2000,7 @@ export default function MapEditor({
         </>
         )}
         {/* Tirador de redimensión (esquina inferior-derecha) */}
-        {!paletteMin && (
+        {!paletteMin && !paletteMax && (
           <div
             onMouseDown={startPaletteResize}
             title="Arrastra para cambiar el tamaño"
