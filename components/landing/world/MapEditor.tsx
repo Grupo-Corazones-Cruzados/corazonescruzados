@@ -1764,7 +1764,7 @@ export default function MapEditor({
                     ) : sel.startsWith('obj:') ? (
                       (() => {
                         const catId = sel.slice(4);
-                        const items = allSprites.list.filter(
+                        const items = (allSprites?.list ?? []).filter(
                           (s) => s.cat === catId,
                         );
                         const CAP = 400;
