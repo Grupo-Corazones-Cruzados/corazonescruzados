@@ -1138,6 +1138,11 @@ export default function MapEditor({
   const HISTORY_LIMIT = 30;
   const activateBrush = (b: Brush) => {
     setBrush(b);
+    // Al elegir un sprite/objeto se descartan las otras selecciones (item,
+    // prop, color) para que la pintura use esta brocha.
+    setItemBrush(null);
+    setPropBrushItemId(null);
+    setColorBrushHex(null);
     setMode('paint');
     setBrushHistory((prev) => {
       const without = prev.filter((p) => p.key !== b.key);
@@ -1381,7 +1386,7 @@ export default function MapEditor({
       });
       return;
     }
-    if (activeTab === 'items' && itemBrush) {
+    if (itemBrush) {
       // Replace any existing item at this cell.
       const without = items.filter((it) => !(it.x === cx && it.y === cy));
       const newItem: ItemPlacement = {
@@ -1578,87 +1583,26 @@ export default function MapEditor({
         <>
         <div style={{ padding: '8px 10px 6px' }}>
           <SegmentedTabs
-            value={activeTab}
-            onChange={(t) => {
-              setActiveTab(t);
-              if (t === 'tiles') {
-                setItemBrush(null);
-                setPropBrushItemId(null);
-                setColorBrushHex(null);
-                setMode('paint');
-              } else if (t === 'items') {
-                setBrush(null);
-                setPropBrushItemId(null);
-                setColorBrushHex(null);
-                setMode('paint');
-              } else if (t === 'props') {
-                setBrush(null);
-                setItemBrush(null);
-                setColorBrushHex(null);
-                setMode('prop');
-              } else {
-                setItemBrush(null);
-                setPropBrushItemId(null);
-                setMode('paint');
-              }
+            value={tileView}
+            onChange={(v) => {
+              setTileView(v);
+              if (v === 'objects') setMode('paint');
             }}
             tabs={[
-              { value: 'tiles', label: 'Tiles' },
-              { value: 'items', label: 'Items' },
-              { value: 'props', label: 'Props' },
-              { value: 'colors', label: 'Colores' },
+              { value: 'objects', label: 'Objetos' },
+              { value: 'sheets', label: 'Hojas' },
             ]}
           />
         </div>
 
-        {activeTab === 'tiles' && (
+        {tileView === 'sheets' && (
           <div
             style={{
               padding: 10,
               borderBottom: '1px solid #edebe9',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
             }}
           >
-            {/* Vista: galería de objetos categorizada vs hojas crudas */}
-            <SegmentedTabs
-              value={tileView}
-              onChange={(v) => setTileView(v)}
-              tabs={[
-                { value: 'objects', label: 'Objetos' },
-                { value: 'sheets', label: 'Hojas' },
-              ]}
-            />
-            {tileView === 'objects' ? (
-              // Chips de categoría (clasificación automática por color).
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {SPRITE_CATEGORIES.map((c) => {
-                  const on = spriteCat === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setSpriteCat(c.id)}
-                      style={{
-                        padding: '3px 9px',
-                        borderRadius: 999,
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        fontFamily:
-                          "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                        cursor: 'pointer',
-                        background: on ? '#0078d4' : '#f3f2f1',
-                        color: on ? '#fff' : '#605e5c',
-                        border: `1px solid ${on ? '#0078d4' : '#d1d1d1'}`,
-                      }}
-                    >
-                      {c.label}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
+            {(
               <select
                 value={activeCategory}
                 onChange={(e) =>
@@ -1700,7 +1644,7 @@ export default function MapEditor({
             gap: 16,
           }}
         >
-          {activeTab === 'items' &&
+          {tileView === 'objects' &&
             ITEM_CATEGORIES.map((cat) => {
               const itemsInCat = ITEMS.filter(
                 (it) =>
@@ -1716,9 +1660,9 @@ export default function MapEditor({
               const expanded =
                 !!filteredQuery || expandedSections.has(key);
               return (
-                <div key={cat.id}>
+                <div key={`item-${cat.id}`}>
                   <CollapseHeader
-                    label={cat.label}
+                    label={`Ítems · ${cat.label}`}
                     count={itemsInCat.length}
                     expanded={expanded}
                     onToggle={() => toggleSection(key)}
@@ -1739,6 +1683,9 @@ export default function MapEditor({
                           type="button"
                           onClick={() => {
                             setItemBrush(it.id);
+                            setBrush(null);
+                            setPropBrushItemId(null);
+                            setColorBrushHex(null);
                             setMode('paint');
                           }}
                           title={it.label}
@@ -1763,21 +1710,8 @@ export default function MapEditor({
                 </div>
               );
             })}
-          {activeTab === 'props' && (
+          {tileView === 'objects' && (
             <>
-              <div
-                style={{
-                  fontSize: '0.72rem',
-                  letterSpacing: '0.12em',
-                  color: 'rgba(50,49,48,0.7)',
-                  lineHeight: 1.5,
-                  marginBottom: 4,
-                }}
-              >
-                Elige un sprite y haz clic en el mapa para colocar un
-                prop. Clic sobre un prop existente para configurarlo
-                (sólido, luz, trigger).
-              </div>
               {ITEM_CATEGORIES.map((cat) => {
                 const itemsInCat = ITEMS.filter(
                   (it) =>
@@ -1791,9 +1725,9 @@ export default function MapEditor({
                 const expanded =
                   !!filteredQuery || expandedSections.has(key);
                 return (
-                  <div key={cat.id}>
+                  <div key={`prop-${cat.id}`}>
                     <CollapseHeader
-                      label={cat.label}
+                      label={`Props · ${cat.label}`}
                       count={itemsInCat.length}
                       expanded={expanded}
                       onToggle={() => toggleSection(key)}
@@ -1814,6 +1748,9 @@ export default function MapEditor({
                             type="button"
                             onClick={() => {
                               setPropBrushItemId(it.id);
+                              setBrush(null);
+                              setItemBrush(null);
+                              setColorBrushHex(null);
                               setMode('prop');
                             }}
                             title={it.label}
@@ -1840,103 +1777,115 @@ export default function MapEditor({
               })}
             </>
           )}
-          {activeTab === 'colors' && (
-            <ColorsPalette
-              activeColor={colorBrushHex}
-              onPick={(c) => {
-                setColorBrushHex(c);
-                setBrush(colorBrush(c));
-                setItemBrush(null);
-                setPropBrushItemId(null);
-                setMode('paint');
-              }}
-            />
-          )}
-          {/* Galería de objetos categorizada (auto-detección + color) */}
-          {activeTab === 'tiles' && tileView === 'objects' && (
-            allSprites === null ? (
-              <div
-                style={{
-                  fontSize: '0.78rem',
-                  color: '#605e5c',
-                  padding: '12px 4px',
-                  textAlign: 'center',
-                }}
-              >
-                Analizando sprites…
+          {tileView === 'objects' && (() => {
+            const key = 'cat:colors';
+            const expanded = expandedSections.has(key);
+            return (
+              <div>
+                <CollapseHeader
+                  label="Colores"
+                  expanded={expanded}
+                  onToggle={() => toggleSection(key)}
+                />
+                {expanded && (
+                  <ColorsPalette
+                    activeColor={colorBrushHex}
+                    onPick={(c) => {
+                      setColorBrushHex(c);
+                      setBrush(colorBrush(c));
+                      setItemBrush(null);
+                      setPropBrushItemId(null);
+                      setMode('paint');
+                    }}
+                  />
+                )}
               </div>
-            ) : (() => {
-              const list = allSprites.list.filter(
-                (s) => spriteCat === 'all' || s.cat === spriteCat,
-              );
-              if (list.length === 0)
-                return (
-                  <div
-                    style={{
-                      fontSize: '0.78rem',
-                      color: '#a19f9d',
-                      padding: '12px 4px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    Sin objetos en esta categoría.
-                    <br />
-                    <span style={{ fontSize: '0.7rem' }}>
-                      ({allSprites.loaded}/{SHEETS.length} hojas analizadas,{' '}
-                      {allSprites.list.length} sprites)
-                    </span>
-                  </div>
-                );
-              const CAP = 600;
-              const shown = list.slice(0, CAP);
-              return (
-                <>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns:
-                        'repeat(auto-fill, minmax(64px, 1fr))',
-                      gap: 6,
-                    }}
-                  >
-                    {shown.map((sp, i) => {
-                      const isActive =
-                        brush?.source === 'sheet' &&
-                        brush.sheetIdx === sp.sheetIdx &&
-                        brush.sx === sp.sx &&
-                        brush.sy === sp.sy;
-                      return (
-                        <SpriteThumb
-                          key={`${sp.sheetIdx}:${sp.sx}:${sp.sy}:${i}`}
-                          sprite={sp}
-                          active={!!isActive}
-                          onClick={() =>
-                            activateBrush(
-                              sheetBrush(sp.sheetIdx, sp.sx, sp.sy, sp.w, sp.h),
-                            )
-                          }
-                        />
-                      );
-                    })}
-                  </div>
-                  {list.length > CAP && (
-                    <div
-                      style={{
-                        fontSize: '0.7rem',
-                        color: '#a19f9d',
-                        textAlign: 'center',
-                        padding: '8px 4px',
-                      }}
-                    >
-                      Mostrando {CAP} de {list.length}. Filtra por categoría para
-                      ver más.
-                    </div>
-                  )}
-                </>
-              );
-            })()
+            );
+          })()}
+          {/* Objetos detectados — una sección colapsable por categoría */}
+          {tileView === 'objects' && allSprites === null && (
+            <div
+              style={{
+                fontSize: '0.78rem',
+                color: '#605e5c',
+                padding: '12px 4px',
+                textAlign: 'center',
+              }}
+            >
+              Analizando sprites…
+            </div>
           )}
-          {activeTab === 'tiles' && tileView === 'sheets' && (
+          {tileView === 'objects' &&
+            allSprites !== null &&
+            SPRITE_CATEGORIES.filter((c) => c.id !== 'all').map((cat) => {
+              const items = allSprites.list.filter((s) => s.cat === cat.id);
+              if (items.length === 0) return null;
+              const key = `obj:${cat.id}`;
+              const expanded = expandedSections.has(key);
+              const CAP = 400;
+              const shown = items.slice(0, CAP);
+              return (
+                <div key={`obj-${cat.id}`}>
+                  <CollapseHeader
+                    label={cat.label}
+                    count={items.length}
+                    expanded={expanded}
+                    onToggle={() => toggleSection(key)}
+                  />
+                  {expanded && (
+                    <>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns:
+                            'repeat(auto-fill, minmax(64px, 1fr))',
+                          gap: 6,
+                        }}
+                      >
+                        {shown.map((sp, i) => {
+                          const isActive =
+                            brush?.source === 'sheet' &&
+                            brush.sheetIdx === sp.sheetIdx &&
+                            brush.sx === sp.sx &&
+                            brush.sy === sp.sy;
+                          return (
+                            <SpriteThumb
+                              key={`${sp.sheetIdx}:${sp.sx}:${sp.sy}:${i}`}
+                              sprite={sp}
+                              active={!!isActive}
+                              onClick={() =>
+                                activateBrush(
+                                  sheetBrush(
+                                    sp.sheetIdx,
+                                    sp.sx,
+                                    sp.sy,
+                                    sp.w,
+                                    sp.h,
+                                  ),
+                                )
+                              }
+                            />
+                          );
+                        })}
+                      </div>
+                      {items.length > CAP && (
+                        <div
+                          style={{
+                            fontSize: '0.7rem',
+                            color: '#a19f9d',
+                            textAlign: 'center',
+                            padding: '8px 4px',
+                          }}
+                        >
+                          Mostrando {CAP} de {items.length}.
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          {tileView === 'sheets' && (
             <div
               style={{
                 fontSize: '0.72rem',
@@ -1952,7 +1901,7 @@ export default function MapEditor({
               Luego clic en el mapa para estamparlo.
             </div>
           )}
-          {activeTab === 'tiles' && tileView === 'sheets' &&
+          {tileView === 'sheets' &&
             visibleSheets
             .filter(
               (s) =>
