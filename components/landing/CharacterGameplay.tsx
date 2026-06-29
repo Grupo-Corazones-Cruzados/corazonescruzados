@@ -17,7 +17,7 @@ import WorldMap, {
 } from './WorldMap';
 import SceneManagerEditor from './world/SceneManagerEditor';
 import InventoryBar from './world/InventoryBar';
-import { type NpcRecord } from './world/NpcEditor';
+import { type NpcRecord, npcScale } from './world/NpcEditor';
 import LightOverlay from './world/LightOverlay';
 import CinematicPlayer from '@/components/world/CinematicPlayer';
 import {
@@ -969,7 +969,7 @@ export default function CharacterGameplay({
               direction={n.facing}
               animation={n.animation}
               frame={npcFrame}
-              scale={3}
+              scale={3 * npcScale(n.config)}
             />
             {/* Name tag floats above the NPC's head. */}
             <div

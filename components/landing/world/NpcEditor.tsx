@@ -81,8 +81,15 @@ type Draft = {
   y: number;
   facing: SpriteDirection;
   animation: CharacterAnimation;
+  scale: number; // tamaño del cuerpo (multiplicador, 1 = normal)
   dialogueText: string; // newline-separated for the textarea
 };
+
+// El tamaño del cuerpo se guarda dentro del `config` (jsonb) como `scale`.
+export function npcScale(config: unknown): number {
+  const s = (config as { scale?: unknown } | null | undefined)?.scale;
+  return typeof s === 'number' && s > 0 ? s : 1;
+}
 
 function npcToDraft(n: NpcRecord): Draft {
   return {
@@ -93,6 +100,7 @@ function npcToDraft(n: NpcRecord): Draft {
     y: n.y,
     facing: n.facing,
     animation: n.animation ?? 'idle',
+    scale: npcScale(n.config),
     dialogueText: (n.dialogue ?? []).join('\n'),
   };
 }
@@ -106,6 +114,7 @@ function newDraft(playerX: number, playerY: number): Draft {
     y: playerY,
     facing: 's',
     animation: 'idle',
+    scale: 1,
     dialogueText: '¡Hola, viajero!\nQué bueno verte por aquí.',
   };
 }
@@ -201,7 +210,7 @@ export default function NpcEditor({
       const body = JSON.stringify({
         scene: slug,
         name: draft.name,
-        config: draft.config,
+        config: { ...draft.config, scale: draft.scale },
         x: draft.x,
         y: draft.y,
         facing: draft.facing,
@@ -367,7 +376,7 @@ export default function NpcEditor({
                   direction={draft.facing}
                   animation={draft.animation}
                   frame={previewFrame}
-                  scale={3}
+                  scale={3 * draft.scale}
                 />
               </div>
 
@@ -439,45 +448,33 @@ export default function NpcEditor({
                 />
               </Field>
 
-              <Field label="Posición (tile)">
-                <div style={{ display: 'flex', gap: 6 }}>
+              <Field label="Tamaño del cuerpo">
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+                >
                   <input
-                    type="number"
-                    value={draft.x}
+                    type="range"
+                    min={0.5}
+                    max={2.5}
+                    step={0.1}
+                    value={draft.scale}
                     onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        x: Math.floor(Number(e.target.value) || 0),
-                      })
+                      setDraft({ ...draft, scale: Number(e.target.value) })
                     }
-                    style={{ ...inputStyle, width: 70 }}
+                    style={{ flex: 1, accentColor: '#0078d4' }}
                   />
-                  <input
-                    type="number"
-                    value={draft.y}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        y: Math.floor(Number(e.target.value) || 0),
-                      })
-                    }
-                    style={{ ...inputStyle, width: 70 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDraft({ ...draft, x: playerTileX, y: playerTileY })
-                    }
+                  <span
                     style={{
-                      ...pillStyle(false),
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 5,
+                      minWidth: 46,
+                      textAlign: 'right',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: '#323130',
+                      fontVariantNumeric: 'tabular-nums',
                     }}
-                    title="Usar mi posición actual"
                   >
-                    <IconLocation size={15} /> Aquí
-                  </button>
+                    {Math.round(draft.scale * 100)}%
+                  </span>
                 </div>
               </Field>
 

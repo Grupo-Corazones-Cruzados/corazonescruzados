@@ -36,7 +36,7 @@ import {
   IconButton as GhostBtn,
   PANEL_WIDTH,
 } from './editorUi';
-import NpcEditor, { type NpcRecord } from './NpcEditor';
+import NpcEditor, { type NpcRecord, npcScale } from './NpcEditor';
 import { CharacterSprite, ANIMATIONS } from '../CharacterCreator';
 import {
   IconAdd,
@@ -2634,7 +2634,7 @@ export default function MapEditor({
                   direction={n.facing}
                   animation={n.animation}
                   frame={npcFrame}
-                  scale={Math.max(0.5, viewScale)}
+                  scale={Math.max(0.5, viewScale) * npcScale(n.config)}
                 />
                 <span
                   style={{
