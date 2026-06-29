@@ -523,10 +523,29 @@ export default function CharacterGameplay({
         e.preventDefault();
         return;
       }
-      // Hotbar selection — keys 1-9 pick slot 0..8, key 0 picks slot 9.
+      // Tecla 0: eliminar (descartar) el ítem actualmente seleccionado/equipado.
+      if (k === '0') {
+        const id = equippedRef.current;
+        if (id) {
+          setEquipped(null);
+          setInventory((prev) => {
+            const next = { ...prev };
+            delete next[id];
+            return next;
+          });
+          fetch('/api/world/inventory', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ discard: id }),
+          }).catch(() => undefined);
+        }
+        e.preventDefault();
+        return;
+      }
+      // Hotbar selection — keys 1-9 pick slot 0..8.
       // Re-pressing the slot of the currently equipped item unequips it.
-      if (k.length === 1 && k >= '0' && k <= '9') {
-        const slot = k === '0' ? 9 : Number(k) - 1;
+      if (k.length === 1 && k >= '1' && k <= '9') {
+        const slot = Number(k) - 1;
         const entries = Object.entries(inventoryRef.current).filter(
           ([, qty]) => qty > 0,
         );
@@ -1306,6 +1325,21 @@ export default function CharacterGameplay({
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ equipped: id }),
+              }).catch(() => undefined);
+            }}
+            onDiscard={() => {
+              const id = equipped;
+              if (!id) return;
+              setEquipped(null);
+              setInventory((prev) => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+              });
+              fetch('/api/world/inventory', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ discard: id }),
               }).catch(() => undefined);
             }}
           />

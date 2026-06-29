@@ -78,7 +78,8 @@ export async function POST(req: Request) {
   }
 }
 
-// PUT: equip / unequip an item. Body: { equipped: string | null }
+// PUT: equip / unequip an item — Body: { equipped: string | null }
+//      o descartar (eliminar) un ítem del inventario — Body: { discard: itemId }
 export async function PUT(req: Request) {
   try {
     const me = await getAuthedClient();
@@ -87,7 +88,31 @@ export async function PUT(req: Request) {
         { error: 'No autenticado' },
         { status: 401 },
       );
-    const { equipped } = await req.json();
+    const body = await req.json();
+
+    // Descartar (eliminar) un ítem del inventario; si estaba equipado, se
+    // desequipa también.
+    if (typeof body?.discard === 'string' && body.discard.length > 0) {
+      const { rows } = await pool.query(
+        `SELECT inventory, equipped_item FROM gcc_world.clients WHERE id = $1`,
+        [me.id],
+      );
+      const inv: Record<string, number> = { ...(rows[0]?.inventory ?? {}) };
+      delete inv[body.discard];
+      const newEquipped =
+        rows[0]?.equipped_item === body.discard
+          ? null
+          : (rows[0]?.equipped_item ?? null);
+      await pool.query(
+        `UPDATE gcc_world.clients
+           SET inventory = $1::jsonb, equipped_item = $2
+         WHERE id = $3`,
+        [JSON.stringify(inv), newEquipped, me.id],
+      );
+      return NextResponse.json({ ok: true, inventory: inv, equipped: newEquipped });
+    }
+
+    const { equipped } = body;
     const value =
       equipped === null
         ? null

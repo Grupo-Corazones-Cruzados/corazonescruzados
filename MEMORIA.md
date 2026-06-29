@@ -267,6 +267,15 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Hotbar del juego — tecla 0 = ELIMINAR el ítem equipado (2026-06-28):** decisión del usuario.
+  Antes la tecla `0` seleccionaba el slot 10 de la hotbar; ahora **descarta (elimina) el ítem
+  actualmente equipado** del inventario. Implementación: `components/landing/CharacterGameplay.tsx`
+  (keydown: `0` → si hay `equipped`, lo borra del `inventory` + `setEquipped(null)` + `PUT
+  /api/world/inventory { discard: id }`); el endpoint `app/api/world/inventory/route.ts` PUT acepta
+  `{ discard: itemId }` (borra la key del jsonb `inventory` y desequipa). La hotbar
+  (`components/landing/world/InventoryBar.tsx`) ahora numera **1–9** y añade una **celda de descartar**
+  (ícono papelera, tecla `[0]`, se activa solo con algo equipado) al final. **Consecuencia:** el
+  10.º slot ya no es seleccionable por teclado (solo por clic); el cap `MAX_INVENTORY_SLOTS` sigue 10.
 - **Onboarding de candidato en la landing — modal de 8 sliders + postulación (2026-06-23):** al
   pulsar **"Entrar"** un visitante **NUEVO** (sin `savedCharacter`) ya **no entra directo al mundo**:
   primero se abre `OnboardingSlidersModal` (`components/landing/OnboardingSlidersModal.tsx`), un modal
