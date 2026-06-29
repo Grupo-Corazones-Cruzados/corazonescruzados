@@ -127,7 +127,49 @@ export type Tile = {
   // this color instead of looking up the sheet sprite, and `s/sx/sy`
   // are ignored. Used by the Colores palette.
   color?: string;
+  // Orientación del sprite: volteo horizontal/vertical y rotación en grados
+  // (0/90/180/270). El renderer aplica rotación y luego volteo al dibujar.
+  fx?: 1; // flip horizontal
+  fy?: 1; // flip vertical
+  rot?: number; // 90 | 180 | 270
 };
+
+// Dibuja un sprite de sheet aplicando volteo (fx/fy) y rotación (grados). Si no
+// hay orientación, usa drawImage directo. Compartido por el editor y el juego.
+export function drawOriented(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource,
+  srcX: number,
+  srcY: number,
+  srcSize: number,
+  destX: number,
+  destY: number,
+  destSize: number,
+  fx?: boolean,
+  fy?: boolean,
+  rot?: number,
+) {
+  if (!fx && !fy && !rot) {
+    ctx.drawImage(img, srcX, srcY, srcSize, srcSize, destX, destY, destSize, destSize);
+    return;
+  }
+  ctx.save();
+  ctx.translate(destX + destSize / 2, destY + destSize / 2);
+  if (rot) ctx.rotate((rot * Math.PI) / 180);
+  ctx.scale(fx ? -1 : 1, fy ? -1 : 1);
+  ctx.drawImage(
+    img,
+    srcX,
+    srcY,
+    srcSize,
+    srcSize,
+    -destSize / 2,
+    -destSize / 2,
+    destSize,
+    destSize,
+  );
+  ctx.restore();
+}
 
 // Z-layer derived from the sheet's category. Ground (terreno, agua)
 // goes underneath; everything else (edificios, decoracion, interiores)

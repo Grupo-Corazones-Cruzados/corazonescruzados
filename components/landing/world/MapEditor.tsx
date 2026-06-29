@@ -16,6 +16,7 @@ import {
   SHEETS,
   TILE_PX,
   tileZ,
+  drawOriented,
   type ItemPlacement,
   type LayerData,
   type PropLight,
@@ -61,6 +62,10 @@ import {
   IconSave,
   IconUndo,
   IconRedo,
+  IconFlipH,
+  IconFlipV,
+  IconRotateCw,
+  IconRotateCcw,
 } from './EditorIcons';
 import {
   LIGHT_MODE_OPTIONS,
@@ -79,6 +84,9 @@ type BrushTile = {
   sy: number;
   c?: 1;
   color?: string; // solid color tile (overrides sheet)
+  fx?: 1; // flip horizontal
+  fy?: 1; // flip vertical
+  rot?: number; // 90 | 180 | 270
 };
 
 type Brush = {
@@ -181,6 +189,61 @@ function mapBrush(
     source: 'map',
     tiles,
     key: `map:${w}x${h}:${sig}`,
+  };
+}
+
+// Voltea/rota una brocha: transforma la disposición (dx/dy + tamaño) y la
+// orientación por tile (fx/fy/rot). 'cw'/'ccw' = rotar 90° horario/antihorario.
+function transformBrush(
+  b: Brush,
+  op: 'flipH' | 'flipV' | 'cw' | 'ccw',
+): Brush {
+  const { w, h } = b;
+  const tiles: BrushTile[] = b.tiles.map((t) => {
+    let dx = t.dx;
+    let dy = t.dy;
+    let fx = !!t.fx;
+    let fy = !!t.fy;
+    let rot = t.rot ?? 0;
+    if (op === 'flipH') {
+      dx = w - 1 - dx;
+      fx = !fx;
+    } else if (op === 'flipV') {
+      dy = h - 1 - dy;
+      fy = !fy;
+    } else if (op === 'cw') {
+      const ndx = h - 1 - dy;
+      dy = dx;
+      dx = ndx;
+      rot = (rot + 90) % 360;
+    } else {
+      const ndy = w - 1 - dx;
+      dx = dy;
+      dy = ndy;
+      rot = (rot + 270) % 360;
+    }
+    const nt: BrushTile = { dx, dy, s: t.s, sx: t.sx, sy: t.sy };
+    if (t.c) nt.c = 1;
+    if (t.color) nt.color = t.color;
+    if (fx) nt.fx = 1;
+    if (fy) nt.fy = 1;
+    if (rot) nt.rot = rot;
+    return nt;
+  });
+  const nw = op === 'cw' || op === 'ccw' ? h : w;
+  const nh = op === 'cw' || op === 'ccw' ? w : h;
+  const sig = tiles
+    .map(
+      (c) =>
+        `${c.dx},${c.dy},${c.s},${c.sx},${c.sy},${c.c ?? 0},${c.color ?? ''},${c.fx ?? 0},${c.fy ?? 0},${c.rot ?? 0}`,
+    )
+    .join('|');
+  return {
+    w: nw,
+    h: nh,
+    source: 'map',
+    tiles,
+    key: `tf:${nw}x${nh}:${sig}`,
   };
 }
 
@@ -859,16 +922,18 @@ export default function MapEditor({
           ctx.globalAlpha = 1;
           return;
         }
-        ctx.drawImage(
+        drawOriented(
+          ctx,
           img,
           t.sx * TILE_PX,
           t.sy * TILE_PX,
           TILE_PX,
-          TILE_PX,
           t.x * TILE_PX,
           t.y * TILE_PX,
           TILE_PX,
-          TILE_PX,
+          !!t.fx,
+          !!t.fy,
+          t.rot,
         );
       }
       if (t.c && showCollisions) {
@@ -1480,6 +1545,9 @@ export default function MapEditor({
         };
         if (bt.c) newTile.c = 1;
         if (bt.color) newTile.color = bt.color;
+        if (bt.fx) newTile.fx = 1;
+        if (bt.fy) newTile.fy = 1;
+        if (bt.rot) newTile.rot = bt.rot;
         const idx = next.findIndex(
           (t) => t.x === tx && t.y === ty && tileZ(t.s) === z,
         );
@@ -2162,6 +2230,40 @@ export default function MapEditor({
                   hotkey="E"
                   active={mode === 'copy'}
                   onClick={() => setMode('copy')}
+                />
+              </RibbonGroup>
+              <RibbonGroup label="Orientación">
+                <RibbonButton
+                  icon={<IconFlipH size={20} />}
+                  label="Voltear H"
+                  disabled={!brush}
+                  onClick={() =>
+                    setBrush((b) => (b ? transformBrush(b, 'flipH') : b))
+                  }
+                />
+                <RibbonButton
+                  icon={<IconFlipV size={20} />}
+                  label="Voltear V"
+                  disabled={!brush}
+                  onClick={() =>
+                    setBrush((b) => (b ? transformBrush(b, 'flipV') : b))
+                  }
+                />
+                <RibbonButton
+                  icon={<IconRotateCcw size={20} />}
+                  label="Rotar ↺"
+                  disabled={!brush}
+                  onClick={() =>
+                    setBrush((b) => (b ? transformBrush(b, 'ccw') : b))
+                  }
+                />
+                <RibbonButton
+                  icon={<IconRotateCw size={20} />}
+                  label="Rotar ↻"
+                  disabled={!brush}
+                  onClick={() =>
+                    setBrush((b) => (b ? transformBrush(b, 'cw') : b))
+                  }
                 />
               </RibbonGroup>
               <RibbonGroup label="Tile">
@@ -5205,16 +5307,18 @@ function PreviewOverlay({
       }
       const img = imgs[bt.s];
       if (!img) return;
-      ctx.drawImage(
+      drawOriented(
+        ctx,
         img,
         bt.sx * TILE_PX,
         bt.sy * TILE_PX,
         TILE_PX,
-        TILE_PX,
         tx * TILE_PX,
         ty * TILE_PX,
         TILE_PX,
-        TILE_PX,
+        !!bt.fx,
+        !!bt.fy,
+        bt.rot,
       );
     };
     for (const bt of brush.tiles) if (tileZ(bt.s) === 0) drawCell(bt);
@@ -5309,16 +5413,18 @@ function BrushThumbnail({
     const drawCell = (bt: BrushTile) => {
       const img = imgs[bt.s];
       if (!img) return;
-      ctx.drawImage(
+      drawOriented(
+        ctx,
         img,
         bt.sx * TILE_PX,
         bt.sy * TILE_PX,
         TILE_PX,
-        TILE_PX,
         bt.dx * TILE_PX,
         bt.dy * TILE_PX,
         TILE_PX,
-        TILE_PX,
+        !!bt.fx,
+        !!bt.fy,
+        bt.rot,
       );
     };
     for (const bt of brush.tiles) if (tileZ(bt.s) === 0) drawCell(bt);

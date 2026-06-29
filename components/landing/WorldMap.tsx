@@ -5,6 +5,7 @@ import {
   SHEETS,
   TILE_PX,
   tileZ,
+  drawOriented,
   type WorldMapData,
 } from './world/sheets';
 import { ITEMS, findItem, itemDataUrl } from './world/items';
@@ -71,6 +72,9 @@ function WorldMap({
         x: number;
         y: number;
         color?: string;
+        fx?: 1;
+        fy?: 1;
+        rot?: number;
       }) => {
         if (t.color) {
           ctx.fillStyle = t.color;
@@ -79,16 +83,18 @@ function WorldMap({
         }
         const img = imgs[t.s];
         if (!img) return;
-        ctx.drawImage(
+        drawOriented(
+          ctx,
           img,
           t.sx * TILE,
           t.sy * TILE,
           TILE,
-          TILE,
           t.x * TILE,
           t.y * TILE,
           TILE,
-          TILE,
+          !!t.fx,
+          !!t.fy,
+          t.rot,
         );
       };
       const layers = map.layers ?? [];

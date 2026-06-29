@@ -254,3 +254,34 @@ export const IconWarning = (p: P) => (
     <path d="M10 8.5v3.5M10 14h.01" />
   </Svg>
 );
+
+// Voltear horizontal (espejo vertical).
+export const IconFlipH = (p: P) => (
+  <Svg {...p}>
+    <path d="M10 3v14" strokeDasharray="2 2" />
+    <path d="M6.5 7 3.5 10l3 3" />
+    <path d="M13.5 7l3 3-3 3" />
+  </Svg>
+);
+// Voltear vertical (espejo horizontal).
+export const IconFlipV = (p: P) => (
+  <Svg {...p}>
+    <path d="M3 10h14" strokeDasharray="2 2" />
+    <path d="M7 6.5 10 3.5l3 3" />
+    <path d="M7 13.5l3 3 3-3" />
+  </Svg>
+);
+// Rotar en sentido horario.
+export const IconRotateCw = (p: P) => (
+  <Svg {...p}>
+    <path d="M15.5 9a6 6 0 1 0-1.6 5" />
+    <path d="M15.5 4.5V9H11" />
+  </Svg>
+);
+// Rotar en sentido antihorario.
+export const IconRotateCcw = (p: P) => (
+  <Svg {...p}>
+    <path d="M4.5 9a6 6 0 1 1 1.6 5" />
+    <path d="M4.5 4.5V9H9" />
+  </Svg>
+);
