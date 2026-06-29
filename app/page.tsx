@@ -2986,6 +2986,10 @@ export default function LandingPage() {
                 // Returning player: solo entra si está aprobado + verificado.
                 if (savedCharacter) {
                   if (!gateGameEntry()) return;
+                  // "Entrar" SIEMPRE exige login (credenciales + 2FA) dentro del
+                  // juego: descartamos cualquier autenticación previa de esta
+                  // misma carga para que no entre directo al reconocer la cuenta.
+                  setFreshAuth(false);
                   setWindAway(true);
                   return;
                 }
