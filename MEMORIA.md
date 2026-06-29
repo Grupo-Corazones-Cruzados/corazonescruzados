@@ -267,6 +267,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **NPCs — comportamiento por animación + movimiento (2026-06-28):** (1) las animaciones de una
+  sola vez (sit, cast, thrust, slash, shoot, hurt) se reproducen UNA vez y se quedan en el último
+  frame (helper `npcDisplayFrame` en `CharacterCreator.tsx` + contadores monótonos); idle estático,
+  walk cíclica. (2) **Tamaño del cuerpo** por NPC (slider 50–250%) guardado en `config.scale` (jsonb)
+  → `npcScale()`. (3) **Movimiento al caminar:** con `animation='walk'` el NPC se mueve según
+  `config.behavior` (jsonb): `mode 'route'` (waypoints, **ping-pong**) o `mode 'wander'` (deambula al
+  azar dentro de `wanderRadius`). Helpers `npcBehavior()`/`NpcBehavior` en `NpcEditor.tsx`. Runtime en
+  `CharacterGameplay.tsx` (RAF que mueve los NPCs, anima 'walk' al moverse / 'idle' al parar; la
+  colisión del jugador usa el tile actual del NPC vía `npcTilesRef`). La **ruta se dibuja sobre el
+  mapa**: botón "Ruta" por NPC en la galería del ribbon (MapEditor, modo `'npcRoute'`) → clic en
+  celdas añade waypoints; al guardar persiste `behavior.route` y fuerza `animation='walk'`. Todo el
+  comportamiento vive en el `config` jsonb (sin migración de DB ni cambios de API de NPCs).
 - **Hotbar del juego — tecla 0 = ELIMINAR el ítem equipado (2026-06-28):** decisión del usuario.
   Antes la tecla `0` seleccionaba el slot 10 de la hotbar; ahora **descarta (elimina) el ítem
   actualmente equipado** del inventario. Implementación: `components/landing/CharacterGameplay.tsx`
