@@ -18,7 +18,12 @@ import WorldMap, {
 } from './WorldMap';
 import SceneManagerEditor from './world/SceneManagerEditor';
 import InventoryBar from './world/InventoryBar';
-import { type NpcRecord, npcScale } from './world/NpcEditor';
+import {
+  type NpcRecord,
+  npcScale,
+  npcBehavior,
+  type NpcBehavior,
+} from './world/NpcEditor';
 import LightOverlay from './world/LightOverlay';
 import CinematicPlayer from '@/components/world/CinematicPlayer';
 import {
@@ -150,6 +155,146 @@ export default function CharacterGameplay({
   useEffect(() => {
     const id = window.setInterval(() => setNpcFrame((f) => f + 1), 130);
     return () => window.clearInterval(id);
+  }, []);
+
+  // ── Movimiento de NPCs (animación 'walk': ruta ping-pong o deambular) ──
+  const npcsRef = useRef(npcs);
+  useEffect(() => {
+    npcsRef.current = npcs;
+  }, [npcs]);
+  const worldRef = useRef({ w: 60, h: 40 });
+  useEffect(() => {
+    worldRef.current = { w: worldMap.width, h: worldMap.height };
+  }, [worldMap]);
+  // Posición/dirección animada por NPC (la consume el render).
+  const [npcAnim, setNpcAnim] = useState<
+    Record<number, { x: number; y: number; dir: SpriteDirection; moving: boolean }>
+  >({});
+  // Estado interno de cada NPC en movimiento.
+  type NpcRT = {
+    x: number;
+    y: number;
+    dir: SpriteDirection;
+    moving: boolean;
+    routeIdx: number;
+    routeDir: 1 | -1;
+    target: { x: number; y: number } | null;
+    pauseUntil: number;
+  };
+  const npcRTRef = useRef<Map<number, NpcRT>>(new Map());
+  // Tiles ocupados por NPCs (para la colisión del jugador).
+  const npcTilesRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    let raf = 0;
+    let last = performance.now();
+    const clamp = (v: number, lo: number, hi: number) =>
+      Math.max(lo, Math.min(hi, v));
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      const SPEED = 2; // tiles/seg
+      const rt = npcRTRef.current;
+      const ids = new Set<number>();
+      const out: Record<
+        number,
+        { x: number; y: number; dir: SpriteDirection; moving: boolean }
+      > = {};
+      const tiles = new Set<string>();
+      for (const n of npcsRef.current) {
+        ids.add(n.id);
+        if (n.animation !== 'walk') {
+          out[n.id] = { x: n.x, y: n.y, dir: n.facing, moving: false };
+          tiles.add(`${n.x},${n.y}`);
+          continue;
+        }
+        const beh: NpcBehavior = npcBehavior(n.config);
+        let st = rt.get(n.id);
+        if (!st) {
+          st = {
+            x: n.x,
+            y: n.y,
+            dir: n.facing,
+            moving: false,
+            routeIdx: 0,
+            routeDir: 1,
+            target: null,
+            pauseUntil: 0,
+          };
+          rt.set(n.id, st);
+        }
+        if (now >= st.pauseUntil) {
+          if (!st.target) {
+            if (beh.mode === 'route' && beh.route.length >= 2) {
+              st.routeIdx = clamp(st.routeIdx, 0, beh.route.length - 1);
+              st.target = beh.route[st.routeIdx];
+            } else if (beh.mode === 'wander') {
+              const r = beh.wanderRadius;
+              st.target = {
+                x: clamp(
+                  Math.round(n.x + (Math.random() * 2 - 1) * r),
+                  0,
+                  worldRef.current.w - 1,
+                ),
+                y: clamp(
+                  Math.round(n.y + (Math.random() * 2 - 1) * r),
+                  0,
+                  worldRef.current.h - 1,
+                ),
+              };
+            }
+          }
+          if (st.target) {
+            const dx = st.target.x - st.x;
+            const dy = st.target.y - st.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 0.08) {
+              st.x = st.target.x;
+              st.y = st.target.y;
+              st.target = null;
+              st.moving = false;
+              if (beh.mode === 'route' && beh.route.length >= 2) {
+                let ni = st.routeIdx + st.routeDir;
+                if (ni >= beh.route.length) {
+                  ni = beh.route.length - 2;
+                  st.routeDir = -1;
+                } else if (ni < 0) {
+                  ni = 1;
+                  st.routeDir = 1;
+                }
+                st.routeIdx = ni;
+              } else if (beh.mode === 'wander') {
+                st.pauseUntil = now + 500 + Math.random() * 1800;
+              }
+            } else {
+              const step = SPEED * dt;
+              st.x += (dx / dist) * step;
+              st.y += (dy / dist) * step;
+              st.dir =
+                Math.abs(dx) > Math.abs(dy)
+                  ? dx > 0
+                    ? 'e'
+                    : 'w'
+                  : dy > 0
+                    ? 's'
+                    : 'n';
+              st.moving = true;
+            }
+          } else {
+            st.moving = false;
+          }
+        } else {
+          st.moving = false;
+        }
+        out[n.id] = { x: st.x, y: st.y, dir: st.dir, moving: st.moving };
+        tiles.add(`${Math.round(st.x)},${Math.round(st.y)}`);
+      }
+      for (const id of [...rt.keys()]) if (!ids.has(id)) rt.delete(id);
+      npcTilesRef.current = tiles;
+      setNpcAnim(out);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
   const [activeDialogue, setActiveDialogue] = useState<{
     npcId: number;
@@ -621,8 +766,8 @@ export default function CharacterGameplay({
     if (tx < 0 || ty < 0 || tx >= worldMap.width || ty >= worldMap.height)
       return false;
     if (collisionGrid[ty]?.[tx]) return true;
-    // NPCs occupy their own tile.
-    return npcs.some((n) => n.x === tx && n.y === ty);
+    // NPCs ocupan su tile ACTUAL (se actualiza con su movimiento).
+    return npcTilesRef.current.has(`${tx},${ty}`);
   };
 
   // Player tile coordinates (used for proximity to NPCs and as the
@@ -954,22 +1099,36 @@ export default function CharacterGameplay({
       >
         <WorldMap map={worldMap} hidePickedItems={pickedItems} />
         {/* NPCs live in the world transform so they scroll with the map. */}
-        {npcs.map((n) => (
+        {npcs.map((n) => {
+          // Posición/dirección animada (NPCs que caminan se mueven); por defecto
+          // su posición fija.
+          const a = npcAnim[n.id];
+          const ax = a ? a.x : n.x;
+          const ay = a ? a.y : n.y;
+          const adir = a ? a.dir : n.facing;
+          // Mientras camina, anima 'walk'; al detenerse, queda quieto (idle).
+          const anim =
+            n.animation === 'walk'
+              ? a && a.moving
+                ? 'walk'
+                : 'idle'
+              : n.animation;
+          return (
           <div
             key={n.id}
             style={{
               position: 'absolute',
-              left: n.x * TILE_PX_DISPLAY + TILE_PX_DISPLAY / 2,
-              top: n.y * TILE_PX_DISPLAY + TILE_PX_DISPLAY / 2,
+              left: ax * TILE_PX_DISPLAY + TILE_PX_DISPLAY / 2,
+              top: ay * TILE_PX_DISPLAY + TILE_PX_DISPLAY / 2,
               transform: 'translate(-50%, -50%)',
               pointerEvents: 'none',
             }}
           >
             <CharacterSprite
               config={n.config}
-              direction={n.facing}
-              animation={n.animation}
-              frame={npcDisplayFrame(n.animation, npcFrame)}
+              direction={adir}
+              animation={anim}
+              frame={npcDisplayFrame(anim, npcFrame)}
               scale={3 * npcScale(n.config)}
             />
             {/* Name tag floats above the NPC's head. */}
@@ -992,7 +1151,8 @@ export default function CharacterGameplay({
               {n.name}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Character — sigue al jugador; desfasado del centro por (pos - cam),

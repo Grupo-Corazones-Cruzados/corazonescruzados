@@ -83,6 +83,9 @@ type Draft = {
   facing: SpriteDirection;
   animation: CharacterAnimation;
   scale: number; // tamaño del cuerpo (multiplicador, 1 = normal)
+  walkMode: 'route' | 'wander'; // comportamiento con animación 'walk'
+  wanderRadius: number; // radio de deambulación (modo 'wander')
+  route: NpcWaypoint[]; // waypoints (modo 'route'); se editan en el mapa
   dialogueText: string; // newline-separated for the textarea
 };
 
@@ -90,6 +93,35 @@ type Draft = {
 export function npcScale(config: unknown): number {
   const s = (config as { scale?: unknown } | null | undefined)?.scale;
   return typeof s === 'number' && s > 0 ? s : 1;
+}
+
+// Comportamiento de movimiento del NPC (solo aplica con animación 'walk'). Se
+// guarda dentro del `config` (jsonb) como `behavior`. 'route' = recorre los
+// waypoints en ping-pong; 'wander' = deambula al azar dentro de un radio.
+export type NpcWaypoint = { x: number; y: number };
+export type NpcBehavior = {
+  mode: 'route' | 'wander';
+  route: NpcWaypoint[];
+  wanderRadius: number;
+};
+export function npcBehavior(config: unknown): NpcBehavior {
+  const b = (config as { behavior?: unknown } | null | undefined)?.behavior as
+    | Partial<NpcBehavior>
+    | undefined;
+  const route = Array.isArray(b?.route)
+    ? b!.route.filter(
+        (p): p is NpcWaypoint =>
+          typeof p?.x === 'number' && typeof p?.y === 'number',
+      )
+    : [];
+  return {
+    mode: b?.mode === 'wander' ? 'wander' : 'route',
+    route,
+    wanderRadius:
+      typeof b?.wanderRadius === 'number' && b.wanderRadius > 0
+        ? b.wanderRadius
+        : 3,
+  };
 }
 
 function npcToDraft(n: NpcRecord): Draft {
@@ -102,6 +134,9 @@ function npcToDraft(n: NpcRecord): Draft {
     facing: n.facing,
     animation: n.animation ?? 'idle',
     scale: npcScale(n.config),
+    walkMode: npcBehavior(n.config).mode,
+    wanderRadius: npcBehavior(n.config).wanderRadius,
+    route: npcBehavior(n.config).route,
     dialogueText: (n.dialogue ?? []).join('\n'),
   };
 }
@@ -116,6 +151,9 @@ function newDraft(playerX: number, playerY: number): Draft {
     facing: 's',
     animation: 'idle',
     scale: 1,
+    walkMode: 'route',
+    wanderRadius: 3,
+    route: [],
     dialogueText: '¡Hola, viajero!\nQué bueno verte por aquí.',
   };
 }
@@ -211,7 +249,15 @@ export default function NpcEditor({
       const body = JSON.stringify({
         scene: slug,
         name: draft.name,
-        config: { ...draft.config, scale: draft.scale },
+        config: {
+          ...draft.config,
+          scale: draft.scale,
+          behavior: {
+            mode: draft.walkMode,
+            route: draft.route,
+            wanderRadius: draft.wanderRadius,
+          },
+        },
         x: draft.x,
         y: draft.y,
         facing: draft.facing,
@@ -437,6 +483,84 @@ export default function NpcEditor({
                   ))}
                 </div>
               </Field>
+
+              {draft.animation === 'walk' && (
+                <Field label="Comportamiento al caminar">
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <PillButton
+                        active={draft.walkMode === 'route'}
+                        onClick={() =>
+                          setDraft({ ...draft, walkMode: 'route' })
+                        }
+                      >
+                        Ruta definida
+                      </PillButton>
+                      <PillButton
+                        active={draft.walkMode === 'wander'}
+                        onClick={() =>
+                          setDraft({ ...draft, walkMode: 'wander' })
+                        }
+                      >
+                        Deambular
+                      </PillButton>
+                    </div>
+                    {draft.walkMode === 'wander' ? (
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                      >
+                        <span
+                          style={{ fontSize: '0.78rem', color: '#605e5c' }}
+                        >
+                          Radio
+                        </span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={15}
+                          value={draft.wanderRadius}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              wanderRadius: Math.max(
+                                1,
+                                Math.min(15, Math.floor(Number(e.target.value) || 1)),
+                              ),
+                            })
+                          }
+                          style={{ ...inputStyle, width: 70 }}
+                        />
+                        <span
+                          style={{ fontSize: '0.72rem', color: '#a19f9d' }}
+                        >
+                          tiles
+                        </span>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          fontSize: '0.74rem',
+                          color: '#605e5c',
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {draft.route.length > 0
+                          ? `Ruta con ${draft.route.length} punto${draft.route.length === 1 ? '' : 's'} (ida y vuelta).`
+                          : 'Sin ruta aún.'}{' '}
+                        Define los puntos con el botón{' '}
+                        <strong style={{ color: '#0078d4' }}>Ruta</strong> de la
+                        galería de NPCs (sobre el mapa).
+                      </div>
+                    )}
+                  </div>
+                </Field>
+              )}
 
               <Field label="Nombre">
                 <input
