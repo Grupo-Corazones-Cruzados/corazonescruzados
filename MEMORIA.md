@@ -789,6 +789,18 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Login del juego: `hasPassword` NO basta como gate (2026-06-29):** el formulario "crea tu cuenta"
+  (showSetup) aparece cuando `/api/character/me` devuelve `isMember`/`hasAccount`/`hasPassword` todos
+  en false. Los **miembros/clientes guardan la contraseña en `gcc_world.users`, no en
+  `gcc_world.clients`** → `hasPassword=false`; por eso `showLogin` debe exigir login también con
+  `isMember || hasAccount`, no solo `hasPassword` (`components/landing/CharacterGameplay.tsx`). `/me`
+  reconoce al miembro por `clients.user_id` o porque `clients.email` coincide con un `users` (rol
+  member/admin). Un registro de `clients` SIN contraseña ni `user_id` y con correo que no matchea
+  ningún `users` → se ve como candidato sin cuenta → showSetup (correcto). Caso real: el personaje de
+  prueba **"Claudio"** (id 32, correo lfgonzalezm0@gmail.com) disparaba esto; **se eliminó**.
+- **"Entrar" exige login siempre:** el botón "Entrar" (returning) hace `setFreshAuth(false)` para no
+  entrar directo al reconocer la cuenta; el login (credenciales + 2FA) se muestra DENTRO del juego vía
+  `showLogin` (no en la landing). `freshAuth` evita el doble login en la misma carga.
 - **SRI "FECHA EMISION EXTEMPORANEA" = bug de zona horaria (2026-06-15):** la clave de acceso
   (`generateAccessKey`, `access-key.ts`) y `fechaEmision` (`xml-builder.ts`) construían la fecha con
   `new Date().getDate()/getMonth()/getFullYear()` → **hora local del servidor**. En Railway el contenedor
