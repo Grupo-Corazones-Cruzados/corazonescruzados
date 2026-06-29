@@ -1650,45 +1650,6 @@ export default function MapEditor({
           />
         </div>
 
-        {tileView === 'sheets' && (
-          <div
-            style={{
-              padding: 10,
-              borderBottom: '1px solid #edebe9',
-            }}
-          >
-            {(
-              <select
-                value={activeCategory}
-                onChange={(e) =>
-                  setActiveCategory(
-                    e.target.value as (typeof CATEGORIES)[number]['id'],
-                  )
-                }
-                style={{
-                  width: '100%',
-                  padding: '6px 8px',
-                  background: '#f3f2f1',
-                  color: '#323130',
-                  border: '1px solid #d1d1d1',
-                  fontFamily:
-                    "system-ui, -apple-system, 'Segoe UI', sans-serif",
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.08em',
-                  outline: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        )}
-
         <div
           style={{
             flex: 1,
@@ -1699,7 +1660,9 @@ export default function MapEditor({
             gap: 16,
           }}
         >
-          {(tileView === 'objects' || tileView === 'items') && (
+          {(tileView === 'objects' ||
+            tileView === 'items' ||
+            tileView === 'sheets') && (
             tileView === 'objects' && allSprites === null ? (
               <div
                 style={{
@@ -1738,20 +1701,32 @@ export default function MapEditor({
                 count: ITEMS.filter((it) => it.category === c.id && matchQ(it))
                   .length,
               })).filter((s) => s.count > 0);
+              const sheetGroups = CATEGORIES.map((cat) => ({
+                title: cat.label,
+                secs: SHEETS.filter(
+                  (s) =>
+                    s.category === cat.id &&
+                    (!filteredQuery ||
+                      s.name.toLowerCase().includes(filteredQuery) ||
+                      s.id.toLowerCase().includes(filteredQuery)),
+                ).map((s) => ({ key: `sheet:${s.id}`, label: s.name })),
+              })).filter((g) => g.secs.length > 0);
               const groups: {
                 title: string;
                 secs: { key: string; label: string; count?: number }[];
               }[] =
                 tileView === 'items'
                   ? [{ title: '', secs: itemSecs }]
-                  : [
-                      { title: 'Objetos', secs: objSecs },
-                      { title: 'Props', secs: propSecs },
-                      {
-                        title: '',
-                        secs: [{ key: 'cat:colors', label: 'Colores' }],
-                      },
-                    ];
+                  : tileView === 'sheets'
+                    ? sheetGroups
+                    : [
+                        { title: 'Objetos', secs: objSecs },
+                        { title: 'Props', secs: propSecs },
+                        {
+                          title: '',
+                          secs: [{ key: 'cat:colors', label: 'Colores' }],
+                        },
+                      ];
               const allKeys = groups.flatMap((g) => g.secs.map((s) => s.key));
               const sel = allKeys.includes(selectedSection)
                 ? selectedSection
@@ -1799,7 +1774,7 @@ export default function MapEditor({
                   </div>
 
                   {/* Detalle: ítems de la categoría seleccionada */}
-                  <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
+                  <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
                     {sel === 'cat:colors' ? (
                       <ColorsPalette
                         activeColor={colorBrushHex}
@@ -1869,6 +1844,48 @@ export default function MapEditor({
                           </>
                         );
                       })()
+                    ) : sel.startsWith('sheet:') ? (
+                      (() => {
+                        const sheet = SHEETS.find(
+                          (s) => s.id === sel.slice(6),
+                        );
+                        if (!sheet) return null;
+                        const sheetIdx = SHEETS.indexOf(sheet);
+                        return (
+                          <>
+                            <div
+                              style={{
+                                fontSize: '0.72rem',
+                                color: '#605e5c',
+                                lineHeight: 1.5,
+                                padding: '0 2px 8px',
+                              }}
+                            >
+                              <strong style={{ color: '#0078d4' }}>Clic</strong>{' '}
+                              = sprite completo · <strong>arrastra</strong> = rango
+                              de celdas. Luego clic en el mapa.
+                            </div>
+                            <SheetPalette
+                              sheet={sheet}
+                              sheetIdx={sheetIdx}
+                              selected={
+                                brush?.source === 'sheet' &&
+                                brush.sheetIdx === sheetIdx &&
+                                brush.sx != null &&
+                                brush.sy != null
+                                  ? {
+                                      sx: brush.sx,
+                                      sy: brush.sy,
+                                      w: brush.w,
+                                      h: brush.h,
+                                    }
+                                  : null
+                              }
+                              onPick={(b) => activateBrush(b)}
+                            />
+                          </>
+                        );
+                      })()
                     ) : (
                       (() => {
                         const isProp = sel.startsWith('prop:');
@@ -1934,68 +1951,6 @@ export default function MapEditor({
               );
             })()
           )}
-          {tileView === 'sheets' && (
-            <div
-              style={{
-                fontSize: '0.72rem',
-                color: '#605e5c',
-                lineHeight: 1.5,
-                padding: '0 2px 4px',
-              }}
-            >
-              <strong style={{ color: '#323130' }}>Tip:</strong> pasa el cursor
-              y haz <strong style={{ color: '#0078d4' }}>clic</strong> para
-              seleccionar el sprite completo (se resalta en azul). O{' '}
-              <strong>arrastra</strong> para elegir un rango de celdas a mano.
-              Luego clic en el mapa para estamparlo.
-            </div>
-          )}
-          {tileView === 'sheets' &&
-            visibleSheets
-            .filter(
-              (s) =>
-                !filteredQuery ||
-                s.name.toLowerCase().includes(filteredQuery) ||
-                s.id.toLowerCase().includes(filteredQuery) ||
-                s.category.toLowerCase().includes(filteredQuery),
-            )
-            .map((sheet) => {
-              const sheetIdx = SHEETS.indexOf(sheet);
-              const key = `sheet:${sheet.id}`;
-              const expanded =
-                !!filteredQuery || expandedSections.has(key);
-              return (
-                <div key={sheet.id}>
-                  <CollapseHeader
-                    label={`${sheet.name} · ${sheet.cols}×${sheet.rows}`}
-                    expanded={expanded}
-                    onToggle={() => toggleSection(key)}
-                  />
-                  {expanded && (
-                    <SheetPalette
-                      sheet={sheet}
-                      sheetIdx={sheetIdx}
-                      selected={
-                        brush?.source === 'sheet' &&
-                        brush.sheetIdx === sheetIdx &&
-                        brush.sx != null &&
-                        brush.sy != null
-                          ? {
-                              sx: brush.sx,
-                              sy: brush.sy,
-                              w: brush.w,
-                              h: brush.h,
-                            }
-                          : null
-                      }
-                      onPick={(b) => {
-                        activateBrush(b);
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            })}
         </div>
         </>
         )}
@@ -4896,7 +4851,7 @@ function SheetPalette({
       style={{
         position: 'relative',
         width: sheet.cols * PALETTE_TILE,
-        maxWidth: '100%',
+        flexShrink: 0,
         background: '#faf9f8',
         border: '1px solid rgba(0,120,212,0.4)',
         backgroundImage: `url(${sheet.url})`,
