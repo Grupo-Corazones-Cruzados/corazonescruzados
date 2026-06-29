@@ -46,7 +46,7 @@ import type {
 } from './world/sheets';
 
 const TILE_PX_DISPLAY = TILE * WORLD_SCALE; // 64 px per tile on screen
-const SPEED = 1.2 * WORLD_SCALE;
+const SPEED = 1.9 * WORLD_SCALE;
 const DEFAULT_SCENE_SLUG = 'main';
 const DEFAULT_MAP: WorldMapData = {
   name: DEFAULT_SCENE_SLUG,
@@ -522,7 +522,14 @@ export default function CharacterGameplay({
     !auth.hasAccount &&
     !isMemberSession &&
     (!auth.hasPassword || (!!auth.emailVerified && !auth.profileCompleted));
-  const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
+  // Jugador recurrente con CUENTA (contraseña, miembro o cliente) debe validar el
+  // login al entrar. Antes solo se exigía con `hasPassword`, pero miembros/clientes
+  // guardan la contraseña en gcc_world.users (no en clients) → hasPassword=false y
+  // entraban sin validar. Ahora también se exige a miembros y cuentas.
+  const showLogin =
+    isReturning &&
+    !auth.authenticated &&
+    (auth.hasPassword || !!auth.isMember || !!auth.hasAccount);
   const authOverlay = showSetup || showLogin || passkeyOffer;
   const overlayVisible = authOverlay || exitConfirm;
   const locked = overlayVisible;
