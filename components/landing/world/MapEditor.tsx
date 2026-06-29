@@ -37,7 +37,7 @@ import {
   PANEL_WIDTH,
 } from './editorUi';
 import NpcEditor, { type NpcRecord, npcScale } from './NpcEditor';
-import { CharacterSprite, ANIMATIONS } from '../CharacterCreator';
+import { CharacterSprite, ANIMATIONS, npcDisplayFrame } from '../CharacterCreator';
 import {
   IconAdd,
   IconEdit,
@@ -398,7 +398,7 @@ export default function MapEditor({
   }, [refreshNpcs]);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNpcFrame((f) => (f >= 8 ? 1 : f + 1)), 150);
+    const id = window.setInterval(() => setNpcFrame((f) => f + 1), 150);
     return () => window.clearInterval(id);
   }, []);
   const [brushHistory, setBrushHistory] = useState<Brush[]>([]);
@@ -2633,7 +2633,7 @@ export default function MapEditor({
                   config={n.config}
                   direction={n.facing}
                   animation={n.animation}
-                  frame={npcFrame}
+                  frame={npcDisplayFrame(n.animation, npcFrame)}
                   scale={Math.max(0.5, viewScale) * npcScale(n.config)}
                 />
                 <span

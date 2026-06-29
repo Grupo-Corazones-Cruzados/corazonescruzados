@@ -9,6 +9,7 @@ import {
   type SpriteDirection,
   ANIMATIONS,
   ANIMATION_OPTIONS,
+  npcDisplayFrame,
   SKIN_TONES,
   HAIR_COLORS,
   HAIR_STYLES,
@@ -375,7 +376,7 @@ export default function NpcEditor({
                   config={draft.config}
                   direction={draft.facing}
                   animation={draft.animation}
-                  frame={previewFrame}
+                  frame={npcDisplayFrame(draft.animation, previewFrame)}
                   scale={3 * draft.scale}
                 />
               </div>

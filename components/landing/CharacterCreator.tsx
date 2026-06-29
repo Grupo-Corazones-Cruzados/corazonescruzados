@@ -229,6 +229,32 @@ export const ANIMATIONS: Record<CharacterAnimation, AnimationDef> = {
   sit:    { rows: { n: 30, w: 31, s: 32, e: 33 }, frames: 3,  fps: 4 },
 };
 
+// Animaciones que se reproducen UNA vez y se quedan en el último frame (poses
+// que terminan en un estado: sentarse, lanzar, golpear…). 'idle' y 'walk' son
+// cíclicas (idle = 1 frame; walk reproduce el ciclo de pasos).
+export const ONE_SHOT_ANIMATIONS = new Set<CharacterAnimation>([
+  'sit',
+  'cast',
+  'thrust',
+  'slash',
+  'shoot',
+  'hurt',
+]);
+
+// Frame a mostrar para un NPC dado un contador MONÓTONO (siempre creciente):
+// las cíclicas hacen módulo (bucle); las de una sola vez avanzan hasta el último
+// frame y se quedan ahí.
+export function npcDisplayFrame(
+  animation: CharacterAnimation,
+  counter: number,
+): number {
+  const def = ANIMATIONS[animation];
+  if (def.frames <= 1) return 0;
+  return ONE_SHOT_ANIMATIONS.has(animation)
+    ? Math.min(counter, def.frames - 1)
+    : counter % def.frames;
+}
+
 export const ANIMATION_OPTIONS: { id: CharacterAnimation; label: string }[] = [
   { id: 'idle',   label: 'Quieto' },
   { id: 'walk',   label: 'Caminar' },

@@ -7,6 +7,7 @@ import {
 } from '@simplewebauthn/browser';
 import {
   CharacterSprite,
+  npcDisplayFrame,
   type CharacterConfig,
   type SpriteDirection,
 } from './CharacterCreator';
@@ -968,7 +969,7 @@ export default function CharacterGameplay({
               config={n.config}
               direction={n.facing}
               animation={n.animation}
-              frame={npcFrame}
+              frame={npcDisplayFrame(n.animation, npcFrame)}
               scale={3 * npcScale(n.config)}
             />
             {/* Name tag floats above the NPC's head. */}
