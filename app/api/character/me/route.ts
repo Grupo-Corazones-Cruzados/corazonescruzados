@@ -15,6 +15,10 @@ export async function GET() {
     const token = cookieStore.get(CLIENT_COOKIE)?.value || null;
     const ip = await getClientIp();
     const ipHash = hashIp(ip);
+    // Sesión de staff (JWT): si existe, el jugador ES un usuario de gcc_world.users
+    // (miembro/admin/cliente), aunque la fila de clients que matchee por cookie/IP
+    // no tenga user_id. Se usa para el fallback y para isMember/hasAccount.
+    const staff = await getCurrentUser();
 
     let row: Record<string, unknown> | null = null;
 
@@ -51,17 +55,14 @@ export async function GET() {
 
     // Fallback robusto: miembro/admin con sesión de staff (JWT) → reconoce su
     // personaje por user_id o correo aunque la cookie/IP de jugador no coincidan.
-    if (!row) {
-      const staff = await getCurrentUser();
-      if (staff) {
-        const r = await pool.query(
-          `SELECT ${COLS} FROM gcc_world.clients
-            WHERE (user_id = $1 OR LOWER(email) = LOWER($2)) AND character_data IS NOT NULL
-            ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
-          [staff.userId, staff.email],
-        );
-        row = r.rows[0] ?? null;
-      }
+    if (!row && staff) {
+      const r = await pool.query(
+        `SELECT ${COLS} FROM gcc_world.clients
+          WHERE (user_id = $1 OR LOWER(email) = LOWER($2)) AND character_data IS NOT NULL
+          ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
+        [staff.userId, staff.email],
+      );
+      row = r.rows[0] ?? null;
     }
 
     if (!row) {
@@ -92,6 +93,13 @@ export async function GET() {
         hasAccount = true;
         if (role === 'member' || role === 'admin') isMember = true;
       }
+    }
+    // Si hay sesión de staff logueada, el jugador YA tiene cuenta (member/admin/
+    // cliente) → nunca debe mostrarse "crea tu cuenta", aunque la fila de clients
+    // matcheada no tenga user_id ni correo que coincida.
+    if (staff) {
+      hasAccount = true;
+      if (staff.role === 'member' || staff.role === 'admin') isMember = true;
     }
 
     const authCookie = cookieStore.get(AUTH_COOKIE)?.value || null;
