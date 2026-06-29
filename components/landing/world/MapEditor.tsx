@@ -321,6 +321,14 @@ export default function MapEditor({
   const [paletteOpen, setPaletteOpen] = useState(true);
   const [paletteMin, setPaletteMin] = useState(false);
   const [palettePos, setPalettePos] = useState({ x: 16, y: 70 });
+  // Tamaño de la ventana (redimensionable desde el borde inferior-derecho). El
+  // tamaño por defecto es el MÍNIMO; el usuario puede agrandarla.
+  const PALETTE_MIN_W = 420;
+  const PALETTE_MIN_H = 560;
+  const [paletteSize, setPaletteSize] = useState({
+    w: PALETTE_MIN_W,
+    h: PALETTE_MIN_H,
+  });
   const paletteDragRef = useRef<{ dx: number; dy: number } | null>(null);
   const startPaletteDrag = (e: React.MouseEvent) => {
     paletteDragRef.current = {
@@ -336,6 +344,32 @@ export default function MapEditor({
     };
     const up = () => {
       paletteDragRef.current = null;
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+  // Redimensionar desde la esquina inferior-derecha (mín = tamaño actual).
+  const startPaletteResize = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = paletteSize.w;
+    const startH = paletteSize.h;
+    const move = (ev: MouseEvent) => {
+      const maxW = Math.max(PALETTE_MIN_W, window.innerWidth - palettePos.x - 12);
+      const maxH = Math.max(
+        PALETTE_MIN_H,
+        window.innerHeight - palettePos.y - 12,
+      );
+      setPaletteSize({
+        w: Math.min(maxW, Math.max(PALETTE_MIN_W, startW + (ev.clientX - startX))),
+        h: Math.min(maxH, Math.max(PALETTE_MIN_H, startH + (ev.clientY - startY))),
+      });
+    };
+    const up = () => {
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseup', up);
     };
@@ -1528,8 +1562,8 @@ export default function MapEditor({
           left: palettePos.x,
           top: palettePos.y,
           zIndex: 40,
-          width: 420,
-          height: paletteMin ? 'auto' : 'min(80vh, 640px)',
+          width: paletteSize.w,
+          height: paletteMin ? 'auto' : paletteSize.h,
           display: paletteOpen ? 'flex' : 'none',
           flexDirection: 'column',
           background: '#ffffff',
@@ -1948,6 +1982,24 @@ export default function MapEditor({
             })}
         </div>
         </>
+        )}
+        {/* Tirador de redimensión (esquina inferior-derecha) */}
+        {!paletteMin && (
+          <div
+            onMouseDown={startPaletteResize}
+            title="Arrastra para cambiar el tamaño"
+            style={{
+              position: 'absolute',
+              right: 0,
+              bottom: 0,
+              width: 18,
+              height: 18,
+              cursor: 'nwse-resize',
+              zIndex: 3,
+              background:
+                'linear-gradient(135deg, transparent 0 55%, #b3b0ad 55% 63%, transparent 63% 73%, #b3b0ad 73% 81%, transparent 81%)',
+            }}
+          />
         )}
       </aside>
 
@@ -5272,18 +5324,15 @@ function LayersPanel({
         minHeight: 0,
       }}
     >
-      <PanelHeader
-        title="Capas"
-        actions={
-          <EditorButton
-            icon={<IconAdd size={14} />}
-            onClick={onAdd}
-            title="Agregar capa nueva (vacía, encima de las demás)"
-          >
-            Nueva
-          </EditorButton>
-        }
-      >
+      <PanelHeader title="Capas">
+        <EditorButton
+          icon={<IconAdd size={14} />}
+          onClick={onAdd}
+          title="Agregar capa nueva (vacía, encima de las demás)"
+          style={{ width: '100%' }}
+        >
+          Nueva
+        </EditorButton>
         <span style={{ fontSize: '0.72rem', color: '#605e5c' }}>
           {reversed.length} capa{reversed.length === 1 ? '' : 's'}
         </span>
