@@ -184,6 +184,8 @@ export default function CharacterGameplay({
   const npcRTRef = useRef<Map<number, NpcRT>>(new Map());
   // Tiles ocupados por NPCs (para la colisión del jugador).
   const npcTilesRef = useRef<Set<string>>(new Set());
+  // ¿El frame anterior tenía NPCs caminando? (para limpiar el estado una vez).
+  const hadWalkersRef = useRef(false);
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
@@ -200,6 +202,7 @@ export default function CharacterGameplay({
         { x: number; y: number; dir: SpriteDirection; moving: boolean }
       > = {};
       const tiles = new Set<string>();
+      let hasWalkers = false;
       for (const n of npcsRef.current) {
         ids.add(n.id);
         if (n.animation !== 'walk') {
@@ -207,6 +210,7 @@ export default function CharacterGameplay({
           tiles.add(`${n.x},${n.y}`);
           continue;
         }
+        hasWalkers = true;
         const beh: NpcBehavior = npcBehavior(n.config);
         let st = rt.get(n.id);
         if (!st) {
@@ -290,7 +294,16 @@ export default function CharacterGameplay({
       }
       for (const id of [...rt.keys()]) if (!ids.has(id)) rt.delete(id);
       npcTilesRef.current = tiles;
-      setNpcAnim(out);
+      // Solo re-renderiza si hay NPCs que caminan (o para limpiar una vez al
+      // dejar de haberlos). Evita re-renders por frame sin movimiento, que
+      // bajan los FPS y ralentizan al jugador.
+      if (hasWalkers) {
+        setNpcAnim(out);
+        hadWalkersRef.current = true;
+      } else if (hadWalkersRef.current) {
+        setNpcAnim(out);
+        hadWalkersRef.current = false;
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -916,9 +929,16 @@ export default function CharacterGameplay({
       return;
     }
     let raf = 0;
-    const tick = () => {
-      const vx = direction === 'w' ? -SPEED : direction === 'e' ? SPEED : 0;
-      const vy = direction === 'n' ? -SPEED : direction === 's' ? SPEED : 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      // Movimiento por TIEMPO (no por frame): la velocidad es la misma aunque
+      // bajen los FPS. factor = 1 a 60fps. Se acota para evitar saltos grandes.
+      const factor = Math.min(3, (now - last) / (1000 / 60));
+      last = now;
+      const vx =
+        (direction === 'w' ? -SPEED : direction === 'e' ? SPEED : 0) * factor;
+      const vy =
+        (direction === 'n' ? -SPEED : direction === 's' ? SPEED : 0) * factor;
       setPos((p) => {
         // Try X then Y separately so a wall on one axis doesn't
         // freeze diagonal movement on the other.
