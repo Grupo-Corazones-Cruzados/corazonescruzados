@@ -522,14 +522,7 @@ export default function CharacterGameplay({
     !auth.hasAccount &&
     !isMemberSession &&
     (!auth.hasPassword || (!!auth.emailVerified && !auth.profileCompleted));
-  // Jugador recurrente con CUENTA (contraseña, miembro o cliente) debe validar el
-  // login al entrar. Antes solo se exigía con `hasPassword`, pero miembros/clientes
-  // guardan la contraseña en gcc_world.users (no en clients) → hasPassword=false y
-  // entraban sin validar. Ahora también se exige a miembros y cuentas.
-  const showLogin =
-    isReturning &&
-    !auth.authenticated &&
-    (auth.hasPassword || !!auth.isMember || !!auth.hasAccount);
+  const showLogin = isReturning && auth.hasPassword && !auth.authenticated;
   const authOverlay = showSetup || showLogin || passkeyOffer;
   const overlayVisible = authOverlay || exitConfirm;
   const locked = overlayVisible;
