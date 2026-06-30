@@ -1160,6 +1160,7 @@ export default function CharacterGameplay({
               pointerEvents: 'none',
             }}
           >
+            <GroundShadow scale={3 * npcScale(n.config)} />
             <CharacterSprite
               config={n.config}
               direction={adir}
@@ -1206,6 +1207,7 @@ export default function CharacterGameplay({
           willChange: 'transform',
         }}
       >
+        <GroundShadow scale={3} />
         <CharacterSprite
           config={config}
           direction={direction}
@@ -1602,6 +1604,29 @@ export default function CharacterGameplay({
         muted={!!cinematicPlaying}
       />
     </div>
+  );
+}
+
+// Sombra de contacto bajo un personaje: una elipse oscura a la altura de los pies.
+// `scale` = la escala del CharacterSprite (3 = jugador, 3·npcScale = NPC) para que
+// el tamaño/posición acompañen al sprite.
+function GroundShadow({ scale }: { scale: number }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: '50%',
+        bottom: 7 * scale,
+        transform: 'translateX(-50%)',
+        width: 20 * scale,
+        height: 6.5 * scale,
+        borderRadius: '50%',
+        background:
+          'radial-gradient(ellipse at center, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.18) 55%, rgba(0,0,0,0) 78%)',
+        pointerEvents: 'none',
+        zIndex: -1,
+      }}
+    />
   );
 }
 
