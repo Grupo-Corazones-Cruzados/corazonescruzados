@@ -36,9 +36,14 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const slug = pickSlug(url.searchParams.get('scene'));
+    await pool.query(
+      `ALTER TABLE gcc_world.world_maps
+         ADD COLUMN IF NOT EXISTS character_layer text`,
+    );
     const r = await pool.query(
       `SELECT id, name, width, height, layers, items,
-              spawn_x, spawn_y, ambient_darkness, transitions, props, updated_at
+              spawn_x, spawn_y, ambient_darkness, transitions, props,
+              character_layer, updated_at
          FROM gcc_world.world_maps
         WHERE name = $1
         LIMIT 1`,
@@ -71,6 +76,7 @@ export async function GET(req: Request) {
       ambientDarkness: Number(row.ambient_darkness) || 0,
       transitions: row.transitions ?? [],
       props: row.props ?? [],
+      characterLayer: row.character_layer ?? undefined,
       updatedAt: row.updated_at,
       isAdmin: !!me?.isAdmin,
     });
@@ -130,13 +136,19 @@ export async function PUT(req: Request) {
       0,
       Math.min(1, Number(body?.ambientDarkness) || 0),
     );
+    const characterLayer =
+      typeof body?.characterLayer === 'string' ? body.characterLayer : null;
 
+    await pool.query(
+      `ALTER TABLE gcc_world.world_maps
+         ADD COLUMN IF NOT EXISTS character_layer text`,
+    );
     await pool.query(
       `INSERT INTO gcc_world.world_maps
           (name, width, height, layers, items, spawn_x, spawn_y,
-           ambient_darkness, transitions, props, updated_at)
+           ambient_darkness, transitions, props, character_layer, updated_at)
        VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9::jsonb,
-               $10::jsonb, NOW())
+               $10::jsonb, $11, NOW())
        ON CONFLICT (name) DO UPDATE
           SET width = EXCLUDED.width,
               height = EXCLUDED.height,
@@ -147,6 +159,7 @@ export async function PUT(req: Request) {
               ambient_darkness = EXCLUDED.ambient_darkness,
               transitions = EXCLUDED.transitions,
               props = EXCLUDED.props,
+              character_layer = EXCLUDED.character_layer,
               updated_at = NOW()`,
       [
         slug,
@@ -159,6 +172,7 @@ export async function PUT(req: Request) {
         ambientDarkness,
         JSON.stringify(transitions),
         JSON.stringify(props),
+        characterLayer,
       ],
     );
     return NextResponse.json({ ok: true });

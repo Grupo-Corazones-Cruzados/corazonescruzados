@@ -1133,7 +1133,11 @@ export default function CharacterGameplay({
           boxShadow: '0 0 0 4px #0a0c11, 0 18px 70px rgba(0,0,0,0.6)',
         }}
       >
-        <WorldMap map={worldMap} hidePickedItems={pickedItems} />
+        <WorldMap
+          map={worldMap}
+          hidePickedItems={pickedItems}
+          splitMode="below"
+        />
         {/* NPCs live in the world transform so they scroll with the map. */}
         {npcs.map((n) => {
           // Posición/dirección animada (NPCs que caminan se mueven); por defecto
@@ -1252,6 +1256,24 @@ export default function CharacterGameplay({
               />
             );
           })()}
+      </div>
+
+      {/* Capas POR ENCIMA de la del personaje: se dibujan DELANTE del jugador y
+          los NPCs (mismo transform del mundo) para que los "Objetos" los tapen. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          width: MAP_PX_W,
+          height: MAP_PX_H,
+          transform: `translate(calc(-50% - ${camX}px), calc(-50% - ${camY}px))`,
+          willChange: 'transform',
+          pointerEvents: 'none',
+          zIndex: 8,
+        }}
+      >
+        <WorldMap map={worldMap} splitMode="above" />
       </div>
 
       {/* Lighting layer — same world transform as the tile container,

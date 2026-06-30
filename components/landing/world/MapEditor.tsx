@@ -504,6 +504,11 @@ export default function MapEditor({
   const [ambientDarkness, setAmbientDarkness] = useState<number>(
     initialMap.ambientDarkness ?? 0,
   );
+  // Capa sobre la que se dibuja el personaje en el juego: las capas por encima
+  // lo tapan. Se guarda con el mapa.
+  const [characterLayer, setCharacterLayer] = useState<string | undefined>(
+    initialMap.characterLayer,
+  );
   // Transitions (doors) — saved alongside the map, drive scene
   // switches in the runtime. Painted with the new 'transition' editor
   // mode (Phase 2).
@@ -1606,6 +1611,7 @@ export default function MapEditor({
           ambientDarkness,
           transitions,
           props,
+          characterLayer,
         }),
       });
       const j = await r.json();
@@ -1627,6 +1633,7 @@ export default function MapEditor({
         ambientDarkness,
         transitions,
         props,
+        characterLayer,
       });
     } finally {
       setSaving(false);
@@ -2980,6 +2987,11 @@ estos controles: el zoom se centra en la última celda en la que hiciste clic."
           onRename={renameLayer}
           onToggleVisible={toggleLayerVisible}
           onMove={moveLayer}
+          characterLayer={characterLayer}
+          onSetCharacterLayer={(id) => {
+            setCharacterLayer(id);
+            window.setTimeout(pushHistory, 0);
+          }}
         />
       </aside>
 
@@ -5577,6 +5589,8 @@ function LayersPanel({
   onRename,
   onToggleVisible,
   onMove,
+  characterLayer,
+  onSetCharacterLayer,
 }: {
   layers: LayerData[];
   activeLayerId: string;
@@ -5586,6 +5600,9 @@ function LayersPanel({
   onRename: (id: string, name: string) => void;
   onToggleVisible: (id: string) => void;
   onMove: (id: string, dir: -1 | 1) => void;
+  /** Capa sobre la que va el personaje (las de arriba lo tapan). */
+  characterLayer?: string;
+  onSetCharacterLayer: (id: string | undefined) => void;
 }) {
   // Top → bottom in the panel = top → bottom in the visible stack,
   // which means we render the array reversed (last layer = paints
@@ -5754,6 +5771,22 @@ function LayersPanel({
                       onClick={(e) => {
                         e.stopPropagation();
                         if (l.id) setEditingId(l.id);
+                      }}
+                    />
+                    <GhostBtn
+                      icon={<IconNpcs size={15} />}
+                      title={
+                        characterLayer === l.id
+                          ? 'El personaje va sobre esta capa (clic para quitar)'
+                          : 'Poner el personaje sobre esta capa: las capas de arriba lo taparán'
+                      }
+                      active={characterLayer === l.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (l.id)
+                          onSetCharacterLayer(
+                            characterLayer === l.id ? undefined : l.id,
+                          );
                       }}
                     />
                     <GhostBtn

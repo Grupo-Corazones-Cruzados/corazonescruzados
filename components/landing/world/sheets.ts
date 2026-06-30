@@ -277,6 +277,10 @@ export type WorldMapData = {
   transitions?: Transition[];
   props?: WorldProp[];
   isAdmin?: boolean;
+  // Capa (id) sobre la que se dibuja el personaje/NPCs: las capas POR ENCIMA de
+  // esta tapan al personaje (p.ej. ponerlo sobre "Terreno" → los "Objetos" lo
+  // ocultan). Si no se define, el personaje va por encima de todo (antiguo).
+  characterLayer?: string;
 };
 
 // ── Scenes (game-engine-style) ──────────────────────────────────────

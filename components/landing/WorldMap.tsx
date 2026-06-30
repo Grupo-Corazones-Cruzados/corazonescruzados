@@ -21,10 +21,16 @@ function WorldMap({
   map,
   scale = WORLD_SCALE,
   hidePickedItems,
+  splitMode,
 }: {
   map: WorldMapData;
   scale?: number;
   hidePickedItems?: Set<string>;
+  // Render parcial para que el personaje pueda quedar ENTRE capas:
+  //  'below' = capas hasta `map.characterLayer` (+ items/props),
+  //  'above' = solo las capas POR ENCIMA de `map.characterLayer`.
+  //  undefined = todas (comportamiento normal).
+  splitMode?: 'below' | 'above';
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -98,12 +104,25 @@ function WorldMap({
         );
       };
       const layers = map.layers ?? [];
-      for (const layer of layers) {
-        if (layer.visible === false) continue;
+      // Índice de la capa del personaje (las de arriba lo tapan).
+      const splitIdx = map.characterLayer
+        ? layers.findIndex((l) => l.id === map.characterLayer)
+        : -1;
+      layers.forEach((layer, i) => {
+        if (layer.visible === false) return;
+        // 'above' dibuja solo capas por encima de la del personaje; 'below' (y
+        // sin split) dibuja hasta esa capa inclusive.
+        if (splitMode === 'above') {
+          if (splitIdx < 0 || i <= splitIdx) return;
+        } else if (splitMode === 'below' && splitIdx >= 0 && i > splitIdx) {
+          return;
+        }
         const tiles = layer.tiles ?? [];
         for (const t of tiles) if (tileZ(t.s) === 0) drawTile(t);
         for (const t of tiles) if (tileZ(t.s) === 1) drawTile(t);
-      }
+      });
+      // El paso 'above' solo dibuja capas (sin items/props).
+      if (splitMode === 'above') return;
       // Items on top of tiles.
       const items = map.items ?? [];
       for (const placement of items) {
@@ -146,7 +165,7 @@ function WorldMap({
     return () => {
       cancelled = true;
     };
-  }, [map, hidePickedItems]);
+  }, [map, hidePickedItems, splitMode]);
 
   return (
     <canvas
