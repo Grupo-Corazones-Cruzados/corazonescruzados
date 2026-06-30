@@ -369,6 +369,8 @@ export default function MapEditor({
     | 'npc'
     | 'npcRoute';
   const [mode, setMode] = useState<EditorMode>('paint');
+  // Tamaño del borrador (NxN celdas). 1 = una celda.
+  const [eraserSize, setEraserSize] = useState(1);
 
   // ── NPCs de esta escena ─────────────────────────────────────────────
   const [npcs, setNpcs] = useState<NpcRecord[]>([]);
@@ -1469,6 +1471,24 @@ export default function MapEditor({
       window.setTimeout(pushHistory, 0);
       return;
     }
+    if (mode === 'erase' && eraserSize > 1) {
+      // Borrador de área NxN centrado en (cx, cy): quita los tiles de la capa
+      // activa + props + items dentro del recuadro.
+      const half = Math.floor((eraserSize - 1) / 2);
+      const minX = cx - half;
+      const minY = cy - half;
+      const maxX = minX + eraserSize - 1;
+      const maxY = minY + eraserSize - 1;
+      const inArea = (x: number, y: number) =>
+        x >= minX && x <= maxX && y >= minY && y <= maxY;
+      setProps((prev) => prev.filter((p) => !inArea(p.x, p.y)));
+      setItems((prev) => prev.filter((it) => !inArea(it.x, it.y)));
+      setTiles((prev) => {
+        const next = prev.filter((t) => !inArea(t.x, t.y));
+        return next.length === prev.length ? prev : next;
+      });
+      return;
+    }
     if (mode === 'erase') {
       // Erase removes the top-most tile from the ACTIVE layer at the
       // cursor cell. Props and items live outside the layer system so
@@ -2295,6 +2315,54 @@ export default function MapEditor({
                   }
                 />
               </RibbonGroup>
+              <RibbonGroup label="Borrador">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '0 4px',
+                    height: '100%',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEraserSize((s) => Math.max(1, s - 1));
+                      setMode('erase');
+                    }}
+                    disabled={eraserSize <= 1}
+                    title="Borrador más pequeño"
+                    style={eraserStepBtn(eraserSize <= 1)}
+                  >
+                    −
+                  </button>
+                  <div
+                    style={{
+                      minWidth: 44,
+                      textAlign: 'center',
+                      fontSize: '0.74rem',
+                      fontWeight: 600,
+                      color: '#323130',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    {eraserSize}×{eraserSize}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEraserSize((s) => Math.min(9, s + 1));
+                      setMode('erase');
+                    }}
+                    disabled={eraserSize >= 9}
+                    title="Borrador más grande"
+                    style={eraserStepBtn(eraserSize >= 9)}
+                  >
+                    +
+                  </button>
+                </div>
+              </RibbonGroup>
               <RibbonGroup label="Tile">
                 <RibbonButton
                   icon={<IconCollision size={20} />}
@@ -2769,6 +2837,7 @@ export default function MapEditor({
               imgs={imgs}
               width={width}
               height={height}
+              eraserSize={eraserSize}
             />
 
             {/* Ruta en edición — línea punteada + waypoints numerados. */}
@@ -5279,6 +5348,7 @@ function PreviewOverlay({
   imgs,
   width,
   height,
+  eraserSize,
 }: {
   brush: Brush | null;
   mode:
@@ -5298,6 +5368,7 @@ function PreviewOverlay({
   imgs: (HTMLImageElement | null)[];
   width: number;
   height: number;
+  eraserSize?: number;
 }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   useEffect(() => {
@@ -5309,6 +5380,25 @@ function PreviewOverlay({
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Borrador: recuadro NxN bajo el cursor.
+    if (mode === 'erase' && hoverCell) {
+      const n = Math.max(1, eraserSize ?? 1);
+      const half = Math.floor((n - 1) / 2);
+      const ox = hoverCell.x - half;
+      const oy = hoverCell.y - half;
+      ctx.fillStyle = 'rgba(255, 60, 60, 0.18)';
+      ctx.fillRect(ox * TILE_PX, oy * TILE_PX, n * TILE_PX, n * TILE_PX);
+      ctx.strokeStyle = '#d13438';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        ox * TILE_PX + 1,
+        oy * TILE_PX + 1,
+        n * TILE_PX - 2,
+        n * TILE_PX - 2,
+      );
+      return;
+    }
 
     if (mode === 'copy' && copyDrag) {
       const ox = Math.min(copyDrag.start.x, copyDrag.now.x);
@@ -5368,7 +5458,7 @@ function PreviewOverlay({
       brush.w * TILE_PX - 1,
       brush.h * TILE_PX - 1,
     );
-  }, [brush, mode, hoverCell, copyDrag, imgs, width, height]);
+  }, [brush, mode, hoverCell, copyDrag, imgs, width, height, eraserSize]);
   return (
     <canvas
       ref={ref}
@@ -6231,3 +6321,21 @@ const routeBtnStyle: React.CSSProperties = {
   fontSize: '0.76rem',
   fontWeight: 600,
 };
+
+// Botón − / + del control de tamaño del borrador.
+function eraserStepBtn(disabled: boolean): React.CSSProperties {
+  return {
+    width: 26,
+    height: 26,
+    display: 'grid',
+    placeItems: 'center',
+    background: disabled ? '#f3f2f1' : '#ffffff',
+    color: disabled ? '#c8c6c4' : '#323130',
+    border: '1px solid #d1d1d1',
+    borderRadius: 4,
+    cursor: disabled ? 'default' : 'pointer',
+    fontSize: '1rem',
+    fontWeight: 700,
+    lineHeight: 1,
+  };
+}
