@@ -789,6 +789,18 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **El poll de auth borraba el reconocimiento → "crea tu cuenta" recurrente (2026-06-30):** en
+  `CharacterGameplay`, el `useEffect` que hace polling de `/api/character/me` cada 4s (mientras hay
+  overlay de auth) hacía `setAuth({ ... })` REEMPLAZANDO todo el objeto y **descartando**
+  `isMember`/`hasAccount`/`profileCompleted`/`email`. A los pocos segundos `auth.isMember` quedaba
+  `undefined` → `showSetup` se activaba y aparecía el formulario "crea tu cuenta", incluso tras login
+  con passkey/código. **Fix:** el poll hace `{ ...prev, ... }` (merge) preservando esos campos
+  (OR con el previo). Regla: cualquier `setAuth` parcial DEBE spread-mergear, nunca reemplazar.
+- **Login del juego con cuenta reconocida usa passkey/código sin contraseña (2026-06-30):** la
+  `LoginForm` recibe `recognizedEmail` (de `/me`) → arranca en el paso "factor" (passkey / enviar
+  código) sin pedir credenciales; "Cambiar cuenta" → `onChangeEntryType`. El endpoint
+  `returning/begin` acepta `{ recognized:true }` y envía el código sin contraseña SOLO si la cookie
+  de cliente (`CLIENT_COOKIE`) está enlazada a ese correo (`clients.email` o `clients.user_id→users`).
 - **Login del juego: `hasPassword` NO basta como gate (2026-06-29):** el formulario "crea tu cuenta"
   (showSetup) aparece cuando `/api/character/me` devuelve `isMember`/`hasAccount`/`hasPassword` todos
   en false. Los **miembros/clientes guardan la contraseña en `gcc_world.users`, no en
