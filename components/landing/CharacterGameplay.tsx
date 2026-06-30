@@ -1075,6 +1075,7 @@ export default function CharacterGameplay({
         const j = await r.json();
         if (j?.exists) {
           setAuth((prev) => ({
+            ...prev,
             hasPassword: !!j.hasPassword,
             emailVerified: !!j.emailVerified,
             // Polling must NOT auto-grant authenticated state, even if
@@ -1082,6 +1083,12 @@ export default function CharacterGameplay({
             // can only succeed via the explicit LoginForm submission.
             authenticated: prev.authenticated,
             pendingEmail: j.pendingEmail ?? null,
+            // Preserva/actualiza el reconocimiento de cuenta: NO borrar estos
+            // campos o reaparece "crea tu cuenta" a un miembro/cliente.
+            isMember: !!j.isMember || !!prev.isMember,
+            hasAccount: !!j.hasAccount || !!prev.hasAccount,
+            profileCompleted: j.profileCompleted ?? prev.profileCompleted,
+            email: j.email ?? prev.email,
           }));
         }
       } catch {
