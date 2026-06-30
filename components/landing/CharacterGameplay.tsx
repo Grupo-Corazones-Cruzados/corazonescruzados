@@ -1403,7 +1403,7 @@ export default function CharacterGameplay({
               setEditorInitialTab('scenes');
               setEditorOpen(true);
             }}
-            className="pixel-btn pixel-btn-secondary"
+            className="pixel-btn pixel-btn-primary"
             title="Editor (E)"
             style={{
               fontSize: '0.6rem',
@@ -1515,6 +1515,18 @@ export default function CharacterGameplay({
       {/* Inventory hotbar — always present at the bottom of the
           screen (hidden only while a modal-style overlay covers it).
           Shows numbered slots so players can pick with 1-9 / 0 keys. */}
+      {/* Minimapa del mundo actual (arriba a la derecha). */}
+      {!overlayVisible &&
+        !editorOpen &&
+        !npcEditorOpen &&
+        !activeDialogue && (
+          <Minimap
+            map={worldMap}
+            playerFx={(pos.x + HALF_W) / TILE_PX_DISPLAY}
+            playerFy={(pos.y + HALF_H) / TILE_PX_DISPLAY}
+          />
+        )}
+
       {!overlayVisible &&
         !editorOpen &&
         !npcEditorOpen &&
@@ -1627,6 +1639,59 @@ function GroundShadow({ scale }: { scale: number }) {
         zIndex: -1,
       }}
     />
+  );
+}
+
+// Minimapa (arriba a la derecha): el mundo ACTUAL a escala reducida + un punto
+// que marca la posición del jugador. Reusa <WorldMap> (memoizado) a escala chica.
+function Minimap({
+  map,
+  playerFx,
+  playerFy,
+}: {
+  map: WorldMapData;
+  playerFx: number; // posición del jugador en celdas (continua)
+  playerFy: number;
+}) {
+  const MAX = 168; // px máx. del lado mayor
+  const cells = Math.max(map.width, map.height);
+  const scale = MAX / (cells * TILE);
+  const w = map.width * TILE * scale;
+  const h = map.height * TILE * scale;
+  const dotX = Math.max(0, Math.min(w, (playerFx / map.width) * w));
+  const dotY = Math.max(0, Math.min(h, (playerFy / map.height) * h));
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 16,
+        right: 16,
+        zIndex: 99997,
+        border: '2px solid var(--color-accent)',
+        boxShadow: '4px 4px 0 rgba(0,0,0,0.55)',
+        background: 'rgba(19,25,35,0.92)',
+        padding: 4,
+        pointerEvents: 'none',
+      }}
+    >
+      <div style={{ position: 'relative', width: w, height: h, overflow: 'hidden' }}>
+        <WorldMap map={map} scale={scale} />
+        <div
+          style={{
+            position: 'absolute',
+            left: dotX,
+            top: dotY,
+            transform: 'translate(-50%, -50%)',
+            width: 7,
+            height: 7,
+            borderRadius: '50%',
+            background: '#ffcc00',
+            border: '1px solid #1a1a1a',
+            boxShadow: '0 0 5px #ffcc00',
+          }}
+        />
+      </div>
+    </div>
   );
 }
 
