@@ -746,6 +746,24 @@ export default function MapEditor({
           e.preventDefault();
           setMode('prop');
           return;
+        // Orientación de la brocha (voltear / rotar). El updater funcional usa
+        // la brocha ACTUAL (sin closures obsoletos) y no hace nada si no hay.
+        case 'v':
+          e.preventDefault();
+          setBrush((b) => (b ? transformBrush(b, 'flipH') : b));
+          return;
+        case 'b':
+          e.preventDefault();
+          setBrush((b) => (b ? transformBrush(b, 'flipV') : b));
+          return;
+        case 'n':
+          e.preventDefault();
+          setBrush((b) => (b ? transformBrush(b, 'ccw') : b));
+          return;
+        case 'm':
+          e.preventDefault();
+          setBrush((b) => (b ? transformBrush(b, 'cw') : b));
+          return;
       }
     };
     window.addEventListener('keydown', onKey);
@@ -2236,6 +2254,7 @@ export default function MapEditor({
                 <RibbonButton
                   icon={<IconFlipH size={20} />}
                   label="Voltear H"
+                  hotkey="V"
                   disabled={!brush}
                   onClick={() =>
                     setBrush((b) => (b ? transformBrush(b, 'flipH') : b))
@@ -2244,6 +2263,7 @@ export default function MapEditor({
                 <RibbonButton
                   icon={<IconFlipV size={20} />}
                   label="Voltear V"
+                  hotkey="B"
                   disabled={!brush}
                   onClick={() =>
                     setBrush((b) => (b ? transformBrush(b, 'flipV') : b))
@@ -2252,6 +2272,7 @@ export default function MapEditor({
                 <RibbonButton
                   icon={<IconRotateCcw size={20} />}
                   label="Rotar ↺"
+                  hotkey="N"
                   disabled={!brush}
                   onClick={() =>
                     setBrush((b) => (b ? transformBrush(b, 'ccw') : b))
@@ -2260,6 +2281,7 @@ export default function MapEditor({
                 <RibbonButton
                   icon={<IconRotateCw size={20} />}
                   label="Rotar ↻"
+                  hotkey="M"
                   disabled={!brush}
                   onClick={() =>
                     setBrush((b) => (b ? transformBrush(b, 'cw') : b))
