@@ -1198,7 +1198,11 @@ export default function CharacterGameplay({
           position: 'absolute',
           left: '50%',
           top: '50%',
-          transform: `translate(calc(-50% + ${pos.x - camX}px), calc(-50% + ${pos.y - camY}px))`,
+          // scale(0.8): reduce un poco al jugador para igualar el tamaño del NPC
+          // (que está al 80%). Escala todo el contenedor (sprite + ítem en mano)
+          // para que la alineación del ítem se mantenga.
+          transform: `translate(calc(-50% + ${pos.x - camX}px), calc(-50% + ${pos.y - camY}px)) scale(0.8)`,
+          transformOrigin: 'center center',
           willChange: 'transform',
         }}
       >
