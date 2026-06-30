@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { verifyAuthenticationResponse } from '@simplewebauthn/server';
+import { createToken, setAuthCookie } from '@/lib/auth/jwt';
 import {
   AUTH_COOKIE,
   AUTH_COOKIE_MAX_AGE,
@@ -160,6 +161,25 @@ export async function POST(req: Request) {
       path: '/',
       maxAge: COOKIE_MAX_AGE,
     });
+
+    // Si el personaje está enlazado a un usuario staff (miembro/admin), fija
+    // también el JWT de staff para que el dashboard lo reconozca (Colaborar) y
+    // no pida login de nuevo.
+    const linked = await pool.query(
+      `SELECT u.id, u.email, u.role FROM gcc_world.clients c
+         JOIN gcc_world.users u ON u.id = c.user_id
+        WHERE c.id = $1 LIMIT 1`,
+      [client.id],
+    );
+    const su = linked.rows[0];
+    if (su) {
+      const jwt = await createToken({
+        userId: String(su.id),
+        email: su.email,
+        role: su.role,
+      });
+      await setAuthCookie(jwt);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

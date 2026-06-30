@@ -101,6 +101,16 @@ export async function POST(req: Request) {
       maxAge: AUTH_COOKIE_MAX_AGE,
     });
 
+    // Sesión de STAFF (JWT): para que el dashboard (Colaborar) reconozca al
+    // miembro/admin sin pedir login de nuevo. Coexiste con las cookies de
+    // personaje (el juego usa esas; el dashboard usa el JWT).
+    const jwt = await createToken({
+      userId: String(user.id),
+      email: cleanEmail,
+      role: user.role,
+    });
+    await setAuthCookie(jwt);
+
     const pk = await pool.query(
       `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 LIMIT 1`,
       [character.id],
