@@ -789,6 +789,14 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Doble login en "Colaborar" → faltaba el JWT de staff (2026-06-30):** el login de miembro
+  (`MemberLoginModal`) usa endpoints de PERSONAJE (`/api/character/auth/member-login/verify` y
+  `passkey/login/finish`). En la rama "tiene personaje" seteaban solo las cookies de personaje
+  (`CLIENT_COOKIE` + `AUTH_COOKIE='gcc_player_auth'`), NO el **JWT de staff** (`auth_token`) que usa el
+  **dashboard**. Resultado: Colaborar → /dashboard pedía login de nuevo. **Fix:** si el personaje está
+  enlazado a un usuario staff (`clients.user_id → users` member/admin), ambos endpoints también fijan
+  el JWT (`createToken` + `setAuthCookie`). Dos sesiones coexisten: el juego usa las cookies de
+  personaje; el dashboard usa el JWT de staff.
 - **El poll de auth borraba el reconocimiento → "crea tu cuenta" recurrente (2026-06-30):** en
   `CharacterGameplay`, el `useEffect` que hace polling de `/api/character/me` cada 4s (mientras hay
   overlay de auth) hacía `setAuth({ ... })` REEMPLAZANDO todo el objeto y **descartando**
