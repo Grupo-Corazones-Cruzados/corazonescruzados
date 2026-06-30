@@ -1289,6 +1289,7 @@ export default function CharacterGameplay({
 
       {showLogin && (
         <LoginForm
+          recognizedEmail={auth.email ?? auth.pendingEmail ?? ''}
           expectedKind={auth.isMember ? 'member' : auth.hasAccount ? 'client' : 'candidate'}
           onChangeEntryType={onChangeEntryType}
           onLoggedIn={async () => {
@@ -2080,14 +2081,23 @@ function LoginForm({
   onLoggedIn,
   expectedKind,
   onChangeEntryType,
+  recognizedEmail = '',
 }: {
   onLoggedIn: () => void;
   /** Tipo reconocido: el modal solo acepta este tipo de cuenta. */
   expectedKind?: 'member' | 'candidate' | 'client';
   onChangeEntryType?: () => void;
+  /** Correo de la cuenta YA reconocida (del dispositivo). Si viene, se omite el
+   *  paso de credenciales y se ofrece passkey / enviar código directamente. */
+  recognizedEmail?: string;
 }) {
-  const [step, setStep] = useState<'creds' | 'factor' | 'code'>('creds');
-  const [email, setEmail] = useState('');
+  // Cuenta reconocida → arranca en "factor" (passkey / enviar código), sin pedir
+  // la contraseña. Si no hay correo reconocido, cae al flujo con credenciales.
+  const recognized = !!recognizedEmail;
+  const [step, setStep] = useState<'creds' | 'factor' | 'code'>(
+    recognized ? 'factor' : 'creds',
+  );
+  const [email, setEmail] = useState(recognizedEmail);
   const [pwd, setPwd] = useState('');
   const [code, setCode] = useState('');
   const [masked, setMasked] = useState<string | null>(null);
@@ -2141,7 +2151,14 @@ function LoginForm({
       const r = await fetch('/api/character/auth/returning/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password: pwd, expect: expectedKind }),
+        body: JSON.stringify({
+          email: email.trim(),
+          password: pwd,
+          expect: expectedKind,
+          // Cuenta reconocida: el backend envía el código sin contraseña si el
+          // dispositivo (cookie) está enlazado a este correo.
+          recognized,
+        }),
       });
       const j = await r.json();
       if (!r.ok) {
@@ -2267,25 +2284,20 @@ function LoginForm({
   if (step === 'factor') {
     return (
       <FormShell
-        title="Elige cómo continuar"
-        subtitle="Verificamos tus credenciales. Completa un segundo paso."
+        title="Continúa tu partida"
+        subtitle={
+          recognized
+            ? `Cuenta: ${recognizedEmail} · usa tu passkey o un código`
+            : 'Verificamos tus credenciales. Completa un segundo paso.'
+        }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button
-            type="button"
-            onClick={sendCode}
-            disabled={submitting}
-            className="pixel-btn pixel-btn-primary"
-            style={{ opacity: submitting ? 0.6 : 1 }}
-          >
-            {submitting ? 'Enviando código...' : 'Enviar código'}
-          </button>
           {hasPasskeys && (
             <button
               type="button"
               onClick={loginWithPasskey}
               disabled={passkeyBusy}
-              className="pixel-btn pixel-btn-secondary"
+              className="pixel-btn pixel-btn-primary"
               style={{
                 width: '100%',
                 display: 'flex',
@@ -2310,9 +2322,20 @@ function LoginForm({
                 <rect x="5" y="10" width="14" height="11" rx="1" />
                 <path d="M12 14v4" />
               </svg>
-              {passkeyBusy ? 'Autenticando...' : 'Usar passkey'}
+              {passkeyBusy ? 'Autenticando...' : 'Ingresar con passkey'}
             </button>
           )}
+          <button
+            type="button"
+            onClick={sendCode}
+            disabled={submitting}
+            className={
+              hasPasskeys ? 'pixel-btn pixel-btn-secondary' : 'pixel-btn pixel-btn-primary'
+            }
+            style={{ opacity: submitting ? 0.6 : 1 }}
+          >
+            {submitting ? 'Enviando código...' : 'Enviar código al correo'}
+          </button>
           {error && (
             <div style={{ fontSize: '0.62rem', letterSpacing: '0.05em', color: '#ff6f6f' }}>
               {error}
@@ -2321,8 +2344,11 @@ function LoginForm({
           <button
             type="button"
             onClick={() => {
-              setStep('creds');
-              setError(null);
+              if (recognized && onChangeEntryType) onChangeEntryType();
+              else {
+                setStep('creds');
+                setError(null);
+              }
             }}
             style={{
               background: 'transparent',
@@ -2335,7 +2361,7 @@ function LoginForm({
               marginTop: 2,
             }}
           >
-            ← Volver
+            {recognized ? 'Cambiar cuenta' : '← Volver'}
           </button>
         </div>
       </FormShell>

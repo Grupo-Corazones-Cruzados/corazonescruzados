@@ -1,7 +1,9 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { verifyPassword } from '@/lib/auth/password';
 import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/resend';
+import { CLIENT_COOKIE } from '@/lib/world/session';
 
 function maskEmail(email: string): string {
   const [user, domain] = email.split('@');
@@ -21,15 +23,48 @@ function generateCode(): string {
  */
 export async function POST(req: Request) {
   try {
-    const { email, password, expect, validateOnly } = await req.json();
-    if (typeof email !== 'string' || typeof password !== 'string') {
+    const { email, password, expect, validateOnly, recognized } =
+      await req.json();
+    if (typeof email !== 'string') {
       return NextResponse.json(
-        { error: 'Correo y contraseña son requeridos' },
+        { error: 'Correo requerido' },
         { status: 400 },
       );
     }
     const cleanEmail = email.trim().toLowerCase();
     const code = generateCode();
+    const pwd = typeof password === 'string' ? password : '';
+
+    // Flujo "reconocido": si el DISPOSITIVO (cookie de cliente) está enlazado a
+    // este correo (por clients.email o por su usuario staff), se puede enviar el
+    // código SIN contraseña (la posesión del correo / la passkey es el factor).
+    let deviceRecognized = false;
+    if (recognized === true) {
+      try {
+        const token = (await cookies()).get(CLIENT_COOKIE)?.value;
+        if (token) {
+          const cr = await pool.query(
+            `SELECT LOWER(c.email) AS cemail, LOWER(u.email) AS uemail
+               FROM gcc_world.clients c
+               LEFT JOIN gcc_world.users u ON u.id = c.user_id
+              WHERE c.client_token = $1 LIMIT 1`,
+            [token],
+          );
+          const crow = cr.rows[0];
+          if (crow && (crow.cemail === cleanEmail || crow.uemail === cleanEmail)) {
+            deviceRecognized = true;
+          }
+        }
+      } catch {
+        /* sin reconocimiento → cae al flujo con contraseña */
+      }
+    }
+    if (!deviceRecognized && typeof password !== 'string') {
+      return NextResponse.json(
+        { error: 'Correo y contraseña son requeridos' },
+        { status: 400 },
+      );
+    }
 
     // ¿Tiene cuenta en gcc_world.users? (miembro/admin o CLIENTE). Valida ahí.
     const u = await pool.query(
@@ -66,7 +101,10 @@ export async function POST(req: Request) {
     }
 
     if (account && expect !== 'candidate') {
-      if (!account.password_hash || !(await verifyPassword(password, account.password_hash))) {
+      if (
+        !deviceRecognized &&
+        (!account.password_hash || !(await verifyPassword(pwd, account.password_hash)))
+      ) {
         return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
       }
       // El cliente debe verificar su correo antes de poder ingresar.
@@ -114,7 +152,7 @@ export async function POST(req: Request) {
     if (!row.email_verified) {
       return NextResponse.json({ error: 'La cuenta aún no está confirmada' }, { status: 403 });
     }
-    if (!(await verifyPassword(password, row.password_hash))) {
+    if (!deviceRecognized && !(await verifyPassword(pwd, row.password_hash))) {
       return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
     }
     if (validateOnly) {
