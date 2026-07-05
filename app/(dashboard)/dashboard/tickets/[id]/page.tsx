@@ -426,7 +426,7 @@ export default function TicketDetailPage() {
   );
 
   return (
-    <div className="max-w-6xl">
+    <div>
       <DetailHeader
         breadcrumb={{ label: 'Tickets', href: '/dashboard/tickets' }}
         title={editing ? 'Editando ticket' : (ticket.title || `Ticket #${ticket.id}`)}
