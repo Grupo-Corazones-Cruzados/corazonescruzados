@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/jwt";
 import { pool } from "@/lib/db";
+import { ensureAdminMember } from "@/lib/ensure-admin-member";
 
 export async function GET() {
   const payload = await getCurrentUser();
@@ -27,5 +28,14 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ user: result.rows[0] });
+  const row = result.rows[0];
+  // El admin también puede tener secciones de miembro (CV/Portafolio/Disponibilidad):
+  // enlazamos (idempotente) un perfil de miembro sin cambiar su rol.
+  if (row.role === "admin" && !row.member_id) {
+    const name = [row.first_name, row.last_name].filter(Boolean).join(" ");
+    const memberId = await ensureAdminMember(row.id, row.email, name);
+    if (memberId) row.member_id = memberId;
+  }
+
+  return NextResponse.json({ user: row });
 }
