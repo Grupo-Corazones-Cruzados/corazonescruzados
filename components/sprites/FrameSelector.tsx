@@ -53,7 +53,7 @@ function FrameThumb({
       onClick={onClick}
       className={`relative rounded border-2 transition-all ${
         selected
-          ? 'border-digi-green shadow-[0_0_6px_rgba(29,158,117,0.4)]'
+          ? 'border-accent shadow-[0_0_6px_rgba(29,158,117,0.4)]'
           : 'border-digi-border/40 opacity-35 hover:opacity-60'
       }`}
       title={`Frame ${col + 1}`}

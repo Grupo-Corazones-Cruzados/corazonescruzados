@@ -180,9 +180,13 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   sub-vistas (Dashboard/Mundo/Proyectos/Incidentes/Sprites). Tablas de-pixeladas (Equipo/Clientes/
   Postulaciones/Incidentes) con badges + labels en español; **Postulaciones** con acciones Aprobar
   (verde)/Rechazar (rojo) con icono y aviso en banner corp; **DigiDashboard** con StatCards de icono.
-  Los **editores de juego embebidos** (`WorldViewer`/`SpritesEditor`/`ProjectsEditor` de `(main)`)
-  **conservan su identidad pixelart** — solo se limpió el contenedor (`border` 1px `rounded-lg`). Las
-  subrutas con breadcrumb corp (`ChevronLeft`).
+  Los **editores de Proyectos y Sprites** (`(main)/projects/page.tsx`, `(main)/sprites/page.tsx` +
+  subcomponentes `components/sprites/*` y `components/shared/{DropZone,AnimatedSprite}`) fueron
+  **reformulados a Fluent** (2026-07-05): se quitó `font-pixel` (→ `font-semibold`) y el tema **verde
+  `digi-green` pasó al `accent` de marca**; los colores **amber/red se conservan** porque `.corp` ya
+  remapea `--color-amber-400`/`--color-red-400` a tonos legibles en claro/oscuro. El **`WorldViewer`**
+  (visor de mundo) sí **mantiene su identidad pixelart**. Contenedores de pestaña con `height` fijo
+  (`calc(100vh - 200px)`) + scroll interno para ocupar el alto. Subrutas con breadcrumb corp (`ChevronLeft`).
 - **Soporte** (`support/page.tsx` + `support/[id]/page.tsx`, 2026-07-05) — lista = **rail (estado:
   Todos/Abiertos/En proceso/Resueltos/Cerrados, iconos `LifeBuoy/DoorOpen/Loader/CheckCircle2/Archive`)
   + lista + panel de vista previa**, con conteos del API (`GET /api/support` devuelve `counts`),

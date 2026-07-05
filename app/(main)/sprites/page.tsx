@@ -402,8 +402,8 @@ export default function SpritesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Wand2 size={20} className="text-digi-green" />
-          <h1 className="font-pixel text-lg text-digi-green tracking-wider">
+          <Wand2 size={20} className="text-accent" />
+          <h1 className="font-semibold text-lg text-accent tracking-wider">
             Generador de Sprites
           </h1>
         </div>
@@ -412,7 +412,7 @@ export default function SpritesPage() {
           {checking ? (
             <span className="text-digi-muted">Verificando...</span>
           ) : falAvailable ? (
-            <span className="flex items-center gap-1.5 text-digi-green">
+            <span className="flex items-center gap-1.5 text-accent">
               <Wifi size={14} />
               fal.ai Ready
             </span>
@@ -432,7 +432,7 @@ export default function SpritesPage() {
           className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-digi-text hover:bg-white/5 transition-colors rounded-lg"
         >
           <span className="flex items-center gap-2">
-            <Plus size={14} className="text-digi-green" />
+            <Plus size={14} className="text-accent" />
             Agregar nuevo ciudadano
           </span>
           <ChevronDown size={14} className={`text-digi-muted transition-transform ${showAddCitizen ? 'rotate-180' : ''}`} />
@@ -454,7 +454,7 @@ export default function SpritesPage() {
                     }
                   }}
                   placeholder="ej. Agumon, Gabumon..."
-                  className="w-full bg-digi-dark border border-digi-border rounded px-3 py-2 text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none focus:border-digi-green/50"
+                  className="w-full bg-digi-darker border border-digi-border rounded px-3 py-2 text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none focus:border-accent/50"
                 />
                 <datalist id="digimon-list">
                   {KNOWN_DIGIMON.map((d) => <option key={d} value={d} />)}
@@ -467,7 +467,7 @@ export default function SpritesPage() {
                   value={newAgentId}
                   onChange={(e) => setNewAgentId(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                   placeholder="ej. agumon, gabumon..."
-                  className="w-full bg-digi-dark border border-digi-border rounded px-3 py-2 text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none focus:border-digi-green/50 font-mono"
+                  className="w-full bg-digi-darker border border-digi-border rounded px-3 py-2 text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none focus:border-accent/50 font-mono"
                 />
               </div>
             </div>
@@ -479,9 +479,9 @@ export default function SpritesPage() {
                   type="checkbox"
                   checked={createRepo}
                   onChange={(e) => setCreateRepo(e.target.checked)}
-                  className="accent-digi-green"
+                  className="accent-accent"
                 />
-                <span className="text-xs text-digi-text">Crear repo en <strong className="text-digi-green">Grupo-Corazones-Cruzados</strong></span>
+                <span className="text-xs text-digi-text">Crear repo en <strong className="text-accent">Grupo-Corazones-Cruzados</strong></span>
               </label>
               {createRepo && (
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -500,7 +500,7 @@ export default function SpritesPage() {
               <button
                 onClick={handleAddCitizen}
                 disabled={!!generating || !falAvailable || !newDigimon.trim() || !newAgentId.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-digi-green/20 border border-digi-green/40 text-digi-green rounded text-sm font-medium hover:bg-digi-green/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 bg-accent/20 border border-accent/40 text-accent rounded text-sm font-medium hover:bg-accent/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Sparkles size={16} />
                 Generar y agregar
@@ -573,11 +573,11 @@ export default function SpritesPage() {
                               list="digimon-list-edit"
                               value={editNameValue}
                               onChange={(e) => setEditNameValue(e.target.value)}
-                              className="bg-digi-dark border border-digi-border rounded px-2 py-1 text-sm text-digi-text font-pixel w-full focus:outline-none focus:border-digi-green/50"
+                              className="bg-digi-darker border border-digi-border rounded px-2 py-1 text-sm text-digi-text font-semibold w-full focus:outline-none focus:border-accent/50"
                               autoFocus
                               onKeyDown={(e) => e.key === 'Enter' && handleSaveName(c.agentId)}
                             />
-                            <button onClick={() => handleSaveName(c.agentId)} className="text-digi-green hover:text-digi-green/80">
+                            <button onClick={() => handleSaveName(c.agentId)} className="text-accent hover:text-accent/80">
                               <Check size={14} />
                             </button>
                             <button onClick={() => setEditingName(null)} className="text-digi-muted hover:text-red-400">
@@ -589,7 +589,7 @@ export default function SpritesPage() {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <h3 className="font-pixel text-sm text-digi-green truncate">{c.name}</h3>
+                            <h3 className="font-semibold text-sm text-accent truncate">{c.name}</h3>
                             <button
                               onClick={() => { setEditingName(c.agentId); setEditNameValue(c.name); }}
                               className="text-digi-muted hover:text-digi-text transition-colors shrink-0"
@@ -619,7 +619,7 @@ export default function SpritesPage() {
                         <button
                           onClick={() => setConfirmRegenerate({ agentId: c.agentId, name: c.name })}
                           disabled={!!isGenerating || !falAvailable}
-                          className="flex items-center gap-1 px-2.5 py-1.5 bg-digi-green/15 border border-digi-green/30 text-digi-green rounded text-[10px] font-medium hover:bg-digi-green/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="flex items-center gap-1 px-2.5 py-1.5 bg-accent/15 border border-accent/30 text-accent rounded text-[10px] font-medium hover:bg-accent/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           title="Regenerar sprites con fal.ai (nueva imagen)"
                         >
                           {isGenerating ? (
@@ -654,7 +654,7 @@ export default function SpritesPage() {
                           step="0.1"
                           value={c.scale ?? 1}
                           onChange={(e) => handleScaleChange(c.agentId, parseFloat(e.target.value))}
-                          className="w-20 h-1 accent-digi-green"
+                          className="w-20 h-1 accent-accent"
                         />
                         <span className="text-[9px] text-digi-muted font-mono w-6">{(c.scale ?? 1).toFixed(1)}</span>
                       </div>
@@ -662,7 +662,7 @@ export default function SpritesPage() {
                         onClick={() => handleFlipWalkToggle(c.agentId, !(c.flipWalk ?? true))}
                         className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${
                           (c.flipWalk ?? true)
-                            ? 'text-digi-green border-digi-green/30 bg-digi-green/10'
+                            ? 'text-accent border-accent/30 bg-accent/10'
                             : 'text-amber-400 border-amber-400/30 bg-amber-400/10'
                         }`}
                         title="Controla qué dirección se invierte al caminar"
@@ -795,7 +795,7 @@ export default function SpritesPage() {
                             <span className="text-[9px] text-digi-muted block">
                               {anim.label}
                               {selFrames && selFrames.length < 4 && (
-                                <span className="text-digi-green ml-0.5">({selFrames.length})</span>
+                                <span className="text-accent ml-0.5">({selFrames.length})</span>
                               )}
                             </span>
                           </div>
@@ -832,7 +832,7 @@ export default function SpritesPage() {
                           value={reprocessUrl[c.agentId] || ''}
                           onChange={(e) => setReprocessUrl(prev => ({ ...prev, [c.agentId]: e.target.value }))}
                           placeholder="URL imagen raw (opcional)"
-                          className="w-full bg-digi-dark border border-digi-border rounded px-2 py-1.5 text-[9px] text-digi-text placeholder:text-digi-muted/40 focus:outline-none focus:border-amber-400/40 font-mono"
+                          className="w-full bg-digi-darker border border-digi-border rounded px-2 py-1.5 text-[9px] text-digi-text placeholder:text-digi-muted/40 focus:outline-none focus:border-amber-400/40 font-mono"
                         />
                         <button
                           onClick={() => handleReprocess(c.agentId)}
@@ -904,9 +904,9 @@ export default function SpritesPage() {
       {confirmRegenerate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setConfirmRegenerate(null)}>
           <div className="bg-digi-card border border-digi-border rounded-lg p-5 max-w-sm mx-4 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-pixel text-sm text-amber-400">Confirmar regeneracion</h3>
+            <h3 className="font-semibold text-sm text-amber-400">Confirmar regeneracion</h3>
             <p className="text-xs text-digi-text">
-              Esto generara una <strong>nueva imagen</strong> con fal.ai para <strong className="text-digi-green">{confirmRegenerate.name}</strong>, reemplazando los sprites actuales. Esta accion no se puede deshacer.
+              Esto generara una <strong>nueva imagen</strong> con fal.ai para <strong className="text-accent">{confirmRegenerate.name}</strong>, reemplazando los sprites actuales. Esta accion no se puede deshacer.
             </p>
             <div className="flex items-center gap-2 justify-end">
               <button
@@ -940,9 +940,9 @@ export default function SpritesPage() {
         const basePath = `/api/assets/universal_assets/citizens/${sheetViewer.sprite}`;
         return (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSheetViewer(null)}>
-            <div className="bg-digi-dark border-2 border-digi-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-digi-darker border-2 border-digi-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between px-4 py-3 border-b border-digi-border">
-                <h3 className="font-pixel text-sm text-digi-green">{sheetViewer.name} — Sprite Sheets</h3>
+                <h3 className="font-semibold text-sm text-accent">{sheetViewer.name} — Sprite Sheets</h3>
                 <button onClick={() => setSheetViewer(null)} className="text-digi-muted hover:text-white text-lg leading-none">&times;</button>
               </div>
 
@@ -954,7 +954,7 @@ export default function SpritesPage() {
                     onClick={() => setSheetViewerIndex(i)}
                     className={`flex-1 px-3 py-2 text-[10px] font-medium transition-colors ${
                       sheetViewerIndex === i
-                        ? 'text-digi-green border-b-2 border-digi-green bg-digi-green/5'
+                        ? 'text-accent border-b-2 border-accent bg-accent/5'
                         : 'text-digi-muted hover:text-digi-text'
                     }`}
                   >

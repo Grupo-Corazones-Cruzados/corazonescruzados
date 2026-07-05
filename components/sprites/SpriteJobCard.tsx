@@ -9,7 +9,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
   generating: { label: 'Generando sprites...', color: 'text-amber-400', icon: <Loader2 size={14} className="animate-spin" />, pulse: true },
   processing: { label: 'Procesando imagen...', color: 'text-blue-400', icon: <Loader2 size={14} className="animate-spin" />, pulse: true },
   converting: { label: 'Preparando sheets...', color: 'text-purple-400', icon: <Loader2 size={14} className="animate-spin" />, pulse: true },
-  ready: { label: 'Listo', color: 'text-digi-green', icon: <Check size={14} /> },
+  ready: { label: 'Listo', color: 'text-accent', icon: <Check size={14} /> },
   error: { label: 'Error', color: 'text-red-400', icon: <AlertCircle size={14} /> },
 };
 
@@ -26,7 +26,7 @@ export default function SpriteJobCard({ job, onRetry }: SpriteJobCardProps) {
     <div className={`bg-digi-card border rounded-lg p-4 space-y-3 ${isActive ? 'border-amber-400/30 animate-pulse' : 'border-digi-border'}`}>
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-pixel text-sm text-digi-green">{job.digimonName}</h3>
+          <h3 className="font-semibold text-sm text-accent">{job.digimonName}</h3>
           <p className="text-xs text-digi-muted font-mono mt-0.5">{job.agentId}</p>
         </div>
         <div className={`flex items-center gap-1.5 text-xs font-medium ${status.color}`}>
@@ -44,7 +44,7 @@ export default function SpriteJobCard({ job, onRetry }: SpriteJobCardProps) {
           {onRetry && (
             <button
               onClick={() => onRetry(job)}
-              className="flex items-center gap-1.5 text-xs text-digi-green hover:text-digi-green/80 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors"
             >
               <RefreshCw size={12} />
               Reintentar

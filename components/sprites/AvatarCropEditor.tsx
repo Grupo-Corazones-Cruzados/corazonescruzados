@@ -101,7 +101,7 @@ export default function AvatarCropEditor({ src, crop, onChange }: AvatarCropEdit
           <canvas
             ref={previewRef}
             style={{ imageRendering: 'pixelated' }}
-            className="rounded-full border-2 border-digi-green/50"
+            className="rounded-full border-2 border-accent/50"
           />
           <span className="text-[8px] text-digi-muted">Preview</span>
         </div>
@@ -113,7 +113,7 @@ export default function AvatarCropEditor({ src, crop, onChange }: AvatarCropEdit
             type="range" min="0" max={FRAME - crop.size} step="1"
             value={crop.x}
             onChange={(e) => onChange({ ...crop, x: parseInt(e.target.value) })}
-            className="flex-1 h-1 accent-digi-green"
+            className="flex-1 h-1 accent-accent"
           />
           <span className="text-[9px] text-digi-muted font-mono w-6 text-right">{crop.x}</span>
         </div>
@@ -123,7 +123,7 @@ export default function AvatarCropEditor({ src, crop, onChange }: AvatarCropEdit
             type="range" min="0" max={FRAME - crop.size} step="1"
             value={crop.y}
             onChange={(e) => onChange({ ...crop, y: parseInt(e.target.value) })}
-            className="flex-1 h-1 accent-digi-green"
+            className="flex-1 h-1 accent-accent"
           />
           <span className="text-[9px] text-digi-muted font-mono w-6 text-right">{crop.y}</span>
         </div>
@@ -142,7 +142,7 @@ export default function AvatarCropEditor({ src, crop, onChange }: AvatarCropEdit
                 size: newSize,
               });
             }}
-            className="flex-1 h-1 accent-digi-green"
+            className="flex-1 h-1 accent-accent"
           />
           <span className="text-[9px] text-digi-muted font-mono w-6 text-right">{crop.size}</span>
         </div>

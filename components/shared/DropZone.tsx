@@ -41,8 +41,8 @@ export default function DropZone({
       className={cn(
         'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
         isDragActive
-          ? 'border-digi-green bg-digi-green/10'
-          : 'border-digi-border hover:border-digi-green/50 hover:bg-white/[0.02]',
+          ? 'border-accent bg-accent/10'
+          : 'border-digi-border hover:border-accent/50 hover:bg-white/[0.02]',
         className
       )}
     >
