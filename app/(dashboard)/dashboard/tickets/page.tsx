@@ -10,7 +10,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PageHeader from '@/components/ui/PageHeader';
-import { BTN_PRIMARY } from '@/components/ui/Button';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
   X, ArrowRight, Ticket as TicketIcon,
@@ -53,6 +53,18 @@ export default function TicketsPage() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
   const [selected, setSelected] = useState<any>(null);
+  const [selDetail, setSelDetail] = useState<any>(null);
+  const [selLoading, setSelLoading] = useState(false);
+
+  const selectTicket = async (t: any) => {
+    setSelected(t); setSelDetail(null); setSelLoading(true);
+    try {
+      const res = await fetch(`/api/tickets/${t.id}`);
+      const data = await res.json();
+      setSelDetail(data.data || null);
+    } catch { setSelDetail(null); }
+    finally { setSelLoading(false); }
+  };
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -82,7 +94,7 @@ export default function TicketsPage() {
   }, [page, tab, search]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
-  useEffect(() => { setPage(1); setSelected(null); }, [tab, search]);
+  useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search]);
 
   const openCreateModal = async () => {
     if (user?.role === 'member' && user.member_id) {
@@ -206,21 +218,9 @@ export default function TicketsPage() {
               { key: 'deadline', header: 'Límite', width: '110px', render: (t: any) => (
                 <span className="text-[12px] text-digi-muted" style={mf}>{t.deadline ? new Date(t.deadline).toLocaleDateString('es-EC') : '—'}</span>
               ) },
-              { key: 'invoice', header: 'Factura', width: '90px', render: (t: any) => {
-                if (!t.invoice_id) return <span className="text-digi-muted/50 text-[12px]">—</span>;
-                return (
-                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
-                    <FileText className="w-3.5 h-3.5 text-green-600" />
-                    {t.invoice_sri_status === 'authorized' && (
-                      <button onClick={() => window.open(`/api/invoices/${t.invoice_id}/pdf`, '_blank')}
-                        className="px-1.5 py-0.5 text-[10px] border border-green-500/40 rounded text-green-700 hover:bg-green-50 transition-colors" style={mf}>PDF</button>
-                    )}
-                  </div>
-                );
-              } },
             ]}
             data={tickets}
-            onRowClick={(t: any) => setSelected(t)}
+            onRowClick={(t: any) => selectTicket(t)}
             emptyTitle="Sin tickets"
             emptyDesc="No hay tickets en este estado."
           />
@@ -273,9 +273,66 @@ export default function TicketsPage() {
                         <span className="text-digi-text text-right" style={mf}>{v}</span>
                       </div>
                     ))}
-                    <button onClick={() => router.push(`/dashboard/tickets/${selected.id}`)} className={`${BTN_PRIMARY} w-full mt-1`}>
-                      Ver detalle <ArrowRight className="w-4 h-4" />
-                    </button>
+
+                    {/* Presupuesto / avance */}
+                    {(() => {
+                      const est = Number(selDetail?.estimated_cost) || 0;
+                      const total = Number(selDetail?.actions_total) || 0;
+                      if (est <= 0) return null;
+                      const pct = Math.min(100, Math.round((total / est) * 100));
+                      return (
+                        <div className="pt-2 border-t border-digi-border">
+                          <div className="flex items-center justify-between text-[11px] mb-1" style={mf}>
+                            <span className="text-digi-muted">Presupuesto</span>
+                            <span className="text-digi-text tabular-nums">${total.toFixed(2)} / ${est.toFixed(2)} · {pct}%</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} /></div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Días de trabajo */}
+                    {selLoading ? (
+                      <p className="text-[11px] text-digi-muted pt-1" style={mf}>Cargando…</p>
+                    ) : (selDetail?.time_slots?.length > 0) && (
+                      <div className="pt-2 border-t border-digi-border">
+                        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Días de trabajo</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selDetail.time_slots.map((s: any, i: number) => (
+                            <span key={i} className="text-[11px] px-2 py-0.5 rounded bg-digi-darker border border-digi-border text-digi-text" style={mf}>
+                              {new Date(String(s.date).split('T')[0] + 'T12:00:00').toLocaleDateString('es', { day: '2-digit', month: 'short' })}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Acciones */}
+                    {selDetail?.actions?.length > 0 && (
+                      <div className="pt-2 border-t border-digi-border">
+                        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Acciones ({selDetail.actions.length})</p>
+                        <div className="space-y-1">
+                          {selDetail.actions.map((a: any) => (
+                            <div key={a.id} className="flex items-center gap-2 text-[12px]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                              <span className="flex-1 truncate text-digi-text" style={mf}>{a.description}</span>
+                              <span className="text-digi-text tabular-nums shrink-0" style={mf}>${Number(a.cost).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2 pt-1">
+                      <button onClick={() => router.push(`/dashboard/tickets/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
+                        Ver detalle <ArrowRight className="w-4 h-4" />
+                      </button>
+                      {selected.invoice_id && (
+                        <button onClick={() => router.push(`/dashboard/invoices/${selected.invoice_id}`)} className={`${BTN_SECONDARY} w-full`}>
+                          <FileText className="w-4 h-4" /> Ver factura
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

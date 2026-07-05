@@ -9,10 +9,10 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PageHeader from '@/components/ui/PageHeader';
-import { BTN_PRIMARY } from '@/components/ui/Button';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
-  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight,
+  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -45,6 +45,18 @@ export default function ProjectsPage() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
   const [selected, setSelected] = useState<any>(null);
+  const [selDetail, setSelDetail] = useState<any>(null);
+  const [selLoading, setSelLoading] = useState(false);
+
+  const selectProject = async (p: any) => {
+    setSelected(p); setSelDetail(null); setSelLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${p.id}`);
+      const data = await res.json();
+      setSelDetail(data.data || null);
+    } catch { setSelDetail(null); }
+    finally { setSelLoading(false); }
+  };
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -88,7 +100,7 @@ export default function ProjectsPage() {
   }, [page, tab, search]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { setPage(1); setSelected(null); }, [tab, search]);
+  useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search]);
 
   const createProject = async () => {
     if (!createTitle.trim()) return;
@@ -199,13 +211,14 @@ export default function ProjectsPage() {
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
           <PixelDataTable
+            singleLine
             columns={[
-              { key: 'id', header: 'ID', render: (p: any) => <span className="tabular-nums text-digi-muted">#{p.id}</span>, width: '60px' },
+              { key: 'id', header: 'ID', render: (p: any) => <span className="tabular-nums text-digi-muted">#{p.id}</span>, width: '56px' },
               { key: 'title', header: 'Título', render: (p: any) => <span className={`text-[13px] font-medium ${selected?.id === p.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.title}</span> },
               { key: 'status', header: 'Estado', width: '120px', render: (p: any) => (
                 <PixelBadge variant={STATUS_V[p.status] || 'default'}>{STATUS_LABEL[p.status] || p.status}</PixelBadge>
               ) },
-              { key: 'client', header: 'Cliente', render: (p: any) => <span className="text-[12px] text-digi-text" style={mf}>{p.client_name || '—'}</span> },
+              { key: 'client', header: 'Cliente', width: '150px', render: (p: any) => <span className="text-[12px] text-digi-text" style={mf}>{p.client_name || '—'}</span> },
               { key: 'budget', header: 'Presupuesto', width: '130px', render: (p: any) => (
                 <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{p.budget_min ? `$${p.budget_min}${p.budget_max ? `–${p.budget_max}` : ''}` : '—'}</span>
               ) },
@@ -215,21 +228,9 @@ export default function ProjectsPage() {
               { key: 'deadline', header: 'Límite', width: '110px', render: (p: any) => (
                 <span className="text-[12px] text-digi-muted" style={mf}>{p.deadline ? new Date(p.deadline).toLocaleDateString('es-EC') : '—'}</span>
               ) },
-              { key: 'invoice', header: 'Factura', width: '90px', render: (p: any) => {
-                if (!p.invoice_id) return <span className="text-digi-muted/50 text-[12px]">—</span>;
-                return (
-                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
-                    <FileText className="w-3.5 h-3.5 text-green-600" />
-                    {p.invoice_sri_status === 'authorized' && (
-                      <button onClick={() => window.open(`/api/invoices/${p.invoice_id}/pdf`, '_blank')}
-                        className="px-1.5 py-0.5 text-[10px] border border-green-500/40 rounded text-green-700 hover:bg-green-50 transition-colors" style={mf}>PDF</button>
-                    )}
-                  </div>
-                );
-              } },
             ]}
             data={projects}
-            onRowClick={(p: any) => setSelected(p)}
+            onRowClick={(p: any) => selectProject(p)}
             emptyTitle="Sin proyectos"
             emptyDesc="No hay proyectos en este ámbito."
           />
@@ -282,9 +283,55 @@ export default function ProjectsPage() {
                         <span className="text-digi-text text-right" style={mf}>{v}</span>
                       </div>
                     ))}
-                    <button onClick={() => router.push(`/dashboard/projects/${selected.id}`)} className={`${BTN_PRIMARY} w-full mt-1`}>
-                      Ver detalle <ArrowRight className="w-4 h-4" />
-                    </button>
+
+                    {/* Requerimientos (compacto) */}
+                    {(() => {
+                      const reqs = selDetail?.requirements || [];
+                      if (selLoading) return <p className="text-[11px] text-digi-muted pt-1" style={mf}>Cargando requerimientos…</p>;
+                      if (reqs.length === 0) return null;
+                      const done = reqs.filter((r: any) => r.is_completed).length;
+                      return (
+                        <div className="pt-2 border-t border-digi-border">
+                          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Requerimientos ({done}/{reqs.length})</p>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex-1 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? Math.round((done / reqs.length) * 100) : 0}%` }} /></div>
+                            <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{reqs.length ? Math.round((done / reqs.length) * 100) : 0}%</span>
+                          </div>
+                          <div className="space-y-1">
+                            {reqs.map((r: any) => {
+                              const acc = (r.assignments || []).find((a: any) => a.status === 'accepted');
+                              return (
+                                <div key={r.id} className="flex items-center gap-2 text-[12px]">
+                                  <span className={`w-3.5 h-3.5 rounded-[4px] shrink-0 flex items-center justify-center ${r.is_completed ? 'bg-accent text-white' : 'border border-digi-border'}`}>
+                                    {r.is_completed && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
+                                  </span>
+                                  <span className={`flex-1 truncate ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</span>
+                                  {acc && (
+                                    acc.photo_url ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={acc.photo_url} alt="" title={acc.member_name} className="w-5 h-5 rounded-full border border-digi-border object-cover shrink-0" />
+                                    ) : (
+                                      <span title={acc.member_name} className="w-5 h-5 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[10px] font-semibold text-accent shrink-0" style={mf}>{(acc.member_name || '?')[0].toUpperCase()}</span>
+                                    )
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="space-y-2 pt-1">
+                      <button onClick={() => router.push(`/dashboard/projects/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
+                        Ver detalle <ArrowRight className="w-4 h-4" />
+                      </button>
+                      {selected.invoice_id && (
+                        <button onClick={() => router.push(`/dashboard/invoices/${selected.invoice_id}`)} className={`${BTN_SECONDARY} w-full`}>
+                          <FileText className="w-4 h-4" /> Ver factura
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

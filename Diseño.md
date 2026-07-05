@@ -225,6 +225,14 @@ Marketplace añade una **galería de imágenes** con controles prev/next: `compo
 (imagen + flechas + indicadores + contador; click abre la galería a pantalla completa). Regla: las
 filas ya **no** navegan directo; seleccionan → panel → botón. Reusa el layout `grid
 xl:[minmax(0,1fr)_340px]` list · panel.
+- **El panel puede cargar el detalle on-demand** (fetch a `/api/<módulo>/[id]`) para mostrar más que la
+  fila: **Proyectos** → barra de avance de requerimientos + lista compacta (título truncado + avatar del
+  asignado, sin nombre); **Tickets** → barra de presupuesto/avance + días de trabajo + acciones. Ambos
+  ofrecen **acceso a la factura** desde el panel (botón "Ver factura", se quitó la columna Factura de las
+  tablas). Tablas con muchas columnas usan `singleLine` (una línea + elipsis, no crecen con el texto).
+- **Tablas/listas densas:** preferir avatar + tooltip (`title` o hover) en vez de nombres completos; en
+  Participantes de proyecto los requerimientos del bid van en un **tooltip** ("N req." al hover), no como
+  chips inline. Filas de requerimiento compactas (padding reducido, sin etiqueta de nombre del miembro).
 
 **Aprovechamiento del espacio — sin `max-w` flotante (2026-07-05):** las páginas del dashboard **no**
 deben quedar flotando centradas con `max-w-*`; deben ocupar todo el ancho disponible (rail + contenido

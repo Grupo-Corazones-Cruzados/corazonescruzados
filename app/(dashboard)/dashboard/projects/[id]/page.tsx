@@ -957,7 +957,7 @@ export default function ProjectDetailPage() {
             {reqs.length === 0 ? (
               <p className="text-[13px] text-digi-muted text-center py-6" style={mf}>Sin requerimientos aún.</p>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {reqs.map((r: any) => {
                   const assignments = r.assignments || [];
                   const items = r.items || [];
@@ -965,7 +965,7 @@ export default function ProjectDetailPage() {
                   const acceptedAssignments = assignments.filter((a: any) => a.status === 'accepted');
                   return (
                     <div key={r.id} className={`rounded-lg border border-digi-border bg-white overflow-hidden`}>
-                      <div className={`p-3.5 border-l-[3px] ${r.is_completed ? 'border-l-green-500' : 'border-l-accent'}`}>
+                      <div className={`p-2.5 border-l-[3px] ${r.is_completed ? 'border-l-green-500' : 'border-l-accent'}`}>
                         <div className="flex items-start gap-3">
                           <button
                             onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
@@ -990,7 +990,6 @@ export default function ProjectDetailPage() {
                                     </div>
                                   )
                                 ))}
-                                <span className="text-[11px] text-digi-muted" style={mf}>{acceptedAssignments.length === 1 ? acceptedAssignments[0].member_name : `${acceptedAssignments.length} asignados`}</span>
                               </div>
                             )}
                           </div>
@@ -1097,16 +1096,20 @@ export default function ProjectDetailPage() {
                             {b.bid_amount != null && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${Number(b.bid_amount).toFixed(2)}</span>}
                             {b.estimated_days && <span className="text-[11px] text-digi-muted" style={mf}>· {b.estimated_days}d</span>}
                             <PixelBadge variant={BID_V[b.status] || 'default'}>{bidLabel}</PixelBadge>
+                            {b.requirement_ids?.length > 0 && (
+                              <span tabIndex={0} className="relative group/reqs inline-flex items-center gap-1 text-[11px] text-accent bg-accent-light border border-accent/20 rounded px-1.5 py-0.5 cursor-default outline-none" style={mf}>
+                                <ListChecks className="w-3 h-3" /> {b.requirement_ids.length} req.
+                                <span className="absolute left-0 top-full mt-1.5 z-30 w-64 max-w-[80vw] bg-digi-card border border-digi-border rounded-lg shadow-lg p-2.5 opacity-0 invisible group-hover/reqs:opacity-100 group-hover/reqs:visible group-focus-within/reqs:opacity-100 group-focus-within/reqs:visible transition-opacity" style={mf}>
+                                  <span className="block text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1">Requerimientos</span>
+                                  {b.requirement_ids.map((rid: number) => {
+                                    const req = reqs.find((r: any) => r.id === rid || r.id === Number(rid));
+                                    return req ? <span key={rid} className="block text-[11px] text-digi-text truncate">• {req.title}</span> : null;
+                                  })}
+                                </span>
+                              </span>
+                            )}
                           </div>
                           {b.proposal && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{b.proposal}</p>}
-                          {b.requirement_ids?.length > 0 && (
-                            <div className="mt-1.5 flex flex-wrap gap-1">
-                              {b.requirement_ids.map((rid: number) => {
-                                const req = reqs.find((r: any) => r.id === rid || r.id === Number(rid));
-                                return req ? <span key={rid} className="text-[11px] text-accent bg-accent-light border border-accent/20 rounded px-1.5 py-0.5" style={mf}>{req.title}</span> : null;
-                              })}
-                            </div>
-                          )}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {isOwner && b.status === 'pending' && (
