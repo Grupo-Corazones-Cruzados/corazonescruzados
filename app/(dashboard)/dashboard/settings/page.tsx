@@ -7,12 +7,17 @@ import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
+import {
+  User, ShieldCheck, CalendarClock, FileText, Briefcase, CalendarDays,
+  Camera, ChevronRight,
+} from 'lucide-react';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
+  const [section, setSection] = useState<'profile' | 'account'>('profile');
   const [firstName, setFirstName] = useState(user?.first_name || '');
   const [lastName, setLastName] = useState(user?.last_name || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -25,19 +30,15 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const isMember = user?.role === 'member' || user?.role === 'admin';
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('La imagen no puede superar 2MB'); return; }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('La imagen no puede superar 2MB');
-      return;
-    }
-
-    // Show local preview immediately
     const localPreview = URL.createObjectURL(file);
     setAvatarPreview(localPreview);
-
     setUploading(true);
     try {
       const form = new FormData();
@@ -65,13 +66,9 @@ export default function SettingsPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          first_name: firstName,
-          last_name: lastName,
-          phone,
-          youtube_handle: youtube,
-          tiktok_handle: tiktok,
-          instagram_handle: instagram,
-          facebook_handle: facebook,
+          first_name: firstName, last_name: lastName, phone,
+          youtube_handle: youtube, tiktok_handle: tiktok,
+          instagram_handle: instagram, facebook_handle: facebook,
         }),
       });
       if (!res.ok) throw new Error('Error al actualizar');
@@ -84,125 +81,125 @@ export default function SettingsPage() {
     }
   };
 
+  const RailButton = ({ active, Icon, label, onClick }: any) => (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
+        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
+      }`}
+    >
+      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
+      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
+    </button>
+  );
+
+  const RailLink = ({ href, Icon, label }: any) => (
+    <Link href={href}
+      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 border-transparent text-digi-text hover:bg-black/[0.03]">
+      <Icon className="w-4 h-4 shrink-0 text-digi-muted" />
+      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
+      <ChevronRight className="w-4 h-4 shrink-0 text-digi-muted" />
+    </Link>
+  );
+
   return (
-    <div className="max-w-2xl">
-      <PageHeader title="Configuracion" description="Administra tu perfil" />
+    <div>
+      <PageHeader title="Configuración" description="Administra tu perfil y preferencias" />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile form */}
-        <div className="md:col-span-2">
-          <form onSubmit={handleSave} className="pixel-card space-y-4">
-            {/* Avatar */}
-            <div className="flex items-center gap-4 mb-2">
-              <div className="relative shrink-0">
-                {avatarPreview ? (
-                  <img src={avatarPreview} alt="" className="w-20 h-20 border-2 border-accent/30 object-cover" />
-                ) : (
-                  <div className="w-20 h-20 flex items-center justify-center bg-accent/20 border-2 border-accent/30 text-accent-glow text-2xl" style={pf}>
-                    {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
-                  </div>
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+        {/* ── Left rail: secciones ── */}
+        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Ajustes</p>
+          <div className="space-y-0.5">
+            <RailButton active={section === 'profile'} Icon={User} label="Perfil" onClick={() => setSection('profile')} />
+            <RailButton active={section === 'account'} Icon={ShieldCheck} label="Cuenta" onClick={() => setSection('account')} />
+            {isMember && (
+              <>
+                <div className="h-px bg-digi-border/60 my-1.5 mx-2" />
+                <p className="text-[9px] font-semibold text-digi-muted/70 uppercase tracking-wider px-2 pb-1" style={df}>Miembro</p>
+                <RailLink href="/dashboard/settings/availability" Icon={CalendarClock} label="Disponibilidad" />
+                <RailLink href="/dashboard/settings/cv" Icon={FileText} label="Mi CV" />
+                <RailLink href="/dashboard/settings/portfolio" Icon={Briefcase} label="Portafolio" />
+                {user?.role === 'member' && (
+                  <RailLink href="/dashboard/settings/calendar" Icon={CalendarDays} label="Calendario" />
                 )}
-                {uploading && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                    <span className="text-[8px] text-digi-text animate-pulse" style={pf}>...</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-digi-text mb-0.5" style={pf}>{user?.email}</p>
-                <p className="text-[9px] text-digi-muted mb-3" style={mf}>ID: {user?.id?.slice(0, 8)}...</p>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/gif,image/webp"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                  className="text-[9px] text-accent-glow border border-accent/30 px-3 py-1 hover:bg-accent/10 transition-colors disabled:opacity-50"
-                  style={pf}
-                >
-                  {uploading ? 'Subiendo...' : 'Cambiar foto'}
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <PixelInput label="Nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Juan" />
-              <PixelInput label="Apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Perez" />
-            </div>
-
-            <PixelInput label="Telefono" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+593999999999" />
-
-            <div className="pt-2 border-t border-digi-border/30 space-y-3">
-              <div>
-                <h4 className="text-[10px] text-accent-glow mb-1" style={pf}>Redes Sociales</h4>
-                <p className="text-[9px] text-digi-muted" style={mf}>
-                  Se usaran al generar copy para promocionar tus proyectos. Formato @usuario o nombre de pagina.
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <PixelInput label="YouTube" value={youtube} onChange={(e) => setYoutube(e.target.value)} placeholder="@canal" />
-                <PixelInput label="TikTok" value={tiktok} onChange={(e) => setTiktok(e.target.value)} placeholder="@usuario" />
-                <PixelInput label="Instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@usuario" />
-                <PixelInput label="Facebook" value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder="Nombre de pagina" />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="pixel-btn pixel-btn-primary w-full disabled:opacity-50"
-            >
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </form>
-        </div>
-
-        {/* Sidebar info */}
-        <div className="space-y-4">
-          <div className="pixel-card">
-            <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Cuenta</h3>
-            <div className="space-y-2 text-[10px]" style={mf}>
-              <div className="flex justify-between">
-                <span className="text-digi-muted">Rol</span>
-                <PixelBadge variant="info">{user?.role}</PixelBadge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-digi-muted">Verificado</span>
-                <PixelBadge variant={user?.is_verified ? 'success' : 'warning'}>
-                  {user?.is_verified ? 'Si' : 'No'}
-                </PixelBadge>
-              </div>
-            </div>
+              </>
+            )}
           </div>
+        </aside>
 
-          {(user?.role === 'member' || user?.role === 'admin') && (
-            <div className="pixel-card">
-              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Miembro</h3>
-              <div className="space-y-1.5">
-                {[
-                  { label: 'Disponibilidad', href: '/dashboard/settings/availability' },
-                  { label: 'Mi CV', href: '/dashboard/settings/cv' },
-                  { label: 'Portafolio', href: '/dashboard/settings/portfolio' },
-                  // El calendario requiere member_id; solo rol 'member' lo tiene.
-                  ...(user?.role === 'member'
-                    ? [{ label: 'Calendario', href: '/dashboard/settings/calendar' }]
-                    : []),
-                ].map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="flex items-center justify-between px-2 py-1.5 text-[10px] text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors"
-                    style={pf}
-                  >
-                    {link.label} <span>&gt;</span>
-                  </Link>
-                ))}
+        {/* ── Content ── */}
+        <div className="flex-1 min-w-0 w-full max-w-2xl">
+          {section === 'profile' ? (
+            <form onSubmit={handleSave} className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5 space-y-4">
+              {/* Avatar */}
+              <div className="flex items-center gap-4">
+                <div className="relative shrink-0">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="" className="w-20 h-20 rounded-lg border border-digi-border object-cover" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-lg flex items-center justify-center bg-accent-light border border-accent/20 text-accent text-2xl font-semibold" style={mf}>
+                      {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+                    </div>
+                  )}
+                  {uploading && (
+                    <div className="absolute inset-0 rounded-lg bg-black/50 flex items-center justify-center">
+                      <span className="text-[10px] text-white animate-pulse" style={mf}>...</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] text-digi-text font-medium truncate" style={mf}>{user?.email}</p>
+                  <p className="text-[11px] text-digi-muted mb-2.5" style={mf}>ID: {user?.id?.slice(0, 8)}…</p>
+                  <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={handleAvatarUpload} className="hidden" />
+                  <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                    className="inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-50" style={mf}>
+                    <Camera className="w-3.5 h-3.5" /> {uploading ? 'Subiendo...' : 'Cambiar foto'}
+                  </button>
+                </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <PixelInput label="Nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Juan" />
+                <PixelInput label="Apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Pérez" />
+              </div>
+              <PixelInput label="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+593999999999" />
+
+              <div className="pt-3 border-t border-digi-border space-y-3">
+                <div>
+                  <h4 className="text-[13px] font-semibold text-digi-text mb-0.5" style={mf}>Redes sociales</h4>
+                  <p className="text-[11px] text-digi-muted" style={mf}>
+                    Se usarán al generar copy para promocionar tus proyectos. Formato @usuario o nombre de página.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <PixelInput label="YouTube" value={youtube} onChange={(e) => setYoutube(e.target.value)} placeholder="@canal" />
+                  <PixelInput label="TikTok" value={tiktok} onChange={(e) => setTiktok(e.target.value)} placeholder="@usuario" />
+                  <PixelInput label="Instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@usuario" />
+                  <PixelInput label="Facebook" value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder="Nombre de página" />
+                </div>
+              </div>
+
+              <button type="submit" disabled={saving} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+                {saving ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </form>
+          ) : (
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
+              <h3 className="text-[14px] font-semibold text-digi-text mb-4" style={mf}>Cuenta</h3>
+              <dl className="space-y-3">
+                {[
+                  ['Correo', <span key="e" className="text-digi-text" style={mf}>{user?.email}</span>],
+                  ['ID', <span key="i" className="text-digi-muted tabular-nums" style={mf}>{user?.id?.slice(0, 8)}…</span>],
+                  ['Rol', <PixelBadge key="r" variant="info">{user?.role}</PixelBadge>],
+                  ['Verificado', <PixelBadge key="v" variant={user?.is_verified ? 'success' : 'warning'}>{user?.is_verified ? 'Sí' : 'No'}</PixelBadge>],
+                ].map(([k, v]) => (
+                  <div key={k as string} className="flex items-center justify-between gap-3 text-[12.5px] pb-3 border-b border-digi-border/60 last:border-0 last:pb-0">
+                    <dt className="text-digi-muted" style={mf}>{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           )}
         </div>

@@ -120,6 +120,12 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   flujo** (Email/WhatsApp/Chatbot/Agente IA/Personalizado, iconos lucide `Mail/MessageCircle/Bot/
   Sparkles/Puzzle`); filtro command bar = **estado**; el botón **Configurar** del panel abre los
   editores grandes (`WhatsAppFlowPanel`/`ChatbotFlowPanel`/`FlowSidePanel`) como drill-in overlay.
+- **Configuración** (`settings/page.tsx`, 2026-07-05) — **variante rail + contenido** (sin panel de
+  detalle, porque no hay lista de registros): rail = secciones de ajustes (Perfil, Cuenta) como
+  botones que cambian el contenido in-page + enlaces de miembro (Disponibilidad/CV/Portafolio/
+  Calendario) como `RailLink` con chevron que navegan a subpáginas. Iconos lucide
+  `User/ShieldCheck/CalendarClock/FileText/Briefcase/CalendarDays`. Es la adaptación del patrón para
+  módulos de ajustes (estilo settings de M365/Azure).
 
 ---
 
