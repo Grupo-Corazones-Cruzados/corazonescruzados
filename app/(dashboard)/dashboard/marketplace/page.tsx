@@ -10,7 +10,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PageHeader from '@/components/ui/PageHeader';
 import ImageGallery from '@/components/ui/ImageGallery';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { FolderKanban, Package, Workflow, ShoppingBag, Search, X, Users, ListChecks, FileText, ExternalLink } from 'lucide-react';
+import { FolderKanban, Package, Workflow, ShoppingBag, Search, X, Users, ListChecks, FileText, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
 
 const TABS = [
@@ -262,6 +262,95 @@ export default function MarketplacePage() {
     else openBuyModal(item);
   };
 
+  const firstImage = (item: any): string | null =>
+    (Array.isArray(item.images) && item.images[0]) || item.image_url || null;
+
+  // Avatares de miembro/equipo para la tarjeta
+  const CardMembers = ({ item }: { item: any }) => {
+    const team: any[] = item.team || [];
+    const avatar = (photo: string | null, name: string, key: any) =>
+      photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={key} src={photo} alt={name} title={name} className="w-5 h-5 rounded-full object-cover border border-digi-border -ml-1 first:ml-0" />
+      ) : (
+        <div key={key} title={name} className="w-5 h-5 rounded-full bg-accent-light border border-accent/20 flex items-center justify-center -ml-1 first:ml-0">
+          <span className="text-[10px] font-semibold text-accent" style={mf}>{(name || '?').charAt(0).toUpperCase()}</span>
+        </div>
+      );
+    if (team.length) return (
+      <div className="flex items-center min-w-0">
+        <div className="flex items-center pl-1">{team.slice(0, 3).map((m, i) => avatar(m.photo_url, m.name, i))}</div>
+        <span className="text-[11px] text-digi-muted truncate ml-1.5" style={mf}>{team.length > 1 ? `${team.length} miembros` : team[0]?.name}</span>
+      </div>
+    );
+    if (item.member_name) return (
+      <div className="flex items-center gap-1.5 min-w-0">
+        {avatar(item.member_photo, item.member_name, 'm')}
+        <span className="text-[11px] text-digi-muted truncate" style={mf}>{item.member_name}</span>
+      </div>
+    );
+    return <span className="text-[11px] text-digi-muted/60" style={mf}>Sin miembro</span>;
+  };
+
+  const renderCard = (item: any) => {
+    const isProject = item.source_type === 'project';
+    const price = Number(item.final_cost ?? item.price ?? 0);
+    const img = firstImage(item);
+    const count = imageCount(item);
+    const active = selected?.id === item.id && selected?.source_type === item.source_type;
+    const CatIcon = isProject ? FolderKanban : tab === 'automations' ? Workflow : Package;
+    const catLabel = isProject ? 'Proyecto' : tab === 'automations' ? 'Automatización' : 'Producto';
+    const tags: string[] = Array.isArray(item.tags) ? item.tags : [];
+    return (
+      <div
+        key={`${item.source_type || tab}-${item.id}`}
+        onClick={() => selectItem(item)}
+        className={`group cursor-pointer flex flex-col bg-digi-card border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md ${
+          active ? 'border-accent ring-1 ring-accent/30' : 'border-digi-border hover:border-accent/40'
+        }`}
+      >
+        {/* media */}
+        <div className="relative aspect-[16/9] bg-digi-darker overflow-hidden">
+          {img ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={img} alt={item.title} className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center"><CatIcon className="w-9 h-9 text-digi-muted/30" /></div>
+          )}
+          <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-digi-card/85 text-digi-muted text-[10px] font-medium backdrop-blur-sm">{catLabel}</span>
+          {count > 0 && (
+            <button onClick={(e) => openGallery(item, e)} title={`Ver ${count} foto(s)`}
+              className="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/45 text-white text-[11px] backdrop-blur-sm hover:bg-black/65 transition-colors">
+              <ImageIcon className="w-3 h-3" /> {count}
+            </button>
+          )}
+        </div>
+        {/* body */}
+        <div className="p-3 flex flex-col flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-[13.5px] font-semibold text-digi-text leading-snug line-clamp-2 flex-1" style={mf}>{item.title}</h3>
+            <span className="text-[15px] font-bold text-accent tabular-nums shrink-0" style={mf}>${fmt2(price)}</span>
+          </div>
+          {item.description && <p className="text-[12px] text-digi-muted mt-1 line-clamp-2 leading-relaxed" style={mf}>{item.description}</p>}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {tags.slice(0, 3).map((t) => <PixelBadge key={t}>{t}</PixelBadge>)}
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-2 mt-2.5 pt-2.5 border-t border-digi-border/60">
+            <CardMembers item={item} />
+            {isProject && item.requirements_count != null && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-digi-muted shrink-0" style={mf}><ListChecks className="w-3.5 h-3.5" /> {item.requirements_count}</span>
+            )}
+          </div>
+          <button onClick={(e) => { e.stopPropagation(); primaryAction(item); }} className={`${BTN_PRIMARY} w-full mt-3`}>
+            {isProject ? 'Solicitar proyecto' : 'Comprar'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderMarketplacePanel = () => {
     if (!selected) {
       return (
@@ -355,218 +444,40 @@ export default function MarketplacePage() {
 
           <div className={tab === 'orders' ? '' : 'grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start'}>
             <div className="min-w-0">
-      {/* ========== ORDERS TAB ========== */}
+      {/* ========== MIS PEDIDOS (tabla) ========== */}
       {tab === 'orders' ? (
         <PixelDataTable
+          singleLine
           columns={[
-            { key: 'id', header: 'ID', render: (o: any) => `#${o.id}`, width: '60px' },
-            {
-              key: 'items', header: 'Productos', render: (o: any) => {
-                if (!o.items?.length) return '-';
-                return o.items.map((i: any) => i.product_title).filter(Boolean).join(', ') || '-';
-              },
-            },
-            { key: 'total', header: 'Total', render: (o: any) => `$${fmt2(Number(o.total || 0))}`, width: '100px' },
-            {
-              key: 'status', header: 'Estado', render: (o: any) => (
-                <PixelBadge variant={ORDER_STATUS[o.status] || 'default'}>{ORDER_LABEL[o.status] || o.status}</PixelBadge>
-              ), width: '110px',
-            },
-            {
-              key: 'date', header: 'Fecha', render: (o: any) =>
-                o.created_at ? new Date(o.created_at).toLocaleDateString() : '-',
-              width: '100px',
-            },
+            { key: 'id', header: 'ID', width: '60px', render: (o: any) => <span className="tabular-nums text-digi-muted">#{o.id}</span> },
+            { key: 'items', header: 'Productos', render: (o: any) => (o.items?.length ? (o.items.map((i: any) => i.product_title).filter(Boolean).join(', ') || '—') : '—') },
+            { key: 'total', header: 'Total', width: '100px', render: (o: any) => <span className="text-accent tabular-nums">${fmt2(Number(o.total || 0))}</span> },
+            { key: 'status', header: 'Estado', width: '120px', render: (o: any) => (
+              <PixelBadge variant={ORDER_STATUS[o.status] || 'default'}>{ORDER_LABEL[o.status] || o.status}</PixelBadge>
+            ) },
+            { key: 'date', header: 'Fecha', width: '110px', render: (o: any) => <span className="text-digi-muted">{o.created_at ? new Date(o.created_at).toLocaleDateString('es-EC') : '—'}</span> },
           ]}
           data={orders}
           onRowClick={(o: any) => { setSelectedOrder(o); setOrderModal(true); }}
           emptyTitle="Sin pedidos"
-          emptyDesc="No has realizado ningun pedido aun."
+          emptyDesc="No has realizado ningún pedido aún."
         />
-      ) : tab === 'projects' ? (
-        /* ========== MARKETPLACE PROJECTS TABLE ========== */
-        <PixelDataTable
-          columns={[
-            {
-              key: 'images', header: 'Fotos', width: '70px',
-              render: (p: any) => {
-                const count = imageCount(p);
-                return (
-                  <button
-                    onClick={(e) => openGallery(p, e)}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 border transition-colors ${
-                      count > 0 ? 'border-accent/40 text-accent hover:bg-accent-light' : 'border-digi-border/30 text-digi-muted/40 cursor-default'
-                    }`}
-                    disabled={count === 0}
-                    title={count > 0 ? `Ver ${count} foto(s)` : 'Sin fotos'}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <rect x="1" y="3" width="14" height="10" rx="1" /><circle cx="5.5" cy="7" r="1.5" /><path d="M14 13L10.5 9L7.5 12L5.5 10.5L2 13" />
-                    </svg>
-                    <span className="text-[11px]" style={mf}>{count}</span>
-                  </button>
-                );
-              },
-            },
-            { key: 'title', header: 'Proyecto', render: (p: any) => (
-              <span className="text-digi-text">{p.title}</span>
-            )},
-            { key: 'team', header: 'Equipo', render: (p: any) => {
-              const team = p.team || [];
-              if (team.length === 0 && p.member_name) return (
-                <div className="flex items-center gap-1" title={p.member_name}>
-                  {p.member_photo ? (
-                    <img src={p.member_photo} alt={p.member_name} className="w-5 h-5 rounded-full object-cover border border-digi-border" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full bg-accent-light border border-accent/30 flex items-center justify-center">
-                      <span className="text-[11px] text-accent" style={pf}>{p.member_name?.charAt(0)}</span>
-                    </div>
-                  )}
-                </div>
-              );
-              if (team.length === 0) return <span className="text-digi-muted">-</span>;
-              return (
-                <div className="flex items-center gap-1">
-                  {team.slice(0, 3).map((m: any, i: number) => (
-                    m.photo_url ? (
-                      <img key={i} src={m.photo_url} alt={m.name} className="w-5 h-5 rounded-full object-cover border border-digi-border" title={m.name} />
-                    ) : (
-                      <div key={i} className="w-5 h-5 rounded-full bg-accent-light border border-accent/30 flex items-center justify-center" title={m.name}>
-                        <span className="text-[11px] text-accent" style={pf}>{m.name?.charAt(0)}</span>
-                      </div>
-                    )
-                  ))}
-                  {team.length > 3 && <span className="text-[11px] text-digi-muted" style={mf}>+{team.length - 3}</span>}
-                </div>
-              );
-            }, width: '120px' },
-            { key: 'reqs', header: 'Reqs', render: (p: any) => (
-              <span className="text-digi-muted" style={mf}>{p.requirements_count}</span>
-            ), width: '60px' },
-            { key: 'price', header: 'Precio', width: '100px', render: (p: any) => (
-              <span className="text-accent font-medium" style={mf}>${fmt2(Number(p.final_cost || 0))}</span>
-            )},
-            { key: 'docs', header: 'Docs', width: '70px', render: (p: any) => {
-              if (!p.public_docs_token) return <span className="text-digi-muted/30 text-[11px]">-</span>;
-              const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org';
-              const url = `${base}/docs/${p.public_docs_token}`;
-              return (
-                <div className="flex items-center gap-1">
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    title="Ver documentacion publica"
-                    className="flex items-center justify-center w-6 h-6 border border-accent/40 text-accent hover:bg-accent-light transition-colors"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                    </svg>
-                  </a>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try { await navigator.clipboard.writeText(url); toast.success('Enlace copiado'); }
-                      catch { toast.error('No se pudo copiar'); }
-                    }}
-                    title="Copiar enlace"
-                    className="flex items-center justify-center w-6 h-6 border border-accent/40 text-accent hover:bg-accent-light transition-colors"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                  </button>
-                </div>
-              );
-            }},
-            { key: 'actions', header: '', width: '90px', render: (p: any) => (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (p.source_type === 'project') { setSelectedProject(p); setRequestModal(true); }
-                  else { openBuyModal(p); }
-                }}
-                className="text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors"
-                style={pf}
-              >
-                {p.source_type === 'project' ? 'Solicitar' : 'Comprar'}
-              </button>
-            )},
-          ]}
-          data={marketplaceProjects.filter((p: any) => !search || p.title?.toLowerCase().includes(search.toLowerCase()))}
-          onRowClick={(item: any) => selectItem(item)}
-          emptyTitle="Sin proyectos"
-          emptyDesc="No hay proyectos publicados en el marketplace aun."
-        />
-      ) : (
-        /* ========== ITEMS TABLE (Products / Automations) ========== */
-        <PixelDataTable
-          columns={[
-            { key: 'id', header: 'ID', render: (item: any) => `#${item.id}`, width: '60px' },
-            {
-              key: 'images', header: 'Fotos', width: '70px',
-              render: (item: any) => {
-                const count = imageCount(item);
-                return (
-                  <button
-                    onClick={(e) => openGallery(item, e)}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 border transition-colors ${
-                      count > 0
-                        ? 'border-accent/40 text-accent hover:bg-accent-light'
-                        : 'border-digi-border/30 text-digi-muted/40 cursor-default'
-                    }`}
-                    disabled={count === 0}
-                    title={count > 0 ? `Ver ${count} foto(s)` : 'Sin fotos'}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <rect x="1" y="3" width="14" height="10" rx="1" />
-                      <circle cx="5.5" cy="7" r="1.5" />
-                      <path d="M14 13L10.5 9L7.5 12L5.5 10.5L2 13" />
-                    </svg>
-                    <span className="text-[11px]" style={mf}>{count}</span>
-                  </button>
-                );
-              },
-            },
-            { key: 'title', header: 'Titulo', render: (item: any) => (
-              <span className="text-digi-text">{item.title}</span>
-            )},
-            {
-              key: 'tags', header: 'Tags', render: (item: any) => (
-                <div className="flex flex-wrap gap-1">
-                  {(item.tags || []).slice(0, 3).map((t: string) => (
-                    <PixelBadge key={t}>{t}</PixelBadge>
-                  ))}
-                </div>
-              ),
-            },
-            { key: 'member', header: 'Miembro', render: (item: any) => item.member_name || '-', width: '120px' },
-            {
-              key: 'price', header: 'Precio', width: '100px',
-              render: (item: any) => (
-                <span className="text-accent font-medium">${fmt2(Number(item.price || 0))}</span>
-              ),
-            },
-            {
-              key: 'actions', header: '', width: '80px',
-              render: (item: any) => Number(item.price || 0) > 0 ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); openBuyModal(item); }}
-                  className="text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors"
-                  style={pf}
-                >
-                  Comprar
-                </button>
-              ) : null,
-            },
-          ]}
-          data={filtered}
-          onRowClick={(item: any) => selectItem(item)}
-          emptyTitle={`Sin ${tabLabel}`}
-          emptyDesc={`No hay ${tabLabel} registrados aun.`}
-        />
-      )}
+      ) : (() => {
+        const cards = tab === 'projects'
+          ? marketplaceProjects.filter((p: any) => !search || p.title?.toLowerCase().includes(search.toLowerCase()))
+          : filtered;
+        if (!cards.length) {
+          const EmptyIcon = tab === 'projects' ? FolderKanban : tab === 'automations' ? Workflow : Package;
+          return (
+            <div className="bg-digi-card border border-digi-border rounded-xl py-16 text-center">
+              <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-3"><EmptyIcon className="w-6 h-6 text-digi-muted" /></div>
+              <p className="text-sm font-medium text-digi-text" style={mf}>Sin {tabLabel}</p>
+              <p className="text-[13px] text-digi-muted mt-1" style={mf}>No hay {tabLabel} publicados por ahora.</p>
+            </div>
+          );
+        }
+        return <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3">{cards.map(renderCard)}</div>;
+      })()}
             </div>
 
             {tab !== 'orders' && (
