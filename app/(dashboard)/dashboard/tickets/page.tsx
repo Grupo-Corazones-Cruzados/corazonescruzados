@@ -204,13 +204,14 @@ export default function TicketsPage() {
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
           <PixelDataTable
+            singleLine
             columns={[
-              { key: 'id', header: 'ID', render: (t: any) => <span className="tabular-nums text-digi-muted">#{t.id}</span>, width: '60px' },
+              { key: 'id', header: 'ID', render: (t: any) => <span className="tabular-nums text-digi-muted">#{t.id}</span>, width: '56px' },
               { key: 'title', header: 'Título', render: (t: any) => <span className={`text-[13px] font-medium ${selected?.id === t.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{t.title}</span> },
               { key: 'status', header: 'Estado', width: '120px', render: (t: any) => (
                 <PixelBadge variant={STATUS_VARIANT[t.status] || 'default'}>{STATUS_LABEL[t.status] || t.status}</PixelBadge>
               ) },
-              { key: 'client', header: 'Cliente', render: (t: any) => <span className="text-[12px] text-digi-text" style={mf}>{t.client_name || '—'}</span> },
+              { key: 'client', header: 'Cliente', width: '160px', render: (t: any) => <span className="text-[12px] text-digi-text" style={mf}>{t.client_name || '—'}</span> },
               { key: 'final_cost', header: 'Costo', width: '100px', render: (t: any) => {
                 const v = t.invoice_total ?? t.estimated_cost;
                 return <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{v != null && v !== '' ? `$${Number(v).toFixed(2)}` : '—'}</span>;
