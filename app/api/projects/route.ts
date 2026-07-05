@@ -14,41 +14,68 @@ export async function GET(req: NextRequest) {
     const limit = Number(searchParams.get('limit') || 15);
     const offset = (page - 1) * limit;
 
-    let where = 'WHERE 1=1';
-    const params: any[] = [];
-
-    // Access control: private projects only visible to owner, invited members, or admin
+    // Access control + search (base for list, count, and per-tab counts).
+    // Private projects only visible to owner, invited members, or admin.
+    let accessWhere = 'WHERE 1=1';
+    const accessParams: any[] = [];
+    let mId: number | null = null;
     if (user.role === 'member') {
       const memberRes = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
-      const mId = memberRes.rows[0]?.member_id;
+      mId = memberRes.rows[0]?.member_id ?? null;
       if (mId) {
-        params.push(mId);
-        const mIdx = params.length;
-        where += ` AND ((p.is_private = false AND p.status != 'draft') OR p.assigned_member_id = $${mIdx} OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = $${mIdx}))`;
-
-        // Handle special tabs
-        if (status === 'mine') {
-          where += ` AND p.assigned_member_id = $${mIdx}`;
-        } else if (status === 'invited') {
-          where += ` AND EXISTS (SELECT 1 FROM gcc_world.project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${mIdx} AND pb2.status = 'invited')`;
-        }
+        accessParams.push(mId);
+        const mIdx = accessParams.length;
+        accessWhere += ` AND ((p.is_private = false AND p.status != 'draft') OR p.assigned_member_id = $${mIdx} OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = $${mIdx}))`;
       }
     } else if (user.role === 'client') {
       const clientRes = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [user.email]);
       if (clientRes.rows[0]) {
-        params.push(clientRes.rows[0].id);
-        where += ` AND p.client_id = $${params.length}`;
+        accessParams.push(clientRes.rows[0].id);
+        accessWhere += ` AND p.client_id = $${accessParams.length}`;
       }
     }
     // admin sees everything
+    if (search) {
+      accessParams.push(`%${search}%`);
+      accessWhere += ` AND p.title ILIKE $${accessParams.length}`;
+    }
 
-    if (status && status !== 'all' && status !== 'mine' && status !== 'invited') {
+    // Scope/status filter extends the access base.
+    let where = accessWhere;
+    const params: any[] = [...accessParams];
+    if (status === 'mine' && mId) {
+      params.push(mId);
+      where += ` AND p.assigned_member_id = $${params.length}`;
+    } else if (status === 'invited' && mId) {
+      params.push(mId);
+      where += ` AND EXISTS (SELECT 1 FROM gcc_world.project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${params.length} AND pb2.status = 'invited')`;
+    } else if (status && status !== 'all' && status !== 'mine' && status !== 'invited') {
       params.push(status);
       where += ` AND p.status = $${params.length}`;
     }
-    if (search) {
-      params.push(`%${search}%`);
-      where += ` AND p.title ILIKE $${params.length}`;
+
+    // Per-tab counts for the rail (respect access + search; ignore scope/status filter).
+    const counts: Record<string, number> = {};
+    const statusCountsQ = await pool.query(
+      `SELECT p.status, COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} GROUP BY p.status`,
+      accessParams,
+    );
+    let allCount = 0;
+    for (const r of statusCountsQ.rows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
+    counts.all = allCount;
+    if (user.role === 'member' && mId) {
+      const mineQ = await pool.query(
+        `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND p.assigned_member_id = $${accessParams.length + 1}`,
+        [...accessParams, mId],
+      );
+      counts.mine = Number(mineQ.rows[0].n);
+      const invQ = await pool.query(
+        `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND EXISTS (SELECT 1 FROM gcc_world.project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${accessParams.length + 1} AND pb2.status = 'invited')`,
+        [...accessParams, mId],
+      );
+      counts.invited = Number(invQ.rows[0].n);
+    } else if (user.role === 'client') {
+      counts.mine = allCount;
     }
 
     const countQ = await pool.query(`SELECT COUNT(*) FROM gcc_world.projects p ${where}`, params);
@@ -92,10 +119,10 @@ export async function GET(req: NextRequest) {
       params
     );
 
-    return NextResponse.json({ data: dataQ.rows, total: Number(countQ.rows[0].count) });
+    return NextResponse.json({ data: dataQ.rows, total: Number(countQ.rows[0].count), counts });
   } catch (err: any) {
     console.error('Projects error:', err.message);
-    return NextResponse.json({ data: [], total: 0 });
+    return NextResponse.json({ data: [], total: 0, counts: {} });
   }
 }
 

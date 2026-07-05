@@ -4,26 +4,36 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelInput from '@/components/ui/PixelInput';
+import PageHeader from '@/components/ui/PageHeader';
+import { BTN_PRIMARY } from '@/components/ui/Button';
+import {
+  FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
+  Search, Plus, FileText, ChevronLeft, ChevronRight,
+} from 'lucide-react';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 
-const BASE_TABS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'draft', label: 'Borrador' },
-  { value: 'open', label: 'Abiertos' },
-  { value: 'in_progress', label: 'En Progreso' },
-  { value: 'in_review', label: 'En Revision' },
-  { value: 'completed', label: 'Completados' },
+const STATUS_TABS = [
+  { value: 'all', label: 'Todos', Icon: FolderKanban },
+  { value: 'draft', label: 'Borrador', Icon: FileEdit },
+  { value: 'open', label: 'Abiertos', Icon: DoorOpen },
+  { value: 'in_progress', label: 'En progreso', Icon: Loader },
+  { value: 'in_review', label: 'En revisión', Icon: Eye },
+  { value: 'completed', label: 'Completados', Icon: CheckCircle2 },
 ];
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   draft: 'default', open: 'info', in_progress: 'warning',
   in_review: 'info', completed: 'success', closed: 'success', cancelled: 'error',
+};
+const STATUS_LABEL: Record<string, string> = {
+  draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso',
+  in_review: 'En revisión', completed: 'Completado', closed: 'Cerrado', cancelled: 'Cancelado',
 };
 
 const PER_PAGE = 15;
@@ -32,6 +42,7 @@ export default function ProjectsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [projects, setProjects] = useState<any[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -55,11 +66,12 @@ export default function ProjectsPage() {
   const [editDeadline, setEditDeadline] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const tabs = user?.role === 'member'
-    ? [{ value: 'mine', label: 'Mis Proyectos' }, { value: 'invited', label: 'Invitado' }, ...BASE_TABS]
+  // Scope items (rail top section) depend on role.
+  const scopeItems = user?.role === 'member'
+    ? [{ value: 'mine', label: 'Mis proyectos', Icon: UserRound }, { value: 'invited', label: 'Invitado', Icon: Mail }]
     : user?.role === 'client'
-    ? [{ value: 'mine', label: 'Mis Proyectos' }, ...BASE_TABS]
-    : BASE_TABS;
+    ? [{ value: 'mine', label: 'Mis proyectos', Icon: UserRound }]
+    : [];
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
@@ -70,6 +82,7 @@ export default function ProjectsPage() {
       const data = await res.json();
       setProjects(data.data || []);
       setTotal(data.total || 0);
+      setCounts(data.counts || {});
     } catch { setProjects([]); }
   }, [page, tab, search]);
 
@@ -81,18 +94,15 @@ export default function ProjectsPage() {
     setCreating(true);
     try {
       const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: createTitle,
-          description: createDesc || null,
+          title: createTitle, description: createDesc || null,
           budget_min: createBudgetMin ? Number(createBudgetMin) : null,
           budget_max: createBudgetMax ? Number(createBudgetMax) : null,
-          deadline: createDeadline || null,
-          client_email: createClientEmail || null,
+          deadline: createDeadline || null, client_email: createClientEmail || null,
         }),
       });
-      if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Error'); return; }
+      if (!res.ok) { toast.error((await res.json()).error || 'Error'); return; }
       const { data } = await res.json();
       toast.success('Proyecto creado');
       setShowCreate(false);
@@ -102,21 +112,12 @@ export default function ProjectsPage() {
     finally { setCreating(false); }
   };
 
-  const openEdit = (p: any) => {
-    setEditProject(p);
-    setEditTitle(p.title || '');
-    setEditBudgetMin(p.budget_min || '');
-    setEditBudgetMax(p.budget_max || '');
-    setEditDeadline(p.deadline?.split('T')[0] || '');
-  };
-
   const saveEdit = async () => {
     if (!editProject || !editTitle.trim()) return;
     setSaving(true);
     try {
       await fetch(`/api/projects/${editProject.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: editTitle,
           budget_min: editBudgetMin ? Number(editBudgetMin) : null,
@@ -131,137 +132,158 @@ export default function ProjectsPage() {
     finally { setSaving(false); }
   };
 
-  const isOwnerOf = (p: any) => {
-    if (user?.role === 'admin') return true;
-    if (user?.role === 'member' && user.member_id && p.assigned_member_id == user.member_id) return true;
-    return false;
-  };
+  const totalPages = Math.ceil(total / PER_PAGE);
+
+  const RailItem = ({ active, Icon, label, count, onClick }: any) => (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
+        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
+      }`}
+    >
+      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
+      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
+      {count !== undefined && (
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count}</span>
+      )}
+    </button>
+  );
 
   return (
     <div>
-      <ModuleToolbar
-        tabs={tabs}
-        activeTab={tab}
-        onTabChange={setTab}
-        search={search}
-        onSearchChange={setSearch}
-        action={
-          <button onClick={() => setShowCreate(true)} className="pixel-btn pixel-btn-primary text-[9px]">
-            + Nuevo Proyecto
-          </button>
-        }
-      />
+      <PageHeader title="Proyectos" description="Proyectos, propuestas y su facturación" />
 
-      <PixelDataTable
-        columns={[
-          { key: 'id', header: 'ID', render: (p: any) => `#${p.id}`, width: '60px' },
-          { key: 'title', header: 'Titulo', render: (p: any) => p.title },
-          { key: 'status', header: 'Estado', render: (p: any) => (
-            <PixelBadge variant={STATUS_V[p.status] || 'default'}>{p.status}</PixelBadge>
-          )},
-          { key: 'client', header: 'Cliente', render: (p: any) => p.client_name || '-' },
-          { key: 'budget', header: 'Presupuesto', render: (p: any) =>
-            p.budget_min ? `$${p.budget_min}${p.budget_max ? `-${p.budget_max}` : ''}` : '-'
-          },
-          { key: 'final_cost', header: 'Costo Final', render: (p: any) =>
-            p.final_cost ? `$${Number(p.final_cost).toFixed(2)}` : '-'
-          },
-          { key: 'deadline', header: 'Limite', render: (p: any) => p.deadline ? new Date(p.deadline).toLocaleDateString() : '-' },
-          { key: 'invoice', header: 'Factura', width: '80px', render: (p: any) => {
-            if (!p.invoice_id) return <span className="text-digi-muted text-[8px]">-</span>;
-            return (
-              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                <span className="text-green-400 text-[10px]" title="Factura generada">&#9632;</span>
-                {p.invoice_sri_status === 'authorized' && (
-                  <button onClick={() => window.open(`/api/invoices/${p.invoice_id}/pdf`, '_blank')}
-                    className="px-1.5 py-0.5 text-[7px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>PDF</button>
-                )}
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+        {/* ── Left rail: alcance + estado ── */}
+        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+          {scopeItems.length > 0 && (
+            <>
+              <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Alcance</p>
+              <div className="space-y-0.5 mb-1.5">
+                {scopeItems.map((s) => (
+                  <RailItem key={s.value} active={tab === s.value} Icon={s.Icon} label={s.label}
+                    count={counts[s.value]} onClick={() => setTab(s.value)} />
+                ))}
               </div>
-            );
-          }},
-        ]}
-        data={projects}
-        onRowClick={(p: any) => router.push(`/dashboard/projects/${p.id}`)}
-        page={page}
-        totalPages={Math.ceil(total / PER_PAGE)}
-        onPageChange={setPage}
-        emptyTitle="Sin proyectos"
-        emptyDesc="No hay proyectos registrados aun."
-      />
+              <div className="h-px bg-digi-border/60 my-1 mx-2" />
+            </>
+          )}
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
+          <div className="space-y-0.5">
+            {STATUS_TABS.map((s) => (
+              <RailItem key={s.value} active={tab === s.value} Icon={s.Icon} label={s.label}
+                count={counts[s.value]} onClick={() => setTab(s.value)} />
+            ))}
+          </div>
+        </aside>
+
+        {/* ── Right region: command bar + table ── */}
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por título..."
+                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                style={mf}
+              />
+            </div>
+            <button onClick={() => setShowCreate(true)} className={`${BTN_PRIMARY} shrink-0`}>
+              <Plus className="w-4 h-4" /> Nuevo proyecto
+            </button>
+          </div>
+
+          <PixelDataTable
+            columns={[
+              { key: 'id', header: 'ID', render: (p: any) => <span className="tabular-nums text-digi-muted">#{p.id}</span>, width: '60px' },
+              { key: 'title', header: 'Título', render: (p: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{p.title}</span> },
+              { key: 'status', header: 'Estado', width: '120px', render: (p: any) => (
+                <PixelBadge variant={STATUS_V[p.status] || 'default'}>{STATUS_LABEL[p.status] || p.status}</PixelBadge>
+              ) },
+              { key: 'client', header: 'Cliente', render: (p: any) => <span className="text-[12px] text-digi-text" style={mf}>{p.client_name || '—'}</span> },
+              { key: 'budget', header: 'Presupuesto', width: '130px', render: (p: any) => (
+                <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{p.budget_min ? `$${p.budget_min}${p.budget_max ? `–${p.budget_max}` : ''}` : '—'}</span>
+              ) },
+              { key: 'final_cost', header: 'Costo final', width: '110px', render: (p: any) => (
+                <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{p.final_cost ? `$${Number(p.final_cost).toFixed(2)}` : '—'}</span>
+              ) },
+              { key: 'deadline', header: 'Límite', width: '110px', render: (p: any) => (
+                <span className="text-[12px] text-digi-muted" style={mf}>{p.deadline ? new Date(p.deadline).toLocaleDateString('es-EC') : '—'}</span>
+              ) },
+              { key: 'invoice', header: 'Factura', width: '90px', render: (p: any) => {
+                if (!p.invoice_id) return <span className="text-digi-muted/50 text-[12px]">—</span>;
+                return (
+                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                    <FileText className="w-3.5 h-3.5 text-green-600" />
+                    {p.invoice_sri_status === 'authorized' && (
+                      <button onClick={() => window.open(`/api/invoices/${p.invoice_id}/pdf`, '_blank')}
+                        className="px-1.5 py-0.5 text-[10px] border border-green-500/40 rounded text-green-700 hover:bg-green-50 transition-colors" style={mf}>PDF</button>
+                    )}
+                  </div>
+                );
+              } },
+            ]}
+            data={projects}
+            onRowClick={(p: any) => router.push(`/dashboard/projects/${p.id}`)}
+            emptyTitle="Sin proyectos"
+            emptyDesc="No hay proyectos en este ámbito."
+          />
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-3">
+              <span className="text-[12px] text-digi-muted" style={mf}>Página {page} de {totalPages} · {total} proyectos</span>
+              <div className="flex gap-1.5">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
+                  <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                </button>
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
+                  Siguiente <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Create Modal */}
-      <PixelModal open={showCreate} onClose={() => setShowCreate(false)} title="Nuevo Proyecto">
+      <PixelModal open={showCreate} onClose={() => setShowCreate(false)} title="Nuevo proyecto">
         <div className="space-y-3">
+          <PixelInput label="Título *" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Nombre del proyecto" />
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Titulo *</label>
-            <input value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Nombre del proyecto"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Descripcion</label>
-            <textarea value={createDesc} onChange={(e) => setCreateDesc(e.target.value)} rows={3} placeholder="Descripcion del proyecto..."
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
+            <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Descripción</label>
+            <textarea value={createDesc} onChange={(e) => setCreateDesc(e.target.value)} rows={3} placeholder="Descripción del proyecto..."
+              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           {user?.role === 'member' && (
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Email del Cliente</label>
-              <input value={createClientEmail} onChange={(e) => setCreateClientEmail(e.target.value)} placeholder="cliente@email.com"
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-            </div>
+            <PixelInput label="Email del cliente" value={createClientEmail} onChange={(e) => setCreateClientEmail(e.target.value)} placeholder="cliente@email.com" />
           )}
           <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Presupuesto Min ($)</label>
-              <input value={createBudgetMin} onChange={(e) => setCreateBudgetMin(e.target.value)} type="number" placeholder="0"
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Presupuesto Max ($)</label>
-              <input value={createBudgetMax} onChange={(e) => setCreateBudgetMax(e.target.value)} type="number" placeholder="0"
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-            </div>
+            <PixelInput label="Presupuesto mín ($)" type="number" value={createBudgetMin} onChange={(e) => setCreateBudgetMin(e.target.value)} placeholder="0" />
+            <PixelInput label="Presupuesto máx ($)" type="number" value={createBudgetMax} onChange={(e) => setCreateBudgetMax(e.target.value)} placeholder="0" />
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Limite</label>
-            <input value={createDeadline} onChange={(e) => setCreateDeadline(e.target.value)} type="date"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-          </div>
+          <PixelInput label="Límite" type="date" value={createDeadline} onChange={(e) => setCreateDeadline(e.target.value)} />
           {user?.role === 'member' && (
-            <p className="text-[8px] text-digi-muted" style={pf}>
-              Como miembro, el proyecto se creara como privado y en progreso automaticamente.
-            </p>
+            <p className="text-[11px] text-digi-muted" style={mf}>Como miembro, el proyecto se creará como privado y en progreso automáticamente.</p>
           )}
           <button onClick={createProject} disabled={creating || !createTitle.trim()} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-            {creating ? '...' : 'Crear Proyecto'}
+            {creating ? '...' : 'Crear proyecto'}
           </button>
         </div>
       </PixelModal>
 
       {/* Edit Modal */}
-      <PixelModal open={!!editProject} onClose={() => setEditProject(null)} title="Editar Proyecto" size="sm">
+      <PixelModal open={!!editProject} onClose={() => setEditProject(null)} title="Editar proyecto" size="sm">
         <div className="space-y-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Titulo</label>
-            <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-          </div>
+          <PixelInput label="Título" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
           <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Presupuesto Min ($)</label>
-              <input value={editBudgetMin} onChange={(e) => setEditBudgetMin(e.target.value)} type="number" placeholder="0"
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Presupuesto Max ($)</label>
-              <input value={editBudgetMax} onChange={(e) => setEditBudgetMax(e.target.value)} type="number" placeholder="0"
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-            </div>
+            <PixelInput label="Presupuesto mín ($)" type="number" value={editBudgetMin} onChange={(e) => setEditBudgetMin(e.target.value)} placeholder="0" />
+            <PixelInput label="Presupuesto máx ($)" type="number" value={editBudgetMax} onChange={(e) => setEditBudgetMax(e.target.value)} placeholder="0" />
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Limite</label>
-            <input value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} type="date"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-          </div>
+          <PixelInput label="Límite" type="date" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} />
           <button onClick={saveEdit} disabled={saving || !editTitle.trim()} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
             {saving ? '...' : 'Guardar'}
           </button>
