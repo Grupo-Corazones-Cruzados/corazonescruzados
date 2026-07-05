@@ -8,8 +8,10 @@ import Link from 'next/link';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
+import { ChevronLeft } from 'lucide-react';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+// Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -20,6 +22,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const SRI_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   generated: 'default', signed: 'info', sent: 'info', authorized: 'success', rejected: 'error', error: 'error',
+};
+const SRI_LABEL: Record<string, string> = {
+  generated: 'Generada', signed: 'Firmada', sent: 'Enviada', authorized: 'Autorizada',
+  rejected: 'Rechazada', error: 'Error', voided: 'Anulada',
 };
 
 export default function InvoiceDetailPage() {
@@ -188,7 +194,7 @@ export default function InvoiceDetailPage() {
   };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando factura..." /></div>;
-  if (!invoice) return <div className="pixel-card text-center py-12"><p className="pixel-heading text-sm text-red-400">Factura no encontrada</p></div>;
+  if (!invoice) return <div className="bg-digi-card border border-digi-border rounded-lg py-12 text-center"><p className="text-sm font-semibold text-red-600">Factura no encontrada</p></div>;
 
   // Use SRI items if available, fallback to regular items
   const items = sriItems.length > 0 ? sriItems : (invoice.items || []);
@@ -198,14 +204,14 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="max-w-5xl">
-      <div className="mb-4">
-        <Link href="/dashboard/invoices" className="text-[10px] text-accent-glow opacity-60 hover:opacity-100" style={pf}>&lt; Volver a facturas</Link>
-      </div>
+      <Link href="/dashboard/invoices" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-2" style={mf}>
+        <ChevronLeft className="w-4 h-4" /> Facturas
+      </Link>
 
       <div className="flex items-start justify-between gap-3 mb-6">
-        <h1 className="pixel-heading text-lg text-digi-text">{invoice.invoice_number || `Factura #${invoice.id}`}</h1>
+        <h1 className="text-2xl font-semibold text-digi-text" style={mf}>{invoice.invoice_number || `Factura #${invoice.id}`}</h1>
         <div className="flex gap-2">
-          {invoice.sri_status && <PixelBadge variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {invoice.sri_status}</PixelBadge>}
+          {invoice.sri_status && <PixelBadge variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {SRI_LABEL[invoice.sri_status] || invoice.sri_status}</PixelBadge>}
           <PixelBadge variant={STATUS_V[invoice.status] || 'default'}>{STATUS_LABEL[invoice.status] || invoice.status}</PixelBadge>
         </div>
       </div>
@@ -217,16 +223,16 @@ export default function InvoiceDetailPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b-2 border-digi-border">
-                  <th className="text-left px-4 py-2.5 text-[9px] text-digi-muted uppercase" style={pf}>Descripcion</th>
-                  <th className="text-center px-2 py-2.5 text-[9px] text-digi-muted uppercase" style={pf}>Cant.</th>
-                  <th className="text-right px-2 py-2.5 text-[9px] text-digi-muted uppercase" style={pf}>P.Unit.</th>
-                  <th className="text-right px-2 py-2.5 text-[9px] text-digi-muted uppercase" style={pf}>IVA</th>
-                  <th className="text-right px-4 py-2.5 text-[9px] text-digi-muted uppercase" style={pf}>Subtotal</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] text-digi-muted uppercase" style={pf}>Descripcion</th>
+                  <th className="text-center px-2 py-2.5 text-[11px] text-digi-muted uppercase" style={pf}>Cant.</th>
+                  <th className="text-right px-2 py-2.5 text-[11px] text-digi-muted uppercase" style={pf}>P.Unit.</th>
+                  <th className="text-right px-2 py-2.5 text-[11px] text-digi-muted uppercase" style={pf}>IVA</th>
+                  <th className="text-right px-4 py-2.5 text-[11px] text-digi-muted uppercase" style={pf}>Subtotal</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-4 text-center text-digi-muted text-[9px]" style={mf}>Sin items</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-4 text-center text-digi-muted text-[11px]" style={mf}>Sin items</td></tr>
                 ) : items.map((item: any, idx: number) => (
                   <tr key={item.id || idx} className="border-b border-digi-border/30">
                     <td className="px-4 py-2 text-digi-text" style={mf}>{item.description}</td>
@@ -239,18 +245,18 @@ export default function InvoiceDetailPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-digi-border">
-                  <td colSpan={4} className="px-4 py-2 text-right text-[9px] text-digi-muted" style={pf}>Subtotal</td>
+                  <td colSpan={4} className="px-4 py-2 text-right text-[11px] text-digi-muted" style={pf}>Subtotal</td>
                   <td className="px-4 py-2 text-right text-digi-text" style={mf}>${subtotal.toFixed(2)}</td>
                 </tr>
                 {totalIva > 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-1 text-right text-[9px] text-digi-muted" style={pf}>IVA</td>
+                    <td colSpan={4} className="px-4 py-1 text-right text-[11px] text-digi-muted" style={pf}>IVA</td>
                     <td className="px-4 py-1 text-right text-digi-muted" style={mf}>${totalIva.toFixed(2)}</td>
                   </tr>
                 )}
                 <tr className="border-t border-digi-border">
-                  <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-accent-glow" style={pf}>Total</td>
-                  <td className="px-4 py-2 text-right text-sm text-accent-glow font-bold" style={mf}>${total.toFixed(2)}</td>
+                  <td colSpan={4} className="px-4 py-2 text-right text-[12px] font-semibold text-digi-text" style={pf}>Total</td>
+                  <td className="px-4 py-2 text-right text-sm text-accent font-bold" style={mf}>${total.toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -260,8 +266,8 @@ export default function InvoiceDetailPage() {
         {/* ─── Sidebar ─── */}
         <div className="space-y-4">
           <div className="pixel-card">
-            <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Detalles</h3>
-            <div className="space-y-2 text-[10px]" style={mf}>
+            <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Detalles</h3>
+            <div className="space-y-2 text-[12px]" style={mf}>
               <DetailRow label="Cliente" value={invoice.client_name_sri || invoice.client_name || '-'} />
               <DetailRow label="RUC/CI" value={invoice.client_ruc || '-'} />
               <DetailRow label="Email" value={invoice.client_email_sri || '-'} />
@@ -273,20 +279,20 @@ export default function InvoiceDetailPage() {
           {/* SRI Info */}
           {invoice.access_key && (
             <div className="pixel-card">
-              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>SRI</h3>
+              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>SRI</h3>
               <div className="space-y-2">
                 <div>
-                  <label className="text-[8px] text-digi-muted block mb-0.5" style={pf}>Clave de Acceso</label>
-                  <p className="text-[7px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.access_key}</p>
+                  <label className="text-[11px] text-digi-muted block mb-0.5" style={pf}>Clave de Acceso</label>
+                  <p className="text-[11px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.access_key}</p>
                   <button onClick={() => { navigator.clipboard.writeText(invoice.access_key); toast.success('Clave copiada'); }}
-                    className="text-[7px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>Copiar clave</button>
+                    className="text-[11px] text-accent border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>Copiar clave</button>
                 </div>
                 {invoice.authorization_number && (
                   <div>
-                    <label className="text-[8px] text-digi-muted block mb-0.5" style={pf}>No. Autorizacion</label>
-                    <p className="text-[7px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.authorization_number}</p>
+                    <label className="text-[11px] text-digi-muted block mb-0.5" style={pf}>No. Autorizacion</label>
+                    <p className="text-[11px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.authorization_number}</p>
                     <button onClick={() => { navigator.clipboard.writeText(invoice.authorization_number); toast.success('Autorizacion copiada'); }}
-                      className="text-[7px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>Copiar autorizacion</button>
+                      className="text-[11px] text-accent border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>Copiar autorizacion</button>
                   </div>
                 )}
               </div>
@@ -295,22 +301,22 @@ export default function InvoiceDetailPage() {
 
           {/* Actions */}
           <div className="pixel-card">
-            <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Acciones</h3>
+            <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Acciones</h3>
             <div className="space-y-1.5">
               {invoice.sri_status === 'authorized' && (
                 <>
                   <button onClick={() => window.open(`/api/invoices/${id}/pdf`, '_blank')}
-                    className="w-full py-1.5 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
+                    className="w-full py-1.5 text-[11px] text-green-600 border border-green-300 hover:bg-green-50 transition-colors" style={pf}>
                     Descargar PDF
                   </button>
                   {isAdmin && (
                     <>
                       <button onClick={() => { setResendEmails(invoice.client_email_sri || ''); setShowResend(true); }}
-                        className="w-full py-1.5 text-[9px] text-accent-glow border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
+                        className="w-full py-1.5 text-[11px] text-accent border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
                         Reenviar por Correo
                       </button>
                       <button onClick={() => setShowVoid(true)}
-                        className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
+                        className="w-full py-1.5 text-[11px] text-red-600 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>
                         Anular Factura
                       </button>
                     </>
@@ -319,10 +325,10 @@ export default function InvoiceDetailPage() {
               )}
               {invoice.sri_status === 'voided' && (
                 <>
-                  <p className="text-[9px] text-red-400 text-center py-2" style={mf}>Factura anulada</p>
+                  <p className="text-[11px] text-red-600 text-center py-2" style={mf}>Factura anulada</p>
                   {isAdmin && (
                     <button onClick={() => router.push(`/dashboard/invoices?refactor=${id}`)}
-                      className="w-full py-1.5 text-[9px] text-yellow-400 border border-yellow-500/40 hover:bg-yellow-900/20 transition-colors" style={pf}>
+                      className="w-full py-1.5 text-[11px] text-amber-700 border border-yellow-500/40 hover:bg-amber-50 transition-colors" style={pf}>
                       Refacturar
                     </button>
                   )}
@@ -330,7 +336,7 @@ export default function InvoiceDetailPage() {
               )}
               {(invoice.sri_status === 'rejected' || invoice.sri_status === 'error') && isAdmin && (
                 <>
-                  <div className="px-2 py-1.5 border border-red-700/50 bg-red-900/10 text-[8px] text-red-400 leading-relaxed" style={mf}>
+                  <div className="px-2 py-1.5 border border-red-300 bg-red-50 text-[11px] text-red-600 leading-relaxed" style={mf}>
                     {(() => {
                       try {
                         const r = typeof invoice.sri_response === 'string' ? JSON.parse(invoice.sri_response) : invoice.sri_response;
@@ -342,12 +348,12 @@ export default function InvoiceDetailPage() {
                   </div>
                   {invoice.sri_status === 'error' && (
                     <button onClick={handleResendToSri} disabled={resendingSri}
-                      className="w-full py-1.5 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors disabled:opacity-50" style={pf}>
+                      className="w-full py-1.5 text-[11px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors disabled:opacity-50" style={pf}>
                       {resendingSri ? 'Reenviando...' : 'Reenviar al SRI'}
                     </button>
                   )}
                   <button onClick={openEditModal}
-                    className="w-full py-1.5 text-[9px] text-yellow-400 border border-yellow-500/40 hover:bg-yellow-900/20 transition-colors" style={pf}>
+                    className="w-full py-1.5 text-[11px] text-amber-700 border border-yellow-500/40 hover:bg-amber-50 transition-colors" style={pf}>
                     Editar y Reintentar
                   </button>
                 </>
@@ -358,34 +364,34 @@ export default function InvoiceDetailPage() {
           {/* Payment Proof */}
           {isAdmin && (
             <div className="pixel-card">
-              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Comprobante de Pago</h3>
+              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Comprobante de Pago</h3>
               {invoice.has_payment_proof ? (
                 <div className="space-y-1.5">
                   <button onClick={() => setShowProof(true)}
-                    className="w-full py-1.5 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
+                    className="w-full py-1.5 text-[11px] text-green-600 border border-green-300 hover:bg-green-50 transition-colors" style={pf}>
                     Ver Comprobante
                   </button>
                   <button onClick={() => window.open(`/api/invoices/${id}/proof`, '_blank')}
-                    className="w-full py-1.5 text-[9px] text-accent-glow border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
+                    className="w-full py-1.5 text-[11px] text-accent border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
                     Abrir en Nueva Pestaña
                   </button>
-                  <label className="block w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors text-center cursor-pointer" style={pf}>
+                  <label className="block w-full py-1.5 text-[11px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors text-center cursor-pointer" style={pf}>
                     {uploadingProof ? 'Subiendo...' : 'Reemplazar'}
                     <input type="file" accept="image/*" onChange={handleUploadProof} className="hidden" disabled={uploadingProof} />
                   </label>
                   <button onClick={handleDeleteProof}
-                    className="w-full py-1.5 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
+                    className="w-full py-1.5 text-[11px] text-red-600 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>
                     Eliminar Comprobante
                   </button>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-[9px] text-digi-muted" style={mf}>Sin comprobante adjunto</p>
-                  <label className="block w-full py-2 text-[9px] text-accent-glow border-2 border-dashed border-accent/30 hover:bg-accent/5 transition-colors text-center cursor-pointer" style={pf}>
+                  <p className="text-[11px] text-digi-muted" style={mf}>Sin comprobante adjunto</p>
+                  <label className="block w-full py-2 text-[11px] text-accent border-2 border-dashed border-accent/30 hover:bg-accent/5 transition-colors text-center cursor-pointer" style={pf}>
                     {uploadingProof ? 'Subiendo...' : 'Adjuntar Imagen'}
                     <input type="file" accept="image/*" onChange={handleUploadProof} className="hidden" disabled={uploadingProof} />
                   </label>
-                  <p className="text-[7px] text-digi-muted" style={mf}>JPG, PNG, WEBP o GIF</p>
+                  <p className="text-[11px] text-digi-muted" style={mf}>JPG, PNG, WEBP o GIF</p>
                 </div>
               )}
             </div>
@@ -404,17 +410,17 @@ export default function InvoiceDetailPage() {
       {/* Void Modal */}
       <PixelModal open={showVoid} onClose={() => setShowVoid(false)} title="Anular Factura" size="sm">
         <div className="space-y-3">
-          <div className="px-3 py-2 border border-red-700/50 bg-red-900/10 text-[9px] text-red-400" style={mf}>
+          <div className="px-3 py-2 border border-red-300 bg-red-50 text-[11px] text-red-600" style={mf}>
             Se emitira una Nota de Credito ante el SRI por el valor total de la factura. Esta accion no se puede deshacer.
           </div>
           <div>
-            <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Motivo de anulacion <span className="text-red-400">*</span></label>
+            <label className="text-[11px] text-digi-muted mb-0.5 block" style={pf}>Motivo de anulacion <span className="text-red-600">*</span></label>
             <textarea value={voidReason} onChange={e => setVoidReason(e.target.value)} rows={3}
               placeholder="Ej: Error en los datos del comprobante"
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setShowVoid(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
+            <button onClick={() => setShowVoid(false)} className="px-4 py-2 text-[11px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
             <button onClick={async () => {
               if (!voidReason.trim()) return;
               setVoiding(true);
@@ -433,7 +439,7 @@ export default function InvoiceDetailPage() {
                 }
               } catch { toast.error('Error de conexion'); }
               finally { setVoiding(false); }
-            }} disabled={voiding || !voidReason.trim()} className="px-4 py-2 text-[9px] border-2 border-red-700 bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-colors disabled:opacity-50" style={pf}>
+            }} disabled={voiding || !voidReason.trim()} className="px-4 py-2 text-[11px] border-2 border-red-700 bg-red-900/30 text-red-600 hover:bg-red-900/50 transition-colors disabled:opacity-50" style={pf}>
               {voiding ? 'Procesando...' : 'Confirmar Anulacion'}
             </button>
           </div>
@@ -443,15 +449,15 @@ export default function InvoiceDetailPage() {
       {/* Edit & Retry Modal */}
       <PixelModal open={showEdit} onClose={() => !editing && setShowEdit(false)} title="Editar y Reintentar Factura" size="lg">
         <div className="space-y-4">
-          <div className="px-3 py-2 border border-yellow-700/50 bg-yellow-900/10 text-[9px] text-yellow-400" style={mf}>
+          <div className="px-3 py-2 border border-yellow-700/50 bg-yellow-900/10 text-[11px] text-amber-700" style={mf}>
             Corrige los datos del cliente o de los items. Se generará una nueva clave de acceso con un nuevo secuencial y se reenviará al SRI automáticamente.
           </div>
 
           <div>
-            <h4 className="text-[10px] text-accent-glow mb-2" style={pf}>Cliente</h4>
+            <h4 className="text-[12px] font-semibold text-digi-text mb-2" style={pf}>Cliente</h4>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tipo ID</label>
+                <label className="text-[11px] text-digi-muted mb-0.5 block" style={pf}>Tipo ID</label>
                 <select value={editForm.clientIdType} onChange={e => setEditForm({ ...editForm, clientIdType: e.target.value })}
                   className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf}>
                   <option value="04">RUC</option>
@@ -462,27 +468,27 @@ export default function InvoiceDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>RUC / Cédula</label>
+                <label className="text-[11px] text-digi-muted mb-0.5 block" style={pf}>RUC / Cédula</label>
                 <input value={editForm.clientRuc} onChange={e => setEditForm({ ...editForm, clientRuc: e.target.value })}
                   className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
               </div>
               <div className="col-span-2">
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Razón Social / Nombre</label>
+                <label className="text-[11px] text-digi-muted mb-0.5 block" style={pf}>Razón Social / Nombre</label>
                 <input value={editForm.clientName} onChange={e => setEditForm({ ...editForm, clientName: e.target.value })}
                   className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
               </div>
               <div>
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Email</label>
+                <label className="text-[11px] text-digi-muted mb-0.5 block" style={pf}>Email</label>
                 <input value={editForm.clientEmail} onChange={e => setEditForm({ ...editForm, clientEmail: e.target.value })}
                   className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
               </div>
               <div>
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Teléfono</label>
+                <label className="text-[11px] text-digi-muted mb-0.5 block" style={pf}>Teléfono</label>
                 <input value={editForm.clientPhone} onChange={e => setEditForm({ ...editForm, clientPhone: e.target.value })}
                   className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
               </div>
               <div className="col-span-2">
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Dirección</label>
+                <label className="text-[11px] text-digi-muted mb-0.5 block" style={pf}>Dirección</label>
                 <input value={editForm.clientAddress} onChange={e => setEditForm({ ...editForm, clientAddress: e.target.value })}
                   className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
               </div>
@@ -491,9 +497,9 @@ export default function InvoiceDetailPage() {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-[10px] text-accent-glow" style={pf}>Items</h4>
+              <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>Items</h4>
               <button onClick={() => setEditForm({ ...editForm, items: [...editForm.items, { description: '', quantity: 1, unitPrice: 0, ivaRate: 15 }] })}
-                className="text-[8px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>+ Item</button>
+                className="text-[11px] text-accent border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>+ Item</button>
             </div>
             <div className="space-y-2">
               {editForm.items.map((it, idx) => (
@@ -502,40 +508,40 @@ export default function InvoiceDetailPage() {
                     const items = [...editForm.items]; items[idx] = { ...it, description: e.target.value };
                     setEditForm({ ...editForm, items });
                   }} placeholder="Descripción"
-                    className="col-span-5 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                    className="col-span-5 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                   <input type="number" step="0.01" value={it.quantity} onChange={e => {
                     const items = [...editForm.items]; items[idx] = { ...it, quantity: Number(e.target.value) };
                     setEditForm({ ...editForm, items });
                   }} placeholder="Cant"
-                    className="col-span-2 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                    className="col-span-2 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                   <input type="number" step="0.01" value={it.unitPrice} onChange={e => {
                     const items = [...editForm.items]; items[idx] = { ...it, unitPrice: Number(e.target.value) };
                     setEditForm({ ...editForm, items });
                   }} placeholder="P.Unit"
-                    className="col-span-2 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                    className="col-span-2 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                   <select value={it.ivaRate} onChange={e => {
                     const items = [...editForm.items]; items[idx] = { ...it, ivaRate: Number(e.target.value) };
                     setEditForm({ ...editForm, items });
-                  }} className="col-span-2 px-1 py-1.5 bg-digi-darker border-2 border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                  }} className="col-span-2 px-1 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                     <option value={0}>0%</option>
                     <option value={5}>5%</option>
                     <option value={12}>12%</option>
                     <option value={15}>15%</option>
                   </select>
                   <button onClick={() => setEditForm({ ...editForm, items: editForm.items.filter((_, i) => i !== idx) })}
-                    className="col-span-1 py-1.5 text-[10px] text-red-400 border-2 border-red-700/50 hover:bg-red-900/20" style={pf}>×</button>
+                    className="col-span-1 py-1.5 text-[12px] text-red-600 border-2 border-red-300 hover:bg-red-50" style={pf}>×</button>
                 </div>
               ))}
               {editForm.items.length === 0 && (
-                <p className="text-[9px] text-digi-muted text-center py-2" style={mf}>Sin items. Agrega al menos uno.</p>
+                <p className="text-[11px] text-digi-muted text-center py-2" style={mf}>Sin items. Agrega al menos uno.</p>
               )}
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setShowEdit(false)} disabled={editing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50" style={pf}>Cancelar</button>
+            <button onClick={() => setShowEdit(false)} disabled={editing} className="px-4 py-2 text-[11px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50" style={pf}>Cancelar</button>
             <button onClick={handleRegenerate} disabled={editing || editForm.items.length === 0 || !editForm.clientName.trim()}
-              className="px-4 py-2 text-[9px] border-2 border-yellow-700 bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/50 transition-colors disabled:opacity-50" style={pf}>
+              className="px-4 py-2 text-[11px] border-2 border-yellow-700 bg-yellow-900/30 text-amber-700 hover:bg-yellow-900/50 transition-colors disabled:opacity-50" style={pf}>
               {editing ? 'Regenerando...' : 'Regenerar y Reenviar'}
             </button>
           </div>
@@ -545,18 +551,18 @@ export default function InvoiceDetailPage() {
       {/* Resend Modal */}
       <PixelModal open={showResend} onClose={() => setShowResend(false)} title="Reenviar Factura" size="sm">
         <div className="space-y-3">
-          <p className="text-[9px] text-digi-muted" style={mf}>
+          <p className="text-[11px] text-digi-muted" style={mf}>
             Ingresa los correos separados por punto y coma (;)
           </p>
           <div>
-            <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Destinatarios</label>
+            <label className="text-[11px] text-digi-muted mb-0.5 block" style={pf}>Destinatarios</label>
             <textarea value={resendEmails} onChange={e => setResendEmails(e.target.value)} rows={3}
               placeholder="correo1@ejemplo.com; correo2@ejemplo.com"
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setShowResend(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
-            <button onClick={handleResend} disabled={sending || !resendEmails.trim()} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+            <button onClick={() => setShowResend(false)} className="px-4 py-2 text-[11px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
+            <button onClick={handleResend} disabled={sending || !resendEmails.trim()} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:pointer-events-none" style={pf}>
               {sending ? 'Enviando...' : 'Enviar'}
             </button>
           </div>

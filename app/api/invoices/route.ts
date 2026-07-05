@@ -30,9 +30,18 @@ export async function GET(req: NextRequest) {
       params
     );
 
-    return NextResponse.json({ data: rows });
+    // Per-status counts for the rail (global, ignore the status filter).
+    const { rows: countRows } = await pool.query(
+      `SELECT status, COUNT(*)::int AS n FROM gcc_world.invoices GROUP BY status`,
+    );
+    const counts: Record<string, number> = {};
+    let allCount = 0;
+    for (const r of countRows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
+    counts.all = allCount;
+
+    return NextResponse.json({ data: rows, counts });
   } catch (err: any) {
     console.error('Invoices error:', err.message);
-    return NextResponse.json({ data: [] });
+    return NextResponse.json({ data: [], counts: {} });
   }
 }

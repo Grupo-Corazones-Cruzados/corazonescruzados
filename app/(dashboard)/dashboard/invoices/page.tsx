@@ -4,21 +4,25 @@ import { Suspense, useCallback, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
+import PageHeader from '@/components/ui/PageHeader';
+import { BTN_PRIMARY } from '@/components/ui/Button';
+import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus } from 'lucide-react';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+// Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 
-const TABS = [
-  { value: 'all', label: 'Todas' },
-  { value: 'pending', label: 'Pendientes' },
-  { value: 'sent', label: 'Enviadas' },
-  { value: 'paid', label: 'Pagadas' },
-  { value: 'failed', label: 'Fallidas' },
-  { value: 'cancelled', label: 'Canceladas' },
+const STATUS_TABS = [
+  { value: 'all', label: 'Todas', Icon: Receipt },
+  { value: 'pending', label: 'Pendientes', Icon: Clock },
+  { value: 'sent', label: 'Enviadas', Icon: Send },
+  { value: 'paid', label: 'Pagadas', Icon: CheckCircle2 },
+  { value: 'failed', label: 'Fallidas', Icon: XCircle },
+  { value: 'cancelled', label: 'Canceladas', Icon: Ban },
 ];
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -29,6 +33,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const SRI_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   generated: 'default', signed: 'info', sent: 'info', authorized: 'success', rejected: 'error', error: 'error', voided: 'error',
+};
+const SRI_STATUS_LABEL: Record<string, string> = {
+  generated: 'Generada', signed: 'Firmada', sent: 'Enviada al SRI', authorized: 'Autorizada',
+  rejected: 'Rechazada', error: 'Error', voided: 'Anulada',
 };
 
 export default function InvoicesPage() {
@@ -44,6 +52,7 @@ function InvoicesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const isAdmin = user?.role === 'admin';
@@ -101,6 +110,7 @@ function InvoicesPageInner() {
       const res = await fetch(`/api/invoices?${params}`);
       const data = await res.json();
       setInvoices(data.data || []);
+      setCounts(data.counts || {});
     } catch { setInvoices([]); }
   }, [tab, search]);
 
@@ -502,31 +512,57 @@ function InvoicesPageInner() {
 
   return (
     <div>
-      <ModuleToolbar
-        tabs={TABS}
-        activeTab={tab}
-        onTabChange={setTab}
-        search={search}
-        onSearchChange={setSearch}
-        action={isAdmin ? (
-          <button onClick={openManualModal} className="pixel-btn pixel-btn-primary text-[9px]">
-            + Factura Manual
-          </button>
-        ) : undefined}
-      />
+      <PageHeader title="Facturas" description="Facturación electrónica (SRI)" />
+
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+        {/* ── Left rail: estado ── */}
+        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
+          <div className="space-y-0.5">
+            {STATUS_TABS.map((s) => {
+              const active = tab === s.value;
+              return (
+                <button key={s.value} onClick={() => setTab(s.value)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
+                    active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
+                  }`}>
+                  <s.Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
+                  <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{s.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{counts[s.value] ?? 0}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* ── Right region: command bar + tabla ── */}
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input value={search} onChange={(ev) => setSearch(ev.target.value)} placeholder="Buscar factura..."
+                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                style={mf} />
+            </div>
+            {isAdmin && (
+              <button onClick={openManualModal} className={`${BTN_PRIMARY} shrink-0`}>
+                <Plus className="w-4 h-4" /> Factura manual
+              </button>
+            )}
+          </div>
 
       <PixelDataTable
         columns={[
           { key: 'number', header: 'No. Factura', render: (i: any) => (
             <div className="flex items-center gap-1.5">
               <span className="text-digi-text">{i.invoice_number || `#${i.id}`}</span>
-              {i.is_manual && <span className="text-[6px] px-1 py-0.5 border border-purple-500/40 text-purple-400 leading-none" style={pf}>MANUAL</span>}
+              {i.is_manual && <span className="text-[10px] px-1 py-0.5 border border-accent/40 text-accent leading-none" style={pf}>MANUAL</span>}
             </div>
           ), width: '160px' },
           { key: 'client', header: 'Cliente', render: (i: any) => i.client_name_sri || i.client_name || '-' },
-          { key: 'total', header: 'Total', render: (i: any) => <span className="text-accent-glow">${Number(i.total || 0).toFixed(2)}</span> },
+          { key: 'total', header: 'Total', render: (i: any) => <span className="text-accent">${Number(i.total || 0).toFixed(2)}</span> },
           { key: 'sri', header: 'SRI', render: (i: any) => i.sri_status ? (
-            <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{i.sri_status}</PixelBadge>
+            <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
           ) : <span className="text-digi-muted">-</span> },
           { key: 'status', header: 'Estado', render: (i: any) => (
             <PixelBadge variant={STATUS_V[i.status] || 'default'}>{STATUS_LABEL[i.status] || i.status}</PixelBadge>
@@ -536,17 +572,17 @@ function InvoicesPageInner() {
             <div className="flex gap-1" onClick={e => e.stopPropagation()}>
               {i.access_key && (
                 <button onClick={() => { navigator.clipboard.writeText(i.access_key); }}
-                  className="px-1.5 py-0.5 text-[7px] border border-digi-border text-digi-muted hover:text-accent-glow hover:border-accent/30 transition-colors" style={pf}
+                  className="px-1.5 py-0.5 text-[11px] border border-digi-border text-digi-muted hover:text-accent hover:border-accent/30 transition-colors" style={pf}
                   title={`Clave: ${i.access_key}`}>Clave</button>
               )}
               {i.authorization_number && (
                 <button onClick={() => { navigator.clipboard.writeText(i.authorization_number); }}
-                  className="px-1.5 py-0.5 text-[7px] border border-digi-border text-digi-muted hover:text-accent-glow hover:border-accent/30 transition-colors" style={pf}
+                  className="px-1.5 py-0.5 text-[11px] border border-digi-border text-digi-muted hover:text-accent hover:border-accent/30 transition-colors" style={pf}
                   title={`Auth: ${i.authorization_number}`}>Auth</button>
               )}
               {i.sri_status === 'authorized' && (
                 <button onClick={() => window.open(`/api/invoices/${i.id}/pdf`, '_blank')}
-                  className="px-1.5 py-0.5 text-[7px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>PDF</button>
+                  className="px-1.5 py-0.5 text-[11px] border border-green-300 text-green-600 hover:bg-green-50 transition-colors" style={pf}>PDF</button>
               )}
             </div>
           )},
@@ -556,16 +592,18 @@ function InvoicesPageInner() {
         emptyTitle="Sin facturas"
         emptyDesc="No hay facturas registradas aun."
       />
+        </div>
+      </div>
 
       {/* Manual Invoice Modal */}
       <PixelModal open={showManual} onClose={() => !processing && setShowManual(false)} title="Factura Manual" size="lg">
         {manualStep === 'processing' ? (
           <div className="py-8 space-y-6">
             <div className="space-y-3">
-              <div className="w-full h-1.5 bg-digi-border overflow-hidden">
+              <div className="w-full h-1.5 rounded-full bg-digi-border/60 overflow-hidden">
                 <div className="h-full bg-accent animate-[progressPulse_1.5s_ease-in-out_infinite]" style={{ width: '100%' }} />
               </div>
-              <p className="text-center text-xs text-accent-glow" style={mf}>{processStep}</p>
+              <p className="text-center text-[13px] text-digi-text" style={mf}>{processStep}</p>
             </div>
             <div className="flex items-center justify-center gap-3">
               {[
@@ -575,17 +613,17 @@ function InvoicesPageInner() {
                 { label: 'Email', done: processStep === 'Proceso completado' },
               ].map((s, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <div className={`w-6 h-6 flex items-center justify-center text-[8px] border-2 transition-all ${
-                    s.done ? 'border-green-500 bg-green-900/20 text-green-400' : 'border-digi-border text-digi-muted animate-pulse'
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] border-2 transition-all ${
+                    s.done ? 'border-green-500 bg-green-50 text-green-600' : 'border-digi-border text-digi-muted animate-pulse'
                   }`} style={pf}>
                     {s.done ? '✓' : i + 1}
                   </div>
-                  <span className={`text-[8px] ${s.done ? 'text-green-400' : 'text-digi-muted'}`} style={pf}>{s.label}</span>
+                  <span className={`text-[11px] ${s.done ? 'text-green-600' : 'text-digi-muted'}`} style={pf}>{s.label}</span>
                   {i < 3 && <div className={`w-4 h-0.5 ${s.done ? 'bg-green-500' : 'bg-digi-border'}`} />}
                 </div>
               ))}
             </div>
-            <p className="text-center text-[8px] text-digi-muted" style={mf}>No cierres esta ventana hasta que el proceso termine</p>
+            <p className="text-center text-[12px] text-digi-muted" style={mf}>No cierres esta ventana hasta que el proceso termine</p>
           </div>
 
         ) : manualStep === 'type' ? (
@@ -594,13 +632,13 @@ function InvoicesPageInner() {
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => { setManualType('completo'); setManualStep('projects'); }}
                 className="p-4 border-2 border-digi-border hover:border-accent transition-colors text-left space-y-2">
-                <div className="text-[10px] text-accent-glow font-bold" style={pf}>Completo</div>
-                <p className="text-[9px] text-digi-muted" style={mf}>El cliente pago el monto total del proyecto. La factura se genera con el valor completo de los requerimientos.</p>
+                <div className="text-[10px] text-accent font-semibold" style={pf}>Completo</div>
+                <p className="text-[11px] text-digi-muted" style={mf}>El cliente pago el monto total del proyecto. La factura se genera con el valor completo de los requerimientos.</p>
               </button>
               <button onClick={() => { setManualType('con_fallo'); setManualStep('projects'); }}
                 className="p-4 border-2 border-digi-border hover:border-orange-500/50 transition-colors text-left space-y-2">
                 <div className="text-[10px] text-orange-400 font-bold" style={pf}>Con Fallo</div>
-                <p className="text-[9px] text-digi-muted" style={mf}>El cliente envio un monto inferior al total. Se aplicara un descuento proporcional en los requerimientos para igualar lo pagado.</p>
+                <p className="text-[11px] text-digi-muted" style={mf}>El cliente envio un monto inferior al total. Se aplicara un descuento proporcional en los requerimientos para igualar lo pagado.</p>
               </button>
             </div>
           </div>
@@ -608,7 +646,7 @@ function InvoicesPageInner() {
         ) : manualStep === 'projects' ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-1">
-              {manualType === 'con_fallo' && <span className="text-[8px] px-1.5 py-0.5 border border-orange-500/40 text-orange-400" style={pf}>CON FALLO</span>}
+              {manualType === 'con_fallo' && <span className="text-[11px] px-1.5 py-0.5 border border-orange-500/40 text-orange-400" style={pf}>CON FALLO</span>}
             </div>
             <p className="text-[10px] text-digi-muted" style={mf}>Busca y selecciona los proyectos a incluir en la factura manual.</p>
 
@@ -621,7 +659,7 @@ function InvoicesPageInner() {
                 className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
                 style={mf}
               />
-              {searchingProjects && <span className="absolute right-3 top-2.5 text-[8px] text-digi-muted animate-pulse" style={pf}>...</span>}
+              {searchingProjects && <span className="absolute right-3 top-2.5 text-[11px] text-digi-muted animate-pulse" style={pf}>...</span>}
 
               {/* Dropdown results */}
               {projectResults.length > 0 && (
@@ -634,8 +672,8 @@ function InvoicesPageInner() {
                         <PixelBadge variant={STATUS_V_PROJECT[p.status] || 'default'}>{STATUS_LABELS[p.status] || p.status}</PixelBadge>
                       </div>
                       <div className="flex gap-3 mt-0.5">
-                        <span className="text-[8px] text-digi-muted" style={mf}>{p.client_name || 'Sin cliente'}</span>
-                        {p.final_cost && <span className="text-[8px] text-accent-glow" style={mf}>${Number(p.final_cost).toFixed(2)}</span>}
+                        <span className="text-[11px] text-digi-muted" style={mf}>{p.client_name || 'Sin cliente'}</span>
+                        {p.final_cost && <span className="text-[11px] text-accent" style={mf}>${Number(p.final_cost).toFixed(2)}</span>}
                       </div>
                     </button>
                   ))}
@@ -646,17 +684,17 @@ function InvoicesPageInner() {
             {/* Selected projects */}
             {selectedProjects.length > 0 && (
               <div className="space-y-1.5">
-                <label className="text-[9px] text-accent-glow" style={pf}>Proyectos seleccionados ({selectedProjects.length})</label>
+                <label className="text-[11px] text-accent" style={pf}>Proyectos seleccionados ({selectedProjects.length})</label>
                 {selectedProjects.map(p => (
                   <div key={p.id} className="flex items-center justify-between px-3 py-2 border border-accent/30 bg-accent/5">
                     <div>
                       <span className="text-xs text-digi-text" style={mf}>#{p.id} — {p.title}</span>
                       <div className="flex gap-3 mt-0.5">
                         <PixelBadge variant={STATUS_V_PROJECT[p.status] || 'default'}>{STATUS_LABELS[p.status] || p.status}</PixelBadge>
-                        {p.final_cost && <span className="text-[8px] text-accent-glow" style={mf}>${Number(p.final_cost).toFixed(2)}</span>}
+                        {p.final_cost && <span className="text-[11px] text-accent" style={mf}>${Number(p.final_cost).toFixed(2)}</span>}
                       </div>
                     </div>
-                    <button onClick={() => removeProject(p.id)} className="text-red-400/60 hover:text-red-400 text-[8px] px-2 py-1 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>Quitar</button>
+                    <button onClick={() => removeProject(p.id)} className="text-red-600/60 hover:text-red-600 text-[11px] px-2 py-1 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>Quitar</button>
                   </div>
                 ))}
               </div>
@@ -664,9 +702,9 @@ function InvoicesPageInner() {
 
             {/* Next button */}
             <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
-              <button onClick={() => setManualStep('type')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Atras</button>
+              <button onClick={() => setManualStep('type')} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Atras</button>
               <button onClick={goToForm} disabled={selectedProjects.length === 0}
-                className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
                 Siguiente
               </button>
             </div>
@@ -679,12 +717,12 @@ function InvoicesPageInner() {
               {/* LEFT: Adquirente + Pago */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between border-b border-digi-border pb-1">
-                  <h4 className="text-[9px] text-accent-glow" style={pf}>Adquirente</h4>
+                  <h4 className="text-[11px] text-accent" style={pf}>Adquirente</h4>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => setHistoryOpen(o => !o)}
-                      className="text-[8px] px-2 py-0.5 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors"
+                      className="text-[11px] px-2 py-0.5 rounded border border-accent/40 text-accent hover:bg-accent-light transition-colors"
                       style={pf}
                     >
                       {historyOpen ? 'Cerrar' : `Cliente previo${clientHistory.length ? ` (${clientHistory.length})` : ''}`}
@@ -692,7 +730,7 @@ function InvoicesPageInner() {
                     <button
                       type="button"
                       onClick={clearClientFields}
-                      className="text-[8px] px-2 py-0.5 border border-digi-border text-digi-muted hover:text-digi-text transition-colors"
+                      className="text-[11px] px-2 py-0.5 border border-digi-border text-digi-muted hover:text-digi-text transition-colors"
                       style={pf}
                       title="Limpiar campos"
                     >
@@ -702,18 +740,18 @@ function InvoicesPageInner() {
                 </div>
 
                 {historyOpen && (
-                  <div className="border border-digi-border bg-digi-darker p-2 space-y-2">
+                  <div className="border border-digi-border rounded-lg bg-digi-darker p-2 space-y-2">
                     <input
                       autoFocus
                       value={historySearch}
                       onChange={e => setHistorySearch(e.target.value)}
                       placeholder="Buscar por nombre o RUC..."
-                      className="w-full px-2 py-1 bg-digi-dark border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none"
+                      className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none"
                       style={mf}
                     />
                     <div className="max-h-40 overflow-y-auto border border-digi-border/50">
                       {filteredHistory.length === 0 ? (
-                        <div className="px-2 py-3 text-center text-[9px] text-digi-muted" style={pf}>
+                        <div className="px-2 py-3 text-center text-[12px] text-digi-muted" style={pf}>
                           {clientHistory.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}
                         </div>
                       ) : (
@@ -724,8 +762,8 @@ function InvoicesPageInner() {
                             onClick={() => applyPastClient(c)}
                             className="w-full text-left px-2 py-1.5 border-b border-digi-border/30 last:border-b-0 hover:bg-accent/10 transition-colors"
                           >
-                            <div className="text-[10px] text-digi-text truncate" style={mf}>{c.client_name}</div>
-                            <div className="text-[8px] text-digi-muted flex gap-2" style={mf}>
+                            <div className="text-[12px] text-digi-text truncate" style={mf}>{c.client_name}</div>
+                            <div className="text-[11px] text-digi-muted flex gap-2" style={mf}>
                               <span>{c.client_ruc}</span>
                               {c.client_email && <span className="truncate">· {c.client_email}</span>}
                             </div>
@@ -733,7 +771,7 @@ function InvoicesPageInner() {
                         ))
                       )}
                     </div>
-                    <div className="text-[8px] text-digi-muted" style={pf}>
+                    <div className="text-[11px] text-digi-muted" style={pf}>
                       Elige uno para rellenar los campos, o cierra y llena manualmente.
                     </div>
                   </div>
@@ -741,51 +779,51 @@ function InvoicesPageInner() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tipo ID <span className="text-red-400">*</span></label>
+                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tipo ID <span className="text-red-600">*</span></label>
                     <select value={mIdType} onChange={e => {
                       const t = e.target.value;
                       setMIdType(t);
                       if (t === '07') { setMClientRuc('9999999999999'); setMClientName('CONSUMIDOR FINAL'); }
                       else { if (mClientRuc === '9999999999999') setMClientRuc(''); if (mClientName === 'CONSUMIDOR FINAL') setMClientName(''); }
-                    }} className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                    }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                       <option value="04">RUC</option><option value="05">Cedula</option><option value="06">Pasaporte</option><option value="07">Consumidor Final</option><option value="08">ID Exterior</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Identificacion <span className="text-red-400">*</span></label>
+                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Identificacion <span className="text-red-600">*</span></label>
                     <input value={mClientRuc} onChange={e => setMClientRuc(e.target.value)} disabled={mIdType === '07'}
                       placeholder={mIdType === '04' ? '0900000000001' : '0900000000'} maxLength={mIdType === '04' ? 13 : mIdType === '05' ? 10 : 20}
-                      className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-                    {mIdType === '04' && mClientRuc && mClientRuc.length !== 13 && <p className="text-[7px] text-red-400" style={mf}>13 digitos</p>}
-                    {mIdType === '05' && mClientRuc && mClientRuc.length !== 10 && <p className="text-[7px] text-red-400" style={mf}>10 digitos</p>}
+                      className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                    {mIdType === '04' && mClientRuc && mClientRuc.length !== 13 && <p className="text-[11px] text-red-600" style={mf}>13 digitos</p>}
+                    {mIdType === '05' && mClientRuc && mClientRuc.length !== 10 && <p className="text-[11px] text-red-600" style={mf}>10 digitos</p>}
                   </div>
                 </div>
                 <div>
-                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Razon Social <span className="text-red-400">*</span></label>
+                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Razon Social <span className="text-red-600">*</span></label>
                   <input value={mClientName} onChange={e => setMClientName(e.target.value)} disabled={mIdType === '07'}
-                    className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
                 </div>
                 <div>
-                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Direccion <span className="text-red-400">*</span></label>
+                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Direccion <span className="text-red-600">*</span></label>
                   <input value={mClientAddress} onChange={e => setMClientAddress(e.target.value)} placeholder="Direccion"
-                    className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Email {mIdType !== '07' && <span className="text-red-400">*</span>}</label>
+                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Email {mIdType !== '07' && <span className="text-red-600">*</span>}</label>
                     <input value={mClientEmail} onChange={e => setMClientEmail(e.target.value)} type="email" placeholder="correo@ejemplo.com"
-                      className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                   </div>
                   <div>
-                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Telefono</label>
+                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Telefono</label>
                     <input value={mClientPhone} onChange={e => setMClientPhone(e.target.value)} placeholder="0999999999"
-                      className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                   </div>
                 </div>
 
-                <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Forma de Pago</h4>
+                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Forma de Pago</h4>
                 <select value={mPaymentCode} onChange={e => setMPaymentCode(e.target.value)}
-                  className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                  className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                   <option value="01">Sin utilizacion del sistema financiero</option>
                   <option value="15">Compensacion de deudas</option>
                   <option value="16">Tarjeta de debito</option>
@@ -796,30 +834,30 @@ function InvoicesPageInner() {
                   <option value="21">Endoso de titulos</option>
                 </select>
 
-                <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Moneda</h4>
+                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Moneda</h4>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Moneda de la factura</label>
+                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Moneda de la factura</label>
                     <select value={mCurrency} onChange={e => {
                       const code = e.target.value;
                       setMCurrency(code);
                       const c = currencies.find(c => c.code === code);
                       setMExchangeRate(c ? String(c.rate) : '1');
-                    }} className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                    }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                       {currencies.map(c => (
                         <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tasa (1 USD = ?)</label>
+                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tasa (1 USD = ?)</label>
                     <input value={mExchangeRate} onChange={e => setMExchangeRate(e.target.value)}
                       type="number" min="0.0001" step="0.0001" disabled={mCurrency === 'USD'}
-                      className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                      className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
                   </div>
                 </div>
                 {mCurrency !== 'USD' && (
-                  <div className="px-2 py-1.5 border border-purple-500/30 bg-purple-900/10 text-[9px] text-purple-300 mt-1" style={mf}>
+                  <div className="px-2 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent mt-1" style={mf}>
                     Equivalente para el cliente: {(() => {
                       const t = mItems.reduce((s, it) => {
                         const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
@@ -832,27 +870,27 @@ function InvoicesPageInner() {
                   </div>
                 )}
 
-                <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Campos Adicionales</h4>
+                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Campos Adicionales</h4>
                 <div className="space-y-1">
                   {mAdditionalFields.map((f, i) => (
                     <div key={i} className="flex gap-1">
                       <input value={f.name} onChange={e => { const n = [...mAdditionalFields]; n[i] = { ...n[i], name: e.target.value }; setMAdditionalFields(n); }}
-                        placeholder="Nombre" className="w-1/3 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                        placeholder="Nombre" className="w-1/3 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                       <input value={f.value} onChange={e => { const n = [...mAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setMAdditionalFields(n); }}
-                        placeholder="Descripcion" className="flex-1 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                        placeholder="Descripcion" className="flex-1 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                       <button onClick={() => setMAdditionalFields(prev => prev.filter((_, idx) => idx !== i))}
-                        className="text-red-400/60 hover:text-red-400 text-[8px] px-1" style={pf}>X</button>
+                        className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
                     </div>
                   ))}
                   <button onClick={() => setMAdditionalFields(prev => [...prev, { name: '', value: '' }])}
-                    className="text-[8px] text-digi-muted border border-digi-border px-2 py-0.5 hover:text-accent-glow hover:border-accent/30 transition-colors" style={pf}>+ Campo adicional</button>
+                    className="text-[12px] text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={pf}>+ Campo adicional</button>
                 </div>
 
                 {/* Selected projects summary */}
-                <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Proyectos ({selectedProjects.length})</h4>
+                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Proyectos ({selectedProjects.length})</h4>
                 <div className="space-y-1">
                   {selectedProjects.map(p => (
-                    <div key={p.id} className="text-[9px] text-digi-muted px-2 py-1 border border-digi-border/30" style={mf}>
+                    <div key={p.id} className="text-[11px] text-digi-muted px-2 py-1 border border-digi-border/30" style={mf}>
                       #{p.id} — {p.title}
                     </div>
                   ))}
@@ -861,45 +899,45 @@ function InvoicesPageInner() {
 
               {/* RIGHT: Detalle + Totales */}
               <div className="space-y-2">
-                <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1" style={pf}>Detalle</h4>
+                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Detalle</h4>
                 <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
                   {mItems.map((item, i) => (
-                    <div key={i} className="border border-digi-border/50 p-1.5">
+                    <div key={i} className="border border-digi-border rounded-lg p-2">
                       <div className="flex gap-1 mb-1">
                         <input value={item.description} onChange={e => { const n = [...mItems]; n[i] = { ...n[i], description: e.target.value }; setMItems(n); }}
                           placeholder="Descripcion" className="flex-1 px-2 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                         <button onClick={() => setMItems(prev => prev.filter((_, idx) => idx !== i))}
-                          className="text-red-400/60 hover:text-red-400 text-[7px] px-1" style={pf}>X</button>
+                          className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
                       </div>
                       <div className="grid grid-cols-4 gap-1">
                         <div>
-                          <label className="text-[7px] text-digi-muted" style={pf}>Cant.</label>
+                          <label className="text-[11px] text-digi-muted" style={pf}>Cant.</label>
                           <input value={item.quantity} onChange={e => { const n = [...mItems]; n[i] = { ...n[i], quantity: e.target.value }; setMItems(n); }}
-                            type="number" min="0.01" step="0.01" className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                            type="number" min="0.01" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                         </div>
                         <div>
-                          <label className="text-[7px] text-digi-muted" style={pf}>P.Unit.</label>
+                          <label className="text-[11px] text-digi-muted" style={pf}>P.Unit.</label>
                           <input value={item.unitPrice} onChange={e => { const n = [...mItems]; n[i] = { ...n[i], unitPrice: e.target.value }; setMItems(n); }}
-                            type="number" min="0" step="0.01" className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                            type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                         </div>
                         <div>
-                          <label className="text-[7px] text-digi-muted" style={pf}>IVA</label>
+                          <label className="text-[11px] text-digi-muted" style={pf}>IVA</label>
                           <select value={item.ivaRate} onChange={e => { const n = [...mItems]; n[i] = { ...n[i], ivaRate: e.target.value }; setMItems(n); }}
-                            className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                            className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                             <option value="0">0%</option><option value="5">5%</option><option value="15">15%</option>
                           </select>
                         </div>
                         <div>
-                          <label className="text-[7px] text-digi-muted" style={pf}>Desc.</label>
+                          <label className="text-[11px] text-digi-muted" style={pf}>Desc.</label>
                           <input value={item.discount} onChange={e => { const n = [...mItems]; n[i] = { ...n[i], discount: e.target.value }; setMItems(n); }}
-                            type="number" min="0" step="0.01" className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                            type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
                 <button onClick={() => setMItems(prev => [...prev, { description: '', quantity: '1', unitPrice: '0', ivaRate: '0', discount: '0' }])}
-                  className="text-[8px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>+ Item</button>
+                  className="inline-flex items-center gap-1 text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors" style={pf}>+ Item</button>
 
                 {/* Totales */}
                 {(() => {
@@ -916,13 +954,13 @@ function InvoicesPageInner() {
                     return s + base * ((Number(it.ivaRate) || 0) / 100);
                   }, 0);
                   return (
-                    <div className="border-2 border-digi-border p-2 text-[9px] space-y-0.5" style={mf}>
+                    <div className="border border-digi-border rounded-lg p-3 text-[12px] space-y-1" style={mf}>
                       {Object.entries(ivaByRate).map(([rate, base]) => (
                         <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${base.toFixed(2)}</span></div>
                       ))}
                       {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${totalDiscount.toFixed(2)}</span></div>}
                       {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${totalIva.toFixed(2)}</span></div>}
-                      <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent-glow font-bold">Total:</span><span className="text-accent-glow font-bold">${(subtotal + totalIva).toFixed(2)}</span></div>
+                      <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent font-semibold">Total:</span><span className="text-accent font-semibold">${(subtotal + totalIva).toFixed(2)}</span></div>
                     </div>
                   );
                 })()}
@@ -930,25 +968,25 @@ function InvoicesPageInner() {
             </div>
 
             {/* Footer */}
-            <div className="pt-3 mt-3 border-t-2 border-digi-border space-y-2">
+            <div className="pt-3 mt-3 border-t border-digi-border space-y-2">
               {consumidorFinalOver50 && (
-                <div className="px-3 py-2 border border-red-700/50 bg-red-900/10 text-[9px] text-red-400" style={mf}>
+                <div className="px-3 py-2 border border-red-300 rounded bg-red-50 text-[12px] text-red-600" style={mf}>
                   El SRI requiere identificar al cliente (RUC o Cedula) en facturas mayores a $50.00. El total actual es ${invoiceTotal.toFixed(2)}. Cambia el tipo de identificacion.
                 </div>
               )}
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={mSendEmail} onChange={e => setMSendEmail(e.target.checked)} className="accent-[#4B2D8E]" />
-                  <span className="text-[9px] text-digi-muted" style={mf}>Enviar por correo</span>
+                  <span className="text-[12px] text-digi-muted" style={mf}>Enviar por correo</span>
                 </label>
                 <div className="flex gap-2">
-                  <button onClick={() => setManualStep('projects')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Atras</button>
+                  <button onClick={() => setManualStep('projects')} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Atras</button>
                   {manualType === 'con_fallo' ? (
-                    <button onClick={() => setManualStep('paid')} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                    <button onClick={() => setManualStep('paid')} disabled={!isFormValid} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
                       Siguiente
                     </button>
                   ) : (
-                    <button onClick={handleManualSubmit} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                    <button onClick={handleManualSubmit} disabled={!isFormValid} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
                       Generar Factura
                     </button>
                   )}
@@ -961,26 +999,26 @@ function InvoicesPageInner() {
           /* Paid amount step (con fallo) */
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[8px] px-1.5 py-0.5 border border-orange-500/40 text-orange-400" style={pf}>CON FALLO</span>
+              <span className="text-[11px] px-1.5 py-0.5 border border-orange-500/40 text-orange-400" style={pf}>CON FALLO</span>
             </div>
             <p className="text-[10px] text-digi-muted" style={mf}>Ingresa el monto que el cliente envio (en USD). El descuento se distribuira proporcionalmente entre los requerimientos.</p>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div>
-                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Total real de requerimientos (USD)</label>
+                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Total real de requerimientos (USD)</label>
                   <div className="px-3 py-2 bg-digi-darker border border-digi-border text-xs text-digi-text" style={mf}>
                     ${itemsTotalUsd.toFixed(2)}
                   </div>
                 </div>
                 <div>
-                  <label className="text-[8px] text-accent-glow mb-0.5 block" style={pf}>Monto pagado por el cliente (USD) <span className="text-red-400">*</span></label>
+                  <label className="text-[11px] text-accent mb-0.5 block" style={pf}>Monto pagado por el cliente (USD) <span className="text-red-600">*</span></label>
                   <input value={mPaidAmount} onChange={e => setMPaidAmount(e.target.value)}
                     type="number" min="0.01" step="0.01" placeholder="0.00"
                     className="w-full px-3 py-2 bg-digi-darker border-2 border-accent/50 text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
                 </div>
                 {mCurrency !== 'USD' && Number(mPaidAmount) > 0 && (
-                  <div className="px-2 py-1.5 border border-purple-500/30 bg-purple-900/10 text-[9px] text-purple-300" style={mf}>
+                  <div className="px-2 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent" style={mf}>
                     En {mCurrency}: {currencies.find(c => c.code === mCurrency)?.symbol || ''}{(Number(mPaidAmount) * (Number(mExchangeRate) || 1)).toFixed(2)}
                   </div>
                 )}
@@ -990,22 +1028,22 @@ function InvoicesPageInner() {
                 {Number(mPaidAmount) > 0 && Number(mPaidAmount) < itemsTotalUsd && (
                   <>
                     <div>
-                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Descuento total a aplicar (USD)</label>
-                      <div className="px-3 py-2 bg-red-900/10 border border-red-500/30 text-xs text-red-400 font-bold" style={mf}>
+                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Descuento total a aplicar (USD)</label>
+                      <div className="px-3 py-2 bg-red-50 border border-red-300 text-xs text-red-600 font-bold" style={mf}>
                         -${(itemsTotalUsd - Number(mPaidAmount)).toFixed(2)}
                       </div>
                     </div>
                     <div>
-                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Distribucion por item</label>
+                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Distribucion por item</label>
                       <div className="space-y-1 max-h-40 overflow-y-auto">
                         {mItems.map((it, i) => {
                           const itemBase = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
                           const weight = itemsTotalUsd > 0 ? itemBase / itemsTotalUsd : 0;
                           const itemDiscount = Math.round((itemsTotalUsd - Number(mPaidAmount)) * weight * 100) / 100;
                           return (
-                            <div key={i} className="flex justify-between text-[8px] px-2 py-1 border border-digi-border/30" style={mf}>
+                            <div key={i} className="flex justify-between text-[11px] px-2 py-1 border border-digi-border/30" style={mf}>
                               <span className="text-digi-muted truncate max-w-[60%]">{it.description || `Item ${i + 1}`}</span>
-                              <span className="text-red-400">-${itemDiscount.toFixed(2)}</span>
+                              <span className="text-red-600">-${itemDiscount.toFixed(2)}</span>
                             </div>
                           );
                         })}
@@ -1014,7 +1052,7 @@ function InvoicesPageInner() {
                   </>
                 )}
                 {Number(mPaidAmount) > 0 && Number(mPaidAmount) >= itemsTotalUsd && (
-                  <div className="px-3 py-2 border border-yellow-500/30 bg-yellow-900/10 text-[9px] text-yellow-400" style={mf}>
+                  <div className="px-3 py-2 border border-amber-300 bg-amber-50 text-[11px] text-amber-700" style={mf}>
                     El monto pagado es igual o mayor al total. No se aplicara descuento. Usa el tipo "Completo" en su lugar.
                   </div>
                 )}
@@ -1022,10 +1060,10 @@ function InvoicesPageInner() {
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-digi-border">
-              <button onClick={() => setManualStep('form')} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Atras</button>
+              <button onClick={() => setManualStep('form')} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Atras</button>
               <button onClick={applyDiscountsAndSubmit}
                 disabled={!Number(mPaidAmount) || Number(mPaidAmount) <= 0 || Number(mPaidAmount) >= itemsTotalUsd}
-                className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
                 Generar Factura con Descuento
               </button>
             </div>

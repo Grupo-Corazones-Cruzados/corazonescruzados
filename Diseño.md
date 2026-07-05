@@ -171,6 +171,13 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   facturado movido a una línea bajo la tabla (se quitó la barra fija inferior). Modal de creación a
   campos `field-control`/`labelCls`.
 
+- **Facturas** (`invoices/page.tsx` + `invoices/[id]/page.tsx`, 2026-07-05) — lista = **rail (estado:
+  Todas/Pendientes/Enviadas/Pagadas/Fallidas/Canceladas, iconos `Receipt/Clock/Send/CheckCircle2/
+  XCircle/Ban`) + tabla**, con conteos del API (`GET /api/invoices` devuelve `counts` global por estado);
+  estado SRI y de factura en español; el **modal Factura Manual (SRI)** de-pixelado (mismos patrones que
+  tickets). Detalle: documento (breadcrumb + título + badges + tabla de ítems + sidebar), de-pixelado
+  (pf→body, tamaños ≥11px, colores corp, SRI en español). Es un documento → sin rail.
+
 **Botón estándar del dashboard:** `components/ui/Button.tsx` — `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER`
 (clases componibles) y `<Button variant icon>`. Es la fuente única del botón Fluent; reusar en todos
 los módulos (evita `pixel-btn` ad-hoc en el header de detalle).
