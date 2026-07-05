@@ -410,9 +410,9 @@ export default function CentralizedPage() {
     <div>
       <PageHeader title="Proyecto Centralizado" description="Modelo 4P — sistemas fundamentales del grupo" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_300px] gap-4 items-start">
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: Pisos ── */}
-        <aside className="bg-digi-card border border-digi-border rounded-lg p-2 lg:sticky lg:top-4 self-start">
+        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
           <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estructura 4P</p>
           <div className="space-y-0.5">
             <RailItem active={scopePiso === 'all'} Icon={Layers} label="Todos los sistemas"
@@ -426,8 +426,8 @@ export default function CentralizedPage() {
           </div>
         </aside>
 
-        {/* ── Center: command bar + list ── */}
-        <div className="min-w-0">
+        {/* ── Right region: command bar + (list · detail) ── */}
+        <div className="flex-1 min-w-0 w-full">
           {/* Command bar */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
             <div className="relative flex-1 min-w-0">
@@ -443,7 +443,7 @@ export default function CentralizedPage() {
             <select
               value={pasoFilter}
               onChange={(e) => setPasoFilter(e.target.value)}
-              className="field-control field-select px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none sm:w-48"
+              className="field-control field-select appearance-none px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none sm:w-48"
               style={mf}
             >
               <option value="">Todos los pasos</option>
@@ -458,8 +458,10 @@ export default function CentralizedPage() {
             )}
           </div>
 
-          {/* Systems list */}
-          <PixelDataTable
+          {/* list · detail */}
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+            <div className="min-w-0">
+            <PixelDataTable
             data={visibleSystems}
             onRowClick={(s: any) => setSelected(s)}
             emptyTitle="Sin sistemas"
@@ -492,10 +494,10 @@ export default function CentralizedPage() {
               ) },
             ]}
           />
-        </div>
+            </div>
 
-        {/* ── Right: detail panel ── */}
-        <aside className="lg:sticky lg:top-4 self-start">
+            {/* ── Detail panel ── */}
+            <aside className="w-full xl:w-[300px]">
           {selected ? (
             <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
               <div className="flex items-start gap-3 p-4 border-b border-digi-border">
@@ -567,7 +569,9 @@ export default function CentralizedPage() {
               <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un sistema para ver sus detalles y acciones.</p>
             </div>
           )}
-        </aside>
+            </aside>
+          </div>
+        </div>
       </div>
 
       {renderModals()}
