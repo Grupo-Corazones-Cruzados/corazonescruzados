@@ -9,7 +9,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import ImageGallery from '@/components/ui/ImageGallery';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { FolderKanban, Package, Workflow, Plus, Pencil, Trash2, UploadCloud, X, ChevronLeft, Image as ImageIcon } from 'lucide-react';
 
@@ -36,6 +36,7 @@ export default function PortfolioPage() {
   // Right detail panel
   const [selected, setSelected] = useState<any>(null);
   const [panelImages, setPanelImages] = useState<string[]>([]);
+  const [panelImgLoading, setPanelImgLoading] = useState(false);
 
   // Gallery modal
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -58,7 +59,20 @@ export default function PortfolioPage() {
   const imageCount = (item: any) => (item.images?.length > 0 ? item.images.length : item.image_url ? 1 : 0);
   const imagesOf = (item: any): string[] => (item.images?.length ? item.images : item.image_url ? [item.image_url] : []);
 
-  const selectItem = (item: any) => { setSelected(item); setPanelImages(imagesOf(item)); };
+  const selectItem = async (item: any) => {
+    setSelected(item); setPanelImages([]);
+    if (item.__team) {
+      // Proyectos del equipo: el listado solo trae cover/count; se cargan las imágenes aquí.
+      if (item.image_count) {
+        setPanelImgLoading(true);
+        try { const res = await fetch(`/api/marketplace/projects/${item.id}`); const d = await res.json(); setPanelImages(d?.data?.images || (item.cover_image ? [item.cover_image] : [])); }
+        catch { setPanelImages(item.cover_image ? [item.cover_image] : []); }
+        finally { setPanelImgLoading(false); }
+      } else setPanelImages(item.cover_image ? [item.cover_image] : []);
+      return;
+    }
+    setPanelImages(imagesOf(item));
+  };
 
   const openCreate = () => { setEditingItem(null); setForm(emptyForm); setModal(true); };
   const openEdit = (item: any) => {
@@ -76,6 +90,17 @@ export default function PortfolioPage() {
     const clean = (imgs || []).filter(Boolean);
     if (!clean.length) { toast.info('Este registro no tiene imágenes'); return; }
     setGalleryImages(clean); setGalleryTitle(title); setGalleryOpen(true);
+  };
+
+  const openCardGallery = async (item: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (item.__team) {
+      if (!item.image_count) { toast.info('Este proyecto no tiene imágenes'); return; }
+      try { const res = await fetch(`/api/marketplace/projects/${item.id}`); const d = await res.json(); openGalleryFor(d?.data?.images || (item.cover_image ? [item.cover_image] : []), item.title); }
+      catch { toast.error('No se pudieron cargar las imágenes'); }
+      return;
+    }
+    openGalleryFor(imagesOf(item), item.title);
   };
 
   const fileToBase64 = (file: File): Promise<string> =>
@@ -154,7 +179,14 @@ export default function PortfolioPage() {
 
   const tabMeta = TABS.find((t) => t.value === tab)!;
   const tabLabel = tabMeta.label.replace(/s$/, '');
-  const filtered = items.filter((i: any) => !search || i.title?.toLowerCase().includes(search.toLowerCase()));
+  const q = search.toLowerCase();
+  const ownFiltered = items.filter((i: any) => !search || i.title?.toLowerCase().includes(q));
+  // En "Proyectos" se muestran también los proyectos existentes del equipo (Marketplace),
+  // fusionados en el mismo grid y seleccionables.
+  const teamCards = (tab === 'project' ? teamProjects : [])
+    .filter((p: any) => !search || p.title?.toLowerCase().includes(q))
+    .map((p: any) => ({ ...p, __team: true, price: p.final_cost }));
+  const displayItems = [...ownFiltered, ...teamCards];
 
   if (!user?.member_id) {
     return (
@@ -168,8 +200,9 @@ export default function PortfolioPage() {
 
   /* ── Card (idéntica a Marketplace) ── */
   const renderCard = (item: any) => {
-    const img = firstImage(item); const count = imageCount(item);
-    const active = selected?.id === item.id && !selected?.__team;
+    const img = firstImage(item);
+    const count = item.__team ? (item.image_count || 0) : imageCount(item);
+    const active = selected?.id === item.id && !!selected?.__team === !!item.__team;
     const tags: string[] = Array.isArray(item.tags) ? item.tags : [];
     return (
       <div key={item.id} onClick={() => selectItem(item)}
@@ -183,7 +216,7 @@ export default function PortfolioPage() {
           )}
           <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-digi-card/85 text-digi-muted text-[10px] font-medium backdrop-blur-sm">{tabLabel}</span>
           {count > 0 && (
-            <button onClick={(e) => { e.stopPropagation(); openGalleryFor(imagesOf(item), item.title); }} title={`Ver ${count} foto(s)`}
+            <button onClick={(e) => openCardGallery(item, e)} title={`Ver ${count} foto(s)`}
               className="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/45 text-white text-[11px] backdrop-blur-sm hover:bg-black/65 transition-colors"><ImageIcon className="w-3 h-3" /> {count}</button>
           )}
         </div>
@@ -194,33 +227,7 @@ export default function PortfolioPage() {
           </div>
           {item.description && <p className="text-[12px] text-digi-muted mt-1 line-clamp-2 leading-relaxed" style={mf}>{item.description}</p>}
           {tags.length > 0 && <div className="flex flex-wrap gap-1 mt-2">{tags.slice(0, 3).map((t) => <PixelBadge key={t}>{t}</PixelBadge>)}</div>}
-          <button onClick={(e) => { e.stopPropagation(); openEdit(item); }} className={`${BTN_PRIMARY} w-full mt-3`}><Pencil className="w-3.5 h-3.5" /> Editar</button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderTeamCard = (p: any) => {
-    const img = firstImage(p); const count = p.images?.length || 0;
-    return (
-      <div key={p.id} className="flex flex-col bg-digi-card border border-digi-border rounded-xl overflow-hidden shadow-sm">
-        <div className="relative aspect-[16/9] bg-digi-darker overflow-hidden">
-          {img ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={img} alt={p.title} className="w-full h-full object-cover" />
-          ) : <div className="w-full h-full flex items-center justify-center"><FolderKanban className="w-9 h-9 text-digi-muted/30" /></div>}
-          <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-digi-card/85 text-digi-muted text-[10px] font-medium backdrop-blur-sm">Equipo</span>
-          {count > 0 && (
-            <button onClick={(e) => { e.stopPropagation(); openGalleryFor(p.images, p.title); }}
-              className="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/45 text-white text-[11px] backdrop-blur-sm hover:bg-black/65 transition-colors"><ImageIcon className="w-3 h-3" /> {count}</button>
-          )}
-        </div>
-        <div className="p-3 flex flex-col flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-[13.5px] font-semibold text-digi-text leading-snug line-clamp-2 flex-1" style={mf}>{p.title}</h3>
-            <span className="text-[15px] font-bold text-accent tabular-nums shrink-0" style={mf}>${fmt2(Number(p.final_cost || 0))}</span>
-          </div>
-          <button onClick={() => openTeamEdit(p)} className={`${BTN_SECONDARY} w-full mt-3`}><Pencil className="w-3.5 h-3.5" /> Editar</button>
+          <button onClick={(e) => { e.stopPropagation(); item.__team ? openTeamEdit(item) : openEdit(item); }} className={`${BTN_PRIMARY} w-full mt-3`}><Pencil className="w-3.5 h-3.5" /> Editar</button>
         </div>
       </div>
     );
@@ -250,7 +257,7 @@ export default function PortfolioPage() {
           <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-4 space-y-3">
-          <ImageGallery key={t.id} images={panelImages} alt={t.title} onOpen={() => openGalleryFor(panelImages, t.title)} />
+          <ImageGallery key={`${t.__team ? 't' : 'o'}-${t.id}`} images={panelImages} loading={panelImgLoading} alt={t.title} onOpen={() => openGalleryFor(panelImages, t.title)} />
           {t.description && <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{t.description}</p>}
           <dl className="space-y-2">
             {rows.map(([k, v], i) => (
@@ -258,8 +265,8 @@ export default function PortfolioPage() {
             ))}
           </dl>
           <div className="flex items-center gap-2 pt-1">
-            <button onClick={() => openEdit(t)} className={`${BTN_PRIMARY} flex-1`}><Pencil className="w-3.5 h-3.5" /> Editar</button>
-            <button onClick={() => handleDelete(t.id)} title="Eliminar" className="w-9 h-9 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors shrink-0"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => (t.__team ? openTeamEdit(t) : openEdit(t))} className={`${BTN_PRIMARY} flex-1`}><Pencil className="w-3.5 h-3.5" /> Editar</button>
+            {!t.__team && <button onClick={() => handleDelete(t.id)} title="Eliminar" className="w-9 h-9 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors shrink-0"><Trash2 className="w-4 h-4" /></button>}
           </div>
         </div>
       </div>
@@ -323,21 +330,14 @@ export default function PortfolioPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
             <div className="min-w-0">
-              {filtered.length === 0 ? (
+              {displayItems.length === 0 ? (
                 <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
                   <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-3"><tabMeta.Icon className="w-6 h-6 text-digi-muted" /></div>
                   <p className="text-sm font-medium text-digi-text" style={mf}>Sin {tabMeta.label.toLowerCase()}</p>
                   <p className="text-[13px] text-digi-muted mt-1" style={mf}>Agrega tu primer registro con “Nuevo”.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{filtered.map(renderCard)}</div>
-              )}
-
-              {tab === 'project' && teamProjects.length > 0 && (
-                <div className="mt-8">
-                  <h2 className="text-[13px] font-semibold text-digi-text mb-3" style={mf}>Proyectos del equipo (Marketplace)</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{teamProjects.map(renderTeamCard)}</div>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{displayItems.map(renderCard)}</div>
               )}
             </div>
 
