@@ -38,6 +38,11 @@ export default function PortfolioPage() {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [galleryTitle, setGalleryTitle] = useState('');
 
+  // Right detail panel
+  const [selected, setSelected] = useState<any>(null);
+  const [panelImages, setPanelImages] = useState<string[]>([]);
+  const [panelImgLoading, setPanelImgLoading] = useState(false);
+
   const fetchItems = useCallback(async () => {
     if (!user?.member_id) return;
     try {
@@ -48,9 +53,24 @@ export default function PortfolioPage() {
   }, [user?.member_id, tab]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => { setSelected(null); setPanelImages([]); }, [tab]);
 
   const imageCount = (item: any) => (item.images?.length > 0 ? item.images.length : item.image_url ? 1 : 0);
   const imagesOf = (item: any): string[] => (item.images?.length ? item.images : item.image_url ? [item.image_url] : []);
+
+  const selectItem = async (item: any) => {
+    setSelected(item); setPanelImages([]);
+    if (item.__team) {
+      if (item.image_count) {
+        setPanelImgLoading(true);
+        try { const res = await fetch(`/api/marketplace/projects/${item.id}`); const d = await res.json(); setPanelImages(d?.data?.images || (item.cover_image ? [item.cover_image] : [])); }
+        catch { setPanelImages(item.cover_image ? [item.cover_image] : []); }
+        finally { setPanelImgLoading(false); }
+      } else setPanelImages(item.cover_image ? [item.cover_image] : []);
+      return;
+    }
+    setPanelImages(imagesOf(item));
+  };
 
   const openCreate = () => { setEditingItem(null); setForm(emptyForm); setModal(true); };
   const openEdit = (item: any) => {
@@ -113,8 +133,12 @@ export default function PortfolioPage() {
 
   const handleDelete = async (id: number) => {
     if (!user?.member_id) return;
-    try { await fetch(`/api/members/${user.member_id}/portfolio/${id}`, { method: 'DELETE' }); toast.success('Eliminado'); fetchItems(); }
-    catch { toast.error('Error al eliminar'); }
+    try {
+      await fetch(`/api/members/${user.member_id}/portfolio/${id}`, { method: 'DELETE' });
+      toast.success('Eliminado');
+      if (selected?.id === id && !selected?.__team) { setSelected(null); setPanelImages([]); }
+      fetchItems();
+    } catch { toast.error('Error al eliminar'); }
   };
 
   // --- Team projects (marketplace published) ---
@@ -158,6 +182,45 @@ export default function PortfolioPage() {
     .filter((p: any) => !search || p.title?.toLowerCase().includes(q))
     .map((p: any) => ({ ...p, __team: true, price: p.final_cost }));
   const rows = [...ownFiltered, ...teamRows];
+
+  const renderPanel = () => {
+    if (!selected) {
+      return (
+        <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+          <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2"><tabMeta.Icon className="w-5 h-5 text-digi-muted" /></div>
+          <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un elemento para ver sus detalles e imágenes.</p>
+        </div>
+      );
+    }
+    const t = selected;
+    const detailRows: [string, React.ReactNode][] = [['Precio', <span key="p" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(Number(t.price || 0))}</span>]];
+    if (Array.isArray(t.tags) && t.tags.length) detailRows.push(['Tags', t.tags.slice(0, 4).join(', ')]);
+    if (t.project_url) detailRows.push(['URL', <a key="u" href={t.project_url} target="_blank" rel="noreferrer" className="text-accent hover:underline truncate max-w-[190px] inline-block align-bottom">{t.project_url}</a>]);
+    return (
+      <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+        <div className="flex items-start gap-3 p-4 border-b border-digi-border">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{t.title}</h3>
+            <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{t.__team ? 'Proyecto · Equipo' : tabLabel}</p>
+          </div>
+          <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-4 space-y-3">
+          <ImageGallery key={`${t.__team ? 't' : 'o'}-${t.id}`} images={panelImages} loading={panelImgLoading} alt={t.title} onOpen={() => openGalleryFor(panelImages, t.title)} />
+          {t.description && <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{t.description}</p>}
+          <dl className="space-y-2">
+            {detailRows.map(([k, v], i) => (
+              <div key={i} className="flex items-center justify-between gap-3 text-[12px]"><dt className="text-digi-muted" style={mf}>{k}</dt><dd className="text-digi-text text-right" style={mf}>{v}</dd></div>
+            ))}
+          </dl>
+          <div className="flex items-center gap-2 pt-1">
+            <button onClick={() => (t.__team ? openTeamEdit(t) : openEdit(t))} className={`${BTN_PRIMARY} flex-1`}><Pencil className="w-3.5 h-3.5" /> Editar</button>
+            {!t.__team && <button onClick={() => handleDelete(t.id)} title="Eliminar" className="w-9 h-9 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors shrink-0"><Trash2 className="w-4 h-4" /></button>}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const dropzone = (images: string[], setImages: (imgs: string[]) => void) => (
     <div className="flex flex-col gap-1.5">
@@ -214,9 +277,12 @@ export default function PortfolioPage() {
         <button onClick={openCreate} className={`${BTN_PRIMARY} ml-auto`}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
       </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
+        <div className="min-w-0">
       <PixelDataTable
         singleLine
         data={rows}
+        onRowClick={(item: any) => selectItem(item)}
         emptyTitle={`Sin ${tabMeta.label.toLowerCase()}`}
         emptyDesc={`Agrega tu primer registro con “Nuevo”.`}
         columns={[
@@ -249,6 +315,9 @@ export default function PortfolioPage() {
           ) },
         ]}
       />
+        </div>
+        <aside className="w-full xl:w-[360px]">{renderPanel()}</aside>
+      </div>
 
       {/* ── Create / Edit modal ── */}
       <PixelModal open={modal} onClose={() => { setModal(false); setEditingItem(null); }} title={editingItem ? `Editar ${tabLabel.toLowerCase()}` : `Nuevo ${tabLabel.toLowerCase()}`} size="lg">
