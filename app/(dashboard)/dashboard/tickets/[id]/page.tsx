@@ -11,7 +11,11 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt } from 'lucide-react';
+
+// Botones estándar Fluent del dashboard (mismo modelo que los módulos rediseñados).
+const BTN_PRIMARY = 'inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors';
+const BTN_SECONDARY = 'inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -441,12 +445,12 @@ export default function TicketDetailPage() {
         actions={!editing && !editingSlots ? (
           <>
             {(ticket.status === 'pending' || ticket.status === 'withdrawn') && canEdit && !isRequestForMe && (
-              <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary text-sm">Confirmar</button>
+              <button onClick={() => updateStatus('confirmed')} className={BTN_PRIMARY}><Check className="w-4 h-4" /> Confirmar</button>
             )}
             {canCompleteTicket && (
-              <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary text-sm">Completar y facturar</button>
+              <button onClick={openCompleteModal} className={BTN_PRIMARY}><Receipt className="w-4 h-4" /> Completar y facturar</button>
             )}
-            {canEdit && <button onClick={startEdit} className="pixel-btn pixel-btn-secondary text-sm">Editar</button>}
+            {canEdit && <button onClick={startEdit} className={BTN_SECONDARY}><Pencil className="w-3.5 h-3.5" /> Editar</button>}
           </>
         ) : undefined}
         overflow={!editing && !editingSlots ? [
@@ -463,12 +467,12 @@ export default function TicketDetailPage() {
             El cliente {ticket.client_name || ''} te ha solicitado este servicio. Acepta e indica los días de trabajo, o rechaza la solicitud.
           </p>
           <div className="flex gap-2">
-            <button onClick={handleAccept} className="pixel-btn pixel-btn-primary text-sm">
-              Aceptar e indicar días
+            <button onClick={handleAccept} className={BTN_PRIMARY}>
+              <Check className="w-4 h-4" /> Aceptar e indicar días
             </button>
             <button onClick={() => updateStatus('cancelled')}
-              className="py-1.5 px-3 text-[12px] text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors" style={mf}>
-              Rechazar
+              className="inline-flex items-center gap-1.5 py-2 px-3 text-sm font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors" style={mf}>
+              <X className="w-4 h-4" /> Rechazar
             </button>
           </div>
         </div>
@@ -529,9 +533,9 @@ export default function TicketDetailPage() {
               </div>
             )}
             <div className="flex gap-2">
-              <button onClick={() => setEditingSlots(false)} className="pixel-btn pixel-btn-secondary flex-1 text-sm">Cancelar</button>
+              <button onClick={() => setEditingSlots(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
               <button onClick={isRequestForMe ? handleAcceptWithSlots : handleSaveSlots} disabled={savingSlots || selectedDates.length === 0}
-                className="flex-1 pixel-btn pixel-btn-primary disabled:opacity-50">
+                className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
                 {savingSlots ? 'Guardando...' : isRequestForMe ? `Aceptar (${selectedDates.length} días)` : `Guardar (${selectedDates.length} días)`}
               </button>
             </div>
@@ -565,8 +569,8 @@ export default function TicketDetailPage() {
             <PixelInput label="Costo estimado (USD)" type="number" value={form.estimated_cost} onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setEditing(false)} className="pixel-btn pixel-btn-secondary flex-1 text-sm">Cancelar</button>
-            <button onClick={handleSave} disabled={saving || !form.title?.trim()} className="flex-1 pixel-btn pixel-btn-primary disabled:opacity-50">
+            <button onClick={() => setEditing(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
+            <button onClick={handleSave} disabled={saving || !form.title?.trim()} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
@@ -692,10 +696,10 @@ export default function TicketDetailPage() {
               <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm space-y-2">
                 <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Acciones rápidas</h3>
                 {(ticket.status === 'pending' || ticket.status === 'withdrawn') && (
-                  <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary w-full text-sm">Confirmar</button>
+                  <button onClick={() => updateStatus('confirmed')} className={`${BTN_PRIMARY} w-full`}><Check className="w-4 h-4" /> Confirmar</button>
                 )}
                 {canCompleteTicket && (
-                  <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary w-full text-sm">Completar y facturar</button>
+                  <button onClick={openCompleteModal} className={`${BTN_PRIMARY} w-full`}><Receipt className="w-4 h-4" /> Completar y facturar</button>
                 )}
               </div>
             )}
