@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
+import { ChevronLeft } from 'lucide-react';
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -17,7 +19,6 @@ const defaultSchedule = (): Record<string, DaySchedule> => {
   return s;
 };
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function AvailabilityPage() {
@@ -54,53 +55,53 @@ export default function AvailabilityPage() {
 
   return (
     <div className="max-w-xl">
+      <Link href="/dashboard/settings" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-2" style={mf}>
+        <ChevronLeft className="w-4 h-4" /> Configuración
+      </Link>
       <PageHeader title="Disponibilidad" description="Configura tu horario semanal" />
 
-      <div className="pixel-card">
-        <div className="space-y-2">
-          {DAY_KEYS.map((key, i) => (
-            <div key={key} className="flex items-center gap-3 py-2 border-b border-digi-border/50 last:border-0">
-              <label className="w-20 text-[10px] text-digi-text shrink-0" style={pf}>
-                {DAYS[i]}
-              </label>
-              <button
-                onClick={() => update(key, 'active', !schedule[key].active)}
-                className={`w-10 text-[9px] py-1 border transition-colors ${
-                  schedule[key].active
-                    ? 'border-green-600/50 bg-green-900/20 text-green-400'
-                    : 'border-digi-border bg-digi-darker text-digi-muted'
-                }`}
-                style={pf}
-              >
-                {schedule[key].active ? 'ON' : 'OFF'}
-              </button>
-              <input
-                type="time"
-                value={schedule[key].start}
-                onChange={(e) => update(key, 'start', e.target.value)}
-                disabled={!schedule[key].active}
-                className="px-2 py-1 bg-digi-darker border border-digi-border text-xs text-digi-text disabled:opacity-30 focus:border-accent focus:outline-none"
-                style={mf}
-              />
-              <span className="text-[9px] text-digi-muted" style={pf}>a</span>
-              <input
-                type="time"
-                value={schedule[key].end}
-                onChange={(e) => update(key, 'end', e.target.value)}
-                disabled={!schedule[key].active}
-                className="px-2 py-1 bg-digi-darker border border-digi-border text-xs text-digi-text disabled:opacity-30 focus:border-accent focus:outline-none"
-                style={mf}
-              />
-            </div>
-          ))}
+      <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
+        <div className="divide-y divide-digi-border/60">
+          {DAY_KEYS.map((key, i) => {
+            const on = schedule[key].active;
+            return (
+              <div key={key} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                <span className="w-24 text-[13px] font-medium text-digi-text shrink-0" style={mf}>{DAYS[i]}</span>
+                <button
+                  onClick={() => update(key, 'active', !on)}
+                  className={`inline-flex items-center justify-center min-w-[72px] px-2.5 py-1 rounded-full text-[12px] font-medium transition-colors ${
+                    on ? 'bg-accent-light text-accent border border-accent/30' : 'bg-black/[0.04] text-digi-muted border border-transparent'
+                  }`}
+                  style={mf}
+                >
+                  {on ? 'Activo' : 'Inactivo'}
+                </button>
+                <div className="flex items-center gap-2 ml-auto">
+                  <input
+                    type="time"
+                    value={schedule[key].start}
+                    onChange={(e) => update(key, 'start', e.target.value)}
+                    disabled={!on}
+                    className="field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text disabled:opacity-40 focus:border-accent focus:outline-none"
+                    style={mf}
+                  />
+                  <span className="text-[12px] text-digi-muted" style={mf}>a</span>
+                  <input
+                    type="time"
+                    value={schedule[key].end}
+                    onChange={(e) => update(key, 'end', e.target.value)}
+                    disabled={!on}
+                    className="field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text disabled:opacity-40 focus:border-accent focus:outline-none"
+                    style={mf}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        <button
-          onClick={save}
-          disabled={saving}
-          className="pixel-btn pixel-btn-primary w-full mt-4 disabled:opacity-50"
-        >
-          {saving ? 'Guardando...' : 'Guardar Disponibilidad'}
+        <button onClick={save} disabled={saving} className="pixel-btn pixel-btn-primary w-full mt-5 disabled:opacity-50">
+          {saving ? 'Guardando...' : 'Guardar disponibilidad'}
         </button>
       </div>
     </div>

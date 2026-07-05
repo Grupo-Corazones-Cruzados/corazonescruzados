@@ -8,7 +8,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import {
-  User, ShieldCheck, CalendarClock, FileText, Briefcase, CalendarDays,
+  User, CalendarClock, FileText, Briefcase, CalendarDays,
   Camera, ChevronRight,
 } from 'lucide-react';
 
@@ -17,7 +17,6 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
-  const [section, setSection] = useState<'profile' | 'account'>('profile');
   const [firstName, setFirstName] = useState(user?.first_name || '');
   const [lastName, setLastName] = useState(user?.last_name || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -111,8 +110,7 @@ export default function SettingsPage() {
         <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
           <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Ajustes</p>
           <div className="space-y-0.5">
-            <RailButton active={section === 'profile'} Icon={User} label="Perfil" onClick={() => setSection('profile')} />
-            <RailButton active={section === 'account'} Icon={ShieldCheck} label="Cuenta" onClick={() => setSection('account')} />
+            <RailButton active Icon={User} label="Perfil" onClick={() => {}} />
             {isMember && (
               <>
                 <div className="h-px bg-digi-border/60 my-1.5 mx-2" />
@@ -130,8 +128,7 @@ export default function SettingsPage() {
 
         {/* ── Content ── */}
         <div className="flex-1 min-w-0 w-full max-w-2xl">
-          {section === 'profile' ? (
-            <form onSubmit={handleSave} className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5 space-y-4">
+          <form onSubmit={handleSave} className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5 space-y-4">
               {/* Avatar */}
               <div className="flex items-center gap-4">
                 <div className="relative shrink-0">
@@ -180,28 +177,28 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+              {/* Cuenta */}
+              <div className="pt-3 border-t border-digi-border space-y-3">
+                <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Cuenta</h4>
+                <dl className="space-y-2.5">
+                  {[
+                    ['Correo', <span key="e" className="text-digi-text" style={mf}>{user?.email}</span>],
+                    ['ID', <span key="i" className="text-digi-muted tabular-nums" style={mf}>{user?.id?.slice(0, 8)}…</span>],
+                    ['Rol', <PixelBadge key="r" variant="info">{user?.role}</PixelBadge>],
+                    ['Verificado', <PixelBadge key="v" variant={user?.is_verified ? 'success' : 'warning'}>{user?.is_verified ? 'Sí' : 'No'}</PixelBadge>],
+                  ].map(([k, v]) => (
+                    <div key={k as string} className="flex items-center justify-between gap-3 text-[12.5px]">
+                      <dt className="text-digi-muted" style={mf}>{k}</dt>
+                      <dd>{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
               <button type="submit" disabled={saving} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </form>
-          ) : (
-            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
-              <h3 className="text-[14px] font-semibold text-digi-text mb-4" style={mf}>Cuenta</h3>
-              <dl className="space-y-3">
-                {[
-                  ['Correo', <span key="e" className="text-digi-text" style={mf}>{user?.email}</span>],
-                  ['ID', <span key="i" className="text-digi-muted tabular-nums" style={mf}>{user?.id?.slice(0, 8)}…</span>],
-                  ['Rol', <PixelBadge key="r" variant="info">{user?.role}</PixelBadge>],
-                  ['Verificado', <PixelBadge key="v" variant={user?.is_verified ? 'success' : 'warning'}>{user?.is_verified ? 'Sí' : 'No'}</PixelBadge>],
-                ].map(([k, v]) => (
-                  <div key={k as string} className="flex items-center justify-between gap-3 text-[12.5px] pb-3 border-b border-digi-border/60 last:border-0 last:pb-0">
-                    <dt className="text-digi-muted" style={mf}>{k}</dt>
-                    <dd>{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          )}
         </div>
       </div>
     </div>

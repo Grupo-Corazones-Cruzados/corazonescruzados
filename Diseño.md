@@ -124,8 +124,11 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   detalle, porque no hay lista de registros): rail = secciones de ajustes (Perfil, Cuenta) como
   botones que cambian el contenido in-page + enlaces de miembro (Disponibilidad/CV/Portafolio/
   Calendario) como `RailLink` con chevron que navegan a subpáginas. Iconos lucide
-  `User/ShieldCheck/CalendarClock/FileText/Briefcase/CalendarDays`. Es la adaptación del patrón para
-  módulos de ajustes (estilo settings de M365/Azure).
+  `User/CalendarClock/FileText/Briefcase/CalendarDays`. Es la adaptación del patrón para módulos de
+  ajustes (estilo settings de M365/Azure). **La sección "Cuenta" se fusionó dentro del formulario de
+  Perfil** (tras Redes sociales), ya no es un ítem de rail. La subpágina **Disponibilidad**
+  (`settings/availability`) se llevó a corp: breadcrumb, tarjeta corp, toggle Activo/Inactivo en pill
+  accent, inputs `field-control`.
 - **Herramientas** (`tools/page.tsx`, 2026-07-05) — **variante galería de tarjetas** (estilo M365 app
   launcher): buscador + grid de tarjetas Fluent (icono `bg-accent-light` + nombre + descripción +
   "Abrir →"); cada tarjeta abre un modal-utilidad. Se usa cuando el módulo es un puñado de acciones/
@@ -175,8 +178,10 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   Todas/Pendientes/Enviadas/Pagadas/Fallidas/Canceladas, iconos `Receipt/Clock/Send/CheckCircle2/
   XCircle/Ban`) + tabla**, con conteos del API (`GET /api/invoices` devuelve `counts` global por estado);
   estado SRI y de factura en español; el **modal Factura Manual (SRI)** de-pixelado (mismos patrones que
-  tickets). Detalle: documento (breadcrumb + título + badges + tabla de ítems + sidebar), de-pixelado
-  (pf→body, tamaños ≥11px, colores corp, SRI en español). Es un documento → sin rail.
+  tickets). Detalle: **`DetailHeader`** (breadcrumb + nº factura + badges SRI/estado + **acciones en la
+  command bar** con overflow ⋯) · contenido (tabla de ítems) · **rail derecho** (Detalles, SRI con copiar
+  clave/autorización, rechazo SRI, comprobante de pago). Se movieron las acciones del stack de botones de
+  la sidebar a la command bar del header (modelo de Tickets/Proyectos).
 
 **Botón estándar del dashboard:** `components/ui/Button.tsx` — `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER`
 (clases componibles) y `<Button variant icon>`. Es la fuente única del botón Fluent; reusar en todos

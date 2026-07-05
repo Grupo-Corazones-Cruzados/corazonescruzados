@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import Link from 'next/link';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft } from 'lucide-react';
+import DetailHeader from '@/components/ui/DetailHeader';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { Download, Mail, RefreshCw, Pencil, Copy, KeyRound, FileCheck2 } from 'lucide-react';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -203,23 +204,44 @@ export default function InvoiceDetailPage() {
   const total = Number(invoice.total) || (subtotal + totalIva);
 
   return (
-    <div className="max-w-5xl">
-      <Link href="/dashboard/invoices" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-2" style={mf}>
-        <ChevronLeft className="w-4 h-4" /> Facturas
-      </Link>
+    <div>
+      <DetailHeader
+        breadcrumb={{ label: 'Facturas', href: '/dashboard/invoices' }}
+        title={invoice.invoice_number || `Factura #${invoice.id}`}
+        status={
+          <span className="flex items-center gap-2">
+            {invoice.sri_status && <PixelBadge variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {SRI_LABEL[invoice.sri_status] || invoice.sri_status}</PixelBadge>}
+            <PixelBadge variant={STATUS_V[invoice.status] || 'default'}>{STATUS_LABEL[invoice.status] || invoice.status}</PixelBadge>
+          </span>
+        }
+        actions={
+          <>
+            {invoice.sri_status === 'authorized' && (
+              <button onClick={() => window.open(`/api/invoices/${id}/pdf`, '_blank')} className={BTN_PRIMARY}><Download className="w-4 h-4" /> Descargar PDF</button>
+            )}
+            {invoice.sri_status === 'authorized' && isAdmin && (
+              <button onClick={() => { setResendEmails(invoice.client_email_sri || ''); setShowResend(true); }} className={BTN_SECONDARY}><Mail className="w-4 h-4" /> Reenviar</button>
+            )}
+            {invoice.sri_status === 'error' && isAdmin && (
+              <button onClick={handleResendToSri} disabled={resendingSri} className={BTN_SECONDARY}><RefreshCw className="w-4 h-4" /> {resendingSri ? 'Reenviando...' : 'Reenviar al SRI'}</button>
+            )}
+            {(invoice.sri_status === 'rejected' || invoice.sri_status === 'error') && isAdmin && (
+              <button onClick={openEditModal} className={BTN_SECONDARY}><Pencil className="w-4 h-4" /> Editar y reintentar</button>
+            )}
+            {invoice.sri_status === 'voided' && isAdmin && (
+              <button onClick={() => router.push(`/dashboard/invoices?refactor=${id}`)} className={BTN_SECONDARY}>Refacturar</button>
+            )}
+          </>
+        }
+        overflow={[
+          ...(invoice.sri_status === 'authorized' && isAdmin ? [{ label: 'Anular factura', onClick: () => setShowVoid(true), danger: true }] : []),
+        ]}
+      />
 
-      <div className="flex items-start justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-semibold text-digi-text" style={mf}>{invoice.invoice_number || `Factura #${invoice.id}`}</h1>
-        <div className="flex gap-2">
-          {invoice.sri_status && <PixelBadge variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {SRI_LABEL[invoice.sri_status] || invoice.sri_status}</PixelBadge>}
-          <PixelBadge variant={STATUS_V[invoice.status] || 'default'}>{STATUS_LABEL[invoice.status] || invoice.status}</PixelBadge>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
         {/* ─── Items table ─── */}
-        <div className="md:col-span-2 space-y-4">
-          <div className="pixel-card p-0">
+        <div className="min-w-0 space-y-4">
+          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b-2 border-digi-border">
@@ -263,10 +285,10 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
 
-        {/* ─── Sidebar ─── */}
-        <div className="space-y-4">
-          <div className="pixel-card">
-            <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Detalles</h3>
+        {/* ─── Right rail ─── */}
+        <div className="space-y-4 lg:sticky lg:top-4">
+          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
+            <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Detalles</h3>
             <div className="space-y-2 text-[12px]" style={mf}>
               <DetailRow label="Cliente" value={invoice.client_name_sri || invoice.client_name || '-'} />
               <DetailRow label="RUC/CI" value={invoice.client_ruc || '-'} />
@@ -276,118 +298,79 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
+          {/* SRI error */}
+          {(invoice.sri_status === 'rejected' || invoice.sri_status === 'error') && isAdmin && (
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
+              <h3 className="text-[11px] font-semibold text-red-600 uppercase tracking-wide mb-2" style={pf}>Rechazo del SRI</h3>
+              <div className="px-2.5 py-2 rounded border border-red-300 bg-red-50 text-[11px] text-red-600 leading-relaxed" style={mf}>
+                {(() => {
+                  try {
+                    const r = typeof invoice.sri_response === 'string' ? JSON.parse(invoice.sri_response) : invoice.sri_response;
+                    const msgs = r?.comprobantes?.[0]?.mensajes || r?.mensajes;
+                    if (Array.isArray(msgs) && msgs.length > 0) return msgs.map((m: any) => m.mensaje || m.informacionAdicional).filter(Boolean).join(' · ');
+                  } catch {}
+                  return typeof invoice.sri_response === 'string' ? invoice.sri_response : 'Factura rechazada por el SRI';
+                })()}
+              </div>
+            </div>
+          )}
+
           {/* SRI Info */}
           {invoice.access_key && (
-            <div className="pixel-card">
-              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>SRI</h3>
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
+              <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3 flex items-center gap-1.5" style={pf}><KeyRound className="w-3.5 h-3.5" /> SRI</h3>
               <div className="space-y-2">
                 <div>
                   <label className="text-[11px] text-digi-muted block mb-0.5" style={pf}>Clave de Acceso</label>
                   <p className="text-[11px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.access_key}</p>
                   <button onClick={() => { navigator.clipboard.writeText(invoice.access_key); toast.success('Clave copiada'); }}
-                    className="text-[11px] text-accent border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>Copiar clave</button>
+                    className="inline-flex items-center gap-1 text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors" style={pf}><Copy className="w-3 h-3" /> Copiar clave</button>
                 </div>
                 {invoice.authorization_number && (
                   <div>
                     <label className="text-[11px] text-digi-muted block mb-0.5" style={pf}>No. Autorizacion</label>
                     <p className="text-[11px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.authorization_number}</p>
                     <button onClick={() => { navigator.clipboard.writeText(invoice.authorization_number); toast.success('Autorizacion copiada'); }}
-                      className="text-[11px] text-accent border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>Copiar autorizacion</button>
+                      className="inline-flex items-center gap-1 text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors" style={pf}><Copy className="w-3 h-3" /> Copiar autorización</button>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="pixel-card">
-            <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Acciones</h3>
-            <div className="space-y-1.5">
-              {invoice.sri_status === 'authorized' && (
-                <>
-                  <button onClick={() => window.open(`/api/invoices/${id}/pdf`, '_blank')}
-                    className="w-full py-1.5 text-[11px] text-green-600 border border-green-300 hover:bg-green-50 transition-colors" style={pf}>
-                    Descargar PDF
-                  </button>
-                  {isAdmin && (
-                    <>
-                      <button onClick={() => { setResendEmails(invoice.client_email_sri || ''); setShowResend(true); }}
-                        className="w-full py-1.5 text-[11px] text-accent border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
-                        Reenviar por Correo
-                      </button>
-                      <button onClick={() => setShowVoid(true)}
-                        className="w-full py-1.5 text-[11px] text-red-600 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>
-                        Anular Factura
-                      </button>
-                    </>
-                  )}
-                </>
-              )}
-              {invoice.sri_status === 'voided' && (
-                <>
-                  <p className="text-[11px] text-red-600 text-center py-2" style={mf}>Factura anulada</p>
-                  {isAdmin && (
-                    <button onClick={() => router.push(`/dashboard/invoices?refactor=${id}`)}
-                      className="w-full py-1.5 text-[11px] text-amber-700 border border-yellow-500/40 hover:bg-amber-50 transition-colors" style={pf}>
-                      Refacturar
-                    </button>
-                  )}
-                </>
-              )}
-              {(invoice.sri_status === 'rejected' || invoice.sri_status === 'error') && isAdmin && (
-                <>
-                  <div className="px-2 py-1.5 border border-red-300 bg-red-50 text-[11px] text-red-600 leading-relaxed" style={mf}>
-                    {(() => {
-                      try {
-                        const r = typeof invoice.sri_response === 'string' ? JSON.parse(invoice.sri_response) : invoice.sri_response;
-                        const msgs = r?.comprobantes?.[0]?.mensajes || r?.mensajes;
-                        if (Array.isArray(msgs) && msgs.length > 0) return msgs.map((m: any) => m.mensaje || m.informacionAdicional).filter(Boolean).join(' · ');
-                      } catch {}
-                      return typeof invoice.sri_response === 'string' ? invoice.sri_response : 'Factura rechazada por el SRI';
-                    })()}
-                  </div>
-                  {invoice.sri_status === 'error' && (
-                    <button onClick={handleResendToSri} disabled={resendingSri}
-                      className="w-full py-1.5 text-[11px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors disabled:opacity-50" style={pf}>
-                      {resendingSri ? 'Reenviando...' : 'Reenviar al SRI'}
-                    </button>
-                  )}
-                  <button onClick={openEditModal}
-                    className="w-full py-1.5 text-[11px] text-amber-700 border border-yellow-500/40 hover:bg-amber-50 transition-colors" style={pf}>
-                    Editar y Reintentar
-                  </button>
-                </>
-              )}
+          {invoice.sri_status === 'voided' && (
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 text-center">
+              <p className="text-[12px] text-red-600 font-medium" style={mf}>Factura anulada</p>
             </div>
-          </div>
+          )}
 
           {/* Payment Proof */}
           {isAdmin && (
-            <div className="pixel-card">
-              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Comprobante de Pago</h3>
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
+              <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3 flex items-center gap-1.5" style={pf}><FileCheck2 className="w-3.5 h-3.5" /> Comprobante de pago</h3>
               {invoice.has_payment_proof ? (
                 <div className="space-y-1.5">
                   <button onClick={() => setShowProof(true)}
-                    className="w-full py-1.5 text-[11px] text-green-600 border border-green-300 hover:bg-green-50 transition-colors" style={pf}>
+                    className="w-full py-2 text-sm font-medium rounded text-green-600 border border-green-300 hover:bg-green-50 transition-colors" style={pf}>
                     Ver Comprobante
                   </button>
                   <button onClick={() => window.open(`/api/invoices/${id}/proof`, '_blank')}
-                    className="w-full py-1.5 text-[11px] text-accent border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
+                    className="w-full py-2 text-sm font-medium rounded text-accent border border-accent/40 hover:bg-accent-light transition-colors" style={pf}>
                     Abrir en Nueva Pestaña
                   </button>
-                  <label className="block w-full py-1.5 text-[11px] text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors text-center cursor-pointer" style={pf}>
+                  <label className="block w-full py-2 text-sm font-medium rounded text-digi-muted border border-digi-border hover:text-digi-text hover:border-accent/30 transition-colors text-center cursor-pointer" style={pf}>
                     {uploadingProof ? 'Subiendo...' : 'Reemplazar'}
                     <input type="file" accept="image/*" onChange={handleUploadProof} className="hidden" disabled={uploadingProof} />
                   </label>
                   <button onClick={handleDeleteProof}
-                    className="w-full py-1.5 text-[11px] text-red-600 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>
+                    className="w-full py-2 text-sm font-medium rounded text-red-600 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>
                     Eliminar Comprobante
                   </button>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-[11px] text-digi-muted" style={mf}>Sin comprobante adjunto</p>
-                  <label className="block w-full py-2 text-[11px] text-accent border-2 border-dashed border-accent/30 hover:bg-accent/5 transition-colors text-center cursor-pointer" style={pf}>
+                  <label className="block w-full py-2 text-sm font-medium rounded text-accent border-2 border-dashed border-accent/30 hover:bg-accent-light transition-colors text-center cursor-pointer" style={pf}>
                     {uploadingProof ? 'Subiendo...' : 'Adjuntar Imagen'}
                     <input type="file" accept="image/*" onChange={handleUploadProof} className="hidden" disabled={uploadingProof} />
                   </label>
@@ -420,7 +403,7 @@ export default function InvoiceDetailPage() {
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setShowVoid(false)} className="px-4 py-2 text-[11px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
+            <button onClick={() => setShowVoid(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
             <button onClick={async () => {
               if (!voidReason.trim()) return;
               setVoiding(true);
@@ -439,7 +422,7 @@ export default function InvoiceDetailPage() {
                 }
               } catch { toast.error('Error de conexion'); }
               finally { setVoiding(false); }
-            }} disabled={voiding || !voidReason.trim()} className="px-4 py-2 text-[11px] border-2 border-red-700 bg-red-900/30 text-red-600 hover:bg-red-900/50 transition-colors disabled:opacity-50" style={pf}>
+            }} disabled={voiding || !voidReason.trim()} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 transition-colors disabled:opacity-50" style={pf}>
               {voiding ? 'Procesando...' : 'Confirmar Anulacion'}
             </button>
           </div>
@@ -449,7 +432,7 @@ export default function InvoiceDetailPage() {
       {/* Edit & Retry Modal */}
       <PixelModal open={showEdit} onClose={() => !editing && setShowEdit(false)} title="Editar y Reintentar Factura" size="lg">
         <div className="space-y-4">
-          <div className="px-3 py-2 border border-yellow-700/50 bg-yellow-900/10 text-[11px] text-amber-700" style={mf}>
+          <div className="px-3 py-2 rounded border border-amber-300 bg-amber-50 text-[11px] text-amber-700" style={mf}>
             Corrige los datos del cliente o de los items. Se generará una nueva clave de acceso con un nuevo secuencial y se reenviará al SRI automáticamente.
           </div>
 
@@ -499,7 +482,7 @@ export default function InvoiceDetailPage() {
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>Items</h4>
               <button onClick={() => setEditForm({ ...editForm, items: [...editForm.items, { description: '', quantity: 1, unitPrice: 0, ivaRate: 15 }] })}
-                className="text-[11px] text-accent border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>+ Item</button>
+                className="text-[11px] text-accent border border-accent/40 px-2 py-0.5 hover:bg-accent-light transition-colors" style={pf}>+ Item</button>
             </div>
             <div className="space-y-2">
               {editForm.items.map((it, idx) => (
@@ -539,9 +522,9 @@ export default function InvoiceDetailPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setShowEdit(false)} disabled={editing} className="px-4 py-2 text-[11px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50" style={pf}>Cancelar</button>
+            <button onClick={() => setShowEdit(false)} disabled={editing} className="pixel-btn pixel-btn-secondary text-sm disabled:opacity-50" style={pf}>Cancelar</button>
             <button onClick={handleRegenerate} disabled={editing || editForm.items.length === 0 || !editForm.clientName.trim()}
-              className="px-4 py-2 text-[11px] border-2 border-yellow-700 bg-yellow-900/30 text-amber-700 hover:bg-yellow-900/50 transition-colors disabled:opacity-50" style={pf}>
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={pf}>
               {editing ? 'Regenerando...' : 'Regenerar y Reenviar'}
             </button>
           </div>
@@ -561,7 +544,7 @@ export default function InvoiceDetailPage() {
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setShowResend(false)} className="px-4 py-2 text-[11px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
+            <button onClick={() => setShowResend(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
             <button onClick={handleResend} disabled={sending || !resendEmails.trim()} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:pointer-events-none" style={pf}>
               {sending ? 'Enviando...' : 'Enviar'}
             </button>
