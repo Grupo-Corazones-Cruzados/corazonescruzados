@@ -132,9 +132,19 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   apps, no registros ni jerarquía. Modales restilizados a corp (dropzone `UploadCloud`, barra de
   progreso `bg-accent`, resultado con `CheckCircle2` + descarga primaria).
 
+- **Tickets** (`tickets/page.tsx` + `tickets/[id]/page.tsx`, 2026-07-05) — **rail + lista** (2 paneles,
+  sin panel de detalle: el detalle es página propia). Rail = **estado** (Todos/Pendientes/Confirmados/
+  Completados/Cancelados, iconos `Inbox/Clock/CircleCheck/CheckCircle2/XCircle`) con **conteos** que
+  vienen del API (`GET /api/tickets` ahora devuelve `counts` por estado). Fila → navega a la página de
+  detalle. **Detalle** (`[id]`): ya usaba `DetailHeader` + `PropertyRail`; se de-pixelaron los formularios
+  asociados (crear/editar ticket, calendario de días, registro de acciones, **modal Completar + factura
+  SRI**, eliminar) a corp — se neutralizó la fuente pixel (`pf → var(--font-body)`), tamaños legibles,
+  badges de estado en español, verdes/rojos corp, botones `pixel-btn`.
+
 **Cuándo usar cada variante:** lista de registros con dimensión de agrupación → **rail + lista +
-panel** (Centralizado, Automatizaciones). Ajustes con secciones → **rail + contenido** (Configuración).
-Puñado de acciones/apps → **galería de tarjetas** (Herramientas).
+panel** (Centralizado, Automatizaciones) o **rail + lista** si el detalle es página propia (Tickets).
+Ajustes con secciones → **rail + contenido** (Configuración). Puñado de acciones/apps → **galería de
+tarjetas** (Herramientas).
 
 ---
 

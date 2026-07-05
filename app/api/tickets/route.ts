@@ -21,20 +21,24 @@ export async function GET(req: NextRequest) {
     const limit = Number(searchParams.get('limit') || 15);
     const offset = (page - 1) * limit;
 
-    let where = 'WHERE 1=1';
-    const params: any[] = [];
+    // Base filters (search + client scoping), shared by list, count and per-status counts.
+    let baseWhere = 'WHERE 1=1';
+    const baseParams: any[] = [];
+    if (search) {
+      baseParams.push(`%${search}%`);
+      baseWhere += ` AND t.title ILIKE $${baseParams.length}`;
+    }
+    if (user.role === 'client') {
+      baseParams.push(user.userId);
+      baseWhere += ` AND t.client_id IN (SELECT id FROM gcc_world.clients WHERE user_id = $${baseParams.length})`;
+    }
 
+    // Status-filtered where extends the base.
+    let where = baseWhere;
+    const params: any[] = [...baseParams];
     if (status && status !== 'all') {
       params.push(status);
       where += ` AND t.status = $${params.length}`;
-    }
-    if (search) {
-      params.push(`%${search}%`);
-      where += ` AND t.title ILIKE $${params.length}`;
-    }
-    if (user.role === 'client') {
-      params.push(user.userId);
-      where += ` AND t.client_id IN (SELECT id FROM gcc_world.clients WHERE user_id = $${params.length})`;
     }
 
     // Ensure invoice source columns exist for the invoice LEFT JOIN (additive, safe)
@@ -42,6 +46,16 @@ export async function GET(req: NextRequest) {
       ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_type VARCHAR(20);
       ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_id TEXT;
     `);
+
+    // Per-status counts (respect base filters, ignore the status filter) for the rail.
+    const countsQ = await pool.query(
+      `SELECT t.status, COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere} GROUP BY t.status`,
+      baseParams,
+    );
+    const counts: Record<string, number> = {};
+    let allCount = 0;
+    for (const r of countsQ.rows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
+    counts.all = allCount;
 
     const countQ = await pool.query(`SELECT COUNT(*) FROM gcc_world.tickets t ${where}`, params);
     params.push(limit, offset);
@@ -64,10 +78,10 @@ export async function GET(req: NextRequest) {
       params
     );
 
-    return NextResponse.json({ data: dataQ.rows, total: Number(countQ.rows[0].count) });
+    return NextResponse.json({ data: dataQ.rows, total: Number(countQ.rows[0].count), counts });
   } catch (err: any) {
     console.error('Tickets error:', err.message);
-    return NextResponse.json({ data: [], total: 0 });
+    return NextResponse.json({ data: [], total: 0, counts: {} });
   }
 }
 

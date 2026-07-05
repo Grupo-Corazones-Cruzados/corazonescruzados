@@ -12,8 +12,10 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+// Dashboard es Fluent (.corp): usar la fuente de cuerpo, no la pixel de la landing.
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -29,6 +31,7 @@ const STATUSES = [
   { value: 'cancelled', label: 'Cancelado' },
   { value: 'withdrawn', label: 'Retirado' },
 ];
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(STATUSES.map((s) => [s.value, s.label]));
 
 type SelectedDates = string[];
 
@@ -395,7 +398,7 @@ export default function TicketDetailPage() {
   };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando ticket..." /></div>;
-  if (!ticket) return <div className="pixel-card text-center py-12"><p className="pixel-heading text-sm text-red-400">Ticket no encontrado</p></div>;
+  if (!ticket) return <div className="bg-digi-card border border-digi-border rounded-lg py-12 text-center"><p className="text-sm font-semibold text-red-500">Ticket no encontrado</p></div>;
 
   const isAdmin = user?.role === 'admin';
   const isMember = user?.role === 'member';
@@ -414,7 +417,7 @@ export default function TicketDetailPage() {
       <DetailHeader
         breadcrumb={{ label: 'Tickets', href: '/dashboard/tickets' }}
         title={editing ? 'Editando ticket' : (ticket.title || `Ticket #${ticket.id}`)}
-        status={!editing ? <PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{ticket.status}</PixelBadge> : undefined}
+        status={!editing ? <PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{STATUS_LABEL[ticket.status] || ticket.status}</PixelBadge> : undefined}
         chips={!editing ? (
           <>
             {ticket.client_name && <HeaderChip>{ticket.client_name}</HeaderChip>}
@@ -425,12 +428,12 @@ export default function TicketDetailPage() {
         actions={!editing && !editingSlots ? (
           <>
             {(ticket.status === 'pending' || ticket.status === 'withdrawn') && canEdit && !isRequestForMe && (
-              <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary text-[10px]">Confirmar</button>
+              <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary text-sm">Confirmar</button>
             )}
             {canCompleteTicket && (
-              <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary text-[10px]">Completar y facturar</button>
+              <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary text-sm">Completar y facturar</button>
             )}
-            {canEdit && <button onClick={startEdit} className="pixel-btn pixel-btn-secondary text-[10px]">Editar</button>}
+            {canEdit && <button onClick={startEdit} className="pixel-btn pixel-btn-secondary text-sm">Editar</button>}
           </>
         ) : undefined}
         overflow={!editing && !editingSlots ? [
@@ -441,17 +444,17 @@ export default function TicketDetailPage() {
 
       {/* ========== PENDING REQUEST BANNER ========== */}
       {isRequestForMe && !editingSlots && (
-        <div className="pixel-card !border-amber-400/30 !bg-amber-400/5 mb-4">
-          <p className="text-xs text-amber-400 mb-3" style={pf}>Solicitud pendiente de un cliente</p>
-          <p className="text-[10px] text-digi-muted mb-3" style={mf}>
-            El cliente {ticket.client_name || ''} te ha solicitado este servicio. Acepta e indica los dias de trabajo, o rechaza la solicitud.
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
+          <p className="text-[13px] font-semibold text-amber-800 mb-1" style={mf}>Solicitud pendiente de un cliente</p>
+          <p className="text-[12px] text-digi-muted mb-3" style={mf}>
+            El cliente {ticket.client_name || ''} te ha solicitado este servicio. Acepta e indica los días de trabajo, o rechaza la solicitud.
           </p>
           <div className="flex gap-2">
-            <button onClick={handleAccept} className="pixel-btn pixel-btn-primary text-[9px]">
-              Aceptar e indicar dias
+            <button onClick={handleAccept} className="pixel-btn pixel-btn-primary text-sm">
+              Aceptar e indicar días
             </button>
             <button onClick={() => updateStatus('cancelled')}
-              className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
+              className="py-1.5 px-3 text-[12px] text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors" style={mf}>
               Rechazar
             </button>
           </div>
@@ -475,17 +478,17 @@ export default function TicketDetailPage() {
         for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
         return (
-          <div className="pixel-card mb-4">
-            <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>
-              {isRequestForMe ? 'Selecciona los dias de trabajo para aceptar' : 'Editar dias de trabajo'}
+          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 mb-4 max-w-md">
+            <h3 className="text-[13px] font-semibold text-digi-text mb-3" style={mf}>
+              {isRequestForMe ? 'Selecciona los días de trabajo para aceptar' : 'Editar días de trabajo'}
             </h3>
             <div className="flex items-center justify-between mb-2">
-              <button onClick={prevMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&lt;</button>
-              <span className="text-xs text-digi-text" style={pf}>{monthNames[month]} {year}</span>
-              <button onClick={nextMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&gt;</button>
+              <button onClick={prevMonth} className="p-1.5 text-digi-muted hover:text-accent border border-digi-border rounded hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="text-[13px] font-semibold text-digi-text" style={mf}>{monthNames[month]} {year}</span>
+              <button onClick={nextMonth} className="p-1.5 text-digi-muted hover:text-accent border border-digi-border rounded hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
             </div>
             <div className="grid grid-cols-7 gap-1 mb-1">
-              {dayNames.map(d => <div key={d} className="text-center text-[8px] text-digi-muted py-1" style={pf}>{d}</div>)}
+              {dayNames.map(d => <div key={d} className="text-center text-[10px] text-digi-muted py-1 font-medium" style={mf}>{d}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-1 mb-3">
               {cells.map((day, i) => {
@@ -495,28 +498,28 @@ export default function TicketDetailPage() {
                 const isOutOfRange = dateStr < todayStr || (!!deadlineStr && dateStr > deadlineStr);
                 return (
                   <button key={dateStr} onClick={() => !isOutOfRange && toggleDate(dateStr)} disabled={isOutOfRange}
-                    className={`py-1.5 text-[10px] text-center border transition-colors ${isSelected ? 'bg-accent/30 border-accent text-digi-text' : isOutOfRange ? 'border-transparent text-digi-muted/30 cursor-default' : 'border-digi-border/30 text-digi-text hover:border-accent/50 hover:bg-accent/10'}`}
-                    style={{ fontFamily: 'var(--font-body)' }}>{day}</button>
+                    className={`py-1.5 text-[12px] text-center rounded border transition-colors ${isSelected ? 'bg-accent border-accent text-white font-medium' : isOutOfRange ? 'border-transparent text-digi-muted/30 cursor-default' : 'border-digi-border/60 text-digi-text hover:border-accent hover:bg-accent-light'}`}
+                    style={mf}>{day}</button>
                 );
               })}
             </div>
             {selectedDates.length > 0 && (
-              <div className="border-t border-digi-border/30 pt-2 mb-3">
-                <div className="flex flex-wrap gap-1">
+              <div className="border-t border-digi-border pt-2 mb-3">
+                <div className="flex flex-wrap gap-1.5">
                   {selectedDates.map(d => (
-                    <span key={d} className="text-[9px] px-1.5 py-0.5 bg-accent/20 border border-accent/30 text-accent-glow flex items-center gap-1" style={mf}>
+                    <span key={d} className="text-[11px] px-2 py-0.5 rounded bg-accent-light border border-accent/30 text-accent flex items-center gap-1" style={mf}>
                       {new Date(d + 'T12:00:00').toLocaleDateString('es', { day: '2-digit', month: 'short' })}
-                      <button onClick={() => toggleDate(d)} className="text-red-400 hover:text-red-300 text-[8px]">x</button>
+                      <button onClick={() => toggleDate(d)} className="text-digi-muted hover:text-red-500">×</button>
                     </span>
                   ))}
                 </div>
               </div>
             )}
             <div className="flex gap-2">
-              <button onClick={() => setEditingSlots(false)} className="flex-1 py-2 text-[10px] text-digi-muted border border-digi-border hover:bg-digi-darker transition-colors" style={pf}>Cancelar</button>
+              <button onClick={() => setEditingSlots(false)} className="pixel-btn pixel-btn-secondary flex-1 text-sm">Cancelar</button>
               <button onClick={isRequestForMe ? handleAcceptWithSlots : handleSaveSlots} disabled={savingSlots || selectedDates.length === 0}
                 className="flex-1 pixel-btn pixel-btn-primary disabled:opacity-50">
-                {savingSlots ? 'Guardando...' : isRequestForMe ? `Aceptar (${selectedDates.length} dias)` : `Guardar (${selectedDates.length} dias)`}
+                {savingSlots ? 'Guardando...' : isRequestForMe ? `Aceptar (${selectedDates.length} días)` : `Guardar (${selectedDates.length} días)`}
               </button>
             </div>
           </div>
@@ -525,12 +528,12 @@ export default function TicketDetailPage() {
 
       {editing ? (
         /* ========== EDIT MODE ========== */
-        <div className="pixel-card space-y-4">
-          <PixelInput label="Titulo *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5 space-y-4 max-w-3xl">
+          <PixelInput label="Título *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Descripcion</label>
+            <label className="field-label text-[10px] text-accent-glow opacity-70" style={mf}>Descripción</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4}
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
+              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <PixelSelect label="Estado" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={STATUSES} />
@@ -549,9 +552,9 @@ export default function TicketDetailPage() {
             <PixelInput label="Costo estimado (USD)" type="number" value={form.estimated_cost} onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setEditing(false)} className="flex-1 py-2 text-[10px] text-digi-muted border border-digi-border hover:bg-digi-darker transition-colors" style={pf}>Cancelar</button>
+            <button onClick={() => setEditing(false)} className="pixel-btn pixel-btn-secondary flex-1 text-sm">Cancelar</button>
             <button onClick={handleSave} disabled={saving || !form.title?.trim()} className="flex-1 pixel-btn pixel-btn-primary disabled:opacity-50">
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
+              {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
         </div>
@@ -588,7 +591,7 @@ export default function TicketDetailPage() {
                       {timeSlots.map((slot: any, i: number) => (
                         <div key={i} className="px-2.5 py-1.5 border border-digi-border rounded bg-[#faf9f8] text-center">
                           <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
-                          {slot.start_time && <p className="text-[9px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
+                          {slot.start_time && <p className="text-[11px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
                         </div>
                       ))}
                     </div>
@@ -614,7 +617,7 @@ export default function TicketDetailPage() {
                     <div className="px-4 pt-4">
                       <div className="flex items-center justify-between text-[11px] mb-1.5" style={mf}>
                         <span className="text-digi-muted">Presupuesto</span>
-                        <span className="text-digi-text">${total.toFixed(2)} / ${estimated.toFixed(2)} · disp. <span className={remaining <= 0 ? 'text-red-400' : 'text-green-400'}>${remaining.toFixed(2)}</span></span>
+                        <span className="text-digi-text">${total.toFixed(2)} / ${estimated.toFixed(2)} · disp. <span className={remaining <= 0 ? 'text-red-500' : 'text-green-600'}>${remaining.toFixed(2)}</span></span>
                       </div>
                       <div className="h-1.5 rounded-full bg-[#edebe9] overflow-hidden">
                         <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
@@ -631,7 +634,7 @@ export default function TicketDetailPage() {
                         </div>
                         <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${Number(a.cost).toFixed(2)}</span>
                         {canManageActions && (
-                          <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity shrink-0 text-[12px]">✕</button>
+                          <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 transition-opacity shrink-0"><X className="w-3.5 h-3.5" /></button>
                         )}
                       </div>
                     )) : (
@@ -640,14 +643,14 @@ export default function TicketDetailPage() {
                   </div>
                   {canManageActions && (
                     estimated <= 0 ? (
-                      <p className="text-[11px] text-amber-400 px-4 pb-4" style={mf}>Define un costo estimado en el ticket para registrar acciones.</p>
+                      <p className="text-[11px] text-amber-600 px-4 pb-4" style={mf}>Define un costo estimado en el ticket para registrar acciones.</p>
                     ) : budgetExhausted ? (
-                      <p className="text-[11px] text-amber-400 px-4 pb-4" style={mf}>Presupuesto agotado. No puedes agregar más acciones.</p>
+                      <p className="text-[11px] text-amber-600 px-4 pb-4" style={mf}>Presupuesto agotado. No puedes agregar más acciones.</p>
                     ) : (
                       <div className="border-t border-digi-border p-3 flex flex-col sm:flex-row gap-2 sm:items-end">
                         <div className="flex-1"><PixelInput label="Nueva acción" value={actionForm.description} onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })} placeholder="Qué se hizo..." /></div>
                         <div className="w-full sm:w-36"><PixelInput label={`Costo (máx $${remaining.toFixed(2)})`} type="number" value={actionForm.cost} onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })} placeholder="0.00" /></div>
-                        <button onClick={handleAddAction} disabled={savingAction || !actionForm.description.trim() || !actionForm.cost} className="pixel-btn pixel-btn-primary text-[10px] disabled:opacity-50 shrink-0">{savingAction ? '...' : 'Agregar'}</button>
+                        <button onClick={handleAddAction} disabled={savingAction || !actionForm.description.trim() || !actionForm.cost} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50 shrink-0">{savingAction ? '...' : 'Agregar'}</button>
                       </div>
                     )
                   )}
@@ -671,10 +674,10 @@ export default function TicketDetailPage() {
               <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm space-y-2">
                 <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Acciones rápidas</h3>
                 {(ticket.status === 'pending' || ticket.status === 'withdrawn') && (
-                  <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary w-full text-[10px]">Confirmar</button>
+                  <button onClick={() => updateStatus('confirmed')} className="pixel-btn pixel-btn-primary w-full text-sm">Confirmar</button>
                 )}
                 {canCompleteTicket && (
-                  <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary w-full text-[10px]">Completar y facturar</button>
+                  <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary w-full text-sm">Completar y facturar</button>
                 )}
               </div>
             )}
@@ -686,10 +689,10 @@ export default function TicketDetailPage() {
         {completing ? (
           <div className="py-8 space-y-6">
             <div className="space-y-3">
-              <div className="w-full h-1.5 bg-digi-border overflow-hidden">
+              <div className="w-full h-1.5 rounded-full bg-digi-border/60 overflow-hidden">
                 <div className="h-full bg-accent animate-[progressPulse_1.5s_ease-in-out_infinite]" style={{ width: '100%' }} />
               </div>
-              <p className="text-center text-xs text-accent-glow" style={mf}>{completeStep}</p>
+              <p className="text-center text-[13px] text-digi-text" style={mf}>{completeStep}</p>
             </div>
             <div className="flex items-center justify-center gap-3">
               {[
@@ -699,54 +702,54 @@ export default function TicketDetailPage() {
                 { label: 'Email', done: completeStep === 'Proceso completado' },
               ].map((s, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <div className={`w-6 h-6 flex items-center justify-center text-[8px] border-2 transition-all ${s.done ? 'border-green-500 bg-green-900/20 text-green-400' : 'border-digi-border text-digi-muted animate-pulse'}`} style={pf}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] border-2 transition-all ${s.done ? 'border-green-500 bg-green-50 text-green-600' : 'border-digi-border text-digi-muted animate-pulse'}`} style={pf}>
                     {s.done ? '✓' : i + 1}
                   </div>
-                  <span className={`text-[8px] ${s.done ? 'text-green-400' : 'text-digi-muted'}`} style={pf}>{s.label}</span>
+                  <span className={`text-[11px] ${s.done ? 'text-green-600' : 'text-digi-muted'}`} style={pf}>{s.label}</span>
                   {i < 3 && <div className={`w-4 h-0.5 ${s.done ? 'bg-green-500' : 'bg-digi-border'}`} />}
                 </div>
               ))}
             </div>
-            <p className="text-center text-[8px] text-digi-muted" style={mf}>No cierres esta ventana hasta que el proceso termine</p>
+            <p className="text-center text-[12px] text-digi-muted" style={mf}>No cierres esta ventana hasta que el proceso termine</p>
           </div>
         ) : (
         <div className="max-h-[80vh] overflow-y-auto pr-1">
           {/* Items mode toggle — exclusivo de tickets: define el origen de los items */}
           <div className="mb-3">
-            <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mb-2" style={pf}>Items de la factura</h4>
+            <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mb-2" style={pf}>Items de la factura</h4>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => applyItemsMode('title')}
-                className={`py-2 text-[9px] border transition-colors ${itemsMode === 'title' ? 'border-accent bg-accent/20 text-digi-text' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                Titulo del ticket<br /><span className="text-[8px] opacity-70">${Number(ticket.estimated_cost || 0).toFixed(2)}</span>
+                className={`py-2 text-[12px] rounded border transition-colors ${itemsMode === 'title' ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
+                Titulo del ticket<br /><span className="text-[11px] opacity-70">${Number(ticket.estimated_cost || 0).toFixed(2)}</span>
               </button>
               <button type="button" onClick={() => applyItemsMode('breakdown')} disabled={(ticket.actions || []).length === 0}
-                className={`py-2 text-[9px] border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${itemsMode === 'breakdown' ? 'border-accent bg-accent/20 text-digi-text' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                Desglose de acciones<br /><span className="text-[8px] opacity-70">{(ticket.actions || []).length} items - ${Number(ticket.actions_total || 0).toFixed(2)}</span>
+                className={`py-2 text-[12px] rounded border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${itemsMode === 'breakdown' ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
+                Desglose de acciones<br /><span className="text-[11px] opacity-70">{(ticket.actions || []).length} items - ${Number(ticket.actions_total || 0).toFixed(2)}</span>
               </button>
             </div>
-            <p className="text-[8px] text-digi-muted mt-1" style={pf}>Cambiar el modo recarga los items; luego puedes editarlos abajo.</p>
+            <p className="text-[11px] text-digi-muted mt-1" style={pf}>Cambiar el modo recarga los items; luego puedes editarlos abajo.</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* ─── LEFT: Adquirente + Pago ─── */}
             <div className="space-y-2">
               <div className="flex items-center justify-between border-b border-digi-border pb-1">
-                <h4 className="text-[9px] text-accent-glow" style={pf}>Adquirente</h4>
-                <button type="button" onClick={() => setHistoryOpen(o => !o)} className="text-[8px] px-2 py-0.5 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors" style={pf}>
+                <h4 className="text-[12px] font-semibold text-digi-text" style={mf}>Adquirente</h4>
+                <button type="button" onClick={() => setHistoryOpen(o => !o)} className="text-[11px] px-2 py-0.5 rounded border border-accent/40 text-accent hover:bg-accent-light transition-colors" style={pf}>
                   {historyOpen ? 'Cerrar' : `Cliente previo${clientHistory.length ? ` (${clientHistory.length})` : ''}`}
                 </button>
               </div>
               {historyOpen && (
-                <div className="border border-digi-border bg-digi-darker p-2 space-y-2">
-                  <input autoFocus value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="Buscar por nombre o RUC..." className="w-full px-2 py-1 bg-digi-dark border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                <div className="border border-digi-border rounded-lg bg-digi-darker p-2 space-y-2">
+                  <input autoFocus value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="Buscar por nombre o RUC..." className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                   <div className="max-h-40 overflow-y-auto border border-digi-border/50">
                     {filteredHistory.length === 0 ? (
-                      <div className="px-2 py-3 text-center text-[9px] text-digi-muted" style={pf}>{clientHistory.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}</div>
+                      <div className="px-2 py-3 text-center text-[12px] text-digi-muted" style={pf}>{clientHistory.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}</div>
                     ) : (
                       filteredHistory.slice(0, 50).map((c) => (
                         <button key={c.client_ruc} type="button" onClick={() => applyPastClient(c)} className="w-full text-left px-2 py-1.5 border-b border-digi-border/30 last:border-b-0 hover:bg-accent/10 transition-colors">
-                          <div className="text-[10px] text-digi-text truncate" style={mf}>{c.client_name}</div>
-                          <div className="text-[8px] text-digi-muted flex gap-2" style={mf}>
+                          <div className="text-[12px] text-digi-text truncate" style={mf}>{c.client_name}</div>
+                          <div className="text-[11px] text-digi-muted flex gap-2" style={mf}>
                             <span>{c.client_ruc}</span>
                             {c.client_email && <span className="truncate">· {c.client_email}</span>}
                           </div>
@@ -754,56 +757,56 @@ export default function TicketDetailPage() {
                       ))
                     )}
                   </div>
-                  <div className="text-[8px] text-digi-muted" style={pf}>Elige uno para rellenar los campos, o cierra y llena manualmente.</div>
+                  <div className="text-[11px] text-digi-muted" style={pf}>Elige uno para rellenar los campos, o cierra y llena manualmente.</div>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tipo ID <span className="text-red-400">*</span></label>
+                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tipo ID <span className="text-red-500">*</span></label>
                   <select value={completeIdType} onChange={e => {
                     const t = e.target.value;
                     setCompleteIdType(t);
                     if (t === '07') { setCompleteClientRuc('9999999999999'); setCompleteClientName('CONSUMIDOR FINAL'); }
                     else { if (completeClientRuc === '9999999999999') setCompleteClientRuc(''); if (completeClientName === 'CONSUMIDOR FINAL') setCompleteClientName(''); }
-                  }} className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                  }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                     <option value="04">RUC</option><option value="05">Cedula</option><option value="06">Pasaporte</option><option value="07">Consumidor Final</option><option value="08">ID Exterior</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Identificacion <span className="text-red-400">*</span></label>
+                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Identificacion <span className="text-red-500">*</span></label>
                   <input value={completeClientRuc} onChange={e => setCompleteClientRuc(e.target.value)} disabled={completeIdType === '07'}
                     placeholder={completeIdType === '04' ? '0900000000001' : '0900000000'} maxLength={completeIdType === '04' ? 13 : completeIdType === '05' ? 10 : 20}
-                    className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-                  {completeIdType === '04' && completeClientRuc && completeClientRuc.length !== 13 && <p className="text-[7px] text-red-400" style={mf}>13 digitos</p>}
-                  {completeIdType === '05' && completeClientRuc && completeClientRuc.length !== 10 && <p className="text-[7px] text-red-400" style={mf}>10 digitos</p>}
+                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                  {completeIdType === '04' && completeClientRuc && completeClientRuc.length !== 13 && <p className="text-[11px] text-red-500" style={mf}>13 digitos</p>}
+                  {completeIdType === '05' && completeClientRuc && completeClientRuc.length !== 10 && <p className="text-[11px] text-red-500" style={mf}>10 digitos</p>}
                 </div>
               </div>
               <div>
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Razon Social <span className="text-red-400">*</span></label>
+                <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Razon Social <span className="text-red-500">*</span></label>
                 <input value={completeClientName} onChange={e => setCompleteClientName(e.target.value)} disabled={completeIdType === '07'}
-                  className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                  className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
               </div>
               <div>
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Direccion <span className="text-red-400">*</span></label>
+                <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Direccion <span className="text-red-500">*</span></label>
                 <input value={completeClientAddress} onChange={e => setCompleteClientAddress(e.target.value)} placeholder="Direccion"
-                  className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                  className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Email {completeIdType !== '07' && <span className="text-red-400">*</span>}</label>
+                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Email {completeIdType !== '07' && <span className="text-red-500">*</span>}</label>
                   <input value={completeClientEmail} onChange={e => setCompleteClientEmail(e.target.value)} type="email" placeholder="correo@ejemplo.com"
-                    className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                 </div>
                 <div>
-                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Telefono</label>
+                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Telefono</label>
                   <input value={completeClientPhone} onChange={e => setCompleteClientPhone(e.target.value)} placeholder="0999999999"
-                    className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                 </div>
               </div>
 
-              <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Forma de Pago</h4>
+              <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Forma de Pago</h4>
               <select value={completePaymentCode} onChange={e => setCompletePaymentCode(e.target.value)}
-                className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                 <option value="01">Sin utilizacion del sistema financiero</option>
                 <option value="15">Compensacion de deudas</option>
                 <option value="16">Tarjeta de debito</option>
@@ -816,30 +819,30 @@ export default function TicketDetailPage() {
 
               {currencies.length > 0 && (
               <>
-              <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Moneda</h4>
+              <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Moneda</h4>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Moneda</label>
+                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Moneda</label>
                   <select value={completeCurrency} onChange={e => {
                     const code = e.target.value;
                     setCompleteCurrency(code);
                     const c = currencies.find(c => c.code === code);
                     setCompleteExchangeRate(c ? String(c.rate) : '1');
-                  }} className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                  }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                     {currencies.map(c => (
                       <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tasa (1 USD = ?)</label>
+                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tasa (1 USD = ?)</label>
                   <input value={completeExchangeRate} onChange={e => setCompleteExchangeRate(e.target.value)}
                     type="number" min="0.0001" step="0.0001" disabled={completeCurrency === 'USD'}
-                    className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
                 </div>
               </div>
               {completeCurrency !== 'USD' && (
-                <div className="px-2 py-1.5 border border-purple-500/30 bg-purple-900/10 text-[9px] text-purple-300 mt-1" style={mf}>
+                <div className="px-2 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent mt-1" style={mf}>
                   Equivalente para el cliente: {(() => {
                     const t = completeItems.reduce((s, it) => {
                       const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
@@ -854,64 +857,64 @@ export default function TicketDetailPage() {
               </>
               )}
 
-              <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Campos Adicionales</h4>
+              <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Campos Adicionales</h4>
               <div className="space-y-1">
                 {completeAdditionalFields.map((f, i) => (
                   <div key={i} className="flex gap-1">
                     <input value={f.name} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], name: e.target.value }; setCompleteAdditionalFields(n); }}
-                      placeholder="Nombre" className="w-1/3 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      placeholder="Nombre" className="w-1/3 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                     <input value={f.value} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setCompleteAdditionalFields(n); }}
-                      placeholder="Descripcion" className="flex-1 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      placeholder="Descripcion" className="flex-1 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                     <button onClick={() => setCompleteAdditionalFields(prev => prev.filter((_, idx) => idx !== i))}
-                      className="text-red-400/60 hover:text-red-400 text-[8px] px-1" style={pf}>X</button>
+                      className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
                   </div>
                 ))}
                 <button onClick={() => setCompleteAdditionalFields(prev => [...prev, { name: '', value: '' }])}
-                  className="text-[8px] text-digi-muted border border-digi-border px-2 py-0.5 hover:text-accent-glow hover:border-accent/30 transition-colors" style={pf}>+ Campo adicional</button>
+                  className="text-[12px] text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={pf}>+ Campo adicional</button>
               </div>
             </div>
 
             {/* ─── RIGHT: Detalle + Totales ─── */}
             <div className="space-y-2">
-              <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1" style={pf}>Detalle</h4>
+              <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Detalle</h4>
               <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
                 {completeItems.map((item, i) => (
-                  <div key={i} className="border border-digi-border/50 p-1.5">
+                  <div key={i} className="border border-digi-border rounded-lg p-2">
                     <div className="flex gap-1 mb-1">
                       <input value={item.description} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], description: e.target.value }; setCompleteItems(n); }}
                         placeholder="Descripcion" className="flex-1 px-2 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                       <button onClick={() => setCompleteItems(prev => prev.filter((_, idx) => idx !== i))}
-                        className="text-red-400/60 hover:text-red-400 text-[7px] px-1" style={pf}>X</button>
+                        className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
                     </div>
                     <div className="grid grid-cols-4 gap-1">
                       <div>
-                        <label className="text-[7px] text-digi-muted" style={pf}>Cant.</label>
+                        <label className="text-[11px] text-digi-muted" style={pf}>Cant.</label>
                         <input value={item.quantity} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], quantity: e.target.value }; setCompleteItems(n); }}
-                          type="number" min="0.01" step="0.01" className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                          type="number" min="0.01" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                       </div>
                       <div>
-                        <label className="text-[7px] text-digi-muted" style={pf}>P.Unit.</label>
+                        <label className="text-[11px] text-digi-muted" style={pf}>P.Unit.</label>
                         <input value={item.unitPrice} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], unitPrice: e.target.value }; setCompleteItems(n); }}
-                          type="number" min="0" step="0.01" className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                          type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                       </div>
                       <div>
-                        <label className="text-[7px] text-digi-muted" style={pf}>IVA</label>
+                        <label className="text-[11px] text-digi-muted" style={pf}>IVA</label>
                         <select value={item.ivaRate} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], ivaRate: e.target.value }; setCompleteItems(n); }}
-                          className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                          className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                           <option value="0">0%</option><option value="5">5%</option><option value="15">15%</option>
                         </select>
                       </div>
                       <div>
-                        <label className="text-[7px] text-digi-muted" style={pf}>Desc.</label>
+                        <label className="text-[11px] text-digi-muted" style={pf}>Desc.</label>
                         <input value={item.discount} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], discount: e.target.value }; setCompleteItems(n); }}
-                          type="number" min="0" step="0.01" className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                          type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
               <button onClick={() => setCompleteItems(prev => [...prev, { description: '', quantity: '1', unitPrice: '0', ivaRate: '0', discount: '0' }])}
-                className="text-[8px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>+ Item</button>
+                className="inline-flex items-center gap-1 text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors" style={pf}>+ Item</button>
 
               {/* Totales */}
               {(() => {
@@ -928,13 +931,13 @@ export default function TicketDetailPage() {
                   return s + base * ((Number(it.ivaRate) || 0) / 100);
                 }, 0);
                 return (
-                  <div className="border-2 border-digi-border p-2 text-[9px] space-y-0.5" style={mf}>
+                  <div className="border border-digi-border rounded-lg p-3 text-[12px] space-y-1" style={mf}>
                     {Object.entries(ivaByRate).map(([rate, base]) => (
                       <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${base.toFixed(2)}</span></div>
                     ))}
                     {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${totalDiscount.toFixed(2)}</span></div>}
                     {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${totalIva.toFixed(2)}</span></div>}
-                    <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent-glow font-bold">Total:</span><span className="text-accent-glow font-bold">${(subtotal + totalIva).toFixed(2)}</span></div>
+                    <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent font-semibold">Total:</span><span className="text-accent font-semibold">${(subtotal + totalIva).toFixed(2)}</span></div>
                   </div>
                 );
               })()}
@@ -950,23 +953,23 @@ export default function TicketDetailPage() {
             const consumidorFinalOver50 = completeIdType === '07' && invoiceTotal > 50;
             const isFormValid = !completing && completeClientName.trim() && completeClientRuc.trim() && completeClientAddress.trim() && (completeIdType === '07' || completeClientEmail.trim()) && completeItems.length > 0 && !(completeIdType === '04' && completeClientRuc.length !== 13) && !(completeIdType === '05' && completeClientRuc.length !== 10) && !consumidorFinalOver50;
             return (
-              <div className="pt-3 mt-3 border-t-2 border-digi-border space-y-2">
+              <div className="pt-3 mt-3 border-t border-digi-border space-y-2">
                 {consumidorFinalOver50 && (
-                  <div className="px-3 py-2 border border-red-700/50 bg-red-900/10 text-[9px] text-red-400" style={mf}>
+                  <div className="px-3 py-2 border border-red-300 rounded bg-red-50 text-[12px] text-red-600" style={mf}>
                     El SRI requiere identificar al cliente (RUC o Cedula) en facturas mayores a $50.00. El total actual es ${invoiceTotal.toFixed(2)}. Cambia el tipo de identificacion.
                   </div>
                 )}
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={completeSendEmail} onChange={e => setCompleteSendEmail(e.target.checked)} className="accent-[#4B2D8E]" />
-                    <span className="text-[9px] text-digi-muted" style={mf}>Enviar por correo</span>
+                    <span className="text-[12px] text-digi-muted" style={mf}>Enviar por correo</span>
                   </label>
                   <div className="flex gap-2">
-                    <button onClick={() => setCompleteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
-                    <button onClick={() => handleComplete(true)} disabled={completing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-text hover:border-accent hover:text-digi-text transition-colors disabled:opacity-50" style={pf}>
+                    <button onClick={() => setCompleteModal(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
+                    <button onClick={() => handleComplete(true)} disabled={completing} className="pixel-btn pixel-btn-secondary text-sm disabled:opacity-50" style={pf}>
                       Completar sin Facturar
                     </button>
-                    <button onClick={() => handleComplete(false)} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                    <button onClick={() => handleComplete(false)} disabled={!isFormValid} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
                       Completar y Facturar
                     </button>
                   </div>
@@ -982,9 +985,9 @@ export default function TicketDetailPage() {
         <div className="space-y-4">
           <p className="text-xs text-digi-muted" style={mf}>Esta accion no se puede deshacer.</p>
           <div className="flex gap-2">
-            <button onClick={() => setDeleteModal(false)} className="flex-1 py-2 text-[10px] text-digi-muted border border-digi-border hover:bg-digi-darker transition-colors" style={pf}>Cancelar</button>
+            <button onClick={() => setDeleteModal(false)} className="pixel-btn pixel-btn-secondary flex-1 text-sm" style={pf}>Cancelar</button>
             <button onClick={handleDelete} disabled={deleting}
-              className="flex-1 py-2 text-[10px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors disabled:opacity-50" style={pf}>
+              className="flex-1 py-2 text-sm text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors disabled:opacity-50" style={pf}>
               {deleting ? 'Eliminando...' : 'Si, eliminar'}
             </button>
           </div>

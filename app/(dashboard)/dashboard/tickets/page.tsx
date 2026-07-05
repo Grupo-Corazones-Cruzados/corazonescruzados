@@ -1,57 +1,54 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
+import PageHeader from '@/components/ui/PageHeader';
+import {
+  Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
+} from 'lucide-react';
+
+const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_TABS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'pending', label: 'Pendientes' },
-  { value: 'confirmed', label: 'Confirmados' },
-  { value: 'completed', label: 'Completados' },
-  { value: 'cancelled', label: 'Cancelados' },
+  { value: 'all', label: 'Todos', Icon: Inbox },
+  { value: 'pending', label: 'Pendientes', Icon: Clock },
+  { value: 'confirmed', label: 'Confirmados', Icon: CircleCheck },
+  { value: 'completed', label: 'Completados', Icon: CheckCircle2 },
+  { value: 'cancelled', label: 'Cancelados', Icon: XCircle },
 ];
 
 const STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  pending: 'warning',
-  confirmed: 'info',
-  in_progress: 'info',
-  completed: 'success',
-  cancelled: 'error',
-  withdrawn: 'default',
+  pending: 'warning', confirmed: 'info', in_progress: 'info',
+  completed: 'success', cancelled: 'error', withdrawn: 'default',
+};
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Pendiente', confirmed: 'Confirmado', in_progress: 'En progreso',
+  completed: 'Completado', cancelled: 'Cancelado', withdrawn: 'Retirado',
 };
 
 const PER_PAGE = 15;
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
-
-// Selected dates as ISO strings (YYYY-MM-DD)
 type SelectedDates = string[];
 
 const emptyForm = {
-  title: '',
-  description: '',
-  service_id: '',
-  member_id: '',
-  client_id: '',
-  client_email: '',
-  client_mode: 'select' as 'select' | 'email',
-  deadline: '',
-  estimated_hours: '',
-  estimated_cost: '',
+  title: '', description: '', service_id: '', member_id: '', client_id: '',
+  client_email: '', client_mode: 'select' as 'select' | 'email',
+  deadline: '', estimated_hours: '', estimated_cost: '',
 };
 
 export default function TicketsPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [tickets, setTickets] = useState<any[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -77,6 +74,7 @@ export default function TicketsPage() {
       const data = await res.json();
       setTickets(data.data || []);
       setTotal(data.total || 0);
+      setCounts(data.counts || {});
     } catch { setTickets([]); }
   }, [page, tab, search]);
 
@@ -84,12 +82,10 @@ export default function TicketsPage() {
   useEffect(() => { setPage(1); }, [tab, search]);
 
   const openCreateModal = async () => {
-    // Pre-fill member_id if user is a member
     if (user?.role === 'member' && user.member_id) {
       setForm(prev => ({ ...prev, member_id: String(user.member_id) }));
     }
     setModal(true);
-    // Fetch services, members, clients in parallel
     const [sRes, mRes, cRes] = await Promise.all([
       fetch('/api/services').then(r => r.json()).catch(() => ({ data: [] })),
       fetch('/api/members/list').then(r => r.json()).catch(() => ({ data: [] })),
@@ -99,7 +95,6 @@ export default function TicketsPage() {
     setMembers(mRes.data || []);
     const clientList = cRes.data || [];
     setClients(clientList);
-    // Pre-fill client_id if user is a client (match by email)
     if (user?.role === 'client' && user.email) {
       const match = clientList.find((c: any) => c.email === user.email);
       if (match) setForm(prev => ({ ...prev, client_id: String(match.id) }));
@@ -107,24 +102,15 @@ export default function TicketsPage() {
   };
 
   const handleCreate = async () => {
-    if (!form.title.trim()) {
-      toast.error('El titulo es requerido');
-      return;
-    }
-    if (!form.deadline) {
-      toast.error('La fecha limite es requerida');
-      return;
-    }
-    // Members must include at least one work day
+    if (!form.title.trim()) { toast.error('El título es requerido'); return; }
+    if (!form.deadline) { toast.error('La fecha límite es requerida'); return; }
     if (user?.role === 'member' && selectedDates.length === 0) {
-      toast.error('Debes indicar al menos un dia de trabajo');
-      return;
+      toast.error('Debes indicar al menos un día de trabajo'); return;
     }
     setCreating(true);
     try {
       const res = await fetch('/api/tickets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: form.title,
           description: form.description || undefined,
@@ -138,14 +124,9 @@ export default function TicketsPage() {
           time_slots: selectedDates.length > 0 ? selectedDates.map(d => ({ date: d })) : undefined,
         }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Error');
-      }
+      if (!res.ok) throw new Error((await res.json()).error || 'Error');
       toast.success('Ticket creado exitosamente');
-      setModal(false);
-      setForm(emptyForm);
-      setSelectedDates([]);
+      setModal(false); setForm(emptyForm); setSelectedDates([]);
       fetchTickets();
     } catch (err: any) {
       toast.error(err.message || 'Error al crear ticket');
@@ -154,206 +135,203 @@ export default function TicketsPage() {
     }
   };
 
+  const totalPages = Math.ceil(total / PER_PAGE);
+
+  const RailItem = ({ active, Icon, label, count, onClick }: any) => (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
+        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
+      }`}
+    >
+      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
+      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
+      <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count ?? 0}</span>
+    </button>
+  );
+
   return (
     <div>
-      <ModuleToolbar
-        tabs={STATUS_TABS}
-        activeTab={tab}
-        onTabChange={setTab}
-        search={search}
-        onSearchChange={setSearch}
-        action={
-          <button onClick={openCreateModal} className="pixel-btn pixel-btn-primary">
-            + Nuevo Ticket
-          </button>
-        }
-      />
+      <PageHeader title="Tickets" description="Solicitudes de trabajo y soporte" />
 
-      <PixelDataTable
-        columns={[
-          { key: 'id', header: 'ID', render: (t: any) => `#${t.id}`, width: '60px' },
-          { key: 'title', header: 'Titulo', render: (t: any) => t.title },
-          { key: 'status', header: 'Estado', render: (t: any) => (
-            <PixelBadge variant={STATUS_VARIANT[t.status] || 'default'}>{t.status}</PixelBadge>
-          )},
-          { key: 'client', header: 'Cliente', render: (t: any) => t.client_name || '-' },
-          { key: 'final_cost', header: 'Costo Final', render: (t: any) => {
-            const v = t.invoice_total ?? t.estimated_cost;
-            return v != null && v !== '' ? `$${Number(v).toFixed(2)}` : '-';
-          }},
-          { key: 'deadline', header: 'Limite', render: (t: any) => t.deadline ? new Date(t.deadline).toLocaleDateString() : '-' },
-          { key: 'invoice', header: 'Factura', width: '80px', render: (t: any) => {
-            if (!t.invoice_id) return <span className="text-digi-muted text-[8px]">-</span>;
-            return (
-              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                <span className="text-green-400 text-[10px]" title="Factura generada">&#9632;</span>
-                {t.invoice_sri_status === 'authorized' && (
-                  <button onClick={() => window.open(`/api/invoices/${t.invoice_id}/pdf`, '_blank')}
-                    className="px-1.5 py-0.5 text-[7px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>PDF</button>
-                )}
-              </div>
-            );
-          }},
-        ]}
-        data={tickets}
-        onRowClick={(t: any) => router.push(`/dashboard/tickets/${t.id}`)}
-        page={page}
-        totalPages={Math.ceil(total / PER_PAGE)}
-        onPageChange={setPage}
-        emptyTitle="Sin tickets"
-        emptyDesc="No hay tickets registrados aun."
-      />
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+        {/* ── Left rail: estado ── */}
+        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
+          <div className="space-y-0.5">
+            {STATUS_TABS.map((s) => (
+              <RailItem key={s.value} active={tab === s.value} Icon={s.Icon} label={s.label}
+                count={counts[s.value]} onClick={() => setTab(s.value)} />
+            ))}
+          </div>
+        </aside>
 
-      {/* Create Ticket Modal */}
-      <PixelModal open={modal} onClose={() => setModal(false)} title="Nuevo Ticket" size="lg">
-        <div className="space-y-3">
-          <PixelInput
-            label="Titulo *"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="Ej: Desarrollo de landing page"
-            required
-          />
-
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Descripcion</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={3}
-              placeholder="Describe el trabajo a realizar..."
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none"
-              style={{ fontFamily: 'var(--font-body)' }}
-            />
+        {/* ── Right region: command bar + table ── */}
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por título..."
+                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                style={mf}
+              />
+            </div>
+            <button onClick={openCreateModal}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+              style={mf}>
+              <Plus className="w-4 h-4" /> Nuevo ticket
+            </button>
           </div>
 
-          <PixelSelect
-            label="Servicio"
-            value={form.service_id}
-            onChange={(e) => setForm({ ...form, service_id: e.target.value })}
-            options={services.map((s: any) => ({ value: String(s.id), label: `${s.name}${s.base_price ? ` ($${s.base_price})` : ''}` }))}
-            placeholder="-- Seleccionar servicio --"
+          <PixelDataTable
+            columns={[
+              { key: 'id', header: 'ID', render: (t: any) => <span className="tabular-nums text-digi-muted">#{t.id}</span>, width: '60px' },
+              { key: 'title', header: 'Título', render: (t: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{t.title}</span> },
+              { key: 'status', header: 'Estado', width: '120px', render: (t: any) => (
+                <PixelBadge variant={STATUS_VARIANT[t.status] || 'default'}>{STATUS_LABEL[t.status] || t.status}</PixelBadge>
+              ) },
+              { key: 'client', header: 'Cliente', render: (t: any) => <span className="text-[12px] text-digi-text" style={mf}>{t.client_name || '—'}</span> },
+              { key: 'final_cost', header: 'Costo', width: '100px', render: (t: any) => {
+                const v = t.invoice_total ?? t.estimated_cost;
+                return <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{v != null && v !== '' ? `$${Number(v).toFixed(2)}` : '—'}</span>;
+              } },
+              { key: 'deadline', header: 'Límite', width: '110px', render: (t: any) => (
+                <span className="text-[12px] text-digi-muted" style={mf}>{t.deadline ? new Date(t.deadline).toLocaleDateString('es-EC') : '—'}</span>
+              ) },
+              { key: 'invoice', header: 'Factura', width: '90px', render: (t: any) => {
+                if (!t.invoice_id) return <span className="text-digi-muted/50 text-[12px]">—</span>;
+                return (
+                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                    <FileText className="w-3.5 h-3.5 text-green-600" />
+                    {t.invoice_sri_status === 'authorized' && (
+                      <button onClick={() => window.open(`/api/invoices/${t.invoice_id}/pdf`, '_blank')}
+                        className="px-1.5 py-0.5 text-[10px] border border-green-500/40 rounded text-green-700 hover:bg-green-50 transition-colors" style={mf}>PDF</button>
+                    )}
+                  </div>
+                );
+              } },
+            ]}
+            data={tickets}
+            onRowClick={(t: any) => router.push(`/dashboard/tickets/${t.id}`)}
+            emptyTitle="Sin tickets"
+            emptyDesc="No hay tickets en este estado."
           />
 
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-3">
+              <span className="text-[12px] text-digi-muted" style={mf}>Página {page} de {totalPages} · {total} tickets</span>
+              <div className="flex gap-1.5">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
+                  <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                </button>
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
+                  Siguiente <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Create Ticket Modal */}
+      <PixelModal open={modal} onClose={() => setModal(false)} title="Nuevo ticket" size="lg">
+        <div className="space-y-3">
+          <PixelInput label="Título *" value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder="Ej: Desarrollo de landing page" required />
+
+          <div className="flex flex-col gap-1">
+            <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Descripción</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
+              placeholder="Describe el trabajo a realizar..."
+              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
+          </div>
+
+          <PixelSelect label="Servicio" value={form.service_id}
+            onChange={(e) => setForm({ ...form, service_id: e.target.value })}
+            options={services.map((s: any) => ({ value: String(s.id), label: `${s.name}${s.base_price ? ` ($${s.base_price})` : ''}` }))}
+            placeholder="-- Seleccionar servicio --" />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <PixelSelect
-              label="Miembro asignado"
-              value={form.member_id}
+            <PixelSelect label="Miembro asignado" value={form.member_id}
               onChange={(e) => setForm({ ...form, member_id: e.target.value })}
               options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
-              placeholder="-- Sin asignar --"
-              disabled={user?.role === 'member'}
-            />
+              placeholder="-- Sin asignar --" disabled={user?.role === 'member'} />
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Cliente</label>
+                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente</label>
                 {user?.role !== 'client' && (
                   <button type="button" onClick={() => setForm(prev => ({
-                    ...prev,
-                    client_mode: prev.client_mode === 'select' ? 'email' : 'select',
-                    client_id: '',
-                    client_email: '',
+                    ...prev, client_mode: prev.client_mode === 'select' ? 'email' : 'select', client_id: '', client_email: '',
                   }))}
-                    className="text-[8px] text-digi-muted hover:text-accent-glow border border-digi-border px-1.5 py-0.5 transition-colors" style={pf}>
+                    className="text-[11px] text-digi-muted hover:text-accent border border-digi-border rounded px-1.5 py-0.5 transition-colors" style={mf}>
                     {form.client_mode === 'select' ? 'Escribir email' : 'Seleccionar'}
                   </button>
                 )}
               </div>
               {form.client_mode === 'select' ? (
-                <PixelSelect
-                  value={form.client_id}
+                <PixelSelect value={form.client_id}
                   onChange={(e) => setForm({ ...form, client_id: e.target.value })}
                   options={clients.map((c: any) => ({ value: String(c.id), label: c.name || c.email }))}
-                  placeholder="-- Sin cliente --"
-                  disabled={user?.role === 'client'}
-                />
+                  placeholder="-- Sin cliente --" disabled={user?.role === 'client'} />
               ) : (
-                <input
-                  type="email"
-                  value={form.client_email}
+                <input type="email" value={form.client_email}
                   onChange={(e) => setForm({ ...form, client_email: e.target.value })}
                   placeholder="correo@cliente.com"
-                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                  style={{ fontFamily: 'var(--font-body)' }}
-                />
+                  className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <PixelInput
-              label="Fecha limite *"
-              type="date"
-              value={form.deadline}
+            <PixelInput label="Fecha límite *" type="date" value={form.deadline}
               onChange={(e) => {
                 const newDeadline = e.target.value;
                 setForm({ ...form, deadline: newDeadline });
-                // Remove selected dates beyond new deadline
-                if (newDeadline) {
-                  setSelectedDates(prev => prev.filter(d => d <= newDeadline));
-                }
-              }}
-              required
-            />
-            <PixelInput
-              label="Horas estimadas"
-              type="number"
-              value={form.estimated_hours}
-              onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })}
-              placeholder="0"
-            />
-            <PixelInput
-              label="Costo estimado (USD)"
-              type="number"
-              value={form.estimated_cost}
-              onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })}
-              placeholder="0.00"
-            />
+                if (newDeadline) setSelectedDates(prev => prev.filter(d => d <= newDeadline));
+              }} required />
+            <PixelInput label="Horas estimadas" type="number" value={form.estimated_hours}
+              onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} placeholder="0" />
+            <PixelInput label="Costo estimado (USD)" type="number" value={form.estimated_cost}
+              onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} placeholder="0.00" />
           </div>
 
-          {/* Time slots button */}
+          {/* Time slots */}
           {(user?.role === 'member' || user?.role === 'admin') && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <label className="text-[10px] text-accent-glow opacity-70" style={pf}>
-                  Dias de trabajo {user?.role === 'member' ? '*' : ''}
+                <label className="field-label text-[10px] text-accent-glow opacity-70 block" style={df}>
+                  Días de trabajo {user?.role === 'member' ? '*' : ''}
                 </label>
-                {!form.deadline && (
-                  <p className="text-[9px] text-amber-400 mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
-                    Primero elige la fecha limite
-                  </p>
-                )}
+                {!form.deadline && <p className="text-[11px] text-amber-600 mt-0.5" style={mf}>Primero elige la fecha límite</p>}
                 {form.deadline && selectedDates.length > 0 && (
-                  <p className="text-[9px] text-digi-muted mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
-                    {selectedDates.length} dia(s) seleccionados
-                  </p>
+                  <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{selectedDates.length} día(s) seleccionados</p>
                 )}
               </div>
               <button type="button"
-                onClick={() => {
-                  // Clear dates that are beyond the new deadline
-                  setSelectedDates(prev => prev.filter(d => d <= form.deadline));
-                  setSlotsModal(true);
-                }}
+                onClick={() => { setSelectedDates(prev => prev.filter(d => d <= form.deadline)); setSlotsModal(true); }}
                 disabled={!form.deadline}
-                className="text-[9px] text-accent-glow border border-accent/30 px-3 py-1 hover:bg-accent/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" style={pf}>
-                {selectedDates.length > 0 ? 'Editar dias' : 'Seleccionar dias'}
+                className="text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0" style={mf}>
+                {selectedDates.length > 0 ? 'Editar días' : 'Seleccionar días'}
               </button>
             </div>
           )}
 
-          <button
-            onClick={handleCreate}
-            disabled={creating || !form.title.trim()}
-            className="pixel-btn pixel-btn-primary w-full disabled:opacity-50"
-          >
-            {creating ? 'Creando...' : 'Crear Ticket'}
+          <button onClick={handleCreate} disabled={creating || !form.title.trim()}
+            className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+            {creating ? 'Creando...' : 'Crear ticket'}
           </button>
         </div>
       </PixelModal>
 
       {/* Calendar Modal */}
-      <PixelModal open={slotsModal} onClose={() => setSlotsModal(false)} title="Seleccionar Dias de Trabajo">
+      <PixelModal open={slotsModal} onClose={() => setSlotsModal(false)} title="Seleccionar días de trabajo">
         {(() => {
           const { year, month } = calMonth;
           const firstDay = new Date(year, month, 1).getDay();
@@ -363,12 +341,8 @@ export default function TicketsPage() {
           const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
           const dayNames = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
 
-          const toggleDate = (dateStr: string) => {
-            setSelectedDates(prev =>
-              prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr].sort()
-            );
-          };
-
+          const toggleDate = (dateStr: string) => setSelectedDates(prev =>
+            prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr].sort());
           const prevMonth = () => setCalMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
           const nextMonth = () => setCalMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
 
@@ -378,21 +352,16 @@ export default function TicketsPage() {
 
           return (
             <div className="space-y-3">
-              {/* Month nav */}
               <div className="flex items-center justify-between">
-                <button onClick={prevMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&lt;</button>
-                <span className="text-xs text-digi-text" style={pf}>{monthNames[month]} {year}</span>
-                <button onClick={nextMonth} className="px-2 py-1 text-digi-muted hover:text-accent-glow border border-digi-border hover:border-accent/30 transition-colors text-[10px]" style={pf}>&gt;</button>
+                <button onClick={prevMonth} className="p-1.5 text-digi-muted hover:text-accent border border-digi-border rounded hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                <span className="text-[13px] font-semibold text-digi-text" style={mf}>{monthNames[month]} {year}</span>
+                <button onClick={nextMonth} className="p-1.5 text-digi-muted hover:text-accent border border-digi-border rounded hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
               </div>
 
-              {/* Day headers */}
               <div className="grid grid-cols-7 gap-1">
-                {dayNames.map(d => (
-                  <div key={d} className="text-center text-[8px] text-digi-muted py-1" style={pf}>{d}</div>
-                ))}
+                {dayNames.map(d => <div key={d} className="text-center text-[10px] text-digi-muted py-1 font-medium" style={mf}>{d}</div>)}
               </div>
 
-              {/* Day cells */}
               <div className="grid grid-cols-7 gap-1">
                 {cells.map((day, i) => {
                   if (day === null) return <div key={`e${i}`} />;
@@ -400,34 +369,26 @@ export default function TicketsPage() {
                   const isSelected = selectedDates.includes(dateStr);
                   const isOutOfRange = dateStr < today || (!!deadline && dateStr > deadline);
                   return (
-                    <button
-                      key={dateStr}
-                      onClick={() => !isOutOfRange && toggleDate(dateStr)}
-                      disabled={isOutOfRange}
-                      className={`py-1.5 text-[10px] text-center border transition-colors ${
-                        isSelected
-                          ? 'bg-accent/30 border-accent text-digi-text'
-                          : isOutOfRange
-                            ? 'border-transparent text-digi-muted/30 cursor-default'
-                            : 'border-digi-border/30 text-digi-text hover:border-accent/50 hover:bg-accent/10'
-                      }`}
-                      style={{ fontFamily: 'var(--font-body)' }}
-                    >
+                    <button key={dateStr} onClick={() => !isOutOfRange && toggleDate(dateStr)} disabled={isOutOfRange}
+                      className={`py-1.5 text-[12px] text-center rounded border transition-colors ${
+                        isSelected ? 'bg-accent border-accent text-white font-medium'
+                          : isOutOfRange ? 'border-transparent text-digi-muted/30 cursor-default'
+                            : 'border-digi-border/60 text-digi-text hover:border-accent hover:bg-accent-light'
+                      }`} style={mf}>
                       {day}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Selected summary */}
               {selectedDates.length > 0 && (
-                <div className="border-t border-digi-border/30 pt-2">
-                  <p className="text-[9px] text-digi-muted mb-1" style={pf}>{selectedDates.length} dia(s) seleccionados:</p>
-                  <div className="flex flex-wrap gap-1">
+                <div className="border-t border-digi-border pt-2">
+                  <p className="text-[11px] text-digi-muted mb-1.5" style={mf}>{selectedDates.length} día(s) seleccionados:</p>
+                  <div className="flex flex-wrap gap-1.5">
                     {selectedDates.map(d => (
-                      <span key={d} className="text-[9px] px-1.5 py-0.5 bg-accent/20 border border-accent/30 text-accent-glow flex items-center gap-1" style={{ fontFamily: 'var(--font-body)' }}>
+                      <span key={d} className="text-[11px] px-2 py-0.5 rounded bg-accent-light border border-accent/30 text-accent flex items-center gap-1" style={mf}>
                         {new Date(d + 'T12:00:00').toLocaleDateString('es', { day: '2-digit', month: 'short' })}
-                        <button onClick={() => toggleDate(d)} className="text-red-400 hover:text-red-300 text-[8px]">x</button>
+                        <button onClick={() => toggleDate(d)} className="text-digi-muted hover:text-red-500">×</button>
                       </span>
                     ))}
                   </div>
@@ -435,7 +396,7 @@ export default function TicketsPage() {
               )}
 
               <button onClick={() => setSlotsModal(false)} className="pixel-btn pixel-btn-primary w-full">
-                Confirmar ({selectedDates.length} dias)
+                Confirmar ({selectedDates.length} días)
               </button>
             </div>
           );
