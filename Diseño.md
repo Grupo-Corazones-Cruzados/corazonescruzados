@@ -150,6 +150,12 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   secciones** (Resumen/Requerimientos/DigiMundo/Imágenes, iconos `LayoutList/ListChecks/Boxes/Image`)
   · contenido · panel PROPIEDADES (ancho fijo), igual que Tickets.
 
+- **Suscripciones** (`subscriptions/page.tsx`, 2026-07-05) — **rail + lista + panel**: rail = estado
+  (Todas/Activas/Pausadas/Canceladas, iconos `Layers/CheckCircle2/PauseCircle/XCircle`) con conteos del
+  API (`GET /api/subscriptions` devuelve `counts`). El detalle de **meses** (antes un modal) ahora es el
+  **panel de detalle derecho** (360px): meta, estado, error de cobro, lista de meses con Marcar pagado/
+  Desmarcar/PDF y eliminar. Modal de creación restilizado a `PixelSelect`/`PixelInput`.
+
 **Botón estándar del dashboard:** `components/ui/Button.tsx` — `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER`
 (clases componibles) y `<Button variant icon>`. Es la fuente única del botón Fluent; reusar en todos
 los módulos (evita `pixel-btn` ad-hoc en el header de detalle).

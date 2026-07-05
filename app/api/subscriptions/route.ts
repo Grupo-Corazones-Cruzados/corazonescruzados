@@ -28,6 +28,22 @@ export async function GET(req: NextRequest) {
     }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
+    // Per-status counts for the rail (respect search, ignore status filter).
+    const searchParamsArr: any[] = [];
+    let searchWhere = '';
+    if (search) {
+      searchParamsArr.push(`%${search}%`);
+      searchWhere = `WHERE (s.title ILIKE $1 OR s.client_name_sri ILIKE $1)`;
+    }
+    const { rows: countRows } = await pool.query(
+      `SELECT s.status, COUNT(*)::int AS n FROM gcc_world.subscriptions s ${searchWhere} GROUP BY s.status`,
+      searchParamsArr,
+    );
+    const counts: Record<string, number> = {};
+    let allCount = 0;
+    for (const r of countRows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
+    counts.all = allCount;
+
     const { rows: [{ count }] } = await pool.query(
       `SELECT COUNT(*)::int AS count FROM gcc_world.subscriptions s ${whereSql}`, params
     );
@@ -91,10 +107,10 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ data, total: count, page, limit });
+    return NextResponse.json({ data, total: count, page, limit, counts });
   } catch (err: any) {
     console.error('Subscriptions list error:', err.message);
-    return NextResponse.json({ data: [], total: 0 });
+    return NextResponse.json({ data: [], total: 0, counts: {} });
   }
 }
 
