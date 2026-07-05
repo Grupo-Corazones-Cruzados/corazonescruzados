@@ -10,6 +10,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import DetailHeader from '@/components/ui/DetailHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Download, Mail, RefreshCw, Pencil, Copy, KeyRound, FileCheck2 } from 'lucide-react';
+import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -258,27 +259,27 @@ export default function InvoiceDetailPage() {
                 ) : items.map((item: any, idx: number) => (
                   <tr key={item.id || idx} className="border-b border-digi-border/30">
                     <td className="px-4 py-2 text-digi-text" style={mf}>{item.description}</td>
-                    <td className="px-2 py-2 text-center text-digi-muted" style={mf}>{Number(item.quantity).toFixed(2)}</td>
-                    <td className="px-2 py-2 text-right text-digi-muted" style={mf}>${Number(item.unit_price).toFixed(2)}</td>
+                    <td className="px-2 py-2 text-center text-digi-muted" style={mf}>{fmt2(Number(item.quantity))}</td>
+                    <td className="px-2 py-2 text-right text-digi-muted" style={mf}>${fmt2(Number(item.unit_price))}</td>
                     <td className="px-2 py-2 text-right text-digi-muted" style={mf}>{Number(item.iva_rate || 0)}%</td>
-                    <td className="px-4 py-2 text-right text-digi-text" style={mf}>${Number(item.subtotal || (Number(item.quantity) * Number(item.unit_price))).toFixed(2)}</td>
+                    <td className="px-4 py-2 text-right text-digi-text" style={mf}>${fmt2(Number(item.subtotal || (Number(item.quantity) * Number(item.unit_price))))}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-digi-border">
                   <td colSpan={4} className="px-4 py-2 text-right text-[11px] text-digi-muted" style={pf}>Subtotal</td>
-                  <td className="px-4 py-2 text-right text-digi-text" style={mf}>${subtotal.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right text-digi-text" style={mf}>${fmt2(subtotal)}</td>
                 </tr>
                 {totalIva > 0 && (
                   <tr>
                     <td colSpan={4} className="px-4 py-1 text-right text-[11px] text-digi-muted" style={pf}>IVA</td>
-                    <td className="px-4 py-1 text-right text-digi-muted" style={mf}>${totalIva.toFixed(2)}</td>
+                    <td className="px-4 py-1 text-right text-digi-muted" style={mf}>${fmt2(totalIva)}</td>
                   </tr>
                 )}
                 <tr className="border-t border-digi-border">
                   <td colSpan={4} className="px-4 py-2 text-right text-[12px] font-semibold text-digi-text" style={pf}>Total</td>
-                  <td className="px-4 py-2 text-right text-sm text-accent font-bold" style={mf}>${total.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right text-sm text-accent font-bold" style={mf}>${fmt2(total)}</td>
                 </tr>
               </tfoot>
             </table>

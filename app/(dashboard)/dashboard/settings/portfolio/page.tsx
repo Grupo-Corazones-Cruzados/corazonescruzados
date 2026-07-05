@@ -8,6 +8,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
+import { fmt2 } from '@/lib/format';
 
 const TABS = [
   { value: 'project', label: 'Proyectos' },
@@ -280,7 +281,7 @@ export default function PortfolioPage() {
           {
             key: 'price', header: 'Precio', width: '100px',
             render: (item: any) => (
-              <span className="text-accent-glow">${Number(item.price || 0).toFixed(2)}</span>
+              <span className="text-accent-glow">${fmt2(Number(item.price || 0))}</span>
             ),
           },
           {
@@ -354,7 +355,7 @@ export default function PortfolioPage() {
                 );
               }, width: '120px' },
               { key: 'price', header: 'Precio', width: '100px', render: (p: any) => (
-                <span className="text-accent-glow" style={mf}>${Number(p.final_cost || 0).toFixed(2)}</span>
+                <span className="text-accent-glow" style={mf}>${fmt2(Number(p.final_cost || 0))}</span>
               )},
               { key: 'actions', header: '', width: '80px', render: (p: any) => (
                 <button

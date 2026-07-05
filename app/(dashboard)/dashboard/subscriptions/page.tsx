@@ -11,6 +11,7 @@ import PixelSelect from '@/components/ui/PixelSelect';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY } from '@/components/ui/Button';
+import { fmt2 } from '@/lib/format';
 import {
   Layers, CheckCircle2, PauseCircle, XCircle, Search, Plus, X, Trash2, FileText,
   ChevronLeft, ChevronRight, CreditCard,
@@ -293,7 +294,7 @@ export default function SubscriptionsPage() {
                     );
                   } },
                   { key: 'title', header: 'Razón / Título', render: (s: any) => <span className="text-[12px] text-digi-text" style={mf}>{s.title}</span> },
-                  { key: 'cost', header: 'Costo', width: '100px', render: (s: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${Number(s.monthly_cost).toFixed(2)}</span> },
+                  { key: 'cost', header: 'Costo', width: '100px', render: (s: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${fmt2(Number(s.monthly_cost))}</span> },
                   { key: 'next', header: 'Próximo cobro', width: '200px', render: (s: any) => {
                     if (s.status === 'cancelled') return <span className="text-digi-muted/50 text-[12px]">—</span>;
                     if (!s.next_due) return <span className="text-green-600 text-[12px] font-medium" style={mf}>Al día</span>;
@@ -353,7 +354,7 @@ export default function SubscriptionsPage() {
 
                   <div className="p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-2 text-[12px]" style={mf}>
-                      <div><span className="text-digi-muted">Costo:</span> <span className="text-digi-text">${Number(detail.monthly_cost).toFixed(2)}</span></div>
+                      <div><span className="text-digi-muted">Costo:</span> <span className="text-digi-text">${fmt2(Number(detail.monthly_cost))}</span></div>
                       <div><span className="text-digi-muted">Día corte:</span> <span className="text-digi-text">{detail.cut_day}</span></div>
                       <div className="col-span-2"><span className="text-digi-muted">Inicio:</span> <span className="text-digi-text">{detail.start_date}</span></div>
                     </div>

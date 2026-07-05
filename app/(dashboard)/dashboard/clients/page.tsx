@@ -11,6 +11,7 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { PAISES } from '@/lib/countries';
+import { fmt2 } from '@/lib/format';
 import {
   Users, Building2, Contact, BookUser, UserRound, Globe, Search, Plus, X,
   Trash2, CheckCircle2, ChevronDown, ExternalLink, FileText,
@@ -277,13 +278,13 @@ export default function ClientsPage() {
                   { key: 'id', header: 'Identificación', width: '150px', render: (c: any) => <span className="text-[12px] text-digi-text" style={mf}>{c.ruc}</span> },
                   { key: 'email', header: 'Email', width: '160px', render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{c.email || '—'}</span> },
                   { key: 'facturas', header: 'Facturas', width: '90px', sortKey: 'facturas', render: (c: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{c.facturas}</span> },
-                  { key: 'total', header: 'Total facturado', width: '130px', sortKey: 'total', render: (c: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${Number(c.total).toFixed(2)}</span> },
+                  { key: 'total', header: 'Total facturado', width: '130px', sortKey: 'total', render: (c: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${fmt2(Number(c.total))}</span> },
                   { key: 'ultima', header: 'Última factura', width: '140px', sortKey: 'ultima', render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{fechaEs(c.ultima)}</span> },
                 ]}
               />
               <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-digi-border text-[12px]" style={mf}>
                 <span className="text-digi-muted">{sortedClients.length} cliente{sortedClients.length === 1 ? '' : 's'} · {sortedClients.reduce((s, c) => s + Number(c.facturas || 0), 0)} facturas</span>
-                <span className="text-digi-text">Total facturado: <span className="text-accent font-semibold tabular-nums">${sortedClients.reduce((s, c) => s + Number(c.total || 0), 0).toFixed(2)}</span></span>
+                <span className="text-digi-text">Total facturado: <span className="text-accent font-semibold tabular-nums">${fmt2(sortedClients.reduce((s, c) => s + Number(c.total || 0), 0))}</span></span>
               </div>
             </div>
 
@@ -362,8 +363,8 @@ export default function ClientsPage() {
                       <>
                         <div className="grid grid-cols-3 gap-2">
                           <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Facturas</div><div className="text-[16px] font-semibold text-digi-text" style={mf}>{detail.summary.count}</div></div>
-                          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Total</div><div className="text-[16px] font-semibold text-digi-text tabular-nums" style={mf}>${detail.summary.total_facturado.toFixed(2)}</div></div>
-                          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Autorizado</div><div className="text-[16px] font-semibold text-green-600 tabular-nums" style={mf}>${detail.summary.total_autorizado.toFixed(2)}</div></div>
+                          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Total</div><div className="text-[16px] font-semibold text-digi-text tabular-nums" style={mf}>${fmt2(detail.summary.total_facturado)}</div></div>
+                          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Autorizado</div><div className="text-[16px] font-semibold text-green-600 tabular-nums" style={mf}>${fmt2(detail.summary.total_autorizado)}</div></div>
                         </div>
                         <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={mf}>Facturas ({detail.invoices.length})</h4>
                         {detail.invoices.length === 0 ? (
@@ -376,7 +377,7 @@ export default function ClientsPage() {
                                   <div className="text-[12px] font-medium text-digi-text" style={mf}>{inv.invoice_number || `Factura #${inv.id}`}</div>
                                   <div className="text-[11px] text-digi-muted flex items-center gap-2 flex-wrap" style={mf}>
                                     <span>{inv.created_at}</span>
-                                    <span>· ${inv.total.toFixed(2)}</span>
+                                    <span>· ${fmt2(inv.total)}</span>
                                     <PixelBadge variant={STATUS_V[inv.status] || 'default'}>{STATUS_LABEL[inv.status] || inv.status}</PixelBadge>
                                     {inv.origin_label && <span className="text-digi-muted">· {inv.origin_label}</span>}
                                   </div>

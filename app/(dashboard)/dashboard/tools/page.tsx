@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelSelect from '@/components/ui/PixelSelect';
+import { fmt2 } from '@/lib/format';
 import {
   Repeat2, Captions, Search, ArrowRight, UploadCloud, Download, CheckCircle2,
 } from 'lucide-react';
@@ -172,7 +173,7 @@ export default function ToolsPage() {
       className="w-full py-6 px-3 rounded-lg border-2 border-dashed border-digi-border hover:border-accent/50 hover:bg-accent-light/40 cursor-pointer text-center transition-colors">
       <UploadCloud className="w-6 h-6 text-digi-muted mx-auto mb-1.5" />
       <p className="text-[12px] text-digi-text" style={mf}>{file ? file.name : hint}</p>
-      {file && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{(file.size / 1024 / 1024).toFixed(2)} MB</p>}
+      {file && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{fmt2((file.size / 1024 / 1024))} MB</p>}
     </div>
   );
 

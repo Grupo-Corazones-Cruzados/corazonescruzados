@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
+import { fmt2 } from '@/lib/format';
 import {
   Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
   Download, Plus, X, type LucideIcon,
@@ -95,7 +96,7 @@ export default function DashboardHome() {
   const greet = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
   const name = user?.first_name || user?.email?.split('@')[0] || '';
 
-  const money = (n: number) => `$${n.toFixed(2)}`;
+  const money = (n: number) => `$${fmt2(n)}`;
 
   return (
     <div>

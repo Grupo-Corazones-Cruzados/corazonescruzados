@@ -10,6 +10,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { fmt2 } from '@/lib/format';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
   Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check,
@@ -229,7 +230,7 @@ export default function ProjectsPage() {
                 <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{p.budget_min ? `$${p.budget_min}${p.budget_max ? `–${p.budget_max}` : ''}` : '—'}</span>
               ) },
               { key: 'final_cost', header: 'Costo final', width: '110px', render: (p: any) => (
-                <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{p.final_cost ? `$${Number(p.final_cost).toFixed(2)}` : '—'}</span>
+                <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{p.final_cost ? `$${fmt2(Number(p.final_cost))}` : '—'}</span>
               ) },
               { key: 'deadline', header: 'Límite', width: '110px', render: (p: any) => (
                 <span className="text-[12px] text-digi-muted" style={mf}>{p.deadline ? new Date(p.deadline).toLocaleDateString('es-EC') : '—'}</span>
@@ -281,7 +282,7 @@ export default function ProjectsPage() {
                       ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
                       ['Cliente', selected.client_name || '—'],
                       ['Presupuesto', selected.budget_min ? `$${selected.budget_min}${selected.budget_max ? `–${selected.budget_max}` : ''}` : '—'],
-                      ['Costo final', selected.final_cost ? `$${Number(selected.final_cost).toFixed(2)}` : '—'],
+                      ['Costo final', selected.final_cost ? `$${fmt2(Number(selected.final_cost))}` : '—'],
                       ['Límite', selected.deadline ? new Date(selected.deadline).toLocaleDateString('es-EC') : '—'],
                     ].map(([k, v]) => (
                       <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">

@@ -11,6 +11,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { fmt2 } from '@/lib/format';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
   X, ArrowRight, Ticket as TicketIcon,
@@ -220,7 +221,7 @@ export default function TicketsPage() {
               { key: 'client', header: 'Cliente', width: '160px', render: (t: any) => <span className="text-[12px] text-digi-text" style={mf}>{t.client_name || '—'}</span> },
               { key: 'final_cost', header: 'Costo', width: '100px', render: (t: any) => {
                 const v = t.invoice_total ?? t.estimated_cost;
-                return <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{v != null && v !== '' ? `$${Number(v).toFixed(2)}` : '—'}</span>;
+                return <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{v != null && v !== '' ? `$${fmt2(Number(v))}` : '—'}</span>;
               } },
               { key: 'deadline', header: 'Límite', width: '110px', render: (t: any) => (
                 <span className="text-[12px] text-digi-muted" style={mf}>{t.deadline ? new Date(t.deadline).toLocaleDateString('es-EC') : '—'}</span>
@@ -272,7 +273,7 @@ export default function TicketsPage() {
                     {[
                       ['Estado', <PixelBadge key="s" variant={STATUS_VARIANT[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
                       ['Cliente', selected.client_name || '—'],
-                      ['Costo', (() => { const v = selected.invoice_total ?? selected.estimated_cost; return v != null && v !== '' ? `$${Number(v).toFixed(2)}` : '—'; })()],
+                      ['Costo', (() => { const v = selected.invoice_total ?? selected.estimated_cost; return v != null && v !== '' ? `$${fmt2(Number(v))}` : '—'; })()],
                       ['Límite', selected.deadline ? new Date(selected.deadline).toLocaleDateString('es-EC') : '—'],
                     ].map(([k, v]) => (
                       <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
@@ -291,7 +292,7 @@ export default function TicketsPage() {
                         <div className="pt-2 border-t border-digi-border">
                           <div className="flex items-center justify-between text-[11px] mb-1" style={mf}>
                             <span className="text-digi-muted">Presupuesto</span>
-                            <span className="text-digi-text tabular-nums">${total.toFixed(2)} / ${est.toFixed(2)} · {pct}%</span>
+                            <span className="text-digi-text tabular-nums">${fmt2(total)} / ${fmt2(est)} · {pct}%</span>
                           </div>
                           <div className="h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} /></div>
                         </div>
@@ -323,7 +324,7 @@ export default function TicketsPage() {
                             <div key={a.id} className="flex items-center gap-2 text-[12px]">
                               <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
                               <span className="flex-1 truncate text-digi-text" style={mf}>{a.description}</span>
-                              <span className="text-digi-text tabular-nums shrink-0" style={mf}>${Number(a.cost).toFixed(2)}</span>
+                              <span className="text-digi-text tabular-nums shrink-0" style={mf}>${fmt2(Number(a.cost))}</span>
                             </div>
                           ))}
                         </div>

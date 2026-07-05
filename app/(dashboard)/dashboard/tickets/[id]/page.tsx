@@ -13,6 +13,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -435,7 +436,7 @@ export default function TicketDetailPage() {
         chips={!editing ? (
           <>
             {ticket.client_name && <HeaderChip>{ticket.client_name}</HeaderChip>}
-            {ticket.estimated_cost != null && ticket.estimated_cost !== '' && <HeaderChip>${Number(ticket.estimated_cost).toFixed(2)}</HeaderChip>}
+            {ticket.estimated_cost != null && ticket.estimated_cost !== '' && <HeaderChip>${fmt2(Number(ticket.estimated_cost))}</HeaderChip>}
             {ticket.deadline && <HeaderChip>Límite {new Date(ticket.deadline).toLocaleDateString()}</HeaderChip>}
           </>
         ) : undefined}
@@ -635,7 +636,7 @@ export default function TicketDetailPage() {
                     <div className="px-4 pt-4">
                       <div className="flex items-center justify-between text-[11px] mb-1.5" style={mf}>
                         <span className="text-digi-muted">Presupuesto</span>
-                        <span className="text-digi-text">${total.toFixed(2)} / ${estimated.toFixed(2)} · disp. <span className={remaining <= 0 ? 'text-red-500' : 'text-green-600'}>${remaining.toFixed(2)}</span></span>
+                        <span className="text-digi-text">${fmt2(total)} / ${fmt2(estimated)} · disp. <span className={remaining <= 0 ? 'text-red-500' : 'text-green-600'}>${fmt2(remaining)}</span></span>
                       </div>
                       <div className="h-1.5 rounded-full bg-[#edebe9] overflow-hidden">
                         <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
@@ -650,7 +651,7 @@ export default function TicketDetailPage() {
                           <p className="text-[12px] text-digi-text break-words" style={mf}>{a.description}</p>
                           <p className="text-[10px] text-digi-muted" style={mf}>{new Date(a.created_at).toLocaleDateString()}</p>
                         </div>
-                        <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${Number(a.cost).toFixed(2)}</span>
+                        <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${fmt2(Number(a.cost))}</span>
                         {canManageActions && (
                           <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 transition-opacity shrink-0"><X className="w-3.5 h-3.5" /></button>
                         )}
@@ -667,7 +668,7 @@ export default function TicketDetailPage() {
                     ) : (
                       <div className="border-t border-digi-border p-3 flex flex-col sm:flex-row gap-2 sm:items-end">
                         <div className="flex-1"><PixelInput label="Nueva acción" value={actionForm.description} onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })} placeholder="Qué se hizo..." /></div>
-                        <div className="w-full sm:w-36"><PixelInput label={`Costo (máx $${remaining.toFixed(2)})`} type="number" value={actionForm.cost} onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })} placeholder="0.00" /></div>
+                        <div className="w-full sm:w-36"><PixelInput label={`Costo (máx $${fmt2(remaining)})`} type="number" value={actionForm.cost} onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })} placeholder="0.00" /></div>
                         <button onClick={handleAddAction} disabled={savingAction || !actionForm.description.trim() || !actionForm.cost} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50 shrink-0">{savingAction ? '...' : 'Agregar'}</button>
                       </div>
                     )
@@ -685,7 +686,7 @@ export default function TicketDetailPage() {
               { label: 'Servicio', value: ticket.service_name || '-' },
               { label: 'Límite', value: ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : '-' },
               { label: 'Horas est.', value: ticket.estimated_hours ? `${ticket.estimated_hours}h` : '-' },
-              { label: 'Costo est.', value: ticket.estimated_cost ? `$${Number(ticket.estimated_cost).toFixed(2)}` : '-' },
+              { label: 'Costo est.', value: ticket.estimated_cost ? `$${fmt2(Number(ticket.estimated_cost))}` : '-' },
               { label: 'Creado', value: new Date(ticket.created_at).toLocaleDateString() },
             ]}
           >
@@ -740,11 +741,11 @@ export default function TicketDetailPage() {
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => applyItemsMode('title')}
                 className={`py-2 text-[12px] rounded border transition-colors ${itemsMode === 'title' ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                Titulo del ticket<br /><span className="text-[11px] opacity-70">${Number(ticket.estimated_cost || 0).toFixed(2)}</span>
+                Titulo del ticket<br /><span className="text-[11px] opacity-70">${fmt2(Number(ticket.estimated_cost || 0))}</span>
               </button>
               <button type="button" onClick={() => applyItemsMode('breakdown')} disabled={(ticket.actions || []).length === 0}
                 className={`py-2 text-[12px] rounded border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${itemsMode === 'breakdown' ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                Desglose de acciones<br /><span className="text-[11px] opacity-70">{(ticket.actions || []).length} items - ${Number(ticket.actions_total || 0).toFixed(2)}</span>
+                Desglose de acciones<br /><span className="text-[11px] opacity-70">{(ticket.actions || []).length} items - ${fmt2(Number(ticket.actions_total || 0))}</span>
               </button>
             </div>
             <p className="text-[11px] text-digi-muted mt-1" style={pf}>Cambiar el modo recarga los items; luego puedes editarlos abajo.</p>
@@ -869,7 +870,7 @@ export default function TicketDetailPage() {
                       return s + base + base * ((Number(it.ivaRate) || 0) / 100);
                     }, 0);
                     const sym = currencies.find(c => c.code === completeCurrency)?.symbol || completeCurrency;
-                    return `${sym} ${(t * (Number(completeExchangeRate) || 1)).toFixed(2)} ${completeCurrency}`;
+                    return `${sym} ${fmt2((t * (Number(completeExchangeRate) || 1)))} ${completeCurrency}`;
                   })()}
                   <span className="text-digi-muted"> (referencia, factura en USD)</span>
                 </div>
@@ -953,11 +954,11 @@ export default function TicketDetailPage() {
                 return (
                   <div className="border border-digi-border rounded-lg p-3 text-[12px] space-y-1" style={mf}>
                     {Object.entries(ivaByRate).map(([rate, base]) => (
-                      <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${base.toFixed(2)}</span></div>
+                      <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${fmt2(base)}</span></div>
                     ))}
-                    {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${totalDiscount.toFixed(2)}</span></div>}
-                    {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${totalIva.toFixed(2)}</span></div>}
-                    <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent font-semibold">Total:</span><span className="text-accent font-semibold">${(subtotal + totalIva).toFixed(2)}</span></div>
+                    {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${fmt2(totalDiscount)}</span></div>}
+                    {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${fmt2(totalIva)}</span></div>}
+                    <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent font-semibold">Total:</span><span className="text-accent font-semibold">${fmt2((subtotal + totalIva))}</span></div>
                   </div>
                 );
               })()}
@@ -976,7 +977,7 @@ export default function TicketDetailPage() {
               <div className="pt-3 mt-3 border-t border-digi-border space-y-2">
                 {consumidorFinalOver50 && (
                   <div className="px-3 py-2 border border-red-300 rounded bg-red-50 text-[12px] text-red-600" style={mf}>
-                    El SRI requiere identificar al cliente (RUC o Cedula) en facturas mayores a $50.00. El total actual es ${invoiceTotal.toFixed(2)}. Cambia el tipo de identificacion.
+                    El SRI requiere identificar al cliente (RUC o Cedula) en facturas mayores a $50.00. El total actual es ${fmt2(invoiceTotal)}. Cambia el tipo de identificacion.
                   </div>
                 )}
                 <div className="flex items-center justify-between">

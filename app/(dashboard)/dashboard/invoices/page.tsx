@@ -10,6 +10,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight, PenLine, Zap, Download, KeyRound, FileCheck2 } from 'lucide-react';
+import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -572,7 +573,7 @@ function InvoicesPageInner() {
             </span>
           ) },
           { key: 'client', header: 'Cliente', render: (i: any) => <span className="text-digi-text">{i.client_name_sri || i.client_name || '-'}</span> },
-          { key: 'total', header: 'Total', width: '100px', render: (i: any) => <span className="text-accent tabular-nums">${Number(i.total || 0).toFixed(2)}</span> },
+          { key: 'total', header: 'Total', width: '100px', render: (i: any) => <span className="text-accent tabular-nums">${fmt2(Number(i.total || 0))}</span> },
           { key: 'sri', header: 'SRI', width: '150px', render: (i: any) => i.sri_status ? (
             <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
           ) : <span className="text-digi-muted">-</span> },
@@ -605,7 +606,7 @@ function InvoicesPageInner() {
               </div>
               <div className="p-4 space-y-2.5">
                 {[
-                  ['Total', <span key="t" className="text-accent font-semibold tabular-nums" style={mf}>${Number(selected.total || 0).toFixed(2)}</span>],
+                  ['Total', <span key="t" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(Number(selected.total || 0))}</span>],
                   ['SRI', selected.sri_status ? <PixelBadge key="sri" variant={SRI_STATUS_V[selected.sri_status] || 'default'}>{SRI_STATUS_LABEL[selected.sri_status] || selected.sri_status}</PixelBadge> : '—'],
                   ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
                   ['Fecha', selected.created_at ? new Date(selected.created_at).toLocaleDateString('es-EC') : '—'],
@@ -727,7 +728,7 @@ function InvoicesPageInner() {
                       </div>
                       <div className="flex gap-3 mt-0.5">
                         <span className="text-[11px] text-digi-muted" style={mf}>{p.client_name || 'Sin cliente'}</span>
-                        {p.final_cost && <span className="text-[11px] text-accent" style={mf}>${Number(p.final_cost).toFixed(2)}</span>}
+                        {p.final_cost && <span className="text-[11px] text-accent" style={mf}>${fmt2(Number(p.final_cost))}</span>}
                       </div>
                     </button>
                   ))}
@@ -745,7 +746,7 @@ function InvoicesPageInner() {
                       <span className="text-xs text-digi-text" style={mf}>#{p.id} — {p.title}</span>
                       <div className="flex gap-3 mt-0.5">
                         <PixelBadge variant={STATUS_V_PROJECT[p.status] || 'default'}>{STATUS_LABELS[p.status] || p.status}</PixelBadge>
-                        {p.final_cost && <span className="text-[11px] text-accent" style={mf}>${Number(p.final_cost).toFixed(2)}</span>}
+                        {p.final_cost && <span className="text-[11px] text-accent" style={mf}>${fmt2(Number(p.final_cost))}</span>}
                       </div>
                     </div>
                     <button onClick={() => removeProject(p.id)} className="text-red-600/60 hover:text-red-600 text-[11px] px-2 py-1 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>Quitar</button>
@@ -918,7 +919,7 @@ function InvoicesPageInner() {
                         return s + base + base * ((Number(it.ivaRate) || 0) / 100);
                       }, 0);
                       const sym = currencies.find(c => c.code === mCurrency)?.symbol || mCurrency;
-                      return `${sym} ${(t * (Number(mExchangeRate) || 1)).toFixed(2)} ${mCurrency}`;
+                      return `${sym} ${fmt2((t * (Number(mExchangeRate) || 1)))} ${mCurrency}`;
                     })()}
                     <span className="text-digi-muted"> (referencia, factura en USD)</span>
                   </div>
@@ -1010,11 +1011,11 @@ function InvoicesPageInner() {
                   return (
                     <div className="border border-digi-border rounded-lg p-3 text-[12px] space-y-1" style={mf}>
                       {Object.entries(ivaByRate).map(([rate, base]) => (
-                        <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${base.toFixed(2)}</span></div>
+                        <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${fmt2(base)}</span></div>
                       ))}
-                      {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${totalDiscount.toFixed(2)}</span></div>}
-                      {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${totalIva.toFixed(2)}</span></div>}
-                      <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent font-semibold">Total:</span><span className="text-accent font-semibold">${(subtotal + totalIva).toFixed(2)}</span></div>
+                      {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${fmt2(totalDiscount)}</span></div>}
+                      {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${fmt2(totalIva)}</span></div>}
+                      <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent font-semibold">Total:</span><span className="text-accent font-semibold">${fmt2((subtotal + totalIva))}</span></div>
                     </div>
                   );
                 })()}
@@ -1025,7 +1026,7 @@ function InvoicesPageInner() {
             <div className="pt-3 mt-3 border-t border-digi-border space-y-2">
               {consumidorFinalOver50 && (
                 <div className="px-3 py-2 border border-red-300 rounded bg-red-50 text-[12px] text-red-600" style={mf}>
-                  El SRI requiere identificar al cliente (RUC o Cedula) en facturas mayores a $50.00. El total actual es ${invoiceTotal.toFixed(2)}. Cambia el tipo de identificacion.
+                  El SRI requiere identificar al cliente (RUC o Cedula) en facturas mayores a $50.00. El total actual es ${fmt2(invoiceTotal)}. Cambia el tipo de identificacion.
                 </div>
               )}
               <div className="flex items-center justify-between">
@@ -1062,7 +1063,7 @@ function InvoicesPageInner() {
                 <div>
                   <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Total real de requerimientos (USD)</label>
                   <div className="px-3 py-2 bg-digi-darker border border-digi-border text-xs text-digi-text" style={mf}>
-                    ${itemsTotalUsd.toFixed(2)}
+                    ${fmt2(itemsTotalUsd)}
                   </div>
                 </div>
                 <div>
@@ -1073,7 +1074,7 @@ function InvoicesPageInner() {
                 </div>
                 {mCurrency !== 'USD' && Number(mPaidAmount) > 0 && (
                   <div className="px-2 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent" style={mf}>
-                    En {mCurrency}: {currencies.find(c => c.code === mCurrency)?.symbol || ''}{(Number(mPaidAmount) * (Number(mExchangeRate) || 1)).toFixed(2)}
+                    En {mCurrency}: {currencies.find(c => c.code === mCurrency)?.symbol || ''}{fmt2((Number(mPaidAmount) * (Number(mExchangeRate) || 1)))}
                   </div>
                 )}
               </div>
@@ -1084,7 +1085,7 @@ function InvoicesPageInner() {
                     <div>
                       <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Descuento total a aplicar (USD)</label>
                       <div className="px-3 py-2 bg-red-50 border border-red-300 text-xs text-red-600 font-bold" style={mf}>
-                        -${(itemsTotalUsd - Number(mPaidAmount)).toFixed(2)}
+                        -${fmt2((itemsTotalUsd - Number(mPaidAmount)))}
                       </div>
                     </div>
                     <div>
@@ -1097,7 +1098,7 @@ function InvoicesPageInner() {
                           return (
                             <div key={i} className="flex justify-between text-[11px] px-2 py-1 border border-digi-border/30" style={mf}>
                               <span className="text-digi-muted truncate max-w-[60%]">{it.description || `Item ${i + 1}`}</span>
-                              <span className="text-red-600">-${itemDiscount.toFixed(2)}</span>
+                              <span className="text-red-600">-${fmt2(itemDiscount)}</span>
                             </div>
                           );
                         })}

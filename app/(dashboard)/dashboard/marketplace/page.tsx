@@ -11,6 +11,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import ImageGallery from '@/components/ui/ImageGallery';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { FolderKanban, Package, Workflow, ShoppingBag, Search, X, Users, ListChecks, FileText, ExternalLink } from 'lucide-react';
+import { fmt2 } from '@/lib/format';
 
 const TABS = [
   { value: 'projects', label: 'Proyectos', Icon: FolderKanban },
@@ -277,7 +278,7 @@ export default function MarketplacePage() {
     const price = Number(t.final_cost ?? t.price ?? 0);
     const docsUrl = t.public_docs_token ? `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/docs/${t.public_docs_token}` : null;
     const rows: [string, React.ReactNode][] = [
-      ['Precio', <span key="p" className="text-accent font-semibold tabular-nums" style={mf}>${price.toFixed(2)}</span>],
+      ['Precio', <span key="p" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(price)}</span>],
     ];
     if (t.member_name) rows.push(['Miembro', t.member_name]);
     if (isProject && t.requirements_count != null) rows.push(['Requerimientos', String(t.requirements_count)]);
@@ -365,7 +366,7 @@ export default function MarketplacePage() {
                 return o.items.map((i: any) => i.product_title).filter(Boolean).join(', ') || '-';
               },
             },
-            { key: 'total', header: 'Total', render: (o: any) => `$${Number(o.total || 0).toFixed(2)}`, width: '100px' },
+            { key: 'total', header: 'Total', render: (o: any) => `$${fmt2(Number(o.total || 0))}`, width: '100px' },
             {
               key: 'status', header: 'Estado', render: (o: any) => (
                 <PixelBadge variant={ORDER_STATUS[o.status] || 'default'}>{ORDER_LABEL[o.status] || o.status}</PixelBadge>
@@ -443,7 +444,7 @@ export default function MarketplacePage() {
               <span className="text-digi-muted" style={mf}>{p.requirements_count}</span>
             ), width: '60px' },
             { key: 'price', header: 'Precio', width: '100px', render: (p: any) => (
-              <span className="text-accent font-medium" style={mf}>${Number(p.final_cost || 0).toFixed(2)}</span>
+              <span className="text-accent font-medium" style={mf}>${fmt2(Number(p.final_cost || 0))}</span>
             )},
             { key: 'docs', header: 'Docs', width: '70px', render: (p: any) => {
               if (!p.public_docs_token) return <span className="text-digi-muted/30 text-[11px]">-</span>;
@@ -544,7 +545,7 @@ export default function MarketplacePage() {
             {
               key: 'price', header: 'Precio', width: '100px',
               render: (item: any) => (
-                <span className="text-accent font-medium">${Number(item.price || 0).toFixed(2)}</span>
+                <span className="text-accent font-medium">${fmt2(Number(item.price || 0))}</span>
               ),
             },
             {
@@ -668,7 +669,7 @@ export default function MarketplacePage() {
 
             <div className="flex justify-between text-[10px] py-1 border-b border-digi-border/30" style={mf}>
               <span className="text-digi-muted">Precio unitario</span>
-              <span className="text-digi-text">${Number(selectedItem.price || 0).toFixed(2)}</span>
+              <span className="text-digi-text">${fmt2(Number(selectedItem.price || 0))}</span>
             </div>
 
             {selectedItem.allow_quantities && (
@@ -684,7 +685,7 @@ export default function MarketplacePage() {
             <div className="bg-accent-light border border-accent/30 rounded-lg p-4">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] text-accent font-medium" style={pf}>Total a pagar</span>
-                <span className="text-sm text-digi-text font-bold" style={mf}>${total.toFixed(2)}</span>
+                <span className="text-sm text-digi-text font-bold" style={mf}>${fmt2(total)}</span>
               </div>
             </div>
 
@@ -751,7 +752,7 @@ export default function MarketplacePage() {
             <div className="bg-accent-light border border-accent/30 rounded-lg p-4">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] text-accent font-medium" style={pf}>Costo del proyecto</span>
-                <span className="text-sm text-digi-text font-bold" style={mf}>${Number(selectedProject.final_cost || 0).toFixed(2)}</span>
+                <span className="text-sm text-digi-text font-bold" style={mf}>${fmt2(Number(selectedProject.final_cost || 0))}</span>
               </div>
             </div>
 
@@ -806,7 +807,7 @@ export default function MarketplacePage() {
             </div>
             <div className="flex justify-between text-[10px] py-1 border-b border-digi-border/30" style={mf}>
               <span className="text-digi-muted">Total</span>
-              <span className="text-digi-text">${Number(selectedOrder.total || 0).toFixed(2)}</span>
+              <span className="text-digi-text">${fmt2(Number(selectedOrder.total || 0))}</span>
             </div>
             <div className="flex justify-between text-[10px] py-1 border-b border-digi-border/30" style={mf}>
               <span className="text-digi-muted">Fecha</span>
@@ -826,11 +827,11 @@ export default function MarketplacePage() {
                             <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>por {item.member_name}</p>
                           )}
                           <p className="text-[11px] text-digi-muted" style={mf}>
-                            {item.quantity}x ${Number(item.unit_price || 0).toFixed(2)}
+                            {item.quantity}x ${fmt2(Number(item.unit_price || 0))}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-digi-text" style={mf}>${Number(item.subtotal || 0).toFixed(2)}</p>
+                          <p className="text-xs text-digi-text" style={mf}>${fmt2(Number(item.subtotal || 0))}</p>
                           {item.member_confirmed === true && <PixelBadge variant="success">Confirmado</PixelBadge>}
                           {item.member_confirmed === false && <PixelBadge variant="error">Rechazado</PixelBadge>}
                           {item.member_confirmed === null && <PixelBadge variant="warning">Pendiente</PixelBadge>}
