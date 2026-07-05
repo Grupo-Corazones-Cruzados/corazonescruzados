@@ -106,7 +106,7 @@ export default function ProjectsPage() {
       {/* header */}
       <div className="flex items-center justify-between mb-4 shrink-0">
         <div>
-          <h2 className="font-pixel text-lg text-digi-green">Proyectos</h2>
+          <h2 className="font-semibold text-lg text-accent">Proyectos</h2>
           <p className="text-sm text-digi-muted mt-1">
             Estructura de módulos, secciones y subsecciones por proyecto
           </p>
@@ -117,7 +117,7 @@ export default function ProjectsPage() {
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(v => !v)}
-                className="flex items-center gap-2 px-3 py-2 rounded text-xs font-medium bg-digi-card border border-digi-border text-digi-muted hover:text-digi-green hover:border-digi-green/30 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded text-xs font-medium bg-digi-card border border-digi-border text-digi-muted hover:text-accent hover:border-accent/40 transition-colors"
               >
                 <Plus size={14} />
                 Agregar proyecto
@@ -125,12 +125,12 @@ export default function ProjectsPage() {
               {dropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-digi-dark border border-digi-border rounded-lg p-2 min-w-[220px] z-20 shadow-xl">
+                  <div className="absolute right-0 top-full mt-1 bg-digi-card border border-digi-border rounded-lg p-2 min-w-[220px] z-20 shadow-xl">
                     {availableAgents.map(([agentId, info]) => (
                       <button
                         key={agentId}
                         onClick={() => { addProject(agentId); setDropdownOpen(false); }}
-                        className="flex items-center gap-2 px-3 py-2 w-full text-left rounded text-xs text-digi-muted hover:text-digi-green hover:bg-digi-green/10 transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 w-full text-left rounded text-xs text-digi-muted hover:text-accent hover:bg-accent-light transition-colors"
                       >
                         <Plus size={10} />
                         <span className="font-medium">{agentId}</span>
@@ -152,7 +152,7 @@ export default function ProjectsPage() {
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded text-xs font-medium transition-colors',
               dirty
-                ? 'bg-digi-green/20 border border-digi-green/40 text-digi-green hover:bg-digi-green/30'
+                ? 'bg-accent-light border border-accent/40 text-accent hover:bg-accent-light'
                 : 'bg-digi-card border border-digi-border text-digi-muted cursor-not-allowed',
             )}
           >
@@ -238,18 +238,18 @@ function ProjectColumn({
       {/* column header */}
       <div className="px-4 py-3 border-b border-digi-border shrink-0">
         <div className="flex items-center gap-2">
-          <FolderTree size={14} className="text-digi-green shrink-0" />
+          <FolderTree size={14} className="text-accent shrink-0" />
           <input
             value={project.name}
             onChange={e => onUpdate({ name: e.target.value })}
-            className="flex-1 bg-transparent text-sm font-pixel text-digi-green border-none outline-none placeholder:text-digi-muted min-w-0"
+            className="flex-1 bg-transparent text-sm font-semibold text-accent border-none outline-none placeholder:text-digi-muted min-w-0"
             placeholder="Nombre del proyecto"
           />
           <button
             onClick={copyPortalLink}
             className={cn(
               'shrink-0 transition-colors',
-              linkCopied ? 'text-green-400' : 'text-digi-muted hover:text-blue-400',
+              linkCopied ? 'text-green-600' : 'text-digi-muted hover:text-accent',
             )}
             title="Copiar enlace del portal"
           >
@@ -271,7 +271,7 @@ function ProjectColumn({
             href={appUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-[10px] text-blue-400 hover:bg-blue-500/20 transition-colors truncate"
+            className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-accent-light border border-accent/20 rounded text-[10px] text-accent hover:bg-accent-light transition-colors truncate"
           >
             <ExternalLink size={10} className="shrink-0" />
             <span className="truncate">{appUrl}</span>
@@ -304,7 +304,7 @@ function ProjectColumn({
       <div className="p-2 border-t border-digi-border shrink-0">
         <button
           onClick={addModule}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs text-digi-muted hover:text-digi-green hover:bg-digi-green/10 rounded transition-colors w-full justify-center"
+          className="flex items-center gap-2 px-3 py-1.5 text-xs text-digi-muted hover:text-accent hover:bg-accent-light rounded transition-colors w-full justify-center"
         >
           <Plus size={12} /> Agregar módulo
         </button>
@@ -355,7 +355,7 @@ function ModuleCard({
         <button onClick={() => setExpanded(!expanded)} className="text-digi-muted hover:text-digi-text">
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
-        <Box size={14} className="text-blue-400 shrink-0" />
+        <Box size={14} className="text-accent shrink-0" />
         <input
           value={mod.name}
           onChange={e => onUpdate({ name: e.target.value })}
@@ -390,7 +390,7 @@ function ModuleCard({
 
           <button
             onClick={addSection}
-            className="flex items-center gap-2 px-2 py-1 text-[11px] text-digi-muted hover:text-blue-400 hover:bg-blue-400/10 rounded transition-colors w-full justify-center border border-dashed border-digi-border/50 hover:border-blue-400/30"
+            className="flex items-center gap-2 px-2 py-1 text-[11px] text-digi-muted hover:text-accent hover:bg-accent-light rounded transition-colors w-full justify-center border border-dashed border-digi-border/50 hover:border-accent/40"
           >
             <Plus size={10} /> Agregar sección
           </button>
