@@ -115,11 +115,11 @@ export default function AdminPage() {
                 </div>
               )}
               {digiTab === 'digi-projects' && (
-                <div className="border border-digi-border rounded-lg overflow-auto p-3" style={{ maxHeight: 'calc(100vh - 240px)' }}><ProjectsEditor /></div>
+                <div className="border border-digi-border rounded-lg overflow-auto p-3" style={{ height: 'calc(100vh - 200px)' }}><ProjectsEditor /></div>
               )}
               {digiTab === 'digi-incidents' && <DigiIncidents />}
               {digiTab === 'digi-sprites' && (
-                <div className="border border-digi-border rounded-lg overflow-auto p-3" style={{ maxHeight: 'calc(100vh - 240px)' }}><SpritesEditor /></div>
+                <div className="border border-digi-border rounded-lg overflow-auto p-3" style={{ height: 'calc(100vh - 200px)' }}><SpritesEditor /></div>
               )}
             </div>
           )}
