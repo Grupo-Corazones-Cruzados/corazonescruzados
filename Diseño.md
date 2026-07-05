@@ -141,10 +141,22 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   SRI**, eliminar) a corp — se neutralizó la fuente pixel (`pf → var(--font-body)`), tamaños legibles,
   badges de estado en español, verdes/rojos corp, botones `pixel-btn`.
 
+- **Proyectos** (`projects/page.tsx` + `projects/[id]/page.tsx`, 2026-07-05) — lista = **rail
+  (Alcance: Mis proyectos/Invitado según rol · Estado) + lista**, con conteos del API (`GET
+  /api/projects` devuelve `counts` respetando el control de acceso por rol). Detalle: header con
+  botones `Button` compartidos + iconos, estado en español, y **de-pixelado completo** de sus
+  formularios (invitar, propuesta/bid, requerimientos, asignación, y el **modal Completar + factura
+  SRI**): `pf → var(--font-body)`, tamaños ≥11px, verdes/rojos/ámbar corp. **Pendiente:** convertir
+  las pestañas horizontales del detalle a rail de secciones (como Tickets).
+
+**Botón estándar del dashboard:** `components/ui/Button.tsx` — `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER`
+(clases componibles) y `<Button variant icon>`. Es la fuente única del botón Fluent; reusar en todos
+los módulos (evita `pixel-btn` ad-hoc en el header de detalle).
+
 **Cuándo usar cada variante:** lista de registros con dimensión de agrupación → **rail + lista +
-panel** (Centralizado, Automatizaciones) o **rail + lista** si el detalle es página propia (Tickets).
-Ajustes con secciones → **rail + contenido** (Configuración). Puñado de acciones/apps → **galería de
-tarjetas** (Herramientas).
+panel** (Centralizado, Automatizaciones) o **rail + lista** si el detalle es página propia (Tickets,
+Proyectos). Ajustes con secciones → **rail + contenido** (Configuración). Puñado de acciones/apps →
+**galería de tarjetas** (Herramientas).
 
 ---
 

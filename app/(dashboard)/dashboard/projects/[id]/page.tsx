@@ -10,7 +10,8 @@ import PropertyRail from '@/components/ui/PropertyRail';
 import PixelTabs from '@/components/ui/PixelTabs';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
-import { Check } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt } from 'lucide-react';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import IncidentDetailPanel from '@/components/projects/IncidentDetailPanel';
@@ -25,12 +26,17 @@ import ScriptStoryboardEditor from '@/components/projects/ScriptStoryboardEditor
 import type { StoryboardSegment } from '@/components/projects/ScriptStoryboardEditor';
 import useAgentChat from '@/hooks/useAgentChat';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+// Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   draft: 'default', open: 'info', in_progress: 'warning', review: 'warning',
   completed: 'success', closed: 'success', cancelled: 'error', on_hold: 'default',
+};
+const STATUS_LABEL: Record<string, string> = {
+  draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso', review: 'En revisión',
+  completed: 'Completado', closed: 'Cerrado', cancelled: 'Cancelado', on_hold: 'En pausa',
 };
 const SEV_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   low: 'default', medium: 'warning', high: 'error', critical: 'error',
@@ -796,7 +802,7 @@ export default function ProjectDetailPage() {
   };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando proyecto..." /></div>;
-  if (!project) return <div className="pixel-card text-center py-12"><p className="pixel-heading text-sm text-red-400">Proyecto no encontrado</p></div>;
+  if (!project) return <div className="pixel-card text-center py-12"><p className="pixel-heading text-sm text-red-600">Proyecto no encontrado</p></div>;
 
   const reqs = project.requirements || [];
   const completedReqs = reqs.filter((r: any) => r.is_completed).length;
@@ -845,8 +851,8 @@ export default function ProjectDetailPage() {
             className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-accent text-lg text-digi-text focus:outline-none"
             style={pf}
           />
-          <button onClick={saveTitle} className="pixel-btn pixel-btn-primary text-[10px]">Guardar</button>
-          <button onClick={() => setEditingTitle(false)} className="pixel-btn pixel-btn-secondary text-[10px]">Cancelar</button>
+          <button onClick={saveTitle} className={BTN_PRIMARY}>Guardar</button>
+          <button onClick={() => setEditingTitle(false)} className={BTN_SECONDARY}>Cancelar</button>
         </div>
       ) : (
         <DetailHeader
@@ -858,7 +864,7 @@ export default function ProjectDetailPage() {
                 <Link href={`/dashboard/projects/${project.marketplace_source_id}`}><PixelBadge variant="info">Marketplace</PixelBadge></Link>
               )}
               {project.is_marketplace_published && <PixelBadge variant="success">En Marketplace</PixelBadge>}
-              <PixelBadge variant={STATUS_V[project.status] || 'default'}>{project.status}</PixelBadge>
+              <PixelBadge variant={STATUS_V[project.status] || 'default'}>{STATUS_LABEL[project.status] || project.status}</PixelBadge>
             </span>
           }
           chips={
@@ -870,18 +876,18 @@ export default function ProjectDetailPage() {
           }
           actions={
             <>
-              {project.status === 'draft' && isOwner && <button onClick={() => updateStatus('open')} className="pixel-btn pixel-btn-primary text-[10px]">Publicar</button>}
-              {project.status === 'open' && isOwner && <button onClick={() => updateStatus('in_progress')} className="pixel-btn pixel-btn-primary text-[10px]">Iniciar</button>}
+              {project.status === 'draft' && isOwner && <button onClick={() => updateStatus('open')} className={BTN_PRIMARY}><DoorOpen className="w-4 h-4" /> Publicar</button>}
+              {project.status === 'open' && isOwner && <button onClick={() => updateStatus('in_progress')} className={BTN_PRIMARY}><Play className="w-4 h-4" /> Iniciar</button>}
               {project.status === 'in_progress' && isOwner && (() => {
                 const reqs = project.requirements || [];
                 const allDone = reqs.length > 0 && reqs.every((r: any) => r.is_completed || r.completed_at);
                 return (
                   <button onClick={() => updateStatus('review')} disabled={!allDone}
-                    className={`pixel-btn text-[10px] ${allDone ? 'pixel-btn-primary' : 'pixel-btn-secondary opacity-50 cursor-not-allowed'}`}
-                    title={!allDone ? 'Todos los requerimientos deben estar completados' : ''}>Enviar a revisión</button>
+                    className={allDone ? BTN_PRIMARY : BTN_SECONDARY}
+                    title={!allDone ? 'Todos los requerimientos deben estar completados' : ''}><Send className="w-4 h-4" /> Enviar a revisión</button>
                 );
               })()}
-              {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className="pixel-btn pixel-btn-primary text-[10px]">Completar y facturar</button>}
+              {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className={BTN_PRIMARY}><Receipt className="w-4 h-4" /> Completar y facturar</button>}
             </>
           }
           overflow={[
@@ -908,7 +914,7 @@ export default function ProjectDetailPage() {
           {ptab === 'resumen' && (<>
           {project.description && (
             <div className="pixel-card">
-              <h3 className="text-[10px] text-accent-glow mb-2" style={pf}>Descripcion</h3>
+              <h3 className="text-[12px] font-semibold text-digi-text mb-2" style={pf}>Descripcion</h3>
               <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{project.description}</p>
             </div>
           )}
@@ -918,16 +924,16 @@ export default function ProjectDetailPage() {
           {/* Requirements */}
           <div className="pixel-card">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[10px] text-accent-glow" style={pf}>Requerimientos ({completedReqs}/{reqs.length})</h3>
+              <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>Requerimientos ({completedReqs}/{reqs.length})</h3>
               <div className="flex items-center gap-2">
                 {reqs.length > 0 && (
                   <div className="flex items-center gap-2">
                     <div className="w-24 h-1.5 rounded-full bg-[#edebe9] overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? (completedReqs / reqs.length) * 100 : 0}%` }} /></div>
-                    <span className="text-[9px] text-digi-muted" style={mf}>{reqs.length ? Math.round((completedReqs / reqs.length) * 100) : 0}%</span>
+                    <span className="text-[11px] text-digi-muted" style={mf}>{reqs.length ? Math.round((completedReqs / reqs.length) * 100) : 0}%</span>
                   </div>
                 )}
                 {canAddReqs && (
-                  <button onClick={() => setShowReqModal(true)} className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>+ Agregar</button>
+                  <button onClick={() => setShowReqModal(true)} className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors" style={pf}>+ Agregar</button>
                 )}
               </div>
             </div>
@@ -966,14 +972,14 @@ export default function ProjectDetailPage() {
                                       // eslint-disable-next-line @next/next/no-img-element
                                       <img src={a.photo_url} alt="" className="w-6 h-6 rounded-full border border-accent/50 object-cover" />
                                     ) : (
-                                      <div className="w-6 h-6 rounded-full border border-accent/50 bg-accent/20 flex items-center justify-center text-[8px] text-accent-glow" style={pf}>
+                                      <div className="w-6 h-6 rounded-full border border-accent/50 bg-accent-light flex items-center justify-center text-[11px] text-accent" style={pf}>
                                         {(a.member_name || '?')[0].toUpperCase()}
                                       </div>
                                     )}
                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-digi-card border border-digi-border rounded shadow-lg opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 transition-opacity pointer-events-none z-20 min-w-max text-[10px]" style={mf}>
                                       <div className="font-semibold text-digi-text">{a.member_name}</div>
                                       <div className="text-digi-muted mt-0.5">Propuesto: ${a.proposed_cost}{a.member_cost != null ? ` → $${a.member_cost}` : ''}</div>
-                                      <div className="text-green-400 mt-0.5">● {a.status}</div>
+                                      <div className="text-green-600 mt-0.5">● {a.status}</div>
                                     </div>
                                   </div>
                                 ))}
@@ -982,9 +988,9 @@ export default function ProjectDetailPage() {
                           })()}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          {r.cost && <span className="text-[9px] text-accent-glow" style={mf}>${r.cost}</span>}
+                          {r.cost && <span className="text-[12px] text-accent" style={mf}>${r.cost}</span>}
                           {isOwner && (
-                            <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="text-digi-muted/60 hover:text-red-400 transition-colors text-[18px] leading-none px-1">×</button>
+                            <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[18px] leading-none px-1">×</button>
                           )}
                         </div>
                       </div>
@@ -998,15 +1004,15 @@ export default function ProjectDetailPage() {
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={a.photo_url} alt="" className="w-5 h-5 rounded-full border border-accent/50 object-cover" />
                               ) : (
-                                <div className="w-5 h-5 rounded-full border border-accent/50 bg-accent/20 flex items-center justify-center text-[7px] text-accent-glow" style={pf}>
+                                <div className="w-5 h-5 rounded-full border border-accent/50 bg-accent-light flex items-center justify-center text-[11px] text-accent" style={pf}>
                                   {(a.member_name || '?')[0].toUpperCase()}
                                 </div>
                               )}
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-digi-card border border-digi-border text-[8px] text-digi-text whitespace-nowrap opacity-0 group-hover/asgn:opacity-100 transition-opacity pointer-events-none z-10" style={mf}>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-digi-card border border-digi-border text-[11px] text-digi-text whitespace-nowrap opacity-0 group-hover/asgn:opacity-100 transition-opacity pointer-events-none z-10" style={mf}>
                                 {a.member_name}
                               </div>
                             </div>
-                            <span className="text-[8px] text-digi-muted" style={mf}>
+                            <span className="text-[11px] text-digi-muted" style={mf}>
                               Propuesto: ${a.proposed_cost}
                               {a.member_cost != null && ` → Contra: $${a.member_cost}`}
                             </span>
@@ -1020,18 +1026,18 @@ export default function ProjectDetailPage() {
                                   onChange={(e) => setCounterCosts(prev => ({ ...prev, [a.id]: e.target.value }))}
                                   placeholder="Tu costo"
                                   type="number"
-                                  className="w-16 px-1 py-0.5 bg-digi-darker border border-digi-border text-[8px] text-digi-text focus:border-accent focus:outline-none"
+                                  className="w-16 px-1 py-0.5 bg-digi-darker border border-digi-border text-[11px] text-digi-text focus:border-accent focus:outline-none"
                                   style={mf}
                                 />
-                                <button onClick={() => submitCounter(a.id)} className="text-[7px] text-accent-glow border border-accent/30 px-1 hover:bg-accent/10" style={pf}>Enviar</button>
+                                <button onClick={() => submitCounter(a.id)} className="text-[11px] text-accent border border-accent/30 px-1 hover:bg-accent/10" style={pf}>Enviar</button>
                               </div>
                             )}
 
                             {/* Owner can accept/reject counter */}
                             {a.status === 'counter' && isOwner && (
                               <div className="flex gap-1">
-                                <button onClick={() => resolveAssignment(a.id, 'accept')} className="text-[7px] text-green-400 border border-green-500/30 px-1 hover:bg-green-900/20" style={pf}>OK</button>
-                                <button onClick={() => resolveAssignment(a.id, 'reject')} className="text-[7px] text-red-400 border border-red-500/30 px-1 hover:bg-red-900/20" style={pf}>NO</button>
+                                <button onClick={() => resolveAssignment(a.id, 'accept')} className="text-[11px] text-green-700 border border-green-300 rounded px-1.5 py-0.5 hover:bg-green-50" style={pf}>OK</button>
+                                <button onClick={() => resolveAssignment(a.id, 'reject')} className="text-[11px] text-red-600 border border-red-300 rounded px-1.5 py-0.5 hover:bg-red-50" style={pf}>NO</button>
                               </div>
                             )}
                           </div>
@@ -1072,15 +1078,15 @@ export default function ProjectDetailPage() {
           {/* Participants */}
           <div className="pixel-card">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[10px] text-accent-glow" style={pf}>Participantes</h3>
+              <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>Participantes</h3>
               <div className="flex gap-1">
                 {canInvite && (
-                  <button onClick={openInviteModal} className="text-[8px] text-accent-glow border border-accent/50 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>
+                  <button onClick={openInviteModal} className="text-[11px] text-accent border border-accent/50 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>
                     + Invitar
                   </button>
                 )}
                 {canBid && (
-                  <button onClick={() => setShowBidModal(true)} className="text-[8px] text-green-400 border border-green-500/30 px-2 py-0.5 hover:bg-green-900/20 transition-colors" style={pf}>
+                  <button onClick={() => setShowBidModal(true)} className="text-[11px] text-green-600 border border-green-300 px-2 py-0.5 hover:bg-green-50 transition-colors" style={pf}>
                     Postularse
                   </button>
                 )}
@@ -1096,43 +1102,43 @@ export default function ProjectDetailPage() {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={b.photo_url} alt="" className="w-6 h-6 rounded-full border border-accent/50 object-cover shrink-0" />
                         ) : (
-                          <div className="w-6 h-6 rounded-full border border-accent/50 bg-accent/20 flex items-center justify-center text-[8px] text-accent-glow shrink-0" style={pf}>
+                          <div className="w-6 h-6 rounded-full border border-accent/50 bg-accent-light flex items-center justify-center text-[11px] text-accent shrink-0" style={pf}>
                             {(b.member_name || '?')[0].toUpperCase()}
                           </div>
                         )}
                         <span className="text-xs text-digi-text" style={mf}>{b.member_name}</span>
-                        {b.bid_amount != null && <span className="text-[9px] text-accent-glow ml-2" style={mf}>${Number(b.bid_amount).toFixed(2)}</span>}
-                        {b.estimated_days && <span className="text-[9px] text-digi-muted ml-1" style={mf}>({b.estimated_days}d)</span>}
+                        {b.bid_amount != null && <span className="text-[12px] text-accent ml-2" style={mf}>${Number(b.bid_amount).toFixed(2)}</span>}
+                        {b.estimated_days && <span className="text-[11px] text-digi-muted ml-1" style={mf}>({b.estimated_days}d)</span>}
                       </div>
                     <div className="flex items-center gap-1.5 ml-2">
                       <PixelBadge variant={BID_V[b.status] || 'default'}>{b.status}</PixelBadge>
                       {isOwner && b.status === 'pending' && (
                         <>
-                          <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'accepted' }) }); fetchProject(); toast.success('Aceptado'); }} className="text-[7px] text-green-400 border border-green-500/30 px-1 hover:bg-green-900/20" style={pf}>OK</button>
-                          <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'rejected' }) }); fetchProject(); }} className="text-[7px] text-red-400 border border-red-500/30 px-1 hover:bg-red-900/20" style={pf}>NO</button>
+                          <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'accepted' }) }); fetchProject(); toast.success('Aceptado'); }} className="text-[11px] text-green-700 border border-green-300 rounded px-1.5 py-0.5 hover:bg-green-50" style={pf}>OK</button>
+                          <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'rejected' }) }); fetchProject(); }} className="text-[11px] text-red-600 border border-red-300 rounded px-1.5 py-0.5 hover:bg-red-50" style={pf}>NO</button>
                         </>
                       )}
                       {b.status === 'invited' && String(b.member_id) === String(memberId) && (
-                        <button onClick={() => setShowBidModal(true)} className="text-[7px] text-accent-glow border border-accent/30 px-1.5 hover:bg-accent/10 transition-colors" style={pf}>
+                        <button onClick={() => setShowBidModal(true)} className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors" style={pf}>
                           Enviar Propuesta
                         </button>
                       )}
                       {isOwner && b.status === 'invited' && String(b.member_id) !== String(memberId) && (
-                        <span className="text-[7px] text-yellow-400" style={pf}>Esperando</span>
+                        <span className="text-[11px] text-amber-700" style={pf}>Esperando</span>
                       )}
                     </div>
                     </div>
                     {/* Proposal details */}
                     {b.proposal && (
                       <div className="mt-1.5 pt-1.5 border-t border-digi-border/30">
-                        <p className="text-[9px] text-digi-muted" style={mf}>{b.proposal}</p>
+                        <p className="text-[11px] text-digi-muted" style={mf}>{b.proposal}</p>
                         {b.requirement_ids?.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            <span className="text-[8px] text-digi-muted" style={pf}>Reqs:</span>
+                            <span className="text-[11px] text-digi-muted" style={pf}>Reqs:</span>
                             {b.requirement_ids.map((rid: number) => {
                               const req = reqs.find((r: any) => r.id === rid || r.id === Number(rid));
                               return req ? (
-                                <span key={rid} className="text-[8px] text-accent-glow border border-accent/20 px-1" style={mf}>{req.title}</span>
+                                <span key={rid} className="text-[11px] text-accent border border-accent/30 rounded px-1.5 py-0.5" style={mf}>{req.title}</span>
                               ) : null;
                             })}
                           </div>
@@ -1143,7 +1149,7 @@ export default function ProjectDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-[9px] text-digi-muted text-center py-2" style={mf}>Sin participantes aun</p>
+              <p className="text-[11px] text-digi-muted text-center py-2" style={mf}>Sin participantes aun</p>
             )}
           </div>
           </>)}
@@ -1151,7 +1157,7 @@ export default function ProjectDetailPage() {
           {/* Invite Modal */}
           <PixelModal open={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invitar Miembros" size="md">
             <div className="space-y-3">
-              <p className="text-[9px] text-digi-muted" style={mf}>Selecciona los miembros que deseas invitar a enviar una propuesta:</p>
+              <p className="text-[11px] text-digi-muted" style={mf}>Selecciona los miembros que deseas invitar a enviar una propuesta:</p>
               <div className="max-h-64 overflow-y-auto space-y-1">
                 {allMembers.filter(m => !bids.some((b: any) => String(b.member_id) === String(m.id))).map((m: any) => (
                   <label key={m.id} className="flex items-center gap-2 px-3 py-2 border border-digi-border/50 cursor-pointer hover:bg-accent/5 transition-colors">
@@ -1167,18 +1173,18 @@ export default function ProjectDetailPage() {
                     />
                     <div className="flex-1">
                       <span className="text-xs text-digi-text" style={mf}>{m.name}</span>
-                      {m.email && <span className="text-[9px] text-digi-muted ml-2" style={mf}>{m.email}</span>}
+                      {m.email && <span className="text-[11px] text-digi-muted ml-2" style={mf}>{m.email}</span>}
                     </div>
                     {m.position_name && <PixelBadge variant="default">{m.position_name}</PixelBadge>}
                   </label>
                 ))}
                 {allMembers.filter(m => !bids.some((b: any) => String(b.member_id) === String(m.id))).length === 0 && (
-                  <p className="text-center text-[9px] text-digi-muted py-4" style={mf}>Todos los miembros ya fueron invitados</p>
+                  <p className="text-center text-[12px] text-digi-muted py-4" style={mf}>Todos los miembros ya fueron invitados</p>
                 )}
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-                <button onClick={() => setShowInviteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
-                <button onClick={sendInvites} disabled={inviting || selectedInvites.size === 0} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                <button onClick={() => setShowInviteModal(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
+                <button onClick={sendInvites} disabled={inviting || selectedInvites.size === 0} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
                   {inviting ? 'Invitando...' : `Invitar (${selectedInvites.size})`}
                 </button>
               </div>
@@ -1189,24 +1195,24 @@ export default function ProjectDetailPage() {
           <PixelModal open={showBidModal} onClose={() => setShowBidModal(false)} title="Enviar Propuesta" size="md">
             <div className="space-y-3">
               <div>
-                <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Propuesta <span className="text-red-400">*</span></label>
+                <label className="block text-[11px] text-digi-muted mb-1" style={pf}>Propuesta <span className="text-red-600">*</span></label>
                 <textarea value={bidProposal} onChange={e => setBidProposal(e.target.value)} rows={3}
                   placeholder="Describe tu propuesta, experiencia relevante y como abordarias el proyecto..."
                   className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
               </div>
 
               <div>
-                <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Dias estimados</label>
+                <label className="block text-[11px] text-digi-muted mb-1" style={pf}>Dias estimados</label>
                 <input value={bidDays} onChange={e => setBidDays(e.target.value)} type="number" placeholder="Opcional"
                   className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
               </div>
 
               {reqs.length > 0 && (
                 <div>
-                  <label className="block text-[9px] text-digi-muted mb-1" style={pf}>
-                    Requerimientos que puedes atender <span className="text-red-400">*</span>
+                  <label className="block text-[11px] text-digi-muted mb-1" style={pf}>
+                    Requerimientos que puedes atender <span className="text-red-600">*</span>
                   </label>
-                  <p className="text-[8px] text-digi-muted mb-2" style={mf}>Selecciona y especifica tu costo para cada uno</p>
+                  <p className="text-[11px] text-digi-muted mb-2" style={mf}>Selecciona y especifica tu costo para cada uno</p>
                   <div className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
                     {reqs.map((r: any) => {
                       const selected = bidReqIds.includes(r.id);
@@ -1227,11 +1233,11 @@ export default function ProjectDetailPage() {
                               className="accent-[#4B2D8E]"
                             />
                             <span className="text-xs text-digi-text flex-1" style={mf}>{r.title}</span>
-                            {r.cost && <span className="text-[9px] text-digi-muted" style={mf}>Ref: ${r.cost}</span>}
+                            {r.cost && <span className="text-[11px] text-digi-muted" style={mf}>Ref: ${r.cost}</span>}
                           </label>
                           {selected && (
                             <div className="mt-1.5 ml-6 flex items-center gap-2">
-                              <span className="text-[8px] text-digi-muted" style={pf}>Tu costo ($):</span>
+                              <span className="text-[11px] text-digi-muted" style={pf}>Tu costo ($):</span>
                               <input
                                 value={bidReqCosts[r.id] || ''}
                                 onChange={e => setBidReqCosts(prev => ({ ...prev, [r.id]: e.target.value }))}
@@ -1242,7 +1248,7 @@ export default function ProjectDetailPage() {
                               {r.cost && (
                                 <button
                                   onClick={() => setBidReqCosts(prev => ({ ...prev, [r.id]: String(r.cost) }))}
-                                  className="text-[7px] text-accent-glow border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors"
+                                  className="text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors"
                                   style={pf}
                                   title="Usar el costo propuesto por el creador"
                                 >
@@ -1257,7 +1263,7 @@ export default function ProjectDetailPage() {
                   </div>
                   {bidReqIds.length > 0 && (
                     <div className="mt-2 flex justify-end">
-                      <span className="text-[9px] text-accent-glow" style={pf}>
+                      <span className="text-[12px] text-accent" style={pf}>
                         Total: ${bidReqIds.reduce((sum, rid) => sum + (Number(bidReqCosts[rid]) || 0), 0).toFixed(2)}
                       </span>
                     </div>
@@ -1266,8 +1272,8 @@ export default function ProjectDetailPage() {
               )}
 
               <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-                <button onClick={() => setShowBidModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
-                <button onClick={submitBid} disabled={submittingBid || !bidProposal.trim() || bidReqIds.length === 0} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                <button onClick={() => setShowBidModal(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
+                <button onClick={submitBid} disabled={submittingBid || !bidProposal.trim() || bidReqIds.length === 0} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
                   {submittingBid ? 'Enviando...' : 'Enviar Propuesta'}
                 </button>
               </div>
@@ -1280,10 +1286,10 @@ export default function ProjectDetailPage() {
               <div className="py-8 space-y-6">
                 {/* Progress bar */}
                 <div className="space-y-3">
-                  <div className="w-full h-1.5 bg-digi-border overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-digi-border/60 overflow-hidden">
                     <div className="h-full bg-accent animate-[progressPulse_1.5s_ease-in-out_infinite]" style={{ width: '100%' }} />
                   </div>
-                  <p className="text-center text-xs text-accent-glow" style={mf}>{completeStep}</p>
+                  <p className="text-center text-[13px] text-digi-text" style={mf}>{completeStep}</p>
                 </div>
 
                 {/* Steps visual */}
@@ -1295,18 +1301,18 @@ export default function ProjectDetailPage() {
                     { label: 'Email', done: completeStep === 'Proceso completado' },
                   ].map((s, i) => (
                     <div key={i} className="flex items-center gap-2">
-                      <div className={`w-6 h-6 flex items-center justify-center text-[8px] border-2 transition-all ${
-                        s.done ? 'border-green-500 bg-green-900/20 text-green-400' : 'border-digi-border text-digi-muted animate-pulse'
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] border-2 transition-all ${
+                        s.done ? 'border-green-500 bg-green-50 text-green-600' : 'border-digi-border text-digi-muted animate-pulse'
                       }`} style={pf}>
                         {s.done ? '✓' : i + 1}
                       </div>
-                      <span className={`text-[8px] ${s.done ? 'text-green-400' : 'text-digi-muted'}`} style={pf}>{s.label}</span>
+                      <span className={`text-[11px] ${s.done ? 'text-green-600' : 'text-digi-muted'}`} style={pf}>{s.label}</span>
                       {i < 3 && <div className={`w-4 h-0.5 ${s.done ? 'bg-green-500' : 'bg-digi-border'}`} />}
                     </div>
                   ))}
                 </div>
 
-                <p className="text-center text-[8px] text-digi-muted" style={mf}>No cierres esta ventana hasta que el proceso termine</p>
+                <p className="text-center text-[12px] text-digi-muted" style={mf}>No cierres esta ventana hasta que el proceso termine</p>
               </div>
             ) : (
             <div className="max-h-[80vh] overflow-y-auto pr-1">
@@ -1314,11 +1320,11 @@ export default function ProjectDetailPage() {
                 {/* ─── LEFT: Adquirente + Pago ─── */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between border-b border-digi-border pb-1">
-                    <h4 className="text-[9px] text-accent-glow" style={pf}>Adquirente</h4>
+                    <h4 className="text-[12px] text-accent" style={pf}>Adquirente</h4>
                     <button
                       type="button"
                       onClick={() => setHistoryOpen(o => !o)}
-                      className="text-[8px] px-2 py-0.5 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors"
+                      className="text-[11px] px-2 py-0.5 rounded border border-accent/40 text-accent hover:bg-accent-light transition-colors"
                       style={pf}
                     >
                       {historyOpen ? 'Cerrar' : `Cliente previo${clientHistory.length ? ` (${clientHistory.length})` : ''}`}
@@ -1326,18 +1332,18 @@ export default function ProjectDetailPage() {
                   </div>
 
                   {historyOpen && (
-                    <div className="border border-digi-border bg-digi-darker p-2 space-y-2">
+                    <div className="border border-digi-border rounded-lg bg-digi-darker p-2 space-y-2">
                       <input
                         autoFocus
                         value={historySearch}
                         onChange={e => setHistorySearch(e.target.value)}
                         placeholder="Buscar por nombre o RUC..."
-                        className="w-full px-2 py-1 bg-digi-dark border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none"
+                        className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none"
                         style={mf}
                       />
                       <div className="max-h-40 overflow-y-auto border border-digi-border/50">
                         {filteredHistory.length === 0 ? (
-                          <div className="px-2 py-3 text-center text-[9px] text-digi-muted" style={pf}>
+                          <div className="px-2 py-3 text-center text-[12px] text-digi-muted" style={pf}>
                             {clientHistory.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}
                           </div>
                         ) : (
@@ -1348,8 +1354,8 @@ export default function ProjectDetailPage() {
                               onClick={() => applyPastClient(c)}
                               className="w-full text-left px-2 py-1.5 border-b border-digi-border/30 last:border-b-0 hover:bg-accent/10 transition-colors"
                             >
-                              <div className="text-[10px] text-digi-text truncate" style={mf}>{c.client_name}</div>
-                              <div className="text-[8px] text-digi-muted flex gap-2" style={mf}>
+                              <div className="text-[12px] text-digi-text truncate" style={mf}>{c.client_name}</div>
+                              <div className="text-[11px] text-digi-muted flex gap-2" style={mf}>
                                 <span>{c.client_ruc}</span>
                                 {c.client_email && <span className="truncate">· {c.client_email}</span>}
                               </div>
@@ -1357,58 +1363,58 @@ export default function ProjectDetailPage() {
                           ))
                         )}
                       </div>
-                      <div className="text-[8px] text-digi-muted" style={pf}>
+                      <div className="text-[11px] text-digi-muted" style={pf}>
                         Elige uno para rellenar los campos, o cierra y llena manualmente.
                       </div>
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tipo ID <span className="text-red-400">*</span></label>
+                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tipo ID <span className="text-red-600">*</span></label>
                       <select value={completeIdType} onChange={e => {
                         const t = e.target.value;
                         setCompleteIdType(t);
                         if (t === '07') { setCompleteClientRuc('9999999999999'); setCompleteClientName('CONSUMIDOR FINAL'); }
                         else { if (completeClientRuc === '9999999999999') setCompleteClientRuc(''); if (completeClientName === 'CONSUMIDOR FINAL') setCompleteClientName(''); }
-                      }} className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                      }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                         <option value="04">RUC</option><option value="05">Cedula</option><option value="06">Pasaporte</option><option value="07">Consumidor Final</option><option value="08">ID Exterior</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Identificacion <span className="text-red-400">*</span></label>
+                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Identificacion <span className="text-red-600">*</span></label>
                       <input value={completeClientRuc} onChange={e => setCompleteClientRuc(e.target.value)} disabled={completeIdType === '07'}
                         placeholder={completeIdType === '04' ? '0900000000001' : '0900000000'} maxLength={completeIdType === '04' ? 13 : completeIdType === '05' ? 10 : 20}
-                        className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-                      {completeIdType === '04' && completeClientRuc && completeClientRuc.length !== 13 && <p className="text-[7px] text-red-400" style={mf}>13 digitos</p>}
-                      {completeIdType === '05' && completeClientRuc && completeClientRuc.length !== 10 && <p className="text-[7px] text-red-400" style={mf}>10 digitos</p>}
+                        className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                      {completeIdType === '04' && completeClientRuc && completeClientRuc.length !== 13 && <p className="text-[11px] text-red-600" style={mf}>13 digitos</p>}
+                      {completeIdType === '05' && completeClientRuc && completeClientRuc.length !== 10 && <p className="text-[11px] text-red-600" style={mf}>10 digitos</p>}
                     </div>
                   </div>
                   <div>
-                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Razon Social <span className="text-red-400">*</span></label>
+                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Razon Social <span className="text-red-600">*</span></label>
                     <input value={completeClientName} onChange={e => setCompleteClientName(e.target.value)} disabled={completeIdType === '07'}
-                      className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                      className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
                   </div>
                   <div>
-                    <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Direccion <span className="text-red-400">*</span></label>
+                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Direccion <span className="text-red-600">*</span></label>
                     <input value={completeClientAddress} onChange={e => setCompleteClientAddress(e.target.value)} placeholder="Direccion"
-                      className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Email {completeIdType !== '07' && <span className="text-red-400">*</span>}</label>
+                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Email {completeIdType !== '07' && <span className="text-red-600">*</span>}</label>
                       <input value={completeClientEmail} onChange={e => setCompleteClientEmail(e.target.value)} type="email" placeholder="correo@ejemplo.com"
-                        className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                        className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                     </div>
                     <div>
-                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Telefono</label>
+                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Telefono</label>
                       <input value={completeClientPhone} onChange={e => setCompleteClientPhone(e.target.value)} placeholder="0999999999"
-                        className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                        className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                     </div>
                   </div>
 
-                  <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Forma de Pago</h4>
+                  <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Forma de Pago</h4>
                   <select value={completePaymentCode} onChange={e => setCompletePaymentCode(e.target.value)}
-                    className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                     <option value="01">Sin utilizacion del sistema financiero</option>
                     <option value="15">Compensacion de deudas</option>
                     <option value="16">Tarjeta de debito</option>
@@ -1421,30 +1427,30 @@ export default function ProjectDetailPage() {
 
                   {currencies.length > 0 && (
                   <>
-                  <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Moneda</h4>
+                  <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Moneda</h4>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Moneda</label>
+                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Moneda</label>
                       <select value={completeCurrency} onChange={e => {
                         const code = e.target.value;
                         setCompleteCurrency(code);
                         const c = currencies.find(c => c.code === code);
                         setCompleteExchangeRate(c ? String(c.rate) : '1');
-                      }} className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                      }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                         {currencies.map(c => (
                           <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Tasa (1 USD = ?)</label>
+                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tasa (1 USD = ?)</label>
                       <input value={completeExchangeRate} onChange={e => setCompleteExchangeRate(e.target.value)}
                         type="number" min="0.0001" step="0.0001" disabled={completeCurrency === 'USD'}
-                        className="w-full px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+                        className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
                     </div>
                   </div>
                   {completeCurrency !== 'USD' && (
-                    <div className="px-2 py-1.5 border border-purple-500/30 bg-purple-900/10 text-[9px] text-purple-300 mt-1" style={mf}>
+                    <div className="px-2 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent mt-1" style={mf}>
                       Equivalente para el cliente: {(() => {
                         const t = completeItems.reduce((s, it) => {
                           const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
@@ -1459,64 +1465,64 @@ export default function ProjectDetailPage() {
                   </>
                   )}
 
-                  <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1 mt-3" style={pf}>Campos Adicionales</h4>
+                  <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Campos Adicionales</h4>
                   <div className="space-y-1">
                     {completeAdditionalFields.map((f, i) => (
                       <div key={i} className="flex gap-1">
                         <input value={f.name} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], name: e.target.value }; setCompleteAdditionalFields(n); }}
-                          placeholder="Nombre" className="w-1/3 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                          placeholder="Nombre" className="w-1/3 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                         <input value={f.value} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setCompleteAdditionalFields(n); }}
-                          placeholder="Descripcion" className="flex-1 px-2 py-1 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                          placeholder="Descripcion" className="flex-1 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                         <button onClick={() => setCompleteAdditionalFields(prev => prev.filter((_, idx) => idx !== i))}
-                          className="text-red-400/60 hover:text-red-400 text-[8px] px-1" style={pf}>X</button>
+                          className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
                       </div>
                     ))}
                     <button onClick={() => setCompleteAdditionalFields(prev => [...prev, { name: '', value: '' }])}
-                      className="text-[8px] text-digi-muted border border-digi-border px-2 py-0.5 hover:text-accent-glow hover:border-accent/30 transition-colors" style={pf}>+ Campo adicional</button>
+                      className="text-[12px] text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={pf}>+ Campo adicional</button>
                   </div>
                 </div>
 
                 {/* ─── RIGHT: Detalle + Totales ─── */}
                 <div className="space-y-2">
-                  <h4 className="text-[9px] text-accent-glow border-b border-digi-border pb-1" style={pf}>Detalle</h4>
+                  <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Detalle</h4>
                   <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
                     {completeItems.map((item, i) => (
-                      <div key={i} className="border border-digi-border/50 p-1.5">
+                      <div key={i} className="border border-digi-border rounded-lg p-2">
                         <div className="flex gap-1 mb-1">
                           <input value={item.description} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], description: e.target.value }; setCompleteItems(n); }}
                             placeholder="Descripcion" className="flex-1 px-2 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                           <button onClick={() => setCompleteItems(prev => prev.filter((_, idx) => idx !== i))}
-                            className="text-red-400/60 hover:text-red-400 text-[7px] px-1" style={pf}>X</button>
+                            className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
                         </div>
                         <div className="grid grid-cols-4 gap-1">
                           <div>
-                            <label className="text-[7px] text-digi-muted" style={pf}>Cant.</label>
+                            <label className="text-[11px] text-digi-muted" style={pf}>Cant.</label>
                             <input value={item.quantity} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], quantity: e.target.value }; setCompleteItems(n); }}
-                              type="number" min="0.01" step="0.01" className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                              type="number" min="0.01" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                           </div>
                           <div>
-                            <label className="text-[7px] text-digi-muted" style={pf}>P.Unit.</label>
+                            <label className="text-[11px] text-digi-muted" style={pf}>P.Unit.</label>
                             <input value={item.unitPrice} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], unitPrice: e.target.value }; setCompleteItems(n); }}
-                              type="number" min="0" step="0.01" className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                              type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                           </div>
                           <div>
-                            <label className="text-[7px] text-digi-muted" style={pf}>IVA</label>
+                            <label className="text-[11px] text-digi-muted" style={pf}>IVA</label>
                             <select value={item.ivaRate} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], ivaRate: e.target.value }; setCompleteItems(n); }}
-                              className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                              className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                               <option value="0">0%</option><option value="5">5%</option><option value="15">15%</option>
                             </select>
                           </div>
                           <div>
-                            <label className="text-[7px] text-digi-muted" style={pf}>Desc.</label>
+                            <label className="text-[11px] text-digi-muted" style={pf}>Desc.</label>
                             <input value={item.discount} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], discount: e.target.value }; setCompleteItems(n); }}
-                              type="number" min="0" step="0.01" className="w-full px-1 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                              type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                   <button onClick={() => setCompleteItems(prev => [...prev, { description: '', quantity: '1', unitPrice: '0', ivaRate: '0', discount: '0' }])}
-                    className="text-[8px] text-accent-glow border border-accent/30 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>+ Item</button>
+                    className="inline-flex items-center gap-1 text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors" style={pf}>+ Item</button>
 
                   {/* Totales */}
                   {(() => {
@@ -1533,13 +1539,13 @@ export default function ProjectDetailPage() {
                       return s + base * ((Number(it.ivaRate) || 0) / 100);
                     }, 0);
                     return (
-                      <div className="border-2 border-digi-border p-2 text-[9px] space-y-0.5" style={mf}>
+                      <div className="border border-digi-border rounded-lg p-3 text-[12px] space-y-1" style={mf}>
                         {Object.entries(ivaByRate).map(([rate, base]) => (
                           <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${base.toFixed(2)}</span></div>
                         ))}
                         {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${totalDiscount.toFixed(2)}</span></div>}
                         {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${totalIva.toFixed(2)}</span></div>}
-                        <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent-glow font-bold">Total:</span><span className="text-accent-glow font-bold">${(subtotal + totalIva).toFixed(2)}</span></div>
+                        <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent font-semibold">Total:</span><span className="text-accent font-semibold">${(subtotal + totalIva).toFixed(2)}</span></div>
                       </div>
                     );
                   })()}
@@ -1555,23 +1561,23 @@ export default function ProjectDetailPage() {
                 const consumidorFinalOver50 = completeIdType === '07' && invoiceTotal > 50;
                 const isFormValid = !completing && completeClientName.trim() && completeClientRuc.trim() && completeClientAddress.trim() && (completeIdType === '07' || completeClientEmail.trim()) && completeItems.length > 0 && !(completeIdType === '04' && completeClientRuc.length !== 13) && !(completeIdType === '05' && completeClientRuc.length !== 10) && !consumidorFinalOver50;
                 return (
-                  <div className="pt-3 mt-3 border-t-2 border-digi-border space-y-2">
+                  <div className="pt-3 mt-3 border-t border-digi-border space-y-2">
                     {consumidorFinalOver50 && (
-                      <div className="px-3 py-2 border border-red-700/50 bg-red-900/10 text-[9px] text-red-400" style={mf}>
+                      <div className="px-3 py-2 border border-red-300 rounded bg-red-50 text-[12px] text-red-600" style={mf}>
                         El SRI requiere identificar al cliente (RUC o Cedula) en facturas mayores a $50.00. El total actual es ${invoiceTotal.toFixed(2)}. Cambia el tipo de identificacion.
                       </div>
                     )}
                     <div className="flex items-center justify-between">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={completeSendEmail} onChange={e => setCompleteSendEmail(e.target.checked)} className="accent-[#4B2D8E]" />
-                        <span className="text-[9px] text-digi-muted" style={mf}>Enviar por correo</span>
+                        <span className="text-[12px] text-digi-muted" style={mf}>Enviar por correo</span>
                       </label>
                       <div className="flex gap-2">
-                        <button onClick={() => setShowCompleteModal(false)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
-                        <button onClick={() => handleComplete(true)} disabled={completing} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-text hover:border-accent hover:text-digi-text transition-colors disabled:opacity-50" style={pf}>
+                        <button onClick={() => setShowCompleteModal(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
+                        <button onClick={() => handleComplete(true)} disabled={completing} className="pixel-btn pixel-btn-secondary text-sm disabled:opacity-50" style={pf}>
                           Completar sin Facturar
                         </button>
-                        <button onClick={() => handleComplete(false)} disabled={!isFormValid} className="pixel-btn-primary px-4 py-2 text-[9px] disabled:opacity-50" style={pf}>
+                        <button onClick={() => handleComplete(false)} disabled={!isFormValid} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
                           Completar y Facturar
                         </button>
                       </div>
@@ -1587,7 +1593,7 @@ export default function ProjectDetailPage() {
           {/* Withdrawal Requests */}
           {projectRequests.length > 0 && (
             <div className="pixel-card">
-              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Solicitudes</h3>
+              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Solicitudes</h3>
               <div className="space-y-2">
                 {projectRequests.map((r: any) => (
                   <div key={r.id} className="p-2 border border-digi-border bg-digi-darker">
@@ -1596,11 +1602,11 @@ export default function ProjectDetailPage() {
                         {r.photo_url ? (
                           <img src={r.photo_url} alt={r.member_name} className="w-4 h-4 rounded-full object-cover border border-digi-border" />
                         ) : (
-                          <div className="w-4 h-4 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center">
+                          <div className="w-4 h-4 rounded-full bg-accent-light border border-accent/50 flex items-center justify-center">
                             <span className="text-[6px] text-accent-glow" style={pf}>{r.member_name?.charAt(0)}</span>
                           </div>
                         )}
-                        <span className="text-[9px] text-digi-text" style={mf}>{r.member_name}</span>
+                        <span className="text-[11px] text-digi-text" style={mf}>{r.member_name}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <PixelBadge variant={r.type === 'withdrawal' ? 'info' : 'warning'}>
@@ -1613,11 +1619,11 @@ export default function ProjectDetailPage() {
                         </PixelBadge>
                       </div>
                     </div>
-                    <p className="text-[9px] text-digi-muted" style={mf}>{r.reason}</p>
+                    <p className="text-[11px] text-digi-muted" style={mf}>{r.reason}</p>
                     {r.status === 'pending' && r.type === 'withdrawal' && isOwner && (
                       <div className="flex gap-1 mt-1.5">
-                        <button onClick={() => reviewRequest(r.id, 'approved')} className="text-[8px] text-green-400 border border-green-500/30 px-2 py-0.5 hover:bg-green-900/20 transition-colors" style={pf}>Aprobar</button>
-                        <button onClick={() => reviewRequest(r.id, 'rejected')} className="text-[8px] text-red-400 border border-red-500/30 px-2 py-0.5 hover:bg-red-900/20 transition-colors" style={pf}>Rechazar</button>
+                        <button onClick={() => reviewRequest(r.id, 'approved')} className="text-[11px] text-green-600 border border-green-300 px-2 py-0.5 hover:bg-green-50 transition-colors" style={pf}>Aprobar</button>
+                        <button onClick={() => reviewRequest(r.id, 'rejected')} className="text-[11px] text-red-600 border border-red-300 px-2 py-0.5 hover:bg-red-50 transition-colors" style={pf}>Rechazar</button>
                       </div>
                     )}
                   </div>
@@ -1644,7 +1650,7 @@ export default function ProjectDetailPage() {
             if (members.length === 0) return null;
             return (
               <div className="pixel-card">
-                <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Progreso del Equipo</h3>
+                <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Progreso del Equipo</h3>
                 <div className="space-y-2">
                   {members.map((m, i) => {
                     const pct = m.total > 0 ? Math.round((m.completed / m.total) * 100) : 0;
@@ -1653,14 +1659,14 @@ export default function ProjectDetailPage() {
                         {m.photo_url ? (
                           <img src={m.photo_url} alt={m.name} className="w-6 h-6 rounded-full object-cover border border-digi-border shrink-0" />
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center shrink-0">
-                            <span className="text-[7px] text-accent-glow" style={pf}>{m.name?.charAt(0)}</span>
+                          <div className="w-6 h-6 rounded-full bg-accent-light border border-accent/50 flex items-center justify-center shrink-0">
+                            <span className="text-[11px] text-accent" style={pf}>{m.name?.charAt(0)}</span>
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-[9px] text-digi-text truncate" style={mf}>{m.name}</span>
-                            <span className="text-[8px] text-digi-muted shrink-0" style={mf}>{m.completed}/{m.total} ({pct}%)</span>
+                            <span className="text-[11px] text-digi-text truncate" style={mf}>{m.name}</span>
+                            <span className="text-[11px] text-digi-muted shrink-0" style={mf}>{m.completed}/{m.total} ({pct}%)</span>
                           </div>
                           <div className="h-1.5 bg-digi-darker border border-digi-border overflow-hidden">
                             <div className={`h-full transition-all duration-500 ${pct === 100 ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
@@ -1680,9 +1686,9 @@ export default function ProjectDetailPage() {
           {showImages && (
             <div className="pixel-card">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[10px] text-accent-glow" style={pf}>Imagenes del Proyecto ({projectImages.length}/30)</h3>
+                <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>Imagenes del Proyecto ({projectImages.length}/30)</h3>
                 {canEditImages && projectImages.length < 30 && (
-                  <label className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors cursor-pointer" style={pf}>
+                  <label className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors cursor-pointer" style={pf}>
                     {uploadingImages ? 'Subiendo...' : '+ Subir'}
                     <input
                       type="file"
@@ -1698,9 +1704,9 @@ export default function ProjectDetailPage() {
 
               {projectImages.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-[9px] text-digi-muted" style={mf}>Sin imagenes aun</p>
+                  <p className="text-[11px] text-digi-muted" style={mf}>Sin imagenes aun</p>
                   {canEditImages && (
-                    <label className="inline-block mt-2 px-3 py-1.5 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors cursor-pointer" style={pf}>
+                    <label className="inline-block mt-2 px-3 py-1.5 text-[12px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors cursor-pointer" style={pf}>
                       {uploadingImages ? 'Subiendo...' : 'Subir primera imagen'}
                       <input
                         type="file"
@@ -1728,7 +1734,7 @@ export default function ProjectDetailPage() {
                         <button
                           onClick={() => handleImageDelete(idx)}
                           disabled={deletingImageIdx === idx}
-                          className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center bg-red-900/80 text-red-300 text-[8px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-800"
+                          className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded bg-red-600/90 text-white text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
                           style={pf}
                           title="Eliminar imagen"
                         >
@@ -1780,7 +1786,7 @@ export default function ProjectDetailPage() {
                           &gt;
                         </button>
                       )}
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-digi-card/80 border border-digi-border text-[8px] text-digi-muted z-10" style={mf}>
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-digi-card/80 border border-digi-border text-[11px] text-digi-muted z-10" style={mf}>
                         {currentIdx + 1} / {projectImages.length}
                       </div>
                     </>
@@ -1800,7 +1806,7 @@ export default function ProjectDetailPage() {
           {/* Actions */}
           {(isOwner || isMember) && (
             <div className="pixel-card">
-              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Acciones</h3>
+              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Acciones</h3>
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
                 {/* Participant: Desistir / Salida Supervisada */}
@@ -1813,13 +1819,13 @@ export default function ProjectDetailPage() {
                     <>
                       {!hasPendingWithdrawal && !hasRejectedWithdrawal && (
                         <button onClick={() => { setWithdrawType('withdrawal'); setWithdrawReason(''); setShowWithdrawModal(true); }}
-                          className="py-1.5 px-3 text-[9px] text-yellow-400 border border-yellow-500/30 hover:bg-yellow-900/20 transition-colors" style={pf}>
+                          className="py-1.5 px-3 text-[11px] text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors" style={pf}>
                           Desistir
                         </button>
                       )}
                       {hasRejectedWithdrawal && !hasPendingSupervisedExit && (
                         <button onClick={() => { setWithdrawType('supervised_exit'); setWithdrawReason(''); setShowWithdrawModal(true); }}
-                          className="py-1.5 px-3 text-[9px] text-red-400 border border-red-500/30 hover:bg-red-900/20 transition-colors" style={pf}>
+                          className="py-1.5 px-3 text-[11px] text-red-600 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>
                           Salida con Supervision
                         </button>
                       )}
@@ -1827,7 +1833,7 @@ export default function ProjectDetailPage() {
                   );
                 })()}
                 </div>
-                <p className="text-[9px] text-digi-muted leading-relaxed" style={mf}>
+                <p className="text-[11px] text-digi-muted leading-relaxed" style={mf}>
                   {project.status === 'draft' && 'Publicar hara visible este proyecto para que miembros puedan postularse y trabajar en el.'}
                   {project.status === 'open' && 'Iniciar cambia el estado a En Progreso, indicando que el equipo ya esta trabajando activamente.'}
                   {project.status === 'in_progress' && 'Enviar a Revision notifica al administrador que el trabajo esta listo para ser evaluado. Todos los requerimientos deben estar completados al 100%.'}
@@ -1848,7 +1854,7 @@ export default function ProjectDetailPage() {
                         fetchProject();
                       } catch (e: any) { toast.error(e.message || 'Error'); }
                     }}
-                    className={`pixel-btn text-[9px] ${project.is_marketplace_published ? 'border border-yellow-500/30 text-yellow-400 hover:bg-yellow-900/20' : 'pixel-btn-primary'}`}
+                    className={`pixel-btn text-sm ${project.is_marketplace_published ? 'border border-amber-300 text-amber-700 hover:bg-amber-50' : 'pixel-btn-primary'}`}
                   >
                     {project.is_marketplace_published ? 'Despublicar Marketplace' : 'Publicar en Marketplace'}
                   </button>
@@ -1861,12 +1867,12 @@ export default function ProjectDetailPage() {
           {isAdmin && (
             <div className="pixel-card" style={{ borderColor: project.digimundo_project_id ? 'var(--color-accent)' : undefined }}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[10px] text-accent-glow" style={pf}>DigiMundo</h3>
+                <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>DigiMundo</h3>
                 {project.digimundo_project_id && chat.citizen && (
                   <div className="flex items-center gap-1.5">
                     <TaskQueueIndicator count={chat.pendingQueue.length} items={chat.pendingQueue.map(q => ({ id: q.id, title: q.title }))} isProcessing={chat.isProcessing} />
                     {!chat.chatOpen && (
-                      <button onClick={() => { chat.setChatOpen(true); chat.setChatMinimized(false); }} className="px-2 py-1 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>Chat</button>
+                      <button onClick={() => { chat.setChatOpen(true); chat.setChatMinimized(false); }} className="px-2 py-1 text-[11px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>Chat</button>
                     )}
                   </div>
                 )}
@@ -1877,37 +1883,37 @@ export default function ProjectDetailPage() {
                 <option value="">Sin vincular</option>
                 {digiProjects.map((dp: any) => <option key={dp.id} value={dp.id}>{dp.name}</option>)}
               </select>
-              {linkedDigiName && <p className="text-[9px] text-green-400" style={pf}>Vinculado a: {linkedDigiName}</p>}
+              {linkedDigiName && <p className="text-[11px] text-green-600" style={pf}>Vinculado a: {linkedDigiName}</p>}
             </div>
           )}
 
           {/* Proforma */}
           {project.digimundo_project_id && (project.has_proforma || chat.isLocalhost) && (
             <div className="pixel-card" style={{ borderColor: project.has_proforma ? 'var(--color-accent)' : undefined }}>
-              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Proforma</h3>
+              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Proforma</h3>
               {project.has_proforma ? (
                 <div className="space-y-2">
-                  <p className="text-[9px] text-green-400" style={pf}>Proforma guardada</p>
+                  <p className="text-[11px] text-green-600" style={pf}>Proforma guardada</p>
                   <div className="flex gap-1.5 flex-wrap">
                     <button onClick={() => window.open(`/api/projects/${id}/proforma?format=pdf`, '_blank')}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors" style={pf}>
+                      className="flex-1 px-2 py-1.5 text-[11px] text-green-600 border border-green-700/50 hover:bg-green-50 transition-colors" style={pf}>
                       PDF
                     </button>
                     {chat.isLocalhost && (
                       <button onClick={openProformaChat}
-                        className="flex-1 px-2 py-1.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
+                        className="flex-1 px-2 py-1.5 text-[11px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                         Editar / Actualizar
                       </button>
                     )}
                     <ProformaTokenButton projectId={id as string}
-                      className="flex-1 px-2 py-1.5 text-[8px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors" />
+                      className="flex-1 px-2 py-1.5 text-[11px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors" />
                   </div>
                 </div>
               ) : chat.isLocalhost ? (
                 <div className="space-y-2">
-                  <p className="text-[9px] text-digi-muted" style={mf}>Genera una proforma profesional con asistencia de IA.</p>
+                  <p className="text-[11px] text-digi-muted" style={mf}>Genera una proforma profesional con asistencia de IA.</p>
                   <button onClick={openProformaChat}
-                    className="w-full px-2 py-2 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
+                    className="w-full px-2 py-2 text-[12px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
                     Generar Proforma
                   </button>
                 </div>
@@ -1918,11 +1924,11 @@ export default function ProjectDetailPage() {
           {/* Content (Script + Video) - Completed projects, admin */}
           {isAdmin && project.status === 'completed' && project.digimundo_project_id && (
             <div className="pixel-card" style={{ borderColor: (videoScript || videoUrl) ? 'var(--color-accent)' : undefined }}>
-              <h3 className="text-[10px] text-accent-glow mb-3" style={pf}>Contenido</h3>
+              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Contenido</h3>
               <div className="space-y-2">
                 {/* Script */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-digi-muted" style={mf}>Guion</span>
+                  <span className="text-[11px] text-digi-muted" style={mf}>Guion</span>
                   <div className="flex gap-1">
                     {videoScript && (
                       <button
@@ -1933,7 +1939,7 @@ export default function ProjectDetailPage() {
                           a.href = url; a.download = `guion-${project.title.replace(/\s+/g, '-').toLowerCase()}.txt`;
                           a.click(); URL.revokeObjectURL(url);
                         }}
-                        className="px-2 py-0.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors"
+                        className="px-2 py-0.5 text-[11px] text-green-600 border border-green-700/50 hover:bg-green-50 transition-colors"
                         style={pf}
                       >
                         Descargar
@@ -1942,7 +1948,7 @@ export default function ProjectDetailPage() {
                     {chat.isLocalhost && (
                       <button
                         onClick={openScriptPanel}
-                        className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors"
+                        className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors"
                         style={pf}
                       >
                         {videoScript ? 'Regenerar' : 'Generar Guion'}
@@ -1952,7 +1958,7 @@ export default function ProjectDetailPage() {
                 </div>
                 {videoScript && (
                   <div className="max-h-32 overflow-y-auto px-2 py-1.5 border border-digi-border/30 bg-digi-darker">
-                    <p className="text-[9px] text-digi-text whitespace-pre-wrap" style={mf}>{videoScript.slice(0, 500)}{videoScript.length > 500 ? '...' : ''}</p>
+                    <p className="text-[11px] text-digi-text whitespace-pre-wrap" style={mf}>{videoScript.slice(0, 500)}{videoScript.length > 500 ? '...' : ''}</p>
                   </div>
                 )}
 
@@ -1960,16 +1966,16 @@ export default function ProjectDetailPage() {
                 {videoScript && projectImages.length > 0 && (
                   <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] text-digi-muted" style={mf}>Storyboard</span>
+                      <span className="text-[11px] text-digi-muted" style={mf}>Storyboard</span>
                       {storyboard && (
-                        <span className="text-[7px] text-accent-glow/60" style={mf}>
+                        <span className="text-[11px] text-accent/60" style={mf}>
                           ({storyboard.filter(s => s.imageIndex !== null).length}/{storyboard.length} asignados)
                         </span>
                       )}
                     </div>
                     <button
                       onClick={() => setShowStoryboard(true)}
-                      className="px-2 py-0.5 text-[8px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors"
+                      className="px-2 py-0.5 text-[11px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors"
                       style={pf}
                     >
                       {storyboard ? 'Editar' : 'Configurar'}
@@ -1979,12 +1985,12 @@ export default function ProjectDetailPage() {
 
                 {/* Video */}
                 <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
-                  <span className="text-[9px] text-digi-muted" style={mf}>Video</span>
+                  <span className="text-[11px] text-digi-muted" style={mf}>Video</span>
                   <div className="flex gap-1">
                     {videoUrl && (
                       <button
                         onClick={() => window.open(`/api/projects/${id}/video?download=true`, '_blank')}
-                        className="px-2 py-0.5 text-[8px] text-green-400 border border-green-700/50 hover:bg-green-900/20 transition-colors"
+                        className="px-2 py-0.5 text-[11px] text-green-600 border border-green-700/50 hover:bg-green-50 transition-colors"
                         style={pf}
                       >
                         Descargar
@@ -1994,7 +2000,7 @@ export default function ProjectDetailPage() {
                       <button
                         onClick={handleGenerateVideo}
                         disabled={generatingVideo || projectImages.length === 0}
-                        className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors disabled:opacity-40"
+                        className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors disabled:opacity-40"
                         style={pf}
                       >
                         {generatingVideo ? videoStep || 'Generando...' : videoUrl ? 'Regenerar Video' : 'Generar Video'}
@@ -2003,20 +2009,20 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
                 {!videoScript && !chat.isLocalhost && (
-                  <p className="text-[9px] text-digi-muted text-center py-2" style={mf}>Sin contenido generado aun</p>
+                  <p className="text-[11px] text-digi-muted text-center py-2" style={mf}>Sin contenido generado aun</p>
                 )}
                 {chat.isLocalhost && !videoScript && projectImages.length === 0 && (
-                  <p className="text-[8px] text-yellow-400/70 mt-1" style={mf}>Sube imagenes al proyecto antes de generar contenido</p>
+                  <p className="text-[11px] text-amber-700/70 mt-1" style={mf}>Sube imagenes al proyecto antes de generar contenido</p>
                 )}
 
                 {/* Public Docs */}
                 {chat.isLocalhost && (
                   <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
-                    <span className="text-[9px] text-digi-muted" style={mf}>Docs publicas</span>
+                    <span className="text-[11px] text-digi-muted" style={mf}>Docs publicas</span>
                     <div className="flex gap-1 items-center">
                       {publicDocsToken && (
                         <>
-                          <span className="text-[8px] text-green-400" style={pf}>ACTIVA</span>
+                          <span className="text-[11px] text-green-600" style={pf}>ACTIVA</span>
                           <button
                             onClick={async () => {
                               const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org';
@@ -2024,7 +2030,7 @@ export default function ProjectDetailPage() {
                               try { await navigator.clipboard.writeText(url); toast.success('Enlace copiado'); }
                               catch { toast.error('No se pudo copiar'); }
                             }}
-                            className="px-2 py-0.5 text-[8px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors"
+                            className="px-2 py-0.5 text-[11px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors"
                             style={pf}
                           >
                             Copiar
@@ -2033,7 +2039,7 @@ export default function ProjectDetailPage() {
                       )}
                       <button
                         onClick={openPublicDocsPanel}
-                        className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors"
+                        className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors"
                         style={pf}
                       >
                         {publicDocsToken ? 'Gestionar' : 'Generar'}
@@ -2045,12 +2051,12 @@ export default function ProjectDetailPage() {
                 {/* Social Copy */}
                 {chat.isLocalhost && (
                   <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
-                    <span className="text-[9px] text-digi-muted" style={mf}>Redes sociales</span>
+                    <span className="text-[11px] text-digi-muted" style={mf}>Redes sociales</span>
                     <div className="flex gap-1 items-center">
-                      {hasSocialCopy && <span className="text-[8px] text-green-400" style={pf}>LISTO</span>}
+                      {hasSocialCopy && <span className="text-[11px] text-green-600" style={pf}>LISTO</span>}
                       <button
                         onClick={openSocialCopyPanel}
-                        className="px-2 py-0.5 text-[8px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors"
+                        className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors"
                         style={pf}
                       >
                         {hasSocialCopy ? 'Ver / Regenerar' : 'Generar Copy'}
@@ -2076,11 +2082,11 @@ export default function ProjectDetailPage() {
                 />
               ) : (
                 <>
-                  <h3 className="text-[10px] text-accent-glow mb-2" style={pf}>Incidencias ({incidents.length})</h3>
+                  <h3 className="text-[12px] font-semibold text-digi-text mb-2" style={pf}>Incidencias ({incidents.length})</h3>
                   <div className="flex gap-1 flex-wrap mb-3">
                     {['all', 'pending', 'proposal', 'approved', 'reviewing', 'completed', 'rejected'].map(s => (
                       <button key={s} onClick={() => setIncidentFilter(s)}
-                        className={`px-1.5 py-0.5 text-[7px] border transition-colors ${incidentFilter === s ? 'border-accent text-accent-glow bg-accent/10' : 'border-digi-border/50 text-digi-muted hover:text-digi-text'}`} style={pf}>
+                        className={`px-1.5 py-0.5 text-[11px] border transition-colors ${incidentFilter === s ? 'border-accent text-accent-glow bg-accent/10' : 'border-digi-border/50 text-digi-muted hover:text-digi-text'}`} style={pf}>
                         {s === 'all' ? 'Todos' : s}
                       </button>
                     ))}
@@ -2096,7 +2102,7 @@ export default function ProjectDetailPage() {
                             <PixelBadge variant={SEV_V[inc.severity] || 'default'}>{inc.severity}</PixelBadge>
                           </div>
                           <div className="flex items-center justify-between mt-1.5">
-                            <span className="text-[8px] text-digi-muted" style={mf}>{inc.clientName} &middot; {new Date(inc.createdAt).toLocaleDateString()}</span>
+                            <span className="text-[11px] text-digi-muted" style={mf}>{inc.clientName} &middot; {new Date(inc.createdAt).toLocaleDateString()}</span>
                             <PixelBadge variant={INC_STATUS_V[inc.status] || 'default'}>{inc.status}</PixelBadge>
                           </div>
                         </div>
@@ -2126,8 +2132,8 @@ export default function ProjectDetailPage() {
                       <input value={editBudgetMin} onChange={(e) => setEditBudgetMin(e.target.value)} type="number" placeholder="Min" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
                       <span className="text-digi-muted">-</span>
                       <input value={editBudgetMax} onChange={(e) => setEditBudgetMax(e.target.value)} type="number" placeholder="Max" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
-                      <button onClick={saveBudget} className="text-[9px] text-green-400 border border-green-500/30 px-1 hover:bg-green-900/20" style={pf}>OK</button>
-                      <button onClick={() => setEditingBudget(false)} className="text-[9px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
+                      <button onClick={saveBudget} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
+                      <button onClick={() => setEditingBudget(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
                     </div>
                   ) : (
                     <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditBudgetMin(project.budget_min || ''); setEditBudgetMax(project.budget_max || ''); setEditingBudget(true); } }}>{project.budget_min ? `$${project.budget_min}${project.budget_max ? ` - $${project.budget_max}` : ''}` : '-'}</span>
@@ -2141,8 +2147,8 @@ export default function ProjectDetailPage() {
                   {editingDeadline ? (
                     <div className="flex items-center gap-1 justify-end flex-wrap">
                       <input value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} type="date" className="px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none" style={mf} />
-                      <button onClick={saveDeadline} className="text-[9px] text-green-400 border border-green-500/30 px-1 hover:bg-green-900/20" style={pf}>OK</button>
-                      <button onClick={() => setEditingDeadline(false)} className="text-[9px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
+                      <button onClick={saveDeadline} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
+                      <button onClick={() => setEditingDeadline(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
                     </div>
                   ) : (
                     <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditDeadline(project.deadline?.split('T')[0] || ''); setEditingDeadline(true); } }}>{project.deadline ? new Date(project.deadline).toLocaleDateString() : '-'}</span>
@@ -2154,7 +2160,7 @@ export default function ProjectDetailPage() {
                 <dd className="text-right flex items-center gap-2 justify-end flex-wrap">
                   <span className="text-digi-text">{project.is_private ? 'Privado' : 'Público'}</span>
                   {isOwner && !isTerminal && hasReqs && (
-                    <button onClick={async () => { await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_private: !project.is_private }) }); toast.success(project.is_private ? 'Proyecto ahora es publico' : 'Proyecto ahora es privado'); fetchProject(); }} className="text-[9px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>{project.is_private ? 'Hacer público' : 'Hacer privado'}</button>
+                    <button onClick={async () => { await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_private: !project.is_private }) }); toast.success(project.is_private ? 'Proyecto ahora es publico' : 'Proyecto ahora es privado'); fetchProject(); }} className="text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>{project.is_private ? 'Hacer público' : 'Hacer privado'}</button>
                   )}
                 </dd>
               </div>
@@ -2187,7 +2193,7 @@ export default function ProjectDetailPage() {
                     </button>
                     <span className={`text-[13px] flex-1 ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
                     {canEditThis && (
-                      <button onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" className="text-digi-muted/60 hover:text-red-400 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
+                      <button onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
                     )}
                   </div>
                 )) : (
@@ -2205,7 +2211,7 @@ export default function ProjectDetailPage() {
                     className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
                     style={mf}
                   />
-                  <button onClick={() => addSubItem(r.id)} disabled={!(newItemText[r.id] || '').trim()} className="pixel-btn pixel-btn-primary text-[10px] disabled:opacity-50 shrink-0">Agregar</button>
+                  <button onClick={() => addSubItem(r.id)} disabled={!(newItemText[r.id] || '').trim()} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50 shrink-0">Agregar</button>
                 </div>
               )}
             </div>
@@ -2224,7 +2230,7 @@ export default function ProjectDetailPage() {
               : 'Tu solicitud sera enviada al administrador. Puede implicar una cuota por perjuicio.'}
           </p>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Motivo *</label>
+            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Motivo *</label>
             <textarea value={withdrawReason} onChange={(e) => setWithdrawReason(e.target.value)} rows={3} placeholder="Describe el motivo de tu solicitud..."
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
@@ -2238,17 +2244,17 @@ export default function ProjectDetailPage() {
       <PixelModal open={showReqModal} onClose={() => setShowReqModal(false)} title="Nuevo Requerimiento">
         <div className="space-y-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Titulo</label>
+            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Titulo</label>
             <input value={reqTitle} onChange={(e) => setReqTitle(e.target.value)} placeholder="Titulo del requerimiento"
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Descripcion</label>
+            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Descripcion</label>
             <textarea value={reqDesc} onChange={(e) => setReqDesc(e.target.value)} rows={3} placeholder="Descripcion detallada..."
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Costo ($)</label>
+            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Costo ($)</label>
             <input value={reqCost} onChange={(e) => setReqCost(e.target.value)} type="number" placeholder="0.00 (opcional)"
               className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
           </div>
@@ -2262,7 +2268,7 @@ export default function ProjectDetailPage() {
       <PixelModal open={showAssignModal} onClose={() => setShowAssignModal(false)} title="Asignar Miembro" size="sm">
         <div className="space-y-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Miembro</label>
+            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Miembro</label>
             <select
               value={assignMemberId}
               onChange={(e) => handleAssignMemberChange(e.target.value)}
@@ -2276,7 +2282,7 @@ export default function ProjectDetailPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-accent-glow opacity-70" style={pf}>Costo Propuesto ($)</label>
+            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Costo Propuesto ($)</label>
             <input
               value={assignCost}
               onChange={(e) => setAssignCost(e.target.value)}
