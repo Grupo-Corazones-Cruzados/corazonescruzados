@@ -174,6 +174,14 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   facturado movido a una línea bajo la tabla (se quitó la barra fija inferior). Modal de creación a
   campos `field-control`/`labelCls`.
 
+- **Soporte** (`support/page.tsx` + `support/[id]/page.tsx`, 2026-07-05) — lista = **rail (estado:
+  Todos/Abiertos/En proceso/Resueltos/Cerrados, iconos `LifeBuoy/DoorOpen/Loader/CheckCircle2/Archive`)
+  + lista + panel de vista previa**, con conteos del API (`GET /api/support` devuelve `counts`),
+  `singleLine` y estado como **punto de color** en el asunto. Detalle: `DetailHeader` (breadcrumb +
+  asunto + badges tipo/estado + acciones **Resolver**/**Cerrar** en la command bar) · **hilo de
+  conversación** (tarjetas corp con avatar `rounded-full`, componente `MessageCard`) + formulario de
+  respuesta · **`PropertyRail`** de detalles a la derecha (ancho completo, sin `max-w`). Estados en
+  español.
 - **Facturas** (`invoices/page.tsx` + `invoices/[id]/page.tsx`, 2026-07-05) — lista = **rail (estado:
   Todas/Pendientes/Enviadas/Pagadas/Fallidas/Canceladas, iconos `Receipt/Clock/Send/CheckCircle2/
   XCircle/Ban`) + tabla**, con conteos del API (`GET /api/invoices` devuelve `counts` global por estado);
