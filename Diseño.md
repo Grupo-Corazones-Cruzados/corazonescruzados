@@ -114,6 +114,13 @@ navegar el **Modelo 4P** (16 celdas = 4 Pisos × 4 Pasos, cada una con N *sistem
   sistema crezca (p. ej. Aprobación de candidatos) migrará a ruta propia `centralized/[id]`.
 Reusar este patrón para otros módulos jerárquicos del dashboard.
 
+**Módulos que lo usan:**
+- **Centralizado** (`centralized/page.tsx`) — rail = Pisos (Modelo 4P); drill-in = vista del sistema.
+- **Automatizaciones** (`components/dashboard/flows/FlowsTable.tsx`, 2026-07-05) — rail = **tipos de
+  flujo** (Email/WhatsApp/Chatbot/Agente IA/Personalizado, iconos lucide `Mail/MessageCircle/Bot/
+  Sparkles/Puzzle`); filtro command bar = **estado**; el botón **Configurar** del panel abre los
+  editores grandes (`WhatsAppFlowPanel`/`ChatbotFlowPanel`/`FlowSidePanel`) como drill-in overlay.
+
 ---
 
 ## Desviaciones detectadas y resolución
