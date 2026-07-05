@@ -21,6 +21,7 @@ const TABS = [
 ];
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 const emptyForm = { title: '', description: '', price: '', tags: '', project_url: '', images: [''] };
 
 export default function PortfolioPage() {
@@ -259,26 +260,34 @@ export default function PortfolioPage() {
       <Link href="/dashboard/settings" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-2" style={mf}><ChevronLeft className="w-4 h-4" /> Configuración</Link>
       <PageHeader title="Portafolio" description="Tus proyectos, productos y automatizaciones" />
 
-      {/* toolbar: categorías (segmented) + buscador + Nuevo */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        <div className="inline-flex flex-wrap gap-1 p-0.5 bg-black/[0.04] rounded-md">
-          {TABS.map((t) => {
-            const active = tab === t.value;
-            return (
-              <button key={t.value} onClick={() => setTab(t.value)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded transition-colors ${active ? 'bg-digi-card text-accent shadow-sm' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>
-                <t.Icon className="w-3.5 h-3.5" /> {t.label}
-              </button>
-            );
-          })}
-        </div>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
-          className="field-control flex-1 min-w-[160px] max-w-xs px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-        <button onClick={openCreate} className={`${BTN_PRIMARY} ml-auto`}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
-      </div>
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+        {/* ── Left rail: catálogo ── */}
+        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Catálogo</p>
+          <div className="space-y-0.5">
+            {TABS.map((t) => {
+              const active = tab === t.value;
+              return (
+                <button key={t.value} onClick={() => setTab(t.value)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'}`}>
+                  <t.Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
+                  <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
-        <div className="min-w-0">
+        {/* ── Right region: command bar + table + panel ── */}
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
+              className="field-control flex-1 min-w-[160px] max-w-xs px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+            <button onClick={openCreate} className={`${BTN_PRIMARY} ml-auto`}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
+            <div className="min-w-0">
       <PixelDataTable
         singleLine
         data={rows}
@@ -315,8 +324,10 @@ export default function PortfolioPage() {
           ) },
         ]}
       />
+            </div>
+            <aside className="w-full xl:w-[360px]">{renderPanel()}</aside>
+          </div>
         </div>
-        <aside className="w-full xl:w-[360px]">{renderPanel()}</aside>
       </div>
 
       {/* ── Create / Edit modal ── */}
