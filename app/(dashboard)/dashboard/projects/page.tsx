@@ -35,6 +35,10 @@ const STATUS_LABEL: Record<string, string> = {
   draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso',
   in_review: 'En revisión', completed: 'Completado', closed: 'Cerrado', cancelled: 'Cancelado',
 };
+// Punto de color por variante para mostrar el estado sin columna dedicada.
+const STATUS_DOT: Record<string, string> = {
+  success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-accent', default: 'bg-digi-muted',
+};
 
 const PER_PAGE = 15;
 
@@ -214,9 +218,11 @@ export default function ProjectsPage() {
             singleLine
             columns={[
               { key: 'id', header: 'ID', render: (p: any) => <span className="tabular-nums text-digi-muted">#{p.id}</span>, width: '56px' },
-              { key: 'title', header: 'Título', render: (p: any) => <span className={`text-[13px] font-medium ${selected?.id === p.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.title}</span> },
-              { key: 'status', header: 'Estado', width: '120px', render: (p: any) => (
-                <PixelBadge variant={STATUS_V[p.status] || 'default'}>{STATUS_LABEL[p.status] || p.status}</PixelBadge>
+              { key: 'title', header: 'Título', render: (p: any) => (
+                <span className="flex items-center gap-2 min-w-0">
+                  <span title={STATUS_LABEL[p.status] || p.status} className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[STATUS_V[p.status] || 'default']}`} />
+                  <span className={`truncate text-[13px] font-medium ${selected?.id === p.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.title}</span>
+                </span>
               ) },
               { key: 'client', header: 'Cliente', width: '150px', render: (p: any) => <span className="text-[12px] text-digi-text" style={mf}>{p.client_name || '—'}</span> },
               { key: 'budget', header: 'Presupuesto', width: '130px', render: (p: any) => (
