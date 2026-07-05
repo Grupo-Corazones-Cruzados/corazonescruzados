@@ -3,17 +3,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import ModuleToolbar from '@/components/ui/ModuleToolbar';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
+import PageHeader from '@/components/ui/PageHeader';
+import { FolderKanban, Package, Workflow, ShoppingBag, Search } from 'lucide-react';
 
 const TABS = [
-  { value: 'projects', label: 'Proyectos' },
-  { value: 'products', label: 'Productos' },
-  { value: 'automations', label: 'Automatizaciones' },
-  { value: 'orders', label: 'Mis Pedidos' },
+  { value: 'projects', label: 'Proyectos', Icon: FolderKanban },
+  { value: 'products', label: 'Productos', Icon: Package },
+  { value: 'automations', label: 'Automatizaciones', Icon: Workflow },
+  { value: 'orders', label: 'Mis pedidos', Icon: ShoppingBag },
 ];
 
 const ORDER_STATUS: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -23,9 +24,15 @@ const ORDER_STATUS: Record<string, 'default' | 'info' | 'success' | 'warning' | 
   completed: 'success',
   cancelled: 'error',
 };
+const ORDER_LABEL: Record<string, string> = {
+  pending: 'Pendiente', confirmed: 'Confirmado', in_progress: 'En progreso',
+  completed: 'Completado', cancelled: 'Cancelado',
+};
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+// Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 
 // Map tab value to API item_type
 const TAB_TO_TYPE: Record<string, string> = {
@@ -220,13 +227,38 @@ export default function MarketplacePage() {
 
   return (
     <div>
-      <ModuleToolbar
-        tabs={TABS}
-        activeTab={tab}
-        onTabChange={setTab}
-        search={search}
-        onSearchChange={setSearch}
-      />
+      <PageHeader title="Marketplace" description="Proyectos, productos y automatizaciones del grupo" />
+
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+        {/* ── Left rail: categorías ── */}
+        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Catálogo</p>
+          <div className="space-y-0.5">
+            {TABS.map((t) => {
+              const active = tab === t.value;
+              return (
+                <button key={t.value} onClick={() => setTab(t.value)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
+                    active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
+                  }`}>
+                  <t.Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
+                  <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* ── Right region: command bar + tabla ── */}
+        <div className="flex-1 min-w-0 w-full">
+          {tab !== 'orders' && (
+            <div className="relative w-full sm:max-w-xs mb-3">
+              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
+                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                style={mf} />
+            </div>
+          )}
 
       {/* ========== ORDERS TAB ========== */}
       {tab === 'orders' ? (
@@ -242,7 +274,7 @@ export default function MarketplacePage() {
             { key: 'total', header: 'Total', render: (o: any) => `$${Number(o.total || 0).toFixed(2)}`, width: '100px' },
             {
               key: 'status', header: 'Estado', render: (o: any) => (
-                <PixelBadge variant={ORDER_STATUS[o.status] || 'default'}>{o.status}</PixelBadge>
+                <PixelBadge variant={ORDER_STATUS[o.status] || 'default'}>{ORDER_LABEL[o.status] || o.status}</PixelBadge>
               ), width: '110px',
             },
             {
@@ -268,7 +300,7 @@ export default function MarketplacePage() {
                   <button
                     onClick={(e) => openGallery(p, e)}
                     className={`flex items-center gap-1 px-1.5 py-0.5 border transition-colors ${
-                      count > 0 ? 'border-accent/40 text-accent-glow hover:bg-accent/10' : 'border-digi-border/30 text-digi-muted/40 cursor-default'
+                      count > 0 ? 'border-accent/40 text-accent hover:bg-accent-light' : 'border-digi-border/30 text-digi-muted/40 cursor-default'
                     }`}
                     disabled={count === 0}
                     title={count > 0 ? `Ver ${count} foto(s)` : 'Sin fotos'}
@@ -276,7 +308,7 @@ export default function MarketplacePage() {
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <rect x="1" y="3" width="14" height="10" rx="1" /><circle cx="5.5" cy="7" r="1.5" /><path d="M14 13L10.5 9L7.5 12L5.5 10.5L2 13" />
                     </svg>
-                    <span className="text-[9px]" style={mf}>{count}</span>
+                    <span className="text-[11px]" style={mf}>{count}</span>
                   </button>
                 );
               },
@@ -291,8 +323,8 @@ export default function MarketplacePage() {
                   {p.member_photo ? (
                     <img src={p.member_photo} alt={p.member_name} className="w-5 h-5 rounded-full object-cover border border-digi-border" />
                   ) : (
-                    <div className="w-5 h-5 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center">
-                      <span className="text-[7px] text-accent-glow" style={pf}>{p.member_name?.charAt(0)}</span>
+                    <div className="w-5 h-5 rounded-full bg-accent-light border border-accent/30 flex items-center justify-center">
+                      <span className="text-[11px] text-accent" style={pf}>{p.member_name?.charAt(0)}</span>
                     </div>
                   )}
                 </div>
@@ -304,12 +336,12 @@ export default function MarketplacePage() {
                     m.photo_url ? (
                       <img key={i} src={m.photo_url} alt={m.name} className="w-5 h-5 rounded-full object-cover border border-digi-border" title={m.name} />
                     ) : (
-                      <div key={i} className="w-5 h-5 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center" title={m.name}>
-                        <span className="text-[7px] text-accent-glow" style={pf}>{m.name?.charAt(0)}</span>
+                      <div key={i} className="w-5 h-5 rounded-full bg-accent-light border border-accent/30 flex items-center justify-center" title={m.name}>
+                        <span className="text-[11px] text-accent" style={pf}>{m.name?.charAt(0)}</span>
                       </div>
                     )
                   ))}
-                  {team.length > 3 && <span className="text-[9px] text-digi-muted" style={mf}>+{team.length - 3}</span>}
+                  {team.length > 3 && <span className="text-[11px] text-digi-muted" style={mf}>+{team.length - 3}</span>}
                 </div>
               );
             }, width: '120px' },
@@ -317,10 +349,10 @@ export default function MarketplacePage() {
               <span className="text-digi-muted" style={mf}>{p.requirements_count}</span>
             ), width: '60px' },
             { key: 'price', header: 'Precio', width: '100px', render: (p: any) => (
-              <span className="text-accent-glow" style={mf}>${Number(p.final_cost || 0).toFixed(2)}</span>
+              <span className="text-accent font-medium" style={mf}>${Number(p.final_cost || 0).toFixed(2)}</span>
             )},
             { key: 'docs', header: 'Docs', width: '70px', render: (p: any) => {
-              if (!p.public_docs_token) return <span className="text-digi-muted/30 text-[9px]">-</span>;
+              if (!p.public_docs_token) return <span className="text-digi-muted/30 text-[11px]">-</span>;
               const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org';
               const url = `${base}/docs/${p.public_docs_token}`;
               return (
@@ -331,7 +363,7 @@ export default function MarketplacePage() {
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
                     title="Ver documentacion publica"
-                    className="flex items-center justify-center w-6 h-6 border border-accent/40 text-accent-glow hover:bg-accent/10 transition-colors"
+                    className="flex items-center justify-center w-6 h-6 border border-accent/40 text-accent hover:bg-accent-light transition-colors"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
@@ -344,7 +376,7 @@ export default function MarketplacePage() {
                       catch { toast.error('No se pudo copiar'); }
                     }}
                     title="Copiar enlace"
-                    className="flex items-center justify-center w-6 h-6 border border-purple-500/40 text-purple-400 hover:bg-purple-900/20 transition-colors"
+                    className="flex items-center justify-center w-6 h-6 border border-accent/40 text-accent hover:bg-accent-light transition-colors"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -360,7 +392,7 @@ export default function MarketplacePage() {
                   if (p.source_type === 'project') { setSelectedProject(p); setRequestModal(true); }
                   else { openBuyModal(p); }
                 }}
-                className="text-[9px] text-accent-glow border border-accent/40 px-2 py-0.5 hover:bg-accent/10 transition-colors"
+                className="text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors"
                 style={pf}
               >
                 {p.source_type === 'project' ? 'Solicitar' : 'Comprar'}
@@ -385,7 +417,7 @@ export default function MarketplacePage() {
                     onClick={(e) => openGallery(item, e)}
                     className={`flex items-center gap-1 px-1.5 py-0.5 border transition-colors ${
                       count > 0
-                        ? 'border-accent/40 text-accent-glow hover:bg-accent/10'
+                        ? 'border-accent/40 text-accent hover:bg-accent-light'
                         : 'border-digi-border/30 text-digi-muted/40 cursor-default'
                     }`}
                     disabled={count === 0}
@@ -396,7 +428,7 @@ export default function MarketplacePage() {
                       <circle cx="5.5" cy="7" r="1.5" />
                       <path d="M14 13L10.5 9L7.5 12L5.5 10.5L2 13" />
                     </svg>
-                    <span className="text-[9px]" style={mf}>{count}</span>
+                    <span className="text-[11px]" style={mf}>{count}</span>
                   </button>
                 );
               },
@@ -417,7 +449,7 @@ export default function MarketplacePage() {
             {
               key: 'price', header: 'Precio', width: '100px',
               render: (item: any) => (
-                <span className="text-accent-glow">${Number(item.price || 0).toFixed(2)}</span>
+                <span className="text-accent font-medium">${Number(item.price || 0).toFixed(2)}</span>
               ),
             },
             {
@@ -425,7 +457,7 @@ export default function MarketplacePage() {
               render: (item: any) => Number(item.price || 0) > 0 ? (
                 <button
                   onClick={(e) => { e.stopPropagation(); openBuyModal(item); }}
-                  className="text-[9px] text-accent-glow border border-accent/40 px-2 py-0.5 hover:bg-accent/10 transition-colors"
+                  className="text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors"
                   style={pf}
                 >
                   Comprar
@@ -438,6 +470,8 @@ export default function MarketplacePage() {
           emptyDesc={`No hay ${tabLabel} registrados aun.`}
         />
       )}
+        </div>
+      </div>
 
       {/* ========== IMAGE GALLERY MODAL ========== */}
       <PixelModal open={galleryOpen} onClose={() => setGalleryOpen(false)} title={galleryTitle || 'Galeria'} size="lg">
@@ -461,14 +495,14 @@ export default function MarketplacePage() {
                 <>
                   <button
                     onClick={() => setGalleryIndex((p) => (p - 1 + galleryImages.length) % galleryImages.length)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-darker/80 border border-digi-border text-digi-text hover:border-accent hover:text-accent-glow transition-colors"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-darker/80 border border-digi-border text-digi-text hover:border-accent hover:text-accent font-medium transition-colors"
                     style={pf}
                   >
                     &lt;
                   </button>
                   <button
                     onClick={() => setGalleryIndex((p) => (p + 1) % galleryImages.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-darker/80 border border-digi-border text-digi-text hover:border-accent hover:text-accent-glow transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-digi-darker/80 border border-digi-border text-digi-text hover:border-accent hover:text-accent font-medium transition-colors"
                     style={pf}
                   >
                     &gt;
@@ -543,14 +577,14 @@ export default function MarketplacePage() {
               />
             )}
 
-            <div className="pixel-card !bg-accent/5 !border-accent/30">
+            <div className="bg-accent-light border border-accent/30 rounded-lg p-4">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] text-accent-glow" style={pf}>Total a pagar</span>
+                <span className="text-[10px] text-accent font-medium" style={pf}>Total a pagar</span>
                 <span className="text-sm text-digi-text font-bold" style={mf}>${total.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="text-[9px] text-digi-muted" style={mf}>
+            <div className="text-[11px] text-digi-muted" style={mf}>
               Al confirmar, se creara un pedido pendiente. El miembro del equipo revisara y confirmara tu solicitud.
             </div>
 
@@ -587,18 +621,18 @@ export default function MarketplacePage() {
 
             {selectedProject.team?.length > 0 && (
               <div>
-                <span className="text-[9px] text-digi-muted block mb-1.5" style={pf}>Equipo asignado</span>
+                <span className="text-[11px] text-digi-muted block mb-1.5" style={pf}>Equipo asignado</span>
                 <div className="flex flex-wrap gap-2">
                   {selectedProject.team.map((m: any, i: number) => (
                     <div key={i} className="flex items-center gap-1.5 px-2 py-1 border border-digi-border bg-digi-darker">
                       {m.photo_url ? (
                         <img src={m.photo_url} alt={m.name} className="w-4 h-4 rounded-full object-cover" />
                       ) : (
-                        <div className="w-4 h-4 rounded-full bg-accent/30 flex items-center justify-center">
-                          <span className="text-[6px] text-accent-glow" style={pf}>{m.name?.charAt(0)}</span>
+                        <div className="w-4 h-4 rounded-full bg-accent-light flex items-center justify-center">
+                          <span className="text-[6px] text-accent font-medium" style={pf}>{m.name?.charAt(0)}</span>
                         </div>
                       )}
-                      <span className="text-[9px] text-digi-text" style={mf}>{m.name}</span>
+                      <span className="text-[11px] text-digi-text" style={mf}>{m.name}</span>
                     </div>
                   ))}
                 </div>
@@ -610,14 +644,14 @@ export default function MarketplacePage() {
               <span className="text-digi-text">{selectedProject.requirements_count}</span>
             </div>
 
-            <div className="pixel-card !bg-accent/5 !border-accent/30">
+            <div className="bg-accent-light border border-accent/30 rounded-lg p-4">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] text-accent-glow" style={pf}>Costo del proyecto</span>
+                <span className="text-[10px] text-accent font-medium" style={pf}>Costo del proyecto</span>
                 <span className="text-sm text-digi-text font-bold" style={mf}>${Number(selectedProject.final_cost || 0).toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="text-[9px] text-digi-muted" style={mf}>
+            <div className="text-[11px] text-digi-muted" style={mf}>
               Se creara un proyecto privado con los mismos requerimientos y se invitara al equipo original.
               Si algun miembro no acepta, podras asignar otros profesionales.
             </div>
@@ -677,17 +711,17 @@ export default function MarketplacePage() {
 
             {selectedOrder.items && selectedOrder.items.length > 0 && (
               <div>
-                <h4 className="text-[10px] text-accent-glow mb-2" style={pf}>Items</h4>
+                <h4 className="text-[10px] text-accent font-medium mb-2" style={pf}>Items</h4>
                 <div className="space-y-2">
                   {selectedOrder.items.map((item: any) => (
-                    <div key={item.id} className="pixel-card !py-2 !px-3">
+                    <div key={item.id} className="bg-digi-card border border-digi-border rounded-lg py-2 px-3">
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="text-[10px] text-digi-text" style={pf}>{item.product_title || `Producto #${item.product_id}`}</p>
                           {item.member_name && (
-                            <p className="text-[9px] text-digi-muted mt-0.5" style={mf}>por {item.member_name}</p>
+                            <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>por {item.member_name}</p>
                           )}
-                          <p className="text-[9px] text-digi-muted" style={mf}>
+                          <p className="text-[11px] text-digi-muted" style={mf}>
                             {item.quantity}x ${Number(item.unit_price || 0).toFixed(2)}
                           </p>
                         </div>
@@ -699,12 +733,12 @@ export default function MarketplacePage() {
                         </div>
                       </div>
                       {item.member_message && (
-                        <p className="text-[9px] text-digi-muted mt-1 border-t border-digi-border/30 pt-1" style={mf}>
+                        <p className="text-[11px] text-digi-muted mt-1 border-t border-digi-border/30 pt-1" style={mf}>
                           {item.member_message}
                         </p>
                       )}
                       {item.delivery_date && (
-                        <p className="text-[9px] text-accent-glow mt-0.5" style={mf}>
+                        <p className="text-[11px] text-accent mt-0.5" style={mf}>
                           Entrega: {new Date(item.delivery_date).toLocaleDateString()}
                         </p>
                       )}

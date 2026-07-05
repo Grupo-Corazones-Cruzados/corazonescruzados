@@ -156,6 +156,13 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   **panel de detalle derecho** (360px): meta, estado, error de cobro, lista de meses con Marcar pagado/
   Desmarcar/PDF y eliminar. Modal de creación restilizado a `PixelSelect`/`PixelInput`.
 
+- **Marketplace** (`marketplace/page.tsx`, 2026-07-05) — **variante rail (categorías) + tabla**: rail =
+  catálogo (Proyectos/Productos/Automatizaciones/Mis pedidos, iconos `FolderKanban/Package/Workflow/
+  ShoppingBag`) como navegación (sin conteos; cargan por pestaña). Command bar con buscador; tablas
+  `PixelDataTable` por categoría de-pixeladas (precios `text-accent`, botones Solicitar/Comprar corp,
+  avatares `bg-accent-light`); estado de pedido en español; modales (galería, comprar, solicitar,
+  pedido) a corp.
+
 **Botón estándar del dashboard:** `components/ui/Button.tsx` — `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER`
 (clases componibles) y `<Button variant icon>`. Es la fuente única del botón Fluent; reusar en todos
 los módulos (evita `pixel-btn` ad-hoc en el header de detalle).
