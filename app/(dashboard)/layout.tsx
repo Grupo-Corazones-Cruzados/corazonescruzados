@@ -6,9 +6,13 @@ import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    try { if (localStorage.getItem('gcc_dash_theme') === 'dark') setDark(true); } catch {}
+    try {
+      if (localStorage.getItem('gcc_dash_theme') === 'dark') setDark(true);
+      if (localStorage.getItem('gcc_dash_collapsed') === '1') setCollapsed(true);
+    } catch {}
   }, []);
 
   const toggleTheme = () => {
@@ -19,11 +23,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     });
   };
 
+  const toggleCollapse = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try { localStorage.setItem('gcc_dash_collapsed', next ? '1' : '0'); } catch {}
+      return next;
+    });
+  };
+
   return (
     <AuthGuard>
       <div className={`corp ${dark ? 'dark' : ''} flex min-h-screen`}>
-        <DashboardSidebar dark={dark} onToggleTheme={toggleTheme} />
-        <main className="flex-1 ml-0 lg:ml-56 p-4 md:p-6 pt-14 lg:pt-6 overflow-auto min-h-screen">
+        <DashboardSidebar dark={dark} onToggleTheme={toggleTheme} collapsed={collapsed} onToggleCollapse={toggleCollapse} />
+        <main className={`flex-1 ml-0 ${collapsed ? 'lg:ml-16' : 'lg:ml-56'} p-4 md:p-6 pt-14 lg:pt-6 overflow-auto min-h-screen transition-[margin] duration-200`}>
           {children}
         </main>
       </div>

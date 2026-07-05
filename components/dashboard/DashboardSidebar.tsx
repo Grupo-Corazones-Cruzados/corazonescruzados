@@ -47,10 +47,19 @@ const NAV_GROUPS: NavGroup[] = [
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-export default function DashboardSidebar({ dark = false, onToggleTheme }: { dark?: boolean; onToggleTheme?: () => void }) {
+export default function DashboardSidebar({
+  dark = false,
+  onToggleTheme,
+  collapsed = false,
+  onToggleCollapse,
+}: {
+  dark?: boolean;
+  onToggleTheme?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+}) {
   const { user, signOut } = useAuth();
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
@@ -156,7 +165,7 @@ export default function DashboardSidebar({ dark = false, onToggleTheme }: { dark
               </button>
             )}
             <button
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={onToggleCollapse}
               className="hidden lg:flex items-center justify-center py-1.5 rounded-md text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors"
               aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
             >
