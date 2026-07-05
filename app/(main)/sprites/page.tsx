@@ -69,6 +69,9 @@ export default function SpritesPage() {
   const [sheetViewer, setSheetViewer] = useState<{ sprite: string; name: string } | null>(null);
   const [sheetViewerIndex, setSheetViewerIndex] = useState(0);
 
+  // Selected citizen (master-detail)
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hadActiveRef = useRef(false);
 
@@ -397,6 +400,8 @@ export default function SpritesPage() {
     }
   };
 
+  const selectedCitizen = citizens.find(c => c.agentId === selectedAgent) || citizens[0] || null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -429,7 +434,7 @@ export default function SpritesPage() {
       <div className="bg-digi-card border border-digi-border rounded-lg">
         <button
           onClick={() => setShowAddCitizen(!showAddCitizen)}
-          className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-digi-text hover:bg-white/5 transition-colors rounded-lg"
+          className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-digi-text hover:bg-black/[0.04] transition-colors rounded-lg"
         >
           <span className="flex items-center gap-2">
             <Plus size={14} className="text-accent" />
@@ -507,7 +512,7 @@ export default function SpritesPage() {
               </button>
               <button
                 onClick={() => setShowUpload(!showUpload)}
-                className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-digi-border text-digi-muted rounded text-sm hover:text-digi-text hover:bg-white/10 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-digi-darker border border-digi-border text-digi-muted rounded text-sm hover:text-digi-text hover:bg-black/[0.06] transition-colors"
               >
                 <Upload size={16} />
                 Subir manual
@@ -534,21 +539,42 @@ export default function SpritesPage() {
         <p className="text-xs text-red-400 bg-red-400/10 rounded px-3 py-2">{error}</p>
       )}
 
-      {/* Citizens list — each with regenerate option */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-medium text-digi-text">Ciudadanos del mundo</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {(() => {
-            // Reorder so expanded citizen starts at an even index (beginning of a grid row)
-            if (!editingFrames) return citizens;
-            const idx = citizens.findIndex(c => c.agentId === editingFrames);
-            if (idx <= 0) return citizens; // already first or not found
-            if (idx % 2 === 0) return citizens; // already at row start
-            // Swap with the previous citizen so expanded is at even index
-            const reordered = [...citizens];
-            [reordered[idx - 1], reordered[idx]] = [reordered[idx], reordered[idx - 1]];
-            return reordered;
-          })().map((c) => {
+      {/* Ciudadanos: lista (maestro) + editor (detalle) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4 items-start">
+        {/* list */}
+        <aside className="bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-digi-border">
+            <span className="text-[12px] font-semibold text-digi-text uppercase tracking-wide">Ciudadanos</span>
+            <span className="text-[11px] text-digi-muted tabular-nums px-1.5 py-0.5 rounded-full bg-black/[0.05]">{citizens.length}</span>
+          </div>
+          <div className="p-1.5 space-y-0.5 max-h-[72vh] overflow-y-auto">
+            {citizens.length === 0 && <p className="text-[12px] text-digi-muted/60 text-center py-6">Sin ciudadanos</p>}
+            {citizens.map((cit) => {
+              const active = cit.agentId === selectedCitizen?.agentId;
+              const cjob = getLatestJob(cit.agentId);
+              const cgen = generating === cit.agentId || (cjob && ['pending', 'generating', 'processing', 'converting'].includes(cjob.status));
+              return (
+                <button key={cit.agentId} onClick={() => setSelectedAgent(cit.agentId)}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors border-l-2 ${active ? 'bg-accent-light border-accent' : 'border-transparent hover:bg-black/[0.03]'}`}>
+                  <span className="w-7 h-7 rounded-md bg-accent-light text-accent text-[12px] font-semibold flex items-center justify-center shrink-0">{(cit.name[0] || '?').toUpperCase()}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className={`block text-[13px] font-medium truncate ${active ? 'text-accent' : 'text-digi-text'}`}>{cit.name}</span>
+                    <span className="block text-[10px] text-digi-muted font-mono truncate">{cit.agentId}</span>
+                  </span>
+                  {cgen && <RefreshCw size={12} className="text-amber-400 animate-spin shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* detail */}
+        <section className="min-w-0">
+          {!selectedCitizen ? (
+            <div className="bg-digi-card border border-digi-border rounded-lg py-16 text-center">
+              <p className="text-[13px] text-digi-muted">Selecciona un ciudadano para editarlo.</p>
+            </div>
+          ) : [selectedCitizen].map((c) => {
             const job = getLatestJob(c.agentId);
             const isGenerating = generating === c.agentId || (job && ['pending', 'generating', 'processing', 'converting'].includes(job.status));
             const isEditing = editingName === c.agentId;
@@ -558,7 +584,7 @@ export default function SpritesPage() {
             return (
               <div
                 key={c.agentId}
-                className={`bg-digi-card border rounded-lg p-4 ${isExpanded ? 'md:col-span-2' : ''} ${isGenerating ? 'border-amber-400/30' : 'border-digi-border'}`}
+                className={`bg-digi-card border rounded-lg p-4 ${isGenerating ? 'border-amber-400/30' : 'border-digi-border'}`}
               >
                 <div className={`${isExpanded ? 'flex flex-col md:flex-row gap-4' : ''}`}>
                   {/* ── Left side: normal card content ── */}
@@ -892,7 +918,7 @@ export default function SpritesPage() {
               </div>
             );
           })}
-        </div>
+        </section>
       </div>
 
       {/* Info */}
@@ -911,7 +937,7 @@ export default function SpritesPage() {
             <div className="flex items-center gap-2 justify-end">
               <button
                 onClick={() => setConfirmRegenerate(null)}
-                className="px-3 py-1.5 text-xs text-digi-muted border border-digi-border rounded hover:text-digi-text hover:bg-white/5 transition-colors"
+                className="px-3 py-1.5 text-xs text-digi-muted border border-digi-border rounded hover:text-digi-text hover:bg-black/[0.04] transition-colors"
               >
                 Cancelar
               </button>
@@ -940,10 +966,10 @@ export default function SpritesPage() {
         const basePath = `/api/assets/universal_assets/citizens/${sheetViewer.sprite}`;
         return (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSheetViewer(null)}>
-            <div className="bg-digi-darker border-2 border-digi-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-digi-darker border border-digi-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between px-4 py-3 border-b border-digi-border">
                 <h3 className="font-semibold text-sm text-accent">{sheetViewer.name} — Sprite Sheets</h3>
-                <button onClick={() => setSheetViewer(null)} className="text-digi-muted hover:text-white text-lg leading-none">&times;</button>
+                <button onClick={() => setSheetViewer(null)} className="text-digi-muted hover:text-digi-text text-lg leading-none">&times;</button>
               </div>
 
               {/* Tab bar */}
@@ -965,7 +991,7 @@ export default function SpritesPage() {
 
               {/* Image */}
               <div className="p-4 flex flex-col items-center gap-3">
-                <div className="border-2 border-digi-border bg-black/30 p-2 w-full flex items-center justify-center min-h-[256px]">
+                <div className="border border-digi-border bg-black/30 p-2 w-full flex items-center justify-center min-h-[256px]">
                   <img
                     src={`${basePath}${SHEET_TYPES[sheetViewerIndex].suffix}.png?v=${spriteVer}`}
                     alt={`${sheetViewer.name} ${SHEET_TYPES[sheetViewerIndex].label}`}
