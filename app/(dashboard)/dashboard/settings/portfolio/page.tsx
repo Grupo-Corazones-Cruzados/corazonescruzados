@@ -8,6 +8,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
+import PixelDataTable from '@/components/ui/PixelDataTable';
 import ImageGallery from '@/components/ui/ImageGallery';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
@@ -20,7 +21,6 @@ const TABS = [
 ];
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 const emptyForm = { title: '', description: '', price: '', tags: '', project_url: '', images: [''] };
 
 export default function PortfolioPage() {
@@ -32,11 +32,6 @@ export default function PortfolioPage() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-
-  // Right detail panel
-  const [selected, setSelected] = useState<any>(null);
-  const [panelImages, setPanelImages] = useState<string[]>([]);
-  const [panelImgLoading, setPanelImgLoading] = useState(false);
 
   // Gallery modal
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -53,26 +48,9 @@ export default function PortfolioPage() {
   }, [user?.member_id, tab]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
-  useEffect(() => { setSelected(null); setPanelImages([]); }, [tab]);
 
-  const firstImage = (item: any): string | null => (Array.isArray(item.images) && item.images[0]) || item.image_url || item.cover_image || null;
   const imageCount = (item: any) => (item.images?.length > 0 ? item.images.length : item.image_url ? 1 : 0);
   const imagesOf = (item: any): string[] => (item.images?.length ? item.images : item.image_url ? [item.image_url] : []);
-
-  const selectItem = async (item: any) => {
-    setSelected(item); setPanelImages([]);
-    if (item.__team) {
-      // Proyectos del equipo: el listado solo trae cover/count; se cargan las imágenes aquí.
-      if (item.image_count) {
-        setPanelImgLoading(true);
-        try { const res = await fetch(`/api/marketplace/projects/${item.id}`); const d = await res.json(); setPanelImages(d?.data?.images || (item.cover_image ? [item.cover_image] : [])); }
-        catch { setPanelImages(item.cover_image ? [item.cover_image] : []); }
-        finally { setPanelImgLoading(false); }
-      } else setPanelImages(item.cover_image ? [item.cover_image] : []);
-      return;
-    }
-    setPanelImages(imagesOf(item));
-  };
 
   const openCreate = () => { setEditingItem(null); setForm(emptyForm); setModal(true); };
   const openEdit = (item: any) => {
@@ -91,8 +69,7 @@ export default function PortfolioPage() {
     if (!clean.length) { toast.info('Este registro no tiene imágenes'); return; }
     setGalleryImages(clean); setGalleryTitle(title); setGalleryOpen(true);
   };
-
-  const openCardGallery = async (item: any, e: React.MouseEvent) => {
+  const openRowGallery = async (item: any, e: React.MouseEvent) => {
     e.stopPropagation();
     if (item.__team) {
       if (!item.image_count) { toast.info('Este proyecto no tiene imágenes'); return; }
@@ -136,12 +113,8 @@ export default function PortfolioPage() {
 
   const handleDelete = async (id: number) => {
     if (!user?.member_id) return;
-    try {
-      await fetch(`/api/members/${user.member_id}/portfolio/${id}`, { method: 'DELETE' });
-      toast.success('Eliminado');
-      if (selected?.id === id) { setSelected(null); setPanelImages([]); }
-      fetchItems();
-    } catch { toast.error('Error al eliminar'); }
+    try { await fetch(`/api/members/${user.member_id}/portfolio/${id}`, { method: 'DELETE' }); toast.success('Eliminado'); fetchItems(); }
+    catch { toast.error('Error al eliminar'); }
   };
 
   // --- Team projects (marketplace published) ---
@@ -181,97 +154,10 @@ export default function PortfolioPage() {
   const tabLabel = tabMeta.label.replace(/s$/, '');
   const q = search.toLowerCase();
   const ownFiltered = items.filter((i: any) => !search || i.title?.toLowerCase().includes(q));
-  // En "Proyectos" se muestran también los proyectos existentes del equipo (Marketplace),
-  // fusionados en el mismo grid y seleccionables.
-  const teamCards = (tab === 'project' ? teamProjects : [])
+  const teamRows = (tab === 'project' ? teamProjects : [])
     .filter((p: any) => !search || p.title?.toLowerCase().includes(q))
     .map((p: any) => ({ ...p, __team: true, price: p.final_cost }));
-  const displayItems = [...ownFiltered, ...teamCards];
-
-  if (!user?.member_id) {
-    return (
-      <div className="max-w-3xl">
-        <Link href="/dashboard/settings" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-2" style={mf}><ChevronLeft className="w-4 h-4" /> Configuración</Link>
-        <PageHeader title="Portafolio" description="Tus proyectos, productos y automatizaciones" />
-        <div className="bg-digi-card border border-digi-border rounded-lg py-12 text-center"><p className="text-sm text-digi-muted" style={mf}>Solo disponible para miembros.</p></div>
-      </div>
-    );
-  }
-
-  /* ── Card (idéntica a Marketplace) ── */
-  const renderCard = (item: any) => {
-    const img = firstImage(item);
-    const count = item.__team ? (item.image_count || 0) : imageCount(item);
-    const active = selected?.id === item.id && !!selected?.__team === !!item.__team;
-    const tags: string[] = Array.isArray(item.tags) ? item.tags : [];
-    return (
-      <div key={item.id} onClick={() => selectItem(item)}
-        className={`group cursor-pointer flex flex-col bg-digi-card border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md ${active ? 'border-accent ring-1 ring-accent/30' : 'border-digi-border hover:border-accent/40'}`}>
-        <div className="relative aspect-[16/9] bg-digi-darker overflow-hidden">
-          {img ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={img} alt={item.title} className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center"><tabMeta.Icon className="w-9 h-9 text-digi-muted/30" /></div>
-          )}
-          <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-digi-card/85 text-digi-muted text-[10px] font-medium backdrop-blur-sm">{tabLabel}</span>
-          {count > 0 && (
-            <button onClick={(e) => openCardGallery(item, e)} title={`Ver ${count} foto(s)`}
-              className="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/45 text-white text-[11px] backdrop-blur-sm hover:bg-black/65 transition-colors"><ImageIcon className="w-3 h-3" /> {count}</button>
-          )}
-        </div>
-        <div className="p-3 flex flex-col flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-[13.5px] font-semibold text-digi-text leading-snug line-clamp-2 flex-1" style={mf}>{item.title}</h3>
-            <span className="text-[15px] font-bold text-accent tabular-nums shrink-0" style={mf}>${fmt2(Number(item.price || 0))}</span>
-          </div>
-          {item.description && <p className="text-[12px] text-digi-muted mt-1 line-clamp-2 leading-relaxed" style={mf}>{item.description}</p>}
-          {tags.length > 0 && <div className="flex flex-wrap gap-1 mt-2">{tags.slice(0, 3).map((t) => <PixelBadge key={t}>{t}</PixelBadge>)}</div>}
-          <button onClick={(e) => { e.stopPropagation(); item.__team ? openTeamEdit(item) : openEdit(item); }} className={`${BTN_PRIMARY} w-full mt-3`}><Pencil className="w-3.5 h-3.5" /> Editar</button>
-        </div>
-      </div>
-    );
-  };
-
-  /* ── Panel de detalle (idéntico a Marketplace) ── */
-  const renderPanel = () => {
-    if (!selected) {
-      return (
-        <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
-          <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2"><tabMeta.Icon className="w-5 h-5 text-digi-muted" /></div>
-          <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un elemento para ver sus detalles e imágenes.</p>
-        </div>
-      );
-    }
-    const t = selected;
-    const rows: [string, React.ReactNode][] = [['Precio', <span key="p" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(Number(t.price || 0))}</span>]];
-    if (Array.isArray(t.tags) && t.tags.length) rows.push(['Tags', t.tags.slice(0, 4).join(', ')]);
-    if (t.project_url) rows.push(['URL', <a key="u" href={t.project_url} target="_blank" rel="noreferrer" className="text-accent hover:underline truncate max-w-[180px] inline-block align-bottom">{t.project_url}</a>]);
-    return (
-      <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
-        <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-          <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{t.title}</h3>
-            <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{tabLabel}</p>
-          </div>
-          <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
-        </div>
-        <div className="p-4 space-y-3">
-          <ImageGallery key={`${t.__team ? 't' : 'o'}-${t.id}`} images={panelImages} loading={panelImgLoading} alt={t.title} onOpen={() => openGalleryFor(panelImages, t.title)} />
-          {t.description && <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{t.description}</p>}
-          <dl className="space-y-2">
-            {rows.map(([k, v], i) => (
-              <div key={i} className="flex items-center justify-between gap-3 text-[12px]"><dt className="text-digi-muted" style={mf}>{k}</dt><dd className="text-digi-text text-right" style={mf}>{v}</dd></div>
-            ))}
-          </dl>
-          <div className="flex items-center gap-2 pt-1">
-            <button onClick={() => (t.__team ? openTeamEdit(t) : openEdit(t))} className={`${BTN_PRIMARY} flex-1`}><Pencil className="w-3.5 h-3.5" /> Editar</button>
-            {!t.__team && <button onClick={() => handleDelete(t.id)} title="Eliminar" className="w-9 h-9 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors shrink-0"><Trash2 className="w-4 h-4" /></button>}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const rows = [...ownFiltered, ...teamRows];
 
   const dropzone = (images: string[], setImages: (imgs: string[]) => void) => (
     <div className="flex flex-col gap-1.5">
@@ -295,56 +181,74 @@ export default function PortfolioPage() {
     </div>
   );
 
+  if (!user?.member_id) {
+    return (
+      <div className="max-w-3xl">
+        <Link href="/dashboard/settings" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-2" style={mf}><ChevronLeft className="w-4 h-4" /> Configuración</Link>
+        <PageHeader title="Portafolio" description="Tus proyectos, productos y automatizaciones" />
+        <div className="bg-digi-card border border-digi-border rounded-lg py-12 text-center"><p className="text-sm text-digi-muted" style={mf}>Solo disponible para miembros.</p></div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <Link href="/dashboard/settings" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-2" style={mf}><ChevronLeft className="w-4 h-4" /> Configuración</Link>
       <PageHeader title="Portafolio" description="Tus proyectos, productos y automatizaciones" />
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
-        {/* ── Left rail: categorías ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Catálogo</p>
-          <div className="space-y-0.5">
-            {TABS.map((t) => {
-              const active = tab === t.value;
-              return (
-                <button key={t.value} onClick={() => setTab(t.value)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'}`}>
-                  <t.Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-                  <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+      {/* toolbar: categorías (segmented) + buscador + Nuevo */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <div className="inline-flex flex-wrap gap-1 p-0.5 bg-black/[0.04] rounded-md">
+          {TABS.map((t) => {
+            const active = tab === t.value;
+            return (
+              <button key={t.value} onClick={() => setTab(t.value)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded transition-colors ${active ? 'bg-digi-card text-accent shadow-sm' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>
+                <t.Icon className="w-3.5 h-3.5" /> {t.label}
+              </button>
+            );
+          })}
+        </div>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
+          className="field-control flex-1 min-w-[160px] max-w-xs px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+        <button onClick={openCreate} className={`${BTN_PRIMARY} ml-auto`}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
+      </div>
 
-        {/* ── Right region: command bar + grid + panel ── */}
-        <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <div className="relative flex-1 min-w-[180px] max-w-xs">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
-                className="field-control w-full pl-3 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-            </div>
-            <button onClick={openCreate} className={BTN_PRIMARY}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
-            <div className="min-w-0">
-              {displayItems.length === 0 ? (
-                <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-3"><tabMeta.Icon className="w-6 h-6 text-digi-muted" /></div>
-                  <p className="text-sm font-medium text-digi-text" style={mf}>Sin {tabMeta.label.toLowerCase()}</p>
-                  <p className="text-[13px] text-digi-muted mt-1" style={mf}>Agrega tu primer registro con “Nuevo”.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{displayItems.map(renderCard)}</div>
+      <PixelDataTable
+        singleLine
+        data={rows}
+        emptyTitle={`Sin ${tabMeta.label.toLowerCase()}`}
+        emptyDesc={`Agrega tu primer registro con “Nuevo”.`}
+        columns={[
+          { key: 'photos', header: 'Fotos', width: '72px', render: (item: any) => {
+            const count = item.__team ? (item.image_count || 0) : imageCount(item);
+            return count > 0 ? (
+              <button onClick={(e) => openRowGallery(item, e)} title={`Ver ${count} foto(s)`}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-accent/40 text-accent text-[11px] hover:bg-accent-light transition-colors"><ImageIcon className="w-3.5 h-3.5" /> {count}</button>
+            ) : <span className="text-digi-muted/50 text-[12px]">—</span>;
+          } },
+          { key: 'title', header: 'Título', render: (item: any) => (
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="truncate text-[13px] font-medium text-digi-text" style={mf}>{item.title}</span>
+              {item.__team && <PixelBadge variant="info">Equipo</PixelBadge>}
+            </span>
+          ) },
+          { key: 'tags', header: 'Tags', width: '200px', render: (item: any) => (
+            <div className="flex flex-wrap gap-1">{(item.tags || []).slice(0, 3).map((t: string) => <PixelBadge key={t}>{t}</PixelBadge>)}</div>
+          ) },
+          { key: 'price', header: 'Precio', width: '110px', render: (item: any) => <span className="text-accent font-medium tabular-nums" style={mf}>${fmt2(Number(item.price || 0))}</span> },
+          { key: 'actions', header: '', width: '160px', render: (item: any) => (
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => (item.__team ? openTeamEdit(item) : openEdit(item))}
+                className="inline-flex items-center gap-1 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><Pencil className="w-3.5 h-3.5" /> Editar</button>
+              {!item.__team && (
+                <button onClick={() => handleDelete(item.id)} title="Eliminar"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded border border-digi-border text-digi-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
               )}
             </div>
-
-            <aside className="w-full xl:w-[360px]">{renderPanel()}</aside>
-          </div>
-        </div>
-      </div>
+          ) },
+        ]}
+      />
 
       {/* ── Create / Edit modal ── */}
       <PixelModal open={modal} onClose={() => { setModal(false); setEditingItem(null); }} title={editingItem ? `Editar ${tabLabel.toLowerCase()}` : `Nuevo ${tabLabel.toLowerCase()}`} size="lg">
