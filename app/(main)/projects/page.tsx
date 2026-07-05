@@ -54,6 +54,7 @@ export default function ProjectsPage() {
   const [dirty, setDirty] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -62,6 +63,7 @@ export default function ProjectsPage() {
     ]).then(([structs, agentData]) => {
       setStructures(structs);
       setAgents(agentData);
+      setSelectedId(structs[0]?.id ?? null);
       setLoaded(true);
     });
   }, []);
@@ -102,11 +104,18 @@ export default function ProjectsPage() {
 
   const addProject = (agentId: string) => {
     const agentName = agentId.charAt(0).toUpperCase() + agentId.slice(1);
-    update(draft => [...draft, { id: uid(), agentId, name: agentName, modules: [] }]);
+    const id = uid();
+    update(draft => [...draft, { id, agentId, name: agentName, modules: [] }]);
+    setSelectedId(id);
   };
-  const removeProject = (id: string) => update(draft => draft.filter(p => p.id !== id));
+  const removeProject = (id: string) => {
+    update(draft => draft.filter(p => p.id !== id));
+    setSelectedId(prev => (prev === id ? structures.find(p => p.id !== id)?.id ?? null : prev));
+  };
   const updateProject = (id: string, patch: Partial<ProjectStructure>) =>
     update(draft => draft.map(p => (p.id === id ? { ...p, ...patch } : p)));
+
+  const selected = structures.find(s => s.id === selectedId) || null;
 
   if (!loaded) {
     return (
@@ -129,33 +138,68 @@ export default function ProjectsPage() {
             <p className="text-[13px] text-digi-muted">Estructura de módulos, secciones y subsecciones por proyecto</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={save}
+          disabled={!dirty || saving}
+          className={cn(
+            'inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-[13px] font-medium transition-colors shrink-0',
+            dirty
+              ? 'bg-accent text-white hover:bg-accent-hover shadow-sm'
+              : 'bg-digi-darker border border-digi-border text-digi-muted cursor-not-allowed',
+          )}
+        >
+          {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+          {dirty ? 'Guardar cambios' : 'Guardado'}
+        </button>
+      </div>
+
+      {/* master — detail */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4">
+        {/* projects list */}
+        <aside className="bg-digi-card border border-digi-border rounded-xl overflow-hidden flex flex-col min-h-0">
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-digi-border shrink-0">
+            <span className="text-[12px] font-semibold text-digi-text uppercase tracking-wide">Proyectos</span>
+            <CountChip n={structures.length} />
+          </div>
+          <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5 min-h-0">
+            {structures.length === 0 && (
+              <p className="text-[12px] text-digi-muted/60 text-center py-6">Sin proyectos</p>
+            )}
+            {structures.map(p => {
+              const active = p.id === selectedId;
+              return (
+                <button key={p.id} onClick={() => setSelectedId(p.id)}
+                  className={cn(
+                    'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors border-l-2',
+                    active ? 'bg-accent-light border-accent' : 'border-transparent hover:bg-black/[0.03]',
+                  )}>
+                  <FolderTree size={15} className={cn('shrink-0', active ? 'text-accent' : 'text-digi-muted')} />
+                  <span className="flex-1 min-w-0">
+                    <span className={cn('block text-[13px] font-medium truncate', active ? 'text-accent' : 'text-digi-text')}>{p.name}</span>
+                    <span className="block text-[10px] text-digi-muted font-mono truncate">{p.agentId}</span>
+                  </span>
+                  <CountChip n={p.modules.length} />
+                </button>
+              );
+            })}
+          </div>
           {availableAgents.length > 0 && (
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(v => !v)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-[13px] font-medium border border-digi-border text-digi-text hover:border-accent hover:text-accent transition-colors"
-              >
-                <Plus size={15} /> Agregar proyecto
+            <div className="p-2 border-t border-digi-border shrink-0 relative">
+              <button onClick={() => setDropdownOpen(v => !v)}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-[12px] font-medium border border-dashed border-digi-border text-digi-muted hover:border-accent hover:text-accent transition-colors">
+                <Plus size={14} /> Agregar proyecto
               </button>
               {dropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1.5 bg-digi-card border border-digi-border rounded-lg p-1.5 min-w-[240px] z-20 shadow-lg">
+                  <div className="absolute left-2 right-2 bottom-full mb-1.5 bg-digi-card border border-digi-border rounded-lg p-1.5 z-20 shadow-lg max-h-[280px] overflow-y-auto">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-digi-muted px-2.5 pt-1 pb-1.5">Agentes disponibles</p>
                     {availableAgents.map(([agentId, info]) => (
-                      <button
-                        key={agentId}
-                        onClick={() => { addProject(agentId); setDropdownOpen(false); }}
-                        className="flex items-center gap-2 px-2.5 py-2 w-full text-left rounded-md text-[13px] text-digi-text hover:bg-accent-light hover:text-accent transition-colors"
-                      >
+                      <button key={agentId} onClick={() => { addProject(agentId); setDropdownOpen(false); }}
+                        className="flex items-center gap-2 px-2.5 py-2 w-full text-left rounded-md text-[13px] text-digi-text hover:bg-accent-light hover:text-accent transition-colors">
                         <Box size={13} className="shrink-0 text-digi-muted" />
                         <span className="font-medium truncate">{agentId}</span>
-                        {info.projectPath && (
-                          <span className="text-digi-muted/60 ml-auto truncate max-w-[110px] text-[11px]">
-                            {info.projectPath.split('/').pop()}
-                          </span>
-                        )}
+                        {info.projectPath && <span className="text-digi-muted/60 ml-auto truncate max-w-[110px] text-[11px]">{info.projectPath.split('/').pop()}</span>}
                       </button>
                     ))}
                   </div>
@@ -163,53 +207,36 @@ export default function ProjectsPage() {
               )}
             </div>
           )}
-          <button
-            onClick={save}
-            disabled={!dirty || saving}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-[13px] font-medium transition-colors',
-              dirty
-                ? 'bg-accent text-white hover:bg-accent-hover shadow-sm'
-                : 'bg-digi-darker border border-digi-border text-digi-muted cursor-not-allowed',
-            )}
-          >
-            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-            Guardar
-          </button>
-        </div>
-      </div>
+        </aside>
 
-      {/* board */}
-      {structures.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
-          <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mb-3">
-            <FolderTree size={22} className="text-digi-muted" />
-          </div>
-          <p className="text-sm font-medium text-digi-text">No hay proyectos configurados</p>
-          <p className="text-[13px] text-digi-muted mt-1">Agrega uno desde los agentes conectados.</p>
-        </div>
-      ) : (
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1">
-          <div className="flex gap-4 h-full" style={{ minWidth: structures.length * 336 }}>
-            {structures.map(project => (
-              <ProjectColumn
-                key={project.id}
-                project={project}
-                agentInfo={agents[project.agentId]}
-                onUpdate={patch => updateProject(project.id, patch)}
-                onRemove={() => removeProject(project.id)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+        {/* detail */}
+        <section className="min-w-0 min-h-0">
+          {selected ? (
+            <ProjectDetail
+              key={selected.id}
+              project={selected}
+              agentInfo={agents[selected.agentId]}
+              onUpdate={patch => updateProject(selected.id, patch)}
+              onRemove={() => removeProject(selected.id)}
+            />
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-center bg-digi-card border border-digi-border rounded-xl py-12">
+              <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mb-3">
+                <FolderTree size={22} className="text-digi-muted" />
+              </div>
+              <p className="text-sm font-medium text-digi-text">Selecciona un proyecto</p>
+              <p className="text-[13px] text-digi-muted mt-1">o agrega uno desde los agentes conectados.</p>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
 
-/* ────────── Project Column ────────── */
+/* ────────── Project Detail (full-width tree editor) ────────── */
 
-function ProjectColumn({
+function ProjectDetail({
   project, agentInfo, onUpdate, onRemove,
 }: {
   project: ProjectStructure;
@@ -233,59 +260,55 @@ function ProjectColumn({
   const removeModule = (moduleId: string) =>
     onUpdate({ modules: project.modules.filter(m => m.id !== moduleId) });
 
-  const iconBtn = 'w-7 h-7 flex items-center justify-center rounded-md text-digi-muted transition-colors shrink-0';
+  const iconBtn = 'w-8 h-8 flex items-center justify-center rounded-md text-digi-muted transition-colors shrink-0';
 
   return (
-    <div className="w-[320px] shrink-0 flex flex-col bg-digi-card border border-digi-border rounded-xl overflow-hidden h-full shadow-sm">
-      {/* column header */}
-      <div className="px-3.5 py-3 border-b border-digi-border shrink-0">
-        <div className="flex items-center gap-1">
-          <FolderTree size={15} className="text-accent shrink-0" />
-          <InlineText
-            value={project.name}
-            onChange={v => onUpdate({ name: v })}
-            placeholder="Nombre del proyecto"
-            className="flex-1 text-[14px] font-semibold text-digi-text"
-          />
+    <div className="h-full flex flex-col bg-digi-card border border-digi-border rounded-xl overflow-hidden min-h-0">
+      {/* header */}
+      <div className="px-4 py-3.5 border-b border-digi-border shrink-0">
+        <div className="flex items-center gap-2">
+          <FolderTree size={18} className="text-accent shrink-0" />
+          <InlineText value={project.name} onChange={v => onUpdate({ name: v })} placeholder="Nombre del proyecto" className="flex-1 text-[16px] font-semibold text-digi-text" />
           <button onClick={copyPortalLink} className={cn(iconBtn, linkCopied ? 'text-green-600' : 'hover:text-accent hover:bg-accent-light')} title="Copiar enlace del portal">
-            {linkCopied ? <Check size={14} /> : <Link2 size={14} />}
+            {linkCopied ? <Check size={15} /> : <Link2 size={15} />}
           </button>
           <button onClick={onRemove} className={cn(iconBtn, 'hover:text-red-600 hover:bg-red-50')} title="Eliminar proyecto">
-            <Trash2 size={14} />
+            <Trash2 size={15} />
           </button>
         </div>
-        <div className="flex items-center gap-2 mt-1.5 pl-6">
+        <div className="flex flex-wrap items-center gap-2 mt-2 pl-7">
           <span className="text-[11px] text-digi-muted font-mono px-1.5 py-0.5 rounded bg-black/[0.04]">{project.agentId}</span>
           <CountChip n={project.modules.length} suffix={project.modules.length === 1 ? 'módulo' : 'módulos'} />
+          {appUrl && (
+            <a href={appUrl} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-accent-light border border-accent/20 rounded-md text-[11px] text-accent hover:border-accent/40 transition-colors max-w-[360px]">
+              <ExternalLink size={11} className="shrink-0" />
+              <span className="truncate">{appUrl}</span>
+            </a>
+          )}
         </div>
-        {appUrl && (
-          <a href={appUrl} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 mt-2 px-2 py-1.5 bg-accent-light border border-accent/20 rounded-md text-[11px] text-accent hover:border-accent/40 transition-colors truncate">
-            <ExternalLink size={11} className="shrink-0" />
-            <span className="truncate">{appUrl}</span>
-          </a>
-        )}
         {agentInfo?.projectPath && (
-          <p className="text-[10px] text-digi-muted/60 font-mono truncate mt-1.5 pl-0.5">{agentInfo.projectPath}</p>
+          <p className="text-[10px] text-digi-muted/60 font-mono truncate mt-1.5 pl-7">{agentInfo.projectPath}</p>
         )}
       </div>
 
       {/* modules */}
-      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-0">
-        {project.modules.length === 0 && (
-          <p className="text-[12px] text-digi-muted/60 text-center py-6">Sin módulos todavía</p>
-        )}
-        {project.modules.map(mod => (
-          <ModuleCard key={mod.id} module={mod} onUpdate={patch => updateModule(mod.id, patch)} onRemove={() => removeModule(mod.id)} />
-        ))}
-      </div>
-
-      {/* add module footer */}
-      <div className="p-2.5 border-t border-digi-border shrink-0">
-        <button onClick={addModule}
-          className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium text-digi-muted hover:text-accent hover:bg-accent-light rounded-md transition-colors w-full justify-center border border-dashed border-digi-border hover:border-accent/40">
-          <Plus size={13} /> Agregar módulo
-        </button>
+      <div className="flex-1 overflow-y-auto p-3 min-h-0">
+        <div className="max-w-3xl mx-auto space-y-2">
+          {project.modules.length === 0 && (
+            <div className="text-center py-10">
+              <div className="w-11 h-11 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2"><Box size={20} className="text-digi-muted" /></div>
+              <p className="text-[13px] text-digi-muted">Este proyecto no tiene módulos todavía.</p>
+            </div>
+          )}
+          {project.modules.map(mod => (
+            <ModuleCard key={mod.id} module={mod} onUpdate={patch => updateModule(mod.id, patch)} onRemove={() => removeModule(mod.id)} />
+          ))}
+          <button onClick={addModule}
+            className="flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-medium text-digi-muted hover:text-accent hover:bg-accent-light rounded-lg transition-colors w-full justify-center border border-dashed border-digi-border hover:border-accent/40">
+            <Plus size={15} /> Agregar módulo
+          </button>
+        </div>
       </div>
     </div>
   );
