@@ -8,7 +8,9 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PageHeader from '@/components/ui/PageHeader';
-import { FolderKanban, Package, Workflow, ShoppingBag, Search } from 'lucide-react';
+import ImageGallery from '@/components/ui/ImageGallery';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { FolderKanban, Package, Workflow, ShoppingBag, Search, X, Users, ListChecks, FileText, ExternalLink } from 'lucide-react';
 
 const TABS = [
   { value: 'projects', label: 'Proyectos', Icon: FolderKanban },
@@ -64,6 +66,11 @@ export default function MarketplacePage() {
   // Order detail modal
   const [orderModal, setOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+
+  // Right detail panel
+  const [selected, setSelected] = useState<any>(null);
+  const [panelImages, setPanelImages] = useState<string[]>([]);
+  const [panelImgLoading, setPanelImgLoading] = useState(false);
 
   // Marketplace published projects
   const [marketplaceProjects, setMarketplaceProjects] = useState<any[]>([]);
@@ -225,6 +232,91 @@ export default function MarketplacePage() {
   // --- Tab label for empty state ---
   const tabLabel = tab === 'projects' ? 'proyectos' : tab === 'products' ? 'productos' : 'automatizaciones';
 
+  // Clear the detail panel when switching catalog tab.
+  useEffect(() => { setSelected(null); setPanelImages([]); }, [tab]);
+
+  const selectItem = async (item: any) => {
+    setSelected(item);
+    setPanelImages([]);
+    if (item.images?.length) { setPanelImages(item.images); return; }
+    if (item.image_url) { setPanelImages([item.image_url]); return; }
+    if (item.source_type === 'project' && item.image_count) {
+      setPanelImgLoading(true);
+      try {
+        const res = await fetch(`/api/marketplace/projects/${item.id}`);
+        const data = await res.json();
+        setPanelImages(data?.data?.images || []);
+      } catch { setPanelImages([]); }
+      finally { setPanelImgLoading(false); }
+    }
+  };
+
+  const openGalleryFromPanel = (k: number) => {
+    if (!panelImages.length) return;
+    setGalleryImages(panelImages); setGalleryIndex(k); setGalleryTitle(selected?.title || ''); setGalleryOpen(true);
+  };
+
+  const primaryAction = (item: any) => {
+    if (item.source_type === 'project') { setSelectedProject(item); setRequestModal(true); }
+    else openBuyModal(item);
+  };
+
+  const renderMarketplacePanel = () => {
+    if (!selected) {
+      return (
+        <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+          <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
+            <FolderKanban className="w-5 h-5 text-digi-muted" />
+          </div>
+          <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un elemento para ver sus detalles e imágenes.</p>
+        </div>
+      );
+    }
+    const t = selected;
+    const isProject = t.source_type === 'project';
+    const price = Number(t.final_cost ?? t.price ?? 0);
+    const docsUrl = t.public_docs_token ? `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/docs/${t.public_docs_token}` : null;
+    const rows: [string, React.ReactNode][] = [
+      ['Precio', <span key="p" className="text-accent font-semibold tabular-nums" style={mf}>${price.toFixed(2)}</span>],
+    ];
+    if (t.member_name) rows.push(['Miembro', t.member_name]);
+    if (isProject && t.requirements_count != null) rows.push(['Requerimientos', String(t.requirements_count)]);
+    if (Array.isArray(t.tags) && t.tags.length) rows.push(['Tags', t.tags.slice(0, 4).join(', ')]);
+    return (
+      <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+        <div className="flex items-start gap-3 p-4 border-b border-digi-border">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{t.title}</h3>
+            <p className="text-[11px] text-digi-muted mt-0.5 capitalize" style={mf}>{isProject ? 'Proyecto' : tabLabel.replace(/s$/, '')}</p>
+          </div>
+          <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-4 space-y-3">
+          <ImageGallery key={t.id + (isProject ? '-p' : '')} images={panelImages} loading={panelImgLoading} alt={t.title} onOpen={openGalleryFromPanel} />
+          {t.description && <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{t.description}</p>}
+          <dl className="space-y-2">
+            {rows.map(([k, v], i) => (
+              <div key={i} className="flex items-center justify-between gap-3 text-[12px]">
+                <dt className="text-digi-muted" style={mf}>{k}</dt>
+                <dd className="text-digi-text text-right" style={mf}>{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="space-y-2 pt-1">
+            <button onClick={() => primaryAction(t)} className={`${BTN_PRIMARY} w-full`}>
+              {isProject ? 'Solicitar proyecto' : 'Comprar'}
+            </button>
+            {docsUrl && (
+              <a href={docsUrl} target="_blank" rel="noreferrer" className={`${BTN_SECONDARY} w-full`}>
+                <FileText className="w-4 h-4" /> Ver documentación <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
       <PageHeader title="Marketplace" description="Proyectos, productos y automatizaciones del grupo" />
@@ -260,6 +352,8 @@ export default function MarketplacePage() {
             </div>
           )}
 
+          <div className={tab === 'orders' ? '' : 'grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start'}>
+            <div className="min-w-0">
       {/* ========== ORDERS TAB ========== */}
       {tab === 'orders' ? (
         <PixelDataTable
@@ -400,6 +494,7 @@ export default function MarketplacePage() {
             )},
           ]}
           data={marketplaceProjects.filter((p: any) => !search || p.title?.toLowerCase().includes(search.toLowerCase()))}
+          onRowClick={(item: any) => selectItem(item)}
           emptyTitle="Sin proyectos"
           emptyDesc="No hay proyectos publicados en el marketplace aun."
         />
@@ -466,10 +561,19 @@ export default function MarketplacePage() {
             },
           ]}
           data={filtered}
+          onRowClick={(item: any) => selectItem(item)}
           emptyTitle={`Sin ${tabLabel}`}
           emptyDesc={`No hay ${tabLabel} registrados aun.`}
         />
       )}
+            </div>
+
+            {tab !== 'orders' && (
+              <aside className="w-full xl:w-[360px]">
+                {renderMarketplacePanel()}
+              </aside>
+            )}
+          </div>
         </div>
       </div>
 
