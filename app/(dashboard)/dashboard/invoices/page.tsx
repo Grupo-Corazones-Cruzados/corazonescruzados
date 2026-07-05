@@ -9,7 +9,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY } from '@/components/ui/Button';
-import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus } from 'lucide-react';
+import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight } from 'lucide-react';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -55,6 +55,7 @@ function InvoicesPageInner() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<any>(null);
   const isAdmin = user?.role === 'admin';
 
   // Manual invoice modal states
@@ -115,6 +116,7 @@ function InvoicesPageInner() {
   }, [tab, search]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { setSelected(null); }, [tab, search]);
 
   // Fetch currencies on mount
   useEffect(() => {
@@ -551,11 +553,13 @@ function InvoicesPageInner() {
             )}
           </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
+        <div className="min-w-0">
       <PixelDataTable
         columns={[
           { key: 'number', header: 'No. Factura', render: (i: any) => (
             <div className="flex items-center gap-1.5">
-              <span className="text-digi-text">{i.invoice_number || `#${i.id}`}</span>
+              <span className={selected?.id === i.id ? 'text-accent font-medium' : 'text-digi-text'}>{i.invoice_number || `#${i.id}`}</span>
               {i.is_manual && <span className="text-[10px] px-1 py-0.5 border border-accent/40 text-accent leading-none" style={pf}>MANUAL</span>}
             </div>
           ), width: '160px' },
@@ -588,10 +592,50 @@ function InvoicesPageInner() {
           )},
         ]}
         data={invoices}
-        onRowClick={(i: any) => router.push(`/dashboard/invoices/${i.id}`)}
+        onRowClick={(i: any) => setSelected(i)}
         emptyTitle="Sin facturas"
         emptyDesc="No hay facturas registradas aun."
       />
+        </div>
+
+        {/* ── Detail preview panel ── */}
+        <aside className="w-full xl:w-[340px]">
+          {!selected ? (
+            <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+              <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
+                <Receipt className="w-5 h-5 text-digi-muted" />
+              </div>
+              <p className="text-[12px] text-digi-muted" style={mf}>Selecciona una factura para ver un resumen.</p>
+            </div>
+          ) : (
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+              <div className="flex items-start gap-3 p-4 border-b border-digi-border">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.invoice_number || `Factura #${selected.id}`}</h3>
+                  <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{selected.client_name_sri || selected.client_name || '—'}</p>
+                </div>
+                <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="p-4 space-y-2.5">
+                {[
+                  ['Total', <span key="t" className="text-accent font-semibold tabular-nums" style={mf}>${Number(selected.total || 0).toFixed(2)}</span>],
+                  ['SRI', selected.sri_status ? <PixelBadge key="sri" variant={SRI_STATUS_V[selected.sri_status] || 'default'}>{SRI_STATUS_LABEL[selected.sri_status] || selected.sri_status}</PixelBadge> : '—'],
+                  ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
+                  ['Fecha', selected.created_at ? new Date(selected.created_at).toLocaleDateString('es-EC') : '—'],
+                ].map(([k, v]) => (
+                  <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
+                    <span className="text-digi-muted" style={mf}>{k}</span>
+                    <span className="text-digi-text text-right" style={mf}>{v}</span>
+                  </div>
+                ))}
+                <button onClick={() => router.push(`/dashboard/invoices/${selected.id}`)} className={`${BTN_PRIMARY} w-full mt-1`}>
+                  Ver factura <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
         </div>
       </div>
 

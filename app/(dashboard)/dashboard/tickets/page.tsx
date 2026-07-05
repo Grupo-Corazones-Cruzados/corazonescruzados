@@ -10,8 +10,10 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PageHeader from '@/components/ui/PageHeader';
+import { BTN_PRIMARY } from '@/components/ui/Button';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
+  X, ArrowRight, Ticket as TicketIcon,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -50,6 +52,7 @@ export default function TicketsPage() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
+  const [selected, setSelected] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -79,7 +82,7 @@ export default function TicketsPage() {
   }, [page, tab, search]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
-  useEffect(() => { setPage(1); }, [tab, search]);
+  useEffect(() => { setPage(1); setSelected(null); }, [tab, search]);
 
   const openCreateModal = async () => {
     if (user?.role === 'member' && user.member_id) {
@@ -186,10 +189,12 @@ export default function TicketsPage() {
             </button>
           </div>
 
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
+            <div className="min-w-0">
           <PixelDataTable
             columns={[
               { key: 'id', header: 'ID', render: (t: any) => <span className="tabular-nums text-digi-muted">#{t.id}</span>, width: '60px' },
-              { key: 'title', header: 'Título', render: (t: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{t.title}</span> },
+              { key: 'title', header: 'Título', render: (t: any) => <span className={`text-[13px] font-medium ${selected?.id === t.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{t.title}</span> },
               { key: 'status', header: 'Estado', width: '120px', render: (t: any) => (
                 <PixelBadge variant={STATUS_VARIANT[t.status] || 'default'}>{STATUS_LABEL[t.status] || t.status}</PixelBadge>
               ) },
@@ -215,7 +220,7 @@ export default function TicketsPage() {
               } },
             ]}
             data={tickets}
-            onRowClick={(t: any) => router.push(`/dashboard/tickets/${t.id}`)}
+            onRowClick={(t: any) => setSelected(t)}
             emptyTitle="Sin tickets"
             emptyDesc="No hay tickets en este estado."
           />
@@ -236,6 +241,46 @@ export default function TicketsPage() {
               </div>
             </div>
           )}
+            </div>
+
+            {/* ── Detail preview panel ── */}
+            <aside className="w-full xl:w-[340px]">
+              {!selected ? (
+                <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+                  <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
+                    <TicketIcon className="w-5 h-5 text-digi-muted" />
+                  </div>
+                  <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un ticket para ver un resumen.</p>
+                </div>
+              ) : (
+                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+                  <div className="flex items-start gap-3 p-4 border-b border-digi-border">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.title}</h3>
+                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Ticket #{selected.id}</p>
+                    </div>
+                    <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                  </div>
+                  <div className="p-4 space-y-2.5">
+                    {[
+                      ['Estado', <PixelBadge key="s" variant={STATUS_VARIANT[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
+                      ['Cliente', selected.client_name || '—'],
+                      ['Costo', (() => { const v = selected.invoice_total ?? selected.estimated_cost; return v != null && v !== '' ? `$${Number(v).toFixed(2)}` : '—'; })()],
+                      ['Límite', selected.deadline ? new Date(selected.deadline).toLocaleDateString('es-EC') : '—'],
+                    ].map(([k, v]) => (
+                      <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
+                        <span className="text-digi-muted" style={mf}>{k}</span>
+                        <span className="text-digi-text text-right" style={mf}>{v}</span>
+                      </div>
+                    ))}
+                    <button onClick={() => router.push(`/dashboard/tickets/${selected.id}`)} className={`${BTN_PRIMARY} w-full mt-1`}>
+                      Ver detalle <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </aside>
+          </div>
         </div>
       </div>
 

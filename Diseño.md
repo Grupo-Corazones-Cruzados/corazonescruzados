@@ -217,6 +217,15 @@ tokens `digi-*`/`accent` sobre literales; si usas un literal semántico, verific
 `.corp.dark`. **Gotcha:** en comentarios CSS evitar la secuencia `*/` (p. ej. escribir "digi- y accent",
 no "digi-*/accent") — cierra el comentario y rompe el build.
 
+**Panel de vista previa en listas + galería (2026-07-05):** estándar en listas cuyo detalle es página
+propia (Tickets, Proyectos, Facturas) y en catálogos (Marketplace): al hacer **click en una fila** se
+selecciona y se abre un **panel de detalle a la derecha** (340–360px, sticky) con un resumen (metadatos
++ badges) y un botón primario **"Ver detalle/factura"** que navega a la página completa (`ArrowRight`).
+Marketplace añade una **galería de imágenes** con controles prev/next: `components/ui/ImageGallery`
+(imagen + flechas + indicadores + contador; click abre la galería a pantalla completa). Regla: las
+filas ya **no** navegan directo; seleccionan → panel → botón. Reusa el layout `grid
+xl:[minmax(0,1fr)_340px]` list · panel.
+
 **Aprovechamiento del espacio — sin `max-w` flotante (2026-07-05):** las páginas del dashboard **no**
 deben quedar flotando centradas con `max-w-*`; deben ocupar todo el ancho disponible (rail + contenido
 a ancho completo). Se quitaron los `max-w-*` de Perfil, Disponibilidad, CV, Calendario, detalle de
