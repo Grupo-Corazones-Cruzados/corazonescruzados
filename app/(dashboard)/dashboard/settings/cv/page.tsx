@@ -75,7 +75,7 @@ export default function CvPage() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <PageHeader title="Mi CV" description="Edita tu curriculum vitae" />
 
       <div className="space-y-4">

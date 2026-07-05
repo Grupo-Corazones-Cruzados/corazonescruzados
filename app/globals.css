@@ -804,13 +804,25 @@ html {
   opacity: 1;
 }
 
-/* Status badges: Fluent-style pills (light tinted bg + readable dark text).
-   Overrides the dark-tuned Tailwind colors only inside the corporate scope. */
-.corp .pixel-badge[data-variant="success"] { background: #dff6dd; color: #0e700e; border-color: #a7d8a7; }
-.corp .pixel-badge[data-variant="warning"] { background: #fff4ce; color: #835c00; border-color: #f2df9b; }
-.corp .pixel-badge[data-variant="error"]   { background: #fde7e9; color: #a4262c; border-color: #f1bcc0; }
-.corp .pixel-badge[data-variant="info"]    { background: var(--color-accent-light); color: var(--color-accent); border-color: rgba(75, 45, 142, 0.30); }
-.corp .pixel-badge[data-variant="default"] { background: #f3f2f1; color: var(--color-digi-muted); border-color: var(--color-digi-border); }
+/* Status badges — Fluent "serious" style: neutral pill + semantic dot & text
+   (estilo Azure/M365). El color va en el punto y el texto; el fondo es neutro. */
+.corp .pixel-badge {
+  background: #f3f2f1;
+  color: var(--color-digi-muted);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.6875rem;   /* 11px */
+  font-weight: 500;
+  letter-spacing: normal;
+  text-shadow: none;
+}
+.corp .pixel-badge[data-variant="success"] { color: #107c10; }
+.corp .pixel-badge[data-variant="warning"] { color: #986f0b; }
+.corp .pixel-badge[data-variant="error"]   { color: #a4262c; }
+.corp .pixel-badge[data-variant="info"]    { color: var(--color-accent); }
+.corp .pixel-badge[data-variant="default"] { color: var(--color-digi-muted); }
+.corp .pixel-badge-dot { background: currentColor; }
 
 /* =====================================================
    CORPORATE CONTROLS — Fluent-style form fields, tabs,
@@ -1004,6 +1016,99 @@ html {
   --color-purple-300: #5c2e91;
   --color-pink-400: #be185d;
 }
+
+/* =====================================================
+   DARK MODE (.corp.dark) — modo oscuro del dashboard.
+   Se activa añadiendo `.dark` al shell `.corp`. Funciona
+   REDEFINIENDO los tokens (los utilitarios digi- y accent se
+   adaptan solos); luego se sobreescriben los pocos literales
+   Tailwind hardcodeados usados en los módulos.
+   ===================================================== */
+.corp.dark {
+  --color-digi-green: #6bb700;
+  --color-digi-dark: #1b1a19;    /* page background */
+  --color-digi-darker: #201f1e;  /* input / deep surface */
+  --color-digi-card: #252423;    /* cards / sidebar / table header */
+  --color-digi-border: #3b3a39;  /* border */
+  --color-digi-text: #f3f2f1;    /* primary text */
+  --color-digi-muted: #a19f9d;   /* secondary text */
+
+  --color-accent: #8267d4;       /* brand purple (button bg + accents on dark) */
+  --color-accent-hover: #9179df;
+  --color-accent-light: #2d2647; /* accent tint surface on dark */
+  --color-accent-dark: #6f4fc0;
+  --color-accent-glow: #a78bfa;  /* brighter accent text on dark */
+
+  /* Palette tuned for dark background */
+  --color-red-400: #f1707b; --color-red-300: #f1707b;
+  --color-green-400: #6bb700;
+  --color-yellow-400: #e0b34d; --color-amber-400: #e0b34d; --color-amber-300: #e0b34d;
+  --color-orange-400: #f08a4b; --color-blue-400: #4aa3f0;
+  --color-purple-400: #b39ddb; --color-purple-300: #b39ddb; --color-pink-400: #f472b6;
+}
+
+/* Hardcoded neutrals inside .corp rules → dark equivalents */
+.corp.dark .dt-row:hover { background: #2d2c2b; }
+.corp.dark .modal-close:hover { background: #33322f; }
+.corp.dark ::-webkit-scrollbar-thumb { background: #4a4948; }
+.corp.dark ::-webkit-scrollbar-thumb:hover { background: #5a5958; }
+
+/* Serious badge — dark */
+.corp.dark .pixel-badge { background: #333231; }
+.corp.dark .pixel-badge[data-variant="success"] { color: #7bc043; }
+.corp.dark .pixel-badge[data-variant="warning"] { color: #e0b34d; }
+.corp.dark .pixel-badge[data-variant="error"]   { color: #f1707b; }
+.corp.dark .pixel-badge[data-variant="info"]    { color: var(--color-accent-glow); }
+
+/* Tailwind literals used across the dashboard → dark equivalents.
+   (Los utilitarios basados en tokens digi- y accent ya se adaptan solos.) */
+.corp.dark .bg-white { background-color: var(--color-digi-card) !important; }
+.corp.dark .bg-\[\#faf9f8\] { background-color: var(--color-digi-darker) !important; }
+.corp.dark .bg-\[\#f3f2f1\] { background-color: #2d2c2b !important; }
+.corp.dark .bg-\[\#edebe9\] { background-color: #3b3a39 !important; }
+
+.corp.dark .bg-black\/\[0\.02\],
+.corp.dark .bg-black\/\[0\.03\],
+.corp.dark .bg-black\/\[0\.04\],
+.corp.dark .bg-black\/\[0\.05\] { background-color: rgba(255,255,255,0.05) !important; }
+.corp.dark .hover\:bg-black\/\[0\.03\]:hover,
+.corp.dark .hover\:bg-black\/\[0\.04\]:hover { background-color: rgba(255,255,255,0.07) !important; }
+
+/* Semantic tint surfaces */
+.corp.dark .bg-green-50 { background-color: rgba(107,183,0,0.13) !important; }
+.corp.dark .bg-red-50 { background-color: rgba(241,112,123,0.13) !important; }
+.corp.dark .bg-amber-50, .corp.dark .bg-yellow-50 { background-color: rgba(224,179,77,0.13) !important; }
+.corp.dark .hover\:bg-green-50:hover, .corp.dark .hover\:bg-green-100:hover { background-color: rgba(107,183,0,0.18) !important; }
+.corp.dark .hover\:bg-red-50:hover { background-color: rgba(241,112,123,0.18) !important; }
+.corp.dark .hover\:bg-amber-50:hover { background-color: rgba(224,179,77,0.18) !important; }
+
+/* Semantic text on dark */
+.corp.dark .text-green-600, .corp.dark .text-green-700 { color: #7bc043 !important; }
+.corp.dark .text-red-600, .corp.dark .text-red-700, .corp.dark .text-red-500 { color: #f1707b !important; }
+.corp.dark .text-amber-600, .corp.dark .text-amber-700 { color: #e0b34d !important; }
+
+/* Semantic borders on dark */
+.corp.dark .border-green-300, .corp.dark .border-green-500\/40, .corp.dark .border-green-500\/30 { border-color: rgba(107,183,0,0.42) !important; }
+.corp.dark .border-red-300, .corp.dark .border-red-200 { border-color: rgba(241,112,123,0.42) !important; }
+.corp.dark .border-amber-300 { border-color: rgba(224,179,77,0.42) !important; }
+
+/* Filled semantic buttons (white text) — slightly muted for dark */
+.corp.dark .bg-green-600 { background-color: #3f7a1a !important; }
+.corp.dark .hover\:bg-green-700:hover { background-color: #356817 !important; }
+.corp.dark .bg-red-600 { background-color: #b5423e !important; }
+.corp.dark .hover\:bg-red-700:hover { background-color: #9e3835 !important; }
+
+/* Hardcoded-white .corp rules → dark surfaces (cards, modales, botón secundario) */
+.corp.dark .pixel-card {
+  background: var(--color-digi-card);
+  box-shadow: 0 1.6px 3.6px rgba(0,0,0,0.45), 0 0.3px 0.9px rgba(0,0,0,0.35);
+}
+.corp.dark .pixel-card:hover { box-shadow: 0 3.2px 7.2px rgba(0,0,0,0.55), 0 0.6px 1.8px rgba(0,0,0,0.4); }
+.corp.dark .pixel-btn-secondary { background: var(--color-digi-card); }
+.corp.dark .pixel-btn-secondary:hover { background: #33322f; }
+.corp.dark .pixel-btn-secondary:active { background: #3b3a39; }
+/* Cards con sombra suave (shadow-sm) sobre fondo oscuro */
+.corp.dark .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.4) !important; }
 
 /* Dark "island" inside the corporate dashboard: re-establishes the original
    dark/pixel tokens locally. Use on subtrees that must stay dark regardless of

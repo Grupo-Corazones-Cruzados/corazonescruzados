@@ -127,7 +127,7 @@ export default function SettingsPage() {
         </aside>
 
         {/* ── Content ── */}
-        <div className="flex-1 min-w-0 w-full max-w-2xl">
+        <div className="flex-1 min-w-0 w-full">
           <form onSubmit={handleSave} className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5 space-y-4">
               {/* Avatar */}
               <div className="flex items-center gap-4">

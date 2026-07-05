@@ -189,7 +189,7 @@ export default function CalendarSettingsPage() {
   };
 
   return (
-    <div className="max-w-6xl">
+    <div>
       <PageHeader title="Calendario" description="Organiza tus eventos y tareas laborales y personales" />
 
       <div className="pixel-card space-y-4">

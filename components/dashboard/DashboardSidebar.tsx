@@ -8,7 +8,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
-  LogOut, type LucideIcon,
+  LogOut, Sun, Moon, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem {
@@ -47,7 +47,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-export default function DashboardSidebar() {
+export default function DashboardSidebar({ dark = false, onToggleTheme }: { dark?: boolean; onToggleTheme?: () => void }) {
   const { user, signOut } = useAuth();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -144,6 +144,17 @@ export default function DashboardSidebar() {
           )}
 
           <div className="flex flex-col gap-1.5">
+            {onToggleTheme && (
+              <button
+                onClick={onToggleTheme}
+                className={`flex items-center gap-1.5 py-1.5 rounded-md text-[12px] font-medium text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors ${collapsed ? 'justify-center' : 'justify-center'}`}
+                aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                title={dark ? 'Modo claro' : 'Modo oscuro'}
+              >
+                {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {!collapsed && (dark ? 'Modo claro' : 'Modo oscuro')}
+              </button>
+            )}
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="hidden lg:flex items-center justify-center py-1.5 rounded-md text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors"

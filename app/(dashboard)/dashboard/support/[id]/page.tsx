@@ -74,7 +74,7 @@ export default function SupportDetailPage() {
   const replies = ticket.replies || [];
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <div className="mb-4">
         <Link href="/dashboard/support" className="text-[10px] text-accent-glow opacity-60 hover:opacity-100" style={pf}>&lt; Volver a soporte</Link>
       </div>

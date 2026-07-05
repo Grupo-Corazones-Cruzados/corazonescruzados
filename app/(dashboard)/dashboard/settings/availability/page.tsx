@@ -54,7 +54,7 @@ export default function AvailabilityPage() {
   };
 
   return (
-    <div className="max-w-xl">
+    <div>
       <Link href="/dashboard/settings" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-2" style={mf}>
         <ChevronLeft className="w-4 h-4" /> Configuración
       </Link>

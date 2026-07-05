@@ -197,6 +197,32 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
 (clases componibles) y `<Button variant icon>`. Es la fuente única del botón Fluent; reusar en todos
 los módulos (evita `pixel-btn` ad-hoc en el header de detalle).
 
+**Badges / Tags — estilo Fluent "serio" (2026-07-05):** `components/ui/PixelBadge` es la fuente única
+de TODAS las etiquetas del dashboard (estados de tickets/proyectos/facturas, columna **SRI**, tags de
+detalle, etc.). Se rediseñó a estilo Azure/M365: **píldora neutra** (fondo `#f3f2f1`, sin borde) +
+**punto semántico** (`.pixel-badge-dot`, `bg-current`) + **texto semántico** (verde/ámbar/rojo/accent),
+fuente body 11px. Los colores viven en `.corp .pixel-badge[data-variant]` (globals.css) — cambiar ahí
+recolorea todas las etiquetas. **NO** crear tags ad-hoc: usar `<PixelBadge variant>`.
+
+**Modo oscuro del dashboard (`.corp.dark`, 2026-07-05):** el layout (`app/(dashboard)/layout.tsx`)
+mantiene el estado `dark` (persistido en `localStorage 'gcc_dash_theme'`) y añade la clase `dark` al
+shell `.corp`; el toggle (Sol/Luna) vive al pie del sidebar (`DashboardSidebar` recibe `dark` +
+`onToggleTheme`). Arquitectura: **`.corp.dark` REDEFINE los tokens** (`--color-digi-*`, `--color-accent*`,
+paleta `--color-*-400`) → todos los utilitarios `digi-*`/`accent` y `var(--…)` se adaptan solos. Los
+pocos **literales Tailwind hardcodeados** usados en los módulos se sobreescriben en `.corp.dark`
+(`bg-white`, `bg-black/[0.0x]`, `bg-green-50`/`red-50`/`amber-50`, `text-green/red/amber-6/700`,
+`border-*-300`, `bg-green/red-600`, `bg-[#f3f2f1]`…) y las reglas `.corp` con blanco fijo
+(`.pixel-card`, `.pixel-btn-secondary`, `.modal-close:hover`, `.dt-row:hover`). **Regla:** preferir
+tokens `digi-*`/`accent` sobre literales; si usas un literal semántico, verifica que tenga override en
+`.corp.dark`. **Gotcha:** en comentarios CSS evitar la secuencia `*/` (p. ej. escribir "digi- y accent",
+no "digi-*/accent") — cierra el comentario y rompe el build.
+
+**Aprovechamiento del espacio — sin `max-w` flotante (2026-07-05):** las páginas del dashboard **no**
+deben quedar flotando centradas con `max-w-*`; deben ocupar todo el ancho disponible (rail + contenido
+a ancho completo). Se quitaron los `max-w-*` de Perfil, Disponibilidad, CV, Calendario, detalle de
+soporte y detalle de factura. Excepción: formularios internos dentro de una tarjeta pueden acotar su
+ancho, pero la página contenedora llena la pantalla.
+
 **Cuándo usar cada variante:** lista de registros con dimensión de agrupación → **rail + lista +
 panel** (Centralizado, Automatizaciones) o **rail + lista** si el detalle es página propia (Tickets,
 Proyectos). Ajustes con secciones → **rail + contenido** (Configuración). Puñado de acciones/apps →
