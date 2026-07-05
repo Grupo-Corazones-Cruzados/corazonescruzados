@@ -23,6 +23,20 @@ async function ensureTable() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  // Access table may be read (JOIN) before the access route creates it.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (
+      id SERIAL PRIMARY KEY,
+      member_id INT NOT NULL,
+      piso VARCHAR(30) NOT NULL,
+      paso VARCHAR(30) NOT NULL,
+      cell_name VARCHAR(100) NOT NULL,
+      system_id INT NOT NULL,
+      granted_by TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(member_id, system_id)
+    )
+  `);
 }
 
 export async function GET(req: NextRequest) {
@@ -36,16 +50,23 @@ export async function GET(req: NextRequest) {
     const piso = searchParams.get('piso');
     const paso = searchParams.get('paso');
 
-    let query = 'SELECT * FROM gcc_world.centralized_systems';
+    let query = `
+      SELECT s.*, COALESCE(ac.cnt, 0)::int AS access_count
+      FROM gcc_world.centralized_systems s
+      LEFT JOIN (
+        SELECT system_id, COUNT(*) AS cnt
+        FROM gcc_world.centralized_member_access
+        GROUP BY system_id
+      ) ac ON ac.system_id = s.id`;
     const params: string[] = [];
     const conditions: string[] = [];
 
-    if (piso) { conditions.push(`piso = $${params.length + 1}`); params.push(piso); }
-    if (paso) { conditions.push(`paso = $${params.length + 1}`); params.push(paso); }
-    if (user.role !== 'admin') { conditions.push('is_active = true'); }
+    if (piso) { conditions.push(`s.piso = $${params.length + 1}`); params.push(piso); }
+    if (paso) { conditions.push(`s.paso = $${params.length + 1}`); params.push(paso); }
+    if (user.role !== 'admin') { conditions.push('s.is_active = true'); }
 
     if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
-    query += ' ORDER BY created_at DESC';
+    query += ' ORDER BY s.created_at DESC';
 
     const { rows } = await pool.query(query, params);
     return NextResponse.json({ data: rows });

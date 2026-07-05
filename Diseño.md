@@ -7,7 +7,8 @@
 La app tiene **tres lenguajes visuales** distintos (intencional):
 1. **Landing / juego (pixelart oscuro):** fuente `Silkscreen`/`JetBrains Mono`, `var(--color-accent)`,
    clases `pixel-btn`, sombras duras. En `app/page.tsx`, `components/landing/*`, `app/globals.css`.
-2. **Dashboard:** Next.js + Tailwind (panel administrativo). *(Pendiente de auditar en detalle.)*
+2. **Dashboard:** Next.js + Tailwind, **Microsoft Fluent claro** scoped en **`.corp`** (montado en
+   `app/(dashboard)/layout.tsx`). Ver sección "Dashboard — Fluent (`.corp`)".
 3. **Editor del mundo (Microsoft Fluent):** claro, `system-ui/Segoe UI`, azul `#0078d4`. **Este doc se
    centra aquí** (es lo estandarizado en 2026-06-28).
 
@@ -65,10 +66,67 @@ estilos ad-hoc por archivo.
 - Texto **blanco** sobre fondos azules (contraste).
 - Las tres secciones (Escenas/NPCs/Capas) comparten header, botones, íconos y listas.
 
+---
+
+## Dashboard — Fluent (`.corp`)
+
+### Stack y fuente única
+- Todo el dashboard se monta bajo el scope **`.corp`** (`app/(dashboard)/layout.tsx`), que en
+  `app/globals.css` (bloque `.corp`, ~L684–990) **reescribe** las clases pixel/`digi-*` a Fluent
+  claro. Cambiar los tokens ahí recolorea todo el dashboard.
+- **Tokens (light):** `--color-accent #4B2D8E` (morado marca) · `--color-accent-hover #3A1F7A` ·
+  `--color-accent-light #EDEBFA` · `--color-digi-card #ffffff` (tarjetas/sidebar/thead) ·
+  `--color-digi-text #242424` · `--color-digi-muted` · `--color-digi-border`. Fondo shell `#faf9f8`.
+  Fuente **Segoe UI**. Radios 4–6px. **Regla:** usar utilidades de estos tokens
+  (`bg-accent`, `hover:bg-accent-hover`, `bg-accent-light`, `text-accent`, `bg-digi-card`,
+  `border-digi-border`, `text-digi-muted`) — **no** hex crudos.
+
+### Componentes compartidos (una definición por control)
+| Control | Componente | Notas |
+|---|---|---|
+| Título de página | `components/ui/PageHeader` | title + description |
+| Command bar de módulo | `components/ui/ModuleToolbar` | pivot tabs izq · buscador + acción der |
+| Tabs (pivot) | `components/ui/PixelTabs` (`flush`) | `.corp .pivot` subrayado azul marca |
+| Tabla | `components/ui/PixelDataTable` | `.corp .data-table`; `onRowClick`, orden por columna |
+| Badge/estado | `components/ui/PixelBadge` | variantes success/warning/error/info/default |
+| Modal / Panel | `components/ui/PixelModal` | md/lg se vuelven **panel lateral derecho** (Fluent) |
+| Input / Select | `components/ui/PixelInput` · `PixelSelect` | `.corp .field-control` alto 34px |
+| Rail de propiedades | `components/ui/PropertyRail` | panel sticky de metadatos clave/valor |
+| Header de detalle | `components/ui/DetailHeader` | breadcrumb + título + command bar + overflow ⋯ |
+| Confirmar | `components/ui/PixelConfirm` | NO usar `confirm()` del navegador (excepción puntual) |
+- **Iconografía dashboard:** **`lucide-react`** (línea monocromo, serио tipo Microsoft), `currentColor`,
+  16–20px. Es el estándar del dashboard (sidebar, tablas, command bars). **NO emojis.**
+
+### Patrón "Explorador Azure" (rail + lista + panel) — estándar para módulos con jerarquía
+Adoptado 2026-07-05 en **Centralizado** (`app/(dashboard)/dashboard/centralized/page.tsx`) para
+navegar el **Modelo 4P** (16 celdas = 4 Pisos × 4 Pasos, cada una con N *sistemas*). Layout
+`grid lg:grid-cols-[220px_minmax(0,1fr)_300px]`:
+- **Rail izquierdo (Fluent nav):** tarjeta `bg-digi-card`; ítems con icono lucide + label + hint +
+  badge de conteo; activo = `bg-accent-light` + borde-izq `border-accent` + texto `accent`. Aquí van
+  los **Pisos** + "Todos".
+- **Centro:** *command bar* (buscador con icono `Search` + `select` de filtro por Paso + botón
+  primario `+ Nuevo` solo admin) sobre un `PixelDataTable` (columnas Sistema[icono+nombre+desc] ·
+  Piso · Paso · Acceso[👥 n] · Estado[badge]); `onRowClick` selecciona.
+- **Panel derecho (detalle):** tarjeta sticky con cabecera (icono+nombre+celda+cerrar), metadatos
+  clave/valor, y acciones (**Abrir sistema** primario; admin: Compartir/Editar/Activar/Eliminar).
+  Estado vacío cuando no hay selección.
+- **Abrir** hace drill-in (reemplaza el centro por la vista del sistema, con breadcrumb). Cuando un
+  sistema crezca (p. ej. Aprobación de candidatos) migrará a ruta propia `centralized/[id]`.
+Reusar este patrón para otros módulos jerárquicos del dashboard.
+
+---
+
 ## Desviaciones detectadas y resolución
 - **2026-06-28:** las secciones del editor tenían títulos, botones de filtros e íconos distintos
   (emojis genéricos; NPCs con estilo propio). **Resuelto:** se creó `editorUi.tsx` (fuente única) +
   `EditorIcons.tsx`, y se migraron Escenas, NPCs y Capas al mismo estándar Fluent. NPCs pasó de editor
   aparte a **pestaña** del editor. Se quitó el botón "NPCs" del HUD del juego (acceso solo por el editor).
-- **Pendiente:** auditar/estandarizar el **dashboard** (Tailwind) y migrar las listas internas de
-  `MapEditor` (categorías de sheets, capas) a `ListRow` para consistencia total.
+- **2026-07-05 — Centralizado fuera del estándar del dashboard:**
+  `app/(dashboard)/dashboard/centralized/page.tsx` construía la matriz 4×4 y la vista de sistema con
+  **clases pixelart crudas** (`text-accent-glow`, `bg-digi-darker`, `border-accent/40`, tipos
+  `[8px]/[9px]`, `var(--font-display)`) → look oscuro/neón inconsistente con el resto del dashboard
+  `.corp`. **Resuelto:** rediseñado al patrón **Explorador Azure** (rail Pisos + lista + panel de
+  detalle) con tokens `.corp`, iconos `lucide-react` y componentes compartidos; se documentó el
+  patrón arriba. Backend: `GET /api/centralized/systems` ahora devuelve `access_count`.
+- **Pendiente:** auditar el resto del **dashboard** en detalle (documentar cada control) y migrar las
+  listas internas de `MapEditor` (categorías de sheets, capas) a `ListRow` para consistencia total.
