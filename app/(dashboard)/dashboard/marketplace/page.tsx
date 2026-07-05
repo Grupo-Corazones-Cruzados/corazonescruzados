@@ -263,7 +263,7 @@ export default function MarketplacePage() {
   };
 
   const firstImage = (item: any): string | null =>
-    (Array.isArray(item.images) && item.images[0]) || item.image_url || null;
+    (Array.isArray(item.images) && item.images[0]) || item.image_url || item.cover_image || null;
 
   // Avatares de miembro/equipo para la tarjeta
   const CardMembers = ({ item }: { item: any }) => {
