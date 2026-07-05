@@ -32,6 +32,10 @@ const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'err
 const STATUS_LABEL: Record<string, string> = {
   active: 'Activa', paused: 'Pausada', cancelled: 'Cancelada',
 };
+// Punto de color por variante para mostrar el estado sin columna dedicada.
+const STATUS_DOT: Record<string, string> = {
+  success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-accent', default: 'bg-digi-muted',
+};
 
 const PER_PAGE = 15;
 
@@ -279,7 +283,12 @@ export default function SubscriptionsPage() {
                 emptyDesc="No hay suscripciones en este estado."
                 columns={[
                   { key: 'id', header: 'ID', width: '56px', render: (s: any) => <span className="tabular-nums text-digi-muted">#{s.id}</span> },
-                  { key: 'client', header: 'Cliente', render: (s: any) => <span className={`text-[13px] font-medium ${selected?.id === s.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{s.client_name || '—'}</span> },
+                  { key: 'client', header: 'Cliente', render: (s: any) => (
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span title={STATUS_LABEL[s.status] || s.status} className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[STATUS_V[s.status] || 'default']}`} />
+                      <span className={`truncate text-[13px] font-medium ${selected?.id === s.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{s.client_name || '—'}</span>
+                    </span>
+                  ) },
                   { key: 'title', header: 'Razón / Título', render: (s: any) => <span className="text-[12px] text-digi-text" style={mf}>{s.title}</span> },
                   { key: 'cost', header: 'Costo', width: '100px', render: (s: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${Number(s.monthly_cost).toFixed(2)}</span> },
                   { key: 'next', header: 'Próximo cobro', render: (s: any) => {
@@ -295,9 +304,6 @@ export default function SubscriptionsPage() {
                   } },
                   { key: 'paid', header: 'Pagados', width: '90px', render: (s: any) => (
                     <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{s.paid_count}/{s.total_periods}</span>
-                  ) },
-                  { key: 'status', header: 'Estado', width: '100px', render: (s: any) => (
-                    <PixelBadge variant={STATUS_V[s.status] || 'default'}>{STATUS_LABEL[s.status] || s.status}</PixelBadge>
                   ) },
                 ]}
               />
