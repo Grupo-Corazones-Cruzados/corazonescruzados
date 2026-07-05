@@ -267,6 +267,31 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Estandarización de diseño del dashboard — COMPLETA (2026-07-05):** todos los módulos de
+  `/dashboard/` quedan alineados al lenguaje Fluent/`.corp` (Inicio, Tickets, Proyectos,
+  Suscripciones, Clientes, Facturas, Marketplace, Centralizado, Automatizaciones, Herramientas,
+  Configuración, **Soporte** y **Admin**). Patrón dominante: **rail + lista + panel de vista previa**
+  (o rail + contenido en Config/Admin). Detalle del catálogo en **`Diseño.md`** (no duplicar aquí).
+  Hitos de la sesión: **modo oscuro** (toggle al pie del sidebar, `.corp.dark`, persistido); **badges
+  "serios" estilo Microsoft** (`PixelBadge`, punto de color); **estado como punto de color** en tablas
+  (Tickets/Proyectos/Suscripciones/Facturas/Soporte) + **relleno de fila** por estado en Suscripciones
+  (prop `rowClassName` en `PixelDataTable`); **colapso del sidebar** ahora refluye el `<main>` (estado
+  `collapsed` elevado al layout, persistido); tablas `singleLine`; formulario financiero mensual de
+  Inicio reformulado.
+- **DigiMundo (Admin) — editores reformulados (2026-07-05):** los editores embebidos
+  `app/(main)/projects/page.tsx` y `app/(main)/sprites/page.tsx` (+ subcomponentes `components/sprites/*`)
+  pasaron de pixelart verde a **Fluent maestro-detalle** (lista a la izquierda + editor a ancho completo
+  a la derecha), como el resto del dashboard. Se quitó `font-pixel` y el tema `digi-green` → `accent`.
+  **El `WorldViewer` (visor de mundo) conserva su identidad pixelart** a propósito. Las pestañas
+  Proyectos/Sprites se muestran "como parte de la página" (sin marco incrustado; Sprites fluye con el
+  scroll de la página, Proyectos usa altura para su árbol).
+- **Formato numérico de presentación es-ES (2026-07-05):** miles con `.` y decimales con `,`
+  (p. ej. `$1.234,56`). Fuente única **`lib/format.ts`** (`fmt2`/`fmtNum`/`fmtInt`/`money`, vía
+  `Intl.NumberFormat('es-ES')`). Se aplicó a las 73 presentaciones `.toFixed(2)` del dashboard.
+  **REGLA/gotcha:** NO formatear así en `app/api` (el **XML del SRI** y los **PDFs** exigen **punto
+  decimal**) ni en los editores `(main)` (números acoplados a **CSS**: px/%/keyframes); tampoco IDs/
+  nº de factura/años (no son cantidades).
+
 - **NPCs — comportamiento por animación + movimiento (2026-06-28):** (1) las animaciones de una
   sola vez (sit, cast, thrust, slash, shoot, hurt) se reproducen UNA vez y se quedan en el último
   frame (helper `npcDisplayFrame` en `CharacterCreator.tsx` + contadores monótonos); idle estático,
