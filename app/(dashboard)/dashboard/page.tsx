@@ -149,69 +149,88 @@ export default function DashboardHome() {
         {loadingDetail ? (
           <p className="text-center text-digi-muted py-8 text-[13px]" style={mf}>Cargando...</p>
         ) : (
-          <div className="max-h-[75vh] overflow-y-auto pr-1">
+          <div className="max-h-[75vh] overflow-y-auto pr-1 space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Ingresos */}
-              <div className="space-y-2">
-                <h4 className="text-[12px] font-semibold text-green-700 border-b border-digi-border pb-1.5" style={mf}>Ingresos</h4>
-                {incomeItems.map((item, i) => (
-                  <div key={i} className="flex gap-1.5">
-                    <input value={item.description} onChange={e => { if (!isAdmin) return; const n = [...incomeItems]; n[i] = { ...n[i], description: e.target.value }; setIncomeItems(n); }}
-                      placeholder="Descripción" readOnly={!isAdmin}
-                      className="field-control flex-1 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    <input value={item.amount} onChange={e => { if (!isAdmin) return; const n = [...incomeItems]; n[i] = { ...n[i], amount: e.target.value }; setIncomeItems(n); }}
-                      type="number" min="0" step="0.01" placeholder="0.00" readOnly={!isAdmin}
-                      className="field-control w-24 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none text-right" style={mf} />
-                    {isAdmin && <button onClick={() => setIncomeItems(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500/70 hover:text-red-600 shrink-0"><X className="w-4 h-4" /></button>}
-                  </div>
-                ))}
-                {isAdmin && <button onClick={() => setIncomeItems(prev => [...prev, { type: 'income', description: '', amount: '' }])}
-                  className="inline-flex items-center gap-1 text-[12px] text-green-700 border border-green-300 rounded px-2.5 py-1 hover:bg-green-50 transition-colors" style={mf}><Plus className="w-3.5 h-3.5" /> Ingreso</button>}
-                <div className="flex justify-between px-3 py-2 rounded-lg border border-digi-border bg-digi-darker text-[12px]" style={mf}>
-                  <span className="text-digi-muted">Total ingresos</span>
-                  <span className="text-green-700 font-semibold tabular-nums">{money(detailIncome)}</span>
+              <div className="rounded-lg border border-digi-border overflow-hidden">
+                <div className="flex items-center justify-between px-3.5 py-2.5 bg-black/[0.02] border-b border-digi-border">
+                  <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-digi-text" style={mf}><TrendingUp className="w-4 h-4 text-green-600" /> Ingresos</span>
+                  <span className="text-[14px] font-semibold text-green-700 tabular-nums" style={mf}>{money(detailIncome)}</span>
+                </div>
+                <div className="p-3 space-y-2">
+                  {incomeItems.length === 0 && !isAdmin && <p className="text-[12px] text-digi-muted text-center py-2" style={mf}>Sin ingresos registrados.</p>}
+                  {incomeItems.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input value={item.description} onChange={e => { if (!isAdmin) return; const n = [...incomeItems]; n[i] = { ...n[i], description: e.target.value }; setIncomeItems(n); }}
+                        placeholder="Descripción" readOnly={!isAdmin}
+                        className="field-control flex-1 min-w-0 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      <input value={item.amount} onChange={e => { if (!isAdmin) return; const n = [...incomeItems]; n[i] = { ...n[i], amount: e.target.value }; setIncomeItems(n); }}
+                        type="number" min="0" step="0.01" placeholder="0.00" readOnly={!isAdmin}
+                        className="field-control w-28 shrink-0 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none text-right" style={mf} />
+                      {isAdmin && <button onClick={() => setIncomeItems(prev => prev.filter((_, idx) => idx !== i))} aria-label="Quitar" className="w-7 h-7 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"><X className="w-4 h-4" /></button>}
+                    </div>
+                  ))}
+                  {isAdmin && (
+                    <button onClick={() => setIncomeItems(prev => [...prev, { type: 'income', description: '', amount: '' }])}
+                      className="w-full inline-flex items-center justify-center gap-1.5 py-2 border border-dashed border-digi-border rounded-lg text-[12px] font-medium text-digi-muted hover:border-accent hover:text-accent transition-colors" style={mf}>
+                      <Plus className="w-3.5 h-3.5" /> Agregar ingreso
+                    </button>
+                  )}
                 </div>
               </div>
 
               {/* Egresos */}
-              <div className="space-y-2">
-                <h4 className="text-[12px] font-semibold text-red-600 border-b border-digi-border pb-1.5" style={mf}>Egresos</h4>
-                {expenseItems.map((item, i) => (
-                  <div key={i} className="flex gap-1.5">
-                    <input value={item.description} onChange={e => { if (!isAdmin) return; const n = [...expenseItems]; n[i] = { ...n[i], description: e.target.value }; setExpenseItems(n); }}
-                      placeholder="Descripción" readOnly={!isAdmin}
-                      className="field-control flex-1 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    <input value={item.amount} onChange={e => { if (!isAdmin) return; const n = [...expenseItems]; n[i] = { ...n[i], amount: e.target.value }; setExpenseItems(n); }}
-                      type="number" min="0" step="0.01" placeholder="0.00" readOnly={!isAdmin}
-                      className="field-control w-24 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none text-right" style={mf} />
-                    {isAdmin && <button onClick={() => setExpenseItems(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500/70 hover:text-red-600 shrink-0"><X className="w-4 h-4" /></button>}
-                  </div>
-                ))}
-                {isAdmin && <button onClick={() => setExpenseItems(prev => [...prev, { type: 'expense', description: '', amount: '' }])}
-                  className="inline-flex items-center gap-1 text-[12px] text-red-600 border border-red-300 rounded px-2.5 py-1 hover:bg-red-50 transition-colors" style={mf}><Plus className="w-3.5 h-3.5" /> Egreso</button>}
-                <div className="flex justify-between px-3 py-2 rounded-lg border border-digi-border bg-digi-darker text-[12px]" style={mf}>
-                  <span className="text-digi-muted">Total egresos</span>
-                  <span className="text-red-600 font-semibold tabular-nums">{money(detailExpense)}</span>
+              <div className="rounded-lg border border-digi-border overflow-hidden">
+                <div className="flex items-center justify-between px-3.5 py-2.5 bg-black/[0.02] border-b border-digi-border">
+                  <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-digi-text" style={mf}><TrendingDown className="w-4 h-4 text-red-600" /> Egresos</span>
+                  <span className="text-[14px] font-semibold text-red-600 tabular-nums" style={mf}>{money(detailExpense)}</span>
+                </div>
+                <div className="p-3 space-y-2">
+                  {expenseItems.length === 0 && !isAdmin && <p className="text-[12px] text-digi-muted text-center py-2" style={mf}>Sin egresos registrados.</p>}
+                  {expenseItems.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input value={item.description} onChange={e => { if (!isAdmin) return; const n = [...expenseItems]; n[i] = { ...n[i], description: e.target.value }; setExpenseItems(n); }}
+                        placeholder="Descripción" readOnly={!isAdmin}
+                        className="field-control flex-1 min-w-0 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      <input value={item.amount} onChange={e => { if (!isAdmin) return; const n = [...expenseItems]; n[i] = { ...n[i], amount: e.target.value }; setExpenseItems(n); }}
+                        type="number" min="0" step="0.01" placeholder="0.00" readOnly={!isAdmin}
+                        className="field-control w-28 shrink-0 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none text-right" style={mf} />
+                      {isAdmin && <button onClick={() => setExpenseItems(prev => prev.filter((_, idx) => idx !== i))} aria-label="Quitar" className="w-7 h-7 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"><X className="w-4 h-4" /></button>}
+                    </div>
+                  ))}
+                  {isAdmin && (
+                    <button onClick={() => setExpenseItems(prev => [...prev, { type: 'expense', description: '', amount: '' }])}
+                      className="w-full inline-flex items-center justify-center gap-1.5 py-2 border border-dashed border-digi-border rounded-lg text-[12px] font-medium text-digi-muted hover:border-accent hover:text-accent transition-colors" style={mf}>
+                      <Plus className="w-3.5 h-3.5" /> Agregar egreso
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Savings summary */}
-            {[
-              { label: 'Ahorro (mes actual)', value: detailSavings, strong: detailSavings >= 0 },
-              { label: 'Ahorro a la fecha (mes anterior)', value: priorSavings, strong: priorSavings >= 0 },
-              { label: 'Ahorro global (a la fecha)', value: cumulativeSavings, strong: cumulativeSavings >= 0, accent: true },
-            ].map((row, i) => (
-              <div key={i} className={`mt-2 first:mt-4 flex justify-between px-3 py-2 rounded-lg border text-[13px] ${
-                row.strong ? (row.accent ? 'border-accent/30 bg-accent-light text-accent' : 'border-digi-border bg-digi-darker text-digi-text') : 'border-red-300 bg-red-50 text-red-600'
-              }`} style={mf}>
-                <span className="font-semibold">{row.label}</span>
-                <span className="font-semibold tabular-nums">{money(row.value)}</span>
+            {/* Resumen de ahorro */}
+            <div className="rounded-lg border border-digi-border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[13px] font-semibold text-digi-text" style={mf}>Ahorro del mes</p>
+                  <p className="text-[11px] text-digi-muted" style={mf}>Ingresos − egresos de {detailMonth ? `${MONTH_NAMES[detailMonth.month - 1]} ${detailMonth.year}` : 'el mes'}</p>
+                </div>
+                <span className={`text-2xl font-bold tabular-nums ${detailSavings >= 0 ? 'text-accent' : 'text-red-600'}`} style={mf}>{money(detailSavings)}</span>
               </div>
-            ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-digi-darker border border-digi-border text-[12px]" style={mf}>
+                  <span className="text-digi-muted">A la fecha (mes anterior)</span>
+                  <span className={`font-medium tabular-nums ${priorSavings >= 0 ? 'text-digi-text' : 'text-red-600'}`}>{money(priorSavings)}</span>
+                </div>
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent-light border border-accent/30 text-[12px]" style={mf}>
+                  <span className="text-accent">Ahorro global (a la fecha)</span>
+                  <span className="text-accent font-semibold tabular-nums">{money(cumulativeSavings)}</span>
+                </div>
+              </div>
+            </div>
 
             {/* Actions */}
-            <div className="flex justify-between items-center pt-3 mt-3 border-t border-digi-border">
+            <div className="flex justify-between items-center pt-3 border-t border-digi-border">
               <button onClick={() => detailMonth && window.open(`/api/finance/${detailMonth.id}/pdf`, '_blank')}
                 className="inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
                 <Download className="w-4 h-4" /> PDF
