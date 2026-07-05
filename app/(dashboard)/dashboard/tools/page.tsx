@@ -3,15 +3,18 @@
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
-import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelSelect from '@/components/ui/PixelSelect';
+import {
+  Repeat2, Captions, Search, ArrowRight, UploadCloud, Download, CheckCircle2,
+} from 'lucide-react';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 
 const TOOLS = [
-  { id: 'convert', name: 'Convertir Archivos', description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.)' },
-  { id: 'transcribe', name: 'Transcribir Audio', description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper)' },
+  { id: 'convert', name: 'Convertir Archivos', Icon: Repeat2, description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.).' },
+  { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
 ];
 
 const CONVERSIONS: Record<string, string[]> = {
@@ -61,7 +64,6 @@ export default function ToolsPage() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    // Delay revoke to ensure browser picks up the download
     setTimeout(() => URL.revokeObjectURL(url), 3000);
   };
 
@@ -95,7 +97,7 @@ export default function ToolsPage() {
       setConvertProgress(100);
       setConvertResult({ blob, name });
       triggerDownload(blob, name);
-      toast.success('Conversion completada');
+      toast.success('Conversión completada');
     } catch (err: any) {
       clearInterval(interval);
       toast.error(err.message || 'Error al convertir');
@@ -133,7 +135,7 @@ export default function ToolsPage() {
       setTranscribeResult({ blob, name });
       setTranscribePhase('done');
       triggerDownload(blob, name);
-      toast.success('Transcripcion completada');
+      toast.success('Transcripción completada');
     } catch (err: any) {
       clearInterval(progressInterval);
       toast.error(err.message || 'Error al transcribir');
@@ -142,111 +144,119 @@ export default function ToolsPage() {
     }
   };
 
-  const downloadResult = (result: { blob: Blob; name: string }) => {
-    triggerDownload(result.blob, result.name);
-  };
-
+  const downloadResult = (result: { blob: Blob; name: string }) => triggerDownload(result.blob, result.name);
   const closeConvert = () => { setShowConvert(false); setConvertResult(null); setConverting(false); };
   const closeTranscribe = () => { setShowTranscribe(false); setTranscribeResult(null); setTranscribePhase('idle'); };
+
+  const ProgressBar = ({ value, done }: { value: number; done?: boolean }) => (
+    <div className="w-full h-2 rounded-full bg-digi-border/60 overflow-hidden">
+      <div className={`h-full rounded-full transition-all duration-300 ${done ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${value}%` }} />
+    </div>
+  );
+
+  const ResultBlock = ({ result, onClose, label }: any) => (
+    <div className="space-y-2 pt-3 border-t border-digi-border">
+      <p className="flex items-center justify-center gap-1.5 text-[12px] text-green-700 font-medium" style={mf}>
+        <CheckCircle2 className="w-4 h-4" /> {label}
+      </p>
+      <button onClick={() => downloadResult(result)}
+        className="w-full inline-flex items-center justify-center gap-1.5 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors" style={mf}>
+        <Download className="w-4 h-4" /> Descargar {result.name}
+      </button>
+      <button onClick={onClose} className="pixel-btn pixel-btn-secondary w-full text-sm" style={mf}>Cerrar</button>
+    </div>
+  );
+
+  const Dropzone = ({ onClick, file, hint }: any) => (
+    <div onClick={onClick}
+      className="w-full py-6 px-3 rounded-lg border-2 border-dashed border-digi-border hover:border-accent/50 hover:bg-accent-light/40 cursor-pointer text-center transition-colors">
+      <UploadCloud className="w-6 h-6 text-digi-muted mx-auto mb-1.5" />
+      <p className="text-[12px] text-digi-text" style={mf}>{file ? file.name : hint}</p>
+      {file && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{(file.size / 1024 / 1024).toFixed(2)} MB</p>}
+    </div>
+  );
 
   return (
     <div>
       <PageHeader title="Herramientas" description="Utilidades de uso interno" />
 
-      <div className="mb-4">
+      {/* Command bar */}
+      <div className="relative w-full max-w-xs mb-4">
+        <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
-          placeholder="Buscar..."
+          placeholder="Buscar herramienta..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none w-full max-w-xs"
+          className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
           style={mf}
         />
       </div>
 
-      <PixelDataTable
-        columns={[
-          { key: 'name', header: 'Herramienta', render: (t: any) => <span className="text-digi-text">{t.name}</span> },
-          { key: 'description', header: 'Descripcion', render: (t: any) => <span className="text-digi-muted">{t.description}</span> },
-          { key: 'action', header: '', width: '100px', render: (t: any) => (
-            <button onClick={(e) => { e.stopPropagation(); openTool(t.id); }}
-              className="px-3 py-1 text-[9px] text-accent-glow border border-accent/30 hover:bg-accent/10 transition-colors" style={pf}>
-              Abrir
+      {/* Tool gallery */}
+      {filtered.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((t) => (
+            <button key={t.id} onClick={() => openTool(t.id)}
+              className="group text-left bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 flex flex-col hover:border-accent/40 hover:shadow-md transition-all">
+              <div className="w-11 h-11 rounded-lg bg-accent-light border border-accent/15 flex items-center justify-center mb-3">
+                <t.Icon className="w-5 h-5 text-accent" />
+              </div>
+              <h3 className="text-[14px] font-semibold text-digi-text" style={mf}>{t.name}</h3>
+              <p className="text-[12px] text-digi-muted mt-1 flex-1 leading-relaxed" style={mf}>{t.description}</p>
+              <span className="mt-3 inline-flex items-center gap-1 text-[12px] text-accent font-medium group-hover:gap-1.5 transition-all" style={mf}>
+                Abrir <ArrowRight className="w-3.5 h-3.5" />
+              </span>
             </button>
-          )},
-        ]}
-        data={filtered}
-        onRowClick={(t: any) => openTool(t.id)}
-        emptyTitle="Sin herramientas"
-        emptyDesc="No se encontraron herramientas."
-      />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-digi-card border border-digi-border rounded-lg p-10 text-center">
+          <p className="text-[13px] text-digi-text font-medium" style={mf}>Sin herramientas</p>
+          <p className="text-[12px] text-digi-muted mt-1" style={mf}>No se encontraron herramientas para “{search}”.</p>
+        </div>
+      )}
 
       {/* Convert Modal */}
       <PixelModal open={showConvert} onClose={() => !converting && closeConvert()} title="Convertir Archivos" size="sm">
         {converting ? (
-          <div className="py-6 space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-[9px]" style={mf}>
+          <div className="py-4 space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[12px]" style={mf}>
                 <span className="text-digi-muted">{convertProgress < 100 ? 'Convirtiendo...' : 'Completado'}</span>
-                <span className="text-accent-glow">{Math.round(convertProgress)}%</span>
+                <span className="text-accent font-medium">{Math.round(convertProgress)}%</span>
               </div>
-              <div className="w-full h-2 bg-digi-border overflow-hidden">
-                <div className="h-full bg-accent transition-all duration-300" style={{ width: `${convertProgress}%` }} />
-              </div>
+              <ProgressBar value={convertProgress} done={convertProgress >= 100} />
             </div>
-            {convertResult && (
-              <div className="space-y-2 pt-2 border-t border-digi-border">
-                <p className="text-[9px] text-green-400 text-center" style={mf}>Archivo convertido exitosamente</p>
-                <button onClick={() => downloadResult(convertResult)}
-                  className="w-full py-2 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
-                  Descargar {convertResult.name}
-                </button>
-                <button onClick={closeConvert}
-                  className="w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-digi-text transition-colors" style={pf}>
-                  Cerrar
-                </button>
-              </div>
+            {convertResult ? (
+              <ResultBlock result={convertResult} onClose={closeConvert} label="Archivo convertido exitosamente" />
+            ) : (
+              <p className="text-[11px] text-digi-muted text-center" style={mf}>No cierres esta ventana</p>
             )}
-            {!convertResult && <p className="text-[8px] text-digi-muted text-center" style={mf}>No cierres esta ventana</p>}
           </div>
         ) : (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Formato origen</label>
-                <select value={convertFrom} onChange={e => {
+              <PixelSelect label="Formato origen" value={convertFrom}
+                onChange={(e) => {
                   setConvertFrom(e.target.value);
                   const targets = CONVERSIONS[e.target.value] || [];
                   if (targets.length > 0 && !targets.includes(convertTo)) setConvertTo(targets[0]);
                 }}
-                  className="w-full px-2 py-1.5 bg-digi-darker border border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                  {Object.keys(CONVERSIONS).map(f => <option key={f} value={f}>{f.toUpperCase()}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Formato destino</label>
-                <select value={convertTo} onChange={e => setConvertTo(e.target.value)}
-                  className="w-full px-2 py-1.5 bg-digi-darker border border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                  {(CONVERSIONS[convertFrom] || []).map(f => <option key={f} value={f}>{f.toUpperCase()}</option>)}
-                </select>
-              </div>
+                options={Object.keys(CONVERSIONS).map((f) => ({ value: f, label: f.toUpperCase() }))} />
+              <PixelSelect label="Formato destino" value={convertTo}
+                onChange={(e) => setConvertTo(e.target.value)}
+                options={(CONVERSIONS[convertFrom] || []).map((f) => ({ value: f, label: f.toUpperCase() }))} />
             </div>
 
-            <div>
-              <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Archivo</label>
-              <div
-                onClick={() => convertInputRef.current?.click()}
-                className="w-full py-4 border-2 border-dashed border-digi-border hover:border-accent/30 cursor-pointer text-center transition-colors">
-                <p className="text-[9px] text-digi-muted" style={mf}>
-                  {convertFile ? convertFile.name : `Haz clic para seleccionar un archivo .${convertFrom}`}
-                </p>
-                {convertFile && <p className="text-[8px] text-digi-muted mt-1" style={mf}>{(convertFile.size / 1024 / 1024).toFixed(2)} MB</p>}
-              </div>
+            <div className="flex flex-col gap-1">
+              <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Archivo</label>
+              <Dropzone onClick={() => convertInputRef.current?.click()} file={convertFile}
+                hint={`Haz clic para seleccionar un archivo .${convertFrom}`} />
               <input ref={convertInputRef} type="file" accept={`.${convertFrom}`} onChange={e => setConvertFile(e.target.files?.[0] || null)} className="hidden" />
             </div>
 
-            <button onClick={handleConvert} disabled={!convertFile}
-              className="pixel-btn-primary w-full py-2 text-[9px] disabled:opacity-50" style={pf}>
-              Iniciar Conversion
+            <button onClick={handleConvert} disabled={!convertFile} className="pixel-btn pixel-btn-primary w-full text-sm disabled:opacity-50" style={mf}>
+              Iniciar conversión
             </button>
           </div>
         )}
@@ -255,61 +265,38 @@ export default function ToolsPage() {
       {/* Transcribe Modal */}
       <PixelModal open={showTranscribe} onClose={() => transcribePhase !== 'processing' && closeTranscribe()} title="Transcribir Audio" size="sm">
         {transcribePhase === 'processing' ? (
-          <div className="py-6 space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-[9px]" style={mf}>
+          <div className="py-4 space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[12px]" style={mf}>
                 <span className="text-digi-muted">Transcribiendo...</span>
-                <span className="text-accent-glow">{Math.round(transcribeProgress)}%</span>
+                <span className="text-accent font-medium">{Math.round(transcribeProgress)}%</span>
               </div>
-              <div className="w-full h-2 bg-digi-border overflow-hidden">
-                <div className="h-full bg-accent transition-all duration-300" style={{ width: `${transcribeProgress}%` }} />
-              </div>
+              <ProgressBar value={transcribeProgress} />
             </div>
-            <p className="text-[8px] text-digi-muted text-center" style={mf}>No cierres esta ventana</p>
+            <p className="text-[11px] text-digi-muted text-center" style={mf}>No cierres esta ventana</p>
           </div>
         ) : transcribePhase === 'done' && transcribeResult ? (
-          <div className="py-6 space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-[9px]" style={mf}>
-                <span className="text-green-400">Completado</span>
-                <span className="text-green-400">100%</span>
+          <div className="py-4 space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[12px]" style={mf}>
+                <span className="text-green-700 font-medium">Completado</span>
+                <span className="text-green-700 font-medium">100%</span>
               </div>
-              <div className="w-full h-2 bg-digi-border overflow-hidden">
-                <div className="h-full bg-green-500" style={{ width: '100%' }} />
-              </div>
+              <ProgressBar value={100} done />
             </div>
-            <div className="space-y-2 pt-2 border-t border-digi-border">
-              <p className="text-[9px] text-green-400 text-center" style={mf}>Audio transcrito exitosamente</p>
-              <button onClick={() => downloadResult(transcribeResult)}
-                className="w-full py-2 text-[9px] text-green-400 border border-green-500/30 hover:bg-green-900/20 transition-colors" style={pf}>
-                Descargar {transcribeResult.name}
-              </button>
-              <button onClick={closeTranscribe}
-                className="w-full py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-digi-text transition-colors" style={pf}>
-                Cerrar
-              </button>
-            </div>
+            <ResultBlock result={transcribeResult} onClose={closeTranscribe} label="Audio transcrito exitosamente" />
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-[9px] text-digi-muted" style={mf}>Sube un archivo de audio (MP3, M4A, WAV, OGG, WEBM) para transcribirlo a texto.</p>
-
-            <div>
-              <label className="text-[8px] text-digi-muted mb-0.5 block" style={pf}>Archivo de audio</label>
-              <div
-                onClick={() => transcribeInputRef.current?.click()}
-                className="w-full py-4 border-2 border-dashed border-digi-border hover:border-accent/30 cursor-pointer text-center transition-colors">
-                <p className="text-[9px] text-digi-muted" style={mf}>
-                  {transcribeFile ? transcribeFile.name : 'Haz clic para seleccionar un archivo de audio'}
-                </p>
-                {transcribeFile && <p className="text-[8px] text-digi-muted mt-1" style={mf}>{(transcribeFile.size / 1024 / 1024).toFixed(2)} MB</p>}
-              </div>
+            <p className="text-[12px] text-digi-muted" style={mf}>Sube un archivo de audio (MP3, M4A, WAV, OGG, WEBM) para transcribirlo a texto.</p>
+            <div className="flex flex-col gap-1">
+              <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Archivo de audio</label>
+              <Dropzone onClick={() => transcribeInputRef.current?.click()} file={transcribeFile}
+                hint="Haz clic para seleccionar un archivo de audio" />
               <input ref={transcribeInputRef} type="file" accept=".mp3,.m4a,.mp4,.wav,.ogg,.webm" onChange={e => setTranscribeFile(e.target.files?.[0] || null)} className="hidden" />
             </div>
-
-            <button onClick={handleTranscribe} disabled={!transcribeFile}
-              className="pixel-btn-primary w-full py-2 text-[9px] disabled:opacity-50" style={pf}>
-              Iniciar Transcripcion
+            <button onClick={handleTranscribe} disabled={!transcribeFile} className="pixel-btn pixel-btn-primary w-full text-sm disabled:opacity-50" style={mf}>
+              Iniciar transcripción
             </button>
           </div>
         )}

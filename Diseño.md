@@ -126,6 +126,15 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   Calendario) como `RailLink` con chevron que navegan a subpáginas. Iconos lucide
   `User/ShieldCheck/CalendarClock/FileText/Briefcase/CalendarDays`. Es la adaptación del patrón para
   módulos de ajustes (estilo settings de M365/Azure).
+- **Herramientas** (`tools/page.tsx`, 2026-07-05) — **variante galería de tarjetas** (estilo M365 app
+  launcher): buscador + grid de tarjetas Fluent (icono `bg-accent-light` + nombre + descripción +
+  "Abrir →"); cada tarjeta abre un modal-utilidad. Se usa cuando el módulo es un puñado de acciones/
+  apps, no registros ni jerarquía. Modales restilizados a corp (dropzone `UploadCloud`, barra de
+  progreso `bg-accent`, resultado con `CheckCircle2` + descarga primaria).
+
+**Cuándo usar cada variante:** lista de registros con dimensión de agrupación → **rail + lista +
+panel** (Centralizado, Automatizaciones). Ajustes con secciones → **rail + contenido** (Configuración).
+Puñado de acciones/apps → **galería de tarjetas** (Herramientas).
 
 ---
 
