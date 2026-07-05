@@ -12,10 +12,7 @@ import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt } from 'lucide-react';
-
-// Botones estándar Fluent del dashboard (mismo modelo que los módulos rediseñados).
-const BTN_PRIMARY = 'inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors';
-const BTN_SECONDARY = 'inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
