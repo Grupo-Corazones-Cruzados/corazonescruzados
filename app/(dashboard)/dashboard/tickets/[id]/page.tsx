@@ -6,17 +6,17 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
 import PropertyRail from '@/components/ui/PropertyRail';
-import PixelTabs from '@/components/ui/PixelTabs';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks } from 'lucide-react';
 
-// Dashboard es Fluent (.corp): usar la fuente de cuerpo, no la pixel de la landing.
+// Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   pending: 'warning', confirmed: 'info', in_progress: 'info',
@@ -412,8 +412,21 @@ export default function TicketDetailPage() {
   const activeTab = tab === 'acciones' && showActions ? 'acciones' : 'resumen';
   const canCompleteTicket = ticket.status === 'confirmed' && (isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id));
 
+  const SectionRailItem = ({ active, Icon, label, count, onClick }: any) => (
+    <button onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
+        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
+      }`}>
+      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
+      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
+      {count !== undefined && (
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count}</span>
+      )}
+    </button>
+  );
+
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-6xl">
       <DetailHeader
         breadcrumb={{ label: 'Tickets', href: '/dashboard/tickets' }}
         title={editing ? 'Editando ticket' : (ticket.title || `Ticket #${ticket.id}`)}
@@ -560,17 +573,21 @@ export default function TicketDetailPage() {
         </div>
       ) : !editingSlots && (
         /* ========== VIEW MODE (tabs + property rail) ========== */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 min-w-0">
-            <PixelTabs
-              tabs={[
-                { value: 'resumen', label: 'Resumen' },
-                ...(showActions ? [{ value: 'acciones', label: 'Acciones', count: (ticket.actions || []).length }] : []),
-              ]}
-              active={activeTab}
-              onChange={(v) => setTab(v as 'resumen' | 'acciones')}
-            />
+        <div className="flex flex-col lg:flex-row gap-4 items-start">
+          {/* Section rail */}
+          <aside className="w-full lg:w-[200px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+            <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Secciones</p>
+            <div className="space-y-0.5">
+              <SectionRailItem active={activeTab === 'resumen'} Icon={LayoutList} label="Resumen" onClick={() => setTab('resumen')} />
+              {showActions && (
+                <SectionRailItem active={activeTab === 'acciones'} Icon={ListChecks} label="Acciones"
+                  count={(ticket.actions || []).length} onClick={() => setTab('acciones')} />
+              )}
+            </div>
+          </aside>
 
+          {/* Content */}
+          <div className="flex-1 min-w-0 w-full">
             {activeTab === 'resumen' && (
               <div className="space-y-4">
                 {ticket.description && (
@@ -659,6 +676,7 @@ export default function TicketDetailPage() {
             })()}
           </div>
 
+          <div className="w-full lg:w-[300px] shrink-0">
           <PropertyRail
             items={[
               { label: 'Cliente', value: ticket.client_name || '-' },
@@ -682,6 +700,7 @@ export default function TicketDetailPage() {
               </div>
             )}
           </PropertyRail>
+          </div>
         </div>
       )}
 
