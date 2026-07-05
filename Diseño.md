@@ -183,6 +183,16 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   clave/autorización, rechazo SRI, comprobante de pago). Se movieron las acciones del stack de botones de
   la sidebar a la command bar del header (modelo de Tickets/Proyectos).
 
+- **Sidebar del dashboard** (`components/dashboard/DashboardSidebar.tsx`, 2026-07-05) — nav **agrupada**
+  en secciones (Principal · Operación · Plataforma · Sistema) con etiquetas `uppercase` tenues; ítems
+  Fluent (Segoe, `text-[13px]`, `rounded-md`, activo = `bg-accent-light text-accent` + barra izq accent),
+  iconos lucide 18px. Marca con logo + "GCC WORLD" semibold. Usuario con avatar `rounded-full` + rol.
+  Colapsar/Salir corp (Salir en rojo). Filtra por rol y **oculta grupos vacíos**.
+- **Inicio** (`dashboard/page.tsx`, 2026-07-05) — saludo por hora ("Buenos días, {nombre} 👋") + grid de
+  **StatCards con chip de icono** (Tickets/Proyectos/Clientes en accent; Ingresos/Egresos/Ahorro en
+  verde/rojo/accent). Tabla financiera de-pixelada; **modal de estado mensual** (ingresos/egresos
+  editables + resúmenes de ahorro) a corp (`field-control`, `+ Ingreso/Egreso`, botones `pixel-btn`).
+
 **Botón estándar del dashboard:** `components/ui/Button.tsx` — `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER`
 (clases componibles) y `<Button variant icon>`. Es la fuente única del botón Fluent; reusar en todos
 los módulos (evita `pixel-btn` ad-hoc en el header de detalle).
