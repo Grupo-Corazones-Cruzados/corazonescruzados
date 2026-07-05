@@ -8,9 +8,7 @@ import {
   Save, Loader2, Link2, Check, ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type {
-  ProjectStructure, Module, Section, Subsection,
-} from '@/types/projects';
+import type { ProjectStructure, Module, Section, Subsection } from '@/types/projects';
 
 /* ────────── helpers ────────── */
 
@@ -19,6 +17,33 @@ function uid() {
 }
 
 type AgentInfo = Record<string, { projectPath?: string; port?: number; productionUrl?: string }>;
+
+/** Inline-editable text: transparent until hover/focus, then a subtle field appears. */
+function InlineText({ value, onChange, placeholder, className }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; className?: string;
+}) {
+  return (
+    <input
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={cn(
+        'min-w-0 bg-transparent border border-transparent rounded-md px-1.5 py-1 outline-none transition-colors',
+        'hover:bg-black/[0.03] focus:bg-digi-darker focus:border-accent/50 focus:ring-1 focus:ring-accent/20',
+        'placeholder:text-digi-muted/50',
+        className,
+      )}
+    />
+  );
+}
+
+function CountChip({ n, suffix }: { n: number; suffix?: string }) {
+  return (
+    <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] tabular-nums text-digi-muted bg-black/[0.05]">
+      {n}{suffix ? ` ${suffix}` : ''}
+    </span>
+  );
+}
 
 /* ────────── page ────────── */
 
@@ -55,6 +80,7 @@ export default function ProjectsPage() {
         return;
       }
       setDirty(false);
+      toast.success('Estructura guardada');
     } catch (e: any) {
       toast.error('Error al guardar: ' + e.message);
     } finally {
@@ -76,27 +102,16 @@ export default function ProjectsPage() {
 
   const addProject = (agentId: string) => {
     const agentName = agentId.charAt(0).toUpperCase() + agentId.slice(1);
-    update(draft => [
-      ...draft,
-      { id: uid(), agentId, name: agentName, modules: [] },
-    ]);
+    update(draft => [...draft, { id: uid(), agentId, name: agentName, modules: [] }]);
   };
-
-  const removeProject = (id: string) => {
-    update(draft => draft.filter(p => p.id !== id));
-  };
-
-  const updateProject = (id: string, patch: Partial<ProjectStructure>) => {
-    update(draft =>
-      draft.map(p => (p.id === id ? { ...p, ...patch } : p)),
-    );
-  };
+  const removeProject = (id: string) => update(draft => draft.filter(p => p.id !== id));
+  const updateProject = (id: string, patch: Partial<ProjectStructure>) =>
+    update(draft => draft.map(p => (p.id === id ? { ...p, ...patch } : p)));
 
   if (!loaded) {
     return (
-      <div className="flex items-center justify-center h-64 text-digi-muted">
-        <Loader2 className="animate-spin mr-2" size={18} />
-        Cargando...
+      <div className="flex items-center justify-center h-64 text-digi-muted text-sm">
+        <Loader2 className="animate-spin mr-2" size={18} /> Cargando...
       </div>
     );
   }
@@ -104,38 +119,40 @@ export default function ProjectsPage() {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* header */}
-      <div className="flex items-center justify-between mb-4 shrink-0">
-        <div>
-          <h2 className="font-semibold text-lg text-accent">Proyectos</h2>
-          <p className="text-sm text-digi-muted mt-1">
-            Estructura de módulos, secciones y subsecciones por proyecto
-          </p>
+      <div className="flex items-start justify-between gap-3 mb-4 shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-lg bg-accent-light flex items-center justify-center shrink-0">
+            <FolderTree size={18} className="text-accent" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-digi-text leading-tight">Proyectos</h2>
+            <p className="text-[13px] text-digi-muted">Estructura de módulos, secciones y subsecciones por proyecto</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {/* add project dropdown */}
+        <div className="flex items-center gap-2 shrink-0">
           {availableAgents.length > 0 && (
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(v => !v)}
-                className="flex items-center gap-2 px-3 py-2 rounded text-xs font-medium bg-digi-card border border-digi-border text-digi-muted hover:text-accent hover:border-accent/40 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-[13px] font-medium border border-digi-border text-digi-text hover:border-accent hover:text-accent transition-colors"
               >
-                <Plus size={14} />
-                Agregar proyecto
+                <Plus size={15} /> Agregar proyecto
               </button>
               {dropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 bg-digi-card border border-digi-border rounded-lg p-2 min-w-[220px] z-20 shadow-xl">
+                  <div className="absolute right-0 top-full mt-1.5 bg-digi-card border border-digi-border rounded-lg p-1.5 min-w-[240px] z-20 shadow-lg">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-digi-muted px-2.5 pt-1 pb-1.5">Agentes disponibles</p>
                     {availableAgents.map(([agentId, info]) => (
                       <button
                         key={agentId}
                         onClick={() => { addProject(agentId); setDropdownOpen(false); }}
-                        className="flex items-center gap-2 px-3 py-2 w-full text-left rounded text-xs text-digi-muted hover:text-accent hover:bg-accent-light transition-colors"
+                        className="flex items-center gap-2 px-2.5 py-2 w-full text-left rounded-md text-[13px] text-digi-text hover:bg-accent-light hover:text-accent transition-colors"
                       >
-                        <Plus size={10} />
-                        <span className="font-medium">{agentId}</span>
+                        <Box size={13} className="shrink-0 text-digi-muted" />
+                        <span className="font-medium truncate">{agentId}</span>
                         {info.projectPath && (
-                          <span className="text-digi-muted/60 ml-auto truncate max-w-[120px]">
+                          <span className="text-digi-muted/60 ml-auto truncate max-w-[110px] text-[11px]">
                             {info.projectPath.split('/').pop()}
                           </span>
                         )}
@@ -150,26 +167,30 @@ export default function ProjectsPage() {
             onClick={save}
             disabled={!dirty || saving}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded text-xs font-medium transition-colors',
+              'inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-[13px] font-medium transition-colors',
               dirty
-                ? 'bg-accent-light border border-accent/40 text-accent hover:bg-accent-light'
-                : 'bg-digi-card border border-digi-border text-digi-muted cursor-not-allowed',
+                ? 'bg-accent text-white hover:bg-accent-hover shadow-sm'
+                : 'bg-digi-darker border border-digi-border text-digi-muted cursor-not-allowed',
             )}
           >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
             Guardar
           </button>
         </div>
       </div>
 
-      {/* planner columns */}
+      {/* board */}
       {structures.length === 0 ? (
-        <div className="text-center py-12 text-digi-muted text-sm">
-          No hay proyectos configurados. Agrega uno desde los agentes conectados.
+        <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
+          <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mb-3">
+            <FolderTree size={22} className="text-digi-muted" />
+          </div>
+          <p className="text-sm font-medium text-digi-text">No hay proyectos configurados</p>
+          <p className="text-[13px] text-digi-muted mt-1">Agrega uno desde los agentes conectados.</p>
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden pb-2">
-          <div className="flex gap-4 h-full" style={{ minWidth: structures.length * 320 }}>
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1">
+          <div className="flex gap-4 h-full" style={{ minWidth: structures.length * 336 }}>
             {structures.map(project => (
               <ProjectColumn
                 key={project.id}
@@ -189,10 +210,7 @@ export default function ProjectsPage() {
 /* ────────── Project Column ────────── */
 
 function ProjectColumn({
-  project,
-  agentInfo,
-  onUpdate,
-  onRemove,
+  project, agentInfo, onUpdate, onRemove,
 }: {
   project: ProjectStructure;
   agentInfo?: { projectPath?: string; port?: number; productionUrl?: string };
@@ -204,109 +222,69 @@ function ProjectColumn({
 
   const copyPortalLink = () => {
     const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    const url = `${base}/portal/${project.id}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(`${base}/portal/${project.id}`);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const addModule = () => {
-    onUpdate({
-      modules: [
-        ...project.modules,
-        { id: uid(), name: 'Nuevo módulo', sections: [] },
-      ],
-    });
-  };
+  const addModule = () => onUpdate({ modules: [...project.modules, { id: uid(), name: 'Nuevo módulo', sections: [] }] });
+  const updateModule = (moduleId: string, patch: Partial<Module>) =>
+    onUpdate({ modules: project.modules.map(m => (m.id === moduleId ? { ...m, ...patch } : m)) });
+  const removeModule = (moduleId: string) =>
+    onUpdate({ modules: project.modules.filter(m => m.id !== moduleId) });
 
-  const updateModule = (moduleId: string, patch: Partial<Module>) => {
-    onUpdate({
-      modules: project.modules.map(m =>
-        m.id === moduleId ? { ...m, ...patch } : m,
-      ),
-    });
-  };
-
-  const removeModule = (moduleId: string) => {
-    onUpdate({
-      modules: project.modules.filter(m => m.id !== moduleId),
-    });
-  };
+  const iconBtn = 'w-7 h-7 flex items-center justify-center rounded-md text-digi-muted transition-colors shrink-0';
 
   return (
-    <div className="w-[320px] shrink-0 flex flex-col bg-digi-card border border-digi-border rounded-lg overflow-hidden h-full">
+    <div className="w-[320px] shrink-0 flex flex-col bg-digi-card border border-digi-border rounded-xl overflow-hidden h-full shadow-sm">
       {/* column header */}
-      <div className="px-4 py-3 border-b border-digi-border shrink-0">
-        <div className="flex items-center gap-2">
-          <FolderTree size={14} className="text-accent shrink-0" />
-          <input
+      <div className="px-3.5 py-3 border-b border-digi-border shrink-0">
+        <div className="flex items-center gap-1">
+          <FolderTree size={15} className="text-accent shrink-0" />
+          <InlineText
             value={project.name}
-            onChange={e => onUpdate({ name: e.target.value })}
-            className="flex-1 bg-transparent text-sm font-semibold text-accent border-none outline-none placeholder:text-digi-muted min-w-0"
+            onChange={v => onUpdate({ name: v })}
             placeholder="Nombre del proyecto"
+            className="flex-1 text-[14px] font-semibold text-digi-text"
           />
-          <button
-            onClick={copyPortalLink}
-            className={cn(
-              'shrink-0 transition-colors',
-              linkCopied ? 'text-green-600' : 'text-digi-muted hover:text-accent',
-            )}
-            title="Copiar enlace del portal"
-          >
-            {linkCopied ? <Check size={13} /> : <Link2 size={13} />}
+          <button onClick={copyPortalLink} className={cn(iconBtn, linkCopied ? 'text-green-600' : 'hover:text-accent hover:bg-accent-light')} title="Copiar enlace del portal">
+            {linkCopied ? <Check size={14} /> : <Link2 size={14} />}
           </button>
-          <button
-            onClick={onRemove}
-            className="text-digi-muted hover:text-red-400 transition-colors shrink-0"
-          >
-            <Trash2 size={13} />
+          <button onClick={onRemove} className={cn(iconBtn, 'hover:text-red-600 hover:bg-red-50')} title="Eliminar proyecto">
+            <Trash2 size={14} />
           </button>
         </div>
-        <div className="flex items-center justify-between mt-1">
-          <span className="text-[10px] text-digi-muted font-mono">{project.agentId}</span>
-          <span className="text-[10px] text-digi-muted">{project.modules.length} módulos</span>
+        <div className="flex items-center gap-2 mt-1.5 pl-6">
+          <span className="text-[11px] text-digi-muted font-mono px-1.5 py-0.5 rounded bg-black/[0.04]">{project.agentId}</span>
+          <CountChip n={project.modules.length} suffix={project.modules.length === 1 ? 'módulo' : 'módulos'} />
         </div>
         {appUrl && (
-          <a
-            href={appUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-accent-light border border-accent/20 rounded text-[10px] text-accent hover:bg-accent-light transition-colors truncate"
-          >
-            <ExternalLink size={10} className="shrink-0" />
+          <a href={appUrl} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 mt-2 px-2 py-1.5 bg-accent-light border border-accent/20 rounded-md text-[11px] text-accent hover:border-accent/40 transition-colors truncate">
+            <ExternalLink size={11} className="shrink-0" />
             <span className="truncate">{appUrl}</span>
           </a>
         )}
         {agentInfo?.projectPath && (
-          <p className="text-[9px] text-digi-muted/60 font-mono truncate mt-1">
-            {agentInfo.projectPath}
-          </p>
+          <p className="text-[10px] text-digi-muted/60 font-mono truncate mt-1.5 pl-0.5">{agentInfo.projectPath}</p>
         )}
       </div>
 
-      {/* scrollable module list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+      {/* modules */}
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-0">
         {project.modules.length === 0 && (
-          <p className="text-xs text-digi-muted/50 text-center py-4">Sin módulos</p>
+          <p className="text-[12px] text-digi-muted/60 text-center py-6">Sin módulos todavía</p>
         )}
-
         {project.modules.map(mod => (
-          <ModuleCard
-            key={mod.id}
-            module={mod}
-            onUpdate={patch => updateModule(mod.id, patch)}
-            onRemove={() => removeModule(mod.id)}
-          />
+          <ModuleCard key={mod.id} module={mod} onUpdate={patch => updateModule(mod.id, patch)} onRemove={() => removeModule(mod.id)} />
         ))}
       </div>
 
       {/* add module footer */}
-      <div className="p-2 border-t border-digi-border shrink-0">
-        <button
-          onClick={addModule}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs text-digi-muted hover:text-accent hover:bg-accent-light rounded transition-colors w-full justify-center"
-        >
-          <Plus size={12} /> Agregar módulo
+      <div className="p-2.5 border-t border-digi-border shrink-0">
+        <button onClick={addModule}
+          className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium text-digi-muted hover:text-accent hover:bg-accent-light rounded-md transition-colors w-full justify-center border border-dashed border-digi-border hover:border-accent/40">
+          <Plus size={13} /> Agregar módulo
         </button>
       </div>
     </div>
@@ -315,84 +293,39 @@ function ProjectColumn({
 
 /* ────────── Module Card ────────── */
 
-function ModuleCard({
-  module: mod,
-  onUpdate,
-  onRemove,
-}: {
-  module: Module;
-  onUpdate: (patch: Partial<Module>) => void;
-  onRemove: () => void;
+function ModuleCard({ module: mod, onUpdate, onRemove }: {
+  module: Module; onUpdate: (patch: Partial<Module>) => void; onRemove: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const addSection = () => {
-    onUpdate({
-      sections: [
-        ...mod.sections,
-        { id: uid(), name: 'Nueva sección', subsections: [] },
-      ],
-    });
-  };
-
-  const updateSection = (sectionId: string, patch: Partial<Section>) => {
-    onUpdate({
-      sections: mod.sections.map(s =>
-        s.id === sectionId ? { ...s, ...patch } : s,
-      ),
-    });
-  };
-
-  const removeSection = (sectionId: string) => {
-    onUpdate({
-      sections: mod.sections.filter(s => s.id !== sectionId),
-    });
-  };
+  const addSection = () => onUpdate({ sections: [...mod.sections, { id: uid(), name: 'Nueva sección', subsections: [] }] });
+  const updateSection = (sectionId: string, patch: Partial<Section>) =>
+    onUpdate({ sections: mod.sections.map(s => (s.id === sectionId ? { ...s, ...patch } : s)) });
+  const removeSection = (sectionId: string) => onUpdate({ sections: mod.sections.filter(s => s.id !== sectionId) });
 
   return (
-    <div className="bg-digi-darker border border-digi-border rounded-lg overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2">
-        <button onClick={() => setExpanded(!expanded)} className="text-digi-muted hover:text-digi-text">
-          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+    <div className="group/mod rounded-lg border border-digi-border bg-digi-darker overflow-hidden">
+      <div className="flex items-center gap-1.5 px-2 py-1.5">
+        <button onClick={() => setExpanded(!expanded)} className="text-digi-muted hover:text-digi-text shrink-0 transition-colors">
+          {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
         </button>
         <Box size={14} className="text-accent shrink-0" />
-        <input
-          value={mod.name}
-          onChange={e => onUpdate({ name: e.target.value })}
-          className="flex-1 bg-transparent text-xs font-medium text-digi-text border-none outline-none placeholder:text-digi-muted min-w-0"
-          placeholder="Nombre del módulo"
-        />
-        <span className="text-[10px] text-digi-muted shrink-0">
-          {mod.sections.length}s
-        </span>
-        <button onClick={onRemove} className="text-digi-muted hover:text-red-400 transition-colors shrink-0">
-          <Trash2 size={12} />
+        <InlineText value={mod.name} onChange={v => onUpdate({ name: v })} placeholder="Nombre del módulo" className="flex-1 text-[13px] font-medium text-digi-text" />
+        <CountChip n={mod.sections.length} suffix="sec" />
+        <button onClick={onRemove} className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover/mod:opacity-100">
+          <Trash2 size={13} />
         </button>
       </div>
 
       {expanded && (
-        <div className="px-3 pb-3 pl-7 space-y-2">
-          <input
-            value={mod.description || ''}
-            onChange={e => onUpdate({ description: e.target.value || undefined })}
-            className="w-full bg-transparent text-[11px] text-digi-muted border-none outline-none placeholder:text-digi-muted/50"
-            placeholder="Descripción del módulo (opcional)"
-          />
-
+        <div className="px-2 pb-2.5 pl-8 space-y-1.5 border-t border-digi-border/60 pt-2">
+          <InlineText value={mod.description || ''} onChange={v => onUpdate({ description: v || undefined })} placeholder="Descripción del módulo (opcional)" className="w-full text-[11px] text-digi-muted" />
           {mod.sections.map(sec => (
-            <SectionCard
-              key={sec.id}
-              section={sec}
-              onUpdate={patch => updateSection(sec.id, patch)}
-              onRemove={() => removeSection(sec.id)}
-            />
+            <SectionCard key={sec.id} section={sec} onUpdate={patch => updateSection(sec.id, patch)} onRemove={() => removeSection(sec.id)} />
           ))}
-
-          <button
-            onClick={addSection}
-            className="flex items-center gap-2 px-2 py-1 text-[11px] text-digi-muted hover:text-accent hover:bg-accent-light rounded transition-colors w-full justify-center border border-dashed border-digi-border/50 hover:border-accent/40"
-          >
-            <Plus size={10} /> Agregar sección
+          <button onClick={addSection}
+            className="flex items-center gap-1.5 px-2 py-1.5 text-[11px] font-medium text-digi-muted hover:text-accent hover:bg-accent-light rounded-md transition-colors w-full justify-center border border-dashed border-digi-border/70 hover:border-accent/40">
+            <Plus size={11} /> Agregar sección
           </button>
         </div>
       )}
@@ -402,93 +335,45 @@ function ModuleCard({
 
 /* ────────── Section Card ────────── */
 
-function SectionCard({
-  section: sec,
-  onUpdate,
-  onRemove,
-}: {
-  section: Section;
-  onUpdate: (patch: Partial<Section>) => void;
-  onRemove: () => void;
+function SectionCard({ section: sec, onUpdate, onRemove }: {
+  section: Section; onUpdate: (patch: Partial<Section>) => void; onRemove: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const addSubsection = () => {
-    onUpdate({
-      subsections: [
-        ...sec.subsections,
-        { id: uid(), name: 'Nueva subsección' },
-      ],
-    });
-  };
-
-  const updateSubsection = (subId: string, patch: Partial<Subsection>) => {
-    onUpdate({
-      subsections: sec.subsections.map(ss =>
-        ss.id === subId ? { ...ss, ...patch } : ss,
-      ),
-    });
-  };
-
-  const removeSubsection = (subId: string) => {
-    onUpdate({
-      subsections: sec.subsections.filter(ss => ss.id !== subId),
-    });
-  };
+  const addSubsection = () => onUpdate({ subsections: [...sec.subsections, { id: uid(), name: 'Nueva subsección' }] });
+  const updateSubsection = (subId: string, patch: Partial<Subsection>) =>
+    onUpdate({ subsections: sec.subsections.map(ss => (ss.id === subId ? { ...ss, ...patch } : ss)) });
+  const removeSubsection = (subId: string) => onUpdate({ subsections: sec.subsections.filter(ss => ss.id !== subId) });
 
   return (
-    <div className="bg-digi-card/50 border border-digi-border/50 rounded">
-      <div className="flex items-center gap-2 px-2 py-1.5">
-        <button onClick={() => setExpanded(!expanded)} className="text-digi-muted hover:text-digi-text">
-          {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+    <div className="group/sec rounded-md border border-digi-border/70 bg-digi-card">
+      <div className="flex items-center gap-1.5 px-1.5 py-1.5">
+        <button onClick={() => setExpanded(!expanded)} className="text-digi-muted hover:text-digi-text shrink-0 transition-colors">
+          {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         </button>
-        <Layers size={12} className="text-purple-400 shrink-0" />
-        <input
-          value={sec.name}
-          onChange={e => onUpdate({ name: e.target.value })}
-          className="flex-1 bg-transparent text-[11px] text-digi-text border-none outline-none placeholder:text-digi-muted min-w-0"
-          placeholder="Nombre de la sección"
-        />
-        <span className="text-[10px] text-digi-muted shrink-0">
-          {sec.subsections.length}ss
-        </span>
-        <button onClick={onRemove} className="text-digi-muted hover:text-red-400 transition-colors shrink-0">
-          <Trash2 size={11} />
+        <Layers size={12} className="text-digi-muted shrink-0" />
+        <InlineText value={sec.name} onChange={v => onUpdate({ name: v })} placeholder="Nombre de la sección" className="flex-1 text-[12px] text-digi-text" />
+        <CountChip n={sec.subsections.length} />
+        <button onClick={onRemove} className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover/sec:opacity-100">
+          <Trash2 size={12} />
         </button>
       </div>
 
       {expanded && (
-        <div className="px-2 pb-2 pl-6 space-y-1.5">
-          <input
-            value={sec.description || ''}
-            onChange={e => onUpdate({ description: e.target.value || undefined })}
-            className="w-full bg-transparent text-[10px] text-digi-muted border-none outline-none placeholder:text-digi-muted/50"
-            placeholder="Descripción de la sección (opcional)"
-          />
-
+        <div className="px-1.5 pb-2 pl-7 space-y-1 border-t border-digi-border/50 pt-1.5">
+          <InlineText value={sec.description || ''} onChange={v => onUpdate({ description: v || undefined })} placeholder="Descripción de la sección (opcional)" className="w-full text-[10px] text-digi-muted" />
           {sec.subsections.map(sub => (
-            <div key={sub.id} className="flex items-center gap-2 px-2 py-1 bg-digi-darker/50 rounded border border-digi-border/30">
-              <FileText size={10} className="text-amber-400 shrink-0" />
-              <input
-                value={sub.name}
-                onChange={e => updateSubsection(sub.id, { name: e.target.value })}
-                className="flex-1 bg-transparent text-[11px] text-digi-text border-none outline-none placeholder:text-digi-muted min-w-0"
-                placeholder="Subsección"
-              />
-              <button
-                onClick={() => removeSubsection(sub.id)}
-                className="text-digi-muted hover:text-red-400 transition-colors shrink-0"
-              >
-                <Trash2 size={10} />
+            <div key={sub.id} className="group/sub flex items-center gap-1.5 pl-1.5 rounded border border-transparent hover:border-digi-border/50 hover:bg-black/[0.02] transition-colors">
+              <FileText size={11} className="text-digi-muted/70 shrink-0" />
+              <InlineText value={sub.name} onChange={v => updateSubsection(sub.id, { name: v })} placeholder="Subsección" className="flex-1 text-[11px] text-digi-text" />
+              <button onClick={() => removeSubsection(sub.id)} className="w-5 h-5 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover/sub:opacity-100">
+                <Trash2 size={11} />
               </button>
             </div>
           ))}
-
-          <button
-            onClick={addSubsection}
-            className="flex items-center gap-2 px-2 py-1 text-[10px] text-digi-muted hover:text-amber-400 hover:bg-amber-400/10 rounded transition-colors w-full justify-center border border-dashed border-digi-border/30 hover:border-amber-400/30"
-          >
-            <Plus size={9} /> Agregar subsección
+          <button onClick={addSubsection}
+            className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-digi-muted hover:text-accent hover:bg-accent-light rounded transition-colors w-full justify-center border border-dashed border-digi-border/50 hover:border-accent/40">
+            <Plus size={10} /> Agregar subsección
           </button>
         </div>
       )}
