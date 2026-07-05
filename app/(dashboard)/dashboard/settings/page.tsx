@@ -7,8 +7,9 @@ import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
+import CvPanel from '@/components/settings/CvPanel';
 import {
-  User, CalendarClock, FileText, Briefcase, CalendarDays,
+  User, CalendarClock, Briefcase, CalendarDays,
   Camera, ChevronRight,
 } from 'lucide-react';
 
@@ -116,7 +117,6 @@ export default function SettingsPage() {
                 <div className="h-px bg-digi-border/60 my-1.5 mx-2" />
                 <p className="text-[9px] font-semibold text-digi-muted/70 uppercase tracking-wider px-2 pb-1" style={df}>Miembro</p>
                 <RailLink href="/dashboard/settings/availability" Icon={CalendarClock} label="Disponibilidad" />
-                <RailLink href="/dashboard/settings/cv" Icon={FileText} label="Mi CV" />
                 <RailLink href="/dashboard/settings/portfolio" Icon={Briefcase} label="Portafolio" />
                 {user?.role === 'member' && (
                   <RailLink href="/dashboard/settings/calendar" Icon={CalendarDays} label="Calendario" />
@@ -126,8 +126,9 @@ export default function SettingsPage() {
           </div>
         </aside>
 
-        {/* ── Content ── */}
+        {/* ── Content: Perfil (form) + Mi CV (panel) ── */}
         <div className="flex-1 min-w-0 w-full">
+          <div className={user?.member_id ? 'grid grid-cols-1 xl:grid-cols-2 gap-4 items-start' : ''}>
           <form onSubmit={handleSave} className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5 space-y-4">
               {/* Avatar */}
               <div className="flex items-center gap-4">
@@ -199,6 +200,9 @@ export default function SettingsPage() {
                 {saving ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </form>
+
+            {user?.member_id && <CvPanel />}
+          </div>
         </div>
       </div>
     </div>
