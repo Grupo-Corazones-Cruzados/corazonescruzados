@@ -277,6 +277,7 @@ export default function SubscriptionsPage() {
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
             <div className="min-w-0">
               <PixelDataTable
+                singleLine
                 data={subs}
                 onRowClick={(s: any) => openDetail(s)}
                 emptyTitle="Sin suscripciones"
@@ -291,7 +292,7 @@ export default function SubscriptionsPage() {
                   ) },
                   { key: 'title', header: 'Razón / Título', render: (s: any) => <span className="text-[12px] text-digi-text" style={mf}>{s.title}</span> },
                   { key: 'cost', header: 'Costo', width: '100px', render: (s: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${Number(s.monthly_cost).toFixed(2)}</span> },
-                  { key: 'next', header: 'Próximo cobro', render: (s: any) => {
+                  { key: 'next', header: 'Próximo cobro', width: '200px', render: (s: any) => {
                     if (s.status === 'cancelled') return <span className="text-digi-muted/50 text-[12px]">—</span>;
                     if (!s.next_due) return <span className="text-green-600 text-[12px] font-medium" style={mf}>Al día</span>;
                     return (

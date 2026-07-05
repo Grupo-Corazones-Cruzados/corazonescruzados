@@ -8,8 +8,8 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PageHeader from '@/components/ui/PageHeader';
-import { BTN_PRIMARY } from '@/components/ui/Button';
-import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight } from 'lucide-react';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight, PenLine, Zap, Download, KeyRound, FileCheck2 } from 'lucide-react';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -565,8 +565,10 @@ function InvoicesPageInner() {
           { key: 'number', header: 'No. Factura', width: '190px', render: (i: any) => (
             <span className="flex items-center gap-2 min-w-0">
               <span title={STATUS_LABEL[i.status] || i.status} className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[STATUS_V[i.status] || 'default']}`} />
-              <span className={`truncate ${selected?.id === i.id ? 'text-accent font-medium' : 'text-digi-text'}`}>{i.invoice_number || `#${i.id}`}</span>
-              {i.is_manual && <span className="text-[10px] px-1 py-0.5 border border-accent/40 rounded text-accent leading-none shrink-0" style={mf}>MANUAL</span>}
+              <span className={`flex-1 truncate ${selected?.id === i.id ? 'text-accent font-medium' : 'text-digi-text'}`}>{i.invoice_number || `#${i.id}`}</span>
+              {i.is_manual
+                ? <span title="Factura manual" className="shrink-0 text-digi-muted"><PenLine className="w-3.5 h-3.5" /></span>
+                : <span title="Factura automática" className="shrink-0 text-digi-muted"><Zap className="w-3.5 h-3.5" /></span>}
             </span>
           ) },
           { key: 'client', header: 'Cliente', render: (i: any) => <span className="text-digi-text">{i.client_name_sri || i.client_name || '-'}</span> },
@@ -575,24 +577,6 @@ function InvoicesPageInner() {
             <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
           ) : <span className="text-digi-muted">-</span> },
           { key: 'date', header: 'Fecha', width: '110px', render: (i: any) => <span className="text-digi-muted">{i.created_at ? new Date(i.created_at).toLocaleDateString('es-EC') : '-'}</span> },
-          { key: 'actions', header: '', width: '160px', render: (i: any) => (
-            <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-              {i.access_key && (
-                <button onClick={() => { navigator.clipboard.writeText(i.access_key); }}
-                  className="px-1.5 py-0.5 text-[11px] border border-digi-border text-digi-muted hover:text-accent hover:border-accent/30 transition-colors" style={pf}
-                  title={`Clave: ${i.access_key}`}>Clave</button>
-              )}
-              {i.authorization_number && (
-                <button onClick={() => { navigator.clipboard.writeText(i.authorization_number); }}
-                  className="px-1.5 py-0.5 text-[11px] border border-digi-border text-digi-muted hover:text-accent hover:border-accent/30 transition-colors" style={pf}
-                  title={`Auth: ${i.authorization_number}`}>Auth</button>
-              )}
-              {i.sri_status === 'authorized' && (
-                <button onClick={() => window.open(`/api/invoices/${i.id}/pdf`, '_blank')}
-                  className="px-1.5 py-0.5 text-[11px] border border-green-300 text-green-600 hover:bg-green-50 transition-colors" style={pf}>PDF</button>
-              )}
-            </div>
-          )},
         ]}
         data={invoices}
         onRowClick={(i: any) => setSelected(i)}
@@ -631,9 +615,32 @@ function InvoicesPageInner() {
                     <span className="text-digi-text text-right" style={mf}>{v}</span>
                   </div>
                 ))}
-                <button onClick={() => router.push(`/dashboard/invoices/${selected.id}`)} className={`${BTN_PRIMARY} w-full mt-1`}>
-                  Ver factura <ArrowRight className="w-4 h-4" />
-                </button>
+                <div className="space-y-2 pt-1">
+                  {selected.sri_status === 'authorized' && (
+                    <button onClick={() => window.open(`/api/invoices/${selected.id}/pdf`, '_blank')} className={`${BTN_SECONDARY} w-full`}>
+                      <Download className="w-4 h-4" /> Descargar PDF
+                    </button>
+                  )}
+                  {(selected.access_key || selected.authorization_number) && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {selected.access_key && (
+                        <button onClick={() => { navigator.clipboard.writeText(selected.access_key); toast.success('Clave copiada'); }}
+                          className="inline-flex items-center justify-center gap-1.5 px-2 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf} title={selected.access_key}>
+                          <KeyRound className="w-3.5 h-3.5" /> Clave
+                        </button>
+                      )}
+                      {selected.authorization_number && (
+                        <button onClick={() => { navigator.clipboard.writeText(selected.authorization_number); toast.success('Autorización copiada'); }}
+                          className="inline-flex items-center justify-center gap-1.5 px-2 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf} title={selected.authorization_number}>
+                          <FileCheck2 className="w-3.5 h-3.5" /> Autorización
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <button onClick={() => router.push(`/dashboard/invoices/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
+                    Ver factura <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           )}
