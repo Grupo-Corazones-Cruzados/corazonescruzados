@@ -261,6 +261,7 @@ export default function ClientsPage() {
             <div className="min-w-0">
               <PixelDataTable
                 singleLine
+                bottomReserve={52}
                 sortBy={sortBy} sortDir={sortDir} onSort={onSort}
                 data={sortedClients}
                 onRowClick={(c: any) => openDetail(c)}
@@ -280,9 +281,9 @@ export default function ClientsPage() {
                   { key: 'ultima', header: 'Última factura', width: '140px', sortKey: 'ultima', render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{fechaEs(c.ultima)}</span> },
                 ]}
               />
-              <div className="flex items-center justify-between mt-3 text-[12px]" style={mf}>
+              <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-digi-border text-[12px]" style={mf}>
                 <span className="text-digi-muted">{sortedClients.length} cliente{sortedClients.length === 1 ? '' : 's'} · {sortedClients.reduce((s, c) => s + Number(c.facturas || 0), 0)} facturas</span>
-                <span className="text-digi-text">Total: <span className="text-accent font-semibold">${sortedClients.reduce((s, c) => s + Number(c.total || 0), 0).toFixed(2)}</span></span>
+                <span className="text-digi-text">Total facturado: <span className="text-accent font-semibold tabular-nums">${sortedClients.reduce((s, c) => s + Number(c.total || 0), 0).toFixed(2)}</span></span>
               </div>
             </div>
 
