@@ -18,9 +18,7 @@ export default function AdminSpritesPage() {
         </Link>
         <span className="text-[12px] text-digi-muted" style={{ fontFamily: 'var(--font-body)' }}>DigiMundo &gt; Sprites</span>
       </div>
-      <div className="border border-digi-border rounded-lg overflow-hidden" style={{ minHeight: 'calc(100vh - 120px)' }}>
-        <SpritesEditor />
-      </div>
+      <SpritesEditor />
     </div>
   );
 }

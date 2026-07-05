@@ -18,7 +18,7 @@ export default function AdminDigimundoProjectsPage() {
         </Link>
         <span className="text-[12px] text-digi-muted" style={{ fontFamily: 'var(--font-body)' }}>DigiMundo &gt; Proyectos</span>
       </div>
-      <ProjectsEditor />
+      <div style={{ height: 'calc(100vh - 140px)' }}><ProjectsEditor /></div>
     </div>
   );
 }
