@@ -13,12 +13,12 @@ export default function AdminSpritesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <Link href="/dashboard/admin" className="text-[10px] text-accent-glow opacity-60 hover:opacity-100" style={{ fontFamily: 'var(--font-display)' }}>
+        <Link href="/dashboard/admin" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
           &lt; Volver a Admin
         </Link>
-        <span className="text-[10px] text-digi-muted" style={{ fontFamily: 'var(--font-display)' }}>DigiMundo &gt; Sprites</span>
+        <span className="text-[12px] text-digi-muted" style={{ fontFamily: 'var(--font-body)' }}>DigiMundo &gt; Sprites</span>
       </div>
-      <div className="border-2 border-digi-border overflow-hidden" style={{ minHeight: 'calc(100vh - 120px)' }}>
+      <div className="border border-digi-border rounded-lg overflow-hidden" style={{ minHeight: 'calc(100vh - 120px)' }}>
         <SpritesEditor />
       </div>
     </div>

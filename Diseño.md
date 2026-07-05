@@ -174,6 +174,15 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   facturado movido a una línea bajo la tabla (se quitó la barra fija inferior). Modal de creación a
   campos `field-control`/`labelCls`.
 
+- **Admin** (`admin/page.tsx` + subrutas `incidents`/`world`/`sprites`/`digimundo-projects`, 2026-07-05)
+  — **variante rail + contenido** (como Configuración): rail de secciones (Equipo/Clientes/Postulaciones/
+  DigiMundo, iconos `Users/UserRound/UserPlus/Gamepad2`). DigiMundo usa un **segmented control** para sus
+  sub-vistas (Dashboard/Mundo/Proyectos/Incidentes/Sprites). Tablas de-pixeladas (Equipo/Clientes/
+  Postulaciones/Incidentes) con badges + labels en español; **Postulaciones** con acciones Aprobar
+  (verde)/Rechazar (rojo) con icono y aviso en banner corp; **DigiDashboard** con StatCards de icono.
+  Los **editores de juego embebidos** (`WorldViewer`/`SpritesEditor`/`ProjectsEditor` de `(main)`)
+  **conservan su identidad pixelart** — solo se limpió el contenedor (`border` 1px `rounded-lg`). Las
+  subrutas con breadcrumb corp (`ChevronLeft`).
 - **Soporte** (`support/page.tsx` + `support/[id]/page.tsx`, 2026-07-05) — lista = **rail (estado:
   Todos/Abiertos/En proceso/Resueltos/Cerrados, iconos `LifeBuoy/DoorOpen/Loader/CheckCircle2/Archive`)
   + lista + panel de vista previa**, con conteos del API (`GET /api/support` devuelve `counts`),
