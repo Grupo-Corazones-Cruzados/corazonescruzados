@@ -163,6 +163,14 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   avatares `bg-accent-light`); estado de pedido en español; modales (galería, comprar, solicitar,
   pedido) a corp.
 
+- **Clientes** (`clients/page.tsx`, 2026-07-05) — **rail + lista + panel**: rail = **tipo de
+  identificación** (Todos/RUC/Cédula/Pasaporte/Consumidor Final/ID Exterior, iconos `Users/Building2/
+  Contact/BookUser/UserRound/Globe`) con conteos calculados en cliente. El detalle (antes modal con
+  pestañas) es el **panel de detalle derecho** (400px) con toggle segmentado **Datos/Consumos**: form
+  editable + país (buscador), y consumos (totales + facturas con Origen/Factura). Resumen de total
+  facturado movido a una línea bajo la tabla (se quitó la barra fija inferior). Modal de creación a
+  campos `field-control`/`labelCls`.
+
 **Botón estándar del dashboard:** `components/ui/Button.tsx` — `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER`
 (clases componibles) y `<Button variant icon>`. Es la fuente única del botón Fluent; reusar en todos
 los módulos (evita `pixel-btn` ad-hoc en el header de detalle).
