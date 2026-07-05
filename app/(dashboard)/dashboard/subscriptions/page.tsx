@@ -32,10 +32,6 @@ const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'err
 const STATUS_LABEL: Record<string, string> = {
   active: 'Activa', paused: 'Pausada', cancelled: 'Cancelada',
 };
-// Punto de color por variante para mostrar el estado sin columna dedicada.
-const STATUS_DOT: Record<string, string> = {
-  success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-accent', default: 'bg-digi-muted',
-};
 
 const PER_PAGE = 15;
 
@@ -49,11 +45,6 @@ type BillingClient = {
   is_consumidor_final: boolean;
 };
 
-function alertBadge(alert: string, label: string) {
-  if (alert === 'overdue') return <PixelBadge variant="error">{label}</PixelBadge>;
-  if (alert === 'due_soon') return <PixelBadge variant="warning">{label}</PixelBadge>;
-  return null;
-}
 function dueText(daysUntilDue: number) {
   if (daysUntilDue < 0) return `Vencido hace ${Math.abs(daysUntilDue)}d`;
   if (daysUntilDue === 0) return 'Vence hoy';
@@ -280,16 +271,27 @@ export default function SubscriptionsPage() {
                 singleLine
                 data={subs}
                 onRowClick={(s: any) => openDetail(s)}
+                rowClassName={(s: any) => s.status === 'paused' ? 'bg-amber-50' : s.status === 'cancelled' ? 'bg-red-50 opacity-60' : ''}
                 emptyTitle="Sin suscripciones"
                 emptyDesc="No hay suscripciones en este estado."
                 columns={[
                   { key: 'id', header: 'ID', width: '56px', render: (s: any) => <span className="tabular-nums text-digi-muted">#{s.id}</span> },
-                  { key: 'client', header: 'Cliente', render: (s: any) => (
-                    <span className="flex items-center gap-2 min-w-0">
-                      <span title={STATUS_LABEL[s.status] || s.status} className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[STATUS_V[s.status] || 'default']}`} />
-                      <span className={`truncate text-[13px] font-medium ${selected?.id === s.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{s.client_name || '—'}</span>
-                    </span>
-                  ) },
+                  { key: 'client', header: 'Cliente', render: (s: any) => {
+                    const dot = s.status === 'cancelled' ? 'bg-digi-muted'
+                      : s.alert === 'overdue' ? 'bg-red-500'
+                      : s.alert === 'due_soon' ? 'bg-amber-500'
+                      : 'bg-green-500';
+                    const dotTitle = s.status === 'cancelled' ? 'Cancelada'
+                      : s.alert === 'overdue' ? `Vencido${s.next_due ? ` · ${dueText(s.next_due.daysUntilDue)}` : ''}`
+                      : s.alert === 'due_soon' ? `Por vencer${s.next_due ? ` · ${dueText(s.next_due.daysUntilDue)}` : ''}`
+                      : (s.next_due ? 'Al día' : 'Sin cobros pendientes');
+                    return (
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span title={dotTitle} className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                        <span className={`truncate text-[13px] font-medium ${selected?.id === s.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{s.client_name || '—'}</span>
+                      </span>
+                    );
+                  } },
                   { key: 'title', header: 'Razón / Título', render: (s: any) => <span className="text-[12px] text-digi-text" style={mf}>{s.title}</span> },
                   { key: 'cost', header: 'Costo', width: '100px', render: (s: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${Number(s.monthly_cost).toFixed(2)}</span> },
                   { key: 'next', header: 'Próximo cobro', width: '200px', render: (s: any) => {
@@ -299,7 +301,6 @@ export default function SubscriptionsPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-[12px] text-digi-text" style={mf}>{s.next_due.label}</span>
                         <span className="text-[11px] text-digi-muted" style={mf}>· {dueText(s.next_due.daysUntilDue)}</span>
-                        {alertBadge(s.alert, s.alert === 'overdue' ? 'Vencido' : 'Por vencer')}
                       </div>
                     );
                   } },

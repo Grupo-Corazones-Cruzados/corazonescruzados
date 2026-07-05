@@ -29,6 +29,8 @@ interface PixelDataTableProps<T> {
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
   onSort?: (key: string) => void;
+  /** Clase(s) extra por fila según el dato (p. ej. relleno por estado). */
+  rowClassName?: (item: T) => string;
 }
 
 const BOTTOM_GAP = 16; // breathing room below the table
@@ -48,6 +50,7 @@ export default function PixelDataTable<T>({
   sortBy,
   sortDir,
   onSort,
+  rowClassName,
 }: PixelDataTableProps<T>) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [fillH, setFillH] = useState<number>();
@@ -128,7 +131,7 @@ export default function PixelDataTable<T>({
                 onClick={() => onRowClick?.(item)}
                 className={`dt-row border-b border-digi-border/50 transition-colors ${
                   onRowClick ? 'cursor-pointer hover:bg-accent/5' : ''
-                }`}
+                } ${rowClassName ? rowClassName(item) : ''}`}
               >
                 {columns.map((col) => (
                   <td
