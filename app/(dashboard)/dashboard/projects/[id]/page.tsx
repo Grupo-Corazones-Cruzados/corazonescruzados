@@ -7,10 +7,9 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
 import PropertyRail from '@/components/ui/PropertyRail';
-import PixelTabs from '@/components/ui/PixelTabs';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
-import { Check, DoorOpen, Play, Send, Receipt } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -29,6 +28,7 @@ import useAgentChat from '@/hooks/useAgentChat';
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   draft: 'default', open: 'info', in_progress: 'warning', review: 'warning',
@@ -839,6 +839,19 @@ export default function ProjectDetailPage() {
   const canBidInvited = isMember && !isOwner && myBid?.status === 'invited';
   const canBid = canBidNew || canBidInvited;
 
+  const SectionRailItem = ({ active, Icon, label, count, onClick }: any) => (
+    <button onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
+        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
+      }`}>
+      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
+      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
+      {count !== undefined && (
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count}</span>
+      )}
+    </button>
+  );
+
   return (
     <div>
       {editingTitle ? (
@@ -898,19 +911,20 @@ export default function ProjectDetailPage() {
         />
       )}
 
-      <PixelTabs
-        tabs={[
-          { value: 'resumen', label: 'Resumen' },
-          { value: 'requerimientos', label: 'Requerimientos' },
-          { value: 'digimundo', label: 'DigiMundo' },
-          { value: 'imagenes', label: 'Imágenes' },
-        ]}
-        active={ptab}
-        onChange={(v) => setPtab(v as any)}
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* ====== LEFT ====== */}
-        <div className="lg:col-span-2 min-w-0 space-y-4">
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+        {/* Section rail */}
+        <aside className="w-full lg:w-[200px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Secciones</p>
+          <div className="space-y-0.5">
+            <SectionRailItem active={ptab === 'resumen'} Icon={LayoutList} label="Resumen" onClick={() => setPtab('resumen')} />
+            <SectionRailItem active={ptab === 'requerimientos'} Icon={ListChecks} label="Requerimientos" count={reqs.length} onClick={() => setPtab('requerimientos')} />
+            <SectionRailItem active={ptab === 'digimundo'} Icon={Boxes} label="DigiMundo" onClick={() => setPtab('digimundo')} />
+            <SectionRailItem active={ptab === 'imagenes'} Icon={ImageIcon} label="Imágenes" onClick={() => setPtab('imagenes')} />
+          </div>
+        </aside>
+
+        {/* ====== CONTENT ====== */}
+        <div className="flex-1 min-w-0 space-y-4">
           {ptab === 'resumen' && (<>
           {project.description && (
             <div className="pixel-card">
@@ -2117,7 +2131,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* ====== RIGHT (Propiedades + DigiMundo) ====== */}
-        <div className="space-y-4">
+        <div className="w-full lg:w-[320px] shrink-0 space-y-4">
           {/* Propiedades */}
           <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm lg:sticky lg:top-4">
             <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Propiedades</h3>

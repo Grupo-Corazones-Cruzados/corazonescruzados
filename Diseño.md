@@ -146,8 +146,9 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   /api/projects` devuelve `counts` respetando el control de acceso por rol). Detalle: header con
   botones `Button` compartidos + iconos, estado en español, y **de-pixelado completo** de sus
   formularios (invitar, propuesta/bid, requerimientos, asignación, y el **modal Completar + factura
-  SRI**): `pf → var(--font-body)`, tamaños ≥11px, verdes/rojos/ámbar corp. **Pendiente:** convertir
-  las pestañas horizontales del detalle a rail de secciones (como Tickets).
+  SRI**): `pf → var(--font-body)`, tamaños ≥11px, verdes/rojos/ámbar corp. El detalle usa **rail de
+  secciones** (Resumen/Requerimientos/DigiMundo/Imágenes, iconos `LayoutList/ListChecks/Boxes/Image`)
+  · contenido · panel PROPIEDADES (ancho fijo), igual que Tickets.
 
 **Botón estándar del dashboard:** `components/ui/Button.tsx` — `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER`
 (clases componibles) y `<Button variant icon>`. Es la fuente única del botón Fluent; reusar en todos
