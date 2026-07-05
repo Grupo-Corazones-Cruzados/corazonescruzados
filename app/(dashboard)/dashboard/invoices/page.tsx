@@ -31,6 +31,10 @@ const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'err
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pendiente', sent: 'Enviada', paid: 'Pagada', cancelled: 'Anulada', failed: 'Fallida',
 };
+// Punto de color por variante para mostrar el estado sin columna dedicada.
+const STATUS_DOT: Record<string, string> = {
+  success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-accent', default: 'bg-digi-muted',
+};
 const SRI_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   generated: 'default', signed: 'info', sent: 'info', authorized: 'success', rejected: 'error', error: 'error', voided: 'error',
 };
@@ -556,22 +560,21 @@ function InvoicesPageInner() {
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
         <div className="min-w-0">
       <PixelDataTable
+        singleLine
         columns={[
-          { key: 'number', header: 'No. Factura', render: (i: any) => (
-            <div className="flex items-center gap-1.5">
-              <span className={selected?.id === i.id ? 'text-accent font-medium' : 'text-digi-text'}>{i.invoice_number || `#${i.id}`}</span>
-              {i.is_manual && <span className="text-[10px] px-1 py-0.5 border border-accent/40 text-accent leading-none" style={pf}>MANUAL</span>}
-            </div>
-          ), width: '160px' },
-          { key: 'client', header: 'Cliente', render: (i: any) => i.client_name_sri || i.client_name || '-' },
-          { key: 'total', header: 'Total', render: (i: any) => <span className="text-accent">${Number(i.total || 0).toFixed(2)}</span> },
-          { key: 'sri', header: 'SRI', render: (i: any) => i.sri_status ? (
+          { key: 'number', header: 'No. Factura', width: '190px', render: (i: any) => (
+            <span className="flex items-center gap-2 min-w-0">
+              <span title={STATUS_LABEL[i.status] || i.status} className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[STATUS_V[i.status] || 'default']}`} />
+              <span className={`truncate ${selected?.id === i.id ? 'text-accent font-medium' : 'text-digi-text'}`}>{i.invoice_number || `#${i.id}`}</span>
+              {i.is_manual && <span className="text-[10px] px-1 py-0.5 border border-accent/40 rounded text-accent leading-none shrink-0" style={mf}>MANUAL</span>}
+            </span>
+          ) },
+          { key: 'client', header: 'Cliente', render: (i: any) => <span className="text-digi-text">{i.client_name_sri || i.client_name || '-'}</span> },
+          { key: 'total', header: 'Total', width: '100px', render: (i: any) => <span className="text-accent tabular-nums">${Number(i.total || 0).toFixed(2)}</span> },
+          { key: 'sri', header: 'SRI', width: '150px', render: (i: any) => i.sri_status ? (
             <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
           ) : <span className="text-digi-muted">-</span> },
-          { key: 'status', header: 'Estado', render: (i: any) => (
-            <PixelBadge variant={STATUS_V[i.status] || 'default'}>{STATUS_LABEL[i.status] || i.status}</PixelBadge>
-          )},
-          { key: 'date', header: 'Fecha', render: (i: any) => i.created_at ? new Date(i.created_at).toLocaleDateString() : '-' },
+          { key: 'date', header: 'Fecha', width: '110px', render: (i: any) => <span className="text-digi-muted">{i.created_at ? new Date(i.created_at).toLocaleDateString('es-EC') : '-'}</span> },
           { key: 'actions', header: '', width: '160px', render: (i: any) => (
             <div className="flex gap-1" onClick={e => e.stopPropagation()}>
               {i.access_key && (
