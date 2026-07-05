@@ -469,8 +469,9 @@ export default function CentralizedPage() {
             columns={[
               { key: 'name', header: 'Sistema', render: (s: any) => (
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-md bg-accent-light border border-accent/15 flex items-center justify-center shrink-0">
+                  <div className="relative w-8 h-8 rounded-md bg-accent-light border border-accent/15 flex items-center justify-center shrink-0">
                     <Boxes className="w-4 h-4 text-accent" />
+                    <span title={s.is_active ? 'Activo' : 'Inactivo'} className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-digi-card ${s.is_active ? 'bg-green-500' : 'bg-digi-muted'}`} />
                   </div>
                   <div className="min-w-0">
                     <span className={`block text-[13px] font-medium truncate ${selected?.id === s.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{s.name}</span>
@@ -488,9 +489,6 @@ export default function CentralizedPage() {
                 <span className="inline-flex items-center gap-1 text-[12px] text-digi-muted" style={mf}>
                   <Users className="w-3.5 h-3.5" /> {s.access_count ?? 0}
                 </span>
-              ) },
-              { key: 'status', header: 'Estado', width: '100px', render: (s: any) => (
-                <PixelBadge variant={s.is_active ? 'success' : 'default'}>{s.is_active ? 'Activo' : 'Inactivo'}</PixelBadge>
               ) },
             ]}
           />
