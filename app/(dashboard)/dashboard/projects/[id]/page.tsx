@@ -9,7 +9,7 @@ import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
 import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -936,152 +936,128 @@ export default function ProjectDetailPage() {
 
           {ptab === 'requerimientos' && (<>
           {/* Requirements */}
-          <div className="pixel-card">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>Requerimientos ({completedReqs}/{reqs.length})</h3>
-              <div className="flex items-center gap-2">
+          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h3 className="text-[14px] font-semibold text-digi-text" style={mf}>
+                Requerimientos <span className="text-digi-muted font-normal">({completedReqs}/{reqs.length})</span>
+              </h3>
+              <div className="flex items-center gap-3">
                 {reqs.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <div className="w-24 h-1.5 rounded-full bg-[#edebe9] overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? (completedReqs / reqs.length) * 100 : 0}%` }} /></div>
-                    <span className="text-[11px] text-digi-muted" style={mf}>{reqs.length ? Math.round((completedReqs / reqs.length) * 100) : 0}%</span>
+                    <div className="w-28 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? (completedReqs / reqs.length) * 100 : 0}%` }} /></div>
+                    <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{reqs.length ? Math.round((completedReqs / reqs.length) * 100) : 0}%</span>
                   </div>
                 )}
                 {canAddReqs && (
-                  <button onClick={() => setShowReqModal(true)} className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors" style={pf}>+ Agregar</button>
+                  <button onClick={() => setShowReqModal(true)} className="inline-flex items-center gap-1 text-[12px] font-medium text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors" style={mf}><Plus className="w-3.5 h-3.5" /> Agregar</button>
                 )}
               </div>
             </div>
 
             {reqs.length === 0 ? (
-              <p className="text-xs text-digi-muted" style={mf}>Sin requerimientos aun</p>
+              <p className="text-[13px] text-digi-muted text-center py-6" style={mf}>Sin requerimientos aún.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {reqs.map((r: any) => {
                   const assignments = r.assignments || [];
                   const items = r.items || [];
                   const canEditThis = canMemberEditReq(r.id);
-                  const assignedMemberName = assignments.find((a: any) => a.status === 'accepted')?.member_name;
+                  const acceptedAssignments = assignments.filter((a: any) => a.status === 'accepted');
                   return (
-                    <div key={r.id} className={`relative group/req rounded-md border border-digi-border border-l-[3px] bg-digi-card hover:bg-[#faf9f8] transition-colors px-3 py-2.5 ${r.is_completed ? 'border-l-[#107c10]' : 'border-l-accent'}`}>
-                      <div className="flex items-start gap-2.5">
-                        <button
-                          onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
-                          disabled={!canEditThis}
-                          aria-label={r.is_completed ? 'Marcar incompleto' : 'Marcar completo'}
-                          className={`mt-0.5 w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : 'cursor-default'}`}
-                        >
-                          {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
-                        </button>
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-[13px] font-medium ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</p>
-                          {r.description && <p className="text-[10px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
-                          {(() => {
-                            const acceptedAssignments = assignments.filter((a: any) => a.status === 'accepted');
-                            if (acceptedAssignments.length === 0) return null;
-                            return (
-                              <div className="flex items-center gap-1 mt-1">
+                    <div key={r.id} className={`rounded-lg border border-digi-border bg-white overflow-hidden`}>
+                      <div className={`p-3.5 border-l-[3px] ${r.is_completed ? 'border-l-green-500' : 'border-l-accent'}`}>
+                        <div className="flex items-start gap-3">
+                          <button
+                            onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
+                            disabled={!canEditThis}
+                            aria-label={r.is_completed ? 'Marcar incompleto' : 'Marcar completo'}
+                            className={`mt-0.5 w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : 'cursor-default'}`}
+                          >
+                            {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
+                          </button>
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-[13px] font-medium ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</p>
+                            {r.description && <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
+                            {acceptedAssignments.length > 0 && (
+                              <div className="flex items-center gap-1.5 mt-1.5">
                                 {acceptedAssignments.map((a: any) => (
-                                  <div key={a.id} tabIndex={0} className="relative group/avatar cursor-pointer outline-none">
-                                    {a.photo_url ? (
-                                      // eslint-disable-next-line @next/next/no-img-element
-                                      <img src={a.photo_url} alt="" className="w-6 h-6 rounded-full border border-accent/50 object-cover" />
-                                    ) : (
-                                      <div className="w-6 h-6 rounded-full border border-accent/50 bg-accent-light flex items-center justify-center text-[11px] text-accent" style={pf}>
-                                        {(a.member_name || '?')[0].toUpperCase()}
-                                      </div>
-                                    )}
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-digi-card border border-digi-border rounded shadow-lg opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 transition-opacity pointer-events-none z-20 min-w-max text-[10px]" style={mf}>
-                                      <div className="font-semibold text-digi-text">{a.member_name}</div>
-                                      <div className="text-digi-muted mt-0.5">Propuesto: ${a.proposed_cost}{a.member_cost != null ? ` → $${a.member_cost}` : ''}</div>
-                                      <div className="text-green-600 mt-0.5">● {a.status}</div>
+                                  a.photo_url ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img key={a.id} src={a.photo_url} alt="" title={`${a.member_name} · $${a.member_cost ?? a.proposed_cost}`} className="w-6 h-6 rounded-full border border-digi-border object-cover" />
+                                  ) : (
+                                    <div key={a.id} title={`${a.member_name} · $${a.member_cost ?? a.proposed_cost}`} className="w-6 h-6 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[11px] font-semibold text-accent" style={mf}>
+                                      {(a.member_name || '?')[0].toUpperCase()}
                                     </div>
-                                  </div>
+                                  )
                                 ))}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {r.cost && <span className="text-[12px] text-accent" style={mf}>${r.cost}</span>}
-                          {isOwner && (
-                            <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[18px] leading-none px-1">×</button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Assignments + assign button (accepted ones are shown via the avatar tooltip above) */}
-                      <div className="mt-1.5 ml-5 space-y-1">
-                        {assignments.filter((a: any) => a.status !== 'accepted').map((a: any) => (
-                          <div key={a.id} className="flex items-center gap-1.5 flex-wrap px-1.5 py-1 border border-accent/20 bg-accent/5">
-                            <div className="relative group/asgn">
-                              {a.photo_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={a.photo_url} alt="" className="w-5 h-5 rounded-full border border-accent/50 object-cover" />
-                              ) : (
-                                <div className="w-5 h-5 rounded-full border border-accent/50 bg-accent-light flex items-center justify-center text-[11px] text-accent" style={pf}>
-                                  {(a.member_name || '?')[0].toUpperCase()}
-                                </div>
-                              )}
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-digi-card border border-digi-border text-[11px] text-digi-text whitespace-nowrap opacity-0 group-hover/asgn:opacity-100 transition-opacity pointer-events-none z-10" style={mf}>
-                                {a.member_name}
-                              </div>
-                            </div>
-                            <span className="text-[11px] text-digi-muted" style={mf}>
-                              Propuesto: ${a.proposed_cost}
-                              {a.member_cost != null && ` → Contra: $${a.member_cost}`}
-                            </span>
-                            <PixelBadge variant={a.status === 'accepted' ? 'success' : a.status === 'counter' ? 'warning' : a.status === 'rejected' ? 'error' : 'default'}>{a.status}</PixelBadge>
-
-                            {/* Member can submit counter */}
-                            {a.status === 'proposed' && a.member_id == memberId && (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  value={counterCosts[a.id] || ''}
-                                  onChange={(e) => setCounterCosts(prev => ({ ...prev, [a.id]: e.target.value }))}
-                                  placeholder="Tu costo"
-                                  type="number"
-                                  className="w-16 px-1 py-0.5 bg-digi-darker border border-digi-border text-[11px] text-digi-text focus:border-accent focus:outline-none"
-                                  style={mf}
-                                />
-                                <button onClick={() => submitCounter(a.id)} className="text-[11px] text-accent border border-accent/30 px-1 hover:bg-accent/10" style={pf}>Enviar</button>
-                              </div>
-                            )}
-
-                            {/* Owner can accept/reject counter */}
-                            {a.status === 'counter' && isOwner && (
-                              <div className="flex gap-1">
-                                <button onClick={() => resolveAssignment(a.id, 'accept')} className="text-[11px] text-green-700 border border-green-300 rounded px-1.5 py-0.5 hover:bg-green-50" style={pf}>OK</button>
-                                <button onClick={() => resolveAssignment(a.id, 'reject')} className="text-[11px] text-red-600 border border-red-300 rounded px-1.5 py-0.5 hover:bg-red-50" style={pf}>NO</button>
+                                <span className="text-[11px] text-digi-muted" style={mf}>{acceptedAssignments.length === 1 ? acceptedAssignments[0].member_name : `${acceptedAssignments.length} asignados`}</span>
                               </div>
                             )}
                           </div>
-                        ))}
-
-                        {/* Action buttons row */}
-                        <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                          {isOwner && (isAdmin || project.confirmed_at || isMemberCreator) && (
-                            <button onClick={() => openAssignModal(r.id)} className="text-[10px] text-digi-muted hover:text-accent border border-digi-border rounded px-2 py-1 hover:border-accent transition-colors" style={pf}>+ Asignar miembro</button>
-                          )}
-                          {canEditThis && (
-                            <button onClick={() => setSubtaskReqId(r.id)} className="text-[10px] text-digi-muted hover:text-accent border border-digi-border rounded px-2 py-1 hover:border-accent transition-colors" style={pf}>+ Agregar subtarea{items.length > 0 ? ` (${items.length})` : ''}</button>
-                          )}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {r.cost && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${r.cost}</span>}
+                            {isOwner && (
+                              <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="text-digi-muted/60 hover:text-red-600 transition-colors"><X className="w-4 h-4" /></button>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Subtasks — floating preview on requirement hover */}
-                      {items.length > 0 && (
-                        <div className="absolute left-5 top-full -mt-1 z-30 w-72 max-w-[90vw] bg-digi-card border border-digi-border rounded shadow-lg p-3 opacity-0 invisible group-hover/req:opacity-100 group-hover/req:visible transition-opacity pointer-events-none" style={mf}>
-                          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={pf}>Subtareas ({items.filter((it: any) => it.is_completed).length}/{items.length})</p>
-                          <ol className="space-y-1">
+                        {/* Pending assignments (proposed / counter) */}
+                        {assignments.filter((a: any) => a.status !== 'accepted').length > 0 && (
+                          <div className="mt-2.5 ml-[30px] space-y-1.5">
+                            {assignments.filter((a: any) => a.status !== 'accepted').map((a: any) => (
+                              <div key={a.id} className="flex items-center gap-2 flex-wrap rounded-md border border-digi-border bg-digi-darker px-2.5 py-1.5">
+                                {a.photo_url ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={a.photo_url} alt="" title={a.member_name} className="w-5 h-5 rounded-full border border-digi-border object-cover" />
+                                ) : (
+                                  <div title={a.member_name} className="w-5 h-5 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[10px] font-semibold text-accent" style={mf}>{(a.member_name || '?')[0].toUpperCase()}</div>
+                                )}
+                                <span className="text-[12px] text-digi-text" style={mf}>{a.member_name}</span>
+                                <span className="text-[11px] text-digi-muted" style={mf}>Propuesto ${a.proposed_cost}{a.member_cost != null && ` → contra $${a.member_cost}`}</span>
+                                <PixelBadge variant={a.status === 'counter' ? 'warning' : a.status === 'rejected' ? 'error' : 'info'}>{a.status === 'counter' ? 'Contraoferta' : a.status === 'rejected' ? 'Rechazada' : 'Propuesta'}</PixelBadge>
+                                {a.status === 'proposed' && a.member_id == memberId && (
+                                  <div className="flex items-center gap-1.5 ml-auto">
+                                    <input value={counterCosts[a.id] || ''} onChange={(e) => setCounterCosts(prev => ({ ...prev, [a.id]: e.target.value }))} placeholder="Tu costo" type="number"
+                                      className="field-control w-20 px-2 py-1 bg-white border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                                    <button onClick={() => submitCounter(a.id)} className="text-[12px] font-medium text-accent border border-accent/40 rounded px-2 py-1 hover:bg-accent-light transition-colors" style={mf}>Enviar</button>
+                                  </div>
+                                )}
+                                {a.status === 'counter' && isOwner && (
+                                  <div className="flex gap-1.5 ml-auto">
+                                    <button onClick={() => resolveAssignment(a.id, 'accept')} className="inline-flex items-center gap-1 text-[12px] font-medium text-white bg-green-600 rounded px-2 py-1 hover:bg-green-700 transition-colors" style={mf}><Check className="w-3.5 h-3.5" /> Aceptar</button>
+                                    <button onClick={() => resolveAssignment(a.id, 'reject')} className="inline-flex items-center gap-1 text-[12px] font-medium text-red-600 border border-red-300 rounded px-2 py-1 hover:bg-red-50 transition-colors" style={mf}><X className="w-3.5 h-3.5" /> Rechazar</button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Subtasks list */}
+                        {items.length > 0 && (
+                          <ol className="mt-2.5 ml-[30px] space-y-1">
                             {items.map((item: any, i: number) => (
-                              <li key={item.id} className={`text-[11px] flex gap-1.5 ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`}>
+                              <li key={item.id} className={`text-[12px] flex gap-1.5 ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>
                                 <span className="text-digi-muted shrink-0">{i + 1}.</span>
                                 <span className="break-words">{item.title}</span>
                               </li>
                             ))}
                           </ol>
-                        </div>
-                      )}
+                        )}
+
+                        {/* Action buttons */}
+                        {((isOwner && (isAdmin || project.confirmed_at || isMemberCreator)) || canEditThis) && (
+                          <div className="flex flex-wrap items-center gap-2 mt-3 ml-[30px]">
+                            {isOwner && (isAdmin || project.confirmed_at || isMemberCreator) && (
+                              <button onClick={() => openAssignModal(r.id)} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><UserPlus className="w-3.5 h-3.5" /> Asignar miembro</button>
+                            )}
+                            {canEditThis && (
+                              <button onClick={() => setSubtaskReqId(r.id)} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><ListPlus className="w-3.5 h-3.5" /> Subtareas{items.length > 0 ? ` (${items.length})` : ''}</button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -1090,115 +1066,102 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Participants */}
-          <div className="pixel-card">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>Participantes</h3>
-              <div className="flex gap-1">
+          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h3 className="text-[14px] font-semibold text-digi-text" style={mf}>Participantes</h3>
+              <div className="flex gap-2">
                 {canInvite && (
-                  <button onClick={openInviteModal} className="text-[11px] text-accent border border-accent/50 px-2 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>
-                    + Invitar
-                  </button>
+                  <button onClick={openInviteModal} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1.5 hover:border-accent hover:text-accent transition-colors" style={mf}><UserPlus className="w-3.5 h-3.5" /> Invitar</button>
                 )}
                 {canBid && (
-                  <button onClick={() => setShowBidModal(true)} className="text-[11px] text-green-600 border border-green-300 px-2 py-0.5 hover:bg-green-50 transition-colors" style={pf}>
-                    Postularse
-                  </button>
+                  <button onClick={() => setShowBidModal(true)} className={BTN_PRIMARY} style={mf}><Send className="w-4 h-4" /> Postularme</button>
                 )}
               </div>
             </div>
             {bids.length > 0 ? (
-              <div className="space-y-2">
-                {bids.map((b: any) => (
-                  <div key={b.id} className="px-2 py-1.5 border border-digi-border/50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="space-y-2.5">
+                {bids.map((b: any) => {
+                  const bidLabel = ({ pending: 'Pendiente', accepted: 'Aceptada', rejected: 'Rechazada', invited: 'Invitado', counter: 'Contraoferta' } as Record<string, string>)[b.status] || b.status;
+                  return (
+                    <div key={b.id} className="rounded-lg border border-digi-border p-3.5">
+                      <div className="flex items-start gap-3">
                         {b.photo_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={b.photo_url} alt="" className="w-6 h-6 rounded-full border border-accent/50 object-cover shrink-0" />
+                          <img src={b.photo_url} alt="" className="w-9 h-9 rounded-full border border-digi-border object-cover shrink-0" />
                         ) : (
-                          <div className="w-6 h-6 rounded-full border border-accent/50 bg-accent-light flex items-center justify-center text-[11px] text-accent shrink-0" style={pf}>
-                            {(b.member_name || '?')[0].toUpperCase()}
-                          </div>
+                          <div className="w-9 h-9 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[13px] font-semibold text-accent shrink-0" style={mf}>{(b.member_name || '?')[0].toUpperCase()}</div>
                         )}
-                        <span className="text-xs text-digi-text" style={mf}>{b.member_name}</span>
-                        {b.bid_amount != null && <span className="text-[12px] text-accent ml-2" style={mf}>${Number(b.bid_amount).toFixed(2)}</span>}
-                        {b.estimated_days && <span className="text-[11px] text-digi-muted ml-1" style={mf}>({b.estimated_days}d)</span>}
-                      </div>
-                    <div className="flex items-center gap-1.5 ml-2">
-                      <PixelBadge variant={BID_V[b.status] || 'default'}>{b.status}</PixelBadge>
-                      {isOwner && b.status === 'pending' && (
-                        <>
-                          <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'accepted' }) }); fetchProject(); toast.success('Aceptado'); }} className="text-[11px] text-green-700 border border-green-300 rounded px-1.5 py-0.5 hover:bg-green-50" style={pf}>OK</button>
-                          <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'rejected' }) }); fetchProject(); }} className="text-[11px] text-red-600 border border-red-300 rounded px-1.5 py-0.5 hover:bg-red-50" style={pf}>NO</button>
-                        </>
-                      )}
-                      {b.status === 'invited' && String(b.member_id) === String(memberId) && (
-                        <button onClick={() => setShowBidModal(true)} className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors" style={pf}>
-                          Enviar Propuesta
-                        </button>
-                      )}
-                      {isOwner && b.status === 'invited' && String(b.member_id) !== String(memberId) && (
-                        <span className="text-[11px] text-amber-700" style={pf}>Esperando</span>
-                      )}
-                    </div>
-                    </div>
-                    {/* Proposal details */}
-                    {b.proposal && (
-                      <div className="mt-1.5 pt-1.5 border-t border-digi-border/30">
-                        <p className="text-[11px] text-digi-muted" style={mf}>{b.proposal}</p>
-                        {b.requirement_ids?.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            <span className="text-[11px] text-digi-muted" style={pf}>Reqs:</span>
-                            {b.requirement_ids.map((rid: number) => {
-                              const req = reqs.find((r: any) => r.id === rid || r.id === Number(rid));
-                              return req ? (
-                                <span key={rid} className="text-[11px] text-accent border border-accent/30 rounded px-1.5 py-0.5" style={mf}>{req.title}</span>
-                              ) : null;
-                            })}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[13px] font-medium text-digi-text" style={mf}>{b.member_name}</span>
+                            {b.bid_amount != null && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${Number(b.bid_amount).toFixed(2)}</span>}
+                            {b.estimated_days && <span className="text-[11px] text-digi-muted" style={mf}>· {b.estimated_days}d</span>}
+                            <PixelBadge variant={BID_V[b.status] || 'default'}>{bidLabel}</PixelBadge>
                           </div>
-                        )}
+                          {b.proposal && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{b.proposal}</p>}
+                          {b.requirement_ids?.length > 0 && (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {b.requirement_ids.map((rid: number) => {
+                                const req = reqs.find((r: any) => r.id === rid || r.id === Number(rid));
+                                return req ? <span key={rid} className="text-[11px] text-accent bg-accent-light border border-accent/20 rounded px-1.5 py-0.5" style={mf}>{req.title}</span> : null;
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isOwner && b.status === 'pending' && (
+                            <>
+                              <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'accepted' }) }); fetchProject(); toast.success('Propuesta aceptada'); }}
+                                className="inline-flex items-center gap-1 text-[12px] font-medium text-white bg-green-600 rounded px-2.5 py-1.5 hover:bg-green-700 transition-colors" style={mf}><Check className="w-3.5 h-3.5" /> Aceptar</button>
+                              <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'rejected' }) }); fetchProject(); }}
+                                className="inline-flex items-center gap-1 text-[12px] font-medium text-red-600 border border-red-300 rounded px-2.5 py-1.5 hover:bg-red-50 transition-colors" style={mf}><X className="w-3.5 h-3.5" /> Rechazar</button>
+                            </>
+                          )}
+                          {b.status === 'invited' && String(b.member_id) === String(memberId) && (
+                            <button onClick={() => setShowBidModal(true)} className="inline-flex items-center gap-1 text-[12px] font-medium text-accent border border-accent/40 rounded px-2.5 py-1.5 hover:bg-accent-light transition-colors" style={mf}><Send className="w-3.5 h-3.5" /> Enviar propuesta</button>
+                          )}
+                          {isOwner && b.status === 'invited' && String(b.member_id) !== String(memberId) && (
+                            <span className="text-[11px] text-amber-700" style={mf}>Esperando</span>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-[11px] text-digi-muted text-center py-2" style={mf}>Sin participantes aun</p>
+              <p className="text-[12px] text-digi-muted text-center py-3" style={mf}>Sin participantes aún.</p>
             )}
           </div>
           </>)}
 
           {/* Invite Modal */}
-          <PixelModal open={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invitar Miembros" size="md">
+          <PixelModal open={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invitar miembros" size="md">
             <div className="space-y-3">
-              <p className="text-[11px] text-digi-muted" style={mf}>Selecciona los miembros que deseas invitar a enviar una propuesta:</p>
-              <div className="max-h-64 overflow-y-auto space-y-1">
-                {allMembers.filter(m => !bids.some((b: any) => String(b.member_id) === String(m.id))).map((m: any) => (
-                  <label key={m.id} className="flex items-center gap-2 px-3 py-2 border border-digi-border/50 cursor-pointer hover:bg-accent/5 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={selectedInvites.has(m.id)}
-                      onChange={() => {
-                        const next = new Set(selectedInvites);
-                        if (next.has(m.id)) next.delete(m.id); else next.add(m.id);
-                        setSelectedInvites(next);
-                      }}
-                      className="accent-[#4B2D8E]"
-                    />
-                    <div className="flex-1">
-                      <span className="text-xs text-digi-text" style={mf}>{m.name}</span>
-                      {m.email && <span className="text-[11px] text-digi-muted ml-2" style={mf}>{m.email}</span>}
-                    </div>
-                    {m.position_name && <PixelBadge variant="default">{m.position_name}</PixelBadge>}
-                  </label>
-                ))}
+              <p className="text-[12px] text-digi-muted" style={mf}>Selecciona los miembros que deseas invitar a enviar una propuesta:</p>
+              <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+                {allMembers.filter(m => !bids.some((b: any) => String(b.member_id) === String(m.id))).map((m: any) => {
+                  const checked = selectedInvites.has(m.id);
+                  return (
+                    <label key={m.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${checked ? 'border-accent bg-accent-light/50' : 'border-digi-border hover:border-accent/40'}`}>
+                      <input type="checkbox" checked={checked}
+                        onChange={() => { const next = new Set(selectedInvites); if (next.has(m.id)) next.delete(m.id); else next.add(m.id); setSelectedInvites(next); }}
+                        className="w-4 h-4 accent-[#4B2D8E]" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[13px] text-digi-text" style={mf}>{m.name}</span>
+                        {m.email && <span className="text-[11px] text-digi-muted ml-2" style={mf}>{m.email}</span>}
+                      </div>
+                      {m.position_name && <PixelBadge variant="default">{m.position_name}</PixelBadge>}
+                    </label>
+                  );
+                })}
                 {allMembers.filter(m => !bids.some((b: any) => String(b.member_id) === String(m.id))).length === 0 && (
                   <p className="text-center text-[12px] text-digi-muted py-4" style={mf}>Todos los miembros ya fueron invitados</p>
                 )}
               </div>
-              <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-                <button onClick={() => setShowInviteModal(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
-                <button onClick={sendInvites} disabled={inviting || selectedInvites.size === 0} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
+              <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
+                <button onClick={() => setShowInviteModal(false)} className="pixel-btn pixel-btn-secondary text-sm">Cancelar</button>
+                <button onClick={sendInvites} disabled={inviting || selectedInvites.size === 0} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50">
                   {inviting ? 'Invitando...' : `Invitar (${selectedInvites.size})`}
                 </button>
               </div>
@@ -1206,68 +1169,51 @@ export default function ProjectDetailPage() {
           </PixelModal>
 
           {/* Bid/Postulation Modal */}
-          <PixelModal open={showBidModal} onClose={() => setShowBidModal(false)} title="Enviar Propuesta" size="md">
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[11px] text-digi-muted mb-1" style={pf}>Propuesta <span className="text-red-600">*</span></label>
+          <PixelModal open={showBidModal} onClose={() => setShowBidModal(false)} title="Enviar propuesta" size="md">
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1">
+                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Propuesta *</label>
                 <textarea value={bidProposal} onChange={e => setBidProposal(e.target.value)} rows={3}
-                  placeholder="Describe tu propuesta, experiencia relevante y como abordarias el proyecto..."
-                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
+                  placeholder="Describe tu propuesta, experiencia relevante y cómo abordarías el proyecto..."
+                  className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
               </div>
 
-              <div>
-                <label className="block text-[11px] text-digi-muted mb-1" style={pf}>Dias estimados</label>
+              <div className="flex flex-col gap-1">
+                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Días estimados</label>
                 <input value={bidDays} onChange={e => setBidDays(e.target.value)} type="number" placeholder="Opcional"
-                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                  className="field-control w-full sm:w-40 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
               </div>
 
               {reqs.length > 0 && (
                 <div>
-                  <label className="block text-[11px] text-digi-muted mb-1" style={pf}>
-                    Requerimientos que puedes atender <span className="text-red-600">*</span>
-                  </label>
-                  <p className="text-[11px] text-digi-muted mb-2" style={mf}>Selecciona y especifica tu costo para cada uno</p>
-                  <div className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
+                  <label className="field-label text-[10px] text-accent-glow opacity-70 block mb-0.5" style={df}>Requerimientos que puedes atender *</label>
+                  <p className="text-[11px] text-digi-muted mb-2" style={mf}>Marca los que puedes atender e indica tu costo para cada uno.</p>
+                  <div className="space-y-2 max-h-[46vh] overflow-y-auto pr-1">
                     {reqs.map((r: any) => {
                       const selected = bidReqIds.includes(r.id);
+                      const toggle = () => {
+                        if (selected) { setBidReqIds(prev => prev.filter(rid => rid !== r.id)); setBidReqCosts(prev => { const next = { ...prev }; delete next[r.id]; return next; }); }
+                        else setBidReqIds(prev => [...prev, r.id]);
+                      };
                       return (
-                        <div key={r.id} className={`border px-3 py-2 transition-colors ${selected ? 'border-accent bg-accent/5' : 'border-digi-border/50'}`}>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selected}
-                              onChange={() => {
-                                if (selected) {
-                                  setBidReqIds(prev => prev.filter(rid => rid !== r.id));
-                                  setBidReqCosts(prev => { const next = { ...prev }; delete next[r.id]; return next; });
-                                } else {
-                                  setBidReqIds(prev => [...prev, r.id]);
-                                }
-                              }}
-                              className="accent-[#4B2D8E]"
-                            />
-                            <span className="text-xs text-digi-text flex-1" style={mf}>{r.title}</span>
-                            {r.cost && <span className="text-[11px] text-digi-muted" style={mf}>Ref: ${r.cost}</span>}
-                          </label>
+                        <div key={r.id} className={`rounded-lg border p-3 transition-colors ${selected ? 'border-accent bg-accent-light/40' : 'border-digi-border'}`}>
+                          <div className="flex items-center gap-2.5">
+                            <button type="button" onClick={toggle}
+                              className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${selected ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white hover:border-accent'}`}>
+                              {selected && <Check className="w-3 h-3" strokeWidth={3} />}
+                            </button>
+                            <button type="button" onClick={toggle} className="text-[13px] font-medium text-digi-text flex-1 text-left" style={mf}>{r.title}</button>
+                            {r.cost && <span className="text-[11px] text-digi-muted shrink-0" style={mf}>Ref ${r.cost}</span>}
+                          </div>
                           {selected && (
-                            <div className="mt-1.5 ml-6 flex items-center gap-2">
-                              <span className="text-[11px] text-digi-muted" style={pf}>Tu costo ($):</span>
-                              <input
-                                value={bidReqCosts[r.id] || ''}
-                                onChange={e => setBidReqCosts(prev => ({ ...prev, [r.id]: e.target.value }))}
-                                type="number"
-                                placeholder="0"
-                                className="w-24 px-2 py-1 bg-digi-darker border border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf}
-                              />
+                            <div className="mt-2.5 ml-[30px] flex items-center gap-2 flex-wrap">
+                              <span className="text-[12px] text-digi-muted" style={mf}>Tu costo ($)</span>
+                              <input value={bidReqCosts[r.id] || ''} onChange={e => setBidReqCosts(prev => ({ ...prev, [r.id]: e.target.value }))} type="number" placeholder="0"
+                                className="field-control w-28 px-2.5 py-1.5 bg-white border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                               {r.cost && (
-                                <button
-                                  onClick={() => setBidReqCosts(prev => ({ ...prev, [r.id]: String(r.cost) }))}
-                                  className="text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors"
-                                  style={pf}
-                                  title="Usar el costo propuesto por el creador"
-                                >
-                                  Usar ${r.cost}
-                                </button>
+                                <button onClick={() => setBidReqCosts(prev => ({ ...prev, [r.id]: String(r.cost) }))}
+                                  className="text-[11px] font-medium text-accent border border-accent/40 rounded px-2 py-1 hover:bg-accent-light transition-colors" style={mf}
+                                  title="Usar el costo de referencia">Usar ${r.cost}</button>
                               )}
                             </div>
                           )}
@@ -1276,19 +1222,18 @@ export default function ProjectDetailPage() {
                     })}
                   </div>
                   {bidReqIds.length > 0 && (
-                    <div className="mt-2 flex justify-end">
-                      <span className="text-[12px] text-accent" style={pf}>
-                        Total: ${bidReqIds.reduce((sum, rid) => sum + (Number(bidReqCosts[rid]) || 0), 0).toFixed(2)}
-                      </span>
+                    <div className="mt-3 flex items-center justify-between rounded-lg border border-accent/30 bg-accent-light px-3 py-2">
+                      <span className="text-[12px] text-digi-muted" style={mf}>Total de tu propuesta</span>
+                      <span className="text-[15px] font-semibold text-accent tabular-nums" style={mf}>${bidReqIds.reduce((sum, rid) => sum + (Number(bidReqCosts[rid]) || 0), 0).toFixed(2)}</span>
                     </div>
                   )}
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-                <button onClick={() => setShowBidModal(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
-                <button onClick={submitBid} disabled={submittingBid || !bidProposal.trim() || bidReqIds.length === 0} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
-                  {submittingBid ? 'Enviando...' : 'Enviar Propuesta'}
+              <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
+                <button onClick={() => setShowBidModal(false)} className="pixel-btn pixel-btn-secondary text-sm">Cancelar</button>
+                <button onClick={submitBid} disabled={submittingBid || !bidProposal.trim() || bidReqIds.length === 0} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50">
+                  {submittingBid ? 'Enviando...' : 'Enviar propuesta'}
                 </button>
               </div>
             </div>
@@ -1892,7 +1837,7 @@ export default function ProjectDetailPage() {
                 )}
               </div>
               <select value={project.digimundo_project_id || ''} onChange={(e) => linkDigimundo(e.target.value)} disabled={linking}
-                className="w-full px-2 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none appearance-none cursor-pointer disabled:opacity-50 mb-2"
+                className="w-full px-2 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none appearance-none cursor-pointer disabled:opacity-50 mb-2"
                 style={{ ...mf, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237B5FBF' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px' }}>
                 <option value="">Sin vincular</option>
                 {digiProjects.map((dp: any) => <option key={dp.id} value={dp.id}>{dp.name}</option>)}
@@ -2260,17 +2205,17 @@ export default function ProjectDetailPage() {
           <div className="flex flex-col gap-1">
             <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Titulo</label>
             <input value={reqTitle} onChange={(e) => setReqTitle(e.target.value)} placeholder="Titulo del requerimiento"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              className="w-full px-3 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Descripcion</label>
             <textarea value={reqDesc} onChange={(e) => setReqDesc(e.target.value)} rows={3} placeholder="Descripcion detallada..."
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
+              className="w-full px-3 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Costo ($)</label>
             <input value={reqCost} onChange={(e) => setReqCost(e.target.value)} type="number" placeholder="0.00 (opcional)"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              className="w-full px-3 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
           </div>
           <button onClick={addRequirement} disabled={savingReq || !reqTitle.trim()} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
             {savingReq ? '...' : 'Agregar'}
@@ -2286,7 +2231,7 @@ export default function ProjectDetailPage() {
             <select
               value={assignMemberId}
               onChange={(e) => handleAssignMemberChange(e.target.value)}
-              className="w-full px-2 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none appearance-none cursor-pointer"
+              className="w-full px-2 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none appearance-none cursor-pointer"
               style={{ ...mf, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237B5FBF' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px' }}
             >
               <option value="">Seleccionar miembro...</option>
@@ -2302,7 +2247,7 @@ export default function ProjectDetailPage() {
               onChange={(e) => setAssignCost(e.target.value)}
               type="number"
               placeholder="0.00"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none"
+              className="w-full px-3 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
               style={mf}
             />
           </div>
