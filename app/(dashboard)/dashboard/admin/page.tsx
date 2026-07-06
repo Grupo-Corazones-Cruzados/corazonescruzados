@@ -8,8 +8,8 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import BrandLoader from '@/components/ui/BrandLoader';
 import {
-  Users, UserRound, UserPlus, Gamepad2, LayoutDashboard, Globe, FolderKanban,
-  AlertTriangle, Image as ImageIcon, Check, X, ShieldAlert, Clock, Flame, type LucideIcon,
+  Users, UserRound, UserPlus, Gamepad2, Globe, FolderKanban,
+  AlertTriangle, Image as ImageIcon, Check, X, ShieldAlert,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -23,7 +23,6 @@ const MAIN_TABS = [
 ];
 
 const DIGI_TABS = [
-  { value: 'digi-dashboard', label: 'Dashboard', Icon: LayoutDashboard },
   { value: 'digi-world', label: 'Mundo', Icon: Globe },
   { value: 'digi-projects', label: 'Proyectos', Icon: FolderKanban },
   { value: 'digi-incidents', label: 'Incidentes', Icon: AlertTriangle },
@@ -52,7 +51,7 @@ const ProjectsEditor = dynamic(() => import('@/app/(main)/projects/page'), {
 export default function AdminPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState('team');
-  const [digiTab, setDigiTab] = useState('digi-dashboard');
+  const [digiTab, setDigiTab] = useState('digi-world');
 
   if (user?.role !== 'admin') {
     return (
@@ -108,7 +107,6 @@ export default function AdminPage() {
                 })}
               </div>
 
-              {digiTab === 'digi-dashboard' && <DigiDashboard />}
               {digiTab === 'digi-world' && (
                 <div className="border border-digi-border rounded-lg overflow-hidden relative" style={{ height: 'calc(100vh - 220px)', minHeight: 400 }}>
                   <div className="absolute inset-0 overflow-hidden [&>div]:!m-0 [&>div]:!h-full"><WorldViewer /></div>
@@ -260,49 +258,6 @@ function ProposalsSection() {
 }
 
 /* ─── DigiMundo Dashboard ─── */
-function DigiStat({ Icon, label, value, tone }: { Icon: LucideIcon; label: string; value: number; tone: 'accent' | 'amber' | 'red' }) {
-  const chip = tone === 'amber' ? 'bg-amber-50 text-amber-700' : tone === 'red' ? 'bg-red-50 text-red-600' : 'bg-accent-light text-accent';
-  return (
-    <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm flex items-center gap-3">
-      <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${chip}`}><Icon className="w-5 h-5" /></div>
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-digi-muted truncate" style={mf}>{label}</p>
-        <p className="text-xl font-semibold text-digi-text leading-tight tabular-nums" style={mf}>{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function DigiDashboard() {
-  const [stats, setStats] = useState<any>(null);
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/digimundo/projects').then(r => r.json()),
-      fetch('/api/incidents').then(r => r.json()),
-      fetch('/api/world').then(r => r.json()),
-    ]).then(([proj, inc, world]) => {
-      const incidents = Array.isArray(inc) ? inc : inc.data || [];
-      setStats({
-        projects: (proj.data || []).length,
-        incidents: incidents.length,
-        pending: incidents.filter((i: any) => i.status === 'pending').length,
-        critical: incidents.filter((i: any) => i.severity === 'critical' || i.severity === 'high').length,
-        citizens: (world.citizens || []).length,
-      });
-    }).catch(() => {});
-  }, []);
-  if (!stats) return <div className="flex justify-center py-8"><BrandLoader size="md" /></div>;
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      <DigiStat Icon={FolderKanban} label="Proyectos" value={stats.projects} tone="accent" />
-      <DigiStat Icon={Users} label="Ciudadanos" value={stats.citizens} tone="accent" />
-      <DigiStat Icon={AlertTriangle} label="Incidentes" value={stats.incidents} tone="accent" />
-      <DigiStat Icon={Clock} label="Pendientes" value={stats.pending} tone="amber" />
-      <DigiStat Icon={Flame} label="Críticos" value={stats.critical} tone="red" />
-    </div>
-  );
-}
-
 /* ─── DigiMundo Incidents ─── */
 function DigiIncidents() {
   const [incidents, setIncidents] = useState<any[]>([]);
