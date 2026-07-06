@@ -1168,6 +1168,24 @@ export default function LandingPage() {
     }
   }, []);
 
+  // Enlace directo desde /marketplace-publico: abre el modal "Ingresar como
+  // cliente" (con opción de crear cuenta) y, al loguearse, va al marketplace del
+  // dashboard. Limpia el query param para no reabrirlo en refrescos.
+  useEffect(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('acceso') === 'cliente') {
+        setEntryDestination('dashboard');
+        setClientLoginOpen(true);
+        p.delete('acceso');
+        const qs = p.toString();
+        window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // If a saved character is discovered AFTER the user pressed Entrar
   // (windAway = true) and gameplay hasn't mounted yet, dismiss any
   // intro screens and enter as returning. Covers every refresh path.

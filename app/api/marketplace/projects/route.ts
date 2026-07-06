@@ -4,11 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
+    // Lectura pública: el catálogo del marketplace (proyectos publicados y
+    // completados) se muestra también a visitantes sin sesión (/marketplace-publico).
+    // Solo el filtro `member=true` (vista de portafolio del miembro) exige sesión.
     const user = await getCurrentUser();
-    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-
     const search = req.nextUrl.searchParams.get('search');
     const memberOnly = req.nextUrl.searchParams.get('member') === 'true';
+    if (memberOnly && !user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     // Ensure columns exist
     await pool.query(`
@@ -27,8 +29,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Filter by current user's member_id (for portfolio view)
-    if (memberOnly && user.role !== 'admin') {
-      const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
+    if (memberOnly && user!.role !== 'admin') {
+      const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user!.userId]);
       if (u?.member_id) {
         params.push(u.member_id);
         where += ` AND EXISTS (SELECT 1 FROM gcc_world.project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${params.length} AND pb2.status = 'accepted')`;

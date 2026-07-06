@@ -18,8 +18,9 @@ async function isTeamMember(userId: string, projectId: string): Promise<boolean>
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Lectura pública para el catálogo (imágenes del proyecto). Sin sesión solo se
+    // devuelven proyectos publicados en el marketplace; con sesión, cualquiera por id.
     const user = await getCurrentUser();
-    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id } = await params;
     await ensureImagesColumn();
@@ -31,6 +32,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       [id]
     );
     if (!project) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+    if (!user && !project.is_marketplace_published) {
+      return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+    }
 
     return NextResponse.json({ data: project });
   } catch (err: any) {

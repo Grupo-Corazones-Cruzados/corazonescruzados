@@ -267,6 +267,22 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Marketplace público sin sesión (2026-07-06):** Nueva ruta pública **`/marketplace-publico`**
+  (fuera de `/dashboard`, sin `AuthGuard` ni menú de módulos) para **visualizar/filtrar/buscar** el
+  marketplace sin login. **Decisión (usuario):** página **nueva** + **componente compartido**, NO
+  reusar la misma con `if(sesión)`. Se extrajo toda la navegación (rail Catálogo, buscador, tarjetas,
+  panel de detalle, galería) a **`components/marketplace/MarketplaceCatalog.tsx`**, única fuente del
+  diseño de navegación del marketplace; la usan tanto `/dashboard/marketplace` (con sesión: añade
+  pestaña "Mis pedidos" vía `tabsExtra`/`renderExtra` y los modales de compra/solicitud vía
+  `onPrimaryAction`) como la pública (sin pestañas extra; `onPrimaryAction` abre un **gate** "solo
+  clientes"). El botón del gate y del top-bar redirigen a **`/?acceso=cliente`**, que en la landing
+  (`app/page.tsx`) auto-abre el **`ClientLoginModal`** (login + "Crear cuenta de cliente") con destino
+  dashboard; al loguearse va a `/dashboard/marketplace`. **Endpoints:** se relajó el **GET** de
+  `/api/marketplace/projects` (público salvo `member=true`, que sigue exigiendo sesión) y de
+  `/api/marketplace/projects/[id]` (sin sesión solo devuelve proyectos `is_marketplace_published`);
+  `/api/portfolio/public` ya era público. **Lección:** los endpoints públicos son los mismos para ambas
+  vistas → un solo sitio que mantener (DRY), y la vista pública queda fuera del gate del `middleware.ts`
+  (que solo protege `/dashboard`).
 - **Optimización de carga del dashboard (2026-07-05):** `GET /api/finance` (que alimenta la tabla
   de Inicio) ejecutaba en CADA carga `ensureFinanceTables` + `ensureMonth` + **`backfillIncomes`**
   (varios SELECT + inserts secuenciales por fila) antes de devolver los meses → la tabla tardaba en
