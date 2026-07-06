@@ -57,19 +57,35 @@ async function backfillIncomes() {
   }
 }
 
+// Estado a nivel de proceso (Railway = servidor Node persistente) para no repetir
+// trabajo pesado en cada carga del dashboard. La lista de meses se devuelve al instante;
+// el backfill (SELECTs + inserts por fila) se ejecuta como mucho una vez por minuto.
+let tablesReady = false;
+let ensuredMonthKey = '';
+let lastBackfill = 0;
+const BACKFILL_INTERVAL_MS = 60_000;
+
 export async function GET() {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    await ensureFinanceTables();
+    // Crear tablas una sola vez por proceso.
+    if (!tablesReady) { await ensureFinanceTables(); tablesReady = true; }
 
-    // Auto-create current month
+    // Asegurar el mes actual una vez por mes/proceso.
     const now = new Date();
-    await ensureMonth(now.getFullYear(), now.getMonth() + 1);
+    const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    if (ensuredMonthKey !== monthKey) {
+      await ensureMonth(now.getFullYear(), now.getMonth() + 1);
+      ensuredMonthKey = monthKey;
+    }
 
-    // Backfill any completed projects/tickets and invoiced projects not yet registered
-    try { await backfillIncomes(); } catch (e: any) { console.error('Backfill error:', e.message); }
+    // Backfill throttled: no bloquea cada carga (los meses ya se devuelven abajo).
+    if (Date.now() - lastBackfill > BACKFILL_INTERVAL_MS) {
+      lastBackfill = Date.now();
+      try { await backfillIncomes(); } catch (e: any) { console.error('Backfill error:', e.message); }
+    }
 
     const { rows } = await pool.query(
       `SELECT * FROM gcc_world.finance_months ORDER BY year DESC, month DESC`

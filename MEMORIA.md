@@ -267,6 +267,24 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Optimización de carga del dashboard (2026-07-05):** `GET /api/finance` (que alimenta la tabla
+  de Inicio) ejecutaba en CADA carga `ensureFinanceTables` + `ensureMonth` + **`backfillIncomes`**
+  (varios SELECT + inserts secuenciales por fila) antes de devolver los meses → la tabla tardaba en
+  aparecer. **NO eran los PDFs** (esos se abren solo al click, `window.open`). Fix: como Railway es un
+  proceso Node **persistente**, se cachea a nivel de módulo (`tablesReady`, `ensuredMonthKey`) y el
+  **backfill se throttlea a ≤1/min** (`lastBackfill`); las cargas repetidas quedan en solo el `SELECT`.
+  **Lección:** trabajo pesado idempotente (ensure/backfill) NO debe correr en cada GET; cachear por
+  proceso o throttlear (aprovechando que el server es persistente, no serverless).
+- **Marketplace/Portafolio como vitrina + rail (2026-07-05):** Marketplace = **tarjetas** (media/
+  placeholder + contador de fotos→galería, precio, miembro, tags, acción) con **botón anclado al pie**
+  (`mt-auto`, tarjetas de una fila igualan alto) — el API de proyectos devuelve `cover_image` (`images[1]`)
+  para la miniatura. **Portafolio** = **rail "Catálogo" + tabla + panel de detalle** (con galería
+  on-demand para proyectos del equipo) + botón **Nuevo**; los proyectos del equipo se fusionan en la
+  tabla (tag "Equipo"). El **CV** del miembro es ahora un **panel dentro de Perfil** (`components/settings/
+  CvPanel`). Centralizado: estado como **punto** en el avatar (sin columna). DigiMundo: se quitó la
+  pestaña **Dashboard**. Nueva **barra de ruta (breadcrumb) fija al pie** del dashboard
+  (`components/dashboard/DashboardBreadcrumb`). **Admin con CV/Portafolio:** ver [[gcc-admin-member]]
+  (se le enlaza un `member_id` sin cambiar el rol; helper `lib/ensure-admin-member.ts`).
 - **Estandarización de diseño del dashboard — COMPLETA (2026-07-05):** todos los módulos de
   `/dashboard/` quedan alineados al lenguaje Fluent/`.corp` (Inicio, Tickets, Proyectos,
   Suscripciones, Clientes, Facturas, Marketplace, Centralizado, Automatizaciones, Herramientas,

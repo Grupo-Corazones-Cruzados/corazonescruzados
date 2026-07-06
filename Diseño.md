@@ -213,7 +213,7 @@ Reusar este patrón para otros módulos jerárquicos del dashboard.
   Fluent (Segoe, `text-[13px]`, `rounded-md`, activo = `bg-accent-light text-accent` + barra izq accent),
   iconos lucide 18px. Marca con logo + "GCC WORLD" semibold. Usuario con avatar `rounded-full` + rol.
   Colapsar/Salir corp (Salir en rojo). Filtra por rol y **oculta grupos vacíos**.
-- **Inicio** (`dashboard/page.tsx`, 2026-07-05) — saludo por hora ("Buenos días, {nombre} 👋") + grid de
+- **Inicio** (`dashboard/page.tsx`, 2026-07-05) — saludo por hora ("Buenos días, {nombre}") + grid de
   **StatCards con chip de icono** (Tickets/Proyectos/Clientes en accent; Ingresos/Egresos/Ahorro en
   verde/rojo/accent). Tabla financiera de-pixelada; **modal de estado mensual** (ingresos/egresos
   editables + resúmenes de ahorro) a corp (`field-control`, `+ Ingreso/Egreso`, botones `pixel-btn`).
@@ -290,9 +290,26 @@ ancho, pero la página contenedora llena la pantalla.
 en `app/api` (el **XML del SRI** y los **PDFs** exigen **punto decimal**) ni en los editores `(main)`
 (números acoplados a **CSS**: px/%/keyframes); tampoco a IDs/nº de factura/años (no son cantidades).
 
+**Vitrina de tarjetas (storefront) — Marketplace (2026-07-05):** catálogo tipo tienda: **rail de
+categorías** ("Catálogo": Proyectos/Productos/… + Mis pedidos) + buscador + **grid de tarjetas**
+(`grid md:grid-cols-2 2xl:grid-cols-3`) + **panel de detalle** derecho al seleccionar (con
+`ImageGallery`). Tarjeta = media 16/9 (imagen `object-cover` o **placeholder** con icono de categoría +
+chip de tipo + **contador de fotos**→galería), título (`line-clamp-2`), **precio** destacado, descripción,
+tags, miembro/equipo (avatares), y **acción** primaria (Solicitar/Comprar/Editar). **Regla:** el bloque
+inferior (meta + acción) se ancla con **`mt-auto`** y el grid estira las tarjetas a igual alto → **el
+botón queda siempre en la misma posición** sin importar el largo de la descripción. Miniaturas: si el
+listado no trae imágenes eager, el API devuelve una **`cover_image`** (evita fetch por tarjeta).
+Portafolio reusa este catálogo (rail) pero con **tabla + panel** (no grid) — mismo rail "Catálogo".
+
+**Barra de ruta (breadcrumb) fija — dashboard (2026-07-05):** `components/dashboard/DashboardBreadcrumb`
+montado en `app/(dashboard)/layout.tsx`: barra `fixed bottom-0` (offset `lg:left-16/56` que reflowe con
+el colapso del sidebar) con la ruta actual (Inicio › Sección › Subpágina), ids como `#n`, segmentos
+intermedios enlazables. `main` lleva `pb-12` para no taparse.
+
 **Cuándo usar cada variante:** lista de registros con dimensión de agrupación → **rail + lista +
 panel** (Centralizado, Automatizaciones) o **rail + lista** si el detalle es página propia (Tickets,
-Proyectos). Ajustes con secciones → **rail + contenido** (Configuración). Puñado de acciones/apps →
+Proyectos). Ajustes con secciones → **rail + contenido** (Configuración). Catálogo tipo tienda →
+**vitrina de tarjetas** (Marketplace) o **rail + tabla + panel** (Portafolio). Puñado de acciones/apps →
 **galería de tarjetas** (Herramientas). **Editor de un registro a la vez** con muchos controles →
 **maestro-detalle** (lista + editor a ancho completo; editores DigiMundo).
 
