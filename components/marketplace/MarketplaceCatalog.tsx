@@ -7,7 +7,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
 import CardMedia from '@/components/marketplace/CardMedia';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, Check } from 'lucide-react';
+import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -335,27 +335,25 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
                 )}
               </div>
               {panelImgLoading ? (
-                <div className="space-y-1.5">
-                  {[0, 1, 2].map((k) => <div key={k} className="h-9 rounded-md border border-digi-border bg-digi-darker animate-pulse" />)}
+                <div className="rounded-lg border border-digi-border overflow-hidden divide-y divide-digi-border/60">
+                  {[0, 1, 2].map((k) => <div key={k} className="h-8 bg-digi-darker animate-pulse" />)}
                 </div>
               ) : (
-                <ul className="space-y-1.5">
-                  {panelReqs.map((r: any) => {
+                <ul className="rounded-lg border border-digi-border divide-y divide-digi-border/50 overflow-hidden max-h-64 overflow-y-auto">
+                  {panelReqs.map((r: any, i: number) => {
                     const accepted: any[] = r.assignments || [];
                     return (
-                      <li key={r.id} className="flex items-center gap-2.5 rounded-md border border-digi-border bg-digi-card px-2.5 py-2">
-                        <span className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-digi-darker'}`}>
-                          {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
-                        </span>
-                        <span className={`text-[12.5px] flex-1 min-w-0 truncate ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf} title={r.title}>{r.title}</span>
+                      <li key={r.id} className="flex items-start gap-2.5 px-2.5 py-1.5 bg-digi-card">
+                        <span className={`shrink-0 mt-px w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-semibold tabular-nums ${r.is_completed ? 'bg-accent-light text-accent' : 'bg-black/[0.04] text-digi-muted'}`} style={mf}>{i + 1}</span>
+                        <span className="text-[12px] text-digi-text leading-[1.35] flex-1 min-w-0" style={mf}>{r.title}</span>
                         {accepted.length > 0 && (
-                          <div className="flex items-center -space-x-1.5 shrink-0">
+                          <div className="flex items-center -space-x-1.5 shrink-0 mt-px">
                             {accepted.slice(0, 3).map((a) => (
                               a.photo_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img key={a.id} src={a.photo_url} alt="" title={a.member_name} className="w-6 h-6 rounded-full border border-digi-border object-cover" />
+                                <img key={a.id} src={a.photo_url} alt="" title={a.member_name} className="w-5 h-5 rounded-full border border-digi-border object-cover" />
                               ) : (
-                                <div key={a.id} title={a.member_name} className="w-6 h-6 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[11px] font-semibold text-accent" style={mf}>{(a.member_name || '?')[0].toUpperCase()}</div>
+                                <div key={a.id} title={a.member_name} className="w-5 h-5 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[9px] font-semibold text-accent" style={mf}>{(a.member_name || '?')[0].toUpperCase()}</div>
                               )
                             ))}
                           </div>

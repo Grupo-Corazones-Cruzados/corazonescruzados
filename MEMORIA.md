@@ -281,9 +281,10 @@ Stack estándar de la casa, con particularidades de este repo:
   un pulse durante el fetch y nada durante la decodificación (las portadas base64 pesan). Aplica a todos
   los usos de `ImageGallery` (marketplace y `settings/portfolio`). (2) El **panel derecho** del
   marketplace, cuando el registro es un **proyecto**, ahora muestra sus **requerimientos en solo lectura**
-  igual que el módulo de Proyectos: cabecera "REQUERIMIENTOS (hechos/total)" + barra de progreso + %, y
-  lista con checkbox (accent + check si completado), título tachado si completado y avatares de los
-  miembros aceptados. Datos: `GET /api/marketplace/projects/[id]` ahora devuelve `requirements[]`
+  con cabecera "REQUERIMIENTOS (hechos/total)" + barra de progreso + %. **Diseño (rediseñado 2026-07-06):**
+  lista **compacta** en un solo contenedor con divisores, **sin checkbox ni tachado** (textos legibles);
+  cada fila = índice numerado (tinte accent si completado, muted si no) + título + avatares (5px) de los
+  miembros aceptados; `max-h-64` con scroll si hay muchos. Datos: `GET /api/marketplace/projects/[id]` devuelve `requirements[]`
   (`title`, `is_completed`, `assignments` con `member_name`/`photo_url` de asignaciones `accepted`);
   `selectItem` los pide junto con las imágenes (para proyectos SIEMPRE, aunque no tengan imágenes) y
   muestra un skeleton mientras cargan. Se quitó la fila simple "Requerimientos: N" del panel.
