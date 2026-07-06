@@ -267,6 +267,14 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Marketplace: acción solo en el panel + gate según sesión (2026-07-06):** el botón principal
+  (Solicitar/Comprar) **se quitó de las tarjetas** en ambos marketplaces (privado y público); ahora
+  **solo aparece en el panel** de detalle al seleccionar un registro (`MarketplaceCatalog.renderCard`
+  ya no lo pinta). En el **marketplace público**, la acción principal y el botón del gate son
+  **según sesión** (`app/marketplace-publico/page.tsx`): **con sesión** → va directo al marketplace
+  interno (`/dashboard/marketplace`); **sin sesión** → muestra el aviso "Acceso solo para clientes" y su
+  botón lleva a la pantalla de login (`/?acceso=cliente`). En el **privado** el botón del panel sigue
+  abriendo los modales de compra/solicitud.
 - **Marketplace: panel de detalle con spinner y requerimientos (2026-07-06):** (1) `ImageGallery`
   (`components/ui/ImageGallery.tsx`) muestra un **spinner** en dos fases: mientras se traen las imágenes
   del registro (`loading`) y sobre cada imagen hasta que decodifica (`onLoad`, con fade-in) — antes solo

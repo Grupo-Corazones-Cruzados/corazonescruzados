@@ -271,9 +271,6 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
               <span className="inline-flex items-center gap-1 text-[11px] text-digi-muted shrink-0" style={mf}><ListChecks className="w-3.5 h-3.5" /> {item.requirements_count}</span>
             )}
           </div>
-          <button onClick={(e) => { e.stopPropagation(); onPrimaryAction(item); }} className={`${BTN_PRIMARY} w-full mt-3`}>
-            {isProject ? 'Solicitar proyecto' : 'Comprar'}
-          </button>
         </div>
       </div>
     );

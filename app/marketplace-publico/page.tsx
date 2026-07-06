@@ -14,10 +14,16 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 // login que ya tiene la opción de crear cuenta de cliente) y, tras iniciar sesión,
 // devuelve al usuario al marketplace completo del dashboard.
 const goToLogin = () => { window.location.href = '/?acceso=cliente'; };
+// Ya con sesión: al marketplace interno (privado) del panel.
+const goToMarketplace = () => { window.location.href = '/dashboard/marketplace'; };
 
 export default function PublicMarketplacePage() {
   const { user } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
+
+  // Acción principal de un registro seleccionado: con sesión abierta va directo al
+  // marketplace interno; sin sesión, muestra el aviso "solo para clientes".
+  const handlePrimaryAction = () => { if (user) goToMarketplace(); else setGateOpen(true); };
 
   return (
     <div className="corp min-h-screen flex flex-col">
@@ -50,7 +56,7 @@ export default function PublicMarketplacePage() {
           </p>
         </div>
 
-        <MarketplaceCatalog onPrimaryAction={() => setGateOpen(true)} />
+        <MarketplaceCatalog onPrimaryAction={handlePrimaryAction} />
       </main>
 
       {/* ── Gate: solo clientes pueden solicitar/comprar ── */}
@@ -67,9 +73,15 @@ export default function PublicMarketplacePage() {
             Una vez inicies sesión tendrás acceso completo al marketplace desde tu panel.
           </p>
           <div className="flex flex-col sm:flex-row gap-2 pt-1">
-            <button onClick={goToLogin} className={`${BTN_PRIMARY} flex-1`}>
-              <LogIn className="w-4 h-4" /> Iniciar sesión / Crear cuenta
-            </button>
+            {user ? (
+              <button onClick={goToMarketplace} className={`${BTN_PRIMARY} flex-1`}>
+                <ShoppingBag className="w-4 h-4" /> Ir al marketplace
+              </button>
+            ) : (
+              <button onClick={goToLogin} className={`${BTN_PRIMARY} flex-1`}>
+                <LogIn className="w-4 h-4" /> Iniciar sesión / Crear cuenta
+              </button>
+            )}
             <button onClick={() => setGateOpen(false)} className={`${BTN_SECONDARY} flex-1`}>
               Seguir explorando
             </button>
