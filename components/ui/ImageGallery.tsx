@@ -1,12 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, ImageOff } from 'lucide-react';
 
 /**
  * Galería de imágenes con controles prev/next + indicadores, estilo corp.
  * Se resetea al cambiar de elemento montándola con `key`.
+ *
+ * Indicador de carga en dos fases: mientras `loading` (se están trayendo las
+ * imágenes del registro) muestra un spinner; y al cambiar de imagen, muestra el
+ * spinner sobre ella hasta que termina de decodificar (las portadas base64 pesan).
  */
+function Spinner() {
+  return (
+    <span
+      className="w-6 h-6 rounded-full border-2 border-digi-border border-t-accent animate-spin"
+      role="status"
+      aria-label="Cargando imagen"
+    />
+  );
+}
+
 export default function ImageGallery({
   images,
   alt = '',
@@ -19,9 +33,20 @@ export default function ImageGallery({
   onOpen?: (index: number) => void;
 }) {
   const [i, setI] = useState(0);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  const idx = images && images.length ? Math.min(i, images.length - 1) : 0;
+  const currentSrc = images && images.length ? images[idx] : null;
+
+  // Reinicia el estado "cargada" cada vez que cambia la imagen visible.
+  useEffect(() => { setImgLoaded(false); }, [currentSrc]);
 
   if (loading) {
-    return <div className="aspect-video rounded-lg border border-digi-border bg-digi-darker animate-pulse" />;
+    return (
+      <div className="aspect-video rounded-lg border border-digi-border bg-digi-darker flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
   }
   if (!images || images.length === 0) {
     return (
@@ -32,16 +57,21 @@ export default function ImageGallery({
     );
   }
 
-  const idx = Math.min(i, images.length - 1);
   return (
-    <div className="relative rounded-lg overflow-hidden border border-digi-border">
+    <div className="relative rounded-lg overflow-hidden border border-digi-border bg-digi-darker">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={images[idx]}
+        src={currentSrc!}
         alt={alt}
-        className="w-full aspect-video object-contain bg-digi-darker cursor-zoom-in"
+        decoding="async"
+        onLoad={() => setImgLoaded(true)}
+        onError={() => setImgLoaded(true)}
+        className={`w-full aspect-video object-contain bg-digi-darker cursor-zoom-in transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
         onClick={() => onOpen?.(idx)}
       />
+      {!imgLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center"><Spinner /></div>
+      )}
       {images.length > 1 && (
         <>
           <button

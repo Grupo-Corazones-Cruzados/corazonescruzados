@@ -7,7 +7,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
 import CardMedia from '@/components/marketplace/CardMedia';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon } from 'lucide-react';
+import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, Check } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -69,6 +69,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const [selected, setSelected] = useState<any>(null);
   const [panelImages, setPanelImages] = useState<string[]>([]);
   const [panelImgLoading, setPanelImgLoading] = useState(false);
+  const [panelReqs, setPanelReqs] = useState<any[]>([]);
 
   // Marketplace published projects
   const [marketplaceProjects, setMarketplaceProjects] = useState<any[]>([]);
@@ -177,17 +178,22 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const selectItem = async (item: any) => {
     setSelected(item);
     setPanelImages([]);
-    if (item.images?.length) { setPanelImages(item.images); return; }
-    if (item.image_url) { setPanelImages([item.image_url]); return; }
-    if (item.source_type === 'project' && item.image_count) {
-      setPanelImgLoading(true);
-      try {
-        const res = await fetch(`/api/marketplace/projects/${item.id}`);
-        const data = await res.json();
-        setPanelImages(data?.data?.images || []);
-      } catch { setPanelImages([]); }
-      finally { setPanelImgLoading(false); }
+    setPanelReqs([]);
+    // Ítems de portafolio: portada incluida, sin requerimientos.
+    if (item.source_type !== 'project') {
+      if (item.images?.length) setPanelImages(item.images);
+      else if (item.image_url) setPanelImages([item.image_url]);
+      return;
     }
+    // Proyecto del marketplace: trae imágenes + requerimientos (solo lectura).
+    setPanelImgLoading(true);
+    try {
+      const res = await fetch(`/api/marketplace/projects/${item.id}`);
+      const data = await res.json();
+      setPanelImages(data?.data?.images || []);
+      setPanelReqs(data?.data?.requirements || []);
+    } catch { setPanelImages([]); setPanelReqs([]); }
+    finally { setPanelImgLoading(false); }
   };
 
   const openGalleryFromPanel = (k: number) => {
@@ -292,8 +298,10 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
       ['Precio', <span key="p" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(price)}</span>],
     ];
     if (t.member_name) rows.push(['Miembro', t.member_name]);
-    if (isProject && t.requirements_count != null) rows.push(['Requerimientos', String(t.requirements_count)]);
     if (Array.isArray(t.tags) && t.tags.length) rows.push(['Tags', t.tags.slice(0, 4).join(', ')]);
+    const reqDone = panelReqs.filter((r: any) => r.is_completed).length;
+    const reqTotal = panelReqs.length;
+    const reqPct = reqTotal ? Math.round((reqDone / reqTotal) * 100) : 0;
     return (
       <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
         <div className="flex items-start gap-3 p-4 border-b border-digi-border">
@@ -314,6 +322,55 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
               </div>
             ))}
           </dl>
+
+          {/* Requerimientos del proyecto (solo lectura), como en el módulo de Proyectos */}
+          {isProject && (panelImgLoading || panelReqs.length > 0) && (
+            <div className="pt-1">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <h4 className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>
+                  Requerimientos{reqTotal > 0 && <span className="text-digi-muted/70"> ({reqDone}/{reqTotal})</span>}
+                </h4>
+                {reqTotal > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqPct}%` }} /></div>
+                    <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{reqPct}%</span>
+                  </div>
+                )}
+              </div>
+              {panelImgLoading ? (
+                <div className="space-y-1.5">
+                  {[0, 1, 2].map((k) => <div key={k} className="h-9 rounded-md border border-digi-border bg-digi-darker animate-pulse" />)}
+                </div>
+              ) : (
+                <ul className="space-y-1.5">
+                  {panelReqs.map((r: any) => {
+                    const accepted: any[] = r.assignments || [];
+                    return (
+                      <li key={r.id} className="flex items-center gap-2.5 rounded-md border border-digi-border bg-digi-card px-2.5 py-2">
+                        <span className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-digi-darker'}`}>
+                          {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
+                        </span>
+                        <span className={`text-[12.5px] flex-1 min-w-0 truncate ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf} title={r.title}>{r.title}</span>
+                        {accepted.length > 0 && (
+                          <div className="flex items-center -space-x-1.5 shrink-0">
+                            {accepted.slice(0, 3).map((a) => (
+                              a.photo_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img key={a.id} src={a.photo_url} alt="" title={a.member_name} className="w-6 h-6 rounded-full border border-digi-border object-cover" />
+                              ) : (
+                                <div key={a.id} title={a.member_name} className="w-6 h-6 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[11px] font-semibold text-accent" style={mf}>{(a.member_name || '?')[0].toUpperCase()}</div>
+                              )
+                            ))}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2 pt-1">
             <button onClick={() => onPrimaryAction(t)} className={`${BTN_PRIMARY} w-full`}>
               {isProject ? 'Solicitar proyecto' : 'Comprar'}

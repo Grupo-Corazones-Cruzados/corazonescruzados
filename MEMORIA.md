@@ -267,6 +267,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Marketplace: panel de detalle con spinner y requerimientos (2026-07-06):** (1) `ImageGallery`
+  (`components/ui/ImageGallery.tsx`) muestra un **spinner** en dos fases: mientras se traen las imágenes
+  del registro (`loading`) y sobre cada imagen hasta que decodifica (`onLoad`, con fade-in) — antes solo
+  un pulse durante el fetch y nada durante la decodificación (las portadas base64 pesan). Aplica a todos
+  los usos de `ImageGallery` (marketplace y `settings/portfolio`). (2) El **panel derecho** del
+  marketplace, cuando el registro es un **proyecto**, ahora muestra sus **requerimientos en solo lectura**
+  igual que el módulo de Proyectos: cabecera "REQUERIMIENTOS (hechos/total)" + barra de progreso + %, y
+  lista con checkbox (accent + check si completado), título tachado si completado y avatares de los
+  miembros aceptados. Datos: `GET /api/marketplace/projects/[id]` ahora devuelve `requirements[]`
+  (`title`, `is_completed`, `assignments` con `member_name`/`photo_url` de asignaciones `accepted`);
+  `selectItem` los pide junto con las imágenes (para proyectos SIEMPRE, aunque no tengan imágenes) y
+  muestra un skeleton mientras cargan. Se quitó la fila simple "Requerimientos: N" del panel.
 - **Marketplace: carga instantánea + portadas perezosas (2026-07-06):** la tabla se veía **vacía ~3–4s**
   porque `GET /api/marketplace/projects` incluía `p.images[1] as cover_image` y **las imágenes están en
   base64** en `projects.images TEXT[]` → la lista pesaba **4.8 MB / 3.7s**. Fix: (1) el endpoint ya **NO
