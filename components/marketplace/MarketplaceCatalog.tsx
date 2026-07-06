@@ -31,6 +31,10 @@ const TAB_TO_TYPE: Record<string, string> = {
   automations: 'automation',
 };
 
+// URL de una imagen de proyecto redimensionada (WebP). Anchos permitidos por el
+// endpoint: 240 / 480 (tarjeta), 900 (vista previa panel), 1600 (galería completa).
+const projImg = (id: any, i: number, w: number) => `/api/marketplace/projects/${id}/image?i=${i}&w=${w}`;
+
 export interface MarketplaceCatalogProps {
   /** Acción del botón principal de cada tarjeta (Comprar / Solicitar / gate público). */
   onPrimaryAction: (item: any) => void;
@@ -68,7 +72,6 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   // Right detail panel
   const [selected, setSelected] = useState<any>(null);
   const [panelImages, setPanelImages] = useState<string[]>([]);
-  const [panelImgLoading, setPanelImgLoading] = useState(false);
   const [panelReqs, setPanelReqs] = useState<any[]>([]);
   const [panelReqsLoading, setPanelReqsLoading] = useState(false);
   // Token para descartar respuestas de un registro que ya no está seleccionado.
@@ -117,45 +120,20 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     !search || i.title?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // --- Gallery ---
-  const openGallery = async (item: any, e: React.MouseEvent) => {
+  // --- Gallery (galería a pantalla completa: resolución alta) ---
+  const galleryImagesFor = (item: any): string[] => {
+    if (item.source_type === 'project') {
+      const count = imageCount(item);
+      return Array.from({ length: count }, (_, i) => projImg(item.id, i, 1600));
+    }
+    if (item.images?.length > 0) return item.images;
+    if (item.image_url) return [item.image_url];
+    return [];
+  };
+
+  const openGallery = (item: any, e: React.MouseEvent) => {
     e.stopPropagation();
-
-    if (item.source_type === 'project' && !item.images) {
-      if (!item.image_count) {
-        toast.info('Este proyecto no tiene imagenes');
-        return;
-      }
-      setGalleryTitle(item.title || '');
-      setGalleryImages([]);
-      setGalleryIndex(0);
-      setGalleryLoading(true);
-      setGalleryOpen(true);
-      try {
-        const res = await fetch(`/api/marketplace/projects/${item.id}`);
-        const data = await res.json();
-        const imgs: string[] = data?.data?.images || [];
-        if (imgs.length === 0) {
-          toast.info('Este proyecto no tiene imagenes');
-          setGalleryOpen(false);
-          return;
-        }
-        setGalleryImages(imgs);
-      } catch {
-        toast.error('No se pudieron cargar las imagenes');
-        setGalleryOpen(false);
-      } finally {
-        setGalleryLoading(false);
-      }
-      return;
-    }
-
-    const imgs: string[] = [];
-    if (item.images?.length > 0) {
-      imgs.push(...item.images);
-    } else if (item.image_url) {
-      imgs.push(item.image_url);
-    }
+    const imgs = galleryImagesFor(item);
     if (imgs.length === 0) {
       toast.info('Este registro no tiene imagenes');
       return;
@@ -184,32 +162,30 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     setPanelImages([]);
     setPanelReqs([]);
     setPanelReqsLoading(false);
-    setPanelImgLoading(false);
     // Ítems de portafolio: portada incluida, sin requerimientos.
     if (item.source_type !== 'project') {
       if (item.images?.length) setPanelImages(item.images);
       else if (item.image_url) setPanelImages([item.image_url]);
       return;
     }
-    // Requerimientos: endpoint ligero → aparecen al instante, sin esperar imágenes.
+    // Imágenes: URLs de vista previa (WebP w=900), no el base64 pesado. Se pintan al
+    // instante; cada una se carga/decodifica con su propio spinner en ImageGallery.
+    const count = imageCount(item);
+    setPanelImages(Array.from({ length: count }, (_, i) => projImg(item.id, i, 900)));
+    // Requerimientos: endpoint ligero → aparecen al instante, en paralelo.
     setPanelReqsLoading(true);
     fetch(`/api/marketplace/projects/${item.id}/requirements`)
       .then((r) => r.json())
       .then((d) => { if (selTokenRef.current === token) setPanelReqs(d?.data || []); })
       .catch(() => { if (selTokenRef.current === token) setPanelReqs([]); })
       .finally(() => { if (selTokenRef.current === token) setPanelReqsLoading(false); });
-    // Imágenes (base64 pesadas): en paralelo, aparecen después.
-    setPanelImgLoading(true);
-    fetch(`/api/marketplace/projects/${item.id}`)
-      .then((r) => r.json())
-      .then((d) => { if (selTokenRef.current === token) setPanelImages(d?.data?.images || []); })
-      .catch(() => { if (selTokenRef.current === token) setPanelImages([]); })
-      .finally(() => { if (selTokenRef.current === token) setPanelImgLoading(false); });
   };
 
   const openGalleryFromPanel = (k: number) => {
-    if (!panelImages.length) return;
-    setGalleryImages(panelImages); setGalleryIndex(k); setGalleryTitle(selected?.title || ''); setGalleryOpen(true);
+    if (!selected) return;
+    const imgs = galleryImagesFor(selected);
+    if (!imgs.length) return;
+    setGalleryImages(imgs); setGalleryIndex(k); setGalleryTitle(selected?.title || ''); setGalleryOpen(true);
   };
 
   const CardMembers = ({ item }: { item: any }) => {
@@ -242,6 +218,10 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     const isProject = item.source_type === 'project';
     const price = Number(item.final_cost ?? item.price ?? 0);
     const count = imageCount(item);
+    // Portada: proyectos → miniatura WebP (w=480); portafolio → su imagen inline.
+    const coverSrc = isProject
+      ? (count > 0 ? projImg(item.id, 0, 480) : null)
+      : ((Array.isArray(item.images) && item.images[0]) || item.image_url || null);
     const active = selected?.id === item.id && selected?.source_type === item.source_type;
     const CatIcon = isProject ? FolderKanban : tab === 'automations' ? Workflow : Package;
     const catLabel = isProject ? 'Proyecto' : tab === 'automations' ? 'Automatización' : 'Producto';
@@ -255,7 +235,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
         }`}
       >
         {/* media */}
-        <CardMedia item={item} placeholder={<CatIcon className="w-9 h-9 text-digi-muted/30" />}>
+        <CardMedia src={coverSrc} placeholder={<CatIcon className="w-9 h-9 text-digi-muted/30" />}>
           <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-digi-card/85 text-digi-muted text-[10px] font-medium backdrop-blur-sm">{catLabel}</span>
           {count > 0 && (
             <button onClick={(e) => openGallery(item, e)} title={`Ver ${count} foto(s)`}
@@ -320,7 +300,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
           <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-4 space-y-3">
-          <ImageGallery key={t.id + (isProject ? '-p' : '')} images={panelImages} loading={panelImgLoading} alt={t.title} onOpen={openGalleryFromPanel} />
+          <ImageGallery key={t.id + (isProject ? '-p' : '')} images={panelImages} alt={t.title} onOpen={openGalleryFromPanel} />
           {t.description && <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{t.description}</p>}
           <dl className="space-y-2">
             {rows.map(([k, v], i) => (

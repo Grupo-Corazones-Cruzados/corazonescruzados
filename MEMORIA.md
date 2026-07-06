@@ -287,11 +287,21 @@ Stack estándar de la casa, con particularidades de este repo:
   miembros aceptados; `max-h-64` con scroll si hay muchos. Se quitó la fila simple "Requerimientos: N".
   **Datos (separados para que carguen rápido, 2026-07-06):** los requerimientos vienen de un endpoint
   **ligero e independiente** `GET /api/marketplace/projects/[id]/requirements` (~3 KB / 0.4s), NO del
-  `[id]` (que trae las imágenes base64, ~5 MB / 4s). `selectItem` dispara **ambos fetch en paralelo** con
-  estados de carga propios (`panelReqsLoading` vs `panelImgLoading`) y un `selTokenRef` para descartar
-  respuestas de un registro ya no seleccionado; así los requerimientos aparecen al instante y las imágenes
-  después con su spinner. **Lección:** nunca acoplar datos ligeros (texto) a la misma respuesta que
-  imágenes base64 pesadas; endpoints separados + fetch en paralelo.
+  `[id]` (base64). `selectItem` construye las URLs de imagen y **en paralelo** pide requerimientos, con
+  `panelReqsLoading` y un `selTokenRef` para descartar respuestas de un registro ya no seleccionado; así
+  los requerimientos aparecen al instante. **Lección:** nunca acoplar datos ligeros (texto) a la misma
+  respuesta que imágenes pesadas.
+- **Marketplace: miniaturas WebP servidas por endpoint (2026-07-06):** las imágenes están en **base64**
+  (`projects.images TEXT[]`, PNGs de hasta ~2.3 MB c/u) → tarjetas y vista previa cargaban lentísimo.
+  Fix: nuevo endpoint **`GET /api/marketplace/projects/[id]/image?i=<idx>&w=<ancho>`** que decodifica solo
+  `images[idx+1]`, lo **reescala con `sharp`** y devuelve **WebP** (calidad 72) con cache (`Cache-Control`
+  + Map de proceso). Anchos: **480** tarjeta, **900** vista previa del panel, **1600** galería a pantalla
+  completa. Resultado: portada **2.3 MB → 3.2 KB** (w=480), warm ~17 ms. El cliente ya **no baja base64**:
+  `CardMedia` recibe `src` (miniatura `?w=480`, `loading="lazy"` nativo + spinner hasta `onLoad`);
+  `MarketplaceCatalog` arma las URLs (`projImg`) para tarjeta/panel/galería según `image_count` (sin
+  fetch del `[id]`). Se **eliminó** el endpoint `[id]/cover` (ya no se usa). `sharp` 0.34 disponible.
+  **Lección:** para imágenes base64 en BD, servir miniatura redimensionada por endpoint (no mandar el
+  base64 al cliente); pedir la resolución alta solo al hacer zoom.
 - **Marketplace: carga instantánea + portadas perezosas (2026-07-06):** la tabla se veía **vacía ~3–4s**
   porque `GET /api/marketplace/projects` incluía `p.images[1] as cover_image` y **las imágenes están en
   base64** en `projects.images TEXT[]` → la lista pesaba **4.8 MB / 3.7s**. Fix: (1) el endpoint ya **NO
@@ -302,8 +312,9 @@ Stack estándar de la casa, con particularidades de este repo:
   mientras se descarga/decodifica; los ítems de portafolio (portada ya incluida, son URLs) se muestran
   directo. Beneficia también a `settings/portfolio` (`member=true`, misma lista). **Lección:** nunca
   mandar imágenes base64 en un endpoint de LISTA; enviar solo contador y traer la portada aparte/perezosa.
-  **Pendiente sugerido:** las portadas base64 siguen pesando (una llega a **2.3 MB**); convendría
-  redimensionar/servir miniaturas (o migrar a Cloudinary) para bajar aún más el peso por tarjeta.
+  **Actualización:** el `[id]/cover` y la carga perezosa por IntersectionObserver de `CardMedia` fueron
+  **reemplazados** por el endpoint de miniaturas WebP `[id]/image?w=…` (ver entrada de miniaturas arriba),
+  que resuelve el peso de las portadas base64 (2.3 MB → ~3 KB).
 - **Marketplace público sin sesión (2026-07-06):** Nueva ruta pública **`/marketplace-publico`**
   (fuera de `/dashboard`, sin `AuthGuard` ni menú de módulos) para **visualizar/filtrar/buscar** el
   marketplace sin login. **Decisión (usuario):** página **nueva** + **componente compartido**, NO
