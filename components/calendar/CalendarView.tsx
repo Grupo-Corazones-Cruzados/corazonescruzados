@@ -2,9 +2,11 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import type { EventInstance } from '@/lib/calendar/recurrence';
-import { DAY_LABELS_ES_SHORT, colorForEvent, EVENT_COLORS } from '@/lib/calendar/recurrence';
+import { DAY_LABELS_ES_SHORT, DAY_LABELS_ES_LONG, colorForEvent, EVENT_COLORS } from '@/lib/calendar/recurrence';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+// Dashboard Fluent (.corp): ambas fuentes resuelven a Segoe UI. Se conserva el
+// nombre `pf` por uso interno, pero apunta al cuerpo (no al pixel display).
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export type CalendarViewMode = 'month' | 'week' | 'day';
@@ -74,7 +76,7 @@ function useEcuadorNow(): NowParts | null {
   return now;
 }
 
-const NOW_COLOR = '#22d3ee';
+const NOW_COLOR = '#ef4444';
 
 // Minutos por tipo dedicados a un día (porción de cada evento dentro del día;
 // excluye propuestas no confirmadas).
@@ -139,15 +141,15 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) 
   const today = new Date();
 
   return (
-    <div className="border-2 border-digi-border bg-digi-darker">
-      <div className="grid grid-cols-7 border-b-2 border-digi-border">
+    <div className="border border-digi-border rounded-lg overflow-hidden bg-digi-card">
+      <div className="grid grid-cols-7 border-b border-digi-border bg-digi-dark">
         {DAY_LABELS_ES_SHORT.map((label) => (
           <div
             key={label}
-            className="px-2 py-2 text-[10px] text-accent-glow text-center border-r border-digi-border last:border-r-0"
-            style={pf}
+            className="px-2 py-2 text-[11px] font-semibold text-digi-muted text-center border-r border-digi-border last:border-r-0"
+            style={mf}
           >
-            {label.toUpperCase()}
+            {label}
           </div>
         ))}
       </div>
@@ -165,14 +167,16 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) 
             <div
               key={idx}
               onClick={() => onDayClick(day)}
-              className={`min-h-[96px] p-1.5 border-r border-b border-digi-border last:border-r-0 cursor-pointer hover:bg-digi-dark/40 transition-colors ${
-                inMonth ? '' : 'opacity-40'
-              } ${isToday ? 'bg-accent/5' : ''}`}
+              className={`min-h-[104px] p-1.5 border-r border-b border-digi-border last:border-r-0 cursor-pointer transition-colors ${
+                inMonth ? 'hover:bg-black/[0.02]' : 'bg-digi-dark/60 text-digi-muted'
+              } ${isToday ? 'bg-accent-light/50' : ''}`}
             >
               <div className="flex items-center justify-between gap-1 mb-1">
                 <span
-                  className={`text-[10px] ${isToday ? 'text-accent-glow' : 'text-digi-text'}`}
-                  style={pf}
+                  className={`inline-flex items-center justify-center text-[11px] tabular-nums ${
+                    isToday ? 'w-5 h-5 rounded-full bg-accent text-white font-semibold' : inMonth ? 'text-digi-text' : 'text-digi-muted'
+                  }`}
+                  style={mf}
                 >
                   {day.getDate()}
                 </span>
@@ -185,25 +189,24 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) 
                     <div
                       key={`${ev.id}-${i}`}
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                      className={`text-[9px] px-1 py-0.5 truncate border-l-2 hover:opacity-80 transition-opacity ${
-                        proposed ? 'border-dashed italic opacity-75' : ''
+                      className={`text-[10.5px] px-1.5 py-0.5 rounded-[3px] truncate border-l-[3px] hover:opacity-80 transition-opacity ${
+                        proposed ? 'border-dashed italic' : ''
                       }`}
                       style={{
                         ...mf,
-                        borderLeftColor: proposed ? '#f59e0b' : colorForEvent(ev),
-                        backgroundColor: proposed ? '#f59e0b20' : `${colorForEvent(ev)}20`,
-                        color: '#e5e7eb',
+                        borderLeftColor: proposed ? '#d97706' : colorForEvent(ev),
+                        backgroundColor: proposed ? '#f59e0b1f' : `${colorForEvent(ev)}1f`,
+                        color: 'var(--color-digi-text)',
                       }}
                       title={proposed ? `Propuesta: ${ev.title}` : ev.title}
                     >
-                      {proposed && '⏳ '}
-                      {!ev.all_day && formatTime(ev.instanceStart) + ' '}
+                      {!ev.all_day && <span className="text-digi-muted tabular-nums">{formatTime(ev.instanceStart)} </span>}
                       {ev.title}
                     </div>
                   );
                 })}
                 {dayEvents.length > 3 && (
-                  <div className="text-[9px] text-digi-muted px-1" style={pf}>
+                  <div className="text-[10px] text-digi-muted px-1 font-medium" style={mf}>
                     +{dayEvents.length - 3} más
                   </div>
                 )}
@@ -233,23 +236,23 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick }: Props) {
   const now = useEcuadorNow();
 
   return (
-    <div className="border-2 border-digi-border bg-digi-darker">
+    <div className="border border-digi-border rounded-lg overflow-hidden bg-digi-card">
       <div className="grid" style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}>
-        <div className="border-r border-b-2 border-digi-border" />
+        <div className="border-r border-b border-digi-border bg-digi-dark" />
         {weekDays.map((day) => {
           const isToday = sameDay(day, today);
           return (
             <div
               key={day.toISOString()}
               onClick={() => onDayClick(day)}
-              className={`px-2 py-2 text-center border-r border-b-2 border-digi-border last:border-r-0 cursor-pointer hover:bg-digi-dark/40 ${
-                isToday ? 'bg-accent/5' : ''
+              className={`px-2 py-2 text-center border-r border-b border-digi-border last:border-r-0 cursor-pointer transition-colors ${
+                isToday ? 'bg-accent-light/50' : 'bg-digi-dark hover:bg-black/[0.02]'
               }`}
             >
-              <div className="text-[9px] text-digi-muted" style={pf}>
-                {DAY_LABELS_ES_SHORT[day.getDay()].toUpperCase()}
+              <div className="text-[10px] font-semibold text-digi-muted" style={mf}>
+                {DAY_LABELS_ES_SHORT[day.getDay()]}
               </div>
-              <div className={`text-sm ${isToday ? 'text-accent-glow' : 'text-digi-text'}`} style={pf}>
+              <div className={`inline-flex items-center justify-center mt-0.5 text-[14px] tabular-nums ${isToday ? 'w-6 h-6 rounded-full bg-accent text-white font-semibold' : 'text-digi-text'}`} style={mf}>
                 {day.getDate()}
               </div>
               <div className="flex justify-center mt-0.5">
@@ -291,12 +294,12 @@ function DayView({ currentDate, instances, onDayClick, onEventClick }: Props) {
   const hours = Array.from({ length: WEEK_HOUR_END - WEEK_HOUR_START + 1 }, (_, i) => i + WEEK_HOUR_START);
   const now = useEcuadorNow();
   return (
-    <div className="border-2 border-digi-border bg-digi-darker">
+    <div className="border border-digi-border rounded-lg overflow-hidden bg-digi-card">
       <div className="grid" style={{ gridTemplateColumns: '56px 1fr' }}>
-        <div className="border-r border-b-2 border-digi-border" />
-        <div className="px-3 py-2 border-b-2 border-digi-border flex items-center justify-between gap-2">
-          <div className="text-[10px] text-accent-glow" style={pf}>
-            {DAY_LABELS_ES_SHORT[currentDate.getDay()].toUpperCase()} {currentDate.getDate()}
+        <div className="border-r border-b border-digi-border bg-digi-dark" />
+        <div className="px-3 py-2 border-b border-digi-border bg-digi-dark flex items-center justify-between gap-2">
+          <div className="text-[13px] font-semibold text-digi-text capitalize" style={mf}>
+            {DAY_LABELS_ES_LONG[currentDate.getDay()]} {currentDate.getDate()}
           </div>
           <DayTotals totals={dayTotals(instances, currentDate)} />
         </div>
@@ -401,25 +404,21 @@ function DayColumn({
           <div
             key={`${ev.id}-${i}`}
             onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-            className={`absolute left-1 right-1 px-1.5 py-1 text-[9px] overflow-hidden hover:opacity-80 transition-opacity border-l-2 ${
-              proposed ? 'border-dashed' : ''
+            className={`absolute left-1 right-1 px-1.5 py-1 text-[10.5px] rounded-[4px] overflow-hidden hover:opacity-90 transition-opacity border-l-[3px] ${
+              proposed ? 'border-dashed italic' : ''
             }`}
             style={{
               ...mf,
               top,
               height,
               borderLeftColor: color,
-              backgroundColor: `${color}30`,
-              color: '#f3f4f6',
-              outline: proposed ? `1px dashed ${color}80` : undefined,
+              backgroundColor: `${color}24`,
+              color: 'var(--color-digi-text)',
             }}
             title={proposed ? `Propuesta: ${ev.title}` : ev.title}
           >
-            <div className="font-semibold truncate">
-              {proposed && '⏳ '}
-              {ev.title}
-            </div>
-            <div className="text-[8px] opacity-70">
+            <div className="font-semibold truncate">{ev.title}</div>
+            <div className="text-[9.5px] text-digi-muted tabular-nums truncate">
               {proposed && '(propuesta) · '}
               {formatTime(ev.instanceStart)} – {formatTime(ev.instanceEnd)}
             </div>

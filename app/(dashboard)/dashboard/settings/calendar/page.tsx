@@ -1,8 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { ChevronLeft, ChevronRight, Plus, Share2, CalendarDays } from 'lucide-react';
 import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
 import EventModal, { type EventFormPayload, type ClientOption } from '@/components/calendar/EventModal';
 import ShareDialog from '@/components/calendar/ShareDialog';
@@ -13,6 +16,7 @@ import {
   type EventType,
   expandEvents,
   MONTH_LABELS_ES,
+  EVENT_COLORS,
 } from '@/lib/calendar/recurrence';
 import {
   type AvailabilityStatus,
@@ -20,7 +24,13 @@ import {
   AVAILABILITY_ORDER,
 } from '@/lib/calendar/availability';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+const mf = { fontFamily: 'var(--font-body)' } as const;
+
+const VIEWS: { value: CalendarViewMode; label: string }[] = [
+  { value: 'month', label: 'Mes' },
+  { value: 'week', label: 'Semana' },
+  { value: 'day', label: 'Día' },
+];
 
 export default function CalendarSettingsPage() {
   const [view, setView] = useState<CalendarViewMode>('month');
@@ -190,118 +200,100 @@ export default function CalendarSettingsPage() {
 
   return (
     <div>
+      <Link href="/dashboard/settings" className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-2" style={mf}>
+        <ChevronLeft className="w-4 h-4" /> Configuración
+      </Link>
       <PageHeader title="Calendario" description="Organiza tus eventos y tareas laborales y personales" />
 
-      <div className="pixel-card space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
+        {/* ── Command bar ── */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border">
+          {/* Navegación */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={goToday}
-              className="px-3 py-1.5 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors"
-              style={pf}
-            >
-              HOY
-            </button>
-            <button
-              onClick={goPrev}
-              className="w-8 h-8 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors"
-              style={pf}
-              aria-label="Anterior"
-            >
-              &lt;
-            </button>
-            <button
-              onClick={goNext}
-              className="w-8 h-8 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors"
-              style={pf}
-              aria-label="Siguiente"
-            >
-              &gt;
-            </button>
-            <div className="text-sm text-accent-glow px-2" style={pf}>{label}</div>
+            <button onClick={goToday} className={`${BTN_SECONDARY} !py-1.5`}>Hoy</button>
+            <div className="flex items-center gap-1">
+              <button onClick={goPrev} aria-label="Anterior"
+                className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button onClick={goNext} aria-label="Siguiente"
+                className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <span className="text-[15px] font-semibold text-digi-text capitalize ml-1" style={mf}>{label}</span>
           </div>
 
+          {/* Vistas + disponibilidad + acciones */}
           <div className="flex items-center gap-2">
-            <div className="flex border-2 border-digi-border">
-              {(['month', 'week', 'day'] as CalendarViewMode[]).map((v) => (
+            {/* Segmented: Mes / Semana / Día */}
+            <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
+              {VIEWS.map((v) => (
                 <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={`px-3 py-1.5 text-[10px] transition-colors ${
-                    view === v
-                      ? 'bg-accent/20 text-accent-glow'
-                      : 'text-digi-muted hover:text-digi-text'
+                  key={v.value}
+                  onClick={() => setView(v.value)}
+                  className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
+                    view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'
                   }`}
-                  style={pf}
+                  style={mf}
                 >
-                  {v === 'month' ? 'MES' : v === 'week' ? 'SEMANA' : 'DÍA'}
+                  {v.label}
                 </button>
               ))}
             </div>
-            <div
-              className="flex items-center gap-1.5 border-2 border-digi-border px-2 py-1"
-              title="Disponibilidad"
-            >
-              <span
-                className="w-2.5 h-2.5 border border-digi-border"
-                style={{ backgroundColor: AVAILABILITY[availability].color }}
-              />
+
+            {/* Disponibilidad */}
+            <div className="inline-flex items-center gap-1.5 rounded-md border border-digi-border pl-2.5 pr-1.5 py-1" title="Tu disponibilidad">
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[availability].color }} />
               <select
                 value={availability}
                 disabled={savingAvail}
                 onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)}
-                className="bg-transparent text-[10px] text-digi-text focus:outline-none cursor-pointer disabled:opacity-50"
-                style={pf}
+                className="bg-transparent text-[12.5px] text-digi-text focus:outline-none cursor-pointer disabled:opacity-50"
+                style={mf}
                 aria-label="Disponibilidad"
               >
                 {AVAILABILITY_ORDER.map((s) => (
-                  <option key={s} value={s} className="bg-digi-darker text-digi-text">
-                    {AVAILABILITY[s].label.toUpperCase()}
-                  </option>
+                  <option key={s} value={s}>{AVAILABILITY[s].label}</option>
                 ))}
               </select>
             </div>
-            <button
-              onClick={() => setShareOpen(true)}
-              className="px-3 py-1.5 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors"
-              style={pf}
-            >
-              COMPARTIR
+
+            <button onClick={() => setShareOpen(true)} className={BTN_SECONDARY}>
+              <Share2 className="w-4 h-4" /> Compartir
             </button>
-            <button
-              onClick={() => openNew('work')}
-              className="px-3 py-1.5 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors"
-              style={pf}
-            >
-              + NUEVO
+            <button onClick={() => openNew('work')} className={BTN_PRIMARY}>
+              <Plus className="w-4 h-4" /> Nuevo
             </button>
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-8 text-[10px] text-digi-muted" style={pf}>
-            Cargando…
-          </div>
-        ) : (
-          <CalendarView
-            view={view}
-            currentDate={currentDate}
-            instances={instances}
-            onDayClick={handleDayClick}
-            onEventClick={handleEventClick}
-          />
-        )}
+        {/* ── Grid ── */}
+        <div className="p-3">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-digi-muted" style={mf}>
+              <CalendarDays className="w-4 h-4 animate-pulse" /> Cargando…
+            </div>
+          ) : (
+            <CalendarView
+              view={view}
+              currentDate={currentDate}
+              instances={instances}
+              onDayClick={handleDayClick}
+              onEventClick={handleEventClick}
+            />
+          )}
+        </div>
 
-        <div className="flex gap-4 text-[10px] text-digi-muted pt-2" style={pf}>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: '#7B5FBF', backgroundColor: '#7B5FBF30' }} />
-            LABORAL
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: '#22c55e', backgroundColor: '#22c55e30' }} />
-            PERSONAL
-          </div>
-          <div className="ml-auto">Zona horaria: América/Guayaquil (GMT-5)</div>
+        {/* ── Leyenda ── */}
+        <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted" style={mf}>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.work}30`, borderLeft: `3px solid ${EVENT_COLORS.work}` }} /> Laboral
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.personal}30`, borderLeft: `3px solid ${EVENT_COLORS.personal}` }} /> Personal
+          </span>
+          <span className="ml-auto tabular-nums">Zona horaria: América/Guayaquil (GMT-5)</span>
         </div>
       </div>
 
