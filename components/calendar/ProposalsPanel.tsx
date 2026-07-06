@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { Inbox, Check, X, RefreshCw, Repeat } from 'lucide-react';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { MONTH_LABELS_ES } from '@/lib/calendar/recurrence';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface Proposal {
@@ -81,17 +83,20 @@ export default function ProposalsPanel({ onDecision }: Props) {
   if (proposals.length === 0) return null;
 
   return (
-    <div className="pixel-card border-amber-500/40 mt-4">
+    <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-4 mt-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[11px] text-amber-400" style={pf}>
-          PROPUESTAS PENDIENTES ({proposals.length})
-        </h3>
+        <div className="flex items-center gap-2">
+          <Inbox className="w-4 h-4 text-accent" />
+          <h3 className="text-[14px] font-semibold text-digi-text" style={pf}>
+            Propuestas pendientes ({proposals.length})
+          </h3>
+        </div>
         <button
           onClick={load}
-          className="text-[10px] text-digi-muted hover:text-digi-text"
-          style={pf}
+          className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors"
+          style={mf}
         >
-          REFRESCAR
+          <RefreshCw className="w-3.5 h-3.5" /> Refrescar
         </button>
       </div>
 
@@ -101,11 +106,11 @@ export default function ProposalsPanel({ onDecision }: Props) {
             || p.proposer_email
             || 'Cliente';
           return (
-            <div key={p.id} className="border border-digi-border p-3 bg-digi-darker/50">
+            <div key={p.id} className="rounded-lg border border-digi-border bg-digi-darker p-3">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-digi-text truncate" style={pf}>{p.title}</div>
-                  <div className="text-[10px] text-digi-muted mt-0.5" style={mf}>
+                  <div className="text-[13px] font-medium text-digi-text truncate" style={mf}>{p.title}</div>
+                  <div className="text-[12px] text-digi-muted mt-0.5" style={mf}>
                     De: {proposer}{p.proposer_email && ` · ${p.proposer_email}`}
                   </div>
                 </div>
@@ -113,30 +118,30 @@ export default function ProposalsPanel({ onDecision }: Props) {
                   <button
                     onClick={() => respond(p.id, 'accept')}
                     disabled={busy === p.id}
-                    className="px-3 py-1.5 text-[10px] border-2 border-green-500/50 text-green-400 hover:bg-green-950/30 transition-colors disabled:opacity-50"
-                    style={pf}
+                    className={`${BTN_PRIMARY} px-2.5 py-1 text-[12px]`}
+                    style={mf}
                   >
-                    ACEPTAR
+                    <Check className="w-4 h-4" /> Aceptar
                   </button>
                   <button
                     onClick={() => respond(p.id, 'reject')}
                     disabled={busy === p.id}
-                    className="px-3 py-1.5 text-[10px] border-2 border-red-500/50 text-red-400 hover:bg-red-950/30 transition-colors disabled:opacity-50"
-                    style={pf}
+                    className={`${BTN_SECONDARY} px-2.5 py-1 text-[12px]`}
+                    style={mf}
                   >
-                    RECHAZAR
+                    <X className="w-4 h-4" /> Rechazar
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-[10px]" style={mf}>
-                <div className="border border-digi-border/60 px-2 py-1">
+              <div className="grid grid-cols-2 gap-2 text-[12px]" style={mf}>
+                <div className="rounded-md border border-digi-border px-2 py-1">
                   <div className="text-digi-muted">Ecuador (GMT-5)</div>
                   <div className="text-digi-text">
                     {fmt(new Date(p.start_at), 'America/Guayaquil')} — {fmt(new Date(p.end_at), 'America/Guayaquil')}
                   </div>
                 </div>
-                <div className="border border-digi-border/60 px-2 py-1">
+                <div className="rounded-md border border-digi-border px-2 py-1">
                   <div className="text-digi-muted">Cliente ({p.timezone || '—'})</div>
                   <div className="text-digi-text">
                     {fmt(new Date(p.start_at), p.timezone || undefined)} — {fmt(new Date(p.end_at), p.timezone || undefined)}
@@ -145,14 +150,15 @@ export default function ProposalsPanel({ onDecision }: Props) {
               </div>
 
               {p.recurrence_type === 'weekly' && p.recurrence_days && (
-                <div className="mt-2 text-[10px] text-digi-muted" style={pf}>
-                  RECURRENTE: {p.recurrence_days.map((d) => ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][d]).join(' · ')}
-                  {p.recurrence_until && ` · HASTA ${p.recurrence_until}`}
+                <div className="mt-2 flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
+                  <Repeat className="w-3.5 h-3.5" />
+                  Recurrente: {p.recurrence_days.map((d) => ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][d]).join(' · ')}
+                  {p.recurrence_until && ` · hasta ${p.recurrence_until}`}
                 </div>
               )}
 
               {p.description && (
-                <div className="mt-2 text-[11px] text-digi-text whitespace-pre-wrap border-t border-digi-border/50 pt-2" style={mf}>
+                <div className="mt-2 text-[13px] text-digi-text whitespace-pre-wrap border-t border-digi-border pt-2" style={mf}>
                   {p.description}
                 </div>
               )}

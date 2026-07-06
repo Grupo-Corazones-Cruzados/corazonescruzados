@@ -346,6 +346,15 @@ Proyectos). Ajustes con secciones → **rail + contenido** (Configuración). Cat
   cuenta") en `.corp` en vez del `DashboardSidebar`. Un cambio de diseño en el componente refleja en
   ambas vistas (principio de diseño vinculado/reusable). El botón principal de tarjeta se parametriza por
   prop (`onPrimaryAction`): Comprar/Solicitar con sesión, gate "solo clientes" en público.
+- **2026-07-06 — Calendario (`settings/calendar`) en pixel-art oscuro:** la página y sus componentes
+  (`components/calendar/*`) estaban con el tema pixel (fuente display, `text-accent-glow`, `border-2`,
+  `pixel-card`, textos 9–10px, colores de texto hardcodeados `#e5e7eb`/`#f3f4f6` **ilegibles** sobre el
+  fondo claro `.corp`, emojis ⏳). **Resuelto:** reformulado a Fluent — command bar con breadcrumb +
+  segmented Mes/Semana/Día + Hoy/chevrons lucide + disponibilidad como pill + `BTN_*`; grilla
+  (`CalendarView`) con bordes simples redondeados, tipografía de cuerpo, "hoy" como círculo accent, chips
+  de evento legibles (`digi-text` sobre tinte del color), línea de "ahora" roja; modales (`EventModal`,
+  `EventDetailsModal`, `ShareDialog`, `ProposalModal`) y `ProposalsPanel` con `field-control`, `BTN_*` e
+  iconos lucide (sin emojis). Solo presentación; la lógica quedó intacta.
 - **Estado del dashboard:** **estandarización de diseño COMPLETA** en todos los módulos
   (Inicio/Tickets/Proyectos/Suscripciones/Clientes/Facturas/Marketplace/Centralizado/Automatizaciones/
   Herramientas/Configuración/Soporte/Admin + editores DigiMundo). Con **modo oscuro** y **es-ES**.

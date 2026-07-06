@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
+import { Copy, RefreshCw, Trash2, Link as LinkIcon } from 'lucide-react';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface Props {
@@ -88,36 +90,32 @@ export default function ShareDialog({ open, onClose }: Props) {
   return (
     <PixelModal open={open} onClose={onClose} title="Compartir calendario" size="md">
       <div className="space-y-4">
-        <p className="text-[11px] text-digi-muted leading-relaxed">
+        <p className="text-[13px] text-digi-muted leading-relaxed" style={mf}>
           Genera un enlace público de solo lectura para que tus clientes revisen tu calendario.
           Puedes revocarlo cuando quieras.
         </p>
 
         {loading ? (
-          <div className="text-[10px] text-digi-muted text-center py-4" style={pf}>Cargando…</div>
+          <div className="text-[13px] text-digi-muted text-center py-4" style={mf}>Cargando…</div>
         ) : token ? (
           <>
             <div className="space-y-1">
-              <div className="text-[10px] text-accent-glow opacity-70" style={pf}>ENLACE ACTUAL</div>
+              <div className="text-[12px] font-medium text-digi-muted" style={mf}>Enlace actual</div>
               <div className="flex gap-2">
                 <input
                   readOnly
                   value={url}
-                  className="flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none"
+                  className="field-control w-full px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none"
                   style={mf}
                   onFocus={(e) => e.currentTarget.select()}
                 />
-                <button
-                  onClick={copy}
-                  className="px-3 py-2 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors whitespace-nowrap"
-                  style={pf}
-                >
-                  COPIAR
+                <button onClick={copy} className={`${BTN_PRIMARY} whitespace-nowrap`} style={mf}>
+                  <Copy className="w-4 h-4" /> Copiar
                 </button>
               </div>
               {createdAt && (
-                <div className="text-[9px] text-digi-muted" style={pf}>
-                  GENERADO: {new Date(createdAt).toLocaleString()}
+                <div className="text-[11px] text-digi-muted" style={mf}>
+                  Generado: {new Date(createdAt).toLocaleString()}
                 </div>
               )}
             </div>
@@ -126,31 +124,31 @@ export default function ShareDialog({ open, onClose }: Props) {
               <button
                 onClick={generate}
                 disabled={saving}
-                className="flex-1 px-3 py-2 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors disabled:opacity-50"
-                style={pf}
+                className={`${BTN_SECONDARY} flex-1`}
+                style={mf}
               >
-                REGENERAR
+                <RefreshCw className="w-4 h-4" /> Regenerar
               </button>
               <button
                 onClick={() => setConfirmRevoke(true)}
                 disabled={saving}
-                className="flex-1 px-3 py-2 text-[10px] border-2 border-red-500/50 text-red-400 hover:bg-red-950/30 transition-colors disabled:opacity-50"
-                style={pf}
+                className={`${BTN_DANGER} flex-1`}
+                style={mf}
               >
-                REVOCAR
+                <Trash2 className="w-4 h-4" /> Revocar
               </button>
             </div>
           </>
         ) : (
           <div className="text-center py-4">
-            <div className="text-[11px] text-digi-muted mb-3">No hay enlace activo.</div>
+            <div className="text-[13px] text-digi-muted mb-3" style={mf}>No hay enlace activo.</div>
             <button
               onClick={generate}
               disabled={saving}
-              className="px-4 py-2 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors disabled:opacity-50"
-              style={pf}
+              className={BTN_PRIMARY}
+              style={mf}
             >
-              {saving ? 'GENERANDO…' : 'GENERAR ENLACE'}
+              <LinkIcon className="w-4 h-4" /> {saving ? 'Generando…' : 'Generar enlace'}
             </button>
           </div>
         )}

@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { Send, X, AlertTriangle, Crosshair } from 'lucide-react';
 import { DAY_LABELS_ES_SHORT } from '@/lib/calendar/recurrence';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export type ProposalRecurrence = 'none' | 'weekly';
@@ -160,7 +162,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
   return (
     <PixelModal open={open} onClose={onClose} title="Proponer espacio" size="lg">
       <div className="space-y-4">
-        <p className="text-[11px] text-digi-muted">
+        <p className="text-[13px] text-digi-muted" style={mf}>
           Propón un espacio con <strong>{memberName}</strong>. Tu propuesta se marcará como pendiente
           hasta que {memberName} la acepte o rechace (recibirás un correo con la decisión).
         </p>
@@ -173,19 +175,22 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
         />
 
         <div>
-          <label className="text-[10px] text-accent-glow opacity-70" style={pf}>DETALLE (OPCIONAL)</label>
+          <label className="text-[12px] font-medium text-digi-muted" style={mf}>Detalle (opcional)</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full mt-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
+            className="field-control w-full mt-1 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none"
             style={mf}
           />
         </div>
 
-        <div className="border border-amber-500/40 bg-amber-950/20 px-3 py-2 text-[10px] text-amber-300 leading-relaxed" style={pf}>
-          ADVERTENCIA: el calendario de {memberName} se maneja en zona horaria de ECUADOR (GMT-5).
-          Elige tu zona horaria abajo para ver la equivalencia antes de enviar.
+        <div className="flex items-start gap-2 border border-amber-300 bg-amber-50 rounded-md px-3 py-2 text-[12px] text-amber-700 leading-relaxed" style={mf}>
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>
+            El calendario de {memberName} se maneja en zona horaria de Ecuador (GMT-5).
+            Elige tu zona horaria abajo para ver la equivalencia antes de enviar.
+          </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -219,21 +224,21 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
           <button
             type="button"
             onClick={autoDetectTz}
-            className="px-3 py-2.5 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors whitespace-nowrap"
-            style={pf}
+            className={`${BTN_SECONDARY} whitespace-nowrap`}
+            style={mf}
           >
-            AUTO-DETECTAR
+            <Crosshair className="w-4 h-4" /> Auto-detectar
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
-          <div className="pixel-card-inner border border-digi-border p-3 space-y-1" style={mf}>
-            <div className="text-digi-muted text-[10px]" style={pf}>TU HORARIO ({tz})</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px]">
+          <div className="rounded-lg border border-digi-border bg-digi-darker p-3 space-y-1" style={mf}>
+            <div className="text-digi-muted text-[12px] font-medium">Tu horario ({tz})</div>
             <div className="text-digi-text">Inicio: {formatInTz(startUTC, tz)}</div>
             <div className="text-digi-text">Fin: {formatInTz(endUTC, tz)}</div>
           </div>
-          <div className="pixel-card-inner border border-accent/40 bg-accent/5 p-3 space-y-1" style={mf}>
-            <div className="text-accent-glow text-[10px]" style={pf}>HORARIO DEL MIEMBRO (ECUADOR GMT-5)</div>
+          <div className="rounded-lg border border-accent bg-accent-light p-3 space-y-1" style={mf}>
+            <div className="text-accent text-[12px] font-medium">Horario del miembro (Ecuador GMT-5)</div>
             <div className="text-digi-text">Inicio: {formatInTz(startUTC, MEMBER_TZ)}</div>
             <div className="text-digi-text">Fin: {formatInTz(endUTC, MEMBER_TZ)}</div>
           </div>
@@ -254,7 +259,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
         {recurrence === 'weekly' && (
           <>
             <div>
-              <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>DÍAS DE LA SEMANA</div>
+              <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>Días de la semana</div>
               <div className="flex gap-1 flex-wrap">
                 {DAY_LABELS_ES_SHORT.map((label, dow) => {
                   const active = days.includes(dow);
@@ -263,10 +268,10 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
                       key={dow}
                       type="button"
                       onClick={() => toggleDay(dow)}
-                      className={`w-10 h-10 text-[10px] border-2 transition-colors ${
-                        active ? 'border-accent bg-accent/20 text-accent-glow' : 'border-digi-border text-digi-muted hover:text-digi-text'
+                      className={`w-10 h-10 text-[12px] border rounded-md transition-colors ${
+                        active ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:text-digi-text'
                       }`}
-                      style={pf}
+                      style={mf}
                     >
                       {label}
                     </button>
@@ -284,7 +289,8 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
         )}
 
         {error && (
-          <div className="text-[10px] text-red-400 border border-red-500/40 bg-red-950/30 px-3 py-2" style={pf}>
+          <div className="flex items-center gap-2 text-[13px] text-red-600 border border-red-300 bg-red-50 rounded-md px-3 py-2" style={mf}>
+            <AlertTriangle className="w-4 h-4 shrink-0" />
             {error}
           </div>
         )}
@@ -294,19 +300,19 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="px-3 py-2 text-[10px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50"
-            style={pf}
+            className={BTN_SECONDARY}
+            style={mf}
           >
-            CANCELAR
+            <X className="w-4 h-4" /> Cancelar
           </button>
           <button
             type="button"
             onClick={submit}
             disabled={saving}
-            className="px-4 py-2 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors disabled:opacity-50"
-            style={pf}
+            className={BTN_PRIMARY}
+            style={mf}
           >
-            {saving ? 'ENVIANDO…' : 'ENVIAR PROPUESTA'}
+            <Send className="w-4 h-4" /> {saving ? 'Enviando…' : 'Enviar propuesta'}
           </button>
         </div>
       </div>

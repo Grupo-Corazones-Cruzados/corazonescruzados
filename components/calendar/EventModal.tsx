@@ -5,10 +5,12 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
+import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
+import { Save, Trash2, X, AlertTriangle } from 'lucide-react';
 import type { CalendarEvent, RecurrenceType, EventType } from '@/lib/calendar/recurrence';
 import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES } from '@/lib/calendar/recurrence';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export interface ClientOption { id: string; name: string; }
@@ -279,19 +281,19 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         />
 
         <div>
-          <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>TIPO</div>
+          <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>Tipo</div>
           <div className="flex gap-2">
             {(['work', 'personal'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setEventType(t)}
-                className={`flex-1 px-3 py-2 text-[10px] border-2 transition-colors ${
+                className={`flex-1 px-3 py-2 text-[13px] border rounded-md transition-colors ${
                   form.event_type === t
-                    ? 'border-accent bg-accent/10 text-accent-glow'
+                    ? 'border-accent bg-accent-light text-accent'
                     : 'border-digi-border text-digi-muted hover:text-digi-text'
                 }`}
-                style={pf}
+                style={mf}
               >
                 {EVENT_TYPE_LABELS_ES[t]}
               </button>
@@ -310,26 +312,26 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         )}
 
         <div>
-          <label className="text-[10px] text-accent-glow opacity-70" style={pf}>DESCRIPCIÓN (OPCIONAL)</label>
+          <label className="text-[12px] font-medium text-digi-muted" style={mf}>Descripción (opcional)</label>
           <textarea
             value={form.description || ''}
             onChange={(e) => update('description', e.target.value)}
             rows={3}
-            className="w-full px-3 py-2 mt-1 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
+            className="field-control w-full px-2.5 py-1.5 mt-1 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none"
             style={mf}
           />
         </div>
 
         {form.recurrence_type === 'none' ? (
           <>
-            <label className="flex items-center gap-2 text-[10px] text-digi-text cursor-pointer" style={pf}>
+            <label className="flex items-center gap-2 text-[13px] text-digi-text cursor-pointer" style={mf}>
               <input
                 type="checkbox"
                 checked={form.all_day}
                 onChange={(e) => update('all_day', e.target.checked)}
                 className="accent-accent"
               />
-              TODO EL DÍA
+              Todo el día
             </label>
 
             <div className="grid grid-cols-2 gap-3">
@@ -418,7 +420,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
 
         {form.recurrence_type === 'weekly' && (
           <div>
-            <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>DÍAS DE LA SEMANA</div>
+            <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>Días de la semana</div>
             <div className="flex gap-1 flex-wrap">
               {DAY_LABELS_ES_SHORT.map((label, dow) => {
                 const active = (form.recurrence_days || []).includes(dow);
@@ -427,12 +429,12 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
                     key={dow}
                     type="button"
                     onClick={() => toggleDay(dow)}
-                    className={`w-10 h-10 text-[10px] border-2 transition-colors ${
+                    className={`w-10 h-10 text-[12px] border rounded-md transition-colors ${
                       active
-                        ? 'border-accent bg-accent/20 text-accent-glow'
+                        ? 'border-accent bg-accent-light text-accent'
                         : 'border-digi-border text-digi-muted hover:text-digi-text'
                     }`}
-                    style={pf}
+                    style={mf}
                   >
                     {label}
                   </button>
@@ -445,11 +447,11 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         {form.recurrence_type !== 'none' && (
           <div className="space-y-3">
             <div>
-              <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>¿HASTA CUÁNDO?</div>
+              <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>¿Hasta cuándo?</div>
               <div className="flex gap-2">
                 {([
-                  ['forever', 'SIEMPRE'],
-                  ['date', 'HASTA UNA FECHA'],
+                  ['forever', 'Siempre'],
+                  ['date', 'Hasta una fecha'],
                 ] as const).map(([m, lbl]) => (
                   <button
                     key={m}
@@ -458,12 +460,12 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
                       setUntilMode(m);
                       if (m === 'forever') update('recurrence_until', null);
                     }}
-                    className={`flex-1 px-3 py-2 text-[10px] border-2 transition-colors ${
+                    className={`flex-1 px-3 py-2 text-[13px] border rounded-md transition-colors ${
                       untilMode === m
-                        ? 'border-accent bg-accent/10 text-accent-glow'
+                        ? 'border-accent bg-accent-light text-accent'
                         : 'border-digi-border text-digi-muted hover:text-digi-text'
                     }`}
-                    style={pf}
+                    style={mf}
                   >
                     {lbl}
                   </button>
@@ -483,7 +485,8 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         )}
 
         {error && (
-          <div className="text-[10px] text-red-400 border border-red-500/40 bg-red-950/30 px-3 py-2" style={pf}>
+          <div className="flex items-center gap-2 text-[13px] text-red-600 border border-red-300 bg-red-50 rounded-md px-3 py-2" style={mf}>
+            <AlertTriangle className="w-4 h-4 shrink-0" />
             {error}
           </div>
         )}
@@ -495,10 +498,10 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
                 type="button"
                 onClick={() => setConfirmDelete(true)}
                 disabled={saving}
-                className="px-3 py-2 text-[10px] border-2 border-red-500/50 text-red-400 hover:bg-red-950/30 transition-colors disabled:opacity-50"
-                style={pf}
+                className={BTN_DANGER}
+                style={mf}
               >
-                ELIMINAR
+                <Trash2 className="w-4 h-4" /> Eliminar
               </button>
             )}
           </div>
@@ -507,19 +510,19 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-3 py-2 text-[10px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50"
-              style={pf}
+              className={BTN_SECONDARY}
+              style={mf}
             >
-              CANCELAR
+              <X className="w-4 h-4" /> Cancelar
             </button>
             <button
               type="button"
               onClick={submit}
               disabled={saving}
-              className="px-4 py-2 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors disabled:opacity-50"
-              style={pf}
+              className={BTN_PRIMARY}
+              style={mf}
             >
-              {saving ? 'GUARDANDO…' : 'GUARDAR'}
+              <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar'}
             </button>
           </div>
         </div>

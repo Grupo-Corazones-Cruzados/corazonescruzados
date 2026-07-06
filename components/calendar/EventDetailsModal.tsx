@@ -1,10 +1,12 @@
 'use client';
 
 import PixelModal from '@/components/ui/PixelModal';
+import { BTN_SECONDARY } from '@/components/ui/Button';
+import { X, Repeat } from 'lucide-react';
 import type { EventInstance } from '@/lib/calendar/recurrence';
 import { colorForEvent, MONTH_LABELS_ES } from '@/lib/calendar/recurrence';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
+const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface Props {
@@ -33,15 +35,20 @@ export default function EventDetailsModal({ open, onClose, event, hideClientName
             style={{ backgroundColor: color, minHeight: 48 }}
           />
           <div className="flex-1">
-            <div className="text-sm text-digi-text mb-1" style={pf}>{event.title}</div>
-            <div className="text-[10px] text-digi-muted" style={pf}>
-              {event.event_type === 'work' ? 'LABORAL' : 'PERSONAL'}
-              {event.isRecurring && ' · RECURRENTE'}
+            <div className="text-[15px] font-semibold text-digi-text mb-1" style={pf}>{event.title}</div>
+            <div className="flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
+              {event.event_type === 'work' ? 'Laboral' : 'Personal'}
+              {event.isRecurring && (
+                <>
+                  <span>·</span>
+                  <Repeat className="w-3.5 h-3.5" /> Recurrente
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="pixel-card-inner border border-digi-border p-3 space-y-1.5 text-[11px]" style={mf}>
+        <div className="rounded-lg border border-digi-border bg-digi-darker p-3 space-y-1.5 text-[13px]" style={mf}>
           <div className="flex justify-between gap-3">
             <span className="text-digi-muted">Inicio</span>
             <span className="text-digi-text">{fmtDateTime(event.instanceStart)}</span>
@@ -64,20 +71,16 @@ export default function EventDetailsModal({ open, onClose, event, hideClientName
 
         {event.description && !hideDescription && (
           <div>
-            <div className="text-[10px] text-accent-glow opacity-70 mb-1" style={pf}>COMENTARIO</div>
-            <div className="text-[11px] text-digi-text whitespace-pre-wrap" style={mf}>
+            <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>Comentario</div>
+            <div className="text-[13px] text-digi-text whitespace-pre-wrap" style={mf}>
               {event.description}
             </div>
           </div>
         )}
 
         <div className="flex justify-end pt-2 border-t border-digi-border">
-          <button
-            onClick={onClose}
-            className="px-3 py-2 text-[10px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors"
-            style={pf}
-          >
-            CERRAR
+          <button onClick={onClose} className={BTN_SECONDARY} style={mf}>
+            <X className="w-4 h-4" /> Cerrar
           </button>
         </div>
       </div>
