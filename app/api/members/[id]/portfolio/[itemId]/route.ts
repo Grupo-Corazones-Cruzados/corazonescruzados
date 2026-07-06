@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { uploadImages, uploadImage, isBase64Image } from '@/lib/cloudinary';
 import { NextRequest, NextResponse } from 'next/server';
 
 type Params = { params: Promise<{ id: string; itemId: string }> };
@@ -25,12 +26,23 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const values: any[] = [];
     let idx = 1;
 
-    const allowed = ['title', 'description', 'image_url', 'project_url', 'tags', 'item_type'];
+    const folder = `corazones-cruzados/portfolio/${id}`;
+
+    const allowed = ['title', 'description', 'project_url', 'tags', 'item_type'];
     for (const key of allowed) {
       if (key in body) {
         fields.push(`${key} = $${idx++}`);
         values.push(body[key]);
       }
+    }
+
+    // image_url puede venir en base64 → súbelo a Cloudinary.
+    if ('image_url' in body) {
+      const url = body.image_url && isBase64Image(body.image_url)
+        ? await uploadImage(body.image_url, folder)
+        : body.image_url;
+      fields.push(`image_url = $${idx++}`);
+      values.push(url);
     }
 
     // Handle price -> cost mapping
@@ -39,9 +51,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
       values.push(Number(body.price) || 0);
     }
 
-    // Handle images array
+    // Handle images array (base64 → Cloudinary)
     if ('images' in body) {
-      const images = Array.isArray(body.images) ? body.images.filter(Boolean) : [];
+      const raw = Array.isArray(body.images) ? body.images.filter(Boolean) : [];
+      const images = await uploadImages(raw, folder);
       fields.push(`images = $${idx++}`);
       values.push(images);
       // Also update image_url to first image if present

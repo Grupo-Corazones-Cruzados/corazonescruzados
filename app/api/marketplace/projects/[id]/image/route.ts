@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { isCloudinaryUrl, cloudinaryResized } from '@/lib/cloudinary';
 import sharp from 'sharp';
 
 /**
@@ -44,9 +45,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!user && !row.is_marketplace_published) return new NextResponse(null, { status: 404 });
 
     const raw = String(row.img);
-    // Si por lo que sea ya es una URL remota, redirige (no hay base64 que reescalar).
+    // Ya migrada a Cloudinary: redirige a la transformación de ancho (WebP/AVIF auto).
+    if (isCloudinaryUrl(raw)) return NextResponse.redirect(cloudinaryResized(raw, w));
+    // Otra URL remota: redirige tal cual.
     if (/^https?:\/\//i.test(raw)) return NextResponse.redirect(raw);
 
+    // Fallback (aún base64 en BD): reescala con sharp.
     const b64 = raw.replace(/^data:[^;]+;base64,/, '');
     const input = Buffer.from(b64, 'base64');
     const out = await sharp(input).resize({ width: w, withoutEnlargement: true }).webp({ quality: 72 }).toBuffer();

@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { uploadImage, cloudinaryConfigured } from '@/lib/cloudinary';
 import { NextResponse } from 'next/server';
 
 const MAX_SIZE = 2 * 1024 * 1024; // 2MB
@@ -32,13 +33,17 @@ export async function POST(req: Request) {
       gif: 'image/gif', webp: 'image/webp',
     };
     const dataUri = `data:${mimeMap[ext] || 'image/png'};base64,${buffer.toString('base64')}`;
+    // Sube a Cloudinary si está configurado; si no, guarda el base64 (fallback).
+    const avatarUrl = cloudinaryConfigured()
+      ? await uploadImage(dataUri, 'corazones-cruzados/avatars')
+      : dataUri;
 
     await pool.query(
       `UPDATE gcc_world.users SET avatar_url = $1, updated_at = NOW() WHERE id = $2`,
-      [dataUri, user.userId]
+      [avatarUrl, user.userId]
     );
 
-    return NextResponse.json({ avatar_url: dataUri });
+    return NextResponse.json({ avatar_url: avatarUrl });
   } catch (err: any) {
     console.error('Avatar upload error:', err.message);
     return NextResponse.json({ error: 'Error al subir imagen' }, { status: 500 });

@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { uploadImages } from '@/lib/cloudinary';
 import { NextRequest, NextResponse } from 'next/server';
 
 const MAX_IMAGES = 30;
@@ -82,7 +83,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }, { status: 400 });
     }
 
-    const combined = [...currentImages, ...newImages.filter((img: string) => img && img.trim())];
+    const clean = newImages.filter((img: string) => img && img.trim());
+    const uploaded = await uploadImages(clean, `corazones-cruzados/projects/${id}`);
+    const combined = [...currentImages, ...uploaded];
 
     await pool.query(
       `UPDATE gcc_world.projects SET images = $1, updated_at = NOW() WHERE id = $2`,

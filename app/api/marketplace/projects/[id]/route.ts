@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { uploadImages } from '@/lib/cloudinary';
 import { NextRequest, NextResponse } from 'next/server';
 
 async function ensureImagesColumn() {
@@ -72,7 +73,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (title !== undefined) { fields.push(`title = $${idx++}`); values.push(title); }
     if (final_cost !== undefined) { fields.push(`final_cost = $${idx++}`); values.push(final_cost); }
     if (images !== undefined) {
-      const cleanImages = (images as string[]).filter(u => u && u.trim());
+      const cleanImages = await uploadImages((images as string[]).filter(u => u && u.trim()), `corazones-cruzados/projects/${id}`);
       fields.push(`images = $${idx++}`);
       values.push(cleanImages);
     }

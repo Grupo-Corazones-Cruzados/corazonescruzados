@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { uploadImages, uploadImage, isBase64Image } from '@/lib/cloudinary';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -33,8 +34,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const body = await req.json();
 
-    const images = Array.isArray(body.images) ? body.images.filter(Boolean) : [];
-    const imageUrl = body.image_url || images[0] || null;
+    const folder = `corazones-cruzados/portfolio/${id}`;
+    const rawImages = Array.isArray(body.images) ? body.images.filter(Boolean) : [];
+    const images = await uploadImages(rawImages, folder);
+    let imageUrl = body.image_url || images[0] || null;
+    if (imageUrl && isBase64Image(imageUrl)) imageUrl = await uploadImage(imageUrl, folder);
 
     const { rows } = await pool.query(
       `INSERT INTO gcc_world.member_portfolio_items (member_id, title, description, image_url, project_url, cost, tags, item_type, images)

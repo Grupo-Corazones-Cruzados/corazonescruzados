@@ -22,6 +22,7 @@
     "@types/pdfkit": "^0.17.5",
     "@xmldom/xmldom": "^0.8.12",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
     "clsx": "^2.1.0",
     "dotenv": "^17.3.1",
     "ec-sri-invoice-signer": "^1.7.2",
