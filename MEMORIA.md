@@ -284,10 +284,14 @@ Stack estándar de la casa, con particularidades de este repo:
   con cabecera "REQUERIMIENTOS (hechos/total)" + barra de progreso + %. **Diseño (rediseñado 2026-07-06):**
   lista **compacta** en un solo contenedor con divisores, **sin checkbox ni tachado** (textos legibles);
   cada fila = índice numerado (tinte accent si completado, muted si no) + título + avatares (5px) de los
-  miembros aceptados; `max-h-64` con scroll si hay muchos. Datos: `GET /api/marketplace/projects/[id]` devuelve `requirements[]`
-  (`title`, `is_completed`, `assignments` con `member_name`/`photo_url` de asignaciones `accepted`);
-  `selectItem` los pide junto con las imágenes (para proyectos SIEMPRE, aunque no tengan imágenes) y
-  muestra un skeleton mientras cargan. Se quitó la fila simple "Requerimientos: N" del panel.
+  miembros aceptados; `max-h-64` con scroll si hay muchos. Se quitó la fila simple "Requerimientos: N".
+  **Datos (separados para que carguen rápido, 2026-07-06):** los requerimientos vienen de un endpoint
+  **ligero e independiente** `GET /api/marketplace/projects/[id]/requirements` (~3 KB / 0.4s), NO del
+  `[id]` (que trae las imágenes base64, ~5 MB / 4s). `selectItem` dispara **ambos fetch en paralelo** con
+  estados de carga propios (`panelReqsLoading` vs `panelImgLoading`) y un `selTokenRef` para descartar
+  respuestas de un registro ya no seleccionado; así los requerimientos aparecen al instante y las imágenes
+  después con su spinner. **Lección:** nunca acoplar datos ligeros (texto) a la misma respuesta que
+  imágenes base64 pesadas; endpoints separados + fetch en paralelo.
 - **Marketplace: carga instantánea + portadas perezosas (2026-07-06):** la tabla se veía **vacía ~3–4s**
   porque `GET /api/marketplace/projects` incluía `p.images[1] as cover_image` y **las imágenes están en
   base64** en `projects.images TEXT[]` → la lista pesaba **4.8 MB / 3.7s**. Fix: (1) el endpoint ya **NO

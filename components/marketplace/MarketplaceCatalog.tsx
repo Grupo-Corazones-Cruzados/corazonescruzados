@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
@@ -70,6 +70,9 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const [panelImages, setPanelImages] = useState<string[]>([]);
   const [panelImgLoading, setPanelImgLoading] = useState(false);
   const [panelReqs, setPanelReqs] = useState<any[]>([]);
+  const [panelReqsLoading, setPanelReqsLoading] = useState(false);
+  // Token para descartar respuestas de un registro que ya no está seleccionado.
+  const selTokenRef = useRef(0);
 
   // Marketplace published projects
   const [marketplaceProjects, setMarketplaceProjects] = useState<any[]>([]);
@@ -175,25 +178,33 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   // Clear the detail panel when switching catalog tab.
   useEffect(() => { setSelected(null); setPanelImages([]); }, [tab]);
 
-  const selectItem = async (item: any) => {
+  const selectItem = (item: any) => {
+    const token = ++selTokenRef.current;
     setSelected(item);
     setPanelImages([]);
     setPanelReqs([]);
+    setPanelReqsLoading(false);
+    setPanelImgLoading(false);
     // Ítems de portafolio: portada incluida, sin requerimientos.
     if (item.source_type !== 'project') {
       if (item.images?.length) setPanelImages(item.images);
       else if (item.image_url) setPanelImages([item.image_url]);
       return;
     }
-    // Proyecto del marketplace: trae imágenes + requerimientos (solo lectura).
+    // Requerimientos: endpoint ligero → aparecen al instante, sin esperar imágenes.
+    setPanelReqsLoading(true);
+    fetch(`/api/marketplace/projects/${item.id}/requirements`)
+      .then((r) => r.json())
+      .then((d) => { if (selTokenRef.current === token) setPanelReqs(d?.data || []); })
+      .catch(() => { if (selTokenRef.current === token) setPanelReqs([]); })
+      .finally(() => { if (selTokenRef.current === token) setPanelReqsLoading(false); });
+    // Imágenes (base64 pesadas): en paralelo, aparecen después.
     setPanelImgLoading(true);
-    try {
-      const res = await fetch(`/api/marketplace/projects/${item.id}`);
-      const data = await res.json();
-      setPanelImages(data?.data?.images || []);
-      setPanelReqs(data?.data?.requirements || []);
-    } catch { setPanelImages([]); setPanelReqs([]); }
-    finally { setPanelImgLoading(false); }
+    fetch(`/api/marketplace/projects/${item.id}`)
+      .then((r) => r.json())
+      .then((d) => { if (selTokenRef.current === token) setPanelImages(d?.data?.images || []); })
+      .catch(() => { if (selTokenRef.current === token) setPanelImages([]); })
+      .finally(() => { if (selTokenRef.current === token) setPanelImgLoading(false); });
   };
 
   const openGalleryFromPanel = (k: number) => {
@@ -321,7 +332,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
           </dl>
 
           {/* Requerimientos del proyecto (solo lectura), como en el módulo de Proyectos */}
-          {isProject && (panelImgLoading || panelReqs.length > 0) && (
+          {isProject && (panelReqsLoading || panelReqs.length > 0) && (
             <div className="pt-1">
               <div className="flex items-center justify-between gap-3 mb-2">
                 <h4 className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>
@@ -334,7 +345,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
                   </div>
                 )}
               </div>
-              {panelImgLoading ? (
+              {panelReqsLoading ? (
                 <div className="rounded-lg border border-digi-border overflow-hidden divide-y divide-digi-border/60">
                   {[0, 1, 2].map((k) => <div key={k} className="h-8 bg-digi-darker animate-pulse" />)}
                 </div>

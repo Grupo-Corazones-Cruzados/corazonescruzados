@@ -36,25 +36,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
     }
 
-    // Requerimientos del proyecto (solo lectura) para el panel del marketplace:
-    // título, si se completó y los miembros aceptados que lo ejecutaron.
-    const { rows: requirements } = await pool.query(
-      `SELECT r.id, r.title, r.description, (r.completed_at IS NOT NULL) as is_completed,
-              COALESCE(
-                (SELECT json_agg(json_build_object('id', ra.id, 'member_name', m.name, 'photo_url', m.photo_url)
-                        ORDER BY ra.id)
-                 FROM gcc_world.requirement_assignments ra
-                 JOIN gcc_world.members m ON m.id = ra.member_id
-                 WHERE ra.requirement_id = r.id AND ra.status = 'accepted'),
-                '[]'::json
-              ) as assignments
-       FROM gcc_world.project_requirements r
-       WHERE r.project_id = $1
-       ORDER BY r.id`,
-      [id]
-    );
-
-    return NextResponse.json({ data: { ...project, requirements } });
+    return NextResponse.json({ data: project });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
