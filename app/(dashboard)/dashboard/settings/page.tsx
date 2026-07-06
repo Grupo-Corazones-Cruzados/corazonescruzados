@@ -118,9 +118,8 @@ export default function SettingsPage() {
                 <p className="text-[9px] font-semibold text-digi-muted/70 uppercase tracking-wider px-2 pb-1" style={df}>Miembro</p>
                 <RailLink href="/dashboard/settings/availability" Icon={CalendarClock} label="Disponibilidad" />
                 <RailLink href="/dashboard/settings/portfolio" Icon={Briefcase} label="Portafolio" />
-                {user?.role === 'member' && (
-                  <RailLink href="/dashboard/settings/calendar" Icon={CalendarDays} label="Calendario" />
-                )}
+                {/* Calendario: disponible para todo miembro, incluido el admin que también es miembro. */}
+                <RailLink href="/dashboard/settings/calendar" Icon={CalendarDays} label="Calendario" />
               </>
             )}
           </div>
