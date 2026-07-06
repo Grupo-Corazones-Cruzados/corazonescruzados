@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
+import CardMedia from '@/components/marketplace/CardMedia';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
@@ -194,9 +195,6 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     setGalleryImages(panelImages); setGalleryIndex(k); setGalleryTitle(selected?.title || ''); setGalleryOpen(true);
   };
 
-  const firstImage = (item: any): string | null =>
-    (Array.isArray(item.images) && item.images[0]) || item.image_url || item.cover_image || null;
-
   const CardMembers = ({ item }: { item: any }) => {
     const team: any[] = item.team || [];
     const avatar = (photo: string | null, name: string, key: any) =>
@@ -226,7 +224,6 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const renderCard = (item: any) => {
     const isProject = item.source_type === 'project';
     const price = Number(item.final_cost ?? item.price ?? 0);
-    const img = firstImage(item);
     const count = imageCount(item);
     const active = selected?.id === item.id && selected?.source_type === item.source_type;
     const CatIcon = isProject ? FolderKanban : tab === 'automations' ? Workflow : Package;
@@ -241,13 +238,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
         }`}
       >
         {/* media */}
-        <div className="relative aspect-[16/9] bg-digi-darker overflow-hidden">
-          {img ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={img} alt={item.title} className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center"><CatIcon className="w-9 h-9 text-digi-muted/30" /></div>
-          )}
+        <CardMedia item={item} placeholder={<CatIcon className="w-9 h-9 text-digi-muted/30" />}>
           <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-digi-card/85 text-digi-muted text-[10px] font-medium backdrop-blur-sm">{catLabel}</span>
           {count > 0 && (
             <button onClick={(e) => openGallery(item, e)} title={`Ver ${count} foto(s)`}
@@ -255,7 +246,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
               <ImageIcon className="w-3 h-3" /> {count}
             </button>
           )}
-        </div>
+        </CardMedia>
         {/* body */}
         <div className="p-3 flex flex-col flex-1">
           <div className="flex items-start justify-between gap-2">

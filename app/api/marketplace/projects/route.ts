@@ -42,7 +42,6 @@ export async function GET(req: NextRequest) {
               p.marketplace_published_at, p.created_at,
               p.public_docs_token,
               COALESCE(array_length(p.images, 1), 0)::int as image_count,
-              p.images[1] as cover_image,
               COALESCE(
                 (SELECT json_agg(json_build_object('name', m.name, 'photo_url', m.photo_url))
                  FROM gcc_world.project_bids pb

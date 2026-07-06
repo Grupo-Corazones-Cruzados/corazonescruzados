@@ -267,6 +267,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Marketplace: carga instantánea + portadas perezosas (2026-07-06):** la tabla se veía **vacía ~3–4s**
+  porque `GET /api/marketplace/projects` incluía `p.images[1] as cover_image` y **las imágenes están en
+  base64** en `projects.images TEXT[]` → la lista pesaba **4.8 MB / 3.7s**. Fix: (1) el endpoint ya **NO
+  envía imágenes** (solo `image_count`) → lista **4.7 KB / 0.5s**, los registros aparecen al instante;
+  (2) nuevo endpoint ligero **`/api/marketplace/projects/[id]/cover`** (devuelve solo `images[1]`, público
+  para publicados); (3) **`components/marketplace/CardMedia.tsx`**: cada tarjeta carga su portada de forma
+  **perezosa** (IntersectionObserver, `rootMargin 200px`) y muestra un **spinner sobre ese registro**
+  mientras se descarga/decodifica; los ítems de portafolio (portada ya incluida, son URLs) se muestran
+  directo. Beneficia también a `settings/portfolio` (`member=true`, misma lista). **Lección:** nunca
+  mandar imágenes base64 en un endpoint de LISTA; enviar solo contador y traer la portada aparte/perezosa.
+  **Pendiente sugerido:** las portadas base64 siguen pesando (una llega a **2.3 MB**); convendría
+  redimensionar/servir miniaturas (o migrar a Cloudinary) para bajar aún más el peso por tarjeta.
 - **Marketplace público sin sesión (2026-07-06):** Nueva ruta pública **`/marketplace-publico`**
   (fuera de `/dashboard`, sin `AuthGuard` ni menú de módulos) para **visualizar/filtrar/buscar** el
   marketplace sin login. **Decisión (usuario):** página **nueva** + **componente compartido**, NO
