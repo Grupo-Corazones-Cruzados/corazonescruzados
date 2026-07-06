@@ -267,6 +267,21 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Fusión de cuentas: grupocc.org → outlook.com (2026-07-06):** el admin ahora **también cuenta como
+  miembro** (una sola cuenta). Se **eliminó** el usuario `lfgonzalezm0@grupocc.org` (user
+  `779ee818…`, era `role=member`, member_id=1) y el admin `lfgonzalezm0@outlook.com` (user `3fdb4891…`,
+  `role=admin`) quedó **re-enlazado al miembro 1** ("Luis Fernando González Muyulema"), que conserva TODO
+  el trabajo (60 requirement_assignments, 15 bids, CV, portafolio, 24 eventos de calendario). Se borró el
+  miembro 2 (vacío, era el del admin). Los registros a **nivel de usuario** del user viejo se reasignaron
+  al admin (notifications, tickets, ticket_actions, member_calendar_events.created_by, projects.created_by_user_id,
+  user_api_keys); los a nivel de **miembro** no se tocaron (siguen en member 1). El email del member 1 se
+  alineó a outlook. Script: `scripts/merge-account-grupocc-into-outlook.cjs` (transaccional, con backup JSON).
+  **Consecuencia:** el `member_id` del admin cambió de 2 → **1**. [[gcc-admin-member]]
+- **Cloudinary (2026-07-06):** imágenes migradas de base64 → Cloudinary (ver entrada de miniaturas). Config
+  por `CLOUDINARY_URL` (cloud `denkwhhxx`) en `.env.local`; **falta añadirla en Railway** para prod.
+- **Admin ve "Calendario" en Configuración (2026-07-06):** el enlace estaba limitado a `role==='member'`;
+  ahora se muestra para todo miembro (incluido admin). Las APIs de calendario/disponibilidad operan por
+  `member_id` (el admin ya lo tiene). [[gcc-admin-member]]
 - **Marketplace: acción solo en el panel + gate según sesión (2026-07-06):** el botón principal
   (Solicitar/Comprar) **se quitó de las tarjetas** en ambos marketplaces (privado y público); ahora
   **solo aparece en el panel** de detalle al seleccionar un registro (`MarketplaceCatalog.renderCard`
