@@ -337,6 +337,15 @@ Proyectos). Ajustes con secciones → **rail + contenido** (Configuración). Cat
 - **2026-07-05 — números sin separadores es-ES:** las cantidades se mostraban con `.toFixed()` (punto
   decimal, sin miles). **Resuelto:** helper único `lib/format.ts` y sweep de las 73 presentaciones
   `.toFixed(2)` del dashboard → `fmt2(...)`. Excluidos `app/api` (SRI/PDF) y editores `(main)` (CSS).
+- **2026-07-06 — Marketplace: navegación como componente reusable + vista pública:** la navegación del
+  marketplace (rail "Catálogo", buscador, tarjetas, panel de detalle, galería) se extrajo a
+  **`components/marketplace/MarketplaceCatalog.tsx`** = **fuente única** de ese diseño. La usan
+  `/dashboard/marketplace` (con sesión) y **`/marketplace-publico`** (sin sesión, sin sidebar). La
+  pública se envuelve en **`<div className="corp">`** para heredar los tokens Fluent (fondo `digi-dark`,
+  cards/inputs blancos); tiene su **propio top-bar** (logo `icon.png` + botón "Iniciar sesión / Crear
+  cuenta") en `.corp` en vez del `DashboardSidebar`. Un cambio de diseño en el componente refleja en
+  ambas vistas (principio de diseño vinculado/reusable). El botón principal de tarjeta se parametriza por
+  prop (`onPrimaryAction`): Comprar/Solicitar con sesión, gate "solo clientes" en público.
 - **Estado del dashboard:** **estandarización de diseño COMPLETA** en todos los módulos
   (Inicio/Tickets/Proyectos/Suscripciones/Clientes/Facturas/Marketplace/Centralizado/Automatizaciones/
   Herramientas/Configuración/Soporte/Admin + editores DigiMundo). Con **modo oscuro** y **es-ES**.
