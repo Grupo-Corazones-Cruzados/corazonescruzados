@@ -337,7 +337,7 @@ export default function MarketplacePage() {
               {tags.slice(0, 3).map((t) => <PixelBadge key={t}>{t}</PixelBadge>)}
             </div>
           )}
-          <div className="flex items-center justify-between gap-2 mt-2.5 pt-2.5 border-t border-digi-border/60">
+          <div className="flex items-center justify-between gap-2 mt-auto pt-2.5 border-t border-digi-border/60">
             <CardMembers item={item} />
             {isProject && item.requirements_count != null && (
               <span className="inline-flex items-center gap-1 text-[11px] text-digi-muted shrink-0" style={mf}><ListChecks className="w-3.5 h-3.5" /> {item.requirements_count}</span>
