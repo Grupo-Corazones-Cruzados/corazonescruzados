@@ -8,6 +8,7 @@ import { ChevronLeft, Share2, Boxes } from 'lucide-react';
 import ShareAccessModal from '@/components/centralized/ShareAccessModal';
 import SolicitudesSystem from '@/components/centralized/systems/SolicitudesSystem';
 import ReclutamientoSystem from '@/components/centralized/systems/ReclutamientoSystem';
+import HorarioDeVidaSystem from '@/components/centralized/systems/HorarioDeVidaSystem';
 import { isPiso, isPaso, cellName as cellNameFor } from '@/lib/centralized/systems';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -102,6 +103,8 @@ export default function CentralizedSystemPage() {
           <SolicitudesSystem isAdmin={isAdmin} />
         ) : slug === 'reclutamiento-y-seleccion' ? (
           <ReclutamientoSystem system={system} isAdmin={isAdmin} />
+        ) : slug === 'horario-de-vida' ? (
+          <HorarioDeVidaSystem system={system} isAdmin={isAdmin} />
         ) : (
           <div className="bg-digi-card border border-digi-border rounded-xl text-center py-16">
             <div className="w-12 h-12 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center mx-auto mb-3">

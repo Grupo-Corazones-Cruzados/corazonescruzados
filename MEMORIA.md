@@ -273,8 +273,14 @@ Stack estándar de la casa, con particularidades de este repo:
   **registra los criterios** del candidato/miembro (Talento, Valores, Dimensiones, Apoyo) que se muestran
   en la ficha del candidato en Reclutamiento. **Acceso** (por la regla jerárquica): lo ven los miembros con
   paso=implementacion y piso **controlador o superior** (global/pilar/controlador) + admin. **Estado:** solo
-  creado el registro; aún muestra el placeholder genérico "próximamente" (falta el componente + añadirlo al
-  dispatch por slug en `centralized/[piso]/[paso]/[slug]/page.tsx`). El usuario dirá qué debe contener.
+  creado el registro; ver UI abajo.
+  **UI (2026-07-07):** `components/centralized/systems/HorarioDeVidaSystem.tsx` (en el dispatch por slug).
+  De aquí se obtendrán los **criterios de talento** del sujeto (+ otra funcionalidad). 3 paneles:
+  (1) **lista de usuarios** = candidatos + miembros en **grupos colapsables** (usa `/api/admin/candidates`
+  y `/api/admin/team` activos — admin-only por ahora); (2) **panel de tareas** (arrastrables; **origen por
+  definir**, placeholder); (3) **calendario horizontal por semana** (hoy a la izquierda, días siguientes a
+  la derecha; nav Hoy/‹/›). El horario (tareas+calendario) **solo se habilita con un usuario seleccionado**.
+  **PENDIENTE:** de dónde salen las tareas y el **drag&drop** de tareas al calendario (futuro).
 - **Reclutamiento — pestaña Candidatos + criterios (2026-07-06):** el sistema ahora tiene **rail con 2
   pestañas** (`ReclutamientoSystem.tsx`): **Solicitudes** (`reclutamiento/SolicitudesTab.tsx`) y
   **Candidatos** (`reclutamiento/CandidatosTab.tsx`). "Candidatos" lista los postulantes **aprobados que
