@@ -11,6 +11,10 @@ const BG = '#0e0f1a';
 
 const linkId = (l: any, end: 'source' | 'target') => (typeof l[end] === 'object' ? l[end].id : l[end]);
 
+const hexToRgb = (h: string) => { const s = h.replace('#', ''); return { r: parseInt(s.slice(0, 2), 16), g: parseInt(s.slice(2, 4), 16), b: parseInt(s.slice(4, 6), 16) }; };
+const hexA = (h: string, a: number) => { const { r, g, b } = hexToRgb(h); return `rgba(${r},${g},${b},${a})`; };
+const mix = (h1: string, h2: string, t: number) => { const a = hexToRgb(h1), b = hexToRgb(h2); return `rgb(${Math.round(a.r + (b.r - a.r) * t)},${Math.round(a.g + (b.g - a.g) * t)},${Math.round(a.b + (b.b - a.b) * t)})`; };
+
 function useSize<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   const [size, setSize] = useState({ width: 800, height: 560 });
@@ -175,23 +179,38 @@ export default function KnowledgeGraph({
             const lit = isLit(node.id);
             const isActive = node.id === active;
             const isSel = node.id === selectedKey;
+            const alpha = lit ? 1 : 0.2;
 
-            ctx.globalAlpha = lit ? 1 : 0.2;
+            // Halo de luz (gradiente radial suave) — da el aspecto luminoso/fluido.
+            const glowR = r * (isActive ? 3.4 : 2.5);
+            const glow = ctx.createRadialGradient(node.x, node.y, r * 0.2, node.x, node.y, glowR);
+            glow.addColorStop(0, hexA(color, lit ? (isActive ? 0.5 : 0.34) : 0.08));
+            glow.addColorStop(1, hexA(color, 0));
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = glow;
+            ctx.beginPath(); ctx.arc(node.x, node.y, glowR, 0, 2 * Math.PI); ctx.fill();
 
+            // Anillo del seleccionado
             if (isSel) {
-              ctx.beginPath(); ctx.arc(node.x, node.y, r + 4.5, 0, 2 * Math.PI);
-              ctx.strokeStyle = color; ctx.globalAlpha = lit ? 0.55 : 0.18; ctx.lineWidth = 1.6; ctx.stroke();
-              ctx.globalAlpha = lit ? 1 : 0.2;
+              ctx.globalAlpha = lit ? 0.7 : 0.22;
+              ctx.beginPath(); ctx.arc(node.x, node.y, r + 3.5, 0, 2 * Math.PI);
+              ctx.strokeStyle = hexA(color, 0.9); ctx.lineWidth = 1.4; ctx.stroke();
             }
 
-            ctx.shadowColor = color; ctx.shadowBlur = isActive ? 20 : lit ? 10 : 0;
-            ctx.beginPath(); ctx.arc(node.x, node.y, isActive ? r + 1.2 : r, 0, 2 * Math.PI);
-            ctx.fillStyle = color; ctx.fill();
-            // brillo interior
-            ctx.shadowBlur = 0; ctx.globalAlpha = (lit ? 1 : 0.2) * 0.5;
-            ctx.beginPath(); ctx.arc(node.x - r * 0.28, node.y - r * 0.28, r * 0.42, 0, 2 * Math.PI);
-            ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fill();
-            ctx.globalAlpha = lit ? 1 : 0.2;
+            // Orbe con sombreado esférico (sheen desde arriba-izquierda), sin punto blanco duro.
+            ctx.globalAlpha = alpha;
+            const rr = isActive ? r + 1 : r;
+            const g = ctx.createRadialGradient(node.x - rr * 0.4, node.y - rr * 0.4, rr * 0.1, node.x, node.y, rr);
+            g.addColorStop(0, mix(color, '#ffffff', 0.5));
+            g.addColorStop(0.5, color);
+            g.addColorStop(1, mix(color, '#000000', 0.3));
+            ctx.beginPath(); ctx.arc(node.x, node.y, rr, 0, 2 * Math.PI);
+            ctx.fillStyle = g; ctx.fill();
+            // Borde sutil para definición sobre el fondo oscuro
+            ctx.globalAlpha = alpha * 0.7;
+            ctx.lineWidth = 0.7; ctx.strokeStyle = mix(color, '#000000', 0.35);
+            ctx.stroke();
+            ctx.globalAlpha = alpha;
 
             const showLabel = scale >= 1.25 || (active ? lit : n.type === 'situation');
             if (showLabel) {
