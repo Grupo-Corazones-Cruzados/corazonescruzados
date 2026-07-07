@@ -157,8 +157,10 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
     finally { setBusy(false); }
   };
 
-  const toggleSolutionCause = async (solutionId: number, causeId: number, connect: boolean) => {
-    const sKey = nodeKey('solution', solutionId);
+  // `solutionType` es el tipo real del nodo (solution|alternative): ambos comparten la
+  // tabla, pero su key en el grafo depende del tipo, así que hay que usar el correcto.
+  const toggleSolutionCause = async (solutionType: ApoyoNodeType, solutionId: number, causeId: number, connect: boolean) => {
+    const sKey = nodeKey(solutionType, solutionId);
     const cKey = nodeKey('cause', causeId);
     // Optimista: refleja la arista al instante (sin refrescar todo ni reiniciar el layout).
     setGraph((g) => {
@@ -359,7 +361,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                                 const on = solutionCauseInfo.affected.has(c.key);
                                 return (
                                   <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 rounded-md border border-white/12 bg-white/[0.06] cursor-pointer text-[12.5px] text-white/90" style={mf}>
-                                    <input type="checkbox" checked={on} onChange={() => toggleSolutionCause(selectedNode.id, c.id, !on)} className="accent-accent" />
+                                    <input type="checkbox" checked={on} onChange={() => toggleSolutionCause(selectedNode.type, selectedNode.id, c.id, !on)} className="accent-accent" />
                                     <span className="truncate">{c.title}</span>
                                   </label>
                                 );
