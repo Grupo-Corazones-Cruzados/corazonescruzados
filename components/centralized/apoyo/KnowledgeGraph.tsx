@@ -268,9 +268,9 @@ export default function KnowledgeGraph({
             // posado sobre el vértice superior del triángulo — como un badge.
             const dimColor = n.type === 'problem' && n.dimension ? DIMENSION_COLOR[n.dimension] : null;
             if (dimColor) {
-              const br = Math.max(2.1, rr * 0.62);
-              const bx = node.x + rr * 0.62;
-              const by = node.y - rr * 0.92;
+              const br = Math.max(2.8, rr * 0.72);
+              const bx = node.x + rr * 0.66;
+              const by = node.y - rr * 0.96;
               ctx.globalAlpha = lit ? 1 : 0.35;
               // reborde oscuro para separarlo del glow rojo
               ctx.beginPath(); ctx.arc(bx, by, br + 0.9, 0, 2 * Math.PI);
@@ -282,6 +282,11 @@ export default function KnowledgeGraph({
               const bg = ctx.createRadialGradient(bx - br * 0.3, by - br * 0.3, br * 0.1, bx, by, br);
               bg.addColorStop(0, 'rgba(255,255,255,0.45)'); bg.addColorStop(1, 'rgba(255,255,255,0)');
               ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fillStyle = bg; ctx.fill();
+              // inicial de la dimensión (L/C/M/S) en oscuro para contraste
+              ctx.font = `700 ${br * 1.15}px 'Segoe UI', system-ui, sans-serif`;
+              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+              ctx.fillStyle = 'rgba(10,10,16,0.92)';
+              ctx.fillText((n.dimension || '').charAt(0).toUpperCase(), bx, by + br * 0.06);
             }
             ctx.globalAlpha = alpha;
 
