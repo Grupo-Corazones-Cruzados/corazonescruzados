@@ -179,13 +179,15 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                     </span>
                   </div>
                 </div>
-                {isAdmin && (
-                  <ActionsMenu items={[
-                    { label: 'Configurar accesos', icon: SlidersHorizontal, onClick: () => openAccess(selected) },
-                    { label: demoting ? 'Convirtiendo…' : 'Convertir a candidato', icon: UserMinus, danger: true, onClick: () => setConfirmDemote(true), disabled: isAdminMember || demoting },
-                  ]} />
-                )}
-                <button onClick={() => setSelectedId(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {isAdmin && (
+                    <ActionsMenu items={[
+                      { label: 'Configurar accesos', icon: SlidersHorizontal, onClick: () => openAccess(selected) },
+                      { label: demoting ? 'Convirtiendo…' : 'Convertir a candidato', icon: UserMinus, danger: true, onClick: () => setConfirmDemote(true), disabled: isAdminMember || demoting },
+                    ]} />
+                  )}
+                  <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                </div>
               </div>
             </div>
           </div>

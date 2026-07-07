@@ -140,12 +140,14 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
                   </div>
                   <p className="text-[11px] text-digi-muted/80 mt-1" style={mf}>Última sesión: {fmtDate(selected.last_seen_at)}</p>
                 </div>
-                {isAdmin && (
-                  <ActionsMenu items={[
-                    { label: converting === String(selected.id) ? 'Convirtiendo…' : 'Convertir en miembro', icon: UserCheck, onClick: () => setConfirmConvert(true), disabled: converting === String(selected.id) },
-                  ]} />
-                )}
-                <button onClick={() => setSelectedId(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {isAdmin && (
+                    <ActionsMenu items={[
+                      { label: converting === String(selected.id) ? 'Convirtiendo…' : 'Convertir en miembro', icon: UserCheck, onClick: () => setConfirmConvert(true), disabled: converting === String(selected.id) },
+                    ]} />
+                  )}
+                  <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                </div>
               </div>
             </div>
 
