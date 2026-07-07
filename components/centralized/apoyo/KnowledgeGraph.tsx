@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Maximize2, Plus, Minus, Shuffle } from 'lucide-react';
-import { NODE_META } from '@/lib/centralized/apoyo';
+import { NODE_META, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
 import type { GraphNode, GraphEdge } from '@/lib/centralized/apoyo';
 
 // react-force-graph usa d3-force (física) + canvas (render), como el grafo de Obsidian.
@@ -245,6 +245,14 @@ export default function KnowledgeGraph({
             traceShape(ctx, n.type, node.x, node.y, rr);
             ctx.globalAlpha = alpha; ctx.fillStyle = g; ctx.fill();
             ctx.globalAlpha = alpha * 0.85; ctx.lineWidth = 0.9; ctx.strokeStyle = mix(color, '#000000', 0.45); ctx.stroke();
+
+            // Anillo de DIMENSIÓN (solo problemas): color distintivo por dimensión.
+            const dimColor = n.type === 'problem' && n.dimension ? DIMENSION_COLOR[n.dimension] : null;
+            if (dimColor) {
+              ctx.globalAlpha = lit ? 0.95 : 0.3;
+              traceShape(ctx, n.type, node.x, node.y, rr + 2);
+              ctx.lineWidth = 1.6; ctx.strokeStyle = dimColor; ctx.stroke();
+            }
             ctx.globalAlpha = alpha;
 
             const showLabel = scale >= 1.25 || (active ? lit : n.type === 'situation');

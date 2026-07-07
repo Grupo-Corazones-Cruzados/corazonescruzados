@@ -273,7 +273,10 @@ Stack estándar de la casa, con particularidades de este repo:
   **Problemas** → **Causas**; **Soluciones** (reutilizables) → Problemas + las **Causas que afectan**.
   **Dimensión (2026-07-07):** vive en el **Problema** y es **obligatoria** al crearlo (validado en cliente y
   en `nodes` POST); la **Situación NO** pide dimensión (se quitó el campo del form y del INSERT); causas/soluciones
-  nunca la tuvieron. La columna `aa_situations.dimension` queda pero se inserta null.
+  nunca la tuvieron. La columna `aa_situations.dimension` queda pero se inserta null. Cada dimensión tiene un
+  **color** (`DIMENSION_COLOR` en `apoyo.ts`: laboral=azul, corporal=teal, mental=rosa, social=amarillo) que se
+  pinta como **anillo** alrededor del nodo-problema en el grafo (distinto de los colores de tipo). Leyenda de
+  dimensiones en la barra superior (aros de color) + punto de color junto a "Dimensión:" en el panel de detalle.
   Todas M:M salvo Situación que es por-sujeto. **DB** (`lib/centralized/apoyo-db.ts`, `ensureApoyoTables`):
   `aa_situations` (subject_kind `candidate|member` + subject_id), `aa_problems`, `aa_causes`,
   `aa_solutions` + joins `aa_situation_problems`, `aa_problem_causes`, `aa_solution_problems`,

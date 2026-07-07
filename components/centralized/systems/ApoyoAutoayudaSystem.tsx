@@ -7,7 +7,7 @@ import KnowledgeGraph from '@/components/centralized/apoyo/KnowledgeGraph';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import { Plus, Trash2, X, MousePointerClick, HeartHandshake } from 'lucide-react';
 import {
-  NODE_TYPES, NODE_META, DIMENSIONS, DIMENSION_LABEL, nodeKey,
+  NODE_TYPES, NODE_META, DIMENSIONS, DIMENSION_LABEL, DIMENSION_COLOR, nodeKey,
   type ApoyoGraph, type GraphNode, type ApoyoNodeType,
 } from '@/lib/centralized/apoyo';
 
@@ -209,10 +209,16 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
               <span className="text-[13px] font-semibold text-digi-text truncate" style={mf}>Apoyo — {user.name}</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2.5">
+              <div className="hidden lg:flex items-center gap-2.5">
                 {NODE_TYPES.map((t) => (
                   <span key={t.key} className="inline-flex items-center gap-1 text-[11px] text-digi-muted" style={mf}>
                     <span className="w-3 h-3 shrink-0" style={{ background: t.color, ...shapeStyle(t.key) }} /> {t.plural}
+                  </span>
+                ))}
+                <span className="w-px h-3.5 bg-digi-border mx-0.5" />
+                {DIMENSIONS.map((d) => (
+                  <span key={d.key} className="inline-flex items-center gap-1 text-[11px] text-digi-muted" style={mf} title={`Dimensión ${d.label} (anillo del problema)`}>
+                    <span className="w-3 h-3 shrink-0 rounded-full border-[2px] bg-transparent" style={{ borderColor: d.color }} /> {d.label}
                   </span>
                 ))}
               </div>
@@ -256,7 +262,12 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                         <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ ...df, color: NODE_META[selectedNode.type].color }}>{NODE_META[selectedNode.type].label}</p>
                           <h3 className="text-[14.5px] font-semibold text-white leading-snug" style={mf}>{selectedNode.title}</h3>
-                          {selectedNode.dimension && <p className="text-[11.5px] text-white/55 mt-0.5" style={mf}>Dimensión: {DIMENSION_LABEL[selectedNode.dimension] || selectedNode.dimension}</p>}
+                          {selectedNode.dimension && (
+                            <p className="inline-flex items-center gap-1.5 text-[11.5px] text-white/55 mt-0.5" style={mf}>
+                              <span className="w-2.5 h-2.5 shrink-0 rounded-full border-[2px] bg-transparent" style={{ borderColor: DIMENSION_COLOR[selectedNode.dimension] || '#888' }} />
+                              Dimensión: {DIMENSION_LABEL[selectedNode.dimension] || selectedNode.dimension}
+                            </p>
+                          )}
                         </div>
                         <button onClick={() => setSelectedKey(null)} className="text-white/60 hover:text-white shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                       </div>
