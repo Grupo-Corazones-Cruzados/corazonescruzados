@@ -267,6 +267,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Centralizado: ruta propia por sistema (2026-07-06):** cada sistema tiene una **URL estable**
+  `/dashboard/centralized/[piso]/[paso]/[slug]` (decisión del usuario: piso + paso + slug), pensada para
+  redirecciones y **parámetros** futuros (p. ej. `?candidato=123`). Se añadió columna **`slug`** (única,
+  índice) a `gcc_world.centralized_systems`, backfill desde el nombre; el POST genera slug único; el slug
+  es **estable** (no cambia al renombrar → URLs no se rompen; piso/paso ya se bloquean tras crear).
+  `GET /api/centralized/systems` acepta `?slug=` (+piso/paso) y devuelve `slug`. **Arquitectura:**
+  `lib/centralized/systems.ts` (constantes 4P, `slugify`, `systemPath`, labels); la vista general
+  (`centralized/page.tsx`) es rail+lista+panel y **navega** (router.push) al abrir un sistema (ya no
+  drill-in por estado); la página de detalle `centralized/[piso]/[paso]/[slug]/page.tsx` busca el sistema
+  por slug y **despacha por slug** a un componente por sistema en `components/centralized/systems/`
+  (`SolicitudesSystem`, `ReclutamientoSystem` = andamiaje listo para construir; genérico "próximamente" si
+  no hay componente). `ShareAccessModal` se extrajo a `components/centralized/` (lo usan vista general y
+  detalle). **Siguiente:** construir el sistema de **Reclutamiento y Selección**
+  (`/dashboard/centralized/global/implementacion/reclutamiento-y-seleccion`).
 - **Fusión de cuentas: grupocc.org → outlook.com (2026-07-06):** el admin ahora **también cuenta como
   miembro** (una sola cuenta). Se **eliminó** el usuario `lfgonzalezm0@grupocc.org` (user
   `779ee818…`, era `role=member`, member_id=1) y el admin `lfgonzalezm0@outlook.com` (user `3fdb4891…`,

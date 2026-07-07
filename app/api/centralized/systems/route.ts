@@ -1,6 +1,24 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { slugify } from '@/lib/centralized/systems';
 import { NextRequest, NextResponse } from 'next/server';
+
+/** Genera un slug único para un sistema (dentro de centralized_systems). */
+async function uniqueSlug(name: string): Promise<string> {
+  const base = slugify(name) || 'sistema';
+  let candidate = base;
+  let n = 2;
+  // Reintenta hasta encontrar uno libre.
+  // (El volumen de sistemas es bajo; el bucle termina rápido.)
+  while (true) {
+    const { rows } = await pool.query(
+      `SELECT 1 FROM gcc_world.centralized_systems WHERE slug = $1 LIMIT 1`,
+      [candidate]
+    );
+    if (rows.length === 0) return candidate;
+    candidate = `${base}-${n++}`;
+  }
+}
 
 const CELL_MAP: Record<string, Record<string, string>> = {
   global:      { fundamentacion: 'Condiciología', creacion: 'Control Psicosocial', implementacion: 'Centralizado', gestion: 'Gestión Psicosocial' },
@@ -23,6 +41,9 @@ async function ensureTable() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  // Slug estable para las rutas por sistema (/centralized/[piso]/[paso]/[slug]).
+  await pool.query(`ALTER TABLE gcc_world.centralized_systems ADD COLUMN IF NOT EXISTS slug VARCHAR(220)`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS centralized_systems_slug_key ON gcc_world.centralized_systems(slug)`);
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (
@@ -49,6 +70,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const piso = searchParams.get('piso');
     const paso = searchParams.get('paso');
+    const slug = searchParams.get('slug');
 
     let query = `
       SELECT s.*, COALESCE(ac.cnt, 0)::int AS access_count
@@ -63,6 +85,7 @@ export async function GET(req: NextRequest) {
 
     if (piso) { conditions.push(`s.piso = $${params.length + 1}`); params.push(piso); }
     if (paso) { conditions.push(`s.paso = $${params.length + 1}`); params.push(paso); }
+    if (slug) { conditions.push(`s.slug = $${params.length + 1}`); params.push(slug); }
     if (user.role !== 'admin') { conditions.push('s.is_active = true'); }
 
     if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
@@ -88,10 +111,11 @@ export async function POST(req: NextRequest) {
     const cellName = CELL_MAP[piso]?.[paso];
     if (!cellName) return NextResponse.json({ error: 'Invalid piso/paso combination' }, { status: 400 });
 
+    const slug = await uniqueSlug(name);
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, description || null, piso, paso, cellName]
+      `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [name, description || null, piso, paso, cellName, slug]
     );
 
     return NextResponse.json({ data: rows[0] }, { status: 201 });
