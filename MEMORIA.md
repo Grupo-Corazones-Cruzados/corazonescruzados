@@ -267,6 +267,23 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Sistema "Apoyo y Autoayuda" (2026-07-07):** Centralizado, **global · implementación** (celda
+  Centralizado, id 5, slug `apoyo-y-autoayuda`). Registro de **conocimiento reutilizable** para apoyar a
+  una persona en sus dimensiones (laboral/corporal/mental/social). **Modelo:** Situación (por-sujeto) →
+  **Problemas** → **Causas**; **Soluciones** (reutilizables) → Problemas + las **Causas que afectan**.
+  Todas M:M salvo Situación que es por-sujeto. **DB** (`lib/centralized/apoyo-db.ts`, `ensureApoyoTables`):
+  `aa_situations` (subject_kind `candidate|member` + subject_id), `aa_problems`, `aa_causes`,
+  `aa_solutions` + joins `aa_situation_problems`, `aa_problem_causes`, `aa_solution_problems`,
+  `aa_solution_causes`. **APIs** (`/api/centralized/apoyo` GET grafo del sujeto; `.../nodes` POST crear
+  con auto-link al padre + DELETE; `.../links` POST connect/disconnect). Rol member/admin. **UI**
+  (`components/centralized/systems/ApoyoAutoayudaSystem.tsx`): lista de usuarios (izq, componente
+  compartido nuevo `components/centralized/UsersList.tsx`) · **grafo tipo universo** (SVG force-directed,
+  `apoyo/KnowledgeGraph.tsx`: nodos por color de tipo, hover/click resalta vecinos, estilo Obsidian) ·
+  **panel de detalle a la derecha** (crear situación/problema/causa/solución, marcar causas que afecta una
+  solución, eliminar). Tipos/colores en `lib/centralized/apoyo.ts`. **PENDIENTE:** "asociar EXISTENTE"
+  (reusar problemas/causas/soluciones de la biblioteca vía picker/búsqueda — hoy solo crear+autolink);
+  seguimiento de efectividad de soluciones; drag&drop. **Acceso:** global → solo miembros piso=global +
+  admin (regla jerárquica). Datos demo sembrados para "Candidato de Prueba" (subject candidate/33).
 - **Sistema "Horario de Vida" (2026-07-07):** creado en Centralizado, **piso `controlador` · paso
   `implementacion`** (celda "Estrategias", slug `horario-de-vida`, id 8). Ruta:
   `/dashboard/centralized/controlador/implementacion/horario-de-vida`. **Propósito:** será el sistema que
