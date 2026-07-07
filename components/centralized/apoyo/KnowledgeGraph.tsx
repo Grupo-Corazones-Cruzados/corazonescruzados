@@ -201,19 +201,18 @@ export default function KnowledgeGraph({
               ctx.strokeStyle = hexA(color, 0.9); ctx.lineWidth = 1.4; ctx.stroke();
             }
 
-            // Orbe con sombreado esférico (sheen desde arriba-izquierda), sin punto blanco duro.
+            // Orbe: color saturado con leve oscurecido hacia el borde (SIN núcleo claro/blanco).
             ctx.globalAlpha = alpha;
             const rr = isActive ? r + 1 : r;
-            const g = ctx.createRadialGradient(node.x - rr * 0.4, node.y - rr * 0.4, rr * 0.1, node.x, node.y, rr);
-            g.addColorStop(0, mix(color, '#ffffff', 0.5));
-            g.addColorStop(0.5, color);
-            g.addColorStop(1, mix(color, '#000000', 0.3));
+            const g = ctx.createRadialGradient(node.x, node.y, rr * 0.25, node.x, node.y, rr);
+            g.addColorStop(0, color);
+            g.addColorStop(1, mix(color, '#000000', 0.28));
             ctx.beginPath(); ctx.arc(node.x, node.y, rr, 0, 2 * Math.PI);
             ctx.fillStyle = g; ctx.fill();
-            // Borde sutil para definición sobre el fondo oscuro
-            ctx.globalAlpha = alpha * 0.7;
-            ctx.lineWidth = 0.7; ctx.strokeStyle = mix(color, '#000000', 0.35);
-            ctx.stroke();
+            // Borde oscuro fino para definición sobre el fondo oscuro.
+            ctx.globalAlpha = alpha * 0.85;
+            ctx.lineWidth = 0.8; ctx.strokeStyle = mix(color, '#000000', 0.45);
+            ctx.beginPath(); ctx.arc(node.x, node.y, rr, 0, 2 * Math.PI); ctx.stroke();
             ctx.globalAlpha = alpha;
 
             const showLabel = scale >= 1.25 || (active ? lit : n.type === 'situation');
