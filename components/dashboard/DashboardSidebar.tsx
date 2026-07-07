@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import BrandLoader from '@/components/ui/BrandLoader';
+import { accessRoleOf, canAccessModule } from '@/lib/dashboard/access';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
@@ -15,33 +16,32 @@ interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
-  roles?: string[];
 }
 interface NavGroup { title: string; items: NavItem[]; }
 
-// Cliente (rol 'client') ve SOLO: Marketplace, Tickets, Proyectos, Suscripciones,
-// Automatizaciones, Configuracion y Soporte. El resto queda a member/admin.
+// La visibilidad por rol se decide con `canAccessModule` (lib/dashboard/access.ts),
+// la MISMA fuente de verdad que usa el guard de rutas.
 const NAV_GROUPS: NavGroup[] = [
   { title: 'Principal', items: [
-    { label: 'Inicio', href: '/dashboard', icon: Home, roles: ['member', 'admin'] },
+    { label: 'Inicio', href: '/dashboard', icon: Home },
   ] },
   { title: 'Operación', items: [
     { label: 'Tickets', href: '/dashboard/tickets', icon: Ticket },
     { label: 'Proyectos', href: '/dashboard/projects', icon: FolderKanban },
-    { label: 'Suscripciones', href: '/dashboard/subscriptions', icon: CalendarClock, roles: ['member', 'admin', 'client'] },
-    { label: 'Clientes', href: '/dashboard/clients', icon: Users, roles: ['member', 'admin'] },
-    { label: 'Facturas', href: '/dashboard/invoices', icon: ReceiptText, roles: ['member', 'admin'] },
+    { label: 'Suscripciones', href: '/dashboard/subscriptions', icon: CalendarClock },
+    { label: 'Clientes', href: '/dashboard/clients', icon: Users },
+    { label: 'Facturas', href: '/dashboard/invoices', icon: ReceiptText },
   ] },
   { title: 'Plataforma', items: [
     { label: 'Marketplace', href: '/dashboard/marketplace', icon: Store },
     { label: 'Automatizaciones', href: '/dashboard/automatizaciones', icon: Workflow },
-    { label: 'Herramientas', href: '/dashboard/tools', icon: Wrench, roles: ['member', 'admin'] },
-    { label: 'Centralizado', href: '/dashboard/centralized', icon: Network, roles: ['member', 'admin'] },
+    { label: 'Herramientas', href: '/dashboard/tools', icon: Wrench },
+    { label: 'Centralizado', href: '/dashboard/centralized', icon: Network },
   ] },
   { title: 'Sistema', items: [
     { label: 'Configuración', href: '/dashboard/settings', icon: Settings },
     { label: 'Soporte', href: '/dashboard/support', icon: LifeBuoy },
-    { label: 'Admin', href: '/dashboard/admin', icon: ShieldCheck, roles: ['admin'] },
+    { label: 'Admin', href: '/dashboard/admin', icon: ShieldCheck },
   ] },
 ];
 
@@ -64,9 +64,9 @@ export default function DashboardSidebar({
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
-  const role = user?.role || '';
+  const accessRole = accessRoleOf(user);
   const groups = NAV_GROUPS
-    .map((g) => ({ ...g, items: g.items.filter((it) => !it.roles || it.roles.includes(role)) }))
+    .map((g) => ({ ...g, items: g.items.filter((it) => canAccessModule(accessRole, it.href)) }))
     .filter((g) => g.items.length > 0);
 
   const isActive = (href: string) =>

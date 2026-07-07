@@ -8,6 +8,8 @@ export interface User {
   avatar_url: string | null;
   phone: string | null;
   role: UserRole;
+  /** Para role='client': distingue 'candidate' (postulante) de 'client' (cliente). */
+  account_type: 'candidate' | 'client' | null;
   member_id: number | null;
   is_verified: boolean;
   created_at: string;

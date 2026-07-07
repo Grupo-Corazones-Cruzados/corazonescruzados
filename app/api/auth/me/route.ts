@@ -17,10 +17,13 @@ export async function GET() {
   `);
 
   const result = await pool.query(
-    `SELECT id, email, first_name, last_name, avatar_url, phone,
-            role, member_id, is_verified, created_at,
-            youtube_handle, tiktok_handle, instagram_handle, facebook_handle
-     FROM gcc_world.users WHERE id = $1`,
+    `SELECT u.id, u.email, u.first_name, u.last_name, u.avatar_url, u.phone,
+            u.role, u.member_id, u.is_verified, u.created_at,
+            u.youtube_handle, u.tiktok_handle, u.instagram_handle, u.facebook_handle,
+            c.account_type
+     FROM gcc_world.users u
+     LEFT JOIN gcc_world.clients c ON c.user_id = u.id
+     WHERE u.id = $1`,
     [payload.userId]
   );
 

@@ -267,6 +267,21 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Accesos estáticos por rol al dashboard (2026-07-06):** fuente única **`lib/dashboard/access.ts`**
+  (`MODULE_ACCESS`, `accessRoleOf`, `canAccess`, `defaultDashboardPath`). **Roles efectivos:** admin
+  (`role='admin'`, todo), member (`role='member'`, todo menos Admin), y como `role='client'` NO distingue
+  candidato de cliente, se usa **`clients.account_type`** (`candidate`|`client`) → `candidate` o `client`.
+  Se añadió `account_type` al `User` (lib/types.ts) y `GET /api/auth/me` lo trae con `LEFT JOIN clients c
+  ON c.user_id=u.id`. **Matriz:** candidato = Inicio, Tickets, Proyectos, Clientes, Facturas, Marketplace,
+  Configuración, Soporte. miembro = eso + Suscripciones, Centralizado, Automatizaciones, Herramientas.
+  cliente = Tickets, Proyectos, Suscripciones, Marketplace, Configuración, Soporte. admin = todo.
+  **Enforcement:** el sidebar (`DashboardSidebar`) filtra con `canAccessModule`; y
+  `components/dashboard/DashboardAccessGuard.tsx` (dentro de AuthGuard, en `(dashboard)/layout.tsx`)
+  redirige a `defaultDashboardPath` si navegan a un módulo no permitido (el cliente no tiene Inicio → su
+  landing es `/dashboard/marketplace`). Es control de NAVEGACIÓN; los endpoints sensibles siguen con su
+  propia autorización. **Nota:** los candidatos hoy son cuentas de `clients` (sin fila en `users`); para
+  que un candidato use el dashboard con estos accesos necesita `users.role='client'` + `clients.user_id`
+  enlazado con `account_type='candidate'`.
 - **Reclutamiento y Selección — pestaña Solicitudes (2026-07-06):** el sistema
   (`components/centralized/systems/ReclutamientoSystem.tsx`) ya muestra las **postulaciones de
   candidatos** = tabla **`gcc_world.candidate_proposals`** (creadas desde el formulario "Quiero
