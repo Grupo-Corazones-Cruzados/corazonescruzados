@@ -173,7 +173,7 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
             </Section>
 
             {/* 3 · Dimensiones */}
-            <Section title="Dimensiones" Icon={Activity} count={DIMENSION_ITEMS.length}>
+            <Section title="Dimensiones" Icon={Activity} subtitle="Problemas en cada aspecto de su desarrollo" count={DIMENSION_ITEMS.length}>
               <CriteriaGrid items={DIMENSION_ITEMS} group={criteria?.dimensions} />
             </Section>
 
