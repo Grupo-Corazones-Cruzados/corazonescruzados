@@ -9,7 +9,7 @@
 export type ApoyoNodeType = 'situation' | 'problem' | 'cause' | 'solution';
 
 export const NODE_TYPES: { key: ApoyoNodeType; label: string; plural: string; color: string }[] = [
-  { key: 'situation', label: 'Situación', plural: 'Situaciones', color: '#4B2D8E' }, // accent (morado)
+  { key: 'situation', label: 'Situación', plural: 'Situaciones', color: '#8b5cf6' }, // violeta vivo (visible en negro)
   { key: 'problem', label: 'Problema', plural: 'Problemas', color: '#ef4444' },      // rojo
   { key: 'cause', label: 'Causa', plural: 'Causas', color: '#f59e0b' },              // ámbar
   { key: 'solution', label: 'Solución', plural: 'Soluciones', color: '#22c55e' },    // verde
