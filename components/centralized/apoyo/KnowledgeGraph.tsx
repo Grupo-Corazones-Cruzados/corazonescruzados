@@ -8,7 +8,7 @@ import type { GraphNode, GraphEdge } from '@/lib/centralized/apoyo';
 // react-force-graph usa d3-force (física) + canvas (render), como el grafo de Obsidian.
 // Tamaño base por tipo (además del extra por nº de conexiones). Situación es el ancla
 // (más grande); causa la más pequeña (raíz).
-const NODE_R: Record<string, number> = { situation: 9, problem: 7, cause: 4.5, solution: 6.5 };
+const NODE_R: Record<string, number> = { situation: 6, problem: 4.6, cause: 3, solution: 4.3 };
 const BG = '#000000';
 
 function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -118,7 +118,7 @@ export default function KnowledgeGraph({
     for (const e of edges) { m.set(e.source, (m.get(e.source) || 0) + 1); m.set(e.target, (m.get(e.target) || 0) + 1); }
     return m;
   }, [edges]);
-  const radiusOf = (n: GraphNode) => NODE_R[n.type] + Math.min(4.5, Math.sqrt(degree.get(n.key) || 0) * 1.25);
+  const radiusOf = (n: GraphNode) => NODE_R[n.type] + Math.min(3, Math.sqrt(degree.get(n.key) || 0) * 0.85);
 
   const active = hoverKey || selectedKey;
   const filtering = !!filter;
