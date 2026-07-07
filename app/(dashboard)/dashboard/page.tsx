@@ -102,7 +102,7 @@ export default function DashboardHome() {
     <div>
       {/* Greeting */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-digi-text" style={mf}>{greet}{name ? `, ${name}` : ''} 👋</h1>
+        <h1 className="text-2xl font-semibold text-digi-text" style={mf}>{greet}{name ? `, ${name}` : ''}</h1>
         <p className="text-[13px] text-digi-muted mt-0.5" style={mf}>Este es el resumen de GCC World.</p>
       </div>
 
