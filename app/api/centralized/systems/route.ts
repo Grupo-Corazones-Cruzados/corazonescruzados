@@ -86,7 +86,30 @@ export async function GET(req: NextRequest) {
     if (piso) { conditions.push(`s.piso = $${params.length + 1}`); params.push(piso); }
     if (paso) { conditions.push(`s.paso = $${params.length + 1}`); params.push(paso); }
     if (slug) { conditions.push(`s.slug = $${params.length + 1}`); params.push(slug); }
-    if (user.role !== 'admin') { conditions.push('s.is_active = true'); }
+
+    // Control de acceso: el admin global ve todos los sistemas. Cualquier otro
+    // miembro solo accede a los sistemas de SU celda asignada (members.piso +
+    // members.paso) o a los que se le hayan compartido explícitamente.
+    if (user.role !== 'admin') {
+      conditions.push('s.is_active = true');
+      const { rows: [me] } = await pool.query(
+        `SELECT m.id AS member_id, m.piso, m.paso
+         FROM gcc_world.users u JOIN gcc_world.members m ON m.id = u.member_id
+         WHERE u.id = $1`,
+        [user.userId]
+      );
+      if (!me?.member_id) {
+        // Sin miembro asociado → sin acceso a ningún sistema.
+        return NextResponse.json({ data: [] });
+      }
+      const mp = `$${params.length + 1}`; params.push(me.piso ?? '');
+      const ms = `$${params.length + 1}`; params.push(me.paso ?? '');
+      const mid = `$${params.length + 1}`; params.push(String(me.member_id));
+      conditions.push(
+        `((s.piso = ${mp} AND s.paso = ${ms})` +
+        ` OR EXISTS (SELECT 1 FROM gcc_world.centralized_member_access a WHERE a.system_id = s.id AND a.member_id = ${mid}::int))`
+      );
+    }
 
     if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
     query += ' ORDER BY s.created_at DESC';

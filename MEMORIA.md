@@ -267,6 +267,17 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Centralizado: acceso por piso+paso del miembro (2026-07-06):** el **admin global** (`role='admin'`,
+  cuenta `lfgonzalezm0@outlook.com`) accede a **todos** los sistemas sin restricción. Cualquier otro
+  miembro accede **solo a los sistemas de SU celda asignada**: nuevas columnas **`members.piso`** y
+  **`members.paso`** (nullable) → ve los sistemas donde `system.piso = member.piso AND system.paso =
+  member.paso`, **o** los que se le hayan compartido explícitamente (`centralized_member_access`).
+  Sin piso/paso asignado y sin shares → no ve ningún sistema. Enforcement en `GET
+  /api/centralized/systems` (para no-admin): añade la condición de celda/compartido; así la lista, el
+  rail y la ruta por slug (`?slug=` devuelve [] si no hay acceso → la página muestra "no encontrado o
+  sin acceso"). Las columnas `members.piso/paso` se **asignarán a futuro desde el sistema de
+  Reclutamiento y Selección**. Los valores válidos son las keys de `PISOS`/`PASOS` en
+  `lib/centralized/systems.ts`.
 - **Centralizado: ruta propia por sistema (2026-07-06):** cada sistema tiene una **URL estable**
   `/dashboard/centralized/[piso]/[paso]/[slug]` (decisión del usuario: piso + paso + slug), pensada para
   redirecciones y **parámetros** futuros (p. ej. `?candidato=123`). Se añadió columna **`slug`** (única,
