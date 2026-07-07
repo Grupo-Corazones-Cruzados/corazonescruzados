@@ -288,6 +288,11 @@ Stack estándar de la casa, con particularidades de este repo:
   hover/click resalta vecinos y atenúa el resto, etiquetas legibles (texto claro + sombra oscura, sin el
   borde blanco anterior), zoom/pan/drag y `zoomToFit`. La lib se **carga solo en cliente** (import en
   `useEffect` + render del componente real para que el `ref` funcione; `next/dynamic` NO reenvía refs).
+  **Mejoras visuales (2026-07-07):** fondo tipo **nebulosa** (radial glow detrás del cúmulo vía
+  `onRenderFramePre`), **tamaño de nodo por nº de conexiones** (grado), **aristas curvas + flechas**
+  direccionales, **partículas animadas** ("energía") en las aristas del nodo resaltado, brillo interior
+  en los nodos, **tooltip** al pasar el puntero (`nodeLabel` HTML), **clic = centra/enfoca** el nodo, y
+  **controles flotantes** (ajustar/zoom±/reorganizar).
   **Acceso:** global → solo miembros piso=global +
   admin (regla jerárquica). Datos demo sembrados para "Candidato de Prueba" (subject candidate/33).
 - **Sistema "Horario de Vida" (2026-07-07):** creado en Centralizado, **piso `controlador` · paso
