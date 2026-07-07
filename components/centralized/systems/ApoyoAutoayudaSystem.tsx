@@ -80,6 +80,14 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
   const [form, setForm] = useState({ title: '', description: '', dimension: '' });
   const [busy, setBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState<GraphNode | null>(null);
+  // Filtro de leyenda: `pin` = fijado con clic; `hover` = vista previa al pasar el puntero.
+  // El efectivo prioriza el hover para que apuntar previsualice sin desfijar lo elegido.
+  type LegendFilter = { kind: 'type' | 'dimension'; value: string };
+  const [pinFilter, setPinFilter] = useState<LegendFilter | null>(null);
+  const [hoverFilter, setHoverFilter] = useState<LegendFilter | null>(null);
+  const filter = hoverFilter ?? pinFilter;
+  const isPinned = (f: LegendFilter) => pinFilter?.kind === f.kind && pinFilter?.value === f.value;
+  const togglePin = (f: LegendFilter) => setPinFilter((p) => (p && p.kind === f.kind && p.value === f.value ? null : f));
 
   const loadGraph = useCallback(async () => {
     if (!user) { setGraph({ nodes: [], edges: [] }); return; }
@@ -90,7 +98,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
     } catch { setGraph({ nodes: [], edges: [] }); }
   }, [user]);
 
-  useEffect(() => { loadGraph(); setSelectedKey(null); setCreateCtx(null); }, [loadGraph]);
+  useEffect(() => { loadGraph(); setSelectedKey(null); setCreateCtx(null); setPinFilter(null); setHoverFilter(null); }, [loadGraph]);
 
   const selectedNode = useMemo(() => graph.nodes.find((n) => n.key === selectedKey) || null, [graph.nodes, selectedKey]);
 
@@ -209,18 +217,32 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
               <span className="text-[13px] font-semibold text-digi-text truncate" style={mf}>Apoyo — {user.name}</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden lg:flex items-center gap-2.5">
-                {NODE_TYPES.map((t) => (
-                  <span key={t.key} className="inline-flex items-center gap-1 text-[11px] text-digi-muted" style={mf}>
-                    <span className="w-3 h-3 shrink-0" style={{ background: t.color, ...shapeStyle(t.key) }} /> {t.plural}
-                  </span>
-                ))}
+              <div className="hidden lg:flex items-center gap-1">
+                {NODE_TYPES.map((t) => {
+                  const f = { kind: 'type' as const, value: t.key };
+                  return (
+                    <button key={t.key} type="button"
+                      onMouseEnter={() => setHoverFilter(f)} onMouseLeave={() => setHoverFilter(null)}
+                      onClick={() => togglePin(f)}
+                      className={`inline-flex items-center gap-1 text-[11px] rounded-md px-1.5 py-1 transition-colors ${isPinned(f) ? 'bg-white/10 text-digi-text ring-1 ring-inset ring-white/25' : 'text-digi-muted hover:bg-black/[0.04]'}`}
+                      style={mf} title={`Mostrar solo ${t.plural.toLowerCase()}`}>
+                      <span className="w-3 h-3 shrink-0" style={{ background: t.color, ...shapeStyle(t.key) }} /> {t.plural}
+                    </button>
+                  );
+                })}
                 <span className="w-px h-3.5 bg-digi-border mx-0.5" />
-                {DIMENSIONS.map((d) => (
-                  <span key={d.key} className="inline-flex items-center gap-1 text-[11px] text-digi-muted" style={mf} title={`Dimensión ${d.label} (anillo del problema)`}>
-                    <span className="w-3 h-3 shrink-0 rounded-full border-[2px] bg-transparent" style={{ borderColor: d.color }} /> {d.label}
-                  </span>
-                ))}
+                {DIMENSIONS.map((d) => {
+                  const f = { kind: 'dimension' as const, value: d.key };
+                  return (
+                    <button key={d.key} type="button"
+                      onMouseEnter={() => setHoverFilter(f)} onMouseLeave={() => setHoverFilter(null)}
+                      onClick={() => togglePin(f)}
+                      className={`inline-flex items-center gap-1 text-[11px] rounded-md px-1.5 py-1 transition-colors ${isPinned(f) ? 'bg-white/10 text-digi-text ring-1 ring-inset ring-white/25' : 'text-digi-muted hover:bg-black/[0.04]'}`}
+                      style={mf} title={`Mostrar solo problemas de dimensión ${d.label}`}>
+                      <span className="w-3 h-3 shrink-0 rounded-full border-[2px] bg-transparent" style={{ borderColor: d.color }} /> {d.label}
+                    </button>
+                  );
+                })}
               </div>
               <button onClick={() => openCreate({ type: 'situation' })} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-accent text-white text-[12px] font-medium rounded-md hover:bg-accent-hover transition-colors" style={mf}>
                 <Plus className="w-3.5 h-3.5" /> Situación
@@ -230,7 +252,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
 
           {/* Grafo (ocupa todo el ancho y alto) + panel flotante de detalle */}
           <div className="relative flex-1 min-h-0">
-            <KnowledgeGraph nodes={graph.nodes} edges={graph.edges} selectedKey={selectedKey} fitSignal={`${user.kind}:${user.id}`} onSelect={(n) => setSelectedKey(n ? n.key : null)} />
+            <KnowledgeGraph nodes={graph.nodes} edges={graph.edges} selectedKey={selectedKey} filter={filter} fitSignal={`${user.kind}:${user.id}`} onSelect={(n) => setSelectedKey(n ? n.key : null)} />
 
             {(createCtx || selectedNode) && (
               <aside className="absolute bottom-3 right-3 w-[330px] max-w-[calc(100%-24px)] max-h-[calc(100%-24px)] overflow-y-auto z-10 p-2.5 space-y-2.5">

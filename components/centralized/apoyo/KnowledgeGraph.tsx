@@ -64,6 +64,7 @@ export default function KnowledgeGraph({
   selectedKey,
   onSelect,
   fitSignal = '',
+  filter = null,
 }: {
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -71,6 +72,8 @@ export default function KnowledgeGraph({
   onSelect: (n: GraphNode | null) => void;
   /** Cambia solo cuando debe reencuadrarse (p. ej. al cambiar de usuario). NO cambia al crear nodos. */
   fitSignal?: string;
+  /** Filtro de leyenda: resalta solo el tipo o la dimensión indicada, atenúa el resto. */
+  filter?: { kind: 'type' | 'dimension'; value: string } | null;
 }) {
   const fgRef = useRef<any>(null);
   const fittedRef = useRef<string | null>(null);
@@ -118,8 +121,19 @@ export default function KnowledgeGraph({
   const radiusOf = (n: GraphNode) => NODE_R[n.type] + Math.min(4.5, Math.sqrt(degree.get(n.key) || 0) * 1.25);
 
   const active = hoverKey || selectedKey;
-  const isLit = (key: string) => !active || key === active || !!neighbors.get(active)?.has(key);
+  const filtering = !!filter;
+  const matchesFilter = (key: string) => {
+    if (!filter) return true;
+    const n = nodeByKey.get(key);
+    if (!n) return false;
+    return filter.kind === 'type' ? n.type === filter.value : n.type === 'problem' && n.dimension === filter.value;
+  };
+  // El filtro de la leyenda tiene prioridad sobre el resaltado por vecinos.
+  const isLit = (key: string) =>
+    filtering ? matchesFilter(key) : !active || key === active || !!neighbors.get(active)?.has(key);
   const linkActive = (l: any) => !!active && (linkId(l, 'source') === active || linkId(l, 'target') === active);
+  const linkLit = (l: any) =>
+    filtering ? matchesFilter(linkId(l, 'source')) && matchesFilter(linkId(l, 'target')) : !active || linkActive(l);
 
   // Ajusta fuerzas y reencuadra SOLO cuando cambia `fitSignal` (p. ej. otro usuario).
   // Al crear nodos, `fitSignal` no cambia → la cámara se queda donde está.
@@ -198,8 +212,8 @@ export default function KnowledgeGraph({
           }}
           /* Aristas curvas + flechas + partículas al resaltar */
           linkCurvature={0.14}
-          linkColor={(l: any) => (!active || linkActive(l) ? 'rgba(170,158,225,0.5)' : 'rgba(120,120,150,0.10)')}
-          linkWidth={(l: any) => (linkActive(l) ? 1.8 : !active ? 1 : 0.5)}
+          linkColor={(l: any) => (linkLit(l) ? 'rgba(170,158,225,0.5)' : 'rgba(120,120,150,0.10)')}
+          linkWidth={(l: any) => (linkActive(l) ? 1.8 : linkLit(l) ? (filtering ? 1.4 : 1) : 0.45)}
           linkDirectionalArrowLength={(l: any) => (linkActive(l) ? 3.6 : 2.4)}
           linkDirectionalArrowRelPos={0.92}
           linkDirectionalArrowColor={() => 'rgba(200,192,240,0.7)'}
@@ -219,7 +233,7 @@ export default function KnowledgeGraph({
             const lit = isLit(node.id);
             const isActive = node.id === active;
             const isSel = node.id === selectedKey;
-            const alpha = lit ? 1 : 0.2;
+            const alpha = lit ? 1 : filtering ? 0.07 : 0.2;
 
             // Halo de luz (círculo suave alrededor de la forma) — aspecto luminoso.
             const glowR = r * (isActive ? 3.2 : 2.4);
@@ -255,7 +269,7 @@ export default function KnowledgeGraph({
             }
             ctx.globalAlpha = alpha;
 
-            const showLabel = scale >= 1.25 || (active ? lit : n.type === 'situation');
+            const showLabel = scale >= 1.25 || (active || filtering ? lit : n.type === 'situation');
             if (showLabel) {
               const label = n.title.length > 26 ? n.title.slice(0, 25) + '…' : n.title;
               const fontSize = Math.max(3.2, 11 / scale);

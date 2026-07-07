@@ -277,6 +277,10 @@ Stack estándar de la casa, con particularidades de este repo:
   **color** (`DIMENSION_COLOR` en `apoyo.ts`: laboral=azul, corporal=teal, mental=rosa, social=amarillo) que se
   pinta como **anillo** alrededor del nodo-problema en el grafo (distinto de los colores de tipo). Leyenda de
   dimensiones en la barra superior (aros de color) + punto de color junto a "Dimensión:" en el panel de detalle.
+  **Leyenda = filtros (2026-07-07):** los chips de tipo y de dimensión son **botones-filtro**: al pasar el puntero
+  previsualizan y al hacer clic **fijan** el filtro (clic de nuevo lo quita). El grafo resalta solo lo que coincide
+  (tipo, o problemas de esa dimensión) y atenúa el resto (`filter` prop en `KnowledgeGraph`; `hoverFilter`
+  previsualiza sobre `pinFilter`). El filtro se limpia al cambiar de usuario.
   Todas M:M salvo Situación que es por-sujeto. **DB** (`lib/centralized/apoyo-db.ts`, `ensureApoyoTables`):
   `aa_situations` (subject_kind `candidate|member` + subject_id), `aa_problems`, `aa_causes`,
   `aa_solutions` + joins `aa_situation_problems`, `aa_problem_causes`, `aa_solution_problems`,
