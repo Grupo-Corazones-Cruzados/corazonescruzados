@@ -267,6 +267,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Reclutamiento y Selección — pestaña Solicitudes (2026-07-06):** el sistema
+  (`components/centralized/systems/ReclutamientoSystem.tsx`) ya muestra las **postulaciones de
+  candidatos** = tabla **`gcc_world.candidate_proposals`** (creadas desde el formulario "Quiero
+  postularme como candidato" de la landing → `POST /api/candidate/proposal`). Layout pedido: **rail**
+  (pestaña "Solicitudes" con contador de pendientes) · **lista** (buscable: correo/motivo, badge de
+  estado, fecha) · **panel grande de detalle** (correo con mailto, **motivo** para unirse, y detalles:
+  correo verificado, acepta comunicaciones/marketing, fecha, decidido). Reusa el API admin existente
+  `GET /api/admin/candidate-proposals` + `POST …/[id]/approve` (crea cuenta de candidato en `clients` +
+  email) y `…/[id]/reject` (borra y libera el correo). **Es admin-only**: un miembro no-admin con acceso
+  a la celda ve el sistema pero la lista da 403 → vacío (aceptable; datos sensibles). Soporta deep-link
+  **`?solicitud=<id>`** para abrir una postulación por URL. Campos de `candidate_proposals`: email, reason,
+  marketing, status (pending/approved; **reject elimina la fila**), email_verified, created_at, decided_at,
+  decided_by.
 - **Centralizado: acceso por piso+paso del miembro (2026-07-06):** el **admin global** (`role='admin'`,
   cuenta `lfgonzalezm0@outlook.com`) accede a **todos** los sistemas sin restricción. Cualquier otro
   miembro accede **solo a los sistemas de SU celda asignada**: nuevas columnas **`members.piso`** y
