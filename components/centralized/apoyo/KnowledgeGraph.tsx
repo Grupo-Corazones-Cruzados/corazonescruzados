@@ -13,16 +13,17 @@ const linkId = (l: any, end: 'source' | 'target') => (typeof l[end] === 'object'
 
 function useSize<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
-  const [w, setW] = useState(800);
+  const [size, setSize] = useState({ width: 800, height: 560 });
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver((e) => setW(Math.max(320, Math.floor(e[0].contentRect.width))));
+    const apply = (w: number, h: number) => setSize({ width: Math.max(320, Math.floor(w)), height: Math.max(300, Math.floor(h)) });
+    const ro = new ResizeObserver((e) => apply(e[0].contentRect.width, e[0].contentRect.height));
     ro.observe(el);
-    setW(Math.max(320, Math.floor(el.clientWidth)));
+    apply(el.clientWidth, el.clientHeight);
     return () => ro.disconnect();
   }, []);
-  return { ref, width: w };
+  return { ref, ...size };
 }
 
 export default function KnowledgeGraph({
@@ -30,16 +31,14 @@ export default function KnowledgeGraph({
   edges,
   selectedKey,
   onSelect,
-  height = 580,
 }: {
   nodes: GraphNode[];
   edges: GraphEdge[];
   selectedKey: string | null;
   onSelect: (n: GraphNode | null) => void;
-  height?: number;
 }) {
   const fgRef = useRef<any>(null);
-  const { ref, width } = useSize<HTMLDivElement>();
+  const { ref, width, height } = useSize<HTMLDivElement>();
   const [hoverKey, setHoverKey] = useState<string | null>(null);
   const nodeByKey = useMemo(() => new Map(nodes.map((n) => [n.key, n])), [nodes]);
 
@@ -94,14 +93,14 @@ export default function KnowledgeGraph({
 
   if (nodes.length === 0) {
     return (
-      <div ref={ref} style={{ height, background: BG }} className="flex items-center justify-center rounded-b-lg">
+      <div ref={ref} style={{ background: BG }} className="w-full h-full flex items-center justify-center">
         <p className="text-[13px]" style={{ color: '#8a8ba6', fontFamily: 'var(--font-body)' }}>Sin situaciones aún. Crea la primera para empezar el grafo.</p>
       </div>
     );
   }
 
   return (
-    <div ref={ref} style={{ height, background: BG }} className="relative rounded-b-lg overflow-hidden">
+    <div ref={ref} style={{ background: BG }} className="relative w-full h-full overflow-hidden">
       {/* Controles */}
       {ForceGraph2D && (
         <div className="absolute top-2.5 right-2.5 z-10 flex flex-col gap-1.5">

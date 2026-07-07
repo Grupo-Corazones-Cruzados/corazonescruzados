@@ -97,44 +97,44 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
   }, [selectedNode, graph]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 items-start">
-      <UsersList selected={user} onSelect={setUser} className="w-full lg:w-[240px] shrink-0" />
+    <div className="flex gap-4 h-[calc(100dvh-130px)]">
+      <UsersList selected={user} onSelect={setUser} className="w-[240px] shrink-0 h-full" />
 
       {!user ? (
-        <div className="flex-1 min-w-0 w-full bg-digi-card border border-digi-border rounded-xl py-20 text-center">
-          <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-3"><MousePointerClick className="w-6 h-6 text-digi-muted" /></div>
+        <div className="flex-1 min-w-0 h-full bg-digi-card border border-digi-border rounded-xl flex flex-col items-center justify-center text-center px-4">
+          <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mb-3"><MousePointerClick className="w-6 h-6 text-digi-muted" /></div>
           <p className="text-[13px] font-medium text-digi-text" style={mf}>Selecciona un candidato o miembro</p>
-          <p className="text-[12px] text-digi-muted mt-1 max-w-sm mx-auto" style={mf}>Verás su grafo de situaciones, problemas, causas y soluciones.</p>
+          <p className="text-[12px] text-digi-muted mt-1 max-w-sm" style={mf}>Verás su grafo de situaciones, problemas, causas y soluciones.</p>
         </div>
       ) : (
-        <>
-          {/* Grafo */}
-          <div className="flex-1 min-w-0 w-full bg-digi-card border border-digi-border rounded-lg overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 border-b border-digi-border">
-              <div className="flex items-center gap-2 min-w-0">
-                <HeartHandshake className="w-4 h-4 text-accent shrink-0" />
-                <span className="text-[13px] font-semibold text-digi-text truncate" style={mf}>Apoyo — {user.name}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                {/* Leyenda */}
-                <div className="hidden sm:flex items-center gap-2.5">
-                  {NODE_TYPES.map((t) => (
-                    <span key={t.key} className="inline-flex items-center gap-1 text-[11px] text-digi-muted" style={mf}>
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color }} /> {t.plural}
-                    </span>
-                  ))}
-                </div>
-                <button onClick={() => openCreate({ type: 'situation' })} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-accent text-white text-[12px] font-medium rounded-md hover:bg-accent-hover transition-colors" style={mf}>
-                  <Plus className="w-3.5 h-3.5" /> Situación
-                </button>
-              </div>
+        <div className="flex-1 min-w-0 h-full bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
+          {/* Barra superior */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 border-b border-digi-border shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <HeartHandshake className="w-4 h-4 text-accent shrink-0" />
+              <span className="text-[13px] font-semibold text-digi-text truncate" style={mf}>Apoyo — {user.name}</span>
             </div>
-            <KnowledgeGraph nodes={graph.nodes} edges={graph.edges} selectedKey={selectedKey} onSelect={(n) => setSelectedKey(n ? n.key : null)} />
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2.5">
+                {NODE_TYPES.map((t) => (
+                  <span key={t.key} className="inline-flex items-center gap-1 text-[11px] text-digi-muted" style={mf}>
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color }} /> {t.plural}
+                  </span>
+                ))}
+              </div>
+              <button onClick={() => openCreate({ type: 'situation' })} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-accent text-white text-[12px] font-medium rounded-md hover:bg-accent-hover transition-colors" style={mf}>
+                <Plus className="w-3.5 h-3.5" /> Situación
+              </button>
+            </div>
           </div>
 
-          {/* Panel de detalle (borde derecho) */}
-          <aside className="w-full lg:w-[320px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden lg:sticky lg:top-4">
-            {createCtx ? (
+          {/* Grafo (ocupa todo el ancho y alto) + panel flotante de detalle */}
+          <div className="relative flex-1 min-h-0">
+            <KnowledgeGraph nodes={graph.nodes} edges={graph.edges} selectedKey={selectedKey} onSelect={(n) => setSelectedKey(n ? n.key : null)} />
+
+            {(createCtx || selectedNode) && (
+              <aside className="absolute top-3 right-3 bottom-3 w-[330px] max-w-[calc(100%-24px)] bg-digi-card border border-digi-border rounded-xl shadow-2xl overflow-y-auto z-10">
+                {createCtx ? (
               <div className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-[13.5px] font-semibold text-digi-text" style={df}>Nueva {NODE_META[createCtx.type].label.toLowerCase()}</h3>
@@ -209,15 +209,11 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="p-6 text-center">
-                <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2"><HeartHandshake className="w-5 h-5 text-digi-muted" /></div>
-                <p className="text-[12.5px] font-medium text-digi-text" style={mf}>Selecciona un elemento del grafo</p>
-                <p className="text-[12px] text-digi-muted mt-1" style={mf}>Pasa el puntero o haz clic en un punto para ver su detalle y sus conexiones. Empieza creando una <span className="text-accent">Situación</span>.</p>
-              </div>
+            ) : null}
+              </aside>
             )}
-          </aside>
-        </>
+          </div>
+        </div>
       )}
 
       <PixelConfirm
