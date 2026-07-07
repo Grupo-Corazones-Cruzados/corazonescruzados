@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Inbox, Users } from 'lucide-react';
+import { Inbox, Users, UserRound } from 'lucide-react';
 import SolicitudesTab from './reclutamiento/SolicitudesTab';
 import CandidatosTab from './reclutamiento/CandidatosTab';
+import MembersTab from './reclutamiento/MembersTab';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -12,6 +13,7 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 const TABS = [
   { value: 'solicitudes', label: 'Solicitudes', Icon: Inbox },
   { value: 'candidatos', label: 'Candidatos', Icon: Users },
+  { value: 'miembros', label: 'Miembros', Icon: UserRound },
 ] as const;
 
 /**
@@ -23,20 +25,26 @@ const TABS = [
 export default function ReclutamientoSystem({ isAdmin }: { system: any; isAdmin: boolean }) {
   const params = useSearchParams();
   const initialTab =
-    params.get('tab') === 'candidatos' || params.get('candidato') ? 'candidatos' : 'solicitudes';
+    params.get('tab') === 'miembros' || params.get('miembro') ? 'miembros'
+      : params.get('tab') === 'candidatos' || params.get('candidato') ? 'candidatos'
+        : 'solicitudes';
   const [tab, setTab] = useState<string>(initialTab);
 
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [candCount, setCandCount] = useState<number | null>(null);
+  const [memberCount, setMemberCount] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/admin/candidate-proposals').then((r) => r.json())
       .then((d) => setPendingCount((d.data || []).filter((p: any) => p.status === 'pending').length)).catch(() => {});
     fetch('/api/admin/candidates').then((r) => r.json())
       .then((d) => setCandCount((d.data || []).length)).catch(() => {});
+    fetch('/api/admin/team').then((r) => r.json())
+      .then((d) => setMemberCount((d.data || []).length)).catch(() => {});
   }, []);
 
-  const countFor = (value: string) => (value === 'solicitudes' ? pendingCount : candCount);
+  const countFor = (value: string) =>
+    value === 'solicitudes' ? pendingCount : value === 'candidatos' ? candCount : memberCount;
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 items-start">
@@ -65,7 +73,9 @@ export default function ReclutamientoSystem({ isAdmin }: { system: any; isAdmin:
 
       {/* Contenido de la pestaña activa */}
       <div className="flex-1 min-w-0 w-full">
-        {tab === 'candidatos' ? <CandidatosTab isAdmin={isAdmin} /> : <SolicitudesTab isAdmin={isAdmin} />}
+        {tab === 'miembros' ? <MembersTab isAdmin={isAdmin} />
+          : tab === 'candidatos' ? <CandidatosTab isAdmin={isAdmin} />
+            : <SolicitudesTab isAdmin={isAdmin} />}
       </div>
     </div>
   );

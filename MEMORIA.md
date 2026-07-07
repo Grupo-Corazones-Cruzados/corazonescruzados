@@ -285,9 +285,15 @@ Stack estándar de la casa, con particularidades de este repo:
   por email) una fila en `members` activa; da acceso de dashboard como miembro creando/promoviendo un
   `users` con `role='member'` + `member_id` (si el candidato no tenía usuario, **crea uno reusando su
   `password_hash`** para que entre con su contraseña actual; nunca degrada a un admin); enlaza
-  `clients.user_id`. El list `/api/admin/candidates` devuelve `is_member` (LEFT JOIN users) → la UI muestra
-  "Ya es miembro" y oculta el botón. Requiere que el candidato tenga correo (y contraseña si aún no tiene
-  usuario). **Pendiente sugerido:** asignar `members.piso/paso` al convertir (para el acceso a Centralizado).
+  `clients.user_id`. Requiere que el candidato tenga correo (y contraseña si aún no tiene usuario).
+  **Pendiente sugerido:** asignar `members.piso/paso` al convertir (para el acceso a Centralizado).
+- **Reclutamiento — Candidatos excluye miembros + pestaña Miembros (2026-07-07):** una vez convertido, el
+  candidato **desaparece** del listado de Candidatos (`/api/admin/candidates` filtra `u.role NOT IN
+  ('member','admin')`). Nueva **3ª pestaña "Miembros"** en el rail (`reclutamiento/MembersTab.tsx`), mismo
+  diseño lista+detalle; usa **`GET /api/admin/team`** (members + position + role + avatar). El **detalle del
+  miembro está PENDIENTE**: por ahora datos básicos (correo, posición, tarifa, activo/rol) + aviso "el
+  contenido se definirá a continuación" (el usuario dirá qué mostrar, distinto al candidato). Deep-links
+  `?tab=miembros`, `?miembro=<id>`.
 - **Accesos estáticos por rol al dashboard (2026-07-06):** fuente única **`lib/dashboard/access.ts`**
   (`MODULE_ACCESS`, `accessRoleOf`, `canAccess`, `defaultDashboardPath`). **Roles efectivos:** admin
   (`role='admin'`, todo), member (`role='member'`, todo menos Admin), y como `role='client'` NO distingue

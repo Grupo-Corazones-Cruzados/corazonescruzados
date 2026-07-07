@@ -24,6 +24,8 @@ export async function GET() {
          FROM gcc_world.clients c
          LEFT JOIN gcc_world.users u ON u.id = c.user_id
         WHERE c.account_type = 'candidate' AND c.approved = true AND c.profile_completed = true
+          -- Excluir a los que ya fueron convertidos en miembro (usuario member/admin).
+          AND (u.role IS NULL OR u.role NOT IN ('member', 'admin'))
         ORDER BY c.last_seen_at DESC NULLS LAST, c.id DESC`,
     );
 
