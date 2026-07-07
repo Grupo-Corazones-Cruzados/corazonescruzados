@@ -181,7 +181,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
 
           {/* Grafo (ocupa todo el ancho y alto) + panel flotante de detalle */}
           <div className="relative flex-1 min-h-0">
-            <KnowledgeGraph nodes={graph.nodes} edges={graph.edges} selectedKey={selectedKey} onSelect={(n) => setSelectedKey(n ? n.key : null)} />
+            <KnowledgeGraph nodes={graph.nodes} edges={graph.edges} selectedKey={selectedKey} fitSignal={`${user.kind}:${user.id}`} onSelect={(n) => setSelectedKey(n ? n.key : null)} />
 
             {(createCtx || selectedNode) && (
               <aside className="absolute bottom-3 right-3 w-[330px] max-w-[calc(100%-24px)] max-h-[calc(100%-24px)] overflow-y-auto z-10 p-2.5 space-y-2.5">

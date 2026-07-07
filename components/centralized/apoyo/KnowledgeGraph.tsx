@@ -63,13 +63,17 @@ export default function KnowledgeGraph({
   edges,
   selectedKey,
   onSelect,
+  fitSignal = '',
 }: {
   nodes: GraphNode[];
   edges: GraphEdge[];
   selectedKey: string | null;
   onSelect: (n: GraphNode | null) => void;
+  /** Cambia solo cuando debe reencuadrarse (p. ej. al cambiar de usuario). NO cambia al crear nodos. */
+  fitSignal?: string;
 }) {
   const fgRef = useRef<any>(null);
+  const fittedRef = useRef<string | null>(null);
   const { ref, width, height } = useSize<HTMLDivElement>();
   const [hoverKey, setHoverKey] = useState<string | null>(null);
   const nodeByKey = useMemo(() => new Map(nodes.map((n) => [n.key, n])), [nodes]);
@@ -94,8 +98,6 @@ export default function KnowledgeGraph({
     return { nodes: gnodes, links: edges.map((e) => ({ source: e.source, target: e.target, type: e.type })) };
   }, [nodes, edges]);
 
-  // Firma del CONJUNTO de nodos (no de las aristas): reencuadra solo si cambian los nodos.
-  const nodesKey = useMemo(() => nodes.map((n) => n.key).join('|'), [nodes]);
 
   const neighbors = useMemo(() => {
     const m = new Map<string, Set<string>>();
@@ -119,14 +121,18 @@ export default function KnowledgeGraph({
   const isLit = (key: string) => !active || key === active || !!neighbors.get(active)?.has(key);
   const linkActive = (l: any) => !!active && (linkId(l, 'source') === active || linkId(l, 'target') === active);
 
+  // Ajusta fuerzas y reencuadra SOLO cuando cambia `fitSignal` (p. ej. otro usuario).
+  // Al crear nodos, `fitSignal` no cambia → la cámara se queda donde está.
   useEffect(() => {
-    const fg = fgRef.current;
-    if (!fg) return;
-    fg.d3Force('charge')?.strength(-160);
-    fg.d3Force('link')?.distance(60).strength(0.9);
-    const t = setTimeout(() => fg.zoomToFit?.(500, 70), 500);
+    const t = setTimeout(() => {
+      const fg = fgRef.current;
+      if (!fg) return;
+      fg.d3Force('charge')?.strength(-160);
+      fg.d3Force('link')?.distance(60).strength(0.9);
+      if (fittedRef.current !== fitSignal) { fittedRef.current = fitSignal; fg.zoomToFit?.(500, 70); }
+    }, 400);
     return () => clearTimeout(t);
-  }, [nodesKey, ForceGraph2D]);
+  }, [fitSignal, ForceGraph2D]);
 
   const zoomBy = (f: number) => { const fg = fgRef.current; if (fg) fg.zoom(fg.zoom() * f, 250); };
   const fit = () => fgRef.current?.zoomToFit(400, 70);
