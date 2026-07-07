@@ -256,7 +256,7 @@ export default function KnowledgeGraph({
               ctx.globalAlpha = lit ? 1 : 0.28;
               ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5;
               ctx.fillStyle = isActive ? '#ffffff' : '#d8d9ec';
-              ctx.fillText(label, node.x, node.y + r + 2.5);
+              ctx.fillText(label, node.x, node.y + r + Math.max(6, fontSize * 0.7));
               ctx.shadowBlur = 0;
             }
             ctx.globalAlpha = 1;
