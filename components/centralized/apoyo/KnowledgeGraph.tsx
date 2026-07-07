@@ -264,12 +264,24 @@ export default function KnowledgeGraph({
             ctx.globalAlpha = alpha; ctx.fillStyle = g; ctx.fill();
             ctx.globalAlpha = alpha * 0.85; ctx.lineWidth = 0.9; ctx.strokeStyle = mix(color, '#000000', 0.45); ctx.stroke();
 
-            // Anillo de DIMENSIÓN (solo problemas): color distintivo por dimensión.
+            // Insignia de DIMENSIÓN (solo problemas): disco de color con reborde oscuro,
+            // posado sobre el vértice superior del triángulo — como un badge.
             const dimColor = n.type === 'problem' && n.dimension ? DIMENSION_COLOR[n.dimension] : null;
             if (dimColor) {
-              ctx.globalAlpha = lit ? 0.95 : 0.3;
-              traceShape(ctx, n.type, node.x, node.y, rr + 2);
-              ctx.lineWidth = 1.6; ctx.strokeStyle = dimColor; ctx.stroke();
+              const br = Math.max(2.1, rr * 0.62);
+              const bx = node.x + rr * 0.62;
+              const by = node.y - rr * 0.92;
+              ctx.globalAlpha = lit ? 1 : 0.35;
+              // reborde oscuro para separarlo del glow rojo
+              ctx.beginPath(); ctx.arc(bx, by, br + 0.9, 0, 2 * Math.PI);
+              ctx.fillStyle = 'rgba(10,10,16,0.95)'; ctx.fill();
+              // disco de color
+              ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI);
+              ctx.fillStyle = dimColor; ctx.fill();
+              // brillo interior sutil
+              const bg = ctx.createRadialGradient(bx - br * 0.3, by - br * 0.3, br * 0.1, bx, by, br);
+              bg.addColorStop(0, 'rgba(255,255,255,0.45)'); bg.addColorStop(1, 'rgba(255,255,255,0)');
+              ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fillStyle = bg; ctx.fill();
             }
             ctx.globalAlpha = alpha;
 

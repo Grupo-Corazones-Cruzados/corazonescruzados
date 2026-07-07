@@ -275,8 +275,9 @@ Stack estándar de la casa, con particularidades de este repo:
   en `nodes` POST); la **Situación NO** pide dimensión (se quitó el campo del form y del INSERT); causas/soluciones
   nunca la tuvieron. La columna `aa_situations.dimension` queda pero se inserta null. Cada dimensión tiene un
   **color** (`DIMENSION_COLOR` en `apoyo.ts`: laboral=azul, corporal=teal, mental=rosa, social=amarillo) que se
-  pinta como **anillo** alrededor del nodo-problema en el grafo (distinto de los colores de tipo). Leyenda de
-  dimensiones en la barra superior (aros de color) + punto de color junto a "Dimensión:" en el panel de detalle.
+  pinta como **insignia/badge** (disco de color con reborde oscuro y brillo interior) sobre el vértice superior del
+  nodo-problema en el grafo (se reemplazó el anillo de borde). Leyenda de dimensiones en la barra superior (discos
+  de color) + punto de color junto a "Dimensión:" en el panel de detalle.
   **Leyenda = filtros (2026-07-07):** los chips de tipo y de dimensión son **botones-filtro**: al pasar el puntero
   previsualizan y al hacer clic **fijan** el filtro (clic de nuevo lo quita). El grafo resalta solo lo que coincide
   (tipo, o problemas de esa dimensión) y atenúa el resto (`filter` prop en `KnowledgeGraph`; `hoverFilter`

@@ -239,7 +239,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                       onClick={() => togglePin(f)}
                       className={`inline-flex items-center gap-1 text-[11px] rounded-md px-1.5 py-1 transition-colors ${isPinned(f) ? 'bg-white/10 text-digi-text ring-1 ring-inset ring-white/25' : 'text-digi-muted hover:bg-black/[0.04]'}`}
                       style={mf} title={`Mostrar solo problemas de dimensión ${d.label}`}>
-                      <span className="w-3 h-3 shrink-0 rounded-full border-[2px] bg-transparent" style={{ borderColor: d.color }} /> {d.label}
+                      <span className="w-2.5 h-2.5 shrink-0 rounded-full ring-1 ring-black/50" style={{ background: d.color }} /> {d.label}
                     </button>
                   );
                 })}
@@ -286,7 +286,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                           <h3 className="text-[14.5px] font-semibold text-white leading-snug" style={mf}>{selectedNode.title}</h3>
                           {selectedNode.dimension && (
                             <p className="inline-flex items-center gap-1.5 text-[11.5px] text-white/55 mt-0.5" style={mf}>
-                              <span className="w-2.5 h-2.5 shrink-0 rounded-full border-[2px] bg-transparent" style={{ borderColor: DIMENSION_COLOR[selectedNode.dimension] || '#888' }} />
+                              <span className="w-2.5 h-2.5 shrink-0 rounded-full ring-1 ring-black/50" style={{ background: DIMENSION_COLOR[selectedNode.dimension] || '#888' }} />
                               Dimensión: {DIMENSION_LABEL[selectedNode.dimension] || selectedNode.dimension}
                             </p>
                           )}
