@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { UserRound, Mail, X, Search, BadgeCheck, DollarSign, Briefcase, Info, UserMinus, ShieldAlert, Network, SlidersHorizontal } from 'lucide-react';
+import { UserRound, Mail, X, Search, BadgeCheck, DollarSign, Briefcase, UserMinus, Network, SlidersHorizontal } from 'lucide-react';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelSelect from '@/components/ui/PixelSelect';
-import { BTN_SECONDARY } from '@/components/ui/Button';
+import ActionsMenu from '@/components/centralized/ActionsMenu';
 import { fmt2 } from '@/lib/format';
 import { PISOS, PASOS, PISO_LABEL, PASO_LABEL, pisosAtOrBelow } from '@/lib/centralized/systems';
 
@@ -21,7 +21,7 @@ const df = { fontFamily: 'var(--font-display)' } as const;
  * específica del miembro) se definirá más adelante; por ahora se muestran los datos
  * básicos disponibles. Soporta `?miembro=<id>`.
  */
-export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
+export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; onChanged?: () => void }) {
   const params = useSearchParams();
   const deepLinkId = params.get('miembro');
 
@@ -76,6 +76,7 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
       toast.success('Miembro convertido en candidato');
       setSelectedId(null);
       await load();
+      onChanged?.();
     } catch (e: any) { toast.error(e.message || 'Error'); }
     finally { setDemoting(false); }
   };
@@ -170,69 +171,22 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
                     {selected.position_name && <span className="inline-flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {selected.position_name}</span>}
                     {selected.hourly_rate != null && <span className="inline-flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /> {fmt2(Number(selected.hourly_rate))}/h</span>}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-2">
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
                     <PixelBadge variant={selected.is_active ? 'success' : 'default'}>{selected.is_active ? 'Activo' : 'Inactivo'}</PixelBadge>
                     {selected.role && <PixelBadge variant="info"><span className="inline-flex items-center gap-1"><BadgeCheck className="w-3 h-3" /> {selected.role}</span></PixelBadge>}
-                  </div>
-                </div>
-                <button onClick={() => setSelectedId(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
-              </div>
-
-              {/* Cambio de rol: miembro → candidato (los admin no se pueden degradar) */}
-              {isAdmin && (
-                <div className="mt-3 pt-3 border-t border-digi-border flex flex-wrap items-center justify-between gap-2">
-                  {isAdminMember ? (
-                    <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
-                      <ShieldAlert className="w-4 h-4" /> No se puede cambiar el rol de un administrador.
+                    <span className="inline-flex items-center gap-1 text-[11.5px] text-digi-muted" style={mf} title="Acceso a Centralizado">
+                      <Network className="w-3.5 h-3.5" /> Centralizado: {selected.piso && selected.paso ? `${PISO_LABEL[selected.piso] || selected.piso} · ${PASO_LABEL[selected.paso] || selected.paso}` : 'sin acceso'}
                     </span>
-                  ) : (
-                    <>
-                      <span className="text-[12px] text-digi-muted" style={mf}>Cambiar el rol de este miembro.</span>
-                      <button onClick={() => setConfirmDemote(true)} disabled={demoting} className={`${BTN_SECONDARY} disabled:opacity-50`}>
-                        <UserMinus className="w-4 h-4" /> {demoting ? 'Convirtiendo…' : 'Convertir a candidato'}
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Acceso a Centralizado (piso / paso) */}
-            <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-4">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0"><Network className="w-4 h-4 text-accent" /></div>
-                  <h4 className="text-[13.5px] font-semibold text-digi-text" style={df}>Acceso a Centralizado</h4>
+                  </div>
                 </div>
                 {isAdmin && (
-                  <button onClick={() => openAccess(selected)} className={BTN_SECONDARY}>
-                    <SlidersHorizontal className="w-4 h-4" /> Configurar
-                  </button>
+                  <ActionsMenu items={[
+                    { label: 'Configurar accesos', icon: SlidersHorizontal, onClick: () => openAccess(selected) },
+                    { label: demoting ? 'Convirtiendo…' : 'Convertir a candidato', icon: UserMinus, danger: true, onClick: () => setConfirmDemote(true), disabled: isAdminMember || demoting },
+                  ]} />
                 )}
+                <button onClick={() => setSelectedId(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
               </div>
-              {selected.piso && selected.paso ? (
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-3 text-[12.5px]">
-                    <span className="text-digi-muted" style={mf}>Piso</span>
-                    <span className="text-digi-text font-medium" style={mf}>{PISO_LABEL[selected.piso] || selected.piso}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 text-[12.5px]">
-                    <span className="text-digi-muted" style={mf}>Paso</span>
-                    <span className="text-digi-text font-medium" style={mf}>{PASO_LABEL[selected.paso] || selected.paso}</span>
-                  </div>
-                  <p className="text-[11.5px] text-digi-muted pt-1 leading-relaxed" style={mf}>
-                    Accede a los sistemas del paso <span className="text-digi-text">{PASO_LABEL[selected.paso]}</span> en los pisos:{' '}
-                    <span className="text-digi-text">{pisosAtOrBelow(selected.piso).map((k) => PISO_LABEL[k]).join(', ')}</span>.
-                  </p>
-                </div>
-              ) : (
-                <p className="text-[12px] text-digi-muted" style={mf}>Sin piso/paso asignado — este miembro no accede a ningún sistema del Centralizado (salvo los compartidos).</p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 rounded-lg border border-digi-border bg-digi-darker px-3 py-2 text-[12px] text-digi-muted" style={mf}>
-              <Info className="w-4 h-4 shrink-0 text-accent" />
-              El resto del detalle de miembro se definirá a continuación.
             </div>
           </div>
         ) : (

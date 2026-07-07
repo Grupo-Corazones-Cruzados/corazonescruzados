@@ -294,6 +294,16 @@ Stack estándar de la casa, con particularidades de este repo:
   miembro está PENDIENTE**: por ahora datos básicos (correo, posición, tarifa, activo/rol) + aviso "el
   contenido se definirá a continuación" (el usuario dirá qué mostrar, distinto al candidato). Deep-links
   `?tab=miembros`, `?miembro=<id>`.
+- **Reclutamiento — menú de acciones (⋮) + fix de contadores (2026-07-07):** en el detalle de
+  Candidatos y Miembros, las acciones se movieron a un **menú de acciones solo-icono** (`⋮`,
+  `components/centralized/ActionsMenu.tsx`) en la cabecera: Candidatos → "Convertir en miembro";
+  Miembros → "Configurar accesos" + "Convertir a candidato" (deshabilitado para admin). Se **quitó** la
+  tarjeta separada "Acceso a Centralizado"; el piso/paso se muestra como línea compacta en la cabecera y
+  se edita desde el menú. **Fix contadores del rail:** estaban **stale** (se cargaban una vez al montar y
+  no se refrescaban tras convertir) y `memberCount` no filtraba activos. Ahora `loadCounts` se pasa como
+  `onChanged` a las pestañas (se re-llama tras cada conversión) y **Miembros cuenta solo `is_active`**
+  (igual que su lista). Nota: al degradar un miembro queda una fila `members` inactiva "huérfana"; el
+  `convert` la **reactiva/reusa por email** (no duplica).
 - **Reclutamiento — confirmaciones in-app + miembro→candidato (2026-07-07):** las confirmaciones de
   conversión usan **`PixelConfirm`** (modal in-app), no `window.confirm`. En el detalle de **Miembros** hay
   botón **"Convertir a candidato"** (`POST /api/admin/members/[id]/to-candidate`, admin): baja el usuario a

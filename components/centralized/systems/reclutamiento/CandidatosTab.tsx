@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { BTN_PRIMARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import ActionsMenu from '@/components/centralized/ActionsMenu';
 import {
   Users, Mail, X, Sparkles, Gem, Activity, HeartHandshake, Search, Phone, Building2, Globe, Info, ChevronDown,
-  UserCheck, ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 import {
   VALUE_ITEMS, DIMENSION_ITEMS, APOYO_ITEMS, sortedTalents,
@@ -26,7 +26,7 @@ const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString('es-EC
  * Los datos de evaluación aún no existen → se muestran como "sin evaluar".
  * Soporta `?candidato=<id>`.
  */
-export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
+export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean; onChanged?: () => void }) {
   const params = useSearchParams();
   const deepLinkId = params.get('candidato');
 
@@ -72,7 +72,9 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
       const res = await fetch(`/api/admin/candidates/${c.id}/convert`, { method: 'POST' });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
       toast.success('Candidato convertido en miembro');
+      setSelectedId(null);
       await load();
+      onChanged?.();
     } catch (e: any) { toast.error(e.message || 'Error'); }
     finally { setConverting(null); }
   };
@@ -138,23 +140,12 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
                   </div>
                   <p className="text-[11px] text-digi-muted/80 mt-1" style={mf}>Última sesión: {fmtDate(selected.last_seen_at)}</p>
                 </div>
+                {isAdmin && (
+                  <ActionsMenu items={[
+                    { label: converting === String(selected.id) ? 'Convirtiendo…' : 'Convertir en miembro', icon: UserCheck, onClick: () => setConfirmConvert(true), disabled: converting === String(selected.id) },
+                  ]} />
+                )}
                 <button onClick={() => setSelectedId(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
-              </div>
-
-              {/* Conversión a miembro */}
-              <div className="mt-3 pt-3 border-t border-digi-border flex flex-wrap items-center justify-between gap-2">
-                {selected.is_member ? (
-                  <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-green-600" style={mf}>
-                    <ShieldCheck className="w-4 h-4" /> Ya es miembro
-                  </span>
-                ) : (
-                  <span className="text-[12px] text-digi-muted" style={mf}>Este candidato aún no es miembro.</span>
-                )}
-                {isAdmin && !selected.is_member && (
-                  <button onClick={() => setConfirmConvert(true)} disabled={converting === String(selected.id)} className={`${BTN_PRIMARY} disabled:opacity-50`}>
-                    <UserCheck className="w-4 h-4" /> {converting === String(selected.id) ? 'Convirtiendo…' : 'Convertir en miembro'}
-                  </button>
-                )}
               </div>
             </div>
 

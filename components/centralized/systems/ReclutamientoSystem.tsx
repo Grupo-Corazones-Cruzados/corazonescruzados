@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Inbox, Users, UserRound } from 'lucide-react';
 import SolicitudesTab from './reclutamiento/SolicitudesTab';
@@ -34,14 +34,18 @@ export default function ReclutamientoSystem({ isAdmin }: { system: any; isAdmin:
   const [candCount, setCandCount] = useState<number | null>(null);
   const [memberCount, setMemberCount] = useState<number | null>(null);
 
-  useEffect(() => {
+  // Cuenta cada pestaña con la MISMA fuente/filtro que su lista (candidatos ya
+  // excluye convertidos; miembros solo activos). Se re-carga tras cada conversión.
+  const loadCounts = useCallback(() => {
     fetch('/api/admin/candidate-proposals').then((r) => r.json())
       .then((d) => setPendingCount((d.data || []).filter((p: any) => p.status === 'pending').length)).catch(() => {});
     fetch('/api/admin/candidates').then((r) => r.json())
       .then((d) => setCandCount((d.data || []).length)).catch(() => {});
     fetch('/api/admin/team').then((r) => r.json())
-      .then((d) => setMemberCount((d.data || []).length)).catch(() => {});
+      .then((d) => setMemberCount((d.data || []).filter((m: any) => m.is_active).length)).catch(() => {});
   }, []);
+
+  useEffect(() => { loadCounts(); }, [loadCounts]);
 
   const countFor = (value: string) =>
     value === 'solicitudes' ? pendingCount : value === 'candidatos' ? candCount : memberCount;
@@ -73,8 +77,8 @@ export default function ReclutamientoSystem({ isAdmin }: { system: any; isAdmin:
 
       {/* Contenido de la pestaña activa */}
       <div className="flex-1 min-w-0 w-full">
-        {tab === 'miembros' ? <MembersTab isAdmin={isAdmin} />
-          : tab === 'candidatos' ? <CandidatosTab isAdmin={isAdmin} />
+        {tab === 'miembros' ? <MembersTab isAdmin={isAdmin} onChanged={loadCounts} />
+          : tab === 'candidatos' ? <CandidatosTab isAdmin={isAdmin} onChanged={loadCounts} />
             : <SolicitudesTab isAdmin={isAdmin} />}
       </div>
     </div>
