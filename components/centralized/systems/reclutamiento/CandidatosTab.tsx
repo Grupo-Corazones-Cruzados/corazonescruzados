@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  Users, Mail, X, Sparkles, Gem, Activity, HeartHandshake, Search, Phone, Building2, Globe, Info,
+  Users, Mail, X, Sparkles, Gem, Activity, HeartHandshake, Search, Phone, Building2, Globe, Info, ChevronDown,
 } from 'lucide-react';
 import {
   VALUE_ITEMS, DIMENSION_ITEMS, APOYO_ITEMS, sortedTalents,
@@ -132,7 +132,7 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
             )}
 
             {/* 1 · Talento */}
-            <Section title="Talento" Icon={Sparkles} subtitle="Top 10 talentos, de mayor a menor potencial">
+            <Section title="Talento" Icon={Sparkles} subtitle="Top 10 talentos, de mayor a menor potencial" count={sortedTalents(criteria?.talents).length || 10}>
               {(() => {
                 const talents = sortedTalents(criteria?.talents);
                 if (talents.length === 0) return <EmptyNote text="Sin datos de talentos aún." />;
@@ -141,17 +141,17 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
             </Section>
 
             {/* 2 · Valores */}
-            <Section title="Valores" Icon={Gem} subtitle="Valores que gobiernan el proyecto">
+            <Section title="Valores" Icon={Gem} subtitle="Valores que gobiernan el proyecto" count={VALUE_ITEMS.length}>
               <CriteriaGrid items={VALUE_ITEMS} group={criteria?.values} />
             </Section>
 
             {/* 3 · Dimensiones */}
-            <Section title="Dimensiones" Icon={Activity}>
+            <Section title="Dimensiones" Icon={Activity} count={DIMENSION_ITEMS.length}>
               <CriteriaGrid items={DIMENSION_ITEMS} group={criteria?.dimensions} />
             </Section>
 
             {/* 4 · Apoyo */}
-            <Section title="Apoyo" Icon={HeartHandshake} subtitle="Redes de apoyo del candidato">
+            <Section title="Apoyo" Icon={HeartHandshake} subtitle="Redes de apoyo del candidato" count={APOYO_ITEMS.length}>
               <CriteriaGrid items={APOYO_ITEMS} group={criteria?.apoyo} />
             </Section>
           </div>
@@ -167,17 +167,27 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function Section({ title, subtitle, Icon, children }: { title: string; subtitle?: string; Icon: any; children: React.ReactNode }) {
+function Section({ title, subtitle, Icon, count, children }: { title: string; subtitle?: string; Icon: any; count?: number; children: React.ReactNode }) {
+  // Contraída por defecto; se expande al hacer clic en la cabecera.
+  const [open, setOpen] = useState(false);
   return (
-    <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-4">
-      <div className="flex items-center gap-2.5 mb-3">
+    <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2.5 p-4 text-left hover:bg-black/[0.02] transition-colors"
+      >
         <div className="w-8 h-8 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-accent" /></div>
-        <div>
+        <div className="min-w-0 flex-1">
           <h4 className="text-[13.5px] font-semibold text-digi-text leading-none" style={df}>{title}</h4>
-          {subtitle && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{subtitle}</p>}
+          {subtitle && <p className="text-[11px] text-digi-muted mt-0.5 truncate" style={mf}>{subtitle}</p>}
         </div>
-      </div>
-      {children}
+        {count != null && (
+          <span className="text-[11px] text-digi-muted tabular-nums shrink-0" style={mf}>{count}</span>
+        )}
+        <ChevronDown className={`w-4 h-4 text-digi-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="px-4 pb-4">{children}</div>}
     </div>
   );
 }
