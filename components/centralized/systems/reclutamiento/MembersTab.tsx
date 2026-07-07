@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { UserRound, Mail, X, Search, BadgeCheck, DollarSign, Briefcase, Info, UserMinus, ShieldAlert } from 'lucide-react';
+import { UserRound, Mail, X, Search, BadgeCheck, DollarSign, Briefcase, Info, UserMinus, ShieldAlert, Network, SlidersHorizontal } from 'lucide-react';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import PixelModal from '@/components/ui/PixelModal';
+import PixelSelect from '@/components/ui/PixelSelect';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
+import { PISOS, PASOS, PISO_LABEL, PASO_LABEL, pisosAtOrBelow } from '@/lib/centralized/systems';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -28,6 +31,11 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [demoting, setDemoting] = useState(false);
   const [confirmDemote, setConfirmDemote] = useState(false);
+  // Modal de acceso a Centralizado (piso/paso)
+  const [accessOpen, setAccessOpen] = useState(false);
+  const [formPiso, setFormPiso] = useState('');
+  const [formPaso, setFormPaso] = useState('');
+  const [savingAccess, setSavingAccess] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,6 +78,28 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
       await load();
     } catch (e: any) { toast.error(e.message || 'Error'); }
     finally { setDemoting(false); }
+  };
+
+  const openAccess = (m: any) => {
+    setFormPiso(m.piso || '');
+    setFormPaso(m.paso || '');
+    setAccessOpen(true);
+  };
+
+  const saveAccess = async () => {
+    if (!selected) return;
+    setSavingAccess(true);
+    try {
+      const res = await fetch(`/api/admin/members/${selected.id}/access`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ piso: formPiso || null, paso: formPaso || null }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error');
+      toast.success('Acceso a Centralizado actualizado');
+      setAccessOpen(false);
+      await load();
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setSavingAccess(false); }
   };
 
   return (
@@ -167,9 +197,42 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
               )}
             </div>
 
+            {/* Acceso a Centralizado (piso / paso) */}
+            <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-4">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0"><Network className="w-4 h-4 text-accent" /></div>
+                  <h4 className="text-[13.5px] font-semibold text-digi-text" style={df}>Acceso a Centralizado</h4>
+                </div>
+                {isAdmin && (
+                  <button onClick={() => openAccess(selected)} className={BTN_SECONDARY}>
+                    <SlidersHorizontal className="w-4 h-4" /> Configurar
+                  </button>
+                )}
+              </div>
+              {selected.piso && selected.paso ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3 text-[12.5px]">
+                    <span className="text-digi-muted" style={mf}>Piso</span>
+                    <span className="text-digi-text font-medium" style={mf}>{PISO_LABEL[selected.piso] || selected.piso}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 text-[12.5px]">
+                    <span className="text-digi-muted" style={mf}>Paso</span>
+                    <span className="text-digi-text font-medium" style={mf}>{PASO_LABEL[selected.paso] || selected.paso}</span>
+                  </div>
+                  <p className="text-[11.5px] text-digi-muted pt-1 leading-relaxed" style={mf}>
+                    Accede a los sistemas del paso <span className="text-digi-text">{PASO_LABEL[selected.paso]}</span> en los pisos:{' '}
+                    <span className="text-digi-text">{pisosAtOrBelow(selected.piso).map((k) => PISO_LABEL[k]).join(', ')}</span>.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[12px] text-digi-muted" style={mf}>Sin piso/paso asignado — este miembro no accede a ningún sistema del Centralizado (salvo los compartidos).</p>
+              )}
+            </div>
+
             <div className="flex items-center gap-2 rounded-lg border border-digi-border bg-digi-darker px-3 py-2 text-[12px] text-digi-muted" style={mf}>
               <Info className="w-4 h-4 shrink-0 text-accent" />
-              El contenido del detalle de miembro se definirá a continuación.
+              El resto del detalle de miembro se definirá a continuación.
             </div>
           </div>
         ) : (
@@ -190,6 +253,38 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
         onConfirm={() => selected && doDemote(selected)}
         onCancel={() => setConfirmDemote(false)}
       />
+
+      {/* Modal: acceso a Centralizado (piso / paso) */}
+      <PixelModal open={accessOpen} onClose={() => !savingAccess && setAccessOpen(false)} title={`Acceso a Centralizado — ${selected ? displayName(selected) : ''}`}>
+        <div className="space-y-3">
+          <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
+            El miembro accede a los sistemas de <span className="text-digi-text font-medium">su paso</span> en su piso y en
+            todos los pisos por <span className="text-digi-text font-medium">debajo</span>.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <PixelSelect label="Piso" value={formPiso} onChange={(e) => setFormPiso(e.target.value)}
+              options={[{ value: '', label: 'Sin asignar' }, ...PISOS.map((p) => ({ value: p.key, label: p.label }))]} />
+            <PixelSelect label="Paso" value={formPaso} onChange={(e) => setFormPaso(e.target.value)}
+              options={[{ value: '', label: 'Sin asignar' }, ...PASOS.map((p) => ({ value: p.key, label: p.label }))]} />
+          </div>
+          {formPiso && formPaso ? (
+            <p className="text-[11.5px] text-accent bg-accent-light border border-accent/20 rounded-md px-2.5 py-2 leading-relaxed" style={mf}>
+              Cubre el paso <span className="font-semibold">{PASO_LABEL[formPaso]}</span> en los pisos:{' '}
+              <span className="font-semibold">{pisosAtOrBelow(formPiso).map((k) => PISO_LABEL[k]).join(', ')}</span>.
+            </p>
+          ) : (
+            <p className="text-[11.5px] text-digi-muted" style={mf}>Sin piso/paso, el miembro no accede a ningún sistema del Centralizado.</p>
+          )}
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => setAccessOpen(false)} disabled={savingAccess}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>Cancelar</button>
+            <button onClick={saveAccess} disabled={savingAccess}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
+              {savingAccess ? 'Guardando…' : 'Guardar'}
+            </button>
+          </div>
+        </div>
+      </PixelModal>
     </div>
   );
 }

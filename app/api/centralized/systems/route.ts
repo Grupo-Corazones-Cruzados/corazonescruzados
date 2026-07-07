@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { slugify } from '@/lib/centralized/systems';
+import { slugify, pisosAtOrBelow } from '@/lib/centralized/systems';
 import { NextRequest, NextResponse } from 'next/server';
 
 /** Genera un slug único para un sistema (dentro de centralized_systems). */
@@ -88,8 +88,8 @@ export async function GET(req: NextRequest) {
     if (slug) { conditions.push(`s.slug = $${params.length + 1}`); params.push(slug); }
 
     // Control de acceso: el admin global ve todos los sistemas. Cualquier otro
-    // miembro solo accede a los sistemas de SU celda asignada (members.piso +
-    // members.paso) o a los que se le hayan compartido explícitamente.
+    // miembro accede a los sistemas de SU paso (exacto) en SU piso y en todos los
+    // pisos por DEBAJO (jerárquico), o a los que se le compartieron explícitamente.
     if (user.role !== 'admin') {
       conditions.push('s.is_active = true');
       const { rows: [me] } = await pool.query(
@@ -102,11 +102,12 @@ export async function GET(req: NextRequest) {
         // Sin miembro asociado → sin acceso a ningún sistema.
         return NextResponse.json({ data: [] });
       }
-      const mp = `$${params.length + 1}`; params.push(me.piso ?? '');
+      const allowedPisos = pisosAtOrBelow(me.piso); // su piso + los de abajo
+      const pp = `$${params.length + 1}`; params.push(allowedPisos as any);
       const ms = `$${params.length + 1}`; params.push(me.paso ?? '');
       const mid = `$${params.length + 1}`; params.push(String(me.member_id));
       conditions.push(
-        `((s.piso = ${mp} AND s.paso = ${ms})` +
+        `((s.piso = ANY(${pp}::text[]) AND s.paso = ${ms})` +
         ` OR EXISTS (SELECT 1 FROM gcc_world.centralized_member_access a WHERE a.system_id = s.id AND a.member_id = ${mid}::int))`
       );
     }

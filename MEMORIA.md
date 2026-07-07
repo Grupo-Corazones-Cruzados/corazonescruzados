@@ -330,17 +330,18 @@ Stack estándar de la casa, con particularidades de este repo:
   **`?solicitud=<id>`** para abrir una postulación por URL. Campos de `candidate_proposals`: email, reason,
   marketing, status (pending/approved; **reject elimina la fila**), email_verified, created_at, decided_at,
   decided_by.
-- **Centralizado: acceso por piso+paso del miembro (2026-07-06):** el **admin global** (`role='admin'`,
-  cuenta `lfgonzalezm0@outlook.com`) accede a **todos** los sistemas sin restricción. Cualquier otro
-  miembro accede **solo a los sistemas de SU celda asignada**: nuevas columnas **`members.piso`** y
-  **`members.paso`** (nullable) → ve los sistemas donde `system.piso = member.piso AND system.paso =
-  member.paso`, **o** los que se le hayan compartido explícitamente (`centralized_member_access`).
-  Sin piso/paso asignado y sin shares → no ve ningún sistema. Enforcement en `GET
-  /api/centralized/systems` (para no-admin): añade la condición de celda/compartido; así la lista, el
-  rail y la ruta por slug (`?slug=` devuelve [] si no hay acceso → la página muestra "no encontrado o
-  sin acceso"). Las columnas `members.piso/paso` se **asignarán a futuro desde el sistema de
-  Reclutamiento y Selección**. Los valores válidos son las keys de `PISOS`/`PASOS` en
-  `lib/centralized/systems.ts`.
+- **Centralizado: acceso jerárquico por piso + exacto por paso (2026-07-07, CORRIGE el modelo previo):**
+  el **admin global** accede a **todo**. Cualquier otro miembro accede a los sistemas de **SU paso
+  (exacto)** en **SU piso y en todos los pisos por DEBAJO** (jerarquía `global > pilar > controlador >
+  colaborador`), **o** a los compartidos (`centralized_member_access`). Ej.: piso *global* + paso
+  *fundamentación* → todos los pisos en fundamentación; piso *pilar* + fundamentación → pilar+controlador+
+  colaborador (NO global); piso *colaborador* → solo colaborador. **ANTES era "celda exacta" (piso Y paso
+  iguales) — ya NO.** Cada miembro = 1 piso + 1 paso (`members.piso`, `members.paso`). Sin piso/paso → sin
+  acceso (salvo shares). Enforcement en `GET /api/centralized/systems`: `s.piso = ANY(pisosAtOrBelow(piso))
+  AND s.paso = paso`; helper **`pisosAtOrBelow`** en `lib/centralized/systems.ts` (`PISO_ORDER`). **UI:** en
+  la pestaña **Miembros** de Reclutamiento, el detalle tiene tarjeta "Acceso a Centralizado" (muestra piso/
+  paso y qué pisos cubre) + botón **Configurar** → modal con selects piso/paso → `PATCH
+  /api/admin/members/[id]/access` (admin). El list `/api/admin/team` ahora devuelve `piso`/`paso`.
 - **Centralizado: ruta propia por sistema (2026-07-06):** cada sistema tiene una **URL estable**
   `/dashboard/centralized/[piso]/[paso]/[slug]` (decisión del usuario: piso + paso + slug), pensada para
   redirecciones y **parámetros** futuros (p. ej. `?candidato=123`). Se añadió columna **`slug`** (única,

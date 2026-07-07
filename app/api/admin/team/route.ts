@@ -8,7 +8,7 @@ export async function GET() {
     if (!user || user.role !== 'admin') return NextResponse.json({ data: [] }, { status: 403 });
 
     const { rows } = await pool.query(
-      `SELECT m.id, m.name, m.email, m.hourly_rate, m.is_active,
+      `SELECT m.id, m.name, m.email, m.hourly_rate, m.is_active, m.piso, m.paso,
               p.name as position_name,
               u.role, u.avatar_url
        FROM gcc_world.members m

@@ -29,6 +29,19 @@ export const PASO_LABEL: Record<string, string> = Object.fromEntries(PASOS.map((
 export const PISO_KEYS = new Set(PISOS.map((p) => p.key));
 export const PASO_KEYS = new Set(PASOS.map((p) => p.key));
 
+/**
+ * Jerarquía de pisos, de arriba hacia abajo. El acceso a Centralizado es
+ * jerárquico por piso: un miembro accede a los sistemas de SU piso y de todos los
+ * pisos POR DEBAJO, pero solo en SU paso (exacto).
+ */
+export const PISO_ORDER: string[] = PISOS.map((p) => p.key); // global > pilar > controlador > colaborador
+
+/** Pisos al nivel del dado y por debajo (p. ej. 'pilar' → pilar, controlador, colaborador). */
+export function pisosAtOrBelow(piso: string | null | undefined): string[] {
+  const i = PISO_ORDER.indexOf(String(piso ?? ''));
+  return i < 0 ? [] : PISO_ORDER.slice(i);
+}
+
 export const isPiso = (v: string): v is PisoKey => PISO_KEYS.has(v as PisoKey);
 export const isPaso = (v: string): v is PasoKey => PASO_KEYS.has(v as PasoKey);
 
