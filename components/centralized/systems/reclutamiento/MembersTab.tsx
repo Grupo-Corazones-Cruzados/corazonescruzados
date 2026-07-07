@@ -174,9 +174,11 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                   <div className="flex flex-wrap items-center gap-1.5 mt-2">
                     <PixelBadge variant={selected.is_active ? 'success' : 'default'}>{selected.is_active ? 'Activo' : 'Inactivo'}</PixelBadge>
                     {selected.role && <PixelBadge variant="info"><span className="inline-flex items-center gap-1"><BadgeCheck className="w-3 h-3" /> {selected.role}</span></PixelBadge>}
-                    <span className="inline-flex items-center gap-1 text-[11.5px] text-digi-muted" style={mf} title="Acceso a Centralizado">
-                      <Network className="w-3.5 h-3.5" /> Centralizado: {selected.piso && selected.paso ? `${PISO_LABEL[selected.piso] || selected.piso} · ${PASO_LABEL[selected.paso] || selected.paso}` : 'sin acceso'}
-                    </span>
+                    {!isAdminMember && (
+                      <span className="inline-flex items-center gap-1 text-[11.5px] text-digi-muted" style={mf} title="Acceso a Centralizado">
+                        <Network className="w-3.5 h-3.5" /> Centralizado: {selected.piso && selected.paso ? `${PISO_LABEL[selected.piso] || selected.piso} · ${PASO_LABEL[selected.paso] || selected.paso}` : 'sin acceso'}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
