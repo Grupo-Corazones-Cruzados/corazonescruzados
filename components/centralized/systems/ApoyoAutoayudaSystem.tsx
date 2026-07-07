@@ -167,7 +167,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
             <KnowledgeGraph nodes={graph.nodes} edges={graph.edges} selectedKey={selectedKey} onSelect={(n) => setSelectedKey(n ? n.key : null)} />
 
             {(createCtx || selectedNode) && (
-              <aside className="absolute top-3 right-3 bottom-3 w-[330px] max-w-[calc(100%-24px)] overflow-y-auto z-10 p-2.5 space-y-2.5">
+              <aside className="absolute bottom-3 right-3 w-[330px] max-w-[calc(100%-24px)] max-h-[calc(100%-24px)] overflow-y-auto z-10 p-2.5 space-y-2.5">
                 {createCtx ? (
                   <div className={`${GLASS} p-3.5 space-y-3`}>
                     <div className="flex items-center justify-between">
