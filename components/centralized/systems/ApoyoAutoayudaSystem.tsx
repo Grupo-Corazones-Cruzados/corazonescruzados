@@ -84,11 +84,20 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
   };
 
   const toggleSolutionCause = async (solutionId: number, causeId: number, connect: boolean) => {
+    const sKey = nodeKey('solution', solutionId);
+    const cKey = nodeKey('cause', causeId);
+    // Optimista: refleja la arista al instante (sin refrescar todo ni reiniciar el layout).
+    setGraph((g) => {
+      const has = g.edges.some((e) => e.type === 'solution_cause' && e.source === sKey && e.target === cKey);
+      const edges = connect
+        ? (has ? g.edges : [...g.edges, { source: sKey, target: cKey, type: 'solution_cause' as const }])
+        : g.edges.filter((e) => !(e.type === 'solution_cause' && e.source === sKey && e.target === cKey));
+      return { ...g, edges };
+    });
     try {
       const res = await fetch('/api/centralized/apoyo/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'solution_cause', a: solutionId, b: causeId, connect }) });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
-      await loadGraph();
-    } catch (e: any) { toast.error(e.message || 'Error'); }
+    } catch (e: any) { toast.error(e.message || 'Error'); await loadGraph(); }
   };
 
   // Para una solución seleccionada: causas candidatas (de sus problemas) y las afectadas.

@@ -49,10 +49,25 @@ export default function KnowledgeGraph({
   const [ForceGraph2D, setForceGraph2D] = useState<any>(null);
   useEffect(() => { let ok = true; import('react-force-graph-2d').then((m) => { if (ok) setForceGraph2D(() => m.default); }); return () => { ok = false; }; }, []);
 
-  const graphData = useMemo(() => ({
-    nodes: nodes.map((n) => ({ id: n.key, ref: n })),
-    links: edges.map((e) => ({ source: e.source, target: e.target, type: e.type })),
-  }), [nodes, edges]);
+  // Reusa los MISMOS objetos-nodo entre renders (por key) para que react-force-graph
+  // conserve sus posiciones (x/y) y NO reinicie el layout al cambiar solo las aristas.
+  const nodeObjRef = useRef<Map<string, any>>(new Map());
+  const graphData = useMemo(() => {
+    const cache = nodeObjRef.current;
+    const keep = new Set<string>();
+    const gnodes = nodes.map((n) => {
+      keep.add(n.key);
+      let o = cache.get(n.key);
+      if (!o) { o = { id: n.key }; cache.set(n.key, o); }
+      o.ref = n;
+      return o;
+    });
+    for (const k of Array.from(cache.keys())) if (!keep.has(k)) cache.delete(k);
+    return { nodes: gnodes, links: edges.map((e) => ({ source: e.source, target: e.target, type: e.type })) };
+  }, [nodes, edges]);
+
+  // Firma del CONJUNTO de nodos (no de las aristas): reencuadra solo si cambian los nodos.
+  const nodesKey = useMemo(() => nodes.map((n) => n.key).join('|'), [nodes]);
 
   const neighbors = useMemo(() => {
     const m = new Map<string, Set<string>>();
@@ -83,7 +98,7 @@ export default function KnowledgeGraph({
     fg.d3Force('link')?.distance(60).strength(0.9);
     const t = setTimeout(() => fg.zoomToFit?.(500, 70), 500);
     return () => clearTimeout(t);
-  }, [graphData, ForceGraph2D]);
+  }, [nodesKey, ForceGraph2D]);
 
   const zoomBy = (f: number) => { const fg = fgRef.current; if (fg) fg.zoom(fg.zoom() * f, 250); };
   const fit = () => fgRef.current?.zoomToFit(400, 70);
