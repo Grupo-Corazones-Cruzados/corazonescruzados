@@ -6,8 +6,36 @@ import { NODE_META } from '@/lib/centralized/apoyo';
 import type { GraphNode, GraphEdge } from '@/lib/centralized/apoyo';
 
 // react-force-graph usa d3-force (física) + canvas (render), como el grafo de Obsidian.
-const NODE_R: Record<string, number> = { situation: 7, problem: 5.5, cause: 4.5, solution: 5.5 };
+// Tamaño base por tipo (además del extra por nº de conexiones). Situación es el ancla
+// (más grande); causa la más pequeña (raíz).
+const NODE_R: Record<string, number> = { situation: 9, problem: 7, cause: 4.5, solution: 6.5 };
 const BG = '#000000';
+
+function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Traza la FORMA del nodo según su tipo (distinción clara además del color):
+//  situación = hexágono · problema = triángulo · causa = círculo · solución = cuadrado redondeado.
+function traceShape(ctx: CanvasRenderingContext2D, type: string, x: number, y: number, r: number) {
+  ctx.beginPath();
+  if (type === 'situation') {
+    for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + i * (Math.PI / 3); const px = x + r * Math.cos(a), py = y + r * Math.sin(a); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.closePath();
+  } else if (type === 'problem') {
+    const h = r * 1.16;
+    ctx.moveTo(x, y - h); ctx.lineTo(x + h * 0.92, y + h * 0.62); ctx.lineTo(x - h * 0.92, y + h * 0.62); ctx.closePath();
+  } else if (type === 'solution') {
+    const s = r * 0.92; roundRectPath(ctx, x - s, y - s, 2 * s, 2 * s, r * 0.34);
+  } else {
+    ctx.arc(x, y, r, 0, 2 * Math.PI);
+  }
+}
 
 const linkId = (l: any, end: 'source' | 'target') => (typeof l[end] === 'object' ? l[end].id : l[end]);
 
@@ -187,8 +215,8 @@ export default function KnowledgeGraph({
             const isSel = node.id === selectedKey;
             const alpha = lit ? 1 : 0.2;
 
-            // Halo de luz (gradiente radial suave) — da el aspecto luminoso/fluido.
-            const glowR = r * (isActive ? 3.4 : 2.5);
+            // Halo de luz (círculo suave alrededor de la forma) — aspecto luminoso.
+            const glowR = r * (isActive ? 3.2 : 2.4);
             const glow = ctx.createRadialGradient(node.x, node.y, r * 0.2, node.x, node.y, glowR);
             glow.addColorStop(0, hexA(color, lit ? (isActive ? 0.5 : 0.34) : 0.08));
             glow.addColorStop(1, hexA(color, 0));
@@ -196,25 +224,21 @@ export default function KnowledgeGraph({
             ctx.fillStyle = glow;
             ctx.beginPath(); ctx.arc(node.x, node.y, glowR, 0, 2 * Math.PI); ctx.fill();
 
-            // Anillo del seleccionado
+            // Anillo del seleccionado (misma forma que el nodo)
             if (isSel) {
               ctx.globalAlpha = lit ? 0.7 : 0.22;
-              ctx.beginPath(); ctx.arc(node.x, node.y, r + 3.5, 0, 2 * Math.PI);
+              traceShape(ctx, n.type, node.x, node.y, r + 3.4);
               ctx.strokeStyle = hexA(color, 0.9); ctx.lineWidth = 1.4; ctx.stroke();
             }
 
-            // Orbe: color saturado con leve oscurecido hacia el borde (SIN núcleo claro/blanco).
-            ctx.globalAlpha = alpha;
+            // Forma del tipo, color saturado con leve oscurecido al borde (sin núcleo blanco).
             const rr = isActive ? r + 1 : r;
-            const g = ctx.createRadialGradient(node.x, node.y, rr * 0.25, node.x, node.y, rr);
+            const g = ctx.createRadialGradient(node.x, node.y, rr * 0.25, node.x, node.y, rr * 1.05);
             g.addColorStop(0, color);
-            g.addColorStop(1, mix(color, '#000000', 0.28));
-            ctx.beginPath(); ctx.arc(node.x, node.y, rr, 0, 2 * Math.PI);
-            ctx.fillStyle = g; ctx.fill();
-            // Borde oscuro fino para definición sobre el fondo oscuro.
-            ctx.globalAlpha = alpha * 0.85;
-            ctx.lineWidth = 0.8; ctx.strokeStyle = mix(color, '#000000', 0.45);
-            ctx.beginPath(); ctx.arc(node.x, node.y, rr, 0, 2 * Math.PI); ctx.stroke();
+            g.addColorStop(1, mix(color, '#000000', 0.3));
+            traceShape(ctx, n.type, node.x, node.y, rr);
+            ctx.globalAlpha = alpha; ctx.fillStyle = g; ctx.fill();
+            ctx.globalAlpha = alpha * 0.85; ctx.lineWidth = 0.9; ctx.strokeStyle = mix(color, '#000000', 0.45); ctx.stroke();
             ctx.globalAlpha = alpha;
 
             const showLabel = scale >= 1.25 || (active ? lit : n.type === 'situation');
@@ -232,9 +256,10 @@ export default function KnowledgeGraph({
             ctx.globalAlpha = 1;
           }}
           nodePointerAreaPaint={(node: any, colorStr: string, ctx: CanvasRenderingContext2D) => {
+            if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
             const n: GraphNode = node.ref;
-            ctx.fillStyle = colorStr; ctx.beginPath();
-            ctx.arc(node.x, node.y, radiusOf(n) + 3, 0, 2 * Math.PI); ctx.fill();
+            ctx.fillStyle = colorStr;
+            traceShape(ctx, n.type, node.x, node.y, radiusOf(n) + 3); ctx.fill();
           }}
         />
       )}

@@ -22,6 +22,14 @@ const GLASS_INPUT = 'w-full px-2.5 py-1.5 bg-black/40 border border-white/15 rou
 
 type CreateCtx = { type: ApoyoNodeType; situationId?: number; problemId?: number };
 
+// Marca de forma por tipo (coincide con las formas del grafo) para leyenda/indicadores.
+const shapeStyle = (type: string): React.CSSProperties => {
+  if (type === 'situation') return { clipPath: 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)' };
+  if (type === 'problem') return { clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' };
+  if (type === 'solution') return { borderRadius: '3px' };
+  return { borderRadius: '9999px' };
+};
+
 /**
  * Sistema "Apoyo y Autoayuda" (Global · Implementación). Grafo tipo universo de
  * Situación → Problemas → Causas, y Soluciones (reutilizables) → Problemas + Causas
@@ -161,7 +169,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
               <div className="hidden sm:flex items-center gap-2.5">
                 {NODE_TYPES.map((t) => (
                   <span key={t.key} className="inline-flex items-center gap-1 text-[11px] text-digi-muted" style={mf}>
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color }} /> {t.plural}
+                    <span className="w-3 h-3 shrink-0" style={{ background: t.color, ...shapeStyle(t.key) }} /> {t.plural}
                   </span>
                 ))}
               </div>
@@ -201,7 +209,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                     {/* Cabecera */}
                     <div className={`${GLASS} p-3.5`}>
                       <div className="flex items-start gap-2.5">
-                        <span className="w-3 h-3 rounded-full mt-1 shrink-0" style={{ background: NODE_META[selectedNode.type].color, boxShadow: `0 0 10px ${NODE_META[selectedNode.type].color}` }} />
+                        <span className="w-3 h-3 mt-1 shrink-0" style={{ background: NODE_META[selectedNode.type].color, ...shapeStyle(selectedNode.type) }} />
                         <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ ...df, color: NODE_META[selectedNode.type].color }}>{NODE_META[selectedNode.type].label}</p>
                           <h3 className="text-[14.5px] font-semibold text-white leading-snug" style={mf}>{selectedNode.title}</h3>
@@ -223,7 +231,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                               {g.nodes.map((n) => (
                                 <button key={n.key} onClick={() => setSelectedKey(n.key)} title={n.title}
                                   className="inline-flex items-center gap-1.5 max-w-full px-2 py-1 rounded-full bg-white/[0.08] hover:bg-white/[0.18] border border-white/12 text-[11.5px] text-white/90 transition-colors" style={mf}>
-                                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: NODE_META[n.type].color }} />
+                                  <span className="w-2.5 h-2.5 shrink-0" style={{ background: NODE_META[n.type].color, ...shapeStyle(n.type) }} />
                                   <span className="truncate max-w-[180px]">{n.title}</span>
                                 </button>
                               ))}
