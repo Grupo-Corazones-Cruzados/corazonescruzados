@@ -250,3 +250,39 @@ de fases (1–9: tokens `.corp`, controles/modales Fluent, formularios como pane
 quitar título+descripción, `ModuleToolbar`, sidebar lucide, páginas de detalle estilo Monday) está registrado
 en **`MEMORIA.md`** (sección "Lecciones técnicas → Theming corporativo") y en el historial de git. Objetivos
 previos (feature "Cliente previo") también en MEMORIA.md/git.
+
+## Aprendizaje técnico — Grafo tipo Obsidian con `react-force-graph` (2026-07-07)
+Contexto: sistema **Apoyo y Autoayuda** (Centralizado) — visualizar Situación→Problemas→Causas y
+Soluciones→Problemas+Causas como un *graph view* estilo Obsidian. Detalle de diseño en `Diseño.md`.
+
+### P — ¿Qué usa Obsidian y cómo replicarlo en open source? · ✅ Resuelta
+Obsidian es **cerrado**; su graph = **d3-force** (física/layout) + **PIXI.js/WebGL** (render). La forma
+open-source equivalente es **`react-force-graph`** (vasturiano), mismo motor `d3-force` con render en
+canvas/WebGL. Elegido **`react-force-graph-2d`** (canvas 2D).
+
+### P — ¿Cómo integrarlo en Next.js (SSR) conservando el `ref`? · ✅ Resuelta
+La lib usa `window/canvas` → no puede importarse en SSR. **`next/dynamic` NO reenvía refs** (y el `ref`
+es necesario para `d3Force`, `zoomToFit`, `zoom`). Solución: cargar la lib con `import('react-force-graph-2d')`
+dentro de un `useEffect`, guardarla en `useState` y **renderizar el componente real** con `ref` normal;
+placeholder mientras carga. Medir ancho/alto del contenedor con `ResizeObserver`.
+
+### P — Gotchas de rendering en canvas · ✅ Resuelta
+- `createRadialGradient` **lanza** si `x/y/r` no son finitos → en los primeros frames `node.x/y` pueden
+  ser `NaN` (antes de que la física posicione). **Guardar** con `Number.isFinite` al inicio de
+  `nodeCanvasObject`/`nodePointerAreaPaint`.
+- Formas por tipo: trazar el path en canvas (`traceShape`) y usar `nodePointerAreaPaint` con la misma
+  forma para que el hit-test coincida.
+
+### P — ¿Cómo evitar el "salto"/lentitud al cambiar aristas? · ✅ Resuelta
+Dos causas: (1) **refetch completo** del grafo por cada cambio; (2) recrear los objetos-nodo cambia su
+identidad → react-force-graph **reinicia el layout** y pierde posiciones. Solución: **actualización
+optimista** del estado local (sync en 2º plano, revertir si falla) + **cachear los objetos-nodo por key**
+(useRef Map) para conservar `x/y`; y disparar `zoomToFit` **solo cuando cambia el conjunto de nodos**
+(firma `nodes.map(n=>n.key).join()`), no al cambiar aristas.
+
+### Lecciones de diseño (del usuario, iterando) · ✅
+- Fondo **negro** puro (sin nebulosa morada). Color oscuro de marca (`#4B2D8E`) **no se distingue** sobre
+  negro → subir a violeta vivo `#8b5cf6`. Nodos **sin núcleo blanco** (se ve "infantil"): orbe saturado +
+  halo. Distinción por **forma + tamaño**, no solo color. Panel de detalle **transparente** con bloques
+  "glass" (`bg-black/40 backdrop-blur`) para leerse sobre el canvas sin taparlo; **anclado abajo-derecha**;
+  incluir **referencias a conexiones** (chips navegables).

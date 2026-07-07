@@ -94,8 +94,12 @@ estilos ad-hoc por archivo.
 | Rail de propiedades | `components/ui/PropertyRail` | panel sticky de metadatos clave/valor |
 | Header de detalle | `components/ui/DetailHeader` | breadcrumb + título + command bar + overflow ⋯ |
 | Confirmar | `components/ui/PixelConfirm` | NO usar `confirm()` del navegador (excepción puntual) |
+| Menú de acciones (⋮) | `components/centralized/ActionsMenu` | botón solo-icono `MoreVertical` → menú desplegable de acciones (items `{label,icon,onClick,danger,disabled}`); cierra al clic fuera. Reemplaza botones sueltos en cabeceras de detalle |
+| Lista de usuarios | `components/centralized/UsersList` | candidatos + miembros en **2 grupos colapsables**; selección única (`SelectedUser`). Reusada por Horario de Vida y Apoyo y Autoayuda |
 - **Iconografía dashboard:** **`lucide-react`** (línea monocromo, serио tipo Microsoft), `currentColor`,
   16–20px. Es el estándar del dashboard (sidebar, tablas, command bars). **NO emojis.**
+- **Botón cerrar (X) junto a acciones:** ambos como botones **32×32** (`w-8 h-8 flex items-center
+  justify-center rounded-md`) en un contenedor `flex items-center` para que queden a la misma altura.
 
 ### Patrón "Explorador Azure" (rail + lista + panel) — estándar para módulos con jerarquía
 Adoptado 2026-07-05 en **Centralizado** (`app/(dashboard)/dashboard/centralized/page.tsx`) para
@@ -314,6 +318,35 @@ Proyectos). Ajustes con secciones → **rail + contenido** (Configuración). Cat
 **maestro-detalle** (lista + editor a ancho completo; editores DigiMundo).
 
 ---
+
+### Grafo de conocimiento (canvas oscuro + panel "glass") — estándar para relaciones tipo Obsidian
+Adoptado 2026-07-07 en **Apoyo y Autoayuda** (`components/centralized/apoyo/KnowledgeGraph.tsx`,
+`ApoyoAutoayudaSystem.tsx`). Para visualizar entidades conectadas (situaciones/problemas/causas/
+soluciones) tipo *graph view* de Obsidian.
+- **Librería:** **`react-force-graph-2d`** (motor **d3-force** + render **canvas**, misma arquitectura
+  que Obsidian —cerrado— que usa d3-force + PIXI/WebGL). Se **carga solo en cliente** (`import()` en
+  `useEffect` + render del componente real; `next/dynamic` NO reenvía refs, y el `ref` se necesita para
+  `d3Force`/`zoomToFit`/`zoom`). Mide **ancho y alto** del contenedor con `ResizeObserver`.
+- **Lienzo:** fondo **negro** (`#000000`). Los nodos aportan el color; **NO** poner nebulosa/tinte de
+  fondo (se probó morado y tapaba/desentonaba).
+- **Distinción por TIPO = color + FORMA + tamaño** (no solo color): Situación = **hexágono** (grande,
+  ancla), Problema = **triángulo**, Solución = **cuadrado redondeado**, Causa = **círculo** (pequeño,
+  raíz). Formas trazadas en canvas (`traceShape`) y replicadas en leyenda/chips/panel con `clip-path`
+  (helper `shapeStyle`). Tamaño base por tipo + extra por nº de conexiones (grado).
+- **Nodo:** orbe de color **saturado** con leve oscurecido al borde (radial-gradient centro=color →
+  borde=`mix(color,#000,0.3)`) + **halo de luz** (glow radial del color) + borde fino oscuro. **SIN
+  núcleo blanco** (se veía "infantil"). Guardar contra `x/y/r` no finitos antes de `createRadialGradient`.
+- **Resalte:** hover/selección ilumina el nodo + **vecinos** (atenúa el resto); aristas **curvas** con
+  **flechas** direccionales y **partículas** animadas ("energía") en las del nodo activo; clic **centra**
+  la cámara. Controles flotantes (ajustar/zoom±/reorganizar) en `bg-white/10 backdrop-blur`.
+- **Panel de detalle "glass" flotante:** sobre el canvas oscuro, **anclado abajo-derecha**
+  (`absolute bottom-3 right-3 max-h-…`), **fondo transparente**; el contenido va en **bloques glass**
+  (`rounded-xl bg-black/40 backdrop-blur-md border border-white/12`) con **texto claro**, inputs/botones
+  adaptados a oscuro (`bg-black/40 border-white/15 text-white`, `bg-white/[0.08] hover:bg-white/[0.18]`).
+  Incluye sección **"Conexiones"** con chips clicables de los nodos vinculados (navega el grafo).
+- **Rendimiento:** mutaciones de aristas son **optimistas** (actualizar estado local, sync en 2º plano) y
+  el grafo **reutiliza los objetos-nodo por key** (conserva posiciones → no reinicia el layout); el
+  `zoomToFit` solo se dispara cuando cambia el **conjunto de nodos**, no al cambiar aristas.
 
 ## Desviaciones detectadas y resolución
 - **2026-06-28:** las secciones del editor tenían títulos, botones de filtros e íconos distintos
