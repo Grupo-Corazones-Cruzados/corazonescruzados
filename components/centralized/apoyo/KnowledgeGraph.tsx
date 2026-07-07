@@ -141,8 +141,8 @@ export default function KnowledgeGraph({
     const t = setTimeout(() => {
       const fg = fgRef.current;
       if (!fg) return;
-      fg.d3Force('charge')?.strength(-320).distanceMax(600);
-      fg.d3Force('link')?.distance(110).strength(0.75);
+      fg.d3Force('charge')?.strength(-520).distanceMax(800);
+      fg.d3Force('link')?.distance(160).strength(0.7);
       if (fittedRef.current !== fitSignal) { fittedRef.current = fitSignal; fg.zoomToFit?.(500, 70); }
     }, 400);
     return () => clearTimeout(t);
