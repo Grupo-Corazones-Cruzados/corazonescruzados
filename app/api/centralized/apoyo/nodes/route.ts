@@ -34,11 +34,12 @@ export async function POST(req: Request) {
       const subjectId = String(b.subject_id || '');
       if (!kind || !subjectId) return NextResponse.json({ error: 'Falta el sujeto' }, { status: 400 });
       const { rows } = await pool.query(
-        `INSERT INTO gcc_world.aa_situations (subject_kind, subject_id, title, dimension, description) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-        [kind, subjectId, title, dimension, description],
+        `INSERT INTO gcc_world.aa_situations (subject_kind, subject_id, title, description) VALUES ($1,$2,$3,$4) RETURNING id`,
+        [kind, subjectId, title, description],
       );
       id = Number(rows[0].id);
     } else if (type === 'problem') {
+      if (!dimension) return NextResponse.json({ error: 'La dimensión es requerida' }, { status: 400 });
       const { rows } = await pool.query(`INSERT INTO gcc_world.aa_problems (title, dimension, description) VALUES ($1,$2,$3) RETURNING id`, [title, dimension, description]);
       id = Number(rows[0].id);
       if (b.situationId) await pool.query(`INSERT INTO gcc_world.aa_situation_problems (situation_id, problem_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [Number(b.situationId), id]);

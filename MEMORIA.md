@@ -271,6 +271,9 @@ Stack estándar de la casa, con particularidades de este repo:
   Centralizado, id 5, slug `apoyo-y-autoayuda`). Registro de **conocimiento reutilizable** para apoyar a
   una persona en sus dimensiones (laboral/corporal/mental/social). **Modelo:** Situación (por-sujeto) →
   **Problemas** → **Causas**; **Soluciones** (reutilizables) → Problemas + las **Causas que afectan**.
+  **Dimensión (2026-07-07):** vive en el **Problema** y es **obligatoria** al crearlo (validado en cliente y
+  en `nodes` POST); la **Situación NO** pide dimensión (se quitó el campo del form y del INSERT); causas/soluciones
+  nunca la tuvieron. La columna `aa_situations.dimension` queda pero se inserta null.
   Todas M:M salvo Situación que es por-sujeto. **DB** (`lib/centralized/apoyo-db.ts`, `ensureApoyoTables`):
   `aa_situations` (subject_kind `candidate|member` + subject_id), `aa_problems`, `aa_causes`,
   `aa_solutions` + joins `aa_situation_problems`, `aa_problem_causes`, `aa_solution_problems`,

@@ -99,11 +99,12 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
   const createNode = async () => {
     if (!createCtx) return;
     if (!form.title.trim()) { toast.error('El título es requerido'); return; }
+    if (createCtx.type === 'problem' && !form.dimension) { toast.error('La dimensión es requerida'); return; }
     setBusy(true);
     try {
       const body: any = { type: createCtx.type, title: form.title, description: form.description || null };
-      if (createCtx.type === 'situation') { body.subject_kind = user!.kind; body.subject_id = user!.id; body.dimension = form.dimension || null; }
-      if (createCtx.type === 'problem') { body.situationId = createCtx.situationId; body.dimension = form.dimension || null; }
+      if (createCtx.type === 'situation') { body.subject_kind = user!.kind; body.subject_id = user!.id; }
+      if (createCtx.type === 'problem') { body.situationId = createCtx.situationId; body.dimension = form.dimension; }
       if (createCtx.type === 'cause') body.problemId = createCtx.problemId;
       if (createCtx.type === 'solution') body.problemId = createCtx.problemId;
       const res = await fetch('/api/centralized/apoyo/nodes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -234,9 +235,9 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                       <button onClick={() => setCreateCtx(null)} className="text-white/60 hover:text-white" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                     </div>
                     <input autoFocus value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Título" className={GLASS_INPUT} style={mf} />
-                    {(createCtx.type === 'situation' || createCtx.type === 'problem') && (
+                    {createCtx.type === 'problem' && (
                       <select value={form.dimension} onChange={(e) => setForm((f) => ({ ...f, dimension: e.target.value }))} className={GLASS_INPUT} style={mf}>
-                        <option value="" className="bg-digi-darker text-digi-text">Dimensión (opcional)</option>
+                        <option value="" className="bg-digi-darker text-digi-text">Dimensión (requerida)</option>
                         {DIMENSIONS.map((d) => <option key={d.key} value={d.key} className="bg-digi-darker text-digi-text">{d.label}</option>)}
                       </select>
                     )}
