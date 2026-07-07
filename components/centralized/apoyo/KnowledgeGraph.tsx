@@ -173,9 +173,13 @@ export default function KnowledgeGraph({
           linkDirectionalParticleColor={(l: any) => NODE_META[(l.type as string).startsWith('solution') ? 'solution' : 'situation']?.color || '#c4b5fd'}
           nodeCanvasObjectMode={() => 'replace'}
           nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, scale: number) => {
+            // Los primeros frames pueden no tener posición aún (NaN) → evita que
+            // createRadialGradient lance por valores no finitos.
+            if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
             const n: GraphNode = node.ref;
             const color = NODE_META[n.type].color;
             const r = radiusOf(n);
+            if (!Number.isFinite(r) || r <= 0) return;
             const lit = isLit(node.id);
             const isActive = node.id === active;
             const isSel = node.id === selectedKey;
