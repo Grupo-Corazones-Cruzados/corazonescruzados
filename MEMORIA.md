@@ -267,6 +267,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Reclutamiento — pestaña Candidatos + criterios (2026-07-06):** el sistema ahora tiene **rail con 2
+  pestañas** (`ReclutamientoSystem.tsx`): **Solicitudes** (`reclutamiento/SolicitudesTab.tsx`) y
+  **Candidatos** (`reclutamiento/CandidatosTab.tsx`). "Candidatos" lista los postulantes **aprobados que
+  iniciaron sesión y completaron su perfil** = `clients` con `account_type='candidate' AND approved AND
+  profile_completed` (API nueva **`GET /api/admin/candidates`**, admin-only). Al seleccionar uno, a la
+  derecha se ven sus **criterios en 4 secciones con barras de %**: **Talento** (top 10, orden desc),
+  **Valores** (9: Determinación, Coraje, Pureza, Fe, Paciencia, Seriedad, Espontaneidad, Autonomía,
+  Empatía), **Dimensiones** (mental, corporal, social, laboral) y **Apoyo** (familia, amigos, grupos,
+  clientes). Constantes/tipos en **`lib/centralized/reclutamiento.ts`** (`CandidateCriteria`, VALUE/
+  DIMENSION/APOYO_ITEMS). **PENDIENTE de datos:** los porcentajes se llenarán A FUTURO desde un sistema de
+  evaluación (fuente por definir — el usuario dirá dónde y cómo); hoy `criteria=null` → la UI muestra
+  "sin evaluar" (—). Deep-links: `?tab=candidatos`, `?candidato=<id>`, `?solicitud=<id>`.
 - **Accesos estáticos por rol al dashboard (2026-07-06):** fuente única **`lib/dashboard/access.ts`**
   (`MODULE_ACCESS`, `accessRoleOf`, `canAccess`, `defaultDashboardPath`). **Roles efectivos:** admin
   (`role='admin'`, todo), member (`role='member'`, todo menos Admin), y como `role='client'` NO distingue
