@@ -18,15 +18,22 @@ export async function GET() {
     }
 
     const { rows } = await pool.query(
-      `SELECT id, name, full_name, email, phone, company, country, alias,
-              last_seen_at, created_at, user_id
-         FROM gcc_world.clients
-        WHERE account_type = 'candidate' AND approved = true AND profile_completed = true
-        ORDER BY last_seen_at DESC NULLS LAST, id DESC`,
+      `SELECT c.id, c.name, c.full_name, c.email, c.phone, c.company, c.country, c.alias,
+              c.last_seen_at, c.created_at, c.user_id,
+              u.role AS user_role, u.member_id
+         FROM gcc_world.clients c
+         LEFT JOIN gcc_world.users u ON u.id = c.user_id
+        WHERE c.account_type = 'candidate' AND c.approved = true AND c.profile_completed = true
+        ORDER BY c.last_seen_at DESC NULLS LAST, c.id DESC`,
     );
 
     // criteria por candidato: pendiente de fuente de datos (evaluaciones).
-    const data = rows.map((r: any) => ({ ...r, criteria: null }));
+    // is_member: el candidato ya fue convertido en miembro (usuario con rol member/admin).
+    const data = rows.map((r: any) => ({
+      ...r,
+      criteria: null,
+      is_member: r.user_role === 'member' || r.user_role === 'admin',
+    }));
     return NextResponse.json({ data });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'unknown error';

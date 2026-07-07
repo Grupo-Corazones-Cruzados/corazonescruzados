@@ -278,7 +278,16 @@ Stack estándar de la casa, con particularidades de este repo:
   clientes). Constantes/tipos en **`lib/centralized/reclutamiento.ts`** (`CandidateCriteria`, VALUE/
   DIMENSION/APOYO_ITEMS). **PENDIENTE de datos:** los porcentajes se llenarán A FUTURO desde un sistema de
   evaluación (fuente por definir — el usuario dirá dónde y cómo); hoy `criteria=null` → la UI muestra
-  "sin evaluar" (—). Deep-links: `?tab=candidatos`, `?candidato=<id>`, `?solicitud=<id>`.
+  "sin evaluar" (—). Deep-links: `?tab=candidatos`, `?candidato=<id>`, `?solicitud=<id>`. Las 4 secciones
+  de criterios son **colapsables** (contraídas por defecto, `Section` con chevron + contador).
+- **Convertir candidato → miembro (2026-07-07):** en el detalle del candidato hay un botón **"Convertir en
+  miembro"** (admin). Endpoint **`POST /api/admin/candidates/[id]/convert`** (transaccional): crea (o reusa
+  por email) una fila en `members` activa; da acceso de dashboard como miembro creando/promoviendo un
+  `users` con `role='member'` + `member_id` (si el candidato no tenía usuario, **crea uno reusando su
+  `password_hash`** para que entre con su contraseña actual; nunca degrada a un admin); enlaza
+  `clients.user_id`. El list `/api/admin/candidates` devuelve `is_member` (LEFT JOIN users) → la UI muestra
+  "Ya es miembro" y oculta el botón. Requiere que el candidato tenga correo (y contraseña si aún no tiene
+  usuario). **Pendiente sugerido:** asignar `members.piso/paso` al convertir (para el acceso a Centralizado).
 - **Accesos estáticos por rol al dashboard (2026-07-06):** fuente única **`lib/dashboard/access.ts`**
   (`MODULE_ACCESS`, `accessRoleOf`, `canAccess`, `defaultDashboardPath`). **Roles efectivos:** admin
   (`role='admin'`, todo), member (`role='member'`, todo menos Admin), y como `role='client'` NO distingue

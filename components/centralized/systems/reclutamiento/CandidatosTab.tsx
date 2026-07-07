@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+import { BTN_PRIMARY } from '@/components/ui/Button';
 import {
   Users, Mail, X, Sparkles, Gem, Activity, HeartHandshake, Search, Phone, Building2, Globe, Info, ChevronDown,
+  UserCheck, ShieldCheck,
 } from 'lucide-react';
 import {
   VALUE_ITEMS, DIMENSION_ITEMS, APOYO_ITEMS, sortedTalents,
@@ -30,6 +33,7 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [converting, setConverting] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,6 +62,18 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
   const selected = useMemo(() => candidates.find((c) => String(c.id) === selectedId) || null, [candidates, selectedId]);
   const criteria: CandidateCriteria | null = selected?.criteria || null;
   const displayName = (c: any) => c?.full_name || c?.name || c?.email || 'Candidato';
+
+  const convertToMember = async (c: any) => {
+    if (!window.confirm(`¿Convertir a ${displayName(c)} en miembro? Se creará su perfil de miembro y su acceso al dashboard con su cuenta actual.`)) return;
+    setConverting(String(c.id));
+    try {
+      const res = await fetch(`/api/admin/candidates/${c.id}/convert`, { method: 'POST' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error');
+      toast.success('Candidato convertido en miembro');
+      await load();
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setConverting(null); }
+  };
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-4 items-start">
@@ -121,6 +137,22 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
                   <p className="text-[11px] text-digi-muted/80 mt-1" style={mf}>Última sesión: {fmtDate(selected.last_seen_at)}</p>
                 </div>
                 <button onClick={() => setSelectedId(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+              </div>
+
+              {/* Conversión a miembro */}
+              <div className="mt-3 pt-3 border-t border-digi-border flex flex-wrap items-center justify-between gap-2">
+                {selected.is_member ? (
+                  <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-green-600" style={mf}>
+                    <ShieldCheck className="w-4 h-4" /> Ya es miembro
+                  </span>
+                ) : (
+                  <span className="text-[12px] text-digi-muted" style={mf}>Este candidato aún no es miembro.</span>
+                )}
+                {isAdmin && !selected.is_member && (
+                  <button onClick={() => convertToMember(selected)} disabled={converting === String(selected.id)} className={`${BTN_PRIMARY} disabled:opacity-50`}>
+                    <UserCheck className="w-4 h-4" /> {converting === String(selected.id) ? 'Convirtiendo…' : 'Convertir en miembro'}
+                  </button>
+                )}
               </div>
             </div>
 
