@@ -141,10 +141,14 @@ export default function KnowledgeGraph({
     const t = setTimeout(() => {
       const fg = fgRef.current;
       if (!fg) return;
-      fg.d3Force('charge')?.strength(-520).distanceMax(800);
-      fg.d3Force('link')?.distance(160).strength(0.7);
-      if (fittedRef.current !== fitSignal) { fittedRef.current = fitSignal; fg.zoomToFit?.(500, 70); }
-    }, 400);
+      fg.d3Force('charge')?.strength(-520).distanceMax(900);
+      fg.d3Force('link')?.distance(180).strength(0.6);
+      // Reactiva la simulación: si ya se enfrió, sin esto las nuevas fuerzas no
+      // reposicionan los nodos y la separación no cambia.
+      fg.d3ReheatSimulation?.();
+      // Reencuadra un poco después para dar tiempo a que la simulación reacomode.
+      if (fittedRef.current !== fitSignal) { fittedRef.current = fitSignal; setTimeout(() => fgRef.current?.zoomToFit?.(600, 90), 700); }
+    }, 300);
     return () => clearTimeout(t);
   }, [fitSignal, ForceGraph2D]);
 
