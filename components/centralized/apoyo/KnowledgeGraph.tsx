@@ -1,63 +1,27 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NODE_META } from '@/lib/centralized/apoyo';
 import type { GraphNode, GraphEdge } from '@/lib/centralized/apoyo';
 
-const W = 960;
-const H = 620;
-const RADIUS: Record<string, number> = { situation: 11, problem: 8.5, cause: 6.5, solution: 8.5 };
+// react-force-graph usa d3-force (física) + canvas (render), como el grafo de Obsidian.
 
-/** Layout tipo fuerza (Fruchterman-Reingold simplificado), determinista por índice. */
-function useForceLayout(nodes: GraphNode[], edges: GraphEdge[]) {
-  return useMemo(() => {
-    const N = nodes.length;
-    const map = new Map<string, { x: number; y: number }>();
-    if (N === 0) return map;
-    const idx = new Map(nodes.map((n, i) => [n.key, i]));
-    const p = nodes.map((_, i) => {
-      const a = (i / N) * Math.PI * 2;
-      return { x: W / 2 + Math.cos(a) * 180, y: H / 2 + Math.sin(a) * 140, vx: 0, vy: 0 };
-    });
-    const links = edges
-      .map((e) => ({ s: idx.get(e.source), t: idx.get(e.target) }))
-      .filter((l): l is { s: number; t: number } => l.s != null && l.t != null);
-    const k = Math.min(W, H) / Math.sqrt(N + 1) * 0.9;
-    const ITER = 320;
-    for (let it = 0; it < ITER; it++) {
-      const temp = 1 - it / ITER;
-      for (let i = 0; i < N; i++) {
-        for (let j = i + 1; j < N; j++) {
-          let dx = p[i].x - p[j].x, dy = p[i].y - p[j].y;
-          let dist = Math.hypot(dx, dy) || 0.01;
-          const rep = (k * k) / dist * 0.55;
-          const fx = (dx / dist) * rep, fy = (dy / dist) * rep;
-          p[i].vx += fx; p[i].vy += fy; p[j].vx -= fx; p[j].vy -= fy;
-        }
-      }
-      for (const l of links) {
-        const a = p[l.s], b = p[l.t];
-        let dx = a.x - b.x, dy = a.y - b.y;
-        let dist = Math.hypot(dx, dy) || 0.01;
-        const att = (dist * dist) / k * 0.02;
-        const fx = (dx / dist) * att, fy = (dy / dist) * att;
-        a.vx -= fx; a.vy -= fy; b.vx += fx; b.vy += fy;
-      }
-      for (let i = 0; i < N; i++) {
-        p[i].vx += (W / 2 - p[i].x) * 0.004;
-        p[i].vy += (H / 2 - p[i].y) * 0.004;
-        const sp = Math.hypot(p[i].vx, p[i].vy) || 0.01;
-        const max = 18 * temp + 2;
-        const s = Math.min(sp, max) / sp;
-        p[i].x += p[i].vx * s; p[i].y += p[i].vy * s;
-        p[i].vx *= 0.86; p[i].vy *= 0.86;
-        p[i].x = Math.max(24, Math.min(W - 24, p[i].x));
-        p[i].y = Math.max(24, Math.min(H - 24, p[i].y));
-      }
-    }
-    nodes.forEach((n, i) => map.set(n.key, { x: p[i].x, y: p[i].y }));
-    return map;
-  }, [nodes, edges]);
+const NODE_R: Record<string, number> = { situation: 7, problem: 5.5, cause: 4.5, solution: 5.5 };
+const BG = '#0e0f1a';
+
+/** Mide el ancho del contenedor (react-force-graph necesita width/height explícitos). */
+function useSize<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [w, setW] = useState(800);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => setW(Math.max(320, Math.floor(entries[0].contentRect.width))));
+    ro.observe(el);
+    setW(Math.max(320, Math.floor(el.clientWidth)));
+    return () => ro.disconnect();
+  }, []);
+  return { ref, width: w };
 }
 
 export default function KnowledgeGraph({
@@ -65,15 +29,29 @@ export default function KnowledgeGraph({
   edges,
   selectedKey,
   onSelect,
+  height = 560,
 }: {
   nodes: GraphNode[];
   edges: GraphEdge[];
   selectedKey: string | null;
   onSelect: (n: GraphNode | null) => void;
+  height?: number;
 }) {
-  const pos = useForceLayout(nodes, edges);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const active = hovered || selectedKey;
+  const fgRef = useRef<any>(null);
+  const { ref, width } = useSize<HTMLDivElement>();
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
+  const nodeByKey = useMemo(() => new Map(nodes.map((n) => [n.key, n])), [nodes]);
+
+  // Carga la librería solo en cliente (usa window/canvas) y renderiza el componente
+  // real (así el `ref` funciona; `next/dynamic` no reenvía refs).
+  const [ForceGraph2D, setForceGraph2D] = useState<any>(null);
+  useEffect(() => { let ok = true; import('react-force-graph-2d').then((m) => { if (ok) setForceGraph2D(() => m.default); }); return () => { ok = false; }; }, []);
+
+  // Datos en el formato de la librería (memoizado: no reinicia la física en cada hover).
+  const graphData = useMemo(() => ({
+    nodes: nodes.map((n) => ({ id: n.key, ref: n })),
+    links: edges.map((e) => ({ source: e.source, target: e.target, type: e.type })),
+  }), [nodes, edges]);
 
   const neighbors = useMemo(() => {
     const m = new Map<string, Set<string>>();
@@ -86,54 +64,115 @@ export default function KnowledgeGraph({
     return m;
   }, [edges]);
 
-  const isLit = (key: string) => !active || key === active || neighbors.get(active)?.has(key);
-  const nodeByKey = useMemo(() => new Map(nodes.map((n) => [n.key, n])), [nodes]);
+  const active = hoverKey || selectedKey;
+  const isLit = (key: string) => !active || key === active || !!neighbors.get(active)?.has(key);
+
+  // Ajusta fuerzas (repulsión + distancia) y encuadra al cargar.
+  useEffect(() => {
+    const fg = fgRef.current;
+    if (!fg) return;
+    fg.d3Force('charge')?.strength(-150);
+    fg.d3Force('link')?.distance(56).strength(0.9);
+    const t = setTimeout(() => fg.zoomToFit?.(400, 60), 500);
+    return () => clearTimeout(t);
+  }, [graphData, ForceGraph2D]);
+
+  if (nodes.length === 0) {
+    return (
+      <div ref={ref} style={{ height, background: BG }} className="flex items-center justify-center rounded-b-lg">
+        <p className="text-[13px]" style={{ color: '#8a8ba6', fontFamily: 'var(--font-body)' }}>Sin situaciones aún. Crea la primera para empezar el grafo.</p>
+      </div>
+    );
+  }
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[68vh] select-none" onClick={() => onSelect(null)}>
-      {/* Aristas */}
-      {edges.map((e, i) => {
-        const a = pos.get(e.source), b = pos.get(e.target);
-        if (!a || !b) return null;
-        const lit = !active || e.source === active || e.target === active;
-        return (
-          <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-            stroke={lit ? '#8b7bbf' : '#c8c6d0'} strokeWidth={lit ? 1.4 : 0.7} strokeOpacity={lit ? 0.75 : 0.25} />
-        );
-      })}
-      {/* Nodos */}
-      {nodes.map((n) => {
-        const c = pos.get(n.key);
-        if (!c) return null;
-        const lit = isLit(n.key);
-        const color = NODE_META[n.type].color;
-        const r = RADIUS[n.type];
-        const isActive = n.key === active;
-        const showLabel = isActive || (active ? isLit(n.key) : n.type === 'situation');
-        return (
-          <g key={n.key}
-            className="cursor-pointer"
-            opacity={lit ? 1 : 0.28}
-            onMouseEnter={() => setHovered(n.key)}
-            onMouseLeave={() => setHovered(null)}
-            onClick={(ev) => { ev.stopPropagation(); onSelect(n); }}
-          >
-            {n.key === selectedKey && <circle cx={c.x} cy={c.y} r={r + 5} fill="none" stroke={color} strokeWidth={1.5} strokeOpacity={0.5} />}
-            <circle cx={c.x} cy={c.y} r={isActive ? r + 1.5 : r} fill={color} stroke="#ffffff" strokeWidth={1.5} />
-            {showLabel && (
-              <text x={c.x} y={c.y + r + 11} textAnchor="middle" fontSize={10.5} fill="#242424"
-                style={{ fontFamily: 'var(--font-body)', paintOrder: 'stroke', stroke: '#ffffff', strokeWidth: 3 } as any}>
-                {n.title.length > 22 ? n.title.slice(0, 21) + '…' : n.title}
-              </text>
-            )}
-          </g>
-        );
-      })}
-      {nodes.length === 0 && (
-        <text x={W / 2} y={H / 2} textAnchor="middle" fontSize={14} fill="#605e5c" style={{ fontFamily: 'var(--font-body)' }}>
-          Sin situaciones aún. Crea la primera para empezar el grafo.
-        </text>
+    <div ref={ref} style={{ height, background: BG }} className="rounded-b-lg overflow-hidden">
+      {!ForceGraph2D ? (
+        <div className="w-full h-full flex items-center justify-center">
+          <span className="text-[12px] animate-pulse" style={{ color: '#8a8ba6', fontFamily: 'var(--font-body)' }}>Cargando grafo…</span>
+        </div>
+      ) : (
+      <ForceGraph2D
+        ref={fgRef}
+        width={width}
+        height={height}
+        graphData={graphData as any}
+        backgroundColor={BG}
+        cooldownTicks={120}
+        d3VelocityDecay={0.3}
+        nodeRelSize={5}
+        enableNodeDrag
+        onBackgroundClick={() => onSelect(null)}
+        onNodeHover={(n: any) => setHoverKey(n ? n.id : null)}
+        onNodeClick={(n: any) => onSelect(n ? nodeByKey.get(n.id) || null : null)}
+        linkColor={(l: any) => {
+          const s = typeof l.source === 'object' ? l.source.id : l.source;
+          const t = typeof l.target === 'object' ? l.target.id : l.target;
+          const lit = !active || s === active || t === active;
+          return lit ? 'rgba(160,150,220,0.55)' : 'rgba(120,120,150,0.12)';
+        }}
+        linkWidth={(l: any) => {
+          const s = typeof l.source === 'object' ? l.source.id : l.source;
+          const t = typeof l.target === 'object' ? l.target.id : l.target;
+          return !active || s === active || t === active ? 1.4 : 0.6;
+        }}
+        nodeCanvasObjectMode={() => 'replace'}
+        nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, scale: number) => {
+          const n: GraphNode = node.ref;
+          const color = NODE_META[n.type].color;
+          const r = NODE_R[n.type];
+          const lit = isLit(node.id);
+          const isActive = node.id === active;
+          const isSel = node.id === selectedKey;
+
+          ctx.globalAlpha = lit ? 1 : 0.22;
+
+          // Halo del seleccionado
+          if (isSel) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, r + 4, 0, 2 * Math.PI);
+            ctx.strokeStyle = color;
+            ctx.globalAlpha = lit ? 0.5 : 0.18;
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+            ctx.globalAlpha = lit ? 1 : 0.22;
+          }
+
+          // Nodo con glow
+          ctx.shadowColor = color;
+          ctx.shadowBlur = isActive ? 16 : lit ? 8 : 0;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, isActive ? r + 1 : r, 0, 2 * Math.PI);
+          ctx.fillStyle = color;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // Etiqueta: al acercar el zoom, o si el nodo está resaltado.
+          const showLabel = scale >= 1.3 || (active ? lit : n.type === 'situation');
+          if (showLabel) {
+            const label = n.title.length > 26 ? n.title.slice(0, 25) + '…' : n.title;
+            const fontSize = Math.max(3.2, 11 / scale);
+            ctx.font = `${fontSize}px 'Segoe UI', system-ui, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.globalAlpha = lit ? 1 : 0.3;
+            ctx.shadowColor = 'rgba(0,0,0,0.85)';
+            ctx.shadowBlur = 4;
+            ctx.fillStyle = isActive ? '#ffffff' : '#d8d9ec';
+            ctx.fillText(label, node.x, node.y + r + 2);
+            ctx.shadowBlur = 0;
+          }
+          ctx.globalAlpha = 1;
+        }}
+        nodePointerAreaPaint={(node: any, colorStr: string, ctx: CanvasRenderingContext2D) => {
+          const n: GraphNode = node.ref;
+          ctx.fillStyle = colorStr;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, NODE_R[n.type] + 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }}
+      />
       )}
-    </svg>
+    </div>
   );
 }

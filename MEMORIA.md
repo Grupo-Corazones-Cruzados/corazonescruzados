@@ -278,11 +278,17 @@ Stack estándar de la casa, con particularidades de este repo:
   con auto-link al padre + DELETE; `.../links` POST connect/disconnect). Rol member/admin. **UI**
   (`components/centralized/systems/ApoyoAutoayudaSystem.tsx`): lista de usuarios (izq, componente
   compartido nuevo `components/centralized/UsersList.tsx`) · **grafo tipo universo** (SVG force-directed,
-  `apoyo/KnowledgeGraph.tsx`: nodos por color de tipo, hover/click resalta vecinos, estilo Obsidian) ·
+  `apoyo/KnowledgeGraph.tsx`) ·
   **panel de detalle a la derecha** (crear situación/problema/causa/solución, marcar causas que afecta una
   solución, eliminar). Tipos/colores en `lib/centralized/apoyo.ts`. **PENDIENTE:** "asociar EXISTENTE"
   (reusar problemas/causas/soluciones de la biblioteca vía picker/búsqueda — hoy solo crear+autolink);
-  seguimiento de efectividad de soluciones; drag&drop. **Acceso:** global → solo miembros piso=global +
+  seguimiento de efectividad de soluciones. **Grafo (2026-07-07):** se reemplazó el SVG casero por
+  **`react-force-graph-2d`** (d3-force + canvas, la misma arquitectura que el grafo de Obsidian —que es
+  cerrado: d3-force + PIXI/WebGL). Canvas **oscuro** (`#0e0f1a`), nodos con glow por color de tipo,
+  hover/click resalta vecinos y atenúa el resto, etiquetas legibles (texto claro + sombra oscura, sin el
+  borde blanco anterior), zoom/pan/drag y `zoomToFit`. La lib se **carga solo en cliente** (import en
+  `useEffect` + render del componente real para que el `ref` funcione; `next/dynamic` NO reenvía refs).
+  **Acceso:** global → solo miembros piso=global +
   admin (regla jerárquica). Datos demo sembrados para "Candidato de Prueba" (subject candidate/33).
 - **Sistema "Horario de Vida" (2026-07-07):** creado en Centralizado, **piso `controlador` · paso
   `implementacion`** (celda "Estrategias", slug `horario-de-vida`, id 8). Ruta:
