@@ -60,6 +60,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         [name, email, cand.phone || null],
       );
       memberId = Number(m.id);
+    } else {
+      // Reactiva un miembro reusado (p. ej. uno degradado antes a candidato).
+      await client.query(`UPDATE gcc_world.members SET is_active = true WHERE id = $1`, [memberId]);
     }
 
     // ── Usuario: promueve o crea ──

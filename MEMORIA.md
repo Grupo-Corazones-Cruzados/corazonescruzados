@@ -294,6 +294,14 @@ Stack estándar de la casa, con particularidades de este repo:
   miembro está PENDIENTE**: por ahora datos básicos (correo, posición, tarifa, activo/rol) + aviso "el
   contenido se definirá a continuación" (el usuario dirá qué mostrar, distinto al candidato). Deep-links
   `?tab=miembros`, `?miembro=<id>`.
+- **Reclutamiento — confirmaciones in-app + miembro→candidato (2026-07-07):** las confirmaciones de
+  conversión usan **`PixelConfirm`** (modal in-app), no `window.confirm`. En el detalle de **Miembros** hay
+  botón **"Convertir a candidato"** (`POST /api/admin/members/[id]/to-candidate`, admin): baja el usuario a
+  `role='client'` + `member_id=NULL`, **desactiva** la fila `members` (se conserva por FKs/histórico → sale
+  de la lista de Miembros, que filtra `is_active`), y garantiza una fila `clients` `account_type='candidate'`
+  (aprobada, perfil completo) → reaparece en Candidatos. **Un admin NO se puede degradar** (botón oculto +
+  guard en el endpoint). Al reconvertir candidato→miembro, el endpoint `convert` **reactiva** el `members`
+  reusado. Miembros lista solo `is_active=true`.
 - **Accesos estáticos por rol al dashboard (2026-07-06):** fuente única **`lib/dashboard/access.ts`**
   (`MODULE_ACCESS`, `accessRoleOf`, `canAccess`, `defaultDashboardPath`). **Roles efectivos:** admin
   (`role='admin'`, todo), member (`role='member'`, todo menos Admin), y como `role='client'` NO distingue

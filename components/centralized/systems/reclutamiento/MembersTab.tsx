@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserRound, Mail, X, Search, BadgeCheck, DollarSign, Briefcase, Info } from 'lucide-react';
+import { toast } from 'sonner';
+import { UserRound, Mail, X, Search, BadgeCheck, DollarSign, Briefcase, Info, UserMinus, ShieldAlert } from 'lucide-react';
 import PixelBadge from '@/components/ui/PixelBadge';
+import PixelConfirm from '@/components/ui/PixelConfirm';
+import { BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -23,6 +26,8 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [demoting, setDemoting] = useState(false);
+  const [confirmDemote, setConfirmDemote] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,12 +49,28 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter((m) => `${m.name || ''} ${m.email || ''} ${m.position_name || ''}`.toLowerCase().includes(q));
+    // Solo miembros activos (los degradados a candidato quedan inactivos → fuera).
+    const active = members.filter((m) => m.is_active);
+    if (!q) return active;
+    return active.filter((m) => `${m.name || ''} ${m.email || ''} ${m.position_name || ''}`.toLowerCase().includes(q));
   }, [members, search]);
 
   const selected = useMemo(() => members.find((m) => String(m.id) === selectedId) || null, [members, selectedId]);
   const displayName = (m: any) => m?.name || m?.email || 'Miembro';
+  const isAdminMember = selected?.role === 'admin';
+
+  const doDemote = async (m: any) => {
+    setConfirmDemote(false);
+    setDemoting(true);
+    try {
+      const res = await fetch(`/api/admin/members/${m.id}/to-candidate`, { method: 'POST' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error');
+      toast.success('Miembro convertido en candidato');
+      setSelectedId(null);
+      await load();
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setDemoting(false); }
+  };
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-4 items-start">
@@ -126,6 +147,24 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
                 </div>
                 <button onClick={() => setSelectedId(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
               </div>
+
+              {/* Cambio de rol: miembro → candidato (los admin no se pueden degradar) */}
+              {isAdmin && (
+                <div className="mt-3 pt-3 border-t border-digi-border flex flex-wrap items-center justify-between gap-2">
+                  {isAdminMember ? (
+                    <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
+                      <ShieldAlert className="w-4 h-4" /> No se puede cambiar el rol de un administrador.
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-[12px] text-digi-muted" style={mf}>Cambiar el rol de este miembro.</span>
+                      <button onClick={() => setConfirmDemote(true)} disabled={demoting} className={`${BTN_SECONDARY} disabled:opacity-50`}>
+                        <UserMinus className="w-4 h-4" /> {demoting ? 'Convirtiendo…' : 'Convertir a candidato'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2 rounded-lg border border-digi-border bg-digi-darker px-3 py-2 text-[12px] text-digi-muted" style={mf}>
@@ -141,6 +180,16 @@ export default function MembersTab({ isAdmin }: { isAdmin: boolean }) {
           </div>
         )}
       </aside>
+
+      <PixelConfirm
+        open={confirmDemote}
+        title="Convertir a candidato"
+        message={selected ? `¿Convertir a ${displayName(selected)} en candidato? Dejará de ser miembro (pierde el acceso de miembro) y pasará a rol de candidato.` : ''}
+        confirmLabel="Convertir a candidato"
+        danger
+        onConfirm={() => selected && doDemote(selected)}
+        onCancel={() => setConfirmDemote(false)}
+      />
     </div>
   );
 }

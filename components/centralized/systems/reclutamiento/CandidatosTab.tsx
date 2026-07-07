@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { BTN_PRIMARY } from '@/components/ui/Button';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import {
   Users, Mail, X, Sparkles, Gem, Activity, HeartHandshake, Search, Phone, Building2, Globe, Info, ChevronDown,
   UserCheck, ShieldCheck,
@@ -34,6 +35,7 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [converting, setConverting] = useState<string | null>(null);
+  const [confirmConvert, setConfirmConvert] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,8 +65,8 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
   const criteria: CandidateCriteria | null = selected?.criteria || null;
   const displayName = (c: any) => c?.full_name || c?.name || c?.email || 'Candidato';
 
-  const convertToMember = async (c: any) => {
-    if (!window.confirm(`¿Convertir a ${displayName(c)} en miembro? Se creará su perfil de miembro y su acceso al dashboard con su cuenta actual.`)) return;
+  const doConvert = async (c: any) => {
+    setConfirmConvert(false);
     setConverting(String(c.id));
     try {
       const res = await fetch(`/api/admin/candidates/${c.id}/convert`, { method: 'POST' });
@@ -149,7 +151,7 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
                   <span className="text-[12px] text-digi-muted" style={mf}>Este candidato aún no es miembro.</span>
                 )}
                 {isAdmin && !selected.is_member && (
-                  <button onClick={() => convertToMember(selected)} disabled={converting === String(selected.id)} className={`${BTN_PRIMARY} disabled:opacity-50`}>
+                  <button onClick={() => setConfirmConvert(true)} disabled={converting === String(selected.id)} className={`${BTN_PRIMARY} disabled:opacity-50`}>
                     <UserCheck className="w-4 h-4" /> {converting === String(selected.id) ? 'Convirtiendo…' : 'Convertir en miembro'}
                   </button>
                 )}
@@ -195,6 +197,15 @@ export default function CandidatosTab({ isAdmin }: { isAdmin: boolean }) {
           </div>
         )}
       </aside>
+
+      <PixelConfirm
+        open={confirmConvert}
+        title="Convertir en miembro"
+        message={selected ? `¿Convertir a ${displayName(selected)} en miembro? Se creará su perfil de miembro y su acceso al dashboard con su cuenta actual.` : ''}
+        confirmLabel="Convertir"
+        onConfirm={() => selected && doConvert(selected)}
+        onCancel={() => setConfirmConvert(false)}
+      />
     </div>
   );
 }
