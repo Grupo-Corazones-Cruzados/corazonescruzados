@@ -8,7 +8,7 @@ import type { GraphNode, GraphEdge } from '@/lib/centralized/apoyo';
 // react-force-graph usa d3-force (física) + canvas (render), como el grafo de Obsidian.
 // Tamaño base por tipo (además del extra por nº de conexiones). Situación es el ancla
 // (más grande); causa la más pequeña (raíz).
-const NODE_R: Record<string, number> = { situation: 6, problem: 4.6, cause: 3, solution: 4.3 };
+const NODE_R: Record<string, number> = { situation: 6, problem: 4.6, cause: 3, alternative: 4.3, solution: 4.3 };
 const BG = '#000000';
 
 function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -32,6 +32,8 @@ function traceShape(ctx: CanvasRenderingContext2D, type: string, x: number, y: n
     ctx.moveTo(x, y - h); ctx.lineTo(x + h * 0.92, y + h * 0.62); ctx.lineTo(x - h * 0.92, y + h * 0.62); ctx.closePath();
   } else if (type === 'solution') {
     const s = r * 0.92; roundRectPath(ctx, x - s, y - s, 2 * s, 2 * s, r * 0.34);
+  } else if (type === 'alternative') {
+    const s = r * 1.08; ctx.moveTo(x, y - s); ctx.lineTo(x + s, y); ctx.lineTo(x, y + s); ctx.lineTo(x - s, y); ctx.closePath();
   } else {
     ctx.arc(x, y, r, 0, 2 * Math.PI);
   }

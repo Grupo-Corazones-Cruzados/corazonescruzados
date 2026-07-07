@@ -6,13 +6,14 @@
  * reaplicar en otras personas). Situaciones son por-sujeto.
  */
 
-export type ApoyoNodeType = 'situation' | 'problem' | 'cause' | 'solution';
+export type ApoyoNodeType = 'situation' | 'problem' | 'cause' | 'alternative' | 'solution';
 
 export const NODE_TYPES: { key: ApoyoNodeType; label: string; plural: string; color: string }[] = [
   { key: 'situation', label: 'Situación', plural: 'Situaciones', color: '#8b5cf6' }, // violeta vivo (visible en negro)
   { key: 'problem', label: 'Problema', plural: 'Problemas', color: '#ef4444' },      // rojo
   { key: 'cause', label: 'Causa', plural: 'Causas', color: '#f59e0b' },              // ámbar
-  { key: 'solution', label: 'Solución', plural: 'Soluciones', color: '#22c55e' },    // verde
+  { key: 'alternative', label: 'Alternativa', plural: 'Alternativas', color: '#38bdf8' }, // celeste (idea propuesta)
+  { key: 'solution', label: 'Solución', plural: 'Soluciones', color: '#22c55e' },    // verde (comprobada)
 ];
 
 export const NODE_META: Record<ApoyoNodeType, { label: string; plural: string; color: string }> =

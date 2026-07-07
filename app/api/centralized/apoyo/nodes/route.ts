@@ -4,7 +4,8 @@ import { ensureApoyoTables } from '@/lib/centralized/apoyo-db';
 import { NextResponse } from 'next/server';
 
 const NODE_TABLE: Record<string, string> = {
-  situation: 'aa_situations', problem: 'aa_problems', cause: 'aa_causes', solution: 'aa_solutions',
+  situation: 'aa_situations', problem: 'aa_problems', cause: 'aa_causes',
+  solution: 'aa_solutions', alternative: 'aa_solutions',
 };
 
 async function guard() {
@@ -48,13 +49,31 @@ export async function POST(req: Request) {
       id = Number(rows[0].id);
       if (b.problemId) await pool.query(`INSERT INTO gcc_world.aa_problem_causes (problem_id, cause_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [Number(b.problemId), id]);
     } else {
-      const { rows } = await pool.query(`INSERT INTO gcc_world.aa_solutions (title, description) VALUES ($1,$2) RETURNING id`, [title, description]);
+      // 'alternative' (propuesta) o 'solution' (comprobada). Comparten tabla aa_solutions.
+      const status = type === 'solution' ? 'solution' : 'alternative';
+      const { rows } = await pool.query(`INSERT INTO gcc_world.aa_solutions (title, description, status) VALUES ($1,$2,$3) RETURNING id`, [title, description, status]);
       id = Number(rows[0].id);
       if (b.problemId) await pool.query(`INSERT INTO gcc_world.aa_solution_problems (solution_id, problem_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [id, Number(b.problemId)]);
     }
     return NextResponse.json({ ok: true, id });
   } catch (err: any) {
     console.error('Apoyo node create error:', err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+// PATCH — cambia el `status` de un registro de aa_solutions: convierte una alternativa
+// (propuesta) en solución (comprobada), o viceversa. Los enlaces se conservan.
+export async function PATCH(req: Request) {
+  try {
+    if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    await ensureApoyoTables();
+    const { id, status } = await req.json();
+    if (!id || !['alternative', 'solution'].includes(String(status))) return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
+    await pool.query(`UPDATE gcc_world.aa_solutions SET status = $1 WHERE id = $2`, [String(status), Number(id)]);
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error('Apoyo node patch error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
@@ -102,7 +121,7 @@ export async function DELETE(req: Request) {
       await client.query(`DELETE FROM gcc_world.aa_problem_causes WHERE cause_id = $1`, [nid]);
       await client.query(`DELETE FROM gcc_world.aa_solution_causes WHERE cause_id = $1`, [nid]);
       await client.query(`DELETE FROM gcc_world.aa_causes WHERE id = $1`, [nid]);
-    } else if (type === 'solution') {
+    } else if (type === 'solution' || type === 'alternative') {
       await client.query(`DELETE FROM gcc_world.aa_solution_problems WHERE solution_id = $1`, [nid]);
       await client.query(`DELETE FROM gcc_world.aa_solution_causes WHERE solution_id = $1`, [nid]);
       await client.query(`DELETE FROM gcc_world.aa_solutions WHERE id = $1`, [nid]);

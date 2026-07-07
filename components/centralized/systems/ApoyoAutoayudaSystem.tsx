@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
 import KnowledgeGraph from '@/components/centralized/apoyo/KnowledgeGraph';
 import PixelConfirm from '@/components/ui/PixelConfirm';
-import { Plus, Trash2, X, MousePointerClick, HeartHandshake } from 'lucide-react';
+import { Plus, Trash2, X, MousePointerClick, HeartHandshake, CheckCircle2 } from 'lucide-react';
 import {
   NODE_TYPES, NODE_META, DIMENSIONS, DIMENSION_LABEL, DIMENSION_COLOR, nodeKey,
   type ApoyoGraph, type GraphNode, type ApoyoNodeType,
@@ -26,7 +26,7 @@ type CreateCtx = { type: ApoyoNodeType; situationId?: number; problemId?: number
 // keys de nodos que deben quitarse al borrar `node`. Sirve para reflejarlo al instante.
 function cascadeKeys(node: GraphNode, edges: { source: string; target: string; type: string }[]): Set<string> {
   const remove = new Set<string>();
-  if (node.type === 'cause' || node.type === 'solution') { remove.add(node.key); return remove; }
+  if (node.type === 'cause' || node.type === 'solution' || node.type === 'alternative') { remove.add(node.key); return remove; }
 
   const problems = new Set<string>();
   if (node.type === 'problem') problems.add(node.key);
@@ -63,6 +63,7 @@ function cascadeKeys(node: GraphNode, edges: { source: string; target: string; t
 const shapeStyle = (type: string): React.CSSProperties => {
   if (type === 'situation') return { clipPath: 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)' };
   if (type === 'problem') return { clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' };
+  if (type === 'alternative') return { clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' };
   if (type === 'solution') return { borderRadius: '3px' };
   return { borderRadius: '9999px' };
 };
@@ -114,7 +115,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
       if (createCtx.type === 'situation') { body.subject_kind = user!.kind; body.subject_id = user!.id; }
       if (createCtx.type === 'problem') { body.situationId = createCtx.situationId; body.dimension = form.dimension; }
       if (createCtx.type === 'cause') body.problemId = createCtx.problemId;
-      if (createCtx.type === 'solution') body.problemId = createCtx.problemId;
+      if (createCtx.type === 'solution' || createCtx.type === 'alternative') body.problemId = createCtx.problemId;
       const res = await fetch('/api/centralized/apoyo/nodes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
       const d = await res.json();
@@ -142,6 +143,20 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
     } catch (e: any) { toast.error(e.message || 'No se pudo eliminar; recargando'); await loadGraph(); }
   };
 
+  // Convierte una alternativa (idea propuesta) en solución (comprobada). Conserva sus
+  // enlaces; solo cambia el tipo/estado. Al recargar, el nodo pasa a verde/cuadrado.
+  const convertToSolution = async (n: GraphNode) => {
+    setBusy(true);
+    try {
+      const res = await fetch('/api/centralized/apoyo/nodes', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: n.id, status: 'solution' }) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error');
+      toast.success('Alternativa convertida en solución');
+      await loadGraph();
+      setSelectedKey(nodeKey('solution', n.id));
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setBusy(false); }
+  };
+
   const toggleSolutionCause = async (solutionId: number, causeId: number, connect: boolean) => {
     const sKey = nodeKey('solution', solutionId);
     const cKey = nodeKey('cause', causeId);
@@ -161,7 +176,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
 
   // Para una solución seleccionada: causas candidatas (de sus problemas) y las afectadas.
   const solutionCauseInfo = useMemo(() => {
-    if (!selectedNode || selectedNode.type !== 'solution') return null;
+    if (!selectedNode || (selectedNode.type !== 'solution' && selectedNode.type !== 'alternative')) return null;
     const sKey = selectedNode.key;
     const probKeys = graph.edges.filter((e) => e.type === 'solution_problem' && e.source === sKey).map((e) => e.target);
     const causeKeys = new Set(graph.edges.filter((e) => e.type === 'problem_cause' && probKeys.includes(e.source)).map((e) => e.target));
@@ -187,11 +202,11 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
     else if (t === 'problem') {
       add('Situaciones', E.filter((e) => e.type === 'situation_problem' && e.target === key).map((e) => e.source));
       add('Causas', E.filter((e) => e.type === 'problem_cause' && e.source === key).map((e) => e.target));
-      add('Soluciones', E.filter((e) => e.type === 'solution_problem' && e.target === key).map((e) => e.source));
+      add('Alternativas y soluciones', E.filter((e) => e.type === 'solution_problem' && e.target === key).map((e) => e.source));
     } else if (t === 'cause') {
       add('Problemas', E.filter((e) => e.type === 'problem_cause' && e.target === key).map((e) => e.source));
-      add('Soluciones que la afectan', E.filter((e) => e.type === 'solution_cause' && e.target === key).map((e) => e.source));
-    } else if (t === 'solution') {
+      add('Alternativas/soluciones que la afectan', E.filter((e) => e.type === 'solution_cause' && e.target === key).map((e) => e.source));
+    } else if (t === 'solution' || t === 'alternative') {
       add('Problemas', E.filter((e) => e.type === 'solution_problem' && e.source === key).map((e) => e.target));
       add('Causas que afecta', E.filter((e) => e.type === 'solution_cause' && e.source === key).map((e) => e.target));
     }
@@ -325,10 +340,10 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                       {selectedNode.type === 'problem' && (
                         <div className="grid grid-cols-2 gap-2">
                           <button onClick={() => openCreate({ type: 'cause', problemId: selectedNode.id })} className={`${GLASS_BTN} px-2 py-2 text-[12px] font-medium`} style={mf}><Plus className="w-3.5 h-3.5" /> Causa</button>
-                          <button onClick={() => openCreate({ type: 'solution', problemId: selectedNode.id })} className={`${GLASS_BTN} px-2 py-2 text-[12px] font-medium`} style={mf}><Plus className="w-3.5 h-3.5" /> Solución</button>
+                          <button onClick={() => openCreate({ type: 'alternative', problemId: selectedNode.id })} className={`${GLASS_BTN} px-2 py-2 text-[12px] font-medium`} style={mf}><Plus className="w-3.5 h-3.5" /> Alternativa</button>
                         </div>
                       )}
-                      {selectedNode.type === 'solution' && solutionCauseInfo && (
+                      {(selectedNode.type === 'solution' || selectedNode.type === 'alternative') && solutionCauseInfo && (
                         <div>
                           <p className="text-[11px] font-semibold text-white/50 uppercase tracking-wide mb-1.5" style={df}>Causas que afecta</p>
                           {solutionCauseInfo.causes.length === 0 ? (
@@ -347,6 +362,12 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                             </div>
                           )}
                         </div>
+                      )}
+
+                      {selectedNode.type === 'alternative' && (
+                        <button onClick={() => convertToSolution(selectedNode)} disabled={busy} className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-emerald-400/40 bg-emerald-500/15 hover:bg-emerald-500/25 rounded-md text-[12.5px] font-medium text-emerald-300 transition-colors disabled:opacity-50" style={mf}>
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Convertir en solución
+                        </button>
                       )}
 
                       <button onClick={() => setConfirmDel(selectedNode)} className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-red-400/40 bg-red-500/15 hover:bg-red-500/25 rounded-md text-[12.5px] font-medium text-red-300 transition-colors" style={mf}>

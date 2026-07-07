@@ -267,6 +267,16 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Alternativa vs Solución (2026-07-07):** las "soluciones" ahora se crean primero como **Alternativas**
+  (ideas propuestas para afrontar un problema). Alternativa y Solución **comparten la tabla `aa_solutions`
+  y sus joins** (`aa_solution_problems`/`aa_solution_causes`); se distinguen por la columna nueva
+  `aa_solutions.status` (`'alternative'` | `'solution'`; ALTER idempotente, default `'solution'` para no romper
+  datos previos). El grafo emite el **tipo de nodo** según `status` (getSubjectGraph mapea id→tipo y usa esa key
+  en los nodos Y en las aristas). La **alternativa** funciona igual que la solución en el detalle (enlazar
+  problemas, marcar causas que afecta) + botón **"Convertir en solución"** (`PATCH /api/centralized/apoyo/nodes`
+  `{id,status:'solution'}`). Al crear desde un problema el botón es **"Alternativa"** (ya no "Solución").
+  **Formas/colores:** alternativa = **rombo celeste `#38bdf8`**; solución conserva **cuadrado redondeado verde
+  `#22c55e`**. Ambas aparecen en la leyenda-filtro.
 - **Sistema "Apoyo y Autoayuda" (2026-07-07):** Centralizado, **global · implementación** (celda
   Centralizado, id 5, slug `apoyo-y-autoayuda`). Registro de **conocimiento reutilizable** para apoyar a
   una persona en sus dimensiones (laboral/corporal/mental/social). **Modelo:** Situación (por-sujeto) →

@@ -24,6 +24,7 @@ export async function ensureApoyoTables() {
     );
     CREATE TABLE IF NOT EXISTS gcc_world.aa_solutions (
       id BIGSERIAL PRIMARY KEY, title TEXT NOT NULL, description TEXT,
+      status TEXT NOT NULL DEFAULT 'solution',   -- 'alternative' (propuesta) | 'solution' (comprobada)
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE TABLE IF NOT EXISTS gcc_world.aa_situation_problems (
@@ -39,6 +40,8 @@ export async function ensureApoyoTables() {
       solution_id BIGINT NOT NULL, cause_id BIGINT NOT NULL, PRIMARY KEY (solution_id, cause_id)
     );
   `);
+  // Para instalaciones previas: las soluciones existentes ya eran "comprobadas".
+  await pool.query(`ALTER TABLE gcc_world.aa_solutions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'solution'`);
 }
 
 /**
@@ -78,19 +81,26 @@ export async function getSubjectGraph(subjectKind: string, subjectId: string): P
       cau.rows.forEach((r: any) => push('cause', r));
     }
 
-    // Solución → Problemas (de este sujeto)
+    // Alternativas/Soluciones → Problemas (de este sujeto). El tipo del nodo depende del
+    // `status`: 'solution' (comprobada) o 'alternative' (propuesta). Ambas comparten tabla/joins.
     const spr = await pool.query(`SELECT solution_id, problem_id FROM gcc_world.aa_solution_problems WHERE problem_id = ANY($1::bigint[])`, [problemIds]);
     const solutionIds = Array.from(new Set(spr.rows.map((r: any) => Number(r.solution_id))));
-    spr.rows.forEach((r: any) => edges.push({ source: nodeKey('solution', r.solution_id), target: nodeKey('problem', r.problem_id), type: 'solution_problem' }));
     if (solutionIds.length) {
-      const sol = await pool.query(`SELECT id, title, description FROM gcc_world.aa_solutions WHERE id = ANY($1::bigint[]) ORDER BY id`, [solutionIds]);
-      sol.rows.forEach((r: any) => push('solution', r));
-      // Solución → Causas que afecta (limitado a las causas presentes en el grafo)
+      const sol = await pool.query(`SELECT id, title, description, status FROM gcc_world.aa_solutions WHERE id = ANY($1::bigint[]) ORDER BY id`, [solutionIds]);
+      const solType = new Map<number, ApoyoNodeType>();
+      sol.rows.forEach((r: any) => {
+        const t: ApoyoNodeType = r.status === 'solution' ? 'solution' : 'alternative';
+        solType.set(Number(r.id), t);
+        push(t, r);
+      });
+      const typeOf = (id: any) => solType.get(Number(id)) || 'alternative';
+      spr.rows.forEach((r: any) => edges.push({ source: nodeKey(typeOf(r.solution_id), r.solution_id), target: nodeKey('problem', r.problem_id), type: 'solution_problem' }));
+      // → Causas que afecta (limitado a las causas presentes en el grafo)
       const sc = await pool.query(`SELECT solution_id, cause_id FROM gcc_world.aa_solution_causes WHERE solution_id = ANY($1::bigint[])`, [solutionIds]);
       const presentCauseKeys = new Set(nodes.filter((n) => n.type === 'cause').map((n) => n.key));
       sc.rows.forEach((r: any) => {
         const target = nodeKey('cause', r.cause_id);
-        if (presentCauseKeys.has(target)) edges.push({ source: nodeKey('solution', r.solution_id), target, type: 'solution_cause' });
+        if (presentCauseKeys.has(target)) edges.push({ source: nodeKey(typeOf(r.solution_id), r.solution_id), target, type: 'solution_cause' });
       });
     }
   }
