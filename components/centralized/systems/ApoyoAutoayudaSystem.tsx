@@ -22,6 +22,43 @@ const GLASS_INPUT = 'w-full px-2.5 py-1.5 bg-black/40 border border-white/15 rou
 
 type CreateCtx = { type: ApoyoNodeType; situationId?: number; problemId?: number };
 
+// Cascada de eliminación en cliente (espeja la del backend, orphan-aware): devuelve las
+// keys de nodos que deben quitarse al borrar `node`. Sirve para reflejarlo al instante.
+function cascadeKeys(node: GraphNode, edges: { source: string; target: string; type: string }[]): Set<string> {
+  const remove = new Set<string>();
+  if (node.type === 'cause' || node.type === 'solution') { remove.add(node.key); return remove; }
+
+  const problems = new Set<string>();
+  if (node.type === 'problem') problems.add(node.key);
+  else if (node.type === 'situation') {
+    remove.add(node.key);
+    for (const e of edges) {
+      if (e.type === 'situation_problem' && e.source === node.key) {
+        const pk = e.target;
+        const otherSit = edges.some((x) => x.type === 'situation_problem' && x.target === pk && x.source !== node.key);
+        if (!otherSit) problems.add(pk);
+      }
+    }
+  }
+
+  for (const pk of problems) {
+    remove.add(pk);
+    for (const e of edges) {
+      if (e.type === 'problem_cause' && e.source === pk) {
+        const ck = e.target;
+        const other = edges.some((x) => x.type === 'problem_cause' && x.target === ck && x.source !== pk && !problems.has(x.source));
+        if (!other) remove.add(ck);
+      }
+      if (e.type === 'solution_problem' && e.target === pk) {
+        const sk = e.source;
+        const other = edges.some((x) => x.type === 'solution_problem' && x.source === sk && x.target !== pk && !problems.has(x.target));
+        if (!other) remove.add(sk);
+      }
+    }
+  }
+  return remove;
+}
+
 // Marca de forma por tipo (coincide con las formas del grafo) para leyenda/indicadores.
 const shapeStyle = (type: string): React.CSSProperties => {
   if (type === 'situation') return { clipPath: 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)' };
@@ -82,13 +119,18 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
 
   const deleteNode = async (n: GraphNode) => {
     setConfirmDel(null);
+    // Optimista: quita al instante el nodo y su cascada (nodos + aristas).
+    const removeSet = cascadeKeys(n, graph.edges);
+    setGraph((g) => ({
+      nodes: g.nodes.filter((x) => !removeSet.has(x.key)),
+      edges: g.edges.filter((e) => !removeSet.has(e.source) && !removeSet.has(e.target)),
+    }));
+    if (selectedKey && removeSet.has(selectedKey)) setSelectedKey(null);
+    toast.success(`${NODE_META[n.type].label} eliminada`);
     try {
       const res = await fetch('/api/centralized/apoyo/nodes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: n.type, id: n.id }) });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
-      toast.success(`${NODE_META[n.type].label} eliminada`);
-      if (selectedKey === n.key) setSelectedKey(null);
-      await loadGraph();
-    } catch (e: any) { toast.error(e.message || 'Error'); }
+    } catch (e: any) { toast.error(e.message || 'No se pudo eliminar; recargando'); await loadGraph(); }
   };
 
   const toggleSolutionCause = async (solutionId: number, causeId: number, connect: boolean) => {
