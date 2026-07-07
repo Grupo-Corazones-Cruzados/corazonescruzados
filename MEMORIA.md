@@ -267,6 +267,14 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Sistema "Horario de Vida" (2026-07-07):** creado en Centralizado, **piso `controlador` · paso
+  `implementacion`** (celda "Estrategias", slug `horario-de-vida`, id 8). Ruta:
+  `/dashboard/centralized/controlador/implementacion/horario-de-vida`. **Propósito:** será el sistema que
+  **registra los criterios** del candidato/miembro (Talento, Valores, Dimensiones, Apoyo) que se muestran
+  en la ficha del candidato en Reclutamiento. **Acceso** (por la regla jerárquica): lo ven los miembros con
+  paso=implementacion y piso **controlador o superior** (global/pilar/controlador) + admin. **Estado:** solo
+  creado el registro; aún muestra el placeholder genérico "próximamente" (falta el componente + añadirlo al
+  dispatch por slug en `centralized/[piso]/[paso]/[slug]/page.tsx`). El usuario dirá qué debe contener.
 - **Reclutamiento — pestaña Candidatos + criterios (2026-07-06):** el sistema ahora tiene **rail con 2
   pestañas** (`ReclutamientoSystem.tsx`): **Solicitudes** (`reclutamiento/SolicitudesTab.tsx`) y
   **Candidatos** (`reclutamiento/CandidatosTab.tsx`). "Candidatos" lista los postulantes **aprobados que
