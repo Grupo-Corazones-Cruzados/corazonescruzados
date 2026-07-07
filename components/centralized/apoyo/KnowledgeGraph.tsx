@@ -7,7 +7,7 @@ import type { GraphNode, GraphEdge } from '@/lib/centralized/apoyo';
 
 // react-force-graph usa d3-force (física) + canvas (render), como el grafo de Obsidian.
 const NODE_R: Record<string, number> = { situation: 7, problem: 5.5, cause: 4.5, solution: 5.5 };
-const BG = '#0e0f1a';
+const BG = '#000000';
 
 const linkId = (l: any, end: 'source' | 'target') => (typeof l[end] === 'object' ? l[end].id : l[end]);
 
@@ -146,19 +146,6 @@ export default function KnowledgeGraph({
               <div style="font-size:12.5px;font-weight:600;line-height:1.25">${escapeHtml(nn.title)}</div>
               ${nn.description ? `<div style="font-size:11px;color:#a9a9c2;margin-top:3px;line-height:1.3">${escapeHtml(nn.description)}</div>` : ''}
             </div>`;
-          }}
-          /* Fondo tipo nebulosa detrás del cúmulo */
-          onRenderFramePre={(ctx: CanvasRenderingContext2D) => {
-            const ns = (graphData.nodes as any[]).filter((n) => typeof n.x === 'number');
-            if (!ns.length) return;
-            let cx = 0, cy = 0; for (const n of ns) { cx += n.x; cy += n.y; } cx /= ns.length; cy /= ns.length;
-            let maxd = 80; for (const n of ns) maxd = Math.max(maxd, Math.hypot(n.x - cx, n.y - cy));
-            const R = maxd * 1.5;
-            const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
-            g.addColorStop(0, 'rgba(90,60,170,0.20)');
-            g.addColorStop(0.55, 'rgba(45,32,80,0.09)');
-            g.addColorStop(1, 'rgba(14,15,26,0)');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.fill();
           }}
           /* Aristas curvas + flechas + partículas al resaltar */
           linkCurvature={0.14}
