@@ -70,9 +70,16 @@ export default function PolicyBanner({ collapsed = false }: { collapsed?: boolea
                     const on = i === idx;
                     return (
                       <button key={pol.id} onClick={() => setIdx(i)}
-                        className={`shrink-0 max-w-[180px] inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-semibold truncate border transition-colors ${on ? 'bg-white text-[#4c1d95] border-white shadow-sm' : 'bg-white/5 text-white/75 border-white/25 hover:bg-white/15 hover:text-white'}`}
-                        style={mf} title={pol.name}>
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${on ? 'bg-[#6d28d9]' : 'bg-white/40'}`} />
+                        className="shrink-0 max-w-[180px] inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-semibold truncate border transition-colors"
+                        style={{
+                          ...mf,
+                          background: on ? '#ffffff' : 'rgba(255,255,255,0.08)',
+                          color: on ? '#4c1d95' : 'rgba(255,255,255,0.8)',
+                          borderColor: on ? '#ffffff' : 'rgba(255,255,255,0.28)',
+                          boxShadow: on ? '0 2px 8px -2px rgba(0,0,0,.35)' : 'none',
+                        }}
+                        title={pol.name}>
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: on ? '#7c3aed' : 'rgba(255,255,255,0.45)' }} />
                         <span className="truncate">{pol.name}</span>
                       </button>
                     );
