@@ -281,8 +281,15 @@ Stack estándar de la casa, con particularidades de este repo:
     y `hv_schedule` (subject + alternative_id + day). Cada tarea necesita **etiquetas** (valores y/o talentos, multi-select con
     buscador `components/ui/MultiSelectSearch.tsx`) antes de poder **arrastrarse** (HTML5 nativo, sin lib) a un día del calendario
     semanal. APIs: `/api/centralized/horario` (GET tareas+agenda, PATCH etiquetas validadas contra las listas canónicas),
-    `/api/centralized/horario/schedule` (POST asigna —exige etiquetas—, DELETE quita). Al convertir la alternativa en solución
-    desaparece de tareas.
+    `/api/centralized/horario/schedule` (POST asigna —exige etiquetas—, DELETE quita, PATCH marca completada). Al convertir la
+    alternativa en solución desaparece de tareas.
+  - **Cumplimiento → puntuación de perfil (2026-07-07):** `hv_schedule.completed` (bool). Cada tarea programada puntúa sus
+    etiquetas: **completada = +1**, **día pasado sin completar = −1**, día futuro sin completar = pendiente (no puntúa).
+    En el Horario cada asignación tiene toggle de completada (verde ✓ / roja si vencida). `getSubjectsProfileScores()` en
+    `horario-db.ts` agrega por sujeto: **Talentos** = neto (completadas−fallidas), top 10 con neto positivo repartiéndose el
+    100% (→ sección Talento de reclutamiento, barras %); **Valores** = por valor {completadas, fallidas} → **barra divergente**
+    (verde=completadas, rojo=no completadas, comparten UNA barra) en la sección Valores de `CandidatosTab` (`ValueBalanceBar`).
+    Se calcula en `/api/admin/candidates` (`criteria.talents` y `criteria.valuesBalance`).
 - **Alternativa vs Solución (2026-07-07):** las "soluciones" ahora se crean primero como **Alternativas**
   (ideas propuestas para afrontar un problema). Alternativa y Solución **comparten la tabla `aa_solutions`
   y sus joins** (`aa_solution_problems`/`aa_solution_causes`); se distinguen por la columna nueva

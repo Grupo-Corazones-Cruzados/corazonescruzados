@@ -46,6 +46,21 @@ export async function POST(req: Request) {
   }
 }
 
+// PATCH — marca una asignación como completada o no completada.
+export async function PATCH(req: Request) {
+  try {
+    if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    await ensureHorarioTables();
+    const { id, completed } = await req.json();
+    if (!id || typeof completed !== 'boolean') return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
+    await pool.query(`UPDATE gcc_world.hv_schedule SET completed = $1 WHERE id = $2`, [completed, Number(id)]);
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error('Horario schedule PATCH error:', err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
 // DELETE — quita una asignación del calendario.
 export async function DELETE(req: Request) {
   try {

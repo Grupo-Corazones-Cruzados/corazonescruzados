@@ -167,9 +167,11 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
               })()}
             </Section>
 
-            {/* 2 · Valores */}
-            <Section title="Valores" Icon={Gem} subtitle="Valores que gobiernan el proyecto" count={VALUE_ITEMS.length}>
-              <CriteriaGrid items={VALUE_ITEMS} group={criteria?.values} />
+            {/* 2 · Valores (barra divergente: completadas vs no completadas) */}
+            <Section title="Valores" Icon={Gem} subtitle="Cumplimiento de tareas por valor" count={VALUE_ITEMS.length}>
+              <div className="space-y-2.5">
+                {VALUE_ITEMS.map((it) => <ValueBalanceBar key={it.key} label={it.label} data={criteria?.valuesBalance?.[it.key]} />)}
+              </div>
             </Section>
 
             {/* 3 · Dimensiones */}
@@ -254,4 +256,32 @@ function Bar({ label, value }: { label: string; value: number | null | undefined
 
 function EmptyNote({ text }: { text: string }) {
   return <p className="text-[12px] text-digi-muted py-2" style={mf}>{text}</p>;
+}
+
+/**
+ * Barra DIVERGENTE de un valor: una sola barra donde el tramo verde = proporción de
+ * tareas completadas y el tramo rojo = proporción de no completadas (sobre el total de
+ * tareas etiquetadas con ese valor). A la derecha, los conteos ✓/✗.
+ */
+function ValueBalanceBar({ label, data }: { label: string; data?: { completed: number; failed: number } }) {
+  const completed = data?.completed ?? 0;
+  const failed = data?.failed ?? 0;
+  const total = completed + failed;
+  const has = total > 0;
+  const pos = has ? (completed / total) * 100 : 0;
+  const neg = has ? (failed / total) * 100 : 0;
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-32 shrink-0 text-[12.5px] text-digi-text truncate" style={mf} title={label}>{label}</span>
+      <div className="flex-1 h-2.5 rounded-full bg-digi-border/50 overflow-hidden flex">
+        <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pos}%` }} />
+        <div className="h-full bg-red-500 transition-all" style={{ width: `${neg}%` }} />
+      </div>
+      <span className="w-14 text-right text-[11.5px] tabular-nums shrink-0" style={mf}>
+        {has ? (
+          <><span className="text-emerald-600">{completed}</span><span className="text-digi-muted/50">/</span><span className="text-red-500">{failed}</span></>
+        ) : <span className="text-digi-muted/50">—</span>}
+      </span>
+    </div>
+  );
 }

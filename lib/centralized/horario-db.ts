@@ -25,10 +25,13 @@ export async function ensureHorarioTables() {
       subject_id TEXT NOT NULL,
       alternative_id BIGINT NOT NULL,
       day DATE NOT NULL,
+      completed BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS hv_schedule_subject_idx ON gcc_world.hv_schedule (subject_kind, subject_id);
   `);
+  // Para instalaciones previas de hv_schedule sin la columna.
+  await pool.query(`ALTER TABLE gcc_world.hv_schedule ADD COLUMN IF NOT EXISTS completed BOOLEAN NOT NULL DEFAULT FALSE`);
 }
 
 export interface HorarioTask {
@@ -43,6 +46,7 @@ export interface ScheduleEntry {
   id: number;
   alternativeId: number;
   day: string; // YYYY-MM-DD
+  completed: boolean;
 }
 
 /**
@@ -106,15 +110,74 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string):
 
   // Calendario del sujeto (limitado a tareas todavía vigentes).
   const schedRows = (await pool.query(
-    `SELECT id, alternative_id, to_char(day, 'YYYY-MM-DD') AS day
+    `SELECT id, alternative_id, to_char(day, 'YYYY-MM-DD') AS day, completed
        FROM gcc_world.hv_schedule
       WHERE subject_kind = $1 AND subject_id = $2 AND alternative_id = ANY($3::bigint[])
       ORDER BY day`,
     [subjectKind, subjectId, ids],
   )).rows;
-  const schedule: ScheduleEntry[] = schedRows.map((r: any) => ({ id: Number(r.id), alternativeId: Number(r.alternative_id), day: r.day }));
+  const schedule: ScheduleEntry[] = schedRows.map((r: any) => ({ id: Number(r.id), alternativeId: Number(r.alternative_id), day: r.day, completed: r.completed === true }));
 
   return { tasks, schedule };
+}
+
+export interface ProfileScores {
+  /** Top 10 talentos por puntos netos; `score` = % sobre la suma del top 10. */
+  talents: { name: string; score: number }[];
+  /** Por valor: nº de tareas completadas (positivo) vs no completadas (negativo). */
+  valuesBalance: Record<string, { completed: number; failed: number }>;
+}
+
+/**
+ * Puntuación de perfil derivada del cumplimiento de tareas del Horario de Vida.
+ * Cada tarea programada afecta a sus etiquetas: si se COMPLETA suma (+1); si el día ya
+ * pasó y NO se completó resta (−1); si el día aún no llega, queda pendiente (no puntúa).
+ *
+ *  - Talentos: puntos netos por talento (completadas − fallidas). El top 10 con neto
+ *    positivo se reparte el 100% proporcionalmente (mayor potencial = más %).
+ *  - Valores: por cada valor, cuántas completadas vs no completadas (barra divergente).
+ *
+ * Devuelve: { [subject_id]: ProfileScores }.
+ */
+export async function getSubjectsProfileScores(subjectKind: string, subjectIds: string[]): Promise<Record<string, ProfileScores>> {
+  const out: Record<string, ProfileScores> = {};
+  if (subjectIds.length === 0) return out;
+  await ensureHorarioTables();
+  const { rows } = await pool.query(
+    `SELECT h.subject_id, h.completed, (h.day < CURRENT_DATE) AS past, l.value_tags, l.talent_tags
+       FROM gcc_world.hv_schedule h
+       JOIN gcc_world.hv_task_labels l ON l.alternative_id = h.alternative_id
+      WHERE h.subject_kind = $1 AND h.subject_id = ANY($2::text[])`,
+    [subjectKind, subjectIds],
+  );
+
+  type Tally = { c: number; f: number };
+  const agg = new Map<string, { talents: Map<string, Tally>; values: Map<string, Tally> }>();
+  for (const r of rows) {
+    const completed = r.completed === true;
+    const past = r.past === true;
+    if (!completed && !past) continue; // pendiente (día futuro sin completar) → no puntúa aún
+    const sid = String(r.subject_id);
+    let a = agg.get(sid);
+    if (!a) { a = { talents: new Map(), values: new Map() }; agg.set(sid, a); }
+    const bump = (m: Map<string, Tally>, key: string) => { const e = m.get(key) || { c: 0, f: 0 }; if (completed) e.c++; else e.f++; m.set(key, e); };
+    for (const t of (r.talent_tags || [])) bump(a.talents, String(t));
+    for (const v of (r.value_tags || [])) bump(a.values, String(v));
+  }
+
+  for (const [sid, a] of agg) {
+    const nets = Array.from(a.talents.entries())
+      .map(([name, e]) => ({ name, net: e.c - e.f }))
+      .filter((x) => x.net > 0)
+      .sort((p, q) => q.net - p.net)
+      .slice(0, 10);
+    const sum = nets.reduce((s, x) => s + x.net, 0);
+    const talents = sum > 0 ? nets.map((x) => ({ name: x.name, score: Math.round((x.net / sum) * 100) })) : [];
+    const valuesBalance: Record<string, { completed: number; failed: number }> = {};
+    for (const [v, e] of a.values) valuesBalance[v] = { completed: e.c, failed: e.f };
+    out[sid] = { talents, valuesBalance };
+  }
+  return out;
 }
 
 /** Fija las etiquetas (valores/talentos) de una tarea (alternativa). */

@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { getDimensionProblemLoads } from '@/lib/centralized/apoyo-db';
+import { getSubjectsProfileScores } from '@/lib/centralized/horario-db';
 import { NextResponse } from 'next/server';
 
 /**
@@ -30,13 +31,26 @@ export async function GET() {
         ORDER BY c.last_seen_at DESC NULLS LAST, c.id DESC`,
     );
 
-    // Dimensiones: se calculan desde el sistema de Apoyo y Autoayuda (carga de problemas
-    // por dimensión, descontando los que ya tienen solución). El resto de criterios
-    // (talento/valores/apoyo) sigue pendiente de fuente de datos.
-    const loads = await getDimensionProblemLoads('candidate', rows.map((r: any) => String(r.id)));
+    // Criterios calculados:
+    //  - Dimensiones: carga de problemas por dimensión (Apoyo y Autoayuda).
+    //  - Talento y Valores: cumplimiento de tareas del Horario de Vida (± por etiqueta).
+    // Apoyo sigue pendiente de fuente de datos.
+    const ids = rows.map((r: any) => String(r.id));
+    const [loads, scores] = await Promise.all([
+      getDimensionProblemLoads('candidate', ids),
+      getSubjectsProfileScores('candidate', ids),
+    ]);
     const data = rows.map((r: any) => {
-      const dims = loads[String(r.id)];
-      const criteria = dims ? { talents: [], values: {}, dimensions: dims, apoyo: {} } : null;
+      const sid = String(r.id);
+      const dims = loads[sid];
+      const sc = scores[sid];
+      const criteria = (dims || sc) ? {
+        talents: sc?.talents || [],
+        values: {},
+        valuesBalance: sc?.valuesBalance || {},
+        dimensions: dims || {},
+        apoyo: {},
+      } : null;
       return {
         ...r,
         criteria,

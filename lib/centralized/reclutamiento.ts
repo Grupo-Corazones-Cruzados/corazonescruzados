@@ -15,9 +15,13 @@ export interface CriteriaGroup {
   [key: string]: number; // key → porcentaje 0–100
 }
 
+/** Balance de un valor: tareas completadas (positivo) vs no completadas (negativo). */
+export interface ValueBalance { completed: number; failed: number; }
+
 export interface CandidateCriteria {
   talents: TalentScore[];          // hasta 10, se ordenan de mayor a menor
-  values: CriteriaGroup;           // por key de VALUE_ITEMS
+  values: CriteriaGroup;           // por key de VALUE_ITEMS (compat; hoy vacío)
+  valuesBalance?: { [key: string]: ValueBalance }; // barra divergente por valor
   dimensions: CriteriaGroup;       // por key de DIMENSION_ITEMS
   apoyo: CriteriaGroup;            // por key de APOYO_ITEMS
 }

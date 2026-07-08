@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X, Gem, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X, Gem, Sparkles, CheckCircle2, Circle } from 'lucide-react';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
 import PixelModal from '@/components/ui/PixelModal';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
@@ -20,7 +20,7 @@ const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.g
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 interface Task { id: number; title: string; description: string | null; problems: { title: string; dimension: string | null }[]; values: string[]; talents: string[] }
-interface ScheduleEntry { id: number; alternativeId: number; day: string }
+interface ScheduleEntry { id: number; alternativeId: number; day: string; completed: boolean }
 
 const VALOR_OPTIONS = VALORES.map((v) => ({ value: v.key, label: v.label }));
 const TALENTO_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));
@@ -48,6 +48,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
 
   const today = startOfDay(new Date());
+  const todayStr = ymd(today);
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const enabled = !!selected;
 
@@ -103,9 +104,18 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
       const d = await res.json();
-      setSchedule((s) => [...s, { id: d.id, alternativeId: task.id, day: dayStr }]);
+      setSchedule((s) => [...s, { id: d.id, alternativeId: task.id, day: dayStr, completed: false }]);
       toast.success(`"${task.title}" programada`);
     } catch (e: any) { toast.error(e.message || 'Error'); }
+  };
+
+  const toggleComplete = async (entry: ScheduleEntry) => {
+    const next = !entry.completed;
+    setSchedule((s) => s.map((e) => (e.id === entry.id ? { ...e, completed: next } : e))); // optimista
+    try {
+      const res = await fetch('/api/centralized/horario/schedule', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: entry.id, completed: next }) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error');
+    } catch (e: any) { toast.error(e.message || 'Error'); setSchedule((s) => s.map((x) => (x.id === entry.id ? { ...x, completed: entry.completed } : x))); }
   };
 
   const unassign = async (entry: ScheduleEntry) => {
@@ -237,10 +247,15 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                         ) : (
                           entries.map((e) => {
                             const t = taskById.get(e.alternativeId);
+                            const past = dayStr < todayStr;
+                            const missed = past && !e.completed;
                             return (
-                              <div key={e.id} className="group flex items-start gap-1 rounded-md border border-accent/25 bg-accent-light px-2 py-1.5">
-                                <span className="text-[11px] text-accent leading-snug flex-1 min-w-0" style={mf}>{t?.title || 'Tarea'}</span>
-                                <button onClick={() => unassign(e)} className="opacity-0 group-hover:opacity-100 text-accent/70 hover:text-accent transition-opacity shrink-0" aria-label="Quitar"><X className="w-3 h-3" /></button>
+                              <div key={e.id} className={`group flex items-start gap-1 rounded-md border px-1.5 py-1.5 ${e.completed ? 'border-emerald-400/40 bg-emerald-500/10' : missed ? 'border-red-400/40 bg-red-500/10' : 'border-accent/25 bg-accent-light'}`}>
+                                <button onClick={() => toggleComplete(e)} title={e.completed ? 'Completada — desmarcar' : 'Marcar completada'} className="shrink-0 mt-0.5" aria-label="Completar">
+                                  {e.completed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Circle className={`w-3.5 h-3.5 ${missed ? 'text-red-400' : 'text-accent/60'} hover:text-accent`} />}
+                                </button>
+                                <span className={`text-[11px] leading-snug flex-1 min-w-0 ${e.completed ? 'text-emerald-700 line-through' : missed ? 'text-red-600' : 'text-accent'}`} style={mf}>{t?.title || 'Tarea'}</span>
+                                <button onClick={() => unassign(e)} className="opacity-0 group-hover:opacity-100 text-digi-muted hover:text-red-500 transition-opacity shrink-0" aria-label="Quitar"><X className="w-3 h-3" /></button>
                               </div>
                             );
                           })
