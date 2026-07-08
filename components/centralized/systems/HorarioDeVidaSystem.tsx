@@ -10,6 +10,7 @@ import UsersList, { type SelectedUser } from '@/components/centralized/UsersList
 import PixelModal from '@/components/ui/PixelModal';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { VALORES, VALOR_LABEL } from '@/lib/centralized/valores';
+import { DIMENSION_COLOR, DIMENSION_LABEL } from '@/lib/centralized/apoyo';
 import { TALENTOS } from '@/lib/centralized/talentos';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -26,7 +27,7 @@ type Status = 'pending' | 'completed' | 'failed';
 interface TaskLink { source: 'ticket' | 'project'; title: string; status: string | null; description: string | null; start: string | null; end: string | null }
 interface Task { id: number; title: string; description: string | null; problems: { title: string; dimension: string | null }[]; values: string[]; talents: string[]; link: TaskLink | null }
 interface ScheduleEntry { id: number; alternativeId: number; day: string; status: Status }
-interface AutoEntry { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string }
+interface AutoEntry { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string; status: Status }
 interface TaskContext { problems: { title: string; dimension: string | null }[]; situations: string[]; causes: string[] }
 
 const VALOR_OPTIONS = VALORES.map((v) => ({ value: v.key, label: v.label }));
@@ -64,8 +65,8 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
   // Filtro del panel de tareas: solo pendientes (sin ninguna instancia completada)
   const [onlyPending, setOnlyPending] = useState(false);
 
-  // Panel de detalle: una asignación manual (con `entry`) o una entrada automática (entry=null)
-  const [panel, setPanel] = useState<{ alternativeId: number; entry: ScheduleEntry | null } | null>(null);
+  // Panel de detalle: asignación manual (`entry`) o entrada automática (`auto` con día+estado)
+  const [panel, setPanel] = useState<{ alternativeId: number; entry: ScheduleEntry | null; auto: { day: string; status: Status } | null } | null>(null);
   const [panelCtx, setPanelCtx] = useState<TaskContext | null>(null);
   const [panelLoading, setPanelLoading] = useState(false);
 
@@ -156,6 +157,17 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     } catch (e: any) { toast.error(e.message || 'Error'); load(); }
   };
 
+  // Estado de una entrada automática (por día). Se materializa como fila `locked`.
+  const setAutoStatusFor = async (alternativeId: number, day: string, status: Status) => {
+    if (!selected) return;
+    setAuto((a) => a.map((e) => (e.alternativeId === alternativeId && e.day === day ? { ...e, status } : e)));
+    setPanel((p) => (p && p.auto && p.alternativeId === alternativeId && p.auto.day === day ? { ...p, auto: { ...p.auto, status } } : p));
+    try {
+      const res = await fetch('/api/centralized/horario/auto-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject_kind: selected.kind, subject_id: selected.id, alternativeId, day, status }) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error');
+    } catch (e: any) { toast.error(e.message || 'Error'); load(); }
+  };
+
   const unassign = async (entry: ScheduleEntry) => {
     setSchedule((s) => s.filter((e) => e.id !== entry.id));
     setPanel((p) => (p && p.entry && p.entry.id === entry.id ? null : p));
@@ -167,8 +179,8 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
 
   // Abre el panel de detalle: para una asignación manual (con estado/quitar) o para una
   // entrada automática (entry=null → solo detalles, incl. ticket/proyecto asociado).
-  const openPanel = async (alternativeId: number, entry: ScheduleEntry | null) => {
-    setPanel({ alternativeId, entry });
+  const openPanel = async (alternativeId: number, entry: ScheduleEntry | null, auto: { day: string; status: Status } | null = null) => {
+    setPanel({ alternativeId, entry, auto });
     setPanelCtx(null);
     if (!selected) return;
     setPanelLoading(true);
@@ -345,26 +357,31 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                               const t = taskById.get(e.alternativeId);
                               const st = e.status;
                               const open = panel?.entry?.id === e.id;
+                              const dims = Array.from(new Set((t?.problems || []).map((p) => p.dimension).filter(Boolean))) as string[];
                               return (
-                                <div key={e.id} className={`flex items-center gap-1 rounded-md border px-1 py-1.5 ${st === 'completed' ? 'border-emerald-400/40 bg-emerald-500/10' : st === 'failed' ? 'border-red-400/40 bg-red-500/10' : 'border-accent/25 bg-accent-light'} ${open ? 'ring-1 ring-accent' : ''}`}>
-                                  <button onClick={() => openPanel(e.alternativeId, e)} title="Detalles de la tarea" className="shrink-0 text-digi-muted hover:text-accent transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
+                                <div key={e.id} className={`flex items-center gap-1 rounded-md border pl-1.5 pr-0.5 py-1.5 ${st === 'completed' ? 'border-emerald-400/40 bg-emerald-500/10' : st === 'failed' ? 'border-red-400/40 bg-red-500/10' : 'border-accent/25 bg-accent-light'} ${open ? 'ring-1 ring-accent' : ''}`}>
+                                  {dims.slice(0, 3).map((dm) => (
+                                    <span key={dm} title={`Dimensión: ${DIMENSION_LABEL[dm] || dm}`} className="w-2 h-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ background: DIMENSION_COLOR[dm] || '#888' }} />
+                                  ))}
                                   <span className={`text-[11px] leading-snug flex-1 min-w-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-accent'}`} style={mf}>{t?.title || 'Tarea'}</span>
                                   {st === 'completed' && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
                                   {st === 'failed' && <XCircle className="w-3 h-3 text-red-500 shrink-0" />}
+                                  <button onClick={() => openPanel(e.alternativeId, e)} title="Detalles de la tarea" className="shrink-0 text-digi-muted hover:text-accent transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
                                 </div>
                               );
                             })}
-                            {/* Entradas automáticas del ticket/proyecto asociado (no editables) — ⋮ a la derecha abre el detalle */}
+                            {/* Entradas automáticas del ticket/proyecto asociado — fijas, pero con estado; ⋮ a la derecha abre el detalle */}
                             {autoEntries.map((a, ai) => {
                               const t = taskById.get(a.alternativeId);
                               const RefIcon = a.source === 'ticket' ? Ticket : FolderKanban;
-                              const open = panel?.alternativeId === a.alternativeId && !panel?.entry;
+                              const st = a.status;
+                              const open = panel?.alternativeId === a.alternativeId && !!panel?.auto && panel.auto.day === a.day;
                               return (
                                 <div key={`auto-${a.alternativeId}-${ai}`}
-                                  className={`flex items-center gap-1 rounded-md border border-dashed border-sky-400/40 bg-sky-500/10 pl-1.5 pr-0.5 py-1.5 ${open ? 'ring-1 ring-sky-400' : ''}`}>
-                                  <RefIcon className="w-3 h-3 shrink-0 text-sky-400" />
-                                  <span className="text-[11px] leading-snug flex-1 min-w-0 text-sky-300" style={mf}>{t?.title || 'Tarea'}</span>
-                                  <button onClick={() => openPanel(a.alternativeId, null)} title="Detalles de la tarea" className="shrink-0 text-sky-400/80 hover:text-sky-300 transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
+                                  className={`flex items-center gap-1 rounded-md border border-dashed pl-1.5 pr-0.5 py-1.5 ${st === 'completed' ? 'border-emerald-400/50 bg-emerald-500/10' : st === 'failed' ? 'border-red-400/50 bg-red-500/10' : 'border-sky-400/40 bg-sky-500/10'} ${open ? 'ring-1 ring-sky-400' : ''}`}>
+                                  <RefIcon className={`w-3 h-3 shrink-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-sky-400'}`} />
+                                  <span className={`text-[11px] leading-snug flex-1 min-w-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-sky-300'}`} style={mf}>{t?.title || 'Tarea'}</span>
+                                  <button onClick={() => openPanel(a.alternativeId, null, { day: a.day, status: a.status })} title="Detalles de la tarea" className="shrink-0 text-sky-400/80 hover:text-sky-300 transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
                                 </div>
                               );
                             })}
@@ -396,20 +413,25 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                     {t?.description && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{t.description}</p>}
                   </div>
 
-                  {/* Estado (solo asignaciones manuales) */}
-                  {entry && (
-                    <div>
-                      <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado</p>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <StatusButton active={st === 'completed'} tone="completed" onClick={() => setEntryStatus(entry, 'completed')} Icon={CheckCircle2} label="Completada" />
-                        <StatusButton active={st === 'failed'} tone="failed" onClick={() => setEntryStatus(entry, 'failed')} Icon={XCircle} label="Fallida" />
-                        <StatusButton active={st === 'pending'} tone="pending" onClick={() => setEntryStatus(entry, 'pending')} Icon={CircleDashed} label="Pendiente" />
+                  {/* Estado (asignación manual o entrada automática) */}
+                  {(() => {
+                    const cur = entry ? entry.status : panel.auto?.status;
+                    if (!entry && !panel.auto) return null;
+                    const set = (s: Status) => (entry ? setEntryStatus(entry, s) : setAutoStatusFor(panel.alternativeId, panel.auto!.day, s));
+                    return (
+                      <div>
+                        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado{panel.auto ? ` · ${fmtDay(panel.auto.day)}` : ''}</p>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <StatusButton active={cur === 'completed'} tone="completed" onClick={() => set('completed')} Icon={CheckCircle2} label="Completada" />
+                          <StatusButton active={cur === 'failed'} tone="failed" onClick={() => set('failed')} Icon={XCircle} label="Fallida" />
+                          <StatusButton active={cur === 'pending'} tone="pending" onClick={() => set('pending')} Icon={CircleDashed} label="Pendiente" />
+                        </div>
+                        <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>
+                          Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.
+                        </p>
                       </div>
-                      <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>
-                        Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.
-                      </p>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Ticket/proyecto asociado */}
                   {link && (
@@ -452,7 +474,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                       <Trash2 className="w-3.5 h-3.5" /> Quitar del día
                     </button>
                   ) : (
-                    <p className="text-[10.5px] text-sky-300/90 inline-flex items-center gap-1 pt-1" style={mf}><Lock className="w-3 h-3" /> Fijada automáticamente por su {link?.source === 'ticket' ? 'ticket' : 'proyecto'}; no se edita ni se quita.</p>
+                    <p className="text-[10.5px] text-sky-300/90 inline-flex items-start gap-1 pt-1" style={mf}><Lock className="w-3 h-3 mt-0.5 shrink-0" /> Fijada automáticamente por su {link?.source === 'ticket' ? 'ticket' : 'proyecto'}; no se mueve ni se quita, pero puedes marcar su estado.</p>
                   )}
                 </div>
               </div>

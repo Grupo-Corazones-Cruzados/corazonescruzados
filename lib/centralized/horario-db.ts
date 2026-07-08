@@ -27,12 +27,14 @@ export async function ensureHorarioTables() {
       day DATE NOT NULL,
       completed BOOLEAN NOT NULL DEFAULT FALSE,           -- legado (ya no se usa)
       status TEXT NOT NULL DEFAULT 'pending',             -- 'pending' | 'completed' | 'failed'
+      locked BOOLEAN NOT NULL DEFAULT FALSE,              -- true = generada por ticket/proyecto (solo estado)
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS hv_schedule_subject_idx ON gcc_world.hv_schedule (subject_kind, subject_id);
   `);
-  // Instalaciones previas: agrega `status` y arrastra el valor del viejo `completed`.
+  // Instalaciones previas: agrega `status`/`locked` y arrastra el valor del viejo `completed`.
   await pool.query(`ALTER TABLE gcc_world.hv_schedule ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending'`);
+  await pool.query(`ALTER TABLE gcc_world.hv_schedule ADD COLUMN IF NOT EXISTS locked BOOLEAN NOT NULL DEFAULT FALSE`);
   await pool.query(`UPDATE gcc_world.hv_schedule SET status = 'completed' WHERE completed = TRUE AND status = 'pending'`);
 }
 
@@ -60,12 +62,15 @@ export interface ScheduleEntry {
   day: string; // YYYY-MM-DD
   status: ScheduleStatus;
 }
-/** Entrada AUTOMÁTICA (no editable) derivada del ticket/proyecto asociado a la alternativa. */
+/** Entrada AUTOMÁTICA (fija: no se mueve ni se quita, pero SÍ se marca su estado) derivada
+ *  del ticket/proyecto asociado a la alternativa. El estado vive en una fila `locked` de
+ *  hv_schedule por (sujeto, alternativa, día). */
 export interface AutoEntry {
   alternativeId: number;
   day: string; // YYYY-MM-DD
   source: 'ticket' | 'project';
   refTitle: string;
+  status: ScheduleStatus;
 }
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -152,11 +157,21 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
   const schedRows = (await pool.query(
     `SELECT id, alternative_id, to_char(day, 'YYYY-MM-DD') AS day, status
        FROM gcc_world.hv_schedule
-      WHERE subject_kind = $1 AND subject_id = $2 AND alternative_id = ANY($3::bigint[])
+      WHERE subject_kind = $1 AND subject_id = $2 AND alternative_id = ANY($3::bigint[]) AND locked = FALSE
       ORDER BY day`,
     [subjectKind, subjectId, ids],
   )).rows;
   const schedule: ScheduleEntry[] = schedRows.map((r: any) => ({ id: Number(r.id), alternativeId: Number(r.alternative_id), day: r.day, status: (r.status as ScheduleStatus) || 'pending' }));
+
+  // Estados de las entradas AUTOMÁTICAS (filas locked) por (alternativa|día).
+  const lockedRows = (await pool.query(
+    `SELECT alternative_id, to_char(day, 'YYYY-MM-DD') AS day, status
+       FROM gcc_world.hv_schedule
+      WHERE subject_kind = $1 AND subject_id = $2 AND alternative_id = ANY($3::bigint[]) AND locked = TRUE`,
+    [subjectKind, subjectId, ids],
+  )).rows;
+  const lockedStatus = new Map<string, ScheduleStatus>();
+  for (const r of lockedRows) lockedStatus.set(`${r.alternative_id}|${r.day}`, (r.status as ScheduleStatus) || 'pending');
 
   // Entradas AUTOMÁTICAS: por cada alternativa con un ticket/proyecto asociado, un día por
   // cada fecha entre su inicio (created_at; proyectos: confirmed_at si existe) y su límite
@@ -174,7 +189,8 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
       const end = new Date(`${hi}T00:00:00`);
       let guard = 0;
       while (d <= end && guard < 400) {
-        auto.push({ alternativeId: Number(r.aid), day: ymd(d), source: r.source, refTitle: r.ref_title });
+        const day = ymd(d);
+        auto.push({ alternativeId: Number(r.aid), day, source: r.source, refTitle: r.ref_title, status: lockedStatus.get(`${r.aid}|${day}`) || 'pending' });
         d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
         guard++;
       }
@@ -288,6 +304,23 @@ export async function getTaskContext(subjectKind: string, subjectId: string, alt
     situations: sitRows.map((r: any) => r.title),
     causes: causeRows.map((r: any) => r.title),
   };
+}
+
+/** Marca el estado de una entrada AUTOMÁTICA (por sujeto/alternativa/día) en una fila
+ *  `locked` de hv_schedule (se crea si no existía). Afecta la puntuación como cualquier
+ *  otra: completada +1, fallida −1, pendiente neutro. */
+export async function setAutoStatus(subjectKind: string, subjectId: string, alternativeId: number, day: string, status: ScheduleStatus) {
+  await ensureHorarioTables();
+  const upd = await pool.query(
+    `UPDATE gcc_world.hv_schedule SET status = $5 WHERE subject_kind = $1 AND subject_id = $2 AND alternative_id = $3 AND day = $4::date AND locked = TRUE`,
+    [subjectKind, subjectId, alternativeId, day, status],
+  );
+  if (!upd.rowCount) {
+    await pool.query(
+      `INSERT INTO gcc_world.hv_schedule (subject_kind, subject_id, alternative_id, day, status, locked) VALUES ($1,$2,$3,$4::date,$5,TRUE)`,
+      [subjectKind, subjectId, alternativeId, day, status],
+    );
+  }
 }
 
 /** Fija las etiquetas (valores/talentos) de una tarea (alternativa). */

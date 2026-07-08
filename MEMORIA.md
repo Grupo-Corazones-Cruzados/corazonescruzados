@@ -316,9 +316,15 @@ Stack estándar de la casa, con particularidades de este repo:
   **todos los días entre el inicio y la fecha límite** del ref (inicio = `created_at`; proyecto = `confirmed_at` si existe;
   fin = `deadline`; si no hay `deadline`, no genera). `getSubjectHorario(kind,id,from,to)` devuelve `auto[]` acotado a la
   ventana (semana visible; el Horario refetch por semana) y cada tarea trae `link` (`{source,title,start,end}`). Chips punteados
-  celestes, sin estado ni scoring; cada auto-chip tiene **⋮ a la derecha** que abre el **panel de detalle** (entry=null → modo
-  auto, sin estado ni "quitar") con una sección **Ticket/Proyecto asociado** (título, estado, "Del … al …", descripción, botones
-  Inicio/Fin). **Tareas fijadas/bloqueadas:** las alternativas con `link` **NO son arrastrables** (guard en `assign` +
+  celestes; cada auto-chip tiene **⋮ a la derecha** que abre el **panel de detalle** (entry=null, auto={day,status}) con sección
+  **Ticket/Proyecto asociado** (título, estado, "Del … al …", descripción, Inicio/Fin). **Estado de auto-entradas (2026-07-07):**
+  las entradas automáticas **SÍ se marcan** completada/fallida/pendiente **por día** (el usuario lo pidió: define si la alternativa
+  cumple sus valores/talentos). El estado vive en una fila **`locked=TRUE`** de `hv_schedule` (col nueva `locked`) por
+  (sujeto,alternativa,día); `setAutoStatus` hace upsert (`POST /api/centralized/horario/auto-status`). El scoring
+  (`getSubjectsProfileScores`) ya lee TODO `hv_schedule` → las auto-entradas puntúan. `getSubjectHorario`: `schedule` manual =
+  `locked=FALSE`; `auto[]` toma su `status` de las filas locked. **Chips del calendario:** el ⋮ va a la **derecha** (manual y
+  auto); las manuales muestran **puntos de color de la(s) dimensión(es)** del problema relacionado (`DIMENSION_COLOR`); color por
+  estado (verde/rojo/celeste-o-accent). **Tareas fijadas/bloqueadas:** las alternativas con `link` **NO son arrastrables** (guard en `assign` +
   `draggable=false`); en el panel de Tareas muestran **candado** (hover → **burbuja** con detalles del ticket/proyecto) + botones
   **Inicio/Fin**. El rango en el calendario es **continuo desde el inicio hasta el fin** (todos los días); `TaskLink` lleva
   `{source,title,status,description,start,end}`. El panel de detalle se generalizó a `panel={alternativeId, entry|null}`. **Gotcha:** `projects.id` es **bigint**
