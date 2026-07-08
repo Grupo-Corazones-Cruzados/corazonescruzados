@@ -37,8 +37,42 @@ export async function ensureComandosTables(): Promise<void> {
     )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS cv_policies_category_idx ON gcc_world.cv_policies(category_id)`);
   await pool.query(`CREATE INDEX IF NOT EXISTS cv_functions_policy_idx ON gcc_world.cv_functions(policy_id)`);
+  await ensureGeneratedTasksTable();
   await ensureSystemSeed();
   ready = true;
+}
+
+/**
+ * Tabla de TAREAS GENERADAS por políticas (enforcement de la función `generate_tasks`).
+ * Cada fila es una instancia por (función · programa · sujeto · día): la tarea aterriza en
+ * el "Mi día" del sujeto y en su Horario de Vida como una entrada FIJA (como las de
+ * ticket/proyecto). El usuario solo cambia su `status` y sus etiquetas (`value_tags`/
+ * `talent_tags`). Se materializa al ACTIVAR la política y se limpia al desactivarla.
+ * La expuesta también la crea el Horario de Vida al leer, por eso vive en su propia función.
+ */
+export async function ensureGeneratedTasksTable(): Promise<void> {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.cv_generated_tasks (
+      id BIGSERIAL PRIMARY KEY,
+      function_id INT NOT NULL REFERENCES gcc_world.cv_functions(id) ON DELETE CASCADE,
+      policy_id INT NOT NULL,
+      program_idx INT NOT NULL,                 -- índice del TaskProgram dentro de la función
+      subject_kind TEXT NOT NULL,               -- 'member' | 'candidate'
+      subject_id TEXT NOT NULL,                 -- members.id | clients.id (como texto)
+      title TEXT NOT NULL,
+      detail TEXT NOT NULL DEFAULT '',
+      value_tags TEXT[] NOT NULL DEFAULT '{}',
+      talent_tags TEXT[] NOT NULL DEFAULT '{}',
+      all_day BOOLEAN NOT NULL DEFAULT FALSE,
+      start_time TEXT,
+      end_time TEXT,
+      day DATE NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',    -- 'pending' | 'completed' | 'failed'
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (function_id, subject_kind, subject_id, program_idx, day)
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS cv_generated_subject_idx ON gcc_world.cv_generated_tasks (subject_kind, subject_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS cv_generated_policy_idx ON gcc_world.cv_generated_tasks (policy_id)`);
 }
 
 /** Siembra el sistema built-in "Comandos Violeta" (global · creación) si no existe. */
@@ -138,6 +172,69 @@ export async function setPolicyActive(id: number, active: boolean) {
   await pool.query(
     `UPDATE gcc_world.cv_policies SET active = $1, activated_at = CASE WHEN $1 THEN NOW() ELSE activated_at END WHERE id = $2`,
     [active, id],
+  );
+  // Enforcement de la función `generate_tasks`: al activar se materializan las tareas
+  // programadas en el horario de cada usuario; al desactivar se retiran las pendientes.
+  if (active) await materializePolicyTasks(id);
+  else await removePolicyPendingTasks(id);
+}
+
+/**
+ * Materializa (idempotente) las tareas de todas las funciones `generate_tasks` de la
+ * política: por cada TaskProgram expande los días desde la FECHA DE ACTIVACIÓN durante
+ * `daysCount` días, filtrando por `weekdays` (vacío = todos), e inserta una fila por día.
+ * `ON CONFLICT DO NOTHING` evita duplicar días ya existentes (re-activación / solape).
+ */
+export async function materializePolicyTasks(policyId: number): Promise<void> {
+  await ensureGeneratedTasksTable();
+  // Fecha de activación en la zona local (para que "día" cuadre con el resto de la app).
+  const polRes = await pool.query(
+    `SELECT to_char((activated_at AT TIME ZONE 'America/Guayaquil')::date, 'YYYY-MM-DD') AS start_day
+       FROM gcc_world.cv_policies WHERE id = $1`,
+    [policyId],
+  );
+  const startDay: string | null = polRes.rows[0]?.start_day || null;
+  if (!startDay) return;
+
+  const { rows: fns } = await pool.query(
+    `SELECT id, config FROM gcc_world.cv_functions WHERE policy_id = $1 AND type = 'generate_tasks'`,
+    [policyId],
+  );
+  for (const fn of fns) {
+    const tasks: any[] = Array.isArray(fn.config?.tasks) ? fn.config.tasks : [];
+    for (let idx = 0; idx < tasks.length; idx++) {
+      const t = tasks[idx];
+      if (!t?.userKind || !t?.userId || !t?.title) continue;
+      const days = Math.max(1, Number(t.daysCount) || 1);
+      const weekdays: number[] = Array.isArray(t.weekdays) ? t.weekdays.map(Number) : [];
+      await pool.query(
+        `INSERT INTO gcc_world.cv_generated_tasks
+           (function_id, policy_id, program_idx, subject_kind, subject_id, title, detail,
+            value_tags, talent_tags, all_day, start_time, end_time, day, status)
+         SELECT $1, $2, $3, $4, $5, $6, $7, $8::text[], $9::text[], $10, $11, $12, d::date, 'pending'
+           FROM generate_series($13::date, $13::date + ($14 - 1) * INTERVAL '1 day', INTERVAL '1 day') AS d
+          WHERE ($15::int[] = '{}'::int[] OR EXTRACT(DOW FROM d)::int = ANY($15::int[]))
+         ON CONFLICT (function_id, subject_kind, subject_id, program_idx, day) DO NOTHING`,
+        [
+          Number(fn.id), policyId, idx, String(t.userKind), String(t.userId),
+          String(t.title), String(t.detail || ''),
+          Array.isArray(t.valores) ? t.valores.map(String) : [],
+          Array.isArray(t.talentos) ? t.talentos.map(String) : [],
+          !!t.allDay, t.allDay ? null : String(t.startTime || ''), t.allDay ? null : String(t.endTime || ''),
+          startDay, days, weekdays,
+        ],
+      );
+    }
+  }
+}
+
+/** Al desactivar: retira las tareas PENDIENTES (pasadas y futuras); conserva el historial
+ *  de las completadas/fallidas para el registro y el scoring del perfil. */
+export async function removePolicyPendingTasks(policyId: number): Promise<void> {
+  await ensureGeneratedTasksTable();
+  await pool.query(
+    `DELETE FROM gcc_world.cv_generated_tasks WHERE policy_id = $1 AND status = 'pending'`,
+    [policyId],
   );
 }
 

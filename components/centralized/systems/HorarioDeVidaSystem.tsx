@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X,
   Gem, Sparkles, CheckCircle2, XCircle, CircleDashed, MoreVertical, Trash2, Ticket, FolderKanban, Lock, Flag,
-  Briefcase, Dumbbell, Brain, Users,
+  Briefcase, Dumbbell, Brain, Users, ShieldCheck, Clock,
 } from 'lucide-react';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
 import TaskStatusButtons from '@/components/centralized/TaskStatusButtons';
@@ -30,6 +30,7 @@ interface TaskLink { source: 'ticket' | 'project'; title: string; status: string
 interface Task { id: number; title: string; description: string | null; problems: { title: string; dimension: string | null }[]; values: string[]; talents: string[]; link: TaskLink | null }
 interface ScheduleEntry { id: number; alternativeId: number; day: string; status: Status }
 interface AutoEntry { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string; status: Status }
+interface GenTask { id: number; groupId: string; day: string; title: string; detail: string; values: string[]; talents: string[]; allDay: boolean; startTime: string | null; endTime: string | null; status: Status; policyName: string }
 interface TaskContext { problems: { title: string; dimension: string | null }[]; situations: string[]; causes: string[] }
 
 // Icono que representa cada dimensión (con su color de `DIMENSION_COLOR`).
@@ -50,13 +51,18 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
   const [tasks, setTasks] = useState<Task[]>([]);
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([]);
   const [auto, setAuto] = useState<AutoEntry[]>([]);
+  const [generated, setGenerated] = useState<GenTask[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Editor de etiquetas
+  // Editor de etiquetas (alternativas del Horario)
   const [editing, setEditing] = useState<Task | null>(null);
   const [draftValues, setDraftValues] = useState<string[]>([]);
   const [draftTalents, setDraftTalents] = useState<string[]>([]);
   const [savingLabels, setSavingLabels] = useState(false);
+
+  // Tareas generadas por políticas (fijas): panel de detalle + editor de etiquetas propio.
+  const [genPanel, setGenPanel] = useState<GenTask | null>(null);
+  const [editingGen, setEditingGen] = useState<GenTask | null>(null);
 
   // Drag & drop (HTML5 nativo)
   const [dragId, setDragId] = useState<number | null>(null);
@@ -81,16 +87,18 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
   const enabled = !!selected;
 
   const load = useCallback(async () => {
-    if (!selected) { setTasks([]); setSchedule([]); setAuto([]); return; }
+    if (!selected) { setTasks([]); setSchedule([]); setAuto([]); setGenerated([]); return; }
     setLoading(true);
-    const from = ymd(weekStart), to = ymd(addDays(weekStart, 6));
+    // La ventana de auto-entradas es la semana; +1 día en `to` porque el filtro es [from, to).
+    const from = ymd(weekStart), to = ymd(addDays(weekStart, 7));
     try {
       const res = await fetch(`/api/centralized/horario?subject_kind=${selected.kind}&subject_id=${selected.id}&from=${from}&to=${to}`);
       const d = await res.json();
       setTasks(d.data?.tasks || []);
       setSchedule(d.data?.schedule || []);
       setAuto(d.data?.auto || []);
-    } catch { setTasks([]); setSchedule([]); setAuto([]); }
+      setGenerated(d.data?.generated || []);
+    } catch { setTasks([]); setSchedule([]); setAuto([]); setGenerated([]); }
     finally { setLoading(false); }
   }, [selected, weekStart]);
 
@@ -108,6 +116,11 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     for (const e of auto) { const a = m.get(e.day) || []; a.push(e); m.set(e.day, a); }
     return m;
   }, [auto]);
+  const generatedByDay = useMemo(() => {
+    const m = new Map<string, GenTask[]>();
+    for (const g of generated) { const a = m.get(g.day) || []; a.push(g); m.set(g.day, a); }
+    return m;
+  }, [generated]);
   // Una tarea es "pendiente" mientras no tenga ninguna instancia resuelta (completada o fallida).
   const isPending = (t: Task) => !schedule.some((e) => e.alternativeId === t.id && (e.status === 'completed' || e.status === 'failed'));
   const visibleTasks = useMemo(() => (onlyPending ? tasks.filter(isPending) : tasks), [tasks, schedule, onlyPending]);
@@ -173,6 +186,38 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     } catch (e: any) { toast.error(e.message || 'Error'); load(); }
   };
 
+  // Estado de una tarea GENERADA por política (fija). Solo cambia estado; optimista.
+  const setGeneratedStatusFor = async (g: GenTask, status: Status) => {
+    setGenerated((arr) => arr.map((x) => (x.id === g.id ? { ...x, status } : x)));
+    setGenPanel((p) => (p && p.id === g.id ? { ...p, status } : p));
+    try {
+      const res = await fetch('/api/centralized/horario/generated', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: g.id, status }) });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error');
+    } catch (e: any) { toast.error(e.message || 'Error'); load(); }
+  };
+
+  // Guarda las etiquetas de una tarea generada (se aplican a TODOS sus días — mismo groupId).
+  const saveGenLabels = async () => {
+    if (!editingGen) return;
+    setSavingLabels(true);
+    try {
+      const res = await fetch('/api/centralized/horario/generated', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingGen.id, values: draftValues, talents: draftTalents }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error');
+      const d = await res.json();
+      const gid = editingGen.groupId;
+      setGenerated((arr) => arr.map((x) => (x.groupId === gid ? { ...x, values: d.values, talents: d.talents } : x)));
+      setGenPanel((p) => (p && p.groupId === gid ? { ...p, values: d.values, talents: d.talents } : p));
+      toast.success('Etiquetas guardadas');
+      setEditingGen(null);
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setSavingLabels(false); }
+  };
+
+  const openGenEditor = (g: GenTask) => { setDraftValues(g.values); setDraftTalents(g.talents); setEditingGen(g); };
+
   const unassign = async (entry: ScheduleEntry) => {
     setSchedule((s) => s.filter((e) => e.id !== entry.id));
     setPanel((p) => (p && p.entry && p.entry.id === entry.id ? null : p));
@@ -185,6 +230,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
   // Abre el panel de detalle: para una asignación manual (con estado/quitar) o para una
   // entrada automática (entry=null → solo detalles, incl. ticket/proyecto asociado).
   const openPanel = async (alternativeId: number, entry: ScheduleEntry | null, auto: { day: string; status: Status } | null = null) => {
+    setGenPanel(null);
     setPanel({ alternativeId, entry, auto });
     setPanelCtx(null);
     if (!selected) return;
@@ -346,6 +392,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                   const dayStr = ymd(d);
                   const entries = scheduleByDay.get(dayStr) || [];
                   const autoEntries = autoByDay.get(dayStr) || [];
+                  const genEntries = generatedByDay.get(dayStr) || [];
                   const over = dragOverDay === dayStr;
                   return (
                     <div key={i} className={`w-[150px] shrink-0 border rounded-lg overflow-hidden bg-digi-card transition-colors ${over ? 'border-accent ring-1 ring-accent' : 'border-digi-border'}`}
@@ -358,7 +405,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                         <div className="text-[10px] text-digi-muted" style={mf}>{MONTH_ABBR[d.getMonth()]}</div>
                       </div>
                       <div className={`min-h-[240px] p-2 space-y-1.5 ${over ? 'bg-accent-light/40' : ''}`}>
-                        {entries.length === 0 && autoEntries.length === 0 ? (
+                        {entries.length === 0 && autoEntries.length === 0 && genEntries.length === 0 ? (
                           <div className="h-full min-h-[220px] flex items-center justify-center text-center">
                             <span className="text-[10.5px] text-digi-muted/50" style={mf}>{over ? 'Suelta para programar' : 'Arrastra tareas aquí'}</span>
                           </div>
@@ -398,6 +445,19 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                                   <RefIcon className={`w-3 h-3 shrink-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-sky-400'}`} />
                                   <span className={`text-[11px] leading-snug flex-1 min-w-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-sky-300'}`} style={mf}>{t?.title || 'Tarea'}</span>
                                   <button onClick={() => openPanel(a.alternativeId, null, { day: a.day, status: a.status })} title="Detalles de la tarea" className="shrink-0 text-sky-400/80 hover:text-sky-300 transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
+                                </div>
+                              );
+                            })}
+                            {/* Tareas generadas por políticas de Comandos Violeta — fijas (como las auto), con estado */}
+                            {genEntries.map((g) => {
+                              const st = g.status;
+                              const open = genPanel?.id === g.id;
+                              return (
+                                <div key={`gen-${g.id}`}
+                                  className={`flex items-center gap-1 rounded-md border border-dashed pl-1.5 pr-0.5 py-1.5 ${st === 'completed' ? 'border-emerald-400/50 bg-emerald-500/10' : st === 'failed' ? 'border-red-400/50 bg-red-500/10' : 'border-violet-400/40 bg-violet-500/10'} ${open ? 'ring-1 ring-violet-400' : ''}`}>
+                                  <ShieldCheck className={`w-3 h-3 shrink-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-violet-400'}`} />
+                                  <span className={`text-[11px] leading-snug flex-1 min-w-0 truncate ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-violet-300'}`} style={mf}>{g.title}</span>
+                                  <button onClick={() => { setPanel(null); setGenPanel(g); }} title="Detalles de la tarea" className="shrink-0 text-violet-400/80 hover:text-violet-300 transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
                                 </div>
                               );
                             })}
@@ -492,6 +552,51 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
               </div>
             );
           })()}
+
+          {/* Panel de detalle de una tarea GENERADA por política */}
+          {genPanel && (
+            <div className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden self-stretch">
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
+                <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
+                <button onClick={() => setGenPanel(null)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="p-3 space-y-3 max-h-[calc(100dvh-200px)] overflow-y-auto">
+                <div>
+                  <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{genPanel.title}</h4>
+                  {genPanel.detail && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{genPanel.detail}</p>}
+                </div>
+
+                {/* Estado del día */}
+                <div>
+                  <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado · {fmtDay(genPanel.day)}</p>
+                  <TaskStatusButtons value={genPanel.status} onChange={(s) => setGeneratedStatusFor(genPanel, s)} />
+                  <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.</p>
+                </div>
+
+                {/* Política de origen + horario */}
+                <div className="rounded-lg border border-violet-400/30 bg-violet-500/[0.06] p-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-400 mb-1 inline-flex items-center gap-1" style={df}><ShieldCheck className="w-3 h-3" /> Política</p>
+                  <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{genPanel.policyName || '—'}</p>
+                  <p className="text-[11px] text-digi-muted mt-0.5 inline-flex items-center gap-1" style={mf}><Clock className="w-3 h-3" /> {genPanel.allDay ? 'Todo el día' : (genPanel.startTime && genPanel.endTime ? `${genPanel.startTime}–${genPanel.endTime}` : 'Sin horario')}</p>
+                </div>
+
+                {/* Etiquetas + editar */}
+                <div>
+                  {(genPanel.values.length > 0 || genPanel.talents.length > 0) ? (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {genPanel.values.map((v) => <span key={`v-${v}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-[10px] text-violet-300" style={mf}><Gem className="w-2.5 h-2.5" />{VALOR_LABEL[v] || v}</span>)}
+                      {genPanel.talents.map((tal) => <span key={`t-${tal}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10px] text-sky-300" style={mf}><Sparkles className="w-2.5 h-2.5" />{tal}</span>)}
+                    </div>
+                  ) : (
+                    <p className="text-[10.5px] text-digi-muted/70 mb-2" style={mf}>Sin etiquetas. Agrégalas para que su cumplimiento sume o reste al perfil.</p>
+                  )}
+                  <button onClick={() => openGenEditor(genPanel)} className="inline-flex items-center gap-1 text-[11px] text-accent hover:text-accent-hover transition-colors" style={mf}><Tag className="w-3 h-3" /> Editar etiquetas</button>
+                </div>
+
+                <p className="text-[10.5px] text-violet-300/90 inline-flex items-start gap-1 pt-1" style={mf}><Lock className="w-3 h-3 mt-0.5 shrink-0" /> Fijada por su política; no se mueve ni se quita, pero puedes marcar su estado y editar sus etiquetas.</p>
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -541,6 +646,27 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
           <div className="flex gap-2 pt-1">
             <button onClick={() => setEditing(null)} disabled={savingLabels} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-50" style={mf}>Cancelar</button>
             <button onClick={saveLabels} disabled={savingLabels} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>{savingLabels ? 'Guardando…' : 'Guardar etiquetas'}</button>
+          </div>
+        </div>
+      </PixelModal>
+
+      {/* Editor de etiquetas de una tarea GENERADA por política (aplica a todos sus días) */}
+      <PixelModal open={!!editingGen} onClose={() => !savingLabels && setEditingGen(null)} title={editingGen ? `Etiquetas — ${editingGen.title}` : 'Etiquetas'}>
+        <div className="space-y-4">
+          <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
+            Asigna <span className="text-digi-text font-medium">valores</span> y <span className="text-digi-text font-medium">talentos</span> a esta tarea generada. Se aplican a <span className="text-digi-text font-medium">todos sus días</span>; con ellas, su cumplimiento suma o resta al perfil.
+          </p>
+          <div>
+            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-digi-text mb-1.5" style={df}><Gem className="w-3.5 h-3.5 text-accent" /> Valores</label>
+            <MultiSelectSearch options={VALOR_OPTIONS} selected={draftValues} onChange={setDraftValues} placeholder="Buscar valor…" />
+          </div>
+          <div>
+            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-digi-text mb-1.5" style={df}><Sparkles className="w-3.5 h-3.5 text-accent" /> Talentos</label>
+            <MultiSelectSearch options={TALENTO_OPTIONS} selected={draftTalents} onChange={setDraftTalents} placeholder="Buscar talento…" />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => setEditingGen(null)} disabled={savingLabels} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-50" style={mf}>Cancelar</button>
+            <button onClick={saveGenLabels} disabled={savingLabels} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>{savingLabels ? 'Guardando…' : 'Guardar etiquetas'}</button>
           </div>
         </div>
       </PixelModal>

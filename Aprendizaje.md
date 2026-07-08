@@ -5,6 +5,85 @@
 >
 > **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
+## Objetivo ACTUAL (declarado 2026-07-08) — Comandos Violeta: generación REAL de tareas al activar una política
+**Necesidad:** cuando se activa una **política** que contiene una función **`generate_tasks`**, las tareas
+programadas deben **materializarse y asignarse a los usuarios** (candidatos/miembros) para los que se
+programaron, apareciendo en su **"Mi día"**. Hoy la autoría funciona (se guardan los `TaskProgram` en la
+config de la función) pero **al activar NO pasa nada** (es el PENDIENTE (3) de enforcement documentado en
+`MEMORIA.md`).
+
+### Rol asumido
+**Ingeniero full-stack (Next.js 15 App Router + Postgres crudo `pg`)** con foco en el modelo de datos del
+Horario de Vida / Mi día y el enforcement de Comandos Violeta.
+
+### Progreso
+- **% de información para el objetivo:** 100% — **IMPLEMENTADO Y VERIFICADO (2026-07-08)**. `tsc`+`next build`
+  OK; expansión de días (weekdays con `EXTRACT(DOW)`) e idempotencia (`ON CONFLICT DO NOTHING`) probadas contra
+  Postgres real dentro de una transacción con ROLLBACK (sin tocar datos). Detalle en `MEMORIA.md`.
+
+### Solución construida (resumen)
+- Tabla `cv_generated_tasks` + `materializePolicyTasks`/`removePolicyPendingTasks` enganchadas a `setPolicyActive`.
+- `getSubjectGeneratedTasks` → `generated[]` en `getSubjectHorario`; se ven en Mi día y en el sistema Horario de
+  Vida como entradas FIJAS (estilo auto de ticket/proyecto). Solo estado + etiquetas editables.
+- `PATCH /api/centralized/horario/generated`; scoring incluye las generadas completadas/fallidas.
+
+### Decisiones del usuario (2026-07-08)
+- **P5 · ✅ SÍ alimentan el perfil**: completar/fallar una tarea generada suma/resta a sus valores/talentos
+  (igual que el Horario de Vida).
+- **P6 · ✅ Al desactivar**: se **borran las pendientes** (pasadas y futuras sin resolver); se **conserva el
+  historial** de completadas/fallidas. Re-activar **regenera** desde el nuevo `activated_at`, idempotente
+  (ON CONFLICT DO NOTHING) para no duplicar días ya materializados.
+- **P7 · ✅ Sin vista admin nueva**: aparecen en el **"Mi día"** de cada usuario asignado **Y** en el sistema
+  **Horario de Vida**, comportándose **como las entradas auto de ticket/proyecto**: **fijas** (no se arrastran
+  ni se quitan); el usuario **solo cambia estado y etiquetas** (etiquetas se editan en el sistema Horario de
+  Vida). Feed de scoring incluido.
+
+### Hallazgos (investigación en el código, 2026-07-08)
+- **P1 — ¿La activación genera tareas? · ✅** NO. `PATCH /api/centralized/comandos/policies {active}` →
+  `setPolicyActive()` solo pone `active`/`activated_at`. `getActiveEffects()` (`comandos-db.ts`) procesa
+  `permanent_message`, `policy_terms` y `block_modules` pero **ignora `generate_tasks`**. No existe tabla ni
+  código de materialización (grep confirmó: `generate_tasks` solo aparece en autoría/UI).
+- **P2 — ¿El targeting de usuarios es correcto? · ✅ SÍ.** `TaskProgram.userKind`+`userId` (de `UsersList`)
+  coincide exactamente con el sujeto que resuelve `GET /horario/me`:
+  - candidato → `UsersList` usa `/api/admin/candidates` → `clients.id`; `/me` resuelve candidato = `clients.id`. ✔
+  - miembro → `UsersList` usa `/api/admin/team` → `members.id`; `/me` resuelve miembro = `users.member_id`
+    (y `member_id::bigint = members.id`). ✔
+  Conclusión: la preocupación del usuario ("que se asignen a los usuarios correctos") está **cubierta en el
+  targeting**; lo único que falta es **ejecutar** la generación.
+- **P3 — ¿Dónde aterrizan las tareas? · 🔎 Mismatch de modelo.** El Horario/Mi día está atado al sistema
+  **Apoyo**: una tarea = una **alternativa** (`aa_solutions` status='alternative') unida por problemas/
+  situaciones; `hv_schedule.alternative_id` es `BIGINT NOT NULL`. La tarea generada es **libre**
+  (título+detalle+etiquetas+horario), sin alternativa ni grafo psicosocial. Además `hv_schedule` es
+  **granular por día** (no guarda hora), pero `TaskProgram` trae `allDay`/`startTime`/`endTime`.
+  → **No se puede reusar `hv_schedule` tal cual.** Decisión de diseño: **store dedicado
+  `cv_generated_tasks`** (instancias materializadas por usuario/día con estado+hora+política origen) y que el
+  rail de "Mi día" **fusione** esa segunda fuente. (Alternativa descartada: crear alternativas sintéticas en
+  el grafo de Apoyo — contamina el modelo psicosocial y no soporta hora.)
+- **P4 — Expansión de presencia · ✅ decidido en MEMORIA.** Inicio = `activated_at`; ventana = `daysCount`
+  días; `weekdays` (vacío=todos) filtra qué días dentro de la ventana; `allDay` o `startTime`/`endTime`.
+
+### Preguntas ABIERTAS para el usuario (deciden el modelo de datos / comportamiento)
+- **P5 — ⏸ ¿Las tareas generadas alimentan el PERFIL (scoring de valores/talentos)** igual que las del
+  Horario de Vida? Llevan las mismas etiquetas, así que lo natural es que completarlas/fallarlas sume/reste.
+- **P6 — ⏸ Ciclo de vida al DESACTIVAR la política:** ¿se **eliminan** las tareas pendientes/futuras (y se
+  conserva el historial de las ya completadas/fallidas para el registro y el scoring), o quedan todas? ¿Y al
+  **re-activar** se regeneran (idempotente por función+día para no duplicar)?
+- **P7 — ⏸ ¿Se necesita una vista/gestión para el ADMIN** (previsualizar/depurar las tareas generadas por una
+  política), o basta con que aparezcan en el "Mi día" de cada usuario?
+
+### Plan de solución (borrador, a confirmar con P5–P7)
+1. Tabla `gcc_world.cv_generated_tasks` (function_id, policy_id, subject_kind, subject_id, title, detail,
+   value_tags[], talent_tags[], day DATE, all_day, start_time, end_time, status, created_at) + índice por
+   sujeto y **UNIQUE (function_id, subject_kind, subject_id, day)** para idempotencia.
+2. Al activar (`setPolicyActive(true)`): por cada función `generate_tasks` de la política, expandir cada
+   `TaskProgram` sobre [activated_at, +daysCount) filtrando `weekdays`, e insertar filas (ON CONFLICT DO
+   NOTHING). Al desactivar: según P6.
+3. `getSubjectHorario`/`/horario/me` (o un endpoint nuevo) devuelve también las `cv_generated_tasks` del
+   sujeto en la ventana; el rail de "Mi día" las fusiona con estado propio + `TaskStatusButtons`.
+4. Scoring según P5. Verificar `tsc` + `next build`. Commit+push a main.
+
+---
+
 ## Objetivo ACTUAL (declarado 2026-06-23) — Onboarding de candidato en la landing (8 sliders + postulación)
 **Necesidad:** al pulsar "Entrar" en la landing, un visitante **nuevo** debe ver primero un modal tipo
 carrusel ("deslizados") con **8 sliders** que le **dan a conocer el proyecto**, y al final un formulario

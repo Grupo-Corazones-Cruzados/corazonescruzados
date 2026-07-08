@@ -372,6 +372,18 @@ columna (icono + label): Completada (`CheckCircle2`, verde), Fallida (`XCircle`,
 el activo se rellena con su tono. Lo usan el **Horario de Vida** (detalle de tarea) y **Mi día** (rail de tareas). Regla:
 cualquier lugar que marque estado de tarea usa este componente (no recomponer los 3 botones a mano).
 
+### Entradas de tarea FIJAS en el Horario/Mi día (auto de ticket/proyecto · generada por política)
+Patrón para tareas que el usuario **no puede quitar** (fijadas por lógica externa); solo cambia estado (y, si aplica,
+etiquetas). Tarjeta con **borde `border-dashed`** y color por **fuente**, que vira a verde/rojo según estado
+(`completed`/`failed`), y un **icono de fuente** a la izquierda + `MoreVertical` (⋮) que abre el panel de detalle. Dos variantes:
+- **Auto (ticket/proyecto)** — color **sky** (`border-sky-400/40 bg-sky-500/10`, texto `text-sky-300`), icono `Ticket`/
+  `FolderKanban` (o `Lock` en Mi día). Estado vive en fila `locked` de `hv_schedule`.
+- **Generada por política (Comandos Violeta)** — color **violeta** (`border-violet-400/40 bg-violet-500/10`, texto
+  `text-violet-300`), icono **`ShieldCheck`**. Filas de `cv_generated_tasks`; el panel muestra la política de origen + horario
+  (`Clock`) y permite **editar etiquetas** (aplican a todos sus días). Estado/etiquetas vía `PATCH /api/centralized/horario/generated`.
+Ambas usan `TaskStatusButtons` en el panel y muestran la nota "Fijada …; no se mueve ni se quita, pero puedes marcar su estado".
+Archivos: `components/centralized/systems/HorarioDeVidaSystem.tsx` (calendario semanal + panel) y `app/(dashboard)/dashboard/mi-dia/page.tsx` (rail).
+
 ### Configuración — Perfil fijo + pestañas (estándar de la página de ajustes)
 `settings/page.tsx` = **Perfil fijo a la izquierda** (`ProfilePanel`, `w-[400px]`) + a la derecha una tarjeta con **pestañas
 horizontales** (CV · Disponibilidad · Portafolio). Ambos lados **misma altura** (`items-stretch`). El contenido de cada pestaña

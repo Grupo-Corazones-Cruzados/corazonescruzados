@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { getSubjectHorario } from '@/lib/centralized/horario-db';
 import { NextRequest, NextResponse } from 'next/server';
 
-const EMPTY = { subject: null, tasks: [], schedule: [], auto: [] };
+const EMPTY = { subject: null, tasks: [], schedule: [], auto: [], generated: [] };
 
 /** Resuelve el SUJETO (candidato/miembro) del usuario logueado. */
 async function resolveSubject(user: any): Promise<{ kind: 'member' | 'candidate'; id: string } | null> {

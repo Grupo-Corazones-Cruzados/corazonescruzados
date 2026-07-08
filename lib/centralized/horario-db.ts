@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { ensureApoyoTables } from '@/lib/centralized/apoyo-db';
+import { ensureGeneratedTasksTable } from '@/lib/centralized/comandos-db';
 
 /**
  * Tablas del sistema "Horario de Vida":
@@ -72,8 +73,63 @@ export interface AutoEntry {
   refTitle: string;
   status: ScheduleStatus;
 }
+/** Tarea GENERADA por una política de Comandos Violeta. Fija (como las auto de ticket/
+ *  proyecto): no se arrastra ni se quita; el usuario solo cambia estado y etiquetas. Cada
+ *  fila es un día concreto. `groupId` = función:programa, agrupa todos los días de la misma
+ *  tarea programada (para editar sus etiquetas de una vez). */
+export interface GeneratedTask {
+  id: number;              // id de la fila (día concreto) → cambiar estado
+  groupId: string;         // `${functionId}:${programIdx}` → editar etiquetas del grupo
+  day: string;             // YYYY-MM-DD
+  title: string;
+  detail: string;
+  values: string[];
+  talents: string[];
+  allDay: boolean;
+  startTime: string | null;
+  endTime: string | null;
+  status: ScheduleStatus;
+  policyName: string;
+}
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/**
+ * Tareas GENERADAS por políticas de Comandos Violeta para el sujeto, acotadas a [from, to]
+ * si se indica. Independientes de las alternativas de Apoyo (son tareas libres fijadas por
+ * la política). Solo se incluyen las de políticas ACTIVAS; el historial de completadas/
+ * fallidas de una política ya desactivada NO se muestra en el horario (pero sí puntúa).
+ */
+export async function getSubjectGeneratedTasks(subjectKind: string, subjectId: string, from?: string, to?: string): Promise<GeneratedTask[]> {
+  await ensureGeneratedTasksTable();
+  const windowed = from && to && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to);
+  const params: any[] = [subjectKind, subjectId];
+  let windowClause = '';
+  if (windowed) { params.push(from, to); windowClause = `AND g.day >= $3::date AND g.day < $4::date`; }
+  const { rows } = await pool.query(
+    `SELECT g.id, g.function_id, g.program_idx, to_char(g.day, 'YYYY-MM-DD') AS day, g.title, g.detail,
+            g.value_tags, g.talent_tags, g.all_day, g.start_time, g.end_time, g.status, p.name AS policy_name
+       FROM gcc_world.cv_generated_tasks g
+       JOIN gcc_world.cv_policies p ON p.id = g.policy_id
+      WHERE g.subject_kind = $1 AND g.subject_id = $2 AND p.active = TRUE ${windowClause}
+      ORDER BY g.day, g.id`,
+    params,
+  );
+  return rows.map((r: any) => ({
+    id: Number(r.id),
+    groupId: `${r.function_id}:${r.program_idx}`,
+    day: r.day,
+    title: r.title,
+    detail: r.detail || '',
+    values: r.value_tags || [],
+    talents: r.talent_tags || [],
+    allDay: !!r.all_day,
+    startTime: r.start_time ?? null,
+    endTime: r.end_time ?? null,
+    status: (r.status as ScheduleStatus) || 'pending',
+    policyName: r.policy_name || '',
+  }));
+}
 
 /**
  * Tareas del sujeto = alternativas (aún no convertidas en solución) vinculadas a algún
@@ -81,8 +137,11 @@ const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
  * las entradas AUTOMÁTICAS del ticket/proyecto asociado (todos los días entre su fecha de
  * inicio y su fecha límite), acotadas a la ventana [from, to] si se indica.
  */
-export async function getSubjectHorario(subjectKind: string, subjectId: string, from?: string, to?: string): Promise<{ tasks: HorarioTask[]; schedule: ScheduleEntry[]; auto: AutoEntry[] }> {
+export async function getSubjectHorario(subjectKind: string, subjectId: string, from?: string, to?: string): Promise<{ tasks: HorarioTask[]; schedule: ScheduleEntry[]; auto: AutoEntry[]; generated: GeneratedTask[] }> {
   await ensureHorarioTables();
+
+  // Tareas generadas por políticas (independientes de las alternativas de Apoyo).
+  const generated = await getSubjectGeneratedTasks(subjectKind, subjectId, from, to);
 
   // Alternativas del sujeto (por sus problemas).
   const taskRows = (await pool.query(
@@ -97,7 +156,7 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
   )).rows;
 
   const ids = taskRows.map((r: any) => Number(r.id));
-  if (ids.length === 0) return { tasks: [], schedule: [], auto: [] };
+  if (ids.length === 0) return { tasks: [], schedule: [], auto: [], generated };
 
   // Problemas que aborda cada alternativa (contexto en la tarjeta).
   const probRows = (await pool.query(
@@ -200,7 +259,28 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
     }
   }
 
-  return { tasks, schedule, auto };
+  return { tasks, schedule, auto, generated };
+}
+
+/** Cambia el estado (pending/completed/failed) de una tarea generada (por id de fila/día). */
+export async function setGeneratedStatus(id: number, status: ScheduleStatus) {
+  await ensureGeneratedTasksTable();
+  await pool.query(`UPDATE gcc_world.cv_generated_tasks SET status = $1 WHERE id = $2`, [status, id]);
+}
+
+/** Fija las etiquetas (valores/talentos) de una tarea generada. Se aplica a TODOS los días
+ *  de la misma tarea programada (mismo function_id + program_idx + sujeto que la fila id). */
+export async function setGeneratedLabels(id: number, values: string[], talents: string[]) {
+  await ensureGeneratedTasksTable();
+  await pool.query(
+    `UPDATE gcc_world.cv_generated_tasks g
+        SET value_tags = $2::text[], talent_tags = $3::text[]
+       FROM gcc_world.cv_generated_tasks ref
+      WHERE ref.id = $1
+        AND g.function_id = ref.function_id AND g.program_idx = ref.program_idx
+        AND g.subject_kind = ref.subject_kind AND g.subject_id = ref.subject_id`,
+    [id, values, talents],
+  );
 }
 
 export interface ProfileScores {
@@ -225,24 +305,36 @@ export async function getSubjectsProfileScores(subjectKind: string, subjectIds: 
   const out: Record<string, ProfileScores> = {};
   if (subjectIds.length === 0) return out;
   await ensureHorarioTables();
-  const { rows } = await pool.query(
+  await ensureGeneratedTasksTable();
+  // Dos fuentes con el MISMO formato (subject_id, status, value_tags, talent_tags):
+  //   1) tareas del Horario de Vida (alternativas agendadas)
+  //   2) tareas GENERADAS por políticas de Comandos Violeta (su historial puntúa aunque la
+  //      política se haya desactivado — el cumplimiento ya ocurrió).
+  const { rows: schedRows } = await pool.query(
     `SELECT h.subject_id, h.status, l.value_tags, l.talent_tags
        FROM gcc_world.hv_schedule h
        JOIN gcc_world.hv_task_labels l ON l.alternative_id = h.alternative_id
       WHERE h.subject_kind = $1 AND h.subject_id = ANY($2::text[]) AND h.status IN ('completed','failed')`,
     [subjectKind, subjectIds],
   );
+  const { rows: genRows } = await pool.query(
+    `SELECT g.subject_id, g.status, g.value_tags, g.talent_tags
+       FROM gcc_world.cv_generated_tasks g
+      WHERE g.subject_kind = $1 AND g.subject_id = ANY($2::text[]) AND g.status IN ('completed','failed')`,
+    [subjectKind, subjectIds],
+  );
+  const rows = [...schedRows, ...genRows];
 
   type Tally = { c: number; f: number };
   const agg = new Map<string, { talents: Map<string, Tally>; values: Map<string, Tally> }>();
+  const bump = (m: Map<string, Tally>, key: string, completed: boolean) => { const e = m.get(key) || { c: 0, f: 0 }; if (completed) e.c++; else e.f++; m.set(key, e); };
   for (const r of rows) {
     const completed = r.status === 'completed'; // 'failed' es el otro caso (pending ya se filtró)
     const sid = String(r.subject_id);
     let a = agg.get(sid);
     if (!a) { a = { talents: new Map(), values: new Map() }; agg.set(sid, a); }
-    const bump = (m: Map<string, Tally>, key: string) => { const e = m.get(key) || { c: 0, f: 0 }; if (completed) e.c++; else e.f++; m.set(key, e); };
-    for (const t of (r.talent_tags || [])) bump(a.talents, String(t));
-    for (const v of (r.value_tags || [])) bump(a.values, String(v));
+    for (const t of (r.talent_tags || [])) bump(a.talents, String(t), completed);
+    for (const v of (r.value_tags || [])) bump(a.values, String(v), completed);
   }
 
   for (const [sid, a] of agg) {

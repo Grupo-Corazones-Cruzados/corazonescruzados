@@ -286,11 +286,27 @@ Stack estándar de la casa, con particularidades de este repo:
   - **UI** `ComandosVioletaSystem.tsx`: panel **categorías** (izq; crear + **renombrar inline + eliminar**, acciones SIEMPRE visibles)
     · grafo · **panel flotante** de detalle (crear política pide nombre; política=toggle activar + "+ Función" + lista; función=dropdown
     de acción + config —módulos como **chips**, no dropdown; tareas/detalle abren su modal—; eliminar).
-  - **ENFORCEMENT (efectos al activar, HECHO para 2 de 3):** `getActiveEffects()` agrega por política activa {name, activatedAt,
+  - **ENFORCEMENT (efectos al activar, HECHO 3 de 3):** `getActiveEffects()` agrega por política activa {name, activatedAt,
     messages[], details[]} + `blockedModules[]`. Provider **`components/providers/PolicyEffectsProvider.tsx`** (en el layout del
     dashboard) carga `/comandos/active` y refresca por navegación/foco. (1) **Mensaje permanente** → banner flotante; (2) **bloqueo de
     módulos** → sidebar oculta + `DashboardAccessGuard` redirige (no-admin; helpers `isPathBlocked`/`safeDashboardPath` en
-    `lib/dashboard/access.ts`; admin nunca se bloquea). **PENDIENTE:** (3) **generación real de tareas** en Mi día al activar.
+    `lib/dashboard/access.ts`; admin nunca se bloquea).
+  - **(3) GENERACIÓN DE TAREAS al activar (2026-07-08, HECHO + verificado contra BD):** el targeting ya era correcto
+    (`TaskProgram.userKind`+`userId` = sujeto del Horario: candidato→`clients.id`, miembro→`members.id`=`users.member_id`). Faltaba
+    **materializar**. **Tabla `gcc_world.cv_generated_tasks`** (prefijo `cv_`; en `ensureGeneratedTasksTable()` de `comandos-db.ts`):
+    una fila por (function_id · program_idx · sujeto · `day`), con title/detail/value_tags/talent_tags/all_day/start_time/end_time/
+    status; **UNIQUE(function_id, subject_kind, subject_id, program_idx, day)** para idempotencia. **`setPolicyActive`** ahora, al
+    ACTIVAR, llama `materializePolicyTasks()` (expande cada TaskProgram desde `activated_at` en zona `America/Guayaquil` durante
+    `daysCount` días, filtra `weekdays` con `EXTRACT(DOW)` 0=Dom, `generate_series` + `ON CONFLICT DO NOTHING`); al DESACTIVAR,
+    `removePolicyPendingTasks()` (**borra solo las `pending`**; conserva completadas/fallidas como historial). Re-activar regenera
+    idempotente. **Lectura:** `getSubjectGeneratedTasks()` (solo políticas `active=TRUE`) se incluye como `generated[]` en
+    `getSubjectHorario` → fluye a `/horario` (sistema) y `/horario/me` (Mi día). **UI:** aparecen como entradas **FIJAS** (igual que
+    las auto de ticket/proyecto) — el usuario NO las quita, solo cambia **estado** y **etiquetas**: en `HorarioDeVidaSystem.tsx`
+    (tarjeta violeta punteada `ShieldCheck` + panel de detalle con `TaskStatusButtons` y editor de etiquetas propio) y en **Mi día**
+    (rail, estado). **Endpoint** `PATCH /api/centralized/horario/generated` (`{id,status}` o `{id,values,talents}`; etiquetas se
+    aplican a TODOS los días del grupo function_id+program_idx). **Scoring:** `getSubjectsProfileScores` suma las generadas
+    completadas/fallidas (mismo formato) — su historial puntúa aunque la política se desactive. `setGeneratedStatus`/
+    `setGeneratedLabels` en `horario-db.ts`. Verificado: `tsc`+`next build` OK + expansión/idempotencia probadas en Postgres (rollback).
   - **Banner** `components/dashboard/PolicyBanner.tsx` (montado en `(dashboard)/layout.tsx`, solo /dashboard/): FLOTANTE fijo arriba que
     **NO reserva espacio** (no refluye el contenido — se intentó en `<main>` y desplazaba los componentes que miden su `top`). Muestra
     las **políticas activas por PESTAÑAS** (header morado con pestañas; zona inferior color tarjeta `bg-digi-card/text-digi-text` para
