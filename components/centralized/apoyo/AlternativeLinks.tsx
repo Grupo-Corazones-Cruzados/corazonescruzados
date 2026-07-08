@@ -51,12 +51,14 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
   const openBubble = () => {
     const el = btnRef.current;
     const vw = window.innerWidth, vh = window.innerHeight;
-    const maxH = Math.min(470, vh - 32);
-    if (!el) { setPos({ left: Math.max(8, vw - BUBBLE_W - 8), top: 16, maxH }); return; }
+    const maxH = Math.min(440, vh - 96);
+    if (!el) { setPos({ left: Math.max(8, vw - BUBBLE_W - 8), top: 24, maxH }); return; }
     const r = el.getBoundingClientRect();
     let left = r.left - 10 - BUBBLE_W;            // a la IZQUIERDA del botón
     if (left < 8) left = Math.min(r.right + 10, vw - BUBBLE_W - 8);
-    const top = Math.max(8, Math.min(r.top - 8, vh - maxH - 8));
+    // Centrada verticalmente respecto al botón (sube el formulario) con margen inferior amplio.
+    let top = r.top + r.height / 2 - maxH / 2;
+    top = Math.max(16, Math.min(top, vh - maxH - 24));
     setPos({ left, top, maxH });
   };
 
