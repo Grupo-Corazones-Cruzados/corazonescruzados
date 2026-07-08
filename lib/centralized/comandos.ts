@@ -24,12 +24,13 @@ export const POLICY_META: Record<PolicyNodeType, { label: string; plural: string
 };
 
 /* ── Tipos de función y sus acciones ────────────────────────────────────────── */
-export type FunctionType = 'permanent_message' | 'block_modules' | 'generate_tasks';
+export type FunctionType = 'permanent_message' | 'block_modules' | 'generate_tasks' | 'policy_terms';
 
 export const FUNCTION_ACTIONS: { key: FunctionType; label: string }[] = [
   { key: 'permanent_message', label: 'Ingresar mensaje permanente' },
   { key: 'block_modules', label: 'Bloquear accesos al menú de módulos' },
   { key: 'generate_tasks', label: 'Generar tareas' },
+  { key: 'policy_terms', label: 'Detalle de la política (términos y condiciones)' },
 ];
 export const FUNCTION_LABEL: Record<FunctionType, string> =
   Object.fromEntries(FUNCTION_ACTIONS.map((a) => [a.key, a.label])) as any;
@@ -38,6 +39,18 @@ export const FUNCTION_SHORT: Record<FunctionType, string> = {
   permanent_message: 'Mensaje permanente',
   block_modules: 'Bloqueo de módulos',
   generate_tasks: 'Generar tareas',
+  policy_terms: 'Detalle / Términos',
+};
+
+/**
+ * Color y FORMA del nodo de cada tipo de función en el grafo. El "Detalle / Términos"
+ * usa una forma de DOCUMENTO (distinta del pentágono) para diferenciarlo a simple vista.
+ */
+export const FUNCTION_TYPE_META: Record<FunctionType, { color: string; shape: 'pentagon' | 'doc' }> = {
+  permanent_message: { color: '#22d3ee', shape: 'pentagon' },
+  block_modules: { color: '#22d3ee', shape: 'pentagon' },
+  generate_tasks: { color: '#22d3ee', shape: 'pentagon' },
+  policy_terms: { color: '#f59e0b', shape: 'doc' }, // ámbar + documento
 };
 
 /** Módulos del /dashboard que una política puede BLOQUEAR (Admin nunca se bloquea). */
@@ -88,13 +101,19 @@ export interface TaskProgram {
 }
 export interface GenerateTasksConfig { tasks: TaskProgram[] }
 
-export type FunctionConfig = PermanentMessageConfig | BlockModulesConfig | GenerateTasksConfig | Record<string, never>;
+/** Detalle textual de la política (términos y condiciones) que se muestra durante su
+ *  activación y que luego puede compartirse a los usuarios. */
+export interface PolicyTermsClause { title: string; text: string }
+export interface PolicyTermsConfig { title: string; purpose: string; conduct: string; clauses: PolicyTermsClause[] }
+
+export type FunctionConfig = PermanentMessageConfig | BlockModulesConfig | GenerateTasksConfig | PolicyTermsConfig | Record<string, never>;
 
 /** Resumen legible de una función para el grafo/panel. */
 export function summarizeFunction(type: FunctionType, config: any): string {
   if (type === 'permanent_message') return config?.message ? `“${String(config.message).slice(0, 60)}”` : 'Sin mensaje';
   if (type === 'block_modules') { const n = config?.modules?.length || 0; return n ? `${n} módulo(s) bloqueado(s)` : 'Sin módulos'; }
   if (type === 'generate_tasks') { const n = config?.tasks?.length || 0; return n ? `${n} tarea(s) programada(s)` : 'Sin tareas'; }
+  if (type === 'policy_terms') { const n = config?.clauses?.length || 0; return n ? `${n} cláusula(s)` : (config?.purpose || config?.title ? 'Detalle definido' : 'Sin detalle'); }
   return '';
 }
 

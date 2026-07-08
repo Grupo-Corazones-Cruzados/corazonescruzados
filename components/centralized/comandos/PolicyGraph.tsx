@@ -2,19 +2,30 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Maximize2, Plus, Minus, Shuffle } from 'lucide-react';
-import { POLICY_META } from '@/lib/centralized/comandos';
+import { POLICY_META, FUNCTION_TYPE_META } from '@/lib/centralized/comandos';
 import type { PolicyGraphNode, PolicyGraphEdge } from '@/lib/centralized/comandos';
 
 // Mismo motor que el grafo de Apoyo (react-force-graph-2d: d3-force + canvas), con FORMAS
-// nuevas: Política = ESTRELLA de 5 puntas · Función = PENTÁGONO. Los nodos inactivos
-// (políticas desactivadas) se pintan atenuados.
+// nuevas: Política = ESTRELLA · Función = PENTÁGONO · Detalle/Términos = DOCUMENTO. Los
+// nodos inactivos (políticas desactivadas) se pintan atenuados.
 const NODE_R: Record<string, number> = { policy: 6, function: 4.3 };
 const BG = '#000000';
 
-function traceShape(ctx: CanvasRenderingContext2D, type: string, x: number, y: number, r: number) {
+// Forma a dibujar para un nodo: estrella (política), documento (detalle/términos) o pentágono.
+function shapeOf(n: PolicyGraphNode): 'star' | 'doc' | 'pentagon' {
+  if (n.type === 'policy') return 'star';
+  return n.functionType && FUNCTION_TYPE_META[n.functionType]?.shape === 'doc' ? 'doc' : 'pentagon';
+}
+
+// Color del nodo: la política usa su color; cada función, el de su tipo.
+function colorOf(n: PolicyGraphNode): string {
+  if (n.type === 'policy') return POLICY_META.policy.color;
+  return (n.functionType && FUNCTION_TYPE_META[n.functionType]?.color) || POLICY_META.function.color;
+}
+
+function traceShape(ctx: CanvasRenderingContext2D, shape: string, x: number, y: number, r: number) {
   ctx.beginPath();
-  if (type === 'policy') {
-    // Estrella de 5 puntas.
+  if (shape === 'star') {
     const spikes = 5, outer = r * 1.15, inner = r * 0.5;
     for (let i = 0; i < spikes * 2; i++) {
       const rad = i % 2 === 0 ? outer : inner;
@@ -22,6 +33,16 @@ function traceShape(ctx: CanvasRenderingContext2D, type: string, x: number, y: n
       const px = x + rad * Math.cos(a), py = y + rad * Math.sin(a);
       i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
     }
+    ctx.closePath();
+  } else if (shape === 'doc') {
+    // Documento: rectángulo con la esquina superior derecha doblada.
+    const w = r * 1.5, h = r * 1.9, fold = r * 0.6;
+    const left = x - w / 2, top = y - h / 2, right = x + w / 2, bottom = y + h / 2;
+    ctx.moveTo(left, top);
+    ctx.lineTo(right - fold, top);
+    ctx.lineTo(right, top + fold);
+    ctx.lineTo(right, bottom);
+    ctx.lineTo(left, bottom);
     ctx.closePath();
   } else {
     // Pentágono.
@@ -176,7 +197,7 @@ export default function PolicyGraph({
           }}
           nodeLabel={(n: any) => {
             const nn: PolicyGraphNode = n.ref;
-            const c = POLICY_META[nn.type].color;
+            const c = colorOf(nn);
             const state = nn.type === 'policy' ? (nn.active ? 'Activa' : 'Inactiva') : '';
             return `<div style="max-width:240px;padding:8px 10px;background:#181826;border:1px solid #2b2b40;border-radius:8px;color:#e8e8f2;font-family:'Segoe UI',system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.4)">
               <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:${c};font-weight:700;margin-bottom:2px">${POLICY_META[nn.type].label}${state ? ` · ${state}` : ''}</div>
@@ -197,7 +218,7 @@ export default function PolicyGraph({
           nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, scale: number) => {
             if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
             const n: PolicyGraphNode = node.ref;
-            const baseColor = POLICY_META[n.type].color;
+            const baseColor = colorOf(n);
             // Política inactiva → gris atenuado (aún no aplica en la app).
             const inactivePolicy = n.type === 'policy' && !n.active;
             const color = inactivePolicy ? '#6b7280' : baseColor;
@@ -219,7 +240,7 @@ export default function PolicyGraph({
             // Anillo del seleccionado
             if (isSel) {
               ctx.globalAlpha = lit ? 0.75 : 0.22;
-              traceShape(ctx, n.type, node.x, node.y, r + 3.4);
+              traceShape(ctx, shapeOf(n), node.x, node.y, r + 3.4);
               ctx.strokeStyle = hexA(color, 0.9); ctx.lineWidth = 1.4; ctx.stroke();
             }
 
@@ -228,7 +249,7 @@ export default function PolicyGraph({
             const g = ctx.createRadialGradient(node.x, node.y, rr * 0.25, node.x, node.y, rr * 1.05);
             g.addColorStop(0, color);
             g.addColorStop(1, mix(color, '#000000', 0.3));
-            traceShape(ctx, n.type, node.x, node.y, rr);
+            traceShape(ctx, shapeOf(n), node.x, node.y, rr);
             ctx.globalAlpha = alpha; ctx.fillStyle = g; ctx.fill();
             ctx.globalAlpha = alpha * 0.85; ctx.lineWidth = 0.9; ctx.strokeStyle = mix(color, '#000000', 0.45); ctx.stroke();
 
@@ -260,7 +281,7 @@ export default function PolicyGraph({
             if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
             const n: PolicyGraphNode = node.ref;
             ctx.fillStyle = colorStr;
-            traceShape(ctx, n.type, node.x, node.y, radiusOf(n) + 3); ctx.fill();
+            traceShape(ctx, shapeOf(n), node.x, node.y, radiusOf(n) + 3); ctx.fill();
           }}
         />
       )}

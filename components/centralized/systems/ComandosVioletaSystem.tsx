@@ -5,13 +5,14 @@ import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PolicyGraph from '@/components/centralized/comandos/PolicyGraph';
 import GenerateTasksModal from '@/components/centralized/comandos/GenerateTasksModal';
+import PolicyTermsModal from '@/components/centralized/comandos/PolicyTermsModal';
 import {
   POLICY_META, FUNCTION_ACTIONS, FUNCTION_LABEL, FUNCTION_SHORT, BLOCKABLE_MODULES,
   summarizeFunction, policyKey,
-  type PolicyGraph as PolicyGraphT, type PolicyGraphNode, type FunctionType, type TaskProgram, type Category,
+  type PolicyGraph as PolicyGraphT, type PolicyGraphNode, type FunctionType, type TaskProgram, type PolicyTermsConfig, type Category,
 } from '@/lib/centralized/comandos';
 import {
-  Plus, Trash2, X, MousePointerClick, Sparkles, FolderPlus, MessageSquareText, Ban, ListChecks, Power, Pencil, Check,
+  Plus, Trash2, X, MousePointerClick, Sparkles, FolderPlus, MessageSquareText, Ban, ListChecks, Power, Pencil, Check, FileText,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -21,7 +22,8 @@ const GLASS = 'rounded-xl bg-black/40 backdrop-blur-md border border-white/12 sh
 const GLASS_BTN = 'inline-flex items-center justify-center gap-1.5 border border-white/15 bg-white/[0.08] hover:bg-white/[0.18] text-white/90 rounded-md transition-colors';
 const GLASS_INPUT = 'w-full px-2.5 py-1.5 bg-black/40 border border-white/15 rounded-md text-[13px] text-white placeholder-white/40 focus:border-accent focus:outline-none';
 
-const FUNC_ICON: Record<FunctionType, any> = { permanent_message: MessageSquareText, block_modules: Ban, generate_tasks: ListChecks };
+const FUNC_ICON: Record<FunctionType, any> = { permanent_message: MessageSquareText, block_modules: Ban, generate_tasks: ListChecks, policy_terms: FileText };
+const emptyTerms = (): PolicyTermsConfig => ({ title: '', purpose: '', conduct: '', clauses: [] });
 
 // Marca de forma para la leyenda (coincide con el grafo): política = estrella, función = pentágono.
 const shapeStyle = (type: string): React.CSSProperties =>
@@ -29,7 +31,7 @@ const shapeStyle = (type: string): React.CSSProperties =>
     ? { clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }
     : { clipPath: 'polygon(50% 0%, 98% 35%, 79% 91%, 21% 91%, 2% 35%)' };
 
-type FuncForm = { policyId: number; editingId: number | null; type: FunctionType; message: string; modules: string[]; tasks: TaskProgram[] };
+type FuncForm = { policyId: number; editingId: number | null; type: FunctionType; message: string; modules: string[]; tasks: TaskProgram[]; terms: PolicyTermsConfig };
 
 /**
  * Sistema "Comandos Violeta" (Global · Creación). Panel de CATEGORÍAS (izq) → grafo de
@@ -49,6 +51,7 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
   const [policyName, setPolicyName] = useState('');
   const [funcForm, setFuncForm] = useState<FuncForm | null>(null);
   const [tasksModal, setTasksModal] = useState(false);
+  const [termsModal, setTermsModal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState<PolicyGraphNode | null>(null);
 
@@ -130,7 +133,7 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
   };
 
   /* ── Funciones ── */
-  const openCreateFunction = (policyId: number) => setFuncForm({ policyId, editingId: null, type: 'permanent_message', message: '', modules: [], tasks: [] });
+  const openCreateFunction = (policyId: number) => setFuncForm({ policyId, editingId: null, type: 'permanent_message', message: '', modules: [], tasks: [], terms: emptyTerms() });
 
   const openEditFunction = async (fnNode: PolicyGraphNode) => {
     const policyEdge = graph.edges.find((e) => e.target === fnNode.key);
@@ -140,7 +143,11 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
       const d = await res.json();
       const cfg = d.data?.config || {};
       const type = (d.data?.type || 'permanent_message') as FunctionType;
-      setFuncForm({ policyId, editingId: fnNode.id, type, message: cfg.message || '', modules: cfg.modules || [], tasks: cfg.tasks || [] });
+      setFuncForm({
+        policyId, editingId: fnNode.id, type,
+        message: cfg.message || '', modules: cfg.modules || [], tasks: cfg.tasks || [],
+        terms: { title: cfg.title || '', purpose: cfg.purpose || '', conduct: cfg.conduct || '', clauses: cfg.clauses || [] },
+      });
     } catch { toast.error('No se pudo cargar la función'); }
   };
 
@@ -149,10 +156,15 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
     const { type } = funcForm;
     const config = type === 'permanent_message' ? { message: funcForm.message.trim() }
       : type === 'block_modules' ? { modules: funcForm.modules }
-        : { tasks: funcForm.tasks };
+        : type === 'generate_tasks' ? { tasks: funcForm.tasks }
+          : { ...funcForm.terms };
     if (type === 'permanent_message' && !funcForm.message.trim()) { toast.error('Escribe el mensaje'); return; }
     if (type === 'block_modules' && funcForm.modules.length === 0) { toast.error('Selecciona al menos un módulo'); return; }
     if (type === 'generate_tasks' && funcForm.tasks.length === 0) { toast.error('Agrega al menos una tarea'); return; }
+    if (type === 'policy_terms') {
+      const t = funcForm.terms;
+      if (!t.title.trim() && !t.purpose.trim() && !t.conduct.trim() && t.clauses.length === 0) { toast.error('Completa el detalle de la política'); return; }
+    }
     setBusy(true);
     try {
       if (funcForm.editingId) {
@@ -303,6 +315,12 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
                       </button>
                     )}
 
+                    {funcForm.type === 'policy_terms' && (
+                      <button onClick={() => setTermsModal(true)} className={`${GLASS_BTN} w-full px-3 py-2 text-[12.5px] font-medium`} style={mf}>
+                        <FileText className="w-3.5 h-3.5" /> Configurar detalle ({funcForm.terms.clauses.length} cláusula{funcForm.terms.clauses.length === 1 ? '' : 's'})
+                      </button>
+                    )}
+
                     <div className="flex gap-2 pt-1">
                       <button onClick={() => setFuncForm(null)} className={`${GLASS_BTN} flex-1 px-3 py-2 text-sm font-medium`} style={mf}>Cancelar</button>
                       <button onClick={saveFunction} disabled={busy} className="flex-1 px-3 py-2 bg-accent text-white text-sm font-medium rounded-md hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>{busy ? '...' : 'Guardar'}</button>
@@ -392,6 +410,9 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
 
       {funcForm && (
         <GenerateTasksModal open={tasksModal} initialTasks={funcForm.tasks} onClose={() => setTasksModal(false)} onSave={(tasks) => setFuncForm((f) => f && ({ ...f, tasks }))} />
+      )}
+      {funcForm && (
+        <PolicyTermsModal open={termsModal} initial={funcForm.terms} onClose={() => setTermsModal(false)} onSave={(terms) => setFuncForm((f) => f && ({ ...f, terms }))} />
       )}
 
       <PixelConfirm
