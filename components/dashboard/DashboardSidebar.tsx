@@ -9,7 +9,7 @@ import { accessRoleOf, canAccessModule } from '@/lib/dashboard/access';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
-  LogOut, Sun, Moon, type LucideIcon,
+  LogOut, Sun, Moon, CalendarDays, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem {
@@ -24,6 +24,7 @@ interface NavGroup { title: string; items: NavItem[]; }
 const NAV_GROUPS: NavGroup[] = [
   { title: 'Principal', items: [
     { label: 'Inicio', href: '/dashboard', icon: Home },
+    { label: 'Mi día', href: '/dashboard/mi-dia', icon: CalendarDays },
   ] },
   { title: 'Operación', items: [
     { label: 'Tickets', href: '/dashboard/tickets', icon: Ticket },

@@ -32,6 +32,7 @@ const ALL: AccessRole[] = ['candidate', 'client', 'member', 'admin'];
 /** Reglas por módulo (base path → roles permitidos). Admin siempre pasa. */
 export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   { path: '/dashboard', roles: ['candidate', 'member', 'admin'] }, // Inicio (exacto)
+  { path: '/dashboard/mi-dia', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/tickets', roles: ALL },
   { path: '/dashboard/projects', roles: ALL },
   { path: '/dashboard/clients', roles: ['candidate', 'member', 'admin'] },
