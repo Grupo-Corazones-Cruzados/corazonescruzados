@@ -56,6 +56,9 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
   // Burbuja flotante de etiquetas (hover sobre los iconos de la tarjeta)
   const [bubble, setBubble] = useState<{ kind: 'values' | 'talents'; items: string[]; x: number; y: number } | null>(null);
 
+  // Filtro del panel de tareas: solo pendientes (sin ninguna instancia completada)
+  const [onlyPending, setOnlyPending] = useState(false);
+
   // Panel de detalle de una asignación
   const [panelEntry, setPanelEntry] = useState<ScheduleEntry | null>(null);
   const [panelCtx, setPanelCtx] = useState<TaskContext | null>(null);
@@ -87,6 +90,9 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     for (const e of schedule) { const a = m.get(e.day) || []; a.push(e); m.set(e.day, a); }
     return m;
   }, [schedule]);
+  // Una tarea es "pendiente" mientras no tenga ninguna instancia marcada como completada.
+  const isPending = (t: Task) => !schedule.some((e) => e.alternativeId === t.id && e.status === 'completed');
+  const visibleTasks = useMemo(() => (onlyPending ? tasks.filter(isPending) : tasks), [tasks, schedule, onlyPending]);
 
   const openEditor = (t: Task) => { setDraftValues(t.values); setDraftTalents(t.talents); setEditing(t); };
 
@@ -187,18 +193,25 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
             <div className="flex items-center gap-2 px-3 py-2 bg-digi-dark border-b border-digi-border">
               <ListTodo className="w-4 h-4 text-digi-muted" />
               <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Tareas</span>
-              <span className="ml-auto text-[11px] text-digi-muted tabular-nums" style={mf}>{tasks.length}</span>
+              <button
+                onClick={() => setOnlyPending((v) => !v)}
+                title={onlyPending ? 'Mostrando solo pendientes' : 'Mostrar solo pendientes'}
+                aria-pressed={onlyPending}
+                className={`ml-auto w-6 h-6 flex items-center justify-center rounded-md border transition-colors ${onlyPending ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-muted hover:text-accent hover:bg-black/[0.05]'}`}>
+                <CircleDashed className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{visibleTasks.length}</span>
             </div>
             <div className="p-2.5 space-y-2 max-h-[calc(100dvh-220px)] overflow-y-auto">
               {loading ? (
                 <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Cargando…</p>
-              ) : tasks.length === 0 ? (
+              ) : visibleTasks.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-digi-border/80 bg-digi-darker/40 p-4 text-center">
                   <GripVertical className="w-5 h-5 text-digi-muted/50 mx-auto mb-1.5" />
-                  <p className="text-[12px] text-digi-muted" style={mf}>Sin tareas. Crea alternativas en Apoyo y Autoayuda para este usuario.</p>
+                  <p className="text-[12px] text-digi-muted" style={mf}>{onlyPending && tasks.length > 0 ? 'No hay tareas pendientes.' : 'Sin tareas. Crea alternativas en Apoyo y Autoayuda para este usuario.'}</p>
                 </div>
               ) : (
-                tasks.map((t) => {
+                visibleTasks.map((t) => {
                   const ready = hasLabels(t);
                   const scheduledCount = schedule.filter((e) => e.alternativeId === t.id).length;
                   return (
