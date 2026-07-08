@@ -45,6 +45,53 @@ export async function ensureApoyoTables() {
 }
 
 /**
+ * Carga de problemas por dimensión para un conjunto de sujetos (candidatos/miembros).
+ * Por dimensión devuelve el % de problemas AÚN sin resolver = (total - resueltos)/total.
+ * Un problema está "resuelto" si tiene al menos una **solución** vinculada (status
+ * 'solution'); las alternativas NO cuentan como resuelto. Si todos siguen sin solución
+ * el % es 100; si 1 de 5 ya tiene solución, el % baja a 80. Dimensiones sin problemas
+ * quedan fuera del resultado (la UI las muestra como "sin evaluar").
+ *
+ * Devuelve: { [subject_id]: { [dimension]: pct 0–100 } }.
+ */
+export async function getDimensionProblemLoads(
+  subjectKind: string,
+  subjectIds: string[],
+): Promise<Record<string, Record<string, number>>> {
+  const out: Record<string, Record<string, number>> = {};
+  if (subjectIds.length === 0) return out;
+  await ensureApoyoTables();
+  const { rows } = await pool.query(
+    `SELECT s.subject_id AS subject_id,
+            p.dimension AS dimension,
+            COUNT(DISTINCT p.id) AS total,
+            COUNT(DISTINCT p.id) FILTER (WHERE solved.ok) AS solved
+       FROM gcc_world.aa_situations s
+       JOIN gcc_world.aa_situation_problems sp ON sp.situation_id = s.id
+       JOIN gcc_world.aa_problems p ON p.id = sp.problem_id
+       LEFT JOIN LATERAL (
+         SELECT EXISTS (
+           SELECT 1 FROM gcc_world.aa_solution_problems spr
+             JOIN gcc_world.aa_solutions so ON so.id = spr.solution_id
+            WHERE spr.problem_id = p.id AND so.status = 'solution'
+         ) AS ok
+       ) solved ON TRUE
+      WHERE s.subject_kind = $1 AND s.subject_id = ANY($2::text[]) AND p.dimension IS NOT NULL
+      GROUP BY s.subject_id, p.dimension`,
+    [subjectKind, subjectIds],
+  );
+  for (const r of rows) {
+    const total = Number(r.total) || 0;
+    if (total === 0) continue;
+    const solved = Number(r.solved) || 0;
+    const pct = Math.round(((total - solved) / total) * 100);
+    const sid = String(r.subject_id);
+    (out[sid] ||= {})[String(r.dimension)] = pct;
+  }
+  return out;
+}
+
+/**
  * Grafo del sujeto: sus situaciones + los problemas asociados + las causas de esos
  * problemas + las soluciones asociadas a esos problemas (y qué causas afectan).
  */

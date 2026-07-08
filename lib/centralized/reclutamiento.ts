@@ -24,18 +24,10 @@ export interface CandidateCriteria {
 
 export interface CriterionItem { key: string; label: string; }
 
-/** Valores que gobiernan el proyecto (9). */
-export const VALUE_ITEMS: CriterionItem[] = [
-  { key: 'determinacion', label: 'Determinación' },
-  { key: 'coraje', label: 'Coraje' },
-  { key: 'pureza', label: 'Pureza' },
-  { key: 'fe', label: 'Fe' },
-  { key: 'paciencia', label: 'Paciencia' },
-  { key: 'seriedad', label: 'Seriedad' },
-  { key: 'espontaneidad', label: 'Espontaneidad' },
-  { key: 'autonomia', label: 'Autonomía' },
-  { key: 'empatia', label: 'Empatía' },
-];
+/** Valores que gobiernan el proyecto (9). Fuente única: `lib/centralized/valores.ts`. */
+export { VALORES } from './valores';
+import { VALORES } from './valores';
+export const VALUE_ITEMS: CriterionItem[] = VALORES;
 
 /** Dimensiones del candidato (4). */
 export const DIMENSION_ITEMS: CriterionItem[] = [

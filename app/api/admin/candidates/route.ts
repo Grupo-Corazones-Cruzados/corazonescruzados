@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { getDimensionProblemLoads } from '@/lib/centralized/apoyo-db';
 import { NextResponse } from 'next/server';
 
 /**
@@ -29,13 +30,19 @@ export async function GET() {
         ORDER BY c.last_seen_at DESC NULLS LAST, c.id DESC`,
     );
 
-    // criteria por candidato: pendiente de fuente de datos (evaluaciones).
-    // is_member: el candidato ya fue convertido en miembro (usuario con rol member/admin).
-    const data = rows.map((r: any) => ({
-      ...r,
-      criteria: null,
-      is_member: r.user_role === 'member' || r.user_role === 'admin',
-    }));
+    // Dimensiones: se calculan desde el sistema de Apoyo y Autoayuda (carga de problemas
+    // por dimensión, descontando los que ya tienen solución). El resto de criterios
+    // (talento/valores/apoyo) sigue pendiente de fuente de datos.
+    const loads = await getDimensionProblemLoads('candidate', rows.map((r: any) => String(r.id)));
+    const data = rows.map((r: any) => {
+      const dims = loads[String(r.id)];
+      const criteria = dims ? { talents: [], values: {}, dimensions: dims, apoyo: {} } : null;
+      return {
+        ...r,
+        criteria,
+        is_member: r.user_role === 'member' || r.user_role === 'admin',
+      };
+    });
     return NextResponse.json({ data });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'unknown error';
