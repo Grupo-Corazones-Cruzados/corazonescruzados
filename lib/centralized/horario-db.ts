@@ -39,6 +39,8 @@ export async function ensureHorarioTables() {
 export interface TaskLink {
   source: 'ticket' | 'project';
   title: string;
+  status: string | null;
+  description: string | null;
   start: string | null; // YYYY-MM-DD (inicio del ref)
   end: string | null;   // YYYY-MM-DD (fecha límite del ref)
 }
@@ -119,19 +121,19 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
 
   // Vínculo (ticket/proyecto) por alternativa: para bloqueo, botones de fecha y auto-agenda.
   const linkRows = (await pool.query(
-    `SELECT l.alternative_id AS aid, 'ticket'::text AS source, t.title AS ref_title,
+    `SELECT l.alternative_id AS aid, 'ticket'::text AS source, t.title AS ref_title, t.status AS ref_status, t.description AS ref_desc,
             to_char(t.created_at::date, 'YYYY-MM-DD') AS start, to_char(t.deadline::date, 'YYYY-MM-DD') AS end
        FROM gcc_world.aa_alternative_tickets l JOIN gcc_world.tickets t ON t.id = l.ticket_id
       WHERE l.alternative_id = ANY($1::bigint[])
      UNION ALL
-     SELECT l.alternative_id, 'project'::text, p.title,
+     SELECT l.alternative_id, 'project'::text, p.title, p.status, p.description,
             to_char(COALESCE(p.confirmed_at, p.created_at)::date, 'YYYY-MM-DD'), to_char(p.deadline::date, 'YYYY-MM-DD')
        FROM gcc_world.aa_alternative_projects l JOIN gcc_world.projects p ON p.id::text = l.project_id
       WHERE l.alternative_id = ANY($1::bigint[])`,
     [ids],
   )).rows;
   const linksBy = new Map<number, TaskLink>();
-  for (const r of linkRows) linksBy.set(Number(r.aid), { source: r.source, title: r.ref_title, start: r.start ?? null, end: r.end ?? null });
+  for (const r of linkRows) linksBy.set(Number(r.aid), { source: r.source, title: r.ref_title, status: r.ref_status ?? null, description: r.ref_desc ?? null, start: r.start ?? null, end: r.end ?? null });
 
   const tasks: HorarioTask[] = taskRows.map((r: any) => {
     const l = labelsBy.get(Number(r.id)) || { values: [], talents: [] };

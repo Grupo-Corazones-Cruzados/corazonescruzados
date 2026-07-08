@@ -23,7 +23,7 @@ const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.g
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 type Status = 'pending' | 'completed' | 'failed';
-interface TaskLink { source: 'ticket' | 'project'; title: string; start: string | null; end: string | null }
+interface TaskLink { source: 'ticket' | 'project'; title: string; status: string | null; description: string | null; start: string | null; end: string | null }
 interface Task { id: number; title: string; description: string | null; problems: { title: string; dimension: string | null }[]; values: string[]; talents: string[]; link: TaskLink | null }
 interface ScheduleEntry { id: number; alternativeId: number; day: string; status: Status }
 interface AutoEntry { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string }
@@ -58,12 +58,14 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
 
   // Burbuja flotante de etiquetas (hover sobre los iconos de la tarjeta)
   const [bubble, setBubble] = useState<{ kind: 'values' | 'talents'; items: string[]; x: number; y: number } | null>(null);
+  // Burbuja flotante con detalles del ticket/proyecto (hover sobre el candado)
+  const [linkBubble, setLinkBubble] = useState<{ link: TaskLink; x: number; y: number } | null>(null);
 
   // Filtro del panel de tareas: solo pendientes (sin ninguna instancia completada)
   const [onlyPending, setOnlyPending] = useState(false);
 
-  // Panel de detalle de una asignación
-  const [panelEntry, setPanelEntry] = useState<ScheduleEntry | null>(null);
+  // Panel de detalle: una asignación manual (con `entry`) o una entrada automática (entry=null)
+  const [panel, setPanel] = useState<{ alternativeId: number; entry: ScheduleEntry | null } | null>(null);
   const [panelCtx, setPanelCtx] = useState<TaskContext | null>(null);
   const [panelLoading, setPanelLoading] = useState(false);
 
@@ -86,7 +88,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     finally { setLoading(false); }
   }, [selected, weekStart]);
 
-  useEffect(() => { load(); setPanelEntry(null); }, [load]);
+  useEffect(() => { load(); setPanel(null); }, [load]);
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const hasLabels = (t: Task) => t.values.length > 0 || t.talents.length > 0;
@@ -147,7 +149,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
 
   const setEntryStatus = async (entry: ScheduleEntry, status: Status) => {
     setSchedule((s) => s.map((e) => (e.id === entry.id ? { ...e, status } : e)));
-    setPanelEntry((p) => (p && p.id === entry.id ? { ...p, status } : p));
+    setPanel((p) => (p && p.entry && p.entry.id === entry.id ? { ...p, entry: { ...p.entry, status } } : p));
     try {
       const res = await fetch('/api/centralized/horario/schedule', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: entry.id, status }) });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
@@ -156,20 +158,22 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
 
   const unassign = async (entry: ScheduleEntry) => {
     setSchedule((s) => s.filter((e) => e.id !== entry.id));
-    setPanelEntry((p) => (p && p.id === entry.id ? null : p));
+    setPanel((p) => (p && p.entry && p.entry.id === entry.id ? null : p));
     try {
       const res = await fetch('/api/centralized/horario/schedule', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: entry.id }) });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
     } catch (e: any) { toast.error(e.message || 'Error'); load(); }
   };
 
-  const openPanel = async (entry: ScheduleEntry) => {
-    setPanelEntry(entry);
+  // Abre el panel de detalle: para una asignación manual (con estado/quitar) o para una
+  // entrada automática (entry=null → solo detalles, incl. ticket/proyecto asociado).
+  const openPanel = async (alternativeId: number, entry: ScheduleEntry | null) => {
+    setPanel({ alternativeId, entry });
     setPanelCtx(null);
     if (!selected) return;
     setPanelLoading(true);
     try {
-      const res = await fetch(`/api/centralized/horario/task?subject_kind=${selected.kind}&subject_id=${selected.id}&alternative_id=${entry.alternativeId}`);
+      const res = await fetch(`/api/centralized/horario/task?subject_kind=${selected.kind}&subject_id=${selected.id}&alternative_id=${alternativeId}`);
       const d = await res.json();
       setPanelCtx(d.data || { problems: [], situations: [], causes: [] });
     } catch { setPanelCtx({ problems: [], situations: [], causes: [] }); }
@@ -189,6 +193,11 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     const r = el.getBoundingClientRect();
     setBubble({ kind, items, x: r.left + r.width / 2, y: r.top });
   };
+  const showLinkBubble = (el: HTMLElement, link: TaskLink) => {
+    const r = el.getBoundingClientRect();
+    setLinkBubble({ link, x: r.left + r.width / 2, y: r.top });
+  };
+  const fmtDay = (d: string | null) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 items-start">
@@ -238,7 +247,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                       className={`rounded-lg border p-2.5 transition-colors ${linked ? 'border-sky-400/30 bg-sky-500/[0.06]' : ready ? 'border-digi-border bg-digi-darker/50 cursor-grab active:cursor-grabbing hover:border-accent/50' : 'border-dashed border-digi-border/70 bg-digi-darker/50'} ${dragId === t.id ? 'opacity-50' : ''}`}>
                       <div className="flex items-start gap-1.5">
                         {linked
-                          ? <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-sky-400" />
+                          ? <button type="button" onMouseEnter={(e) => t.link && showLinkBubble(e.currentTarget, t.link)} onMouseLeave={() => setLinkBubble(null)} className="mt-0.5 shrink-0 text-sky-400 hover:text-sky-300 cursor-help" aria-label="Detalles del ticket/proyecto"><Lock className="w-3.5 h-3.5" /></button>
                           : <GripVertical className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${ready ? 'text-digi-muted' : 'text-digi-muted/40'}`} />}
                         <div className="min-w-0 flex-1">
                           <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{t.title}</p>
@@ -271,15 +280,9 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                       )}
 
                       {linked && t.link ? (
-                        <div className="mt-2 ml-5 space-y-1.5">
-                          <p className="inline-flex items-center gap-1 text-[10.5px] text-sky-300 max-w-full" style={mf} title={`Fijada por ${t.link.source === 'ticket' ? 'ticket' : 'proyecto'}: ${t.link.title}`}>
-                            {t.link.source === 'ticket' ? <Ticket className="w-3 h-3 shrink-0" /> : <FolderKanban className="w-3 h-3 shrink-0" />}
-                            <span className="truncate">Fijada por {t.link.source === 'ticket' ? 'ticket' : 'proyecto'}: {t.link.title}</span>
-                          </p>
-                          <div className="flex items-center gap-1.5">
-                            <button onClick={() => goToWeekOf(t.link!.start)} disabled={!t.link.start} title="Ir a la fecha de inicio" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><CalendarClock className="w-3 h-3" /> Inicio</button>
-                            <button onClick={() => goToWeekOf(t.link!.end)} disabled={!t.link.end} title="Ir a la fecha límite" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><Flag className="w-3 h-3" /> Fin</button>
-                          </div>
+                        <div className="flex items-center gap-1.5 mt-2 ml-5">
+                          <button onClick={() => goToWeekOf(t.link!.start)} disabled={!t.link.start} title="Ir a la fecha de inicio" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><CalendarClock className="w-3 h-3" /> Inicio</button>
+                          <button onClick={() => goToWeekOf(t.link!.end)} disabled={!t.link.end} title="Ir a la fecha límite" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><Flag className="w-3 h-3" /> Fin</button>
                         </div>
                       ) : (
                         <>
@@ -341,25 +344,27 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                             {entries.map((e) => {
                               const t = taskById.get(e.alternativeId);
                               const st = e.status;
-                              const open = panelEntry?.id === e.id;
+                              const open = panel?.entry?.id === e.id;
                               return (
                                 <div key={e.id} className={`flex items-center gap-1 rounded-md border px-1 py-1.5 ${st === 'completed' ? 'border-emerald-400/40 bg-emerald-500/10' : st === 'failed' ? 'border-red-400/40 bg-red-500/10' : 'border-accent/25 bg-accent-light'} ${open ? 'ring-1 ring-accent' : ''}`}>
-                                  <button onClick={() => openPanel(e)} title="Detalles de la tarea" className="shrink-0 text-digi-muted hover:text-accent transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => openPanel(e.alternativeId, e)} title="Detalles de la tarea" className="shrink-0 text-digi-muted hover:text-accent transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
                                   <span className={`text-[11px] leading-snug flex-1 min-w-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-accent'}`} style={mf}>{t?.title || 'Tarea'}</span>
                                   {st === 'completed' && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
                                   {st === 'failed' && <XCircle className="w-3 h-3 text-red-500 shrink-0" />}
                                 </div>
                               );
                             })}
-                            {/* Entradas automáticas del ticket/proyecto asociado (no editables) */}
+                            {/* Entradas automáticas del ticket/proyecto asociado (no editables) — ⋮ a la derecha abre el detalle */}
                             {autoEntries.map((a, ai) => {
                               const t = taskById.get(a.alternativeId);
                               const RefIcon = a.source === 'ticket' ? Ticket : FolderKanban;
+                              const open = panel?.alternativeId === a.alternativeId && !panel?.entry;
                               return (
-                                <div key={`auto-${a.alternativeId}-${ai}`} title={`Automático · ${a.source === 'ticket' ? 'Ticket' : 'Proyecto'}: ${a.refTitle}`}
-                                  className="flex items-center gap-1 rounded-md border border-dashed border-sky-400/40 bg-sky-500/10 px-1.5 py-1.5">
+                                <div key={`auto-${a.alternativeId}-${ai}`}
+                                  className={`flex items-center gap-1 rounded-md border border-dashed border-sky-400/40 bg-sky-500/10 pl-1.5 pr-0.5 py-1.5 ${open ? 'ring-1 ring-sky-400' : ''}`}>
                                   <RefIcon className="w-3 h-3 shrink-0 text-sky-400" />
                                   <span className="text-[11px] leading-snug flex-1 min-w-0 text-sky-300" style={mf}>{t?.title || 'Tarea'}</span>
+                                  <button onClick={() => openPanel(a.alternativeId, null)} title="Detalles de la tarea" className="shrink-0 text-sky-400/80 hover:text-sky-300 transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
                                 </div>
                               );
                             })}
@@ -373,15 +378,17 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
             </div>
           </div>
 
-          {/* Panel de detalle de la tarea programada (a la derecha del calendario) */}
-          {panelEntry && (() => {
-            const t = taskById.get(panelEntry.alternativeId);
-            const st = panelEntry.status;
+          {/* Panel de detalle de la tarea (a la derecha del calendario) */}
+          {panel && (() => {
+            const t = taskById.get(panel.alternativeId);
+            const entry = panel.entry;
+            const st = entry?.status;
+            const link = t?.link || null;
             return (
               <div className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden self-stretch">
                 <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
                   <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
-                  <button onClick={() => setPanelEntry(null)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                  <button onClick={() => setPanel(null)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="p-3 space-y-3 max-h-[calc(100dvh-200px)] overflow-y-auto">
                   <div>
@@ -389,18 +396,37 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                     {t?.description && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{t.description}</p>}
                   </div>
 
-                  {/* Estado */}
-                  <div>
-                    <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado</p>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <StatusButton active={st === 'completed'} tone="completed" onClick={() => setEntryStatus(panelEntry, 'completed')} Icon={CheckCircle2} label="Completada" />
-                      <StatusButton active={st === 'failed'} tone="failed" onClick={() => setEntryStatus(panelEntry, 'failed')} Icon={XCircle} label="Fallida" />
-                      <StatusButton active={st === 'pending'} tone="pending" onClick={() => setEntryStatus(panelEntry, 'pending')} Icon={CircleDashed} label="Pendiente" />
+                  {/* Estado (solo asignaciones manuales) */}
+                  {entry && (
+                    <div>
+                      <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <StatusButton active={st === 'completed'} tone="completed" onClick={() => setEntryStatus(entry, 'completed')} Icon={CheckCircle2} label="Completada" />
+                        <StatusButton active={st === 'failed'} tone="failed" onClick={() => setEntryStatus(entry, 'failed')} Icon={XCircle} label="Fallida" />
+                        <StatusButton active={st === 'pending'} tone="pending" onClick={() => setEntryStatus(entry, 'pending')} Icon={CircleDashed} label="Pendiente" />
+                      </div>
+                      <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>
+                        Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.
+                      </p>
                     </div>
-                    <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>
-                      Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.
-                    </p>
-                  </div>
+                  )}
+
+                  {/* Ticket/proyecto asociado */}
+                  {link && (
+                    <div className="rounded-lg border border-sky-400/30 bg-sky-500/[0.06] p-2.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-400 mb-1 inline-flex items-center gap-1" style={df}>
+                        {link.source === 'ticket' ? <Ticket className="w-3 h-3" /> : <FolderKanban className="w-3 h-3" />} {link.source === 'ticket' ? 'Ticket asociado' : 'Proyecto asociado'}
+                      </p>
+                      <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{link.title}</p>
+                      {link.status && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Estado: {link.status}</p>}
+                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Del {fmtDay(link.start)} al {fmtDay(link.end)}</p>
+                      {link.description && <p className="text-[11px] text-digi-muted/90 mt-1 leading-snug" style={mf}>{link.description}</p>}
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <button onClick={() => goToWeekOf(link.start)} disabled={!link.start} className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40" style={mf}><CalendarClock className="w-3 h-3" /> Inicio</button>
+                        <button onClick={() => goToWeekOf(link.end)} disabled={!link.end} className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40" style={mf}><Flag className="w-3 h-3" /> Fin</button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Etiquetas */}
                   {t && (t.values.length > 0 || t.talents.length > 0) && (
@@ -421,9 +447,13 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                     </div>
                   )}
 
-                  <button onClick={() => unassign(panelEntry)} className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 mt-1 border border-red-400/30 bg-red-500/10 hover:bg-red-500/20 rounded-md text-[12px] font-medium text-red-400 transition-colors" style={mf}>
-                    <Trash2 className="w-3.5 h-3.5" /> Quitar del día
-                  </button>
+                  {entry ? (
+                    <button onClick={() => unassign(entry)} className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 mt-1 border border-red-400/30 bg-red-500/10 hover:bg-red-500/20 rounded-md text-[12px] font-medium text-red-400 transition-colors" style={mf}>
+                      <Trash2 className="w-3.5 h-3.5" /> Quitar del día
+                    </button>
+                  ) : (
+                    <p className="text-[10.5px] text-sky-300/90 inline-flex items-center gap-1 pt-1" style={mf}><Lock className="w-3 h-3" /> Fijada automáticamente por su {link?.source === 'ticket' ? 'ticket' : 'proyecto'}; no se edita ni se quita.</p>
+                  )}
                 </div>
               </div>
             );
@@ -441,6 +471,21 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                 <span key={i} className={`px-1.5 py-0.5 rounded-full text-[10px] ${bubble.kind === 'values' ? 'bg-violet-500/15 text-violet-300' : 'bg-sky-500/15 text-sky-300'}`} style={mf}>{it}</span>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Burbuja flotante con detalles del ticket/proyecto (hover sobre el candado) */}
+      {linkBubble && (
+        <div className="fixed z-50 pointer-events-none -translate-x-1/2 -translate-y-full -mt-2" style={{ left: linkBubble.x, top: linkBubble.y }}>
+          <div className="p-2.5 rounded-md bg-digi-card border border-digi-border shadow-xl w-[220px]">
+            <p className="text-[9.5px] uppercase tracking-wide text-sky-400 mb-0.5 inline-flex items-center gap-1" style={df}>
+              {linkBubble.link.source === 'ticket' ? <Ticket className="w-3 h-3" /> : <FolderKanban className="w-3 h-3" />} {linkBubble.link.source === 'ticket' ? 'Ticket' : 'Proyecto'}
+            </p>
+            <p className="text-[12px] font-medium text-digi-text leading-snug" style={mf}>{linkBubble.link.title}</p>
+            {linkBubble.link.status && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Estado: {linkBubble.link.status}</p>}
+            <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Del {fmtDay(linkBubble.link.start)} al {fmtDay(linkBubble.link.end)}</p>
+            {linkBubble.link.description && <p className="text-[11px] text-digi-muted/90 mt-1 line-clamp-3 leading-snug" style={mf}>{linkBubble.link.description}</p>}
           </div>
         </div>
       )}

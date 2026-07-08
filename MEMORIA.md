@@ -316,9 +316,12 @@ Stack estándar de la casa, con particularidades de este repo:
   **todos los días entre el inicio y la fecha límite** del ref (inicio = `created_at`; proyecto = `confirmed_at` si existe;
   fin = `deadline`; si no hay `deadline`, no genera). `getSubjectHorario(kind,id,from,to)` devuelve `auto[]` acotado a la
   ventana (semana visible; el Horario refetch por semana) y cada tarea trae `link` (`{source,title,start,end}`). Chips punteados
-  celestes, sin estado ni scoring. **Tareas fijadas/bloqueadas:** las alternativas con `link` **NO son arrastrables** (no se
-  agendan manualmente; guard en `assign` + `draggable=false`), muestran icono de candado + "Fijada por ticket/proyecto" y botones
-  **Inicio/Fin** que saltan el calendario a la semana de la fecha de inicio/límite del ref. **Gotcha:** `projects.id` es **bigint**
+  celestes, sin estado ni scoring; cada auto-chip tiene **⋮ a la derecha** que abre el **panel de detalle** (entry=null → modo
+  auto, sin estado ni "quitar") con una sección **Ticket/Proyecto asociado** (título, estado, "Del … al …", descripción, botones
+  Inicio/Fin). **Tareas fijadas/bloqueadas:** las alternativas con `link` **NO son arrastrables** (guard en `assign` +
+  `draggable=false`); en el panel de Tareas muestran **candado** (hover → **burbuja** con detalles del ticket/proyecto) + botones
+  **Inicio/Fin**. El rango en el calendario es **continuo desde el inicio hasta el fin** (todos los días); `TaskLink` lleva
+  `{source,title,status,description,start,end}`. El panel de detalle se generalizó a `panel={alternativeId, entry|null}`. **Gotcha:** `projects.id` es **bigint**
   (no cuid); en joins con `aa_alternative_projects.project_id` (text) hay que castear `p.id::text = l.project_id` (si no, la consulta
   `auto` lanzaba `bigint = text` y dejaba el Horario **sin tareas**). `tickets.user_id` es **uuid** → `user_id::text = $2::text`.
 - **Alternativa vs Solución (2026-07-07):** las "soluciones" ahora se crean primero como **Alternativas**
