@@ -75,7 +75,7 @@ export default function ProfilePanel() {
   };
 
   return (
-    <SettingsPanel Icon={User} title="Perfil" subtitle="Tus datos personales y redes" bodyClassName="p-0">
+    <SettingsPanel Icon={User} title="Perfil" subtitle="Tus datos personales y redes" bodyClassName="p-0" className="w-full xl:w-[400px] shrink-0">
       <form onSubmit={handleSave} className="p-4 space-y-4">
         {/* Avatar */}
         <div className="flex items-center gap-4">

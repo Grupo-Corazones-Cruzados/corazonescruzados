@@ -7,7 +7,6 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import ImageGallery from '@/components/ui/ImageGallery';
-import SettingsPanel from '@/components/settings/SettingsPanel';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { Briefcase, FolderKanban, Package, Workflow, Plus, Pencil, Trash2, UploadCloud, X, Image as ImageIcon } from 'lucide-react';
@@ -184,48 +183,42 @@ export default function PortfolioPanel() {
   );
 
   if (!user?.member_id) {
-    return (
-      <SettingsPanel Icon={Briefcase} title="Portafolio" subtitle="Proyectos, productos y automatizaciones">
-        <p className="text-[12px] text-digi-muted text-center py-8" style={mf}>Solo disponible para miembros.</p>
-      </SettingsPanel>
-    );
+    return <p className="text-[12px] text-digi-muted text-center py-8" style={mf}>Solo disponible para miembros.</p>;
   }
 
   return (
-    <SettingsPanel Icon={Briefcase} title="Portafolio" subtitle="Proyectos, productos y automatizaciones" bodyClassName="p-4 space-y-3">
-      {/* Pestañas (catálogo) */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {TABS.map((t) => {
-          const active = tab === t.value;
-          return (
-            <button key={t.value} onClick={() => setTab(t.value)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${active ? 'bg-accent-light border-accent text-accent' : 'border-digi-border text-digi-muted hover:border-accent/40 hover:text-digi-text'}`} style={mf}>
-              <t.Icon className="w-3.5 h-3.5" /> {t.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Buscador + Nuevo */}
-      <div className="flex items-center gap-2">
+    <div className="space-y-3">
+      {/* Pestañas (catálogo) + buscador + Nuevo en una fila */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {TABS.map((t) => {
+            const active = tab === t.value;
+            return (
+              <button key={t.value} onClick={() => setTab(t.value)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${active ? 'bg-accent-light border-accent text-accent' : 'border-digi-border text-digi-muted hover:border-accent/40 hover:text-digi-text'}`} style={mf}>
+                <t.Icon className="w-3.5 h-3.5" /> {t.label}
+              </button>
+            );
+          })}
+        </div>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
-          className="field-control flex-1 min-w-0 px-3 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none rounded-md" style={mf} />
-        <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0 !px-2.5`} title={`Nuevo ${tabLabel.toLowerCase()}`}><Plus className="w-4 h-4" /></button>
+          className="field-control flex-1 min-w-[160px] px-3 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none rounded-md" style={mf} />
+        <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0`}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
       </div>
 
-      {/* Lista de tarjetas */}
+      {/* Grilla de tarjetas: llena el ancho disponible en varias columnas */}
       {rows.length === 0 ? (
-        <div className="text-center py-10">
+        <div className="text-center py-12">
           <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2"><tabMeta.Icon className="w-5 h-5 text-digi-muted" /></div>
-          <p className="text-[12px] text-digi-muted" style={mf}>Sin {tabMeta.label.toLowerCase()}. Agrega tu primer registro con “+”.</p>
+          <p className="text-[12px] text-digi-muted" style={mf}>Sin {tabMeta.label.toLowerCase()}. Agrega tu primer registro con “Nuevo”.</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
           {rows.map((item: any) => {
             const count = item.__team ? (item.image_count || 0) : imageCount(item);
             const key = item.__team ? `t-${item.id}` : `o-${item.id}`;
             return (
-              <div key={key} className="rounded-lg border border-digi-border bg-digi-darker/40 p-2.5">
+              <div key={key} className="rounded-lg border border-digi-border bg-digi-darker/40 p-3">
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 min-w-0">
@@ -289,6 +282,6 @@ export default function PortfolioPanel() {
       <PixelModal open={galleryOpen} onClose={() => setGalleryOpen(false)} title={galleryTitle || 'Galería'} size="lg">
         <ImageGallery images={galleryImages} alt={galleryTitle} />
       </PixelModal>
-    </SettingsPanel>
+    </div>
   );
 }

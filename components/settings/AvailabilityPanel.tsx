@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { BTN_PRIMARY } from '@/components/ui/Button';
-import SettingsPanel from '@/components/settings/SettingsPanel';
 import { fmtNum } from '@/lib/format';
 import { CalendarClock, Clock3, CalendarCheck, Save } from 'lucide-react';
 
@@ -71,7 +70,7 @@ export default function AvailabilityPanel() {
   const presetBtn = 'px-2.5 py-1 rounded-md text-[12px] font-medium border border-digi-border text-digi-text hover:border-accent hover:text-accent transition-colors';
 
   return (
-    <SettingsPanel Icon={CalendarClock} title="Disponibilidad" subtitle="Tu horario semanal de atención" bodyClassName="p-4 space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 items-start">
       {/* ── Editor de días ── */}
       <div className="rounded-xl border border-digi-border overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 border-b border-digi-border">
@@ -87,7 +86,7 @@ export default function AvailabilityPanel() {
           {DAY_KEYS.map((key, i) => {
             const on = schedule[key].active;
             return (
-              <div key={key} className={`flex items-center gap-2.5 px-3 py-2.5 transition-colors ${on ? '' : 'bg-black/[0.015]'}`}>
+              <div key={key} className={`flex items-center gap-3 px-4 py-3 transition-colors ${on ? '' : 'bg-black/[0.015]'}`}>
                 <button
                   role="switch" aria-checked={on} onClick={() => update(key, 'active', !on)}
                   className={`relative w-9 h-5 rounded-full shrink-0 transition-colors ${on ? 'bg-accent' : 'bg-digi-border'}`}
@@ -95,15 +94,16 @@ export default function AvailabilityPanel() {
                 >
                   <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow-sm transition-transform" style={{ background: '#fff', transform: on ? 'translateX(16px)' : 'none' }} />
                 </button>
-                <span className={`w-16 text-[12.5px] font-medium shrink-0 ${on ? 'text-digi-text' : 'text-digi-muted'}`} style={mf}>{DAYS[i]}</span>
+                <span className={`w-24 text-[13px] font-medium shrink-0 ${on ? 'text-digi-text' : 'text-digi-muted'}`} style={mf}>{DAYS[i]}</span>
 
                 {on ? (
-                  <div className="flex items-center gap-1.5 ml-auto">
+                  <div className="flex items-center gap-2 ml-auto">
                     <input type="time" value={schedule[key].start} onChange={(e) => update(key, 'start', e.target.value)}
-                      className="field-control px-1.5 py-1 bg-digi-darker border-2 border-digi-border rounded-md text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    <span className="text-[11px] text-digi-muted" style={mf}>a</span>
+                      className="field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                    <span className="text-[12px] text-digi-muted" style={mf}>a</span>
                     <input type="time" value={schedule[key].end} onChange={(e) => update(key, 'end', e.target.value)}
-                      className="field-control px-1.5 py-1 bg-digi-darker border-2 border-digi-border rounded-md text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      className="field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                    <span className="w-14 text-right text-[11px] text-digi-muted tabular-nums" style={mf}>{fmtNum(dayHours(schedule[key]), 1)} h</span>
                   </div>
                 ) : (
                   <span className="ml-auto text-[12px] text-digi-muted italic" style={mf}>Descanso</span>
@@ -113,7 +113,7 @@ export default function AvailabilityPanel() {
           })}
         </div>
 
-        <div className="px-3 py-2.5 border-t border-digi-border">
+        <div className="px-4 py-3 border-t border-digi-border">
           <button onClick={save} disabled={saving || !dirty} className={`${BTN_PRIMARY} w-full disabled:opacity-50`}>
             <Save className="w-4 h-4" /> {saving ? 'Guardando…' : dirty ? 'Guardar disponibilidad' : 'Guardado'}
           </button>
@@ -121,7 +121,7 @@ export default function AvailabilityPanel() {
       </div>
 
       {/* ── Resumen ── */}
-      <div className="rounded-xl border border-digi-border p-4">
+      <div className="rounded-xl border border-digi-border p-4 lg:sticky lg:top-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 rounded-lg bg-accent-light flex items-center justify-center"><CalendarClock className="w-4 h-4 text-accent" /></div>
           <span className="text-[13px] font-semibold text-digi-text" style={mf}>Resumen</span>
@@ -153,6 +153,6 @@ export default function AvailabilityPanel() {
         </div>
         <p className="text-[11px] text-digi-muted mt-3 leading-relaxed" style={mf}>Este horario define tu ventana de atención. Los miembros lo usan también en su calendario público.</p>
       </div>
-    </SettingsPanel>
+    </div>
   );
 }
