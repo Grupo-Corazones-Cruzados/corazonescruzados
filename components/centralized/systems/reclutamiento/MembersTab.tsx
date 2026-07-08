@@ -175,7 +175,7 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                     {selected.position_name && <span className="inline-flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" /> {selected.position_name}</span>}
                     {selected.hourly_rate != null && <span className="inline-flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /> {fmt2(Number(selected.hourly_rate))}/h</span>}
                   </div>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  <div className="flex flex-nowrap items-center gap-1.5 mt-2">
                     <PixelBadge variant={selected.is_active ? 'success' : 'default'}>{selected.is_active ? 'Activo' : 'Inactivo'}</PixelBadge>
                     {selected.role && <PixelBadge variant="info"><span className="inline-flex items-center gap-1"><BadgeCheck className="w-3 h-3" /> {selected.role}</span></PixelBadge>}
                     {!isAdminMember && (
@@ -183,6 +183,8 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                         <Network className="w-3.5 h-3.5" /> Centralizado: {selected.piso && selected.paso ? `${PISO_LABEL[selected.piso] || selected.piso} · ${PASO_LABEL[selected.paso] || selected.paso}` : 'sin acceso'}
                       </span>
                     )}
+                    {/* Prospección a la misma altura del rol, empujada al borde derecho */}
+                    <div className="ml-auto shrink-0"><ProspeccionBar criteria={selected.criteria || null} /></div>
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
@@ -196,8 +198,6 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                   <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                 </div>
               </div>
-              {/* Prospección al borde derecho del componente */}
-              <div className="mt-3 flex justify-end"><ProspeccionBar criteria={selected.criteria || null} /></div>
             </div>
           </div>
         ) : (
