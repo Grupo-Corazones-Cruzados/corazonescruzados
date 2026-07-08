@@ -51,12 +51,23 @@ export interface ScheduleEntry {
   day: string; // YYYY-MM-DD
   status: ScheduleStatus;
 }
+/** Entrada AUTOMÁTICA (no editable) derivada del ticket/proyecto asociado a la alternativa. */
+export interface AutoEntry {
+  alternativeId: number;
+  day: string; // YYYY-MM-DD
+  source: 'ticket' | 'project';
+  refTitle: string;
+}
+
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /**
  * Tareas del sujeto = alternativas (aún no convertidas en solución) vinculadas a algún
- * problema de sus situaciones, con sus etiquetas. Más el calendario asignado.
+ * problema de sus situaciones, con sus etiquetas. Más el calendario asignado (manual) y
+ * las entradas AUTOMÁTICAS del ticket/proyecto asociado (todos los días entre su fecha de
+ * inicio y su fecha límite), acotadas a la ventana [from, to] si se indica.
  */
-export async function getSubjectHorario(subjectKind: string, subjectId: string): Promise<{ tasks: HorarioTask[]; schedule: ScheduleEntry[] }> {
+export async function getSubjectHorario(subjectKind: string, subjectId: string, from?: string, to?: string): Promise<{ tasks: HorarioTask[]; schedule: ScheduleEntry[]; auto: AutoEntry[] }> {
   await ensureHorarioTables();
 
   // Alternativas del sujeto (por sus problemas).
@@ -72,7 +83,7 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string):
   )).rows;
 
   const ids = taskRows.map((r: any) => Number(r.id));
-  if (ids.length === 0) return { tasks: [], schedule: [] };
+  if (ids.length === 0) return { tasks: [], schedule: [], auto: [] };
 
   // Problemas que aborda cada alternativa (contexto en la tarjeta).
   const probRows = (await pool.query(
@@ -121,7 +132,42 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string):
   )).rows;
   const schedule: ScheduleEntry[] = schedRows.map((r: any) => ({ id: Number(r.id), alternativeId: Number(r.alternative_id), day: r.day, status: (r.status as ScheduleStatus) || 'pending' }));
 
-  return { tasks, schedule };
+  // Entradas AUTOMÁTICAS: por cada alternativa con un ticket/proyecto asociado, un día por
+  // cada fecha entre su inicio (created_at; proyectos: confirmed_at si existe) y su límite
+  // (deadline). Acotadas a la ventana [from, to] para no generar rangos enormes.
+  const auto: AutoEntry[] = [];
+  if (from && to && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    const ranges = (await pool.query(
+      `SELECT l.alternative_id AS aid, 'ticket'::text AS source, t.title AS ref_title,
+              to_char(t.created_at::date, 'YYYY-MM-DD') AS start, to_char(t.deadline::date, 'YYYY-MM-DD') AS end
+         FROM gcc_world.aa_alternative_tickets l
+         JOIN gcc_world.tickets t ON t.id = l.ticket_id
+        WHERE l.alternative_id = ANY($1::bigint[]) AND t.deadline IS NOT NULL
+       UNION ALL
+       SELECT l.alternative_id, 'project'::text, p.title,
+              to_char(COALESCE(p.confirmed_at, p.created_at)::date, 'YYYY-MM-DD'), to_char(p.deadline::date, 'YYYY-MM-DD')
+         FROM gcc_world.aa_alternative_projects l
+         JOIN gcc_world.projects p ON p.id = l.project_id
+        WHERE l.alternative_id = ANY($1::bigint[]) AND p.deadline IS NOT NULL`,
+      [ids],
+    )).rows;
+    for (const r of ranges) {
+      const lo = r.start > from ? r.start : from;   // comparación lexicográfica válida en YYYY-MM-DD
+      const hi = r.end < to ? r.end : to;
+      if (lo > hi) continue;
+      // Itera día a día en la ventana efectiva.
+      let d = new Date(`${lo}T00:00:00`);
+      const end = new Date(`${hi}T00:00:00`);
+      let guard = 0;
+      while (d <= end && guard < 400) {
+        auto.push({ alternativeId: Number(r.aid), day: ymd(d), source: r.source, refTitle: r.ref_title });
+        d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+        guard++;
+      }
+    }
+  }
+
+  return { tasks, schedule, auto };
 }
 
 export interface ProfileScores {

@@ -13,16 +13,18 @@ async function guard() {
 // GET — tareas (alternativas del sujeto) + su calendario asignado.
 export async function GET(req: NextRequest) {
   try {
-    if (!(await guard())) return NextResponse.json({ data: { tasks: [], schedule: [] } }, { status: 403 });
+    if (!(await guard())) return NextResponse.json({ data: { tasks: [], schedule: [], auto: [] } }, { status: 403 });
     const sp = req.nextUrl.searchParams;
     const kind = sp.get('subject_kind');
     const id = sp.get('subject_id');
-    if (!kind || !id) return NextResponse.json({ data: { tasks: [], schedule: [] } });
-    const data = await getSubjectHorario(kind, id);
+    const from = sp.get('from') || undefined;
+    const to = sp.get('to') || undefined;
+    if (!kind || !id) return NextResponse.json({ data: { tasks: [], schedule: [], auto: [] } });
+    const data = await getSubjectHorario(kind, id, from, to);
     return NextResponse.json({ data });
   } catch (err: any) {
     console.error('Horario GET error:', err.message);
-    return NextResponse.json({ data: { tasks: [], schedule: [] }, error: err.message }, { status: 500 });
+    return NextResponse.json({ data: { tasks: [], schedule: [], auto: [] }, error: err.message }, { status: 500 });
   }
 }
 

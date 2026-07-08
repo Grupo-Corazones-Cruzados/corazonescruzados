@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X,
-  Gem, Sparkles, CheckCircle2, XCircle, CircleDashed, MoreVertical, Trash2,
+  Gem, Sparkles, CheckCircle2, XCircle, CircleDashed, MoreVertical, Trash2, Ticket, FolderKanban,
 } from 'lucide-react';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
 import PixelModal from '@/components/ui/PixelModal';
@@ -25,6 +25,7 @@ const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 type Status = 'pending' | 'completed' | 'failed';
 interface Task { id: number; title: string; description: string | null; problems: { title: string; dimension: string | null }[]; values: string[]; talents: string[] }
 interface ScheduleEntry { id: number; alternativeId: number; day: string; status: Status }
+interface AutoEntry { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string }
 interface TaskContext { problems: { title: string; dimension: string | null }[]; situations: string[]; causes: string[] }
 
 const VALOR_OPTIONS = VALORES.map((v) => ({ value: v.key, label: v.label }));
@@ -41,6 +42,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
   const [weekStart, setWeekStart] = useState<Date>(() => startOfDay(new Date()));
   const [tasks, setTasks] = useState<Task[]>([]);
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([]);
+  const [auto, setAuto] = useState<AutoEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Editor de etiquetas
@@ -70,16 +72,18 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
   const enabled = !!selected;
 
   const load = useCallback(async () => {
-    if (!selected) { setTasks([]); setSchedule([]); return; }
+    if (!selected) { setTasks([]); setSchedule([]); setAuto([]); return; }
     setLoading(true);
+    const from = ymd(weekStart), to = ymd(addDays(weekStart, 6));
     try {
-      const res = await fetch(`/api/centralized/horario?subject_kind=${selected.kind}&subject_id=${selected.id}`);
+      const res = await fetch(`/api/centralized/horario?subject_kind=${selected.kind}&subject_id=${selected.id}&from=${from}&to=${to}`);
       const d = await res.json();
       setTasks(d.data?.tasks || []);
       setSchedule(d.data?.schedule || []);
-    } catch { setTasks([]); setSchedule([]); }
+      setAuto(d.data?.auto || []);
+    } catch { setTasks([]); setSchedule([]); setAuto([]); }
     finally { setLoading(false); }
-  }, [selected]);
+  }, [selected, weekStart]);
 
   useEffect(() => { load(); setPanelEntry(null); }, [load]);
 
@@ -90,6 +94,11 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     for (const e of schedule) { const a = m.get(e.day) || []; a.push(e); m.set(e.day, a); }
     return m;
   }, [schedule]);
+  const autoByDay = useMemo(() => {
+    const m = new Map<string, AutoEntry[]>();
+    for (const e of auto) { const a = m.get(e.day) || []; a.push(e); m.set(e.day, a); }
+    return m;
+  }, [auto]);
   // Una tarea es "pendiente" mientras no tenga ninguna instancia resuelta (completada o fallida).
   const isPending = (t: Task) => !schedule.some((e) => e.alternativeId === t.id && (e.status === 'completed' || e.status === 'failed'));
   const visibleTasks = useMemo(() => (onlyPending ? tasks.filter(isPending) : tasks), [tasks, schedule, onlyPending]);
@@ -286,6 +295,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                   const isToday = sameDay(d, today);
                   const dayStr = ymd(d);
                   const entries = scheduleByDay.get(dayStr) || [];
+                  const autoEntries = autoByDay.get(dayStr) || [];
                   const over = dragOverDay === dayStr;
                   return (
                     <div key={i} className={`w-[150px] shrink-0 border rounded-lg overflow-hidden bg-digi-card transition-colors ${over ? 'border-accent ring-1 ring-accent' : 'border-digi-border'}`}
@@ -298,24 +308,38 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                         <div className="text-[10px] text-digi-muted" style={mf}>{MONTH_ABBR[d.getMonth()]}</div>
                       </div>
                       <div className={`min-h-[240px] p-2 space-y-1.5 ${over ? 'bg-accent-light/40' : ''}`}>
-                        {entries.length === 0 ? (
+                        {entries.length === 0 && autoEntries.length === 0 ? (
                           <div className="h-full min-h-[220px] flex items-center justify-center text-center">
                             <span className="text-[10.5px] text-digi-muted/50" style={mf}>{over ? 'Suelta para programar' : 'Arrastra tareas aquí'}</span>
                           </div>
                         ) : (
-                          entries.map((e) => {
-                            const t = taskById.get(e.alternativeId);
-                            const st = e.status;
-                            const open = panelEntry?.id === e.id;
-                            return (
-                              <div key={e.id} className={`flex items-center gap-1 rounded-md border px-1 py-1.5 ${st === 'completed' ? 'border-emerald-400/40 bg-emerald-500/10' : st === 'failed' ? 'border-red-400/40 bg-red-500/10' : 'border-accent/25 bg-accent-light'} ${open ? 'ring-1 ring-accent' : ''}`}>
-                                <button onClick={() => openPanel(e)} title="Detalles de la tarea" className="shrink-0 text-digi-muted hover:text-accent transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
-                                <span className={`text-[11px] leading-snug flex-1 min-w-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-accent'}`} style={mf}>{t?.title || 'Tarea'}</span>
-                                {st === 'completed' && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
-                                {st === 'failed' && <XCircle className="w-3 h-3 text-red-500 shrink-0" />}
-                              </div>
-                            );
-                          })
+                          <>
+                            {entries.map((e) => {
+                              const t = taskById.get(e.alternativeId);
+                              const st = e.status;
+                              const open = panelEntry?.id === e.id;
+                              return (
+                                <div key={e.id} className={`flex items-center gap-1 rounded-md border px-1 py-1.5 ${st === 'completed' ? 'border-emerald-400/40 bg-emerald-500/10' : st === 'failed' ? 'border-red-400/40 bg-red-500/10' : 'border-accent/25 bg-accent-light'} ${open ? 'ring-1 ring-accent' : ''}`}>
+                                  <button onClick={() => openPanel(e)} title="Detalles de la tarea" className="shrink-0 text-digi-muted hover:text-accent transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
+                                  <span className={`text-[11px] leading-snug flex-1 min-w-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-accent'}`} style={mf}>{t?.title || 'Tarea'}</span>
+                                  {st === 'completed' && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
+                                  {st === 'failed' && <XCircle className="w-3 h-3 text-red-500 shrink-0" />}
+                                </div>
+                              );
+                            })}
+                            {/* Entradas automáticas del ticket/proyecto asociado (no editables) */}
+                            {autoEntries.map((a, ai) => {
+                              const t = taskById.get(a.alternativeId);
+                              const RefIcon = a.source === 'ticket' ? Ticket : FolderKanban;
+                              return (
+                                <div key={`auto-${a.alternativeId}-${ai}`} title={`Automático · ${a.source === 'ticket' ? 'Ticket' : 'Proyecto'}: ${a.refTitle}`}
+                                  className="flex items-center gap-1 rounded-md border border-dashed border-sky-400/40 bg-sky-500/10 px-1.5 py-1.5">
+                                  <RefIcon className="w-3 h-3 shrink-0 text-sky-400" />
+                                  <span className="text-[11px] leading-snug flex-1 min-w-0 text-sky-300" style={mf}>{t?.title || 'Tarea'}</span>
+                                </div>
+                              );
+                            })}
+                          </>
                         )}
                       </div>
                     </div>

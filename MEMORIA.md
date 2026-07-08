@@ -303,15 +303,19 @@ Stack estándar de la casa, con particularidades de este repo:
     esperar el POST). En el día, cada asignación tiene **tres puntitos** (`MoreVertical`, a la izquierda; ya no ✕) que abren un
     **panel de detalle a la derecha del calendario**: título/descripción, contexto de Apoyo (problema/situaciones/causas vía
     `GET /api/centralized/horario/task`), botones **Completada/Fallida/Pendiente** (`PATCH …/schedule {id,status}`) y "Quitar del día".
-- **Alternativa ↔ proyectos/tickets (2026-07-07):** una alternativa puede asociarse a **proyectos** (`gcc_world.projects`)
-  y **tickets** (`gcc_world.tickets`) que el sujeto **creó o en los que participa** — solo para verlos desde el detalle de la
-  alternativa en Apoyo. **Participante:** ticket → `member_id` (miembro) o `client_id` (candidato); proyecto (miembro) →
-  `assigned_member_id`, bid **aceptado** (`project_bids.status='accepted'`) o `requirement_assignments`; (candidato) → `client_id`.
-  **Creó:** `tickets.user_id` / `projects.created_by_user_id` = user del sujeto (miembro vía `users.member_id`, candidato vía
-  `clients.user_id`). **DB** (`apoyo-db.ts`): join tables `aa_alternative_tickets`/`aa_alternative_projects`; funciones
-  `getSubjectLinkOptions`, `getAlternativeLinks`, `setAlternativeLink`. **API** `/api/centralized/apoyo/associations` (GET
-  opciones+asociados, POST connect/disconnect). **UI** `components/centralized/apoyo/AlternativeLinks.tsx` en el detalle de la
-  alternativa (chips de asociados + selector de participaciones).
+- **Alternativa ↔ proyecto/ticket (2026-07-07):** una alternativa se asocia a **UN** proyecto (`gcc_world.projects`) **O**
+  **UN** ticket (`gcc_world.tickets`) — **exclusivo** (máx. uno; al asociar se limpia el anterior). Opciones = los que el
+  sujeto **creó o en los que participa**. **Participante:** ticket → `member_id` (miembro) o `client_id` (candidato); proyecto
+  (miembro) → `assigned_member_id`, bid **aceptado** (`project_bids.status='accepted'`; las **invitaciones NO** cuentan) o
+  `requirement_assignments`; (candidato) → `client_id`. **Creó:** `tickets.user_id` / `projects.created_by_user_id` = user del
+  sujeto (miembro vía `users.member_id`, candidato vía `clients.user_id`; el creador SÍ se registra al crear). **DB**
+  (`apoyo-db.ts`): `aa_alternative_tickets`/`aa_alternative_projects`; `getSubjectLinkOptions`, `getAlternativeLink` (único),
+  `setAlternativeLink` (exclusivo). **API** `/api/centralized/apoyo/associations`. **UI** `AlternativeLinks.tsx`: chip del
+  asociado + botón "Asociar" que abre **panel lateral IZQUIERDO con overlay**, selección **única**.
+  **Auto-agenda:** una alternativa con proyecto/ticket asociado aparece **automáticamente** (no editable) en el Horario de Vida
+  **todos los días entre el inicio y la fecha límite** del ref (inicio = `created_at`; proyecto = `confirmed_at` si existe;
+  fin = `deadline`; si no hay `deadline`, no genera). `getSubjectHorario(kind,id,from,to)` devuelve `auto[]` acotado a la
+  ventana (semana visible; el Horario refetch por semana). Chips punteados celestes, sin estado ni scoring.
 - **Alternativa vs Solución (2026-07-07):** las "soluciones" ahora se crean primero como **Alternativas**
   (ideas propuestas para afrontar un problema). Alternativa y Solución **comparten la tabla `aa_solutions`
   y sus joins** (`aa_solution_problems`/`aa_solution_causes`); se distinguen por la columna nueva

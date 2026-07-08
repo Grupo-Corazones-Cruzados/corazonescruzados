@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { getSubjectLinkOptions, getAlternativeLinks, setAlternativeLink } from '@/lib/centralized/apoyo-db';
+import { getSubjectLinkOptions, getAlternativeLink, setAlternativeLink } from '@/lib/centralized/apoyo-db';
 import { NextRequest, NextResponse } from 'next/server';
 
 async function guard() {
@@ -17,10 +17,10 @@ export async function GET(req: NextRequest) {
     const kind = sp.get('subject_kind');
     const id = sp.get('subject_id');
     const alternativeId = Number(sp.get('alternative_id'));
-    if (!kind || !id || !alternativeId) return NextResponse.json({ data: { available: { tickets: [], projects: [] }, linked: { tickets: [], projects: [] } } });
+    if (!kind || !id || !alternativeId) return NextResponse.json({ data: { available: { tickets: [], projects: [] }, linked: null } });
     const [available, linked] = await Promise.all([
       getSubjectLinkOptions(kind, id),
-      getAlternativeLinks(alternativeId),
+      getAlternativeLink(alternativeId),
     ]);
     return NextResponse.json({ data: { available, linked } });
   } catch (err: any) {

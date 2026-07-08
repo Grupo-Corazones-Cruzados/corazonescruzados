@@ -103,33 +103,38 @@ export async function getSubjectLinkOptions(subjectKind: string, subjectId: stri
   return { tickets, projects };
 }
 
-/** Proyectos y tickets ya asociados a una alternativa (para el detalle). */
-export async function getAlternativeLinks(alternativeId: number): Promise<{ tickets: LinkRef[]; projects: LinkRef[] }> {
+export interface AlternativeLink { kind: 'ticket' | 'project'; id: string; title: string; status: string | null }
+
+/** El ÚNICO proyecto o ticket asociado a una alternativa (exclusivo), o null. */
+export async function getAlternativeLink(alternativeId: number): Promise<AlternativeLink | null> {
   await ensureApoyoTables();
-  const tickets = (await pool.query(
+  const t = (await pool.query(
     `SELECT t.id, t.title, t.status FROM gcc_world.aa_alternative_tickets l
-       JOIN gcc_world.tickets t ON t.id = l.ticket_id WHERE l.alternative_id = $1 ORDER BY t.id DESC`,
+       JOIN gcc_world.tickets t ON t.id = l.ticket_id WHERE l.alternative_id = $1 LIMIT 1`,
     [alternativeId],
-  )).rows.map((r: any) => ({ id: String(r.id), title: r.title, status: r.status ?? null }));
-  const projects = (await pool.query(
+  )).rows[0];
+  if (t) return { kind: 'ticket', id: String(t.id), title: t.title, status: t.status ?? null };
+  const p = (await pool.query(
     `SELECT p.id, p.title, p.status FROM gcc_world.aa_alternative_projects l
-       JOIN gcc_world.projects p ON p.id = l.project_id WHERE l.alternative_id = $1`,
+       JOIN gcc_world.projects p ON p.id = l.project_id WHERE l.alternative_id = $1 LIMIT 1`,
     [alternativeId],
-  )).rows.map((r: any) => ({ id: String(r.id), title: r.title, status: r.status ?? null }));
-  return { tickets, projects };
+  )).rows[0];
+  if (p) return { kind: 'project', id: String(p.id), title: p.title, status: p.status ?? null };
+  return null;
 }
 
-/** Asocia/desasocia una alternativa con un ticket o proyecto. */
+/**
+ * Asocia/desasocia una alternativa con un ticket o proyecto. La relación es EXCLUSIVA:
+ * a lo sumo UN ticket O UN proyecto por alternativa. Al conectar se limpia cualquier
+ * asociación previa (de ambos tipos) y se deja solo la nueva.
+ */
 export async function setAlternativeLink(alternativeId: number, kind: 'ticket' | 'project', refId: string, connect: boolean) {
   await ensureApoyoTables();
-  if (kind === 'ticket') {
-    const tid = Number(refId);
-    if (connect) await pool.query(`INSERT INTO gcc_world.aa_alternative_tickets (alternative_id, ticket_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [alternativeId, tid]);
-    else await pool.query(`DELETE FROM gcc_world.aa_alternative_tickets WHERE alternative_id = $1 AND ticket_id = $2`, [alternativeId, tid]);
-  } else {
-    if (connect) await pool.query(`INSERT INTO gcc_world.aa_alternative_projects (alternative_id, project_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [alternativeId, refId]);
-    else await pool.query(`DELETE FROM gcc_world.aa_alternative_projects WHERE alternative_id = $1 AND project_id = $2`, [alternativeId, refId]);
-  }
+  await pool.query(`DELETE FROM gcc_world.aa_alternative_tickets WHERE alternative_id = $1`, [alternativeId]);
+  await pool.query(`DELETE FROM gcc_world.aa_alternative_projects WHERE alternative_id = $1`, [alternativeId]);
+  if (!connect) return;
+  if (kind === 'ticket') await pool.query(`INSERT INTO gcc_world.aa_alternative_tickets (alternative_id, ticket_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [alternativeId, Number(refId)]);
+  else await pool.query(`INSERT INTO gcc_world.aa_alternative_projects (alternative_id, project_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [alternativeId, refId]);
 }
 
 /**
