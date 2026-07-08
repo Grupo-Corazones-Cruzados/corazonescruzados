@@ -276,7 +276,10 @@ Stack estándar de la casa, con particularidades de este repo:
     se centralizó en `lib/centralized/criteria.ts` `getSubjectsCriteria(kind, ids)` (dimensiones + talento/valores), usado por
     `/api/admin/candidates` y ahora también por `/api/admin/team` (cada miembro trae `criteria`). En **MembersTab**, el menú ⋮
     del miembro tiene **Prospección** (además de Configurar accesos y Convertir a candidato): abre un **panel a la derecha con
-    overlay** que muestra los mismos criterios de desarrollo que la pestaña de Candidatos.
+    overlay** (ancho ~680px) que muestra los mismos criterios de desarrollo que la pestaña de Candidatos.
+    **Prospección = indicador de capacidad:** barrita compacta `ProspeccionBar.tsx` en la **cabecera del perfil** (candidato:
+    bajo "Última sesión"; miembro: a la derecha de la etiqueta de rol). Suma todos los indicadores de Valores → total positivo
+    (completadas) vs negativo (fallidas) y el neto; el llenado se **anima** al cargar. NO va dentro de `CriteriaSections`.
   - **Apoyo → Reclutamiento (Dimensiones):** las barras de la sección "Dimensiones" de `CandidatosTab` reflejan la
     **carga de problemas sin resolver** por dimensión del sujeto (candidate). `getDimensionProblemLoads()` en `apoyo-db.ts`:
     por dimensión, % = (total − resueltos)/total; "resuelto" = el problema tiene al menos una **solución** vinculada

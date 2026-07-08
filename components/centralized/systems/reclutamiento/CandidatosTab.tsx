@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import ActionsMenu from '@/components/centralized/ActionsMenu';
 import CriteriaSections from '@/components/centralized/reclutamiento/CriteriaSections';
+import ProspeccionBar from '@/components/centralized/reclutamiento/ProspeccionBar';
 import { Users, Mail, X, Search, Phone, Building2, Globe, UserCheck } from 'lucide-react';
 import { type CandidateCriteria } from '@/lib/centralized/reclutamiento';
 
@@ -134,6 +135,7 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
                     {selected.country && <span className="inline-flex items-center gap-1"><Globe className="w-3.5 h-3.5" /> {selected.country}</span>}
                   </div>
                   <p className="text-[11px] text-digi-muted/80 mt-1" style={mf}>Última sesión: {fmtDate(selected.last_seen_at)}</p>
+                  <div className="mt-2"><ProspeccionBar criteria={criteria} /></div>
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
                   {isAdmin && (

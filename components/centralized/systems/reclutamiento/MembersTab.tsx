@@ -10,6 +10,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelSelect from '@/components/ui/PixelSelect';
 import ActionsMenu from '@/components/centralized/ActionsMenu';
 import CriteriaSections from '@/components/centralized/reclutamiento/CriteriaSections';
+import ProspeccionBar from '@/components/centralized/reclutamiento/ProspeccionBar';
 import { fmt2 } from '@/lib/format';
 import { PISOS, PASOS, PISO_LABEL, PASO_LABEL, pisosAtOrBelow } from '@/lib/centralized/systems';
 
@@ -177,6 +178,7 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                   <div className="flex flex-wrap items-center gap-1.5 mt-2">
                     <PixelBadge variant={selected.is_active ? 'success' : 'default'}>{selected.is_active ? 'Activo' : 'Inactivo'}</PixelBadge>
                     {selected.role && <PixelBadge variant="info"><span className="inline-flex items-center gap-1"><BadgeCheck className="w-3 h-3" /> {selected.role}</span></PixelBadge>}
+                    <ProspeccionBar criteria={selected.criteria || null} />
                     {!isAdminMember && (
                       <span className="inline-flex items-center gap-1 text-[11.5px] text-digi-muted" style={mf} title="Acceso a Centralizado">
                         <Network className="w-3.5 h-3.5" /> Centralizado: {selected.piso && selected.paso ? `${PISO_LABEL[selected.piso] || selected.piso} · ${PASO_LABEL[selected.paso] || selected.paso}` : 'sin acceso'}
