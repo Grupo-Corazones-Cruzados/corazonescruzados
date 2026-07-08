@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X,
   Gem, Sparkles, CheckCircle2, XCircle, CircleDashed, MoreVertical, Trash2, Ticket, FolderKanban, Lock, Flag,
+  Briefcase, Dumbbell, Brain, Users,
 } from 'lucide-react';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
 import PixelModal from '@/components/ui/PixelModal';
@@ -29,6 +30,9 @@ interface Task { id: number; title: string; description: string | null; problems
 interface ScheduleEntry { id: number; alternativeId: number; day: string; status: Status }
 interface AutoEntry { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string; status: Status }
 interface TaskContext { problems: { title: string; dimension: string | null }[]; situations: string[]; causes: string[] }
+
+// Icono que representa cada dimensión (con su color de `DIMENSION_COLOR`).
+const DIM_ICON: Record<string, any> = { laboral: Briefcase, corporal: Dumbbell, mental: Brain, social: Users };
 
 const VALOR_OPTIONS = VALORES.map((v) => ({ value: v.key, label: v.label }));
 const TALENTO_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));
@@ -360,9 +364,14 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                               const dims = Array.from(new Set((t?.problems || []).map((p) => p.dimension).filter(Boolean))) as string[];
                               return (
                                 <div key={e.id} className={`flex items-center gap-1 rounded-md border pl-1.5 pr-0.5 py-1.5 ${st === 'completed' ? 'border-emerald-400/40 bg-emerald-500/10' : st === 'failed' ? 'border-red-400/40 bg-red-500/10' : 'border-accent/25 bg-accent-light'} ${open ? 'ring-1 ring-accent' : ''}`}>
-                                  {dims.slice(0, 3).map((dm) => (
-                                    <span key={dm} title={`Dimensión: ${DIMENSION_LABEL[dm] || dm}`} className="w-2 h-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ background: DIMENSION_COLOR[dm] || '#888' }} />
-                                  ))}
+                                  {dims.slice(0, 3).map((dm) => {
+                                    const DI = DIM_ICON[dm];
+                                    return (
+                                      <span key={dm} title={`Dimensión: ${DIMENSION_LABEL[dm] || dm}`} className="shrink-0 inline-flex">
+                                        {DI ? <DI className="w-3 h-3" style={{ color: DIMENSION_COLOR[dm] || '#888' }} /> : <span className="w-2 h-2 rounded-full" style={{ background: DIMENSION_COLOR[dm] || '#888' }} />}
+                                      </span>
+                                    );
+                                  })}
                                   <span className={`text-[11px] leading-snug flex-1 min-w-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-accent'}`} style={mf}>{t?.title || 'Tarea'}</span>
                                   {st === 'completed' && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
                                   {st === 'failed' && <XCircle className="w-3 h-3 text-red-500 shrink-0" />}
