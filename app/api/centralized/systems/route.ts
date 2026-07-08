@@ -44,6 +44,15 @@ async function ensureTable() {
   // Slug estable para las rutas por sistema (/centralized/[piso]/[paso]/[slug]).
   await pool.query(`ALTER TABLE gcc_world.centralized_systems ADD COLUMN IF NOT EXISTS slug VARCHAR(220)`);
   await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS centralized_systems_slug_key ON gcc_world.centralized_systems(slug)`);
+  // Sistema built-in "Comandos Violeta" (global · creación). Se siembra idempotente para
+  // que exista sin necesidad de crearlo a mano (define su propia interfaz por slug).
+  await pool.query(
+    `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+     SELECT 'Comandos Violeta',
+            'Configura modelos organizacionales: políticas activables por categoría, cada una con funciones (mensaje permanente, bloqueo de módulos, generación de tareas) que actúan en toda la app.',
+            'global', 'creacion', 'Control Psicosocial', 'comandos-violeta'
+     WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'comandos-violeta')`,
+  );
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (
