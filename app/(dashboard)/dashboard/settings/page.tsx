@@ -35,7 +35,7 @@ export default function SettingsPage() {
         <Settings className="w-5 h-5 text-accent" /> Configuración
       </h1>
 
-      <div className="flex flex-col xl:flex-row gap-4 items-start">
+      <div className="flex flex-col xl:flex-row gap-4 items-stretch">
         <ProfilePanel />
 
         {isMember && (

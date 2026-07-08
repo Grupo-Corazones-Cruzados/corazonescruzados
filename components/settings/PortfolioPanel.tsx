@@ -206,46 +206,61 @@ export default function PortfolioPanel() {
         <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0`}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
       </div>
 
-      {/* Grilla de tarjetas: llena el ancho disponible en varias columnas */}
+      {/* Formato TABLA: llena el ancho; scroll horizontal solo si es muy angosto */}
       {rows.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2"><tabMeta.Icon className="w-5 h-5 text-digi-muted" /></div>
           <p className="text-[12px] text-digi-muted" style={mf}>Sin {tabMeta.label.toLowerCase()}. Agrega tu primer registro con “Nuevo”.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
-          {rows.map((item: any) => {
-            const count = item.__team ? (item.image_count || 0) : imageCount(item);
-            const key = item.__team ? `t-${item.id}` : `o-${item.id}`;
-            return (
-              <div key={key} className="rounded-lg border border-digi-border bg-digi-darker/40 p-3">
-                <div className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="truncate text-[13px] font-medium text-digi-text" style={mf}>{item.title}</span>
-                      {item.__team && <PixelBadge variant="info">Equipo</PixelBadge>}
-                    </div>
-                    <p className="text-[12px] text-accent font-semibold tabular-nums mt-0.5" style={mf}>${fmt2(Number(item.price || 0))}</p>
-                    {Array.isArray(item.tags) && item.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">{item.tags.slice(0, 3).map((t: string) => <PixelBadge key={t}>{t}</PixelBadge>)}</div>
-                    )}
-                  </div>
-                  {count > 0 && (
-                    <button onClick={() => openRowGallery(item)} title={`Ver ${count} foto(s)`}
-                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-accent/40 text-accent text-[11px] hover:bg-accent-light transition-colors shrink-0"><ImageIcon className="w-3.5 h-3.5" /> {count}</button>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 mt-2">
-                  <button onClick={() => (item.__team ? openTeamEdit(item) : openEdit(item))}
-                    className="inline-flex items-center gap-1 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><Pencil className="w-3.5 h-3.5" /> Editar</button>
-                  {!item.__team && (
-                    <button onClick={() => handleDelete(item.id)} title="Eliminar"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded border border-digi-border text-digi-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="border border-digi-border rounded-lg overflow-x-auto">
+          <table className="w-full text-left border-collapse" style={mf}>
+            <thead>
+              <tr className="border-b border-digi-border bg-digi-dark">
+                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide w-[80px]">Fotos</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide">Título</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide">Tags</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide w-[110px]">Precio</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide w-[150px] text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-digi-border/60">
+              {rows.map((item: any) => {
+                const count = item.__team ? (item.image_count || 0) : imageCount(item);
+                const key = item.__team ? `t-${item.id}` : `o-${item.id}`;
+                return (
+                  <tr key={key} className="hover:bg-black/[0.02] transition-colors">
+                    <td className="px-3 py-2.5 align-middle">
+                      {count > 0 ? (
+                        <button onClick={() => openRowGallery(item)} title={`Ver ${count} foto(s)`}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-accent/40 text-accent text-[11px] hover:bg-accent-light transition-colors"><ImageIcon className="w-3.5 h-3.5" /> {count}</button>
+                      ) : <span className="text-digi-muted/50 text-[12px]">—</span>}
+                    </td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <span className="inline-flex items-center gap-2 min-w-0">
+                        <span className="text-[13px] font-medium text-digi-text">{item.title}</span>
+                        {item.__team && <PixelBadge variant="info">Equipo</PixelBadge>}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <div className="flex flex-wrap gap-1">{(item.tags || []).slice(0, 3).map((t: string) => <PixelBadge key={t}>{t}</PixelBadge>)}</div>
+                    </td>
+                    <td className="px-3 py-2.5 align-middle text-accent font-semibold tabular-nums text-[13px]">${fmt2(Number(item.price || 0))}</td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button onClick={() => (item.__team ? openTeamEdit(item) : openEdit(item))}
+                          className="inline-flex items-center gap-1 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors"><Pencil className="w-3.5 h-3.5" /> Editar</button>
+                        {!item.__team && (
+                          <button onClick={() => handleDelete(item.id)} title="Eliminar"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded border border-digi-border text-digi-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
