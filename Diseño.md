@@ -329,6 +329,11 @@ soluciones) tipo *graph view* de Obsidian.
   `d3Force`/`zoomToFit`/`zoom`). Mide **ancho y alto** del contenedor con `ResizeObserver`.
 - **Lienzo:** fondo **negro** (`#000000`). Los nodos aportan el color; **NO** poner nebulosa/tinte de
   fondo (se probó morado y tapaba/desentonaba).
+- **Iconos de DIMENSIÓN (consistentes app-wide):** cada dimensión usa **el mismo icono lucide** en todas partes —
+  Laboral=`Briefcase`, Corporal=`Dumbbell`, Mental=`Brain`, Social=`Users`— con su color de `DIMENSION_COLOR`. En el
+  **grafo** (canvas) el badge del problema pre-renderiza el icono a imagen (`renderToStaticMarkup` → data-URL → `drawImage`,
+  dark para contraste; letra L/C/M/S como respaldo mientras carga); en el **Horario de Vida** (chips de tarea manual) se usa el
+  componente lucide coloreado. Regla: si cambias el icono de una dimensión, cámbialo en ambos (mapa `DIM_ICON`/`DIM_ICON_COMP`).
 - **Distinción por TIPO = color + FORMA + tamaño** (no solo color): Situación = **hexágono** (grande,
   ancla), Problema = **triángulo**, Solución = **cuadrado redondeado**, Causa = **círculo** (pequeño,
   raíz). Formas trazadas en canvas (`traceShape`) y replicadas en leyenda/chips/panel con `clip-path`

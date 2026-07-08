@@ -1,9 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Maximize2, Plus, Minus, Shuffle } from 'lucide-react';
+import { createElement, useEffect, useMemo, useRef, useState } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { Maximize2, Plus, Minus, Shuffle, Briefcase, Dumbbell, Brain, Users } from 'lucide-react';
 import { NODE_META, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
 import type { GraphNode, GraphEdge } from '@/lib/centralized/apoyo';
+
+// Icono por dimensión (mismo criterio que el Horario de Vida). Se pre-renderiza a imagen
+// para poder dibujarlo en el canvas del grafo.
+const DIM_ICON_COMP: Record<string, any> = { laboral: Briefcase, corporal: Dumbbell, mental: Brain, social: Users };
 
 // react-force-graph usa d3-force (física) + canvas (render), como el grafo de Obsidian.
 // Tamaño base por tipo (además del extra por nº de conexiones). Situación es el ancla
@@ -85,6 +90,21 @@ export default function KnowledgeGraph({
 
   const [ForceGraph2D, setForceGraph2D] = useState<any>(null);
   useEffect(() => { let ok = true; import('react-force-graph-2d').then((m) => { if (ok) setForceGraph2D(() => m.default); }); return () => { ok = false; }; }, []);
+
+  // Pre-render de los iconos de dimensión a imágenes (dark) para dibujarlos en el badge.
+  const dimImgRef = useRef<Record<string, HTMLImageElement>>({});
+  const [, bumpIcons] = useState(0);
+  useEffect(() => {
+    const imgs: Record<string, HTMLImageElement> = {};
+    for (const [key, Comp] of Object.entries(DIM_ICON_COMP)) {
+      const svg = renderToStaticMarkup(createElement(Comp, { color: '#0a0a10', strokeWidth: 2.5, width: 24, height: 24 }));
+      const img = new Image();
+      img.onload = () => bumpIcons((v) => v + 1);
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      imgs[key] = img;
+    }
+    dimImgRef.current = imgs;
+  }, []);
 
   // Reusa los MISMOS objetos-nodo entre renders (por key) para que react-force-graph
   // conserve sus posiciones (x/y) y NO reinicie el layout al cambiar solo las aristas.
@@ -284,11 +304,17 @@ export default function KnowledgeGraph({
               const bg = ctx.createRadialGradient(bx - br * 0.3, by - br * 0.3, br * 0.1, bx, by, br);
               bg.addColorStop(0, 'rgba(255,255,255,0.45)'); bg.addColorStop(1, 'rgba(255,255,255,0)');
               ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fillStyle = bg; ctx.fill();
-              // inicial de la dimensión (L/C/M/S) en oscuro para contraste
-              ctx.font = `700 ${br * 1.15}px 'Segoe UI', system-ui, sans-serif`;
-              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              ctx.fillStyle = 'rgba(10,10,16,0.92)';
-              ctx.fillText((n.dimension || '').charAt(0).toUpperCase(), bx, by + br * 0.06);
+              // icono de la dimensión (mismo que el Horario) en oscuro; letra como respaldo
+              const dimImg = n.dimension ? dimImgRef.current[n.dimension] : null;
+              if (dimImg && dimImg.complete && dimImg.naturalWidth) {
+                const s = br * 1.5;
+                ctx.drawImage(dimImg, bx - s / 2, by - s / 2, s, s);
+              } else {
+                ctx.font = `700 ${br * 1.15}px 'Segoe UI', system-ui, sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(10,10,16,0.92)';
+                ctx.fillText((n.dimension || '').charAt(0).toUpperCase(), bx, by + br * 0.06);
+              }
             }
 
             // Distintivo de ASOCIACIÓN: alternativa/solución con ticket o proyecto → badge
