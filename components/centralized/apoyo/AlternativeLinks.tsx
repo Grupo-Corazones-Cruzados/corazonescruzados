@@ -93,25 +93,25 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
       {pos && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[60]">
           <div className="absolute inset-0" onClick={() => setPos(null)} />
-          <div className="absolute rounded-xl bg-digi-darker border border-white/15 shadow-2xl flex flex-col overflow-hidden animate-[pixelFadeIn_0.15s_ease-out]" style={{ left: pos.left, top: pos.top, width: BUBBLE_W, maxHeight: pos.maxH }}>
-            <div className="flex items-center gap-2 px-3.5 py-3 border-b border-white/12 shrink-0">
+          <div className="absolute rounded-xl bg-digi-card border border-digi-border shadow-2xl flex flex-col overflow-hidden animate-[pixelFadeIn_0.15s_ease-out]" style={{ left: pos.left, top: pos.top, width: BUBBLE_W, maxHeight: pos.maxH }}>
+            <div className="flex items-center gap-2 px-3.5 py-3 border-b border-digi-border shrink-0">
               <Link2 className="w-4 h-4 text-accent shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold text-white leading-tight" style={df}>Asociar proyecto o ticket</p>
-                <p className="text-[11px] text-white/50" style={mf}>Solo uno (un ticket o un proyecto)</p>
+                <p className="text-[13px] font-semibold text-digi-text leading-tight" style={df}>Asociar proyecto o ticket</p>
+                <p className="text-[11px] text-digi-muted" style={mf}>Solo uno (un ticket o un proyecto)</p>
               </div>
-              <button onClick={() => setPos(null)} className="text-white/60 hover:text-white shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+              <button onClick={() => setPos(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {loading ? (
-                <p className="text-[12px] text-white/50 text-center py-6" style={mf}>Cargando…</p>
+                <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Cargando…</p>
               ) : availableCount === 0 ? (
-                <p className="text-[12px] text-white/50 text-center py-6" style={mf}>Este usuario no creó ni participa en proyectos/tickets.</p>
+                <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Este usuario no creó ni participa en proyectos/tickets.</p>
               ) : (
                 <>
                   {data.available.tickets.length > 0 && (
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-white/40 mb-1.5" style={df}>Tickets</p>
+                      <p className="text-[10px] uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Tickets</p>
                       <div className="space-y-1">
                         {data.available.tickets.map((t) => <Row key={`t-${t.id}`} Icon={Ticket} refItem={t} on={isSelected('ticket', t.id)} onClick={() => select('ticket', t)} />)}
                       </div>
@@ -119,7 +119,7 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
                   )}
                   {data.available.projects.length > 0 && (
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-white/40 mb-1.5" style={df}>Proyectos</p>
+                      <p className="text-[10px] uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Proyectos</p>
                       <div className="space-y-1">
                         {data.available.projects.map((p) => <Row key={`p-${p.id}`} Icon={FolderKanban} refItem={p} on={isSelected('project', p.id)} onClick={() => select('project', p)} />)}
                       </div>
@@ -138,11 +138,11 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
 
 function Row({ Icon, refItem, on, onClick }: { Icon: any; refItem: Ref; on: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-left text-[12.5px] transition-colors ${on ? 'bg-accent/25 text-white' : 'text-white/85 hover:bg-white/[0.08]'}`} style={mf}>
-      <span className={`w-4 h-4 shrink-0 rounded-full border flex items-center justify-center ${on ? 'bg-accent border-accent text-white' : 'border-white/25'}`}>{on && <Check className="w-3 h-3" />}</span>
-      <Icon className="w-3.5 h-3.5 shrink-0 text-white/55" />
+    <button onClick={onClick} className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-left text-[12.5px] transition-colors border-l-2 ${on ? 'bg-accent-light text-accent border-accent' : 'text-digi-text border-transparent hover:bg-black/[0.03]'}`} style={mf}>
+      <span className={`w-4 h-4 shrink-0 rounded-full border flex items-center justify-center ${on ? 'bg-accent border-accent text-white' : 'border-digi-border'}`}>{on && <Check className="w-3 h-3" />}</span>
+      <Icon className={`w-3.5 h-3.5 shrink-0 ${on ? 'text-accent' : 'text-digi-muted'}`} />
       <span className="truncate flex-1">{refItem.title}</span>
-      {refItem.status && <span className="text-[10px] text-white/40 shrink-0">{refItem.status}</span>}
+      {refItem.status && <span className="text-[10px] text-digi-muted shrink-0">{refItem.status}</span>}
     </button>
   );
 }

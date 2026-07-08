@@ -347,6 +347,16 @@ soluciones) tipo *graph view* de Obsidian.
 - **Rendimiento:** mutaciones de aristas son **optimistas** (actualizar estado local, sync en 2º plano) y
   el grafo **reutiliza los objetos-nodo por key** (conserva posiciones → no reinicia el layout); el
   `zoomToFit` solo se dispara cuando cambia el **conjunto de nodos**, no al cambiar aristas.
+- **Popovers/burbujas que salen del panel glass = tokens `.corp` (NO glass blanco):** un menú/selector
+  que se dispara desde el panel glass pero se renderiza por **portal a `document.body`** (para escapar del
+  recorte de `overflow`/`backdrop-blur`) cae en el shell **`.corp`**, así que debe usar los **tokens Fluent**
+  (`bg-digi-card`, `text-digi-text`, `text-digi-muted`, `border-digi-border`, filas `bg-accent-light`/
+  `text-accent` + borde-izq accent, hover `bg-black/[0.03]`) — **no** `text-white/*` ni `bg-digi-darker`
+  hardcodeados (esos solo valen para bloques glass sobre el canvas negro). Así adapta a claro/oscuro.
+  Ejemplo: `components/centralized/apoyo/AlternativeLinks.tsx` (asociar 1 proyecto **o** 1 ticket a una
+  alternativa) — chip/label/botón dispatch quedan glass (están sobre el panel), pero la **burbuja** es
+  Fluent. **Gotcha:** `position:fixed` dentro de un ancestro con `backdrop-filter` se ancla a ese ancestro
+  (no al viewport) → por eso el portal.
 
 ## Desviaciones detectadas y resolución
 - **2026-06-28:** las secciones del editor tenían títulos, botones de filtros e íconos distintos
