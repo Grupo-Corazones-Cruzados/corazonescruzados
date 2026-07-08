@@ -54,61 +54,50 @@ export default function PolicyBanner({ collapsed = false }: { collapsed?: boolea
       <div className={`fixed top-0 left-0 right-0 ${collapsed ? 'lg:left-16' : 'lg:left-56'} z-[60] flex justify-center px-3 pt-2 pointer-events-none transition-[left] duration-200`}>
         {open ? (
           <div
-            className="pointer-events-auto max-w-2xl w-full rounded-xl border border-white/15 text-white"
-            style={{
-              background: 'linear-gradient(100deg,#4c1d95,#5b21b6 55%,#6d28d9)',
-              boxShadow: '0 10px 34px -10px rgba(76,29,149,.7)',
-              animation: 'gccPolIn .35s ease-out, gccPolFloat 5s ease-in-out .35s infinite',
-            }}
+            className="pointer-events-auto max-w-2xl w-full rounded-xl border border-digi-border"
+            style={{ boxShadow: '0 10px 34px -10px rgba(76,29,149,.6)', animation: 'gccPolIn .35s ease-out, gccPolFloat 5s ease-in-out .35s infinite' }}
           >
-            {/* Cabecera: megáfono + pestañas de políticas (si hay varias) + ocultar */}
-            <div className="flex items-center gap-2 px-3 pt-2">
-              <Megaphone className="w-[18px] h-[18px] shrink-0 text-white/90" />
+            {/* Header MORADO: megáfono + pestañas (si hay varias) + ocultar */}
+            <div className="flex items-end gap-2 px-3 pt-2 rounded-t-xl" style={{ background: 'linear-gradient(100deg,#4c1d95,#5b21b6 55%,#6d28d9)' }}>
+              <Megaphone className="w-[18px] h-[18px] shrink-0 text-white/90 mb-2" />
               {multi ? (
-                <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-1 no-scrollbar py-0.5">
+                <div className="flex items-end gap-1.5 overflow-x-auto min-w-0 flex-1 no-scrollbar">
                   {policies.map((pol, i) => {
                     const on = i === idx;
                     return (
                       <button key={pol.id} onClick={() => setIdx(i)}
-                        className="shrink-0 max-w-[180px] inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-semibold truncate border transition-colors"
-                        style={{
-                          ...mf,
-                          background: on ? '#ffffff' : 'rgba(255,255,255,0.08)',
-                          color: on ? '#4c1d95' : 'rgba(255,255,255,0.8)',
-                          borderColor: on ? '#ffffff' : 'rgba(255,255,255,0.28)',
-                          boxShadow: on ? '0 2px 8px -2px rgba(0,0,0,.35)' : 'none',
-                        }}
-                        title={pol.name}>
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: on ? '#7c3aed' : 'rgba(255,255,255,0.45)' }} />
+                        className={`shrink-0 max-w-[190px] inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-semibold truncate transition-colors ${on ? 'bg-digi-card text-digi-text rounded-t-lg -mb-px' : 'text-white/70 hover:text-white hover:bg-white/10 rounded-t-lg mb-1'}`}
+                        style={mf} title={pol.name}>
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: on ? 'var(--color-accent)' : 'rgba(255,255,255,0.45)' }} />
                         <span className="truncate">{pol.name}</span>
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <span className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-wide text-white/75 truncate" style={df} title={p.name}>{p.name}</span>
+                <span className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-wide text-white/80 truncate mb-2" style={df} title={p.name}>{p.name}</span>
               )}
               <button onClick={() => persist(false)} title="Ocultar aviso" aria-label="Ocultar aviso"
-                className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/20 transition-colors">
+                className="shrink-0 w-6 h-6 mb-1.5 rounded-md flex items-center justify-center text-white hover:bg-white/20 transition-colors">
                 <ChevronUp className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Contenido de la política seleccionada */}
-            <div className="px-3 pb-2.5 pt-1.5 pl-[38px]">
+            {/* Zona inferior de CONTENIDO (color de tarjeta, buen contraste de texto) */}
+            <div className="bg-digi-card rounded-b-xl px-3.5 py-2.5">
               {date && (
-                <span className="inline-flex items-center gap-1 text-[10px] text-white/50 mb-1" style={mf}>
+                <span className="inline-flex items-center gap-1 text-[10.5px] text-digi-muted mb-1" style={mf}>
                   <CalendarDays className="w-2.5 h-2.5" /> {date}
                 </span>
               )}
 
               {p.messages.map((m, i) => (
-                <p key={i} className="text-[13px] font-medium leading-snug break-words" style={mf}>{m}</p>
+                <p key={i} className="text-[13px] font-medium text-digi-text leading-snug break-words" style={mf}>{m}</p>
               ))}
 
               {p.details.length === 1 && (
                 <button onClick={() => openDetail(p.details[0])}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-white/12 hover:bg-white/22 border border-white/15 px-2 py-1 text-[11.5px] font-medium text-white transition-colors" style={mf}>
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-digi-border bg-digi-darker/40 px-2 py-1 text-[11.5px] font-medium text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
                   <FileText className="w-3.5 h-3.5" /> Ver detalle: {p.details[0].title}
                 </button>
               )}
@@ -116,7 +105,7 @@ export default function PolicyBanner({ collapsed = false }: { collapsed?: boolea
               {p.details.length > 1 && (
                 <div className="relative mt-2 inline-block">
                   <button onClick={() => setListOpen((v) => !v)}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-white/12 hover:bg-white/22 border border-white/15 px-2 py-1 text-[11.5px] font-medium text-white transition-colors" style={mf}>
+                    className="inline-flex items-center gap-1.5 rounded-md border border-digi-border bg-digi-darker/40 px-2 py-1 text-[11.5px] font-medium text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
                     <FileText className="w-3.5 h-3.5" /> Detalles ({p.details.length}) <ChevronDown className={`w-3 h-3 transition-transform ${listOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {listOpen && (
