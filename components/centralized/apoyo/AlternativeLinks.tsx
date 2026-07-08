@@ -94,7 +94,8 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
         <p className="text-[11.5px] text-white/45" style={mf}>Sin proyecto ni ticket asociado.</p>
       )}
 
-      {/* Burbuja flotante (portal → escapa del blur/overflow del panel) */}
+      {/* Burbuja flotante: portal al shell `.corp` (hereda tokens/fuente Fluent, claro/oscuro);
+          escapa del blur/overflow del panel glass sin caer en el tema pixel de <body>. */}
       {pos && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[60]">
           <div className="absolute inset-0" onClick={() => setPos(null)} />
@@ -130,7 +131,7 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
             </div>
           </div>
         </div>,
-        document.body,
+        (document.querySelector('.corp') as HTMLElement | null) ?? document.body,
       )}
     </div>
   );
@@ -145,7 +146,7 @@ function Section({ title, Icon, query, setQuery, placeholder, children }: { titl
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder}
           className="w-full pl-7 pr-2 py-1.5 bg-digi-card border border-digi-border rounded-md text-[12px] text-digi-text placeholder:text-digi-muted focus:border-accent focus:outline-none" style={mf} />
       </div>
-      <div className="space-y-1">{children}</div>
+      <div className="space-y-1 max-h-[150px] overflow-y-auto pr-0.5">{children}</div>
     </div>
   );
 }
