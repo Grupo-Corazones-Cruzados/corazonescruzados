@@ -66,10 +66,9 @@ export interface BlockModulesConfig { modules: string[] } // paths de BLOCKABLE_
 /**
  * Programa de una tarea a generar cuando la política se active. El INICIO es SIEMPRE la
  * fecha de activación de la política (no se elige). Los campos de PRESENCIA se combinan:
- *  - `daysCount`: ventana/duración = fecha de activación + N días (define el fin).
+ *  - `daysCount`: ventana/duración = fecha de activación + N días (define el fin/límite).
  *  - `weekdays`: días de la semana en que la tarea está presente dentro de la ventana
- *    (vacío = todos los días). La presencia se basa SIEMPRE en este campo, no en el
- *    día de activación.
+ *    (vacío = todos los días); actúa como la recurrencia dentro de la ventana.
  *  - `allDay`: si ocupa toda la jornada. Si NO, se usan `startTime`/`endTime`.
  * La generación real se aplica en la iteración de enforcement.
  */
@@ -81,7 +80,6 @@ export interface TaskProgram {
   detail: string;
   valores: string[];   // etiquetas de valores (keys de VALORES)
   talentos: string[];  // etiquetas de talentos
-  recurrence: 'none' | 'daily' | 'weekly' | 'monthly';
   daysCount: number;   // cantidad de días desde la activación (ventana; ≥1)
   weekdays: number[];  // días de la semana presentes dentro de la ventana (vacío = todos)
   allDay: boolean;     // ocupa toda la jornada
