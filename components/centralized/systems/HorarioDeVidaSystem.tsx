@@ -296,9 +296,15 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                       )}
 
                       {linked && t.link ? (
-                        <div className="flex items-center gap-1.5 mt-2 ml-5">
-                          <button onClick={() => goToWeekOf(t.link!.start)} disabled={!t.link.start} title="Ir a la fecha de inicio" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><CalendarClock className="w-3 h-3" /> Inicio</button>
-                          <button onClick={() => goToWeekOf(t.link!.end)} disabled={!t.link.end} title="Ir a la fecha límite" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><Flag className="w-3 h-3" /> Fin</button>
+                        <div className="mt-2 ml-5 space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => goToWeekOf(t.link!.start)} disabled={!t.link.start} title="Ir a la fecha de inicio" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><CalendarClock className="w-3 h-3" /> Inicio</button>
+                            <button onClick={() => goToWeekOf(t.link!.end)} disabled={!t.link.end} title="Ir a la fecha límite" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><Flag className="w-3 h-3" /> Fin</button>
+                          </div>
+                          <button onClick={() => openEditor(t)} className="inline-flex items-center gap-1 text-[11px] text-accent hover:text-accent-hover transition-colors" style={mf}>
+                            <Tag className="w-3 h-3" /> {ready ? 'Editar etiquetas' : 'Agregar etiquetas'}
+                          </button>
+                          {!ready && <p className="text-[10px] text-digi-muted/70" style={mf}>Agrega etiquetas para que su cumplimiento sume o reste al perfil.</p>}
                         </div>
                       ) : (
                         <>
