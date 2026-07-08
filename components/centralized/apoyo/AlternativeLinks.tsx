@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { Ticket, FolderKanban, Plus, X, Check, Link2 } from 'lucide-react';
 
@@ -11,15 +12,18 @@ interface Ref { id: string; title: string; status: string | null }
 interface Linked { kind: 'ticket' | 'project'; id: string; title: string; status: string | null }
 interface Data { available: { tickets: Ref[]; projects: Ref[] }; linked: Linked | null }
 
+const BUBBLE_W = 340;
+
 /**
  * Asociación EXCLUSIVA de una alternativa con UN ticket O UN proyecto del sujeto (creado
- * o donde participa). El botón "Asociar" abre un panel lateral izquierdo con overlay para
- * elegir uno solo. Al asociar uno se reemplaza cualquier asociación previa.
+ * o donde participa). El botón "Asociar" abre una BURBUJA flotante a su izquierda
+ * (renderizada por portal para no quedar recortada por el panel). Selección única.
  */
 export default function AlternativeLinks({ subjectKind, subjectId, alternativeId }: { subjectKind: string; subjectId: string; alternativeId: number }) {
   const [data, setData] = useState<Data>({ available: { tickets: [], projects: [] }, linked: null });
   const [loading, setLoading] = useState(true);
-  const [drawer, setDrawer] = useState(false);
+  const [pos, setPos] = useState<{ left: number; top: number; maxH: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -31,10 +35,28 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
     finally { setLoading(false); }
   }, [subjectKind, subjectId, alternativeId]);
 
-  useEffect(() => { setDrawer(false); load(); }, [load]);
+  useEffect(() => { setPos(null); load(); }, [load]);
+  useEffect(() => {
+    if (!pos) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPos(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pos]);
 
   const linked = data.linked;
   const isSelected = (kind: 'ticket' | 'project', id: string) => !!linked && linked.kind === kind && linked.id === id;
+
+  const openBubble = () => {
+    const el = btnRef.current;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const maxH = Math.min(470, vh - 32);
+    if (!el) { setPos({ left: Math.max(8, vw - BUBBLE_W - 8), top: 16, maxH }); return; }
+    const r = el.getBoundingClientRect();
+    let left = r.left - 10 - BUBBLE_W;            // a la IZQUIERDA del botón
+    if (left < 8) left = Math.min(r.right + 10, vw - BUBBLE_W - 8);
+    const top = Math.max(8, Math.min(r.top - 8, vh - maxH - 8));
+    setPos({ left, top, maxH });
+  };
 
   const select = async (kind: 'ticket' | 'project', ref: Ref) => {
     const connect = !isSelected(kind, ref.id);
@@ -52,7 +74,7 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
     <div className="pt-1">
       <div className="flex items-center justify-between mb-1.5">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50 inline-flex items-center gap-1.5" style={df}><Link2 className="w-3 h-3" /> Proyecto o ticket</p>
-        <button onClick={() => setDrawer(true)} className="inline-flex items-center gap-1 text-[11px] text-accent hover:text-white transition-colors" style={mf}>
+        <button ref={btnRef} onClick={openBubble} className="inline-flex items-center gap-1 text-[11px] text-accent hover:text-white transition-colors" style={mf}>
           <Plus className="w-3 h-3" /> Asociar
         </button>
       </div>
@@ -67,18 +89,18 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
         <p className="text-[11.5px] text-white/45" style={mf}>Sin proyecto ni ticket asociado.</p>
       )}
 
-      {/* Panel lateral izquierdo con overlay */}
-      {drawer && (
-        <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDrawer(false)} />
-          <aside className="absolute left-0 top-0 h-full w-full max-w-[380px] bg-digi-darker border-r border-white/12 shadow-2xl flex flex-col">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/12 shrink-0">
-              <Link2 className="w-4 h-4 text-accent" />
+      {/* Burbuja flotante (portal → escapa del blur/overflow del panel) */}
+      {pos && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[60]">
+          <div className="absolute inset-0" onClick={() => setPos(null)} />
+          <div className="absolute rounded-xl bg-digi-darker border border-white/15 shadow-2xl flex flex-col overflow-hidden animate-[pixelFadeIn_0.15s_ease-out]" style={{ left: pos.left, top: pos.top, width: BUBBLE_W, maxHeight: pos.maxH }}>
+            <div className="flex items-center gap-2 px-3.5 py-3 border-b border-white/12 shrink-0">
+              <Link2 className="w-4 h-4 text-accent shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-semibold text-white leading-tight" style={df}>Asociar proyecto o ticket</p>
                 <p className="text-[11px] text-white/50" style={mf}>Solo uno (un ticket o un proyecto)</p>
               </div>
-              <button onClick={() => setDrawer(false)} className="text-white/60 hover:text-white" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+              <button onClick={() => setPos(null)} className="text-white/60 hover:text-white shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {loading ? (
@@ -106,8 +128,9 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
                 </>
               )}
             </div>
-          </aside>
-        </div>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
