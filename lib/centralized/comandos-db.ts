@@ -166,3 +166,25 @@ export async function deleteFunction(id: number) {
   await ensureComandosTables();
   await pool.query(`DELETE FROM gcc_world.cv_functions WHERE id = $1`, [id]);
 }
+
+/* ── Efectos ACTIVOS (enforcement) ──────────────────────────────────────────── */
+/**
+ * Agrega los efectos "en vivo" de todas las políticas ACTIVAS: mensajes permanentes y
+ * módulos bloqueados. (La generación de tareas se aplica aparte, al activar.)
+ */
+export async function getActiveEffects(): Promise<{ messages: string[]; blockedModules: string[] }> {
+  await ensureComandosTables();
+  const { rows } = await pool.query(
+    `SELECT f.type, f.config
+       FROM gcc_world.cv_functions f
+       JOIN gcc_world.cv_policies p ON p.id = f.policy_id
+      WHERE p.active = true`,
+  );
+  const messages: string[] = [];
+  const blocked = new Set<string>();
+  for (const r of rows) {
+    if (r.type === 'permanent_message') { const m = String(r.config?.message || '').trim(); if (m) messages.push(m); }
+    else if (r.type === 'block_modules') { for (const path of r.config?.modules || []) blocked.add(String(path)); }
+  }
+  return { messages, blockedModules: Array.from(blocked) };
+}

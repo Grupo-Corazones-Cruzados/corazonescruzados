@@ -3,7 +3,8 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { accessRoleOf, canAccess, defaultDashboardPath } from '@/lib/dashboard/access';
+import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
+import { accessRoleOf, canAccess, isPathBlocked, safeDashboardPath } from '@/lib/dashboard/access';
 
 /**
  * Refuerza los accesos estáticos por rol al navegar dentro del dashboard: si el rol
@@ -13,15 +14,18 @@ import { accessRoleOf, canAccess, defaultDashboardPath } from '@/lib/dashboard/a
  */
 export default function DashboardAccessGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { blockedModules } = usePolicyEffects();
   const pathname = usePathname();
   const router = useRouter();
 
   const role = accessRoleOf(user);
-  const allowed = canAccess(role, pathname);
+  // Admin nunca se bloquea; el resto respeta las políticas activas (Comandos Violeta).
+  const blocked = role !== 'admin' && isPathBlocked(pathname, blockedModules);
+  const allowed = canAccess(role, pathname) && !blocked;
 
   useEffect(() => {
-    if (user && !allowed) router.replace(defaultDashboardPath(role));
-  }, [user, allowed, role, router]);
+    if (user && !allowed) router.replace(safeDashboardPath(role, blockedModules));
+  }, [user, allowed, role, router, blockedModules]);
 
   // Evita destellar contenido no permitido mientras se redirige.
   if (user && !allowed) return null;

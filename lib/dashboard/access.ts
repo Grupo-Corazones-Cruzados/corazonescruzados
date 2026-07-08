@@ -82,3 +82,20 @@ export function defaultDashboardPath(role: AccessRole): string {
   if (canAccess(role, '/dashboard')) return '/dashboard';
   return '/dashboard/marketplace';
 }
+
+/**
+ * ¿La ruta está BLOQUEADA por una política activa (Comandos Violeta)? `blocked` es la
+ * lista de paths base de módulo. Inicio ('/dashboard') solo bloquea la ruta exacta; el
+ * resto bloquea el módulo y sus subrutas. El admin nunca se bloquea (se decide fuera).
+ */
+export function isPathBlocked(pathname: string, blocked: string[] | undefined | null): boolean {
+  if (!blocked?.length) return false;
+  return blocked.some((p) => (p === '/dashboard' ? pathname === '/dashboard' : pathname === p || pathname.startsWith(p + '/')));
+}
+
+/** Primera página permitida por rol y NO bloqueada (aterrizaje seguro al bloquear módulos). */
+export function safeDashboardPath(role: AccessRole, blocked: string[] | undefined | null): string {
+  if (role === 'admin') return defaultDashboardPath(role);
+  const cand = MODULE_ACCESS.find((m) => canAccess(role, m.path) && !isPathBlocked(m.path, blocked));
+  return cand?.path || '/dashboard';
+}

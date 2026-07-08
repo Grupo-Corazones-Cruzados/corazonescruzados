@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { accessRoleOf, canAccessModule } from '@/lib/dashboard/access';
+import { accessRoleOf, canAccessModule, isPathBlocked } from '@/lib/dashboard/access';
+import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
@@ -66,8 +67,9 @@ export default function DashboardSidebar({
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const accessRole = accessRoleOf(user);
+  const { blockedModules } = usePolicyEffects();
   const groups = NAV_GROUPS
-    .map((g) => ({ ...g, items: g.items.filter((it) => canAccessModule(accessRole, it.href)) }))
+    .map((g) => ({ ...g, items: g.items.filter((it) => canAccessModule(accessRole, it.href) && (accessRole === 'admin' || !isPathBlocked(it.href, blockedModules))) }))
     .filter((g) => g.items.length > 0);
 
   const isActive = (href: string) =>
