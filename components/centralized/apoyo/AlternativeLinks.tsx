@@ -25,6 +25,7 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
   const [pos, setPos] = useState<{ left: number; top: number; maxH: number } | null>(null);
   const [tq, setTq] = useState('');
   const [pq, setPq] = useState('');
+  const [tab, setTab] = useState<'ticket' | 'project'>('ticket');
   const btnRef = useRef<HTMLButtonElement>(null);
 
   const load = useCallback(async () => {
@@ -107,30 +108,42 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
               <p className="text-[13px] font-semibold text-digi-text leading-tight min-w-0 flex-1" style={mf}>Asociar proyecto o ticket</p>
               <button onClick={() => setPos(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-3.5">
-              {loading ? (
-                <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Cargando…</p>
-              ) : availableCount === 0 ? (
-                <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Este usuario no creó ni participa en proyectos/tickets.</p>
-              ) : (
-                <>
-                  {data.available.tickets.length > 0 && (
-                    <Section title="Tickets" Icon={Ticket} query={tq} setQuery={setTq} placeholder="Buscar ticket…">
-                      {fTickets.length === 0 ? (
-                        <p className="text-[11.5px] text-digi-muted px-1 py-1" style={mf}>Sin coincidencias.</p>
-                      ) : fTickets.map((t) => <Row key={`t-${t.id}`} Icon={Ticket} refItem={t} on={isSelected('ticket', t.id)} onClick={() => select('ticket', t)} />)}
-                    </Section>
+            {loading ? (
+              <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Cargando…</p>
+            ) : availableCount === 0 ? (
+              <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Este usuario no creó ni participa en proyectos/tickets.</p>
+            ) : (
+              <>
+                {/* Pestañas horizontales */}
+                <div className="flex items-center px-2 border-b border-digi-border shrink-0">
+                  <Tab active={tab === 'ticket'} Icon={Ticket} label="Tickets" count={data.available.tickets.length} onClick={() => setTab('ticket')} />
+                  <Tab active={tab === 'project'} Icon={FolderKanban} label="Proyectos" count={data.available.projects.length} onClick={() => setTab('project')} />
+                </div>
+
+                {/* Contenido de la pestaña activa */}
+                <div className="flex-1 flex flex-col min-h-0 p-3">
+                  {tab === 'ticket' ? (
+                    <>
+                      <SearchBox query={tq} setQuery={setTq} placeholder="Buscar ticket…" />
+                      <div className="flex-1 overflow-y-auto space-y-1 pr-0.5 mt-2">
+                        {data.available.tickets.length === 0 ? <Empty text="No hay tickets para este usuario." />
+                          : fTickets.length === 0 ? <Empty text="Sin coincidencias." />
+                            : fTickets.map((t) => <Row key={`t-${t.id}`} Icon={Ticket} refItem={t} on={isSelected('ticket', t.id)} onClick={() => select('ticket', t)} />)}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <SearchBox query={pq} setQuery={setPq} placeholder="Buscar proyecto…" />
+                      <div className="flex-1 overflow-y-auto space-y-1 pr-0.5 mt-2">
+                        {data.available.projects.length === 0 ? <Empty text="No hay proyectos para este usuario." />
+                          : fProjects.length === 0 ? <Empty text="Sin coincidencias." />
+                            : fProjects.map((p) => <Row key={`p-${p.id}`} Icon={FolderKanban} refItem={p} on={isSelected('project', p.id)} onClick={() => select('project', p)} />)}
+                      </div>
+                    </>
                   )}
-                  {data.available.projects.length > 0 && (
-                    <Section title="Proyectos" Icon={FolderKanban} query={pq} setQuery={setPq} placeholder="Buscar proyecto…">
-                      {fProjects.length === 0 ? (
-                        <p className="text-[11.5px] text-digi-muted px-1 py-1" style={mf}>Sin coincidencias.</p>
-                      ) : fProjects.map((p) => <Row key={`p-${p.id}`} Icon={FolderKanban} refItem={p} on={isSelected('project', p.id)} onClick={() => select('project', p)} />)}
-                    </Section>
-                  )}
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         </div>,
         (document.querySelector('.corp') as HTMLElement | null) ?? document.body,
@@ -139,18 +152,27 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
   );
 }
 
-function Section({ title, Icon, query, setQuery, placeholder, children }: { title: string; Icon: any; query: string; setQuery: (v: string) => void; placeholder: string; children: React.ReactNode }) {
+function Tab({ active, Icon, label, count, onClick }: { active: boolean; Icon: any; label: string; count: number; onClick: () => void }) {
   return (
-    <div>
-      <p className="text-[11px] font-semibold text-digi-text mb-1.5 inline-flex items-center gap-1.5" style={mf}><Icon className="w-3.5 h-3.5 text-digi-muted" /> {title}</p>
-      <div className="relative mb-1.5">
-        <Search className="w-3.5 h-3.5 text-digi-muted absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder}
-          className="w-full pl-7 pr-2 py-1.5 bg-digi-card border border-digi-border rounded-md text-[12px] text-digi-text placeholder:text-digi-muted focus:border-accent focus:outline-none" style={mf} />
-      </div>
-      <div className="space-y-1 max-h-[150px] overflow-y-auto pr-0.5">{children}</div>
+    <button onClick={onClick} className={`inline-flex items-center gap-1.5 px-3 py-2 text-[12.5px] border-b-2 -mb-px transition-colors ${active ? 'border-accent text-accent font-medium' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
+      <Icon className="w-3.5 h-3.5" /> {label}
+      <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.06] text-digi-muted'}`}>{count}</span>
+    </button>
+  );
+}
+
+function SearchBox({ query, setQuery, placeholder }: { query: string; setQuery: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative shrink-0">
+      <Search className="w-3.5 h-3.5 text-digi-muted absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder}
+        className="w-full pl-7 pr-2 py-1.5 bg-digi-card border border-digi-border rounded-md text-[12px] text-digi-text placeholder:text-digi-muted focus:border-accent focus:outline-none" style={mf} />
     </div>
   );
+}
+
+function Empty({ text }: { text: string }) {
+  return <p className="text-[11.5px] text-digi-muted px-1 py-2" style={mf}>{text}</p>;
 }
 
 function Row({ Icon, refItem, on, onClick }: { Icon: any; refItem: Ref; on: boolean; onClick: () => void }) {
