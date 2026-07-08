@@ -22,9 +22,9 @@ const VALOR_LABEL: Record<string, string> = Object.fromEntries(VALORES.map((v) =
 type Draft = {
   title: string; detail: string; valores: string[]; talentos: string[];
   recurrence: TaskProgram['recurrence']; startWeekday: number | null;
-  spanMode: TaskProgram['spanMode']; daysCount: number | null; weekdays: number[];
+  daysCount: number; weekdays: number[]; allDay: boolean;
 };
-const emptyDraft = (): Draft => ({ title: '', detail: '', valores: [], talentos: [], recurrence: 'none', startWeekday: null, spanMode: 'days', daysCount: 7, weekdays: [] });
+const emptyDraft = (): Draft => ({ title: '', detail: '', valores: [], talentos: [], recurrence: 'none', startWeekday: null, daysCount: 7, weekdays: [], allDay: false });
 
 /**
  * Modal de "Generar tareas": se elige un usuario y se le programan tareas (etiquetas de
@@ -57,19 +57,22 @@ export default function GenerateTasksModal({
       title: draft.title.trim(), detail: draft.detail.trim(),
       valores: draft.valores, talentos: draft.talentos,
       recurrence: draft.recurrence, startWeekday: draft.startWeekday,
-      spanMode: draft.spanMode,
-      daysCount: draft.spanMode === 'days' ? (draft.daysCount || 1) : null,
-      weekdays: draft.spanMode === 'weekdays' ? draft.weekdays : [],
+      daysCount: Math.max(1, draft.daysCount || 1),
+      weekdays: draft.weekdays,
+      allDay: draft.allDay,
     };
     setTasks((ts) => [...ts, t]);
     setDraft(emptyDraft());
   };
   const removeTask = (i: number) => setTasks((ts) => ts.filter((_, k) => k !== i));
 
-  const spanLabel = (t: TaskProgram) =>
-    t.spanMode === 'allday' ? 'Todo el día'
-      : t.spanMode === 'days' ? `${t.daysCount || 0} día(s) desde el inicio`
-        : `${t.weekdays.map((d) => DAY_LABELS_ES_SHORT[d]).join(', ') || '—'}`;
+  // Resumen de presencia: ventana + filtro de días + todo el día (combinados).
+  const spanLabel = (t: TaskProgram) => {
+    const parts = [`${t.daysCount} día(s)`];
+    parts.push(t.weekdays.length ? t.weekdays.map((d) => DAY_LABELS_ES_SHORT[d]).join(', ') : 'todos los días');
+    if (t.allDay) parts.push('todo el día');
+    return parts.join(' · ');
+  };
 
   return (
     <FloatingWindow open={open} onClose={onClose} title="Generar tareas" initialWidth={860} initialHeight={640}>
@@ -110,22 +113,14 @@ export default function GenerateTasksModal({
                   placeholder="Al activarse" options={DAY_LABELS_ES_SHORT.map((l, i) => ({ value: String(i), label: l }))} />
               </div>
 
-              <div>
-                <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>Presencia de la tarea</div>
-                <div className="flex gap-2">
-                  {([['days', 'Cantidad de días'], ['weekdays', 'Días de la semana'], ['allday', 'Todo el día']] as const).map(([m, lbl]) => (
-                    <button key={m} type="button" onClick={() => upd('spanMode', m)}
-                      className={`flex-1 px-2.5 py-2 text-[12px] border rounded-md transition-colors ${draft.spanMode === m ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:text-digi-text'}`} style={mf}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
+              {/* Presencia de la tarea: 3 campos INDEPENDIENTES que se combinan */}
+              <div className="rounded-lg border border-digi-border p-3 space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-digi-muted" style={df}>Presencia en el Horario de Vida</p>
 
-              {draft.spanMode === 'days' && (
-                <PixelInput type="number" min={1} label="CANTIDAD DE DÍAS DESDE EL INICIO" value={draft.daysCount ?? 1} onChange={(e) => upd('daysCount', Math.max(1, parseInt(e.target.value, 10) || 1))} />
-              )}
-              {draft.spanMode === 'weekdays' && (
+                <PixelInput type="number" min={1} label="CANTIDAD DE DÍAS DESDE EL INICIO (VENTANA)" value={draft.daysCount} onChange={(e) => upd('daysCount', Math.max(1, parseInt(e.target.value, 10) || 1))} />
+
                 <div>
-                  <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>Días presentes</div>
+                  <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>Días de la semana presentes <span className="text-digi-muted/60">(vacío = todos los días)</span></div>
                   <div className="flex gap-1 flex-wrap">
                     {DAY_LABELS_ES_SHORT.map((label, dow) => {
                       const active = draft.weekdays.includes(dow);
@@ -136,9 +131,14 @@ export default function GenerateTasksModal({
                     })}
                   </div>
                 </div>
-              )}
 
-              <button type="button" onClick={addTask} disabled={!draft.title.trim() || (draft.spanMode === 'weekdays' && draft.weekdays.length === 0)}
+                <label className="flex items-center gap-2 text-[13px] text-digi-text cursor-pointer" style={mf}>
+                  <input type="checkbox" checked={draft.allDay} onChange={(e) => upd('allDay', e.target.checked)} className="accent-accent" />
+                  Todo el día (ocupa toda la jornada)
+                </label>
+              </div>
+
+              <button type="button" onClick={addTask} disabled={!draft.title.trim()}
                 className={`${BTN_PRIMARY} w-full disabled:opacity-50`}><Plus className="w-4 h-4" /> Agregar tarea</button>
             </div>
           )}

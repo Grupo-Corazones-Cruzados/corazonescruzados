@@ -64,8 +64,13 @@ export interface PermanentMessageConfig { message: string }
 export interface BlockModulesConfig { modules: string[] } // paths de BLOCKABLE_MODULES
 
 /**
- * Programa de una tarea a generar cuando la política se active. La semántica de
- * ejecución (fecha de activación como origen) se aplica en la iteración de enforcement.
+ * Programa de una tarea a generar cuando la política se active. Los campos de PRESENCIA
+ * son INDEPENDIENTES y se combinan (no son excluyentes):
+ *  - `daysCount`: ventana/duración = fecha de inicio + N días (define el fin).
+ *  - `weekdays`: filtro de días de la semana dentro de esa ventana (vacío = todos los días).
+ *  - `allDay`: si la tarea ocupa toda la jornada.
+ * La semántica de ejecución (fecha de activación como origen del inicio) se aplica en la
+ * iteración de enforcement.
  */
 export interface TaskProgram {
   userKind: 'candidate' | 'member';
@@ -76,10 +81,10 @@ export interface TaskProgram {
   valores: string[];   // etiquetas de valores (keys de VALORES)
   talentos: string[];  // etiquetas de talentos
   recurrence: 'none' | 'daily' | 'weekly' | 'monthly';
-  startWeekday: number | null;          // día de la semana de inicio (0=Dom … 6=Sáb), relativo a la activación
-  spanMode: 'days' | 'weekdays' | 'allday';
-  daysCount: number | null;             // spanMode='days': cantidad de días desde la fecha de inicio
-  weekdays: number[];                   // spanMode='weekdays': días de la semana presentes
+  startWeekday: number | null;  // día de la semana de inicio (0=Dom … 6=Sáb), relativo a la activación
+  daysCount: number;            // cantidad de días desde la fecha de inicio (ventana; ≥1)
+  weekdays: number[];           // días de la semana presentes dentro de la ventana (vacío = todos)
+  allDay: boolean;              // ocupa toda la jornada
 }
 export interface GenerateTasksConfig { tasks: TaskProgram[] }
 
