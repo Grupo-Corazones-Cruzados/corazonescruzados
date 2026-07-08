@@ -2,242 +2,261 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Ticket, FolderKanban, Gem, Sparkles,
-  CheckCircle2, XCircle, CircleDashed, Briefcase, Dumbbell, Brain, Users, CalendarRange, Lock,
+  ChevronLeft, ChevronRight, Plus, Share2, CalendarDays, ListTodo, Lock, Ticket, FolderKanban,
+  Briefcase, Dumbbell, Brain, Users, CheckCircle2, XCircle,
 } from 'lucide-react';
+import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
+import EventModal, { type EventFormPayload, type ClientOption, type TaskOption } from '@/components/calendar/EventModal';
+import ShareDialog from '@/components/calendar/ShareDialog';
+import ProposalsPanel from '@/components/calendar/ProposalsPanel';
+import {
+  type CalendarEvent, type EventInstance, type EventType,
+  expandEvents, MONTH_LABELS_ES, EVENT_COLORS,
+} from '@/lib/calendar/recurrence';
+import { type AvailabilityStatus, AVAILABILITY, AVAILABILITY_ORDER } from '@/lib/calendar/availability';
 import { DIMENSION_COLOR, DIMENSION_LABEL } from '@/lib/centralized/apoyo';
-import { VALOR_LABEL } from '@/lib/centralized/valores';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
-const DAY_ABBR = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const MONTH = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const VIEWS: { value: CalendarViewMode; label: string }[] = [
+  { value: 'month', label: 'Mes' }, { value: 'week', label: 'Semana' }, { value: 'day', label: 'Día' },
+];
 const DIM_ICON: Record<string, any> = { laboral: Briefcase, corporal: Dumbbell, mental: Brain, social: Users };
-
-const startOfDay = (d: Date) => { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; };
-const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const longDate = (d: Date) => d.toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 type Status = 'pending' | 'completed' | 'failed';
-interface TaskLink { source: 'ticket' | 'project'; title: string; status: string | null; start: string | null; end: string | null }
-interface Task { id: number; title: string; description: string | null; problems: { title: string; dimension: string | null }[]; values: string[]; talents: string[]; link: TaskLink | null }
-interface Sched { id: number; alternativeId: number; day: string; status: Status }
-interface Auto { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string; status: Status }
-interface Data { subject: { kind: string; id: string } | null; tasks: Task[]; schedule: Sched[]; auto: Auto[] }
-
-type DayItem =
-  | { kind: 'manual'; id: number; alternativeId: number; day: string; status: Status }
-  | { kind: 'auto'; alternativeId: number; day: string; status: Status; source: 'ticket' | 'project'; refTitle: string };
+interface HTask { id: number; title: string; problems: { dimension: string | null }[]; values: string[]; talents: string[]; link: { source: 'ticket' | 'project'; title: string } | null }
+interface Horario { subject: { kind: string; id: string } | null; tasks: HTask[]; schedule: { id: number; alternativeId: number; day: string; status: Status }[]; auto: { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string; status: Status }[] }
 
 /**
- * "Mi día": las tareas del USUARIO ACTUAL según su Horario de Vida. Vista principal =
- * las tareas de HOY; vista secundaria = tira de la semana y calendario del mes para
- * revisar otros días. Se pueden marcar completada/fallida/pendiente (afecta el perfil).
+ * "Mi día": el calendario del miembro (mes/semana/día, mismo que estaba en Configuración)
+ * + un rail de las tareas planificadas según el Horario de Vida para el día enfocado. Al
+ * crear un evento se puede elegir una tarea para justificar el tiempo (evento = inicio→fin).
  */
 export default function MiDiaPage() {
-  const today = startOfDay(new Date());
-  const todayStr = ymd(today);
-  const [anchor, setAnchor] = useState<Date>(today);
-  const [showMonth, setShowMonth] = useState(false);
-  const [data, setData] = useState<Data>({ subject: null, tasks: [], schedule: [], auto: [] });
+  const [view, setView] = useState<CalendarViewMode>('month');
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [clients, setClients] = useState<ClientOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [horario, setHorario] = useState<Horario>({ subject: null, tasks: [], schedule: [], auto: [] });
 
-  const monthKey = `${anchor.getFullYear()}-${anchor.getMonth()}`;
-  const monthGrid = useMemo(() => {
-    const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-    const start = addDays(first, -first.getDay());
-    return Array.from({ length: 42 }, (_, i) => addDays(start, i));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthKey]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [initialDate, setInitialDate] = useState<Date | null>(null);
+  const [initialType, setInitialType] = useState<EventType>('work');
+  const [initialTaskId, setInitialTaskId] = useState<number | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilityStatus>('conectado');
+  const [savingAvail, setSavingAvail] = useState(false);
+
+  const range = useMemo(() => {
+    if (view === 'month') {
+      const s = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      s.setDate(1 - s.getDay()); s.setHours(0, 0, 0, 0);
+      const e = new Date(s); e.setDate(s.getDate() + 42);
+      return { s, e };
+    }
+    if (view === 'week') {
+      const s = new Date(currentDate); s.setDate(s.getDate() - s.getDay()); s.setHours(0, 0, 0, 0);
+      const e = new Date(s); e.setDate(s.getDate() + 7);
+      return { s, e };
+    }
+    const s = new Date(currentDate); s.setHours(0, 0, 0, 0);
+    const e = new Date(s); e.setDate(s.getDate() + 1);
+    return { s, e };
+  }, [view, currentDate]);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const from = ymd(monthGrid[0]), to = ymd(monthGrid[41]);
+    try {
+      const [evRes, clRes, avRes] = await Promise.all([
+        fetch('/api/members/calendar/events'),
+        fetch('/api/clients'),
+        fetch('/api/members/calendar/availability'),
+      ]);
+      const evData = await evRes.json();
+      const clData = await clRes.json();
+      setEvents(evData.data || []);
+      setClients((clData.data || []).map((c: any) => ({ id: c.id, name: c.name })));
+      if (avRes.ok) { const av = await avRes.json(); if (av.status) setAvailability(av.status); }
+    } catch { toast.error('Error al cargar el calendario'); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const loadHorario = useCallback(async () => {
+    const from = ymd(range.s), to = ymd(range.e);
     try {
       const res = await fetch(`/api/centralized/horario/me?from=${from}&to=${to}`);
       const d = await res.json();
-      setData(d.data || { subject: null, tasks: [], schedule: [], auto: [] });
+      setHorario(d.data || { subject: null, tasks: [], schedule: [], auto: [] });
     } catch { /* deja lo que haya */ }
-    finally { setLoading(false); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthKey]);
-  useEffect(() => { load(); }, [load]);
+  }, [range.s, range.e]);
+  useEffect(() => { loadHorario(); }, [loadHorario]);
 
-  const taskById = useMemo(() => new Map(data.tasks.map((t) => [t.id, t])), [data.tasks]);
-  const countByDay = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const e of data.schedule) m.set(e.day, (m.get(e.day) || 0) + 1);
-    for (const e of data.auto) m.set(e.day, (m.get(e.day) || 0) + 1);
-    return m;
-  }, [data]);
+  const instances: EventInstance[] = useMemo(() => expandEvents(events, range.s, range.e), [events, range]);
+  const taskById = useMemo(() => new Map(horario.tasks.map((t) => [t.id, t])), [horario.tasks]);
+  const taskOptions: TaskOption[] = useMemo(() => horario.tasks.map((t) => ({ id: t.id, title: t.title })), [horario.tasks]);
 
-  const anchorStr = ymd(anchor);
-  const isToday = anchorStr === todayStr;
-  const dayItems: DayItem[] = useMemo(() => {
-    const manual = data.schedule.filter((e) => e.day === anchorStr).map((e) => ({ kind: 'manual' as const, id: e.id, alternativeId: e.alternativeId, day: e.day, status: e.status }));
-    const auto = data.auto.filter((e) => e.day === anchorStr).map((e) => ({ kind: 'auto' as const, alternativeId: e.alternativeId, day: e.day, status: e.status, source: e.source, refTitle: e.refTitle }));
+  const dayTasks = useMemo(() => {
+    const ds = ymd(currentDate);
+    const manual = horario.schedule.filter((e) => e.day === ds).map((e) => ({ key: `m-${e.id}`, alternativeId: e.alternativeId, status: e.status, auto: false as const }));
+    const auto = horario.auto.filter((e) => e.day === ds).map((e) => ({ key: `a-${e.alternativeId}`, alternativeId: e.alternativeId, status: e.status, auto: true as const, source: e.source, refTitle: e.refTitle }));
     return [...manual, ...auto];
-  }, [data, anchorStr]);
+  }, [horario, currentDate]);
 
-  const weekStart = addDays(anchor, -anchor.getDay());
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const goPrev = () => { const d = new Date(currentDate); if (view === 'month') d.setMonth(d.getMonth() - 1); else if (view === 'week') d.setDate(d.getDate() - 7); else d.setDate(d.getDate() - 1); setCurrentDate(d); };
+  const goNext = () => { const d = new Date(currentDate); if (view === 'month') d.setMonth(d.getMonth() + 1); else if (view === 'week') d.setDate(d.getDate() + 7); else d.setDate(d.getDate() + 1); setCurrentDate(d); };
+  const goToday = () => setCurrentDate(new Date());
 
-  const setStatus = async (item: DayItem, status: Status) => {
-    if (!data.subject) return;
-    if (item.kind === 'manual') {
-      setData((d) => ({ ...d, schedule: d.schedule.map((e) => (e.id === item.id ? { ...e, status } : e)) }));
-      try {
-        const res = await fetch('/api/centralized/horario/schedule', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id, status }) });
-        if (!res.ok) throw new Error((await res.json()).error || 'Error');
-      } catch (e: any) { toast.error(e.message || 'Error'); load(); }
-    } else {
-      setData((d) => ({ ...d, auto: d.auto.map((e) => (e.alternativeId === item.alternativeId && e.day === item.day ? { ...e, status } : e)) }));
-      try {
-        const res = await fetch('/api/centralized/horario/auto-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject_kind: data.subject.kind, subject_id: data.subject.id, alternativeId: item.alternativeId, day: item.day, status }) });
-        if (!res.ok) throw new Error((await res.json()).error || 'Error');
-      } catch (e: any) { toast.error(e.message || 'Error'); load(); }
-    }
+  const label = useMemo(() => {
+    const m = MONTH_LABELS_ES[currentDate.getMonth()]; const y = currentDate.getFullYear();
+    if (view === 'month') return `${m} ${y}`;
+    if (view === 'week') { const s = new Date(currentDate); s.setDate(s.getDate() - s.getDay()); const e = new Date(s); e.setDate(s.getDate() + 6); return `${s.getDate()} ${MONTH_LABELS_ES[s.getMonth()].slice(0, 3)} – ${e.getDate()} ${MONTH_LABELS_ES[e.getMonth()].slice(0, 3)} ${y}`; }
+    return `${currentDate.getDate()} ${m} ${y}`;
+  }, [view, currentDate]);
+
+  const handleDayClick = (date: Date) => { setEditingEvent(null); setInitialDate(date); setInitialType('work'); setInitialTaskId(null); setCurrentDate(new Date(date)); setModalOpen(true); };
+  const openNew = (type: EventType) => { setEditingEvent(null); setInitialDate(new Date()); setInitialType(type); setInitialTaskId(null); setModalOpen(true); };
+  const openTaskEvent = (alternativeId: number) => {
+    const base = new Date(currentDate); base.setHours(9, 0, 0, 0);
+    setEditingEvent(null); setInitialDate(base); setInitialType('work'); setInitialTaskId(alternativeId); setModalOpen(true);
+  };
+  const handleEventClick = (inst: EventInstance) => { const full = events.find((e) => e.id === inst.id) || null; setEditingEvent(full); setInitialDate(null); setInitialTaskId(null); setModalOpen(true); };
+
+  const handleSave = async (payload: EventFormPayload, id?: string) => {
+    const res = await fetch(id ? `/api/members/calendar/events/${id}` : '/api/members/calendar/events', {
+      method: id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    if (!res.ok) { const data = await res.json().catch(() => ({})); throw new Error(data.error || 'Error al guardar'); }
+    toast.success(id ? 'Evento actualizado' : 'Evento creado');
+    await load();
+  };
+  const handleDelete = async (id: string) => { const res = await fetch(`/api/members/calendar/events/${id}`, { method: 'DELETE' }); if (!res.ok) { toast.error('Error al eliminar'); return; } toast.success('Evento eliminado'); await load(); };
+
+  const changeAvailability = async (status: AvailabilityStatus) => {
+    if (status === availability || savingAvail) return;
+    setSavingAvail(true); const prev = availability; setAvailability(status);
+    try {
+      const res = await fetch('/api/members/calendar/availability', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+      if (!res.ok) { const data = await res.json().catch(() => ({})); throw new Error(data.error || 'Error'); }
+      toast.success(`Disponibilidad: ${AVAILABILITY[status].label}`); await load();
+    } catch (err: any) { setAvailability(prev); toast.error(err?.message || 'Error'); }
+    finally { setSavingAvail(false); }
   };
 
   return (
-    <div>
-      {/* Encabezado */}
-      <div className="flex items-end justify-between gap-3 flex-wrap mb-4">
-        <div className="min-w-0">
-          <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2" style={df}><CalendarDays className="w-5 h-5 text-accent" /> Mi día</h1>
-          <p className="text-[13px] text-digi-muted mt-0.5 capitalize" style={mf}>{isToday ? 'Hoy · ' : ''}{longDate(anchor)}</p>
+    <div className="flex flex-col xl:flex-row gap-4 items-start">
+      <div className="flex-1 min-w-0 w-full">
+        <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2 mb-3" style={df}><CalendarDays className="w-5 h-5 text-accent" /> Mi día</h1>
+
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
+          {/* Command bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border">
+            <div className="flex items-center gap-2">
+              <button onClick={goToday} className={`${BTN_SECONDARY} !py-1.5`}>Hoy</button>
+              <div className="flex items-center gap-1">
+                <button onClick={goPrev} aria-label="Anterior" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                <button onClick={goNext} aria-label="Siguiente" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
+              </div>
+              <span className="text-[15px] font-semibold text-digi-text capitalize ml-1" style={mf}>{label}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
+                {VIEWS.map((v) => (
+                  <button key={v.value} onClick={() => setView(v.value)} className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`} style={mf}>{v.label}</button>
+                ))}
+              </div>
+              <div className="inline-flex items-center gap-1.5 rounded-md border border-digi-border pl-2.5 pr-1.5 py-1" title="Tu disponibilidad">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[availability].color }} />
+                <select value={availability} disabled={savingAvail} onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)} className="bg-transparent text-[12.5px] text-digi-text focus:outline-none cursor-pointer disabled:opacity-50" style={mf} aria-label="Disponibilidad">
+                  {AVAILABILITY_ORDER.map((s) => <option key={s} value={s}>{AVAILABILITY[s].label}</option>)}
+                </select>
+              </div>
+              <button onClick={() => setShareOpen(true)} className={BTN_SECONDARY}><Share2 className="w-4 h-4" /> Compartir</button>
+              <button onClick={() => openNew('work')} className={BTN_PRIMARY}><Plus className="w-4 h-4" /> Nuevo</button>
+            </div>
+          </div>
+
+          {/* Grid */}
+          <div className="p-3">
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-digi-muted" style={mf}><CalendarDays className="w-4 h-4 animate-pulse" /> Cargando…</div>
+            ) : (
+              <CalendarView view={view} currentDate={currentDate} instances={instances} onDayClick={handleDayClick} onEventClick={handleEventClick} />
+            )}
+          </div>
+
+          {/* Leyenda */}
+          <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted" style={mf}>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.work}30`, borderLeft: `3px solid ${EVENT_COLORS.work}` }} /> Laboral</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.personal}30`, borderLeft: `3px solid ${EVENT_COLORS.personal}` }} /> Personal</span>
+            <span className="ml-auto tabular-nums">Zona horaria: América/Guayaquil (GMT-5)</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {!isToday && <button onClick={() => setAnchor(today)} className="px-2.5 py-1.5 text-[12px] font-medium border border-digi-border rounded-md text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>Hoy</button>}
-          <button onClick={() => setAnchor(startOfDay(addDays(anchor, -1)))} aria-label="Día anterior" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-          <button onClick={() => setAnchor(startOfDay(addDays(anchor, 1)))} aria-label="Día siguiente" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
-          <button onClick={() => setShowMonth((v) => !v)} className={`px-2.5 py-1.5 text-[12px] font-medium border rounded-md inline-flex items-center gap-1.5 transition-colors ${showMonth ? 'bg-accent-light border-accent text-accent' : 'border-digi-border text-digi-text hover:border-accent hover:text-accent'}`} style={mf}><CalendarRange className="w-3.5 h-3.5" /> Mes</button>
-        </div>
+
+        <ProposalsPanel onDecision={load} />
       </div>
 
-      {!loading && !data.subject ? (
-        <div className="bg-digi-card border border-digi-border rounded-xl py-16 text-center">
-          <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-3"><CalendarDays className="w-6 h-6 text-digi-muted" /></div>
-          <p className="text-[13px] font-medium text-digi-text" style={mf}>Aún no tienes un horario asignado</p>
-          <p className="text-[12px] text-digi-muted mt-1" style={mf}>Tus tareas aparecerán aquí cuando se te asignen en el Horario de Vida.</p>
+      {/* Rail: tareas planificadas del día enfocado (Horario de Vida) */}
+      <aside className="w-full xl:w-[280px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2.5 bg-digi-dark border-b border-digi-border">
+          <ListTodo className="w-4 h-4 text-digi-muted" />
+          <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Tareas · {label.replace(/\s\d{4}$/, '')}</span>
+          <span className="ml-auto text-[11px] text-digi-muted tabular-nums" style={mf}>{dayTasks.length}</span>
         </div>
-      ) : (
-        <>
-          {/* Vista secundaria: tira de la semana */}
-          <div className="grid grid-cols-7 gap-1.5 mb-3">
-            {weekDays.map((d) => {
-              const ds = ymd(d); const sel = ds === anchorStr; const isT = ds === todayStr; const c = countByDay.get(ds) || 0;
-              return (
-                <button key={ds} onClick={() => setAnchor(startOfDay(d))}
-                  className={`rounded-lg border p-2 text-center transition-colors ${sel ? 'border-accent bg-accent-light' : 'border-digi-border hover:border-accent/50'}`}>
-                  <div className="text-[10px] uppercase tracking-wide text-digi-muted" style={mf}>{DAY_ABBR[d.getDay()]}</div>
-                  <div className={`text-[15px] font-semibold leading-tight ${isT ? 'text-accent' : sel ? 'text-accent' : 'text-digi-text'}`} style={mf}>{d.getDate()}</div>
-                  <div className="h-4 flex items-center justify-center">
-                    {c > 0 && <span className={`text-[9.5px] px-1.5 rounded-full tabular-nums ${sel ? 'bg-accent/20 text-accent' : 'bg-black/[0.06] text-digi-muted'}`} style={mf}>{c}</span>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Vista secundaria: calendario del mes */}
-          {showMonth && (
-            <div className="mb-4 rounded-xl border border-digi-border bg-digi-card p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[13px] font-semibold text-digi-text capitalize" style={df}>{MONTH[anchor.getMonth()]} {anchor.getFullYear()}</span>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => setAnchor(startOfDay(new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1)))} aria-label="Mes anterior" className="w-7 h-7 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => setAnchor(startOfDay(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1)))} aria-label="Mes siguiente" className="w-7 h-7 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronRight className="w-3.5 h-3.5" /></button>
-                </div>
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-digi-muted mb-1" style={mf}>{DAY_ABBR.map((a) => <span key={a}>{a}</span>)}</div>
-              <div className="grid grid-cols-7 gap-1">
-                {monthGrid.map((d) => {
-                  const ds = ymd(d); const c = countByDay.get(ds) || 0; const inMonth = d.getMonth() === anchor.getMonth(); const sel = ds === anchorStr; const isT = ds === todayStr;
-                  return (
-                    <button key={ds} onClick={() => { setAnchor(startOfDay(d)); setShowMonth(false); }}
-                      className={`aspect-square rounded-md flex flex-col items-center justify-center transition-colors ${sel ? 'bg-accent-light border border-accent' : inMonth ? 'hover:bg-black/[0.03]' : 'opacity-40'} ${isT && !sel ? 'ring-1 ring-inset ring-accent/50' : ''}`}>
-                      <span className={`text-[12px] ${isT || sel ? 'text-accent font-semibold' : 'text-digi-text'}`} style={mf}>{d.getDate()}</span>
-                      {c > 0 && <span className="w-1.5 h-1.5 rounded-full bg-accent mt-0.5" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Vista principal: tareas del día seleccionado */}
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-[12px] font-semibold uppercase tracking-wide text-digi-muted" style={df}>{isToday ? 'Tareas de hoy' : 'Tareas del día'}</h2>
-            {dayItems.length > 0 && <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>· {dayItems.length}</span>}
-          </div>
-
-          {loading ? (
-            <div className="bg-digi-card border border-digi-border rounded-xl py-10 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</div>
-          ) : dayItems.length === 0 ? (
-            <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
-              <div className="w-11 h-11 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-2"><CheckCircle2 className="w-5 h-5 text-digi-muted" /></div>
-              <p className="text-[13px] font-medium text-digi-text" style={mf}>Sin tareas {isToday ? 'para hoy' : 'este día'}</p>
-              <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>Nada asignado en tu horario para esta fecha.</p>
-            </div>
+        <p className="text-[11px] text-digi-muted px-3 pt-2 leading-snug" style={mf}>Planificadas para el <span className="text-digi-text font-medium">{currentDate.getDate()} {MONTH_LABELS_ES[currentDate.getMonth()].slice(0, 3)}</span> según tu Horario de Vida. Crea un evento para justificar el tiempo.</p>
+        <div className="p-2.5 space-y-2 max-h-[calc(100dvh-260px)] overflow-y-auto">
+          {!horario.subject ? (
+            <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>No tienes un horario asignado.</p>
+          ) : dayTasks.length === 0 ? (
+            <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Sin tareas planificadas este día.</p>
           ) : (
-            <div className="space-y-2">
-              {dayItems.map((item) => {
-                const t = taskById.get(item.alternativeId);
-                const dims = Array.from(new Set((t?.problems || []).map((p) => p.dimension).filter(Boolean))) as string[];
-                return (
-                  <div key={item.kind === 'manual' ? `m-${item.id}` : `a-${item.alternativeId}-${item.day}`}
-                    className={`rounded-xl border bg-digi-card p-3.5 flex items-start gap-3 ${item.status === 'completed' ? 'border-emerald-400/40' : item.status === 'failed' ? 'border-red-400/40' : 'border-digi-border'}`}>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {dims.map((dm) => { const DI = DIM_ICON[dm]; return (
-                          <span key={dm} title={`Dimensión: ${DIMENSION_LABEL[dm] || dm}`} className="shrink-0 inline-flex">
-                            {DI ? <DI className="w-3.5 h-3.5" style={{ color: DIMENSION_COLOR[dm] || '#888' }} /> : null}
-                          </span>
-                        ); })}
-                        <h3 className="text-[14px] font-semibold text-digi-text leading-snug min-w-0 truncate" style={mf}>{t?.title || 'Tarea'}</h3>
-                        {item.kind === 'auto' && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-400/30 text-[10px] text-sky-500" style={mf}>
-                            <Lock className="w-2.5 h-2.5" /> {item.source === 'ticket' ? <Ticket className="w-2.5 h-2.5" /> : <FolderKanban className="w-2.5 h-2.5" />} {item.refTitle}
-                          </span>
-                        )}
-                      </div>
-                      {t?.description && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed line-clamp-2" style={mf}>{t.description}</p>}
-                      {t && (t.values.length > 0 || t.talents.length > 0) && (
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {t.values.map((v) => <span key={`v-${v}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/10 border border-violet-400/25 text-[10px] text-violet-500" style={mf}><Gem className="w-2.5 h-2.5" />{VALOR_LABEL[v] || v}</span>)}
-                          {t.talents.map((tal) => <span key={`t-${tal}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-400/25 text-[10px] text-sky-500" style={mf}><Sparkles className="w-2.5 h-2.5" />{tal}</span>)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <StatusBtn active={item.status === 'completed'} tone="completed" onClick={() => setStatus(item, 'completed')} Icon={CheckCircle2} label="Completada" />
-                      <StatusBtn active={item.status === 'failed'} tone="failed" onClick={() => setStatus(item, 'failed')} Icon={XCircle} label="Fallida" />
-                      <StatusBtn active={item.status === 'pending'} tone="pending" onClick={() => setStatus(item, 'pending')} Icon={CircleDashed} label="Pendiente" />
-                    </div>
+            dayTasks.map((it) => {
+              const t = taskById.get(it.alternativeId);
+              const dims = Array.from(new Set((t?.problems || []).map((p) => p.dimension).filter(Boolean))) as string[];
+              return (
+                <div key={it.key} className={`rounded-lg border p-2.5 bg-digi-darker/40 ${it.status === 'completed' ? 'border-emerald-400/40' : it.status === 'failed' ? 'border-red-400/40' : 'border-digi-border'}`}>
+                  <div className="flex items-center gap-1.5">
+                    {it.auto && <Lock className="w-3 h-3 shrink-0 text-sky-400" />}
+                    {dims.map((dm) => { const DI = DIM_ICON[dm]; return DI ? <DI key={dm} title={DIMENSION_LABEL[dm] || dm} className="w-3.5 h-3.5 shrink-0" style={{ color: DIMENSION_COLOR[dm] || '#888' }} /> : null; })}
+                    <span className="text-[12.5px] font-medium text-digi-text leading-snug min-w-0 flex-1 truncate" style={mf}>{t?.title || 'Tarea'}</span>
+                    {it.status === 'completed' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                    {it.status === 'failed' && <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
                   </div>
-                );
-              })}
-            </div>
+                  {it.auto && (
+                    <p className="text-[10.5px] text-sky-500 mt-1 inline-flex items-center gap-1" style={mf}>
+                      {it.source === 'ticket' ? <Ticket className="w-2.5 h-2.5" /> : <FolderKanban className="w-2.5 h-2.5" />} {it.refTitle}
+                    </p>
+                  )}
+                  <button onClick={() => openTaskEvent(it.alternativeId)} className="mt-2 w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border border-accent/40 bg-accent-light text-[11.5px] font-medium text-accent hover:bg-accent hover:text-white transition-colors" style={mf}>
+                    <Plus className="w-3 h-3" /> Registrar tiempo
+                  </button>
+                </div>
+              );
+            })
           )}
-        </>
-      )}
-    </div>
-  );
-}
+        </div>
+      </aside>
 
-function StatusBtn({ active, tone, onClick, Icon, label }: { active: boolean; tone: 'completed' | 'failed' | 'pending'; onClick: () => void; Icon: any; label: string }) {
-  const cls = tone === 'completed'
-    ? (active ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-600' : 'border-digi-border text-digi-muted hover:border-emerald-400/40 hover:text-emerald-600')
-    : tone === 'failed'
-      ? (active ? 'bg-red-500/20 border-red-400/50 text-red-600' : 'border-digi-border text-digi-muted hover:border-red-400/40 hover:text-red-600')
-      : (active ? 'bg-black/[0.06] border-digi-border text-digi-text' : 'border-digi-border text-digi-muted hover:text-digi-text');
-  return (
-    <button onClick={onClick} title={label} aria-label={label} className={`w-8 h-8 flex items-center justify-center rounded-md border transition-colors ${cls}`}>
-      <Icon className="w-4 h-4" />
-    </button>
+      <EventModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        event={editingEvent}
+        initialDate={initialDate}
+        initialType={initialType}
+        clients={clients}
+        tasks={taskOptions}
+        initialTaskId={initialTaskId}
+      />
+
+      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
+    </div>
   );
 }

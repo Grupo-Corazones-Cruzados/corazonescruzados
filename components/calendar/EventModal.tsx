@@ -29,7 +29,10 @@ export interface EventFormPayload {
   recurrence_interval: number;
   recurrence_until: string | null;
   color: string | null;
+  alternative_id: number | null;
 }
+
+export interface TaskOption { id: number; title: string; }
 
 interface Props {
   open: boolean;
@@ -40,6 +43,8 @@ interface Props {
   initialDate: Date | null;
   initialType?: EventType;
   clients: ClientOption[];
+  tasks?: TaskOption[];        // tareas del Horario de Vida (para justificar el tiempo)
+  initialTaskId?: number | null;
 }
 
 function toLocalInput(iso: string | Date): string {
@@ -92,10 +97,11 @@ function defaultPayload(base: Date | null, type: EventType = 'work'): EventFormP
     recurrence_interval: 1,
     recurrence_until: null,
     color: null,
+    alternative_id: null,
   };
 }
 
-export default function EventModal({ open, onClose, onSave, onDelete, event, initialDate, initialType, clients }: Props) {
+export default function EventModal({ open, onClose, onSave, onDelete, event, initialDate, initialType, clients, tasks = [], initialTaskId = null }: Props) {
   const [form, setForm] = useState<EventFormPayload>(() => defaultPayload(initialDate, initialType));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,14 +126,22 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         recurrence_interval: event.recurrence_interval || 1,
         recurrence_until: event.recurrence_until,
         color: event.color,
+        alternative_id: event.alternative_id ?? null,
       });
     } else {
-      setForm(defaultPayload(initialDate, initialType));
+      const base = defaultPayload(initialDate, initialType);
+      if (initialTaskId != null) {
+        base.alternative_id = initialTaskId;
+        const tk = tasks.find((t) => t.id === initialTaskId);
+        if (tk && !base.title) base.title = tk.title;
+      }
+      setForm(base);
     }
     setUntilMode(event?.recurrence_until ? 'date' : 'forever');
     setConfirmDelete(false);
     setError(null);
-  }, [open, event, initialDate, initialType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, event, initialDate, initialType, initialTaskId]);
 
   const update = <K extends keyof EventFormPayload>(k: K, v: EventFormPayload[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
@@ -308,6 +322,23 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
             onChange={(e) => update('client_id', e.target.value || null)}
             placeholder="Sin cliente"
             options={clients.map((c) => ({ value: c.id, label: c.name }))}
+          />
+        )}
+
+        {tasks.length > 0 && (
+          <PixelSelect
+            label="TAREA DEL HORARIO (JUSTIFICA EL TIEMPO)"
+            value={form.alternative_id != null ? String(form.alternative_id) : ''}
+            onChange={(e) => {
+              const id = e.target.value ? Number(e.target.value) : null;
+              update('alternative_id', id);
+              if (id != null && !form.title.trim()) {
+                const tk = tasks.find((t) => t.id === id);
+                if (tk) update('title', tk.title);
+              }
+            }}
+            placeholder="Sin tarea (evento libre)"
+            options={tasks.map((t) => ({ value: String(t.id), label: t.title }))}
           />
         )}
 

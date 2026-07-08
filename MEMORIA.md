@@ -267,12 +267,16 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **Módulo "Mi día" (2026-07-08):** nuevo módulo del dashboard bajo **Inicio** (`app/(dashboard)/dashboard/mi-dia/page.tsx`;
-  sidebar `CalendarDays`; acceso candidate/member/admin en `lib/dashboard/access.ts`). Muestra las tareas del **USUARIO ACTUAL**
-  según su Horario de Vida. **Vista principal = HOY**; secundarias = **tira de la semana** (con conteos) y **calendario del mes**
-  (dots por día). Cada tarea se marca completada/fallida/pendiente (manual → `PATCH …/schedule`; auto → `POST …/auto-status`).
-  **API** `GET /api/centralized/horario/me?from&to` resuelve el sujeto del logueado (member vía `users.member_id`; candidato vía
-  `clients` account_type) y reusa `getSubjectHorario`.
+- **Módulo "Mi día" (2026-07-08):** módulo del dashboard bajo **Inicio** (`app/(dashboard)/dashboard/mi-dia/page.tsx`; sidebar
+  `CalendarDays`; acceso candidate/member/admin). **Es el CALENDARIO del miembro** (se movió de Configuración → se quitó el
+  RailLink "Calendario"; `settings/calendar` ahora **redirige** a `/dashboard/mi-dia`). Reusa `CalendarView`/`EventModal`/
+  `ShareDialog`/`ProposalsPanel`/disponibilidad (mes/semana/día, eventos en `gcc_world.member_calendar_events`). **Novedad:**
+  un **rail de tareas** muestra las tareas planificadas del **día enfocado** (`currentDate`) según el Horario de Vida
+  (`GET /api/centralized/horario/me?from&to` resuelve el sujeto del logueado: member vía `users.member_id`, candidato vía
+  `clients`); cada tarea tiene **"Registrar tiempo"** que abre el EventModal con la tarea preseleccionada. Los eventos pueden
+  **enlazar una tarea** (`member_calendar_events.alternative_id`, col nueva) para **justificar el tiempo** (evento = inicio→fin);
+  el EventModal añade un select "Tarea del horario (justifica el tiempo)". **Pendiente/idea a refinar con el usuario:** mostrar
+  los chips de tarea DENTRO de cada celda del grid (hoy están en el rail lateral).
 - **Integración Apoyo ↔ Reclutamiento ↔ Horario de Vida (2026-07-07):**
   - **Listas canónicas (fuente única):** `lib/centralized/valores.ts` (`VALORES`, los 9 valores de la org; `reclutamiento.ts`
     re-exporta `VALUE_ITEMS = VALORES` para no romper imports) y `lib/centralized/talentos.ts` (`TALENTOS`, 500+ talentos

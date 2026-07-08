@@ -9,7 +9,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import CvPanel from '@/components/settings/CvPanel';
 import {
-  User, CalendarClock, Briefcase, CalendarDays,
+  User, CalendarClock, Briefcase,
   Camera, ChevronRight,
 } from 'lucide-react';
 
@@ -118,8 +118,7 @@ export default function SettingsPage() {
                 <p className="text-[9px] font-semibold text-digi-muted/70 uppercase tracking-wider px-2 pb-1" style={df}>Miembro</p>
                 <RailLink href="/dashboard/settings/availability" Icon={CalendarClock} label="Disponibilidad" />
                 <RailLink href="/dashboard/settings/portfolio" Icon={Briefcase} label="Portafolio" />
-                {/* Calendario: disponible para todo miembro, incluido el admin que también es miembro. */}
-                <RailLink href="/dashboard/settings/calendar" Icon={CalendarDays} label="Calendario" />
+                {/* El Calendario se movió al módulo "Mi día" (/dashboard/mi-dia). */}
               </>
             )}
           </div>

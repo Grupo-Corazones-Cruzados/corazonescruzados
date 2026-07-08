@@ -19,6 +19,7 @@ export interface CalendarEvent {
   recurrence_until: string | null;
   color: string | null;
   status: EventStatus;
+  alternative_id?: number | null; // tarea del Horario de Vida que justifica el evento
 }
 
 export interface EventInstance extends CalendarEvent {

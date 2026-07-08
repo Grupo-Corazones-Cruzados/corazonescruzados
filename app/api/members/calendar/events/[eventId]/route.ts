@@ -17,7 +17,7 @@ const SELECT_SQL = `
     c.name AS client_name,
     e.start_at, e.end_at, e.all_day, e.timezone,
     e.recurrence_type, e.recurrence_days, e.recurrence_interval, e.recurrence_until,
-    e.color, e.status, e.created_at, e.updated_at
+    e.color, e.status, e.alternative_id, e.created_at, e.updated_at
   FROM gcc_world.member_calendar_events e
   LEFT JOIN gcc_world.clients c ON c.id = e.client_id
 `;
@@ -81,6 +81,7 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
     if (typeof b.recurrence_interval === 'number') push('recurrence_interval', b.recurrence_interval);
     if ('recurrence_until' in b) push('recurrence_until', b.recurrence_until);
     if ('color' in b) push('color', b.color);
+    if ('alternative_id' in b) push('alternative_id', b.alternative_id != null ? Number(b.alternative_id) : null);
 
     if (fields.length === 0) {
       return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 });

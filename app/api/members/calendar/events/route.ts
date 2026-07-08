@@ -30,6 +30,7 @@ const SELECT_SQL = `
     e.recurrence_until,
     e.color,
     e.status,
+    e.alternative_id,
     e.created_at,
     e.updated_at
   FROM gcc_world.member_calendar_events e
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
       recurrence_interval = 1,
       recurrence_until = null,
       color = null,
+      alternative_id = null,
     } = body;
 
     const { rows } = await pool.query(
@@ -88,12 +90,12 @@ export async function POST(req: NextRequest) {
          member_id, title, description, event_type, client_id,
          start_at, end_at, all_day, timezone,
          recurrence_type, recurrence_days, recurrence_interval, recurrence_until,
-         color, status, created_by
+         color, status, created_by, alternative_id
        ) VALUES (
          $1, $2, $3, $4, $5,
          $6, $7, $8, $9,
          $10, $11, $12, $13,
-         $14, 'confirmed', $15
+         $14, 'confirmed', $15, $16
        ) RETURNING id`,
       [
         memberId, title, description, event_type,
@@ -105,6 +107,7 @@ export async function POST(req: NextRequest) {
         recurrence_until,
         color,
         user.userId,
+        alternative_id != null ? Number(alternative_id) : null,
       ],
     );
 
