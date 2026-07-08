@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
 import KnowledgeGraph from '@/components/centralized/apoyo/KnowledgeGraph';
+import AlternativeLinks from '@/components/centralized/apoyo/AlternativeLinks';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import { Plus, Trash2, X, MousePointerClick, HeartHandshake, CheckCircle2 } from 'lucide-react';
 import {
@@ -336,6 +337,13 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                             </div>
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Proyectos y tickets asociados (solo alternativas/soluciones) */}
+                    {(selectedNode.type === 'alternative' || selectedNode.type === 'solution') && user && (
+                      <div className={`${GLASS} p-3.5`}>
+                        <AlternativeLinks subjectKind={user.kind} subjectId={String(user.id)} alternativeId={selectedNode.id} />
                       </div>
                     )}
 

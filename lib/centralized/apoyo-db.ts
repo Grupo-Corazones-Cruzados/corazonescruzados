@@ -39,9 +39,97 @@ export async function ensureApoyoTables() {
     CREATE TABLE IF NOT EXISTS gcc_world.aa_solution_causes (
       solution_id BIGINT NOT NULL, cause_id BIGINT NOT NULL, PRIMARY KEY (solution_id, cause_id)
     );
+    -- Asociación de una ALTERNATIVA (aa_solutions) con proyectos/tickets del sujeto.
+    CREATE TABLE IF NOT EXISTS gcc_world.aa_alternative_tickets (
+      alternative_id BIGINT NOT NULL, ticket_id BIGINT NOT NULL, PRIMARY KEY (alternative_id, ticket_id)
+    );
+    CREATE TABLE IF NOT EXISTS gcc_world.aa_alternative_projects (
+      alternative_id BIGINT NOT NULL, project_id TEXT NOT NULL, PRIMARY KEY (alternative_id, project_id)
+    );
   `);
   // Para instalaciones previas: las soluciones existentes ya eran "comprobadas".
   await pool.query(`ALTER TABLE gcc_world.aa_solutions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'solution'`);
+}
+
+export interface LinkRef { id: string; title: string; status: string | null }
+
+/** Resuelve el user_id (creador) asociado a un sujeto de Apoyo, si existe. */
+async function resolveUserId(subjectKind: string, subjectId: string): Promise<string | null> {
+  try {
+    if (subjectKind === 'member') {
+      const { rows } = await pool.query(`SELECT id FROM gcc_world.users WHERE member_id::text = $1 LIMIT 1`, [subjectId]);
+      return rows[0] ? String(rows[0].id) : null;
+    }
+    const { rows } = await pool.query(`SELECT user_id FROM gcc_world.clients WHERE id::text = $1 LIMIT 1`, [subjectId]);
+    return rows[0]?.user_id ? String(rows[0].user_id) : null;
+  } catch { return null; }
+}
+
+/**
+ * Proyectos y tickets que el sujeto CREÓ o en los que PARTICIPA, para ofrecerlos en el
+ * selector de asociación de una alternativa.
+ *  - Tickets: participa si es su miembro asignado (member_id) o su cliente (client_id);
+ *    creó si user_id = su user.
+ *  - Proyectos: participa (miembro) si es assigned_member_id, tiene bid aceptado o una
+ *    asignación de requerimiento; su cliente (candidato) si client_id; creó si
+ *    created_by_user_id = su user.
+ */
+export async function getSubjectLinkOptions(subjectKind: string, subjectId: string): Promise<{ tickets: LinkRef[]; projects: LinkRef[] }> {
+  await ensureApoyoTables();
+  const userId = await resolveUserId(subjectKind, subjectId);
+
+  const tickets = (await pool.query(
+    `SELECT id, title, status FROM gcc_world.tickets
+      WHERE ($3 = 'member' AND member_id::text = $1)
+         OR ($3 = 'candidate' AND client_id::text = $1)
+         OR ($2 IS NOT NULL AND user_id = $2)
+      ORDER BY created_at DESC NULLS LAST, id DESC`,
+    [subjectId, userId, subjectKind],
+  )).rows.map((r: any) => ({ id: String(r.id), title: r.title, status: r.status ?? null }));
+
+  const projects = (await pool.query(
+    `SELECT p.id, p.title, p.status FROM gcc_world.projects p
+      WHERE ($3 = 'candidate' AND p.client_id::text = $1)
+         OR ($2 IS NOT NULL AND p.created_by_user_id = $2)
+         OR ($3 = 'member' AND (
+              p.assigned_member_id::text = $1
+              OR EXISTS (SELECT 1 FROM gcc_world.project_bids b WHERE b.project_id = p.id AND b.member_id::text = $1 AND b.status = 'accepted')
+              OR EXISTS (SELECT 1 FROM gcc_world.requirement_assignments ra WHERE ra.project_id = p.id AND ra.member_id::text = $1)
+            ))
+      ORDER BY p.created_at DESC NULLS LAST`,
+    [subjectId, userId, subjectKind],
+  )).rows.map((r: any) => ({ id: String(r.id), title: r.title, status: r.status ?? null }));
+
+  return { tickets, projects };
+}
+
+/** Proyectos y tickets ya asociados a una alternativa (para el detalle). */
+export async function getAlternativeLinks(alternativeId: number): Promise<{ tickets: LinkRef[]; projects: LinkRef[] }> {
+  await ensureApoyoTables();
+  const tickets = (await pool.query(
+    `SELECT t.id, t.title, t.status FROM gcc_world.aa_alternative_tickets l
+       JOIN gcc_world.tickets t ON t.id = l.ticket_id WHERE l.alternative_id = $1 ORDER BY t.id DESC`,
+    [alternativeId],
+  )).rows.map((r: any) => ({ id: String(r.id), title: r.title, status: r.status ?? null }));
+  const projects = (await pool.query(
+    `SELECT p.id, p.title, p.status FROM gcc_world.aa_alternative_projects l
+       JOIN gcc_world.projects p ON p.id = l.project_id WHERE l.alternative_id = $1`,
+    [alternativeId],
+  )).rows.map((r: any) => ({ id: String(r.id), title: r.title, status: r.status ?? null }));
+  return { tickets, projects };
+}
+
+/** Asocia/desasocia una alternativa con un ticket o proyecto. */
+export async function setAlternativeLink(alternativeId: number, kind: 'ticket' | 'project', refId: string, connect: boolean) {
+  await ensureApoyoTables();
+  if (kind === 'ticket') {
+    const tid = Number(refId);
+    if (connect) await pool.query(`INSERT INTO gcc_world.aa_alternative_tickets (alternative_id, ticket_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [alternativeId, tid]);
+    else await pool.query(`DELETE FROM gcc_world.aa_alternative_tickets WHERE alternative_id = $1 AND ticket_id = $2`, [alternativeId, tid]);
+  } else {
+    if (connect) await pool.query(`INSERT INTO gcc_world.aa_alternative_projects (alternative_id, project_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [alternativeId, refId]);
+    else await pool.query(`DELETE FROM gcc_world.aa_alternative_projects WHERE alternative_id = $1 AND project_id = $2`, [alternativeId, refId]);
+  }
 }
 
 /**
