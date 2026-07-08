@@ -283,13 +283,17 @@ Stack estándar de la casa, con particularidades de este repo:
     semanal. APIs: `/api/centralized/horario` (GET tareas+agenda, PATCH etiquetas validadas contra las listas canónicas),
     `/api/centralized/horario/schedule` (POST asigna —exige etiquetas—, DELETE quita, PATCH marca completada). Al convertir la
     alternativa en solución desaparece de tareas.
-  - **Cumplimiento → puntuación de perfil (2026-07-07):** `hv_schedule.completed` (bool). Cada tarea programada puntúa sus
-    etiquetas: **completada = +1**, **día pasado sin completar = −1**, día futuro sin completar = pendiente (no puntúa).
-    En el Horario cada asignación tiene toggle de completada (verde ✓ / roja si vencida). `getSubjectsProfileScores()` en
-    `horario-db.ts` agrega por sujeto: **Talentos** = neto (completadas−fallidas), top 10 con neto positivo repartiéndose el
-    100% (→ sección Talento de reclutamiento, barras %); **Valores** = por valor {completadas, fallidas} → **barra divergente**
-    (verde=completadas, rojo=no completadas, comparten UNA barra) en la sección Valores de `CandidatosTab` (`ValueBalanceBar`).
-    Se calcula en `/api/admin/candidates` (`criteria.talents` y `criteria.valuesBalance`).
+  - **Cumplimiento → puntuación de perfil (2026-07-07):** `hv_schedule.status` (`pending|completed|failed`; la vieja col
+    `completed` queda como legado). Estado EXPLÍCITO: **completed = +1**, **failed = −1**, **pending = neutro** (no puntúa).
+    `getSubjectsProfileScores()` en `horario-db.ts` agrega por sujeto: **Talentos** = neto (completadas−fallidas), top 10 con
+    neto positivo repartiéndose el 100% (→ sección Talento de reclutamiento, barras %); **Valores** = por valor {completadas,
+    fallidas} → **barra divergente** (verde=completadas, rojo=no completadas, comparten UNA barra) en `CandidatosTab`
+    (`ValueBalanceBar`). Se calcula en `/api/admin/candidates` (`criteria.talents` y `criteria.valuesBalance`).
+  - **UX Horario (2026-07-07):** etiquetas de la tarjeta = **dos iconos** (Gem valores / Sparkles talentos) con **burbuja
+    flotante** (fixed, escapa del overflow) al pasar el puntero. Drop **optimista** (id temporal → reconcilia con el real; sin
+    esperar el POST). En el día, cada asignación tiene **tres puntitos** (`MoreVertical`, a la izquierda; ya no ✕) que abren un
+    **panel de detalle a la derecha del calendario**: título/descripción, contexto de Apoyo (problema/situaciones/causas vía
+    `GET /api/centralized/horario/task`), botones **Completada/Fallida/Pendiente** (`PATCH …/schedule {id,status}`) y "Quitar del día".
 - **Alternativa vs Solución (2026-07-07):** las "soluciones" ahora se crean primero como **Alternativas**
   (ideas propuestas para afrontar un problema). Alternativa y Solución **comparten la tabla `aa_solutions`
   y sus joins** (`aa_solution_problems`/`aa_solution_causes`); se distinguen por la columna nueva

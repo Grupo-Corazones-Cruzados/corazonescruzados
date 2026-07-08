@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X, Gem, Sparkles, CheckCircle2, Circle } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X,
+  Gem, Sparkles, CheckCircle2, XCircle, CircleDashed, MoreVertical, Trash2,
+} from 'lucide-react';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
 import PixelModal from '@/components/ui/PixelModal';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
@@ -19,8 +22,10 @@ const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.get
 const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+type Status = 'pending' | 'completed' | 'failed';
 interface Task { id: number; title: string; description: string | null; problems: { title: string; dimension: string | null }[]; values: string[]; talents: string[] }
-interface ScheduleEntry { id: number; alternativeId: number; day: string; completed: boolean }
+interface ScheduleEntry { id: number; alternativeId: number; day: string; status: Status }
+interface TaskContext { problems: { title: string; dimension: string | null }[]; situations: string[]; causes: string[] }
 
 const VALOR_OPTIONS = VALORES.map((v) => ({ value: v.key, label: v.label }));
 const TALENTO_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));
@@ -28,7 +33,8 @@ const TALENTO_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));
 /**
  * Sistema "Horario de Vida". Las TAREAS son las alternativas del sistema de Apoyo que
  * aún no se han convertido en solución. Cada tarea debe recibir ETIQUETAS (valores y/o
- * talentos) antes de poder arrastrarse a un día de la semana del usuario.
+ * talentos) antes de poder arrastrarse a un día de la semana. Una vez en el día, sus
+ * tres puntos abren un panel de detalle donde se marca como completada/fallida/pendiente.
  */
 export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: any; isAdmin: boolean }) {
   const [selected, setSelected] = useState<SelectedUser | null>(null);
@@ -47,6 +53,14 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
 
+  // Burbuja flotante de etiquetas (hover sobre los iconos de la tarjeta)
+  const [bubble, setBubble] = useState<{ kind: 'values' | 'talents'; items: string[]; x: number; y: number } | null>(null);
+
+  // Panel de detalle de una asignación
+  const [panelEntry, setPanelEntry] = useState<ScheduleEntry | null>(null);
+  const [panelCtx, setPanelCtx] = useState<TaskContext | null>(null);
+  const [panelLoading, setPanelLoading] = useState(false);
+
   const today = startOfDay(new Date());
   const todayStr = ymd(today);
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
@@ -64,7 +78,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     finally { setLoading(false); }
   }, [selected]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); setPanelEntry(null); }, [load]);
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const hasLabels = (t: Task) => t.values.length > 0 || t.talents.length > 0;
@@ -93,10 +107,13 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     finally { setSavingLabels(false); }
   };
 
+  // Asignación OPTIMISTA: aparece al instante con un id temporal y luego se reconcilia.
   const assign = async (task: Task, day: Date) => {
     if (!selected) return;
     if (!hasLabels(task)) { toast.error('Agrega etiquetas a la tarea antes de programarla'); return; }
     const dayStr = ymd(day);
+    const tempId = -Date.now();
+    setSchedule((s) => [...s, { id: tempId, alternativeId: task.id, day: dayStr, status: 'pending' }]);
     try {
       const res = await fetch('/api/centralized/horario/schedule', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -104,26 +121,39 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
       const d = await res.json();
-      setSchedule((s) => [...s, { id: d.id, alternativeId: task.id, day: dayStr, completed: false }]);
-      toast.success(`"${task.title}" programada`);
-    } catch (e: any) { toast.error(e.message || 'Error'); }
+      setSchedule((s) => s.map((e) => (e.id === tempId ? { ...e, id: d.id } : e)));
+    } catch (e: any) { toast.error(e.message || 'Error'); setSchedule((s) => s.filter((e) => e.id !== tempId)); }
   };
 
-  const toggleComplete = async (entry: ScheduleEntry) => {
-    const next = !entry.completed;
-    setSchedule((s) => s.map((e) => (e.id === entry.id ? { ...e, completed: next } : e))); // optimista
+  const setEntryStatus = async (entry: ScheduleEntry, status: Status) => {
+    setSchedule((s) => s.map((e) => (e.id === entry.id ? { ...e, status } : e)));
+    setPanelEntry((p) => (p && p.id === entry.id ? { ...p, status } : p));
     try {
-      const res = await fetch('/api/centralized/horario/schedule', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: entry.id, completed: next }) });
+      const res = await fetch('/api/centralized/horario/schedule', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: entry.id, status }) });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
-    } catch (e: any) { toast.error(e.message || 'Error'); setSchedule((s) => s.map((x) => (x.id === entry.id ? { ...x, completed: entry.completed } : x))); }
+    } catch (e: any) { toast.error(e.message || 'Error'); load(); }
   };
 
   const unassign = async (entry: ScheduleEntry) => {
-    setSchedule((s) => s.filter((e) => e.id !== entry.id)); // optimista
+    setSchedule((s) => s.filter((e) => e.id !== entry.id));
+    setPanelEntry((p) => (p && p.id === entry.id ? null : p));
     try {
       const res = await fetch('/api/centralized/horario/schedule', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: entry.id }) });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
     } catch (e: any) { toast.error(e.message || 'Error'); load(); }
+  };
+
+  const openPanel = async (entry: ScheduleEntry) => {
+    setPanelEntry(entry);
+    setPanelCtx(null);
+    if (!selected) return;
+    setPanelLoading(true);
+    try {
+      const res = await fetch(`/api/centralized/horario/task?subject_kind=${selected.kind}&subject_id=${selected.id}&alternative_id=${entry.alternativeId}`);
+      const d = await res.json();
+      setPanelCtx(d.data || { problems: [], situations: [], causes: [] });
+    } catch { setPanelCtx({ problems: [], situations: [], causes: [] }); }
+    finally { setPanelLoading(false); }
   };
 
   const onDropDay = (day: Date) => {
@@ -133,6 +163,11 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     if (id == null) return;
     const t = taskById.get(id);
     if (t) assign(t, day);
+  };
+
+  const showBubble = (el: HTMLElement, kind: 'values' | 'talents', items: string[]) => {
+    const r = el.getBoundingClientRect();
+    setBubble({ kind, items, x: r.left + r.width / 2, y: r.top });
   };
 
   return (
@@ -182,25 +217,35 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                         </div>
                       </div>
 
-                      {/* Etiquetas */}
+                      {/* Etiquetas: dos iconos con burbuja flotante al pasar el puntero */}
                       {(t.values.length > 0 || t.talents.length > 0) && (
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {t.values.map((v) => (
-                            <span key={`v-${v}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-[10px] text-violet-300" style={mf}><Gem className="w-2.5 h-2.5" />{VALOR_LABEL[v] || v}</span>
-                          ))}
-                          {t.talents.map((tal) => (
-                            <span key={`t-${tal}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10px] text-sky-300" style={mf}><Sparkles className="w-2.5 h-2.5" />{tal}</span>
-                          ))}
+                        <div className="flex items-center gap-1.5 mt-2 ml-5">
+                          {t.values.length > 0 && (
+                            <button type="button"
+                              onMouseEnter={(e) => showBubble(e.currentTarget, 'values', t.values.map((v) => VALOR_LABEL[v] || v))}
+                              onMouseLeave={() => setBubble(null)}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-[10.5px] text-violet-300 cursor-default" style={mf}>
+                              <Gem className="w-3 h-3" /> {t.values.length}
+                            </button>
+                          )}
+                          {t.talents.length > 0 && (
+                            <button type="button"
+                              onMouseEnter={(e) => showBubble(e.currentTarget, 'talents', t.talents)}
+                              onMouseLeave={() => setBubble(null)}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10.5px] text-sky-300 cursor-default" style={mf}>
+                              <Sparkles className="w-3 h-3" /> {t.talents.length}
+                            </button>
+                          )}
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center justify-between mt-2 ml-5">
                         <button onClick={() => openEditor(t)} className="inline-flex items-center gap-1 text-[11px] text-accent hover:text-accent-hover transition-colors" style={mf}>
                           <Tag className="w-3 h-3" /> {ready ? 'Editar etiquetas' : 'Agregar etiquetas'}
                         </button>
                         {scheduledCount > 0 && <span className="text-[10px] text-digi-muted tabular-nums" style={mf}>{scheduledCount} en agenda</span>}
                       </div>
-                      {!ready && <p className="text-[10px] text-digi-muted/70 mt-1" style={mf}>Necesita etiquetas para arrastrarla al horario.</p>}
+                      {!ready && <p className="text-[10px] text-digi-muted/70 mt-1 ml-5" style={mf}>Necesita etiquetas para arrastrarla al horario.</p>}
                     </div>
                   );
                 })
@@ -247,15 +292,14 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                         ) : (
                           entries.map((e) => {
                             const t = taskById.get(e.alternativeId);
-                            const past = dayStr < todayStr;
-                            const missed = past && !e.completed;
+                            const st = e.status;
+                            const open = panelEntry?.id === e.id;
                             return (
-                              <div key={e.id} className={`group flex items-start gap-1 rounded-md border px-1.5 py-1.5 ${e.completed ? 'border-emerald-400/40 bg-emerald-500/10' : missed ? 'border-red-400/40 bg-red-500/10' : 'border-accent/25 bg-accent-light'}`}>
-                                <button onClick={() => toggleComplete(e)} title={e.completed ? 'Completada — desmarcar' : 'Marcar completada'} className="shrink-0 mt-0.5" aria-label="Completar">
-                                  {e.completed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Circle className={`w-3.5 h-3.5 ${missed ? 'text-red-400' : 'text-accent/60'} hover:text-accent`} />}
-                                </button>
-                                <span className={`text-[11px] leading-snug flex-1 min-w-0 ${e.completed ? 'text-emerald-700 line-through' : missed ? 'text-red-600' : 'text-accent'}`} style={mf}>{t?.title || 'Tarea'}</span>
-                                <button onClick={() => unassign(e)} className="opacity-0 group-hover:opacity-100 text-digi-muted hover:text-red-500 transition-opacity shrink-0" aria-label="Quitar"><X className="w-3 h-3" /></button>
+                              <div key={e.id} className={`flex items-center gap-1 rounded-md border px-1 py-1.5 ${st === 'completed' ? 'border-emerald-400/40 bg-emerald-500/10' : st === 'failed' ? 'border-red-400/40 bg-red-500/10' : 'border-accent/25 bg-accent-light'} ${open ? 'ring-1 ring-accent' : ''}`}>
+                                <button onClick={() => openPanel(e)} title="Detalles de la tarea" className="shrink-0 text-digi-muted hover:text-accent transition-colors" aria-label="Detalles"><MoreVertical className="w-3.5 h-3.5" /></button>
+                                <span className={`text-[11px] leading-snug flex-1 min-w-0 ${st === 'completed' ? 'text-emerald-400' : st === 'failed' ? 'text-red-400' : 'text-accent'}`} style={mf}>{t?.title || 'Tarea'}</span>
+                                {st === 'completed' && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
+                                {st === 'failed' && <XCircle className="w-3 h-3 text-red-500 shrink-0" />}
                               </div>
                             );
                           })
@@ -267,7 +311,77 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
               </div>
             </div>
           </div>
+
+          {/* Panel de detalle de la tarea programada (a la derecha del calendario) */}
+          {panelEntry && (() => {
+            const t = taskById.get(panelEntry.alternativeId);
+            const st = panelEntry.status;
+            return (
+              <div className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden self-stretch">
+                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
+                  <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
+                  <button onClick={() => setPanelEntry(null)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="p-3 space-y-3 max-h-[calc(100dvh-200px)] overflow-y-auto">
+                  <div>
+                    <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{t?.title || 'Tarea'}</h4>
+                    {t?.description && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{t.description}</p>}
+                  </div>
+
+                  {/* Estado */}
+                  <div>
+                    <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <StatusButton active={st === 'completed'} tone="completed" onClick={() => setEntryStatus(panelEntry, 'completed')} Icon={CheckCircle2} label="Completada" />
+                      <StatusButton active={st === 'failed'} tone="failed" onClick={() => setEntryStatus(panelEntry, 'failed')} Icon={XCircle} label="Fallida" />
+                      <StatusButton active={st === 'pending'} tone="pending" onClick={() => setEntryStatus(panelEntry, 'pending')} Icon={CircleDashed} label="Pendiente" />
+                    </div>
+                    <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>
+                      Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.
+                    </p>
+                  </div>
+
+                  {/* Etiquetas */}
+                  {t && (t.values.length > 0 || t.talents.length > 0) && (
+                    <div className="flex flex-wrap gap-1">
+                      {t.values.map((v) => <span key={`v-${v}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-[10px] text-violet-300" style={mf}><Gem className="w-2.5 h-2.5" />{VALOR_LABEL[v] || v}</span>)}
+                      {t.talents.map((tal) => <span key={`t-${tal}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10px] text-sky-300" style={mf}><Sparkles className="w-2.5 h-2.5" />{tal}</span>)}
+                    </div>
+                  )}
+
+                  {/* Contexto de Apoyo */}
+                  {panelLoading ? (
+                    <p className="text-[12px] text-digi-muted" style={mf}>Cargando contexto…</p>
+                  ) : panelCtx && (
+                    <div className="space-y-2.5 pt-1 border-t border-digi-border/60">
+                      <CtxList title="Problema" items={panelCtx.problems.map((p) => p.title)} />
+                      <CtxList title="Situaciones" items={panelCtx.situations} />
+                      <CtxList title="Causas" items={panelCtx.causes} />
+                    </div>
+                  )}
+
+                  <button onClick={() => unassign(panelEntry)} className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 mt-1 border border-red-400/30 bg-red-500/10 hover:bg-red-500/20 rounded-md text-[12px] font-medium text-red-400 transition-colors" style={mf}>
+                    <Trash2 className="w-3.5 h-3.5" /> Quitar del día
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </>
+      )}
+
+      {/* Burbuja flotante de etiquetas */}
+      {bubble && (
+        <div className="fixed z-50 pointer-events-none -translate-x-1/2 -translate-y-full -mt-2" style={{ left: bubble.x, top: bubble.y }}>
+          <div className="p-2 rounded-md bg-digi-card border border-digi-border shadow-xl max-w-[240px]">
+            <p className="text-[9.5px] uppercase tracking-wide text-digi-muted mb-1" style={df}>{bubble.kind === 'values' ? 'Valores' : 'Talentos'}</p>
+            <div className="flex flex-wrap gap-1">
+              {bubble.items.map((it, i) => (
+                <span key={i} className={`px-1.5 py-0.5 rounded-full text-[10px] ${bubble.kind === 'values' ? 'bg-violet-500/15 text-violet-300' : 'bg-sky-500/15 text-sky-300'}`} style={mf}>{it}</span>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Editor de etiquetas */}
@@ -290,6 +404,32 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
           </div>
         </div>
       </PixelModal>
+    </div>
+  );
+}
+
+function StatusButton({ active, tone, onClick, Icon, label }: { active: boolean; tone: 'completed' | 'failed' | 'pending'; onClick: () => void; Icon: any; label: string }) {
+  const base = 'inline-flex flex-col items-center justify-center gap-1 px-1.5 py-2 rounded-md border text-[10.5px] font-medium transition-colors';
+  const cls = tone === 'completed'
+    ? (active ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300' : 'border-digi-border text-digi-muted hover:border-emerald-400/40 hover:text-emerald-300')
+    : tone === 'failed'
+      ? (active ? 'bg-red-500/20 border-red-400/50 text-red-300' : 'border-digi-border text-digi-muted hover:border-red-400/40 hover:text-red-300')
+      : (active ? 'bg-white/10 border-white/25 text-digi-text' : 'border-digi-border text-digi-muted hover:border-accent/40 hover:text-digi-text');
+  return (
+    <button onClick={onClick} className={`${base} ${cls}`} style={mf}>
+      <Icon className="w-4 h-4" /> {label}
+    </button>
+  );
+}
+
+function CtxList({ title, items }: { title: string; items: string[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-digi-muted mb-1" style={df}>{title}</p>
+      <div className="flex flex-wrap gap-1">
+        {items.map((it, i) => <span key={i} className="px-2 py-0.5 rounded-md bg-digi-darker/60 border border-digi-border/70 text-[11px] text-digi-text" style={mf}>{it}</span>)}
+      </div>
     </div>
   );
 }

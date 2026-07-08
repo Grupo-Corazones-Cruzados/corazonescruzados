@@ -25,13 +25,15 @@ export async function ensureHorarioTables() {
       subject_id TEXT NOT NULL,
       alternative_id BIGINT NOT NULL,
       day DATE NOT NULL,
-      completed BOOLEAN NOT NULL DEFAULT FALSE,
+      completed BOOLEAN NOT NULL DEFAULT FALSE,           -- legado (ya no se usa)
+      status TEXT NOT NULL DEFAULT 'pending',             -- 'pending' | 'completed' | 'failed'
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS hv_schedule_subject_idx ON gcc_world.hv_schedule (subject_kind, subject_id);
   `);
-  // Para instalaciones previas de hv_schedule sin la columna.
-  await pool.query(`ALTER TABLE gcc_world.hv_schedule ADD COLUMN IF NOT EXISTS completed BOOLEAN NOT NULL DEFAULT FALSE`);
+  // Instalaciones previas: agrega `status` y arrastra el valor del viejo `completed`.
+  await pool.query(`ALTER TABLE gcc_world.hv_schedule ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending'`);
+  await pool.query(`UPDATE gcc_world.hv_schedule SET status = 'completed' WHERE completed = TRUE AND status = 'pending'`);
 }
 
 export interface HorarioTask {
@@ -42,11 +44,12 @@ export interface HorarioTask {
   values: string[];   // keys de VALORES
   talents: string[];  // etiquetas de TALENTOS
 }
+export type ScheduleStatus = 'pending' | 'completed' | 'failed';
 export interface ScheduleEntry {
   id: number;
   alternativeId: number;
   day: string; // YYYY-MM-DD
-  completed: boolean;
+  status: ScheduleStatus;
 }
 
 /**
@@ -110,13 +113,13 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string):
 
   // Calendario del sujeto (limitado a tareas todavía vigentes).
   const schedRows = (await pool.query(
-    `SELECT id, alternative_id, to_char(day, 'YYYY-MM-DD') AS day, completed
+    `SELECT id, alternative_id, to_char(day, 'YYYY-MM-DD') AS day, status
        FROM gcc_world.hv_schedule
       WHERE subject_kind = $1 AND subject_id = $2 AND alternative_id = ANY($3::bigint[])
       ORDER BY day`,
     [subjectKind, subjectId, ids],
   )).rows;
-  const schedule: ScheduleEntry[] = schedRows.map((r: any) => ({ id: Number(r.id), alternativeId: Number(r.alternative_id), day: r.day, completed: r.completed === true }));
+  const schedule: ScheduleEntry[] = schedRows.map((r: any) => ({ id: Number(r.id), alternativeId: Number(r.alternative_id), day: r.day, status: (r.status as ScheduleStatus) || 'pending' }));
 
   return { tasks, schedule };
 }
@@ -130,8 +133,8 @@ export interface ProfileScores {
 
 /**
  * Puntuación de perfil derivada del cumplimiento de tareas del Horario de Vida.
- * Cada tarea programada afecta a sus etiquetas: si se COMPLETA suma (+1); si el día ya
- * pasó y NO se completó resta (−1); si el día aún no llega, queda pendiente (no puntúa).
+ * Cada tarea programada afecta a sus etiquetas según su estado EXPLÍCITO: 'completed'
+ * suma (+1), 'failed' resta (−1), 'pending' no puntúa (efecto neutro).
  *
  *  - Talentos: puntos netos por talento (completadas − fallidas). El top 10 con neto
  *    positivo se reparte el 100% proporcionalmente (mayor potencial = más %).
@@ -144,19 +147,17 @@ export async function getSubjectsProfileScores(subjectKind: string, subjectIds: 
   if (subjectIds.length === 0) return out;
   await ensureHorarioTables();
   const { rows } = await pool.query(
-    `SELECT h.subject_id, h.completed, (h.day < CURRENT_DATE) AS past, l.value_tags, l.talent_tags
+    `SELECT h.subject_id, h.status, l.value_tags, l.talent_tags
        FROM gcc_world.hv_schedule h
        JOIN gcc_world.hv_task_labels l ON l.alternative_id = h.alternative_id
-      WHERE h.subject_kind = $1 AND h.subject_id = ANY($2::text[])`,
+      WHERE h.subject_kind = $1 AND h.subject_id = ANY($2::text[]) AND h.status IN ('completed','failed')`,
     [subjectKind, subjectIds],
   );
 
   type Tally = { c: number; f: number };
   const agg = new Map<string, { talents: Map<string, Tally>; values: Map<string, Tally> }>();
   for (const r of rows) {
-    const completed = r.completed === true;
-    const past = r.past === true;
-    if (!completed && !past) continue; // pendiente (día futuro sin completar) → no puntúa aún
+    const completed = r.status === 'completed'; // 'failed' es el otro caso (pending ya se filtró)
     const sid = String(r.subject_id);
     let a = agg.get(sid);
     if (!a) { a = { talents: new Map(), values: new Map() }; agg.set(sid, a); }
@@ -178,6 +179,55 @@ export async function getSubjectsProfileScores(subjectKind: string, subjectIds: 
     out[sid] = { talents, valuesBalance };
   }
   return out;
+}
+
+export interface TaskContext {
+  problems: { title: string; dimension: string | null }[];
+  situations: string[];
+  causes: string[];
+}
+
+/**
+ * Contexto de una tarea (alternativa) dentro del grafo de Apoyo del sujeto: los
+ * problemas que aborda, y —vía esos problemas— sus situaciones y causas. Para el panel
+ * de detalle del horario.
+ */
+export async function getTaskContext(subjectKind: string, subjectId: string, alternativeId: number): Promise<TaskContext> {
+  await ensureHorarioTables();
+  // Problemas del sujeto que aborda esta alternativa.
+  const probRows = (await pool.query(
+    `SELECT DISTINCT p.id, p.title, p.dimension
+       FROM gcc_world.aa_solution_problems spr
+       JOIN gcc_world.aa_problems p ON p.id = spr.problem_id
+       JOIN gcc_world.aa_situation_problems sp ON sp.problem_id = p.id
+       JOIN gcc_world.aa_situations s ON s.id = sp.situation_id
+      WHERE spr.solution_id = $1 AND s.subject_kind = $2 AND s.subject_id = $3`,
+    [alternativeId, subjectKind, subjectId],
+  )).rows;
+  const problemIds = probRows.map((r: any) => Number(r.id));
+  const problems = probRows.map((r: any) => ({ title: r.title, dimension: r.dimension ?? null }));
+  if (problemIds.length === 0) return { problems: [], situations: [], causes: [] };
+
+  const sitRows = (await pool.query(
+    `SELECT DISTINCT s.title
+       FROM gcc_world.aa_situation_problems sp
+       JOIN gcc_world.aa_situations s ON s.id = sp.situation_id
+      WHERE sp.problem_id = ANY($1::bigint[]) AND s.subject_kind = $2 AND s.subject_id = $3`,
+    [problemIds, subjectKind, subjectId],
+  )).rows;
+  const causeRows = (await pool.query(
+    `SELECT DISTINCT c.title
+       FROM gcc_world.aa_problem_causes pc
+       JOIN gcc_world.aa_causes c ON c.id = pc.cause_id
+      WHERE pc.problem_id = ANY($1::bigint[])`,
+    [problemIds],
+  )).rows;
+
+  return {
+    problems,
+    situations: sitRows.map((r: any) => r.title),
+    causes: causeRows.map((r: any) => r.title),
+  };
 }
 
 /** Fija las etiquetas (valores/talentos) de una tarea (alternativa). */

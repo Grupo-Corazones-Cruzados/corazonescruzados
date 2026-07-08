@@ -46,14 +46,15 @@ export async function POST(req: Request) {
   }
 }
 
-// PATCH — marca una asignación como completada o no completada.
+// PATCH — cambia el estado de una asignación: 'pending' | 'completed' | 'failed'.
 export async function PATCH(req: Request) {
   try {
     if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     await ensureHorarioTables();
-    const { id, completed } = await req.json();
-    if (!id || typeof completed !== 'boolean') return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
-    await pool.query(`UPDATE gcc_world.hv_schedule SET completed = $1 WHERE id = $2`, [completed, Number(id)]);
+    const { id, status } = await req.json();
+    if (!id || !['pending', 'completed', 'failed'].includes(String(status))) return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
+    // Mantiene el legado `completed` coherente por si algo lo leyera.
+    await pool.query(`UPDATE gcc_world.hv_schedule SET status = $1, completed = ($1 = 'completed') WHERE id = $2`, [String(status), Number(id)]);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error('Horario schedule PATCH error:', err.message);
