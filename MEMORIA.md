@@ -267,6 +267,22 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Integración Apoyo ↔ Reclutamiento ↔ Horario de Vida (2026-07-07):**
+  - **Listas canónicas (fuente única):** `lib/centralized/valores.ts` (`VALORES`, los 9 valores de la org; `reclutamiento.ts`
+    re-exporta `VALUE_ITEMS = VALORES` para no romper imports) y `lib/centralized/talentos.ts` (`TALENTOS`, 500+ talentos
+    agrupados por categoría, editable a futuro). Todo lugar que ofrezca elegir valores/talentos importa de aquí.
+  - **Apoyo → Reclutamiento (Dimensiones):** las barras de la sección "Dimensiones" de `CandidatosTab` reflejan la
+    **carga de problemas sin resolver** por dimensión del sujeto (candidate). `getDimensionProblemLoads()` en `apoyo-db.ts`:
+    por dimensión, % = (total − resueltos)/total; "resuelto" = el problema tiene al menos una **solución** vinculada
+    (status='solution'; las alternativas NO cuentan). 5 problemas, 1 con solución → 80%. Se calcula en `/api/admin/candidates`
+    (dimensions dentro de `criteria`). Solo candidatos (MembersTab no muestra criterios).
+  - **Apoyo → Horario de Vida (Tareas):** las TAREAS son las **alternativas** del sujeto (aún no convertidas en solución).
+    `lib/centralized/horario-db.ts` (`ensureHorarioTables`): `hv_task_labels` (alternative_id PK, `value_tags[]`, `talent_tags[]`)
+    y `hv_schedule` (subject + alternative_id + day). Cada tarea necesita **etiquetas** (valores y/o talentos, multi-select con
+    buscador `components/ui/MultiSelectSearch.tsx`) antes de poder **arrastrarse** (HTML5 nativo, sin lib) a un día del calendario
+    semanal. APIs: `/api/centralized/horario` (GET tareas+agenda, PATCH etiquetas validadas contra las listas canónicas),
+    `/api/centralized/horario/schedule` (POST asigna —exige etiquetas—, DELETE quita). Al convertir la alternativa en solución
+    desaparece de tareas.
 - **Alternativa vs Solución (2026-07-07):** las "soluciones" ahora se crean primero como **Alternativas**
   (ideas propuestas para afrontar un problema). Alternativa y Solución **comparten la tabla `aa_solutions`
   y sus joins** (`aa_solution_problems`/`aa_solution_causes`); se distinguen por la columna nueva
