@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, Gem, Activity, HeartHandshake, Info, ChevronDown } from 'lucide-react';
+import { Sparkles, Gem, Activity, HeartHandshake, Info, ChevronDown, Target } from 'lucide-react';
 import { VALUE_ITEMS, DIMENSION_ITEMS, APOYO_ITEMS, sortedTalents, type CandidateCriteria, type CriterionItem } from '@/lib/centralized/reclutamiento';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -16,6 +16,8 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 export default function CriteriaSections({ criteria, defaultOpen = false }: { criteria: CandidateCriteria | null; defaultOpen?: boolean }) {
   return (
     <div className="space-y-4">
+      <ProspeccionIndicator criteria={criteria} />
+
       {!criteria && (
         <div className="flex items-center gap-2 rounded-lg border border-digi-border bg-digi-darker px-3 py-2 text-[12px] text-digi-muted" style={mf}>
           <Info className="w-4 h-4 shrink-0 text-accent" />
@@ -44,6 +46,42 @@ export default function CriteriaSections({ criteria, defaultOpen = false }: { cr
       <Section title="Apoyo" Icon={HeartHandshake} subtitle="Redes de apoyo del usuario" count={APOYO_ITEMS.length} defaultOpen={defaultOpen}>
         <CriteriaGrid items={APOYO_ITEMS} group={criteria?.apoyo} />
       </Section>
+    </div>
+  );
+}
+
+/**
+ * Indicador de PROSPECCIÓN: resume la capacidad para alcanzar su objetivo a partir de
+ * TODOS los indicadores del criterio de Valores → total positivo (tareas completadas)
+ * vs total negativo (tareas fallidas), en una sola barra divergente + el neto.
+ */
+function ProspeccionIndicator({ criteria }: { criteria: CandidateCriteria | null }) {
+  const vb = criteria?.valuesBalance || {};
+  let pos = 0, neg = 0;
+  for (const k of Object.keys(vb)) { pos += vb[k].completed || 0; neg += vb[k].failed || 0; }
+  const total = pos + neg;
+  const posPct = total ? (pos / total) * 100 : 0;
+  const negPct = total ? (neg / total) * 100 : 0;
+  const net = pos - neg;
+  return (
+    <div className="rounded-xl border border-accent/30 bg-accent-light/40 p-4">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="w-8 h-8 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0"><Target className="w-4 h-4 text-accent" /></div>
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[13.5px] font-semibold text-digi-text leading-none" style={df}>Prospección</h4>
+          <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Capacidad para alcanzar su objetivo (según cumplimiento de valores)</p>
+        </div>
+        <span className={`text-[15px] font-bold tabular-nums shrink-0 ${net > 0 ? 'text-emerald-500' : net < 0 ? 'text-red-500' : 'text-digi-muted'}`} style={df}>{net > 0 ? `+${net}` : net}</span>
+      </div>
+      <div className="flex items-center justify-between text-[12px] mb-1.5" style={mf}>
+        <span className="inline-flex items-center gap-1 text-emerald-500 font-medium">+{pos} positivo</span>
+        <span className="inline-flex items-center gap-1 text-red-500 font-medium">−{neg} negativo</span>
+      </div>
+      <div className="h-3 rounded-full bg-digi-border/50 overflow-hidden flex">
+        <div className="h-full bg-emerald-500 transition-all" style={{ width: `${posPct}%` }} />
+        <div className="h-full bg-red-500 transition-all" style={{ width: `${negPct}%` }} />
+      </div>
+      {total === 0 && <p className="text-[11px] text-digi-muted/80 mt-1.5" style={mf}>Aún sin tareas evaluadas para este perfil.</p>}
     </div>
   );
 }

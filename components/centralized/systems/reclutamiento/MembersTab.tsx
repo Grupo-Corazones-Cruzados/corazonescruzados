@@ -252,7 +252,7 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
       {prospectOpen && selected && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-[pixelFadeIn_0.15s_ease-out]" onClick={() => setProspectOpen(false)} />
-          <aside className="absolute right-0 top-0 h-full w-full max-w-[440px] bg-digi-darker border-l border-digi-border shadow-2xl flex flex-col animate-[pixelFadeIn_0.2s_ease-out]">
+          <aside className="absolute right-0 top-0 h-full w-full max-w-[680px] bg-digi-darker border-l border-digi-border shadow-2xl flex flex-col animate-[pixelFadeIn_0.2s_ease-out]">
             <div className="flex items-center gap-2.5 px-4 py-3 border-b border-digi-border shrink-0">
               <div className="w-9 h-9 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0"><Radar className="w-5 h-5 text-accent" /></div>
               <div className="min-w-0 flex-1">
