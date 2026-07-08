@@ -8,6 +8,7 @@ import {
   Briefcase, Dumbbell, Brain, Users,
 } from 'lucide-react';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
+import TaskStatusButtons from '@/components/centralized/TaskStatusButtons';
 import PixelModal from '@/components/ui/PixelModal';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { VALORES, VALOR_LABEL } from '@/lib/centralized/valores';
@@ -436,11 +437,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                     return (
                       <div>
                         <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado{panel.auto ? ` · ${fmtDay(panel.auto.day)}` : ''}</p>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          <StatusButton active={cur === 'completed'} tone="completed" onClick={() => set('completed')} Icon={CheckCircle2} label="Completada" />
-                          <StatusButton active={cur === 'failed'} tone="failed" onClick={() => set('failed')} Icon={XCircle} label="Fallida" />
-                          <StatusButton active={cur === 'pending'} tone="pending" onClick={() => set('pending')} Icon={CircleDashed} label="Pendiente" />
-                        </div>
+                        <TaskStatusButtons value={cur ?? 'pending'} onChange={set} />
                         <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>
                           Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.
                         </p>
@@ -548,20 +545,6 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
         </div>
       </PixelModal>
     </div>
-  );
-}
-
-function StatusButton({ active, tone, onClick, Icon, label }: { active: boolean; tone: 'completed' | 'failed' | 'pending'; onClick: () => void; Icon: any; label: string }) {
-  const base = 'inline-flex flex-col items-center justify-center gap-1 px-1.5 py-2 rounded-md border text-[10.5px] font-medium transition-colors';
-  const cls = tone === 'completed'
-    ? (active ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300' : 'border-digi-border text-digi-muted hover:border-emerald-400/40 hover:text-emerald-300')
-    : tone === 'failed'
-      ? (active ? 'bg-red-500/20 border-red-400/50 text-red-300' : 'border-digi-border text-digi-muted hover:border-red-400/40 hover:text-red-300')
-      : (active ? 'bg-white/10 border-white/25 text-digi-text' : 'border-digi-border text-digi-muted hover:border-accent/40 hover:text-digi-text');
-  return (
-    <button onClick={onClick} className={`${base} ${cls}`} style={mf}>
-      <Icon className="w-4 h-4" /> {label}
-    </button>
   );
 }
 

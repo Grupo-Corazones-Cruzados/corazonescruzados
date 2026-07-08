@@ -5,12 +5,13 @@ import { toast } from 'sonner';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Share2, CalendarDays, ListTodo, Lock, Ticket, FolderKanban,
-  Briefcase, Dumbbell, Brain, Users, CheckCircle2, XCircle,
+  Briefcase, Dumbbell, Brain, Users,
 } from 'lucide-react';
 import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
 import EventModal, { type EventFormPayload, type ClientOption, type TaskOption } from '@/components/calendar/EventModal';
 import ShareDialog from '@/components/calendar/ShareDialog';
 import ProposalsPanel from '@/components/calendar/ProposalsPanel';
+import TaskStatusButtons from '@/components/centralized/TaskStatusButtons';
 import {
   type CalendarEvent, type EventInstance, type EventType,
   expandEvents, MONTH_LABELS_ES, EVENT_COLORS,
@@ -111,9 +112,9 @@ export default function MiDiaPage() {
   const rangeGroups = useMemo(() => {
     const from = ymd(range.s), to = ymd(range.e); // [from, to)
     const inRange = (ds: string) => ds >= from && ds < to;
-    const byDay = new Map<string, { key: string; alternativeId: number; status: Status; auto: boolean; source?: 'ticket' | 'project'; refTitle?: string }[]>();
+    const byDay = new Map<string, { key: string; id?: number; alternativeId: number; status: Status; auto: boolean; source?: 'ticket' | 'project'; refTitle?: string }[]>();
     const add = (ds: string, item: any) => { const a = byDay.get(ds) || []; a.push(item); byDay.set(ds, a); };
-    for (const e of horario.schedule) if (inRange(e.day)) add(e.day, { key: `m-${e.id}`, alternativeId: e.alternativeId, status: e.status, auto: false });
+    for (const e of horario.schedule) if (inRange(e.day)) add(e.day, { key: `m-${e.id}`, id: e.id, alternativeId: e.alternativeId, status: e.status, auto: false });
     for (const e of horario.auto) if (inRange(e.day)) add(e.day, { key: `a-${e.alternativeId}-${e.day}`, alternativeId: e.alternativeId, status: e.status, auto: true, source: e.source, refTitle: e.refTitle });
     return Array.from(byDay.entries()).sort(([a], [b]) => (a < b ? -1 : 1)).map(([day, items]) => ({ day, items }));
   }, [horario, range]);
@@ -146,6 +147,32 @@ export default function MiDiaPage() {
     setEditingEvent(null); setInitialDate(base); setInitialType('work'); setInitialTaskId(alternativeId); setModalOpen(true);
   };
   const handleEventClick = (inst: EventInstance) => { const full = events.find((e) => e.id === inst.id) || null; setEditingEvent(full); setInitialDate(null); setInitialTaskId(null); setModalOpen(true); };
+
+  // Marca el estado (completada/fallida/pendiente) de una tarea del rail; optimista.
+  // Manual → PATCH /schedule por id; automática (ticket/proyecto) → POST /auto-status por día.
+  const setTaskStatus = async (it: { id?: number; alternativeId: number; auto: boolean }, day: string, status: Status) => {
+    if (it.auto) {
+      const subject = horario.subject;
+      if (!subject) return;
+      setHorario((h) => ({ ...h, auto: h.auto.map((e) => (e.alternativeId === it.alternativeId && e.day === day ? { ...e, status } : e)) }));
+      try {
+        const res = await fetch('/api/centralized/horario/auto-status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject_kind: subject.kind, subject_id: subject.id, alternativeId: it.alternativeId, day, status }),
+        });
+        if (!res.ok) throw new Error();
+      } catch { toast.error('No se pudo actualizar el estado'); loadHorario(); }
+    } else {
+      if (!it.id) return;
+      setHorario((h) => ({ ...h, schedule: h.schedule.map((e) => (e.id === it.id ? { ...e, status } : e)) }));
+      try {
+        const res = await fetch('/api/centralized/horario/schedule', {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: it.id, status }),
+        });
+        if (!res.ok) throw new Error();
+      } catch { toast.error('No se pudo actualizar el estado'); loadHorario(); }
+    }
+  };
 
   const handleSave = async (payload: EventFormPayload, id?: string) => {
     const res = await fetch(id ? `/api/members/calendar/events/${id}` : '/api/members/calendar/events', {
@@ -298,15 +325,14 @@ export default function MiDiaPage() {
                           {it.auto && <Lock className="w-3 h-3 shrink-0 text-sky-400" />}
                           {dims.map((dm) => { const DI = DIM_ICON[dm]; return DI ? <DI key={dm} title={DIMENSION_LABEL[dm] || dm} className="w-3.5 h-3.5 shrink-0" style={{ color: DIMENSION_COLOR[dm] || '#888' }} /> : null; })}
                           <span className="text-[12.5px] font-medium text-digi-text leading-snug min-w-0 flex-1 truncate" style={mf}>{t?.title || 'Tarea'}</span>
-                          {it.status === 'completed' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-                          {it.status === 'failed' && <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
                         </div>
                         {it.auto && (
                           <p className="text-[10.5px] text-sky-500 mt-1 inline-flex items-center gap-1" style={mf}>
                             {it.source === 'ticket' ? <Ticket className="w-2.5 h-2.5" /> : <FolderKanban className="w-2.5 h-2.5" />} {it.refTitle}
                           </p>
                         )}
-                        <button onClick={() => openTaskEvent(it.alternativeId, g.day)} className="mt-2 w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border border-accent/40 bg-accent-light text-[11.5px] font-medium text-accent hover:bg-accent hover:text-white transition-colors" style={mf}>
+                        <TaskStatusButtons className="mt-2" value={it.status} onChange={(s) => setTaskStatus(it, g.day, s)} />
+                        <button onClick={() => openTaskEvent(it.alternativeId, g.day)} className="mt-1.5 w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border border-accent/40 bg-accent-light text-[11.5px] font-medium text-accent hover:bg-accent hover:text-white transition-colors" style={mf}>
                           <Plus className="w-3 h-3" /> Registrar tiempo
                         </button>
                       </div>
