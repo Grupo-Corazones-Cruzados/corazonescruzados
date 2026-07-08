@@ -1142,3 +1142,8 @@ html {
   --color-purple-300: oklch(82.7% 0.119 306.383);
   --color-pink-400: oklch(71.8% 0.202 349.761);
 }
+
+/* Oculta la barra de scroll manteniendo el scroll (p. ej. la fila de pestañas del
+   banner de políticas). Reutilizable. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
