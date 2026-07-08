@@ -58,27 +58,26 @@ export default function PolicyBanner({ collapsed = false }: { collapsed?: boolea
             style={{ boxShadow: '0 10px 34px -10px rgba(76,29,149,.6)', animation: 'gccPolIn .35s ease-out, gccPolFloat 5s ease-in-out .35s infinite' }}
           >
             {/* Header MORADO: megáfono + pestañas (si hay varias) + ocultar */}
-            <div className="flex items-end gap-2 px-3 pt-2 rounded-t-xl" style={{ background: 'linear-gradient(100deg,#4c1d95,#5b21b6 55%,#6d28d9)' }}>
-              <Megaphone className="w-[18px] h-[18px] shrink-0 text-white/90 mb-2" />
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-xl" style={{ background: 'linear-gradient(100deg,#4c1d95,#5b21b6 55%,#6d28d9)' }}>
+              <Megaphone className="w-[18px] h-[18px] shrink-0 text-white/90" />
               {multi ? (
-                <div className="flex items-end gap-1.5 overflow-x-auto min-w-0 flex-1 no-scrollbar">
+                <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-1 no-scrollbar">
                   {policies.map((pol, i) => {
                     const on = i === idx;
                     return (
                       <button key={pol.id} onClick={() => setIdx(i)}
-                        className={`shrink-0 max-w-[190px] inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-semibold truncate transition-colors ${on ? 'bg-digi-card text-digi-text rounded-t-lg -mb-px' : 'text-white/70 hover:text-white hover:bg-white/10 rounded-t-lg mb-1'}`}
+                        className={`shrink-0 max-w-[190px] inline-flex items-center px-3 py-1 rounded-md text-[11.5px] font-semibold truncate transition-colors ${on ? 'bg-digi-card text-digi-text shadow-sm' : 'text-white/70 hover:text-white hover:bg-white/12'}`}
                         style={mf} title={pol.name}>
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: on ? 'var(--color-accent)' : 'rgba(255,255,255,0.45)' }} />
                         <span className="truncate">{pol.name}</span>
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <span className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-wide text-white/80 truncate mb-2" style={df} title={p.name}>{p.name}</span>
+                <span className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-wide text-white/80 truncate" style={df} title={p.name}>{p.name}</span>
               )}
               <button onClick={() => persist(false)} title="Ocultar aviso" aria-label="Ocultar aviso"
-                className="shrink-0 w-6 h-6 mb-1.5 rounded-md flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+                className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-white hover:bg-white/20 transition-colors">
                 <ChevronUp className="w-4 h-4" />
               </button>
             </div>
