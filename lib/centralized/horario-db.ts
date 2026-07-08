@@ -180,6 +180,9 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
   if (from && to && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
     for (const r of linkRows) {
       if (!r.end) continue;                         // sin fecha límite → sin auto-agenda
+      // Sin etiquetas (valores/talentos) todavía NO se muestra en el calendario.
+      const lbl = labelsBy.get(Number(r.aid));
+      if (!lbl || (lbl.values.length === 0 && lbl.talents.length === 0)) continue;
       const start = r.start || r.end;
       const lo = start > from ? start : from;       // comparación lexicográfica válida en YYYY-MM-DD
       const hi = r.end < to ? r.end : to;
