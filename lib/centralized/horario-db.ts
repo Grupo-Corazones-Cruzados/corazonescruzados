@@ -147,7 +147,7 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
        SELECT l.alternative_id, 'project'::text, p.title,
               to_char(COALESCE(p.confirmed_at, p.created_at)::date, 'YYYY-MM-DD'), to_char(p.deadline::date, 'YYYY-MM-DD')
          FROM gcc_world.aa_alternative_projects l
-         JOIN gcc_world.projects p ON p.id = l.project_id
+         JOIN gcc_world.projects p ON p.id::text = l.project_id
         WHERE l.alternative_id = ANY($1::bigint[]) AND p.deadline IS NOT NULL`,
       [ids],
     )).rows;

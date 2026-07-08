@@ -116,7 +116,7 @@ export async function getAlternativeLink(alternativeId: number): Promise<Alterna
   if (t) return { kind: 'ticket', id: String(t.id), title: t.title, status: t.status ?? null };
   const p = (await pool.query(
     `SELECT p.id, p.title, p.status FROM gcc_world.aa_alternative_projects l
-       JOIN gcc_world.projects p ON p.id = l.project_id WHERE l.alternative_id = $1 LIMIT 1`,
+       JOIN gcc_world.projects p ON p.id::text = l.project_id WHERE l.alternative_id = $1 LIMIT 1`,
     [alternativeId],
   )).rows[0];
   if (p) return { kind: 'project', id: String(p.id), title: p.title, status: p.status ?? null };
