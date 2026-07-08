@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X,
-  Gem, Sparkles, CheckCircle2, XCircle, CircleDashed, MoreVertical, Trash2, Ticket, FolderKanban,
+  Gem, Sparkles, CheckCircle2, XCircle, CircleDashed, MoreVertical, Trash2, Ticket, FolderKanban, Lock, Flag,
 } from 'lucide-react';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
 import PixelModal from '@/components/ui/PixelModal';
@@ -23,7 +23,8 @@ const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.g
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 type Status = 'pending' | 'completed' | 'failed';
-interface Task { id: number; title: string; description: string | null; problems: { title: string; dimension: string | null }[]; values: string[]; talents: string[] }
+interface TaskLink { source: 'ticket' | 'project'; title: string; start: string | null; end: string | null }
+interface Task { id: number; title: string; description: string | null; problems: { title: string; dimension: string | null }[]; values: string[]; talents: string[]; link: TaskLink | null }
 interface ScheduleEntry { id: number; alternativeId: number; day: string; status: Status }
 interface AutoEntry { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string }
 interface TaskContext { problems: { title: string; dimension: string | null }[]; situations: string[]; causes: string[] }
@@ -122,9 +123,13 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     finally { setSavingLabels(false); }
   };
 
+  // Salta el calendario a la semana que contiene la fecha indicada (inicio/fin del ref).
+  const goToWeekOf = (dayStr: string | null) => { if (!dayStr) return; setWeekStart(startOfDay(new Date(`${dayStr}T00:00:00`))); };
+
   // Asignación OPTIMISTA: aparece al instante con un id temporal y luego se reconcilia.
   const assign = async (task: Task, day: Date) => {
     if (!selected) return;
+    if (task.link) { toast.error('Esta tarea está fijada por su ticket/proyecto; no se agenda manualmente.'); return; }
     if (!hasLabels(task)) { toast.error('Agrega etiquetas a la tarea antes de programarla'); return; }
     const dayStr = ymd(day);
     const tempId = -Date.now();
@@ -221,16 +226,20 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                 </div>
               ) : (
                 visibleTasks.map((t) => {
+                  const linked = !!t.link;
                   const ready = hasLabels(t);
+                  const draggable = ready && !linked;
                   const scheduledCount = schedule.filter((e) => e.alternativeId === t.id).length;
                   return (
                     <div key={t.id}
-                      draggable={ready}
-                      onDragStart={(e) => { if (!ready) return; setDragId(t.id); e.dataTransfer.setData('text/plain', String(t.id)); e.dataTransfer.effectAllowed = 'move'; }}
+                      draggable={draggable}
+                      onDragStart={(e) => { if (!draggable) return; setDragId(t.id); e.dataTransfer.setData('text/plain', String(t.id)); e.dataTransfer.effectAllowed = 'move'; }}
                       onDragEnd={() => { setDragId(null); setDragOverDay(null); }}
-                      className={`rounded-lg border p-2.5 bg-digi-darker/50 transition-colors ${ready ? 'border-digi-border cursor-grab active:cursor-grabbing hover:border-accent/50' : 'border-dashed border-digi-border/70'} ${dragId === t.id ? 'opacity-50' : ''}`}>
+                      className={`rounded-lg border p-2.5 transition-colors ${linked ? 'border-sky-400/30 bg-sky-500/[0.06]' : ready ? 'border-digi-border bg-digi-darker/50 cursor-grab active:cursor-grabbing hover:border-accent/50' : 'border-dashed border-digi-border/70 bg-digi-darker/50'} ${dragId === t.id ? 'opacity-50' : ''}`}>
                       <div className="flex items-start gap-1.5">
-                        <GripVertical className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${ready ? 'text-digi-muted' : 'text-digi-muted/40'}`} />
+                        {linked
+                          ? <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-sky-400" />
+                          : <GripVertical className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${ready ? 'text-digi-muted' : 'text-digi-muted/40'}`} />}
                         <div className="min-w-0 flex-1">
                           <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{t.title}</p>
                           {t.problems.length > 0 && (
@@ -261,13 +270,28 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between mt-2 ml-5">
-                        <button onClick={() => openEditor(t)} className="inline-flex items-center gap-1 text-[11px] text-accent hover:text-accent-hover transition-colors" style={mf}>
-                          <Tag className="w-3 h-3" /> {ready ? 'Editar etiquetas' : 'Agregar etiquetas'}
-                        </button>
-                        {scheduledCount > 0 && <span className="text-[10px] text-digi-muted tabular-nums" style={mf}>{scheduledCount} en agenda</span>}
-                      </div>
-                      {!ready && <p className="text-[10px] text-digi-muted/70 mt-1 ml-5" style={mf}>Necesita etiquetas para arrastrarla al horario.</p>}
+                      {linked && t.link ? (
+                        <div className="mt-2 ml-5 space-y-1.5">
+                          <p className="inline-flex items-center gap-1 text-[10.5px] text-sky-300 max-w-full" style={mf} title={`Fijada por ${t.link.source === 'ticket' ? 'ticket' : 'proyecto'}: ${t.link.title}`}>
+                            {t.link.source === 'ticket' ? <Ticket className="w-3 h-3 shrink-0" /> : <FolderKanban className="w-3 h-3 shrink-0" />}
+                            <span className="truncate">Fijada por {t.link.source === 'ticket' ? 'ticket' : 'proyecto'}: {t.link.title}</span>
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => goToWeekOf(t.link!.start)} disabled={!t.link.start} title="Ir a la fecha de inicio" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><CalendarClock className="w-3 h-3" /> Inicio</button>
+                            <button onClick={() => goToWeekOf(t.link!.end)} disabled={!t.link.end} title="Ir a la fecha límite" className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}><Flag className="w-3 h-3" /> Fin</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mt-2 ml-5">
+                            <button onClick={() => openEditor(t)} className="inline-flex items-center gap-1 text-[11px] text-accent hover:text-accent-hover transition-colors" style={mf}>
+                              <Tag className="w-3 h-3" /> {ready ? 'Editar etiquetas' : 'Agregar etiquetas'}
+                            </button>
+                            {scheduledCount > 0 && <span className="text-[10px] text-digi-muted tabular-nums" style={mf}>{scheduledCount} en agenda</span>}
+                          </div>
+                          {!ready && <p className="text-[10px] text-digi-muted/70 mt-1 ml-5" style={mf}>Necesita etiquetas para arrastrarla al horario.</p>}
+                        </>
+                      )}
                     </div>
                   );
                 })

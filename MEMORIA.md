@@ -315,7 +315,12 @@ Stack estándar de la casa, con particularidades de este repo:
   **Auto-agenda:** una alternativa con proyecto/ticket asociado aparece **automáticamente** (no editable) en el Horario de Vida
   **todos los días entre el inicio y la fecha límite** del ref (inicio = `created_at`; proyecto = `confirmed_at` si existe;
   fin = `deadline`; si no hay `deadline`, no genera). `getSubjectHorario(kind,id,from,to)` devuelve `auto[]` acotado a la
-  ventana (semana visible; el Horario refetch por semana). Chips punteados celestes, sin estado ni scoring.
+  ventana (semana visible; el Horario refetch por semana) y cada tarea trae `link` (`{source,title,start,end}`). Chips punteados
+  celestes, sin estado ni scoring. **Tareas fijadas/bloqueadas:** las alternativas con `link` **NO son arrastrables** (no se
+  agendan manualmente; guard en `assign` + `draggable=false`), muestran icono de candado + "Fijada por ticket/proyecto" y botones
+  **Inicio/Fin** que saltan el calendario a la semana de la fecha de inicio/límite del ref. **Gotcha:** `projects.id` es **bigint**
+  (no cuid); en joins con `aa_alternative_projects.project_id` (text) hay que castear `p.id::text = l.project_id` (si no, la consulta
+  `auto` lanzaba `bigint = text` y dejaba el Horario **sin tareas**). `tickets.user_id` es **uuid** → `user_id::text = $2::text`.
 - **Alternativa vs Solución (2026-07-07):** las "soluciones" ahora se crean primero como **Alternativas**
   (ideas propuestas para afrontar un problema). Alternativa y Solución **comparten la tabla `aa_solutions`
   y sus joins** (`aa_solution_problems`/`aa_solution_causes`); se distinguen por la columna nueva

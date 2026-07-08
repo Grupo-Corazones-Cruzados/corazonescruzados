@@ -36,6 +36,12 @@ export async function ensureHorarioTables() {
   await pool.query(`UPDATE gcc_world.hv_schedule SET status = 'completed' WHERE completed = TRUE AND status = 'pending'`);
 }
 
+export interface TaskLink {
+  source: 'ticket' | 'project';
+  title: string;
+  start: string | null; // YYYY-MM-DD (inicio del ref)
+  end: string | null;   // YYYY-MM-DD (fecha límite del ref)
+}
 export interface HorarioTask {
   id: number;
   title: string;
@@ -43,6 +49,7 @@ export interface HorarioTask {
   problems: { title: string; dimension: string | null }[];
   values: string[];   // keys de VALORES
   talents: string[];  // etiquetas de TALENTOS
+  link: TaskLink | null; // ticket/proyecto asociado → tarea fijada/bloqueada
 }
 export type ScheduleStatus = 'pending' | 'completed' | 'failed';
 export interface ScheduleEntry {
@@ -110,6 +117,22 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
   const labelsBy = new Map<number, { values: string[]; talents: string[] }>();
   for (const r of labelRows) labelsBy.set(Number(r.alternative_id), { values: r.value_tags || [], talents: r.talent_tags || [] });
 
+  // Vínculo (ticket/proyecto) por alternativa: para bloqueo, botones de fecha y auto-agenda.
+  const linkRows = (await pool.query(
+    `SELECT l.alternative_id AS aid, 'ticket'::text AS source, t.title AS ref_title,
+            to_char(t.created_at::date, 'YYYY-MM-DD') AS start, to_char(t.deadline::date, 'YYYY-MM-DD') AS end
+       FROM gcc_world.aa_alternative_tickets l JOIN gcc_world.tickets t ON t.id = l.ticket_id
+      WHERE l.alternative_id = ANY($1::bigint[])
+     UNION ALL
+     SELECT l.alternative_id, 'project'::text, p.title,
+            to_char(COALESCE(p.confirmed_at, p.created_at)::date, 'YYYY-MM-DD'), to_char(p.deadline::date, 'YYYY-MM-DD')
+       FROM gcc_world.aa_alternative_projects l JOIN gcc_world.projects p ON p.id::text = l.project_id
+      WHERE l.alternative_id = ANY($1::bigint[])`,
+    [ids],
+  )).rows;
+  const linksBy = new Map<number, TaskLink>();
+  for (const r of linkRows) linksBy.set(Number(r.aid), { source: r.source, title: r.ref_title, start: r.start ?? null, end: r.end ?? null });
+
   const tasks: HorarioTask[] = taskRows.map((r: any) => {
     const l = labelsBy.get(Number(r.id)) || { values: [], talents: [] };
     return {
@@ -119,6 +142,7 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
       problems: probsBy.get(Number(r.id)) || [],
       values: l.values,
       talents: l.talents,
+      link: linksBy.get(Number(r.id)) || null,
     };
   });
 
@@ -137,22 +161,10 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
   // (deadline). Acotadas a la ventana [from, to] para no generar rangos enormes.
   const auto: AutoEntry[] = [];
   if (from && to && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
-    const ranges = (await pool.query(
-      `SELECT l.alternative_id AS aid, 'ticket'::text AS source, t.title AS ref_title,
-              to_char(t.created_at::date, 'YYYY-MM-DD') AS start, to_char(t.deadline::date, 'YYYY-MM-DD') AS end
-         FROM gcc_world.aa_alternative_tickets l
-         JOIN gcc_world.tickets t ON t.id = l.ticket_id
-        WHERE l.alternative_id = ANY($1::bigint[]) AND t.deadline IS NOT NULL
-       UNION ALL
-       SELECT l.alternative_id, 'project'::text, p.title,
-              to_char(COALESCE(p.confirmed_at, p.created_at)::date, 'YYYY-MM-DD'), to_char(p.deadline::date, 'YYYY-MM-DD')
-         FROM gcc_world.aa_alternative_projects l
-         JOIN gcc_world.projects p ON p.id::text = l.project_id
-        WHERE l.alternative_id = ANY($1::bigint[]) AND p.deadline IS NOT NULL`,
-      [ids],
-    )).rows;
-    for (const r of ranges) {
-      const lo = r.start > from ? r.start : from;   // comparación lexicográfica válida en YYYY-MM-DD
+    for (const r of linkRows) {
+      if (!r.end) continue;                         // sin fecha límite → sin auto-agenda
+      const start = r.start || r.end;
+      const lo = start > from ? start : from;       // comparación lexicográfica válida en YYYY-MM-DD
       const hi = r.end < to ? r.end : to;
       if (lo > hi) continue;
       // Itera día a día en la ventana efectiva.
