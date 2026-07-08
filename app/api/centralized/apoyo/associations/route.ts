@@ -18,10 +18,9 @@ export async function GET(req: NextRequest) {
     const id = sp.get('subject_id');
     const alternativeId = Number(sp.get('alternative_id'));
     if (!kind || !id || !alternativeId) return NextResponse.json({ data: { available: { tickets: [], projects: [] }, linked: null } });
-    const [available, linked] = await Promise.all([
-      getSubjectLinkOptions(kind, id),
-      getAlternativeLink(alternativeId),
-    ]);
+    // Independientes: un fallo en uno no debe dejar vacío al otro.
+    const available = await getSubjectLinkOptions(kind, id).catch((e) => { console.error('link options error:', e.message); return { tickets: [], projects: [] }; });
+    const linked = await getAlternativeLink(alternativeId).catch((e) => { console.error('alt link error:', e.message); return null; });
     return NextResponse.json({ data: { available, linked } });
   } catch (err: any) {
     console.error('Apoyo associations GET error:', err.message);
