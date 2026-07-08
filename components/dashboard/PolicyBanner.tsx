@@ -65,14 +65,18 @@ export default function PolicyBanner({ collapsed = false }: { collapsed?: boolea
             <div className="flex items-center gap-2 px-3 pt-2">
               <Megaphone className="w-[18px] h-[18px] shrink-0 text-white/90" />
               {multi ? (
-                <div className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1 no-scrollbar">
-                  {policies.map((pol, i) => (
-                    <button key={pol.id} onClick={() => setIdx(i)}
-                      className={`shrink-0 max-w-[180px] px-2.5 py-1 rounded-md text-[11.5px] font-semibold truncate transition-colors ${i === idx ? 'bg-white/22 text-white' : 'text-white/55 hover:text-white/90 hover:bg-white/10'}`}
-                      style={mf} title={pol.name}>
-                      {pol.name}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-1 no-scrollbar py-0.5">
+                  {policies.map((pol, i) => {
+                    const on = i === idx;
+                    return (
+                      <button key={pol.id} onClick={() => setIdx(i)}
+                        className={`shrink-0 max-w-[180px] inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-semibold truncate border transition-colors ${on ? 'bg-white text-[#4c1d95] border-white shadow-sm' : 'bg-white/5 text-white/75 border-white/25 hover:bg-white/15 hover:text-white'}`}
+                        style={mf} title={pol.name}>
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${on ? 'bg-[#6d28d9]' : 'bg-white/40'}`} />
+                        <span className="truncate">{pol.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <span className="min-w-0 flex-1 text-[11px] font-bold uppercase tracking-wide text-white/75 truncate" style={df} title={p.name}>{p.name}</span>
