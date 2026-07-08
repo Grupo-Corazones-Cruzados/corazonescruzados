@@ -21,24 +21,36 @@ const BUBBLE_W = 340;
  */
 export default function AlternativeLinks({ subjectKind, subjectId, alternativeId }: { subjectKind: string; subjectId: string; alternativeId: number }) {
   const [data, setData] = useState<Data>({ available: { tickets: [], projects: [] }, linked: null });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // spinner del selector de opciones
+  const [optionsLoaded, setOptionsLoaded] = useState(false);
   const [pos, setPos] = useState<{ left: number; top: number; maxH: number } | null>(null);
   const [tq, setTq] = useState('');
   const [pq, setPq] = useState('');
   const [tab, setTab] = useState<'ticket' | 'project'>('ticket');
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // Solo el asociado (rápido) al abrir la alternativa.
+  const loadLinked = useCallback(async () => {
     try {
       const res = await fetch(`/api/centralized/apoyo/associations?subject_kind=${subjectKind}&subject_id=${subjectId}&alternative_id=${alternativeId}`);
       const d = await res.json();
-      setData(d.data || { available: { tickets: [], projects: [] }, linked: null });
+      setData((prev) => ({ ...prev, linked: d.data?.linked ?? null }));
+    } catch { /* deja lo que haya */ }
+  }, [subjectKind, subjectId, alternativeId]);
+
+  // Opciones (consulta pesada) solo al abrir el selector.
+  const loadOptions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/centralized/apoyo/associations?subject_kind=${subjectKind}&subject_id=${subjectId}&alternative_id=${alternativeId}&options=1`);
+      const d = await res.json();
+      setData((prev) => ({ available: d.data?.available ?? { tickets: [], projects: [] }, linked: d.data?.linked ?? prev.linked }));
+      setOptionsLoaded(true);
     } catch { /* deja lo que haya */ }
     finally { setLoading(false); }
   }, [subjectKind, subjectId, alternativeId]);
 
-  useEffect(() => { setPos(null); load(); }, [load]);
+  useEffect(() => { setPos(null); setOptionsLoaded(false); setData({ available: { tickets: [], projects: [] }, linked: null }); loadLinked(); }, [loadLinked]);
   useEffect(() => {
     if (!pos) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPos(null); };
@@ -61,6 +73,7 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
     let top = r.top + r.height / 2 - maxH / 2;
     top = Math.max(16, Math.min(top, vh - maxH - 24));
     setPos({ left, top, maxH });
+    if (!optionsLoaded) loadOptions();
   };
 
   const select = async (kind: 'ticket' | 'project', ref: Ref) => {
@@ -69,7 +82,7 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
     try {
       const res = await fetch('/api/centralized/apoyo/associations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ alternativeId, kind, id: ref.id, connect }) });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
-    } catch (e: any) { toast.error(e.message || 'Error'); load(); }
+    } catch (e: any) { toast.error(e.message || 'Error'); loadLinked(); }
   };
 
   const availableCount = data.available.tickets.length + data.available.projects.length;

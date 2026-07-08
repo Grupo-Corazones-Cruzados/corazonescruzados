@@ -227,11 +227,19 @@ export async function getSubjectGraph(subjectKind: string, subjectId: string): P
     const solutionIds = Array.from(new Set(spr.rows.map((r: any) => Number(r.solution_id))));
     if (solutionIds.length) {
       const sol = await pool.query(`SELECT id, title, description, status FROM gcc_world.aa_solutions WHERE id = ANY($1::bigint[]) ORDER BY id`, [solutionIds]);
+      // Alternativas/soluciones con ticket o proyecto asociado (distintivo en el grafo).
+      const linked = (await pool.query(
+        `SELECT alternative_id FROM gcc_world.aa_alternative_tickets WHERE alternative_id = ANY($1::bigint[])
+         UNION SELECT alternative_id FROM gcc_world.aa_alternative_projects WHERE alternative_id = ANY($1::bigint[])`,
+        [solutionIds],
+      )).rows;
+      const linkedIds = new Set<number>(linked.map((r: any) => Number(r.alternative_id)));
       const solType = new Map<number, ApoyoNodeType>();
       sol.rows.forEach((r: any) => {
         const t: ApoyoNodeType = r.status === 'solution' ? 'solution' : 'alternative';
         solType.set(Number(r.id), t);
         push(t, r);
+        if (linkedIds.has(Number(r.id))) nodes[nodes.length - 1].linked = true;
       });
       const typeOf = (id: any) => solType.get(Number(id)) || 'alternative';
       spr.rows.forEach((r: any) => edges.push({ source: nodeKey(typeOf(r.solution_id), r.solution_id), target: nodeKey('problem', r.problem_id), type: 'solution_problem' }));

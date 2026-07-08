@@ -290,6 +290,21 @@ export default function KnowledgeGraph({
               ctx.fillStyle = 'rgba(10,10,16,0.92)';
               ctx.fillText((n.dimension || '').charAt(0).toUpperCase(), bx, by + br * 0.06);
             }
+
+            // Distintivo de ASOCIACIÓN: alternativa/solución con ticket o proyecto → badge
+            // celeste con un eslabón, arriba a la derecha del nodo.
+            if (n.linked) {
+              const br = Math.max(2.2, rr * 0.6);
+              const bx = node.x + rr * 0.82;
+              const by = node.y - rr * 0.82;
+              ctx.globalAlpha = lit ? 1 : 0.35;
+              ctx.beginPath(); ctx.arc(bx, by, br + 0.9, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(10,10,16,0.95)'; ctx.fill();
+              ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fillStyle = '#38bdf8'; ctx.fill();
+              // dos aritos = eslabón de cadena
+              ctx.lineWidth = Math.max(0.5, br * 0.22); ctx.strokeStyle = 'rgba(10,10,16,0.9)';
+              ctx.beginPath(); ctx.arc(bx - br * 0.28, by, br * 0.42, 0, 2 * Math.PI); ctx.stroke();
+              ctx.beginPath(); ctx.arc(bx + br * 0.28, by, br * 0.42, 0, 2 * Math.PI); ctx.stroke();
+            }
             ctx.globalAlpha = alpha;
 
             const showLabel = scale >= 1.25 || (active || filtering ? lit : n.type === 'situation');

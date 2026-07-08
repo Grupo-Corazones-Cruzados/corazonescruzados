@@ -18,9 +18,12 @@ export async function GET(req: NextRequest) {
     const id = sp.get('subject_id');
     const alternativeId = Number(sp.get('alternative_id'));
     if (!kind || !id || !alternativeId) return NextResponse.json({ data: { available: { tickets: [], projects: [] }, linked: null } });
-    // Independientes: un fallo en uno no debe dejar vacío al otro.
-    const available = await getSubjectLinkOptions(kind, id).catch((e) => { console.error('link options error:', e.message); return { tickets: [], projects: [] }; });
+    // El asociado (chip) es rápido y se pide siempre; las OPCIONES (consulta pesada de
+    // todos los tickets/proyectos) solo cuando se abre el selector (`?options=1`).
     const linked = await getAlternativeLink(alternativeId).catch((e) => { console.error('alt link error:', e.message); return null; });
+    const available = sp.get('options') === '1'
+      ? await getSubjectLinkOptions(kind, id).catch((e) => { console.error('link options error:', e.message); return { tickets: [], projects: [] }; })
+      : { tickets: [], projects: [] };
     return NextResponse.json({ data: { available, linked } });
   } catch (err: any) {
     console.error('Apoyo associations GET error:', err.message);
