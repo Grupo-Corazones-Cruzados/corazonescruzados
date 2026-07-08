@@ -134,8 +134,6 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
                     {selected.company && <span className="inline-flex items-center gap-1"><Building2 className="w-3.5 h-3.5" /> {selected.company}</span>}
                     {selected.country && <span className="inline-flex items-center gap-1"><Globe className="w-3.5 h-3.5" /> {selected.country}</span>}
                   </div>
-                  <p className="text-[11px] text-digi-muted/80 mt-1" style={mf}>Última sesión: {fmtDate(selected.last_seen_at)}</p>
-                  <div className="mt-2"><ProspeccionBar criteria={criteria} /></div>
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
                   {isAdmin && (
@@ -145,6 +143,11 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
                   )}
                   <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                 </div>
+              </div>
+              {/* Prospección al borde izquierdo, a la altura de la fecha de última sesión */}
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 mt-3">
+                <ProspeccionBar criteria={criteria} />
+                <p className="text-[11px] text-digi-muted/80" style={mf}>Última sesión: {fmtDate(selected.last_seen_at)}</p>
               </div>
             </div>
 

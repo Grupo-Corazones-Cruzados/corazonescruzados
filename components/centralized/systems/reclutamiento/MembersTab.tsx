@@ -178,7 +178,6 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                   <div className="flex flex-wrap items-center gap-1.5 mt-2">
                     <PixelBadge variant={selected.is_active ? 'success' : 'default'}>{selected.is_active ? 'Activo' : 'Inactivo'}</PixelBadge>
                     {selected.role && <PixelBadge variant="info"><span className="inline-flex items-center gap-1"><BadgeCheck className="w-3 h-3" /> {selected.role}</span></PixelBadge>}
-                    <ProspeccionBar criteria={selected.criteria || null} />
                     {!isAdminMember && (
                       <span className="inline-flex items-center gap-1 text-[11.5px] text-digi-muted" style={mf} title="Acceso a Centralizado">
                         <Network className="w-3.5 h-3.5" /> Centralizado: {selected.piso && selected.paso ? `${PISO_LABEL[selected.piso] || selected.piso} · ${PASO_LABEL[selected.paso] || selected.paso}` : 'sin acceso'}
@@ -197,6 +196,8 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                   <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                 </div>
               </div>
+              {/* Prospección al borde izquierdo del componente */}
+              <div className="mt-3"><ProspeccionBar criteria={selected.criteria || null} /></div>
             </div>
           </div>
         ) : (
