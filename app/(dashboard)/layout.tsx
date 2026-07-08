@@ -6,6 +6,7 @@ import PolicyEffectsProvider from '@/components/providers/PolicyEffectsProvider'
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardBreadcrumb from '@/components/dashboard/DashboardBreadcrumb';
 import DashboardAccessGuard from '@/components/dashboard/DashboardAccessGuard';
+import PolicyBanner from '@/components/dashboard/PolicyBanner';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(false);
@@ -38,6 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <AuthGuard>
       <PolicyEffectsProvider>
         <div className={`corp ${dark ? 'dark' : ''} flex min-h-screen`}>
+          <PolicyBanner collapsed={collapsed} />
           <DashboardSidebar dark={dark} onToggleTheme={toggleTheme} collapsed={collapsed} onToggleCollapse={toggleCollapse} />
           <main className={`flex-1 ml-0 ${collapsed ? 'lg:ml-16' : 'lg:ml-56'} p-4 md:p-6 pt-14 lg:pt-6 pb-12 overflow-auto min-h-screen transition-[margin] duration-200`}>
             <DashboardAccessGuard>{children}</DashboardAccessGuard>

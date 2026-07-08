@@ -10,7 +10,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
-  LogOut, Sun, Moon, CalendarDays, Megaphone, type LucideIcon,
+  LogOut, Sun, Moon, CalendarDays, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem {
@@ -67,7 +67,7 @@ export default function DashboardSidebar({
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const accessRole = accessRoleOf(user);
-  const { blockedModules, messages } = usePolicyEffects();
+  const { blockedModules } = usePolicyEffects();
   const groups = NAV_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((it) => canAccessModule(accessRole, it.href) && (accessRole === 'admin' || !isPathBlocked(it.href, blockedModules))) }))
     .filter((g) => g.items.length > 0);
@@ -101,28 +101,6 @@ export default function DashboardSidebar({
           <BrandLoader size="sm" />
           {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>}
         </Link>
-
-        {/* Mensajes permanentes de políticas activas (Comandos Violeta). Aquí no
-            desplazan el contenido del /dashboard/ (el sidebar es fijo). */}
-        {messages.length > 0 && (
-          collapsed ? (
-            <div className="flex justify-center py-2 border-b border-digi-border shrink-0" title={messages.join('\n')}>
-              <div className="relative w-9 h-9 rounded-md bg-accent-light flex items-center justify-center">
-                <Megaphone className="w-4 h-4 text-accent" />
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent ring-2 ring-digi-card" />
-              </div>
-            </div>
-          ) : (
-            <div className="px-2.5 py-2.5 border-b border-digi-border shrink-0 space-y-1.5 max-h-44 overflow-y-auto">
-              {messages.map((m, i) => (
-                <div key={i} className="flex items-start gap-2 rounded-md border border-accent/30 bg-accent-light px-2.5 py-2">
-                  <Megaphone className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent" />
-                  <p className="text-[11.5px] font-medium text-accent leading-snug break-words" style={mf}>{m}</p>
-                </div>
-              ))}
-            </div>
-          )
-        )}
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-2 px-2">
