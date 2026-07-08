@@ -5,6 +5,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
 import { BTN_PRIMARY } from '@/components/ui/Button';
+import SettingsPanel from '@/components/settings/SettingsPanel';
 import { FileText, Plus, Trash2, GraduationCap, Briefcase, Save } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -13,8 +14,8 @@ interface EduEntry { institution: string; degree: string; field: string; start_y
 interface ExpEntry { company: string; position: string; description: string; start_year: string; end_year: string; }
 
 /** Editor de CV del miembro (corp). Autónomo: usa el member_id del usuario actual.
- *  Se usa como panel dentro de Perfil (Configuración) y en la subpágina /settings/cv. */
-export default function CvPanel({ className = '' }: { className?: string }) {
+ *  Se usa como panel del carril de Configuración. */
+export default function CvPanel() {
   const { user } = useAuth();
   const [bio, setBio] = useState('');
   const [skills, setSkills] = useState('');
@@ -67,16 +68,7 @@ export default function CvPanel({ className = '' }: { className?: string }) {
   const labelCls = 'text-[12px] font-medium text-digi-text';
 
   return (
-    <div className={`bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden ${className}`}>
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-digi-border">
-        <div className="w-8 h-8 rounded-lg bg-accent-light flex items-center justify-center shrink-0"><FileText className="w-4 h-4 text-accent" /></div>
-        <div>
-          <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>Mi CV</h3>
-          <p className="text-[11px] text-digi-muted" style={mf}>Tu currículum para proyectos y portafolio</p>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-4">
+    <SettingsPanel Icon={FileText} title="Mi CV" subtitle="Tu currículum para proyectos y portafolio">
         <div className="flex flex-col gap-1.5">
           <label className={labelCls} style={mf}>Biografía</label>
           <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Describe tu experiencia…"
@@ -136,7 +128,6 @@ export default function CvPanel({ className = '' }: { className?: string }) {
         <button onClick={save} disabled={saving} className={`${BTN_PRIMARY} w-full`}>
           <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar CV'}
         </button>
-      </div>
-    </div>
+    </SettingsPanel>
   );
 }
