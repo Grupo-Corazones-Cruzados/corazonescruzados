@@ -172,19 +172,24 @@ export async function deleteFunction(id: number) {
  * Agrega los efectos "en vivo" de todas las políticas ACTIVAS: mensajes permanentes y
  * módulos bloqueados. (La generación de tareas se aplica aparte, al activar.)
  */
-export async function getActiveEffects(): Promise<{ messages: string[]; blockedModules: string[] }> {
+export interface ActiveMessage { text: string; activatedAt: string | null }
+export async function getActiveEffects(): Promise<{ messages: ActiveMessage[]; blockedModules: string[] }> {
   await ensureComandosTables();
   const { rows } = await pool.query(
-    `SELECT f.type, f.config
+    `SELECT f.type, f.config, p.activated_at
        FROM gcc_world.cv_functions f
        JOIN gcc_world.cv_policies p ON p.id = f.policy_id
       WHERE p.active = true`,
   );
-  const messages: string[] = [];
+  const messages: ActiveMessage[] = [];
   const blocked = new Set<string>();
   for (const r of rows) {
-    if (r.type === 'permanent_message') { const m = String(r.config?.message || '').trim(); if (m) messages.push(m); }
-    else if (r.type === 'block_modules') { for (const path of r.config?.modules || []) blocked.add(String(path)); }
+    if (r.type === 'permanent_message') {
+      const m = String(r.config?.message || '').trim();
+      if (m) messages.push({ text: m, activatedAt: r.activated_at ? new Date(r.activated_at).toISOString() : null });
+    } else if (r.type === 'block_modules') {
+      for (const path of r.config?.modules || []) blocked.add(String(path));
+    }
   }
   return { messages, blockedModules: Array.from(blocked) };
 }

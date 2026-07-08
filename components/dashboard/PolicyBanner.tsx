@@ -2,10 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
-import { Megaphone, ChevronUp, ChevronDown } from 'lucide-react';
+import { Megaphone, ChevronUp, ChevronDown, CalendarDays } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const STORAGE_KEY = 'gcc_policy_msg_hidden';
+
+// Fecha de activación de la política en formato es-ES (p. ej. "8 de julio de 2026").
+function fmtDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 /**
  * Header FLOTANTE del dashboard con los mensajes de las políticas ACTIVAS de Comandos
@@ -58,10 +66,20 @@ export default function PolicyBanner({ collapsed = false }: { collapsed?: boolea
             <span className="relative mt-0.5 shrink-0" style={{ animation: 'gccPolWiggle 3.2s ease-in-out infinite', transformOrigin: '50% 60%' }}>
               <Megaphone className="w-[18px] h-[18px]" />
             </span>
-            <div className="relative min-w-0 flex-1 space-y-1">
-              {messages.map((m, i) => (
-                <p key={i} className="text-[13px] font-medium leading-snug break-words" style={mf}>{m}</p>
-              ))}
+            <div className="relative min-w-0 flex-1 space-y-1.5">
+              {messages.map((m, i) => {
+                const date = fmtDate(m.activatedAt);
+                return (
+                  <div key={i}>
+                    <p className="text-[13px] font-medium leading-snug break-words" style={mf}>{m.text}</p>
+                    {date && (
+                      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10.5px] font-semibold text-white/95" style={mf}>
+                        <CalendarDays className="w-3 h-3" /> Activa desde el {date}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <button onClick={() => persist(false)} title="Ocultar aviso" aria-label="Ocultar aviso"
               className="relative shrink-0 -mr-1 w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/25 transition-colors">

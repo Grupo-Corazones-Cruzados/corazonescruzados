@@ -3,7 +3,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-export interface PolicyEffects { messages: string[]; blockedModules: string[] }
+export interface PolicyMessage { text: string; activatedAt: string | null }
+export interface PolicyEffects { messages: PolicyMessage[]; blockedModules: string[] }
 
 const Ctx = createContext<PolicyEffects>({ messages: [], blockedModules: [] });
 export const usePolicyEffects = () => useContext(Ctx);

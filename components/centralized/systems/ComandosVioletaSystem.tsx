@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
-import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import PolicyGraph from '@/components/centralized/comandos/PolicyGraph';
 import GenerateTasksModal from '@/components/centralized/comandos/GenerateTasksModal';
 import {
@@ -12,7 +11,7 @@ import {
   type PolicyGraph as PolicyGraphT, type PolicyGraphNode, type FunctionType, type TaskProgram, type Category,
 } from '@/lib/centralized/comandos';
 import {
-  Plus, Trash2, X, MousePointerClick, Sparkles, FolderPlus, MessageSquareText, Ban, ListChecks, Power, Pencil,
+  Plus, Trash2, X, MousePointerClick, Sparkles, FolderPlus, MessageSquareText, Ban, ListChecks, Power, Pencil, Check,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -22,7 +21,6 @@ const GLASS = 'rounded-xl bg-black/40 backdrop-blur-md border border-white/12 sh
 const GLASS_BTN = 'inline-flex items-center justify-center gap-1.5 border border-white/15 bg-white/[0.08] hover:bg-white/[0.18] text-white/90 rounded-md transition-colors';
 const GLASS_INPUT = 'w-full px-2.5 py-1.5 bg-black/40 border border-white/15 rounded-md text-[13px] text-white placeholder-white/40 focus:border-accent focus:outline-none';
 
-const MODULE_OPTIONS = BLOCKABLE_MODULES.map((m) => ({ value: m.path, label: m.label }));
 const FUNC_ICON: Record<FunctionType, any> = { permanent_message: MessageSquareText, block_modules: Ban, generate_tasks: ListChecks };
 
 // Marca de forma para la leyenda (coincide con el grafo): política = estrella, función = pentágono.
@@ -283,8 +281,19 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
 
                     {funcForm.type === 'block_modules' && (
                       <div>
-                        <label className="text-[10.5px] font-semibold uppercase tracking-wide text-white/50 mb-1 block" style={df}>Módulos a bloquear (excepto admin)</label>
-                        <MultiSelectSearch options={MODULE_OPTIONS} selected={funcForm.modules} onChange={(v) => setFuncForm((f) => f && ({ ...f, modules: v }))} placeholder="Buscar módulo…" maxVisible={20} />
+                        <label className="text-[10.5px] font-semibold uppercase tracking-wide text-white/50 mb-1.5 block" style={df}>Módulos a bloquear (excepto admin)</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {BLOCKABLE_MODULES.map((m) => {
+                            const on = funcForm.modules.includes(m.path);
+                            return (
+                              <button key={m.path} type="button"
+                                onClick={() => setFuncForm((f) => f && ({ ...f, modules: on ? f.modules.filter((x) => x !== m.path) : [...f.modules, m.path] }))}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${on ? 'bg-accent text-white border-accent' : 'border-white/20 text-white/80 hover:bg-white/[0.12]'}`} style={mf}>
+                                {on && <Check className="w-3 h-3" />} {m.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
