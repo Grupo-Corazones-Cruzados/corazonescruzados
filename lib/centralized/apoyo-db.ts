@@ -82,7 +82,7 @@ export async function getSubjectLinkOptions(subjectKind: string, subjectId: stri
     `SELECT id, title, status FROM gcc_world.tickets
       WHERE ($3 = 'member' AND member_id::text = $1)
          OR ($3 = 'candidate' AND client_id::text = $1)
-         OR ($2 IS NOT NULL AND user_id = $2)
+         OR ($2::text IS NOT NULL AND user_id::text = $2::text)
       ORDER BY created_at DESC NULLS LAST, id DESC`,
     [subjectId, userId, subjectKind],
   )).rows.map((r: any) => ({ id: String(r.id), title: r.title, status: r.status ?? null }));
@@ -90,7 +90,7 @@ export async function getSubjectLinkOptions(subjectKind: string, subjectId: stri
   const projects = (await pool.query(
     `SELECT p.id, p.title, p.status FROM gcc_world.projects p
       WHERE ($3 = 'candidate' AND p.client_id::text = $1)
-         OR ($2 IS NOT NULL AND p.created_by_user_id = $2)
+         OR ($2::text IS NOT NULL AND p.created_by_user_id::text = $2::text)
          OR ($3 = 'member' AND (
               p.assigned_member_id::text = $1
               OR EXISTS (SELECT 1 FROM gcc_world.project_bids b WHERE b.project_id = p.id AND b.member_id::text = $1 AND b.status = 'accepted')
