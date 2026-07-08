@@ -267,22 +267,37 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **Sistema "Comandos Violeta" (2026-07-08):** nuevo sistema de Centralizado en **global · creación** (celda "Control Psicosocial",
-  slug `comandos-violeta`), **sembrado idempotente** en `ensureTable()` de `app/api/centralized/systems/route.ts` (y también en
-  `comandos-db.ts`) para que exista sin crearlo a mano. Es **otro método de generación de tareas** + configuración de **políticas
-  organizacionales** activables. **Iteración 1 = AUTORÍA + persistencia** (la APLICACIÓN al activar —header permanente, bloqueo real
-  de módulos, generación de tareas— es la próxima iteración). **Modelo:** Categoría → Políticas (activables) → Funciones.
-  **DB** (`lib/centralized/comandos-db.ts`, prefijo `cv_`): `cv_categories`, `cv_policies` (active bool, activated_at),
-  `cv_functions` (type + config jsonb). **Tipos de función** (`lib/centralized/comandos.ts`): `permanent_message` {message},
-  `block_modules` {modules:[paths de BLOCKABLE_MODULES]}, `generate_tasks` {tasks: TaskProgram[]}. **API**
-  `/api/centralized/comandos/{categories,policies,functions}` + `/comandos?category_id=` (grafo); guard `['admin','member']`.
-  **UI** `components/centralized/systems/ComandosVioletaSystem.tsx` (despacho por slug en el `[slug]/page.tsx`): panel de
-  **categorías** (izq, crear/seleccionar) · **grafo** de políticas (`components/centralized/comandos/PolicyGraph.tsx`, react-force-graph
-  como Apoyo pero **formas nuevas: política=ESTRELLA, función=PENTÁGONO**; política inactiva en gris) · **panel flotante** de detalle
-  (crear política pide nombre; política = toggle activar + "+ Función" + lista; función = dropdown de acción + config; eliminar).
-  **Generar tareas** = `GenerateTasksModal.tsx` (FloatingWindow): UsersList + form de tarea (título, detalle, etiquetas valores/talentos
-  con MultiSelectSearch, recurrencia, día de inicio de semana, y **modo de presencia**: cantidad de días / días de semana / todo el día)
-  → arreglo de `TaskProgram` guardado en la config. Verificado tsc + build.
+- **Sistema "Comandos Violeta" (2026-07-08):** sistema de Centralizado en **global · creación** (celda "Control Psicosocial",
+  slug `comandos-violeta`), **sembrado idempotente** en `ensureTable()` de `app/api/centralized/systems/route.ts` (y en
+  `comandos-db.ts`) para que exista sin crearlo a mano. Configura **políticas organizacionales** activables (otro método de generación
+  de tareas + acciones en toda la app). **Modelo:** Categoría → Políticas (activables, con `activated_at`) → Funciones.
+  **DB** (`lib/centralized/comandos-db.ts`, prefijo `cv_`): `cv_categories`, `cv_policies` (active, activated_at), `cv_functions`
+  (type + config jsonb). **API** `/api/centralized/comandos/{categories,policies,functions,active}` + `/comandos?category_id=` (grafo);
+  guard `['admin','member']`. Categorías: GET/POST/**PATCH (renombrar)**/DELETE (cascada).
+  - **Tipos de función** (`lib/centralized/comandos.ts`, `FUNCTION_ACTIONS`): `permanent_message` {message}, `block_modules`
+    {modules:[paths de BLOCKABLE_MODULES]}, `generate_tasks` {tasks: TaskProgram[]}, **`policy_terms`** {title,purpose,conduct,clauses[]}
+    = detalle/términos y condiciones de la política (editable en `PolicyTermsModal`; compartible a futuro).
+  - **TaskProgram (final):** el INICIO es **siempre la fecha de activación** (no se elige); presencia = 3 campos **combinables**
+    (`daysCount` = ventana/límite desde la activación; `weekdays[]` = días presentes, vacío=todos, actúa como recurrencia; `allDay`;
+    con `startTime`/`endTime` si no es todo el día). **Sin** campo de recurrencia (lo cubren daysCount+weekdays). `GenerateTasksModal`
+    (FloatingWindow) = UsersList + form (título, detalle, etiquetas valores/talentos via MultiSelectSearch, presencia).
+  - **Grafo** `PolicyGraph.tsx` (react-force-graph como Apoyo, formas NO usadas allí): **política=ESTRELLA**, **función=PENTÁGONO**,
+    **policy_terms=DOCUMENTO** (ámbar). `shapeOf/colorOf` por tipo (`FUNCTION_TYPE_META`); política inactiva en gris.
+  - **UI** `ComandosVioletaSystem.tsx`: panel **categorías** (izq; crear + **renombrar inline + eliminar**, acciones SIEMPRE visibles)
+    · grafo · **panel flotante** de detalle (crear política pide nombre; política=toggle activar + "+ Función" + lista; función=dropdown
+    de acción + config —módulos como **chips**, no dropdown; tareas/detalle abren su modal—; eliminar).
+  - **ENFORCEMENT (efectos al activar, HECHO para 2 de 3):** `getActiveEffects()` agrega por política activa {name, activatedAt,
+    messages[], details[]} + `blockedModules[]`. Provider **`components/providers/PolicyEffectsProvider.tsx`** (en el layout del
+    dashboard) carga `/comandos/active` y refresca por navegación/foco. (1) **Mensaje permanente** → banner flotante; (2) **bloqueo de
+    módulos** → sidebar oculta + `DashboardAccessGuard` redirige (no-admin; helpers `isPathBlocked`/`safeDashboardPath` en
+    `lib/dashboard/access.ts`; admin nunca se bloquea). **PENDIENTE:** (3) **generación real de tareas** en Mi día al activar.
+  - **Banner** `components/dashboard/PolicyBanner.tsx` (montado en `(dashboard)/layout.tsx`, solo /dashboard/): FLOTANTE fijo arriba que
+    **NO reserva espacio** (no refluye el contenido — se intentó en `<main>` y desplazaba los componentes que miden su `top`). Muestra
+    las **políticas activas por PESTAÑAS** (header morado con pestañas; zona inferior color tarjeta `bg-digi-card/text-digi-text` para
+    contraste; pestaña activa toma el color de la zona inferior). Por política: fecha corta de activación + mensaje(s) + enlace al
+    detalle (1 directo; varios → burbuja con listado). El detalle se lee en `PolicyDetailViewer` (FloatingWindow movible/redimensionable).
+    Ocultable con ↑ (persistido en localStorage), reabrible con pestañita ↓. Animación **sutil** (flotado; se quitó la "luz que se movía").
+  Verificado tsc + build en cada iteración.
 - **Configuración = Perfil fijo + pestañas (2026-07-08):** `app/(dashboard)/dashboard/settings/page.tsx` = **Perfil fijo a la
   izquierda** (`ProfilePanel`, 400px) + a la derecha una tarjeta con **pestañas horizontales** (CV · Disponibilidad · Portafolio);
   el contenido de la pestaña activa usa **todo el ancho** en layouts multi-columna y **SIN scroll interno** (la página se desplaza si

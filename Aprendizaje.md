@@ -286,3 +286,43 @@ optimista** del estado local (sync en 2º plano, revertir si falla) + **cachear 
   halo. Distinción por **forma + tamaño**, no solo color. Panel de detalle **transparente** con bloques
   "glass" (`bg-black/40 backdrop-blur`) para leerse sobre el canvas sin taparlo; **anclado abajo-derecha**;
   incluir **referencias a conexiones** (chips navegables).
+
+---
+
+## Objetivo (2026-07-08) — Sistema "Comandos Violeta" (políticas organizacionales activables)
+**Rol asumido:** arquitecto de plataforma + ingeniero full-stack (modelado de datos, grafo, enforcement transversal).
+
+**Necesidad:** un sistema (Centralizado, global · creación) donde el usuario global crea **políticas** agrupadas por
+**categoría**, activables/desactivables; cada política contiene **funciones** que, al activarse, generan **acciones en toda
+la app**: mensaje permanente (header), bloqueo de módulos (seguridad), generación de tareas, y **detalle/términos** (documento
+textual compartible). Interfaz espejada del sistema Apoyo (categorías izq → grafo → panel de detalle), con formas de grafo NO
+usadas en Apoyo.
+
+- **% de información para el objetivo:** ~90% — AUTORÍA completa + enforcement de mensaje y bloqueo HECHOS y verificados; **falta
+  la generación real de tareas** en Mi día al activar (la lógica de presencia ya está especificada: ver TaskProgram en MEMORIA).
+- **Resumen del estado:** modelo Categoría→Política→Función en tablas `cv_*`; grafo con 3 formas (estrella/pentágono/documento);
+  4 tipos de función; banner flotante por pestañas con visor de detalle; bloqueo real de módulos para no-admin.
+
+### Preguntas y decisiones · ✅
+- **P — ¿Dónde vive y cómo aparece el sistema sin crearlo a mano?** → Es built-in por slug (`comandos-violeta`); se **siembra
+  idempotente** dentro de `ensureTable()` de la ruta de `systems` (se llama en cada carga de Centralizado). Sembrarlo solo en su
+  propia `comandos-db` NO basta: hay huevo-y-gallina (el despacho busca el sistema por slug antes de renderizar el componente).
+- **P — ¿El banner dónde va para no romper el layout?** → Un banner en el flujo de `<main>` empuja el contenido y **recalcula** los
+  componentes que miden su `top` (`innerHeight − top`). Solución: **fixed, fuera del flujo, sin reservar espacio**
+  (`pointer-events-none` salvo el card). Ubicación final: flotante arriba, tipo pestañas.
+- **P — ¿Cómo mostrar varias políticas activas sin amontonar?** → **Pestañas** (una por política; solo se ve el contenido de la
+  seleccionada). Header morado + zona inferior color tarjeta; la pestaña activa toma el color de la zona inferior (tipo navegador).
+- **P — Presencia de la tarea generada.** → El usuario aclaró: NO son opciones excluyentes ni hace falta recurrencia. Inicio =
+  **fecha de activación** (fijo); `daysCount` = ventana/límite; `weekdays[]` = días presentes (recurrencia dentro de la ventana);
+  `allDay` + `startTime`/`endTime`. (Ver TaskProgram en MEMORIA.)
+
+### Lecciones técnicas · ✅
+- **Multiselect dentro de panel flotante con `overflow-y-auto`**: el dropdown de `MultiSelectSearch` se **recorta**. Para listas
+  cortas (módulos), usar **chips toggle** en vez de dropdown.
+- **`bg-white` bajo `.corp` (modo oscuro)** puede quedar pisado → una pestaña "blanca" salía oscura. Para colores garantizados en
+  cualquier tema, usar **estilos inline** (`style={{ background:'#fff', color:'#4c1d95' }}`), no utilidades Tailwind de color.
+- **Grafo reusable pero con formas propias**: se copió el motor de `KnowledgeGraph` a `PolicyGraph` (formas por `shapeOf`, color por
+  `colorOf`/`FUNCTION_TYPE_META`) en vez de generalizar el de Apoyo (riesgo de regresión). Documento = rect con esquina doblada.
+- **Efectos "serios"**: se quitó la "luz que se movía" (sweep) del banner; queda un flotado sutil. Menos fantasía, más profesional.
+- **Enforcement transversal**: un `PolicyEffectsProvider` en el layout provee {policies, blockedModules} a banner + sidebar + guard;
+  refresca por `pathname` y por `visibilitychange`.

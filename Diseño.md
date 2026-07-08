@@ -366,6 +366,36 @@ soluciones) tipo *graph view* de Obsidian.
   Fluent. **Gotcha:** `position:fixed` dentro de un ancestro con `backdrop-filter` se ancla a ese ancestro
   (no al viewport) → por eso el portal.
 
+### Botones de estado de tarea (Completada/Fallida/Pendiente) — reusable
+Control ÚNICO **`components/centralized/TaskStatusButtons.tsx`** (`<TaskStatusButtons value onChange />`): grid de 3 botones
+columna (icono + label): Completada (`CheckCircle2`, verde), Fallida (`XCircle`, rojo), Pendiente (`CircleDashed`, neutro);
+el activo se rellena con su tono. Lo usan el **Horario de Vida** (detalle de tarea) y **Mi día** (rail de tareas). Regla:
+cualquier lugar que marque estado de tarea usa este componente (no recomponer los 3 botones a mano).
+
+### Configuración — Perfil fijo + pestañas (estándar de la página de ajustes)
+`settings/page.tsx` = **Perfil fijo a la izquierda** (`ProfilePanel`, `w-[400px]`) + a la derecha una tarjeta con **pestañas
+horizontales** (CV · Disponibilidad · Portafolio). Ambos lados **misma altura** (`items-stretch`). El contenido de cada pestaña
+usa **todo el ancho** en layouts multi-columna y **SIN scroll interno** (la página se desplaza si hace falta — pedido del usuario:
+nunca ocultar campos tras scroll de un componente). Los paneles CV/Disponibilidad/Portafolio son **contenido "bare"** (sin shell);
+`SettingsPanel` (shell con cabecera) es de **altura natural** y solo lo usa Perfil. Portafolio = **tabla** (no grilla).
+
+### Banner flotante de políticas (Comandos Violeta) — header morado + pestañas
+`components/dashboard/PolicyBanner.tsx` (solo /dashboard/, montado en el layout). **FIJO arriba, fuera del flujo** (`fixed`,
+`pointer-events-none` salvo el card) → **no desplaza el contenido** (nunca ponerlo dentro de `<main>`). Estructura tipo pestañas de
+navegador: **header morado** (`linear-gradient(100deg,#4c1d95,#5b21b6,#6d28d9)`) con megáfono + pestañas + ocultar (↑); **zona
+inferior** color tarjeta (`bg-digi-card`/`text-digi-text`, buen contraste). Con varias políticas → **pestañas** alineadas
+(`items-center`, sin puntos); la **activa toma el color de la zona inferior** (colores por **estilo inline**, no `bg-white`, para
+que no los pise `.corp` oscuro). Fecha de activación **corta** y discreta; enlace(s) al detalle; se oculta (persistido en
+localStorage) dejando una **pestañita ↓**. Movimiento **sutil** (flotado; nada de "luz que se mueve" — es un aviso serio). El
+detalle se lee en `PolicyDetailViewer` sobre **`FloatingWindow`** (movible/redimensionable). Utilidad **`.no-scrollbar`** (globals.css)
+para la fila de pestañas.
+
+### Grafo de políticas (Comandos Violeta) — formas propias
+`components/centralized/comandos/PolicyGraph.tsx` reusa el motor del grafo de conocimiento (react-force-graph, canvas negro) pero con
+**formas NO usadas en Apoyo**: **política = ESTRELLA**, **función = PENTÁGONO**, **detalle/términos = DOCUMENTO** (rect con esquina
+doblada, ámbar). Forma/color por tipo vía `shapeOf`/`colorOf` (`FUNCTION_TYPE_META` en `lib/centralized/comandos.ts`); política
+inactiva en gris. Regla: cada sistema con grafo elige formas distintas para no confundirse entre sistemas.
+
 ## Desviaciones detectadas y resolución
 - **2026-06-28:** las secciones del editor tenían títulos, botones de filtros e íconos distintos
   (emojis genéricos; NPCs con estilo propio). **Resuelto:** se creó `editorUi.tsx` (fuente única) +
