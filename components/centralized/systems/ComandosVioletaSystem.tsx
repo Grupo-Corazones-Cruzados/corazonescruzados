@@ -247,7 +247,7 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
                   <span className={`flex-1 min-w-0 text-[12.5px] font-medium truncate ${active ? 'text-accent' : 'text-digi-text'}`} style={mf}>{c.name}</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full tabular-nums bg-black/[0.05] text-digi-muted">{c.policy_count ?? 0}</span>
                 </button>
-                <div className="flex items-center gap-0.5 pr-1.5 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <div className="flex items-center gap-0.5 pr-1.5 shrink-0">
                   <button onClick={() => setEditingCat({ id: c.id, name: c.name })} title="Renombrar" className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.04] transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={() => setConfirmDelCat(c)} title="Eliminar" className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-black/[0.04] transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
