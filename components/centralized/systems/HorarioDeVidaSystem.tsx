@@ -90,8 +90,8 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
     for (const e of schedule) { const a = m.get(e.day) || []; a.push(e); m.set(e.day, a); }
     return m;
   }, [schedule]);
-  // Una tarea es "pendiente" mientras no tenga ninguna instancia marcada como completada.
-  const isPending = (t: Task) => !schedule.some((e) => e.alternativeId === t.id && e.status === 'completed');
+  // Una tarea es "pendiente" mientras no tenga ninguna instancia resuelta (completada o fallida).
+  const isPending = (t: Task) => !schedule.some((e) => e.alternativeId === t.id && (e.status === 'completed' || e.status === 'failed'));
   const visibleTasks = useMemo(() => (onlyPending ? tasks.filter(isPending) : tasks), [tasks, schedule, onlyPending]);
 
   const openEditor = (t: Task) => { setDraftValues(t.values); setDraftTalents(t.talents); setEditing(t); };
