@@ -21,10 +21,10 @@ const VALOR_LABEL: Record<string, string> = Object.fromEntries(VALORES.map((v) =
 
 type Draft = {
   title: string; detail: string; valores: string[]; talentos: string[];
-  recurrence: TaskProgram['recurrence']; startWeekday: number | null;
-  daysCount: number; weekdays: number[]; allDay: boolean;
+  recurrence: TaskProgram['recurrence'];
+  daysCount: number; weekdays: number[]; allDay: boolean; startTime: string; endTime: string;
 };
-const emptyDraft = (): Draft => ({ title: '', detail: '', valores: [], talentos: [], recurrence: 'none', startWeekday: null, daysCount: 7, weekdays: [], allDay: false });
+const emptyDraft = (): Draft => ({ title: '', detail: '', valores: [], talentos: [], recurrence: 'none', daysCount: 7, weekdays: [], allDay: false, startTime: '09:00', endTime: '10:00' });
 
 /**
  * Modal de "Generar tareas": se elige un usuario y se le programan tareas (etiquetas de
@@ -56,21 +56,22 @@ export default function GenerateTasksModal({
       userKind: user.kind, userId: user.id, userName: user.name,
       title: draft.title.trim(), detail: draft.detail.trim(),
       valores: draft.valores, talentos: draft.talentos,
-      recurrence: draft.recurrence, startWeekday: draft.startWeekday,
+      recurrence: draft.recurrence,
       daysCount: Math.max(1, draft.daysCount || 1),
       weekdays: draft.weekdays,
       allDay: draft.allDay,
+      startTime: draft.startTime, endTime: draft.endTime,
     };
     setTasks((ts) => [...ts, t]);
     setDraft(emptyDraft());
   };
   const removeTask = (i: number) => setTasks((ts) => ts.filter((_, k) => k !== i));
 
-  // Resumen de presencia: ventana + filtro de días + todo el día (combinados).
+  // Resumen de presencia: ventana + filtro de días + horario/todo el día (combinados).
   const spanLabel = (t: TaskProgram) => {
     const parts = [`${t.daysCount} día(s)`];
     parts.push(t.weekdays.length ? t.weekdays.map((d) => DAY_LABELS_ES_SHORT[d]).join(', ') : 'todos los días');
-    if (t.allDay) parts.push('todo el día');
+    parts.push(t.allDay ? 'todo el día' : `${t.startTime}–${t.endTime}`);
     return parts.join(' · ');
   };
 
@@ -106,12 +107,9 @@ export default function GenerateTasksModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <PixelSelect label="RECURRENCIA" value={draft.recurrence} onChange={(e) => upd('recurrence', e.target.value as Draft['recurrence'])}
-                  options={[{ value: 'none', label: 'No se repite' }, { value: 'daily', label: 'Diariamente' }, { value: 'weekly', label: 'Semanalmente' }, { value: 'monthly', label: 'Mensualmente' }]} />
-                <PixelSelect label="DÍA DE INICIO (SEMANA)" value={draft.startWeekday == null ? '' : String(draft.startWeekday)} onChange={(e) => upd('startWeekday', e.target.value === '' ? null : Number(e.target.value))}
-                  placeholder="Al activarse" options={DAY_LABELS_ES_SHORT.map((l, i) => ({ value: String(i), label: l }))} />
-              </div>
+              <PixelSelect label="RECURRENCIA" value={draft.recurrence} onChange={(e) => upd('recurrence', e.target.value as Draft['recurrence'])}
+                options={[{ value: 'none', label: 'No se repite' }, { value: 'daily', label: 'Diariamente' }, { value: 'weekly', label: 'Semanalmente' }, { value: 'monthly', label: 'Mensualmente' }]} />
+              <p className="text-[11px] text-digi-muted -mt-1" style={mf}>La tarea inicia <span className="text-digi-text font-medium">al activarse la política</span>.</p>
 
               {/* Presencia de la tarea: 3 campos INDEPENDIENTES que se combinan */}
               <div className="rounded-lg border border-digi-border p-3 space-y-3">
@@ -136,6 +134,13 @@ export default function GenerateTasksModal({
                   <input type="checkbox" checked={draft.allDay} onChange={(e) => upd('allDay', e.target.checked)} className="accent-accent" />
                   Todo el día (ocupa toda la jornada)
                 </label>
+
+                {!draft.allDay && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <PixelInput type="time" label="HORA DE INICIO" value={draft.startTime} onChange={(e) => upd('startTime', e.target.value)} />
+                    <PixelInput type="time" label="HORA DE FIN" value={draft.endTime} onChange={(e) => upd('endTime', e.target.value)} />
+                  </div>
+                )}
               </div>
 
               <button type="button" onClick={addTask} disabled={!draft.title.trim()}

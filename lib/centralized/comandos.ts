@@ -64,13 +64,14 @@ export interface PermanentMessageConfig { message: string }
 export interface BlockModulesConfig { modules: string[] } // paths de BLOCKABLE_MODULES
 
 /**
- * Programa de una tarea a generar cuando la política se active. Los campos de PRESENCIA
- * son INDEPENDIENTES y se combinan (no son excluyentes):
- *  - `daysCount`: ventana/duración = fecha de inicio + N días (define el fin).
- *  - `weekdays`: filtro de días de la semana dentro de esa ventana (vacío = todos los días).
- *  - `allDay`: si la tarea ocupa toda la jornada.
- * La semántica de ejecución (fecha de activación como origen del inicio) se aplica en la
- * iteración de enforcement.
+ * Programa de una tarea a generar cuando la política se active. El INICIO es SIEMPRE la
+ * fecha de activación de la política (no se elige). Los campos de PRESENCIA se combinan:
+ *  - `daysCount`: ventana/duración = fecha de activación + N días (define el fin).
+ *  - `weekdays`: días de la semana en que la tarea está presente dentro de la ventana
+ *    (vacío = todos los días). La presencia se basa SIEMPRE en este campo, no en el
+ *    día de activación.
+ *  - `allDay`: si ocupa toda la jornada. Si NO, se usan `startTime`/`endTime`.
+ * La generación real se aplica en la iteración de enforcement.
  */
 export interface TaskProgram {
   userKind: 'candidate' | 'member';
@@ -81,10 +82,11 @@ export interface TaskProgram {
   valores: string[];   // etiquetas de valores (keys de VALORES)
   talentos: string[];  // etiquetas de talentos
   recurrence: 'none' | 'daily' | 'weekly' | 'monthly';
-  startWeekday: number | null;  // día de la semana de inicio (0=Dom … 6=Sáb), relativo a la activación
-  daysCount: number;            // cantidad de días desde la fecha de inicio (ventana; ≥1)
-  weekdays: number[];           // días de la semana presentes dentro de la ventana (vacío = todos)
-  allDay: boolean;              // ocupa toda la jornada
+  daysCount: number;   // cantidad de días desde la activación (ventana; ≥1)
+  weekdays: number[];  // días de la semana presentes dentro de la ventana (vacío = todos)
+  allDay: boolean;     // ocupa toda la jornada
+  startTime: string;   // 'HH:MM' — hora de inicio (cuando no es todo el día)
+  endTime: string;     // 'HH:MM' — hora de fin (cuando no es todo el día)
 }
 export interface GenerateTasksConfig { tasks: TaskProgram[] }
 
