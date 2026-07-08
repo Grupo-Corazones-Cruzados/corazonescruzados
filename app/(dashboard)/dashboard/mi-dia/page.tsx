@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import {
-  ChevronLeft, ChevronRight, Plus, Share2, CalendarDays, ListTodo, Lock, Ticket, FolderKanban,
+  ChevronLeft, ChevronRight, ChevronDown, Plus, Share2, CalendarDays, ListTodo, Lock, Ticket, FolderKanban,
   Briefcase, Dumbbell, Brain, Users, CheckCircle2, XCircle,
 } from 'lucide-react';
 import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
@@ -54,6 +54,9 @@ export default function MiDiaPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityStatus>('conectado');
   const [savingAvail, setSavingAvail] = useState(false);
+  // Grupos de fecha del panel de eventos: contraídos por defecto (Set de días expandidos).
+  const [openEventDays, setOpenEventDays] = useState<Set<string>>(new Set());
+  const toggleEventDay = (day: string) => setOpenEventDays((s) => { const n = new Set(s); n.has(day) ? n.delete(day) : n.add(day); return n; });
 
   const range = useMemo(() => {
     if (view === 'month') {
@@ -180,9 +183,9 @@ export default function MiDiaPage() {
           {instances.length === 0 ? (
             <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Sin eventos en esta vista.</p>
           ) : (
-            eventGroups.map((g) => (
-              <div key={g.day}>
-                {view !== 'day' && <p className="text-[10px] uppercase tracking-wide text-digi-muted mb-1.5 flex items-center gap-1.5" style={df}>{dayHeader(g.day)}{g.day === ymd(new Date()) && <span className="text-accent">· hoy</span>}</p>}
+            eventGroups.map((g) => {
+              const openG = view === 'day' || openEventDays.has(g.day);
+              const list = (
                 <div className="space-y-1.5">
                   {g.items.map((ev) => {
                     const color = ev.color || EVENT_COLORS[ev.event_type];
@@ -198,8 +201,20 @@ export default function MiDiaPage() {
                     );
                   })}
                 </div>
-              </div>
-            ))
+              );
+              if (view === 'day') return <div key={g.day}>{list}</div>;
+              return (
+                <div key={g.day}>
+                  <button onClick={() => toggleEventDay(g.day)} className="w-full flex items-center gap-1.5 py-0.5 text-left hover:text-digi-text transition-colors" style={df}>
+                    <ChevronDown className={`w-3.5 h-3.5 text-digi-muted shrink-0 transition-transform ${openG ? '' : '-rotate-90'}`} />
+                    <span className="text-[10px] uppercase tracking-wide text-digi-muted">{dayHeader(g.day)}</span>
+                    {g.day === ymd(new Date()) && <span className="text-[10px] uppercase text-accent">· hoy</span>}
+                    <span className="ml-auto text-[10px] text-digi-muted tabular-nums">{g.items.length}</span>
+                  </button>
+                  {openG && <div className="mt-1.5">{list}</div>}
+                </div>
+              );
+            })
           )}
         </div>
       </aside>
