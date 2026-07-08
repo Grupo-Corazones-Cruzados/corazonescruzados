@@ -3,10 +3,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-export interface PolicyMessage { text: string; activatedAt: string | null }
-export interface PolicyEffects { messages: PolicyMessage[]; blockedModules: string[] }
+export interface PolicyDetailDoc { id: number; title: string; purpose: string; conduct: string; clauses: { title: string; text: string }[] }
+export interface ActivePolicy { id: number; name: string; activatedAt: string | null; messages: string[]; details: PolicyDetailDoc[] }
+export interface PolicyEffects { policies: ActivePolicy[]; blockedModules: string[] }
 
-const Ctx = createContext<PolicyEffects>({ messages: [], blockedModules: [] });
+const Ctx = createContext<PolicyEffects>({ policies: [], blockedModules: [] });
 export const usePolicyEffects = () => useContext(Ctx);
 
 /**
@@ -15,7 +16,7 @@ export const usePolicyEffects = () => useContext(Ctx);
  * Refresca al volver a la pestaña, por si un admin cambió las políticas.
  */
 export default function PolicyEffectsProvider({ children }: { children: React.ReactNode }) {
-  const [effects, setEffects] = useState<PolicyEffects>({ messages: [], blockedModules: [] });
+  const [effects, setEffects] = useState<PolicyEffects>({ policies: [], blockedModules: [] });
   const pathname = usePathname();
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export default function PolicyEffectsProvider({ children }: { children: React.Re
     const load = () =>
       fetch('/api/centralized/comandos/active')
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => { if (ok && d?.data) setEffects({ messages: d.data.messages || [], blockedModules: d.data.blockedModules || [] }); })
+        .then((d) => { if (ok && d?.data) setEffects({ policies: d.data.policies || [], blockedModules: d.data.blockedModules || [] }); })
         .catch(() => {});
     load(); // refresca en cada navegación del dashboard (refleja cambios recientes de políticas)
     const onVis = () => { if (document.visibilityState === 'visible') load(); };

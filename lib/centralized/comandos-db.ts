@@ -172,24 +172,41 @@ export async function deleteFunction(id: number) {
  * Agrega los efectos "en vivo" de todas las políticas ACTIVAS: mensajes permanentes y
  * módulos bloqueados. (La generación de tareas se aplica aparte, al activar.)
  */
-export interface ActiveMessage { text: string; activatedAt: string | null }
-export async function getActiveEffects(): Promise<{ messages: ActiveMessage[]; blockedModules: string[] }> {
+export interface PolicyDetailDoc { id: number; title: string; purpose: string; conduct: string; clauses: { title: string; text: string }[] }
+export interface ActivePolicy { id: number; name: string; activatedAt: string | null; messages: string[]; details: PolicyDetailDoc[] }
+
+/**
+ * Efectos "en vivo" agrupados POR POLÍTICA activa: mensajes permanentes y documentos de
+ * detalle (términos) de cada una, más los módulos bloqueados (agregados globalmente).
+ * Solo se devuelven políticas con algo que comunicar (mensaje o detalle).
+ */
+export async function getActiveEffects(): Promise<{ policies: ActivePolicy[]; blockedModules: string[] }> {
   await ensureComandosTables();
   const { rows } = await pool.query(
-    `SELECT f.type, f.config, p.activated_at
-       FROM gcc_world.cv_functions f
-       JOIN gcc_world.cv_policies p ON p.id = f.policy_id
-      WHERE p.active = true`,
+    `SELECT p.id AS policy_id, p.name, p.activated_at, f.id AS fn_id, f.type, f.config
+       FROM gcc_world.cv_policies p
+       JOIN gcc_world.cv_functions f ON f.policy_id = p.id
+      WHERE p.active = true
+      ORDER BY p.activated_at DESC NULLS LAST, p.id ASC, f.created_at ASC`,
   );
-  const messages: ActiveMessage[] = [];
+  const map = new Map<number, ActivePolicy>();
   const blocked = new Set<string>();
   for (const r of rows) {
+    let pol = map.get(r.policy_id);
+    if (!pol) {
+      pol = { id: r.policy_id, name: r.name, activatedAt: r.activated_at ? new Date(r.activated_at).toISOString() : null, messages: [], details: [] };
+      map.set(r.policy_id, pol);
+    }
     if (r.type === 'permanent_message') {
       const m = String(r.config?.message || '').trim();
-      if (m) messages.push({ text: m, activatedAt: r.activated_at ? new Date(r.activated_at).toISOString() : null });
+      if (m) pol.messages.push(m);
+    } else if (r.type === 'policy_terms') {
+      const c = r.config || {};
+      pol.details.push({ id: Number(r.fn_id), title: String(c.title || 'Detalle'), purpose: String(c.purpose || ''), conduct: String(c.conduct || ''), clauses: Array.isArray(c.clauses) ? c.clauses : [] });
     } else if (r.type === 'block_modules') {
       for (const path of r.config?.modules || []) blocked.add(String(path));
     }
   }
-  return { messages, blockedModules: Array.from(blocked) };
+  const policies = Array.from(map.values()).filter((p) => p.messages.length > 0 || p.details.length > 0);
+  return { policies, blockedModules: Array.from(blocked) };
 }
