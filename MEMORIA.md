@@ -267,16 +267,31 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **Configuración = carril horizontal de paneles (2026-07-08):** `app/(dashboard)/dashboard/settings/page.tsx` dejó de ser
-  rail+contenido y ahora es un **carril horizontal deslizable** (`flex gap-4 overflow-x-auto`) con 4 paneles en orden **Perfil →
-  CV → Disponibilidad → Portafolio**, todos del **mismo ancho (400px)**, **alto = alto disponible** (medido: `innerHeight − top −
-  44` para dejar libre el breadcrumb fijo h-9, recalcula en resize) y **scroll vertical interno** (cabecera fija). Shell reusable
-  **`components/settings/SettingsPanel.tsx`** (ancho/alto/scroll+cabecera; un cambio propaga a los 4). Se extrajeron
-  **`ProfilePanel.tsx`** y **`AvailabilityPanel.tsx`** (antes inline/subpágina); **`CvPanel.tsx`** se adaptó al shell (perdió su
-  card propia y la prop `className`); **`PortfolioPanel.tsx`** se reestructuró para columna angosta (pestañas en píldoras, lista
-  vertical de tarjetas, detalle/galería/edición en **modal** — se quitó el panel de detalle lateral). Los paneles de miembro
-  (CV/Disp/Portafolio) solo se muestran si `user.member_id`. Las subpáginas `/settings/{cv,availability,portfolio}` ahora
-  **redirigen** a `/dashboard/settings` (como `calendar` → mi-dia). Verificado tsc + `next build` OK.
+- **Sistema "Comandos Violeta" (2026-07-08):** nuevo sistema de Centralizado en **global · creación** (celda "Control Psicosocial",
+  slug `comandos-violeta`), **sembrado idempotente** en `ensureTable()` de `app/api/centralized/systems/route.ts` (y también en
+  `comandos-db.ts`) para que exista sin crearlo a mano. Es **otro método de generación de tareas** + configuración de **políticas
+  organizacionales** activables. **Iteración 1 = AUTORÍA + persistencia** (la APLICACIÓN al activar —header permanente, bloqueo real
+  de módulos, generación de tareas— es la próxima iteración). **Modelo:** Categoría → Políticas (activables) → Funciones.
+  **DB** (`lib/centralized/comandos-db.ts`, prefijo `cv_`): `cv_categories`, `cv_policies` (active bool, activated_at),
+  `cv_functions` (type + config jsonb). **Tipos de función** (`lib/centralized/comandos.ts`): `permanent_message` {message},
+  `block_modules` {modules:[paths de BLOCKABLE_MODULES]}, `generate_tasks` {tasks: TaskProgram[]}. **API**
+  `/api/centralized/comandos/{categories,policies,functions}` + `/comandos?category_id=` (grafo); guard `['admin','member']`.
+  **UI** `components/centralized/systems/ComandosVioletaSystem.tsx` (despacho por slug en el `[slug]/page.tsx`): panel de
+  **categorías** (izq, crear/seleccionar) · **grafo** de políticas (`components/centralized/comandos/PolicyGraph.tsx`, react-force-graph
+  como Apoyo pero **formas nuevas: política=ESTRELLA, función=PENTÁGONO**; política inactiva en gris) · **panel flotante** de detalle
+  (crear política pide nombre; política = toggle activar + "+ Función" + lista; función = dropdown de acción + config; eliminar).
+  **Generar tareas** = `GenerateTasksModal.tsx` (FloatingWindow): UsersList + form de tarea (título, detalle, etiquetas valores/talentos
+  con MultiSelectSearch, recurrencia, día de inicio de semana, y **modo de presencia**: cantidad de días / días de semana / todo el día)
+  → arreglo de `TaskProgram` guardado en la config. Verificado tsc + build.
+- **Configuración = Perfil fijo + pestañas (2026-07-08):** `app/(dashboard)/dashboard/settings/page.tsx` = **Perfil fijo a la
+  izquierda** (`ProfilePanel`, 400px) + a la derecha una tarjeta con **pestañas horizontales** (CV · Disponibilidad · Portafolio);
+  el contenido de la pestaña activa usa **todo el ancho** en layouts multi-columna y **SIN scroll interno** (la página se desplaza si
+  hace falta — pedido explícito del usuario). `CvPanel`/`AvailabilityPanel`/`PortfolioPanel` renderizan **contenido "bare"** (sin shell):
+  CV en grilla (bio full + skills/idiomas/linkedin/website en 4 col + educación/experiencia en 2 col), Disponibilidad editor+resumen
+  lado a lado, Portafolio en **grilla de tarjetas** (2–3 col) con detalle/galería/edición en **modal**. `SettingsPanel` pasó a
+  **altura natural** (sin scroll interno) y solo lo usa Perfil. Los paneles de miembro solo aparecen si `user.member_id`.
+  Subpáginas `/settings/{cv,availability,portfolio}` **redirigen** a `/dashboard/settings`. (SUPERSEDE el intento previo de carril
+  horizontal deslizable de 4 columnas del mismo día.) Verificado tsc + `next build` OK.
 - **Botones de estado de tarea reusables (2026-07-08):** el control Completada/Fallida/Pendiente se extrajo de
   `HorarioDeVidaSystem.tsx` a **`components/centralized/TaskStatusButtons.tsx`** (grid de 3, definición única). Se añadió al rail de
   tareas de **Mi día** (cada tarjeta lo tiene): manual → `PATCH /api/centralized/horario/schedule {id,status}`; automática →
