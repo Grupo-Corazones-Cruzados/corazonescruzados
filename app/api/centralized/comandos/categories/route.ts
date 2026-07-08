@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { listCategories, createCategory, deleteCategory } from '@/lib/centralized/comandos-db';
+import { listCategories, createCategory, renameCategory, deleteCategory } from '@/lib/centralized/comandos-db';
 import { NextResponse } from 'next/server';
 
 async function guard() {
@@ -28,6 +28,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ data: await createCategory(name) });
   } catch (err: any) {
     console.error('Comandos categories POST error:', err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+// PATCH — renombra una categoría { id, name }.
+export async function PATCH(req: Request) {
+  try {
+    if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    const { id, name } = await req.json();
+    if (!id) return NextResponse.json({ error: 'Falta el id' }, { status: 400 });
+    if (!name?.trim()) return NextResponse.json({ error: 'El nombre es requerido' }, { status: 400 });
+    await renameCategory(Number(id), name);
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error('Comandos categories PATCH error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

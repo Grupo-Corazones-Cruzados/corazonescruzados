@@ -90,6 +90,11 @@ export async function createCategory(name: string) {
   return rows[0];
 }
 
+export async function renameCategory(id: number, name: string) {
+  await ensureComandosTables();
+  await pool.query(`UPDATE gcc_world.cv_categories SET name = $1 WHERE id = $2`, [name.trim(), id]);
+}
+
 export async function deleteCategory(id: number) {
   await ensureComandosTables();
   await pool.query(`DELETE FROM gcc_world.cv_categories WHERE id = $1`, [id]);

@@ -44,6 +44,8 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [newCategory, setNewCategory] = useState('');
+  const [editingCat, setEditingCat] = useState<{ id: number; name: string } | null>(null);
+  const [confirmDelCat, setConfirmDelCat] = useState<Category | null>(null);
   const [graph, setGraph] = useState<PolicyGraphT>({ nodes: [], edges: [] });
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
@@ -82,6 +84,30 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
       await loadCategories();
       setCategoryId(d.data.id);
     } catch (e: any) { toast.error(e.message || 'Error'); }
+  };
+
+  const saveRenameCategory = async () => {
+    if (!editingCat) return;
+    const { id } = editingCat;
+    const name = editingCat.name.trim();
+    setEditingCat(null);
+    if (!name) return;
+    try {
+      const res = await fetch('/api/centralized/comandos/categories', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, name }) });
+      if (!res.ok) throw new Error((await res.json()).error);
+      await loadCategories();
+    } catch (e: any) { toast.error(e.message || 'No se pudo renombrar'); loadCategories(); }
+  };
+
+  const deleteCategory = async (c: Category) => {
+    setConfirmDelCat(null);
+    try {
+      const res = await fetch('/api/centralized/comandos/categories', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id }) });
+      if (!res.ok) throw new Error();
+      toast.success('Categoría eliminada');
+      if (categoryId === c.id) { setCategoryId(null); setGraph({ nodes: [], edges: [] }); setSelectedKey(null); }
+      await loadCategories();
+    } catch { toast.error('No se pudo eliminar'); }
   };
 
   /* ── Políticas ── */
@@ -205,12 +231,27 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
             <p className="px-3 py-4 text-[12px] text-digi-muted text-center" style={mf}>Sin categorías. Crea la primera abajo.</p>
           ) : categories.map((c) => {
             const active = c.id === categoryId;
+            if (editingCat?.id === c.id) {
+              return (
+                <div key={c.id} className="px-2 py-1.5">
+                  <input autoFocus value={editingCat.name} onChange={(e) => setEditingCat({ id: c.id, name: e.target.value })}
+                    onKeyDown={(e) => { if (e.key === 'Enter') saveRenameCategory(); if (e.key === 'Escape') setEditingCat(null); }}
+                    onBlur={saveRenameCategory}
+                    className="field-control w-full px-2.5 py-1.5 bg-digi-darker border-2 border-accent rounded-md text-[12.5px] text-digi-text focus:outline-none" style={mf} />
+                </div>
+              );
+            }
             return (
-              <button key={c.id} onClick={() => setCategoryId(c.id)}
-                className={`w-full text-left px-3 py-2 flex items-center gap-2 border-l-2 transition-colors ${active ? 'bg-accent-light border-accent' : 'border-transparent hover:bg-black/[0.02]'}`}>
-                <span className={`flex-1 min-w-0 text-[12.5px] font-medium truncate ${active ? 'text-accent' : 'text-digi-text'}`} style={mf}>{c.name}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full tabular-nums bg-black/[0.05] text-digi-muted">{c.policy_count ?? 0}</span>
-              </button>
+              <div key={c.id} className={`group flex items-center border-l-2 transition-colors ${active ? 'bg-accent-light border-accent' : 'border-transparent hover:bg-black/[0.02]'}`}>
+                <button onClick={() => setCategoryId(c.id)} className="flex-1 min-w-0 text-left px-3 py-2 flex items-center gap-2">
+                  <span className={`flex-1 min-w-0 text-[12.5px] font-medium truncate ${active ? 'text-accent' : 'text-digi-text'}`} style={mf}>{c.name}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full tabular-nums bg-black/[0.05] text-digi-muted">{c.policy_count ?? 0}</span>
+                </button>
+                <div className="flex items-center gap-0.5 pr-1.5 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                  <button onClick={() => setEditingCat({ id: c.id, name: c.name })} title="Renombrar" className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.04] transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setConfirmDelCat(c)} title="Eliminar" className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-black/[0.04] transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              </div>
             );
           })}
         </div>
@@ -423,6 +464,16 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
         danger
         onConfirm={() => confirmDel && deleteNode(confirmDel)}
         onCancel={() => setConfirmDel(null)}
+      />
+
+      <PixelConfirm
+        open={!!confirmDelCat}
+        title="Eliminar categoría"
+        message={confirmDelCat ? `¿Eliminar la categoría "${confirmDelCat.name}"? Se eliminarán también sus ${confirmDelCat.policy_count ?? 0} política(s) y sus funciones.` : ''}
+        confirmLabel="Eliminar"
+        danger
+        onConfirm={() => confirmDelCat && deleteCategory(confirmDelCat)}
+        onCancel={() => setConfirmDelCat(null)}
       />
     </div>
   );
