@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import PixelModal from '@/components/ui/PixelModal';
+import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
@@ -280,11 +280,12 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
   };
 
   return (
-    <PixelModal
+    <FloatingWindow
       open={open}
       onClose={onClose}
       title={event ? 'Editar evento' : 'Nuevo evento'}
-      size="lg"
+      initialWidth={560}
+      initialHeight={640}
     >
       <div className="space-y-4">
         <PixelInput
@@ -568,6 +569,6 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
-    </PixelModal>
+    </FloatingWindow>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { BTN_SECONDARY } from '@/components/ui/Button';
 import {
   ChevronLeft, ChevronRight, Plus, Share2, CalendarDays, ListTodo, Lock, Ticket, FolderKanban,
   Briefcase, Dumbbell, Brain, Users, CheckCircle2, XCircle,
@@ -116,6 +116,15 @@ export default function MiDiaPage() {
   }, [horario, range]);
   const totalTasks = useMemo(() => rangeGroups.reduce((s, g) => s + g.items.length, 0), [rangeGroups]);
 
+  // Eventos del rango de la vista, agrupados por día.
+  const eventGroups = useMemo(() => {
+    const byDay = new Map<string, EventInstance[]>();
+    for (const ev of instances) { const ds = ymd(ev.instanceStart); const a = byDay.get(ds) || []; a.push(ev); byDay.set(ds, a); }
+    return Array.from(byDay.entries()).sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([day, items]) => ({ day, items: items.sort((a, b) => a.instanceStart.getTime() - b.instanceStart.getTime()) }));
+  }, [instances]);
+  const fmtTime = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
   const goPrev = () => { const d = new Date(currentDate); if (view === 'month') d.setMonth(d.getMonth() - 1); else if (view === 'week') d.setDate(d.getDate() - 7); else d.setDate(d.getDate() - 1); setCurrentDate(d); };
   const goNext = () => { const d = new Date(currentDate); if (view === 'month') d.setMonth(d.getMonth() + 1); else if (view === 'week') d.setDate(d.getDate() + 7); else d.setDate(d.getDate() + 1); setCurrentDate(d); };
   const goToday = () => setCurrentDate(new Date());
@@ -157,10 +166,45 @@ export default function MiDiaPage() {
   };
 
   return (
-    <div className="flex flex-col xl:flex-row gap-4 items-start">
-      <div className="flex-1 min-w-0 w-full">
-        <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2 mb-3" style={df}><CalendarDays className="w-5 h-5 text-accent" /> Mi día</h1>
+    <div>
+      <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2 mb-3" style={df}><CalendarDays className="w-5 h-5 text-accent" /> Mi día</h1>
+      <div className="flex flex-col xl:flex-row gap-4 items-start">
+      {/* Panel izquierdo: eventos del rango de la vista + botón Nuevo */}
+      <aside className="w-full xl:w-[260px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
+          <CalendarDays className="w-4 h-4 text-digi-muted" />
+          <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Eventos · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : 'Mes'}</span>
+          <button onClick={() => openNew('work')} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent text-white text-[11.5px] font-medium hover:bg-accent-hover transition-colors" style={mf}><Plus className="w-3 h-3" /> Nuevo</button>
+        </div>
+        <div className="p-2.5 space-y-3 max-h-[calc(100dvh-220px)] overflow-y-auto">
+          {instances.length === 0 ? (
+            <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Sin eventos en esta vista.</p>
+          ) : (
+            eventGroups.map((g) => (
+              <div key={g.day}>
+                {view !== 'day' && <p className="text-[10px] uppercase tracking-wide text-digi-muted mb-1.5 flex items-center gap-1.5" style={df}>{dayHeader(g.day)}{g.day === ymd(new Date()) && <span className="text-accent">· hoy</span>}</p>}
+                <div className="space-y-1.5">
+                  {g.items.map((ev) => {
+                    const color = ev.color || EVENT_COLORS[ev.event_type];
+                    return (
+                      <button key={`${ev.id}-${ev.instanceStart.getTime()}`} onClick={() => handleEventClick(ev)}
+                        className="w-full text-left rounded-lg border border-digi-border bg-digi-darker/40 hover:border-accent/50 transition-colors p-2 flex items-stretch gap-2">
+                        <span className="w-1 rounded-full shrink-0" style={{ background: color }} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12.5px] font-medium text-digi-text truncate leading-snug" style={mf}>{ev.title}</p>
+                          <p className="text-[10.5px] text-digi-muted mt-0.5" style={mf}>{ev.all_day ? 'Todo el día' : `${fmtTime(ev.instanceStart)}–${fmtTime(ev.instanceEnd)}`}{ev.client_name ? ` · ${ev.client_name}` : ''}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
 
+      <div className="flex-1 min-w-0 w-full">
         <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
           {/* Command bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border">
@@ -185,7 +229,6 @@ export default function MiDiaPage() {
                 </select>
               </div>
               <button onClick={() => setShareOpen(true)} className={BTN_SECONDARY}><Share2 className="w-4 h-4" /> Compartir</button>
-              <button onClick={() => openNew('work')} className={BTN_PRIMARY}><Plus className="w-4 h-4" /> Nuevo</button>
             </div>
           </div>
 
@@ -275,6 +318,7 @@ export default function MiDiaPage() {
       />
 
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
+      </div>
     </div>
   );
 }
