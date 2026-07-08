@@ -40,7 +40,7 @@ export interface GraphNode {
   title: string;
   dimension?: string | null;
   description?: string | null;
-  linked?: boolean;       // alternativa/solución con ticket o proyecto asociado
+  linkSource?: 'ticket' | 'project' | null; // alternativa/solución con ticket o proyecto asociado
 }
 export interface GraphEdge {
   source: string;         // node key

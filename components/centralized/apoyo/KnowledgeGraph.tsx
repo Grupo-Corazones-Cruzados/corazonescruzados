@@ -2,13 +2,17 @@
 
 import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Maximize2, Plus, Minus, Shuffle, Briefcase, Dumbbell, Brain, Users } from 'lucide-react';
+import { Maximize2, Plus, Minus, Shuffle, Briefcase, Dumbbell, Brain, Users, Ticket, FolderKanban } from 'lucide-react';
 import { NODE_META, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
 import type { GraphNode, GraphEdge } from '@/lib/centralized/apoyo';
 
-// Icono por dimensión (mismo criterio que el Horario de Vida). Se pre-renderiza a imagen
-// para poder dibujarlo en el canvas del grafo.
-const DIM_ICON_COMP: Record<string, any> = { laboral: Briefcase, corporal: Dumbbell, mental: Brain, social: Users };
+// Iconos que se pre-renderizan a imagen para dibujarlos en los badges del canvas:
+// dimensión (mismo criterio que el Horario) + fuente de asociación (ticket/proyecto,
+// mismos iconos que el menú de módulos: Ticket / FolderKanban).
+const ICON_COMP: Record<string, any> = {
+  laboral: Briefcase, corporal: Dumbbell, mental: Brain, social: Users,
+  ticket: Ticket, project: FolderKanban,
+};
 
 // react-force-graph usa d3-force (física) + canvas (render), como el grafo de Obsidian.
 // Tamaño base por tipo (además del extra por nº de conexiones). Situación es el ancla
@@ -91,19 +95,19 @@ export default function KnowledgeGraph({
   const [ForceGraph2D, setForceGraph2D] = useState<any>(null);
   useEffect(() => { let ok = true; import('react-force-graph-2d').then((m) => { if (ok) setForceGraph2D(() => m.default); }); return () => { ok = false; }; }, []);
 
-  // Pre-render de los iconos de dimensión a imágenes (dark) para dibujarlos en el badge.
-  const dimImgRef = useRef<Record<string, HTMLImageElement>>({});
+  // Pre-render de los iconos (dark) a imágenes para dibujarlos en los badges del canvas.
+  const iconImgRef = useRef<Record<string, HTMLImageElement>>({});
   const [, bumpIcons] = useState(0);
   useEffect(() => {
     const imgs: Record<string, HTMLImageElement> = {};
-    for (const [key, Comp] of Object.entries(DIM_ICON_COMP)) {
+    for (const [key, Comp] of Object.entries(ICON_COMP)) {
       const svg = renderToStaticMarkup(createElement(Comp, { color: '#0a0a10', strokeWidth: 2.5, width: 24, height: 24 }));
       const img = new Image();
       img.onload = () => bumpIcons((v) => v + 1);
       img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
       imgs[key] = img;
     }
-    dimImgRef.current = imgs;
+    iconImgRef.current = imgs;
   }, []);
 
   // Reusa los MISMOS objetos-nodo entre renders (por key) para que react-force-graph
@@ -305,7 +309,7 @@ export default function KnowledgeGraph({
               bg.addColorStop(0, 'rgba(255,255,255,0.45)'); bg.addColorStop(1, 'rgba(255,255,255,0)');
               ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fillStyle = bg; ctx.fill();
               // icono de la dimensión (mismo que el Horario) en oscuro; letra como respaldo
-              const dimImg = n.dimension ? dimImgRef.current[n.dimension] : null;
+              const dimImg = n.dimension ? iconImgRef.current[n.dimension] : null;
               if (dimImg && dimImg.complete && dimImg.naturalWidth) {
                 const s = br * 1.5;
                 ctx.drawImage(dimImg, bx - s / 2, by - s / 2, s, s);
@@ -318,18 +322,19 @@ export default function KnowledgeGraph({
             }
 
             // Distintivo de ASOCIACIÓN: alternativa/solución con ticket o proyecto → badge
-            // celeste con un eslabón, arriba a la derecha del nodo.
-            if (n.linked) {
-              const br = Math.max(2.2, rr * 0.6);
+            // celeste con el icono del ticket/proyecto (mismo que el menú de módulos).
+            if (n.linkSource) {
+              const br = Math.max(2.6, rr * 0.68);
               const bx = node.x + rr * 0.82;
               const by = node.y - rr * 0.82;
               ctx.globalAlpha = lit ? 1 : 0.35;
               ctx.beginPath(); ctx.arc(bx, by, br + 0.9, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(10,10,16,0.95)'; ctx.fill();
               ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fillStyle = '#38bdf8'; ctx.fill();
-              // dos aritos = eslabón de cadena
-              ctx.lineWidth = Math.max(0.5, br * 0.22); ctx.strokeStyle = 'rgba(10,10,16,0.9)';
-              ctx.beginPath(); ctx.arc(bx - br * 0.28, by, br * 0.42, 0, 2 * Math.PI); ctx.stroke();
-              ctx.beginPath(); ctx.arc(bx + br * 0.28, by, br * 0.42, 0, 2 * Math.PI); ctx.stroke();
+              const linkImg = iconImgRef.current[n.linkSource];
+              if (linkImg && linkImg.complete && linkImg.naturalWidth) {
+                const s = br * 1.4;
+                ctx.drawImage(linkImg, bx - s / 2, by - s / 2, s, s);
+              }
             }
             ctx.globalAlpha = alpha;
 

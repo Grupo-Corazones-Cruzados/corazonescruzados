@@ -334,6 +334,9 @@ soluciones) tipo *graph view* de Obsidian.
   **grafo** (canvas) el badge del problema pre-renderiza el icono a imagen (`renderToStaticMarkup` → data-URL → `drawImage`,
   dark para contraste; letra L/C/M/S como respaldo mientras carga); en el **Horario de Vida** (chips de tarea manual) se usa el
   componente lucide coloreado. Regla: si cambias el icono de una dimensión, cámbialo en ambos (mapa `DIM_ICON`/`DIM_ICON_COMP`).
+- **Badge de ASOCIACIÓN en el grafo:** una alternativa/solución con ticket o proyecto asociado lleva un **badge celeste** con el
+  **icono del módulo** correspondiente — **Ticket** (`Ticket`) o **Proyecto** (`FolderKanban`), los MISMOS del menú de módulos
+  (`DashboardSidebar`) — pre-renderizado a imagen igual que los de dimensión (`GraphNode.linkSource: 'ticket'|'project'`).
 - **Distinción por TIPO = color + FORMA + tamaño** (no solo color): Situación = **hexágono** (grande,
   ancla), Problema = **triángulo**, Solución = **cuadrado redondeado**, Causa = **círculo** (pequeño,
   raíz). Formas trazadas en canvas (`traceShape`) y replicadas en leyenda/chips/panel con `clip-path`
