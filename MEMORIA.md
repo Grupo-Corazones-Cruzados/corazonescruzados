@@ -267,6 +267,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Configuración = carril horizontal de paneles (2026-07-08):** `app/(dashboard)/dashboard/settings/page.tsx` dejó de ser
+  rail+contenido y ahora es un **carril horizontal deslizable** (`flex gap-4 overflow-x-auto`) con 4 paneles en orden **Perfil →
+  CV → Disponibilidad → Portafolio**, todos del **mismo ancho (400px)**, **alto = alto disponible** (medido: `innerHeight − top −
+  44` para dejar libre el breadcrumb fijo h-9, recalcula en resize) y **scroll vertical interno** (cabecera fija). Shell reusable
+  **`components/settings/SettingsPanel.tsx`** (ancho/alto/scroll+cabecera; un cambio propaga a los 4). Se extrajeron
+  **`ProfilePanel.tsx`** y **`AvailabilityPanel.tsx`** (antes inline/subpágina); **`CvPanel.tsx`** se adaptó al shell (perdió su
+  card propia y la prop `className`); **`PortfolioPanel.tsx`** se reestructuró para columna angosta (pestañas en píldoras, lista
+  vertical de tarjetas, detalle/galería/edición en **modal** — se quitó el panel de detalle lateral). Los paneles de miembro
+  (CV/Disp/Portafolio) solo se muestran si `user.member_id`. Las subpáginas `/settings/{cv,availability,portfolio}` ahora
+  **redirigen** a `/dashboard/settings` (como `calendar` → mi-dia). Verificado tsc + `next build` OK.
+- **Botones de estado de tarea reusables (2026-07-08):** el control Completada/Fallida/Pendiente se extrajo de
+  `HorarioDeVidaSystem.tsx` a **`components/centralized/TaskStatusButtons.tsx`** (grid de 3, definición única). Se añadió al rail de
+  tareas de **Mi día** (cada tarjeta lo tiene): manual → `PATCH /api/centralized/horario/schedule {id,status}`; automática →
+  `POST /api/centralized/horario/auto-status` (usa `horario.subject` de `/horario/me`). Update optimista sobre `horario`.
 - **Módulo "Mi día" (2026-07-08):** módulo del dashboard bajo **Inicio** (`app/(dashboard)/dashboard/mi-dia/page.tsx`; sidebar
   `CalendarDays`; acceso candidate/member/admin). **Es el CALENDARIO del miembro** (se movió de Configuración → se quitó el
   RailLink "Calendario"; `settings/calendar` ahora **redirige** a `/dashboard/mi-dia`). Reusa `CalendarView`/`EventModal`/
