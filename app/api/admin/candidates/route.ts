@@ -1,7 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { getDimensionProblemLoads } from '@/lib/centralized/apoyo-db';
-import { getSubjectsProfileScores } from '@/lib/centralized/horario-db';
+import { getSubjectsCriteria } from '@/lib/centralized/criteria';
 import { NextResponse } from 'next/server';
 
 /**
@@ -31,32 +30,13 @@ export async function GET() {
         ORDER BY c.last_seen_at DESC NULLS LAST, c.id DESC`,
     );
 
-    // Criterios calculados:
-    //  - Dimensiones: carga de problemas por dimensión (Apoyo y Autoayuda).
-    //  - Talento y Valores: cumplimiento de tareas del Horario de Vida (± por etiqueta).
-    // Apoyo sigue pendiente de fuente de datos.
-    const ids = rows.map((r: any) => String(r.id));
-    const [loads, scores] = await Promise.all([
-      getDimensionProblemLoads('candidate', ids),
-      getSubjectsProfileScores('candidate', ids),
-    ]);
-    const data = rows.map((r: any) => {
-      const sid = String(r.id);
-      const dims = loads[sid];
-      const sc = scores[sid];
-      const criteria = (dims || sc) ? {
-        talents: sc?.talents || [],
-        values: {},
-        valuesBalance: sc?.valuesBalance || {},
-        dimensions: dims || {},
-        apoyo: {},
-      } : null;
-      return {
-        ...r,
-        criteria,
-        is_member: r.user_role === 'member' || r.user_role === 'admin',
-      };
-    });
+    // Criterios (dimensiones desde Apoyo; talento/valores desde el Horario de Vida).
+    const criteriaBy = await getSubjectsCriteria('candidate', rows.map((r: any) => String(r.id)));
+    const data = rows.map((r: any) => ({
+      ...r,
+      criteria: criteriaBy[String(r.id)] ?? null,
+      is_member: r.user_role === 'member' || r.user_role === 'admin',
+    }));
     return NextResponse.json({ data });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'unknown error';

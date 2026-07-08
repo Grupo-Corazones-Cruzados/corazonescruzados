@@ -5,14 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import ActionsMenu from '@/components/centralized/ActionsMenu';
-import {
-  Users, Mail, X, Sparkles, Gem, Activity, HeartHandshake, Search, Phone, Building2, Globe, Info, ChevronDown,
-  UserCheck,
-} from 'lucide-react';
-import {
-  VALUE_ITEMS, DIMENSION_ITEMS, APOYO_ITEMS, sortedTalents,
-  type CandidateCriteria, type CriterionItem,
-} from '@/lib/centralized/reclutamiento';
+import CriteriaSections from '@/components/centralized/reclutamiento/CriteriaSections';
+import { Users, Mail, X, Search, Phone, Building2, Globe, UserCheck } from 'lucide-react';
+import { type CandidateCriteria } from '@/lib/centralized/reclutamiento';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -151,38 +146,7 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
               </div>
             </div>
 
-            {!criteria && (
-              <div className="flex items-center gap-2 rounded-lg border border-digi-border bg-digi-darker px-3 py-2 text-[12px] text-digi-muted" style={mf}>
-                <Info className="w-4 h-4 shrink-0 text-accent" />
-                Los criterios se llenarán desde el sistema de evaluación. Aún no hay datos para este candidato.
-              </div>
-            )}
-
-            {/* 1 · Talento */}
-            <Section title="Talento" Icon={Sparkles} subtitle="Top 10 talentos, de mayor a menor potencial" count={sortedTalents(criteria?.talents).length || 10}>
-              {(() => {
-                const talents = sortedTalents(criteria?.talents);
-                if (talents.length === 0) return <EmptyNote text="Sin datos de talentos aún." />;
-                return <div className="space-y-2.5">{talents.map((t, i) => <Bar key={i} label={t.name} value={t.score} />)}</div>;
-              })()}
-            </Section>
-
-            {/* 2 · Valores (barra divergente: completadas vs no completadas) */}
-            <Section title="Valores" Icon={Gem} subtitle="Cumplimiento de tareas por valor" count={VALUE_ITEMS.length}>
-              <div className="space-y-2.5">
-                {VALUE_ITEMS.map((it) => <ValueBalanceBar key={it.key} label={it.label} data={criteria?.valuesBalance?.[it.key]} />)}
-              </div>
-            </Section>
-
-            {/* 3 · Dimensiones */}
-            <Section title="Dimensiones" Icon={Activity} subtitle="Problemas en cada aspecto de su desarrollo" count={DIMENSION_ITEMS.length}>
-              <CriteriaGrid items={DIMENSION_ITEMS} group={criteria?.dimensions} />
-            </Section>
-
-            {/* 4 · Apoyo */}
-            <Section title="Apoyo" Icon={HeartHandshake} subtitle="Redes de apoyo del candidato" count={APOYO_ITEMS.length}>
-              <CriteriaGrid items={APOYO_ITEMS} group={criteria?.apoyo} />
-            </Section>
+            <CriteriaSections criteria={criteria} />
           </div>
         ) : (
           <div className="bg-digi-card border border-digi-border rounded-xl p-10 text-center lg:sticky lg:top-4">
@@ -201,87 +165,6 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
         onConfirm={() => selected && doConvert(selected)}
         onCancel={() => setConfirmConvert(false)}
       />
-    </div>
-  );
-}
-
-function Section({ title, subtitle, Icon, count, children }: { title: string; subtitle?: string; Icon: any; count?: number; children: React.ReactNode }) {
-  // Contraída por defecto; se expande al hacer clic en la cabecera.
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="w-full flex items-center gap-2.5 p-4 text-left hover:bg-black/[0.02] transition-colors"
-      >
-        <div className="w-8 h-8 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-accent" /></div>
-        <div className="min-w-0 flex-1">
-          <h4 className="text-[13.5px] font-semibold text-digi-text leading-none" style={df}>{title}</h4>
-          {subtitle && <p className="text-[11px] text-digi-muted mt-0.5 truncate" style={mf}>{subtitle}</p>}
-        </div>
-        {count != null && (
-          <span className="text-[11px] text-digi-muted tabular-nums shrink-0" style={mf}>{count}</span>
-        )}
-        <ChevronDown className={`w-4 h-4 text-digi-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && <div className="px-4 pb-4">{children}</div>}
-    </div>
-  );
-}
-
-function CriteriaGrid({ items, group }: { items: CriterionItem[]; group?: Record<string, number> | null }) {
-  return (
-    <div className="space-y-2.5">
-      {items.map((it) => <Bar key={it.key} label={it.label} value={group?.[it.key]} />)}
-    </div>
-  );
-}
-
-function Bar({ label, value }: { label: string; value: number | null | undefined }) {
-  const has = typeof value === 'number';
-  const pct = has ? Math.max(0, Math.min(100, value as number)) : 0;
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-32 shrink-0 text-[12.5px] text-digi-text truncate" style={mf} title={label}>{label}</span>
-      <div className="flex-1 h-2 rounded-full bg-digi-border/50 overflow-hidden">
-        <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-      </div>
-      <span className="w-12 text-right text-[12px] tabular-nums shrink-0" style={mf}>
-        {has ? `${Math.round(pct)}%` : <span className="text-digi-muted/50">—</span>}
-      </span>
-    </div>
-  );
-}
-
-function EmptyNote({ text }: { text: string }) {
-  return <p className="text-[12px] text-digi-muted py-2" style={mf}>{text}</p>;
-}
-
-/**
- * Barra DIVERGENTE de un valor: una sola barra donde el tramo verde = proporción de
- * tareas completadas y el tramo rojo = proporción de no completadas (sobre el total de
- * tareas etiquetadas con ese valor). A la derecha, los conteos ✓/✗.
- */
-function ValueBalanceBar({ label, data }: { label: string; data?: { completed: number; failed: number } }) {
-  const completed = data?.completed ?? 0;
-  const failed = data?.failed ?? 0;
-  const total = completed + failed;
-  const has = total > 0;
-  const pos = has ? (completed / total) * 100 : 0;
-  const neg = has ? (failed / total) * 100 : 0;
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-32 shrink-0 text-[12.5px] text-digi-text truncate" style={mf} title={label}>{label}</span>
-      <div className="flex-1 h-2.5 rounded-full bg-digi-border/50 overflow-hidden flex">
-        <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pos}%` }} />
-        <div className="h-full bg-red-500 transition-all" style={{ width: `${neg}%` }} />
-      </div>
-      <span className="w-14 text-right text-[11.5px] tabular-nums shrink-0" style={mf}>
-        {has ? (
-          <><span className="text-emerald-600">{completed}</span><span className="text-digi-muted/50">/</span><span className="text-red-500">{failed}</span></>
-        ) : <span className="text-digi-muted/50">—</span>}
-      </span>
     </div>
   );
 }

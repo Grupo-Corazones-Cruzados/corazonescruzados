@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { getSubjectsCriteria } from '@/lib/centralized/criteria';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -17,7 +18,11 @@ export async function GET() {
        ORDER BY m.id`
     );
 
-    return NextResponse.json({ data: rows });
+    // Criterios de desarrollo del miembro (para la prospección), igual que candidatos.
+    const criteriaBy = await getSubjectsCriteria('member', rows.map((r: any) => String(r.id)));
+    const data = rows.map((r: any) => ({ ...r, criteria: criteriaBy[String(r.id)] ?? null }));
+
+    return NextResponse.json({ data });
   } catch (err: any) {
     console.error('Team error:', err.message);
     return NextResponse.json({ data: [] });

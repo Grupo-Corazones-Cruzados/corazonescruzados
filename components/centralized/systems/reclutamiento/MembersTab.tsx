@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { UserRound, Mail, X, Search, BadgeCheck, DollarSign, Briefcase, UserMinus, Network, SlidersHorizontal } from 'lucide-react';
+import { UserRound, Mail, X, Search, BadgeCheck, DollarSign, Briefcase, UserMinus, Network, SlidersHorizontal, Radar } from 'lucide-react';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelSelect from '@/components/ui/PixelSelect';
 import ActionsMenu from '@/components/centralized/ActionsMenu';
+import CriteriaSections from '@/components/centralized/reclutamiento/CriteriaSections';
 import { fmt2 } from '@/lib/format';
 import { PISOS, PASOS, PISO_LABEL, PASO_LABEL, pisosAtOrBelow } from '@/lib/centralized/systems';
 
@@ -36,6 +37,8 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
   const [formPiso, setFormPiso] = useState('');
   const [formPaso, setFormPaso] = useState('');
   const [savingAccess, setSavingAccess] = useState(false);
+  // Prospección: panel a la derecha (con overlay) con los criterios de desarrollo.
+  const [prospectOpen, setProspectOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -184,6 +187,7 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                 <div className="flex items-center gap-0.5 shrink-0">
                   {isAdmin && (
                     <ActionsMenu items={[
+                      { label: 'Prospección', icon: Radar, onClick: () => setProspectOpen(true) },
                       { label: 'Configurar accesos', icon: SlidersHorizontal, onClick: () => openAccess(selected) },
                       { label: demoting ? 'Convirtiendo…' : 'Convertir a candidato', icon: UserMinus, danger: true, onClick: () => setConfirmDemote(true), disabled: isAdminMember || demoting },
                     ]} />
@@ -243,6 +247,26 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
           </div>
         </div>
       </PixelModal>
+
+      {/* Prospección: overlay + panel deslizante a la derecha con los criterios del miembro */}
+      {prospectOpen && selected && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-[pixelFadeIn_0.15s_ease-out]" onClick={() => setProspectOpen(false)} />
+          <aside className="absolute right-0 top-0 h-full w-full max-w-[440px] bg-digi-darker border-l border-digi-border shadow-2xl flex flex-col animate-[pixelFadeIn_0.2s_ease-out]">
+            <div className="flex items-center gap-2.5 px-4 py-3 border-b border-digi-border shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0"><Radar className="w-5 h-5 text-accent" /></div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-digi-muted" style={df}>Prospección</p>
+                <h3 className="text-[14px] font-semibold text-digi-text truncate leading-tight" style={df}>{displayName(selected)}</h3>
+              </div>
+              <button onClick={() => setProspectOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <CriteriaSections criteria={selected.criteria || null} />
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

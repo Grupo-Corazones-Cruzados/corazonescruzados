@@ -271,6 +271,12 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Listas canónicas (fuente única):** `lib/centralized/valores.ts` (`VALORES`, los 9 valores de la org; `reclutamiento.ts`
     re-exporta `VALUE_ITEMS = VALORES` para no romper imports) y `lib/centralized/talentos.ts` (`TALENTOS`, 500+ talentos
     agrupados por categoría, editable a futuro). Todo lugar que ofrezca elegir valores/talentos importa de aquí.
+  - **Criterios compartidos + Prospección de Miembros (2026-07-07):** las 4 secciones de criterios (Talento/Valores/
+    Dimensiones/Apoyo) se extrajeron a `components/centralized/reclutamiento/CriteriaSections.tsx` (reutilizable). El cálculo
+    se centralizó en `lib/centralized/criteria.ts` `getSubjectsCriteria(kind, ids)` (dimensiones + talento/valores), usado por
+    `/api/admin/candidates` y ahora también por `/api/admin/team` (cada miembro trae `criteria`). En **MembersTab**, el menú ⋮
+    del miembro tiene **Prospección** (además de Configurar accesos y Convertir a candidato): abre un **panel a la derecha con
+    overlay** que muestra los mismos criterios de desarrollo que la pestaña de Candidatos.
   - **Apoyo → Reclutamiento (Dimensiones):** las barras de la sección "Dimensiones" de `CandidatosTab` reflejan la
     **carga de problemas sin resolver** por dimensión del sujeto (candidate). `getDimensionProblemLoads()` en `apoyo-db.ts`:
     por dimensión, % = (total − resueltos)/total; "resuelto" = el problema tiene al menos una **solución** vinculada
