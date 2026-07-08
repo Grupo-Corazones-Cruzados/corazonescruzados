@@ -196,8 +196,8 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                   <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                 </div>
               </div>
-              {/* Prospección al borde izquierdo del componente */}
-              <div className="mt-3"><ProspeccionBar criteria={selected.criteria || null} /></div>
+              {/* Prospección al borde derecho del componente */}
+              <div className="mt-3 flex justify-end"><ProspeccionBar criteria={selected.criteria || null} /></div>
             </div>
           </div>
         ) : (

@@ -144,10 +144,10 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
                   <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                 </div>
               </div>
-              {/* Prospección al borde izquierdo, a la altura de la fecha de última sesión */}
+              {/* Fecha a la izquierda, Prospección al borde derecho (misma altura) */}
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 mt-3">
-                <ProspeccionBar criteria={criteria} />
                 <p className="text-[11px] text-digi-muted/80" style={mf}>Última sesión: {fmtDate(selected.last_seen_at)}</p>
+                <ProspeccionBar criteria={criteria} />
               </div>
             </div>
 
