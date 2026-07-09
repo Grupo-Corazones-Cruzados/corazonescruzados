@@ -276,6 +276,13 @@ Stack estándar de la casa, con particularidades de este repo:
   del rail se acotan igual. **Etiqueta de rol** en el footer del `DashboardSidebar`: usa `accessRoleOf(user)`
   (candidate/client/member/admin, distingue candidato por `account_type`) → "Candidato/Cliente/Miembro/Admin"
   (antes mostraba el `role` crudo "client"). Verificado tsc+build + filtro probado en Postgres.
+- **Inicio (/dashboard) por rol (2026-07-09):** el redirect a Marketplace en `dashboard/page.tsx` usaba `role==='client'`
+  (rebotaba también al candidato); ahora usa **`accessRoleOf(user)`** y solo rebota al **cliente de negocio**
+  (`role==='client'` efectivo), NO al candidato ni staff. El candidato **entra a Inicio** con vista **acotada**:
+  las **finanzas de la org** (tarjetas ingresos/egresos/ahorro + tabla "Estado financiero mensual") y el conteo de
+  clientes **solo para staff**; los stats "Tickets abiertos"/"Proyectos activos" se **acotan a los suyos** en
+  `/api/admin/stats` (no-staff: por `tickets.user_id`/`client_id` y `projects.created_by_user_id`/`client_id`).
+  **`/api/finance` GET gateado a staff** (no-staff → `{data:[]}`). Verificado tsc+build + consultas en Postgres.
 - **Sistema "Comandos Violeta" (2026-07-08):** sistema de Centralizado en **global · creación** (celda "Control Psicosocial",
   slug `comandos-violeta`), **sembrado idempotente** en `ensureTable()` de `app/api/centralized/systems/route.ts` (y en
   `comandos-db.ts`) para que exista sin crearlo a mano. Configura **políticas organizacionales** activables (otro método de generación

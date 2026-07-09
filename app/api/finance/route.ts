@@ -70,6 +70,12 @@ export async function GET() {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
+    // Finanzas = datos de toda la organización → SOLO staff (miembro/admin). Un candidato/
+    // cliente no ve el estado financiero global.
+    if (user.role !== 'admin' && user.role !== 'member') {
+      return NextResponse.json({ data: [] });
+    }
+
     // Crear tablas una sola vez por proceso.
     if (!tablesReady) { await ensureFinanceTables(); tablesReady = true; }
 

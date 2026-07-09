@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { accessRoleOf } from '@/lib/dashboard/access';
 import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
@@ -23,12 +24,16 @@ interface FinanceItem { id?: number; type: 'income' | 'expense'; description: st
 export default function DashboardHome() {
   const { user } = useAuth();
   const router = useRouter();
-  const isAdmin = user?.role === 'admin';
-  const isClient = user?.role === 'client';
+  // Rol EFECTIVO (candidate/client/member/admin). El candidato tiene role='client' en el
+  // JWT pero account_type='candidate' → aquí se distingue para no tratarlo como cliente.
+  const role = accessRoleOf(user);
+  const isAdmin = role === 'admin';
+  const isStaff = role === 'member' || role === 'admin';
   const [stats, setStats] = useState<Stats | null>(null);
   const [months, setMonths] = useState<FinanceMonth[]>([]);
 
-  useEffect(() => { if (isClient) router.replace('/dashboard/marketplace'); }, [isClient, router]);
+  // Solo el CLIENTE de negocio (no candidato ni staff) no tiene Inicio → va a Marketplace.
+  useEffect(() => { if (role === 'client') router.replace('/dashboard/marketplace'); }, [role, router]);
 
   // Detail modal
   const [detailMonth, setDetailMonth] = useState<FinanceMonth | null>(null);
@@ -47,7 +52,7 @@ export default function DashboardHome() {
     } catch {}
   }, []);
 
-  useEffect(() => { fetchMonths(); }, [fetchMonths]);
+  useEffect(() => { if (isStaff) fetchMonths(); }, [isStaff, fetchMonths]);
 
   const globalIncome = months.reduce((s, m) => s + Number(m.total_income || 0), 0);
   const globalExpense = months.reduce((s, m) => s + Number(m.total_expense || 0), 0);
@@ -103,46 +108,51 @@ export default function DashboardHome() {
       {/* Greeting */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-digi-text" style={mf}>{greet}{name ? `, ${name}` : ''}</h1>
-        <p className="text-[13px] text-digi-muted mt-0.5" style={mf}>Este es el resumen de GCC World.</p>
+        <p className="text-[13px] text-digi-muted mt-0.5" style={mf}>{isStaff ? 'Este es el resumen de GCC World.' : 'Este es el resumen de tu cuenta.'}</p>
       </div>
 
-      {/* Stat cards */}
+      {/* Stat cards — para no-staff solo sus propios tickets/proyectos (acotados por el API);
+          las finanzas globales y el conteo de clientes son solo para staff/admin. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
         <StatCard Icon={Ticket} label="Tickets abiertos" value={stats?.open_tickets} tone="accent" />
         <StatCard Icon={FolderKanban} label="Proyectos activos" value={stats?.active_projects} tone="accent" />
         {isAdmin && <StatCard Icon={Users} label="Clientes" value={stats?.clients} tone="accent" />}
-        <StatCard Icon={TrendingUp} label="Total ingresos" value={money(globalIncome)} tone="green" />
-        <StatCard Icon={TrendingDown} label="Total egresos" value={money(globalExpense)} tone="red" />
-        <StatCard Icon={PiggyBank} label="Total ahorro" value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />
+        {isStaff && <StatCard Icon={TrendingUp} label="Total ingresos" value={money(globalIncome)} tone="green" />}
+        {isStaff && <StatCard Icon={TrendingDown} label="Total egresos" value={money(globalExpense)} tone="red" />}
+        {isStaff && <StatCard Icon={PiggyBank} label="Total ahorro" value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
       </div>
 
-      {/* Finance */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[15px] font-semibold text-digi-text" style={mf}>Estado financiero mensual</h2>
-        {months.length > 0 && !isClient && (
-          <button onClick={() => window.open('/api/finance/pdf', '_blank')}
-            className="inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
-            <Download className="w-4 h-4" /> Reporte global
-          </button>
-        )}
-      </div>
+      {/* Estado financiero mensual — SOLO staff (datos de toda la organización). */}
+      {isStaff && (
+        <>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[15px] font-semibold text-digi-text" style={mf}>Estado financiero mensual</h2>
+            {months.length > 0 && (
+              <button onClick={() => window.open('/api/finance/pdf', '_blank')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
+                <Download className="w-4 h-4" /> Reporte global
+              </button>
+            )}
+          </div>
 
-      <PixelDataTable
-        data={months}
-        onRowClick={isClient ? undefined : (m: any) => openDetail(m)}
-        emptyTitle="Sin registros"
-        emptyDesc="No hay estados financieros aún."
-        columns={[
-          { key: 'period', header: 'Periodo', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{MONTH_NAMES[m.month - 1]} {m.year}</span> },
-          { key: 'income', header: 'Ingresos', render: (m: any) => <span className="text-[12px] text-green-600 tabular-nums" style={mf}>{money(Number(m.total_income || 0))}</span> },
-          { key: 'expense', header: 'Egresos', render: (m: any) => <span className="text-[12px] text-red-600 tabular-nums" style={mf}>{money(Number(m.total_expense || 0))}</span> },
-          { key: 'savings', header: 'Ahorro', render: (m: any) => { const s = Number(m.total_savings || 0); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-600'}`} style={mf}>{money(s)}</span>; } },
-          ...(!isClient ? [{ key: 'pdf', header: '', width: '60px', render: (m: any) => (
-            <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`/api/finance/${m.id}/pdf`, '_blank'); }}
-              className="px-1.5 py-0.5 text-[11px] border border-green-500/40 rounded text-green-700 hover:bg-green-50 transition-colors" style={mf}>PDF</button>
-          ) }] : []),
-        ]}
-      />
+          <PixelDataTable
+            data={months}
+            onRowClick={(m: any) => openDetail(m)}
+            emptyTitle="Sin registros"
+            emptyDesc="No hay estados financieros aún."
+            columns={[
+              { key: 'period', header: 'Periodo', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{MONTH_NAMES[m.month - 1]} {m.year}</span> },
+              { key: 'income', header: 'Ingresos', render: (m: any) => <span className="text-[12px] text-green-600 tabular-nums" style={mf}>{money(Number(m.total_income || 0))}</span> },
+              { key: 'expense', header: 'Egresos', render: (m: any) => <span className="text-[12px] text-red-600 tabular-nums" style={mf}>{money(Number(m.total_expense || 0))}</span> },
+              { key: 'savings', header: 'Ahorro', render: (m: any) => { const s = Number(m.total_savings || 0); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-600'}`} style={mf}>{money(s)}</span>; } },
+              { key: 'pdf', header: '', width: '60px', render: (m: any) => (
+                <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`/api/finance/${m.id}/pdf`, '_blank'); }}
+                  className="px-1.5 py-0.5 text-[11px] border border-green-500/40 rounded text-green-700 hover:bg-green-50 transition-colors" style={mf}>PDF</button>
+              ) },
+            ]}
+          />
+        </>
+      )}
 
       {/* Detail Modal */}
       <PixelModal open={!!detailMonth} onClose={() => !saving && setDetailMonth(null)}
