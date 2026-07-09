@@ -3211,10 +3211,44 @@ export default function LandingPage() {
         <CandidateAccountModal
           email={candidateAccount.email}
           onClose={() => setCandidateAccount(null)}
-          onDone={() => {
-            // Cuenta creada (sesión de candidato activa): recarga la landing para
-            // continuar su flujo (ya reconocido, entra al juego / crea su personaje).
-            window.location.href = '/';
+          onDone={async () => {
+            // Cuenta creada (sesión de candidato activa). Rutea según el ORIGEN:
+            const email = candidateAccount.email ?? null;
+            setCandidateAccount(null);
+            if (entryDestination === 'dashboard') {
+              // Colaborar → panel.
+              window.location.href = '/dashboard';
+              return;
+            }
+            // Entrar → juego. Siembra el auth con la cuenta YA completada para que el
+            // juego NO vuelva a pedir el formulario de creación de cuenta (showSetup=false),
+            // y arranca el intro como el login de candidato sin personaje.
+            setFreshAuth(true);
+            setSavedAuth({
+              hasPassword: true,
+              emailVerified: true,
+              approved: true,
+              authenticated: true,
+              pendingEmail: null,
+              email,
+              profileCompleted: true,
+            });
+            setOnboardingOpen(false);
+            const found = await refreshSavedCharacter();
+            if (found) {
+              setSavePointTrigger((n) => n + 1);
+              if (!gateGameEntry()) return;
+              setWindAway(true);
+              return;
+            }
+            setWindAway(true);
+            cameraEnabledRef.current = true;
+            setCameraEnabled(true);
+            if (worldChatTimeoutRef.current) window.clearTimeout(worldChatTimeoutRef.current);
+            worldChatTimeoutRef.current = window.setTimeout(() => {
+              setWorldChatVisible(true);
+              worldChatTimeoutRef.current = null;
+            }, 6000);
           }}
         />
       )}

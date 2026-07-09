@@ -122,8 +122,23 @@ export async function GET() {
         LIMIT 1`,
       [deviceToken, ipHash],
     );
+    // ¿Este dispositivo ya tiene una CUENTA de candidato en `clients` (por cookie de
+    // cliente o IP)? Se usa para NO ofrecer "quiero postularme" a quien ya es candidato.
+    let hasCandidateAccount = false;
+    try {
+      const clientToken = cookieStore.get(CLIENT_COOKIE)?.value || null;
+      const ca = await pool.query(
+        `SELECT 1 FROM gcc_world.clients
+          WHERE account_type = 'candidate'
+            AND (($1::text IS NOT NULL AND client_token = $1) OR ip_hash = $2)
+          LIMIT 1`,
+        [clientToken, ipHash],
+      );
+      hasCandidateAccount = ca.rows.length > 0;
+    } catch { /* best-effort */ }
+
     const row = r.rows[0];
-    if (!row) return NextResponse.json({ exists: false });
+    if (!row) return NextResponse.json({ exists: false, hasCandidateAccount });
 
     // Si ya fue APROBADA, "activa" la sesión de cliente del candidato en ESTE dispositivo
     // (setea el CLIENT_COOKIE con su client_token) para que luego pueda completar su perfil
@@ -154,6 +169,7 @@ export async function GET() {
       status: row.status,
       emailVerified: !!row.email_verified,
       email: row.email,
+      hasCandidateAccount,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'unknown error';

@@ -16,6 +16,19 @@ config de la función) pero **al activar NO pasa nada** (es el PENDIENTE (3) de 
 **Ingeniero full-stack (Next.js 15 App Router + Postgres crudo `pg`)** con foco en el modelo de datos del
 Horario de Vida / Mi día y el enforcement de Comandos Violeta.
 
+### Arquitectura de AUTENTICACIÓN (aprendido 2026-07-09) — clave para el flujo de candidatos
+- **Dos mundos de cuentas:** (a) `gcc_world.users` = staff/clientes de negocio (miembro/admin/client) con
+  **JWT `auth_token`** (`lib/auth/jwt.ts`, `createToken`, role client|member|admin); **`/dashboard` exige ese
+  JWT** (`middleware.ts`, si no → redirige `/auth`). (b) `gcc_world.clients` = juego/reclutamiento (candidatos,
+  `account_type`), con cookies **`gcc_player_auth`** (=`clients.auth_token`) y **`gcc_client_token`**
+  (=`clients.client_token`).
+- **Un candidato NO tiene fila en `users` ni JWT** → **NO puede entrar a `/dashboard`** tal como está. `complete-profile`
+  setea `gcc_player_auth` (juego), no el JWT. `/api/auth/login` valida solo contra `users`.
+- **Consecuencia (PENDIENTE):** el requisito "candidato que entra por *Colaborar* → `/dashboard`" **no funciona**
+  hasta darle a los candidatos aprobados una **sesión de dashboard** (crear/vincular fila `users` role='client' +
+  emitir JWT). Es cambio con implicaciones de seguridad → **confirmar con el usuario** el modelo antes de construir.
+  El destino **juego** (por *Entrar*) sí funciona.
+
 ### Progreso
 - **% de información para el objetivo:** 100% — **IMPLEMENTADO Y VERIFICADO (2026-07-08)**. `tsc`+`next build`
   OK; expansión de días (weekdays con `EXTRACT(DOW)`) e idempotencia (`ON CONFLICT DO NOTHING`) probadas contra

@@ -45,6 +45,7 @@ export default function EntryChoiceModal({
     status?: string;
     email?: string | null;
     emailVerified?: boolean;
+    hasCandidateAccount?: boolean;
   } | null>(null);
   // ¿Este visitante ya tiene una cuenta de cliente (y está verificada)?
   const [client, setClient] = useState<{
@@ -166,6 +167,9 @@ export default function EntryChoiceModal({
                 onProposalPending({ email: proposal.email, emailVerified: proposal.emailVerified })
               }
             />
+          ) : proposal.hasCandidateAccount ? (
+            // Ya es candidato con cuenta: no se ofrece "postularme"; usa "Soy candidato".
+            null
           ) : (
             <Option
               title="Quiero postularme como candidato"
