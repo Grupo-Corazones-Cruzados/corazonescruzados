@@ -430,7 +430,7 @@ export default function TicketsPage() {
             ) : (
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente (asociado a ti)</label>
+                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente</label>
                   <button type="button" onClick={() => setForm(prev => ({
                     ...prev, client_mode: prev.client_mode === 'select' ? 'email' : 'select', client_id: '', client_email: '',
                   }))}
