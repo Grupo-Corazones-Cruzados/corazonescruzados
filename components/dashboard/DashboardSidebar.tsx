@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { accessRoleOf, canAccessModule, isPathBlocked } from '@/lib/dashboard/access';
+import { accessRoleOf, canAccessModule, isPathBlocked, type AccessRole } from '@/lib/dashboard/access';
 import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
@@ -19,6 +19,14 @@ interface NavItem {
   icon: LucideIcon;
 }
 interface NavGroup { title: string; items: NavItem[]; }
+
+// Etiqueta del rol efectivo (candidato/cliente/miembro/admin) para mostrar al usuario.
+const ROLE_LABEL_ES: Record<AccessRole, string> = {
+  candidate: 'Candidato',
+  client: 'Cliente',
+  member: 'Miembro',
+  admin: 'Admin',
+};
 
 // La visibilidad por rol se decide con `canAccessModule` (lib/dashboard/access.ts),
 // la MISMA fuente de verdad que usa el guard de rutas.
@@ -149,7 +157,7 @@ export default function DashboardSidebar({
               {!collapsed && (
                 <div className="min-w-0">
                   <p className="text-[12px] font-medium text-digi-text truncate" style={mf}>{user.first_name || user.email.split('@')[0]}</p>
-                  <p className="text-[10px] text-digi-muted capitalize" style={mf}>{user.role}</p>
+                  <p className="text-[10px] text-digi-muted" style={mf}>{ROLE_LABEL_ES[accessRole]}</p>
                 </div>
               )}
             </div>

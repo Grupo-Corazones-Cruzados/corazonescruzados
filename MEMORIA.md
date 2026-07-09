@@ -267,6 +267,15 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Facturas por usuario + etiqueta de rol (2026-07-09):** en **Facturas** (`/dashboard/invoices`), staff
+  (member/admin) ve TODAS; **candidato/cliente solo ve las SUYAS**: `GET /api/invoices` (y el detalle `[id]`)
+  filtran por pertenencia — `i.client_id = <clients.id del usuario>` (suscripción/factura directa) **OR**
+  `i.ticket_id`/`i.project_id` de un ticket/proyecto creado por él (`tickets.user_id`=uuid / `projects.
+  created_by_user_id`=text = su `users.id`; o `client_id`=su `clients.id`). El `clients.id` del usuario se
+  resuelve por `clients.user_id = <jwt userId>` (enlace que crea `grantCandidateDashboardSession`). Los conteos
+  del rail se acotan igual. **Etiqueta de rol** en el footer del `DashboardSidebar`: usa `accessRoleOf(user)`
+  (candidate/client/member/admin, distingue candidato por `account_type`) → "Candidato/Cliente/Miembro/Admin"
+  (antes mostraba el `role` crudo "client"). Verificado tsc+build + filtro probado en Postgres.
 - **Sistema "Comandos Violeta" (2026-07-08):** sistema de Centralizado en **global · creación** (celda "Control Psicosocial",
   slug `comandos-violeta`), **sembrado idempotente** en `ensureTable()` de `app/api/centralized/systems/route.ts` (y en
   `comandos-db.ts`) para que exista sin crearlo a mano. Configura **políticas organizacionales** activables (otro método de generación

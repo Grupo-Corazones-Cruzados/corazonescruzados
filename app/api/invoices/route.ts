@@ -11,12 +11,37 @@ export async function GET(req: NextRequest) {
     await pool.query(`ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS is_manual BOOLEAN DEFAULT false`);
 
     const status = req.nextUrl.searchParams.get('status');
+
+    // Staff (miembro/admin) ve TODAS las facturas. Un candidato/cliente solo ve las SUYAS:
+    // las facturas están asociadas a una suscripción/proyecto/ticket, así que se incluyen las
+    // que le pertenecen por su `client_id` (suscripción/factura directa) o por un ticket/
+    // proyecto creado por él (`user_id`/`created_by_user_id`).
+    const staff = user.role === 'admin' || user.role === 'member';
+    let ownClientId: number = -1;
+    if (!staff) {
+      const cr = await pool.query(
+        `SELECT id FROM gcc_world.clients WHERE user_id = $1 LIMIT 1`,
+        [user.userId],
+      );
+      ownClientId = cr.rows[0]?.id != null ? Number(cr.rows[0].id) : -1;
+    }
+    // Cláusula de pertenencia; `uP`/`cP` son los índices de los parámetros userId/clientId.
+    const ownClause = (uP: number, cP: number) =>
+      ` AND (
+          i.client_id = $${cP}
+          OR i.ticket_id IN (SELECT id FROM gcc_world.tickets WHERE user_id = $${uP}::uuid OR client_id = $${cP})
+          OR i.project_id IN (SELECT id FROM gcc_world.projects WHERE created_by_user_id = $${uP}::text OR client_id = $${cP})
+        )`;
+
     let where = 'WHERE 1=1';
     const params: any[] = [];
-
     if (status && status !== 'all') {
       params.push(status);
       where += ` AND i.status = $${params.length}`;
+    }
+    if (!staff) {
+      params.push(user.userId, ownClientId);
+      where += ownClause(params.length - 1, params.length);
     }
 
     const { rows } = await pool.query(
@@ -30,9 +55,16 @@ export async function GET(req: NextRequest) {
       params
     );
 
-    // Per-status counts for the rail (global, ignore the status filter).
+    // Conteos por estado para el rail. Global para staff; acotado a las propias para el resto.
+    const countParams: any[] = [];
+    let countWhere = '';
+    if (!staff) {
+      countParams.push(user.userId, ownClientId);
+      countWhere = 'WHERE 1=1' + ownClause(1, 2);
+    }
     const { rows: countRows } = await pool.query(
-      `SELECT status, COUNT(*)::int AS n FROM gcc_world.invoices GROUP BY status`,
+      `SELECT i.status, COUNT(*)::int AS n FROM gcc_world.invoices i ${countWhere} GROUP BY i.status`,
+      countParams,
     );
     const counts: Record<string, number> = {};
     let allCount = 0;
