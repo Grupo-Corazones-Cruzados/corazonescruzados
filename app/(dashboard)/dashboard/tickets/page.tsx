@@ -397,13 +397,11 @@ export default function TicketsPage() {
             {createMode === 'request' ? (
               <div>
                 <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro</label>
-                {/* El selector de miembro desaparece si se deja abierto a propuestas. */}
-                {!form.open_for_proposals && (
-                  <PixelSelect value={form.member_id}
-                    onChange={(e) => setForm({ ...form, member_id: e.target.value })}
-                    options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
-                    placeholder="-- Elegir candidato/miembro --" />
-                )}
+                {/* Al dejar abierto a propuestas, el selector queda bloqueado (no se oculta). */}
+                <PixelSelect value={form.member_id}
+                  onChange={(e) => setForm({ ...form, member_id: e.target.value })}
+                  options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
+                  placeholder="-- Elegir candidato/miembro --" disabled={form.open_for_proposals} />
                 <label className="flex items-center gap-2 mt-1.5 text-[12px] text-digi-text cursor-pointer" style={mf}>
                   <input type="checkbox" checked={form.open_for_proposals}
                     onChange={(e) => setForm({ ...form, open_for_proposals: e.target.checked, member_id: e.target.checked ? '' : form.member_id })}
