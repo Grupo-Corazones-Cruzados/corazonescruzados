@@ -13,6 +13,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { accessRoleOf } from '@/lib/dashboard/access';
+import AssigneePicker from '@/components/tickets/AssigneePicker';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
   X, ArrowRight, Ticket as TicketIcon,
@@ -400,11 +401,11 @@ export default function TicketsPage() {
             {createMode === 'request' ? (
               <div>
                 <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro</label>
-                {/* Al dejar abierto a propuestas, el selector queda bloqueado (no se oculta). */}
-                <PixelSelect value={form.member_id}
-                  onChange={(e) => setForm({ ...form, member_id: e.target.value })}
-                  options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
-                  placeholder="-- Elegir candidato/miembro --" disabled={form.open_for_proposals} />
+                {/* Buscador de candidatos/miembros/admin con rol, prospección y top 5 talentos.
+                    Al dejar abierto a propuestas queda bloqueado (no se oculta). */}
+                <AssigneePicker value={form.member_id}
+                  onChange={(id) => setForm({ ...form, member_id: id })}
+                  disabled={form.open_for_proposals} />
                 <label className="flex items-center gap-2 mt-1.5 text-[12px] text-digi-text cursor-pointer" style={mf}>
                   <input type="checkbox" checked={form.open_for_proposals}
                     onChange={(e) => setForm({ ...form, open_for_proposals: e.target.checked, member_id: e.target.checked ? '' : form.member_id })}

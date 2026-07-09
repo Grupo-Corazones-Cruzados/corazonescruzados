@@ -278,7 +278,16 @@ Stack estándar de la casa, con particularidades de este repo:
   tsc+build + insert/ensure probados en Postgres. **PENDIENTE (Fase 2):** asociación cliente↔usuario completa desde el
   módulo Clientes (dedup por RUC, M2M, `billing_clients` enlazado a cada cuenta cliente); miembro↔cliente al solicitar;
   **invitación por correo** al cliente inexistente + asociar sus registros al crear cuenta; reuso de datos de facturación
-  al completar/facturar; buscador (no select) de candidatos+miembros en "abierto a propuestas".
+  al completar/facturar.
+  - **Buscador de asignados (2026-07-09):** el campo Miembro de "Solicitar" es `AssigneePicker`
+    (`components/tickets/AssigneePicker.tsx`) con búsqueda; lista candidatos/miembros/admin con **rol · prospección ·
+    top 5 talentos**. `GET /api/tickets/assignees`: usuarios con `member_id` (candidato = `clients.account_type='candidate'`);
+    prospección = neto `valuesBalance` y top5 talentos = `sortedTalents`, vía `getSubjectsCriteria` (sujeto candidato→
+    `clients.id`, miembro/admin→`members.id`). Devuelve el `member_id`.
+  - **CV por talentos (2026-07-09):** `CvPanel` sección "Talentos" (cada talento con educación/experiencia/**servicios**
+    propios). Servicios del usuario = filas `services` con `member_id`+`talent`+`is_active`; `member_cv_profiles.talents`
+    JSONB para edu/exp. APIs `/api/members/[id]/services` (GET/POST) y `/[sid]` (PATCH/DELETE). El "Nuevo ticket" lista
+    solo **mis servicios activos** (de mis talentos) en el desplegable de Servicio.
 - **Facturas por usuario + etiqueta de rol (2026-07-09):** en **Facturas** (`/dashboard/invoices`), staff
   (member/admin) ve TODAS; **candidato/cliente solo ve las SUYAS**: `GET /api/invoices` (y el detalle `[id]`)
   filtran por pertenencia — `i.client_id = <clients.id del usuario>` (suscripción/factura directa) **OR**
