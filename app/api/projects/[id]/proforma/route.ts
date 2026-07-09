@@ -172,13 +172,13 @@ function buildProformaEmail(data: {
   targetAmount: number; senderName: string; projectUrl: string;
 }): string {
   const { clientName, projectTitle, proformaNumber, targetAmount, senderName, projectUrl } = data;
-  return `<div style="font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;padding:0;margin:0;">
+  return `<div style="font-family:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;background:#faf9f8;padding:0;margin:0;">
 <div style="max-width:600px;margin:0 auto;background:#ffffff;">
   <div style="height:6px;background:#4B2D8E;"></div>
   <div style="padding:30px 40px;">
     <h1 style="color:#1a1a2e;font-size:22px;margin:0 0 6px;">Hola ${clientName}!</h1>
     <p style="color:#888;font-size:14px;margin:0 0 24px;">Te hacemos llegar la proforma de tu proyecto. Revisa los detalles a continuacion.</p>
-    <table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e1dfdd;border-radius:8px;overflow:hidden;">
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;width:40%"><strong>Documento:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">Proforma</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>No. Proforma:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${proformaNumber}</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Proyecto:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${projectTitle}</td></tr>

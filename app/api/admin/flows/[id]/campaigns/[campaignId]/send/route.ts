@@ -11,14 +11,14 @@ function getResend() {
 
 function buildEmailHtml(bodyHtml: string, footerHtml: string): string {
   const footer = footerHtml
-    ? `<div style="margin-top:32px;padding-top:20px;border-top:1px solid #e0e0e0;">${footerHtml}</div>`
+    ? `<div style="margin-top:32px;padding-top:20px;border-top:1px solid #e1dfdd;">${footerHtml}</div>`
     : '';
 
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="font-family:Arial,Helvetica,sans-serif;background-color:#f5f5f5;margin:0;padding:40px 20px;color:#333333;">
+<body style="font-family:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;background-color:#faf9f8;margin:0;padding:40px 20px;color:#242424;">
 <div style="max-width:600px;margin:0 auto;background:#ffffff;overflow:hidden;border-radius:4px;">
-  <div style="padding:32px;font-size:15px;line-height:1.6;color:#333333;">
+  <div style="padding:32px;font-size:15px;line-height:1.6;color:#242424;">
     ${bodyHtml}
     ${footer}
   </div>

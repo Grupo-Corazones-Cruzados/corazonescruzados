@@ -438,7 +438,24 @@ inactiva en gris. Regla: cada sistema con grafo elige formas distintas para no c
   estrella gris). El filtro se pasa al grafo como `filter={kind:'type'|'state', value}`; `PolicyGraph.matchesFilter`
   resalta esos nodos y atenúa el resto (alpha 0.07). Formas de la leyenda vía `shapeStyle` (STAR/PENTAGON/DOC clip-path).
 
+## Correos electrónicos (tema corporativo, fuente única)
+Todos los correos usan el **tema `.corp` del dashboard** (serio, NO videojuego): fondo `#faf9f8`, tarjeta
+blanca `#ffffff` con borde `#e1dfdd` y radio 12px, texto `#242424`/`#605e5c`, acento `#4B2D8E`, **tipografía
+Segoe UI** (monoespaciado SOLO en cajas de código/contraseña). Estilos **inline** (los clientes de correo no
+soportan variables CSS ni `<style>`).
+- **Fuente única de helpers:** `lib/integrations/resend.ts` — `emailShell`, `emailHeading`, `emailParagraph`,
+  `emailButton` (primary/danger), `emailBadge`, `emailInfoBox`, `emailNote`, `accentStrong`, `emailCodeBox`, y
+  el objeto `EMAIL_THEME`. Todos los correos de auth/verificación/calendario/propuestas se componen con ellos.
+- **Correos con plantilla propia** (facturas, suscripciones, campañas, tickets, proyectos, proformas — con
+  tablas/PDF) quedaron **alineados a los mismos tokens** (Segoe UI + `#faf9f8`/`#e1dfdd`/`#242424`/`#4B2D8E`).
+  A futuro, cualquier correo nuevo debe reusar los helpers de `resend.ts` o al menos sus tokens; **nunca** el
+  viejo estilo videojuego (Courier, fondo oscuro, morado `#7B5FBF`, bordes 2px pixel).
+
 ## Desviaciones detectadas y resolución
+- **2026-07-09 — Correos con estilo "videojuego" (Courier, fondo oscuro, morado, bordes pixel).** El
+  `emailShell` de `resend.ts` y sus plantillas usaban `'Courier New'`, `#0A0E17`, `#7B5FBF`, `border:2px` →
+  inconsistente y poco serio. **Resuelto:** reescrito al tema `.corp` con helpers reusables (ver sección
+  "Correos electrónicos"); las plantillas Arial de otras rutas se alinearon a los mismos tokens. `tsc`+`build` OK.
 - **2026-07-08 — `MultiSelectSearch`: chips encima del buscador descolocaban el layout.** Los chips de
   seleccionados se renderizaban ARRIBA del input, empujándolo hacia abajo y desalineando columnas vecinas
   (p. ej. Valores vs Talentos en el modal Generar tareas). **Resuelto:** los chips ahora van **DEBAJO** del

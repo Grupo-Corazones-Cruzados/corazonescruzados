@@ -178,13 +178,13 @@ export async function POST(req: NextRequest) {
           to: resolvedClientEmail,
           bcc: 'lfgonzalezm0@grupocc.org',
           subject: `Nuevo Ticket #${ticket.id}: ${title} — GCC World`,
-          html: `<div style="font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;padding:0;margin:0;">
+          html: `<div style="font-family:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;background:#faf9f8;padding:0;margin:0;">
 <div style="max-width:600px;margin:0 auto;background:#ffffff;">
   <div style="height:6px;background:#4B2D8E;"></div>
   <div style="padding:30px 40px;">
     <h1 style="color:#1a1a2e;font-size:22px;margin:0 0 6px;">Nuevo Ticket Creado</h1>
     <p style="color:#888;font-size:14px;margin:0 0 24px;">Se ha registrado un nuevo ticket de servicio a tu nombre.</p>
-    <table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e1dfdd;border-radius:8px;overflow:hidden;">
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;width:35%"><strong>Ticket:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">#${ticket.id}</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Titulo:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${title}</td></tr>
       ${description ? `<tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Descripcion:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${description}</td></tr>` : ''}

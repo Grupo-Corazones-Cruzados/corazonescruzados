@@ -147,7 +147,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }
         const clientDisplayName = sub.client_name_sri || 'Cliente';
         const html = `
-          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#333;">
+          <div style="font-family:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#242424;">
             <div style="background:#4B2D8E;padding:20px;text-align:center;">
               <h1 style="color:#fff;font-size:18px;margin:0;">GCC World — Factura Electrónica</h1>
             </div>
@@ -155,15 +155,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               <p style="font-size:13px;">Estimado/a <strong>${clientDisplayName}</strong>,</p>
               <p style="font-size:13px;">Adjuntamos la factura electrónica correspondiente a su suscripción:</p>
               <h3 style="color:#4B2D8E;font-size:15px;margin:16px 0 8px;">${sub.title} — ${periodInfo.label}</h3>
-              <table style="width:100%;border-collapse:collapse;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;">
+              <table style="width:100%;border-collapse:collapse;border:1px solid #e1dfdd;border-radius:6px;overflow:hidden;">
                 <tbody>
                   <tr>
-                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;color:#333;">Factura N°</td>
-                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;text-align:right;color:#333;">${inv?.invoice_number || ''}</td>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;color:#242424;">Factura N°</td>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;text-align:right;color:#242424;">${inv?.invoice_number || ''}</td>
                   </tr>
                   <tr>
-                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;color:#333;">Autorización SRI</td>
-                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;text-align:right;color:#333;">${sriResult.authNumber || inv?.authorization_number || ''}</td>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;color:#242424;">Autorización SRI</td>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f0f0f0;text-align:right;color:#242424;">${sriResult.authNumber || inv?.authorization_number || ''}</td>
                   </tr>
                   <tr>
                     <td style="padding:8px 12px;font-size:14px;font-weight:bold;color:#4B2D8E;">Total</td>

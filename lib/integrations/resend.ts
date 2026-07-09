@@ -10,27 +10,94 @@ const FROM_EMAIL =
   process.env.EMAIL_FROM || "GCC World <noreply@gccworld.com>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3002";
 
+/* ── Diseño de correos = tema corporativo `.corp` del /dashboard ──────────────────
+ * Fondo claro, tarjeta blanca, tipografía Segoe UI (seria, NO videojuego), acento
+ * violeta corporativo. Los tokens replican `app/globals.css` (.corp). Todos los
+ * correos se componen con los helpers de abajo para que se vean idénticos. */
+const CORP = {
+  bg: '#faf9f8',        // fondo de página (digi-dark)
+  card: '#ffffff',      // tarjeta (digi-card)
+  border: '#e1dfdd',    // borde neutro (digi-border)
+  text: '#242424',      // texto primario (digi-text)
+  muted: '#605e5c',     // texto secundario (digi-muted)
+  soft: '#8a8886',      // texto terciario / pies
+  accent: '#4B2D8E',    // acento (accent)
+  success: '#107c10',
+  danger: '#d13438',
+  warning: '#8a6900',
+} as const;
+const FONT = "'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+
+/** Envoltorio base de todos los correos: cabecera "GCC World", tarjeta y pie. */
 function emailShell(content: string): string {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="font-family:'Courier New',monospace;background-color:#0A0E17;margin:0;padding:40px 20px;color:#e5e5e5;">
+<body style="font-family:${FONT};background-color:${CORP.bg};margin:0;padding:32px 16px;color:${CORP.text};-webkit-font-smoothing:antialiased;">
 <div style="max-width:560px;margin:0 auto;">
-  <div style="text-align:center;margin-bottom:24px;">
-    <span style="font-family:'Courier New',monospace;font-size:24px;font-weight:bold;color:#7B5FBF;letter-spacing:0.1em;">GCC WORLD</span>
+  <div style="text-align:center;margin-bottom:20px;">
+    <span style="font-family:${FONT};font-size:20px;font-weight:700;color:${CORP.accent};">GCC World</span>
   </div>
-  <div style="background:#131923;overflow:hidden;border:2px solid #2a2a3a;">
-    <div style="height:3px;background:#4B2D8E;"></div>
-    <div style="padding:36px 32px;">${content}</div>
-    <div style="padding:20px 32px;background:#0f1320;border-top:1px solid #2a2a3a;">
-      <p style="color:#737373;font-size:12px;margin:0;text-align:center;">
-        Este correo fue enviado por GCC World.
-      </p>
+  <div style="background:${CORP.card};border:1px solid ${CORP.border};border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+    <div style="height:3px;background:${CORP.accent};"></div>
+    <div style="padding:32px 32px;">${content}</div>
+    <div style="padding:16px 32px;background:${CORP.bg};border-top:1px solid ${CORP.border};">
+      <p style="color:${CORP.soft};font-size:12px;margin:0;text-align:center;font-family:${FONT};">Este correo fue enviado por GCC World.</p>
     </div>
   </div>
-  <p style="text-align:center;margin-top:24px;color:#737373;font-size:11px;">
-    &copy; ${new Date().getFullYear()} GCC World. Todos los derechos reservados.
-  </p>
+  <p style="text-align:center;margin-top:20px;color:${CORP.soft};font-size:11px;font-family:${FONT};">&copy; ${new Date().getFullYear()} GCC World. Todos los derechos reservados.</p>
 </div></body></html>`;
+}
+
+/** Título (+ subtítulo opcional) centrado. */
+function emailHeading(title: string, subtitle?: string): string {
+  return `<h1 style="color:${CORP.text};font-size:22px;font-weight:600;margin:0 0 ${subtitle ? '6px' : '18px'};text-align:center;font-family:${FONT};">${title}</h1>` +
+    (subtitle ? `<p style="color:${CORP.muted};font-size:14px;text-align:center;margin:0 0 24px;font-family:${FONT};">${subtitle}</p>` : '');
+}
+
+/** Párrafo de cuerpo. */
+function emailParagraph(html: string, align: 'left' | 'center' = 'left'): string {
+  return `<p style="color:${CORP.text};font-size:15px;line-height:1.6;margin:0 0 20px;text-align:${align};font-family:${FONT};">${html}</p>`;
+}
+
+/** Nota discreta al pie del contenido. */
+function emailNote(html: string, align: 'left' | 'center' = 'left'): string {
+  return `<p style="color:${CORP.soft};font-size:12px;line-height:1.5;margin:24px 0 0;text-align:${align};font-family:${FONT};">${html}</p>`;
+}
+
+/** Texto en negrita con el color de acento (para destacar dentro de un párrafo). */
+function accentStrong(text: string): string {
+  return `<strong style="color:${CORP.accent};">${text}</strong>`;
+}
+
+/** Botón de acción (primario acento / peligro rojo). */
+function emailButton(url: string, label: string, variant: 'primary' | 'danger' = 'primary'): string {
+  const bg = variant === 'danger' ? CORP.danger : CORP.accent;
+  return `<div style="text-align:center;margin:28px 0;">
+    <a href="${url}" style="display:inline-block;background:${bg};color:#ffffff;text-decoration:none;padding:12px 32px;font-weight:600;font-size:15px;border-radius:8px;font-family:${FONT};">${label}</a>
+  </div>`;
+}
+
+/** Píldora de estado (badge) con color semántico. */
+function emailBadge(label: string, color: string): string {
+  return `<div style="text-align:center;margin-bottom:12px;">
+    <span style="display:inline-block;padding:5px 12px;background:${color}14;color:${color};font-size:11px;font-weight:700;letter-spacing:0.04em;border:1px solid ${color}55;border-radius:6px;font-family:${FONT};">${label}</span>
+  </div>`;
+}
+
+/** Caja de dato etiquetado (p. ej. FECHA Y HORA). */
+function emailInfoBox(label: string, value: string, extra?: string): string {
+  return `<div style="background:${CORP.bg};border:1px solid ${CORP.border};border-radius:8px;padding:14px 18px;margin:0 0 24px;">
+    <p style="color:${CORP.soft};font-size:11px;margin:0 0 4px;font-weight:600;letter-spacing:0.03em;font-family:${FONT};">${label}</p>
+    <p style="color:${CORP.text};font-size:14px;margin:0;font-family:${FONT};">${value}</p>` +
+    (extra ? `<p style="color:${CORP.soft};font-size:10px;margin:8px 0 0;font-family:${FONT};">${extra}</p>` : '') +
+  `</div>`;
+}
+
+/** Caja monoespaciada para un código o contraseña (la única parte que usa monoespaciado, por legibilidad). */
+function emailCodeBox(value: string, letterSpacing = '0.5em', fontSize = 30): string {
+  return `<div style="text-align:center;margin:20px 0;">
+    <div style="display:inline-block;background:${CORP.bg};color:${CORP.text};padding:16px 32px;font-family:'Courier New',monospace;font-size:${fontSize}px;letter-spacing:${letterSpacing};font-weight:700;border:1px solid ${CORP.border};border-radius:8px;">${value}</div>
+  </div>`;
 }
 
 export async function sendCharacterRecoveryCodeEmail(
@@ -38,25 +105,12 @@ export async function sendCharacterRecoveryCodeEmail(
   code: string,
   alias: string,
 ) {
-  const html = emailShell(`
-    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Recupera tu cuenta</h1>
-    <p style="color:#94A3B8;font-size:14px;text-align:center;margin:0 0 24px;">
-      Estás iniciando sesión en un nuevo dispositivo
-    </p>
-    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 18px;">
-      Hola <strong style="color:#7B5FBF;">${alias}</strong>,<br/>
-      Usa este código para confirmar que eres tú e iniciar sesión desde este
-      dispositivo. El código caduca en 15 minutos.
-    </p>
-    <div style="text-align:center;margin:18px 0;">
-      <div style="display:inline-block;background:#0a0a14;color:#fff;padding:18px 32px;font-family:'Courier New',monospace;font-size:32px;letter-spacing:0.6em;font-weight:bold;border:2px solid #7B5FBF;">
-        ${code}
-      </div>
-    </div>
-    <p style="color:#737373;font-size:12px;margin:24px 0 0;">
-      Si no fuiste tú, ignora este correo. Tu contraseña no ha cambiado.
-    </p>
-  `);
+  const html = emailShell(
+    emailHeading('Recupera tu cuenta', 'Estás iniciando sesión en un nuevo dispositivo') +
+    emailParagraph(`Hola ${accentStrong(escapeHtml(alias))},<br/>Usa este código para confirmar que eres tú e iniciar sesión desde este dispositivo. El código caduca en 15 minutos.`) +
+    emailCodeBox(code) +
+    emailNote('Si no fuiste tú, ignora este correo. Tu contraseña no ha cambiado.'),
+  );
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
@@ -71,26 +125,12 @@ export async function sendCharacterVerificationEmail(
   alias: string,
 ) {
   const url = `${APP_URL}/api/character/auth/verify?token=${token}`;
-  const html = emailShell(`
-    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Confirma tu cuenta</h1>
-    <p style="color:#94A3B8;font-size:14px;text-align:center;margin:0 0 24px;">
-      Para guardar tu progreso en GCC World
-    </p>
-    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Hola <strong style="color:#7B5FBF;">${alias}</strong>,<br/>
-      Recibimos tu registro en el juego. Confirma este correo para activar tu
-      cuenta y poder seguir jugando con tu personaje. Hasta que confirmes,
-      tu contraseña no será válida.
-    </p>
-    <div style="text-align:center;margin:28px 0;">
-      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;font-weight:600;font-size:15px;border:2px solid #7B5FBF;">
-        Confirmar mi cuenta
-      </a>
-    </div>
-    <p style="color:#737373;font-size:12px;margin:24px 0 0;">
-      Este enlace expira en 24 horas. Si no fuiste tú, puedes ignorar este correo.
-    </p>
-  `);
+  const html = emailShell(
+    emailHeading('Confirma tu cuenta', 'Para guardar tu progreso en GCC World') +
+    emailParagraph(`Hola ${accentStrong(escapeHtml(alias))},<br/>Recibimos tu registro en el juego. Confirma este correo para activar tu cuenta y poder seguir jugando con tu personaje. Hasta que confirmes, tu contraseña no será válida.`) +
+    emailButton(url, 'Confirmar mi cuenta') +
+    emailNote('Este enlace expira en 24 horas. Si no fuiste tú, puedes ignorar este correo.'),
+  );
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
@@ -104,23 +144,12 @@ export async function sendCandidateProposalVerificationEmail(
   token: string,
 ) {
   const url = `${APP_URL}/api/candidate/verify?token=${token}`;
-  const html = emailShell(`
-    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Verifica tu correo</h1>
-    <p style="color:#94A3B8;font-size:14px;text-align:center;margin:0 0 24px;">Tu postulación al Grupo Corazones Cruzados</p>
-    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Recibimos tu postulación como candidato. Confirma este correo para validarlo.
-      Tu propuesta quedará <strong style="color:#7B5FBF;">en espera de aprobación</strong> por
-      parte del administrador del proyecto. Te avisaremos cuando sea aprobada.
-    </p>
-    <div style="text-align:center;margin:28px 0;">
-      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;font-weight:600;font-size:15px;border:2px solid #7B5FBF;">
-        Verificar mi correo
-      </a>
-    </div>
-    <p style="color:#737373;font-size:12px;margin:24px 0 0;">
-      Si no fuiste tú quien se postuló, puedes ignorar este correo.
-    </p>
-  `);
+  const html = emailShell(
+    emailHeading('Verifica tu correo', 'Tu postulación al Grupo Corazones Cruzados') +
+    emailParagraph(`Recibimos tu postulación como candidato. Confirma este correo para validarlo. Tu propuesta quedará ${accentStrong('en espera de aprobación')} por parte del administrador del proyecto. Te avisaremos cuando sea aprobada.`) +
+    emailButton(url, 'Verificar mi correo') +
+    emailNote('Si no fuiste tú quien se postuló, puedes ignorar este correo.'),
+  );
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
@@ -133,26 +162,13 @@ export async function sendCandidateApprovalEmail(
   email: string,
   tempPassword: string,
 ) {
-  const html = emailShell(`
-    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">¡Tu postulación fue aprobada!</h1>
-    <p style="color:#94A3B8;font-size:14px;text-align:center;margin:0 0 24px;">Bienvenido al Grupo Corazones Cruzados</p>
-    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 16px;">
-      Felicidades, fuiste aprobado como candidato. Ya puedes ingresar al sitio,
-      elegir <strong style="color:#7B5FBF;">"Soy candidato"</strong> e iniciar sesión con tu
-      correo y esta <strong style="color:#7B5FBF;">contraseña temporal</strong>:
-    </p>
-    <div style="text-align:center;margin:20px 0;">
-      <span style="display:inline-block;background:#0f1320;border:2px solid #7B5FBF;color:#fff;
-        padding:12px 28px;font-size:20px;letter-spacing:0.25em;font-weight:bold;">${tempPassword}</span>
-    </div>
-    <p style="color:#CBD5E1;font-size:14px;line-height:1.6;margin:0 0 8px;">
-      Al ingresar al juego y crear tu personaje, te pediremos completar tus datos y
-      definir tu <strong>contraseña definitiva</strong> (reemplazará esta temporal).
-    </p>
-    <p style="color:#737373;font-size:12px;margin:24px 0 0;">
-      Por seguridad, no compartas esta contraseña con nadie.
-    </p>
-  `);
+  const html = emailShell(
+    emailHeading('¡Tu postulación fue aprobada!', 'Bienvenido al Grupo Corazones Cruzados') +
+    emailParagraph(`Felicidades, fuiste aprobado como candidato. Ya puedes ingresar al sitio, elegir ${accentStrong('"Soy candidato"')} e iniciar sesión con tu correo y esta ${accentStrong('contraseña temporal')}:`) +
+    emailCodeBox(escapeHtml(tempPassword), '0.2em', 20) +
+    emailParagraph(`Al ingresar al juego y crear tu personaje, te pediremos completar tus datos y definir tu <strong>contraseña definitiva</strong> (reemplazará esta temporal).`) +
+    emailNote('Por seguridad, no compartas esta contraseña con nadie.'),
+  );
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
@@ -167,21 +183,12 @@ export async function sendVerificationEmail(
   name?: string
 ) {
   const url = `${APP_URL}/auth/verify?token=${token}`;
-  const html = emailShell(`
-    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Verifica tu cuenta</h1>
-    <p style="color:#94A3B8;font-size:14px;text-align:center;margin:0 0 24px;">Solo un paso m&aacute;s para comenzar</p>
-    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Hola${name ? ` <strong>${name}</strong>` : ""},<br/>
-      Gracias por registrarte en <strong style="color:#7B5FBF;">GCC World</strong>.
-      Haz clic en el bot&oacute;n para activar tu cuenta:
-    </p>
-    <div style="text-align:center;margin:28px 0;">
-      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;font-weight:600;font-size:15px;border:2px solid #7B5FBF;">
-        Verificar mi cuenta
-      </a>
-    </div>
-    <p style="color:#737373;font-size:12px;margin:24px 0 0;">Este enlace expira en 24 horas.</p>
-  `);
+  const html = emailShell(
+    emailHeading('Verifica tu cuenta', 'Solo un paso más para comenzar') +
+    emailParagraph(`Hola${name ? ` <strong>${escapeHtml(name)}</strong>` : ''},<br/>Gracias por registrarte en ${accentStrong('GCC World')}. Haz clic en el botón para activar tu cuenta:`) +
+    emailButton(url, 'Verificar mi cuenta') +
+    emailNote('Este enlace expira en 24 horas.'),
+  );
   return getResend().emails.send({ from: FROM_EMAIL, to: email, subject: "Verifica tu cuenta — GCC World", html });
 }
 
@@ -193,24 +200,16 @@ export async function sendCalendarSubscribeVerification(
   memberName: string,
 ) {
   const url = `${APP_URL}/calendario/confirmar?token=${token}`;
-  const html = emailShell(`
-    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Confirma tu suscripci&oacute;n</h1>
-    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Recibiremos tu correo para notificarte de cambios en el calendario de
-      <strong style="color:#7B5FBF;">${escapeHtml(memberName)}</strong>.
-      Confirma este correo para activar las notificaciones:
-    </p>
-    <div style="text-align:center;margin:28px 0;">
-      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;font-weight:600;font-size:15px;border:2px solid #7B5FBF;">
-        Confirmar suscripci&oacute;n
-      </a>
-    </div>
-    <p style="color:#737373;font-size:12px;margin:24px 0 0;">Si no solicitaste esta suscripci&oacute;n, ignora este correo.</p>
-  `);
+  const html = emailShell(
+    emailHeading('Confirma tu suscripción') +
+    emailParagraph(`Recibiremos tu correo para notificarte de cambios en el calendario de ${accentStrong(escapeHtml(memberName))}. Confirma este correo para activar las notificaciones:`) +
+    emailButton(url, 'Confirmar suscripción') +
+    emailNote('Si no solicitaste esta suscripción, ignora este correo.'),
+  );
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
-    subject: `Confirma tu suscripci\u00F3n al calendario de ${memberName}`,
+    subject: `Confirma tu suscripción al calendario de ${memberName}`,
     html,
   });
 }
@@ -227,30 +226,15 @@ export async function sendCalendarEventNotification(params: {
   const { email, memberName, action, eventTitle, eventStart, eventEnd, publicUrl } = params;
   const actionLabel = action === 'created' ? 'nuevo evento' : action === 'updated' ? 'evento actualizado' : 'evento eliminado';
   const actionTitle = action === 'created' ? 'Nuevo evento' : action === 'updated' ? 'Evento actualizado' : 'Evento eliminado';
-  const actionColor = action === 'deleted' ? '#ef4444' : '#7B5FBF';
+  const actionColor = action === 'deleted' ? CORP.danger : CORP.accent;
   const range = `${formatEmailDateTime(eventStart)} — ${formatEmailDateTime(eventEnd)}`;
 
-  const html = emailShell(`
-    <div style="text-align:center;margin-bottom:8px;">
-      <span style="display:inline-block;padding:4px 10px;background:${actionColor}25;color:${actionColor};font-size:11px;font-weight:600;letter-spacing:0.05em;border:1px solid ${actionColor}80;">
-        ${actionTitle.toUpperCase()}
-      </span>
-    </div>
-    <h1 style="color:#e5e5e5;font-size:20px;font-weight:600;margin:12px 0 8px;text-align:center;">${escapeHtml(eventTitle)}</h1>
-    <p style="color:#94A3B8;font-size:13px;text-align:center;margin:0 0 24px;">
-      ${escapeHtml(memberName)} registr&oacute; un ${actionLabel} en su calendario.
-    </p>
-    <div style="background:#0f1320;border:1px solid #2a2a3a;padding:16px 20px;margin:0 0 24px;">
-      <p style="color:#737373;font-size:11px;margin:0 0 4px;">FECHA Y HORA</p>
-      <p style="color:#CBD5E1;font-size:14px;margin:0;">${range}</p>
-      <p style="color:#737373;font-size:10px;margin:8px 0 0;">Zona horaria: Am&eacute;rica/Guayaquil (GMT-5)</p>
-    </div>
-    <div style="text-align:center;margin:24px 0;">
-      <a href="${publicUrl}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:12px 32px;font-weight:600;font-size:14px;border:2px solid #7B5FBF;">
-        Ver calendario
-      </a>
-    </div>
-  `);
+  const html = emailShell(
+    emailBadge(actionTitle.toUpperCase(), actionColor) +
+    emailHeading(escapeHtml(eventTitle), `${escapeHtml(memberName)} registró un ${actionLabel} en su calendario.`) +
+    emailInfoBox('FECHA Y HORA', range, 'Zona horaria: América/Guayaquil (GMT-5)') +
+    emailButton(publicUrl, 'Ver calendario'),
+  );
 
   return getResend().emails.send({
     from: FROM_EMAIL,
@@ -272,29 +256,13 @@ export async function sendProposalReceivedToMember(params: {
   const { memberEmail, memberName, clientName, clientEmail, eventTitle, eventStart, eventEnd } = params;
   const range = `${formatEmailDateTime(eventStart)} — ${formatEmailDateTime(eventEnd)}`;
   const url = `${APP_URL}/dashboard/settings/calendar`;
-  const html = emailShell(`
-    <div style="text-align:center;margin-bottom:8px;">
-      <span style="display:inline-block;padding:4px 10px;background:#f59e0b25;color:#f59e0b;font-size:11px;font-weight:600;letter-spacing:0.05em;border:1px solid #f59e0b80;">
-        NUEVA PROPUESTA
-      </span>
-    </div>
-    <h1 style="color:#e5e5e5;font-size:20px;font-weight:600;margin:12px 0 8px;text-align:center;">${escapeHtml(eventTitle)}</h1>
-    <p style="color:#94A3B8;font-size:13px;text-align:center;margin:0 0 24px;">
-      <strong>${escapeHtml(clientName)}</strong> (${escapeHtml(clientEmail)}) te propuso un espacio en tu calendario.
-    </p>
-    <div style="background:#0f1320;border:1px solid #2a2a3a;padding:16px 20px;margin:0 0 24px;">
-      <p style="color:#737373;font-size:11px;margin:0 0 4px;">FECHA Y HORA</p>
-      <p style="color:#CBD5E1;font-size:14px;margin:0;">${range}</p>
-    </div>
-    <div style="text-align:center;margin:24px 0;">
-      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:12px 32px;font-weight:600;font-size:14px;border:2px solid #7B5FBF;">
-        Revisar y responder
-      </a>
-    </div>
-    <p style="color:#737373;font-size:12px;text-align:center;margin:16px 0 0;">
-      ${escapeHtml(clientName)} recibir&aacute; un correo autom&aacute;tico con tu decisi&oacute;n.
-    </p>
-  `);
+  const html = emailShell(
+    emailBadge('NUEVA PROPUESTA', CORP.warning) +
+    emailHeading(escapeHtml(eventTitle), `<strong>${escapeHtml(clientName)}</strong> (${escapeHtml(clientEmail)}) te propuso un espacio en tu calendario.`) +
+    emailInfoBox('FECHA Y HORA', range) +
+    emailButton(url, 'Revisar y responder') +
+    emailNote(`${escapeHtml(clientName)} recibirá un correo automático con tu decisión.`, 'center'),
+  );
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: memberEmail,
@@ -316,7 +284,7 @@ export async function sendProposalDecisionToClient(params: {
 }) {
   const { clientEmail, clientName, memberName, action, eventTitle, eventStart, eventEnd, memberId, publicToken } = params;
   const accepted = action === 'accepted';
-  const color = accepted ? '#22c55e' : '#ef4444';
+  const color = accepted ? CORP.success : CORP.danger;
   const label = accepted ? 'PROPUESTA ACEPTADA' : 'PROPUESTA RECHAZADA';
   const subject = accepted
     ? `Confirmado: ${eventTitle} con ${memberName}`
@@ -326,33 +294,17 @@ export async function sendProposalDecisionToClient(params: {
     ? `${APP_URL}/calendario/${memberId}?token=${publicToken}`
     : `${APP_URL}/calendario/${memberId}`;
 
-  const html = emailShell(`
-    <div style="text-align:center;margin-bottom:8px;">
-      <span style="display:inline-block;padding:4px 10px;background:${color}25;color:${color};font-size:11px;font-weight:600;letter-spacing:0.05em;border:1px solid ${color}80;">
-        ${label}
-      </span>
-    </div>
-    <h1 style="color:#e5e5e5;font-size:20px;font-weight:600;margin:12px 0 8px;text-align:center;">${escapeHtml(eventTitle)}</h1>
-    <p style="color:#CBD5E1;font-size:14px;line-height:1.6;margin:0 0 20px;">
-      Hola <strong>${escapeHtml(clientName)}</strong>,<br/>
-      ${accepted
-        ? `<strong>${escapeHtml(memberName)}</strong> acept&oacute; tu propuesta.`
-        : `<strong>${escapeHtml(memberName)}</strong> no pudo aceptar tu propuesta en este momento.`}
-    </p>
-    <div style="background:#0f1320;border:1px solid #2a2a3a;padding:16px 20px;margin:0 0 24px;">
-      <p style="color:#737373;font-size:11px;margin:0 0 4px;">FECHA Y HORA</p>
-      <p style="color:#CBD5E1;font-size:14px;margin:0;">${range}</p>
-    </div>
-    ${accepted ? `
-    <div style="text-align:center;margin:24px 0;">
-      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:12px 32px;font-weight:600;font-size:14px;border:2px solid #7B5FBF;">
-        Ver calendario
-      </a>
-    </div>` : `
-    <p style="color:#737373;font-size:12px;text-align:center;margin:16px 0 0;">
-      Puedes intentar con otro horario desde el mismo enlace.
-    </p>`}
-  `);
+  const html = emailShell(
+    emailBadge(label, color) +
+    emailHeading(escapeHtml(eventTitle)) +
+    emailParagraph(`Hola <strong>${escapeHtml(clientName)}</strong>,<br/>` + (accepted
+      ? `<strong>${escapeHtml(memberName)}</strong> aceptó tu propuesta.`
+      : `<strong>${escapeHtml(memberName)}</strong> no pudo aceptar tu propuesta en este momento.`)) +
+    emailInfoBox('FECHA Y HORA', range) +
+    (accepted
+      ? emailButton(url, 'Ver calendario')
+      : emailNote('Puedes intentar con otro horario desde el mismo enlace.', 'center')),
+  );
 
   return getResend().emails.send({
     from: FROM_EMAIL,
@@ -383,18 +335,17 @@ export async function sendPasswordResetEmail(
   name?: string
 ) {
   const url = `${APP_URL}/auth/reset-password?token=${token}`;
-  const html = emailShell(`
-    <h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 8px;text-align:center;">Restablecer contrase&ntilde;a</h1>
-    <p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 24px;">
-      Hola${name ? ` <strong>${name}</strong>` : ""},<br/>
-      Recibimos una solicitud para restablecer tu contrase&ntilde;a.
-    </p>
-    <div style="text-align:center;margin:28px 0;">
-      <a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:14px 40px;font-weight:600;font-size:15px;border:2px solid #7B5FBF;">
-        Restablecer contrase&ntilde;a
-      </a>
-    </div>
-    <p style="color:#737373;font-size:12px;margin:24px 0 0;">Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.</p>
-  `);
+  const html = emailShell(
+    emailHeading('Restablecer contraseña') +
+    emailParagraph(`Hola${name ? ` <strong>${escapeHtml(name)}</strong>` : ''},<br/>Recibimos una solicitud para restablecer tu contraseña.`) +
+    emailButton(url, 'Restablecer contraseña') +
+    emailNote('Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.'),
+  );
   return getResend().emails.send({ from: FROM_EMAIL, to: email, subject: "Restablecer contraseña — GCC World", html });
 }
+
+/* ── Helpers de diseño reusables para correos construidos en otras rutas
+ *    (facturas, suscripciones, campañas, tickets, proyectos, proformas). Exportados
+ *    para que TODOS los correos compartan el mismo tema corporativo. ─────────────── */
+export const EMAIL_THEME = { ...CORP, font: FONT } as const;
+export { emailShell, emailHeading, emailParagraph, emailNote, emailButton, emailBadge, emailInfoBox, accentStrong };
