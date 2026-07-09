@@ -410,10 +410,14 @@ export default function TicketsPage() {
                 </label>
               </div>
             ) : (
-              <PixelSelect label="Miembro asignado" value={form.member_id}
-                onChange={(e) => setForm({ ...form, member_id: e.target.value })}
-                options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
-                placeholder="-- Sin asignar --" disabled />
+              // Nuevo ticket: el miembro asignado SIEMPRE es el usuario de la sesión
+              // (candidato/miembro/admin). Se muestra de solo lectura.
+              <div>
+                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro asignado</label>
+                <div className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-muted rounded" style={mf}>
+                  Tú — {user?.first_name || user?.email?.split('@')[0] || 'tu cuenta'}
+                </div>
+              </div>
             )}
 
             {/* Cliente */}
