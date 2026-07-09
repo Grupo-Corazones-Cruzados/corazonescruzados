@@ -417,6 +417,12 @@ inactiva en gris. Regla: cada sistema con grafo elige formas distintas para no c
   resalta esos nodos y atenúa el resto (alpha 0.07). Formas de la leyenda vía `shapeStyle` (STAR/PENTAGON/DOC clip-path).
 
 ## Desviaciones detectadas y resolución
+- **2026-07-08 — `MultiSelectSearch`: chips encima del buscador descolocaban el layout.** Los chips de
+  seleccionados se renderizaban ARRIBA del input, empujándolo hacia abajo y desalineando columnas vecinas
+  (p. ej. Valores vs Talentos en el modal Generar tareas). **Resuelto:** los chips ahora van **DEBAJO** del
+  buscador (`mt-1.5`) y el desplegable se ancla al input con `top-full`. Regla: en selects con búsqueda, la
+  selección se lista bajo el control, nunca encima. Afecta a `GenerateTasksModal` y al editor de etiquetas
+  del Horario de Vida.
 - **2026-06-28:** las secciones del editor tenían títulos, botones de filtros e íconos distintos
   (emojis genéricos; NPCs con estilo propio). **Resuelto:** se creó `editorUi.tsx` (fuente única) +
   `EditorIcons.tsx`, y se migraron Escenas, NPCs y Capas al mismo estándar Fluent. NPCs pasó de editor
