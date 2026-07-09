@@ -114,7 +114,10 @@ export default function TicketsPage() {
     setForm(base);
     setModal(true);
     const [sRes, mRes, cRes] = await Promise.all([
-      fetch('/api/services').then(r => r.json()).catch(() => ({ data: [] })),
+      // "Nuevo ticket": los servicios elegibles son MIS servicios ACTIVOS (de mis talentos).
+      (mode === 'create' && user?.member_id
+        ? fetch(`/api/members/${user.member_id}/services?active=1`)
+        : fetch('/api/services')).then(r => r.json()).catch(() => ({ data: [] })),
       fetch('/api/members/list').then(r => r.json()).catch(() => ({ data: [] })),
       // Nuevo: clientes ASOCIADOS a mi sesión; Solicitar: no usa lista (cliente = mi cuenta).
       mode === 'create'

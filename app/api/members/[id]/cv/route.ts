@@ -8,6 +8,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id } = await params;
+    await pool.query(`ALTER TABLE gcc_world.member_cv_profiles ADD COLUMN IF NOT EXISTS talents JSONB DEFAULT '[]'::jsonb`);
     const { rows } = await pool.query(
       `SELECT * FROM gcc_world.member_cv_profiles WHERE member_id = $1`,
       [id]
@@ -28,10 +29,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const body = await req.json();
 
+    // `talents`: [{ key, education[], experience[] }] — talentos del usuario con su
+    // educación/experiencia propias (los servicios de cada talento son filas en `services`).
+    await pool.query(`ALTER TABLE gcc_world.member_cv_profiles ADD COLUMN IF NOT EXISTS talents JSONB DEFAULT '[]'::jsonb`);
+
     // Upsert
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.member_cv_profiles (member_id, bio, skills, languages, linkedin_url, website_url, education, experience)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO gcc_world.member_cv_profiles (member_id, bio, skills, languages, linkedin_url, website_url, education, experience, talents)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        ON CONFLICT (member_id) DO UPDATE SET
          bio = EXCLUDED.bio,
          skills = EXCLUDED.skills,
@@ -40,9 +45,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
          website_url = EXCLUDED.website_url,
          education = EXCLUDED.education,
          experience = EXCLUDED.experience,
+         talents = EXCLUDED.talents,
          updated_at = NOW()
        RETURNING *`,
-      [id, body.bio || null, body.skills || [], body.languages || [], body.linkedin_url || null, body.website_url || null, JSON.stringify(body.education || []), JSON.stringify(body.experience || [])]
+      [id, body.bio || null, body.skills || [], body.languages || [], body.linkedin_url || null, body.website_url || null, JSON.stringify(body.education || []), JSON.stringify(body.experience || []), JSON.stringify(body.talents || [])]
     );
 
     return NextResponse.json({ cv: rows[0] });
