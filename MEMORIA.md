@@ -316,6 +316,12 @@ Stack estándar de la casa, con particularidades de este repo:
     aplican a TODOS los días del grupo function_id+program_idx). **Scoring:** `getSubjectsProfileScores` suma las generadas
     completadas/fallidas (mismo formato) — su historial puntúa aunque la política se desactive. `setGeneratedStatus`/
     `setGeneratedLabels` en `horario-db.ts`. Verificado: `tsc`+`next build` OK + expansión/idempotencia probadas en Postgres (rollback).
+  - **RE-SYNC al editar (2026-07-08):** editar/crear una función de una política **ya activa** ahora refleja los cambios
+    en las tareas ya generadas (Mi día / Horario de Vida) sin desactivar+activar. `createFunction`/`updateFunctionConfig`
+    llaman **`resyncFunctionTasks(functionId)`**: si la política está activa y la función es `generate_tasks`, **borra las
+    PENDIENTES** de esa función y **re-materializa** desde la config actual (los días completados/fallidos se conservan por
+    `ON CONFLICT DO NOTHING`). Refactor: `materializePolicyTasks` → helpers `getPolicyStartDay`/`insertGeneratedForSubject`/
+    `materializeFunctionTasks`. Borrar la función elimina sus tareas por FK `ON DELETE CASCADE`. Verificado en Postgres (rollback).
   - **Banner** `components/dashboard/PolicyBanner.tsx` (montado en `(dashboard)/layout.tsx`, solo /dashboard/): FLOTANTE fijo arriba que
     **NO reserva espacio** (no refluye el contenido — se intentó en `<main>` y desplazaba los componentes que miden su `top`). Muestra
     las **políticas activas por PESTAÑAS** (header morado con pestañas; zona inferior color tarjeta `bg-digi-card/text-digi-text` para

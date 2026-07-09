@@ -187,59 +187,86 @@ export async function setPolicyActive(id: number, active: boolean) {
  */
 export async function materializePolicyTasks(policyId: number): Promise<void> {
   await ensureGeneratedTasksTable();
-  // Fecha de activación en la zona local (para que "día" cuadre con el resto de la app).
-  const polRes = await pool.query(
-    `SELECT to_char((activated_at AT TIME ZONE 'America/Guayaquil')::date, 'YYYY-MM-DD') AS start_day
-       FROM gcc_world.cv_policies WHERE id = $1`,
-    [policyId],
-  );
-  const startDay: string | null = polRes.rows[0]?.start_day || null;
+  const startDay = await getPolicyStartDay(policyId);
   if (!startDay) return;
-
   const { rows: fns } = await pool.query(
     `SELECT id, config FROM gcc_world.cv_functions WHERE policy_id = $1 AND type = 'generate_tasks'`,
     [policyId],
   );
+  for (const fn of fns) await materializeFunctionTasks(policyId, Number(fn.id), fn.config, startDay);
+}
 
-  // Lista de TODOS los sujetos (para tareas con alcance 'all'); se resuelve una sola vez.
+/** Fecha de activación (día local) de la política, o null si no está activada. */
+async function getPolicyStartDay(policyId: number): Promise<string | null> {
+  const { rows } = await pool.query(
+    `SELECT to_char((activated_at AT TIME ZONE 'America/Guayaquil')::date, 'YYYY-MM-DD') AS start_day
+       FROM gcc_world.cv_policies WHERE id = $1`,
+    [policyId],
+  );
+  return rows[0]?.start_day || null;
+}
+
+/** Inserta (idempotente) los días de UN TaskProgram para UN sujeto. */
+async function insertGeneratedForSubject(functionId: number, policyId: number, idx: number, t: any, kind: string, id: string, startDay: string) {
+  const days = Math.max(1, Number(t.daysCount) || 1);
+  const weekdays: number[] = Array.isArray(t.weekdays) ? t.weekdays.map(Number) : [];
+  await pool.query(
+    `INSERT INTO gcc_world.cv_generated_tasks
+       (function_id, policy_id, program_idx, subject_kind, subject_id, title, detail,
+        value_tags, talent_tags, all_day, start_time, end_time, day, status)
+     SELECT $1, $2, $3, $4, $5, $6, $7, $8::text[], $9::text[], $10, $11, $12, d::date, 'pending'
+       FROM generate_series($13::date, $13::date + ($14 - 1) * INTERVAL '1 day', INTERVAL '1 day') AS d
+      WHERE ($15::int[] = '{}'::int[] OR EXTRACT(DOW FROM d)::int = ANY($15::int[]))
+     ON CONFLICT (function_id, subject_kind, subject_id, program_idx, day) DO NOTHING`,
+    [
+      functionId, policyId, idx, kind, id,
+      String(t.title), String(t.detail || ''),
+      Array.isArray(t.valores) ? t.valores.map(String) : [],
+      Array.isArray(t.talentos) ? t.talentos.map(String) : [],
+      !!t.allDay, t.allDay ? null : String(t.startTime || ''), t.allDay ? null : String(t.endTime || ''),
+      startDay, days, weekdays,
+    ],
+  );
+}
+
+/** Materializa todas las tareas (TaskProgram[]) de UNA función `generate_tasks`. */
+async function materializeFunctionTasks(policyId: number, functionId: number, config: any, startDay: string): Promise<void> {
+  const tasks: any[] = Array.isArray(config?.tasks) ? config.tasks : [];
   let allSubjects: { kind: string; id: string }[] | null = null;
-
-  const insertForSubject = async (fnId: number, idx: number, t: any, kind: string, id: string) => {
-    const days = Math.max(1, Number(t.daysCount) || 1);
-    const weekdays: number[] = Array.isArray(t.weekdays) ? t.weekdays.map(Number) : [];
-    await pool.query(
-      `INSERT INTO gcc_world.cv_generated_tasks
-         (function_id, policy_id, program_idx, subject_kind, subject_id, title, detail,
-          value_tags, talent_tags, all_day, start_time, end_time, day, status)
-       SELECT $1, $2, $3, $4, $5, $6, $7, $8::text[], $9::text[], $10, $11, $12, d::date, 'pending'
-         FROM generate_series($13::date, $13::date + ($14 - 1) * INTERVAL '1 day', INTERVAL '1 day') AS d
-        WHERE ($15::int[] = '{}'::int[] OR EXTRACT(DOW FROM d)::int = ANY($15::int[]))
-       ON CONFLICT (function_id, subject_kind, subject_id, program_idx, day) DO NOTHING`,
-      [
-        fnId, policyId, idx, kind, id,
-        String(t.title), String(t.detail || ''),
-        Array.isArray(t.valores) ? t.valores.map(String) : [],
-        Array.isArray(t.talentos) ? t.talentos.map(String) : [],
-        !!t.allDay, t.allDay ? null : String(t.startTime || ''), t.allDay ? null : String(t.endTime || ''),
-        startDay, days, weekdays,
-      ],
-    );
-  };
-
-  for (const fn of fns) {
-    const tasks: any[] = Array.isArray(fn.config?.tasks) ? fn.config.tasks : [];
-    for (let idx = 0; idx < tasks.length; idx++) {
-      const t = tasks[idx];
-      if (!t?.title) continue;
-      if (t.scope === 'all') {
-        if (!allSubjects) allSubjects = await getAllTaskSubjects();
-        for (const s of allSubjects) await insertForSubject(Number(fn.id), idx, t, s.kind, s.id);
-      } else {
-        if (!t.userKind || !t.userId) continue;
-        await insertForSubject(Number(fn.id), idx, t, String(t.userKind), String(t.userId));
-      }
+  for (let idx = 0; idx < tasks.length; idx++) {
+    const t = tasks[idx];
+    if (!t?.title) continue;
+    if (t.scope === 'all') {
+      if (!allSubjects) allSubjects = await getAllTaskSubjects();
+      for (const s of allSubjects) await insertGeneratedForSubject(functionId, policyId, idx, t, s.kind, s.id, startDay);
+    } else {
+      if (!t.userKind || !t.userId) continue;
+      await insertGeneratedForSubject(functionId, policyId, idx, t, String(t.userKind), String(t.userId), startDay);
     }
   }
+}
+
+/**
+ * Re-sincroniza las tareas generadas de UNA función tras crear/editar su config, PERO solo
+ * si su política está ACTIVA (si no, se materializan al activar). Borra las PENDIENTES de la
+ * función (para que se reflejen ediciones/eliminaciones) y regenera desde la config actual
+ * (los días ya completados/fallidos se conservan gracias al ON CONFLICT DO NOTHING). No hace
+ * nada para funciones que no son `generate_tasks`.
+ */
+export async function resyncFunctionTasks(functionId: number): Promise<void> {
+  await ensureGeneratedTasksTable();
+  const { rows } = await pool.query(
+    `SELECT f.policy_id, f.type, f.config, p.active,
+            to_char((p.activated_at AT TIME ZONE 'America/Guayaquil')::date, 'YYYY-MM-DD') AS start_day
+       FROM gcc_world.cv_functions f
+       JOIN gcc_world.cv_policies p ON p.id = f.policy_id
+      WHERE f.id = $1`,
+    [functionId],
+  );
+  const r = rows[0];
+  if (!r || r.type !== 'generate_tasks' || !r.active || !r.start_day) return;
+  await pool.query(`DELETE FROM gcc_world.cv_generated_tasks WHERE function_id = $1 AND status = 'pending'`, [functionId]);
+  await materializeFunctionTasks(Number(r.policy_id), functionId, r.config, r.start_day);
 }
 
 /**
@@ -280,12 +307,16 @@ export async function createFunction(policyId: number, type: string, config: any
     `INSERT INTO gcc_world.cv_functions (policy_id, type, config) VALUES ($1, $2, $3::jsonb) RETURNING id`,
     [policyId, type, JSON.stringify(config || {})],
   );
+  // Si la política ya está activa, materializa de una vez las tareas de esta función.
+  await resyncFunctionTasks(Number(rows[0].id));
   return rows[0];
 }
 
 export async function updateFunctionConfig(id: number, config: any) {
   await ensureComandosTables();
   await pool.query(`UPDATE gcc_world.cv_functions SET config = $1::jsonb WHERE id = $2`, [JSON.stringify(config || {}), id]);
+  // Refleja los cambios en las tareas ya generadas (Mi día / Horario de Vida) si la política está activa.
+  await resyncFunctionTasks(Number(id));
 }
 
 export async function getFunction(id: number) {
