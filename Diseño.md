@@ -372,6 +372,17 @@ columna (icono + label): Completada (`CheckCircle2`, verde), Fallida (`XCircle`,
 el activo se rellena con su tono. Lo usan el **Horario de Vida** (detalle de tarea) y **Mi día** (rail de tareas). Regla:
 cualquier lugar que marque estado de tarea usa este componente (no recomponer los 3 botones a mano).
 
+### Chip de etiquetas (icono + contador con burbuja al hover) — patrón reusable
+Para mostrar valores/talentos de una tarea SIN alargar la tarjeta: un chip compacto **icono + contador**
+(Valores = `Gem` violeta `bg-violet-500/15 border-violet-400/30 text-violet-300`; Talentos = `Sparkles`
+celeste `bg-sky-500/15`); al pasar el puntero abre una **burbuja flotante** (`fixed`, posicionada con
+`getBoundingClientRect`, `-translate-x-1/2 -translate-y-full`) con la lista de etiquetas. Se usa en el panel
+de tareas del **Horario de Vida** y en el **panel de tareas agregadas del modal Generar tareas**
+(`GenerateTasksModal`: layout de 3 columnas — usuarios · formulario · panel de tareas a la derecha estilo
+Horario de Vida; la burbuja usa `z-[80]` para quedar sobre el `FloatingWindow` `z-[70]`). En ese panel, cada
+tarjeta es **clicable para editar** la tarea en el formulario (resalta con `ring-accent`; el botón pasa de
+"Agregar tarea" a "Guardar cambios" y aparece "Cancelar edición"; el ⋯ eliminar hace `stopPropagation`).
+
 ### Entradas de tarea FIJAS en el Horario/Mi día (auto de ticket/proyecto · generada por política)
 Patrón para tareas que el usuario **no puede quitar** (fijadas por lógica externa); solo cambia estado (y, si aplica,
 etiquetas). Tarjeta con **borde `border-dashed`** y color por **fuente**, que vira a verde/rojo según estado
