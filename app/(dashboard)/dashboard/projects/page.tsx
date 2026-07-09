@@ -9,7 +9,9 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PageHeader from '@/components/ui/PageHeader';
+import AssigneePicker from '@/components/tickets/AssigneePicker';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { accessRoleOf } from '@/lib/dashboard/access';
 import { fmt2 } from '@/lib/format';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
@@ -66,15 +68,36 @@ export default function ProjectsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Create modal
+  // Create/Request modal
   const [showCreate, setShowCreate] = useState(false);
+  const [createMode, setCreateMode] = useState<'create' | 'request'>('create');
   const [createTitle, setCreateTitle] = useState('');
   const [createDesc, setCreateDesc] = useState('');
   const [createBudgetMin, setCreateBudgetMin] = useState('');
   const [createBudgetMax, setCreateBudgetMax] = useState('');
   const [createDeadline, setCreateDeadline] = useState('');
-  const [createClientEmail, setCreateClientEmail] = useState('');
   const [creating, setCreating] = useState(false);
+  // create: selección de cliente (uno de mis clientes o invitar por email)
+  const [clientMode, setClientMode] = useState<'existing' | 'email'>('existing');
+  const [createClientId, setCreateClientId] = useState('');
+  const [createClientEmail, setCreateClientEmail] = useState('');
+  const [myClients, setMyClients] = useState<any[]>([]);
+  // request: responsable sugerido o abierto a propuestas
+  const [createMemberId, setCreateMemberId] = useState('');
+  const [openProposals, setOpenProposals] = useState(false);
+
+  const canCreateOwn = accessRoleOf(user) !== 'client'; // candidato/miembro/admin
+
+  const openCreateModal = (mode: 'create' | 'request') => {
+    setCreateMode(mode);
+    setCreateTitle(''); setCreateDesc(''); setCreateBudgetMin(''); setCreateBudgetMax(''); setCreateDeadline('');
+    setCreateClientId(''); setCreateClientEmail(''); setClientMode('existing');
+    setCreateMemberId(''); setOpenProposals(false);
+    setShowCreate(true);
+    if (mode === 'create') {
+      fetch('/api/clients?mine=1').then((r) => r.json()).then((d) => setMyClients(d.data || [])).catch(() => setMyClients([]));
+    }
+  };
 
   // Edit modal
   const [editProject, setEditProject] = useState<any>(null);
@@ -111,20 +134,28 @@ export default function ProjectsPage() {
     if (!createTitle.trim()) return;
     setCreating(true);
     try {
+      const payload: any = {
+        mode: createMode,
+        title: createTitle, description: createDesc || null,
+        budget_min: createBudgetMin ? Number(createBudgetMin) : null,
+        budget_max: createBudgetMax ? Number(createBudgetMax) : null,
+        deadline: createDeadline || null,
+      };
+      if (createMode === 'create') {
+        if (clientMode === 'existing') payload.client_id = createClientId || null;
+        else payload.client_email = createClientEmail || null;
+      } else {
+        payload.open_for_proposals = openProposals;
+        payload.member_id = openProposals ? null : (createMemberId || null);
+      }
       const res = await fetch('/api/projects', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: createTitle, description: createDesc || null,
-          budget_min: createBudgetMin ? Number(createBudgetMin) : null,
-          budget_max: createBudgetMax ? Number(createBudgetMax) : null,
-          deadline: createDeadline || null, client_email: createClientEmail || null,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) { toast.error((await res.json()).error || 'Error'); return; }
       const { data } = await res.json();
-      toast.success('Proyecto creado');
+      toast.success(createMode === 'request' ? 'Solicitud de proyecto creada' : 'Proyecto creado');
       setShowCreate(false);
-      setCreateTitle(''); setCreateDesc(''); setCreateBudgetMin(''); setCreateBudgetMax(''); setCreateDeadline(''); setCreateClientEmail('');
       router.push(`/dashboard/projects/${data.id}`);
     } catch { toast.error('Error al crear'); }
     finally { setCreating(false); }
@@ -208,9 +239,16 @@ export default function ProjectsPage() {
                 style={mf}
               />
             </div>
-            <button onClick={() => setShowCreate(true)} className={`${BTN_PRIMARY} shrink-0`}>
-              <Plus className="w-4 h-4" /> Nuevo proyecto
+            {/* Solicitar proyecto: para TODOS (yo soy el cliente). */}
+            <button onClick={() => openCreateModal('request')} className={`${BTN_SECONDARY} shrink-0`}>
+              <Plus className="w-4 h-4" /> Solicitar proyecto
             </button>
+            {/* Nuevo proyecto: solo candidato/miembro/admin (yo soy el responsable). */}
+            {canCreateOwn && (
+              <button onClick={() => openCreateModal('create')} className={`${BTN_PRIMARY} shrink-0`}>
+                <Plus className="w-4 h-4" /> Nuevo proyecto
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
@@ -347,28 +385,66 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Create Modal */}
-      <PixelModal open={showCreate} onClose={() => setShowCreate(false)} title="Nuevo proyecto">
+      {/* Create/Request Modal */}
+      <PixelModal open={showCreate} onClose={() => setShowCreate(false)} title={createMode === 'request' ? 'Solicitar proyecto' : 'Nuevo proyecto'}>
         <div className="space-y-3">
+          <p className="text-[11.5px] text-digi-muted" style={mf}>
+            {createMode === 'request'
+              ? 'Solicitas un proyecto como cliente. Puedes sugerir un responsable (queda invitado a aceptar) o dejarlo abierto a propuestas.'
+              : 'Creas un proyecto del que serás el responsable. Elige el cliente entre los tuyos o invítalo por email.'}
+          </p>
+
           <PixelInput label="Título *" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Nombre del proyecto" />
           <div className="flex flex-col gap-1">
             <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Descripción</label>
             <textarea value={createDesc} onChange={(e) => setCreateDesc(e.target.value)} rows={3} placeholder="Descripción del proyecto..."
               className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
-          {user?.role === 'member' && (
-            <PixelInput label="Email del cliente" value={createClientEmail} onChange={(e) => setCreateClientEmail(e.target.value)} placeholder="cliente@email.com" />
+
+          {createMode === 'create' ? (
+            /* ── Cliente (mis clientes o invitar por email) ── */
+            <div className="flex flex-col gap-1.5">
+              <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente</label>
+              <div className="flex gap-1.5">
+                <button type="button" onClick={() => setClientMode('existing')}
+                  className={`flex-1 px-2.5 py-1.5 rounded text-[12px] border transition-colors ${clientMode === 'existing' ? 'border-accent text-accent bg-accent-light' : 'border-digi-border text-digi-muted'}`} style={mf}>Mis clientes</button>
+                <button type="button" onClick={() => setClientMode('email')}
+                  className={`flex-1 px-2.5 py-1.5 rounded text-[12px] border transition-colors ${clientMode === 'email' ? 'border-accent text-accent bg-accent-light' : 'border-digi-border text-digi-muted'}`} style={mf}>Invitar por email</button>
+              </div>
+              {clientMode === 'existing' ? (
+                <select value={createClientId} onChange={(e) => setCreateClientId(e.target.value)}
+                  className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                  <option value="">Sin cliente (definir luego)</option>
+                  {myClients.map((c) => <option key={c.id} value={c.id}>{c.name}{c.email ? ` — ${c.email}` : ''}</option>)}
+                </select>
+              ) : (
+                <>
+                  <PixelInput label="" value={createClientEmail} onChange={(e) => setCreateClientEmail(e.target.value)} placeholder="cliente@email.com" />
+                  <p className="text-[10.5px] text-digi-muted" style={mf}>Se registra el proyecto con este correo y se le envía una invitación a unirse al sistema.</p>
+                </>
+              )}
+            </div>
+          ) : (
+            /* ── Miembro responsable (sugerido) o abierto a propuestas ── */
+            <div className="flex flex-col gap-1.5">
+              <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro responsable</label>
+              <AssigneePicker value={createMemberId} onChange={setCreateMemberId} disabled={openProposals} />
+              <label className="flex items-center gap-2 text-[12px] text-digi-text cursor-pointer mt-0.5" style={mf}>
+                <input type="checkbox" checked={openProposals} onChange={(e) => { setOpenProposals(e.target.checked); if (e.target.checked) setCreateMemberId(''); }} className="accent-accent w-4 h-4" />
+                Dejar abierto a propuestas
+              </label>
+              <p className="text-[10.5px] text-digi-muted" style={mf}>Como cliente, se usará (o creará) tu cuenta de tipo cliente para esta solicitud.</p>
+            </div>
           )}
+
           <div className="grid grid-cols-2 gap-2">
             <PixelInput label="Presupuesto mín ($)" type="number" value={createBudgetMin} onChange={(e) => setCreateBudgetMin(e.target.value)} placeholder="0" />
             <PixelInput label="Presupuesto máx ($)" type="number" value={createBudgetMax} onChange={(e) => setCreateBudgetMax(e.target.value)} placeholder="0" />
           </div>
           <PixelInput label="Límite" type="date" value={createDeadline} onChange={(e) => setCreateDeadline(e.target.value)} />
-          {user?.role === 'member' && (
-            <p className="text-[11px] text-digi-muted" style={mf}>Como miembro, el proyecto se creará como privado y en progreso automáticamente.</p>
-          )}
+
           <button onClick={createProject} disabled={creating || !createTitle.trim()} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-            {creating ? '...' : 'Crear proyecto'}
+            {creating ? '...' : createMode === 'request' ? 'Solicitar proyecto' : 'Crear proyecto'}
           </button>
         </div>
       </PixelModal>

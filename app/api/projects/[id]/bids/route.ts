@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { addParticipant } from '@/lib/projects/members';
 
 async function ensureColumns() {
   await pool.query(`ALTER TABLE gcc_world.project_bids ADD COLUMN IF NOT EXISTS requirement_costs JSONB DEFAULT '{}'`);
@@ -74,6 +75,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     );
 
     const bid = rows[0];
+
+    // Al aceptar una propuesta, el miembro queda como PARTICIPANTE del proyecto.
+    if (status === 'accepted' && bid) {
+      await addParticipant(projectId, bid.member_id).catch(() => undefined);
+    }
 
     // When accepting a bid, auto-create requirement assignments
     if (status === 'accepted' && bid && bid.requirement_ids?.length > 0) {

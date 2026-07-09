@@ -412,7 +412,8 @@ export default function TicketDetailPage() {
   const isRequestForMe = isPending && isMember && user?.member_id && ticket.member_id === user.member_id;
   const showActions = !isPending && ticket.status !== 'withdrawn';
   const activeTab = tab === 'acciones' && showActions ? 'acciones' : 'resumen';
-  const canCompleteTicket = ticket.status === 'confirmed' && (isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id));
+  // Completar y FACTURAR es exclusivo del admin (regla de negocio).
+  const canCompleteTicket = ticket.status === 'confirmed' && isAdmin;
 
   const SectionRailItem = ({ active, Icon, label, count, onClick }: any) => (
     <button onClick={onClick}

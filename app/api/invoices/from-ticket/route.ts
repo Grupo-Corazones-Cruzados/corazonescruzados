@@ -42,19 +42,9 @@ export async function POST(req: NextRequest) {
     );
     if (!ticket) return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 });
 
-    // Auth: admin or assigned member
-    const isAdmin = user.role === 'admin';
-    let isAssignedMember = false;
-    if (user.role === 'member') {
-      const { rows: mRows } = await pool.query(
-        `SELECT member_id FROM gcc_world.users WHERE id = $1 LIMIT 1`,
-        [user.userId]
-      );
-      const memberId = mRows[0]?.member_id ? Number(mRows[0].member_id) : null;
-      isAssignedMember = !!memberId && Number(ticket.member_id) === memberId;
-    }
-    if (!isAdmin && !isAssignedMember) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    // Auth: la FACTURACIÓN es exclusiva del admin (regla de negocio).
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Solo un administrador puede facturar.' }, { status: 403 });
     }
 
     // Skip invoice flow: just mark completed and exit

@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureProjectMembersTable, getProjectMembers } from '@/lib/projects/members';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -11,6 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     // Ensure proforma column exists
     try { await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS proforma TEXT`); } catch { /* ignore */ }
+    await ensureProjectMembersTable();
 
     const { rows } = await pool.query(
       `SELECT p.*, c.name as client_name, c.email as client_email,
@@ -36,12 +38,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         if (mId) {
           // Owner?
           if (project.assigned_member_id == mId) hasAccess = true;
-          // Invited/accepted?
+          // Invited/accepted (bid) o miembro del proyecto (responsable/participante)?
           if (!hasAccess) {
             const bidRes = await pool.query(
               `SELECT 1 FROM gcc_world.project_bids WHERE project_id = $1 AND member_id = $2 LIMIT 1`, [id, mId]
             );
             if (bidRes.rows.length > 0) hasAccess = true;
+          }
+          if (!hasAccess) {
+            const pmRes = await pool.query(
+              `SELECT 1 FROM gcc_world.project_members WHERE project_id = $1 AND member_id = $2 LIMIT 1`, [id, mId]
+            );
+            if (pmRes.rows.length > 0) hasAccess = true;
           }
         }
       } else if (user.role === 'client') {
@@ -100,8 +108,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       incidents = incRes.rows;
     }
 
+    // Miembros del proyecto (responsable + participantes) y estado de la invitación.
+    const projectMembers = await getProjectMembers(id);
+    const responsible = projectMembers.find((pm) => pm.role === 'responsible' && pm.status === 'active') || null;
+    const pendingResponsible = projectMembers.find((pm) => pm.role === 'responsible' && pm.status === 'invited') || null;
+
     return NextResponse.json({
-      data: { ...rows[0], requirements: reqs.rows, bids: bids.rows, incidents },
+      data: {
+        ...rows[0], requirements: reqs.rows, bids: bids.rows, incidents,
+        project_members: projectMembers, responsible, pending_responsible: pendingResponsible,
+      },
     });
   } catch (err: any) {
     console.error('Project GET error:', err.message);

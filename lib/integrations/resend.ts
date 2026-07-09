@@ -174,6 +174,35 @@ export async function sendCandidateApprovalEmail(email: string) {
   });
 }
 
+/**
+ * Invitación a un CLIENTE (por email) a unirse al sistema porque se le asignó un proyecto.
+ * El proyecto queda registrado con su correo aunque el cliente aún no tenga cuenta; este
+ * correo lo invita a crear una para dar seguimiento. Best-effort (no bloquea la creación).
+ */
+export async function sendProjectClientInvitationEmail(params: {
+  email: string;
+  projectTitle: string;
+  inviterName?: string | null;
+}) {
+  const url = `${APP_URL}/`;
+  const who = params.inviterName ? `${escapeHtml(params.inviterName)} de ${accentStrong('GCC World')}` : accentStrong('GCC World');
+  const html = emailShell(
+    emailBadge('INVITACIÓN A UN PROYECTO', CORP.accent) +
+    emailHeading('Te invitaron a un proyecto', 'Únete a GCC World para darle seguimiento') +
+    emailParagraph(`${who} creó un proyecto a tu nombre:`) +
+    emailInfoBox('PROYECTO', escapeHtml(params.projectTitle)) +
+    emailParagraph(`Crea tu cuenta de cliente en GCC World para ver el avance, aprobar la proforma y recibir la facturación. El proyecto ya quedó registrado con este correo.`) +
+    emailButton(url, 'Unirme a GCC World') +
+    emailNote('Si no esperabas esta invitación, puedes ignorar este correo.'),
+  );
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to: params.email,
+    subject: `Te invitaron al proyecto "${params.projectTitle}" — GCC World`,
+    html,
+  });
+}
+
 export async function sendVerificationEmail(
   email: string,
   token: string,

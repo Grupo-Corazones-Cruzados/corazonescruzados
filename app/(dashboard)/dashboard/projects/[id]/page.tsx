@@ -9,7 +9,8 @@ import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
 import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus } from 'lucide-react';
+import AssigneePicker from '@/components/tickets/AssigneePicker';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2 } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -164,6 +165,41 @@ export default function ProjectDetailPage() {
   const memberId = user?.member_id;
   const isMemberCreator = isMember && memberId && project?.assigned_member_id == memberId;
   const isOwner = isAdmin || isMemberCreator;
+  const [showAddParticipant, setShowAddParticipant] = useState(false);
+  const [newParticipantId, setNewParticipantId] = useState('');
+  // ¿Me invitaron a tomar el liderazgo (responsable) de este proyecto?
+  const myResponsibleInvite = !!(memberId && project?.pending_responsible && String(project.pending_responsible.member_id) === String(memberId));
+
+  const respondResponsible = async (action: 'accept' | 'decline') => {
+    try {
+      const res = await fetch(`/api/projects/${id}/responsible`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }),
+      });
+      if (!res.ok) { toast.error((await res.json()).error || 'Error'); return; }
+      toast.success(action === 'accept' ? 'Aceptaste el liderazgo del proyecto' : 'Rechazaste la invitación');
+      fetchProject();
+    } catch { toast.error('Error'); }
+  };
+
+  const addParticipant = async (mid: string) => {
+    if (!mid) return;
+    try {
+      const res = await fetch(`/api/projects/${id}/participants`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ member_id: mid }),
+      });
+      if (!res.ok) { toast.error((await res.json()).error || 'Error'); return; }
+      toast.success('Participante agregado');
+      setShowAddParticipant(false); setNewParticipantId('');
+      fetchProject();
+    } catch { toast.error('Error'); }
+  };
+  const removeParticipant = async (mid: string) => {
+    try {
+      const res = await fetch(`/api/projects/${id}/participants?member_id=${mid}`, { method: 'DELETE' });
+      if (!res.ok) { toast.error((await res.json()).error || 'Error'); return; }
+      fetchProject();
+    } catch { toast.error('Error'); }
+  };
 
   const chat = useAgentChat({ digimundoProjectId: project?.digimundo_project_id || null, digiProjects });
 
@@ -912,6 +948,20 @@ export default function ProjectDetailPage() {
         />
       )}
 
+      {/* Invitación a tomar el liderazgo (responsable) del proyecto */}
+      {myResponsibleInvite && (
+        <div className="mb-4 rounded-lg border border-accent/40 bg-accent-light p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-digi-text" style={{ fontFamily: 'var(--font-body)' }}>Te invitaron a liderar este proyecto</p>
+            <p className="text-[12px] text-digi-muted" style={{ fontFamily: 'var(--font-body)' }}>Como responsable tomas la dirección del proyecto y su gestión completa. Solo la facturación queda reservada al administrador.</p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={() => respondResponsible('decline')} className={BTN_SECONDARY}>Rechazar</button>
+            <button onClick={() => respondResponsible('accept')} className={BTN_PRIMARY}><Check className="w-4 h-4" /> Aceptar liderazgo</button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* Section rail */}
         <aside className="w-full lg:w-[200px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
@@ -1065,10 +1115,71 @@ export default function ProjectDetailPage() {
             )}
           </div>
 
-          {/* Participants */}
+          {/* Equipo del proyecto: responsable + participantes (concepto project_members) */}
+          {(() => {
+            const team: any[] = project.project_members || [];
+            const responsibleRow = project.responsible || team.find((t) => t.role === 'responsible' && t.status === 'active');
+            const participants = team.filter((t) => t.status === 'active' && String(t.member_id) !== String(responsibleRow?.member_id));
+            const Avatar = ({ m }: { m: any }) => m.photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={m.photo_url} alt="" className="w-8 h-8 rounded-full border border-digi-border object-cover shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[12px] font-semibold text-accent shrink-0" style={mf}>{(m.member_name || '?')[0].toUpperCase()}</div>
+            );
+            return (
+              <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h3 className="text-[14px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}><Users className="w-4 h-4 text-accent" /> Equipo del proyecto</h3>
+                  {isOwner && (
+                    <button onClick={() => { setNewParticipantId(''); setShowAddParticipant(true); }} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1.5 hover:border-accent hover:text-accent transition-colors" style={mf}><UserPlus className="w-3.5 h-3.5" /> Agregar participante</button>
+                  )}
+                </div>
+                {/* Responsable */}
+                <div className="mb-3">
+                  <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Responsable</p>
+                  {responsibleRow ? (
+                    <div className="flex items-center gap-2.5 rounded-lg border border-accent/30 bg-accent-light px-3 py-2">
+                      <Avatar m={responsibleRow} />
+                      <span className="text-[13px] font-medium text-digi-text flex-1 min-w-0 truncate" style={mf}>{responsibleRow.member_name}</span>
+                      <PixelBadge variant="info"><span className="inline-flex items-center gap-1"><Crown className="w-3 h-3" /> Responsable</span></PixelBadge>
+                    </div>
+                  ) : project.pending_responsible ? (
+                    <div className="flex items-center gap-2.5 rounded-lg border border-digi-border px-3 py-2">
+                      <Avatar m={project.pending_responsible} />
+                      <span className="text-[13px] font-medium text-digi-text flex-1 min-w-0 truncate" style={mf}>{project.pending_responsible.member_name}</span>
+                      <PixelBadge variant="warning">Invitación pendiente</PixelBadge>
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-digi-muted" style={mf}>Sin responsable asignado (abierto a propuestas).</p>
+                  )}
+                </div>
+                {/* Participantes */}
+                <div>
+                  <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Participantes ({participants.length})</p>
+                  {participants.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {participants.map((m) => (
+                        <div key={m.member_id} className="flex items-center gap-2.5 rounded-lg border border-digi-border px-3 py-1.5">
+                          <Avatar m={m} />
+                          <span className="text-[12.5px] text-digi-text flex-1 min-w-0 truncate" style={mf}>{m.member_name}</span>
+                          {isOwner && (
+                            <button onClick={() => removeParticipant(String(m.member_id))} title="Quitar" className="shrink-0 p-1.5 rounded text-digi-muted hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-digi-muted" style={mf}>Aún no hay participantes. Se suman al aceptar sus propuestas o agregándolos.</p>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Propuestas (bids/postulaciones) */}
           <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="text-[14px] font-semibold text-digi-text" style={mf}>Participantes</h3>
+              <h3 className="text-[14px] font-semibold text-digi-text" style={mf}>Propuestas</h3>
               <div className="flex gap-2">
                 {canInvite && (
                   <button onClick={openInviteModal} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1.5 hover:border-accent hover:text-accent transition-colors" style={mf}><UserPlus className="w-3.5 h-3.5" /> Invitar</button>
@@ -2200,6 +2311,17 @@ export default function ProjectDetailPage() {
           <button onClick={submitWithdrawRequest} disabled={submittingWithdraw || !withdrawReason.trim()}
             className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
             {submittingWithdraw ? 'Enviando...' : 'Enviar Solicitud'}
+          </button>
+        </div>
+      </PixelModal>
+
+      {/* Agregar participante (responsable/admin) */}
+      <PixelModal open={showAddParticipant} onClose={() => setShowAddParticipant(false)} title="Agregar participante" size="md">
+        <div className="space-y-3">
+          <p className="text-[12px] text-digi-muted" style={mf}>Elige un miembro para sumarlo como participante del proyecto.</p>
+          <AssigneePicker value={newParticipantId} onChange={setNewParticipantId} />
+          <button onClick={() => addParticipant(newParticipantId)} disabled={!newParticipantId} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+            Agregar participante
           </button>
         </div>
       </PixelModal>

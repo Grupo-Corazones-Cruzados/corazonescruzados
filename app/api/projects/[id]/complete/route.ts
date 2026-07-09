@@ -16,6 +16,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Completar y FACTURAR un proyecto es exclusivo del admin (regla de negocio).
+    if (user.role !== 'admin') return NextResponse.json({ error: 'Solo un administrador puede completar y facturar el proyecto.' }, { status: 403 });
     const { id } = await params;
     const { action, skip_invoice, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
 

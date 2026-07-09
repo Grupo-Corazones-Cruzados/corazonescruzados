@@ -267,6 +267,27 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Proyectos: Nuevo vs Solicitar + responsable/participantes (2026-07-09):** se replicó el patrón de tickets en
+  `/dashboard/projects`. Dos botones: **"Solicitar proyecto"** (TODOS) = `mode='request'`, YO soy el **cliente**
+  (`ensureUserClientAccount`), y elijo **un miembro** (queda **INVITADO a aceptar el liderazgo**, no responsable directo) o
+  **"abierto a propuestas"**; **"Nuevo proyecto"** (solo `accessRoleOf != 'client'`: candidato/miembro/admin) =
+  `mode='create'`, YO soy el **responsable** directo y elijo cliente de **mis clientes** (`/api/clients?mine=1`) o **por
+  email** (se guarda `projects.client_email` + se envía **invitación** `sendProjectClientInvitationEmail`; el proyecto queda
+  ligado al **correo**, NUNCA a la cuenta del invitado, aunque luego entre). POST `/api/projects` recibe `mode`,
+  `open_for_proposals`, `member_id`, `client_id`/`client_email`.
+  - **Modelo responsable/participantes:** nueva tabla **`gcc_world.project_members`** `(project_id, member_id, role
+    'responsible'|'participant', status 'invited'|'active', UNIQUE(project_id,member_id))`. Helpers en
+    `lib/projects/members.ts` (`ensureProjectMembersTable`, `setResponsible`, `addParticipant`, `getProjectMembers`). El
+    **responsable** se sincroniza con `projects.assigned_member_id` (así hereda los poderes de "owner" = `isMemberCreator`
+    del detalle: publicar, requerimientos, aceptar propuestas, participantes, enviar a revisión). El responsable ES también
+    participante (la lógica incluye la fila responsible). Aceptar una **propuesta** (bid) agrega participante.
+  - **Invitación de liderazgo:** `POST /api/projects/[id]/responsible {action:'accept'|'decline'}`. El detalle muestra un
+    **banner** al miembro invitado (`pending_responsible`). Participantes: `GET/POST/DELETE /api/projects/[id]/participants`
+    (gestiona el responsable activo o admin). El detalle tiene tarjeta **"Equipo del proyecto"** (responsable + participantes)
+    y renombró la sección de bids a **"Propuestas"**. GET detalle/lista dan acceso también vía `project_members`.
+  - **Facturación = SOLO ADMIN (regla de negocio, 2026-07-09):** se reforzó server-side: `POST /api/projects/[id]/complete`
+    exige `role='admin'` (antes NO validaba rol, solo lo ocultaba la UI); `POST /api/invoices/from-ticket` pasó de
+    "admin o miembro asignado" a **solo admin**; en tickets `canCompleteTicket` = solo admin. Verificado tsc + `next build`.
 - **Tickets: Nuevo vs Solicitar (Fase 1, 2026-07-09):** dos botones en `/dashboard/tickets`. **"Nuevo ticket"** (solo
   `accessRoleOf != 'client'`: candidato/miembro/admin) = **YO soy el miembro asignado** (auto = `user.member_id` de la
   sesión) y elijo **cliente asociado a mí** (`/api/clients?mine=1` = clientes con mi `user_id` o usados en mis tickets) o
