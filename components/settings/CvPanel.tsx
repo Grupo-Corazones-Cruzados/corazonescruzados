@@ -5,6 +5,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { TALENTOS } from '@/lib/centralized/talentos';
@@ -48,6 +49,7 @@ export default function CvPanel() {
   // Modal para gestionar skills una por una (sin comas).
   const [skillsModal, setSkillsModal] = useState(false);
   const [newSkill, setNewSkill] = useState('');
+  const [confirmDelTalent, setConfirmDelTalent] = useState<number | null>(null);
 
   useEffect(() => {
     if (!memberId) return;
@@ -100,8 +102,13 @@ export default function CvPanel() {
     setActiveTalent(talents.length); // abre la pestaña del talento recién agregado
   };
   const removeTalent = (i: number) => {
+    const key = talents[i]?.key;
     setTalents(talents.filter((_, k) => k !== i));
     setActiveTalent((cur) => (i <= cur ? Math.max(0, cur - 1) : cur));
+    // Elimina también los servicios asociados a ese talento (filas en DB).
+    const toDelete = services.filter((s) => s.talent === key);
+    setServices((s) => s.filter((x) => x.talent !== key));
+    if (memberId) for (const s of toDelete) fetch(`/api/members/${memberId}/services/${s.id}`, { method: 'DELETE' }).catch(() => {});
   };
   const updateTalent = (i: number, patch: Partial<TalentEntry>) =>
     setTalents(talents.map((t, k) => (k === i ? { ...t, ...patch } : t)));
@@ -186,25 +193,23 @@ export default function CvPanel() {
           const talentServices = services.filter((s) => s.talent === t.key);
           return (
             <div className="rounded-xl border border-digi-border bg-digi-card overflow-hidden">
-              {/* Pestañas horizontales: una por talento */}
+              {/* Pestañas horizontales: una por talento, con su icono de eliminar */}
               <div className="flex items-stretch border-b border-digi-border overflow-x-auto">
                 {talents.map((tt, i) => {
                   const active = i === activeIdx;
                   return (
-                    <button key={tt.key} type="button" onClick={() => setActiveTalent(i)}
-                      className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-[12.5px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${active ? 'border-accent text-accent bg-accent-light/40' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
+                    <div key={tt.key} onClick={() => setActiveTalent(i)}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-[12.5px] font-medium border-b-2 -mb-px whitespace-nowrap cursor-pointer transition-colors ${active ? 'border-accent text-accent bg-accent-light/40' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
                       <Sparkles className="w-3.5 h-3.5" /> {tt.key}
-                    </button>
+                      <button type="button" title="Quitar talento" onClick={(e) => { e.stopPropagation(); setConfirmDelTalent(i); }}
+                        className="ml-1 -mr-1 p-0.5 rounded text-digi-muted hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
                   );
                 })}
               </div>
 
               {/* Contenido del talento seleccionado */}
               <div className="p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent" style={mf}><Sparkles className="w-3.5 h-3.5" /> {t.key}</span>
-                  <button onClick={() => removeTalent(activeIdx)} className="text-digi-muted hover:text-red-600 inline-flex items-center gap-1 text-[11.5px]" style={mf}><Trash2 className="w-3.5 h-3.5" /> Quitar talento</button>
-                </div>
                 <SectionEdu title="Educación" items={t.education} onChange={(v) => updateTalent(activeIdx, { education: v })} nested />
                 <SectionExp title="Experiencia" items={t.experience} onChange={(v) => updateTalent(activeIdx, { experience: v })} nested />
                 {/* Servicios del talento */}
@@ -241,6 +246,17 @@ export default function CvPanel() {
           <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar CV'}
         </button>
       </div>
+
+      {/* Confirmación de eliminación de talento. */}
+      <PixelConfirm
+        open={confirmDelTalent !== null}
+        title="Quitar talento"
+        message={`¿Quitar el talento "${confirmDelTalent !== null ? talents[confirmDelTalent]?.key : ''}" de tu CV? Se eliminarán su educación, experiencia y servicios asociados.`}
+        confirmLabel="Sí, quitar"
+        danger
+        onConfirm={() => { if (confirmDelTalent !== null) removeTalent(confirmDelTalent); setConfirmDelTalent(null); }}
+        onCancel={() => setConfirmDelTalent(null)}
+      />
 
       {/* Modal de skills: se agregan una por una (Enter o botón), como chips. */}
       <PixelModal open={skillsModal} onClose={() => setSkillsModal(false)} title="Skills">
