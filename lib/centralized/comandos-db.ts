@@ -200,32 +200,62 @@ export async function materializePolicyTasks(policyId: number): Promise<void> {
     `SELECT id, config FROM gcc_world.cv_functions WHERE policy_id = $1 AND type = 'generate_tasks'`,
     [policyId],
   );
+
+  // Lista de TODOS los sujetos (para tareas con alcance 'all'); se resuelve una sola vez.
+  let allSubjects: { kind: string; id: string }[] | null = null;
+
+  const insertForSubject = async (fnId: number, idx: number, t: any, kind: string, id: string) => {
+    const days = Math.max(1, Number(t.daysCount) || 1);
+    const weekdays: number[] = Array.isArray(t.weekdays) ? t.weekdays.map(Number) : [];
+    await pool.query(
+      `INSERT INTO gcc_world.cv_generated_tasks
+         (function_id, policy_id, program_idx, subject_kind, subject_id, title, detail,
+          value_tags, talent_tags, all_day, start_time, end_time, day, status)
+       SELECT $1, $2, $3, $4, $5, $6, $7, $8::text[], $9::text[], $10, $11, $12, d::date, 'pending'
+         FROM generate_series($13::date, $13::date + ($14 - 1) * INTERVAL '1 day', INTERVAL '1 day') AS d
+        WHERE ($15::int[] = '{}'::int[] OR EXTRACT(DOW FROM d)::int = ANY($15::int[]))
+       ON CONFLICT (function_id, subject_kind, subject_id, program_idx, day) DO NOTHING`,
+      [
+        fnId, policyId, idx, kind, id,
+        String(t.title), String(t.detail || ''),
+        Array.isArray(t.valores) ? t.valores.map(String) : [],
+        Array.isArray(t.talentos) ? t.talentos.map(String) : [],
+        !!t.allDay, t.allDay ? null : String(t.startTime || ''), t.allDay ? null : String(t.endTime || ''),
+        startDay, days, weekdays,
+      ],
+    );
+  };
+
   for (const fn of fns) {
     const tasks: any[] = Array.isArray(fn.config?.tasks) ? fn.config.tasks : [];
     for (let idx = 0; idx < tasks.length; idx++) {
       const t = tasks[idx];
-      if (!t?.userKind || !t?.userId || !t?.title) continue;
-      const days = Math.max(1, Number(t.daysCount) || 1);
-      const weekdays: number[] = Array.isArray(t.weekdays) ? t.weekdays.map(Number) : [];
-      await pool.query(
-        `INSERT INTO gcc_world.cv_generated_tasks
-           (function_id, policy_id, program_idx, subject_kind, subject_id, title, detail,
-            value_tags, talent_tags, all_day, start_time, end_time, day, status)
-         SELECT $1, $2, $3, $4, $5, $6, $7, $8::text[], $9::text[], $10, $11, $12, d::date, 'pending'
-           FROM generate_series($13::date, $13::date + ($14 - 1) * INTERVAL '1 day', INTERVAL '1 day') AS d
-          WHERE ($15::int[] = '{}'::int[] OR EXTRACT(DOW FROM d)::int = ANY($15::int[]))
-         ON CONFLICT (function_id, subject_kind, subject_id, program_idx, day) DO NOTHING`,
-        [
-          Number(fn.id), policyId, idx, String(t.userKind), String(t.userId),
-          String(t.title), String(t.detail || ''),
-          Array.isArray(t.valores) ? t.valores.map(String) : [],
-          Array.isArray(t.talentos) ? t.talentos.map(String) : [],
-          !!t.allDay, t.allDay ? null : String(t.startTime || ''), t.allDay ? null : String(t.endTime || ''),
-          startDay, days, weekdays,
-        ],
-      );
+      if (!t?.title) continue;
+      if (t.scope === 'all') {
+        if (!allSubjects) allSubjects = await getAllTaskSubjects();
+        for (const s of allSubjects) await insertForSubject(Number(fn.id), idx, t, s.kind, s.id);
+      } else {
+        if (!t.userKind || !t.userId) continue;
+        await insertForSubject(Number(fn.id), idx, t, String(t.userKind), String(t.userId));
+      }
     }
   }
+}
+
+/**
+ * Sujetos que cuentan como "todos los usuarios" para las tareas de alcance 'all':
+ * miembros ACTIVOS (subject_id = members.id) + candidatos APROBADOS con perfil completo
+ * (subject_id = clients.id). Coincide con quién aparece en `UsersList`
+ * (/api/admin/team activos + /api/admin/candidates).
+ */
+async function getAllTaskSubjects(): Promise<{ kind: string; id: string }[]> {
+  const { rows } = await pool.query(
+    `SELECT 'member' AS kind, id::text AS id FROM gcc_world.members WHERE is_active = true
+     UNION ALL
+     SELECT 'candidate' AS kind, id::text AS id FROM gcc_world.clients
+       WHERE account_type = 'candidate' AND approved = true AND profile_completed = true`,
+  );
+  return rows.map((r: any) => ({ kind: String(r.kind), id: String(r.id) }));
 }
 
 /** Al desactivar: retira las tareas PENDIENTES (pasadas y futuras); conserva el historial

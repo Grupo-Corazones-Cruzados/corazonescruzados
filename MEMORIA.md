@@ -281,6 +281,11 @@ Stack estándar de la casa, con particularidades de este repo:
     (`daysCount` = ventana/límite desde la activación; `weekdays[]` = días presentes, vacío=todos, actúa como recurrencia; `allDay`;
     con `startTime`/`endTime` si no es todo el día). **Sin** campo de recurrencia (lo cubren daysCount+weekdays). `GenerateTasksModal`
     (FloatingWindow) = UsersList + form (título, detalle, etiquetas valores/talentos via MultiSelectSearch, presencia).
+    - **ALCANCE (2026-07-08):** `TaskProgram.scope` = `'user'` (usuario específico de UsersList) | `'all'` (**todos los usuarios**).
+      El modal tiene un segmentado "Todos los usuarios / Usuario específico"; en 'all' se atenúa UsersList (userId=''`, userName=
+      "Todos los usuarios"). Al materializar, 'all' se expande a **todos los sujetos** (`getAllTaskSubjects()`: miembros
+      `is_active` + candidatos `approved`+`profile_completed`, = quienes salen en UsersList) → una fila por sujeto/día. Se resuelve
+      en la **activación**: usuarios creados después NO reciben la tarea salvo re-activar.
   - **Grafo** `PolicyGraph.tsx` (react-force-graph como Apoyo, formas NO usadas allí): **política=ESTRELLA**, **función=PENTÁGONO**,
     **policy_terms=DOCUMENTO** (ámbar). `shapeOf/colorOf` por tipo (`FUNCTION_TYPE_META`); política inactiva en gris. **Política
     ACTIVA (2026-07-08):** aura + **anillo esmeralda con resplandor** (reemplaza el punto verde). Prop `filter` +

@@ -86,9 +86,13 @@ export interface BlockModulesConfig { modules: string[] } // paths de BLOCKABLE_
  * La generación real se aplica en la iteración de enforcement.
  */
 export interface TaskProgram {
-  userKind: 'candidate' | 'member';
-  userId: string;
-  userName: string;
+  /** Alcance: 'all' = la tarea se genera para TODOS los usuarios (miembros activos +
+   *  candidatos aprobados) al activar la política; 'user'/undefined = para el usuario
+   *  específico indicado por userKind/userId. */
+  scope?: 'user' | 'all';
+  userKind: 'candidate' | 'member';  // solo aplica cuando scope = 'user'
+  userId: string;                    // "" cuando scope = 'all'
+  userName: string;                  // "Todos los usuarios" cuando scope = 'all'
   title: string;
   detail: string;
   valores: string[];   // etiquetas de valores (keys de VALORES)
