@@ -1,16 +1,31 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
+    // `?mine=1` → solo los clientes ASOCIADOS a mi sesión (para "Nuevo ticket"): mi propia
+    // cuenta cliente + los clientes que ya he usado en tickets que yo creé. (La asociación
+    // completa desde el módulo Clientes se integrará después.)
+    const mine = req.nextUrl.searchParams.get('mine') === '1';
+    if (mine) {
+      const { rows } = await pool.query(
+        `SELECT DISTINCT c.id, c.name, c.email
+           FROM gcc_world.clients c
+          WHERE c.user_id = $1
+             OR c.id IN (SELECT client_id FROM gcc_world.tickets WHERE user_id = $1 AND client_id IS NOT NULL)
+          ORDER BY c.name`,
+        [user.userId],
+      );
+      return NextResponse.json({ data: rows });
+    }
+
     const { rows } = await pool.query(
       `SELECT id, name, email FROM gcc_world.clients ORDER BY name`
     );
-
     return NextResponse.json({ data: rows });
   } catch (err: any) {
     console.error('Clients list error:', err.message);

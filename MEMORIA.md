@@ -267,6 +267,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Tickets: Nuevo vs Solicitar (Fase 1, 2026-07-09):** dos botones en `/dashboard/tickets`. **"Nuevo ticket"** (solo
+  `accessRoleOf != 'client'`: candidato/miembro/admin) = **YO soy el miembro asignado** (auto = `user.member_id` de la
+  sesión) y elijo **cliente asociado a mí** (`/api/clients?mine=1` = clientes con mi `user_id` o usados en mis tickets) o
+  invito por email / sin cliente. **"Solicitar ticket"** (TODOS) = **YO soy el cliente** (`ensureUserClientAccount` en
+  `lib/tickets/clientAccount.ts` crea/reusa mi fila `gcc_world.clients` account_type='client' por `user_id`/email) y elijo
+  **un miembro** o **"abierto a propuestas"** (`tickets.open_for_proposals` bool nuevo → sin miembro). POST `/api/tickets`
+  recibe `mode` ('create'|'request') + `open_for_proposals`; en request resuelve el cliente él mismo y permite sin miembro.
+  **Modelo de cliente unificado en `gcc_world.clients`** (decisión del usuario; billing_clients = detalle SRI). Verificado
+  tsc+build + insert/ensure probados en Postgres. **PENDIENTE (Fase 2):** asociación cliente↔usuario completa desde el
+  módulo Clientes (dedup por RUC, M2M, `billing_clients` enlazado a cada cuenta cliente); miembro↔cliente al solicitar;
+  **invitación por correo** al cliente inexistente + asociar sus registros al crear cuenta; reuso de datos de facturación
+  al completar/facturar; buscador (no select) de candidatos+miembros en "abierto a propuestas".
 - **Facturas por usuario + etiqueta de rol (2026-07-09):** en **Facturas** (`/dashboard/invoices`), staff
   (member/admin) ve TODAS; **candidato/cliente solo ve las SUYAS**: `GET /api/invoices` (y el detalle `[id]`)
   filtran por pertenencia — `i.client_id = <clients.id del usuario>` (suscripción/factura directa) **OR**

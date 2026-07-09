@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
@@ -92,14 +93,34 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { title, description, service_id, member_id, client_id, client_email, deadline, estimated_hours, estimated_cost, time_slots } = body;
+    // mode: 'create' = YO soy el miembro asignado y elijo cliente; 'request' = YO soy el
+    // cliente (mi cuenta cliente) y elijo un miembro o dejo el ticket abierto a propuestas.
+    const mode: 'create' | 'request' = body.mode === 'request' ? 'request' : 'create';
+    const openForProposals = mode === 'request' && body.open_for_proposals === true;
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'El titulo es requerido' }, { status: 400 });
     }
 
+    // Columna para el modo "abierto a propuestas" (sin miembro asignado; alguien propone).
+    await pool.query(`ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS open_for_proposals BOOLEAN DEFAULT false`);
+
+    // Miembro asignado: en 'request' con "abierto a propuestas" no hay miembro (queda null).
+    const resolvedMemberId = openForProposals ? null : (member_id || null);
+
     // Resolve client: by ID, by email (find or create), or auto for client role
     let resolvedClientId = client_id || null;
     let resolvedClientEmail = client_email?.trim() || null;
+
+    // En modo SOLICITAR, el cliente es la cuenta de tipo cliente del propio usuario
+    // (candidato/miembro/admin) — se crea si no existe.
+    if (mode === 'request' && !resolvedClientId) {
+      resolvedClientId = await ensureUserClientAccount(user.userId);
+      if (resolvedClientId) {
+        const { rows: [c] } = await pool.query(`SELECT email FROM gcc_world.clients WHERE id = $1`, [resolvedClientId]);
+        resolvedClientEmail = c?.email || resolvedClientEmail;
+      }
+    }
 
     if (!resolvedClientId && resolvedClientEmail) {
       // Find existing client by email or create a new one
@@ -130,19 +151,20 @@ export async function POST(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.tickets (title, description, service_id, member_id, client_id, deadline, estimated_hours, estimated_cost, status, user_id, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, NOW(), NOW())
+      `INSERT INTO gcc_world.tickets (title, description, service_id, member_id, client_id, deadline, estimated_hours, estimated_cost, status, user_id, open_for_proposals, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, NOW(), NOW())
        RETURNING *`,
       [
         title.trim(),
         description?.trim() || null,
         service_id || null,
-        member_id || null,
+        resolvedMemberId,
         resolvedClientId,
         deadline || null,
         estimated_hours || null,
         estimated_cost || null,
         user.userId,
+        openForProposals,
       ]
     );
 

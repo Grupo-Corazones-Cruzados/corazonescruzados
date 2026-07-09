@@ -12,6 +12,7 @@ import PixelSelect from '@/components/ui/PixelSelect';
 import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
+import { accessRoleOf } from '@/lib/dashboard/access';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
   X, ArrowRight, Ticket as TicketIcon,
@@ -49,6 +50,7 @@ const emptyForm = {
   title: '', description: '', service_id: '', member_id: '', client_id: '',
   client_email: '', client_mode: 'select' as 'select' | 'email',
   deadline: '', estimated_hours: '', estimated_cost: '',
+  open_for_proposals: false,
 };
 
 export default function TicketsPage() {
@@ -74,8 +76,10 @@ export default function TicketsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Create ticket state
+  // Create ticket state. `createMode`: 'create' = Nuevo ticket (yo soy el miembro asignado);
+  // 'request' = Solicitar ticket (yo soy el cliente; elijo miembro o lo dejo a propuestas).
   const [modal, setModal] = useState(false);
+  const [createMode, setCreateMode] = useState<'create' | 'request'>('create');
   const [form, setForm] = useState(emptyForm);
   const [selectedDates, setSelectedDates] = useState<SelectedDates>([]);
   const [slotsModal, setSlotsModal] = useState(false);
@@ -101,30 +105,33 @@ export default function TicketsPage() {
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
   useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search]);
 
-  const openCreateModal = async () => {
-    if (user?.role === 'member' && user.member_id) {
-      setForm(prev => ({ ...prev, member_id: String(user.member_id) }));
-    }
+  const openCreateModal = async (mode: 'create' | 'request') => {
+    setCreateMode(mode);
+    setSelectedDates([]);
+    // Nuevo ticket: el miembro asignado es la sesión (candidato/miembro/admin con member_id).
+    const base = { ...emptyForm };
+    if (mode === 'create' && user?.member_id) base.member_id = String(user.member_id);
+    setForm(base);
     setModal(true);
     const [sRes, mRes, cRes] = await Promise.all([
       fetch('/api/services').then(r => r.json()).catch(() => ({ data: [] })),
       fetch('/api/members/list').then(r => r.json()).catch(() => ({ data: [] })),
-      fetch('/api/clients').then(r => r.json()).catch(() => ({ data: [] })),
+      // Nuevo: clientes ASOCIADOS a mi sesión; Solicitar: no usa lista (cliente = mi cuenta).
+      mode === 'create'
+        ? fetch('/api/clients?mine=1').then(r => r.json()).catch(() => ({ data: [] }))
+        : Promise.resolve({ data: [] }),
     ]);
     setServices(sRes.data || []);
     setMembers(mRes.data || []);
-    const clientList = cRes.data || [];
-    setClients(clientList);
-    if (user?.role === 'client' && user.email) {
-      const match = clientList.find((c: any) => c.email === user.email);
-      if (match) setForm(prev => ({ ...prev, client_id: String(match.id) }));
-    }
+    setClients(cRes.data || []);
   };
 
   const handleCreate = async () => {
     if (!form.title.trim()) { toast.error('El título es requerido'); return; }
     if (!form.deadline) { toast.error('La fecha límite es requerida'); return; }
-    if (user?.role === 'member' && selectedDates.length === 0) {
+    // Los días de trabajo solo aplican al CREAR un ticket propio (yo soy el miembro),
+    // no al solicitarlo (yo soy el cliente).
+    if (createMode === 'create' && user?.role === 'member' && selectedDates.length === 0) {
       toast.error('Debes indicar al menos un día de trabajo'); return;
     }
     setCreating(true);
@@ -132,12 +139,17 @@ export default function TicketsPage() {
       const res = await fetch('/api/tickets', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          mode: createMode,
+          open_for_proposals: createMode === 'request' && form.open_for_proposals,
           title: form.title,
           description: form.description || undefined,
           service_id: form.service_id ? Number(form.service_id) : undefined,
+          // En 'request' el miembro sale del buscador (o queda abierto a propuestas);
+          // en 'create' el miembro es la sesión.
           member_id: form.member_id ? Number(form.member_id) : undefined,
-          client_id: form.client_id ? Number(form.client_id) : undefined,
-          client_email: form.client_email?.trim() || undefined,
+          // En 'request' el cliente lo resuelve el backend (mi cuenta cliente).
+          client_id: createMode === 'create' && form.client_id ? Number(form.client_id) : undefined,
+          client_email: createMode === 'create' ? (form.client_email?.trim() || undefined) : undefined,
           deadline: form.deadline || undefined,
           estimated_hours: form.estimated_hours ? Number(form.estimated_hours) : undefined,
           estimated_cost: form.estimated_cost ? Number(form.estimated_cost) : undefined,
@@ -199,11 +211,20 @@ export default function TicketsPage() {
                 style={mf}
               />
             </div>
-            <button onClick={openCreateModal}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+            {/* Solicitar ticket: para TODOS (yo soy el cliente). */}
+            <button onClick={() => openCreateModal('request')}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0"
               style={mf}>
-              <Plus className="w-4 h-4" /> Nuevo ticket
+              <Plus className="w-4 h-4" /> Solicitar ticket
             </button>
+            {/* Nuevo ticket: solo candidato/miembro/admin (yo soy el miembro asignado). */}
+            {accessRoleOf(user) !== 'client' && (
+              <button onClick={() => openCreateModal('create')}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+                style={mf}>
+                <Plus className="w-4 h-4" /> Nuevo ticket
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
@@ -350,7 +371,7 @@ export default function TicketsPage() {
       </div>
 
       {/* Create Ticket Modal */}
-      <PixelModal open={modal} onClose={() => setModal(false)} title="Nuevo ticket" size="lg">
+      <PixelModal open={modal} onClose={() => setModal(false)} title={createMode === 'request' ? 'Solicitar ticket' : 'Nuevo ticket'} size="lg">
         <div className="space-y-3">
           <PixelInput label="Título *" value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -369,34 +390,61 @@ export default function TicketsPage() {
             placeholder="-- Seleccionar servicio --" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <PixelSelect label="Miembro asignado" value={form.member_id}
-              onChange={(e) => setForm({ ...form, member_id: e.target.value })}
-              options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
-              placeholder="-- Sin asignar --" disabled={user?.role === 'member'} />
-            <div>
-              <div className="flex items-center justify-between mb-1">
+            {/* Miembro asignado */}
+            {createMode === 'request' ? (
+              <div>
+                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro (o abierto a propuestas)</label>
+                <PixelSelect value={form.member_id}
+                  onChange={(e) => setForm({ ...form, member_id: e.target.value })}
+                  options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
+                  placeholder="-- Elegir candidato/miembro --" disabled={form.open_for_proposals} />
+                <label className="flex items-center gap-2 mt-1.5 text-[12px] text-digi-text cursor-pointer" style={mf}>
+                  <input type="checkbox" checked={form.open_for_proposals}
+                    onChange={(e) => setForm({ ...form, open_for_proposals: e.target.checked, member_id: e.target.checked ? '' : form.member_id })}
+                    className="accent-accent" />
+                  Dejar abierto a propuestas (que alguien proponga y se asigne)
+                </label>
+              </div>
+            ) : (
+              <PixelSelect label="Miembro asignado" value={form.member_id}
+                onChange={(e) => setForm({ ...form, member_id: e.target.value })}
+                options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
+                placeholder="-- Sin asignar --" disabled />
+            )}
+
+            {/* Cliente */}
+            {createMode === 'request' ? (
+              <div>
                 <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente</label>
-                {user?.role !== 'client' && (
+                <div className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-muted rounded" style={mf}>
+                  Tú — {user?.email || 'tu cuenta cliente'}
+                </div>
+                <p className="text-[10.5px] text-digi-muted/80 mt-1" style={mf}>Se usará (o creará) tu cuenta de tipo cliente para esta solicitud.</p>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente (asociado a ti)</label>
                   <button type="button" onClick={() => setForm(prev => ({
                     ...prev, client_mode: prev.client_mode === 'select' ? 'email' : 'select', client_id: '', client_email: '',
                   }))}
                     className="text-[11px] text-digi-muted hover:text-accent border border-digi-border rounded px-1.5 py-0.5 transition-colors" style={mf}>
-                    {form.client_mode === 'select' ? 'Escribir email' : 'Seleccionar'}
+                    {form.client_mode === 'select' ? 'Invitar por email' : 'Seleccionar'}
                   </button>
+                </div>
+                {form.client_mode === 'select' ? (
+                  <PixelSelect value={form.client_id}
+                    onChange={(e) => setForm({ ...form, client_id: e.target.value })}
+                    options={clients.map((c: any) => ({ value: String(c.id), label: c.name || c.email }))}
+                    placeholder="-- Sin cliente --" />
+                ) : (
+                  <input type="email" value={form.client_email}
+                    onChange={(e) => setForm({ ...form, client_email: e.target.value })}
+                    placeholder="correo@cliente.com"
+                    className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
                 )}
               </div>
-              {form.client_mode === 'select' ? (
-                <PixelSelect value={form.client_id}
-                  onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-                  options={clients.map((c: any) => ({ value: String(c.id), label: c.name || c.email }))}
-                  placeholder="-- Sin cliente --" disabled={user?.role === 'client'} />
-              ) : (
-                <input type="email" value={form.client_email}
-                  onChange={(e) => setForm({ ...form, client_email: e.target.value })}
-                  placeholder="correo@cliente.com"
-                  className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-              )}
-            </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
