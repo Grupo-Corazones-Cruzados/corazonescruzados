@@ -28,11 +28,17 @@ export async function GET() {
         WHERE u.member_id IS NOT NULL`,
     );
 
+    // ¿El usuario es realmente un CANDIDATO? Solo si su ROL no es admin/miembro y tiene fila
+    // `clients` candidate. Un admin/miembro puede tener además una cuenta de candidato de
+    // pruebas; su rol manda y NO debe rebajarse a "Candidato" (subject = su fila members).
+    const isCandidateRow = (r: any) =>
+      r.role !== 'admin' && r.role !== 'member' && r.account_type === 'candidate' && !!r.client_id;
+
     // Sujetos por tipo para calcular criterios en lote.
     const memberIds: string[] = [];
     const candidateIds: string[] = [];
     for (const r of rows) {
-      if (r.account_type === 'candidate' && r.client_id) candidateIds.push(String(r.client_id));
+      if (isCandidateRow(r)) candidateIds.push(String(r.client_id));
       else memberIds.push(String(r.member_id));
     }
     const [memberCrit, candCrit] = await Promise.all([
@@ -48,7 +54,7 @@ export async function GET() {
     };
 
     const data = rows.map((r: any) => {
-      const isCandidate = r.account_type === 'candidate' && r.client_id;
+      const isCandidate = isCandidateRow(r);
       const crit = isCandidate ? candCrit[String(r.client_id)] : memberCrit[String(r.member_id)];
       const roleLabel = isCandidate ? 'Candidato' : r.role === 'admin' ? 'Admin' : 'Miembro';
       return {
