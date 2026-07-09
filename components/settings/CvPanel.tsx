@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
@@ -8,7 +8,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { TALENTOS } from '@/lib/centralized/talentos';
-import { Plus, Trash2, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X } from 'lucide-react';
+import { Plus, Trash2, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -44,7 +44,6 @@ export default function CvPanel() {
   const [talents, setTalents] = useState<TalentEntry[]>([]);
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [saving, setSaving] = useState(false);
-  const [newTalent, setNewTalent] = useState('');
   // Modal para gestionar skills una por una (sin comas).
   const [skillsModal, setSkillsModal] = useState(false);
   const [newSkill, setNewSkill] = useState('');
@@ -94,11 +93,9 @@ export default function CvPanel() {
   };
 
   // ── Talentos ──────────────────────────────────────────────────────────────
-  const addTalent = () => {
-    const key = newTalent.trim();
+  const addTalent = (key: string) => {
     if (!key || talents.some((t) => t.key === key)) return;
     setTalents([...talents, { key, education: [], experience: [] }]);
-    setNewTalent('');
   };
   const removeTalent = (i: number) => setTalents(talents.filter((_, k) => k !== i));
   const updateTalent = (i: number, patch: Partial<TalentEntry>) =>
@@ -136,7 +133,9 @@ export default function CvPanel() {
 
   if (!memberId) return null;
 
-  const availableTalents = TALENTOS.filter((t) => !talents.some((x) => x.key === t));
+  const availableTalents = TALENTOS
+    .filter((t) => !talents.some((x) => x.key === t))
+    .sort((a, b) => a.localeCompare(b, 'es'));
 
   return (
     <div className="space-y-5">
@@ -170,13 +169,8 @@ export default function CvPanel() {
       <div className="pt-4 border-t border-digi-border">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <h4 className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-digi-text" style={mf}><Sparkles className="w-4 h-4 text-accent" /> Talentos</h4>
-          <div className="flex items-center gap-2">
-            <select value={newTalent} onChange={(e) => setNewTalent(e.target.value)}
-              className="field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[12.5px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-              <option value="">— Elegir talento —</option>
-              {availableTalents.map((t) => <option key={t} value={t} className="bg-digi-darker">{t}</option>)}
-            </select>
-            <button onClick={addTalent} disabled={!newTalent} className={`${addBtn} disabled:opacity-40`} style={mf}><Plus className="w-3.5 h-3.5" /> Agregar talento</button>
+          <div className="w-full sm:w-[280px]">
+            <TalentPicker options={availableTalents} onPick={addTalent} />
           </div>
         </div>
         {talents.length === 0 && <p className="text-[12px] text-digi-muted/60" style={mf}>Aún no agregas talentos. Cada talento tiene su educación, experiencia y servicios.</p>}
@@ -250,6 +244,40 @@ export default function CvPanel() {
           )}
         </div>
       </PixelModal>
+    </div>
+  );
+}
+
+/* ── Selector de talento con buscador ───────────────────────────────────────── */
+function TalentPicker({ options, onPick }: { options: string[]; onPick: (t: string) => void }) {
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+  const filtered = options.filter((t) => t.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <div ref={ref} className="relative">
+      <div className="relative">
+        <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <input value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)}
+          placeholder="Buscar y elegir talento…"
+          className="w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+      </div>
+      {open && (
+        <div className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-y-auto rounded-md border-2 border-digi-border bg-digi-card shadow-lg">
+          {filtered.length === 0 ? (
+            <p className="px-3 py-3 text-[12px] text-digi-muted" style={mf}>Sin talentos disponibles.</p>
+          ) : filtered.map((t) => (
+            <button key={t} type="button" onClick={() => { onPick(t); setQ(''); setOpen(false); }}
+              className="w-full text-left px-3 py-1.5 text-[12.5px] text-digi-text hover:bg-black/[0.03] transition-colors" style={mf}>{t}</button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
