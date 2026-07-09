@@ -35,13 +35,16 @@ export default function SettingsPage() {
         <Settings className="w-5 h-5 text-accent" /> Configuración
       </h1>
 
-      <div className="flex flex-col xl:flex-row gap-4 items-stretch">
+      {/* La fila llena el alto disponible del viewport (en desktop); las tarjetas se estiran
+          (`items-stretch`) para aprovechar el espacio. Si el contenido es más alto, la fila
+          crece y la página se desplaza (sin scroll interno). */}
+      <div className="flex flex-col xl:flex-row gap-4 items-stretch xl:min-h-[calc(100dvh-8rem)]">
         <ProfilePanel />
 
         {isMember && (
-          <div className="flex-1 min-w-0 w-full bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
+          <div className="flex-1 min-w-0 w-full flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
             {/* Barra de pestañas horizontal */}
-            <div className="flex items-stretch border-b border-digi-border overflow-x-auto">
+            <div className="flex items-stretch border-b border-digi-border overflow-x-auto shrink-0">
               {TABS.map((t) => {
                 const active = tab === t.key;
                 return (
@@ -53,8 +56,8 @@ export default function SettingsPage() {
               })}
             </div>
 
-            {/* Contenido de la pestaña activa (ancho completo, sin scroll interno) */}
-            <div className="p-4">
+            {/* Contenido de la pestaña activa: llena el alto del panel (ancho completo, sin scroll interno) */}
+            <div className="p-4 flex-1 min-h-0">
               {tab === 'cv' && <CvPanel />}
               {tab === 'availability' && <AvailabilityPanel />}
               {tab === 'portfolio' && <PortfolioPanel />}

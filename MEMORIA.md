@@ -358,6 +358,9 @@ Stack estándar de la casa, con particularidades de este repo:
   **altura natural** (sin scroll interno) y solo lo usa Perfil. Los paneles de miembro solo aparecen si `user.member_id`.
   Subpáginas `/settings/{cv,availability,portfolio}` **redirigen** a `/dashboard/settings`. (SUPERSEDE el intento previo de carril
   horizontal deslizable de 4 columnas del mismo día.) Verificado tsc + `next build` OK.
+  - **Ocupar alto disponible (2026-07-09):** la fila usa `items-stretch` + `xl:min-h-[calc(100dvh-8rem)]` para **llenar el
+    viewport en desktop**; la tarjeta de pestañas es `flex flex-col` con la barra `shrink-0` y el contenido `flex-1 min-h-0`.
+    Ambas tarjetas se estiran (sin scroll interno; si el contenido supera el alto, la fila crece y la página se desplaza).
 - **Botones de estado de tarea reusables (2026-07-08):** el control Completada/Fallida/Pendiente se extrajo de
   `HorarioDeVidaSystem.tsx` a **`components/centralized/TaskStatusButtons.tsx`** (grid de 3, definición única). Se añadió al rail de
   tareas de **Mi día** (cada tarjeta lo tiene): manual → `PATCH /api/centralized/horario/schedule {id,status}`; automática →
