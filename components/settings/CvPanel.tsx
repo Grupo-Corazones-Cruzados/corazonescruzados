@@ -10,7 +10,7 @@ import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { money } from '@/lib/format';
 import { TALENTOS } from '@/lib/centralized/talentos';
-import { Plus, Trash2, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search } from 'lucide-react';
+import { Plus, Trash2, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search, Loader2, Check } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -62,6 +62,8 @@ export default function CvPanel() {
   const [eduForm, setEduForm] = useState<{ idx: number | null; draft: EduEntry } | null>(null);
   const [expForm, setExpForm] = useState<{ idx: number | null; draft: ExpEntry } | null>(null);
   const [svcForm, setSvcForm] = useState<{ id: number | null; draft: ServiceDraft } | null>(null);
+  // Bloquea el cierre del modal activo mientras un formulario está guardando.
+  const [modalBusy, setModalBusy] = useState(false);
 
   useEffect(() => {
     if (!memberId) return;
@@ -131,7 +133,7 @@ export default function CvPanel() {
     const list = [...(talents[activeIdx]?.education || [])];
     if (eduForm.idx === null) list.push(eduForm.draft); else list[eduForm.idx] = eduForm.draft;
     updateTalent(activeIdx, { education: list });
-    setEduForm(null);
+    // El cierre del modal lo gestiona FormShell tras mostrar la confirmación.
   };
   const removeEdu = (activeIdx: number, i: number) =>
     updateTalent(activeIdx, { education: (talents[activeIdx]?.education || []).filter((_, k) => k !== i) });
@@ -140,7 +142,7 @@ export default function CvPanel() {
     const list = [...(talents[activeIdx]?.experience || [])];
     if (expForm.idx === null) list.push(expForm.draft); else list[expForm.idx] = expForm.draft;
     updateTalent(activeIdx, { experience: list });
-    setExpForm(null);
+    // El cierre del modal lo gestiona FormShell tras mostrar la confirmación.
   };
   const removeExp = (activeIdx: number, i: number) =>
     updateTalent(activeIdx, { experience: (talents[activeIdx]?.experience || []).filter((_, k) => k !== i) });
@@ -174,8 +176,11 @@ export default function CvPanel() {
         if (!res.ok) throw new Error(d.error);
         setServices((s) => s.map((x) => (x.id === id ? d.data : x)));
       }
-      setSvcForm(null);
-    } catch (e: any) { toast.error(e.message || 'No se pudo guardar el servicio'); }
+      // El cierre del modal lo gestiona FormShell tras mostrar la confirmación.
+    } catch (e: any) {
+      toast.error(e.message || 'No se pudo guardar el servicio');
+      throw e; // relanza para que FormShell mantenga el modal abierto y permita reintentar
+    }
   };
   const removeService = async (id: number) => {
     setServices((s) => s.filter((x) => x.id !== id));
@@ -340,9 +345,9 @@ export default function CvPanel() {
       </PixelModal>
 
       {/* Formulario de Educación (panel modal). */}
-      <PixelModal open={!!eduForm} onClose={() => setEduForm(null)} title={eduForm?.idx === null ? 'Agregar educación' : 'Editar educación'}>
+      <PixelModal open={!!eduForm} onClose={() => setEduForm(null)} busy={modalBusy} title={eduForm?.idx === null ? 'Agregar educación' : 'Editar educación'}>
         {eduForm && (
-          <FormShell onSave={() => saveEdu(activeIdx)} onCancel={() => setEduForm(null)}>
+          <FormShell onSave={() => saveEdu(activeIdx)} onClose={() => setEduForm(null)} onBusy={setModalBusy}>
             <PixelInput label="Institución" value={eduForm.draft.institution} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, institution: e.target.value } })} autoFocus />
             <PixelInput label="Título" value={eduForm.draft.degree} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, degree: e.target.value } })} />
             <PixelInput label="Campo" value={eduForm.draft.field} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, field: e.target.value } })} />
@@ -355,9 +360,9 @@ export default function CvPanel() {
       </PixelModal>
 
       {/* Formulario de Experiencia (panel modal). */}
-      <PixelModal open={!!expForm} onClose={() => setExpForm(null)} title={expForm?.idx === null ? 'Agregar experiencia' : 'Editar experiencia'}>
+      <PixelModal open={!!expForm} onClose={() => setExpForm(null)} busy={modalBusy} title={expForm?.idx === null ? 'Agregar experiencia' : 'Editar experiencia'}>
         {expForm && (
-          <FormShell onSave={() => saveExp(activeIdx)} onCancel={() => setExpForm(null)}>
+          <FormShell onSave={() => saveExp(activeIdx)} onClose={() => setExpForm(null)} onBusy={setModalBusy}>
             <PixelInput label="Empresa" value={expForm.draft.company} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, company: e.target.value } })} autoFocus />
             <PixelInput label="Cargo" value={expForm.draft.position} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, position: e.target.value } })} />
             <div className="flex flex-col gap-1.5">
@@ -374,9 +379,9 @@ export default function CvPanel() {
       </PixelModal>
 
       {/* Formulario de Servicio (panel modal). */}
-      <PixelModal open={!!svcForm} onClose={() => setSvcForm(null)} title={svcForm?.id === null ? 'Agregar servicio' : 'Editar servicio'}>
+      <PixelModal open={!!svcForm} onClose={() => setSvcForm(null)} busy={modalBusy} title={svcForm?.id === null ? 'Agregar servicio' : 'Editar servicio'}>
         {svcForm && (
-          <FormShell onSave={() => saveService(talents[activeIdx]?.key || '')} onCancel={() => setSvcForm(null)}>
+          <FormShell onSave={() => saveService(talents[activeIdx]?.key || '')} onClose={() => setSvcForm(null)} onBusy={setModalBusy}>
             <PixelInput label="Nombre" value={svcForm.draft.name} onChange={(e) => setSvcForm({ ...svcForm, draft: { ...svcForm.draft, name: e.target.value } })} placeholder="Ej. Consultoría de marca" autoFocus />
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-medium text-digi-text" style={mf}>Descripción</label>
@@ -435,14 +440,55 @@ function ItemRow({ title, subtitle, meta, badge, onEdit, onRemove }: {
   );
 }
 
-/* ── Contenedor de formulario en modal: campos + pie con Cancelar/Guardar ───── */
-function FormShell({ onSave, onCancel, children }: { onSave: () => void; onCancel: () => void; children: React.ReactNode }) {
+/* ── Contenedor de formulario en modal: campos + pie con Cancelar/Guardar ─────
+ * Gestiona el ciclo de guardado con feedback visible:
+ *   idle → saving (spinner "Guardando…") → done (check "¡Guardado!") → cierra solo.
+ * `onSave` puede ser async y debe LANZAR si falla (así el modal se mantiene abierto
+ * para reintentar). El cierre lo dispara este componente, no `onSave`. */
+function FormShell({ onSave, onClose, onBusy, children }: {
+  onSave: () => void | Promise<unknown>;
+  onClose: () => void;
+  onBusy?: (busy: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const [status, setStatus] = useState<'idle' | 'saving' | 'done'>('idle');
+  const busy = status !== 'idle';
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setStatus('saving');
+    onBusy?.(true);
+    try {
+      await onSave();
+      setStatus('done'); // muestra la confirmación un instante antes de cerrar
+      setTimeout(() => { onBusy?.(false); onClose(); }, 750);
+    } catch {
+      setStatus('idle');  // el error ya se notificó (toast); permite reintentar
+      onBusy?.(false);
+    }
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSave(); }} className="flex flex-col gap-3">
-      {children}
+    <form onSubmit={submit} className="flex flex-col gap-3">
+      {/* fieldset con display:contents deshabilita los campos sin alterar el layout */}
+      <fieldset disabled={busy} className="contents">{children}</fieldset>
       <div className="flex justify-end gap-2 pt-2 mt-1 border-t border-digi-border">
-        <button type="button" onClick={onCancel} className={BTN_SECONDARY}>Cancelar</button>
-        <button type="submit" className={BTN_PRIMARY}><Save className="w-4 h-4" /> Guardar</button>
+        <button type="button" onClick={onClose} disabled={busy} className={BTN_SECONDARY}>Cancelar</button>
+        <button
+          type="submit"
+          disabled={busy}
+          aria-live="polite"
+          className={`${BTN_PRIMARY} min-w-[7.5rem] ${status === 'done' ? '!bg-emerald-600 hover:!bg-emerald-600 !opacity-100' : ''}`}
+        >
+          {status === 'saving' ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Guardando…</>
+          ) : status === 'done' ? (
+            <><Check className="w-4 h-4" /> ¡Guardado!</>
+          ) : (
+            <><Save className="w-4 h-4" /> Guardar</>
+          )}
+        </button>
       </div>
     </form>
   );

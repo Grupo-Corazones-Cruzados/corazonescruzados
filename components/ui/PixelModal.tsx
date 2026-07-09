@@ -7,12 +7,14 @@ interface PixelModalProps {
   onClose: () => void;
   title: string;
   size?: 'sm' | 'md' | 'lg';
+  /** Cuando está ocupado (p. ej. guardando), bloquea el cierre por overlay/Escape/X. */
+  busy?: boolean;
   children: React.ReactNode;
 }
 
 const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl' };
 
-export default function PixelModal({ open, onClose, title, size = 'md', children }: PixelModalProps) {
+export default function PixelModal({ open, onClose, title, size = 'md', busy = false, children }: PixelModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -26,7 +28,8 @@ export default function PixelModal({ open, onClose, title, size = 'md', children
     <dialog
       ref={dialogRef}
       onClose={onClose}
-      onClick={(e) => { if (e.target === dialogRef.current) onClose(); }}
+      onCancel={(e) => { if (busy) e.preventDefault(); }}
+      onClick={(e) => { if (!busy && e.target === dialogRef.current) onClose(); }}
       className="fixed inset-0 z-50 m-0 w-full h-full bg-transparent backdrop:bg-black/60 backdrop:backdrop-blur-sm"
     >
       <div className="modal-overlay flex items-center justify-center min-h-full p-4">
@@ -44,8 +47,9 @@ export default function PixelModal({ open, onClose, title, size = 'md', children
             </h2>
             <button
               onClick={onClose}
+              disabled={busy}
               aria-label="Cerrar"
-              className="modal-close w-8 h-8 flex items-center justify-center text-digi-muted hover:text-digi-text border-2 border-digi-border hover:border-accent transition-colors"
+              className="modal-close w-8 h-8 flex items-center justify-center text-digi-muted hover:text-digi-text border-2 border-digi-border hover:border-accent transition-colors disabled:opacity-40 disabled:pointer-events-none"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               X
