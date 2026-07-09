@@ -42,6 +42,7 @@ export default function CvPanel() {
   const [education, setEducation] = useState<EduEntry[]>([]);
   const [experience, setExperience] = useState<ExpEntry[]>([]);
   const [talents, setTalents] = useState<TalentEntry[]>([]);
+  const [activeTalent, setActiveTalent] = useState(0); // índice de la pestaña de talento activa
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [saving, setSaving] = useState(false);
   // Modal para gestionar skills una por una (sin comas).
@@ -96,8 +97,12 @@ export default function CvPanel() {
   const addTalent = (key: string) => {
     if (!key || talents.some((t) => t.key === key)) return;
     setTalents([...talents, { key, education: [], experience: [] }]);
+    setActiveTalent(talents.length); // abre la pestaña del talento recién agregado
   };
-  const removeTalent = (i: number) => setTalents(talents.filter((_, k) => k !== i));
+  const removeTalent = (i: number) => {
+    setTalents(talents.filter((_, k) => k !== i));
+    setActiveTalent((cur) => (i <= cur ? Math.max(0, cur - 1) : cur));
+  };
   const updateTalent = (i: number, patch: Partial<TalentEntry>) =>
     setTalents(talents.map((t, k) => (k === i ? { ...t, ...patch } : t)));
 
@@ -173,28 +178,46 @@ export default function CvPanel() {
             <TalentPicker options={availableTalents} onPick={addTalent} />
           </div>
         </div>
-        {talents.length === 0 && <p className="text-[12px] text-digi-muted/60" style={mf}>Aún no agregas talentos. Cada talento tiene su educación, experiencia y servicios.</p>}
-        <div className="space-y-4">
-          {talents.map((t, i) => (
-            <div key={t.key} className="rounded-xl border border-digi-border bg-digi-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent" style={mf}><Sparkles className="w-3.5 h-3.5" /> {t.key}</span>
-                <button onClick={() => removeTalent(i)} className="text-digi-muted hover:text-red-600 inline-flex items-center gap-1 text-[11.5px]" style={mf}><Trash2 className="w-3.5 h-3.5" /> Quitar talento</button>
+        {talents.length === 0 ? (
+          <p className="text-[12px] text-digi-muted/60" style={mf}>Aún no agregas talentos. Cada talento tiene su educación, experiencia y servicios.</p>
+        ) : (() => {
+          const activeIdx = Math.min(activeTalent, talents.length - 1);
+          const t = talents[activeIdx];
+          const talentServices = services.filter((s) => s.talent === t.key);
+          return (
+            <div className="rounded-xl border border-digi-border bg-digi-card overflow-hidden">
+              {/* Pestañas horizontales: una por talento */}
+              <div className="flex items-stretch border-b border-digi-border overflow-x-auto">
+                {talents.map((tt, i) => {
+                  const active = i === activeIdx;
+                  return (
+                    <button key={tt.key} type="button" onClick={() => setActiveTalent(i)}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-[12.5px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${active ? 'border-accent text-accent bg-accent-light/40' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
+                      <Sparkles className="w-3.5 h-3.5" /> {tt.key}
+                    </button>
+                  );
+                })}
               </div>
-              <div className="space-y-4">
-                <SectionEdu title="Educación" items={t.education} onChange={(v) => updateTalent(i, { education: v })} nested />
-                <SectionExp title="Experiencia" items={t.experience} onChange={(v) => updateTalent(i, { experience: v })} nested />
+
+              {/* Contenido del talento seleccionado */}
+              <div className="p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent" style={mf}><Sparkles className="w-3.5 h-3.5" /> {t.key}</span>
+                  <button onClick={() => removeTalent(activeIdx)} className="text-digi-muted hover:text-red-600 inline-flex items-center gap-1 text-[11.5px]" style={mf}><Trash2 className="w-3.5 h-3.5" /> Quitar talento</button>
+                </div>
+                <SectionEdu title="Educación" items={t.education} onChange={(v) => updateTalent(activeIdx, { education: v })} nested />
+                <SectionExp title="Experiencia" items={t.experience} onChange={(v) => updateTalent(activeIdx, { experience: v })} nested />
                 {/* Servicios del talento */}
                 <div className="pt-3 border-t border-digi-border">
                   <div className="flex items-center justify-between mb-2.5">
                     <h5 className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-digi-text" style={mf}><Wrench className="w-3.5 h-3.5 text-accent" /> Servicios</h5>
                     <button onClick={() => addService(t.key)} className={addBtn} style={mf}><Plus className="w-3.5 h-3.5" /> Agregar servicio</button>
                   </div>
-                  {services.filter((s) => s.talent === t.key).length === 0 && (
+                  {talentServices.length === 0 && (
                     <p className="text-[12px] text-digi-muted/60" style={mf}>Sin servicios. Agrega los servicios que ofreces con este talento.</p>
                   )}
                   <div className="space-y-2">
-                    {services.filter((s) => s.talent === t.key).map((s) => (
+                    {talentServices.map((s) => (
                       <div key={s.id} className={`rounded-lg border p-2.5 grid grid-cols-1 sm:grid-cols-[1fr_1.4fr_120px_auto_auto] gap-2 items-end ${s.is_active ? 'border-digi-border bg-digi-darker/40' : 'border-digi-border/60 bg-digi-darker/20 opacity-70'}`}>
                         <PixelInput label="Nombre" value={s.name} onChange={(e) => patchService(s.id, { name: e.target.value })} />
                         <PixelInput label="Descripción" value={s.description || ''} onChange={(e) => patchService(s.id, { description: e.target.value })} />
@@ -209,8 +232,8 @@ export default function CvPanel() {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })()}
       </div>
 
       <div className="flex justify-end">
