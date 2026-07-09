@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const push = (col: string, val: any) => { vals.push(val); sets.push(`${col} = $${vals.length}`); };
     if (typeof b.name === 'string') push('name', b.name.trim());
     if (typeof b.description === 'string') push('description', b.description.trim() || null);
-    if (b.base_price !== undefined) push('base_price', b.base_price != null && b.base_price !== '' ? Number(b.base_price) : null);
+    if (b.base_price !== undefined) push('base_price', b.base_price != null && b.base_price !== '' ? Number(b.base_price) : 0);
     if (typeof b.is_active === 'boolean') push('is_active', b.is_active);
     if (typeof b.talent === 'string') push('talent', b.talent || null);
     if (sets.length === 0) return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 });

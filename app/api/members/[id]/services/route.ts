@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       `INSERT INTO gcc_world.services (name, description, base_price, is_active, member_id, talent, created_at, updated_at)
        VALUES ($1, $2, $3, true, $4, $5, NOW(), NOW())
        RETURNING id, name, description, base_price, is_active, talent`,
-      [name, String(b.description || '').trim() || null, b.base_price != null && b.base_price !== '' ? Number(b.base_price) : null, id, b.talent ? String(b.talent) : null],
+      [name, String(b.description || '').trim() || null, b.base_price != null && b.base_price !== '' ? Number(b.base_price) : 0, id, b.talent ? String(b.talent) : null],
     );
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {
