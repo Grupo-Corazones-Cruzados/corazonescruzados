@@ -285,8 +285,8 @@ export default function PublicCalendarPage() {
 
           <div className="flex flex-wrap gap-4 text-[10px] text-digi-muted pt-3" style={pf}>
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.work, backgroundColor: `${EVENT_COLORS.work}30` }} />
-              LABORAL
+              <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.progreso, backgroundColor: `${EVENT_COLORS.progreso}30` }} />
+              PROGRESO
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.personal, backgroundColor: `${EVENT_COLORS.personal}30` }} />

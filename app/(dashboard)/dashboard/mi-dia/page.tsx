@@ -51,7 +51,7 @@ export default function MiDiaPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [initialDate, setInitialDate] = useState<Date | null>(null);
-  const [initialType, setInitialType] = useState<EventType>('work');
+  const [initialType, setInitialType] = useState<EventType>('progreso');
   const [initialTaskId, setInitialTaskId] = useState<number | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityStatus>('conectado');
@@ -142,11 +142,11 @@ export default function MiDiaPage() {
     return `${currentDate.getDate()} ${m} ${y}`;
   }, [view, currentDate]);
 
-  const handleDayClick = (date: Date) => { setEditingEvent(null); setInitialDate(date); setInitialType('work'); setInitialTaskId(null); setCurrentDate(new Date(date)); setModalOpen(true); };
+  const handleDayClick = (date: Date) => { setEditingEvent(null); setInitialDate(date); setInitialType('progreso'); setInitialTaskId(null); setCurrentDate(new Date(date)); setModalOpen(true); };
   const openNew = (type: EventType) => { setEditingEvent(null); setInitialDate(new Date()); setInitialType(type); setInitialTaskId(null); setModalOpen(true); };
   const openTaskEvent = (alternativeId: number, dayStr: string) => {
     const base = new Date(`${dayStr}T09:00:00`);
-    setEditingEvent(null); setInitialDate(base); setInitialType('work'); setInitialTaskId(alternativeId); setModalOpen(true);
+    setEditingEvent(null); setInitialDate(base); setInitialType('progreso'); setInitialTaskId(alternativeId); setModalOpen(true);
   };
   const handleEventClick = (inst: EventInstance) => { const full = events.find((e) => e.id === inst.id) || null; setEditingEvent(full); setInitialDate(null); setInitialTaskId(null); setModalOpen(true); };
 
@@ -217,7 +217,7 @@ export default function MiDiaPage() {
         <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
           <CalendarDays className="w-4 h-4 text-digi-muted" />
           <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Eventos · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : 'Mes'}</span>
-          <button onClick={() => openNew('work')} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent text-white text-[11.5px] font-medium hover:bg-accent-hover transition-colors" style={mf}><Plus className="w-3 h-3" /> Nuevo</button>
+          <button onClick={() => openNew('progreso')} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent text-white text-[11.5px] font-medium hover:bg-accent-hover transition-colors" style={mf}><Plus className="w-3 h-3" /> Nuevo</button>
         </div>
         <div className="p-2.5 space-y-3 max-h-[calc(100dvh-220px)] overflow-y-auto">
           {instances.length === 0 ? (
@@ -298,7 +298,7 @@ export default function MiDiaPage() {
 
           {/* Leyenda */}
           <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted" style={mf}>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.work}30`, borderLeft: `3px solid ${EVENT_COLORS.work}` }} /> Laboral</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.progreso}30`, borderLeft: `3px solid ${EVENT_COLORS.progreso}` }} /> Progreso</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.personal}30`, borderLeft: `3px solid ${EVENT_COLORS.personal}` }} /> Personal</span>
             <span className="ml-auto tabular-nums">Zona horaria: América/Guayaquil (GMT-5)</span>
           </div>

@@ -36,7 +36,7 @@ export function findOverlappingInstances(
     id: '__candidate__',
     title: '',
     description: null,
-    event_type: 'work',
+    event_type: 'progreso',
     client_id: null,
     client_name: null,
     start_at: candidate.start_at,

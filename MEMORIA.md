@@ -334,9 +334,18 @@ Stack estándar de la casa, con particularidades de este repo:
   un **rail de tareas** muestra las tareas planificadas del **día enfocado** (`currentDate`) según el Horario de Vida
   (`GET /api/centralized/horario/me?from&to` resuelve el sujeto del logueado: member vía `users.member_id`, candidato vía
   `clients`); cada tarea tiene **"Registrar tiempo"** que abre el EventModal con la tarea preseleccionada. Los eventos pueden
-  **enlazar una tarea** (`member_calendar_events.alternative_id`, col nueva) para **justificar el tiempo** (evento = inicio→fin);
-  el EventModal añade un select "Tarea del horario (justifica el tiempo)". **Pendiente/idea a refinar con el usuario:** mostrar
-  los chips de tarea DENTRO de cada celda del grid (hoy están en el rail lateral).
+  **enlazar una tarea** (`member_calendar_events.alternative_id`, col nueva) para **justificar el tiempo** (evento = inicio→fin).
+  - **Campo "Tarea del horario" (2026-07-08, corregido):** ya NO es un select editable. Solo se muestra **de solo lectura**
+    (título de la alternativa, no cambiable) cuando el EventModal se abre desde **"Registrar tiempo"** (`initialTaskId != null` y
+    evento nuevo). En formularios nuevos normales y en **edición NO aparece** (el `alternative_id` existente se conserva y se guarda
+    igual). Condición de render: `!event && initialTaskId != null && form.alternative_id != null`.
+  - **Pendiente/idea a refinar con el usuario:** mostrar los chips de tarea DENTRO de cada celda del grid (hoy están en el rail lateral).
+- **Tipos de evento del calendario (2026-07-08):** `EventType` = **`'progreso'`** | `'personal'` (antes `'work'`|`'personal'`;
+  se renombró **Laboral → Progreso**). Fuente única en `lib/calendar/recurrence.ts` (`EVENT_COLORS` progreso=morado `#7B5FBF`,
+  personal=verde; `EVENT_TYPE_LABELS_ES` 'Progreso'/'Personal'). El tipo `'progreso'` es el que muestra el campo **Cliente** y suma
+  a las "horas" del día en `CalendarView`. **Migración BD hecha:** `member_calendar_events` — CHECK `..._type_chk` ahora
+  `('progreso','personal','task')`, default `'progreso'`, y 13 filas `work`→`progreso`. Rutas que insertaban `'work'`
+  (propose público) ahora insertan `'progreso'`. Verificado `tsc`+`build`+migración en Postgres.
 - **Integración Apoyo ↔ Reclutamiento ↔ Horario de Vida (2026-07-07):**
   - **Listas canónicas (fuente única):** `lib/centralized/valores.ts` (`VALORES`, los 9 valores de la org; `reclutamiento.ts`
     re-exporta `VALUE_ITEMS = VALORES` para no romper imports) y `lib/centralized/talentos.ts` (`TALENTOS`, 500+ talentos

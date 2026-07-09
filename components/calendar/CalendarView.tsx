@@ -91,7 +91,7 @@ function dayTotals(instances: EventInstance[], day: Date): { work: number; perso
     const e = Math.min(ev.instanceEnd.getTime(), de);
     if (e <= s) continue;
     const minutes = (e - s) / 60000;
-    if (ev.event_type === 'work') work += minutes;
+    if (ev.event_type === 'progreso') work += minutes;
     else personal += minutes;
   }
   return { work: Math.round(work), personal: Math.round(personal) };
@@ -111,8 +111,8 @@ function DayTotals({ totals }: { totals: { work: number; personal: number } }) {
   return (
     <div className="flex items-center gap-1.5 text-[8px] leading-none" style={pf}>
       {totals.work > 0 && (
-        <span className="flex items-center gap-0.5" style={{ color: EVENT_COLORS.work }}>
-          <span className="w-1.5 h-1.5" style={{ backgroundColor: EVENT_COLORS.work }} />
+        <span className="flex items-center gap-0.5" style={{ color: EVENT_COLORS.progreso }}>
+          <span className="w-1.5 h-1.5" style={{ backgroundColor: EVENT_COLORS.progreso }} />
           {fmtDur(totals.work)}
         </span>
       )}

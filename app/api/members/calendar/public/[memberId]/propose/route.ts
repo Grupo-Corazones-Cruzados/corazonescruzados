@@ -84,7 +84,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
          recurrence_type, recurrence_days, recurrence_interval, recurrence_until,
          color, status, created_by
        ) VALUES (
-         $1, $2, $3, 'work', NULL,
+         $1, $2, $3, 'progreso', NULL,
          $4, $5, FALSE, $6,
          $7, $8, $9, $10,
          NULL, 'proposed', $11

@@ -1,4 +1,4 @@
-export type EventType = 'work' | 'personal';
+export type EventType = 'progreso' | 'personal';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
 export type EventStatus = 'confirmed' | 'proposed' | 'cancelled';
 
@@ -124,13 +124,13 @@ function startOfWeek(d: Date): Date {
 }
 
 export const EVENT_COLORS: Record<EventType, string> = {
-  work: '#7B5FBF',
+  progreso: '#7B5FBF',
   personal: '#22c55e',
 };
 
 export const EVENT_TYPE_LABELS_ES: Record<EventType, string> = {
-  work: 'LABORAL',
-  personal: 'PERSONAL',
+  progreso: 'Progreso',
+  personal: 'Personal',
 };
 
 export function colorForEvent(ev: CalendarEvent): string {

@@ -64,9 +64,9 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
 
     if (typeof b.title === 'string') push('title', b.title);
     if ('description' in b) push('description', b.description);
-    if (b.event_type && ['work', 'personal'].includes(b.event_type)) {
+    if (b.event_type && ['progreso', 'personal'].includes(b.event_type)) {
       push('event_type', b.event_type);
-      push('client_id', b.event_type === 'work' ? (b.client_id || null) : null);
+      push('client_id', b.event_type === 'progreso' ? (b.client_id || null) : null);
     } else if ('client_id' in b) {
       push('client_id', b.client_id);
     }

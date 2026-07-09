@@ -37,7 +37,7 @@ export default function EventDetailsModal({ open, onClose, event, hideClientName
           <div className="flex-1">
             <div className="text-[15px] font-semibold text-digi-text mb-1" style={pf}>{event.title}</div>
             <div className="flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
-              {event.event_type === 'work' ? 'Laboral' : 'Personal'}
+              {event.event_type === 'progreso' ? 'Progreso' : 'Personal'}
               {event.isRecurring && (
                 <>
                   <span>·</span>
@@ -57,7 +57,7 @@ export default function EventDetailsModal({ open, onClose, event, hideClientName
             <span className="text-digi-muted">Fin</span>
             <span className="text-digi-text">{fmtDateTime(event.instanceEnd)}</span>
           </div>
-          {event.event_type === 'work' && event.client_name && !hideClientName && (
+          {event.event_type === 'progreso' && event.client_name && !hideClientName && (
             <div className="flex justify-between gap-3">
               <span className="text-digi-muted">Cliente</span>
               <span className="text-digi-text">{event.client_name}</span>

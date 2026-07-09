@@ -77,7 +77,7 @@ function toLocalDate(iso: string | Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function defaultPayload(base: Date | null, type: EventType = 'work'): EventFormPayload {
+function defaultPayload(base: Date | null, type: EventType = 'progreso'): EventFormPayload {
   const start = base ? new Date(base) : new Date();
   start.setMinutes(0, 0, 0);
   if (!base) start.setHours(start.getHours() + 1);
@@ -151,7 +151,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
     setForm((f) => ({
       ...f,
       event_type: t,
-      client_id: t === 'work' ? f.client_id : null,
+      client_id: t === 'progreso' ? f.client_id : null,
     }));
   };
 
@@ -298,7 +298,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         <div>
           <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>Tipo</div>
           <div className="flex gap-2">
-            {(['work', 'personal'] as const).map((t) => (
+            {(['progreso', 'personal'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
@@ -316,7 +316,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
           </div>
         </div>
 
-        {form.event_type === 'work' && (
+        {form.event_type === 'progreso' && (
           <PixelSelect
             label="CLIENTE (OPCIONAL)"
             value={form.client_id || ''}
@@ -326,21 +326,17 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
           />
         )}
 
-        {tasks.length > 0 && (
-          <PixelSelect
-            label="TAREA DEL HORARIO (JUSTIFICA EL TIEMPO)"
-            value={form.alternative_id != null ? String(form.alternative_id) : ''}
-            onChange={(e) => {
-              const id = e.target.value ? Number(e.target.value) : null;
-              update('alternative_id', id);
-              if (id != null && !form.title.trim()) {
-                const tk = tasks.find((t) => t.id === id);
-                if (tk) update('title', tk.title);
-              }
-            }}
-            placeholder="Sin tarea (evento libre)"
-            options={tasks.map((t) => ({ value: String(t.id), label: t.title }))}
-          />
+        {/* Tarea del horario: SOLO se muestra (de solo lectura) al abrir el modal desde
+            "Registrar tiempo" del panel de tareas. No se puede elegir ni cambiar en
+            formularios nuevos/edición. El vínculo (alternative_id) ya viene en el form. */}
+        {!event && initialTaskId != null && form.alternative_id != null && (
+          <div>
+            <label className="text-[12px] font-medium text-digi-muted" style={mf}>TAREA DEL HORARIO (JUSTIFICA EL TIEMPO)</label>
+            <div className="w-full px-2.5 py-1.5 mt-1 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text opacity-80 cursor-not-allowed select-none" style={mf}>
+              {tasks.find((t) => t.id === form.alternative_id)?.title || 'Tarea seleccionada'}
+            </div>
+            <p className="text-[11px] text-digi-muted mt-1" style={mf}>Vinculada desde el panel de tareas; no se puede cambiar.</p>
+          </div>
         )}
 
         <div>

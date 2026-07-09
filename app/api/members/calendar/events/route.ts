@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
        ) RETURNING id`,
       [
         memberId, title, description, event_type,
-        event_type === 'work' ? client_id : null,
+        event_type === 'progreso' ? client_id : null,
         start_at, end_at, all_day, timezone,
         recurrence_type,
         recurrence_type === 'weekly' ? recurrence_days : null,
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
 function validateEventPayload(b: any): string | null {
   if (!b || typeof b !== 'object') return 'Payload inválido';
   if (!b.title || typeof b.title !== 'string' || !b.title.trim()) return 'Título requerido';
-  if (!['work', 'personal'].includes(b.event_type)) return 'Tipo inválido';
+  if (!['progreso', 'personal'].includes(b.event_type)) return 'Tipo inválido';
   if (!b.start_at || !b.end_at) return 'Fechas de inicio y fin requeridas';
   if (new Date(b.end_at).getTime() < new Date(b.start_at).getTime()) {
     return 'La fecha fin no puede ser anterior al inicio';

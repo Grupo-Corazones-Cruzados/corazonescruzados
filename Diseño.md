@@ -448,6 +448,12 @@ inactiva en gris. Regla: cada sistema con grafo elige formas distintas para no c
   de evento legibles (`digi-text` sobre tinte del color), línea de "ahora" roja; modales (`EventModal`,
   `EventDetailsModal`, `ShareDialog`, `ProposalModal`) y `ProposalsPanel` con `field-control`, `BTN_*` e
   iconos lucide (sin emojis). Solo presentación; la lógica quedó intacta.
+- **2026-07-08 — Tipos de evento y campo "Tarea del horario" (EventModal):** los dos tipos de evento son
+  **Progreso** (morado `#7B5FBF`, muestra Cliente) y **Personal** (verde) — fuente única `EVENT_TYPE_LABELS_ES`/
+  `EVENT_COLORS` en `lib/calendar/recurrence.ts` (usar SIEMPRE estas constantes para color/etiqueta, no hardcodear
+  "Laboral"/hex). El campo **"Tarea del horario"** dejó de ser un `PixelSelect` editable: solo aparece **de solo
+  lectura** (caja `bg-digi-darker` `opacity-80 cursor-not-allowed`) cuando el modal se abre desde **"Registrar
+  tiempo"** del rail de tareas; en alta normal y en edición no se muestra.
 - **Estado del dashboard:** **estandarización de diseño COMPLETA** en todos los módulos
   (Inicio/Tickets/Proyectos/Suscripciones/Clientes/Facturas/Marketplace/Centralizado/Automatizaciones/
   Herramientas/Configuración/Soporte/Admin + editores DigiMundo). Con **modo oscuro** y **es-ES**.
