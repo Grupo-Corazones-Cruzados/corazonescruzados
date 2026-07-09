@@ -158,16 +158,13 @@ export async function sendCandidateProposalVerificationEmail(
   });
 }
 
-export async function sendCandidateApprovalEmail(
-  email: string,
-  tempPassword: string,
-) {
+export async function sendCandidateApprovalEmail(email: string) {
+  const url = `${APP_URL}/`;
   const html = emailShell(
     emailHeading('¡Tu postulación fue aprobada!', 'Bienvenido al Grupo Corazones Cruzados') +
-    emailParagraph(`Felicidades, fuiste aprobado como candidato. Ya puedes ingresar al sitio, elegir ${accentStrong('"Soy candidato"')} e iniciar sesión con tu correo y esta ${accentStrong('contraseña temporal')}:`) +
-    emailCodeBox(escapeHtml(tempPassword), '0.2em', 20) +
-    emailParagraph(`Al ingresar al juego y crear tu personaje, te pediremos completar tus datos y definir tu <strong>contraseña definitiva</strong> (reemplazará esta temporal).`) +
-    emailNote('Por seguridad, no compartas esta contraseña con nadie.'),
+    emailParagraph(`Felicidades, fuiste aprobado como candidato. Para completar tu ingreso, vuelve al sitio, pulsa ${accentStrong('"Entrar"')} y continúa con tu postulación aprobada: ahí ${accentStrong('crearás tu cuenta')} definiendo tu contraseña y tus datos.`) +
+    emailButton(url, 'Ir al sitio y continuar') +
+    emailNote('Hasta que completes tu cuenta, tu postulación queda como una solicitud aprobada; no necesitas ninguna contraseña temporal.'),
   );
   return getResend().emails.send({
     from: FROM_EMAIL,

@@ -1,22 +1,14 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
-import { randomBytes } from 'crypto';
-import { hashPassword } from '@/lib/auth/password';
 import { generateClientToken } from '@/lib/world/session';
 import { sendCandidateApprovalEmail } from '@/lib/integrations/resend';
 
-function tempPassword(): string {
-  // 10 caracteres legibles (sin 0/O/1/l).
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-  const bytes = randomBytes(10);
-  let out = '';
-  for (let i = 0; i < 10; i++) out += chars[bytes[i] % chars.length];
-  return out;
-}
-
-// POST — aprueba una postulación: crea la cuenta de candidato (contraseña
-// temporal) en gcc_world.clients y le envía el correo de aprobación.
+// POST — aprueba una postulación: deja la fila de candidato en gcc_world.clients
+// APROBADA pero SIN contraseña (queda como una solicitud aprobada) y le envía el
+// correo de aprobación. El candidato define su contraseña + datos al continuar su
+// postulación (`complete-profile`); hasta entonces NO puede iniciar sesión (el login
+// exige `password_hash`).
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
@@ -38,8 +30,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     const cleanEmail = String(proposal.email).trim().toLowerCase();
-    const temp = tempPassword();
-    const passwordHash = await hashPassword(temp);
     const clientToken = generateClientToken();
 
     // Columnas de cuenta de candidato (idempotente).
@@ -50,8 +40,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
          ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false`,
     );
 
-    // Crea o actualiza la fila del candidato (sin personaje aún). Queda aprobada,
-    // con correo verificado, contraseña temporal y profile_completed=false.
+    // Crea o actualiza la fila del candidato (sin personaje aún). Queda APROBADA, con
+    // correo verificado, SIN contraseña (password_hash intacto/null) y profile_completed=false.
+    // No se toca `password_hash`: si por algún caso ya tuviera una, se conserva; si es
+    // fila nueva, queda NULL → el candidato no puede iniciar sesión hasta completar su cuenta.
     const existing = await pool.query(
       `SELECT id FROM gcc_world.clients WHERE LOWER(email) = $1 LIMIT 1`,
       [cleanEmail],
@@ -59,19 +51,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (existing.rows.length > 0) {
       await pool.query(
         `UPDATE gcc_world.clients
-            SET password_hash = $1, email_verified = true, approved = true,
+            SET email_verified = true, approved = true,
                 account_type = 'candidate', profile_completed = false,
-                client_token = $2, ip_hash = COALESCE($3, ip_hash)
-          WHERE id = $4`,
-        [passwordHash, clientToken, proposal.ip_hash, existing.rows[0].id],
+                client_token = $1, ip_hash = COALESCE($2, ip_hash)
+          WHERE id = $3`,
+        [clientToken, proposal.ip_hash, existing.rows[0].id],
       );
     } else {
       await pool.query(
         `INSERT INTO gcc_world.clients
-            (name, email, alias, password_hash, email_verified, approved,
+            (name, email, alias, email_verified, approved,
              account_type, profile_completed, client_token, ip_hash, last_seen_at)
-         VALUES ($1, $1, 'Candidato', $2, true, true, 'candidate', false, $3, $4, NOW())`,
-        [cleanEmail, passwordHash, clientToken, proposal.ip_hash],
+         VALUES ($1, $1, 'Candidato', true, true, 'candidate', false, $2, $3, NOW())`,
+        [cleanEmail, clientToken, proposal.ip_hash],
       );
     }
 
@@ -83,9 +75,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       [user.email ?? 'admin', proposal.id],
     );
 
-    // Correo de aprobación con la contraseña temporal.
+    // Correo de aprobación (sin contraseña: el candidato la define al continuar).
     try {
-      await sendCandidateApprovalEmail(cleanEmail, temp);
+      await sendCandidateApprovalEmail(cleanEmail);
     } catch (e) {
       console.error('Approval email failed:', e);
       return NextResponse.json(
