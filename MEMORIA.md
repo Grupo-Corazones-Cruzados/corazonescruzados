@@ -282,7 +282,11 @@ Stack estándar de la casa, con particularidades de este repo:
     con `startTime`/`endTime` si no es todo el día). **Sin** campo de recurrencia (lo cubren daysCount+weekdays). `GenerateTasksModal`
     (FloatingWindow) = UsersList + form (título, detalle, etiquetas valores/talentos via MultiSelectSearch, presencia).
   - **Grafo** `PolicyGraph.tsx` (react-force-graph como Apoyo, formas NO usadas allí): **política=ESTRELLA**, **función=PENTÁGONO**,
-    **policy_terms=DOCUMENTO** (ámbar). `shapeOf/colorOf` por tipo (`FUNCTION_TYPE_META`); política inactiva en gris.
+    **policy_terms=DOCUMENTO** (ámbar). `shapeOf/colorOf` por tipo (`FUNCTION_TYPE_META`); política inactiva en gris. **Política
+    ACTIVA (2026-07-08):** aura + **anillo esmeralda con resplandor** (reemplaza el punto verde). Prop `filter` +
+    `matchesFilter` para resaltar por tipo/estado desde la leyenda. **Leyenda interactiva** (patrón de Apoyo:
+    hover previsualiza / clic fija) en `ComandosVioletaSystem.tsx`: grupo **Tipos** (Políticas/Funciones/Detalle·Términos) +
+    grupo **Estado** (Políticas activas/inactivas).
   - **UI** `ComandosVioletaSystem.tsx`: panel **categorías** (izq; crear + **renombrar inline + eliminar**, acciones SIEMPRE visibles)
     · grafo · **panel flotante** de detalle (crear política pide nombre; política=toggle activar + "+ Función" + lista; función=dropdown
     de acción + config —módulos como **chips**, no dropdown; tareas/detalle abren su modal—; eliminar).

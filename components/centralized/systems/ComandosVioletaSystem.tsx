@@ -7,7 +7,7 @@ import PolicyGraph from '@/components/centralized/comandos/PolicyGraph';
 import GenerateTasksModal from '@/components/centralized/comandos/GenerateTasksModal';
 import PolicyTermsModal from '@/components/centralized/comandos/PolicyTermsModal';
 import {
-  POLICY_META, FUNCTION_ACTIONS, FUNCTION_LABEL, FUNCTION_SHORT, BLOCKABLE_MODULES,
+  POLICY_META, FUNCTION_ACTIONS, FUNCTION_LABEL, FUNCTION_SHORT, FUNCTION_TYPE_META, BLOCKABLE_MODULES,
   summarizeFunction, policyKey,
   type PolicyGraph as PolicyGraphT, type PolicyGraphNode, type FunctionType, type TaskProgram, type PolicyTermsConfig, type Category,
 } from '@/lib/centralized/comandos';
@@ -25,11 +25,31 @@ const GLASS_INPUT = 'w-full px-2.5 py-1.5 bg-black/40 border border-white/15 rou
 const FUNC_ICON: Record<FunctionType, any> = { permanent_message: MessageSquareText, block_modules: Ban, generate_tasks: ListChecks, policy_terms: FileText };
 const emptyTerms = (): PolicyTermsConfig => ({ title: '', purpose: '', conduct: '', clauses: [] });
 
-// Marca de forma para la leyenda (coincide con el grafo): política = estrella, función = pentágono.
-const shapeStyle = (type: string): React.CSSProperties =>
-  type === 'policy'
-    ? { clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }
-    : { clipPath: 'polygon(50% 0%, 98% 35%, 79% 91%, 21% 91%, 2% 35%)' };
+// Marca de forma para la leyenda (coincide con el grafo): política/estado = estrella,
+// función = pentágono, detalle/términos = documento (esquina doblada).
+const STAR_CLIP = 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
+const PENTAGON_CLIP = 'polygon(50% 0%, 98% 35%, 79% 91%, 21% 91%, 2% 35%)';
+const DOC_CLIP = 'polygon(0 0, 68% 0, 100% 26%, 100% 100%, 0 100%)';
+const shapeStyle = (kind: string): React.CSSProperties => {
+  if (kind === 'policy' || kind === 'star' || kind === 'state') return { clipPath: STAR_CLIP };
+  if (kind === 'policy_terms' || kind === 'doc') return { clipPath: DOC_CLIP };
+  return { clipPath: PENTAGON_CLIP };
+};
+
+// Colores del estado de política (coinciden con el grafo): activa = esmeralda, inactiva = gris.
+const STATE_COLOR = { active: '#22c55e', inactive: '#6b7280' } as const;
+
+// Ítems de la leyenda (Tipos + Estado). El `filter` resalta esos nodos en el grafo.
+type LegendFilter = { kind: 'type' | 'state'; value: string };
+const LEGEND_TYPES: { f: LegendFilter; label: string; color: string; shape: string }[] = [
+  { f: { kind: 'type', value: 'policy' }, label: POLICY_META.policy.plural, color: POLICY_META.policy.color, shape: 'policy' },
+  { f: { kind: 'type', value: 'function' }, label: POLICY_META.function.plural, color: POLICY_META.function.color, shape: 'function' },
+  { f: { kind: 'type', value: 'policy_terms' }, label: FUNCTION_SHORT.policy_terms, color: FUNCTION_TYPE_META.policy_terms.color, shape: 'policy_terms' },
+];
+const LEGEND_STATES: { f: LegendFilter; label: string; color: string }[] = [
+  { f: { kind: 'state', value: 'active' }, label: 'Políticas activas', color: STATE_COLOR.active },
+  { f: { kind: 'state', value: 'inactive' }, label: 'Políticas inactivas', color: STATE_COLOR.inactive },
+];
 
 type FuncForm = { policyId: number; editingId: number | null; type: FunctionType; message: string; modules: string[]; tasks: TaskProgram[]; terms: PolicyTermsConfig };
 
@@ -57,6 +77,13 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
   const [busy, setBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState<PolicyGraphNode | null>(null);
 
+  // Filtros de la leyenda: hover previsualiza, clic fija (patrón de Apoyo). El efectivo prioriza el hover.
+  const [pinFilter, setPinFilter] = useState<LegendFilter | null>(null);
+  const [hoverFilter, setHoverFilter] = useState<LegendFilter | null>(null);
+  const legendFilter = hoverFilter ?? pinFilter;
+  const isPinned = (f: LegendFilter) => pinFilter?.kind === f.kind && pinFilter?.value === f.value;
+  const togglePin = (f: LegendFilter) => setPinFilter((p) => (p && p.kind === f.kind && p.value === f.value ? null : f));
+
   const category = useMemo(() => categories.find((c) => c.id === categoryId) || null, [categories, categoryId]);
   const selectedNode = useMemo(() => graph.nodes.find((n) => n.key === selectedKey) || null, [graph.nodes, selectedKey]);
 
@@ -71,7 +98,7 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
     try { const res = await fetch(`/api/centralized/comandos?category_id=${categoryId}`); const d = await res.json(); setGraph(d.data || { nodes: [], edges: [] }); }
     catch { setGraph({ nodes: [], edges: [] }); }
   }, [categoryId]);
-  useEffect(() => { loadGraph(); setSelectedKey(null); setCreatingPolicy(false); setFuncForm(null); }, [loadGraph]);
+  useEffect(() => { loadGraph(); setSelectedKey(null); setCreatingPolicy(false); setFuncForm(null); setPinFilter(null); setHoverFilter(null); }, [loadGraph]);
 
   /* ── Categorías ── */
   const createCategory = async () => {
@@ -283,15 +310,30 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
           </div>
 
           <div className="relative flex-1 min-h-0">
-            <PolicyGraph nodes={graph.nodes} edges={graph.edges} selectedKey={selectedKey} fitSignal={String(categoryId)} onSelect={(n) => { setSelectedKey(n ? n.key : null); setCreatingPolicy(false); setFuncForm(null); }} />
+            <PolicyGraph nodes={graph.nodes} edges={graph.edges} selectedKey={selectedKey} filter={legendFilter} fitSignal={String(categoryId)} onSelect={(n) => { setSelectedKey(n ? n.key : null); setCreatingPolicy(false); setFuncForm(null); }} />
 
-            {/* Leyenda */}
-            <div className={`${GLASS} absolute top-3 left-3 z-10 w-[140px] p-1.5`}>
+            {/* Leyenda-filtros: pasar el puntero previsualiza el resaltado; clic lo fija/quita. */}
+            <div className={`${GLASS} absolute top-3 left-3 z-10 w-[168px] max-h-[calc(100%-24px)] overflow-y-auto p-1.5`}>
               <p className="px-1.5 pt-1 pb-1 text-[9.5px] font-semibold uppercase tracking-wide text-white/40" style={df}>Tipos</p>
-              {(['policy', 'function'] as const).map((t) => (
-                <div key={t} className="w-full inline-flex items-center gap-2 text-[11.5px] rounded-md px-2 py-1.5 text-white/70" style={mf}>
-                  <span className="w-3 h-3 shrink-0" style={{ background: POLICY_META[t].color, ...shapeStyle(t) }} /> {POLICY_META[t].plural}
-                </div>
+              {LEGEND_TYPES.map((it) => (
+                <button key={it.f.value} type="button"
+                  onMouseEnter={() => setHoverFilter(it.f)} onMouseLeave={() => setHoverFilter(null)}
+                  onClick={() => togglePin(it.f)}
+                  className={`w-full inline-flex items-center gap-2 text-[11.5px] rounded-md px-2 py-1.5 transition-colors ${isPinned(it.f) ? 'bg-white/12 text-white ring-1 ring-inset ring-white/25' : 'text-white/70 hover:bg-white/[0.08]'}`}
+                  style={mf} title={`Resaltar ${it.label.toLowerCase()}`}>
+                  <span className="w-3 h-3 shrink-0" style={{ background: it.color, ...shapeStyle(it.shape) }} /> {it.label}
+                </button>
+              ))}
+              <div className="my-1 mx-1.5 h-px bg-white/12" />
+              <p className="px-1.5 pb-1 text-[9.5px] font-semibold uppercase tracking-wide text-white/40" style={df}>Estado</p>
+              {LEGEND_STATES.map((it) => (
+                <button key={it.f.value} type="button"
+                  onMouseEnter={() => setHoverFilter(it.f)} onMouseLeave={() => setHoverFilter(null)}
+                  onClick={() => togglePin(it.f)}
+                  className={`w-full inline-flex items-center gap-2 text-[11.5px] rounded-md px-2 py-1.5 transition-colors ${isPinned(it.f) ? 'bg-white/12 text-white ring-1 ring-inset ring-white/25' : 'text-white/70 hover:bg-white/[0.08]'}`}
+                  style={mf} title={`Resaltar ${it.label.toLowerCase()}`}>
+                  <span className="w-3 h-3 shrink-0" style={{ background: it.color, opacity: it.f.value === 'active' ? 1 : 0.65, ...shapeStyle('state') }} /> {it.label}
+                </button>
               ))}
             </div>
 

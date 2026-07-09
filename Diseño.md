@@ -407,6 +407,14 @@ para la fila de pestañas.
 **formas NO usadas en Apoyo**: **política = ESTRELLA**, **función = PENTÁGONO**, **detalle/términos = DOCUMENTO** (rect con esquina
 doblada, ámbar). Forma/color por tipo vía `shapeOf`/`colorOf` (`FUNCTION_TYPE_META` en `lib/centralized/comandos.ts`); política
 inactiva en gris. Regla: cada sistema con grafo elige formas distintas para no confundirse entre sistemas.
+- **Política ACTIVA (2026-07-08):** ya NO se marca con un punto verde. Se dibuja un **aura esmeralda** + un **anillo
+  esmeralda con resplandor** (`shadowBlur`, `#34d399`) trazando la estrella → la política se ve "encendida/energizada"
+  (estilo de glow coherente con Apoyo). El punto verde quedó obsoleto.
+- **Leyenda-filtros interactiva (2026-07-08):** igual que Apoyo — hover **previsualiza**, clic **fija/quita**
+  (`hoverFilter ?? pinFilter`, prioriza hover; fijado = `ring-1 ring-inset ring-white/25`). Dos grupos: **Tipos**
+  (Políticas ★ · Funciones ⬠ · Detalle/Términos 🖹) y **Estado** (Políticas activas = estrella esmeralda · inactivas =
+  estrella gris). El filtro se pasa al grafo como `filter={kind:'type'|'state', value}`; `PolicyGraph.matchesFilter`
+  resalta esos nodos y atenúa el resto (alpha 0.07). Formas de la leyenda vía `shapeStyle` (STAR/PENTAGON/DOC clip-path).
 
 ## Desviaciones detectadas y resolución
 - **2026-06-28:** las secciones del editor tenían títulos, botones de filtros e íconos distintos

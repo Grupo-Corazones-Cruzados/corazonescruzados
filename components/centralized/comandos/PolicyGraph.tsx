@@ -76,13 +76,16 @@ function useSize<T extends HTMLElement>() {
 }
 
 export default function PolicyGraph({
-  nodes, edges, selectedKey, onSelect, fitSignal = '',
+  nodes, edges, selectedKey, onSelect, fitSignal = '', filter = null,
 }: {
   nodes: PolicyGraphNode[];
   edges: PolicyGraphEdge[];
   selectedKey: string | null;
   onSelect: (n: PolicyGraphNode | null) => void;
   fitSignal?: string;
+  // Filtro de la leyenda: resalta por TIPO (policy/function/policy_terms) o por ESTADO
+  // de política (active/inactive), atenuando el resto.
+  filter?: { kind: 'type' | 'state'; value: string } | null;
 }) {
   const fgRef = useRef<any>(null);
   const fittedRef = useRef<string | null>(null);
@@ -128,8 +131,21 @@ export default function PolicyGraph({
   const radiusOf = (n: PolicyGraphNode) => NODE_R[n.type] + Math.min(3, Math.sqrt(degree.get(n.key) || 0) * 0.85);
 
   const active = hoverKey || selectedKey;
-  const isLit = (key: string) => !active || key === active || !!neighbors.get(active)?.has(key);
+  const filtering = !!filter;
+  const matchesFilter = (key: string) => {
+    if (!filter) return true;
+    const n = nodeByKey.get(key);
+    if (!n) return false;
+    if (filter.kind === 'state') return n.type === 'policy' && (filter.value === 'active' ? !!n.active : !n.active);
+    if (filter.value === 'policy') return n.type === 'policy';
+    if (filter.value === 'policy_terms') return n.type === 'function' && n.functionType === 'policy_terms';
+    if (filter.value === 'function') return n.type === 'function' && n.functionType !== 'policy_terms';
+    return false;
+  };
+  // El filtro de la leyenda tiene prioridad sobre el resaltado por vecinos.
+  const isLit = (key: string) => (filtering ? matchesFilter(key) : (!active || key === active || !!neighbors.get(active)?.has(key)));
   const linkActive = (l: any) => !!active && (linkId(l, 'source') === active || linkId(l, 'target') === active);
+  const linkLit = (l: any) => (filtering ? (matchesFilter(linkId(l, 'source')) && matchesFilter(linkId(l, 'target'))) : (!active || linkActive(l)));
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -205,8 +221,8 @@ export default function PolicyGraph({
             </div>`;
           }}
           linkCurvature={0.12}
-          linkColor={(l: any) => (!active || linkActive(l) ? 'rgba(180,150,240,0.5)' : 'rgba(120,120,150,0.12)')}
-          linkWidth={(l: any) => (linkActive(l) ? 1.8 : !active ? 1 : 0.45)}
+          linkColor={(l: any) => (linkLit(l) ? 'rgba(180,150,240,0.5)' : 'rgba(120,120,150,0.12)')}
+          linkWidth={(l: any) => (linkActive(l) ? 1.8 : linkLit(l) ? (filtering ? 1.4 : 1) : 0.45)}
           linkDirectionalArrowLength={(l: any) => (linkActive(l) ? 3.6 : 2.4)}
           linkDirectionalArrowRelPos={0.92}
           linkDirectionalArrowColor={() => 'rgba(210,190,250,0.7)'}
@@ -227,7 +243,7 @@ export default function PolicyGraph({
             const lit = isLit(node.id);
             const isActiveNode = node.id === active;
             const isSel = node.id === selectedKey;
-            const alpha = lit ? (inactivePolicy ? 0.6 : 1) : 0.2;
+            const alpha = lit ? (inactivePolicy ? 0.6 : 1) : (filtering ? 0.07 : 0.2);
 
             // Halo
             const glowR = r * (isActiveNode ? 3.2 : 2.4);
@@ -253,13 +269,26 @@ export default function PolicyGraph({
             ctx.globalAlpha = alpha; ctx.fillStyle = g; ctx.fill();
             ctx.globalAlpha = alpha * 0.85; ctx.lineWidth = 0.9; ctx.strokeStyle = mix(color, '#000000', 0.45); ctx.stroke();
 
-            // Punto verde de "activa" sobre la política activa.
+            // Política ACTIVA → aura + anillo esmeralda "energizado" (reemplaza el punto verde).
+            // La estrella violeta queda envuelta en un halo verde con un contorno brillante,
+            // comunicando "encendida/activa" de forma más elegante que un punto.
             if (n.type === 'policy' && n.active) {
-              const br = Math.max(2.2, rr * 0.5);
-              const bx = node.x + rr * 0.72, by = node.y - rr * 0.86;
-              ctx.globalAlpha = lit ? 1 : 0.35;
-              ctx.beginPath(); ctx.arc(bx, by, br + 0.9, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(10,10,16,0.95)'; ctx.fill();
-              ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fillStyle = '#22c55e'; ctx.fill();
+              const auraR = rr * 2.9;
+              const aura = ctx.createRadialGradient(node.x, node.y, rr * 0.5, node.x, node.y, auraR);
+              aura.addColorStop(0, hexA('#22c55e', lit ? 0.30 : 0.05));
+              aura.addColorStop(1, hexA('#22c55e', 0));
+              ctx.globalAlpha = 1; ctx.fillStyle = aura;
+              ctx.beginPath(); ctx.arc(node.x, node.y, auraR, 0, 2 * Math.PI); ctx.fill();
+
+              ctx.save();
+              ctx.globalAlpha = lit ? 1 : 0.3;
+              ctx.shadowColor = 'rgba(52,211,153,0.9)';
+              ctx.shadowBlur = 9;
+              traceShape(ctx, 'star', node.x, node.y, rr + 2.1);
+              ctx.strokeStyle = '#34d399';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+              ctx.restore();
             }
             ctx.globalAlpha = alpha;
 
