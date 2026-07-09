@@ -384,25 +384,31 @@ export default function TicketsPage() {
               className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
 
-          <PixelSelect label="Servicio" value={form.service_id}
-            onChange={(e) => setForm({ ...form, service_id: e.target.value })}
-            options={services.map((s: any) => ({ value: String(s.id), label: `${s.name}${s.base_price ? ` ($${s.base_price})` : ''}` }))}
-            placeholder="-- Seleccionar servicio --" />
+          {/* Servicio: solo al crear un ticket propio, no al solicitarlo. */}
+          {createMode === 'create' && (
+            <PixelSelect label="Servicio" value={form.service_id}
+              onChange={(e) => setForm({ ...form, service_id: e.target.value })}
+              options={services.map((s: any) => ({ value: String(s.id), label: `${s.name}${s.base_price ? ` ($${s.base_price})` : ''}` }))}
+              placeholder="-- Seleccionar servicio --" />
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Miembro asignado */}
             {createMode === 'request' ? (
               <div>
-                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro (o abierto a propuestas)</label>
-                <PixelSelect value={form.member_id}
-                  onChange={(e) => setForm({ ...form, member_id: e.target.value })}
-                  options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
-                  placeholder="-- Elegir candidato/miembro --" disabled={form.open_for_proposals} />
+                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro</label>
+                {/* El selector de miembro desaparece si se deja abierto a propuestas. */}
+                {!form.open_for_proposals && (
+                  <PixelSelect value={form.member_id}
+                    onChange={(e) => setForm({ ...form, member_id: e.target.value })}
+                    options={members.map((m: any) => ({ value: String(m.id), label: m.name }))}
+                    placeholder="-- Elegir candidato/miembro --" />
+                )}
                 <label className="flex items-center gap-2 mt-1.5 text-[12px] text-digi-text cursor-pointer" style={mf}>
                   <input type="checkbox" checked={form.open_for_proposals}
                     onChange={(e) => setForm({ ...form, open_for_proposals: e.target.checked, member_id: e.target.checked ? '' : form.member_id })}
                     className="accent-accent" />
-                  Dejar abierto a propuestas (que alguien proponga y se asigne)
+                  Dejar abierto a propuestas
                 </label>
               </div>
             ) : (
