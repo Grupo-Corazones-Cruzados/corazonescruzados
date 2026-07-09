@@ -153,13 +153,14 @@ export default function MiDiaPage() {
   }, [horario, range]);
   const totalTasks = useMemo(() => rangeGroups.reduce((s, g) => s + g.items.length, 0), [rangeGroups]);
 
-  // Eventos del rango de la vista, agrupados por día.
+  // Eventos del rango de la vista, agrupados por día. Incluye las tareas generadas por
+  // política (bloques sintéticos) para que también se listen en el panel "Eventos".
   const eventGroups = useMemo(() => {
     const byDay = new Map<string, EventInstance[]>();
-    for (const ev of instances) { const ds = ymd(ev.instanceStart); const a = byDay.get(ds) || []; a.push(ev); byDay.set(ds, a); }
+    for (const ev of allInstances) { const ds = ymd(ev.instanceStart); const a = byDay.get(ds) || []; a.push(ev); byDay.set(ds, a); }
     return Array.from(byDay.entries()).sort(([a], [b]) => (a < b ? -1 : 1))
       .map(([day, items]) => ({ day, items: items.sort((a, b) => a.instanceStart.getTime() - b.instanceStart.getTime()) }));
-  }, [instances]);
+  }, [allInstances]);
   const fmtTime = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
   const goPrev = () => { const d = new Date(currentDate); if (view === 'month') d.setMonth(d.getMonth() - 1); else if (view === 'week') d.setDate(d.getDate() - 7); else d.setDate(d.getDate() - 1); setCurrentDate(d); };
@@ -263,7 +264,7 @@ export default function MiDiaPage() {
           <button onClick={() => openNew('progreso')} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent text-white text-[11.5px] font-medium hover:bg-accent-hover transition-colors" style={mf}><Plus className="w-3 h-3" /> Nuevo</button>
         </div>
         <div className="p-2.5 space-y-3 max-h-[calc(100dvh-220px)] overflow-y-auto">
-          {instances.length === 0 ? (
+          {eventGroups.length === 0 ? (
             <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Sin eventos en esta vista.</p>
           ) : (
             eventGroups.map((g) => {
@@ -273,12 +274,16 @@ export default function MiDiaPage() {
                   {g.items.map((ev) => {
                     const color = ev.color || EVENT_COLORS[ev.event_type];
                     return (
-                      <button key={`${ev.id}-${ev.instanceStart.getTime()}`} onClick={() => handleEventClick(ev)}
+                      <button key={`${ev.id}-${ev.instanceStart.getTime()}`}
+                        onClick={(e) => { if (ev.generated) onGeneratedBlockClick(ev, e); else handleEventClick(ev); }}
                         className="w-full text-left rounded-lg border border-digi-border bg-digi-darker/40 hover:border-accent/50 transition-colors p-2 flex items-stretch gap-2">
                         <span className="w-1 rounded-full shrink-0" style={{ background: color }} />
                         <div className="min-w-0 flex-1">
-                          <p className="text-[12.5px] font-medium text-digi-text truncate leading-snug" style={mf}>{ev.title}</p>
-                          <p className="text-[10.5px] text-digi-muted mt-0.5" style={mf}>{ev.all_day ? 'Todo el día' : `${fmtTime(ev.instanceStart)}–${fmtTime(ev.instanceEnd)}`}{ev.client_name ? ` · ${ev.client_name}` : ''}</p>
+                          <p className="text-[12.5px] font-medium text-digi-text truncate leading-snug inline-flex items-center gap-1" style={mf}>
+                            {ev.generated && <ShieldCheck className="w-3 h-3 shrink-0 text-violet-400" />}
+                            <span className="truncate">{ev.title}</span>
+                          </p>
+                          <p className="text-[10.5px] text-digi-muted mt-0.5" style={mf}>{ev.all_day ? 'Todo el día' : `${fmtTime(ev.instanceStart)}–${fmtTime(ev.instanceEnd)}`}{ev.client_name ? ` · ${ev.client_name}` : ''}{ev.generated ? ' · política' : ''}</p>
                         </div>
                       </button>
                     );

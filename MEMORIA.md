@@ -315,7 +315,8 @@ Stack estándar de la casa, con particularidades de este repo:
     (rail, estado) **+ como BLOQUES en el calendario** (2026-07-08): `generatedInstances` sintéticos (EventInstance con
     `generated:true`) se fusionan en `allInstances` y `CalendarView` los pinta en su franja (o todo el día) los días activos,
     **punteados y con color por estado** (verde/rojo/violeta); clic → **popover** con `TaskStatusButtons` (no cuentan en las horas del
-    día; `dayTotals` los ignora). **Endpoint** `PATCH /api/centralized/horario/generated` (`{id,status}` o `{id,values,talents}`; etiquetas se
+    día; `dayTotals` los ignora). **También en el panel "Eventos" izquierdo** (2026-07-09): `eventGroups` usa `allInstances`
+    (icono `ShieldCheck` + "· política"; clic abre el popover). Aparecen en los 3 sitios: panel Eventos, grilla y rail de Tareas. **Endpoint** `PATCH /api/centralized/horario/generated` (`{id,status}` o `{id,values,talents}`; etiquetas se
     aplican a TODOS los días del grupo function_id+program_idx). **Scoring:** `getSubjectsProfileScores` suma las generadas
     completadas/fallidas (mismo formato) — su historial puntúa aunque la política se desactive. `setGeneratedStatus`/
     `setGeneratedLabels` en `horario-db.ts`. Verificado: `tsc`+`next build` OK + expansión/idempotencia probadas en Postgres (rollback).

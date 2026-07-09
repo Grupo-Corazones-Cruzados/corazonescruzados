@@ -401,6 +401,10 @@ Archivos: `components/centralized/systems/HorarioDeVidaSystem.tsx` (calendario s
   (`dayTotals` los excluye). **Clic → popover** posicionado en el punto del clic con `TaskStatusButtons` (`onGeneratedClick`);
   no abren el `EventModal`. Regla: para inyectar "bloques no-evento" en el calendario, usar `EventInstance` con `generated` +
   un `onGeneratedClick` propio, nunca el flujo de edición de eventos reales.
+- **También en el panel "Eventos" (izq) de Mi día (2026-07-09):** `eventGroups` usa `allInstances`, así que las
+  tareas generadas se listan junto a los eventos, con icono `ShieldCheck` violeta + sufijo "· política" y su color
+  por estado; su clic abre el popover de estado (no el `EventModal`). Aparecen en los 3 sitios: panel Eventos,
+  grilla del calendario y rail de Tareas.
 
 ### Configuración — Perfil fijo + pestañas (estándar de la página de ajustes)
 `settings/page.tsx` = **Perfil fijo a la izquierda** (`ProfilePanel`, `w-[400px]`) + a la derecha una tarjeta con **pestañas
