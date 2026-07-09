@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
+import { grantCandidateDashboardSession } from '@/lib/auth/candidateSession';
 import {
   AUTH_COOKIE,
   AUTH_COOKIE_MAX_AGE,
@@ -88,6 +89,11 @@ export async function POST(req: Request) {
       path: '/',
       maxAge: AUTH_COOKIE_MAX_AGE,
     });
+
+    // Da también sesión de /dashboard (rol client + JWT) al candidato para que, si entró
+    // por "Colaborar", llegue al panel con UN solo login (sin rebotar a /auth).
+    try { await grantCandidateDashboardSession(cleanEmail); }
+    catch (e) { console.error('grant candidate dashboard session (recover/verify):', e); }
 
     const pk = await pool.query(
       `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 LIMIT 1`,

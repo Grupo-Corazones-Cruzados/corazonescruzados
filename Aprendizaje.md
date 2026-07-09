@@ -24,10 +24,16 @@ Horario de Vida / Mi día y el enforcement de Comandos Violeta.
   (=`clients.client_token`).
 - **Un candidato NO tiene fila en `users` ni JWT** → **NO puede entrar a `/dashboard`** tal como está. `complete-profile`
   setea `gcc_player_auth` (juego), no el JWT. `/api/auth/login` valida solo contra `users`.
-- **Consecuencia (PENDIENTE):** el requisito "candidato que entra por *Colaborar* → `/dashboard`" **no funciona**
-  hasta darle a los candidatos aprobados una **sesión de dashboard** (crear/vincular fila `users` role='client' +
-  emitir JWT). Es cambio con implicaciones de seguridad → **confirmar con el usuario** el modelo antes de construir.
-  El destino **juego** (por *Entrar*) sí funciona.
+- **RESUELTO (2026-07-09) — sesión de dashboard para candidatos (evita doble login):** decisión del usuario =
+  darle la sesión de dashboard en el MISMO login (rol según el usuario; módulos gateados por rol). Helper
+  **`lib/auth/candidateSession.ts` → `grantCandidateDashboardSession(email)`**: busca/crea la fila `gcc_world.users`
+  (rol 'client' si es nueva; preserva el rol si ya existe), sincroniza la contraseña, **vincula
+  `clients.user_id`** y emite el **JWT `auth_token`** (`createToken`+`setAuthCookie`). Se llama en
+  **`complete-profile`** (al crear la cuenta) y en **`recover/verify`** (al iniciar sesión como candidato). Así,
+  al ir a `/dashboard` ya hay JWT → NO rebota a `/auth` (un solo login). Es coherente con `passkey/login/finish`,
+  que ya emitía el JWT del `users` enlazado por `clients.user_id`. Verificado tsc+build + SQL en Postgres (rollback).
+- **Botón del ofrecimiento de passkey** (AccountRecoveryModal) ahora dice "…comenzar a colaborar" (destino
+  dashboard) o "…entrar al juego" (destino juego) según `destination`.
 
 ### Progreso
 - **% de información para el objetivo:** 100% — **IMPLEMENTADO Y VERIFICADO (2026-07-08)**. `tsc`+`next build`

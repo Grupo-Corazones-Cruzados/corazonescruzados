@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { hashPassword } from '@/lib/auth/password';
+import { grantCandidateDashboardSession } from '@/lib/auth/candidateSession';
 import {
   AUTH_COOKIE,
   AUTH_COOKIE_MAX_AGE,
@@ -108,6 +109,13 @@ export async function POST(req: Request) {
       path: '/',
       maxAge: AUTH_COOKIE_MAX_AGE,
     });
+
+    // Además de la sesión del juego, da al candidato una sesión de /dashboard (rol client
+    // + JWT) para que pueda entrar al panel al elegir "Colaborar" sin volver a loguearse.
+    if (row.email) {
+      try { await grantCandidateDashboardSession(row.email); }
+      catch (e) { console.error('grant candidate dashboard session (complete-profile):', e); }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
