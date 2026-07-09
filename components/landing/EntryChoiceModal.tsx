@@ -20,6 +20,7 @@ export default function EntryChoiceModal({
   onClient,
   onMember,
   onProposalPending,
+  onProposalApproved,
   onClientPending,
   onClose,
   destination = 'game',
@@ -29,6 +30,8 @@ export default function EntryChoiceModal({
   onClient: () => void;
   onMember: () => void;
   onProposalPending: (info: { email?: string | null; emailVerified?: boolean }) => void;
+  /** La postulación ya fue APROBADA por el admin → continuar a crear cuenta. */
+  onProposalApproved: (info: { email?: string | null }) => void;
   /** Cliente con cuenta no verificada → mostrar "requiere verificación". */
   onClientPending: (info: { email?: string | null }) => void;
   onClose: () => void;
@@ -39,6 +42,7 @@ export default function EntryChoiceModal({
   // ¿Este visitante (por IP) ya tiene una postulación registrada?
   const [proposal, setProposal] = useState<{
     exists: boolean;
+    status?: string;
     email?: string | null;
     emailVerified?: boolean;
   } | null>(null);
@@ -147,6 +151,13 @@ export default function EntryChoiceModal({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {proposal === null ? (
             <LoadingCard />
+          ) : proposal.exists && proposal.status === 'approved' ? (
+            <Option
+              tone="success"
+              title="¡Tu postulación fue aprobada!"
+              desc="Fuiste aceptado por el administrador. Continúa para crear tu cuenta (contraseña y datos) e ingresar como candidato."
+              onClick={() => onProposalApproved({ email: proposal.email })}
+            />
           ) : proposal.exists ? (
             <Option
               title="Tu postulación está en proceso de aprobación"
@@ -235,11 +246,20 @@ function Option({
   title,
   desc,
   onClick,
+  tone = 'default',
 }: {
   title: string;
   desc: string;
   onClick: () => void;
+  /** 'success' pinta la tarjeta en verde (p. ej. postulación aprobada). */
+  tone?: 'default' | 'success';
 }) {
+  const success = tone === 'success';
+  const bg = success ? 'rgba(40,120,70,0.18)' : 'rgba(75,45,142,0.18)';
+  const bgHover = success ? 'rgba(40,120,70,0.32)' : 'rgba(123,95,191,0.3)';
+  const border = success ? 'rgba(79,174,114,0.55)' : 'rgba(123,95,191,0.45)';
+  const borderHover = success ? '#4fae72' : 'var(--color-accent-glow, #7B5FBF)';
+  const arrow = success ? '#7fdca0' : 'var(--color-accent-glow, #7B5FBF)';
   return (
     <button
       type="button"
@@ -248,19 +268,19 @@ function Option({
         textAlign: 'left',
         width: '100%',
         cursor: 'pointer',
-        background: 'rgba(75,45,142,0.18)',
-        border: '1px solid rgba(123,95,191,0.45)',
+        background: bg,
+        border: `1px solid ${border}`,
         borderRadius: 6,
         padding: '16px 18px',
         transition: 'background 0.2s, border-color 0.2s, transform 0.15s',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(123,95,191,0.3)';
-        e.currentTarget.style.borderColor = 'var(--color-accent-glow, #7B5FBF)';
+        e.currentTarget.style.background = bgHover;
+        e.currentTarget.style.borderColor = borderHover;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(75,45,142,0.18)';
-        e.currentTarget.style.borderColor = 'rgba(123,95,191,0.45)';
+        e.currentTarget.style.background = bg;
+        e.currentTarget.style.borderColor = border;
       }}
     >
       <div
@@ -276,7 +296,7 @@ function Option({
         }}
       >
         <span>{title}</span>
-        <span style={{ color: 'var(--color-accent-glow, #7B5FBF)' }}>→</span>
+        <span style={{ color: arrow }}>→</span>
       </div>
       <div style={{ fontFamily: BODY, fontSize: '0.85rem', lineHeight: 1.5, color: '#cfc9e2' }}>
         {desc}

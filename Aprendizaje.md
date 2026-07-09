@@ -141,11 +141,19 @@ El usuario definió el flujo completo (ver `MEMORIA.md` → feature onboarding):
   (bloqueo de correo UNIQUE, `ip_hash`, estado `pending`) + verificación de correo (`/api/candidate/verify`) +
   `ProposalPendingModal` (espera de aprobación) + reconocimiento por IP al elegir "candidato". El candidato NO
   entra al juego tras postularse; queda en espera.
-- **PENDIENTE (flujo de propuesta):** (i) **aprobación del admin global** `lfgonzalezm0@outlook.com` (endpoint
-  `approve`/UI + `status='approved'` + correo de aprobación); (ii) gate post-aprobación para **comenzar la
-  aventura**; (iii) **migración** propuesta→candidato al crear cuenta (borrar fila de `candidate_proposals` y
-  crear registro en `gcc_world.clients` con IP + datos); (iv) reconocimiento por IP de **cuenta ya creada**;
-  (v) correr `next build`.
+- **RESUELTO — Flujo del candidato APROBADO en la landing (2026-07-09):** al volver a "Entrar", si el visitante
+  (reconocido por `PROPOSAL_COOKIE`/ip en `GET /api/candidate/proposal`) tiene la postulación **`status='approved'`**,
+  el `EntryChoiceModal` muestra una opción **verde** "¡Tu postulación fue aprobada!" (antes decía siempre "en proceso").
+  Al pulsarla → `ProposalPendingModal` en **variante aprobada** (icono 🎉, etiqueta **verde** "aceptado por el
+  administrador", botón **"Continuar"** en vez de "Entendido"). "Continuar" abre **`CandidateAccountModal`** (nuevo,
+  `components/landing/`) = formulario nombre/país/dirección/teléfono/contraseña que POSTea a
+  `/api/character/auth/complete-profile` (reemplaza la contraseña temporal, `profile_completed=true`, borra la
+  propuesta, deja sesión de juego activa) → recarga `/`. **Clave backend:** el `GET` de propuesta, cuando está
+  aprobada, **setea el `CLIENT_COOKIE`** con el `client_token` del candidato (por email) para que `complete-profile`
+  lo identifique (el token se creó en el navegador del admin al aprobar, no en el del candidato); además el fallback
+  por ip de `complete-profile` ahora acepta candidatos aprobados **sin personaje**. Verificado tsc+build + estado real
+  en Postgres. (Nota: `/dashboard` exige JWT `auth_token`; el candidato queda con `gcc_player_auth` del juego, por eso
+  se recarga a `/`, no a `/dashboard`.)
 - **PENDIENTE / preguntas:** (a) ¿confirmas que clientes y candidatos comparten `gcc_world.clients` con
   `account_type`, o quieres tabla física separada?; (b) flujo de **aprobación de candidato** (estado en BD +
   endpoint admin + correo); (c) gating de **acceso del cliente** al juego (no debe entrar) y redirección a

@@ -13,6 +13,7 @@ import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 import OnboardingSlidersModal from '@/components/landing/OnboardingSlidersModal';
 import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
 import ProposalPendingModal from '@/components/landing/ProposalPendingModal';
+import CandidateAccountModal from '@/components/landing/CandidateAccountModal';
 import ClientSignupModal from '@/components/landing/ClientSignupModal';
 import ClientLoginModal from '@/components/landing/ClientLoginModal';
 import MemberLoginModal from '@/components/landing/MemberLoginModal';
@@ -375,8 +376,10 @@ export default function LandingPage() {
   // /dashboard. Determina a dónde van candidato/cliente/miembro al iniciar sesión.
   const [entryDestination, setEntryDestination] = useState<'game' | 'dashboard'>('game');
   const [proposalPending, setProposalPending] = useState<
-    { email?: string | null; emailVerified?: boolean } | null
+    { email?: string | null; emailVerified?: boolean; approved?: boolean } | null
   >(null);
+  // Candidato aprobado que va a crear su cuenta (contraseña + datos). null = cerrado.
+  const [candidateAccount, setCandidateAccount] = useState<{ email?: string | null } | null>(null);
   // Cliente con cuenta creada pero correo sin verificar (no puede ingresar).
   const [clientPending, setClientPending] = useState<{ email?: string | null } | null>(null);
   const [clientSignupOpen, setClientSignupOpen] = useState(false);
@@ -3131,6 +3134,11 @@ export default function LandingPage() {
             setEntryChoiceOpen(false);
             setProposalPending({ email: info.email, emailVerified: info.emailVerified });
           }}
+          onProposalApproved={(info) => {
+            setEntryChoiceOpen(false);
+            // Candidato aprobado: muestra el aviso verde con botón "Continuar".
+            setProposalPending({ email: info.email, emailVerified: true, approved: true });
+          }}
           onClientPending={(info) => {
             setEntryChoiceOpen(false);
             setClientPending({ email: info.email });
@@ -3189,7 +3197,25 @@ export default function LandingPage() {
         <ProposalPendingModal
           email={proposalPending.email}
           emailVerified={proposalPending.emailVerified}
+          approved={proposalPending.approved}
+          onContinue={() => {
+            const email = proposalPending.email;
+            setProposalPending(null);
+            setCandidateAccount({ email });
+          }}
           onClose={() => setProposalPending(null)}
+        />
+      )}
+
+      {candidateAccount && (
+        <CandidateAccountModal
+          email={candidateAccount.email}
+          onClose={() => setCandidateAccount(null)}
+          onDone={() => {
+            // Cuenta creada (sesión de candidato activa): recarga la landing para
+            // continuar su flujo (ya reconocido, entra al juego / crea su personaje).
+            window.location.href = '/';
+          }}
         />
       )}
 

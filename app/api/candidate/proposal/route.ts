@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
-import { getClientIp, hashIp } from '@/lib/world/session';
+import { getClientIp, hashIp, CLIENT_COOKIE } from '@/lib/world/session';
 import { sendCandidateProposalVerificationEmail } from '@/lib/integrations/resend';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -124,6 +124,31 @@ export async function GET() {
     );
     const row = r.rows[0];
     if (!row) return NextResponse.json({ exists: false });
+
+    // Si ya fue APROBADA, "activa" la sesión de cliente del candidato en ESTE dispositivo
+    // (setea el CLIENT_COOKIE con su client_token) para que luego pueda completar su perfil
+    // (contraseña + datos) sin necesitar el cookie que se generó en el navegador del admin.
+    if (row.status === 'approved') {
+      try {
+        const c = await pool.query(
+          `SELECT client_token FROM gcc_world.clients
+            WHERE LOWER(email) = LOWER($1) AND account_type = 'candidate' AND approved = true
+            LIMIT 1`,
+          [row.email],
+        );
+        const clientToken = c.rows[0]?.client_token;
+        if (clientToken && cookieStore.get(CLIENT_COOKIE)?.value !== clientToken) {
+          cookieStore.set(CLIENT_COOKIE, clientToken, {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            path: '/',
+            maxAge: 60 * 60 * 24 * 365,
+          });
+        }
+      } catch { /* best-effort */ }
+    }
+
     return NextResponse.json({
       exists: true,
       status: row.status,

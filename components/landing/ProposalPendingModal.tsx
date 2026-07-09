@@ -17,12 +17,18 @@ export default function ProposalPendingModal({
   emailVerified,
   onClose,
   mode = 'candidate',
+  approved = false,
+  onContinue,
 }: {
   email?: string | null;
   emailVerified?: boolean;
   onClose: () => void;
   /** 'candidate' (postulación, requiere aprobación) | 'client' (solo verificar). */
   mode?: 'candidate' | 'client';
+  /** La postulación ya fue APROBADA por el admin → estado verde + botón "Continuar". */
+  approved?: boolean;
+  /** Acción del botón "Continuar" (crear cuenta). Requerido cuando approved=true. */
+  onContinue?: () => void;
 }) {
   const isClient = mode === 'client';
   return (
@@ -76,7 +82,7 @@ export default function ProposalPendingModal({
           ✕
         </button>
 
-        <div style={{ fontSize: '2rem', marginBottom: 8 }}>{isClient ? '📬' : '⏳'}</div>
+        <div style={{ fontSize: '2rem', marginBottom: 8 }}>{approved ? '🎉' : isClient ? '📬' : '⏳'}</div>
         <h2
           style={{
             fontFamily: PIXEL,
@@ -86,11 +92,20 @@ export default function ProposalPendingModal({
             textShadow: '1px 1px 0 rgba(0,0,0,0.6)',
           }}
         >
-          {isClient ? 'Verifica tu cuenta de cliente' : 'Tu postulación está en revisión'}
+          {approved
+            ? '¡Tu postulación fue aprobada!'
+            : isClient
+              ? 'Verifica tu cuenta de cliente'
+              : 'Tu postulación está en revisión'}
         </h2>
 
         <p style={{ fontFamily: BODY, fontSize: '0.9rem', lineHeight: 1.6, color: '#cfc9e2', margin: '0 0 12px' }}>
-          {isClient ? (
+          {approved ? (
+            <>
+              Fuiste aceptado por el administrador del proyecto. Continúa para{' '}
+              <strong style={{ color: '#fff' }}>crear tu cuenta</strong> (contraseña y datos) e ingresar.
+            </>
+          ) : isClient ? (
             <>
               Ya creaste tu cuenta de cliente. Para poder iniciar sesión, primero{' '}
               <strong style={{ color: '#fff' }}>verifica tu correo</strong>. No necesitas crear otra
@@ -105,38 +120,59 @@ export default function ProposalPendingModal({
           )}
         </p>
 
-        <div
-          style={{
-            fontFamily: BODY,
-            fontSize: '0.85rem',
-            lineHeight: 1.55,
-            color: emailVerified ? '#bfe6c9' : '#f3e2c2',
-            background: emailVerified ? 'rgba(40,120,70,0.16)' : 'rgba(160,110,40,0.16)',
-            borderLeft: `3px solid ${emailVerified ? '#4fae72' : '#caa14a'}`,
-            borderRadius: 4,
-            padding: '11px 13px',
-            textAlign: 'left',
-            margin: '4px 0 18px',
-          }}
-        >
-          {emailVerified ? (
-            <>✓ Tu correo {email ? <strong>{email}</strong> : ''} ya está verificado.</>
-          ) : (
-            <>
-              Te enviamos un correo {email ? <strong>a {email}</strong> : ''}:{' '}
-              <strong style={{ color: '#fff' }}>verifícalo</strong> para continuar. Revisa tu bandeja
-              de entrada (y la carpeta de spam).
-            </>
-          )}
-        </div>
+        {/* Etiqueta de estado. Aprobado → verde (igual que "correo verificado"). */}
+        {approved ? (
+          <div
+            style={{
+              fontFamily: BODY,
+              fontSize: '0.85rem',
+              lineHeight: 1.55,
+              color: '#bfe6c9',
+              background: 'rgba(40,120,70,0.16)',
+              borderLeft: '3px solid #4fae72',
+              borderRadius: 4,
+              padding: '11px 13px',
+              textAlign: 'left',
+              margin: '4px 0 18px',
+            }}
+          >
+            ✓ Fuiste <strong>aceptado por el administrador</strong>
+            {email ? <> · {email}</> : ''}.
+          </div>
+        ) : (
+          <div
+            style={{
+              fontFamily: BODY,
+              fontSize: '0.85rem',
+              lineHeight: 1.55,
+              color: emailVerified ? '#bfe6c9' : '#f3e2c2',
+              background: emailVerified ? 'rgba(40,120,70,0.16)' : 'rgba(160,110,40,0.16)',
+              borderLeft: `3px solid ${emailVerified ? '#4fae72' : '#caa14a'}`,
+              borderRadius: 4,
+              padding: '11px 13px',
+              textAlign: 'left',
+              margin: '4px 0 18px',
+            }}
+          >
+            {emailVerified ? (
+              <>✓ Tu correo {email ? <strong>{email}</strong> : ''} ya está verificado.</>
+            ) : (
+              <>
+                Te enviamos un correo {email ? <strong>a {email}</strong> : ''}:{' '}
+                <strong style={{ color: '#fff' }}>verifícalo</strong> para continuar. Revisa tu bandeja
+                de entrada (y la carpeta de spam).
+              </>
+            )}
+          </div>
+        )}
 
         <button
           type="button"
-          onClick={onClose}
+          onClick={approved ? (onContinue ?? onClose) : onClose}
           className="pixel-btn pixel-btn-primary"
           style={{ width: '100%' }}
         >
-          Entendido
+          {approved ? 'Continuar' : 'Entendido'}
         </button>
       </div>
     </div>
