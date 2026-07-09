@@ -3079,6 +3079,7 @@ export default function LandingPage() {
 
       {recoveryOpen && (
         <AccountRecoveryModal
+          destination={entryDestination}
           onClose={() => setRecoveryOpen(false)}
           onSuccess={async () => {
             // Cuenta vinculada a este dispositivo (IP actualizada por el endpoint).
