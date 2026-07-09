@@ -7,9 +7,10 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
-import { BTN_PRIMARY } from '@/components/ui/Button';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { money } from '@/lib/format';
 import { TALENTOS } from '@/lib/centralized/talentos';
-import { Plus, Trash2, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search } from 'lucide-react';
+import { Plus, Trash2, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -21,15 +22,22 @@ interface EduEntry { institution: string; degree: string; field: string; start_y
 interface ExpEntry { company: string; position: string; description: string; start_year: string; end_year: string; }
 interface TalentEntry { key: string; education: EduEntry[]; experience: ExpEntry[]; }
 interface ServiceRow { id: number; name: string; description: string | null; base_price: string | number | null; is_active: boolean; talent: string | null; }
+interface ServiceDraft { name: string; description: string; base_price: string; is_active: boolean; }
 
 const emptyEdu = (): EduEntry => ({ institution: '', degree: '', field: '', start_year: '', end_year: '' });
 const emptyExp = (): ExpEntry => ({ company: '', position: '', description: '', start_year: '', end_year: '' });
+const emptySvc = (): ServiceDraft => ({ name: '', description: '', base_price: '', is_active: true });
 
 const addBtn = 'inline-flex items-center gap-1 text-[12px] font-medium text-digi-muted border border-dashed border-digi-border rounded-md px-2 py-1 hover:border-accent hover:text-accent transition-colors';
 
+// Rango de años "2020 – 2024" (omite guion si falta un extremo, vacío si faltan ambos).
+const yearRange = (a?: string, b?: string) => (a || b ? [a, b].filter(Boolean).join(' – ') : '');
+
 /** Editor de CV del miembro (corp). Autónomo: usa el member_id del usuario actual.
  *  Incluye una sección de TALENTOS: cada talento con su educación, experiencia y servicios
- *  propios; los servicios activos son los que se pueden elegir al crear un ticket. */
+ *  propios; los servicios activos son los que se pueden elegir al crear un ticket.
+ *  Educación/experiencia/servicios se muestran como LISTA compacta; agregar/editar abre un
+ *  formulario en modal (panel lateral) para no ocupar espacio con formularios inline. */
 export default function CvPanel() {
   const { user } = useAuth();
   const memberId = user?.member_id;
@@ -50,6 +58,10 @@ export default function CvPanel() {
   const [skillsModal, setSkillsModal] = useState(false);
   const [newSkill, setNewSkill] = useState('');
   const [confirmDelTalent, setConfirmDelTalent] = useState<number | null>(null);
+  // Formularios en modal (educación/experiencia del talento activo + servicios).
+  const [eduForm, setEduForm] = useState<{ idx: number | null; draft: EduEntry } | null>(null);
+  const [expForm, setExpForm] = useState<{ idx: number | null; draft: ExpEntry } | null>(null);
+  const [svcForm, setSvcForm] = useState<{ id: number | null; draft: ServiceDraft } | null>(null);
 
   useEffect(() => {
     if (!memberId) return;
@@ -111,30 +123,59 @@ export default function CvPanel() {
     if (memberId) for (const s of toDelete) fetch(`/api/members/${memberId}/services/${s.id}`, { method: 'DELETE' }).catch(() => {});
   };
   const updateTalent = (i: number, patch: Partial<TalentEntry>) =>
-    setTalents(talents.map((t, k) => (k === i ? { ...t, ...patch } : t)));
+    setTalents((prev) => prev.map((t, k) => (k === i ? { ...t, ...patch } : t)));
+
+  // ── Educación / Experiencia del talento activo (guardadas desde el modal) ──
+  const saveEdu = (activeIdx: number) => {
+    if (!eduForm) return;
+    const list = [...(talents[activeIdx]?.education || [])];
+    if (eduForm.idx === null) list.push(eduForm.draft); else list[eduForm.idx] = eduForm.draft;
+    updateTalent(activeIdx, { education: list });
+    setEduForm(null);
+  };
+  const removeEdu = (activeIdx: number, i: number) =>
+    updateTalent(activeIdx, { education: (talents[activeIdx]?.education || []).filter((_, k) => k !== i) });
+  const saveExp = (activeIdx: number) => {
+    if (!expForm) return;
+    const list = [...(talents[activeIdx]?.experience || [])];
+    if (expForm.idx === null) list.push(expForm.draft); else list[expForm.idx] = expForm.draft;
+    updateTalent(activeIdx, { experience: list });
+    setExpForm(null);
+  };
+  const removeExp = (activeIdx: number, i: number) =>
+    updateTalent(activeIdx, { experience: (talents[activeIdx]?.experience || []).filter((_, k) => k !== i) });
 
   // ── Servicios (filas en `services`, guardado inmediato vía API) ────────────
-  const addService = async (talent: string) => {
-    if (!memberId) return;
+  const saveService = async (talent: string) => {
+    if (!memberId || !svcForm) return;
+    const name = svcForm.draft.name.trim();
+    if (!name) { toast.error('El nombre del servicio es requerido'); return; }
+    const body = {
+      name,
+      description: svcForm.draft.description.trim() || null,
+      base_price: svcForm.draft.base_price,
+      is_active: svcForm.draft.is_active,
+      talent,
+    };
     try {
-      const res = await fetch(`/api/members/${memberId}/services`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Nuevo servicio', talent }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error);
-      setServices((s) => [...s, d.data]);
-    } catch (e: any) { toast.error(e.message || 'No se pudo crear el servicio'); }
-  };
-  const patchService = async (id: number, patch: Partial<ServiceRow>) => {
-    setServices((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x))); // optimista
-    if (!memberId) return;
-    try {
-      const res = await fetch(`/api/members/${memberId}/services/${id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
-      });
-      if (!res.ok) throw new Error((await res.json()).error);
-    } catch (e: any) { toast.error(e.message || 'No se pudo guardar'); }
+      if (svcForm.id === null) {
+        const res = await fetch(`/api/members/${memberId}/services`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error);
+        setServices((s) => [...s, d.data]);
+      } else {
+        const id = svcForm.id;
+        const res = await fetch(`/api/members/${memberId}/services/${id}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error);
+        setServices((s) => s.map((x) => (x.id === id ? d.data : x)));
+      }
+      setSvcForm(null);
+    } catch (e: any) { toast.error(e.message || 'No se pudo guardar el servicio'); }
   };
   const removeService = async (id: number) => {
     setServices((s) => s.filter((x) => x.id !== id));
@@ -148,6 +189,7 @@ export default function CvPanel() {
   const availableTalents = TALENTOS
     .filter((t) => !talents.some((x) => x.key === t))
     .sort((a, b) => a.localeCompare(b, 'es'));
+  const activeIdx = talents.length ? Math.min(activeTalent, talents.length - 1) : 0;
 
   return (
     <div className="space-y-5">
@@ -188,7 +230,6 @@ export default function CvPanel() {
         {talents.length === 0 ? (
           <p className="text-[12px] text-digi-muted/60" style={mf}>Aún no agregas talentos. Cada talento tiene su educación, experiencia y servicios.</p>
         ) : (() => {
-          const activeIdx = Math.min(activeTalent, talents.length - 1);
           const t = talents[activeIdx];
           const talentServices = services.filter((s) => s.talent === t.key);
           return (
@@ -208,33 +249,47 @@ export default function CvPanel() {
                 })}
               </div>
 
-              {/* Contenido del talento seleccionado */}
+              {/* Contenido del talento seleccionado: listas compactas + agregar en modal */}
               <div className="p-4 space-y-4">
-                <SectionEdu title="Educación" items={t.education} onChange={(v) => updateTalent(activeIdx, { education: v })} nested />
-                <SectionExp title="Experiencia" items={t.experience} onChange={(v) => updateTalent(activeIdx, { experience: v })} nested />
-                {/* Servicios del talento */}
-                <div className="pt-3 border-t border-digi-border">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <h5 className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-digi-text" style={mf}><Wrench className="w-3.5 h-3.5 text-accent" /> Servicios</h5>
-                    <button onClick={() => addService(t.key)} className={addBtn} style={mf}><Plus className="w-3.5 h-3.5" /> Agregar servicio</button>
-                  </div>
-                  {talentServices.length === 0 && (
-                    <p className="text-[12px] text-digi-muted/60" style={mf}>Sin servicios. Agrega los servicios que ofreces con este talento.</p>
-                  )}
-                  <div className="space-y-2">
-                    {talentServices.map((s) => (
-                      <div key={s.id} className={`rounded-lg border p-2.5 grid grid-cols-1 sm:grid-cols-[1fr_1.4fr_120px_auto_auto] gap-2 items-end ${s.is_active ? 'border-digi-border bg-digi-darker/40' : 'border-digi-border/60 bg-digi-darker/20 opacity-70'}`}>
-                        <PixelInput label="Nombre" value={s.name} onChange={(e) => patchService(s.id, { name: e.target.value })} />
-                        <PixelInput label="Descripción" value={s.description || ''} onChange={(e) => patchService(s.id, { description: e.target.value })} />
-                        <PixelInput label="Precio (USD)" type="number" value={s.base_price ?? ''} onChange={(e) => patchService(s.id, { base_price: e.target.value })} />
-                        <label className="flex items-center gap-1.5 text-[11.5px] text-digi-text cursor-pointer pb-2" style={mf} title="Activo (visible al crear tickets)">
-                          <input type="checkbox" checked={s.is_active} onChange={(e) => patchService(s.id, { is_active: e.target.checked })} className="accent-accent" /> Activo
-                        </label>
-                        <button onClick={() => removeService(s.id)} title="Eliminar servicio" className="pb-1.5 text-digi-muted hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ListSection title="Educación" icon={<GraduationCap className="w-4 h-4 text-accent" />}
+                  count={t.education.length} emptyText="Sin formación registrada."
+                  onAdd={() => setEduForm({ idx: null, draft: emptyEdu() })}>
+                  {t.education.map((edu, i) => (
+                    <ItemRow key={i}
+                      title={edu.degree || edu.institution || 'Formación'}
+                      subtitle={[edu.institution, edu.field].filter(Boolean).join(' · ')}
+                      meta={yearRange(edu.start_year, edu.end_year)}
+                      onEdit={() => setEduForm({ idx: i, draft: { ...edu } })}
+                      onRemove={() => removeEdu(activeIdx, i)} />
+                  ))}
+                </ListSection>
+
+                <ListSection title="Experiencia" icon={<Briefcase className="w-4 h-4 text-accent" />}
+                  count={t.experience.length} emptyText="Sin experiencia registrada." topBorder
+                  onAdd={() => setExpForm({ idx: null, draft: emptyExp() })}>
+                  {t.experience.map((exp, i) => (
+                    <ItemRow key={i}
+                      title={exp.position || exp.company || 'Experiencia'}
+                      subtitle={[exp.company, exp.description].filter(Boolean).join(' · ')}
+                      meta={yearRange(exp.start_year, exp.end_year)}
+                      onEdit={() => setExpForm({ idx: i, draft: { ...exp } })}
+                      onRemove={() => removeExp(activeIdx, i)} />
+                  ))}
+                </ListSection>
+
+                <ListSection title="Servicios" icon={<Wrench className="w-3.5 h-3.5 text-accent" />}
+                  count={talentServices.length} emptyText="Sin servicios. Agrega los servicios que ofreces con este talento." topBorder
+                  onAdd={() => setSvcForm({ id: null, draft: emptySvc() })}>
+                  {talentServices.map((s) => (
+                    <ItemRow key={s.id}
+                      title={s.name}
+                      subtitle={s.description || ''}
+                      meta={money(s.base_price)}
+                      badge={s.is_active ? undefined : 'Inactivo'}
+                      onEdit={() => setSvcForm({ id: s.id, draft: { name: s.name, description: s.description || '', base_price: s.base_price != null ? String(s.base_price) : '', is_active: s.is_active } })}
+                      onRemove={() => removeService(s.id)} />
+                  ))}
+                </ListSection>
               </div>
             </div>
           );
@@ -283,7 +338,113 @@ export default function CvPanel() {
           )}
         </div>
       </PixelModal>
+
+      {/* Formulario de Educación (panel modal). */}
+      <PixelModal open={!!eduForm} onClose={() => setEduForm(null)} title={eduForm?.idx === null ? 'Agregar educación' : 'Editar educación'}>
+        {eduForm && (
+          <FormShell onSave={() => saveEdu(activeIdx)} onCancel={() => setEduForm(null)}>
+            <PixelInput label="Institución" value={eduForm.draft.institution} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, institution: e.target.value } })} autoFocus />
+            <PixelInput label="Título" value={eduForm.draft.degree} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, degree: e.target.value } })} />
+            <PixelInput label="Campo" value={eduForm.draft.field} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, field: e.target.value } })} />
+            <div className="grid grid-cols-2 gap-3">
+              <PixelInput label="Año inicio" value={eduForm.draft.start_year} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, start_year: e.target.value } })} placeholder="2020" />
+              <PixelInput label="Año fin" value={eduForm.draft.end_year} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, end_year: e.target.value } })} placeholder="2024" />
+            </div>
+          </FormShell>
+        )}
+      </PixelModal>
+
+      {/* Formulario de Experiencia (panel modal). */}
+      <PixelModal open={!!expForm} onClose={() => setExpForm(null)} title={expForm?.idx === null ? 'Agregar experiencia' : 'Editar experiencia'}>
+        {expForm && (
+          <FormShell onSave={() => saveExp(activeIdx)} onCancel={() => setExpForm(null)}>
+            <PixelInput label="Empresa" value={expForm.draft.company} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, company: e.target.value } })} autoFocus />
+            <PixelInput label="Cargo" value={expForm.draft.position} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, position: e.target.value } })} />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-digi-text" style={mf}>Descripción</label>
+              <textarea value={expForm.draft.description} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, description: e.target.value } })} rows={3} placeholder="Responsabilidades y logros…"
+                className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <PixelInput label="Año inicio" value={expForm.draft.start_year} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, start_year: e.target.value } })} placeholder="2020" />
+              <PixelInput label="Año fin" value={expForm.draft.end_year} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, end_year: e.target.value } })} placeholder="Actual" />
+            </div>
+          </FormShell>
+        )}
+      </PixelModal>
+
+      {/* Formulario de Servicio (panel modal). */}
+      <PixelModal open={!!svcForm} onClose={() => setSvcForm(null)} title={svcForm?.id === null ? 'Agregar servicio' : 'Editar servicio'}>
+        {svcForm && (
+          <FormShell onSave={() => saveService(talents[activeIdx]?.key || '')} onCancel={() => setSvcForm(null)}>
+            <PixelInput label="Nombre" value={svcForm.draft.name} onChange={(e) => setSvcForm({ ...svcForm, draft: { ...svcForm.draft, name: e.target.value } })} placeholder="Ej. Consultoría de marca" autoFocus />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-digi-text" style={mf}>Descripción</label>
+              <textarea value={svcForm.draft.description} onChange={(e) => setSvcForm({ ...svcForm, draft: { ...svcForm.draft, description: e.target.value } })} rows={3} placeholder="Qué incluye el servicio…"
+                className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
+            </div>
+            <div className="grid grid-cols-2 gap-3 items-end">
+              <PixelInput label="Precio (USD)" type="number" value={svcForm.draft.base_price} onChange={(e) => setSvcForm({ ...svcForm, draft: { ...svcForm.draft, base_price: e.target.value } })} placeholder="0,00" />
+              <label className="flex items-center gap-2 text-[13px] text-digi-text cursor-pointer pb-2.5" style={mf} title="Activo: visible al crear tickets">
+                <input type="checkbox" checked={svcForm.draft.is_active} onChange={(e) => setSvcForm({ ...svcForm, draft: { ...svcForm.draft, is_active: e.target.checked } })} className="accent-accent w-4 h-4" /> Activo (visible al crear tickets)
+              </label>
+            </div>
+          </FormShell>
+        )}
+      </PixelModal>
     </div>
+  );
+}
+
+/* ── Encabezado de sección con botón "Agregar" ─────────────────────────────── */
+function ListSection({ title, icon, count, emptyText, topBorder = false, onAdd, children }: {
+  title: string; icon: React.ReactNode; count: number; emptyText: string; topBorder?: boolean; onAdd: () => void; children: React.ReactNode;
+}) {
+  return (
+    <div className={topBorder ? 'pt-3 border-t border-digi-border' : ''}>
+      <div className="flex items-center justify-between mb-2.5">
+        <h5 className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-digi-text" style={mf}>{icon} {title}</h5>
+        <button type="button" onClick={onAdd} className={addBtn} style={mf}><Plus className="w-3.5 h-3.5" /> Agregar</button>
+      </div>
+      {count === 0 ? (
+        <p className="text-[12px] text-digi-muted/60" style={mf}>{emptyText}</p>
+      ) : (
+        <div className="space-y-1.5">{children}</div>
+      )}
+    </div>
+  );
+}
+
+/* ── Fila compacta de un ítem agregado (clic = editar; con acciones) ────────── */
+function ItemRow({ title, subtitle, meta, badge, onEdit, onRemove }: {
+  title: string; subtitle?: string; meta?: string; badge?: string; onEdit: () => void; onRemove: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-digi-border bg-digi-darker/40 pl-3 pr-1.5 py-1.5 hover:border-accent/60 transition-colors">
+      <button type="button" onClick={onEdit} className="flex-1 min-w-0 text-left">
+        <div className="flex items-center gap-1.5">
+          <p className="text-[13px] font-medium text-digi-text truncate" style={mf}>{title}</p>
+          {badge && <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-digi-border/60 text-digi-muted" style={mf}>{badge}</span>}
+        </div>
+        {subtitle && <p className="text-[11.5px] text-digi-muted truncate" style={mf}>{subtitle}</p>}
+      </button>
+      {meta && <span className="shrink-0 text-[11.5px] text-digi-muted whitespace-nowrap tabular-nums" style={mf}>{meta}</span>}
+      <button type="button" onClick={onEdit} title="Editar" className="shrink-0 p-1.5 rounded text-digi-muted hover:text-accent transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+      <button type="button" onClick={onRemove} title="Eliminar" className="shrink-0 p-1.5 rounded text-digi-muted hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+    </div>
+  );
+}
+
+/* ── Contenedor de formulario en modal: campos + pie con Cancelar/Guardar ───── */
+function FormShell({ onSave, onCancel, children }: { onSave: () => void; onCancel: () => void; children: React.ReactNode }) {
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onSave(); }} className="flex flex-col gap-3">
+      {children}
+      <div className="flex justify-end gap-2 pt-2 mt-1 border-t border-digi-border">
+        <button type="button" onClick={onCancel} className={BTN_SECONDARY}>Cancelar</button>
+        <button type="submit" className={BTN_PRIMARY}><Save className="w-4 h-4" /> Guardar</button>
+      </div>
+    </form>
   );
 }
 
@@ -317,57 +478,6 @@ function TalentPicker({ options, onPick }: { options: string[]; onPick: (t: stri
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/* ── Editores reusables (globales y por talento) ────────────────────────────── */
-function SectionEdu({ title, items, onChange, nested = false }: { title: string; items: EduEntry[]; onChange: (v: EduEntry[]) => void; nested?: boolean }) {
-  return (
-    <div className={nested ? '' : 'pt-4 border-t border-digi-border'}>
-      <div className="flex items-center justify-between mb-2.5">
-        <h4 className={`inline-flex items-center gap-1.5 ${nested ? 'text-[12.5px]' : 'text-[13px]'} font-semibold text-digi-text`} style={mf}><GraduationCap className="w-4 h-4 text-accent" /> {title}</h4>
-        <button onClick={() => onChange([...items, emptyEdu()])} className={addBtn} style={mf}><Plus className="w-3.5 h-3.5" /> Agregar</button>
-      </div>
-      {items.length === 0 && <p className="text-[12px] text-digi-muted/60" style={mf}>Sin formación registrada.</p>}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-        {items.map((edu, i) => (
-          <div key={i} className="relative rounded-lg border border-digi-border bg-digi-darker p-3 grid grid-cols-2 gap-2">
-            <button onClick={() => onChange(items.filter((_, k) => k !== i))} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-digi-card border border-digi-border flex items-center justify-center text-digi-muted hover:text-red-600 hover:border-red-300 transition-colors" title="Quitar"><Trash2 className="w-3.5 h-3.5" /></button>
-            <PixelInput label="Institución" value={edu.institution} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], institution: e.target.value }; onChange(n); }} />
-            <PixelInput label="Título" value={edu.degree} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], degree: e.target.value }; onChange(n); }} />
-            <PixelInput label="Campo" value={edu.field} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], field: e.target.value }; onChange(n); }} />
-            <div className="flex gap-2">
-              <PixelInput label="Inicio" value={edu.start_year} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], start_year: e.target.value }; onChange(n); }} placeholder="2020" />
-              <PixelInput label="Fin" value={edu.end_year} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], end_year: e.target.value }; onChange(n); }} placeholder="2024" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SectionExp({ title, items, onChange, nested = false }: { title: string; items: ExpEntry[]; onChange: (v: ExpEntry[]) => void; nested?: boolean }) {
-  return (
-    <div className={nested ? '' : 'pt-4 border-t border-digi-border'}>
-      <div className="flex items-center justify-between mb-2.5">
-        <h4 className={`inline-flex items-center gap-1.5 ${nested ? 'text-[12.5px]' : 'text-[13px]'} font-semibold text-digi-text`} style={mf}><Briefcase className="w-4 h-4 text-accent" /> {title}</h4>
-        <button onClick={() => onChange([...items, emptyExp()])} className={addBtn} style={mf}><Plus className="w-3.5 h-3.5" /> Agregar</button>
-      </div>
-      {items.length === 0 && <p className="text-[12px] text-digi-muted/60" style={mf}>Sin experiencia registrada.</p>}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-        {items.map((exp, i) => (
-          <div key={i} className="relative rounded-lg border border-digi-border bg-digi-darker p-3 grid grid-cols-2 gap-2">
-            <button onClick={() => onChange(items.filter((_, k) => k !== i))} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-digi-card border border-digi-border flex items-center justify-center text-digi-muted hover:text-red-600 hover:border-red-300 transition-colors" title="Quitar"><Trash2 className="w-3.5 h-3.5" /></button>
-            <PixelInput label="Empresa" value={exp.company} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], company: e.target.value }; onChange(n); }} />
-            <PixelInput label="Cargo" value={exp.position} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], position: e.target.value }; onChange(n); }} />
-            <div className="col-span-2"><PixelInput label="Descripción" value={exp.description} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], description: e.target.value }; onChange(n); }} /></div>
-            <PixelInput label="Inicio" value={exp.start_year} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], start_year: e.target.value }; onChange(n); }} placeholder="2020" />
-            <PixelInput label="Fin" value={exp.end_year} onChange={(e) => { const n = [...items]; n[i] = { ...n[i], end_year: e.target.value }; onChange(n); }} placeholder="Actual" />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

@@ -287,7 +287,19 @@ Stack estándar de la casa, con particularidades de este repo:
   - **CV por talentos (2026-07-09):** `CvPanel` sección "Talentos" (cada talento con educación/experiencia/**servicios**
     propios). Servicios del usuario = filas `services` con `member_id`+`talent`+`is_active`; `member_cv_profiles.talents`
     JSONB para edu/exp. APIs `/api/members/[id]/services` (GET/POST) y `/[sid]` (PATCH/DELETE). El "Nuevo ticket" lista
-    solo **mis servicios activos** (de mis talentos) en el desplegable de Servicio.
+    solo **mis servicios activos** (de mis talentos) en el desplegable de Servicio. **`canManage`**: dueño
+    (`users.member_id === id`) o admin; el candidato edita su CV/servicios porque se le enlaza `member_id` sin cambiar rol.
+    - **Refinamientos de UI (2026-07-09):** se **quitaron** educación/experiencia **globales** (solo viven por talento);
+      **idiomas** = `MultiSelectSearch` (lista `LANGUAGES`); **skills** se agregan de a una en un **modal** (sin comas);
+      **selector de talento con buscador** (`TalentPicker`) ordenado ascendente (`localeCompare('es')`); cada talento es una
+      **pestaña horizontal** (no tarjeta apilada) con **icono de tacho** que abre `PixelConfirm` para eliminarlo (borra
+      también sus servicios). **`base_price` NUNCA null** (columna NOT NULL): al crear/editar un servicio sin precio se usa
+      **`0`** por defecto — así se agrega el servicio y luego se define el precio editándolo.
+    - **Listas + formulario en modal (2026-07-09):** educación/experiencia/servicios ya NO usan formularios inline (ocupaban
+      demasiado alto). Cada sección muestra solo una **lista compacta** de lo agregado (`ItemRow`: título + subtítulo +
+      meta año/precio + badge "Inactivo"); **Agregar** o **clic en una fila** abren un **`PixelModal` (panel lateral, overlay)**
+      con el formulario (`FormShell`: campos + pie Cancelar/Guardar). Servicios se guardan por API al confirmar el modal
+      (POST nuevo / PATCH editar), edu/exp viven en `talents[]` y persisten con "Guardar CV". Precio se muestra con `money()`.
 - **Facturas por usuario + etiqueta de rol (2026-07-09):** en **Facturas** (`/dashboard/invoices`), staff
   (member/admin) ve TODAS; **candidato/cliente solo ve las SUYAS**: `GET /api/invoices` (y el detalle `[id]`)
   filtran por pertenencia — `i.client_id = <clients.id del usuario>` (suscripción/factura directa) **OR**

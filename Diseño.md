@@ -413,6 +413,19 @@ usa **todo el ancho** en layouts multi-columna y **SIN scroll interno** (la pág
 nunca ocultar campos tras scroll de un componente). Los paneles CV/Disponibilidad/Portafolio son **contenido "bare"** (sin shell);
 `SettingsPanel` (shell con cabecera) es de **altura natural** y solo lo usa Perfil. Portafolio = **tabla** (no grilla).
 
+### Lista compacta + formulario en modal (colecciones dentro de un panel) — estándar reusable
+Adoptado 2026-07-09 en **Mi CV** (`components/settings/CvPanel.tsx`, secciones Educación/Experiencia/Servicios por talento).
+Para colecciones de sub-ítems **NO usar formularios inline por ítem** (ocupan demasiado alto). En su lugar:
+- **Encabezado de sección** (`ListSection`): icono + título + botón `Agregar` (`addBtn`, dashed) a la derecha; texto de vacío
+  suave (`text-digi-muted/60`) cuando no hay ítems; `pt-3 border-t` entre secciones (`topBorder`).
+- **Fila compacta** (`ItemRow`): `rounded-lg border border-digi-border bg-digi-darker/40`, **clic = editar**; muestra
+  **título** (font-medium) + **subtítulo** truncado (`text-digi-muted`) + **meta** a la derecha (año/precio, `tabular-nums`) +
+  opcional **badge** ("Inactivo") + acciones **lápiz** (editar) y **tacho** (eliminar). Hover `border-accent/60`.
+- **Formulario en modal** (`PixelModal` size md → **panel lateral derecho con overlay**, el estándar de formularios): dentro,
+  `FormShell` = campos + **pie fijo Cancelar (`BTN_SECONDARY`) / Guardar (`BTN_PRIMARY`)**; `submit` guarda y cierra. Un solo
+  estado de draft por colección (`{idx|id, draft}`), `null` = cerrado. Sirve para agregar y editar (mismo modal).
+Precios/números en la fila con `money()`/`fmt2` de `lib/format.ts`. Reusar este patrón para cualquier lista editable embebida.
+
 ### Banner flotante de políticas (Comandos Violeta) — header morado + pestañas
 `components/dashboard/PolicyBanner.tsx` (solo /dashboard/, montado en el layout). **FIJO arriba, fuera del flujo** (`fixed`,
 `pointer-events-none` salvo el card) → **no desplaza el contenido** (nunca ponerlo dentro de `<main>`). Estructura tipo pestañas de
