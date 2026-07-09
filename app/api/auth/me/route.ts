@@ -34,7 +34,10 @@ export async function GET() {
   const row = result.rows[0];
   // El admin también puede tener secciones de miembro (CV/Portafolio/Disponibilidad):
   // enlazamos (idempotente) un perfil de miembro sin cambiar su rol.
-  if (row.role === "admin" && !row.member_id) {
+  // El admin también puede tener secciones de miembro; y el CANDIDATO usa CV/Portafolio/
+  // Disponibilidad como su hoja de vida. A ambos se les enlaza (idempotente) un perfil de
+  // miembro SIN cambiar su rol (el acceso admin/candidato sigue dependiendo de role/account_type).
+  if (!row.member_id && (row.role === "admin" || row.account_type === "candidate")) {
     const name = [row.first_name, row.last_name].filter(Boolean).join(" ");
     const memberId = await ensureAdminMember(row.id, row.email, name);
     if (memberId) row.member_id = memberId;
