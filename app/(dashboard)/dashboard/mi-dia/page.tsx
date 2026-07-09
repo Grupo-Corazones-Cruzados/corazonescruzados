@@ -54,6 +54,8 @@ export default function MiDiaPage() {
   const [initialType, setInitialType] = useState<EventType>('progreso');
   const [initialTaskId, setInitialTaskId] = useState<number | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  // Popover para marcar el estado de una tarea generada al hacer clic en su bloque del calendario.
+  const [genPopover, setGenPopover] = useState<{ id: number; title: string; status: Status; x: number; y: number } | null>(null);
   const [availability, setAvailability] = useState<AvailabilityStatus>('conectado');
   const [savingAvail, setSavingAvail] = useState(false);
   // Grupos de fecha del panel de eventos: contraídos por defecto (Set de días expandidos).
@@ -106,6 +108,35 @@ export default function MiDiaPage() {
   useEffect(() => { loadHorario(); }, [loadHorario]);
 
   const instances: EventInstance[] = useMemo(() => expandEvents(events, range.s, range.e), [events, range]);
+
+  // Bloques SINTÉTICOS de las tareas generadas por política, para pintarlas en la grilla del
+  // calendario (además del rail). Color por estado: completada=verde, fallida=rojo, pendiente=violeta.
+  const generatedInstances: EventInstance[] = useMemo(() => horario.generated.map((g) => {
+    const start = new Date(`${g.day}T00:00:00`);
+    const end = new Date(`${g.day}T00:00:00`);
+    if (g.allDay) { start.setHours(0, 0, 0, 0); end.setHours(23, 59, 0, 0); }
+    else {
+      const [sh, sm] = (g.startTime || '09:00').split(':').map((n) => parseInt(n, 10));
+      const [eh, em] = (g.endTime || '10:00').split(':').map((n) => parseInt(n, 10));
+      start.setHours(Number.isFinite(sh) ? sh : 9, Number.isFinite(sm) ? sm : 0, 0, 0);
+      end.setHours(Number.isFinite(eh) ? eh : 10, Number.isFinite(em) ? em : 0, 0, 0);
+      if (end.getTime() <= start.getTime()) end.setTime(start.getTime() + 60 * 60 * 1000);
+    }
+    const color = g.status === 'completed' ? '#22c55e' : g.status === 'failed' ? '#ef4444' : '#7c3aed';
+    return {
+      id: `gen-${g.id}`, title: g.title, description: g.detail || null,
+      event_type: 'personal', client_id: null, client_name: null,
+      start_at: start.toISOString(), end_at: end.toISOString(),
+      all_day: g.allDay, timezone: 'America/Guayaquil',
+      recurrence_type: 'none', recurrence_days: null, recurrence_interval: 1, recurrence_until: null,
+      color, status: 'confirmed', alternative_id: null,
+      instanceStart: start, instanceEnd: end, isRecurring: false,
+      generated: true, generatedId: g.id, generatedStatus: g.status,
+    } as EventInstance;
+  }), [horario.generated]);
+  // Solo el calendario recibe eventos + tareas generadas; el panel "Eventos" izquierdo usa `instances`.
+  const allInstances = useMemo(() => [...instances, ...generatedInstances], [instances, generatedInstances]);
+
   const taskById = useMemo(() => new Map(horario.tasks.map((t) => [t.id, t])), [horario.tasks]);
   const taskOptions: TaskOption[] = useMemo(() => horario.tasks.map((t) => ({ id: t.id, title: t.title })), [horario.tasks]);
 
@@ -185,6 +216,18 @@ export default function MiDiaPage() {
         if (!res.ok) throw new Error();
       } catch { toast.error('No se pudo actualizar el estado'); loadHorario(); }
     }
+  };
+
+  // Clic en un bloque de tarea generada → abre el popover de estado en el punto del clic.
+  const onGeneratedBlockClick = (ev: EventInstance, e: React.MouseEvent) => {
+    const g = horario.generated.find((x) => x.id === ev.generatedId);
+    if (!g) return;
+    setGenPopover({ id: g.id, title: g.title, status: g.status, x: e.clientX, y: e.clientY });
+  };
+  const setGenPopoverStatus = (status: Status) => {
+    if (!genPopover) return;
+    setTaskStatus({ id: genPopover.id, alternativeId: -1, auto: false, gen: true }, '', status);
+    setGenPopover((p) => (p ? { ...p, status } : p));
   };
 
   const handleSave = async (payload: EventFormPayload, id?: string) => {
@@ -292,7 +335,7 @@ export default function MiDiaPage() {
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-digi-muted" style={mf}><CalendarDays className="w-4 h-4 animate-pulse" /> Cargando…</div>
             ) : (
-              <CalendarView view={view} currentDate={currentDate} instances={instances} onDayClick={handleDayClick} onEventClick={handleEventClick} />
+              <CalendarView view={view} currentDate={currentDate} instances={allInstances} onDayClick={handleDayClick} onEventClick={handleEventClick} onGeneratedClick={onGeneratedBlockClick} />
             )}
           </div>
 
@@ -382,6 +425,22 @@ export default function MiDiaPage() {
       />
 
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
+
+      {/* Popover de estado de una tarea generada (clic en su bloque del calendario) */}
+      {genPopover && (
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setGenPopover(null)} />
+          <div className="fixed z-[61] w-[224px] p-2.5 rounded-lg bg-digi-card border border-digi-border shadow-xl -translate-x-1/2"
+            style={{ left: Math.min(Math.max(genPopover.x, 120), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 120), top: genPopover.y + 10 }}>
+            <div className="flex items-start gap-1.5 mb-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-violet-400" />
+              <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{genPopover.title}</p>
+            </div>
+            <p className="text-[10.5px] text-digi-muted mb-2" style={mf}>Marca el estado de esta tarea.</p>
+            <TaskStatusButtons value={genPopover.status} onChange={setGenPopoverStatus} />
+          </div>
+        </>
+      )}
       </div>
     </div>
   );

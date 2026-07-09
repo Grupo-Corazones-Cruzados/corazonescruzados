@@ -17,6 +17,8 @@ interface Props {
   instances: EventInstance[];
   onDayClick: (date: Date) => void;
   onEventClick: (ev: EventInstance) => void;
+  // Clic sobre un bloque de tarea GENERADA por política (abre popover de estado).
+  onGeneratedClick?: (ev: EventInstance, e: React.MouseEvent) => void;
 }
 
 const WEEK_HOUR_START = 0;
@@ -86,7 +88,7 @@ function dayTotals(instances: EventInstance[], day: Date): { work: number; perso
   let work = 0;
   let personal = 0;
   for (const ev of instances) {
-    if (ev.status === 'proposed') continue;
+    if (ev.status === 'proposed' || ev.generated) continue; // las tareas de política no cuentan como horas
     const s = Math.max(ev.instanceStart.getTime(), ds);
     const e = Math.min(ev.instanceEnd.getTime(), de);
     if (e <= s) continue;
@@ -126,7 +128,7 @@ function DayTotals({ totals }: { totals: { work: number; personal: number } }) {
   );
 }
 
-function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) {
+function MonthView({ currentDate, instances, onDayClick, onEventClick, onGeneratedClick }: Props) {
   const cells = useMemo(() => {
     const first = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const start = new Date(first);
@@ -188,9 +190,9 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) 
                   return (
                     <div
                       key={`${ev.id}-${i}`}
-                      onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                      onClick={(e) => { e.stopPropagation(); if (ev.generated && onGeneratedClick) onGeneratedClick(ev, e); else onEventClick(ev); }}
                       className={`text-[10.5px] px-1.5 py-0.5 rounded-[3px] truncate border-l-[3px] hover:opacity-80 transition-opacity ${
-                        proposed ? 'border-dashed italic' : ''
+                        proposed ? 'border-dashed italic' : ev.generated ? 'border-dashed' : ''
                       }`}
                       style={{
                         ...mf,
@@ -219,7 +221,7 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick }: Props) 
   );
 }
 
-function WeekView({ currentDate, instances, onDayClick, onEventClick }: Props) {
+function WeekView({ currentDate, instances, onDayClick, onEventClick, onGeneratedClick }: Props) {
   const weekDays = useMemo(() => {
     const start = new Date(currentDate);
     start.setDate(start.getDate() - start.getDay());
@@ -283,6 +285,7 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick }: Props) {
             now={now}
             onDayClick={onDayClick}
             onEventClick={onEventClick}
+            onGeneratedClick={onGeneratedClick}
           />
         ))}
       </div>
@@ -290,7 +293,7 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick }: Props) {
   );
 }
 
-function DayView({ currentDate, instances, onDayClick, onEventClick }: Props) {
+function DayView({ currentDate, instances, onDayClick, onEventClick, onGeneratedClick }: Props) {
   const hours = Array.from({ length: WEEK_HOUR_END - WEEK_HOUR_START + 1 }, (_, i) => i + WEEK_HOUR_START);
   const now = useEcuadorNow();
   return (
@@ -323,6 +326,7 @@ function DayView({ currentDate, instances, onDayClick, onEventClick }: Props) {
           now={now}
           onDayClick={onDayClick}
           onEventClick={onEventClick}
+          onGeneratedClick={onGeneratedClick}
         />
       </div>
     </div>
@@ -336,6 +340,7 @@ function DayColumn({
   now,
   onDayClick,
   onEventClick,
+  onGeneratedClick,
 }: {
   day: Date;
   instances: EventInstance[];
@@ -343,6 +348,7 @@ function DayColumn({
   now?: NowParts | null;
   onDayClick: (d: Date) => void;
   onEventClick: (ev: EventInstance) => void;
+  onGeneratedClick?: (ev: EventInstance, e: React.MouseEvent) => void;
 }) {
   const dayStart = startOfDay(day);
   const dayEnd = endOfDay(day);
@@ -403,9 +409,9 @@ function DayColumn({
         return (
           <div
             key={`${ev.id}-${i}`}
-            onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+            onClick={(e) => { e.stopPropagation(); if (ev.generated && onGeneratedClick) onGeneratedClick(ev, e); else onEventClick(ev); }}
             className={`absolute left-1 right-1 px-1.5 py-1 text-[10.5px] rounded-[4px] overflow-hidden hover:opacity-90 transition-opacity border-l-[3px] ${
-              proposed ? 'border-dashed italic' : ''
+              proposed ? 'border-dashed italic' : ev.generated ? 'border-dashed' : ''
             }`}
             style={{
               ...mf,

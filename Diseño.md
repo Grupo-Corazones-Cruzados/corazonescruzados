@@ -394,6 +394,13 @@ etiquetas). Tarjeta con **borde `border-dashed`** y color por **fuente**, que vi
   (`Clock`) y permite **editar etiquetas** (aplican a todos sus días). Estado/etiquetas vía `PATCH /api/centralized/horario/generated`.
 Ambas usan `TaskStatusButtons` en el panel y muestran la nota "Fijada …; no se mueve ni se quita, pero puedes marcar su estado".
 Archivos: `components/centralized/systems/HorarioDeVidaSystem.tsx` (calendario semanal + panel) y `app/(dashboard)/dashboard/mi-dia/page.tsx` (rail).
+- **Como BLOQUES en el calendario de Mi día (2026-07-08):** además del rail, las tareas generadas se pintan en la grilla
+  (`CalendarView`, mes/semana/día) como bloques **punteados** en su franja horaria (o todo el día) los días activos. Se
+  construyen como `EventInstance` sintéticos (`generated:true`, `generatedId`, `generatedStatus`) y se marcan con **color por
+  estado** vía `color` (completada `#22c55e` · fallida `#ef4444` · pendiente violeta `#7c3aed`). No cuentan como horas del día
+  (`dayTotals` los excluye). **Clic → popover** posicionado en el punto del clic con `TaskStatusButtons` (`onGeneratedClick`);
+  no abren el `EventModal`. Regla: para inyectar "bloques no-evento" en el calendario, usar `EventInstance` con `generated` +
+  un `onGeneratedClick` propio, nunca el flujo de edición de eventos reales.
 
 ### Configuración — Perfil fijo + pestañas (estándar de la página de ajustes)
 `settings/page.tsx` = **Perfil fijo a la izquierda** (`ProfilePanel`, `w-[400px]`) + a la derecha una tarjeta con **pestañas

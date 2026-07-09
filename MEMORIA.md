@@ -312,7 +312,10 @@ Stack estándar de la casa, con particularidades de este repo:
     `getSubjectHorario` → fluye a `/horario` (sistema) y `/horario/me` (Mi día). **UI:** aparecen como entradas **FIJAS** (igual que
     las auto de ticket/proyecto) — el usuario NO las quita, solo cambia **estado** y **etiquetas**: en `HorarioDeVidaSystem.tsx`
     (tarjeta violeta punteada `ShieldCheck` + panel de detalle con `TaskStatusButtons` y editor de etiquetas propio) y en **Mi día**
-    (rail, estado). **Endpoint** `PATCH /api/centralized/horario/generated` (`{id,status}` o `{id,values,talents}`; etiquetas se
+    (rail, estado) **+ como BLOQUES en el calendario** (2026-07-08): `generatedInstances` sintéticos (EventInstance con
+    `generated:true`) se fusionan en `allInstances` y `CalendarView` los pinta en su franja (o todo el día) los días activos,
+    **punteados y con color por estado** (verde/rojo/violeta); clic → **popover** con `TaskStatusButtons` (no cuentan en las horas del
+    día; `dayTotals` los ignora). **Endpoint** `PATCH /api/centralized/horario/generated` (`{id,status}` o `{id,values,talents}`; etiquetas se
     aplican a TODOS los días del grupo function_id+program_idx). **Scoring:** `getSubjectsProfileScores` suma las generadas
     completadas/fallidas (mismo formato) — su historial puntúa aunque la política se desactive. `setGeneratedStatus`/
     `setGeneratedLabels` en `horario-db.ts`. Verificado: `tsc`+`next build` OK + expansión/idempotencia probadas en Postgres (rollback).

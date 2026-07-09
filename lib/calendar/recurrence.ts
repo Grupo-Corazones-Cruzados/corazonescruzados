@@ -26,6 +26,11 @@ export interface EventInstance extends CalendarEvent {
   instanceStart: Date;
   instanceEnd: Date;
   isRecurring: boolean;
+  // Bloque SINTÉTICO de una tarea generada por política (no es un evento real del calendario):
+  // se pinta en la grilla con color según su estado y su clic abre un popover para marcarlo.
+  generated?: boolean;
+  generatedId?: number;
+  generatedStatus?: 'pending' | 'completed' | 'failed';
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
