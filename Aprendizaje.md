@@ -27,6 +27,27 @@ Horario de Vida / Mi día y el enforcement de Comandos Violeta.
   Vida como entradas FIJAS (estilo auto de ticket/proyecto). Solo estado + etiquetas editables.
 - `PATCH /api/centralized/horario/generated`; scoring incluye las generadas completadas/fallidas.
 
+### Ampliaciones de la MISMA sesión (2026-07-08) — todas implementadas + verificadas (tsc/build/Postgres rollback)
+Todo lo detallado en `MEMORIA.md`; aquí el arco de aprendizaje del objetivo, que fue creciendo:
+1. **Alcance "todos los usuarios"** — `TaskProgram.scope` = `'user' | 'all'`. En `'all'`, la materialización
+   expande a `getAllTaskSubjects()` (miembros activos + candidatos aprobados = quienes salen en `UsersList`),
+   una fila por sujeto/día. Se resuelve **en la activación** (usuarios nuevos no la reciben salvo re-activar).
+   Aprendizaje: el targeting por-usuario ya cuadraba; "todos" es solo fan-out sobre el mismo INSERT idempotente.
+2. **Re-sync al editar función de política ACTIVA** — el bug real: editar la config guardaba pero NO re-materializaba
+   (solo desactivar+activar lo hacía). Fix: `createFunction`/`updateFunctionConfig` → **`resyncFunctionTasks`**
+   (si activa + `generate_tasks`: borra PENDIENTES de esa función y re-materializa; `ON CONFLICT DO NOTHING`
+   conserva completadas/fallidas). Borrar la función limpia por FK `ON DELETE CASCADE`.
+3. **Tareas de política como BLOQUES en el calendario de Mi día** — decisión del usuario: sí, además del rail;
+   color por estado (verde/rojo/violeta); clic → popover con `TaskStatusButtons`. Técnica: `EventInstance`
+   sintéticos (`generated:true`) fusionados en `allInstances` solo para el calendario; `CalendarView` gana
+   `onGeneratedClick` y `dayTotals` los excluye de las horas.
+4. **UI del modal Generar tareas** — panel de tareas a la DERECHA (estilo Horario de Vida: chip de etiquetas
+   icono+contador con burbuja); **seleccionar tarjeta = editar** esa tarea en el formulario ("Guardar cambios").
+5. **Fixes de diseño transversales**: tipo de evento **Laboral→Progreso** (rename de valor `work`→`progreso` +
+   migración BD); campo "Tarea del horario" del EventModal ahora **solo-lectura** y solo vía "Registrar tiempo";
+   indicador de **política activa = anillo esmeralda** (no punto verde) + **leyenda-filtros** (hover/pin) con
+   Tipos + Estado; `MultiSelectSearch` con **chips debajo** del buscador.
+
 ### Decisiones del usuario (2026-07-08)
 - **P5 · ✅ SÍ alimentan el perfil**: completar/fallar una tarea generada suma/resta a sus valores/talentos
   (igual que el Horario de Vida).
