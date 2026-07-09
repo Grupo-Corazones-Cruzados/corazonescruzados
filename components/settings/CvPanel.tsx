@@ -4,11 +4,17 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
+import PixelModal from '@/components/ui/PixelModal';
+import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { TALENTOS } from '@/lib/centralized/talentos';
-import { Plus, Trash2, GraduationCap, Briefcase, Save, Sparkles, Wrench } from 'lucide-react';
+import { Plus, Trash2, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
+
+// Idiomas para el multiselector (evita escribirlos a mano).
+const LANGUAGES = ['Español', 'Inglés', 'Portugués', 'Francés', 'Italiano', 'Alemán', 'Chino (Mandarín)', 'Japonés', 'Coreano', 'Ruso', 'Árabe', 'Kichwa', 'Catalán', 'Neerlandés', 'Hindi'];
+const LANG_OPTIONS = LANGUAGES.map((l) => ({ value: l, label: l }));
 
 interface EduEntry { institution: string; degree: string; field: string; start_year: string; end_year: string; }
 interface ExpEntry { company: string; position: string; description: string; start_year: string; end_year: string; }
@@ -27,24 +33,29 @@ export default function CvPanel() {
   const { user } = useAuth();
   const memberId = user?.member_id;
   const [bio, setBio] = useState('');
-  const [skills, setSkills] = useState('');
-  const [languages, setLanguages] = useState('');
+  const [skills, setSkills] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<string[]>([]);
   const [linkedin, setLinkedin] = useState('');
   const [website, setWebsite] = useState('');
+  // Educación/experiencia GLOBALES ya no se editan (cada talento tiene la suya); se
+  // conservan en estado para no perder datos previos al guardar.
   const [education, setEducation] = useState<EduEntry[]>([]);
   const [experience, setExperience] = useState<ExpEntry[]>([]);
   const [talents, setTalents] = useState<TalentEntry[]>([]);
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [newTalent, setNewTalent] = useState('');
+  // Modal para gestionar skills una por una (sin comas).
+  const [skillsModal, setSkillsModal] = useState(false);
+  const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
     if (!memberId) return;
     fetch(`/api/members/${memberId}/cv`).then((r) => r.json()).then((data) => {
       if (!data.cv) return;
       setBio(data.cv.bio || '');
-      setSkills((data.cv.skills || []).join(', '));
-      setLanguages((data.cv.languages || []).join(', '));
+      setSkills(Array.isArray(data.cv.skills) ? data.cv.skills : []);
+      setLanguages(Array.isArray(data.cv.languages) ? data.cv.languages : []);
       setLinkedin(data.cv.linkedin_url || '');
       setWebsite(data.cv.website_url || '');
       setEducation(data.cv.education || []);
@@ -63,8 +74,8 @@ export default function CvPanel() {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bio,
-          skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
-          languages: languages.split(',').map((s) => s.trim()).filter(Boolean),
+          skills,
+          languages,
           linkedin_url: linkedin, website_url: website, education, experience, talents,
         }),
       });
@@ -72,6 +83,14 @@ export default function CvPanel() {
       toast.success('CV actualizado');
     } catch { toast.error('Error al guardar'); }
     finally { setSaving(false); }
+  };
+
+  // ── Skills ────────────────────────────────────────────────────────────────
+  const addSkill = () => {
+    const s = newSkill.trim();
+    if (!s || skills.includes(s)) { setNewSkill(''); return; }
+    setSkills([...skills, s]);
+    setNewSkill('');
   };
 
   // ── Talentos ──────────────────────────────────────────────────────────────
@@ -128,16 +147,24 @@ export default function CvPanel() {
           <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Describe tu experiencia…"
             className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
         </div>
-        <PixelInput label="Skills (separados por coma)" value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Next.js, PostgreSQL, …" />
-        <PixelInput label="Idiomas (separados por coma)" value={languages} onChange={(e) => setLanguages(e.target.value)} placeholder="Español, Inglés" />
+        {/* Skills — chips gestionados en un modal (una por una, sin comas) */}
+        <div>
+          <label className="text-[12px] font-medium text-digi-text mb-1 inline-flex items-center gap-1.5" style={mf}><Tag className="w-3.5 h-3.5 text-accent" /> Skills</label>
+          <button type="button" onClick={() => setSkillsModal(true)}
+            className="field-control w-full min-h-[42px] px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-left flex flex-wrap gap-1.5 items-center hover:border-accent transition-colors" style={mf}>
+            {skills.length === 0
+              ? <span className="text-[13px] text-digi-muted/50">Agregar skills…</span>
+              : skills.map((s) => <span key={s} className="text-[11px] px-1.5 py-0.5 rounded bg-accent-light text-accent">{s}</span>)}
+          </button>
+        </div>
+        {/* Idiomas — multiselección */}
+        <div>
+          <label className="text-[12px] font-medium text-digi-text mb-1 block" style={mf}>Idiomas</label>
+          <MultiSelectSearch options={LANG_OPTIONS} selected={languages} onChange={setLanguages} placeholder="Elegir idiomas…" />
+        </div>
         <PixelInput label="LinkedIn" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="https://linkedin.com/in/…" />
         <PixelInput label="Website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" />
       </div>
-
-      {/* Educación (general) */}
-      <SectionEdu title="Educación" items={education} onChange={setEducation} />
-      {/* Experiencia (general) */}
-      <SectionExp title="Experiencia" items={experience} onChange={setExperience} />
 
       {/* Talentos */}
       <div className="pt-4 border-t border-digi-border">
@@ -197,6 +224,32 @@ export default function CvPanel() {
           <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar CV'}
         </button>
       </div>
+
+      {/* Modal de skills: se agregan una por una (Enter o botón), como chips. */}
+      <PixelModal open={skillsModal} onClose={() => setSkillsModal(false)} title="Skills">
+        <div className="space-y-3">
+          <p className="text-[12px] text-digi-muted" style={mf}>Agrega tus skills una por una. Pulsa Enter o “Agregar”.</p>
+          <div className="flex gap-2">
+            <input value={newSkill} onChange={(e) => setNewSkill(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
+              placeholder="Ej. React" autoFocus
+              className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+            <button type="button" onClick={addSkill} disabled={!newSkill.trim()} className={`${BTN_PRIMARY} disabled:opacity-50`}><Plus className="w-4 h-4" /> Agregar</button>
+          </div>
+          {skills.length === 0 ? (
+            <p className="text-[12px] text-digi-muted/60" style={mf}>Aún no agregas skills.</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {skills.map((s) => (
+                <span key={s} className="inline-flex items-center gap-1 text-[12px] px-2 py-1 rounded-full bg-accent-light text-accent" style={mf}>
+                  {s}
+                  <button type="button" onClick={() => setSkills(skills.filter((x) => x !== s))} className="hover:text-accent-hover" aria-label={`Quitar ${s}`}><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </PixelModal>
     </div>
   );
 }
