@@ -83,7 +83,7 @@ export default function AssigneePicker({
         {/* Nombre del seleccionado sobre el input cuando no se escribe (no captura clics) */}
         {selected && !q && (
           <div className="absolute inset-y-0 left-8 right-8 flex items-center gap-2 pointer-events-none">
-            <span className="text-[13px] font-medium text-digi-text truncate" style={mf}>{selected.name}</span>
+            <span className="flex-1 min-w-0 text-[13px] font-medium text-digi-text truncate" style={mf}>{selected.name}</span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full border shrink-0 ${roleColor(selected.role)}`} style={mf}>{selected.role}</span>
           </div>
         )}
@@ -114,12 +114,14 @@ export default function AssigneePicker({
                     {active && <Check className="w-3 h-3" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[12.5px] font-medium text-digi-text truncate" style={mf}>{a.name}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${roleColor(a.role)}`} style={mf}>{a.role}</span>
-                      <span className="inline-flex items-center gap-1 text-[10.5px] text-digi-muted" style={mf} title={`Prospección · +${a.prospeccion.pos} / −${a.prospeccion.neg}`}>
-                        <Target className="w-3 h-3 text-accent" />
-                        <span className={`font-semibold tabular-nums ${net > 0 ? 'text-emerald-600' : net < 0 ? 'text-red-600' : ''}`}>{net > 0 ? `+${net}` : net}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 min-w-0 text-[12.5px] font-medium text-digi-text truncate" style={mf}>{a.name}</span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${roleColor(a.role)}`} style={mf}>{a.role}</span>
+                        <span className="inline-flex items-center gap-1 text-[10.5px] text-digi-muted tabular-nums w-9 justify-end" style={mf} title={`Prospección · +${a.prospeccion.pos} / −${a.prospeccion.neg}`}>
+                          <Target className="w-3 h-3 text-accent" />
+                          <span className={`font-semibold ${net > 0 ? 'text-emerald-600' : net < 0 ? 'text-red-600' : ''}`}>{net > 0 ? `+${net}` : net}</span>
+                        </span>
                       </span>
                     </div>
                     {a.top_talents.length > 0 && (
