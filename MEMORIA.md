@@ -267,6 +267,36 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Sistema "Gestión de Datos" — Centralizado · pilar · fundamentación (Fase A, 2026-07-11):** nuevo sistema built-in
+  (celda "Academia", slug `gestion-de-datos`, sembrado idempotente en `ensureTable()` de
+  `app/api/centralized/systems/route.ts`; dispatch por slug en `[piso]/[paso]/[slug]/page.tsx` →
+  `GestionDeDatosSystem`). **Ordena datos recolectados aplicando la condiciología como método de clasificación**
+  (para objetos/materias de conocimiento, no comportamientos). Tubería de 9 niveles: **Problemática(REF≤4) →
+  Problemas · Fuentes → Enfrentamientos → Códigos(verificables) → Categorías → [Piezas → Rompecabezas → Subtemas →
+  Temas]**. Spec verbatim + motor de nomenclatura en `Aprendizaje.md`.
+  - **UI calcada de Comandos Violeta:** panel izq = Problemáticas (crear/editar/eliminar); centro = **grafo
+    `react-force-graph-2d`** (`components/centralized/gestion-datos/GdGraph.tsx`, formas por tipo:
+    problema=triángulo/fuente premisa=círculo/peso=cuadrado/enfrentamiento=rombo/código=hexágono/categoría=estrella;
+    código verificado=anillo esmeralda; leyenda-filtro hover+pin) + toolbar (Fuente/Problema/Enfrentar/Código/Categoría);
+    panel flotante de detalle + `FloatingWindow` para los modales multi-select. Componente
+    `components/centralized/systems/GestionDeDatosSystem.tsx`.
+  - **Modelo de datos (Fase A, tablas prefijo `gd_` en `lib/centralized/gestion-datos-db.ts`):** `gd_problematicas`
+    (ref UNIQUE ≤4), `gd_problemas`, `gd_fuentes` (tipo_dato cantidad|cualidad, tipo_logica premisa|peso, credibilidad
+    0–100 base + `credibilidad_efectiva`, `seq`), `gd_fuente_pesos` (peso→premisa, promedia credibilidad),
+    `gd_enfrentamientos` (ganó/perdió por credibilidad + texto manual), `gd_codigos` (+ `gd_codigo_unidades`,
+    `gd_codigo_eventos` título+url), `gd_categorias` (por problemática) + `gd_categoria_codigos`. Dominio puro en
+    `lib/centralized/gestion-datos.ts` (nomenclatura + `aplicarPeso`).
+  - **Nomenclatura (verificada contra los ejemplos del usuario):** premisa `REF-n` (seq POR problemática); peso `Ref-n`
+    (seq **GLOBAL**); enfrentada `REF-ganó.perdió`; código `COD-REF-u1/u2/…` (u = `n` o `g.p`); categoría `CAT-n-COD-…`.
+  - **APIs** `app/api/centralized/gestion-datos/**` (9 rutas, guard `['admin','member']`): grafo, problematicas,
+    problemas, fuentes, pesos, enfrentamientos, codigos, codigos/eventos, categorias.
+  - **Decisiones del usuario (2026-07-11):** por **fases**; **credibilidad 0–100 %**; **categorías por problemática**;
+    **piezas = solo visualización** (llegan del futuro sistema "metodología condiciológica"; rompecabezas a la espera).
+  - **Fase B/C PENDIENTE:** Piezas (visualización + variables mental/corporal/ambiental + restricciones), Situaciones y
+    Materias (listas globales), Rompecabezas (nombre manual + validación por restricciones), Subtemas (+hipótesis),
+    Temas (prosa + materias + problemas). **Asunción a confirmar (P5):** matemática del peso al *contradecir*
+    (`(actual + (100−peso))/2`). Verificado: tsc + `next build` OK; lógica pura (nomenclatura/credibilidad) probada
+    offline; INSERT contra Railway no probado desde el entorno (red aislada). **Falta validación visual en vivo.**
 - **Proyectos: Nuevo vs Solicitar + responsable/participantes (2026-07-09):** se replicó el patrón de tickets en
   `/dashboard/projects`. Dos botones: **"Solicitar proyecto"** (TODOS) = `mode='request'`, YO soy el **cliente**
   (`ensureUserClientAccount`), y elijo **un miembro** (queda **INVITADO a aceptar el liderazgo**, no responsable directo) o

@@ -1,11 +1,173 @@
-# Aprendizaje — Módulo "Suscripciones" (cobros mensuales recurrentes → factura + email + ingreso)
+# Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
 > Documento vivo de la skill `/aprendizaje`. Acumula todas las preguntas técnicas y sus
 > respuestas hasta dominar el problema y resolverlo sin fallos.
 >
 > **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
-## Objetivo ACTUAL (declarado 2026-07-08) — Comandos Violeta: generación REAL de tareas al activar una política
+## Objetivo ACTUAL (declarado 2026-07-11) — Sistema "Gestión de Datos" en Centralizado
+
+**Necesidad:** nuevo sistema en `/dashboard/centralized`, piso **pilar**, paso **fundamentación**
+(slug propuesto `gestion-de-datos`). Gestiona y ordena los **datos recolectados** aplicando la
+**condiciología** como método de clasificación de datos (para objetos/materias de conocimiento, no para
+comportamientos). Interfaz **calcada de Comandos Violeta**: panel lateral izquierdo (aquí = lista de
+**Problemáticas**) + panel derecho "universo de gráficos" (grafo) para operar toda la tubería de
+clasificación. **UI genérica todavía por afinar; foco primero en el modelo de datos + motor de
+nomenclatura correctos.**
+
+### Rol asumido
+**Arquitecto de datos + ingeniero full-stack (Next.js 15 App Router + Postgres crudo `pg`, schema
+`gcc_world`)**, con foco en un **motor de nomenclatura/clasificación** determinista y en replicar el
+patrón grafo+paneles de Comandos Violeta.
+
+### La tubería de clasificación (9 niveles) — base verbatim del usuario (2026-07-11)
+> La **condiciología** = estudio de las condiciones a través de instancias (evalúa comportamientos por
+> factores generales, cada factor con causas específicas). Para **objetos/materias de conocimiento** la
+> evaluación NO usa condiciones sino el **método de este sistema** (abajo).
+
+**0. Problemática (carpeta raíz).** Se crea PRIMERO. Al crearla se le asigna una **referencia de máx. 4
+letras** (p.ej. `NROF`) que heredarán sus fuentes de tipo premisa. Al seleccionarla se ve TODO el proceso
+de gestión de datos de esa problemática. Dentro de una problemática seleccionada se puede: **agregar
+fuentes**, **agregar problemas**, crear códigos, categorías, ver piezas, generar rompecabezas, subtemas,
+temas.
+
+**1. Fuente (entrada de datos).** Es la ENTRADA; hoy **manual**, a futuro robots/conexiones que buscan y
+recolectan datos del tema. Cada fuente tiene **3 propiedades**:
+  - **Nivel de confianza / credibilidad** (numérico).
+  - **Tipo de dato:** `cantidad` (p.ej. "30 de cada 100 niños entran a escuela particular") | `cualidad`
+    (p.ej. "se observó cómo los jóvenes se molestaban con el que alertaba a la profesora").
+  - **Tipo de lógica:** `premisa` (aplica a una premisa lógica) | `peso` (aporta peso/credibilidad a otra
+    fuente).
+  - **Nomenclatura de fuente:**
+    - premisa → `<REF>-<seq>`, con **seq por problemática** (p.ej. `NROF-1`, `NROF-23`).
+    - peso → `Ref-<seq>`, con **seq GLOBAL** (independiente de la problemática; p.ej. si en la 1ª
+      problemática llegué a `Ref-5`, la 1ª peso de la 2ª problemática es `Ref-6`).
+
+**2. Código (premisa/verdad consecuente).** Resultado de **juntar premisas** (fuentes premisa) que por
+lógica dan una **verdad consecuente** (= premisa lógica). Puede juntar **varias** premisas (no solo 2).
+  - **Nomenclatura:** `COD-<REF>-<u1>/<u2>/…/<uN>`, donde cada `u` es una unidad-premisa de esa
+    problemática. Ej.: `COD-NROF-1/23`, `COD-NROF-1.45/12`.
+  - **Fuentes de tipo peso** sobre una fuente premisa: **no cambian** la nomenclatura de la premisa; ajustan
+    su credibilidad (**promedio** entre ambas). Una fuente peso puede **sumar** o **contradecir**. Repetir la
+    misma verdad ⇒ más creíble (a más repetición, mayor credibilidad).
+  - **Enfrentamiento de dos premisas** (una premisa puede contradecir a otra SIN ser peso): se enfrentan dos
+    fuentes premisa y por **credibilidad** una queda por encima; se **fusionan en UNA sola premisa** que junta
+    la verdad de ambas (texto de la premisa combinada lo escribe **manualmente** el usuario). Nomenclatura de la
+    premisa enfrentada: `<REF>-<ganadora>.<perdedora>` (p.ej. `NROF-1.45` → ganó 1, perdió 45). Usada en un
+    código: `COD-NROF-1.45/12`.
+  - **Verificación:** un código nace **NO verificado**. Se verifica con **pruebas empíricas** reales
+    (estudios propios / demostración en vivo). Cada código tiene una **lista de eventos** (título + **url**:
+    video grabado o streaming en vivo) que evidencian la demostración. Solo un código **verificado** puede
+    pasar a **categorías**.
+
+**3. Categoría.** Agrupa **códigos verificados** (para reutilizarse a futuro en el sistema "encuadre
+condiciológico"). Tiene número secuencial (cat-1, 2, 3…). **Nomenclatura:** `CAT-<seq>-<nomenclatura del/los
+código(s)>` (ej. `CAT-1-COD-NROF-1.45/12`).
+
+**4. Pieza.** **NO se crea desde este sistema** (viene del futuro sistema "metodología condiciológica"),
+pero **sí se visualiza** aquí. Un experto en condiciología **revisa o corrige** los códigos que llegan y
+devuelve una pieza que puede juntar **varios códigos** o usar **solo uno**. Dos tipos:
+  - `revisión` = **añade variables** a un código con datos fijos. Nomenclatura `PIE.REV-<nomencl. categoría>`
+    (ej. `PIE.REV-CAT-1-COD-NROF-1.24/12`).
+  - `corrección` = **convierte el código completo** en variables distintas. Nomenclatura `PIE.COR-…`
+    (ej. `PIE.COR-CAT-1-COD-NROF-1.24/12`).
+  - Las variables dependen de **3 factores globales**: `mental`, `corporal`, `ambiental`. Hay **variables
+    fijas** y **variables que cambian**. Cada variable puede traer **restricciones** (definidas desde el
+    sistema de metodología condiciológica): p.ej. "aplica más de uno", listado de variables NO aceptadas, o
+    "solo se une con variables de ciertas categorías". Estas restricciones gobiernan el nivel siguiente.
+
+**5. Rompecabezas.** Une **piezas** para responder a una **situación**; la **lógica valida** si las piezas
+pueden unirse según las **restricciones** de sus variables. Es como una **fórmula/expresión** cuyos
+parámetros son las variables de las piezas usadas; distintas uniones ⇒ distintas expresiones/realidades.
+  - **Nomenclatura: NINGUNA codificada** → se le asigna un **nombre manual** (p.ej. "Evento laboral de
+    Desesperación"), legible, para usarse a futuro en "dinámica condiciológica".
+  - Al crear se elige: **situación** (categoría de una lista de "situaciones" que se compartirá luego) +
+    **unión de piezas** + **nombre**.
+
+**6. Subtema.** **Título** que agrupa rompecabezas en un **orden manual** para transmitir una idea = una o
+más **hipótesis** (producto final del subtema). Al crear: **título** + **lista de hipótesis**. **Sin
+nomenclatura.**
+
+**7. Tema.** Agrupa **subtemas**; **describe toda la realidad en prosa** conectando el contenido de todos los
+subtemas **sin inventar** lógicas nuevas — **excepto las hipótesis** de los subtemas, que deben quedar
+**distinguidas** dentro del documento del tema. Tiene **título**. **Sin nomenclatura.** Se asocia a
+**materias** y a **problemas**.
+
+**8. Materia.** Área de conocimiento (física, psicología, química, software…). **Lista global** (como
+"situaciones"). Un tema se asocia a las materias que usó como conocimiento.
+
+**Problema.** Existe **dentro de la problemática** (se agrega en la interfaz junto a las fuentes). Un **tema**
+se asocia a **problemas**; los problemas están conectados por origen a la problemática.
+
+### Elementos GLOBALES (no por-problemática)
+- **Secuencia de fuentes tipo peso** (`Ref-N`) — global.
+- **Materias** — lista global.
+- **Situaciones** (categorías de rompecabezas) — lista global (definición fina la comparte el usuario luego).
+
+### Motor de nomenclatura (resumen determinista)
+| Nivel | Nomenclatura | Secuencia |
+|---|---|---|
+| Problemática | `REF` (≤4 letras, manual) | — |
+| Fuente premisa | `REF-<n>` | por problemática |
+| Fuente peso | `Ref-<n>` | **global** |
+| Premisa enfrentada | `REF-<ganó>.<perdió>` | usa seq de fuentes premisa |
+| Código | `COD-REF-<u1>/<u2>/…` (u = `<n>` o `<g>.<p>`) | por problemática |
+| Categoría | `CAT-<n>-<cod…>` | (¿global/por-problemática? → confirmar) |
+| Pieza revisión | `PIE.REV-<cat…>` | — (viene de otro sistema) |
+| Pieza corrección | `PIE.COR-<cat…>` | — |
+| Rompecabezas | **nombre manual** | — |
+| Subtema / Tema | **título** (sin nomenclatura) | — |
+
+### Patrón técnico confirmado (Comandos Violeta, 2026-07-11) — a calcar
+- **DB:** `lib/centralized/<sistema>-db.ts` importa `pool` de `@/lib/db` (pool `pg` global, `search_path=gcc_world,public`);
+  `let ready=false` + `ensure<Sistema>Tables()` con `CREATE TABLE IF NOT EXISTS gcc_world.<prefijo>_*`; cada CRUD hace
+  `await ensure...()` primero. SQL siempre calificado `gcc_world.`; params `$1`; jsonb `$n::jsonb`+`JSON.stringify`; `RETURNING`.
+- **Dominio:** `lib/centralized/<sistema>.ts` tipos/constantes puras (meta de nodos color/forma, helpers de nomenclatura, keys de nodo).
+- **API:** `app/api/centralized/<sistema>/**` con guard `getCurrentUser()` + `['admin','member']`, try/catch → `{error}`/500,
+  éxito `{data}` (lecturas/creación) o `{ok:true}` (PATCH/DELETE).
+- **Registro:** INSERT idempotente `… WHERE NOT EXISTS (slug)` en `ensureTable()` de `app/api/centralized/systems/route.ts`
+  (name='Gestión de Datos', piso='pilar', paso='fundamentacion', cell_name='Academia', slug='gestion-de-datos'); dispatch
+  ternario por slug en `app/(dashboard)/dashboard/centralized/[piso]/[paso]/[slug]/page.tsx` → `<GestionDeDatosSystem system isAdmin/>`.
+- **UI:** `'use client'` en `components/centralized/systems/`, layout 3 zonas (aside izq + grafo + panel flotante absolute),
+  constantes `mf/df`, `GLASS`/`GLASS_BTN`/`GLASS_INPUT`, fetch nativo + `sonner`, mutaciones optimistas, `PixelConfirm` para borrar,
+  `FloatingWindow` para modales. Grafo `react-force-graph-2d` (import dinámico cliente, cache de nodos por key, `traceShape`/
+  `shapeOf`/`colorOf`, leyenda hover-previsualiza+clic-fija). Panel izq usa clases `digi-*`; panel sobre grafo negro usa `GLASS`/blanco.
+- **Ruta final:** `/dashboard/centralized/pilar/fundamentacion/gestion-de-datos`. Acceso: miembros piso global/pilar con paso
+  fundamentación (`pisosAtOrBelow('pilar')=[pilar,controlador,colaborador]` incluye pilar; se exige paso exacto) + admin + shares.
+
+### Decisiones de negocio (RESUELTAS 2026-07-11, por el usuario)
+#### P1 — Secuencia de **categorías** · ✅ Resuelta → **por problemática** (CAT-n reinicia en cada problemática; agrupa códigos verificados de esa problemática).
+#### P2 — **Piezas** · ✅ Resuelta → **solo visualización** (se modela la tabla + variables/restricciones, pero NO se crean desde este sistema; llegan del futuro sistema "metodología condiciológica". Los **rompecabezas quedan a la espera** de que existan piezas).
+#### P3 — **Escala de credibilidad** · ✅ Resuelta → **0–100 %** (numérico). El promedio peso↔premisa y los enfrentamientos operan en esta escala.
+#### P4 — **Alcance / orden** · ✅ Resuelta → **por fases verificables**:
+  - **Fase A (núcleo lógico):** Problemática(+REF), Problemas, Fuentes (premisa/peso, credibilidad, seq premisa por-problemática / peso global),
+    Pesos (promedio de credibilidad), Enfrentamientos (ganó.perdió + texto manual), Códigos (+ premisas juntadas + eventos de verificación
+    título/url + estado verificado), Categorías (por problemática). + registro del sistema + shell UI/grafo.
+  - **Fase B (síntesis):** Piezas (solo visualización + modelo variables mental/corporal/ambiental + restricciones), Situaciones (lista global),
+    Rompecabezas (nombre manual + situación + unión de piezas validada por restricciones), Subtemas (+ hipótesis).
+  - **Fase C (descriptivo):** Temas (prosa + asociación a materias y problemas), Materias (lista global).
+
+### Preguntas ABIERTAS (surgidas al diseñar)
+#### P5 — Matemática exacta de la **fuente peso** al **contradecir** (no solo apoyar) · ⏸ Bloqueada (asunción provisional)
+- **Por qué importa:** el usuario dijo que una fuente peso "saca un promedio" al aplicarse, y que también puede **contradecir**. El promedio
+  cubre el apoyo (peso alto sube, peso bajo baja), pero la matemática del **modo contradicción** no se especificó.
+- **Asunción provisional implementada (a confirmar):** cada aplicación de peso tiene `modo` = `apoyo` | `contradice`.
+  `apoyo`: `efectiva = (efectiva + peso.cred)/2`. `contradice`: `efectiva = (efectiva + (100 − peso.cred))/2` (un contradictor muy creíble
+  baja la credibilidad). Se guarda historial de aplicaciones; la `credibilidad_efectiva` es acumulativa (el orden importa). **Confirmar con el usuario.**
+#### P6 — Nomenclatura de **categoría** con **varios** códigos: ¿`CAT-n-<cod1>_<cod2>…` o solo `CAT-n` + lista? · ⏸ (provisional: `CAT-n` como ref primaria + lista de códigos; el display concatena el 1º código como en el ejemplo).
+
+### Progreso
+- **% de información para el objetivo:** ~80% — **FASE A CONSTRUIDA Y VERIFICADA (2026-07-11)**: registro del sistema,
+  dominio+nomenclatura (`lib/centralized/gestion-datos.ts`), capa DB (`gestion-datos-db.ts`, tablas `gd_`), 9 rutas API,
+  grafo `GdGraph.tsx` y componente `GestionDeDatosSystem.tsx`. `tsc --noEmit` + `next build` OK. Nomenclatura y
+  credibilidad probadas **offline** contra los ejemplos exactos del usuario (10/10). **No** se pudo probar el INSERT
+  contra Railway (red del entorno aislada; el DDL `IF NOT EXISTS` corre al primer uso en prod).
+- **Pendiente:** validación visual en vivo (requiere login); confirmar P5; construir **Fases B y C**.
+- **Solución construida (Fase A):** ver detalle en `MEMORIA.md` → "Decisiones recientes (feature) · Gestión de Datos".
+
+---
+
+## Objetivo PREVIO (declarado 2026-07-08, ✅ CERRADO 100%) — Comandos Violeta: generación REAL de tareas al activar una política
 **Necesidad:** cuando se activa una **política** que contiene una función **`generate_tasks`**, las tareas
 programadas deben **materializarse y asignarse a los usuarios** (candidatos/miembros) para los que se
 programaron, apareciendo en su **"Mi día"**. Hoy la autoría funciona (se guardan los `TaskProgram` en la

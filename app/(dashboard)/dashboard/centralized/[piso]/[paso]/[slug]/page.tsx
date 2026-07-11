@@ -11,6 +11,7 @@ import ReclutamientoSystem from '@/components/centralized/systems/ReclutamientoS
 import HorarioDeVidaSystem from '@/components/centralized/systems/HorarioDeVidaSystem';
 import ApoyoAutoayudaSystem from '@/components/centralized/systems/ApoyoAutoayudaSystem';
 import ComandosVioletaSystem from '@/components/centralized/systems/ComandosVioletaSystem';
+import GestionDeDatosSystem from '@/components/centralized/systems/GestionDeDatosSystem';
 import { isPiso, isPaso, cellName as cellNameFor } from '@/lib/centralized/systems';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -111,6 +112,8 @@ export default function CentralizedSystemPage() {
           <ApoyoAutoayudaSystem system={system} isAdmin={isAdmin} />
         ) : slug === 'comandos-violeta' ? (
           <ComandosVioletaSystem system={system} isAdmin={isAdmin} />
+        ) : slug === 'gestion-de-datos' ? (
+          <GestionDeDatosSystem system={system} isAdmin={isAdmin} />
         ) : (
           <div className="bg-digi-card border border-digi-border rounded-xl text-center py-16">
             <div className="w-12 h-12 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center mx-auto mb-3">

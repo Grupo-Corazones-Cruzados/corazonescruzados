@@ -53,6 +53,16 @@ async function ensureTable() {
             'global', 'creacion', 'Control Psicosocial', 'comandos-violeta'
      WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'comandos-violeta')`,
   );
+  // Sistema built-in "Gestión de Datos" (pilar · fundamentación, celda "Academia"). Ordena los datos
+  // recolectados aplicando la condiciología como método de clasificación (Problemática → Fuentes →
+  // Códigos → Categorías → Piezas → Rompecabezas → Subtemas → Temas). Sembrado idempotente por slug.
+  await pool.query(
+    `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+     SELECT 'Gestión de Datos',
+            'Gestiona y ordena los datos recolectados aplicando la condiciología como método de clasificación: por problemática se registran fuentes (premisa/peso), se generan códigos verificables, categorías, y luego piezas, rompecabezas, subtemas y temas.',
+            'pilar', 'fundamentacion', 'Academia', 'gestion-de-datos'
+     WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'gestion-de-datos')`,
+  );
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (
