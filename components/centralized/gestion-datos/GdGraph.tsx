@@ -47,6 +47,27 @@ function traceShape(ctx: CanvasRenderingContext2D, shape: string, x: number, y: 
       i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
     }
     ctx.closePath();
+  } else if (shape === 'pentagon') {
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+      const px = x + r * Math.cos(a), py = y + r * Math.sin(a);
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath();
+  } else if (shape === 'doc') {
+    // Documento: rectángulo con la esquina superior derecha doblada.
+    const w = r * 1.5, h = r * 1.9, fold = r * 0.6;
+    const left = x - w / 2, top = y - h / 2, right = x + w / 2, bottom = y + h / 2;
+    ctx.moveTo(left, top);
+    ctx.lineTo(right - fold, top);
+    ctx.lineTo(right, top + fold);
+    ctx.lineTo(right, bottom);
+    ctx.lineTo(left, bottom);
+    ctx.closePath();
+  } else if (shape === 'card') {
+    // Tarjeta: rectángulo apaisado.
+    const w = r * 1.7, h = r * 1.2;
+    ctx.rect(x - w / 2, y - h / 2, w, h);
   } else {
     // star
     const spikes = 5, outer = r * 1.15, inner = r * 0.5;

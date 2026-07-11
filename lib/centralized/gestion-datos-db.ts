@@ -12,9 +12,10 @@ import {
   fuentePremisaRef,
   gdKey,
   normalizeProblematicaRef,
+  piezaRef,
   type CodigoUnidad,
   type GdGraph,
-  type PesoModo,
+  type PiezaTipo,
   type TipoDato,
   type TipoLogica,
 } from '@/lib/centralized/gestion-datos';
@@ -59,13 +60,13 @@ export async function ensureGestionDatosTables(): Promise<void> {
     )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS gd_fuentes_prob_idx ON gcc_world.gd_fuentes(problematica_id)`);
 
-  // Aplicación de una fuente peso sobre una premisa (altera la credibilidad efectiva).
+  // Aplicación de una fuente peso sobre una premisa: SIEMPRE aporta credibilidad (promedio).
+  // La contradicción NO se hace con pesos, sino enfrentando dos premisas.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.gd_fuente_pesos (
       id SERIAL PRIMARY KEY,
       premisa_fuente_id INT NOT NULL REFERENCES gcc_world.gd_fuentes(id) ON DELETE CASCADE,
       peso_fuente_id INT NOT NULL REFERENCES gcc_world.gd_fuentes(id) ON DELETE CASCADE,
-      modo TEXT NOT NULL DEFAULT 'apoyo',      -- 'apoyo' | 'contradice'
       cred_antes NUMERIC(5,2) NOT NULL,
       cred_despues NUMERIC(5,2) NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -136,6 +137,89 @@ export async function ensureGestionDatosTables(): Promise<void> {
       categoria_id INT NOT NULL REFERENCES gcc_world.gd_categorias(id) ON DELETE CASCADE,
       codigo_id INT NOT NULL REFERENCES gcc_world.gd_codigos(id) ON DELETE CASCADE,
       UNIQUE (categoria_id, codigo_id)
+    )`);
+
+  // ── Fase B: listas globales ────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_situaciones (
+      id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_materias (
+      id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+
+  // ── Fase B: Piezas (creadas por el futuro sistema de metodología condiciológica;
+  //    aquí SOLO se visualizan). Una pieza revisa/corrige uno o varios códigos y
+  //    entrega variables (fija/cambia) por factor (mental/corporal/ambiental). ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_piezas (
+      id SERIAL PRIMARY KEY,
+      problematica_id INT NOT NULL REFERENCES gcc_world.gd_problematicas(id) ON DELETE CASCADE,
+      tipo TEXT NOT NULL,                      -- 'revision' | 'correccion'
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS gd_piezas_prob_idx ON gcc_world.gd_piezas(problematica_id)`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_pieza_codigos (
+      id SERIAL PRIMARY KEY,
+      pieza_id INT NOT NULL REFERENCES gcc_world.gd_piezas(id) ON DELETE CASCADE,
+      codigo_id INT NOT NULL REFERENCES gcc_world.gd_codigos(id) ON DELETE CASCADE,
+      UNIQUE (pieza_id, codigo_id)
+    )`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_pieza_variables (
+      id SERIAL PRIMARY KEY,
+      pieza_id INT NOT NULL REFERENCES gcc_world.gd_piezas(id) ON DELETE CASCADE,
+      factor TEXT NOT NULL,                    -- 'mental' | 'corporal' | 'ambiental'
+      nombre TEXT NOT NULL,
+      tipo_var TEXT NOT NULL DEFAULT 'fija',   -- 'fija' | 'cambia'
+      restricciones JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS gd_pieza_variables_pieza_idx ON gcc_world.gd_pieza_variables(pieza_id)`);
+
+  // ── Fase B: Rompecabezas (une piezas → expresión con nombre manual + situación) ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_rompecabezas (
+      id SERIAL PRIMARY KEY,
+      problematica_id INT NOT NULL REFERENCES gcc_world.gd_problematicas(id) ON DELETE CASCADE,
+      nombre TEXT NOT NULL,
+      situacion_id INT REFERENCES gcc_world.gd_situaciones(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS gd_rompecabezas_prob_idx ON gcc_world.gd_rompecabezas(problematica_id)`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_rompecabezas_piezas (
+      id SERIAL PRIMARY KEY,
+      rompecabezas_id INT NOT NULL REFERENCES gcc_world.gd_rompecabezas(id) ON DELETE CASCADE,
+      pieza_id INT NOT NULL REFERENCES gcc_world.gd_piezas(id) ON DELETE CASCADE,
+      UNIQUE (rompecabezas_id, pieza_id)
+    )`);
+
+  // ── Fase B: Subtemas (título + hipótesis + rompecabezas ordenados) ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_subtemas (
+      id SERIAL PRIMARY KEY,
+      problematica_id INT NOT NULL REFERENCES gcc_world.gd_problematicas(id) ON DELETE CASCADE,
+      titulo TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS gd_subtemas_prob_idx ON gcc_world.gd_subtemas(problematica_id)`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_subtema_hipotesis (
+      id SERIAL PRIMARY KEY,
+      subtema_id INT NOT NULL REFERENCES gcc_world.gd_subtemas(id) ON DELETE CASCADE,
+      texto TEXT NOT NULL,
+      orden INT NOT NULL DEFAULT 0
+    )`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_subtema_rompecabezas (
+      id SERIAL PRIMARY KEY,
+      subtema_id INT NOT NULL REFERENCES gcc_world.gd_subtemas(id) ON DELETE CASCADE,
+      rompecabezas_id INT NOT NULL REFERENCES gcc_world.gd_rompecabezas(id) ON DELETE CASCADE,
+      orden INT NOT NULL DEFAULT 0,
+      UNIQUE (subtema_id, rompecabezas_id)
     )`);
 
   ready = true;
@@ -335,7 +419,7 @@ async function recomputeCredibilidad(premisaFuenteId: number) {
   );
   let cred = clampCred(Number(base?.c ?? 0));
   const { rows: pesos } = await pool.query(
-    `SELECT p.id, p.modo, f.credibilidad::float AS peso_cred
+    `SELECT p.id, f.credibilidad::float AS peso_cred
        FROM gcc_world.gd_fuente_pesos p
        JOIN gcc_world.gd_fuentes f ON f.id = p.peso_fuente_id
       WHERE p.premisa_fuente_id = $1
@@ -344,7 +428,7 @@ async function recomputeCredibilidad(premisaFuenteId: number) {
   );
   for (const p of pesos) {
     const antes = cred;
-    cred = clampCred(aplicarPeso(antes, Number(p.peso_cred), p.modo as PesoModo));
+    cred = clampCred(aplicarPeso(antes, Number(p.peso_cred)));
     await pool.query(`UPDATE gcc_world.gd_fuente_pesos SET cred_antes = $1, cred_despues = $2 WHERE id = $3`, [antes, cred, p.id]);
   }
   await pool.query(`UPDATE gcc_world.gd_fuentes SET credibilidad_efectiva = $1 WHERE id = $2`, [cred, premisaFuenteId]);
@@ -352,7 +436,7 @@ async function recomputeCredibilidad(premisaFuenteId: number) {
 }
 
 // ── Pesos (aplicar una fuente peso a una premisa) ─────────────────────────────
-export async function aplicarPesoAFuente(premisaFuenteId: number, pesoFuenteId: number, modo: PesoModo) {
+export async function aplicarPesoAFuente(premisaFuenteId: number, pesoFuenteId: number) {
   await ensureGestionDatosTables();
   // Validaciones: la premisa debe ser 'premisa', el peso debe ser 'peso'.
   const { rows } = await pool.query(
@@ -364,10 +448,10 @@ export async function aplicarPesoAFuente(premisaFuenteId: number, pesoFuenteId: 
   if (!premisa || premisa.tipo_logica !== 'premisa') throw new Error('La fuente objetivo debe ser de tipo premisa.');
   if (!peso || peso.tipo_logica !== 'peso') throw new Error('La fuente aplicada debe ser de tipo peso.');
   await pool.query(
-    `INSERT INTO gcc_world.gd_fuente_pesos (premisa_fuente_id, peso_fuente_id, modo, cred_antes, cred_despues)
-     VALUES ($1, $2, $3, 0, 0)
-     ON CONFLICT (premisa_fuente_id, peso_fuente_id) DO UPDATE SET modo = EXCLUDED.modo`,
-    [premisaFuenteId, pesoFuenteId, modo],
+    `INSERT INTO gcc_world.gd_fuente_pesos (premisa_fuente_id, peso_fuente_id, cred_antes, cred_despues)
+     VALUES ($1, $2, 0, 0)
+     ON CONFLICT (premisa_fuente_id, peso_fuente_id) DO NOTHING`,
+    [premisaFuenteId, pesoFuenteId],
   );
   return recomputeCredibilidad(premisaFuenteId);
 }
@@ -384,7 +468,7 @@ export async function quitarPeso(premisaFuenteId: number, pesoFuenteId: number) 
 export async function listPesosDePremisa(premisaFuenteId: number) {
   await ensureGestionDatosTables();
   const { rows } = await pool.query(
-    `SELECT p.id, p.peso_fuente_id, p.modo, p.cred_antes::float AS cred_antes, p.cred_despues::float AS cred_despues,
+    `SELECT p.id, p.peso_fuente_id, p.cred_antes::float AS cred_antes, p.cred_despues::float AS cred_despues,
             f.seq AS peso_seq, f.contenido AS peso_contenido, f.credibilidad::float AS peso_credibilidad
        FROM gcc_world.gd_fuente_pesos p
        JOIN gcc_world.gd_fuentes f ON f.id = p.peso_fuente_id
@@ -604,6 +688,206 @@ export async function setCategoriaCodigo(categoriaId: number, codigoId: number, 
   }
 }
 
+// ── Fase B: Situaciones (lista global) ────────────────────────────────────────
+export async function listSituaciones() {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(`SELECT id, nombre FROM gcc_world.gd_situaciones ORDER BY nombre ASC`);
+  return rows;
+}
+export async function createSituacion(nombre: string) {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(`INSERT INTO gcc_world.gd_situaciones (nombre) VALUES ($1) RETURNING *`, [nombre.trim()]);
+  return rows[0];
+}
+export async function updateSituacion(id: number, nombre: string) {
+  await ensureGestionDatosTables();
+  await pool.query(`UPDATE gcc_world.gd_situaciones SET nombre = $1 WHERE id = $2`, [nombre.trim(), id]);
+}
+export async function deleteSituacion(id: number) {
+  await ensureGestionDatosTables();
+  await pool.query(`DELETE FROM gcc_world.gd_situaciones WHERE id = $1`, [id]);
+}
+
+// ── Fase B/C: Materias (lista global) ─────────────────────────────────────────
+export async function listMaterias() {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(`SELECT id, nombre FROM gcc_world.gd_materias ORDER BY nombre ASC`);
+  return rows;
+}
+export async function createMateria(nombre: string) {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(`INSERT INTO gcc_world.gd_materias (nombre) VALUES ($1) RETURNING *`, [nombre.trim()]);
+  return rows[0];
+}
+export async function updateMateria(id: number, nombre: string) {
+  await ensureGestionDatosTables();
+  await pool.query(`UPDATE gcc_world.gd_materias SET nombre = $1 WHERE id = $2`, [nombre.trim(), id]);
+}
+export async function deleteMateria(id: number) {
+  await ensureGestionDatosTables();
+  await pool.query(`DELETE FROM gcc_world.gd_materias WHERE id = $1`, [id]);
+}
+
+// ── Fase B: Piezas (SOLO visualización aquí; las crea el sistema de metodología) ──
+/** Nomenclatura base de una pieza = categoría del 1er código (o su ref de código). */
+async function piezaBaseNomencl(codigoIds: number[], ref: string): Promise<string> {
+  if (!codigoIds.length) return '';
+  const first = codigoIds[0];
+  // ¿Está el código en alguna categoría?
+  const { rows } = await pool.query(
+    `SELECT c.seq FROM gcc_world.gd_categoria_codigos gc
+       JOIN gcc_world.gd_categorias c ON c.id = gc.categoria_id
+      WHERE gc.codigo_id = $1 ORDER BY c.seq ASC LIMIT 1`,
+    [first],
+  );
+  const codRef = await codigoRefById(first, ref);
+  if (rows[0]) return categoriaRef(Number(rows[0].seq), [codRef]);
+  return codRef;
+}
+
+export async function listPiezas(problematicaId: number) {
+  await ensureGestionDatosTables();
+  const ref = await getProblematicaRef(problematicaId);
+  const { rows } = await pool.query(
+    `SELECT id, tipo, created_at FROM gcc_world.gd_piezas WHERE problematica_id = $1 ORDER BY created_at ASC`,
+    [problematicaId],
+  );
+  const out = [];
+  for (const p of rows) {
+    const { rows: cods } = await pool.query(`SELECT codigo_id FROM gcc_world.gd_pieza_codigos WHERE pieza_id = $1 ORDER BY id ASC`, [p.id]);
+    const { rows: vars } = await pool.query(`SELECT id, factor, nombre, tipo_var, restricciones FROM gcc_world.gd_pieza_variables WHERE pieza_id = $1 ORDER BY id ASC`, [p.id]);
+    const codigoIds = cods.map((c: any) => c.codigo_id);
+    out.push({ ...p, nomenclatura: piezaRef(p.tipo as PiezaTipo, await piezaBaseNomencl(codigoIds, ref)), codigoIds, variables: vars });
+  }
+  return out;
+}
+
+/** Crear pieza (para el futuro sistema de metodología condiciológica). */
+export async function createPieza(problematicaId: number, tipo: PiezaTipo, codigoIds: number[], variables: { factor: string; nombre: string; tipo_var?: string; restricciones?: any }[]) {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(`INSERT INTO gcc_world.gd_piezas (problematica_id, tipo) VALUES ($1, $2) RETURNING *`, [problematicaId, tipo]);
+  const pieza = rows[0];
+  for (const cid of codigoIds || []) await pool.query(`INSERT INTO gcc_world.gd_pieza_codigos (pieza_id, codigo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [pieza.id, cid]);
+  for (const v of variables || []) {
+    await pool.query(
+      `INSERT INTO gcc_world.gd_pieza_variables (pieza_id, factor, nombre, tipo_var, restricciones) VALUES ($1, $2, $3, $4, $5::jsonb)`,
+      [pieza.id, v.factor, v.nombre, v.tipo_var || 'fija', JSON.stringify(v.restricciones || {})],
+    );
+  }
+  return pieza;
+}
+
+export async function deletePieza(id: number) {
+  await ensureGestionDatosTables();
+  await pool.query(`DELETE FROM gcc_world.gd_piezas WHERE id = $1`, [id]);
+}
+
+// ── Fase B: Rompecabezas ──────────────────────────────────────────────────────
+export async function listRompecabezas(problematicaId: number) {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `SELECT r.id, r.nombre, r.situacion_id, s.nombre AS situacion_nombre, r.created_at
+       FROM gcc_world.gd_rompecabezas r
+       LEFT JOIN gcc_world.gd_situaciones s ON s.id = r.situacion_id
+      WHERE r.problematica_id = $1 ORDER BY r.created_at ASC`,
+    [problematicaId],
+  );
+  const out = [];
+  for (const r of rows) {
+    const { rows: piezas } = await pool.query(`SELECT pieza_id FROM gcc_world.gd_rompecabezas_piezas WHERE rompecabezas_id = $1 ORDER BY id ASC`, [r.id]);
+    out.push({ ...r, piezaIds: piezas.map((p: any) => p.pieza_id) });
+  }
+  return out;
+}
+
+export async function crearRompecabezas(problematicaId: number, nombre: string, situacionId: number | null, piezaIds: number[]) {
+  await ensureGestionDatosTables();
+  if (!nombre?.trim()) throw new Error('El nombre del rompecabezas es requerido.');
+  const { rows } = await pool.query(
+    `INSERT INTO gcc_world.gd_rompecabezas (problematica_id, nombre, situacion_id) VALUES ($1, $2, $3) RETURNING *`,
+    [problematicaId, nombre.trim(), situacionId || null],
+  );
+  const r = rows[0];
+  for (const pid of piezaIds || []) await pool.query(`INSERT INTO gcc_world.gd_rompecabezas_piezas (rompecabezas_id, pieza_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [r.id, pid]);
+  return r;
+}
+
+export async function updateRompecabezas(id: number, nombre?: string, situacionId?: number | null, piezaIds?: number[]) {
+  await ensureGestionDatosTables();
+  const sets: string[] = [];
+  const params: any[] = [];
+  if (nombre != null) { sets.push(`nombre = $${params.length + 1}`); params.push(nombre.trim()); }
+  if (situacionId !== undefined) { sets.push(`situacion_id = $${params.length + 1}`); params.push(situacionId || null); }
+  if (sets.length) { params.push(id); await pool.query(`UPDATE gcc_world.gd_rompecabezas SET ${sets.join(', ')} WHERE id = $${params.length}`, params); }
+  if (piezaIds) {
+    await pool.query(`DELETE FROM gcc_world.gd_rompecabezas_piezas WHERE rompecabezas_id = $1`, [id]);
+    for (const pid of piezaIds) await pool.query(`INSERT INTO gcc_world.gd_rompecabezas_piezas (rompecabezas_id, pieza_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [id, pid]);
+  }
+}
+
+export async function deleteRompecabezas(id: number) {
+  await ensureGestionDatosTables();
+  await pool.query(`DELETE FROM gcc_world.gd_rompecabezas WHERE id = $1`, [id]);
+}
+
+// ── Fase B: Subtemas ──────────────────────────────────────────────────────────
+export async function listSubtemas(problematicaId: number) {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `SELECT id, titulo, created_at FROM gcc_world.gd_subtemas WHERE problematica_id = $1 ORDER BY created_at ASC`,
+    [problematicaId],
+  );
+  const out = [];
+  for (const s of rows) {
+    const { rows: hips } = await pool.query(`SELECT id, texto, orden FROM gcc_world.gd_subtema_hipotesis WHERE subtema_id = $1 ORDER BY orden ASC, id ASC`, [s.id]);
+    const { rows: romps } = await pool.query(
+      `SELECT sr.rompecabezas_id AS id, r.nombre, sr.orden
+         FROM gcc_world.gd_subtema_rompecabezas sr
+         JOIN gcc_world.gd_rompecabezas r ON r.id = sr.rompecabezas_id
+        WHERE sr.subtema_id = $1 ORDER BY sr.orden ASC, sr.id ASC`,
+      [s.id],
+    );
+    out.push({ ...s, hipotesis: hips, rompecabezas: romps });
+  }
+  return out;
+}
+
+export async function crearSubtema(problematicaId: number, titulo: string, hipotesis: string[], rompecabezasIds: number[]) {
+  await ensureGestionDatosTables();
+  if (!titulo?.trim()) throw new Error('El título del subtema es requerido.');
+  const { rows } = await pool.query(`INSERT INTO gcc_world.gd_subtemas (problematica_id, titulo) VALUES ($1, $2) RETURNING *`, [problematicaId, titulo.trim()]);
+  const s = rows[0];
+  await replaceSubtemaChildren(s.id, hipotesis, rompecabezasIds);
+  return s;
+}
+
+export async function updateSubtema(id: number, titulo?: string, hipotesis?: string[], rompecabezasIds?: number[]) {
+  await ensureGestionDatosTables();
+  if (titulo != null) await pool.query(`UPDATE gcc_world.gd_subtemas SET titulo = $1 WHERE id = $2`, [titulo.trim(), id]);
+  if (hipotesis || rompecabezasIds) await replaceSubtemaChildren(id, hipotesis, rompecabezasIds);
+}
+
+async function replaceSubtemaChildren(subtemaId: number, hipotesis?: string[], rompecabezasIds?: number[]) {
+  if (hipotesis) {
+    await pool.query(`DELETE FROM gcc_world.gd_subtema_hipotesis WHERE subtema_id = $1`, [subtemaId]);
+    let i = 0;
+    for (const h of hipotesis) {
+      if (!h?.trim()) continue;
+      await pool.query(`INSERT INTO gcc_world.gd_subtema_hipotesis (subtema_id, texto, orden) VALUES ($1, $2, $3)`, [subtemaId, h.trim(), i++]);
+    }
+  }
+  if (rompecabezasIds) {
+    await pool.query(`DELETE FROM gcc_world.gd_subtema_rompecabezas WHERE subtema_id = $1`, [subtemaId]);
+    let i = 0;
+    for (const rid of rompecabezasIds) await pool.query(`INSERT INTO gcc_world.gd_subtema_rompecabezas (subtema_id, rompecabezas_id, orden) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, [subtemaId, rid, i++]);
+  }
+}
+
+export async function deleteSubtema(id: number) {
+  await ensureGestionDatosTables();
+  await pool.query(`DELETE FROM gcc_world.gd_subtemas WHERE id = $1`, [id]);
+}
+
 // ── Grafo "universo" de una problemática ──────────────────────────────────────
 export async function getProblematicaGraph(problematicaId: number): Promise<GdGraph> {
   await ensureGestionDatosTables();
@@ -697,6 +981,40 @@ export async function getProblematicaGraph(problematicaId: number): Promise<GdGr
     for (const r of codRefsRows) codigoRefs.push(await codigoRefById(r.codigo_id, ref));
     nodes.push({ key: gdKey('categoria', cat.id), type: 'categoria', id: cat.id, title: categoriaRef(cat.seq, codigoRefs) });
     for (const r of codRefsRows) edges.push({ source: gdKey('codigo', r.codigo_id), target: gdKey('categoria', cat.id), kind: 'agrupa' });
+  }
+
+  // Piezas (+ aristas desde sus códigos).
+  const { rows: piezas } = await pool.query(
+    `SELECT id, tipo FROM gcc_world.gd_piezas WHERE problematica_id = $1 ORDER BY created_at ASC`,
+    [problematicaId],
+  );
+  for (const pz of piezas) {
+    const { rows: pcods } = await pool.query(`SELECT codigo_id FROM gcc_world.gd_pieza_codigos WHERE pieza_id = $1 ORDER BY id ASC`, [pz.id]);
+    const codigoIds = pcods.map((r: any) => r.codigo_id);
+    nodes.push({ key: gdKey('pieza', pz.id), type: 'pieza', id: pz.id, title: piezaRef(pz.tipo as PiezaTipo, await piezaBaseNomencl(codigoIds, ref)) });
+    for (const r of pcods) edges.push({ source: gdKey('codigo', r.codigo_id), target: gdKey('pieza', pz.id), kind: 'compone' });
+  }
+
+  // Rompecabezas (+ aristas desde sus piezas).
+  const { rows: romps } = await pool.query(
+    `SELECT id, nombre FROM gcc_world.gd_rompecabezas WHERE problematica_id = $1 ORDER BY created_at ASC`,
+    [problematicaId],
+  );
+  for (const rc of romps) {
+    nodes.push({ key: gdKey('rompecabezas', rc.id), type: 'rompecabezas', id: rc.id, title: rc.nombre });
+    const { rows: rpiezas } = await pool.query(`SELECT pieza_id FROM gcc_world.gd_rompecabezas_piezas WHERE rompecabezas_id = $1`, [rc.id]);
+    for (const r of rpiezas) edges.push({ source: gdKey('pieza', r.pieza_id), target: gdKey('rompecabezas', rc.id), kind: 'compone' });
+  }
+
+  // Subtemas (+ aristas desde sus rompecabezas).
+  const { rows: subtemas } = await pool.query(
+    `SELECT id, titulo FROM gcc_world.gd_subtemas WHERE problematica_id = $1 ORDER BY created_at ASC`,
+    [problematicaId],
+  );
+  for (const st of subtemas) {
+    nodes.push({ key: gdKey('subtema', st.id), type: 'subtema', id: st.id, title: st.titulo });
+    const { rows: sromps } = await pool.query(`SELECT rompecabezas_id FROM gcc_world.gd_subtema_rompecabezas WHERE subtema_id = $1`, [st.id]);
+    for (const r of sromps) edges.push({ source: gdKey('rompecabezas', r.rompecabezas_id), target: gdKey('subtema', st.id), kind: 'agrupa' });
   }
 
   return { nodes, edges };

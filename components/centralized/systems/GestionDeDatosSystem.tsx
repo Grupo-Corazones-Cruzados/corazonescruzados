@@ -4,14 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   FolderPlus, Pencil, Trash2, Plus, Database, GitCompareArrows, Hexagon,
-  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight,
+  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, List,
 } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import GdGraph, { type GdLegendFilter } from '@/components/centralized/gestion-datos/GdGraph';
 import {
-  GD_NODE_META, TIPO_DATO_LABEL, TIPO_LOGICA_LABEL, PESO_MODO_LABEL,
-  type GdGraph as GdGraphT, type GdGraphNode, type GdNodeType, type TipoDato, type TipoLogica, type PesoModo,
+  GD_NODE_META, TIPO_DATO_LABEL, TIPO_LOGICA_LABEL,
+  PIEZA_TIPO_LABEL, VARIABLE_TIPO_LABEL, VARIABLE_FACTOR_LABEL, VARIABLE_FACTOR_COLOR,
+  type GdGraph as GdGraphT, type GdGraphNode, type GdNodeType, type TipoDato, type TipoLogica,
+  type PiezaTipo, type VariableFactor,
 } from '@/lib/centralized/gestion-datos';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -27,6 +29,12 @@ type Enfrentamiento = { id: number; texto: string; nomenclatura: string; gano_se
 type Evento = { id: number; titulo: string; url: string };
 type Codigo = { id: number; texto: string; verificado: boolean; nomenclatura: string; unidades: any[]; eventos: Evento[] };
 type Categoria = { id: number; seq: number; nombre: string; nomenclatura: string; codigos: { id: number; nomenclatura: string; verificado: boolean }[] };
+type PiezaVar = { id: number; factor: VariableFactor; nombre: string; tipo_var: string; restricciones: any };
+type Pieza = { id: number; tipo: PiezaTipo; nomenclatura: string; codigoIds: number[]; variables: PiezaVar[] };
+type Situacion = { id: number; nombre: string };
+type Materia = { id: number; nombre: string };
+type Rompecabezas = { id: number; nombre: string; situacion_id: number | null; situacion_nombre: string | null; piezaIds: number[] };
+type Subtema = { id: number; titulo: string; hipotesis: { id: number; texto: string }[]; rompecabezas: { id: number; nombre: string }[] };
 
 async function mutate(url: string, method: string, body?: any) {
   const res = await fetch(url, {
@@ -50,12 +58,19 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   const [enfrentamientos, setEnfrentamientos] = useState<Enfrentamiento[]>([]);
   const [codigos, setCodigos] = useState<Codigo[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [piezas, setPiezas] = useState<Pieza[]>([]);
+  const [rompecabezas, setRompecabezas] = useState<Rompecabezas[]>([]);
+  const [subtemas, setSubtemas] = useState<Subtema[]>([]);
+  const [situaciones, setSituaciones] = useState<Situacion[]>([]);
+  const [materias, setMaterias] = useState<Materia[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   // Panel de creación rápida (fuente/problema) en el panel flotante.
   const [creating, setCreating] = useState<null | 'fuente' | 'problema'>(null);
   // Modales complejos (necesitan pickers).
-  const [modal, setModal] = useState<null | 'enfrentamiento' | 'codigo' | 'categoria' | 'problematica'>(null);
+  const [modal, setModal] = useState<null | 'enfrentamiento' | 'codigo' | 'categoria' | 'problematica' | 'rompecabezas' | 'subtema' | 'listas'>(null);
+  const [editRomp, setEditRomp] = useState<Rompecabezas | null>(null);
+  const [editSubtema, setEditSubtema] = useState<Subtema | null>(null);
 
   // Filtro de leyenda.
   const [pinFilter, setPinFilter] = useState<GdLegendFilter>(null);
@@ -77,28 +92,43 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     } catch { /* noop */ }
   }, []);
 
+  const loadGlobals = useCallback(async () => {
+    try {
+      const [s, m] = await Promise.all([
+        fetch(`${API}/situaciones`).then((r) => r.json()),
+        fetch(`${API}/materias`).then((r) => r.json()),
+      ]);
+      setSituaciones(s.data || []); setMaterias(m.data || []);
+    } catch { /* noop */ }
+  }, []);
+
   const loadAll = useCallback(async (id: number | null) => {
     if (!id) {
       setGraph({ nodes: [], edges: [] });
       setFuentes([]); setProblemas([]); setEnfrentamientos([]); setCodigos([]); setCategorias([]);
+      setPiezas([]); setRompecabezas([]); setSubtemas([]);
       return;
     }
     try {
-      const [g, f, p, e, c, cat] = await Promise.all([
+      const [g, f, p, e, c, cat, pz, rc, st] = await Promise.all([
         fetch(`${API}?problematica_id=${id}`).then((r) => r.json()),
         fetch(`${API}/fuentes?problematica_id=${id}`).then((r) => r.json()),
         fetch(`${API}/problemas?problematica_id=${id}`).then((r) => r.json()),
         fetch(`${API}/enfrentamientos?problematica_id=${id}`).then((r) => r.json()),
         fetch(`${API}/codigos?problematica_id=${id}`).then((r) => r.json()),
         fetch(`${API}/categorias?problematica_id=${id}`).then((r) => r.json()),
+        fetch(`${API}/piezas?problematica_id=${id}`).then((r) => r.json()),
+        fetch(`${API}/rompecabezas?problematica_id=${id}`).then((r) => r.json()),
+        fetch(`${API}/subtemas?problematica_id=${id}`).then((r) => r.json()),
       ]);
       setGraph(g.data || { nodes: [], edges: [] });
       setFuentes(f.data || []); setProblemas(p.data || []); setEnfrentamientos(e.data || []);
       setCodigos(c.data || []); setCategorias(cat.data || []);
+      setPiezas(pz.data || []); setRompecabezas(rc.data || []); setSubtemas(st.data || []);
     } catch { /* noop */ }
   }, []);
 
-  useEffect(() => { loadProblematicas(); }, [loadProblematicas]);
+  useEffect(() => { loadProblematicas(); loadGlobals(); }, [loadProblematicas, loadGlobals]);
   useEffect(() => { loadAll(probId); setSelectedKey(null); setCreating(null); }, [probId, loadAll]);
 
   const reload = useCallback(() => loadAll(probId), [loadAll, probId]);
@@ -187,6 +217,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     const routeByType: Record<GdNodeType, string> = {
       problema: 'problemas', fuente_premisa: 'fuentes', fuente_peso: 'fuentes',
       enfrentamiento: 'enfrentamientos', codigo: 'codigos', categoria: 'categorias',
+      pieza: 'piezas', rompecabezas: 'rompecabezas', subtema: 'subtemas',
     };
     try {
       await mutate(`${API}/${routeByType[n.type]}`, 'DELETE', { id: n.id });
@@ -207,6 +238,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   const legendTypes: { type: GdNodeType }[] = [
     { type: 'problema' }, { type: 'fuente_premisa' }, { type: 'fuente_peso' },
     { type: 'enfrentamiento' }, { type: 'codigo' }, { type: 'categoria' },
+    { type: 'pieza' }, { type: 'rompecabezas' }, { type: 'subtema' },
   ];
 
   return (
@@ -277,6 +309,9 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                 <ToolBtn icon={<GitCompareArrows className="w-3.5 h-3.5" />} label="Enfrentar" color={GD_NODE_META.enfrentamiento.color} onClick={() => setModal('enfrentamiento')} disabled={premisas.length < 2} />
                 <ToolBtn icon={<Hexagon className="w-3.5 h-3.5" />} label="Código" color={GD_NODE_META.codigo.color} onClick={() => setModal('codigo')} disabled={premisas.length + enfrentamientos.length < 1} />
                 <ToolBtn icon={<Star className="w-3.5 h-3.5" />} label="Categoría" color={GD_NODE_META.categoria.color} onClick={() => setModal('categoria')} disabled={codigosVerificados.length < 1} />
+                <ToolBtn icon={<FileText className="w-3.5 h-3.5" />} label="Rompecabezas" color={GD_NODE_META.rompecabezas.color} onClick={() => { setEditRomp(null); setModal('rompecabezas'); }} />
+                <ToolBtn icon={<Layers className="w-3.5 h-3.5" />} label="Subtema" color={GD_NODE_META.subtema.color} onClick={() => { setEditSubtema(null); setModal('subtema'); }} disabled={rompecabezas.length < 1} />
+                <ToolBtn icon={<List className="w-3.5 h-3.5" />} label="Listas" color="#94a3b8" onClick={() => setModal('listas')} />
               </div>
             </div>
 
@@ -347,8 +382,13 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                       codigos={codigos}
                       categorias={categorias}
                       problemas={problemas}
+                      piezas={piezas}
+                      rompecabezasList={rompecabezas}
+                      subtemasList={subtemas}
                       onEditFuente={openFuente}
                       onEditProblema={openProblema}
+                      onEditRomp={(r: Rompecabezas) => { setEditRomp(r); setModal('rompecabezas'); }}
+                      onEditSubtema={(s: Subtema) => { setEditSubtema(s); setModal('subtema'); }}
                       onReload={reload}
                       onDelete={() => setConfirmNode(selectedNode)}
                       onClose={() => setSelectedKey(null)}
@@ -394,6 +434,18 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       {/* ── Modal: Categoría ── */}
       {modal === 'categoria' && (
         <CategoriaModal probId={probId!} codigosVerificados={codigosVerificados} onClose={() => setModal(null)} onSaved={async () => { setModal(null); await reload(); }} />
+      )}
+      {/* ── Modal: Rompecabezas ── */}
+      {modal === 'rompecabezas' && (
+        <RompecabezasModal probId={probId!} piezas={piezas} situaciones={situaciones} edit={editRomp} onClose={() => { setModal(null); setEditRomp(null); }} onSaved={async () => { setModal(null); setEditRomp(null); await reload(); }} />
+      )}
+      {/* ── Modal: Subtema ── */}
+      {modal === 'subtema' && (
+        <SubtemaModal probId={probId!} rompecabezas={rompecabezas} edit={editSubtema} onClose={() => { setModal(null); setEditSubtema(null); }} onSaved={async () => { setModal(null); setEditSubtema(null); await reload(); }} />
+      )}
+      {/* ── Modal: Listas globales (situaciones + materias) ── */}
+      {modal === 'listas' && (
+        <ListasModal situaciones={situaciones} materias={materias} onClose={() => setModal(null)} onChanged={loadGlobals} />
       )}
 
       <PixelConfirm
@@ -522,7 +574,7 @@ function ProblemaForm({ form, setForm, onCancel, onSave }: any) {
 }
 
 // Detalle del nodo seleccionado (por tipo).
-function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias, problemas, onEditFuente, onEditProblema, onReload, onDelete, onClose }: any) {
+function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias, problemas, piezas, rompecabezasList, subtemasList, onEditFuente, onEditProblema, onEditRomp, onEditSubtema, onReload, onDelete, onClose }: any) {
   const meta = GD_NODE_META[node.type as GdNodeType];
   const header = (
     <div className="flex items-start justify-between gap-2 mb-2">
@@ -579,6 +631,74 @@ function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias
     return <CategoriaDetail cat={cat} onReload={onReload} onDelete={onDelete} header={header} />;
   }
 
+  if (node.type === 'pieza') {
+    const pz = piezas.find((x: Pieza) => x.id === node.id) as Pieza | undefined;
+    if (!pz) return header;
+    return (
+      <div>
+        {header}
+        <Meta rows={[['Tipo', PIEZA_TIPO_LABEL[pz.tipo]], ['Códigos', String(pz.codigoIds.length)], ['Variables', String(pz.variables.length)]]} />
+        <p className="text-[10.5px] text-white/45 mt-2 mb-2" style={mf}>Las piezas provienen del sistema de metodología condiciológica (aquí son de solo lectura).</p>
+        {pz.variables.length > 0 && (
+          <div className="space-y-1">
+            {pz.variables.map((v) => (
+              <div key={v.id} className="flex items-center gap-2 text-[11px] bg-white/[0.04] rounded px-2 py-1">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: VARIABLE_FACTOR_COLOR[v.factor] }} />
+                <span className="text-white/85 flex-1 truncate" style={mf}>{v.nombre}</span>
+                <span className="text-[9.5px] text-white/50" style={mf}>{VARIABLE_FACTOR_LABEL[v.factor]} · {VARIABLE_TIPO_LABEL[(v.tipo_var as 'fija' | 'cambia')] || v.tipo_var}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <DetailActions onDelete={onDelete} />
+      </div>
+    );
+  }
+
+  if (node.type === 'rompecabezas') {
+    const rc = rompecabezasList.find((x: Rompecabezas) => x.id === node.id) as Rompecabezas | undefined;
+    if (!rc) return header;
+    return (
+      <div>
+        {header}
+        <Meta rows={[['Situación', rc.situacion_nombre || '—'], ['Piezas', String(rc.piezaIds.length)]]} />
+        <p className="text-[10.5px] text-white/45 mt-2" style={mf}>Expresión formada por la unión de piezas (parámetros = sus variables).</p>
+        <DetailActions onEdit={() => onEditRomp(rc)} onDelete={onDelete} />
+      </div>
+    );
+  }
+
+  if (node.type === 'subtema') {
+    const st = subtemasList.find((x: Subtema) => x.id === node.id) as Subtema | undefined;
+    if (!st) return header;
+    return (
+      <div>
+        {header}
+        <p className="text-[11px] font-semibold text-white/70 mt-1 mb-1" style={df}>Rompecabezas ({st.rompecabezas.length})</p>
+        <div className="space-y-1">
+          {st.rompecabezas.map((r, i) => (
+            <div key={r.id} className="flex items-center gap-2 text-[11px] bg-white/[0.04] rounded px-2 py-1">
+              <span className="text-white/40 tabular-nums w-4" style={mf}>{i + 1}.</span>
+              <span className="text-white/85 truncate" style={mf}>{r.nombre}</span>
+            </div>
+          ))}
+          {st.rompecabezas.length === 0 && <p className="text-[11px] text-white/45" style={mf}>Sin rompecabezas.</p>}
+        </div>
+        {st.hipotesis.length > 0 && (
+          <>
+            <p className="text-[11px] font-semibold text-white/70 mt-2 mb-1" style={df}>Hipótesis</p>
+            <ul className="space-y-1">
+              {st.hipotesis.map((h) => (
+                <li key={h.id} className="text-[11px] text-white/75 bg-white/[0.04] rounded px-2 py-1" style={mf}>• {h.texto}</li>
+              ))}
+            </ul>
+          </>
+        )}
+        <DetailActions onEdit={() => onEditSubtema(st)} onDelete={onDelete} />
+      </div>
+    );
+  }
+
   return header;
 }
 
@@ -607,7 +727,6 @@ function DetailActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete: ()
 function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fuente[]; onReload: () => void }) {
   const [applied, setApplied] = useState<any[]>([]);
   const [pesoId, setPesoId] = useState<string>('');
-  const [modo, setModo] = useState<PesoModo>('apoyo');
 
   const load = useCallback(async () => {
     try { const d = await fetch(`${API}/pesos?premisa_id=${premisa.id}`).then((r) => r.json()); setApplied(d.data || []); }
@@ -618,7 +737,7 @@ function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fu
   const apply = async () => {
     if (!pesoId) { toast.error('Elige una fuente peso'); return; }
     try {
-      await mutate(`${API}/pesos`, 'POST', { premisa_fuente_id: premisa.id, peso_fuente_id: Number(pesoId), modo });
+      await mutate(`${API}/pesos`, 'POST', { premisa_fuente_id: premisa.id, peso_fuente_id: Number(pesoId) });
       toast.success('Peso aplicado');
       setPesoId('');
       await load(); await onReload();
@@ -635,14 +754,15 @@ function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fu
 
   return (
     <div className="mt-3 pt-2.5 border-t border-white/10">
-      <p className="text-[11px] font-semibold text-white/70 mb-1.5 flex items-center gap-1.5" style={df}><Weight className="w-3.5 h-3.5 text-[#60a5fa]" /> Pesos aplicados</p>
-      {applied.length === 0 && <p className="text-[11px] text-white/45 mb-2" style={mf}>Ninguno. La credibilidad se altera al aplicar fuentes de tipo peso.</p>}
+      <p className="text-[11px] font-semibold text-white/70 mb-1.5 flex items-center gap-1.5" style={df}><Weight className="w-3.5 h-3.5 text-[#60a5fa]" /> Pesos que la refuerzan</p>
+      <p className="text-[10.5px] text-white/40 mb-1.5" style={mf}>Un peso aporta credibilidad (promedio). Para contradecir, enfrenta dos premisas.</p>
+      {applied.length === 0 && <p className="text-[11px] text-white/45 mb-2" style={mf}>Ninguno aplicado aún.</p>}
       <div className="space-y-1 mb-2">
         {applied.map((a) => (
           <div key={a.id} className="flex items-center gap-2 text-[11px] bg-white/[0.04] rounded px-2 py-1">
             <span className="font-bold text-[#60a5fa]" style={df}>{a.peso_nomenclatura}</span>
-            <span className={`px-1 rounded text-[9.5px] ${a.modo === 'apoyo' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`} style={mf}>{PESO_MODO_LABEL[a.modo as PesoModo]}</span>
-            <span className="text-white/60 tabular-nums ml-auto" style={mf}>{Math.round(a.cred_antes)}→{Math.round(a.cred_despues)}%</span>
+            <span className="text-white/50 truncate flex-1" style={mf}>{a.peso_contenido?.slice(0, 24)}</span>
+            <span className="text-white/60 tabular-nums" style={mf}>{Math.round(a.cred_antes)}→{Math.round(a.cred_despues)}%</span>
             <button onClick={() => remove(a.peso_fuente_id)} className="text-white/40 hover:text-red-400"><X className="w-3 h-3" /></button>
           </div>
         ))}
@@ -651,16 +771,12 @@ function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fu
         <div className="flex items-center gap-1.5">
           <select className={`${GLASS_INPUT} flex-1`} value={pesoId} onChange={(e) => setPesoId(e.target.value)}>
             <option value="">Fuente peso…</option>
-            {usableP.map((p) => <option key={p.id} value={p.id} className="bg-[#181826]">{p.nomenclatura} · {p.contenido.slice(0, 30)}</option>)}
+            {usableP.map((p) => <option key={p.id} value={p.id} className="bg-[#181826]">{p.nomenclatura} ({Math.round(p.credibilidad)}%) · {p.contenido.slice(0, 28)}</option>)}
           </select>
-          <select className={`${GLASS_INPUT} w-24`} value={modo} onChange={(e) => setModo(e.target.value as PesoModo)}>
-            <option value="apoyo" className="bg-[#181826]">Apoya</option>
-            <option value="contradice" className="bg-[#181826]">Contradice</option>
-          </select>
-          <button onClick={apply} className={`${GLASS_BTN} px-2 py-1.5`} title="Aplicar"><Plus className="w-3.5 h-3.5" /></button>
+          <button onClick={apply} className={`${GLASS_BTN} px-2 py-1.5`} title="Aplicar peso"><Plus className="w-3.5 h-3.5" /></button>
         </div>
       ) : (
-        <p className="text-[10.5px] text-white/40" style={mf}>Crea fuentes de tipo peso para aportar/contradecir credibilidad.</p>
+        <p className="text-[10.5px] text-white/40" style={mf}>Crea fuentes de tipo peso para reforzar la credibilidad.</p>
       )}
     </div>
   );
@@ -930,5 +1046,191 @@ function CategoriaModal({ probId, codigosVerificados, onClose, onSaved }: { prob
         </div>
       </div>
     </FloatingWindow>
+  );
+}
+
+function RompecabezasModal({ probId, piezas, situaciones, edit, onClose, onSaved }: { probId: number; piezas: Pieza[]; situaciones: Situacion[]; edit: Rompecabezas | null; onClose: () => void; onSaved: () => void }) {
+  const [nombre, setNombre] = useState(edit?.nombre || '');
+  const [situacionId, setSituacionId] = useState<string>(edit?.situacion_id ? String(edit.situacion_id) : '');
+  const [sel, setSel] = useState<number[]>(edit?.piezaIds || []);
+  const toggle = (id: number) => setSel((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+
+  const save = async () => {
+    if (!nombre.trim()) { toast.error('El nombre es requerido'); return; }
+    try {
+      const body: any = { nombre, situacion_id: situacionId ? Number(situacionId) : null, pieza_ids: sel };
+      if (edit) await mutate(`${API}/rompecabezas`, 'PATCH', { id: edit.id, ...body });
+      else await mutate(`${API}/rompecabezas`, 'POST', { problematica_id: probId, ...body });
+      toast.success(edit ? 'Rompecabezas actualizado' : 'Rompecabezas creado');
+      onSaved();
+    } catch (e: any) { toast.error(e.message); }
+  };
+  return (
+    <FloatingWindow open onClose={onClose} title={edit ? 'Editar rompecabezas' : 'Nuevo rompecabezas'} initialWidth={500} initialHeight={540}>
+      <div className="p-4 space-y-3">
+        <p className="text-[11.5px] text-white/60" style={mf}>Une piezas para responder a una situación; es una expresión con nombre legible (se usará luego en dinámica condiciológica).</p>
+        <Field label="Nombre (manual)">
+          <input className={GLASS_INPUT} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Evento laboral de Desesperación" autoFocus />
+        </Field>
+        <Field label="Situación">
+          <select className={GLASS_INPUT} value={situacionId} onChange={(e) => setSituacionId(e.target.value)}>
+            <option value="">Sin situación</option>
+            {situaciones.map((s) => <option key={s.id} value={s.id} className="bg-[#181826]">{s.nombre}</option>)}
+          </select>
+          {situaciones.length === 0 && <p className="text-[10.5px] text-white/40 mt-1" style={mf}>Crea situaciones en “Listas”.</p>}
+        </Field>
+        <div>
+          <p className="text-[11px] font-semibold text-white/70 mb-1" style={df}>Piezas ({piezas.length})</p>
+          {piezas.length === 0 ? (
+            <p className="text-[11px] text-white/45 bg-white/[0.04] rounded px-2 py-2" style={mf}>Aún no hay piezas. Las genera el sistema de metodología condiciológica (revisión/corrección de códigos). El rompecabezas quedará a la espera de piezas.</p>
+          ) : (
+            <div className="max-h-44 overflow-y-auto space-y-1">
+              {piezas.map((p) => (
+                <button key={p.id} onClick={() => toggle(p.id)} className={`w-full flex items-center gap-2 text-left px-2 py-1.5 rounded text-[11.5px] transition-colors ${sel.includes(p.id) ? 'bg-accent/25 border border-accent/40' : 'bg-white/[0.04] border border-transparent hover:bg-white/10'}`} style={mf}>
+                  <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${sel.includes(p.id) ? 'bg-accent border-accent' : 'border-white/30'}`}>{sel.includes(p.id) && <Check className="w-2.5 h-2.5 text-white" />}</span>
+                  <Puzzle className="w-3 h-3 text-[#14b8a6] shrink-0" />
+                  <span className="font-bold text-[#14b8a6]" style={df}>{p.nomenclatura}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+          <button onClick={save} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md" style={mf}>{edit ? 'Guardar' : 'Crear'}</button>
+        </div>
+      </div>
+    </FloatingWindow>
+  );
+}
+
+function SubtemaModal({ probId, rompecabezas, edit, onClose, onSaved }: { probId: number; rompecabezas: Rompecabezas[]; edit: Subtema | null; onClose: () => void; onSaved: () => void }) {
+  const [titulo, setTitulo] = useState(edit?.titulo || '');
+  const [hipotesis, setHipotesis] = useState<string[]>(edit?.hipotesis.map((h) => h.texto) || ['']);
+  const [sel, setSel] = useState<number[]>(edit?.rompecabezas.map((r) => r.id) || []);
+  // Orden = orden de selección.
+  const toggle = (id: number) => setSel((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+  const setHip = (i: number, v: string) => setHipotesis((h) => h.map((x, j) => (j === i ? v : x)));
+  const addHip = () => setHipotesis((h) => [...h, '']);
+  const delHip = (i: number) => setHipotesis((h) => h.filter((_, j) => j !== i));
+
+  const save = async () => {
+    if (!titulo.trim()) { toast.error('El título es requerido'); return; }
+    try {
+      const body: any = { titulo, hipotesis: hipotesis.map((h) => h.trim()).filter(Boolean), rompecabezas_ids: sel };
+      if (edit) await mutate(`${API}/subtemas`, 'PATCH', { id: edit.id, ...body });
+      else await mutate(`${API}/subtemas`, 'POST', { problematica_id: probId, ...body });
+      toast.success(edit ? 'Subtema actualizado' : 'Subtema creado');
+      onSaved();
+    } catch (e: any) { toast.error(e.message); }
+  };
+  return (
+    <FloatingWindow open onClose={onClose} title={edit ? 'Editar subtema' : 'Nuevo subtema'} initialWidth={520} initialHeight={600}>
+      <div className="p-4 space-y-3">
+        <p className="text-[11.5px] text-white/60" style={mf}>Un subtema agrupa rompecabezas en un orden para transmitir una idea; su producto son una o más hipótesis.</p>
+        <Field label="Título">
+          <input className={GLASS_INPUT} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej. La desesperación del desempleo" autoFocus />
+        </Field>
+        <div>
+          <p className="text-[11px] font-semibold text-white/70 mb-1" style={df}>Rompecabezas (orden = selección)</p>
+          {rompecabezas.length === 0 ? (
+            <p className="text-[11px] text-white/45" style={mf}>Crea rompecabezas primero.</p>
+          ) : (
+            <div className="max-h-36 overflow-y-auto space-y-1">
+              {rompecabezas.map((r) => {
+                const idx = sel.indexOf(r.id);
+                return (
+                  <button key={r.id} onClick={() => toggle(r.id)} className={`w-full flex items-center gap-2 text-left px-2 py-1.5 rounded text-[11.5px] transition-colors ${idx >= 0 ? 'bg-accent/25 border border-accent/40' : 'bg-white/[0.04] border border-transparent hover:bg-white/10'}`} style={mf}>
+                    <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 text-[9px] ${idx >= 0 ? 'bg-accent border-accent text-white' : 'border-white/30 text-transparent'}`}>{idx >= 0 ? idx + 1 : ''}</span>
+                    <FileText className="w-3 h-3 text-[#818cf8] shrink-0" />
+                    <span className="text-white/85 truncate">{r.nombre}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[11px] font-semibold text-white/70" style={df}>Hipótesis</p>
+            <button onClick={addHip} className={`${GLASS_BTN} px-1.5 py-0.5 text-[10.5px]`} style={mf}><Plus className="w-3 h-3" /> Añadir</button>
+          </div>
+          <div className="space-y-1.5">
+            {hipotesis.map((h, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <textarea className={`${GLASS_INPUT} resize-none flex-1`} rows={2} value={h} onChange={(e) => setHip(i, e.target.value)} placeholder={`Hipótesis ${i + 1}`} />
+                {hipotesis.length > 1 && <button onClick={() => delHip(i)} className="text-white/40 hover:text-red-400 shrink-0"><X className="w-3.5 h-3.5" /></button>}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+          <button onClick={save} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md" style={mf}>{edit ? 'Guardar' : 'Crear'}</button>
+        </div>
+      </div>
+    </FloatingWindow>
+  );
+}
+
+function ListasModal({ situaciones, materias, onClose, onChanged }: { situaciones: Situacion[]; materias: Materia[]; onClose: () => void; onChanged: () => void }) {
+  return (
+    <FloatingWindow open onClose={onClose} title="Listas globales" initialWidth={480} initialHeight={560}>
+      <div className="p-4 space-y-4">
+        <p className="text-[11.5px] text-white/60" style={mf}>Listas compartidas por todas las problemáticas. Las <b>situaciones</b> clasifican rompecabezas; las <b>materias</b> se asocian a los temas.</p>
+        <EditableList title="Situaciones" endpoint="situaciones" items={situaciones} onChanged={onChanged} />
+        <EditableList title="Materias" endpoint="materias" items={materias} onChanged={onChanged} />
+      </div>
+    </FloatingWindow>
+  );
+}
+
+function EditableList({ title, endpoint, items, onChanged }: { title: string; endpoint: string; items: { id: number; nombre: string }[]; onChanged: () => void }) {
+  const [nuevo, setNuevo] = useState('');
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editVal, setEditVal] = useState('');
+
+  const add = async () => {
+    if (!nuevo.trim()) return;
+    try { await mutate(`${API}/${endpoint}`, 'POST', { nombre: nuevo }); setNuevo(''); await onChanged(); }
+    catch (e: any) { toast.error(e.message); }
+  };
+  const saveEdit = async () => {
+    if (editId == null) return;
+    try { await mutate(`${API}/${endpoint}`, 'PATCH', { id: editId, nombre: editVal }); setEditId(null); await onChanged(); }
+    catch (e: any) { toast.error(e.message); }
+  };
+  const del = async (id: number) => {
+    try { await mutate(`${API}/${endpoint}`, 'DELETE', { id }); await onChanged(); }
+    catch (e: any) { toast.error(e.message); }
+  };
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-white/70 mb-1.5" style={df}>{title} ({items.length})</p>
+      <div className="space-y-1 mb-2 max-h-40 overflow-y-auto">
+        {items.map((it) => (
+          <div key={it.id} className="flex items-center gap-2 text-[11.5px] bg-white/[0.04] rounded px-2 py-1">
+            {editId === it.id ? (
+              <>
+                <input className={`${GLASS_INPUT} flex-1 py-0.5`} value={editVal} autoFocus onChange={(e) => setEditVal(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditId(null); }} />
+                <button onClick={saveEdit} className="text-emerald-400 hover:text-emerald-300"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={() => setEditId(null)} className="text-white/40 hover:text-white"><X className="w-3.5 h-3.5" /></button>
+              </>
+            ) : (
+              <>
+                <span className="text-white/85 flex-1 truncate" style={mf}>{it.nombre}</span>
+                <button onClick={() => { setEditId(it.id); setEditVal(it.nombre); }} className="text-white/40 hover:text-accent"><Pencil className="w-3 h-3" /></button>
+                <button onClick={() => del(it.id)} className="text-white/40 hover:text-red-400"><Trash2 className="w-3 h-3" /></button>
+              </>
+            )}
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-[11px] text-white/45" style={mf}>Vacío.</p>}
+      </div>
+      <div className="flex gap-1.5">
+        <input className={`${GLASS_INPUT} flex-1`} value={nuevo} onChange={(e) => setNuevo(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} placeholder={`Nueva ${title.slice(0, -2).toLowerCase()}…`} />
+        <button onClick={add} className={`${GLASS_BTN} px-2 py-1.5`} title="Agregar"><Plus className="w-3.5 h-3.5" /></button>
+      </div>
+    </div>
   );
 }

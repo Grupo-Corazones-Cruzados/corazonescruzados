@@ -8,8 +8,6 @@
 
 export type TipoDato = 'cantidad' | 'cualidad';
 export type TipoLogica = 'premisa' | 'peso';
-/** Modo en que una fuente de tipo peso altera la credibilidad de una premisa. */
-export type PesoModo = 'apoyo' | 'contradice';
 
 export const TIPO_DATO_LABEL: Record<TipoDato, string> = {
   cantidad: 'Cantidad',
@@ -19,10 +17,26 @@ export const TIPO_LOGICA_LABEL: Record<TipoLogica, string> = {
   premisa: 'Premisa',
   peso: 'Peso',
 };
-export const PESO_MODO_LABEL: Record<PesoModo, string> = {
-  apoyo: 'Apoya',
-  contradice: 'Contradice',
-};
+
+// ── Piezas / rompecabezas (Fase B) ────────────────────────────────────────────
+export type PiezaTipo = 'revision' | 'correccion';
+export type VariableFactor = 'mental' | 'corporal' | 'ambiental';
+export type VariableTipo = 'fija' | 'cambia';
+
+export const PIEZA_TIPO_LABEL: Record<PiezaTipo, string> = { revision: 'Revisión', correccion: 'Corrección' };
+export const VARIABLE_TIPO_LABEL: Record<VariableTipo, string> = { fija: 'Fija', cambia: 'Cambia' };
+export const VARIABLE_FACTOR_LABEL: Record<VariableFactor, string> = { mental: 'Mental', corporal: 'Corporal', ambiental: 'Ambiental' };
+export const VARIABLE_FACTOR_COLOR: Record<VariableFactor, string> = { mental: '#f472b6', corporal: '#2dd4bf', ambiental: '#fbbf24' };
+
+/**
+ * Restricciones de una variable de pieza (definidas desde el futuro sistema de
+ * metodología condiciológica). Gobiernan si dos piezas pueden unirse en un rompecabezas.
+ */
+export interface VariableRestricciones {
+  aplicaMasDeUno?: boolean;         // la variable admite combinarse con varias
+  variablesNoAceptadas?: string[];  // nombres de variables incompatibles
+  soloCategorias?: string[];        // solo se une con variables de estas categorías
+}
 
 // ── Nodos del grafo "universo" ────────────────────────────────────────────────
 export type GdNodeType =
@@ -31,9 +45,12 @@ export type GdNodeType =
   | 'fuente_peso'
   | 'enfrentamiento'
   | 'codigo'
-  | 'categoria';
+  | 'categoria'
+  | 'pieza'
+  | 'rompecabezas'
+  | 'subtema';
 
-export type GdShape = 'triangle' | 'circle' | 'square' | 'diamond' | 'hexagon' | 'star';
+export type GdShape = 'triangle' | 'circle' | 'square' | 'diamond' | 'hexagon' | 'star' | 'pentagon' | 'doc' | 'card';
 
 export const GD_NODE_META: Record<GdNodeType, { label: string; plural: string; color: string; shape: GdShape }> = {
   problema:       { label: 'Problema',       plural: 'Problemas',       color: '#f59e0b', shape: 'triangle' }, // ámbar
@@ -42,6 +59,9 @@ export const GD_NODE_META: Record<GdNodeType, { label: string; plural: string; c
   enfrentamiento: { label: 'Enfrentamiento', plural: 'Enfrentamientos', color: '#a855f7', shape: 'diamond' },  // violeta
   codigo:         { label: 'Código',         plural: 'Códigos',         color: '#10b981', shape: 'hexagon' },   // esmeralda (verif.)
   categoria:      { label: 'Categoría',      plural: 'Categorías',      color: '#eab308', shape: 'star' },      // oro
+  pieza:          { label: 'Pieza',          plural: 'Piezas',          color: '#14b8a6', shape: 'pentagon' },  // teal
+  rompecabezas:   { label: 'Rompecabezas',   plural: 'Rompecabezas',    color: '#818cf8', shape: 'doc' },       // índigo
+  subtema:        { label: 'Subtema',        plural: 'Subtemas',        color: '#f472b6', shape: 'card' },      // rosa
 };
 
 /** Color de un código no verificado (gris) — el verificado usa el color esmeralda del meta. */
@@ -123,16 +143,25 @@ export function categoriaRef(seq: number, codigoRefs: string[]): string {
   return first ? `CAT-${seq}-${first}` : `CAT-${seq}`;
 }
 
+/**
+ * Nomenclatura de pieza: PIE.REV-<base> | PIE.COR-<base>, donde <base> es la nomenclatura
+ * de la categoría (o del código) sobre la que se hace la revisión/corrección.
+ * Ej. PIE.REV-CAT-1-COD-NROF-1.24/12
+ */
+export function piezaRef(tipo: PiezaTipo, base: string): string {
+  const prefix = tipo === 'revision' ? 'PIE.REV' : 'PIE.COR';
+  return base ? `${prefix}-${base}` : prefix;
+}
+
 // ── Credibilidad (0–100) ──────────────────────────────────────────────────────
 /**
  * Nueva credibilidad efectiva de una premisa al aplicarle una fuente de tipo peso.
- * apoyo:      promedio entre la credibilidad actual y la del peso.
- * contradice: promedio entre la actual y el complemento (100 − peso) — un contradictor
- *             muy creíble baja la credibilidad. (Asunción P5, a confirmar con el usuario.)
+ * Una fuente peso SIEMPRE aporta credibilidad a la premisa: se toma el promedio entre la
+ * credibilidad actual y la del peso. La CONTRADICCIÓN NO se hace con pesos, sino
+ * enfrentando dos premisas (gana la de mayor credibilidad). (Confirmado por el usuario 2026-07-11.)
  */
-export function aplicarPeso(actual: number, pesoCred: number, modo: PesoModo): number {
-  const aporte = modo === 'apoyo' ? pesoCred : 100 - pesoCred;
-  return Math.round(((actual + aporte) / 2) * 100) / 100;
+export function aplicarPeso(actual: number, pesoCred: number): number {
+  return Math.round(((actual + pesoCred) / 2) * 100) / 100;
 }
 
 export function clampCred(n: number): number {

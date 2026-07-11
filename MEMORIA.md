@@ -267,7 +267,7 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **Sistema "Gestión de Datos" — Centralizado · pilar · fundamentación (Fase A, 2026-07-11):** nuevo sistema built-in
+- **Sistema "Gestión de Datos" — Centralizado · pilar · fundamentación (Fases A+B, 2026-07-11):** nuevo sistema built-in
   (celda "Academia", slug `gestion-de-datos`, sembrado idempotente en `ensureTable()` de
   `app/api/centralized/systems/route.ts`; dispatch por slug en `[piso]/[paso]/[slug]/page.tsx` →
   `GestionDeDatosSystem`). **Ordena datos recolectados aplicando la condiciología como método de clasificación**
@@ -288,15 +288,25 @@ Stack estándar de la casa, con particularidades de este repo:
     `lib/centralized/gestion-datos.ts` (nomenclatura + `aplicarPeso`).
   - **Nomenclatura (verificada contra los ejemplos del usuario):** premisa `REF-n` (seq POR problemática); peso `Ref-n`
     (seq **GLOBAL**); enfrentada `REF-ganó.perdió`; código `COD-REF-u1/u2/…` (u = `n` o `g.p`); categoría `CAT-n-COD-…`.
-  - **APIs** `app/api/centralized/gestion-datos/**` (9 rutas, guard `['admin','member']`): grafo, problematicas,
-    problemas, fuentes, pesos, enfrentamientos, codigos, codigos/eventos, categorias.
+  - **REGLA de credibilidad (corregida por el usuario 2026-07-11):** una **fuente peso SOLO aumenta** la credibilidad de
+    una premisa (promedio `(actual+peso)/2`); **NO existe modo "contradice" en pesos**. La **contradicción** se hace
+    **únicamente enfrentando dos premisas** (gana la de mayor credibilidad efectiva). Se eliminó el `modo` de
+    `gd_fuente_pesos` y de la API/UI.
+  - **Fase B (2026-07-11, HECHA):** **Piezas** (SOLO visualización — las crea el futuro sistema de metodología
+    condiciológica; modelo `gd_piezas` + `gd_pieza_codigos` + `gd_pieza_variables` factor mental/corporal/ambiental,
+    tipo fija|cambia, `restricciones` jsonb; nomenclatura `PIE.REV-`/`PIE.COR-` derivada de la categoría/código);
+    **Situaciones** y **Materias** = listas globales (`gd_situaciones`, `gd_materias`); **Rompecabezas** (nombre manual +
+    situación + unión de piezas; `gd_rompecabezas` + `gd_rompecabezas_piezas`); **Subtemas** (título + hipótesis
+    ordenadas + rompecabezas ordenados; `gd_subtemas` + `gd_subtema_hipotesis` + `gd_subtema_rompecabezas`). Nodos nuevos
+    del grafo: pieza=pentágono/teal, rompecabezas=documento/índigo, subtema=tarjeta/rosa. UI: botones Rompecabezas/Subtema
+    + modal "Listas" (situaciones/materias). 14 rutas API en total.
   - **Decisiones del usuario (2026-07-11):** por **fases**; **credibilidad 0–100 %**; **categorías por problemática**;
-    **piezas = solo visualización** (llegan del futuro sistema "metodología condiciológica"; rompecabezas a la espera).
-  - **Fase B/C PENDIENTE:** Piezas (visualización + variables mental/corporal/ambiental + restricciones), Situaciones y
-    Materias (listas globales), Rompecabezas (nombre manual + validación por restricciones), Subtemas (+hipótesis),
-    Temas (prosa + materias + problemas). **Asunción a confirmar (P5):** matemática del peso al *contradecir*
-    (`(actual + (100−peso))/2`). Verificado: tsc + `next build` OK; lógica pura (nomenclatura/credibilidad) probada
-    offline; INSERT contra Railway no probado desde el entorno (red aislada). **Falta validación visual en vivo.**
+    **piezas = solo visualización** (rompecabezas a la espera de que existan piezas reales).
+  - **Fase C PENDIENTE:** **Temas** (título + prosa que conecta subtemas sin inventar, salvo hipótesis marcadas +
+    asociación a **materias** y a **problemas**). Nota: `gd_materias` y sus CRUD ya existen (se adelantaron en Fase B).
+  - **Verificado (Fases A+B):** tsc + `next build` OK (14 rutas registradas); nomenclatura y credibilidad probadas
+    offline contra los ejemplos del usuario. INSERT contra Railway no probado desde el entorno (red aislada; el DDL
+    `IF NOT EXISTS` corre al primer uso). **Falta validación visual en vivo.**
 - **Proyectos: Nuevo vs Solicitar + responsable/participantes (2026-07-09):** se replicó el patrón de tickets en
   `/dashboard/projects`. Dos botones: **"Solicitar proyecto"** (TODOS) = `mode='request'`, YO soy el **cliente**
   (`ensureUserClientAccount`), y elijo **un miembro** (queda **INVITADO a aceptar el liderazgo**, no responsable directo) o

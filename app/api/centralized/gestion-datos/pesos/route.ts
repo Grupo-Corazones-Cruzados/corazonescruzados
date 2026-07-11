@@ -21,15 +21,14 @@ export async function GET(req: Request) {
   }
 }
 
-// POST — aplica un peso a una premisa { premisa_fuente_id, peso_fuente_id, modo }.
+// POST — aplica un peso a una premisa { premisa_fuente_id, peso_fuente_id }.
 export async function POST(req: Request) {
   try {
     if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    const { premisa_fuente_id, peso_fuente_id, modo } = await req.json();
+    const { premisa_fuente_id, peso_fuente_id } = await req.json();
     if (!premisa_fuente_id) return NextResponse.json({ error: 'Falta premisa_fuente_id' }, { status: 400 });
     if (!peso_fuente_id) return NextResponse.json({ error: 'Falta peso_fuente_id' }, { status: 400 });
-    if (!['apoyo', 'contradice'].includes(modo)) return NextResponse.json({ error: 'modo inválido' }, { status: 400 });
-    const cred = await aplicarPesoAFuente(Number(premisa_fuente_id), Number(peso_fuente_id), modo);
+    const cred = await aplicarPesoAFuente(Number(premisa_fuente_id), Number(peso_fuente_id));
     return NextResponse.json({ data: { credibilidad: cred } });
   } catch (err: any) {
     console.error('GD pesos POST error:', err.message);

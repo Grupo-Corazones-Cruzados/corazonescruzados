@@ -148,22 +148,23 @@ se asocia a **problemas**; los problemas están conectados por origen a la probl
   - **Fase C (descriptivo):** Temas (prosa + asociación a materias y problemas), Materias (lista global).
 
 ### Preguntas ABIERTAS (surgidas al diseñar)
-#### P5 — Matemática exacta de la **fuente peso** al **contradecir** (no solo apoyar) · ⏸ Bloqueada (asunción provisional)
-- **Por qué importa:** el usuario dijo que una fuente peso "saca un promedio" al aplicarse, y que también puede **contradecir**. El promedio
-  cubre el apoyo (peso alto sube, peso bajo baja), pero la matemática del **modo contradicción** no se especificó.
-- **Asunción provisional implementada (a confirmar):** cada aplicación de peso tiene `modo` = `apoyo` | `contradice`.
-  `apoyo`: `efectiva = (efectiva + peso.cred)/2`. `contradice`: `efectiva = (efectiva + (100 − peso.cred))/2` (un contradictor muy creíble
-  baja la credibilidad). Se guarda historial de aplicaciones; la `credibilidad_efectiva` es acumulativa (el orden importa). **Confirmar con el usuario.**
+#### P5 — ¿La fuente peso puede **contradecir**? · ✅ RESUELTA (usuario, 2026-07-11) → **NO**.
+- **Respuesta:** una fuente de tipo peso **SIEMPRE aumenta** la credibilidad de una premisa (promedio `(actual+peso)/2`). **No
+  existe modo "contradice" en pesos.** La contradicción se aplica **solo enfrentando dos premisas** (gana la de mayor
+  credibilidad efectiva). Se **eliminó** el `modo` de `gd_fuente_pesos`, de `aplicarPeso()`, de la ruta `/pesos` y del UI.
 #### P6 — Nomenclatura de **categoría** con **varios** códigos: ¿`CAT-n-<cod1>_<cod2>…` o solo `CAT-n` + lista? · ⏸ (provisional: `CAT-n` como ref primaria + lista de códigos; el display concatena el 1º código como en el ejemplo).
 
 ### Progreso
-- **% de información para el objetivo:** ~80% — **FASE A CONSTRUIDA Y VERIFICADA (2026-07-11)**: registro del sistema,
-  dominio+nomenclatura (`lib/centralized/gestion-datos.ts`), capa DB (`gestion-datos-db.ts`, tablas `gd_`), 9 rutas API,
-  grafo `GdGraph.tsx` y componente `GestionDeDatosSystem.tsx`. `tsc --noEmit` + `next build` OK. Nomenclatura y
-  credibilidad probadas **offline** contra los ejemplos exactos del usuario (10/10). **No** se pudo probar el INSERT
-  contra Railway (red del entorno aislada; el DDL `IF NOT EXISTS` corre al primer uso en prod).
-- **Pendiente:** validación visual en vivo (requiere login); confirmar P5; construir **Fases B y C**.
-- **Solución construida (Fase A):** ver detalle en `MEMORIA.md` → "Decisiones recientes (feature) · Gestión de Datos".
+- **% de información para el objetivo:** ~92% — **FASES A y B CONSTRUIDAS Y VERIFICADAS (2026-07-11)**: dominio+nomenclatura,
+  capa DB (tablas `gd_`), **14 rutas API**, grafo `GdGraph.tsx` (9 tipos de nodo) y componente `GestionDeDatosSystem.tsx`.
+  `tsc --noEmit` + `next build` OK. Nomenclatura y credibilidad probadas **offline** contra los ejemplos del usuario (10/10).
+  P5 resuelto (peso solo aumenta; contradicción = enfrentamiento). **No** se pudo probar el INSERT contra Railway (red del
+  entorno aislada; el DDL `IF NOT EXISTS` corre al primer uso en prod).
+  - **Fase A:** Problemática/Problemas/Fuentes/Enfrentamientos/Códigos(+eventos)/Categorías.
+  - **Fase B:** Piezas (solo visualización, provienen del sistema de metodología), Situaciones/Materias (listas globales),
+    Rompecabezas (nombre + situación + piezas), Subtemas (título + hipótesis + rompecabezas ordenados).
+- **Pendiente:** **Fase C** (Temas: prosa + asociación a materias y problemas); validación visual en vivo; probar contra Railway.
+- **Solución construida (A+B):** ver detalle en `MEMORIA.md` → "Decisiones recientes (feature) · Gestión de Datos".
 
 ---
 
