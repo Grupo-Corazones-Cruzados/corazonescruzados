@@ -307,8 +307,11 @@ Stack estándar de la casa, con particularidades de este repo:
     `gd_tema_subtemas`/`gd_tema_materias`/`gd_tema_problemas`; nodo naranja octágono; sin nomenclatura (nivel
     descriptivo). Ruta `/temas`. UI: botón Tema + `TemaModal` (título/prosa + chips de subtemas/materias/problemas).
   - **Verificado (Fases A+B+C):** tsc + `next build` OK (**15 rutas API** registradas); nomenclatura y credibilidad
-    probadas offline contra los ejemplos del usuario. INSERT contra Railway no probado desde el entorno (red aislada;
-    el DDL `IF NOT EXISTS` corre al primer uso). **Falta validación visual en vivo** (requiere login).
+    probadas offline. **Prueba END-TO-END contra la BD real de Railway (2026-07-11, 10/10 checks, en transacción con
+    ROLLBACK):** las 24 tablas `gd_` se crean sin error; flujo completo Problemática→Fuentes→peso(40→65)→Enfrentamiento
+    →Código+evento+verificado→Categoría→Pieza(variable+restricción jsonb)→Rompecabezas→Subtema→Tema OK; secuencias
+    (premisa por-problemática, peso global), CAT-1 por problemática y REF única confirmados. **Falta solo validación
+    visual/UX en vivo** (requiere login). Conexión desde el sandbox requiere `dangerouslyDisableSandbox` (red aislada).
   - **La tubería de 9 niveles está COMPLETA end-to-end.** Piezas siguen siendo solo-visualización (las alimentará el
     futuro sistema de "metodología condiciológica"), por lo que los rompecabezas quedan a la espera de piezas reales.
 - **Proyectos: Nuevo vs Solicitar + responsable/participantes (2026-07-09):** se replicó el patrón de tickets en

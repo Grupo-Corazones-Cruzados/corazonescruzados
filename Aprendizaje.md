@@ -155,10 +155,11 @@ se asocia a **problemas**; los problemas están conectados por origen a la probl
 #### P6 — Nomenclatura de **categoría** con **varios** códigos: ¿`CAT-n-<cod1>_<cod2>…` o solo `CAT-n` + lista? · ⏸ (provisional: `CAT-n` como ref primaria + lista de códigos; el display concatena el 1º código como en el ejemplo).
 
 ### Progreso
-- **% de información para el objetivo:** ~98% — **SISTEMA COMPLETO (Fases A+B+C) CONSTRUIDO Y VERIFICADO (2026-07-11)**:
+- **% de información para el objetivo:** ~99% — **SISTEMA COMPLETO (Fases A+B+C) CONSTRUIDO Y VERIFICADO (2026-07-11)**:
   dominio+nomenclatura, capa DB (tablas `gd_`), **15 rutas API**, grafo `GdGraph.tsx` (**10 tipos de nodo**) y componente
-  `GestionDeDatosSystem.tsx`. `tsc --noEmit` + `next build` OK. Nomenclatura y credibilidad probadas **offline** (10/10).
-  P5 resuelto (peso solo aumenta; contradicción = enfrentamiento). INSERT contra Railway no probado (red aislada; DDL al 1er uso).
+  `GestionDeDatosSystem.tsx`. `tsc --noEmit` + `next build` OK. P5 resuelto (peso solo aumenta; contradicción = enfrentamiento).
+  **Prueba END-TO-END contra la BD real de Railway (10/10, transacción con ROLLBACK):** 24 tablas DDL + flujo completo
+  Problemática→…→Tema + secuencias + REF única. Solo falta **validación visual/UX en vivo** (requiere login).
   - **Fase A:** Problemática/Problemas/Fuentes/Enfrentamientos/Códigos(+eventos)/Categorías.
   - **Fase B:** Piezas (solo visualización), Situaciones/Materias (listas globales), Rompecabezas, Subtemas (+hipótesis).
   - **Fase C:** Temas (prosa + agrupa subtemas + asocia materias y problemas).
