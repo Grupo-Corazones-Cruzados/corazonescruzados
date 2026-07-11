@@ -68,6 +68,14 @@ function traceShape(ctx: CanvasRenderingContext2D, shape: string, x: number, y: 
     // Tarjeta: rectángulo apaisado.
     const w = r * 1.7, h = r * 1.2;
     ctx.rect(x - w / 2, y - h / 2, w, h);
+  } else if (shape === 'octagon') {
+    const rr = r * 1.08;
+    for (let i = 0; i < 8; i++) {
+      const a = Math.PI / 8 + (i * 2 * Math.PI) / 8;
+      const px = x + rr * Math.cos(a), py = y + rr * Math.sin(a);
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath();
   } else {
     // star
     const spikes = 5, outer = r * 1.15, inner = r * 0.5;

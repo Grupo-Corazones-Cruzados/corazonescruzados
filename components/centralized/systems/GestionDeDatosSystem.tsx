@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   FolderPlus, Pencil, Trash2, Plus, Database, GitCompareArrows, Hexagon,
-  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, List,
+  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, List, BookOpen,
 } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -35,6 +35,7 @@ type Situacion = { id: number; nombre: string };
 type Materia = { id: number; nombre: string };
 type Rompecabezas = { id: number; nombre: string; situacion_id: number | null; situacion_nombre: string | null; piezaIds: number[] };
 type Subtema = { id: number; titulo: string; hipotesis: { id: number; texto: string }[]; rompecabezas: { id: number; nombre: string }[] };
+type Tema = { id: number; titulo: string; prosa: string; subtemas: { id: number; titulo: string }[]; materias: { id: number; nombre: string }[]; problemas: { id: number; title: string }[] };
 
 async function mutate(url: string, method: string, body?: any) {
   const res = await fetch(url, {
@@ -61,6 +62,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   const [piezas, setPiezas] = useState<Pieza[]>([]);
   const [rompecabezas, setRompecabezas] = useState<Rompecabezas[]>([]);
   const [subtemas, setSubtemas] = useState<Subtema[]>([]);
+  const [temas, setTemas] = useState<Tema[]>([]);
   const [situaciones, setSituaciones] = useState<Situacion[]>([]);
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -68,9 +70,10 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   // Panel de creación rápida (fuente/problema) en el panel flotante.
   const [creating, setCreating] = useState<null | 'fuente' | 'problema'>(null);
   // Modales complejos (necesitan pickers).
-  const [modal, setModal] = useState<null | 'enfrentamiento' | 'codigo' | 'categoria' | 'problematica' | 'rompecabezas' | 'subtema' | 'listas'>(null);
+  const [modal, setModal] = useState<null | 'enfrentamiento' | 'codigo' | 'categoria' | 'problematica' | 'rompecabezas' | 'subtema' | 'tema' | 'listas'>(null);
   const [editRomp, setEditRomp] = useState<Rompecabezas | null>(null);
   const [editSubtema, setEditSubtema] = useState<Subtema | null>(null);
+  const [editTema, setEditTema] = useState<Tema | null>(null);
 
   // Filtro de leyenda.
   const [pinFilter, setPinFilter] = useState<GdLegendFilter>(null);
@@ -106,11 +109,11 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     if (!id) {
       setGraph({ nodes: [], edges: [] });
       setFuentes([]); setProblemas([]); setEnfrentamientos([]); setCodigos([]); setCategorias([]);
-      setPiezas([]); setRompecabezas([]); setSubtemas([]);
+      setPiezas([]); setRompecabezas([]); setSubtemas([]); setTemas([]);
       return;
     }
     try {
-      const [g, f, p, e, c, cat, pz, rc, st] = await Promise.all([
+      const [g, f, p, e, c, cat, pz, rc, st, tm] = await Promise.all([
         fetch(`${API}?problematica_id=${id}`).then((r) => r.json()),
         fetch(`${API}/fuentes?problematica_id=${id}`).then((r) => r.json()),
         fetch(`${API}/problemas?problematica_id=${id}`).then((r) => r.json()),
@@ -120,11 +123,12 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
         fetch(`${API}/piezas?problematica_id=${id}`).then((r) => r.json()),
         fetch(`${API}/rompecabezas?problematica_id=${id}`).then((r) => r.json()),
         fetch(`${API}/subtemas?problematica_id=${id}`).then((r) => r.json()),
+        fetch(`${API}/temas?problematica_id=${id}`).then((r) => r.json()),
       ]);
       setGraph(g.data || { nodes: [], edges: [] });
       setFuentes(f.data || []); setProblemas(p.data || []); setEnfrentamientos(e.data || []);
       setCodigos(c.data || []); setCategorias(cat.data || []);
-      setPiezas(pz.data || []); setRompecabezas(rc.data || []); setSubtemas(st.data || []);
+      setPiezas(pz.data || []); setRompecabezas(rc.data || []); setSubtemas(st.data || []); setTemas(tm.data || []);
     } catch { /* noop */ }
   }, []);
 
@@ -217,7 +221,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     const routeByType: Record<GdNodeType, string> = {
       problema: 'problemas', fuente_premisa: 'fuentes', fuente_peso: 'fuentes',
       enfrentamiento: 'enfrentamientos', codigo: 'codigos', categoria: 'categorias',
-      pieza: 'piezas', rompecabezas: 'rompecabezas', subtema: 'subtemas',
+      pieza: 'piezas', rompecabezas: 'rompecabezas', subtema: 'subtemas', tema: 'temas',
     };
     try {
       await mutate(`${API}/${routeByType[n.type]}`, 'DELETE', { id: n.id });
@@ -238,7 +242,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   const legendTypes: { type: GdNodeType }[] = [
     { type: 'problema' }, { type: 'fuente_premisa' }, { type: 'fuente_peso' },
     { type: 'enfrentamiento' }, { type: 'codigo' }, { type: 'categoria' },
-    { type: 'pieza' }, { type: 'rompecabezas' }, { type: 'subtema' },
+    { type: 'pieza' }, { type: 'rompecabezas' }, { type: 'subtema' }, { type: 'tema' },
   ];
 
   return (
@@ -311,6 +315,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                 <ToolBtn icon={<Star className="w-3.5 h-3.5" />} label="Categoría" color={GD_NODE_META.categoria.color} onClick={() => setModal('categoria')} disabled={codigosVerificados.length < 1} />
                 <ToolBtn icon={<FileText className="w-3.5 h-3.5" />} label="Rompecabezas" color={GD_NODE_META.rompecabezas.color} onClick={() => { setEditRomp(null); setModal('rompecabezas'); }} />
                 <ToolBtn icon={<Layers className="w-3.5 h-3.5" />} label="Subtema" color={GD_NODE_META.subtema.color} onClick={() => { setEditSubtema(null); setModal('subtema'); }} disabled={rompecabezas.length < 1} />
+                <ToolBtn icon={<BookOpen className="w-3.5 h-3.5" />} label="Tema" color={GD_NODE_META.tema.color} onClick={() => { setEditTema(null); setModal('tema'); }} disabled={subtemas.length < 1} />
                 <ToolBtn icon={<List className="w-3.5 h-3.5" />} label="Listas" color="#94a3b8" onClick={() => setModal('listas')} />
               </div>
             </div>
@@ -385,10 +390,12 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                       piezas={piezas}
                       rompecabezasList={rompecabezas}
                       subtemasList={subtemas}
+                      temasList={temas}
                       onEditFuente={openFuente}
                       onEditProblema={openProblema}
                       onEditRomp={(r: Rompecabezas) => { setEditRomp(r); setModal('rompecabezas'); }}
                       onEditSubtema={(s: Subtema) => { setEditSubtema(s); setModal('subtema'); }}
+                      onEditTema={(t: Tema) => { setEditTema(t); setModal('tema'); }}
                       onReload={reload}
                       onDelete={() => setConfirmNode(selectedNode)}
                       onClose={() => setSelectedKey(null)}
@@ -442,6 +449,10 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       {/* ── Modal: Subtema ── */}
       {modal === 'subtema' && (
         <SubtemaModal probId={probId!} rompecabezas={rompecabezas} edit={editSubtema} onClose={() => { setModal(null); setEditSubtema(null); }} onSaved={async () => { setModal(null); setEditSubtema(null); await reload(); }} />
+      )}
+      {/* ── Modal: Tema ── */}
+      {modal === 'tema' && (
+        <TemaModal probId={probId!} subtemas={subtemas} materias={materias} problemas={problemas} edit={editTema} onClose={() => { setModal(null); setEditTema(null); }} onSaved={async () => { setModal(null); setEditTema(null); await reload(); }} />
       )}
       {/* ── Modal: Listas globales (situaciones + materias) ── */}
       {modal === 'listas' && (
@@ -574,7 +585,7 @@ function ProblemaForm({ form, setForm, onCancel, onSave }: any) {
 }
 
 // Detalle del nodo seleccionado (por tipo).
-function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias, problemas, piezas, rompecabezasList, subtemasList, onEditFuente, onEditProblema, onEditRomp, onEditSubtema, onReload, onDelete, onClose }: any) {
+function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias, problemas, piezas, rompecabezasList, subtemasList, temasList, onEditFuente, onEditProblema, onEditRomp, onEditSubtema, onEditTema, onReload, onDelete, onClose }: any) {
   const meta = GD_NODE_META[node.type as GdNodeType];
   const header = (
     <div className="flex items-start justify-between gap-2 mb-2">
@@ -695,6 +706,20 @@ function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias
           </>
         )}
         <DetailActions onEdit={() => onEditSubtema(st)} onDelete={onDelete} />
+      </div>
+    );
+  }
+
+  if (node.type === 'tema') {
+    const tm = temasList.find((x: Tema) => x.id === node.id) as Tema | undefined;
+    if (!tm) return header;
+    return (
+      <div>
+        {header}
+        {tm.prosa && <p className="text-[12px] text-white/80 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto" style={mf}>{tm.prosa}</p>}
+        <Meta rows={[['Subtemas', String(tm.subtemas.length)], ['Materias', tm.materias.map((m) => m.nombre).join(', ') || '—'], ['Problemas', String(tm.problemas.length)]]} />
+        <p className="text-[10.5px] text-white/40 mt-2" style={mf}>La prosa describe los subtemas sin inventar lógicas; solo las hipótesis van marcadas como supuestos.</p>
+        <DetailActions onEdit={() => onEditTema(tm)} onDelete={onDelete} />
       </div>
     );
   }
@@ -1232,5 +1257,61 @@ function EditableList({ title, endpoint, items, onChanged }: { title: string; en
         <button onClick={add} className={`${GLASS_BTN} px-2 py-1.5`} title="Agregar"><Plus className="w-3.5 h-3.5" /></button>
       </div>
     </div>
+  );
+}
+
+function TemaModal({ probId, subtemas, materias, problemas, edit, onClose, onSaved }: { probId: number; subtemas: Subtema[]; materias: Materia[]; problemas: Problema[]; edit: Tema | null; onClose: () => void; onSaved: () => void }) {
+  const [titulo, setTitulo] = useState(edit?.titulo || '');
+  const [prosa, setProsa] = useState(edit?.prosa || '');
+  const [selSub, setSelSub] = useState<number[]>(edit?.subtemas.map((s) => s.id) || []);
+  const [selMat, setSelMat] = useState<number[]>(edit?.materias.map((m) => m.id) || []);
+  const [selProb, setSelProb] = useState<number[]>(edit?.problemas.map((p) => p.id) || []);
+  const toggle = (setter: React.Dispatch<React.SetStateAction<number[]>>) => (id: number) => setter((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+
+  const save = async () => {
+    if (!titulo.trim()) { toast.error('El título es requerido'); return; }
+    try {
+      const body: any = { titulo, prosa, subtema_ids: selSub, materia_ids: selMat, problema_ids: selProb };
+      if (edit) await mutate(`${API}/temas`, 'PATCH', { id: edit.id, ...body });
+      else await mutate(`${API}/temas`, 'POST', { problematica_id: probId, ...body });
+      toast.success(edit ? 'Tema actualizado' : 'Tema creado');
+      onSaved();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const Chips = ({ items, sel, onToggle, label, getName }: { items: any[]; sel: number[]; onToggle: (id: number) => void; label: string; getName: (x: any) => string }) => (
+    <div>
+      <p className="text-[11px] font-semibold text-white/70 mb-1" style={df}>{label} ({items.length})</p>
+      {items.length === 0 ? <p className="text-[11px] text-white/45" style={mf}>Vacío.</p> : (
+        <div className="flex flex-wrap gap-1.5">
+          {items.map((it) => (
+            <button key={it.id} onClick={() => onToggle(it.id)} className={`px-2 py-1 rounded-md text-[11px] border transition-colors ${sel.includes(it.id) ? 'bg-accent/25 border-accent/50 text-white' : 'bg-white/[0.04] border-white/12 text-white/70 hover:bg-white/10'}`} style={mf}>
+              {sel.includes(it.id) && <Check className="w-2.5 h-2.5 inline mr-1" />}{getName(it)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <FloatingWindow open onClose={onClose} title={edit ? 'Editar tema' : 'Nuevo tema'} initialWidth={560} initialHeight={640}>
+      <div className="p-4 space-y-3">
+        <p className="text-[11.5px] text-white/60" style={mf}>Un tema agrupa subtemas y describe la realidad en <b>prosa</b> conectando su contenido, sin inventar lógicas. Marca claramente las hipótesis como supuestos. Se asocia a materias y problemas.</p>
+        <Field label="Título">
+          <input className={GLASS_INPUT} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej. El desempleo masculino en la cultura ecuatoriana" autoFocus />
+        </Field>
+        <Field label="Descripción en prosa">
+          <textarea className={`${GLASS_INPUT} resize-none`} rows={6} value={prosa} onChange={(e) => setProsa(e.target.value)} placeholder="Describe y conecta todos los subtemas de forma legible. Distingue las hipótesis (p. ej. “Hipótesis: …”)." />
+        </Field>
+        <Chips items={subtemas} sel={selSub} onToggle={toggle(setSelSub)} label="Subtemas que agrupa" getName={(s) => s.titulo} />
+        <Chips items={materias} sel={selMat} onToggle={toggle(setSelMat)} label="Materias asociadas" getName={(m) => m.nombre} />
+        <Chips items={problemas} sel={selProb} onToggle={toggle(setSelProb)} label="Problemas que responde" getName={(p) => p.title} />
+        <div className="flex justify-end gap-2 pt-1">
+          <button onClick={onClose} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+          <button onClick={save} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md" style={mf}>{edit ? 'Guardar' : 'Crear'}</button>
+        </div>
+      </div>
+    </FloatingWindow>
   );
 }

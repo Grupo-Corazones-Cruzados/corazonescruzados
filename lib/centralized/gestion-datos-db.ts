@@ -222,6 +222,40 @@ export async function ensureGestionDatosTables(): Promise<void> {
       UNIQUE (subtema_id, rompecabezas_id)
     )`);
 
+  // ── Fase C: Temas (agrupan subtemas; describen la realidad en prosa + asocian
+  //    materias y problemas). Sin nomenclatura (nivel descriptivo). ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_temas (
+      id SERIAL PRIMARY KEY,
+      problematica_id INT NOT NULL REFERENCES gcc_world.gd_problematicas(id) ON DELETE CASCADE,
+      titulo TEXT NOT NULL,
+      prosa TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS gd_temas_prob_idx ON gcc_world.gd_temas(problematica_id)`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_tema_subtemas (
+      id SERIAL PRIMARY KEY,
+      tema_id INT NOT NULL REFERENCES gcc_world.gd_temas(id) ON DELETE CASCADE,
+      subtema_id INT NOT NULL REFERENCES gcc_world.gd_subtemas(id) ON DELETE CASCADE,
+      orden INT NOT NULL DEFAULT 0,
+      UNIQUE (tema_id, subtema_id)
+    )`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_tema_materias (
+      id SERIAL PRIMARY KEY,
+      tema_id INT NOT NULL REFERENCES gcc_world.gd_temas(id) ON DELETE CASCADE,
+      materia_id INT NOT NULL REFERENCES gcc_world.gd_materias(id) ON DELETE CASCADE,
+      UNIQUE (tema_id, materia_id)
+    )`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_tema_problemas (
+      id SERIAL PRIMARY KEY,
+      tema_id INT NOT NULL REFERENCES gcc_world.gd_temas(id) ON DELETE CASCADE,
+      problema_id INT NOT NULL REFERENCES gcc_world.gd_problemas(id) ON DELETE CASCADE,
+      UNIQUE (tema_id, problema_id)
+    )`);
+
   ready = true;
 }
 
@@ -888,6 +922,70 @@ export async function deleteSubtema(id: number) {
   await pool.query(`DELETE FROM gcc_world.gd_subtemas WHERE id = $1`, [id]);
 }
 
+// ── Fase C: Temas ─────────────────────────────────────────────────────────────
+export async function listTemas(problematicaId: number) {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `SELECT id, titulo, prosa, created_at FROM gcc_world.gd_temas WHERE problematica_id = $1 ORDER BY created_at ASC`,
+    [problematicaId],
+  );
+  const out = [];
+  for (const t of rows) {
+    const { rows: subs } = await pool.query(
+      `SELECT ts.subtema_id AS id, s.titulo FROM gcc_world.gd_tema_subtemas ts
+         JOIN gcc_world.gd_subtemas s ON s.id = ts.subtema_id
+        WHERE ts.tema_id = $1 ORDER BY ts.orden ASC, ts.id ASC`, [t.id]);
+    const { rows: mats } = await pool.query(
+      `SELECT tm.materia_id AS id, m.nombre FROM gcc_world.gd_tema_materias tm
+         JOIN gcc_world.gd_materias m ON m.id = tm.materia_id WHERE tm.tema_id = $1 ORDER BY tm.id ASC`, [t.id]);
+    const { rows: probs } = await pool.query(
+      `SELECT tp.problema_id AS id, p.title FROM gcc_world.gd_tema_problemas tp
+         JOIN gcc_world.gd_problemas p ON p.id = tp.problema_id WHERE tp.tema_id = $1 ORDER BY tp.id ASC`, [t.id]);
+    out.push({ ...t, subtemas: subs, materias: mats, problemas: probs });
+  }
+  return out;
+}
+
+async function replaceTemaChildren(temaId: number, subtemaIds?: number[], materiaIds?: number[], problemaIds?: number[]) {
+  if (subtemaIds) {
+    await pool.query(`DELETE FROM gcc_world.gd_tema_subtemas WHERE tema_id = $1`, [temaId]);
+    let i = 0;
+    for (const sid of subtemaIds) await pool.query(`INSERT INTO gcc_world.gd_tema_subtemas (tema_id, subtema_id, orden) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, [temaId, sid, i++]);
+  }
+  if (materiaIds) {
+    await pool.query(`DELETE FROM gcc_world.gd_tema_materias WHERE tema_id = $1`, [temaId]);
+    for (const mid of materiaIds) await pool.query(`INSERT INTO gcc_world.gd_tema_materias (tema_id, materia_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [temaId, mid]);
+  }
+  if (problemaIds) {
+    await pool.query(`DELETE FROM gcc_world.gd_tema_problemas WHERE tema_id = $1`, [temaId]);
+    for (const pid of problemaIds) await pool.query(`INSERT INTO gcc_world.gd_tema_problemas (tema_id, problema_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [temaId, pid]);
+  }
+}
+
+export async function crearTema(problematicaId: number, titulo: string, prosa: string, subtemaIds: number[], materiaIds: number[], problemaIds: number[]) {
+  await ensureGestionDatosTables();
+  if (!titulo?.trim()) throw new Error('El título del tema es requerido.');
+  const { rows } = await pool.query(`INSERT INTO gcc_world.gd_temas (problematica_id, titulo, prosa) VALUES ($1, $2, $3) RETURNING *`, [problematicaId, titulo.trim(), (prosa || '').trim()]);
+  const t = rows[0];
+  await replaceTemaChildren(t.id, subtemaIds, materiaIds, problemaIds);
+  return t;
+}
+
+export async function updateTema(id: number, titulo?: string, prosa?: string, subtemaIds?: number[], materiaIds?: number[], problemaIds?: number[]) {
+  await ensureGestionDatosTables();
+  const sets: string[] = [];
+  const params: any[] = [];
+  if (titulo != null) { sets.push(`titulo = $${params.length + 1}`); params.push(titulo.trim()); }
+  if (prosa != null) { sets.push(`prosa = $${params.length + 1}`); params.push(prosa.trim()); }
+  if (sets.length) { params.push(id); await pool.query(`UPDATE gcc_world.gd_temas SET ${sets.join(', ')} WHERE id = $${params.length}`, params); }
+  if (subtemaIds || materiaIds || problemaIds) await replaceTemaChildren(id, subtemaIds, materiaIds, problemaIds);
+}
+
+export async function deleteTema(id: number) {
+  await ensureGestionDatosTables();
+  await pool.query(`DELETE FROM gcc_world.gd_temas WHERE id = $1`, [id]);
+}
+
 // ── Grafo "universo" de una problemática ──────────────────────────────────────
 export async function getProblematicaGraph(problematicaId: number): Promise<GdGraph> {
   await ensureGestionDatosTables();
@@ -1015,6 +1113,19 @@ export async function getProblematicaGraph(problematicaId: number): Promise<GdGr
     nodes.push({ key: gdKey('subtema', st.id), type: 'subtema', id: st.id, title: st.titulo });
     const { rows: sromps } = await pool.query(`SELECT rompecabezas_id FROM gcc_world.gd_subtema_rompecabezas WHERE subtema_id = $1`, [st.id]);
     for (const r of sromps) edges.push({ source: gdKey('rompecabezas', r.rompecabezas_id), target: gdKey('subtema', st.id), kind: 'agrupa' });
+  }
+
+  // Temas (+ aristas desde sus subtemas y problemas asociados).
+  const { rows: temas } = await pool.query(
+    `SELECT id, titulo FROM gcc_world.gd_temas WHERE problematica_id = $1 ORDER BY created_at ASC`,
+    [problematicaId],
+  );
+  for (const tm of temas) {
+    nodes.push({ key: gdKey('tema', tm.id), type: 'tema', id: tm.id, title: tm.titulo });
+    const { rows: tsubs } = await pool.query(`SELECT subtema_id FROM gcc_world.gd_tema_subtemas WHERE tema_id = $1`, [tm.id]);
+    for (const r of tsubs) edges.push({ source: gdKey('subtema', r.subtema_id), target: gdKey('tema', tm.id), kind: 'agrupa' });
+    const { rows: tprobs } = await pool.query(`SELECT problema_id FROM gcc_world.gd_tema_problemas WHERE tema_id = $1`, [tm.id]);
+    for (const r of tprobs) edges.push({ source: gdKey('problema', r.problema_id), target: gdKey('tema', tm.id), kind: 'agrupa' });
   }
 
   return { nodes, edges };

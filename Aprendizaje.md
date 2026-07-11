@@ -155,16 +155,16 @@ se asocia a **problemas**; los problemas están conectados por origen a la probl
 #### P6 — Nomenclatura de **categoría** con **varios** códigos: ¿`CAT-n-<cod1>_<cod2>…` o solo `CAT-n` + lista? · ⏸ (provisional: `CAT-n` como ref primaria + lista de códigos; el display concatena el 1º código como en el ejemplo).
 
 ### Progreso
-- **% de información para el objetivo:** ~92% — **FASES A y B CONSTRUIDAS Y VERIFICADAS (2026-07-11)**: dominio+nomenclatura,
-  capa DB (tablas `gd_`), **14 rutas API**, grafo `GdGraph.tsx` (9 tipos de nodo) y componente `GestionDeDatosSystem.tsx`.
-  `tsc --noEmit` + `next build` OK. Nomenclatura y credibilidad probadas **offline** contra los ejemplos del usuario (10/10).
-  P5 resuelto (peso solo aumenta; contradicción = enfrentamiento). **No** se pudo probar el INSERT contra Railway (red del
-  entorno aislada; el DDL `IF NOT EXISTS` corre al primer uso en prod).
+- **% de información para el objetivo:** ~98% — **SISTEMA COMPLETO (Fases A+B+C) CONSTRUIDO Y VERIFICADO (2026-07-11)**:
+  dominio+nomenclatura, capa DB (tablas `gd_`), **15 rutas API**, grafo `GdGraph.tsx` (**10 tipos de nodo**) y componente
+  `GestionDeDatosSystem.tsx`. `tsc --noEmit` + `next build` OK. Nomenclatura y credibilidad probadas **offline** (10/10).
+  P5 resuelto (peso solo aumenta; contradicción = enfrentamiento). INSERT contra Railway no probado (red aislada; DDL al 1er uso).
   - **Fase A:** Problemática/Problemas/Fuentes/Enfrentamientos/Códigos(+eventos)/Categorías.
-  - **Fase B:** Piezas (solo visualización, provienen del sistema de metodología), Situaciones/Materias (listas globales),
-    Rompecabezas (nombre + situación + piezas), Subtemas (título + hipótesis + rompecabezas ordenados).
-- **Pendiente:** **Fase C** (Temas: prosa + asociación a materias y problemas); validación visual en vivo; probar contra Railway.
-- **Solución construida (A+B):** ver detalle en `MEMORIA.md` → "Decisiones recientes (feature) · Gestión de Datos".
+  - **Fase B:** Piezas (solo visualización), Situaciones/Materias (listas globales), Rompecabezas, Subtemas (+hipótesis).
+  - **Fase C:** Temas (prosa + agrupa subtemas + asocia materias y problemas).
+- **Pendiente:** **validación visual en vivo** (requiere login); probar contra Railway; alimentar piezas desde el futuro
+  sistema de "metodología condiciológica" (hoy solo-visualización → rompecabezas a la espera de piezas reales).
+- **Solución construida (A+B+C):** ver detalle en `MEMORIA.md` → "Decisiones recientes (feature) · Gestión de Datos".
 
 ---
 

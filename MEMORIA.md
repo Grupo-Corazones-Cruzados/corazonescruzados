@@ -267,7 +267,7 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **Sistema "Gestión de Datos" — Centralizado · pilar · fundamentación (Fases A+B, 2026-07-11):** nuevo sistema built-in
+- **Sistema "Gestión de Datos" — Centralizado · pilar · fundamentación (Fases A+B+C COMPLETO, 2026-07-11):** nuevo sistema built-in
   (celda "Academia", slug `gestion-de-datos`, sembrado idempotente en `ensureTable()` de
   `app/api/centralized/systems/route.ts`; dispatch por slug en `[piso]/[paso]/[slug]/page.tsx` →
   `GestionDeDatosSystem`). **Ordena datos recolectados aplicando la condiciología como método de clasificación**
@@ -302,11 +302,15 @@ Stack estándar de la casa, con particularidades de este repo:
     + modal "Listas" (situaciones/materias). 14 rutas API en total.
   - **Decisiones del usuario (2026-07-11):** por **fases**; **credibilidad 0–100 %**; **categorías por problemática**;
     **piezas = solo visualización** (rompecabezas a la espera de que existan piezas reales).
-  - **Fase C PENDIENTE:** **Temas** (título + prosa que conecta subtemas sin inventar, salvo hipótesis marcadas +
-    asociación a **materias** y a **problemas**). Nota: `gd_materias` y sus CRUD ya existen (se adelantaron en Fase B).
-  - **Verificado (Fases A+B):** tsc + `next build` OK (14 rutas registradas); nomenclatura y credibilidad probadas
-    offline contra los ejemplos del usuario. INSERT contra Railway no probado desde el entorno (red aislada; el DDL
-    `IF NOT EXISTS` corre al primer uso). **Falta validación visual en vivo.**
+  - **Fase C (2026-07-11, HECHA):** **Temas** (título + **prosa** que conecta subtemas sin inventar lógicas, solo
+    hipótesis marcadas como supuestos; agrupa **subtemas** y asocia **materias** y **problemas**). Tablas `gd_temas` +
+    `gd_tema_subtemas`/`gd_tema_materias`/`gd_tema_problemas`; nodo naranja octágono; sin nomenclatura (nivel
+    descriptivo). Ruta `/temas`. UI: botón Tema + `TemaModal` (título/prosa + chips de subtemas/materias/problemas).
+  - **Verificado (Fases A+B+C):** tsc + `next build` OK (**15 rutas API** registradas); nomenclatura y credibilidad
+    probadas offline contra los ejemplos del usuario. INSERT contra Railway no probado desde el entorno (red aislada;
+    el DDL `IF NOT EXISTS` corre al primer uso). **Falta validación visual en vivo** (requiere login).
+  - **La tubería de 9 niveles está COMPLETA end-to-end.** Piezas siguen siendo solo-visualización (las alimentará el
+    futuro sistema de "metodología condiciológica"), por lo que los rompecabezas quedan a la espera de piezas reales.
 - **Proyectos: Nuevo vs Solicitar + responsable/participantes (2026-07-09):** se replicó el patrón de tickets en
   `/dashboard/projects`. Dos botones: **"Solicitar proyecto"** (TODOS) = `mode='request'`, YO soy el **cliente**
   (`ensureUserClientAccount`), y elijo **un miembro** (queda **INVITADO a aceptar el liderazgo**, no responsable directo) o

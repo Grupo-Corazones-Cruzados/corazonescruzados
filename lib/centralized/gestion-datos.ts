@@ -48,9 +48,10 @@ export type GdNodeType =
   | 'categoria'
   | 'pieza'
   | 'rompecabezas'
-  | 'subtema';
+  | 'subtema'
+  | 'tema';
 
-export type GdShape = 'triangle' | 'circle' | 'square' | 'diamond' | 'hexagon' | 'star' | 'pentagon' | 'doc' | 'card';
+export type GdShape = 'triangle' | 'circle' | 'square' | 'diamond' | 'hexagon' | 'star' | 'pentagon' | 'doc' | 'card' | 'octagon';
 
 export const GD_NODE_META: Record<GdNodeType, { label: string; plural: string; color: string; shape: GdShape }> = {
   problema:       { label: 'Problema',       plural: 'Problemas',       color: '#f59e0b', shape: 'triangle' }, // ámbar
@@ -62,6 +63,7 @@ export const GD_NODE_META: Record<GdNodeType, { label: string; plural: string; c
   pieza:          { label: 'Pieza',          plural: 'Piezas',          color: '#14b8a6', shape: 'pentagon' },  // teal
   rompecabezas:   { label: 'Rompecabezas',   plural: 'Rompecabezas',    color: '#818cf8', shape: 'doc' },       // índigo
   subtema:        { label: 'Subtema',        plural: 'Subtemas',        color: '#f472b6', shape: 'card' },      // rosa
+  tema:           { label: 'Tema',           plural: 'Temas',           color: '#fb923c', shape: 'octagon' },   // naranja
 };
 
 /** Color de un código no verificado (gris) — el verificado usa el color esmeralda del meta. */
