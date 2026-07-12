@@ -267,6 +267,15 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Gestión de Datos — varios pesos por premisa (inline) + tipo_dato editable (2026-07-12):** el modelo YA
+  soportaba N pesos por premisa (`gd_fuente_pesos` acumula filas; `recomputeCredibilidad` re-aplica todos en
+  orden: p.ej. base 100 → peso 50 = 75 → peso 80 = 77.5). Lo que faltaba era UX: solo se podían aplicar
+  pesos-fuente **ya creados**, y con un solo peso creado el selector se quedaba vacío (parecía "solo uno").
+  Ahora `PesosManager` tiene un **formulario inline "Nuevo peso"** (contenido + tipo de dato + credibilidad)
+  que **crea el peso-fuente y lo aplica** en un paso (usa `premisa.problematica_id`, por eso `listFuentes`
+  ahora expone `problematica_id`), reutilizable N veces + guard anti doble-envío. Además, el **"Tipo de dato"**
+  (cantidad/cualidad) de una fuente pasó a ser **editable al editar** (antes solo al crear): `updateFuente` y la
+  ruta PATCH `/fuentes` aceptan `tipo_dato`. Verificado: tsc + build + BD real (2 pesos + edición, ROLLBACK).
 - **Gestión de Datos — referencia bibliográfica APA 7 por fuente (2026-07-12):** al crear/editar una **fuente**
   se puede adjuntar una referencia bibliográfica en **formato APA (7.ª ed.)**. Módulo PURO
   `lib/centralized/apa.ts` (importable cliente+servidor): `APA_TIPOS` (catálogo data-driven de tipos con sus
