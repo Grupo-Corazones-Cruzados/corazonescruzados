@@ -59,6 +59,9 @@ export async function ensureGestionDatosTables(): Promise<void> {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS gd_fuentes_prob_idx ON gcc_world.gd_fuentes(problematica_id)`);
+  // Referencia bibliográfica (APA 7) opcional por fuente: tipo + datos estructurados (jsonb).
+  await pool.query(`ALTER TABLE gcc_world.gd_fuentes ADD COLUMN IF NOT EXISTS ref_tipo TEXT`);
+  await pool.query(`ALTER TABLE gcc_world.gd_fuentes ADD COLUMN IF NOT EXISTS ref_datos JSONB`);
 
   // Aplicación de una fuente peso sobre una premisa: SIEMPRE aporta credibilidad (promedio).
   // La contradicción NO se hace con pesos, sino enfrentando dos premisas.
@@ -382,6 +385,7 @@ export async function listFuentes(problematicaId: number) {
     `SELECT f.id, f.tipo_dato, f.tipo_logica, f.contenido,
             f.credibilidad::float AS credibilidad,
             f.credibilidad_efectiva::float AS credibilidad_efectiva,
+            f.ref_tipo, f.ref_datos,
             f.seq, f.created_at
        FROM gcc_world.gd_fuentes f
       WHERE f.problematica_id = $1
@@ -401,6 +405,8 @@ export async function createFuente(
   tipoLogica: TipoLogica,
   contenido: string,
   credibilidad: number,
+  refTipo?: string | null,
+  refDatos?: Record<string, string> | null,
 ) {
   await ensureGestionDatosTables();
   const cred = clampCred(Number(credibilidad));
@@ -418,14 +424,20 @@ export async function createFuente(
   const seq = Number(seqQuery.rows[0].next);
   const { rows } = await pool.query(
     `INSERT INTO gcc_world.gd_fuentes
-       (problematica_id, tipo_dato, tipo_logica, contenido, credibilidad, credibilidad_efectiva, seq)
-     VALUES ($1, $2, $3, $4, $5, $5, $6) RETURNING *`,
-    [problematicaId, tipoDato, tipoLogica, contenido.trim(), cred, seq],
+       (problematica_id, tipo_dato, tipo_logica, contenido, credibilidad, credibilidad_efectiva, seq, ref_tipo, ref_datos)
+     VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8::jsonb) RETURNING *`,
+    [problematicaId, tipoDato, tipoLogica, contenido.trim(), cred, seq, refTipo || null, refDatos ? JSON.stringify(refDatos) : null],
   );
   return rows[0];
 }
 
-export async function updateFuente(id: number, contenido?: string, credibilidad?: number) {
+export async function updateFuente(
+  id: number,
+  contenido?: string,
+  credibilidad?: number,
+  refTipo?: string | null,
+  refDatos?: Record<string, string> | null,
+) {
   await ensureGestionDatosTables();
   const sets: string[] = [];
   const params: any[] = [];
@@ -435,6 +447,10 @@ export async function updateFuente(id: number, contenido?: string, credibilidad?
     // Al cambiar la base se resetea la efectiva a la base y se re-aplican los pesos.
     sets.push(`credibilidad = $${params.length + 1}`); params.push(cred);
     sets.push(`credibilidad_efectiva = $${params.length + 1}`); params.push(cred);
+  }
+  if (refTipo !== undefined) {
+    sets.push(`ref_tipo = $${params.length + 1}`); params.push(refTipo || null);
+    sets.push(`ref_datos = $${params.length + 1}::jsonb`); params.push(refDatos ? JSON.stringify(refDatos) : null);
   }
   if (!sets.length) return;
   params.push(id);

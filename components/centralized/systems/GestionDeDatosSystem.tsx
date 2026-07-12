@@ -15,6 +15,7 @@ import {
   type GdGraph as GdGraphT, type GdGraphNode, type GdNodeType, type TipoDato, type TipoLogica,
   type PiezaTipo, type VariableFactor,
 } from '@/lib/centralized/gestion-datos';
+import { APA_TIPOS, apaTipoLabel, formatApaSegments, formatApaText } from '@/lib/centralized/apa';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -23,7 +24,7 @@ const GLASS_BTN = 'inline-flex items-center justify-center gap-1.5 border border
 const GLASS_INPUT = 'w-full px-2.5 py-1.5 bg-black/40 border border-white/15 rounded-md text-[13px] text-white placeholder-white/40 focus:border-accent focus:outline-none';
 
 type Problematica = { id: number; name: string; ref: string; description: string; fuentes_count: number; codigos_count: number };
-type Fuente = { id: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number; credibilidad_efectiva: number; seq: number; nomenclatura: string };
+type Fuente = { id: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number; credibilidad_efectiva: number; seq: number; nomenclatura: string; ref_tipo?: string | null; ref_datos?: Record<string, string> | null };
 type Problema = { id: number; title: string; description: string };
 type Enfrentamiento = { id: number; texto: string; nomenclatura: string; gano_seq: number; perdio_seq: number; gano_contenido: string; perdio_contenido: string };
 type Evento = { id: number; titulo: string; url: string };
@@ -176,14 +177,16 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   };
 
   // ── Crear fuente / problema (panel) ─────────────────────────────────────────
-  const [fuenteForm, setFuenteForm] = useState<{ id?: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number }>(
-    { tipo_dato: 'cantidad', tipo_logica: 'premisa', contenido: '', credibilidad: 50 },
+  const [fuenteForm, setFuenteForm] = useState<{ id?: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number; ref_tipo: string; ref_datos: Record<string, string> }>(
+    { tipo_dato: 'cantidad', tipo_logica: 'premisa', contenido: '', credibilidad: 50, ref_tipo: '', ref_datos: {} },
   );
   const [problemaForm, setProblemaForm] = useState<{ id?: number; title: string; description: string }>({ title: '', description: '' });
 
   const openFuente = (f?: Fuente) => {
     setSelectedKey(null);
-    setFuenteForm(f ? { id: f.id, tipo_dato: f.tipo_dato, tipo_logica: f.tipo_logica, contenido: f.contenido, credibilidad: f.credibilidad } : { tipo_dato: 'cantidad', tipo_logica: 'premisa', contenido: '', credibilidad: 50 });
+    setFuenteForm(f
+      ? { id: f.id, tipo_dato: f.tipo_dato, tipo_logica: f.tipo_logica, contenido: f.contenido, credibilidad: f.credibilidad, ref_tipo: f.ref_tipo || '', ref_datos: f.ref_datos || {} }
+      : { tipo_dato: 'cantidad', tipo_logica: 'premisa', contenido: '', credibilidad: 50, ref_tipo: '', ref_datos: {} });
     setCreating('fuente');
   };
   const saveFuente = async () => {
@@ -191,11 +194,13 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     if (!fuenteForm.contenido.trim()) { toast.error('El contenido es requerido'); return; }
     setBusy(true);
     try {
+      const ref_tipo = fuenteForm.ref_tipo || null;
+      const ref_datos = fuenteForm.ref_tipo ? fuenteForm.ref_datos : null;
       if (fuenteForm.id) {
-        await mutate(`${API}/fuentes`, 'PATCH', { id: fuenteForm.id, contenido: fuenteForm.contenido, credibilidad: fuenteForm.credibilidad });
+        await mutate(`${API}/fuentes`, 'PATCH', { id: fuenteForm.id, contenido: fuenteForm.contenido, credibilidad: fuenteForm.credibilidad, ref_tipo, ref_datos });
         toast.success('Fuente actualizada');
       } else {
-        await mutate(`${API}/fuentes`, 'POST', { problematica_id: probId, ...fuenteForm });
+        await mutate(`${API}/fuentes`, 'POST', { problematica_id: probId, ...fuenteForm, ref_tipo, ref_datos });
         toast.success('Fuente agregada');
       }
       setCreating(null);
@@ -538,6 +543,59 @@ function CredSlider({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
+// Referencia bibliográfica APA formateada (segmentos con cursivas).
+function ApaReference({ tipo, datos, className }: { tipo?: string | null; datos?: Record<string, string> | null; className?: string }) {
+  const segs = formatApaSegments(tipo, datos);
+  if (!segs.length) return null;
+  return (
+    <p className={className} style={mf}>
+      {segs.map((s, i) => (s.i ? <em key={i}>{s.t}</em> : <span key={i}>{s.t}</span>))}
+    </p>
+  );
+}
+
+// Editor de la referencia bibliográfica (APA) dentro del formulario de fuente.
+function ApaRefFields({ form, setForm }: any) {
+  const tipo: string = form.ref_tipo || '';
+  const datos: Record<string, string> = form.ref_datos || {};
+  const def = APA_TIPOS.find((t) => t.value === tipo);
+  const setDato = (key: string, val: string) => setForm((f: any) => ({ ...f, ref_datos: { ...(f.ref_datos || {}), [key]: val } }));
+  const previewText = formatApaText(tipo, datos);
+  return (
+    <div className="rounded-md border border-white/10 bg-white/[0.03] p-2.5 space-y-2.5">
+      <Field label="Referencia bibliográfica (APA)">
+        <select
+          className={GLASS_INPUT}
+          value={tipo}
+          onChange={(e) => setForm((f: any) => ({ ...f, ref_tipo: e.target.value, ref_datos: {} }))}
+        >
+          <option value="">— Sin referencia bibliográfica —</option>
+          {APA_TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+        {def?.help && <p className="text-[10.5px] text-white/45 mt-1" style={mf}>{def.help}</p>}
+      </Field>
+      {def && def.campos.map((c) => (
+        <Field key={c.key} label={`${c.label}${c.required ? ' *' : ''}`}>
+          {c.kind === 'textarea' ? (
+            <textarea className={`${GLASS_INPUT} resize-none`} rows={2} value={datos[c.key] || ''} onChange={(e) => setDato(c.key, e.target.value)} placeholder={c.placeholder} />
+          ) : (
+            <input className={GLASS_INPUT} value={datos[c.key] || ''} onChange={(e) => setDato(c.key, e.target.value)} placeholder={c.placeholder} inputMode={c.kind === 'year' ? 'numeric' : undefined} />
+          )}
+          {c.help && <p className="text-[10px] text-white/40 mt-1" style={mf}>{c.help}</p>}
+        </Field>
+      ))}
+      {def && (
+        <div className="rounded-md bg-black/40 border border-white/10 p-2">
+          <p className="text-[9.5px] uppercase tracking-wide text-white/40 mb-1" style={df}>Vista previa (APA 7)</p>
+          {previewText
+            ? <ApaReference tipo={tipo} datos={datos} className="text-[11.5px] text-white/85 leading-relaxed" />
+            : <p className="text-[11px] text-white/40 italic" style={mf}>Completa los campos para ver la referencia.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FuenteForm({ form, setForm, onCancel, onSave, saving }: any) {
   return (
     <div className="space-y-3">
@@ -559,6 +617,7 @@ function FuenteForm({ form, setForm, onCancel, onSave, saving }: any) {
       <Field label="Contenido (la verdad que dice la fuente)">
         <textarea className={`${GLASS_INPUT} resize-none`} rows={3} value={form.contenido} onChange={(e) => setForm((f: any) => ({ ...f, contenido: e.target.value }))} placeholder="Ej. 30 de cada 100 niños ingresan a una escuela particular." autoFocus />
       </Field>
+      <ApaRefFields form={form} setForm={setForm} />
       <Field label="Nivel de confianza / credibilidad">
         <CredSlider value={form.credibilidad} onChange={(v) => setForm((f: any) => ({ ...f, credibilidad: v }))} />
       </Field>
@@ -612,6 +671,18 @@ function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias
         {header}
         <Meta rows={[['Tipo de dato', TIPO_DATO_LABEL[f.tipo_dato]], ['Tipo de lógica', TIPO_LOGICA_LABEL[f.tipo_logica]], ['Credibilidad base', `${Math.round(f.credibilidad)}%`], ...(f.tipo_logica === 'premisa' ? [['Credibilidad efectiva', `${Math.round(f.credibilidad_efectiva)}%`] as [string, string]] : [])]} />
         <p className="text-[12px] text-white/80 mt-2 leading-relaxed" style={mf}>{f.contenido}</p>
+        {f.ref_tipo && formatApaText(f.ref_tipo, f.ref_datos) && (
+          <div className="mt-3 rounded-md border border-white/10 bg-white/[0.03] p-2.5">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[9.5px] uppercase tracking-wide text-white/40" style={df}>Referencia · {apaTipoLabel(f.ref_tipo)}</p>
+              <button
+                onClick={() => { navigator.clipboard?.writeText(formatApaText(f.ref_tipo, f.ref_datos)); toast.success('Referencia copiada'); }}
+                className="text-[10.5px] text-accent hover:underline" style={mf}
+              >Copiar</button>
+            </div>
+            <ApaReference tipo={f.ref_tipo} datos={f.ref_datos} className="text-[12px] text-white/85 leading-relaxed" />
+          </div>
+        )}
         {f.tipo_logica === 'premisa' && <PesosManager premisa={f} pesos={pesos} onReload={onReload} />}
         <DetailActions onEdit={() => onEditFuente(f)} onDelete={onDelete} />
       </div>

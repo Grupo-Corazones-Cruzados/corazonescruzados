@@ -25,11 +25,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    const { problematica_id, tipo_dato, tipo_logica, contenido, credibilidad } = await req.json();
+    const { problematica_id, tipo_dato, tipo_logica, contenido, credibilidad, ref_tipo, ref_datos } = await req.json();
     if (!problematica_id) return NextResponse.json({ error: 'Falta problematica_id' }, { status: 400 });
     if (!['cantidad', 'cualidad'].includes(tipo_dato)) return NextResponse.json({ error: 'tipo_dato inválido' }, { status: 400 });
     if (!['premisa', 'peso'].includes(tipo_logica)) return NextResponse.json({ error: 'tipo_logica inválido' }, { status: 400 });
-    return NextResponse.json({ data: await createFuente(Number(problematica_id), tipo_dato, tipo_logica, contenido, credibilidad) });
+    return NextResponse.json({ data: await createFuente(Number(problematica_id), tipo_dato, tipo_logica, contenido, credibilidad, ref_tipo, ref_datos) });
   } catch (err: any) {
     console.error('GD fuentes POST error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -40,9 +40,9 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    const { id, contenido, credibilidad } = await req.json();
+    const { id, contenido, credibilidad, ref_tipo, ref_datos } = await req.json();
     if (!id) return NextResponse.json({ error: 'Falta el id' }, { status: 400 });
-    await updateFuente(Number(id), contenido, credibilidad);
+    await updateFuente(Number(id), contenido, credibilidad, ref_tipo, ref_datos);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error('GD fuentes PATCH error:', err.message);
