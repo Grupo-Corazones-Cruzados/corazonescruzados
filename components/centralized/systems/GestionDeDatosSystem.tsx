@@ -1051,7 +1051,7 @@ function CodigoDetail({ c, onReload, onDelete, header }: any) {
         <button onClick={toggleVerificado} className={`${GLASS_BTN} px-2 py-1 text-[11px]`} style={mf}>{c.verificado ? 'Desmarcar' : 'Verificar'}</button>
       </div>
       <Field label="Verdad consecuente (texto del código)">
-        <textarea className={`${GLASS_INPUT} resize-none`} rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Ej. Un adulto sin trabajo cae en desesperación el 70% de las veces por motivos económicos y presión familiar." />
+        <AutoTextarea className={GLASS_INPUT} value={texto} onChange={(e: any) => setTexto(e.target.value)} placeholder="Ej. Un adulto sin trabajo cae en desesperación el 70% de las veces por motivos económicos y presión familiar." />
       </Field>
       <div className="flex justify-end mt-1.5"><button onClick={saveTexto} className={`${GLASS_BTN} px-2.5 py-1 text-[12px]`} style={mf}><Check className="w-3 h-3" /> Guardar</button></div>
 
@@ -1210,8 +1210,8 @@ function CodigoModal({ probId, premisas, enfrentamientos, onClose, onSaved }: { 
             </div>
           </div>
         )}
-        <Field label="Verdad consecuente (texto)">
-          <textarea className={`${GLASS_INPUT} resize-none`} rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="La interpretación lógica de las premisas juntas." />
+        <Field label="Verdad consecuente">
+          <AutoTextarea className={GLASS_INPUT} value={texto} onChange={(e: any) => setTexto(e.target.value)} placeholder="La interpretación lógica de las premisas juntas." />
         </Field>
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
