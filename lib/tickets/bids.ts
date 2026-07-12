@@ -65,3 +65,30 @@ export async function deleteTicketBid(ticketId: number, memberId: number) {
   await ensureTicketBidsTable();
   await pool.query(`DELETE FROM gcc_world.ticket_bids WHERE ticket_id = $1 AND member_id = $2`, [ticketId, memberId]);
 }
+
+/** Talentos activos del miembro (de sus servicios). */
+export async function memberTalents(memberId: number): Promise<string[]> {
+  const { rows } = await pool.query(
+    `SELECT DISTINCT talent FROM gcc_world.services WHERE member_id = $1 AND is_active = true AND talent IS NOT NULL`,
+    [memberId],
+  );
+  return rows.map((r: any) => r.talent);
+}
+
+/** Toma INMEDIATA de un ticket "abierto por talento": el miembro con ≥1 talento requerido
+ *  queda asignado sin pasar por selección del creador. Devuelve el member_id + info del ticket. */
+export async function takeTicketByTalent(ticketId: number, userId: string) {
+  const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [userId]);
+  const memberId = u?.member_id;
+  if (!memberId) throw new Error('Solo miembros pueden tomar este ticket.');
+  const { rows: [t] } = await pool.query(`SELECT open_for_talent, member_id, required_talents, user_id, title FROM gcc_world.tickets WHERE id = $1`, [ticketId]);
+  if (!t) throw new Error('Ticket inexistente.');
+  if (!t.open_for_talent || t.member_id) throw new Error('Este ticket ya no está disponible para tomar.');
+  const mine = await memberTalents(memberId);
+  const required: string[] = t.required_talents || [];
+  if (!required.some((r) => mine.includes(r))) {
+    throw new Error('Necesitas al menos uno de los talentos requeridos para tomar este ticket.');
+  }
+  await pool.query(`UPDATE gcc_world.tickets SET member_id = $1, open_for_talent = false, updated_at = NOW() WHERE id = $2`, [memberId, ticketId]);
+  return { member_id: memberId, creator_user_id: t.user_id, title: t.title };
+}

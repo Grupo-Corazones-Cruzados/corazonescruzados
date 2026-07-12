@@ -267,6 +267,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Tickets: campo "Opciones" en Solicitar + modo "abierto por talento" (2026-07-11):** el formulario de **Solicitar ticket**
+  reemplazó el checkbox suelto por un campo **"Opciones"** (radios, `form.request_option`): (1) **Dejar abierto a propuestas**;
+  (2) **Permitir que un miembro se haga responsable** (NUEVO, modo talento) → `MultiSelectSearch` de **talentos requeridos**
+  (`TALENTOS`); (3) **Invitar a miembro responsable** → `AssigneePicker`. **Modo talento:** columnas nuevas
+  `tickets.open_for_talent` + `required_talents TEXT[]` (ADD COLUMN IF NOT EXISTS en GET y POST). El ticket queda abierto,
+  **visible solo a miembro/admin** (en la pestaña Abiertos: `openCond` = `(open_for_proposals OR open_for_talent)` para
+  member/admin, solo `open_for_proposals` para candidatos/clientes; scoping por cliente se salta en `open=1`). Un **miembro con
+  ≥1 talento requerido lo TOMA de inmediato** (sin selección del creador): `POST /api/tickets/[id]/take` → `takeTicketByTalent`
+  (talentos del miembro = `DISTINCT services.talent WHERE member_id AND is_active`; overlap con `required_talents`; asigna
+  `member_id`, cierra `open_for_talent`; notifica `ticket_taken` al creador). Banner "Abierto por talento" en el detalle
+  (Resumen) con chips de talentos + botón "Tomar" (no-creador con member_id). `AssigneePicker` reescrito (flyout izq).
+  Verificado: tsc + `next build` OK + **BD real 5/5 (ROLLBACK)**: crear→filtro Abiertos→gating de toma (con/sin talento)→
+  tomar asigna+cierra. **PENDIENTE:** replicar el campo "Opciones" + modo talento en **Solicitar PROYECTO** (el tomador
+  queda como **responsable**, toma requerimientos, y puede hacer público el proyecto para propuestas de los no tomados).
 - **Tickets: pestaña "Abiertos" + Propuestas (2026-07-11):** los tickets **solicitados con "abierto a propuestas"**
   (`open_for_proposals=true`, sin miembro) ahora tienen su propia gestión:
   - **Pestaña "Abiertos"** en el rail de `/dashboard/tickets` (icono **`DoorOpen`**, el mismo que la pestaña Abiertos de

@@ -14,6 +14,8 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
+import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
+import { TALENTOS } from '@/lib/centralized/talentos';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
   X, ArrowRight, Ticket as TicketIcon, DoorOpen,
@@ -53,7 +55,19 @@ const emptyForm = {
   client_email: '', client_mode: 'select' as 'select' | 'email',
   deadline: '', estimated_hours: '', estimated_cost: '',
   open_for_proposals: false,
+  // Solicitar: modo de asignación. invite=elijo miembro · proposals=abierto a propuestas ·
+  // talent=abierto por talento (miembro con el talento requerido lo toma de inmediato).
+  request_option: 'invite' as 'invite' | 'proposals' | 'talent',
+  required_talents: [] as string[],
 };
+
+const TALENT_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));
+
+const REQUEST_OPTIONS: { value: 'proposals' | 'talent' | 'invite'; label: string; hint: string }[] = [
+  { value: 'proposals', label: 'Dejar abierto a propuestas', hint: 'Cualquier miembro propone; tú eliges a quién aceptar.' },
+  { value: 'talent', label: 'Permitir que un miembro se haga responsable', hint: 'Visible a miembros con el talento requerido; el primero con ese talento lo toma de inmediato.' },
+  { value: 'invite', label: 'Invitar a miembro responsable', hint: 'Asignas directamente a un miembro específico.' },
+];
 
 export default function TicketsPage() {
   const router = useRouter();
@@ -146,7 +160,9 @@ export default function TicketsPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode: createMode,
-          open_for_proposals: createMode === 'request' && form.open_for_proposals,
+          open_for_proposals: createMode === 'request' && form.request_option === 'proposals',
+          open_for_talent: createMode === 'request' && form.request_option === 'talent',
+          required_talents: createMode === 'request' && form.request_option === 'talent' ? form.required_talents : undefined,
           title: form.title,
           description: form.description || undefined,
           service_id: form.service_id ? Number(form.service_id) : undefined,
@@ -401,19 +417,37 @@ export default function TicketsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Miembro asignado */}
             {createMode === 'request' ? (
-              <div>
-                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro</label>
-                {/* Buscador de candidatos/miembros/admin con rol, prospección y top 5 talentos.
-                    Al dejar abierto a propuestas queda bloqueado (no se oculta). */}
-                <AssigneePicker value={form.member_id}
-                  onChange={(id) => setForm({ ...form, member_id: id })}
-                  disabled={form.open_for_proposals} />
-                <label className="flex items-center gap-2 mt-1.5 text-[12px] text-digi-text cursor-pointer" style={mf}>
-                  <input type="checkbox" checked={form.open_for_proposals}
-                    onChange={(e) => setForm({ ...form, open_for_proposals: e.target.checked, member_id: e.target.checked ? '' : form.member_id })}
-                    className="accent-accent" />
-                  Dejar abierto a propuestas
-                </label>
+              <div className="sm:col-span-2">
+                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Opciones</label>
+                <div className="border border-digi-border rounded-lg p-2 space-y-1">
+                  {REQUEST_OPTIONS.map((o) => {
+                    const active = form.request_option === o.value;
+                    return (
+                      <label key={o.value} className={`flex items-start gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${active ? 'bg-accent-light' : 'hover:bg-black/[0.03]'}`} style={mf}>
+                        <input type="radio" name="request_option" checked={active}
+                          onChange={() => setForm({ ...form, request_option: o.value, member_id: '', required_talents: [], open_for_proposals: o.value === 'proposals' })}
+                          className="mt-0.5 accent-accent" />
+                        <span className="min-w-0">
+                          <span className="text-[12.5px] font-medium text-digi-text">{o.label}</span>
+                          <span className="block text-[10.5px] text-digi-muted">{o.hint}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                  {form.request_option === 'invite' && (
+                    <div className="pt-1">
+                      <AssigneePicker value={form.member_id} onChange={(id) => setForm({ ...form, member_id: id })} />
+                    </div>
+                  )}
+                  {form.request_option === 'talent' && (
+                    <div className="pt-1">
+                      <MultiSelectSearch options={TALENT_OPTIONS} selected={form.required_talents}
+                        onChange={(vals) => setForm({ ...form, required_talents: vals })}
+                        placeholder="Talentos requeridos para la tarea…" />
+                      {form.required_talents.length === 0 && <p className="text-[10.5px] text-amber-600 mt-1" style={mf}>Elige al menos un talento requerido.</p>}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               // Nuevo ticket: el miembro asignado SIEMPRE es el usuario de la sesión

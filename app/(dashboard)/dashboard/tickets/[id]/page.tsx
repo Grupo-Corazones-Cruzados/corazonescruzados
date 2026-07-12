@@ -11,7 +11,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 
@@ -139,6 +139,15 @@ export default function TicketDetailPage() {
       toast.success('Propuesta aceptada — miembro asignado');
       await fetchTicket();
       await loadBids();
+    } catch (e: any) { toast.error(e.message); }
+  };
+  const takeByTalent = async () => {
+    try {
+      const res = await fetch(`/api/tickets/${id}/take`, { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Error');
+      toast.success('Tomaste el ticket — quedas asignado');
+      await fetchTicket();
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -636,6 +645,29 @@ export default function TicketDetailPage() {
           <div className="flex-1 min-w-0 w-full">
             {activeTab === 'resumen' && (
               <div className="space-y-4">
+                {ticket.open_for_talent && (
+                  <div className="bg-digi-card border border-accent/30 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <DoorOpen className="w-4 h-4 text-accent" />
+                      <h3 className="text-[12px] font-semibold text-digi-text" style={df}>Abierto por talento</h3>
+                    </div>
+                    <p className="text-[11.5px] text-digi-muted mb-2" style={mf}>Un miembro con al menos uno de los talentos requeridos puede tomar este ticket de inmediato.</p>
+                    {(ticket.required_talents || []).length > 0 && (
+                      <div className="flex items-center gap-1 flex-wrap mb-2">
+                        <Sparkles className="w-3.5 h-3.5 text-digi-muted shrink-0" />
+                        {(ticket.required_talents || []).map((t: string) => (
+                          <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded bg-black/[0.05] text-digi-text" style={mf}>{t}</span>
+                        ))}
+                      </div>
+                    )}
+                    {!isOwner && !!user?.member_id && (
+                      <button onClick={takeByTalent} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md px-3 py-1.5" style={mf}>
+                        <Check className="w-3.5 h-3.5" /> Tomar este ticket
+                      </button>
+                    )}
+                    {isOwner && <p className="text-[10.5px] text-digi-muted" style={mf}>Estás esperando a que un miembro con el talento lo tome.</p>}
+                  </div>
+                )}
                 {ticket.description && (
                   <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
                     <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-2" style={pf}>Descripción</h3>

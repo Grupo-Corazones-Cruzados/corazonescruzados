@@ -31,17 +31,22 @@ export async function GET(req: NextRequest) {
       baseParams.push(`%${search}%`);
       baseWhere += ` AND t.title ILIKE $${baseParams.length}`;
     }
-    if (user.role === 'client') {
+    // En la pestaña "Abiertos" el scoping por cliente NO aplica (candidatos/miembros ven todos).
+    if (user.role === 'client' && !openMode) {
       baseParams.push(user.userId);
       baseWhere += ` AND t.client_id IN (SELECT id FROM gcc_world.clients WHERE user_id = $${baseParams.length})`;
     }
+
+    // "Abierto" = a propuestas (todos) o por talento (solo miembro/admin, sin params → seguro inline).
+    const openCond = (user.role === 'admin' || user.role === 'member')
+      ? `(t.open_for_proposals = true OR t.open_for_talent = true)`
+      : `t.open_for_proposals = true`;
 
     // Status-filtered where extends the base.
     let where = baseWhere;
     const params: any[] = [...baseParams];
     if (openMode) {
-      // Pestaña "Abiertos": tickets abiertos a propuestas (sin miembro asignado).
-      where += ` AND t.open_for_proposals = true`;
+      where += ` AND ${openCond}`;
     } else if (status && status !== 'all') {
       params.push(status);
       where += ` AND t.status = $${params.length}`;
@@ -52,6 +57,9 @@ export async function GET(req: NextRequest) {
       ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_type VARCHAR(20);
       ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_id TEXT;
     `);
+    // Columnas de "abierto por talento".
+    await pool.query(`ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS open_for_talent BOOLEAN DEFAULT false`);
+    await pool.query(`ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS required_talents TEXT[] DEFAULT '{}'`);
 
     // Per-status counts (respect base filters, ignore the status filter) for the rail.
     const countsQ = await pool.query(
@@ -64,7 +72,7 @@ export async function GET(req: NextRequest) {
     counts.all = allCount;
     // Conteo de la pestaña "Abiertos".
     const openCountQ = await pool.query(
-      `SELECT COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere} AND t.open_for_proposals = true`,
+      `SELECT COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere} AND ${openCond}`,
       baseParams,
     );
     counts.open = Number(openCountQ.rows[0].n);
@@ -108,16 +116,25 @@ export async function POST(req: NextRequest) {
     // cliente (mi cuenta cliente) y elijo un miembro o dejo el ticket abierto a propuestas.
     const mode: 'create' | 'request' = body.mode === 'request' ? 'request' : 'create';
     const openForProposals = mode === 'request' && body.open_for_proposals === true;
+    // Modo "por talento": abierto solo a miembros con el talento requerido (toman de inmediato).
+    const openForTalent = mode === 'request' && body.open_for_talent === true;
+    const requiredTalents: string[] = openForTalent && Array.isArray(body.required_talents)
+      ? body.required_talents.filter((t: any) => typeof t === 'string' && t.trim()) : [];
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'El titulo es requerido' }, { status: 400 });
     }
+    if (openForTalent && requiredTalents.length === 0) {
+      return NextResponse.json({ error: 'Selecciona al menos un talento requerido.' }, { status: 400 });
+    }
 
-    // Columna para el modo "abierto a propuestas" (sin miembro asignado; alguien propone).
+    // Columnas para los modos "abierto" (a propuestas / por talento).
     await pool.query(`ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS open_for_proposals BOOLEAN DEFAULT false`);
+    await pool.query(`ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS open_for_talent BOOLEAN DEFAULT false`);
+    await pool.query(`ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS required_talents TEXT[] DEFAULT '{}'`);
 
-    // Miembro asignado: en 'request' con "abierto a propuestas" no hay miembro (queda null).
-    const resolvedMemberId = openForProposals ? null : (member_id || null);
+    // Miembro asignado: en 'request' abierto (propuestas o talento) no hay miembro (queda null).
+    const resolvedMemberId = (openForProposals || openForTalent) ? null : (member_id || null);
 
     // Resolve client: by ID, by email (find or create), or auto for client role
     let resolvedClientId = client_id || null;
@@ -162,8 +179,8 @@ export async function POST(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.tickets (title, description, service_id, member_id, client_id, deadline, estimated_hours, estimated_cost, status, user_id, open_for_proposals, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, NOW(), NOW())
+      `INSERT INTO gcc_world.tickets (title, description, service_id, member_id, client_id, deadline, estimated_hours, estimated_cost, status, user_id, open_for_proposals, open_for_talent, required_talents, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12::text[], NOW(), NOW())
        RETURNING *`,
       [
         title.trim(),
@@ -176,6 +193,8 @@ export async function POST(req: NextRequest) {
         estimated_cost || null,
         user.userId,
         openForProposals,
+        openForTalent,
+        requiredTalents,
       ]
     );
 
