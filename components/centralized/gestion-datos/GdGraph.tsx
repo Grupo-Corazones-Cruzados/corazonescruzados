@@ -326,7 +326,8 @@ export default function GdGraph({
             }
             ctx.globalAlpha = alpha;
 
-            const showLabel = scale >= 1.15 || (active ? lit : n.type === 'categoria' || n.type === 'codigo');
+            const isolated = (degree.get(node.id) || 0) === 0;
+            const showLabel = scale >= 1.15 || (active ? lit : n.type === 'categoria' || n.type === 'codigo' || n.type === 'problema' || isolated);
             if (showLabel) {
               const label = n.title.length > 26 ? n.title.slice(0, 25) + '…' : n.title;
               const fontSize = Math.max(3.2, 11 / scale);

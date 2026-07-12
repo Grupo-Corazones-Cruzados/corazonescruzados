@@ -69,6 +69,8 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
 
   // Panel de creación rápida (fuente/problema) en el panel flotante.
   const [creating, setCreating] = useState<null | 'fuente' | 'problema'>(null);
+  // Guard anti doble-envío: mientras hay una mutación en curso, se bloquea otra.
+  const [busy, setBusy] = useState(false);
   // Modales complejos (necesitan pickers).
   const [modal, setModal] = useState<null | 'enfrentamiento' | 'codigo' | 'categoria' | 'problematica' | 'rompecabezas' | 'subtema' | 'tema'>(null);
   const [editRomp, setEditRomp] = useState<Rompecabezas | null>(null);
@@ -147,7 +149,9 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     setModal('problematica');
   };
   const saveProblematica = async () => {
+    if (busy) return;
     if (!probForm.name.trim() || !probForm.ref.trim()) { toast.error('Nombre y referencia son requeridos'); return; }
+    setBusy(true);
     try {
       if (editingProb) {
         await mutate(`${API}/problematicas`, 'PATCH', { id: editingProb.id, ...probForm });
@@ -160,6 +164,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       setModal(null);
       await loadProblematicas();
     } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
   };
   const deleteProblematica = async (p: Problematica) => {
     try {
@@ -182,7 +187,9 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     setCreating('fuente');
   };
   const saveFuente = async () => {
+    if (busy) return;
     if (!fuenteForm.contenido.trim()) { toast.error('El contenido es requerido'); return; }
+    setBusy(true);
     try {
       if (fuenteForm.id) {
         await mutate(`${API}/fuentes`, 'PATCH', { id: fuenteForm.id, contenido: fuenteForm.contenido, credibilidad: fuenteForm.credibilidad });
@@ -194,6 +201,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       setCreating(null);
       await reload();
     } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
   };
 
   const openProblema = (p?: Problema) => {
@@ -202,7 +210,9 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     setCreating('problema');
   };
   const saveProblema = async () => {
+    if (busy) return;
     if (!problemaForm.title.trim()) { toast.error('El título es requerido'); return; }
+    setBusy(true);
     try {
       if (problemaForm.id) {
         await mutate(`${API}/problemas`, 'PATCH', { id: problemaForm.id, title: problemaForm.title, description: problemaForm.description });
@@ -214,6 +224,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       setCreating(null);
       await reload();
     } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
   };
 
   // ── Eliminar nodo ───────────────────────────────────────────────────────────
@@ -327,7 +338,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                 edges={graph.edges}
                 selectedKey={selectedKey}
                 filter={legendFilter}
-                fitSignal={String(probId)}
+                fitSignal={`${probId}:${graph.nodes.length}`}
                 onSelect={(n) => { setSelectedKey(n?.key ?? null); setCreating(null); }}
               />
 
@@ -375,9 +386,9 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
               {(creating || selectedNode) && (
                 <aside className={`absolute bottom-3 right-3 w-[352px] max-h-[calc(100%-24px)] overflow-y-auto ${GLASS} p-3`}>
                   {creating === 'fuente' ? (
-                    <FuenteForm form={fuenteForm} setForm={setFuenteForm} onCancel={() => setCreating(null)} onSave={saveFuente} />
+                    <FuenteForm form={fuenteForm} setForm={setFuenteForm} onCancel={() => setCreating(null)} onSave={saveFuente} saving={busy} />
                   ) : creating === 'problema' ? (
-                    <ProblemaForm form={problemaForm} setForm={setProblemaForm} onCancel={() => setCreating(null)} onSave={saveProblema} />
+                    <ProblemaForm form={problemaForm} setForm={setProblemaForm} onCancel={() => setCreating(null)} onSave={saveProblema} saving={busy} />
                   ) : selectedNode ? (
                     <NodeDetail
                       node={selectedNode}
@@ -423,8 +434,8 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
               <textarea className={`${GLASS_INPUT} resize-none`} rows={3} value={probForm.description} onChange={(e) => setProbForm((f) => ({ ...f, description: e.target.value }))} />
             </Field>
             <div className="flex justify-end gap-2 pt-1">
-              <button onClick={() => setModal(null)} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
-              <button onClick={saveProblematica} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md" style={mf}>{editingProb ? 'Guardar' : 'Crear'}</button>
+              <button onClick={() => setModal(null)} disabled={busy} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+              <button onClick={saveProblematica} disabled={busy} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{busy ? 'Guardando…' : editingProb ? 'Guardar' : 'Crear'}</button>
             </div>
           </div>
         </FloatingWindow>
@@ -527,7 +538,7 @@ function CredSlider({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
-function FuenteForm({ form, setForm, onCancel, onSave }: any) {
+function FuenteForm({ form, setForm, onCancel, onSave, saving }: any) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -552,14 +563,14 @@ function FuenteForm({ form, setForm, onCancel, onSave }: any) {
         <CredSlider value={form.credibilidad} onChange={(v) => setForm((f: any) => ({ ...f, credibilidad: v }))} />
       </Field>
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
-        <button onClick={onSave} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md" style={mf}>{form.id ? 'Guardar' : 'Agregar'}</button>
+        <button onClick={onCancel} disabled={saving} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+        <button onClick={onSave} disabled={saving} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{saving ? 'Guardando…' : form.id ? 'Guardar' : 'Agregar'}</button>
       </div>
     </div>
   );
 }
 
-function ProblemaForm({ form, setForm, onCancel, onSave }: any) {
+function ProblemaForm({ form, setForm, onCancel, onSave, saving }: any) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -573,8 +584,8 @@ function ProblemaForm({ form, setForm, onCancel, onSave }: any) {
         <textarea className={`${GLASS_INPUT} resize-none`} rows={3} value={form.description} onChange={(e) => setForm((f: any) => ({ ...f, description: e.target.value }))} />
       </Field>
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
-        <button onClick={onSave} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md" style={mf}>{form.id ? 'Guardar' : 'Agregar'}</button>
+        <button onClick={onCancel} disabled={saving} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+        <button onClick={onSave} disabled={saving} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{saving ? 'Guardando…' : form.id ? 'Guardar' : 'Agregar'}</button>
       </div>
     </div>
   );
