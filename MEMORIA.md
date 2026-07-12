@@ -1530,18 +1530,26 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
-- **Gestión de Datos — "no se guardó el problema" = doble-clic + nodo invisible (2026-07-12):** el usuario
-  reportó que al agregar un problema no aparecía en el grafo. Diagnóstico contra la BD real: **sí se había
-  guardado, DOS veces** (dos filas idénticas creadas con ~0.3s de diferencia). Dos bugs combinados:
-  1. **Doble-envío:** los handlers `save*` (problema/fuente/problemática) NO tenían guard en curso → el segundo
-     clic reejecutaba el POST y creaba un duplicado. Y el primer toast quedaba **oculto detrás del panel
-     flotante** (mismo gotcha top-layer de los toasts), por eso el 1er clic "no hacía nada". **Fix:** estado
-     `busy` (early-return si `busy` + `try/finally`) y botones deshabilitados con "Guardando…". Regla: TODO
-     handler que muta debe tener guard anti doble-envío.
-  2. **Nodo suelto invisible en el grafo:** en `GdGraph` el `fitSignal` dependía solo de `probId` → agregar un
-     nodo NO reajustaba la vista; y un nodo suelto (degree 0) no mostraba etiqueta salvo con zoom ≥1.15. **Fix:**
-     `fitSignal={`${probId}:${graph.nodes.length}`}` (zoom-to-fit al agregar/eliminar) + mostrar label también
-     para `problema` y para cualquier nodo aislado. Se borró el duplicado (problema id 2) de la BD.
+- **Gestión de Datos — el grafo mostraba "Sin datos aún" siempre = 500 por `id` ambiguo (2026-07-12):** el
+  usuario reportó que al agregar un problema NUNCA aparecía en el "universo de gráficos" (la UI mostraba el
+  estado vacío "Sin datos aún"). **CAUSA RAÍZ real:** en `getProblematicaGraph` (`gestion-datos-db.ts`) la
+  consulta de enfrentamientos hacía `SELECT id, ganadora_fuente_id, perdedora_fuente_id …` **sin calificar**
+  sobre un JOIN de `gd_enfrentamientos e` + 2× `gd_fuentes` (gf/pf); las **tres** tablas tienen columna `id`,
+  así que Postgres lanza `column reference "id" is ambiguous` **en tiempo de planificación** (¡aun con 0
+  enfrentamientos, porque valida las columnas antes de ejecutar!). Eso hacía throw de TODA la función del
+  grafo → el GET `/api/centralized/gestion-datos?problematica_id=` devolvía **500** → el componente lo traga
+  silenciosamente (`g.data || {nodes:[],edges:[]}`) y mostraba el estado vacío. Los datos SÍ se guardaban; solo
+  no se renderizaban. **Fix:** calificar con `e.id`/`e.ganadora_fuente_id`/`e.perdedora_fuente_id`. Confirmado
+  contra la BD real (replicando cada query del grafo con try/catch por paso: la de enfrentamientos era la única
+  que fallaba). **Lección:** en un endpoint que traga errores y cae a un estado vacío, un bug de SQL se ve
+  idéntico a "no hay datos"; diagnosticar corriendo las queries reales, no asumir el front. Y un `SELECT id`
+  sin calificar sobre un JOIN de tablas que comparten `id` SIEMPRE revienta, con 0 o N filas.
+  - **Bugs secundarios corregidos de paso:** (1) **doble-envío** — los `save*` (problema/fuente/problemática) no
+    tenían guard → un doble-clic creaba filas duplicadas (pasó: 2 "Desorientación Vocacional"); el 1er toast
+    quedaba oculto tras el panel (gotcha top-layer). Fix: estado `busy` (early-return + `try/finally`) + botones
+    "Guardando…". Regla: TODO handler que muta debe tener guard. (2) **UX del grafo** — `fitSignal` solo dependía
+    de `probId` (no reajustaba al agregar) y un nodo suelto no mostraba label sin zoom. Fix:
+    `fitSignal={`${probId}:${graph.nodes.length}`}` + label también para `problema` y nodos aislados.
 - **Doble login en "Colaborar" → faltaba el JWT de staff (2026-06-30):** el login de miembro
   (`MemberLoginModal`) usa endpoints de PERSONAJE (`/api/character/auth/member-login/verify` y
   `passkey/login/finish`). En la rama "tiene personaje" seteaban solo las cookies de personaje
