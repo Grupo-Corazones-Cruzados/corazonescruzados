@@ -24,7 +24,7 @@ const GLASS_BTN = 'inline-flex items-center justify-center gap-1.5 border border
 const GLASS_INPUT = 'w-full px-2.5 py-1.5 bg-black/40 border border-white/15 rounded-md text-[13px] text-white placeholder-white/40 focus:border-accent focus:outline-none';
 
 type Problematica = { id: number; name: string; ref: string; description: string; fuentes_count: number; codigos_count: number };
-type Fuente = { id: number; problematica_id: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number; credibilidad_efectiva: number; seq: number; nomenclatura: string; ref_tipo?: string | null; ref_datos?: Record<string, string> | null };
+type Fuente = { id: number; problematica_id: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number; credibilidad_efectiva: number; seq: number; nomenclatura: string; referencia_id?: number | null; ref_tipo?: string | null; ref_datos?: Record<string, string> | null };
 type Problema = { id: number; title: string; description: string };
 type Enfrentamiento = { id: number; texto: string; nomenclatura: string; gano_seq: number; perdio_seq: number; gano_contenido: string; perdio_contenido: string };
 type Evento = { id: number; titulo: string; url: string };
@@ -177,16 +177,16 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   };
 
   // ── Crear fuente / problema (panel) ─────────────────────────────────────────
-  const [fuenteForm, setFuenteForm] = useState<{ id?: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number; ref_tipo: string; ref_datos: Record<string, string> }>(
-    { tipo_dato: 'cantidad', tipo_logica: 'premisa', contenido: '', credibilidad: 50, ref_tipo: '', ref_datos: {} },
+  const [fuenteForm, setFuenteForm] = useState<{ id?: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number; referencia_id: number | null }>(
+    { tipo_dato: 'cantidad', tipo_logica: 'premisa', contenido: '', credibilidad: 50, referencia_id: null },
   );
   const [problemaForm, setProblemaForm] = useState<{ id?: number; title: string; description: string }>({ title: '', description: '' });
 
   const openFuente = (f?: Fuente) => {
     setSelectedKey(null);
     setFuenteForm(f
-      ? { id: f.id, tipo_dato: f.tipo_dato, tipo_logica: f.tipo_logica, contenido: f.contenido, credibilidad: f.credibilidad, ref_tipo: f.ref_tipo || '', ref_datos: f.ref_datos || {} }
-      : { tipo_dato: 'cantidad', tipo_logica: 'premisa', contenido: '', credibilidad: 50, ref_tipo: '', ref_datos: {} });
+      ? { id: f.id, tipo_dato: f.tipo_dato, tipo_logica: f.tipo_logica, contenido: f.contenido, credibilidad: f.credibilidad, referencia_id: f.referencia_id ?? null }
+      : { tipo_dato: 'cantidad', tipo_logica: 'premisa', contenido: '', credibilidad: 50, referencia_id: null });
     setCreating('fuente');
   };
   const saveFuente = async () => {
@@ -194,13 +194,11 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     if (!fuenteForm.contenido.trim()) { toast.error('El contenido es requerido'); return; }
     setBusy(true);
     try {
-      const ref_tipo = fuenteForm.ref_tipo || null;
-      const ref_datos = fuenteForm.ref_tipo ? fuenteForm.ref_datos : null;
       if (fuenteForm.id) {
-        await mutate(`${API}/fuentes`, 'PATCH', { id: fuenteForm.id, contenido: fuenteForm.contenido, credibilidad: fuenteForm.credibilidad, tipo_dato: fuenteForm.tipo_dato, ref_tipo, ref_datos });
+        await mutate(`${API}/fuentes`, 'PATCH', { id: fuenteForm.id, contenido: fuenteForm.contenido, credibilidad: fuenteForm.credibilidad, tipo_dato: fuenteForm.tipo_dato, referencia_id: fuenteForm.referencia_id });
         toast.success('Fuente actualizada');
       } else {
-        await mutate(`${API}/fuentes`, 'POST', { problematica_id: probId, ...fuenteForm, ref_tipo, ref_datos });
+        await mutate(`${API}/fuentes`, 'POST', { problematica_id: probId, ...fuenteForm });
         toast.success('Fuente agregada');
       }
       setCreating(null);
@@ -576,12 +574,12 @@ function ApaReference({ tipo, datos, className }: { tipo?: string | null; datos?
   );
 }
 
-// Editor de la referencia bibliográfica (APA) dentro del formulario de fuente.
-function ApaRefFields({ form, setForm }: any) {
-  const tipo: string = form.ref_tipo || '';
-  const datos: Record<string, string> = form.ref_datos || {};
+// Editor de una referencia bibliográfica (APA) sobre un borrador { ref_tipo, ref_datos }.
+function ApaRefEditor({ draft, setDraft }: { draft: { ref_tipo: string; ref_datos: Record<string, string> }; setDraft: (fn: (d: any) => any) => void }) {
+  const tipo = draft.ref_tipo || '';
+  const datos = draft.ref_datos || {};
   const def = APA_TIPOS.find((t) => t.value === tipo);
-  const setDato = (key: string, val: string) => setForm((f: any) => ({ ...f, ref_datos: { ...(f.ref_datos || {}), [key]: val } }));
+  const setDato = (key: string, val: string) => setDraft((d) => ({ ...d, ref_datos: { ...(d.ref_datos || {}), [key]: val } }));
   const previewText = formatApaText(tipo, datos);
   const [aiText, setAiText] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
@@ -592,13 +590,13 @@ function ApaRefFields({ form, setForm }: any) {
       const res = await fetch(`${API}/fuentes/apa-extract`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: aiText }) });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || 'No se pudo interpretar');
-      setForm((f: any) => ({ ...f, ref_tipo: d.data.ref_tipo, ref_datos: d.data.ref_datos || {} }));
+      setDraft(() => ({ ref_tipo: d.data.ref_tipo, ref_datos: d.data.ref_datos || {} }));
       toast.success('Referencia interpretada con IA');
     } catch (e: any) { toast.error(e.message); }
     finally { setAiBusy(false); }
   };
   return (
-    <div className="rounded-md border border-white/10 bg-white/[0.03] p-2.5 space-y-2.5">
+    <div className="space-y-2.5">
       {/* Autocompletar con IA */}
       <div className="rounded-md border border-accent/30 bg-accent/[0.07] p-2 space-y-1.5">
         <div className="flex items-center gap-1.5">
@@ -617,13 +615,13 @@ function ApaRefFields({ form, setForm }: any) {
           <Sparkles className="w-3.5 h-3.5" />{aiBusy ? 'Interpretando…' : 'Interpretar y rellenar'}
         </button>
       </div>
-      <Field label="Referencia bibliográfica (APA)">
+      <Field label="Tipo de referencia (APA)">
         <select
           className={GLASS_INPUT}
           value={tipo}
-          onChange={(e) => setForm((f: any) => ({ ...f, ref_tipo: e.target.value, ref_datos: {} }))}
+          onChange={(e) => setDraft(() => ({ ref_tipo: e.target.value, ref_datos: {} }))}
         >
-          <option value="">— Sin referencia bibliográfica —</option>
+          <option value="">— Elige el tipo —</option>
           {APA_TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
         {def?.help && <p className="text-[10.5px] text-white/45 mt-1" style={mf}>{def.help}</p>}
@@ -650,6 +648,89 @@ function ApaRefFields({ form, setForm }: any) {
   );
 }
 
+function refLabel(r: any): string {
+  const t = formatApaText(r.ref_tipo, r.ref_datos);
+  const base = t || apaTipoLabel(r.ref_tipo) || 'Referencia';
+  return base.length > 70 ? base.slice(0, 69) + '…' : base;
+}
+
+// Selector de referencia bibliográfica por ASOCIACIÓN: reutiliza referencias existentes (tabla
+// gd_referencias) o crea/edita una (los cambios a una referencia afectan a TODAS las fuentes que la usan).
+function ReferenciaPicker({ value, onChange }: { value: number | null; onChange: (id: number | null) => void }) {
+  const [refs, setRefs] = useState<any[]>([]);
+  const [mode, setMode] = useState<null | 'new' | 'edit'>(null);
+  const [draft, setDraft] = useState<{ ref_tipo: string; ref_datos: Record<string, string> }>({ ref_tipo: '', ref_datos: {} });
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try { const d = await fetch(`${API}/referencias`).then((r) => r.json()); setRefs(d.data || []); } catch { /* noop */ }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const selected = refs.find((r) => r.id === value) || null;
+
+  const onSelect = (v: string) => {
+    if (v === '__new__') { setDraft({ ref_tipo: '', ref_datos: {} }); setMode('new'); }
+    else if (v === '') { onChange(null); setMode(null); }
+    else { onChange(Number(v)); setMode(null); }
+  };
+  const startEdit = () => { if (selected) { setDraft({ ref_tipo: selected.ref_tipo, ref_datos: selected.ref_datos || {} }); setMode('edit'); } };
+  const cancel = () => { setMode(null); setDraft({ ref_tipo: '', ref_datos: {} }); };
+  const saveRef = async () => {
+    if (busy) return;
+    if (!draft.ref_tipo) { toast.error('Elige el tipo de referencia'); return; }
+    setBusy(true);
+    try {
+      if (mode === 'new') {
+        const d = await mutate(`${API}/referencias`, 'POST', { ref_tipo: draft.ref_tipo, ref_datos: draft.ref_datos });
+        await load(); onChange(d.data.id); setMode(null);
+        toast.success('Referencia creada');
+      } else if (mode === 'edit' && selected) {
+        await mutate(`${API}/referencias`, 'PATCH', { id: selected.id, ref_tipo: draft.ref_tipo, ref_datos: draft.ref_datos });
+        await load(); setMode(null);
+        toast.success('Referencia actualizada (afecta a todas las fuentes que la usan)');
+      }
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="rounded-md border border-white/10 bg-white/[0.03] p-2.5 space-y-2.5">
+      <Field label="Referencia bibliográfica (APA)">
+        <select className={GLASS_INPUT} value={mode === 'new' ? '__new__' : (value != null ? String(value) : '')} onChange={(e) => onSelect(e.target.value)}>
+          <option value="">— Sin referencia bibliográfica —</option>
+          {refs.map((r) => <option key={r.id} value={r.id}>{refLabel(r)}{r.usos > 1 ? ` · usada ${r.usos}×` : ''}</option>)}
+          <option value="__new__">➕ Nueva referencia…</option>
+        </select>
+        <p className="text-[10px] text-white/40 mt-1" style={mf}>Reutiliza una referencia existente o crea una nueva. Editar una referencia afecta a todas las fuentes que la usan.</p>
+      </Field>
+
+      {/* Referencia seleccionada (solo lectura) + editar */}
+      {selected && !mode && (
+        <div className="rounded-md bg-black/40 border border-white/10 p-2">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[9.5px] uppercase tracking-wide text-white/40" style={df}>{apaTipoLabel(selected.ref_tipo)}</p>
+            <button onClick={startEdit} className="text-[10.5px] text-accent hover:underline" style={mf}>Editar referencia</button>
+          </div>
+          <ApaReference tipo={selected.ref_tipo} datos={selected.ref_datos} className="text-[11.5px] text-white/85 leading-relaxed" />
+        </div>
+      )}
+
+      {/* Editor (crear / editar) */}
+      {mode && (
+        <div className="rounded-md border border-white/10 bg-black/30 p-2 space-y-2.5">
+          <p className="text-[10.5px] font-semibold text-white/70" style={df}>{mode === 'new' ? 'Nueva referencia' : 'Editar referencia'}{mode === 'edit' && selected?.usos > 1 ? ` · usada en ${selected.usos} fuentes` : ''}</p>
+          <ApaRefEditor draft={draft} setDraft={setDraft as any} />
+          <div className="flex justify-end gap-2">
+            <button onClick={cancel} disabled={busy} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+            <button onClick={saveRef} disabled={busy} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{busy ? 'Guardando…' : mode === 'new' ? 'Crear y asociar' : 'Guardar cambios'}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FuenteForm({ form, setForm, onCancel, onSave, saving }: any) {
   return (
     <div className="space-y-3">
@@ -660,9 +741,9 @@ function FuenteForm({ form, setForm, onCancel, onSave, saving }: any) {
       {/* 2 columnas: referencia bibliográfica a la IZQUIERDA · datos de la fuente a la derecha.
           Así el formulario no crece en altura (la referencia puede tener muchos campos). */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Izquierda: referencia bibliográfica (APA) */}
+        {/* Izquierda: referencia bibliográfica (APA) — por asociación (tabla gd_referencias) */}
         <div>
-          <ApaRefFields form={form} setForm={setForm} />
+          <ReferenciaPicker value={form.referencia_id ?? null} onChange={(id) => setForm((f: any) => ({ ...f, referencia_id: id }))} />
         </div>
         {/* Derecha: datos de la fuente */}
         <div className="space-y-3">

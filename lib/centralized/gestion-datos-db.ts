@@ -261,6 +261,42 @@ export async function ensureGestionDatosTables(): Promise<void> {
       UNIQUE (tema_id, problema_id)
     )`);
 
+  // Referencias bibliográficas (APA) NORMALIZADAS y GLOBALES (reutilizables entre fuentes/problemáticas).
+  // Editar una referencia afecta a TODAS las fuentes que la usan (asocian por referencia_id).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gd_referencias (
+      id SERIAL PRIMARY KEY,
+      ref_tipo TEXT NOT NULL,
+      ref_datos JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  await pool.query(`ALTER TABLE gcc_world.gd_fuentes ADD COLUMN IF NOT EXISTS referencia_id INT REFERENCES gcc_world.gd_referencias(id) ON DELETE SET NULL`);
+
+  // Migración idempotente: mover las referencias inline (ref_tipo/ref_datos en la fuente) a gd_referencias
+  // y enlazar referencia_id. Deduplica referencias idénticas (mismo tipo + mismos datos). Se ejecuta solo
+  // mientras queden fuentes con referencia inline sin migrar; tras migrarlas, no hace nada.
+  const { rows: pend } = await pool.query(
+    `SELECT id, ref_tipo, ref_datos FROM gcc_world.gd_fuentes WHERE ref_tipo IS NOT NULL AND referencia_id IS NULL`,
+  );
+  for (const f of pend) {
+    const datosJson = JSON.stringify(f.ref_datos || {});
+    const { rows: found } = await pool.query(
+      `SELECT id FROM gcc_world.gd_referencias WHERE ref_tipo = $1 AND ref_datos = $2::jsonb LIMIT 1`,
+      [f.ref_tipo, datosJson],
+    );
+    let refId: number;
+    if (found.length) refId = found[0].id;
+    else {
+      const { rows: ins } = await pool.query(
+        `INSERT INTO gcc_world.gd_referencias (ref_tipo, ref_datos) VALUES ($1, $2::jsonb) RETURNING id`,
+        [f.ref_tipo, datosJson],
+      );
+      refId = ins[0].id;
+    }
+    await pool.query(`UPDATE gcc_world.gd_fuentes SET referencia_id = $1 WHERE id = $2`, [refId, f.id]);
+  }
+
   ready = true;
 }
 
@@ -385,9 +421,10 @@ export async function listFuentes(problematicaId: number) {
     `SELECT f.id, f.problematica_id, f.tipo_dato, f.tipo_logica, f.contenido,
             f.credibilidad::float AS credibilidad,
             f.credibilidad_efectiva::float AS credibilidad_efectiva,
-            f.ref_tipo, f.ref_datos,
+            f.referencia_id, r.ref_tipo, r.ref_datos,
             f.seq, f.created_at
        FROM gcc_world.gd_fuentes f
+       LEFT JOIN gcc_world.gd_referencias r ON r.id = f.referencia_id
       WHERE f.problematica_id = $1
       ORDER BY f.created_at ASC`,
     [problematicaId],
@@ -405,8 +442,7 @@ export async function createFuente(
   tipoLogica: TipoLogica,
   contenido: string,
   credibilidad: number,
-  refTipo?: string | null,
-  refDatos?: Record<string, string> | null,
+  referenciaId?: number | null,
 ) {
   await ensureGestionDatosTables();
   const cred = clampCred(Number(credibilidad));
@@ -424,9 +460,9 @@ export async function createFuente(
   const seq = Number(seqQuery.rows[0].next);
   const { rows } = await pool.query(
     `INSERT INTO gcc_world.gd_fuentes
-       (problematica_id, tipo_dato, tipo_logica, contenido, credibilidad, credibilidad_efectiva, seq, ref_tipo, ref_datos)
-     VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8::jsonb) RETURNING *`,
-    [problematicaId, tipoDato, tipoLogica, contenido.trim(), cred, seq, refTipo || null, refDatos ? JSON.stringify(refDatos) : null],
+       (problematica_id, tipo_dato, tipo_logica, contenido, credibilidad, credibilidad_efectiva, seq, referencia_id)
+     VALUES ($1, $2, $3, $4, $5, $5, $6, $7) RETURNING *`,
+    [problematicaId, tipoDato, tipoLogica, contenido.trim(), cred, seq, referenciaId || null],
   );
   return rows[0];
 }
@@ -435,9 +471,8 @@ export async function updateFuente(
   id: number,
   contenido?: string,
   credibilidad?: number,
-  refTipo?: string | null,
-  refDatos?: Record<string, string> | null,
   tipoDato?: TipoDato,
+  referenciaId?: number | null,
 ) {
   await ensureGestionDatosTables();
   const sets: string[] = [];
@@ -450,9 +485,8 @@ export async function updateFuente(
     sets.push(`credibilidad = $${params.length + 1}`); params.push(cred);
     sets.push(`credibilidad_efectiva = $${params.length + 1}`); params.push(cred);
   }
-  if (refTipo !== undefined) {
-    sets.push(`ref_tipo = $${params.length + 1}`); params.push(refTipo || null);
-    sets.push(`ref_datos = $${params.length + 1}::jsonb`); params.push(refDatos ? JSON.stringify(refDatos) : null);
+  if (referenciaId !== undefined) {
+    sets.push(`referencia_id = $${params.length + 1}`); params.push(referenciaId || null);
   }
   if (!sets.length) return;
   params.push(id);
@@ -463,6 +497,46 @@ export async function updateFuente(
 export async function deleteFuente(id: number) {
   await ensureGestionDatosTables();
   await pool.query(`DELETE FROM gcc_world.gd_fuentes WHERE id = $1`, [id]);
+}
+
+// ── Referencias bibliográficas (APA) — normalizadas y reutilizables ────────────
+export async function listReferencias() {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `SELECT r.id, r.ref_tipo, r.ref_datos,
+            (SELECT COUNT(*)::int FROM gcc_world.gd_fuentes f WHERE f.referencia_id = r.id) AS usos
+       FROM gcc_world.gd_referencias r
+      ORDER BY r.updated_at DESC, r.id DESC`,
+  );
+  return rows;
+}
+
+export async function createReferencia(refTipo: string, refDatos?: Record<string, string> | null) {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `INSERT INTO gcc_world.gd_referencias (ref_tipo, ref_datos) VALUES ($1, $2::jsonb) RETURNING *`,
+    [refTipo, JSON.stringify(refDatos || {})],
+  );
+  return rows[0];
+}
+
+// Actualiza la referencia; como las fuentes se asocian por referencia_id, el cambio se refleja en TODAS.
+export async function updateReferencia(id: number, refTipo?: string, refDatos?: Record<string, string> | null) {
+  await ensureGestionDatosTables();
+  const sets: string[] = [];
+  const params: any[] = [];
+  if (refTipo != null) { sets.push(`ref_tipo = $${params.length + 1}`); params.push(refTipo); }
+  if (refDatos !== undefined) { sets.push(`ref_datos = $${params.length + 1}::jsonb`); params.push(JSON.stringify(refDatos || {})); }
+  if (!sets.length) return;
+  sets.push(`updated_at = NOW()`);
+  params.push(id);
+  await pool.query(`UPDATE gcc_world.gd_referencias SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
+}
+
+export async function deleteReferencia(id: number) {
+  await ensureGestionDatosTables();
+  // Las fuentes que la usan quedan sin referencia (ON DELETE SET NULL).
+  await pool.query(`DELETE FROM gcc_world.gd_referencias WHERE id = $1`, [id]);
 }
 
 /** Re-aplica en orden todos los pesos registrados sobre una premisa, desde su base. */
