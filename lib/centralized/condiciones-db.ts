@@ -16,15 +16,17 @@ export async function ensureCondicionesTables(): Promise<void> {
   await ensureGestionDatosTables();  // gd_piezas / gd_pieza_variables / gd_codigos
   await ensureMetodologiaTables();   // mc_tasks / mc_task_codigos / mc_task_pieza
 
-  // Catálogo de variables (lo gestionará el futuro sistema Dinámica Condiciológica): factor→causa→variable.
+  // Catálogo de variables (lo gestiona el sistema Dinámica Condiciológica): factor→causa→variable.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.dc_variables (
       id SERIAL PRIMARY KEY,
       factor TEXT NOT NULL,          -- 'mental' | 'corporal' | 'ambiental'
       causa TEXT NOT NULL,
       nombre TEXT NOT NULL,
+      herramienta_monitoreo TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
+  await pool.query(`ALTER TABLE gcc_world.dc_variables ADD COLUMN IF NOT EXISTS herramienta_monitoreo TEXT NOT NULL DEFAULT ''`);
 
   // Condición descubierta al trabajar una pieza (registro de condición).
   await pool.query(`
@@ -262,13 +264,26 @@ export async function getTaskCodigos(taskId: number) {
 // ── Catálogo de variables (Dinámica Condiciológica, provisional aquí) ─────────
 export async function listVariablesCatalogo() {
   await ensureCondicionesTables();
-  const { rows } = await pool.query(`SELECT id, factor, causa, nombre FROM gcc_world.dc_variables ORDER BY factor ASC, causa ASC, nombre ASC`);
+  const { rows } = await pool.query(`SELECT id, factor, causa, nombre, herramienta_monitoreo FROM gcc_world.dc_variables ORDER BY factor ASC, causa ASC, nombre ASC`);
   return rows;
 }
-export async function createVariableCatalogo(factor: string, causa: string, nombre: string) {
+export async function createVariableCatalogo(factor: string, causa: string, nombre: string, herramientaMonitoreo?: string) {
   await ensureCondicionesTables();
-  const { rows } = await pool.query(`INSERT INTO gcc_world.dc_variables (factor, causa, nombre) VALUES ($1, $2, $3) RETURNING *`, [factor, causa, nombre.trim()]);
+  const { rows } = await pool.query(
+    `INSERT INTO gcc_world.dc_variables (factor, causa, nombre, herramienta_monitoreo) VALUES ($1, $2, $3, $4) RETURNING *`,
+    [factor, causa, nombre.trim(), (herramientaMonitoreo || '').trim()],
+  );
   return rows[0];
+}
+export async function updateVariableCatalogo(id: number, nombre?: string, herramientaMonitoreo?: string) {
+  await ensureCondicionesTables();
+  const sets: string[] = [];
+  const params: any[] = [];
+  if (nombre != null) { sets.push(`nombre = $${params.length + 1}`); params.push(nombre.trim()); }
+  if (herramientaMonitoreo != null) { sets.push(`herramienta_monitoreo = $${params.length + 1}`); params.push(herramientaMonitoreo.trim()); }
+  if (!sets.length) return;
+  params.push(id);
+  await pool.query(`UPDATE gcc_world.dc_variables SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
 }
 export async function deleteVariableCatalogo(id: number) {
   await ensureCondicionesTables();

@@ -254,6 +254,11 @@ rompecabezas/temas las leen); solo se quitó la edición desde aquí. Verificado
 #### P8 — Piso/paso · ✅ PARCIAL (usuario 2026-07-11): **Metodología Condiciológica = global · fundamentación** (celda "Condiciología"). Gestión de Condiciones = **controlador · fundamentación**. **Dinámica Condiciológica** = por confirmar.
 
 ### Estado de construcción del roadmap (2026-07-11)
+- **Dinámica Condiciológica — HECHA (2026-07-11):** colaborador·fundamentación (celda "Investigador", a confirmar piso/paso).
+  Panel de 3 factores → variables agrupadas por causa → editar **nombre** + **herramienta de monitoreo**. Dueño de
+  `dc_variables` (campo nuevo `herramienta_monitoreo`); en Gestión de Condiciones el catálogo quedó **solo lectura**. Ruta
+  `dinamica/variables` (GET/POST/PATCH/DELETE). tsc+build OK + BD real 2/2. **Futuro:** campos que conectarán con Gestión de Datos.
+  **Pendiente:** Laboratorio Condiciológico, módulo Alertas; pulidos finos de Gestión de Condiciones Fase 2.
 - **Gestión de Condiciones — FASE 1 HECHA (2026-07-11):** controlador·fundamentación (celda "Conocimiento"). Bandeja de
   tareas + pestañas **Datos** (códigos con detalle) / Subtareas (placeholder) / **Pieza (workspace)**: condiciones con
   **variables** (fija factor/causa o del catálogo `dc_variables`), **eventos** de verificación, **restricciones** (3 tipos)

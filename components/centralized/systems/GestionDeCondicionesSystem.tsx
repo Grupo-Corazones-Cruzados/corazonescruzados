@@ -495,28 +495,12 @@ function VariableModal({ condId, catalogo, onClose, onSaved }: { condId: number;
 }
 
 // ── Modal: catálogo de variables (Dinámica Condiciológica, provisional) ───────
-function CatalogoModal({ catalogo, onClose, onChanged }: { catalogo: CatVar[]; onClose: () => void; onChanged: () => void }) {
-  const [factor, setFactor] = useState('mental');
-  const [causa, setCausa] = useState(FACTORES[0].causas[0].key);
-  const [nombre, setNombre] = useState('');
-  const causas = FACTORES.find((f) => f.key === factor)?.causas || [];
-
-  const add = async () => { if (!nombre.trim()) return; try { await mutate(`${API}/catalogo`, 'POST', { factor, causa, nombre }); setNombre(''); await onChanged(); } catch (e: any) { toast.error(e.message); } };
-  const del = async (id: number) => { try { await mutate(`${API}/catalogo`, 'DELETE', { id }); await onChanged(); } catch (e: any) { toast.error(e.message); } };
-
+function CatalogoModal({ catalogo, onClose }: { catalogo: CatVar[]; onClose: () => void; onChanged?: () => void }) {
   return (
-    <FloatingWindow open onClose={onClose} title="Catálogo de variables (Dinámica Condiciológica)" initialWidth={500} initialHeight={560}>
+    <FloatingWindow open onClose={onClose} title="Catálogo de variables (solo lectura)" initialWidth={500} initialHeight={520}>
       <div className="p-4 space-y-3">
-        <p className="text-[11.5px] text-digi-muted" style={mf}>Provisional: aquí se listan las variables por factor→causa que usan las condiciones. A futuro las definirá el sistema Dinámica Condiciológica.</p>
-        <div className="flex gap-1.5 items-end">
-          <div className="flex-1"><label className="block text-[10.5px] text-digi-muted mb-0.5" style={mf}>Factor</label><select className={INPUT} value={factor} onChange={(e) => { setFactor(e.target.value); setCausa(FACTORES.find((f) => f.key === e.target.value)!.causas[0].key); }}>{FACTORES.map((f) => <option key={f.key} value={f.key} className="bg-white">{f.label}</option>)}</select></div>
-          <div className="flex-1"><label className="block text-[10.5px] text-digi-muted mb-0.5" style={mf}>Causa</label><select className={INPUT} value={causa} onChange={(e) => setCausa(e.target.value)}>{causas.map((c) => <option key={c.key} value={c.key} className="bg-white">{c.label}</option>)}</select></div>
-        </div>
-        <div className="flex gap-1.5">
-          <input className={`${INPUT} flex-1`} value={nombre} onChange={(e) => setNombre(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} placeholder="Nombre de la variable" />
-          <button onClick={add} className="px-2 py-1.5 border border-digi-border rounded-md text-digi-text hover:border-accent"><Plus className="w-3.5 h-3.5" /></button>
-        </div>
-        <div className="space-y-1 max-h-72 overflow-y-auto">
+        <p className="text-[11.5px] text-digi-muted" style={mf}>Variables por factor→causa que usan las condiciones. Se <b>editan en el sistema Dinámica Condiciológica</b> (colaborador · fundamentación).</p>
+        <div className="space-y-1 max-h-80 overflow-y-auto">
           {FACTORES.map((f) => {
             const list = catalogo.filter((v) => v.factor === f.key);
             if (!list.length) return null;
@@ -527,13 +511,12 @@ function CatalogoModal({ catalogo, onClose, onChanged }: { catalogo: CatVar[]; o
                   <div key={v.id} className="flex items-center gap-2 text-[11.5px] bg-black/[0.02] border border-digi-border rounded px-2 py-1">
                     <span className="text-digi-text flex-1 truncate" style={mf}>{v.nombre}</span>
                     <span className="text-[10px] text-digi-muted" style={mf}>{causaLabel(v.factor, v.causa)}</span>
-                    <button onClick={() => del(v.id)} className="text-digi-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                   </div>
                 ))}
               </div>
             );
           })}
-          {catalogo.length === 0 && <p className="text-[11px] text-digi-muted" style={mf}>Catálogo vacío.</p>}
+          {catalogo.length === 0 && <p className="text-[11px] text-digi-muted" style={mf}>Catálogo vacío. Agrega variables desde Dinámica Condiciológica.</p>}
         </div>
       </div>
     </FloatingWindow>

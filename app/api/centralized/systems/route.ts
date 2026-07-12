@@ -84,6 +84,16 @@ async function ensureTable() {
             'controlador', 'fundamentacion', 'Conocimiento', 'gestion-de-condiciones'
      WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'gestion-de-condiciones')`,
   );
+  // Sistema built-in "Dinámica Condiciológica" (colaborador · fundamentación, celda "Investigador").
+  // Investiga los factores (mental/corporal/ambiental) → causas → variables, y define para cada
+  // variable su nombre y herramienta de monitoreo. Alimenta el catálogo que usa Gestión de Condiciones.
+  await pool.query(
+    `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+     SELECT 'Dinámica Condiciológica',
+            'Investiga los factores condiciológicos (mental, corporal, ambiental) y sus causas, definiendo el catálogo de variables (nombre, herramienta de monitoreo) que se usan para describir condiciones en Gestión de Condiciones.',
+            'colaborador', 'fundamentacion', 'Investigador', 'dinamica-condiciologica'
+     WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'dinamica-condiciologica')`,
+  );
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (

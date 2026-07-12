@@ -267,6 +267,17 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Sistema "Dinámica Condiciológica" — Centralizado · colaborador · fundamentación (2026-07-11):** nuevo sistema built-in
+  (celda "Investigador", slug `dinamica-condiciologica`; seed + dispatch). **Dueño del catálogo de variables** (`dc_variables`)
+  que consume Gestión de Condiciones. UI `components/centralized/systems/DinamicaCondiciologicaSystem.tsx` (corp light):
+  **panel de 3 factores** (mental/corporal/ambiental) → al elegir uno, a la derecha las **variables agrupadas por causa**
+  (mental[cognitivo,social], corporal[estructural,funcional], ambiental[positivo,universo]) con alta rápida por causa →
+  al seleccionar una variable, **editor** (nombre + **herramienta de monitoreo**) + eliminar. Campo nuevo
+  `dc_variables.herramienta_monitoreo` (ADD COLUMN IF NOT EXISTS). Funciones en `condiciones-db.ts`
+  (`listVariablesCatalogo`/`createVariableCatalogo`/`updateVariableCatalogo`/`deleteVariableCatalogo`, ahora con herramienta).
+  Ruta `app/api/centralized/dinamica/variables` (GET/POST/PATCH/DELETE). En **Gestión de Condiciones** el catálogo pasó a
+  **solo lectura** (se edita aquí). **Piso/paso a confirmar** (elegí colaborador·fundamentación por "Investigador"; fácil de
+  mover). **Futuro:** más campos que conectarán Gestión de Datos con este sistema. Verificado: tsc + build OK + BD real 2/2 (ROLLBACK).
 - **Sistema "Gestión de Condiciones" — Centralizado · controlador · fundamentación (Fase 1, 2026-07-11):** nuevo sistema
   built-in (celda "Conocimiento", slug `gestion-de-condiciones`; seed + dispatch). **Recibe las tareas de Metodología
   Condiciológica** y las convierte en **piezas** descubriendo **condiciones**. UI
