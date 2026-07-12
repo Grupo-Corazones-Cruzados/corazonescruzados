@@ -1110,7 +1110,7 @@ export async function getProblematicaGraph(problematicaId: number): Promise<GdGr
 
   // Enfrentamientos.
   const { rows: enfs } = await pool.query(
-    `SELECT id, ganadora_fuente_id, perdedora_fuente_id, gf.seq AS gano_seq, pf.seq AS perdio_seq
+    `SELECT e.id, e.ganadora_fuente_id, e.perdedora_fuente_id, gf.seq AS gano_seq, pf.seq AS perdio_seq
        FROM gcc_world.gd_enfrentamientos e
        JOIN gcc_world.gd_fuentes gf ON gf.id = e.ganadora_fuente_id
        JOIN gcc_world.gd_fuentes pf ON pf.id = e.perdedora_fuente_id
