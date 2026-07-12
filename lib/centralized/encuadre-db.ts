@@ -15,10 +15,16 @@ type ListMeta = SimpleList | KeyedList;
 
 // table/columnas son CONSTANTES (no entran del usuario) → SQL seguro al interpolarlas.
 export const GLOBAL_LISTS: Record<string, ListMeta> = {
-  talentos:    { label: 'Talentos',    table: 'gd_talentos',    shape: 'simple', col: 'nombre' },
-  valores:     { label: 'Valores',     table: 'gd_valores',     shape: 'keyed', keyCol: 'key', labelCol: 'label' },
-  situaciones: { label: 'Situaciones', table: 'gd_situaciones', shape: 'simple', col: 'nombre' },
-  materias:    { label: 'Materias',    table: 'gd_materias',    shape: 'simple', col: 'nombre' },
+  talentos:            { label: 'Talentos',          table: 'gd_talentos',           shape: 'simple', col: 'nombre' },
+  valores:             { label: 'Valores',           table: 'gd_valores',            shape: 'keyed', keyCol: 'key', labelCol: 'label' },
+  situaciones:         { label: 'Situaciones',       table: 'gd_situaciones',        shape: 'simple', col: 'nombre' },
+  materias:            { label: 'Materias',          table: 'gd_materias',           shape: 'simple', col: 'nombre' },
+  acciones:            { label: 'Acciones',          table: 'gd_acciones',           shape: 'simple', col: 'nombre' },
+  intenciones:         { label: 'Intenciones',       table: 'gd_intenciones',        shape: 'simple', col: 'nombre' },
+  estados:             { label: 'Estados',           table: 'gd_estados',            shape: 'simple', col: 'nombre' },
+  lugares:             { label: 'Lugares',           table: 'gd_lugares',            shape: 'simple', col: 'nombre' },
+  procesos_mentales:   { label: 'Procesos mentales', table: 'gd_procesos_mentales',  shape: 'simple', col: 'nombre' },
+  moldes:              { label: 'Moldes',            table: 'gd_moldes',             shape: 'simple', col: 'nombre' },
 };
 export type GlobalListKey = keyof typeof GLOBAL_LISTS;
 
@@ -65,6 +71,12 @@ export async function ensureEncuadreTables(): Promise<void> {
       const key = String(val?.key ?? slugKey(label));
       if (label) await pool.query(`INSERT INTO gcc_world.gd_valores (key, label) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [key, label]);
     }
+  }
+
+  // Listas simple SIN semilla (nacen vacías): acciones, intenciones, estados, lugares,
+  // procesos_mentales, moldes. Se crean sus tablas idempotentes.
+  for (const key of ['gd_acciones', 'gd_intenciones', 'gd_estados', 'gd_lugares', 'gd_procesos_mentales', 'gd_moldes']) {
+    await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.${key} (id SERIAL PRIMARY KEY, nombre TEXT NOT NULL UNIQUE, created_at TIMESTAMPTZ DEFAULT NOW())`);
   }
 
   ready = true;

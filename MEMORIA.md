@@ -273,8 +273,11 @@ Stack estándar de la casa, con particularidades de este repo:
   la "calculadora del comportamiento" y del Control Psicosocial). **Por ahora = HOGAR ÚNICO de las LISTAS GLOBALES**
   (decisión del usuario 2026-07-11, reemplaza la ubicación previa en Metodología). UI
   `components/centralized/systems/EncuadreCondiciologicoSystem.tsx` (corp light, estilo de los otros sistemas): **panel de
-  listas** a la izquierda (Talentos/Valores/Situaciones/Materias + futuras, con conteo) → al seleccionar, a la derecha las
-  **opciones ordenadas ASCENDENTE** (case-insensitive) con **buscador + agregar + eliminar**.
+  listas** a la izquierda (con conteo) → al seleccionar, a la derecha las
+  **opciones ordenadas ASCENDENTE** (case-insensitive) con **buscador + agregar + eliminar**. Listas actuales (2026-07-11):
+  **Talentos, Valores, Situaciones, Materias, Acciones, Intenciones, Estados, Lugares, Procesos mentales, Moldes** (las 6
+  últimas nacen **vacías**, forma `simple`, tablas `gd_acciones`/`gd_intenciones`/`gd_estados`/`gd_lugares`/
+  `gd_procesos_mentales`/`gd_moldes`). Agregar una lista = una línea en `GLOBAL_LISTS` + su `CREATE TABLE` en `ensureEncuadreTables`.
   - **DB** `lib/centralized/encuadre-db.ts`: registro `GLOBAL_LISTS` con **dos formas**: **`simple`** (una col `nombre`:
     talentos/situaciones/materias) y **`keyed`** (dos props internas `key`+`label`: **valores**, que se referencian por `key`).
     `gd_talentos` (simple, sembrada de `TALENTOS` string[]) y `gd_valores` (keyed, sembrada de `VALORES` `{key,label}[]`).

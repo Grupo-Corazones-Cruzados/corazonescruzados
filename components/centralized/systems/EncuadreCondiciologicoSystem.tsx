@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Layers, Plus, Trash2, Search, Sparkles, Gem, MapPin, BookOpen } from 'lucide-react';
+import { Layers, Plus, Trash2, Search, Sparkles, Gem, MapPin, BookOpen, Zap, Target, Gauge, Map as MapIcon, Brain, Shapes } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -21,6 +21,7 @@ type Opcion = { id: number; label: string };
 
 const LIST_ICON: Record<string, typeof Layers> = {
   talentos: Sparkles, valores: Gem, situaciones: MapPin, materias: BookOpen,
+  acciones: Zap, intenciones: Target, estados: Gauge, lugares: MapIcon, procesos_mentales: Brain, moldes: Shapes,
 };
 
 export default function EncuadreCondiciologicoSystem({ isAdmin }: { system?: any; isAdmin?: boolean }) {
