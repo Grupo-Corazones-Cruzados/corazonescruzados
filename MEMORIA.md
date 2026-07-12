@@ -267,6 +267,17 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Módulo "Notificaciones" (dashboard, debajo de "Mi día", 2026-07-11):** nuevo módulo `/dashboard/notificaciones` que
+  muestra las **invitaciones a proyectos** hechas al usuario, cada una **clicable → `/dashboard/projects/[id]`** (donde
+  acepta/participa). **NO hay tabla `notifications`** (no existe en el repo): se **deriva** de las dos fuentes reales de
+  invitación (las mismas que la pestaña Invitados de Proyectos): (a) **participar** = `project_bids.status='invited'`;
+  (b) **liderar** = `project_members role='responsible' status='invited'`. Endpoint **`GET /api/notifications`** (`pool` +
+  `getCurrentUser`; resuelve `member_id` por `users.member_id`; UNION de ambas fuentes, devuelve `{kind,title,project_id,
+  href,invited_at}`). Página `app/(dashboard)/dashboard/notificaciones/page.tsx` (tarjetas clicables, ícono Crown=liderar /
+  FolderKanban=participar, contador, refrescar). **Registro:** item de sidebar (`DashboardSidebar` grupo Principal, icono
+  `Bell`) + `MODULE_ACCESS` (`/dashboard/notificaciones` → candidate/member/admin) en `lib/dashboard/access.ts`. Diseñado
+  **extensible** (a futuro se sumarán otros tipos de notificación al mismo endpoint/tabla derivada). Es el embrión del módulo
+  "Alertas" del roadmap. Verificado: tsc + `next build` OK + query probada contra la BD real (1 invitación a participar pendiente).
 - **Sistema "Dinámica Condiciológica" — Centralizado · colaborador · fundamentación (2026-07-11):** nuevo sistema built-in
   (celda "Investigador", slug `dinamica-condiciologica`; seed + dispatch). **Dueño del catálogo de variables** (`dc_variables`)
   que consume Gestión de Condiciones. UI `components/centralized/systems/DinamicaCondiciologicaSystem.tsx` (corp light):
