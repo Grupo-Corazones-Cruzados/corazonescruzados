@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   FolderPlus, Pencil, Trash2, Plus, Database, GitCompareArrows, Hexagon,
@@ -508,6 +508,28 @@ function ToolBtn({ icon, label, color, onClick, disabled }: { icon: React.ReactN
   );
 }
 
+// Textarea que crece en alto a medida que se escribe (sin scroll interno), con un mínimo.
+function AutoTextarea({ value, onChange, className, placeholder, autoFocus, minHeight = 70 }: any) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      className={className}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      autoFocus={autoFocus}
+      style={{ overflow: 'hidden', minHeight, resize: 'none' }}
+    />
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -655,8 +677,8 @@ function FuenteForm({ form, setForm, onCancel, onSave, saving }: any) {
               </Field>
             </>
           )}
-          <Field label="Contenido (la verdad que dice la fuente)">
-            <textarea className={`${GLASS_INPUT} resize-none`} rows={3} value={form.contenido} onChange={(e) => setForm((f: any) => ({ ...f, contenido: e.target.value }))} placeholder="Ej. 30 de cada 100 niños ingresan a una escuela particular." autoFocus />
+          <Field label="Contenido">
+            <AutoTextarea className={GLASS_INPUT} value={form.contenido} onChange={(e: any) => setForm((f: any) => ({ ...f, contenido: e.target.value }))} placeholder="Ej. 30 de cada 100 niños ingresan a una escuela particular." autoFocus />
           </Field>
           <Field label="Nivel de confianza / credibilidad">
             <CredSlider value={form.credibilidad} onChange={(v) => setForm((f: any) => ({ ...f, credibilidad: v }))} />
