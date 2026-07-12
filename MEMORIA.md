@@ -267,6 +267,23 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Gestión de Datos — referencia bibliográfica APA 7 por fuente (2026-07-12):** al crear/editar una **fuente**
+  se puede adjuntar una referencia bibliográfica en **formato APA (7.ª ed.)**. Módulo PURO
+  `lib/centralized/apa.ts` (importable cliente+servidor): `APA_TIPOS` (catálogo data-driven de tipos con sus
+  campos requeridos: **libro, artículo de revista, artículo científico, contenido académico, página web, video
+  de YouTube, otro/manual**), `apaAuthors` (une autores «A», «A, & B», «A, B, & C»; cada autor se escribe como
+  «Apellido, N. N.», separados por «;»), y `formatApaSegments/formatApaText` que arman la cita con **cursivas
+  correctas** (título/revista/volumen), normalizan el DOI (antepone `https://doi.org/`) y la edición en español
+  («3.ª ed.»). Render con cursivas vía segmentos `{t,i}` (marcador interno ``). **DB:** `gd_fuentes` ganó
+  `ref_tipo TEXT` + `ref_datos JSONB` (ADD COLUMN IF NOT EXISTS); `create/updateFuente` y la ruta `/fuentes`
+  (POST/PATCH) aceptan y persisten `ref_tipo`/`ref_datos` (jsonb via `$n::jsonb` con `JSON.stringify`; node-pg
+  lo devuelve ya parseado como objeto). **UI** (`GestionDeDatosSystem.tsx`): `ApaRefFields` (selector de tipo →
+  campos dinámicos + **vista previa APA en vivo**) dentro de `FuenteForm`; `ApaReference` renderiza los
+  segmentos; el detalle de la fuente muestra la referencia formateada + botón **Copiar**. La referencia es
+  **opcional** (default «Sin referencia»); no bloquea el guardado. Verificado: tsc + `next build` OK + BD real
+  (ALTER + insert jsonb + roundtrip en transacción ROLLBACK) + formateo APA validado offline (libro/journal/
+  youtube). **Pendiente/futuro:** citas en el texto (in-text), estilos adicionales (si se pidieran), y que
+  otros niveles (códigos/temas) puedan referenciar fuentes con su cita.
 - **Sistema "Encuadre Condiciológico" — Centralizado · global · creación (2026-07-11):** nuevo sistema built-in
   (celda "Control Psicosocial", comparte celda con Comandos Violeta; slug `encuadre-condiciologico`; seed + dispatch).
   A futuro **conceptualiza** la investigación (categorías/condiciones → conceptos legibles: nombres/colores/sonidos, base de
