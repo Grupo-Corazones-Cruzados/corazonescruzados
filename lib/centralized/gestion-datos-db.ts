@@ -382,7 +382,7 @@ export async function deleteProblema(id: number) {
 export async function listFuentes(problematicaId: number) {
   await ensureGestionDatosTables();
   const { rows } = await pool.query(
-    `SELECT f.id, f.tipo_dato, f.tipo_logica, f.contenido,
+    `SELECT f.id, f.problematica_id, f.tipo_dato, f.tipo_logica, f.contenido,
             f.credibilidad::float AS credibilidad,
             f.credibilidad_efectiva::float AS credibilidad_efectiva,
             f.ref_tipo, f.ref_datos,
@@ -437,10 +437,12 @@ export async function updateFuente(
   credibilidad?: number,
   refTipo?: string | null,
   refDatos?: Record<string, string> | null,
+  tipoDato?: TipoDato,
 ) {
   await ensureGestionDatosTables();
   const sets: string[] = [];
   const params: any[] = [];
+  if (tipoDato && ['cantidad', 'cualidad'].includes(tipoDato)) { sets.push(`tipo_dato = $${params.length + 1}`); params.push(tipoDato); }
   if (contenido != null) { sets.push(`contenido = $${params.length + 1}`); params.push(contenido.trim()); }
   if (credibilidad != null) {
     const cred = clampCred(Number(credibilidad));

@@ -40,9 +40,9 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    const { id, contenido, credibilidad, ref_tipo, ref_datos } = await req.json();
+    const { id, contenido, credibilidad, ref_tipo, ref_datos, tipo_dato } = await req.json();
     if (!id) return NextResponse.json({ error: 'Falta el id' }, { status: 400 });
-    await updateFuente(Number(id), contenido, credibilidad, ref_tipo, ref_datos);
+    await updateFuente(Number(id), contenido, credibilidad, ref_tipo, ref_datos, tipo_dato);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error('GD fuentes PATCH error:', err.message);

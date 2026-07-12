@@ -24,7 +24,7 @@ const GLASS_BTN = 'inline-flex items-center justify-center gap-1.5 border border
 const GLASS_INPUT = 'w-full px-2.5 py-1.5 bg-black/40 border border-white/15 rounded-md text-[13px] text-white placeholder-white/40 focus:border-accent focus:outline-none';
 
 type Problematica = { id: number; name: string; ref: string; description: string; fuentes_count: number; codigos_count: number };
-type Fuente = { id: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number; credibilidad_efectiva: number; seq: number; nomenclatura: string; ref_tipo?: string | null; ref_datos?: Record<string, string> | null };
+type Fuente = { id: number; problematica_id: number; tipo_dato: TipoDato; tipo_logica: TipoLogica; contenido: string; credibilidad: number; credibilidad_efectiva: number; seq: number; nomenclatura: string; ref_tipo?: string | null; ref_datos?: Record<string, string> | null };
 type Problema = { id: number; title: string; description: string };
 type Enfrentamiento = { id: number; texto: string; nomenclatura: string; gano_seq: number; perdio_seq: number; gano_contenido: string; perdio_contenido: string };
 type Evento = { id: number; titulo: string; url: string };
@@ -197,7 +197,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       const ref_tipo = fuenteForm.ref_tipo || null;
       const ref_datos = fuenteForm.ref_tipo ? fuenteForm.ref_datos : null;
       if (fuenteForm.id) {
-        await mutate(`${API}/fuentes`, 'PATCH', { id: fuenteForm.id, contenido: fuenteForm.contenido, credibilidad: fuenteForm.credibilidad, ref_tipo, ref_datos });
+        await mutate(`${API}/fuentes`, 'PATCH', { id: fuenteForm.id, contenido: fuenteForm.contenido, credibilidad: fuenteForm.credibilidad, tipo_dato: fuenteForm.tipo_dato, ref_tipo, ref_datos });
         toast.success('Fuente actualizada');
       } else {
         await mutate(`${API}/fuentes`, 'POST', { problematica_id: probId, ...fuenteForm, ref_tipo, ref_datos });
@@ -666,16 +666,14 @@ function FuenteForm({ form, setForm, onCancel, onSave, saving }: any) {
         </div>
         {/* Derecha: datos de la fuente */}
         <div className="space-y-3">
+          <Field label="Tipo de dato">
+            <Segmented value={form.tipo_dato} onChange={(v: TipoDato) => setForm((f: any) => ({ ...f, tipo_dato: v }))} options={[{ value: 'cantidad', label: TIPO_DATO_LABEL.cantidad }, { value: 'cualidad', label: TIPO_DATO_LABEL.cualidad }]} />
+          </Field>
           {!form.id && (
-            <>
-              <Field label="Tipo de dato">
-                <Segmented value={form.tipo_dato} onChange={(v: TipoDato) => setForm((f: any) => ({ ...f, tipo_dato: v }))} options={[{ value: 'cantidad', label: TIPO_DATO_LABEL.cantidad }, { value: 'cualidad', label: TIPO_DATO_LABEL.cualidad }]} />
-              </Field>
-              <Field label="Tipo de lógica">
-                <Segmented value={form.tipo_logica} onChange={(v: TipoLogica) => setForm((f: any) => ({ ...f, tipo_logica: v }))} options={[{ value: 'premisa', label: TIPO_LOGICA_LABEL.premisa }, { value: 'peso', label: TIPO_LOGICA_LABEL.peso }]} />
-                <p className="text-[10.5px] text-white/45 mt-1" style={mf}>{form.tipo_logica === 'premisa' ? 'Premisa: aporta a una verdad lógica (se codifica REF-n).' : 'Peso: altera la credibilidad de una premisa (Ref-n global).'}</p>
-              </Field>
-            </>
+            <Field label="Tipo de lógica">
+              <Segmented value={form.tipo_logica} onChange={(v: TipoLogica) => setForm((f: any) => ({ ...f, tipo_logica: v }))} options={[{ value: 'premisa', label: TIPO_LOGICA_LABEL.premisa }, { value: 'peso', label: TIPO_LOGICA_LABEL.peso }]} />
+              <p className="text-[10.5px] text-white/45 mt-1" style={mf}>{form.tipo_logica === 'premisa' ? 'Premisa: aporta a una verdad lógica (se codifica REF-n).' : 'Peso: altera la credibilidad de una premisa (Ref-n global).'}</p>
+            </Field>
           )}
           <Field label="Contenido">
             <AutoTextarea className={GLASS_INPUT} value={form.contenido} onChange={(e: any) => setForm((f: any) => ({ ...f, contenido: e.target.value }))} placeholder="Ej. 30 de cada 100 niños ingresan a una escuela particular." autoFocus />
@@ -900,6 +898,10 @@ function DetailActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete: ()
 function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fuente[]; onReload: () => void }) {
   const [applied, setApplied] = useState<any[]>([]);
   const [pesoId, setPesoId] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+  // Formulario inline para crear un peso nuevo y aplicarlo (una premisa puede tener varios pesos).
+  const [showNew, setShowNew] = useState(false);
+  const [nuevo, setNuevo] = useState<{ contenido: string; credibilidad: number; tipo_dato: TipoDato }>({ contenido: '', credibilidad: 50, tipo_dato: 'cantidad' });
 
   const load = useCallback(async () => {
     try { const d = await fetch(`${API}/pesos?premisa_id=${premisa.id}`).then((r) => r.json()); setApplied(d.data || []); }
@@ -907,20 +909,39 @@ function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fu
   }, [premisa.id]);
   useEffect(() => { load(); }, [load]);
 
-  const apply = async () => {
-    if (!pesoId) { toast.error('Elige una fuente peso'); return; }
+  const applyExisting = async () => {
+    if (!pesoId || busy) { if (!pesoId) toast.error('Elige una fuente peso'); return; }
+    setBusy(true);
     try {
       await mutate(`${API}/pesos`, 'POST', { premisa_fuente_id: premisa.id, peso_fuente_id: Number(pesoId) });
       toast.success('Peso aplicado');
       setPesoId('');
       await load(); await onReload();
     } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
+  };
+  const createAndApply = async () => {
+    if (busy) return;
+    if (!nuevo.contenido.trim()) { toast.error('Escribe el contenido del peso'); return; }
+    setBusy(true);
+    try {
+      const created = await mutate(`${API}/fuentes`, 'POST', { problematica_id: premisa.problematica_id, tipo_dato: nuevo.tipo_dato, tipo_logica: 'peso', contenido: nuevo.contenido, credibilidad: nuevo.credibilidad });
+      await mutate(`${API}/pesos`, 'POST', { premisa_fuente_id: premisa.id, peso_fuente_id: created.data.id });
+      toast.success('Peso creado y aplicado');
+      setNuevo({ contenido: '', credibilidad: 50, tipo_dato: 'cantidad' });
+      setShowNew(false);
+      await load(); await onReload();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
   };
   const remove = async (pfId: number) => {
+    if (busy) return;
+    setBusy(true);
     try {
       await mutate(`${API}/pesos`, 'DELETE', { premisa_fuente_id: premisa.id, peso_fuente_id: pfId });
       await load(); await onReload();
     } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
   };
 
   const usableP = pesos.filter((p) => !applied.some((a) => a.peso_fuente_id === p.id));
@@ -928,7 +949,7 @@ function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fu
   return (
     <div className="mt-3 pt-2.5 border-t border-white/10">
       <p className="text-[11px] font-semibold text-white/70 mb-1.5 flex items-center gap-1.5" style={df}><Weight className="w-3.5 h-3.5 text-[#60a5fa]" /> Pesos que la refuerzan</p>
-      <p className="text-[10.5px] text-white/40 mb-1.5" style={mf}>Un peso aporta credibilidad (promedio). Para contradecir, enfrenta dos premisas.</p>
+      <p className="text-[10.5px] text-white/40 mb-1.5" style={mf}>Una premisa puede tener varios pesos; cada uno aporta credibilidad (promedio). Para contradecir, enfrenta dos premisas.</p>
       {applied.length === 0 && <p className="text-[11px] text-white/45 mb-2" style={mf}>Ninguno aplicado aún.</p>}
       <div className="space-y-1 mb-2">
         {applied.map((a) => (
@@ -940,16 +961,37 @@ function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fu
           </div>
         ))}
       </div>
-      {usableP.length > 0 ? (
-        <div className="flex items-center gap-1.5">
+      {/* Reusar un peso ya existente */}
+      {usableP.length > 0 && (
+        <div className="flex items-center gap-1.5 mb-2">
           <select className={`${GLASS_INPUT} flex-1`} value={pesoId} onChange={(e) => setPesoId(e.target.value)}>
-            <option value="">Fuente peso…</option>
+            <option value="">Aplicar peso existente…</option>
             {usableP.map((p) => <option key={p.id} value={p.id} className="bg-[#181826]">{p.nomenclatura} ({Math.round(p.credibilidad)}%) · {p.contenido.slice(0, 28)}</option>)}
           </select>
-          <button onClick={apply} className={`${GLASS_BTN} px-2 py-1.5`} title="Aplicar peso"><Plus className="w-3.5 h-3.5" /></button>
+          <button onClick={applyExisting} disabled={busy} className={`${GLASS_BTN} px-2 py-1.5`} title="Aplicar peso"><Plus className="w-3.5 h-3.5" /></button>
         </div>
+      )}
+      {/* Crear un peso nuevo y aplicarlo */}
+      {!showNew ? (
+        <button onClick={() => setShowNew(true)} className="inline-flex items-center gap-1.5 text-[11px] text-accent hover:underline" style={mf}>
+          <Plus className="w-3.5 h-3.5" /> Nuevo peso
+        </button>
       ) : (
-        <p className="text-[10.5px] text-white/40" style={mf}>Crea fuentes de tipo peso para reforzar la credibilidad.</p>
+        <div className="rounded-md border border-white/10 bg-white/[0.03] p-2 space-y-2">
+          <Field label="Contenido del peso">
+            <AutoTextarea className={GLASS_INPUT} value={nuevo.contenido} onChange={(e: any) => setNuevo((n) => ({ ...n, contenido: e.target.value }))} placeholder="La verdad que aporta este peso…" autoFocus minHeight={54} />
+          </Field>
+          <Field label="Tipo de dato">
+            <Segmented value={nuevo.tipo_dato} onChange={(v: TipoDato) => setNuevo((n) => ({ ...n, tipo_dato: v }))} options={[{ value: 'cantidad', label: TIPO_DATO_LABEL.cantidad }, { value: 'cualidad', label: TIPO_DATO_LABEL.cualidad }]} />
+          </Field>
+          <Field label="Credibilidad del peso">
+            <CredSlider value={nuevo.credibilidad} onChange={(v) => setNuevo((n) => ({ ...n, credibilidad: v }))} />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => { setShowNew(false); setNuevo({ contenido: '', credibilidad: 50, tipo_dato: 'cantidad' }); }} disabled={busy} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+            <button onClick={createAndApply} disabled={busy} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{busy ? 'Guardando…' : 'Agregar peso'}</button>
+          </div>
+        </div>
       )}
     </div>
   );
