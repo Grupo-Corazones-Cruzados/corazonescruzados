@@ -854,7 +854,7 @@ function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias
   if (node.type === 'codigo') {
     const c = codigos.find((x: Codigo) => x.id === node.id);
     if (!c) return header;
-    return <CodigoDetail c={c} onReload={onReload} onDelete={onDelete} header={header} />;
+    return <CodigoDetail c={c} premisas={fuentes.filter((x: Fuente) => x.tipo_logica === 'premisa')} enfrentamientos={enfrentamientos} onReload={onReload} onDelete={onDelete} header={header} />;
   }
 
   if (node.type === 'categoria') {
@@ -1099,10 +1099,28 @@ function EnfrentamientoDetail({ e, onReload, onDelete, header }: any) {
   );
 }
 
-function CodigoDetail({ c, onReload, onDelete, header }: any) {
+function CodigoDetail({ c, premisas = [], enfrentamientos = [], onReload, onDelete, header }: any) {
   const [texto, setTexto] = useState(c.texto);
   const [evTitulo, setEvTitulo] = useState('');
   const [evUrl, setEvUrl] = useState('');
+  // Edición de las premisas/enfrentamientos que componen el código.
+  const [editU, setEditU] = useState(false);
+  const [sel, setSel] = useState<{ kind: 'premisa' | 'enfrentamiento'; id: number }[]>(c.unidadesSel || []);
+  const [savingU, setSavingU] = useState(false);
+  useEffect(() => { setSel(c.unidadesSel || []); setEditU(false); }, [c.id, c.unidadesSel]);
+  const onU = (kind: 'premisa' | 'enfrentamiento', id: number) => sel.some((u) => u.kind === kind && u.id === id);
+  const toggleU = (kind: 'premisa' | 'enfrentamiento', id: number) => setSel((s) => s.some((u) => u.kind === kind && u.id === id) ? s.filter((u) => !(u.kind === kind && u.id === id)) : [...s, { kind, id }]);
+  const unitLabel = (u: { kind: string; id: number }) => u.kind === 'premisa'
+    ? (premisas.find((p: Fuente) => p.id === u.id)?.nomenclatura || '?')
+    : (enfrentamientos.find((e: Enfrentamiento) => e.id === u.id)?.nomenclatura || '?');
+  const saveUnidades = async () => {
+    if (savingU) return;
+    if (sel.length < 1) { toast.error('Elige al menos una premisa'); return; }
+    setSavingU(true);
+    try { await mutate(`${API}/codigos`, 'PATCH', { id: c.id, unidades: sel }); toast.success('Premisas del código actualizadas'); setEditU(false); await onReload(); }
+    catch (e: any) { toast.error(e.message); }
+    finally { setSavingU(false); }
+  };
 
   const saveTexto = async () => {
     try { await mutate(`${API}/codigos`, 'PATCH', { id: c.id, texto }); toast.success('Guardado'); await onReload(); }
@@ -1135,6 +1153,56 @@ function CodigoDetail({ c, onReload, onDelete, header }: any) {
         <AutoTextarea className={GLASS_INPUT} value={texto} onChange={(e: any) => setTexto(e.target.value)} placeholder="Ej. Un adulto sin trabajo cae en desesperación el 70% de las veces por motivos económicos y presión familiar." />
       </Field>
       <div className="flex justify-end mt-1.5"><button onClick={saveTexto} className={`${GLASS_BTN} px-2.5 py-1 text-[12px]`} style={mf}><Check className="w-3 h-3" /> Guardar</button></div>
+
+      {/* Premisas / enfrentamientos que componen el código */}
+      <div className="mt-3 pt-2.5 border-t border-white/10">
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[11px] font-semibold text-white/70" style={df}>Premisas del código ({(c.unidadesSel || []).length})</p>
+          <button onClick={() => setEditU((v) => !v)} className="text-[10.5px] text-accent hover:underline" style={mf}>{editU ? 'Cerrar' : 'Editar'}</button>
+        </div>
+        {!editU ? (
+          <div className="flex flex-wrap gap-1">
+            {(c.unidadesSel || []).length === 0 && <span className="text-[11px] text-white/45" style={mf}>Sin premisas.</span>}
+            {(c.unidadesSel || []).map((u: any, i: number) => (
+              <span key={i} className={`text-[10.5px] font-bold px-1.5 py-0.5 rounded ${u.kind === 'premisa' ? 'bg-[#22d3ee]/15 text-[#22d3ee]' : 'bg-[#a855f7]/15 text-[#a855f7]'}`} style={df}>{unitLabel(u)}</span>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-[10.5px] text-white/45" style={mf}>Marca las premisas (sueltas o enfrentadas) que componen este código. Cambia la nomenclatura (COD-…).</p>
+            <div>
+              <p className="text-[10.5px] font-semibold text-white/60 mb-1" style={df}>Premisas ({premisas.length})</p>
+              <div className="max-h-36 overflow-y-auto space-y-1">
+                {premisas.map((p: Fuente) => (
+                  <button key={p.id} onClick={() => toggleU('premisa', p.id)} className={`w-full flex items-center gap-2 text-left px-2 py-1 rounded text-[11px] transition-colors ${onU('premisa', p.id) ? 'bg-accent/25 border border-accent/40' : 'bg-white/[0.04] border border-transparent hover:bg-white/10'}`} style={mf}>
+                    <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${onU('premisa', p.id) ? 'bg-accent border-accent' : 'border-white/30'}`}>{onU('premisa', p.id) && <Check className="w-2.5 h-2.5 text-white" />}</span>
+                    <span className="font-bold text-[#22d3ee]" style={df}>{p.nomenclatura}</span>
+                    <span className="text-white/70 truncate">{p.contenido}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {enfrentamientos.length > 0 && (
+              <div>
+                <p className="text-[10.5px] font-semibold text-white/60 mb-1" style={df}>Premisas enfrentadas ({enfrentamientos.length})</p>
+                <div className="max-h-28 overflow-y-auto space-y-1">
+                  {enfrentamientos.map((e: Enfrentamiento) => (
+                    <button key={e.id} onClick={() => toggleU('enfrentamiento', e.id)} className={`w-full flex items-center gap-2 text-left px-2 py-1 rounded text-[11px] transition-colors ${onU('enfrentamiento', e.id) ? 'bg-accent/25 border border-accent/40' : 'bg-white/[0.04] border border-transparent hover:bg-white/10'}`} style={mf}>
+                      <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${onU('enfrentamiento', e.id) ? 'bg-accent border-accent' : 'border-white/30'}`}>{onU('enfrentamiento', e.id) && <Check className="w-2.5 h-2.5 text-white" />}</span>
+                      <span className="font-bold text-[#a855f7]" style={df}>{e.nomenclatura}</span>
+                      <span className="text-white/70 truncate">{e.texto || '(sin texto)'}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <button onClick={() => { setSel(c.unidadesSel || []); setEditU(false); }} disabled={savingU} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+              <button onClick={saveUnidades} disabled={savingU} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{savingU ? 'Guardando…' : 'Guardar premisas'}</button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="mt-3 pt-2.5 border-t border-white/10">
         <p className="text-[11px] font-semibold text-white/70 mb-1.5" style={df}>Eventos de demostración</p>

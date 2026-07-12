@@ -693,15 +693,33 @@ export async function crearCodigo(
   return codigo;
 }
 
-export async function updateCodigo(id: number, texto?: string, verificado?: boolean) {
+export async function updateCodigo(
+  id: number,
+  texto?: string,
+  verificado?: boolean,
+  unidades?: { kind: 'premisa' | 'enfrentamiento'; id: number }[],
+) {
   await ensureGestionDatosTables();
   const sets: string[] = [];
   const params: any[] = [];
   if (texto != null) { sets.push(`texto = $${params.length + 1}`); params.push(texto.trim()); }
   if (verificado != null) { sets.push(`verificado = $${params.length + 1}`); params.push(!!verificado); }
-  if (!sets.length) return;
-  params.push(id);
-  await pool.query(`UPDATE gcc_world.gd_codigos SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
+  if (sets.length) {
+    params.push(id);
+    await pool.query(`UPDATE gcc_world.gd_codigos SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
+  }
+  // Reemplazo de las premisas/enfrentamientos que componen el código (cambia la nomenclatura, que es derivada).
+  if (unidades !== undefined) {
+    if (!unidades?.length) throw new Error('Un código requiere al menos una premisa.');
+    await pool.query(`DELETE FROM gcc_world.gd_codigo_unidades WHERE codigo_id = $1`, [id]);
+    for (const u of unidades) {
+      if (u.kind === 'premisa') {
+        await pool.query(`INSERT INTO gcc_world.gd_codigo_unidades (codigo_id, unidad_kind, fuente_id) VALUES ($1, 'premisa', $2)`, [id, u.id]);
+      } else {
+        await pool.query(`INSERT INTO gcc_world.gd_codigo_unidades (codigo_id, unidad_kind, enfrentamiento_id) VALUES ($1, 'enfrentamiento', $2)`, [id, u.id]);
+      }
+    }
+  }
 }
 
 export async function deleteCodigo(id: number) {
@@ -720,11 +738,16 @@ export async function listCodigos(problematicaId: number) {
   const out = [];
   for (const c of rows) {
     const us = await codigoUnidades(c.id);
+    const { rows: rawU } = await pool.query(
+      `SELECT unidad_kind, fuente_id, enfrentamiento_id FROM gcc_world.gd_codigo_unidades WHERE codigo_id = $1 ORDER BY id ASC`,
+      [c.id],
+    );
+    const unidadesSel = rawU.map((u: any) => ({ kind: u.unidad_kind as 'premisa' | 'enfrentamiento', id: u.unidad_kind === 'premisa' ? u.fuente_id : u.enfrentamiento_id }));
     const { rows: eventos } = await pool.query(
       `SELECT id, titulo, url, created_at FROM gcc_world.gd_codigo_eventos WHERE codigo_id = $1 ORDER BY created_at ASC`,
       [c.id],
     );
-    out.push({ ...c, nomenclatura: codigoRef(ref, us), unidades: us, eventos });
+    out.push({ ...c, nomenclatura: codigoRef(ref, us), unidades: us, unidadesSel, eventos });
   }
   return out;
 }

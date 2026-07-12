@@ -39,9 +39,9 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    const { id, texto, verificado } = await req.json();
+    const { id, texto, verificado, unidades } = await req.json();
     if (!id) return NextResponse.json({ error: 'Falta el id' }, { status: 400 });
-    await updateCodigo(Number(id), texto, verificado);
+    await updateCodigo(Number(id), texto, verificado, unidades);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error('GD codigos PATCH error:', err.message);
