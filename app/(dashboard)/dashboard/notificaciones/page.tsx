@@ -41,8 +41,8 @@ export default function NotificacionesPage() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-4">
+    <div className="flex flex-col h-[calc(100dvh-130px)]">
+      <div className="flex items-center gap-2 mb-4 shrink-0">
         <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2" style={df}>
           <Bell className="w-5 h-5 text-accent" /> Notificaciones
         </h1>
@@ -54,23 +54,25 @@ export default function NotificacionesPage() {
         </button>
       </div>
 
-      <div className="space-y-2 max-w-2xl">
-        {loading && items.length === 0 ? (
-          <p className="text-[12px] text-digi-muted text-center py-10" style={mf}>Cargando…</p>
-        ) : items.length === 0 ? (
-          <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
-            <div className="w-12 h-12 rounded-xl bg-accent-light border border-accent/20 flex items-center justify-center mx-auto mb-3">
-              <Bell className="w-6 h-6 text-accent" />
-            </div>
-            <p className="text-sm font-medium text-digi-text" style={df}>Sin notificaciones</p>
-            <p className="text-[12px] text-digi-muted mt-1" style={mf}>Cuando te inviten a un proyecto, aparecerá aquí.</p>
+      {loading && items.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-[12px] text-digi-muted" style={mf}>Cargando…</p>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="flex-1 bg-digi-card border border-digi-border rounded-xl flex flex-col items-center justify-center text-center">
+          <div className="w-12 h-12 rounded-xl bg-accent-light border border-accent/20 flex items-center justify-center mb-3">
+            <Bell className="w-6 h-6 text-accent" />
           </div>
-        ) : (
-          items.map((n) => (
+          <p className="text-sm font-medium text-digi-text" style={df}>Sin notificaciones</p>
+          <p className="text-[12px] text-digi-muted mt-1" style={mf}>Cuando te inviten a un proyecto, aparecerá aquí.</p>
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
+          {items.map((n) => (
             <Link
               key={n.id}
               href={n.href}
-              className="group flex items-center gap-3 rounded-lg border border-digi-border bg-digi-card p-3 hover:border-accent/50 hover:shadow-sm transition-all"
+              className="group flex items-center gap-3 rounded-lg border border-digi-border bg-digi-card p-3.5 hover:border-accent/50 hover:shadow-sm transition-all"
             >
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${n.kind === 'responsible' ? 'bg-amber-50 border border-amber-200' : 'bg-accent-light border border-accent/20'}`}>
                 {n.kind === 'responsible' ? <Crown className="w-4 h-4 text-amber-500" /> : <FolderKanban className="w-4 h-4 text-accent" />}
@@ -84,9 +86,9 @@ export default function NotificacionesPage() {
               </div>
               <ChevronRight className="w-4 h-4 text-digi-muted group-hover:text-accent transition-colors shrink-0" />
             </Link>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
