@@ -275,11 +275,15 @@ Stack estándar de la casa, con particularidades de este repo:
   `components/centralized/systems/EncuadreCondiciologicoSystem.tsx` (corp light, estilo de los otros sistemas): **panel de
   listas** a la izquierda (Talentos/Valores/Situaciones/Materias + futuras, con conteo) → al seleccionar, a la derecha las
   **opciones ordenadas ASCENDENTE** (case-insensitive) con **buscador + agregar + eliminar**.
-  - **DB** `lib/centralized/encuadre-db.ts`: registro `GLOBAL_LISTS` (key→{label,table,col}); tablas nuevas `gd_talentos` +
-    `gd_valores` (UNIQUE nombre, **sembradas idempotentes desde los estáticos `TALENTOS`/`VALORES` solo si están vacías**);
-    situaciones/materias reusan `gd_situaciones`/`gd_materias`. CRUD genérico (table/col del registro → SQL seguro): add
-    evita duplicados case-insensitive (`WHERE NOT EXISTS LOWER(col)=LOWER(val)`), delete por id, list `ORDER BY LOWER(col)`.
-    **Ruta** `app/api/centralized/encuadre/listas` (GET listas / GET ?list= opciones / POST / DELETE).
+  - **DB** `lib/centralized/encuadre-db.ts`: registro `GLOBAL_LISTS` con **dos formas**: **`simple`** (una col `nombre`:
+    talentos/situaciones/materias) y **`keyed`** (dos props internas `key`+`label`: **valores**, que se referencian por `key`).
+    `gd_talentos` (simple, sembrada de `TALENTOS` string[]) y `gd_valores` (keyed, sembrada de `VALORES` `{key,label}[]`).
+    **Gotcha corregido (2026-07-11):** `VALORES` es `{key,label}[]`, no string[]; el seed genérico inicial lo guardó como
+    JSON en `nombre` → se veía JSON en la UI. Fix: `gd_valores` migra a `(key,label)` (ADD COLUMN, `DROP NOT NULL` de nombre,
+    `DELETE WHERE label IS NULL` para limpiar la basura, re-siembra). En la UI se edita **UN solo campo**: el texto va a
+    `label` y `key = slugKey(texto)` (minúsculas, sin acentos, `[^a-z0-9]→_`). Situaciones/materias reusan sus tablas.
+    CRUD genérico (table/col del registro → SQL seguro): add evita duplicados case-insensitive (por col, o por key/label en
+    keyed), delete por id, list ordenado **ASC** por el texto visible. **Ruta** `app/api/centralized/encuadre/listas`.
   - Se **quitó** el botón "Listas globales" (+ ListasModal/EditableList) de Metodología Condiciológica.
   - **Piso/paso a confirmar** (elegí global·creación por el vínculo con Control Psicosocial; fácil de mover).
   - **PENDIENTE:** que los consumidores de talentos/valores (hoy import estático `TALENTOS`/`VALORES`, p.ej. el MultiSelect de
