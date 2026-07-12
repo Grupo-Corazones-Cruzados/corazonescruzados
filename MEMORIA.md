@@ -267,6 +267,30 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Sistema "Gestión de Condiciones" — Centralizado · controlador · fundamentación (Fase 1, 2026-07-11):** nuevo sistema
+  built-in (celda "Conocimiento", slug `gestion-de-condiciones`; seed + dispatch). **Recibe las tareas de Metodología
+  Condiciológica** y las convierte en **piezas** descubriendo **condiciones**. UI
+  `components/centralized/systems/GestionDeCondicionesSystem.tsx` (corp light): **bandeja de tareas** (todas, ascendente;
+  `condiciones-db.listAllTasks`) + detalle con **3 pestañas**:
+  - **Datos:** títulos/notas + **códigos de la tarea con su detalle** (premisas, pesos, enfrentadas; vía `getTaskCodigos`
+    → `getCodigoDetalle`).
+  - **Subtareas:** placeholder (Fase 2: requerimientos con tickets/proyectos de paso-fundamentación, autorización saltada).
+  - **Pieza (workspace):** selector de **tipo** (revisión/corrección) + **códigos** que usa la pieza (subconjunto de la
+    tarea) + lista de **condiciones**. Cada condición: **variables** (fija con factor/causa, o del **catálogo** dc_variables),
+    **eventos** de demostración (título/url), **restricciones** (3 tipos: no_junto_con, aplica_mas_de_uno, solo_categorias),
+    y toggle **verificada** (exige ≥1 evento). Botón **"Completar tarea"** → `completeTask` **materializa
+    `gd_pieza_variables`** desde las condiciones (fija→`fija`, catálogo→`cambia`; restricciones de la condición volcadas a
+    cada variable), pone la pieza **`completa`** y la tarea **`completada`** (reabrible con `reopenTask`).
+  - **DB** `lib/centralized/condiciones-db.ts`: `dc_variables` (catálogo factor→causa→variable, provisional hasta que exista
+    Dinámica Condiciológica), `gc_condiciones` + `gc_condicion_variables`/`_eventos`/`_restricciones`. Dominio de
+    restricciones/factores en `condiciologia.ts` (`RESTRICCION_TIPOS`, `FACTORES`, `causaLabel`). **8 rutas API**
+    `app/api/centralized/condiciones/**`.
+  - **Verificado:** tsc + `next build` OK (8 rutas) + **flujo probado contra la BD real de Railway (8/8, ROLLBACK)**:
+    condición→variables(catálogo+fija)+evento+restricción → completar materializa la pieza con tipo_var y restricciones
+    correctos → pieza completa/tarea completada → reabrir revierte.
+  - **PENDIENTE (Fase 2+):** pestaña **Subtareas** (tickets/proyectos con autorización saltada), **universo de gráficos con
+    drag-drop** de variables en el workspace, sistemas **Dinámica Condiciológica** (define el catálogo real de variables) y
+    **Laboratorio Condiciológico**, módulo **Alertas**. **Falta validación visual en vivo.**
 - **Sistema "Metodología Condiciológica" — Centralizado · global · fundamentación (Fase 1, 2026-07-11):** nuevo sistema
   built-in (celda "Condiciología", slug `metodologia-condiciologica`; sembrado en `ensureTable()` de systems + dispatch por
   slug). Es **"el lector"**: aplica la metodología de **6 pasos** (Reconocer→Controlar→Predecir→Experimentar→Convertir→

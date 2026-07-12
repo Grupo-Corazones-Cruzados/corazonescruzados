@@ -74,6 +74,16 @@ async function ensureTable() {
             'global', 'fundamentacion', 'Condiciología', 'metodologia-condiciologica'
      WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'metodologia-condiciologica')`,
   );
+  // Sistema built-in "Gestión de Condiciones" (controlador · fundamentación, celda "Conocimiento").
+  // Recibe las tareas de Metodología Condiciológica; los miembros reconocen/controlan/predicen los
+  // códigos para descubrir condiciones y completar la pieza (variables + eventos + restricciones).
+  await pool.query(
+    `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+     SELECT 'Gestión de Condiciones',
+            'Recibe las tareas de Metodología Condiciológica: reconoce, controla y predice los códigos para descubrir condiciones (variables por factor/causa, eventos de verificación y restricciones) y completar la pieza que se reutiliza en Gestión de Datos.',
+            'controlador', 'fundamentacion', 'Conocimiento', 'gestion-de-condiciones'
+     WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'gestion-de-condiciones')`,
+  );
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (

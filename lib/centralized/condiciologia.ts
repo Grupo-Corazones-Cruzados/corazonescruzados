@@ -51,3 +51,17 @@ export const FACTOR_COLOR: Record<FactorKey, string> = {
 /** Todas las causas (planas) con su factor, para pickers y validaciones. */
 export const CAUSAS = FACTORES.flatMap((f) => f.causas.map((c) => ({ ...c, factor: f.key })));
 export const isFactor = (v: string): v is FactorKey => v === 'mental' || v === 'corporal' || v === 'ambiental';
+export const causaLabel = (factor: string, causa: string): string =>
+  FACTORES.find((f) => f.key === factor)?.causas.find((c) => c.key === causa)?.label || causa;
+
+// ── Restricciones de variables (limitan cómo se unen las piezas en rompecabezas) ──
+// Por ahora 3 tipos (se ampliarán). Vienen de Gestión de Condiciones y viajan con la pieza.
+export type RestriccionTipo = 'no_junto_con' | 'aplica_mas_de_uno' | 'solo_categorias';
+export const RESTRICCION_TIPOS: { key: RestriccionTipo; label: string; hint: string }[] = [
+  { key: 'no_junto_con', label: 'No se usa junto a', hint: 'Variables que NO pueden coexistir con esta.' },
+  { key: 'aplica_mas_de_uno', label: 'Aplica más de uno', hint: 'La variable admite combinarse con varias.' },
+  { key: 'solo_categorias', label: 'Solo con categorías', hint: 'Solo se une con variables de ciertas categorías.' },
+];
+export const RESTRICCION_LABEL: Record<RestriccionTipo, string> = Object.fromEntries(
+  RESTRICCION_TIPOS.map((r) => [r.key, r.label]),
+) as Record<RestriccionTipo, string>;
