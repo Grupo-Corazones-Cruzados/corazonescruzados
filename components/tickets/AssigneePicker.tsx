@@ -89,7 +89,7 @@ export default function AssigneePicker({
   const enoughLeft = !!rect && rect.left >= 340;
   const flyoutStyle: React.CSSProperties = rect
     ? enoughLeft
-      ? { position: 'fixed', top: 12, bottom: 12, right: Math.round(window.innerWidth - rect.left + 8), width: 'max-content', minWidth: 300, maxWidth: 460, zIndex: 70 }
+      ? { position: 'fixed', top: 0, bottom: 0, right: Math.round(window.innerWidth - rect.left + 24), width: 'max-content', minWidth: 300, maxWidth: 460, zIndex: 70 }
       : { position: 'fixed', top: Math.round(rect.bottom + 6), left: Math.round(rect.left), width: Math.round(rect.width), maxHeight: '50vh', zIndex: 70 }
     : { display: 'none' };
 
