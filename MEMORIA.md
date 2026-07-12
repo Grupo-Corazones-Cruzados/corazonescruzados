@@ -1561,6 +1561,16 @@ Módulos principales:
   parece no notificar. Soluciones: cerrar el modal antes del toast, o mostrar **confirmación en línea dentro
   del panel** (se hizo en clientes: estado `savedOk` + "✓ Cambios guardados"). El mismo patrón aplica a
   otros paneles que guardan sin cerrar (suscripciones "marcar pagado", etc.).
+- **Popover/flyout DENTRO de un modal `<dialog>` → portar al `<dialog>`, no a `document.body` (2026-07-11):**
+  mismo gotcha del top layer que los toasts. El `AssigneePicker` (buscador de asignados) abre su lista como
+  **flyout `position:fixed`** vía `createPortal`. Portado a `document.body` quedaba **DEBAJO del overlay** del
+  PixelModal (el `<dialog>` está en el top layer). **Fix:** portar al `<dialog>` más cercano
+  (`triggerRef.current?.closest('dialog') || document.body`). Clave: en `PixelModal` el **transform** de la
+  animación vive en `.modal-surface` (panel interno), NO en el `<dialog>`; por eso portar al `<dialog>` mantiene
+  el `position:fixed` **relativo al viewport** y queda por encima del overlay. Regla general: cualquier flyout
+  con portal que deba verse sobre un modal `<dialog>` debe portarse al dialog (o a un elemento sin transform
+  dentro de él). El flyout del picker se ubica a la **izquierda** del control (`right = innerWidth − rect.left + 24`),
+  **altura completa** (`top:0/bottom:0`), ancho `max-content` (min 300 / max 460); si no cabe a la izquierda, cae debajo.
 - **Postgres "inconsistent types deduced for parameter $N" (2026-06-11):** ocurre cuando un mismo
   parámetro `$N` se usa en dos contextos que deducen tipos distintos en la misma query (ej. `sri_status = $2`
   → varchar y `CASE WHEN $2 = 'rejected'` → text). Fix: castear explícitamente (`$2::text`) en todos los usos.
