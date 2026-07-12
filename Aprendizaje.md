@@ -167,6 +167,94 @@ se asocia a **problemas**; los problemas están conectados por origen a la probl
   sistema de "metodología condiciológica" (hoy solo-visualización → rompecabezas a la espera de piezas reales).
 - **Solución construida (A+B+C):** ver detalle en `MEMORIA.md` → "Decisiones recientes (feature) · Gestión de Datos".
 
+### Cambio (2026-07-11): botón "Listas" ELIMINADO de Gestión de Datos
+Las listas globales (situaciones, materias, **talentos, valores** y futuras) deben editarse desde un **espacio ÚNICO**:
+el futuro sistema **Metodología Condiciológica**. Se quitó el botón "Listas" + `ListasModal`/`EditableList` de
+`GestionDeDatosSystem.tsx`. Las tablas `gd_situaciones`/`gd_materias` y sus rutas API se **conservan** (los selectores de
+rompecabezas/temas las leen); solo se quitó la edición desde aquí. Verificado tsc OK.
+
+---
+
+## ROADMAP — sistemas condiciológicos siguientes (capturado 2026-07-11, base verbatim del usuario)
+> Visión detallada de los sistemas que siguen. **NO construido aún** — capturado para dominarlo antes de desarrollar.
+> Nomenclatura de factores: el usuario ahora dice **cognitivo/corporal/ambiental** (antes "mental/corporal/ambiental" en
+> las variables de pieza) — **reconciliar** al construir (probablemente mental≡cognitivo). Ver P7 abajo.
+
+### Flujo global (cómo encajan los sistemas)
+1. **Gestión de Datos** = motor que recolecta y analiza datos hasta crear **Categorías** (códigos verificados).
+2. **Metodología Condiciológica** (sistema, "el lector") = aplica la metodología de **6 pasos** (Reconocer→Controlar→
+   Predecir→Experimentar→Convertir→Cambiar) para obtener **condiciones** reconocibles y cambiables. Lee contenido de
+   investigación de varios sistemas y **genera TAREAS** dentro de un **proyecto de investigación** para avanzar. Decide
+   qué **códigos** convertir en **piezas** y lo solicita generando tareas → van a **Gestión de Condiciones**.
+   **Es el ESPACIO ÚNICO donde se editan las listas globales** (situaciones, materias, talentos, valores, futuras).
+3. **Gestión de Condiciones** (sistema NUEVO, para **miembros paso fundamentación · piso controlador**) = donde se
+   **reconoce/controla/predice** un código para convertirlo en **pieza**, descubriendo **condiciones**. Devuelve la pieza
+   (revisión/corrección + variables) a Metodología Condiciológica, que la adopta a su proyecto; luego la pieza se reutiliza
+   en **Gestión de Datos** para justificar una problemática (rompecabezas).
+4. **Dinámica Condiciológica** (sistema, referenciado) = investiga EXCLUSIVAMENTE los factores **cognitivo/corporal/
+   ambiental**; cada factor tiene **causas**, cada causa tiene **variables**. Define (por análisis experto, según se estudia)
+   qué variables existen y los métodos de recolección según las causas a monitorear. **Provee el listado factor→causa→
+   variable** que usa Gestión de Condiciones.
+5. **Laboratorio Condiciológico** (herramienta) = lugar donde los miembros lanzan las subtareas y hacen el **proceso de
+   investigación de condiciones**: sobre un código, ejercicio en un espacio ambientado, luego analizan factores/causas/
+   variables para determinar cuáles impactan el código. Las investigaciones se guardan como **registros de condiciones**.
+6. **Alertas** (módulo FUTURO, debajo de "Mi día") = bandeja de notificaciones (invitaciones, eliminaciones, novedades)
+   para **aprobar/rechazar** invitaciones/solicitudes.
+
+### Sistema "Metodología Condiciológica" — interfaz
+- **Panel izquierdo** (como el de Problemáticas de Gestión de Datos): crear **Proyectos de investigación**. Un proyecto de
+  investigación **siempre tiene finalidad productiva** (su salida es un resultado usable, p.ej. construir un edificio,
+  cambiar la infraestructura tecnológica de un barrio). Esa salida luego alimenta un **proyecto de creación** (paso
+  creación) — la vinculación se explicará a futuro.
+- **Panel derecho = 6 pestañas** (los 6 pasos): **Reconocer · Controlar · Predecir · Experimentar · Convertir · Cambiar**.
+  Cada pestaña trae **fuentes de distintos sistemas**.
+  - **Reconocer (definir ahora):** panel derecho con **todos los códigos VERIFICADOS** (de Gestión de Datos) por su
+    referencia; seleccionar un código → otro panel a la derecha con su **detalle**: premisas asociadas, **fuentes de peso**
+    de esas premisas (mostrar SOLO su nomenclatura + **burbuja al hover** con el detalle del peso) y premisas de
+    **enfrentamiento**. Se pueden **seleccionar varios códigos** y revisarlos (¡pide creatividad!). Con un conjunto de
+    códigos → **Generar tarea**: **título** + asociar al **proyecto de investigación** + campo **notas/observaciones**.
+    La tarea va **directo a Gestión de Condiciones**.
+
+### Sistema "Gestión de Condiciones" (NUEVO · piso controlador · paso fundamentación) — interfaz
+- **Panel derecho:** todas las **tareas generadas**, seleccionables en **orden ascendente** (más antigua→reciente).
+  Seleccionar tarea → panel a la derecha con su detalle. **Pestañas** en ese panel:
+  - **Datos:** todos los **códigos asociados** + detalle de cada uno (pesos, enfrentamientos, etc.).
+  - **Subtareas (requerimientos):** generar subtareas; cada subtarea puede incluir un conjunto de **tickets o proyectos**
+    (sin límite de subtareas ni de tickets/proyectos por requerimiento). Al crearlos, el usuario es el **cliente**; luego
+    puede: asignar un **miembro paso fundamentación** para que tome el ticket, o dejarlo **sin miembro y público**
+    (candidatos/miembros lo ven, pero **solo miembros paso fundamentación lo pueden tomar**; el primero que lo toma lo
+    ejecuta). Igual para **proyectos** (agregar miembros paso fundamentación como participantes, o público; solo miembro
+    paso fundamentación entra como participante). **Diferencia clave vs tickets/proyectos normales:** la **autorización
+    para entrar se SALTA** (se presume competencia). (A futuro, algo similar para los normales bajo ciertas condiciones.)
+  - **Pieza (espacio de trabajo):** construir la pieza. Puede usar todos o algunos de los códigos verificados de la tarea
+    (criterio del miembro). Usa el **MISMO universo de gráficos** de Gestión de Datos (mismos íconos de código/categoría/
+    pieza): visualiza códigos y categorías ya definidos (con acceso a sus datos) y una **pieza precreada VACÍA**.
+    - **La pieza se crea al crear la tarea** (en Metodología Condiciológica), nace **vacía**; mientras esté vacía, en
+      Gestión de Datos se ve **INCOMPLETA** y su avance/detalle se refleja conforme avanza en Gestión de Condiciones.
+      ⇒ **implica agregar `estado` a `gd_piezas`** (incompleta|completa/verificada) al construir esto.
+    - Para **agregar una condición** al universo: seleccionar → panel derecho **"Condiciones"** con todas las condiciones
+      creadas + botón **agregar condición**. Las condiciones se agregan por la gestión vía subtareas + el proceso de
+      investigación registrado (hecho en el **Laboratorio Condiciológico**).
+    - **Crear condición** → modal para agregar **variables fijas** y **variables del listado** de factores de **Dinámica
+      Condiciológica** (factor→causa→variable). Panel derecho con todas las variables **agrupadas por causa y factor**;
+      **universo de variables** donde se **arrastran** variables del panel izquierdo → significan que la condición está
+      afectada por ellas (**NO verificadas**); + botón para **variables fijas**.
+    - **Verificación de condición:** las variables (fijas o de factor) deben **verificarse demostrando que se expresan en
+      la condición** → la condición tiene una **lista de eventos** (demostración de que existe). Verificada ⇒ se muestra
+      **distinta** en el universo de la pieza (verificada vs no verificada).
+    - Al agregar condiciones, la **pieza trae automáticamente las variables** de esas condiciones al universo (cada
+      variable de cada condición visualizable). Variables **repetidas** entre condiciones ⇒ permiten reconocer **reglas**.
+    - **Restricciones (3 funciones por ahora, se ampliarán):** (1) qué variables **no se pueden usar junto a** otra
+      variable; + las ya comentadas (`aplicaMasDeUno`, `soloCategorias`). Se **añaden a nivel del universo de gráficos**
+      sobre las condiciones existentes. Limitan el comportamiento de la pieza al unirse en **rompecabezas** (Gestión de Datos).
+    - Al terminar → **marcar la tarea como completada** ⇒ la pieza queda **completa/verificada** y usable en Gestión de Datos.
+
+### Preguntas abiertas del roadmap
+#### P7 — Factores: ¿`mental` o `cognitivo`? · ⏸ (el modelo actual de `gd_pieza_variables` usa `mental|corporal|ambiental`; el usuario ahora dice `cognitivo|corporal|ambiental`. Reconciliar al construir Dinámica/Gestión de Condiciones.)
+#### P8 — **Piso/paso** exactos de **Metodología Condiciológica** y **Dinámica Condiciológica** (Gestión de Condiciones = piso controlador · paso fundamentación, confirmado). · ⏸
+#### P9 — Modelo de **variables** (Dinámica Condiciológica: factor→causa→variable) y de **condiciones** (registros con variables + eventos de verificación + restricciones): tablas nuevas + de dónde salen. · ⏸
+#### P10 — Vinculación **tarea (Metodología)→pieza precreada vacía** y estados de pieza (`incompleta`) reflejados en Gestión de Datos. · ⏸
+
 ---
 
 ## Objetivo PREVIO (declarado 2026-07-08, ✅ CERRADO 100%) — Comandos Violeta: generación REAL de tareas al activar una política

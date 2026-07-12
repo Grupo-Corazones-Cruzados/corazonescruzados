@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   FolderPlus, Pencil, Trash2, Plus, Database, GitCompareArrows, Hexagon,
-  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, List, BookOpen,
+  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, BookOpen,
 } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -70,7 +70,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   // Panel de creación rápida (fuente/problema) en el panel flotante.
   const [creating, setCreating] = useState<null | 'fuente' | 'problema'>(null);
   // Modales complejos (necesitan pickers).
-  const [modal, setModal] = useState<null | 'enfrentamiento' | 'codigo' | 'categoria' | 'problematica' | 'rompecabezas' | 'subtema' | 'tema' | 'listas'>(null);
+  const [modal, setModal] = useState<null | 'enfrentamiento' | 'codigo' | 'categoria' | 'problematica' | 'rompecabezas' | 'subtema' | 'tema'>(null);
   const [editRomp, setEditRomp] = useState<Rompecabezas | null>(null);
   const [editSubtema, setEditSubtema] = useState<Subtema | null>(null);
   const [editTema, setEditTema] = useState<Tema | null>(null);
@@ -316,7 +316,6 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                 <ToolBtn icon={<FileText className="w-3.5 h-3.5" />} label="Rompecabezas" color={GD_NODE_META.rompecabezas.color} onClick={() => { setEditRomp(null); setModal('rompecabezas'); }} />
                 <ToolBtn icon={<Layers className="w-3.5 h-3.5" />} label="Subtema" color={GD_NODE_META.subtema.color} onClick={() => { setEditSubtema(null); setModal('subtema'); }} disabled={rompecabezas.length < 1} />
                 <ToolBtn icon={<BookOpen className="w-3.5 h-3.5" />} label="Tema" color={GD_NODE_META.tema.color} onClick={() => { setEditTema(null); setModal('tema'); }} disabled={subtemas.length < 1} />
-                <ToolBtn icon={<List className="w-3.5 h-3.5" />} label="Listas" color="#94a3b8" onClick={() => setModal('listas')} />
               </div>
             </div>
 
@@ -453,10 +452,6 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       {/* ── Modal: Tema ── */}
       {modal === 'tema' && (
         <TemaModal probId={probId!} subtemas={subtemas} materias={materias} problemas={problemas} edit={editTema} onClose={() => { setModal(null); setEditTema(null); }} onSaved={async () => { setModal(null); setEditTema(null); await reload(); }} />
-      )}
-      {/* ── Modal: Listas globales (situaciones + materias) ── */}
-      {modal === 'listas' && (
-        <ListasModal situaciones={situaciones} materias={materias} onClose={() => setModal(null)} onChanged={loadGlobals} />
       )}
 
       <PixelConfirm
@@ -1195,68 +1190,6 @@ function SubtemaModal({ probId, rompecabezas, edit, onClose, onSaved }: { probId
         </div>
       </div>
     </FloatingWindow>
-  );
-}
-
-function ListasModal({ situaciones, materias, onClose, onChanged }: { situaciones: Situacion[]; materias: Materia[]; onClose: () => void; onChanged: () => void }) {
-  return (
-    <FloatingWindow open onClose={onClose} title="Listas globales" initialWidth={480} initialHeight={560}>
-      <div className="p-4 space-y-4">
-        <p className="text-[11.5px] text-white/60" style={mf}>Listas compartidas por todas las problemáticas. Las <b>situaciones</b> clasifican rompecabezas; las <b>materias</b> se asocian a los temas.</p>
-        <EditableList title="Situaciones" endpoint="situaciones" items={situaciones} onChanged={onChanged} />
-        <EditableList title="Materias" endpoint="materias" items={materias} onChanged={onChanged} />
-      </div>
-    </FloatingWindow>
-  );
-}
-
-function EditableList({ title, endpoint, items, onChanged }: { title: string; endpoint: string; items: { id: number; nombre: string }[]; onChanged: () => void }) {
-  const [nuevo, setNuevo] = useState('');
-  const [editId, setEditId] = useState<number | null>(null);
-  const [editVal, setEditVal] = useState('');
-
-  const add = async () => {
-    if (!nuevo.trim()) return;
-    try { await mutate(`${API}/${endpoint}`, 'POST', { nombre: nuevo }); setNuevo(''); await onChanged(); }
-    catch (e: any) { toast.error(e.message); }
-  };
-  const saveEdit = async () => {
-    if (editId == null) return;
-    try { await mutate(`${API}/${endpoint}`, 'PATCH', { id: editId, nombre: editVal }); setEditId(null); await onChanged(); }
-    catch (e: any) { toast.error(e.message); }
-  };
-  const del = async (id: number) => {
-    try { await mutate(`${API}/${endpoint}`, 'DELETE', { id }); await onChanged(); }
-    catch (e: any) { toast.error(e.message); }
-  };
-  return (
-    <div>
-      <p className="text-[11px] font-semibold text-white/70 mb-1.5" style={df}>{title} ({items.length})</p>
-      <div className="space-y-1 mb-2 max-h-40 overflow-y-auto">
-        {items.map((it) => (
-          <div key={it.id} className="flex items-center gap-2 text-[11.5px] bg-white/[0.04] rounded px-2 py-1">
-            {editId === it.id ? (
-              <>
-                <input className={`${GLASS_INPUT} flex-1 py-0.5`} value={editVal} autoFocus onChange={(e) => setEditVal(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditId(null); }} />
-                <button onClick={saveEdit} className="text-emerald-400 hover:text-emerald-300"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={() => setEditId(null)} className="text-white/40 hover:text-white"><X className="w-3.5 h-3.5" /></button>
-              </>
-            ) : (
-              <>
-                <span className="text-white/85 flex-1 truncate" style={mf}>{it.nombre}</span>
-                <button onClick={() => { setEditId(it.id); setEditVal(it.nombre); }} className="text-white/40 hover:text-accent"><Pencil className="w-3 h-3" /></button>
-                <button onClick={() => del(it.id)} className="text-white/40 hover:text-red-400"><Trash2 className="w-3 h-3" /></button>
-              </>
-            )}
-          </div>
-        ))}
-        {items.length === 0 && <p className="text-[11px] text-white/45" style={mf}>Vacío.</p>}
-      </div>
-      <div className="flex gap-1.5">
-        <input className={`${GLASS_INPUT} flex-1`} value={nuevo} onChange={(e) => setNuevo(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} placeholder={`Nueva ${title.slice(0, -2).toLowerCase()}…`} />
-        <button onClick={add} className={`${GLASS_BTN} px-2 py-1.5`} title="Agregar"><Plus className="w-3.5 h-3.5" /></button>
-      </div>
-    </div>
   );
 }
 

@@ -314,6 +314,17 @@ Stack estándar de la casa, con particularidades de este repo:
     visual/UX en vivo** (requiere login). Conexión desde el sandbox requiere `dangerouslyDisableSandbox` (red aislada).
   - **La tubería de 9 niveles está COMPLETA end-to-end.** Piezas siguen siendo solo-visualización (las alimentará el
     futuro sistema de "metodología condiciológica"), por lo que los rompecabezas quedan a la espera de piezas reales.
+  - **Botón "Listas" ELIMINADO (2026-07-11):** las listas globales (situaciones, materias, **talentos, valores**, futuras)
+    se editarán desde un **espacio único** = el futuro sistema **Metodología Condiciológica**. Se quitó el botón + modal de
+    Gestión de Datos; las tablas/API de `gd_situaciones`/`gd_materias` se conservan (selectores de rompecabezas/temas las leen).
+- **Roadmap sistemas condiciológicos (capturado 2026-07-11, EN `Aprendizaje.md`):** próximos sistemas del Centralizado:
+  **Metodología Condiciológica** (el "lector": proyectos de investigación + 6 pestañas Reconocer…Cambiar; genera tareas
+  desde códigos verificados; **espacio único de edición de listas globales**), **Gestión de Condiciones** (piso controlador ·
+  paso fundamentación: recibe tareas, subtareas con tickets/proyectos de paso-fundamentación con autorización saltada,
+  workspace de pieza con universo de gráficos + condiciones + variables factor→causa→variable + eventos + restricciones),
+  **Dinámica Condiciológica** (define factores cognitivo/corporal/ambiental → causas → variables) y **Laboratorio
+  Condiciológico** (herramienta de investigación de condiciones). Módulo futuro **Alertas** (bajo "Mi día"). Detalle y
+  preguntas abiertas (P7–P10) en `Aprendizaje.md` → "ROADMAP — sistemas condiciológicos".
 - **Proyectos: Nuevo vs Solicitar + responsable/participantes (2026-07-09):** se replicó el patrón de tickets en
   `/dashboard/projects`. Dos botones: **"Solicitar proyecto"** (TODOS) = `mode='request'`, YO soy el **cliente**
   (`ensureUserClientAccount`), y elijo **un miembro** (queda **INVITADO a aceptar el liderazgo**, no responsable directo) o
