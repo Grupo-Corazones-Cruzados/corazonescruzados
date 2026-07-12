@@ -282,8 +282,24 @@ Stack estándar de la casa, con particularidades de este repo:
   segmentos; el detalle de la fuente muestra la referencia formateada + botón **Copiar**. La referencia es
   **opcional** (default «Sin referencia»); no bloquea el guardado. Verificado: tsc + `next build` OK + BD real
   (ALTER + insert jsonb + roundtrip en transacción ROLLBACK) + formateo APA validado offline (libro/journal/
-  youtube). **Pendiente/futuro:** citas en el texto (in-text), estilos adicionales (si se pidieran), y que
-  otros niveles (códigos/temas) puedan referenciar fuentes con su cita.
+  youtube).
+  - **Autocompletar con IA (2026-07-12):** en el editor de referencia una caja «Autocompletar con IA» permite
+    **pegar un texto libre** (ficha de catálogo tipo Internet Archive, portada, cita mal formateada…) y **OpenAI**
+    (`gpt-4o`, `response_format: json_object`, `temperature 0`, key `OPENAI_API_KEY`, mismo patrón `fetch` que
+    `lib/openai.ts`) detecta el **tipo** y **rellena los campos** APA. Ruta `POST
+    /api/centralized/gestion-datos/fuentes/apa-extract` `{text}` → `{ref_tipo, ref_datos}`. El **system prompt**
+    se genera desde `APA_TIPOS` (`apaExtractionSystemPrompt`/`apaSchemaForPrompt`, siempre en sync con el schema)
+    y la salida se **sanea** con `sanitizeApaExtraction` (whitelist de tipo y claves; todo string) → seguro
+    contra claves basura. Probado con el ejemplo real del usuario (libro Bowles & Gintis) → clasifica «libro»,
+    autores «Bowles, S.; Gintis, H.», año, título sentence-case, editorial. Instrucciones clave del prompt:
+    autores «Apellido, Iniciales.» separados por «; », año solo dígitos, NO inventar (omitir campos ausentes).
+  - **Layout a 2 columnas (2026-07-12):** `FuenteForm` se reorganizó en **grid 2 col** — **referencia a la
+    IZQUIERDA**, datos de la fuente (tipo/contenido/credibilidad) a la derecha — para que el formulario NO crezca
+    en altura al tener muchos campos de referencia. El panel flotante (`aside`) se ensancha a **680px** solo
+    cuando `creating==='fuente'` (352px para problema/detalle). Edición del libro en `apa.ts` acepta texto
+    («Pbk. ed.») además de números («3.ª ed.»).
+  - **Pendiente/futuro:** citas en el texto (in-text), estilos adicionales (si se pidieran), y que otros niveles
+    (códigos/temas) puedan referenciar fuentes con su cita.
 - **Sistema "Encuadre Condiciológico" — Centralizado · global · creación (2026-07-11):** nuevo sistema built-in
   (celda "Control Psicosocial", comparte celda con Comandos Violeta; slug `encuadre-condiciologico`; seed + dispatch).
   A futuro **conceptualiza** la investigación (categorías/condiciones → conceptos legibles: nombres/colores/sonidos, base de
