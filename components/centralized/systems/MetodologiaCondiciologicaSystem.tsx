@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  FolderPlus, Pencil, Trash2, Plus, Check, X, FlaskConical, Hexagon, Send, List, ShieldCheck, ClipboardList,
+  FolderPlus, Pencil, Trash2, Plus, Check, X, FlaskConical, Hexagon, Send, ShieldCheck, ClipboardList,
 } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -41,7 +41,7 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
   const [detail, setDetail] = useState<CodigoDetalle | null>(null);
   const [tareas, setTareas] = useState<Tarea[]>([]);
 
-  const [modal, setModal] = useState<null | 'proyecto' | 'tarea' | 'listas'>(null);
+  const [modal, setModal] = useState<null | 'proyecto' | 'tarea'>(null);
   const [editProy, setEditProy] = useState<Proyecto | null>(null);
   const [confirmProy, setConfirmProy] = useState<Proyecto | null>(null);
 
@@ -137,12 +137,9 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
             </div>
           ))}
         </div>
-        <div className="p-2 border-t border-digi-border space-y-1.5">
+        <div className="p-2 border-t border-digi-border">
           <button onClick={() => openProy()} className="w-full inline-flex items-center justify-center gap-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md py-2 transition-colors" style={mf}>
             <FolderPlus className="w-3.5 h-3.5" /> Nuevo proyecto
-          </button>
-          <button onClick={() => setModal('listas')} className="w-full inline-flex items-center justify-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded-md py-1.5 hover:border-accent hover:text-accent transition-colors" style={mf}>
-            <List className="w-3.5 h-3.5" /> Listas globales
           </button>
         </div>
       </aside>
@@ -285,8 +282,6 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
         </FloatingWindow>
       )}
 
-      {/* ── Modal: Listas globales ── */}
-      {modal === 'listas' && <ListasModal onClose={() => setModal(null)} />}
 
       <PixelConfirm
         open={!!confirmProy}
@@ -355,61 +350,3 @@ function CodigoDetalleView({ detail }: { detail: CodigoDetalle }) {
   );
 }
 
-// ── Listas globales (situaciones + materias) — espacio ÚNICO de edición ───────
-function ListasModal({ onClose }: { onClose: () => void }) {
-  return (
-    <FloatingWindow open onClose={onClose} title="Listas globales" initialWidth={480} initialHeight={560}>
-      <div className="p-4 space-y-4">
-        <p className="text-[11.5px] text-digi-muted" style={mf}>Espacio único de edición de las listas globales del sistema. Las <b>situaciones</b> clasifican rompecabezas; las <b>materias</b> se asocian a los temas (Gestión de Datos).</p>
-        <EditableList title="Situaciones" endpoint="situaciones" />
-        <EditableList title="Materias" endpoint="materias" />
-        <p className="text-[10.5px] text-digi-muted italic" style={mf}>Talentos y valores se migrarán aquí más adelante (hoy son listas fijas del sistema).</p>
-      </div>
-    </FloatingWindow>
-  );
-}
-
-function EditableList({ title, endpoint }: { title: string; endpoint: string }) {
-  const [items, setItems] = useState<{ id: number; nombre: string }[]>([]);
-  const [nuevo, setNuevo] = useState('');
-  const [editId, setEditId] = useState<number | null>(null);
-  const [editVal, setEditVal] = useState('');
-  const load = useCallback(async () => {
-    try { const d = await fetch(`${GD}/${endpoint}`).then((r) => r.json()); setItems(d.data || []); } catch { /* noop */ }
-  }, [endpoint]);
-  useEffect(() => { load(); }, [load]);
-
-  const add = async () => { if (!nuevo.trim()) return; try { await mutate(`${GD}/${endpoint}`, 'POST', { nombre: nuevo }); setNuevo(''); await load(); } catch (e: any) { toast.error(e.message); } };
-  const saveEdit = async () => { if (editId == null) return; try { await mutate(`${GD}/${endpoint}`, 'PATCH', { id: editId, nombre: editVal }); setEditId(null); await load(); } catch (e: any) { toast.error(e.message); } };
-  const del = async (id: number) => { try { await mutate(`${GD}/${endpoint}`, 'DELETE', { id }); await load(); } catch (e: any) { toast.error(e.message); } };
-
-  return (
-    <div>
-      <p className="text-[11px] font-semibold text-digi-text mb-1.5" style={df}>{title} ({items.length})</p>
-      <div className="space-y-1 mb-2 max-h-40 overflow-y-auto">
-        {items.map((it) => (
-          <div key={it.id} className="flex items-center gap-2 text-[11.5px] bg-black/[0.02] border border-digi-border rounded px-2 py-1">
-            {editId === it.id ? (
-              <>
-                <input className={`${INPUT} flex-1 py-0.5`} value={editVal} autoFocus onChange={(e) => setEditVal(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditId(null); }} />
-                <button onClick={saveEdit} className="text-emerald-600 hover:text-emerald-500"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={() => setEditId(null)} className="text-digi-muted hover:text-digi-text"><X className="w-3.5 h-3.5" /></button>
-              </>
-            ) : (
-              <>
-                <span className="text-digi-text flex-1 truncate" style={mf}>{it.nombre}</span>
-                <button onClick={() => { setEditId(it.id); setEditVal(it.nombre); }} className="text-digi-muted hover:text-accent"><Pencil className="w-3 h-3" /></button>
-                <button onClick={() => del(it.id)} className="text-digi-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
-              </>
-            )}
-          </div>
-        ))}
-        {items.length === 0 && <p className="text-[11px] text-digi-muted" style={mf}>Vacío.</p>}
-      </div>
-      <div className="flex gap-1.5">
-        <input className={`${INPUT} flex-1`} value={nuevo} onChange={(e) => setNuevo(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} placeholder={`Nueva ${title.slice(0, -2).toLowerCase()}…`} />
-        <button onClick={add} className="px-2 py-1.5 border border-digi-border rounded-md text-digi-text hover:border-accent hover:text-accent" title="Agregar"><Plus className="w-3.5 h-3.5" /></button>
-      </div>
-    </div>
-  );
-}

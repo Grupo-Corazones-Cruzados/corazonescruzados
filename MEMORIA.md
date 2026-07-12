@@ -267,6 +267,25 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Sistema "Encuadre Condiciológico" — Centralizado · global · creación (2026-07-11):** nuevo sistema built-in
+  (celda "Control Psicosocial", comparte celda con Comandos Violeta; slug `encuadre-condiciologico`; seed + dispatch).
+  A futuro **conceptualiza** la investigación (categorías/condiciones → conceptos legibles: nombres/colores/sonidos, base de
+  la "calculadora del comportamiento" y del Control Psicosocial). **Por ahora = HOGAR ÚNICO de las LISTAS GLOBALES**
+  (decisión del usuario 2026-07-11, reemplaza la ubicación previa en Metodología). UI
+  `components/centralized/systems/EncuadreCondiciologicoSystem.tsx` (corp light, estilo de los otros sistemas): **panel de
+  listas** a la izquierda (Talentos/Valores/Situaciones/Materias + futuras, con conteo) → al seleccionar, a la derecha las
+  **opciones ordenadas ASCENDENTE** (case-insensitive) con **buscador + agregar + eliminar**.
+  - **DB** `lib/centralized/encuadre-db.ts`: registro `GLOBAL_LISTS` (key→{label,table,col}); tablas nuevas `gd_talentos` +
+    `gd_valores` (UNIQUE nombre, **sembradas idempotentes desde los estáticos `TALENTOS`/`VALORES` solo si están vacías**);
+    situaciones/materias reusan `gd_situaciones`/`gd_materias`. CRUD genérico (table/col del registro → SQL seguro): add
+    evita duplicados case-insensitive (`WHERE NOT EXISTS LOWER(col)=LOWER(val)`), delete por id, list `ORDER BY LOWER(col)`.
+    **Ruta** `app/api/centralized/encuadre/listas` (GET listas / GET ?list= opciones / POST / DELETE).
+  - Se **quitó** el botón "Listas globales" (+ ListasModal/EditableList) de Metodología Condiciológica.
+  - **Piso/paso a confirmar** (elegí global·creación por el vínculo con Control Psicosocial; fácil de mover).
+  - **PENDIENTE:** que los consumidores de talentos/valores (hoy import estático `TALENTOS`/`VALORES`, p.ej. el MultiSelect de
+    tickets/proyectos y reclutamiento) lean de `gd_talentos`/`gd_valores` para que las ediciones propaguen (situaciones/
+    materias ya propagan porque rompecabezas/temas leen de sus tablas). Y las features de conceptualización del sistema.
+  - Verificado: tsc + `next build` OK + **BD real 5/5 (ROLLBACK)**: seed, orden ascendente (con acentos), dedup, agregar/eliminar.
 - **Tickets: campo "Opciones" en Solicitar + modo "abierto por talento" (2026-07-11):** el formulario de **Solicitar ticket**
   reemplazó el checkbox suelto por un campo **"Opciones"** (radios, `form.request_option`): (1) **Dejar abierto a propuestas**;
   (2) **Permitir que un miembro se haga responsable** (NUEVO, modo talento) → `MultiSelectSearch` de **talentos requeridos**
@@ -383,7 +402,8 @@ Stack estándar de la casa, con particularidades de este repo:
   built-in (celda "Condiciología", slug `metodologia-condiciologica`; sembrado en `ensureTable()` de systems + dispatch por
   slug). Es **"el lector"**: aplica la metodología de **6 pasos** (Reconocer→Controlar→Predecir→Experimentar→Convertir→
   Cambiar) sobre **proyectos de investigación** (con finalidad productiva) y genera **tareas** desde códigos verificados.
-  **Es el espacio ÚNICO de edición de listas globales** (situaciones, materias; talentos/valores pendientes de migrar).
+  **(La gestión de listas globales se MOVIÓ a "Encuadre Condiciológico" el 2026-07-11 — ver su entrada; se quitó el botón
+  "Listas globales" de este sistema.)**
   - **UI** `components/centralized/systems/MetodologiaCondiciologicaSystem.tsx` (estilo corp light): panel izq = Proyectos de
     investigación (CRUD) + botón "Listas globales"; derecha = **6 pestañas**. Solo **Reconocer** desarrollado: sub-panel de
     **códigos verificados** (agrupados por problemática, multi-selección) + **detalle** del código (premisas con credibilidad,

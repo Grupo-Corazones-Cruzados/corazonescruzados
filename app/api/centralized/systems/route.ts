@@ -94,6 +94,16 @@ async function ensureTable() {
             'colaborador', 'fundamentacion', 'Investigador', 'dinamica-condiciologica'
      WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'dinamica-condiciologica')`,
   );
+  // Sistema built-in "Encuadre Condiciológico" (global · creación, celda "Control Psicosocial").
+  // Conceptualiza la investigación (categorías/condiciones → conceptos legibles) y es el HOGAR de las
+  // LISTAS GLOBALES (talentos, valores, situaciones, materias y futuras). Sembrado idempotente por slug.
+  await pool.query(
+    `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+     SELECT 'Encuadre Condiciológico',
+            'Conceptualiza la investigación condiciológica (genera conceptos legibles a partir de conjuntos de condiciones/categorías similares) y gestiona las listas globales del sistema: talentos, valores, situaciones, materias y futuras.',
+            'global', 'creacion', 'Control Psicosocial', 'encuadre-condiciologico'
+     WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'encuadre-condiciologico')`,
+  );
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (
