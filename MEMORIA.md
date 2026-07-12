@@ -1589,6 +1589,15 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **`ensureGestionDatosTables` concurrente → DDL/migración en paralelo rompía un endpoint (2026-07-12):** el
+  detalle de una fuente aparecía **solo con el header** (sin cuerpo). Causa: `loadAll` dispara ~10 fetches en
+  paralelo y **todos** llaman a `ensureGestionDatosTables`; al añadir `gd_referencias` + columna `referencia_id`
+  + migración, en la **primera carga** las ~10 ejecuciones concurrentes del DDL nuevo (`CREATE TABLE`/`ALTER`)
+  podían chocar en Postgres → una lanzaba (p. ej. `/fuentes` → 500) → el cliente dejaba `fuentes=[]` →
+  `NodeDetail` caía en `if(!f) return header`. Un refresh lo arreglaba (DDL ya aplicado), pero **el patrón
+  reaparece cada vez que se agrega una tabla/columna nueva**. **Fix:** `ensure` ahora usa un **promise
+  singleton** (`ensuring`): si ya hay uno en curso, los demás esperan ESE; solo corre una vez a la vez por
+  proceso. Regla: cualquier `ensureTables()` llamado por múltiples fetches paralelos debe serializarse así.
 - **Gestión de Datos — el grafo mostraba "Sin datos aún" siempre = 500 por `id` ambiguo (2026-07-12):** el
   usuario reportó que al agregar un problema NUNCA aparecía en el "universo de gráficos" (la UI mostraba el
   estado vacío "Sin datos aún"). **CAUSA RAÍZ real:** en `getProblematicaGraph` (`gestion-datos-db.ts`) la
