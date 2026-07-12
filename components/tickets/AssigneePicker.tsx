@@ -117,7 +117,8 @@ export default function AssigneePicker({
         <ChevronDown className={`w-4 h-4 text-digi-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Flyout (portal) */}
+      {/* Flyout (portal). Si el picker vive dentro de un <dialog> (PixelModal, top layer),
+          se porta AL dialog para quedar por ENCIMA del overlay; si no, a document.body. */}
       {open && typeof document !== 'undefined' && createPortal(
         <div ref={flyoutRef} style={flyoutStyle} className="flex flex-col rounded-lg border border-digi-border bg-digi-card shadow-2xl overflow-hidden">
           <div className="p-2 border-b border-digi-border shrink-0">
@@ -175,7 +176,7 @@ export default function AssigneePicker({
             )}
           </div>
         </div>,
-        document.body,
+        (triggerRef.current?.closest('dialog') as HTMLElement) || document.body,
       )}
     </div>
   );
