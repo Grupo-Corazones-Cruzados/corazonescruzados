@@ -151,9 +151,17 @@ export async function POST(req: NextRequest) {
     // Self-heal columnas usadas.
     await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS created_by_user_id TEXT`);
     await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS client_email TEXT`);
+    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS open_for_talent BOOLEAN DEFAULT false`);
+    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS required_talents TEXT[] DEFAULT '{}'`);
     await ensureProjectMembersTable();
 
     const mode: 'create' | 'request' = body.mode === 'request' ? 'request' : 'create';
+    const openForTalent = mode === 'request' && body.open_for_talent === true;
+    const requiredTalents: string[] = openForTalent && Array.isArray(body.required_talents)
+      ? body.required_talents.filter((t: any) => typeof t === 'string' && t.trim()) : [];
+    if (openForTalent && requiredTalents.length === 0) {
+      return NextResponse.json({ error: 'Selecciona al menos un talento requerido.' }, { status: 400 });
+    }
 
     // Datos del usuario (member_id, nombre) + flags de rol.
     const uRow = (await pool.query(
@@ -205,7 +213,9 @@ export async function POST(req: NextRequest) {
       // request: el usuario es el CLIENTE (cuenta cliente automática, como en tickets).
       clientId = await ensureUserClientAccount(user.userId);
       clientEmail = (uRow.email || user.email || '').toLowerCase() || null;
-      if (body.open_for_proposals) {
+      if (openForTalent) {
+        status = 'open'; isPrivate = false; // abierto por talento: un miembro con el talento se hace responsable
+      } else if (body.open_for_proposals) {
         status = 'open'; isPrivate = false; // abierto a propuestas: visible para que miembros oferten
       } else if (body.member_id) {
         responsibleInviteMemberId = Number(body.member_id); // sugerido: queda INVITADO a aceptar
@@ -216,9 +226,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.projects (client_id, client_email, assigned_member_id, title, description, budget_min, budget_max, deadline, status, is_private, final_cost, created_by_user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [clientId, clientEmail, assignedMemberId, body.title, body.description || null, body.budget_min || null, body.budget_max || null, body.deadline || null, status, isPrivate, body.final_cost || null, user.userId],
+      `INSERT INTO gcc_world.projects (client_id, client_email, assigned_member_id, title, description, budget_min, budget_max, deadline, status, is_private, final_cost, created_by_user_id, open_for_talent, required_talents)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::text[]) RETURNING *`,
+      [clientId, clientEmail, assignedMemberId, body.title, body.description || null, body.budget_min || null, body.budget_max || null, body.deadline || null, status, isPrivate, body.final_cost || null, user.userId, openForTalent, requiredTalents],
     );
     const project = rows[0];
 

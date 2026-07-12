@@ -10,7 +10,7 @@ import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2 } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -177,6 +177,15 @@ export default function ProjectDetailPage() {
       });
       if (!res.ok) { toast.error((await res.json()).error || 'Error'); return; }
       toast.success(action === 'accept' ? 'Aceptaste el liderazgo del proyecto' : 'Rechazaste la invitación');
+      fetchProject();
+    } catch { toast.error('Error'); }
+  };
+
+  const takeByTalent = async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/take`, { method: 'POST' });
+      if (!res.ok) { toast.error((await res.json()).error || 'Error'); return; }
+      toast.success('Te hiciste responsable del proyecto');
       fetchProject();
     } catch { toast.error('Error'); }
   };
@@ -959,6 +968,27 @@ export default function ProjectDetailPage() {
             <button onClick={() => respondResponsible('decline')} className={BTN_SECONDARY}>Rechazar</button>
             <button onClick={() => respondResponsible('accept')} className={BTN_PRIMARY}><Check className="w-4 h-4" /> Aceptar liderazgo</button>
           </div>
+        </div>
+      )}
+
+      {project.open_for_talent && (
+        <div className="mb-4 rounded-lg border border-accent/40 bg-accent-light p-4">
+          <div className="flex items-center gap-2 mb-1.5">
+            <DoorOpen className="w-4 h-4 text-accent" />
+            <p className="text-[13px] font-semibold text-digi-text" style={{ fontFamily: 'var(--font-body)' }}>Abierto por talento</p>
+          </div>
+          <p className="text-[12px] text-digi-muted mb-2" style={{ fontFamily: 'var(--font-body)' }}>Un miembro con al menos uno de los talentos requeridos puede hacerse responsable de inmediato; luego podrá tomar requerimientos o abrir el proyecto a propuestas.</p>
+          {(project.required_talents || []).length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-digi-muted shrink-0" />
+              {(project.required_talents || []).map((t: string) => (
+                <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded bg-black/[0.05] text-digi-text" style={{ fontFamily: 'var(--font-body)' }}>{t}</span>
+              ))}
+            </div>
+          )}
+          {!isOwner && !!memberId && (
+            <button onClick={takeByTalent} className={BTN_PRIMARY}><Crown className="w-4 h-4" /> Hacerme responsable</button>
+          )}
         </div>
       )}
 

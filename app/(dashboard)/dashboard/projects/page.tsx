@@ -10,6 +10,15 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PageHeader from '@/components/ui/PageHeader';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
+import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
+import { TALENTOS } from '@/lib/centralized/talentos';
+
+const TALENT_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));
+const REQUEST_OPTIONS: { value: 'proposals' | 'talent' | 'invite'; label: string; hint: string }[] = [
+  { value: 'proposals', label: 'Dejar abierto a propuestas', hint: 'Cualquier miembro propone; tú eliges a quién aceptar.' },
+  { value: 'talent', label: 'Permitir que un miembro se haga responsable', hint: 'Un miembro con el talento requerido se hace responsable de inmediato; luego puede tomar requerimientos o abrir el proyecto a propuestas.' },
+  { value: 'invite', label: 'Invitar a miembro responsable', hint: 'Invitas directamente a un miembro específico a liderar.' },
+];
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import { fmt2 } from '@/lib/format';
@@ -85,6 +94,8 @@ export default function ProjectsPage() {
   // request: responsable sugerido o abierto a propuestas
   const [createMemberId, setCreateMemberId] = useState('');
   const [openProposals, setOpenProposals] = useState(false);
+  const [requestOption, setRequestOption] = useState<'invite' | 'proposals' | 'talent'>('invite');
+  const [requiredTalents, setRequiredTalents] = useState<string[]>([]);
 
   const canCreateOwn = accessRoleOf(user) !== 'client'; // candidato/miembro/admin
 
@@ -92,7 +103,7 @@ export default function ProjectsPage() {
     setCreateMode(mode);
     setCreateTitle(''); setCreateDesc(''); setCreateBudgetMin(''); setCreateBudgetMax(''); setCreateDeadline('');
     setCreateClientId(''); setCreateClientEmail(''); setClientMode('existing');
-    setCreateMemberId(''); setOpenProposals(false);
+    setCreateMemberId(''); setOpenProposals(false); setRequestOption('invite'); setRequiredTalents([]);
     setShowCreate(true);
     if (mode === 'create') {
       fetch('/api/clients?mine=1').then((r) => r.json()).then((d) => setMyClients(d.data || [])).catch(() => setMyClients([]));
@@ -145,8 +156,10 @@ export default function ProjectsPage() {
         if (clientMode === 'existing') payload.client_id = createClientId || null;
         else payload.client_email = createClientEmail || null;
       } else {
-        payload.open_for_proposals = openProposals;
-        payload.member_id = openProposals ? null : (createMemberId || null);
+        payload.open_for_proposals = requestOption === 'proposals';
+        payload.open_for_talent = requestOption === 'talent';
+        payload.required_talents = requestOption === 'talent' ? requiredTalents : undefined;
+        payload.member_id = requestOption === 'invite' ? (createMemberId || null) : null;
       }
       const res = await fetch('/api/projects', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -425,14 +438,34 @@ export default function ProjectsPage() {
               )}
             </div>
           ) : (
-            /* ── Miembro responsable (sugerido) o abierto a propuestas ── */
+            /* ── Opciones de asignación ── */
             <div className="flex flex-col gap-1.5">
-              <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro responsable</label>
-              <AssigneePicker value={createMemberId} onChange={setCreateMemberId} disabled={openProposals} />
-              <label className="flex items-center gap-2 text-[12px] text-digi-text cursor-pointer mt-0.5" style={mf}>
-                <input type="checkbox" checked={openProposals} onChange={(e) => { setOpenProposals(e.target.checked); if (e.target.checked) setCreateMemberId(''); }} className="accent-accent w-4 h-4" />
-                Dejar abierto a propuestas
-              </label>
+              <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Opciones</label>
+              <div className="border border-digi-border rounded-lg p-2 space-y-1">
+                {REQUEST_OPTIONS.map((o) => {
+                  const active = requestOption === o.value;
+                  return (
+                    <label key={o.value} className={`flex items-start gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${active ? 'bg-accent-light' : 'hover:bg-black/[0.03]'}`} style={mf}>
+                      <input type="radio" name="proj_request_option" checked={active}
+                        onChange={() => { setRequestOption(o.value); setCreateMemberId(''); setRequiredTalents([]); setOpenProposals(o.value === 'proposals'); }}
+                        className="mt-0.5 accent-accent" />
+                      <span className="min-w-0">
+                        <span className="text-[12.5px] font-medium text-digi-text">{o.label}</span>
+                        <span className="block text-[10.5px] text-digi-muted">{o.hint}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+                {requestOption === 'invite' && (
+                  <div className="pt-1"><AssigneePicker value={createMemberId} onChange={setCreateMemberId} /></div>
+                )}
+                {requestOption === 'talent' && (
+                  <div className="pt-1">
+                    <MultiSelectSearch options={TALENT_OPTIONS} selected={requiredTalents} onChange={setRequiredTalents} placeholder="Talentos requeridos para liderar…" />
+                    {requiredTalents.length === 0 && <p className="text-[10.5px] text-amber-600 mt-1" style={mf}>Elige al menos un talento requerido.</p>}
+                  </div>
+                )}
+              </div>
               <p className="text-[10.5px] text-digi-muted" style={mf}>Como cliente, se usará (o creará) tu cuenta de tipo cliente para esta solicitud.</p>
             </div>
           )}
