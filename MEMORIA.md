@@ -268,16 +268,21 @@ Stack estándar de la casa, con particularidades de este repo:
 
 ## Decisiones recientes (feature)
 - **Módulo "Notificaciones" (dashboard, debajo de "Mi día", 2026-07-11):** nuevo módulo `/dashboard/notificaciones` que
-  muestra las **invitaciones a proyectos** hechas al usuario, cada una **clicable → `/dashboard/projects/[id]`** (donde
-  acepta/participa). **NO hay tabla `notifications`** (no existe en el repo): se **deriva** de las dos fuentes reales de
-  invitación (las mismas que la pestaña Invitados de Proyectos): (a) **participar** = `project_bids.status='invited'`;
-  (b) **liderar** = `project_members role='responsible' status='invited'`. Endpoint **`GET /api/notifications`** (`pool` +
-  `getCurrentUser`; resuelve `member_id` por `users.member_id`; UNION de ambas fuentes, devuelve `{kind,title,project_id,
-  href,invited_at}`). Página `app/(dashboard)/dashboard/notificaciones/page.tsx` (tarjetas clicables, ícono Crown=liderar /
-  FolderKanban=participar, contador, refrescar). **Registro:** item de sidebar (`DashboardSidebar` grupo Principal, icono
-  `Bell`) + `MODULE_ACCESS` (`/dashboard/notificaciones` → candidate/member/admin) en `lib/dashboard/access.ts`. Diseñado
-  **extensible** (a futuro se sumarán otros tipos de notificación al mismo endpoint/tabla derivada). Es el embrión del módulo
-  "Alertas" del roadmap. Verificado: tsc + `next build` OK + query probada contra la BD real (1 invitación a participar pendiente).
+  muestra las notificaciones del usuario, cada una **clicable → su `href`** (proyecto/ticket). Combina **dos orígenes**:
+  - **(1) Tabla EXISTENTE `gcc_world.notifications`** (¡ya existía en la BD con 10+ filas reales tipo `payment_submitted`/
+    `project_all_completed`!): columnas `id, created_at, user_id UUID, type, title, message, link, is_read, read_at`. Capa
+    `lib/notifications.ts` (`ensureNotificationsTable` alineada al esquema real, `createNotification(userId,{type,title,
+    message?,link?})`, `listUserNotifications`).
+  - **(2) Invitaciones a proyectos DERIVADAS** en vivo (mismas que la pestaña Invitados): participar=`project_bids.status=
+    'invited'`, liderar=`project_members role='responsible' status='invited'`.
+  - **`GET /api/notifications`** une ambos, mapea a `{id,category,title,label,href,date}` (category: ticket / project_responsible
+    / project_participant / <type>), ordena por fecha. Página con tarjetas (ícono por categoría: Ticket/Crown/FolderKanban),
+    contador y refrescar; **ocupa todo el alto** (`h-[calc(100dvh-130px)]`, lista con scroll). Sidebar: item "Notificaciones"
+    (icono `Bell`, grupo Principal) + `MODULE_ACCESS` → **`ALL`** (candidato/cliente/miembro/admin).
+  - **Solicitud de ticket a un miembro → notificación (2026-07-11):** en `app/api/tickets/route.ts` POST, en modo `request`
+    con `member_id` escogido, se resuelve el `users.id` de ese miembro (`WHERE member_id=$1`) y se crea una notificación
+    `type='ticket_request'` (title=título del ticket, link=`/dashboard/tickets/<id>`). En try/catch (no rompe la creación).
+  - Verificado: tsc + `next build` OK + probado contra la BD real (insert/list en la tabla real; 3/3 y query de invitaciones OK).
 - **Sistema "Dinámica Condiciológica" — Centralizado · colaborador · fundamentación (2026-07-11):** nuevo sistema built-in
   (celda "Investigador", slug `dinamica-condiciologica`; seed + dispatch). **Dueño del catálogo de variables** (`dc_variables`)
   que consume Gestión de Condiciones. UI `components/centralized/systems/DinamicaCondiciologicaSystem.tsx` (corp light):

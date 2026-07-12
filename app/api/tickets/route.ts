@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
+import { createNotification } from '@/lib/notifications';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
@@ -169,6 +170,23 @@ export async function POST(req: NextRequest) {
     );
 
     const ticket = rows[0];
+
+    // Solicitar ticket con miembro escogido → notificar al miembro (usuario) elegido.
+    if (mode === 'request' && resolvedMemberId) {
+      try {
+        const { rows: [u] } = await pool.query(
+          `SELECT id FROM gcc_world.users WHERE member_id = $1 LIMIT 1`, [resolvedMemberId]
+        );
+        if (u?.id) {
+          await createNotification(String(u.id), {
+            type: 'ticket_request',
+            title: title.trim(),
+            message: description?.trim() || 'Te solicitaron atender este ticket.',
+            link: `/dashboard/tickets/${ticket.id}`,
+          });
+        }
+      } catch (e) { console.error('No se pudo crear la notificación de solicitud de ticket:', (e as any)?.message); }
+    }
 
     // Insert time slots if provided
     if (Array.isArray(time_slots) && time_slots.length > 0) {

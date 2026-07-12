@@ -2,19 +2,24 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Bell, FolderKanban, Crown, ChevronRight, RefreshCw } from 'lucide-react';
+import { Bell, FolderKanban, Crown, Ticket, ChevronRight, RefreshCw } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
 type Notif = {
   id: string;
-  type: string;
-  kind: 'participant' | 'responsible';
+  category: string; // 'ticket' | 'project_responsible' | 'project_participant' | …
   title: string;
-  project_id: number;
+  label: string;
   href: string;
-  invited_at: string | null;
+  date: string | null;
+};
+
+const ICON: Record<string, { icon: typeof Bell; tint: string; bg: string }> = {
+  ticket: { icon: Ticket, tint: 'text-sky-500', bg: 'bg-sky-50 border-sky-200' },
+  project_responsible: { icon: Crown, tint: 'text-amber-500', bg: 'bg-amber-50 border-amber-200' },
+  project_participant: { icon: FolderKanban, tint: 'text-accent', bg: 'bg-accent-light border-accent/20' },
 };
 
 function fmtFecha(s: string | null): string {
@@ -68,25 +73,28 @@ export default function NotificacionesPage() {
         </div>
       ) : (
         <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
-          {items.map((n) => (
-            <Link
-              key={n.id}
-              href={n.href}
-              className="group flex items-center gap-3 rounded-lg border border-digi-border bg-digi-card p-3.5 hover:border-accent/50 hover:shadow-sm transition-all"
-            >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${n.kind === 'responsible' ? 'bg-amber-50 border border-amber-200' : 'bg-accent-light border border-accent/20'}`}>
-                {n.kind === 'responsible' ? <Crown className="w-4 h-4 text-amber-500" /> : <FolderKanban className="w-4 h-4 text-accent" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-medium text-digi-text truncate" style={mf}>{n.title}</p>
-                <p className="text-[11.5px] text-digi-muted" style={mf}>
-                  {n.kind === 'responsible' ? 'Invitación a liderar el proyecto' : 'Invitación a participar en el proyecto'}
-                  {n.invited_at ? ` · ${fmtFecha(n.invited_at)}` : ''}
-                </p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-digi-muted group-hover:text-accent transition-colors shrink-0" />
-            </Link>
-          ))}
+          {items.map((n) => {
+            const meta = ICON[n.category] || { icon: Bell, tint: 'text-accent', bg: 'bg-accent-light border-accent/20' };
+            const Ico = meta.icon;
+            return (
+              <Link
+                key={n.id}
+                href={n.href}
+                className="group flex items-center gap-3 rounded-lg border border-digi-border bg-digi-card p-3.5 hover:border-accent/50 hover:shadow-sm transition-all"
+              >
+                <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${meta.bg}`}>
+                  <Ico className={`w-4 h-4 ${meta.tint}`} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-digi-text truncate" style={mf}>{n.title}</p>
+                  <p className="text-[11.5px] text-digi-muted" style={mf}>
+                    {n.label}{n.date ? ` · ${fmtFecha(n.date)}` : ''}
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-digi-muted group-hover:text-accent transition-colors shrink-0" />
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
