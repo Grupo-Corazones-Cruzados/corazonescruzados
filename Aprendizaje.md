@@ -260,8 +260,13 @@ rompecabezas/temas las leen); solo se quitó la edición desde aquí. Verificado
   y **"Completar tarea"** → `completeTask` **materializa `gd_pieza_variables`** (fija→fija, catálogo→cambia; restricciones
   volcadas) + pieza `completa` + tarea `completada` (reabrible). DB `condiciones-db.ts` (dc_/gc_) + 8 rutas API. Dominio
   `condiciologia.ts` (`RESTRICCION_TIPOS`). tsc + build OK + **BD real 8/8 (ROLLBACK)**.
-  **Pendiente:** pestaña Subtareas (tickets/proyectos autorización saltada), universo de gráficos con drag-drop de variables,
-  sistemas **Dinámica Condiciológica** (catálogo real de variables) y **Laboratorio Condiciológico**, módulo **Alertas**.
+  **FASE 2 HECHA (2026-07-11):** (a) **Subtareas** con integración REAL — requerimientos crean tickets/proyectos reales
+  (usuario=cliente, marcados `source_system='condiciones'`/`source_paso='fundamentacion'`), asignar miembro paso-fundamentación
+  o público, **tomar** con enforcement de paso, y **bypass** del gate de proyecto privado; (b) **universo de gráficos** en el
+  workspace (toggle Panel/Universo, `GdGraph` con nodos código/pieza/condición/variable). tsc+build OK + **BD real 5/5** (INSERT
+  ticket service_id NULL + proyecto público con columnas reales). Detalle en `MEMORIA.md`.
+  **Pendiente:** botón "Tomar" en la UI de los módulos Tickets/Proyectos; drag-drop de variables al crear condición; sistemas
+  **Dinámica Condiciológica** (catálogo real de variables) y **Laboratorio Condiciológico**, módulo **Alertas**.
 - **Metodología Condiciológica — FASE 1 HECHA:** proyectos de investigación + 6 pestañas (solo **Reconocer** desarrollado:
   códigos verificados multi-selección + detalle premisas/pesos[hover]/enfrentadas + generar tarea) + gestión de listas
   globales (situaciones/materias) + `createTask` pre-crea **pieza vacía incompleta**. tsc + build OK + BD real 6/6 (ROLLBACK).

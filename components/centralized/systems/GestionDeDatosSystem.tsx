@@ -222,6 +222,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       problema: 'problemas', fuente_premisa: 'fuentes', fuente_peso: 'fuentes',
       enfrentamiento: 'enfrentamientos', codigo: 'codigos', categoria: 'categorias',
       pieza: 'piezas', rompecabezas: 'rompecabezas', subtema: 'subtemas', tema: 'temas',
+      condicion: '', variable: '', // no aparecen en el grafo de Gestión de Datos
     };
     try {
       await mutate(`${API}/${routeByType[n.type]}`, 'DELETE', { id: n.id });

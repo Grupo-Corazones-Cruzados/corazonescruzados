@@ -7,7 +7,9 @@ import {
 } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import GdGraph from '@/components/centralized/gestion-datos/GdGraph';
 import { FACTORES, FACTOR_LABEL, FACTOR_COLOR, causaLabel, RESTRICCION_TIPOS, RESTRICCION_LABEL, type RestriccionTipo } from '@/lib/centralized/condiciologia';
+import type { GdGraph as GdGraphT } from '@/lib/centralized/gestion-datos';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -41,6 +43,12 @@ export default function GestionDeCondicionesSystem({ isAdmin }: { system?: any; 
   const [selCond, setSelCond] = useState<number | null>(null);
   const [modal, setModal] = useState<null | 'catalogo' | 'variable'>(null);
   const [confirmComplete, setConfirmComplete] = useState(false);
+  const [piezaView, setPiezaView] = useState<'panel' | 'universo'>('panel');
+  const [piezaGraph, setPiezaGraph] = useState<GdGraphT>({ nodes: [], edges: [] });
+  const [reqs, setReqs] = useState<any[]>([]);
+  const [miembrosFund, setMiembrosFund] = useState<{ id: number; name: string }[]>([]);
+  const [entregableFor, setEntregableFor] = useState<number | null>(null);
+  const [newReq, setNewReq] = useState({ titulo: '', descripcion: '' });
 
   const task = useMemo(() => tasks.find((t) => t.id === taskId) || null, [tasks, taskId]);
   const condicion = useMemo(() => ws?.condiciones.find((c) => c.id === selCond) || null, [ws, selCond]);
@@ -60,10 +68,23 @@ export default function GestionDeCondicionesSystem({ isAdmin }: { system?: any; 
     try { const d = await fetch(`${API}/pieza?pieza_id=${piezaId}`).then((r) => r.json()); setWs(d.data || null); } catch { /* noop */ }
   }, []);
 
-  useEffect(() => { loadTasks(); loadCatalogo(); }, [loadTasks, loadCatalogo]);
-  useEffect(() => { loadCodigos(taskId); loadWs(task?.pieza_id ?? null); setSelCond(null); }, [taskId, task?.pieza_id, loadCodigos, loadWs]);
+  const loadReqs = useCallback(async (id: number | null) => {
+    if (!id) { setReqs([]); return; }
+    try { const d = await fetch(`${API}/requerimientos?task_id=${id}`).then((r) => r.json()); setReqs(d.data || []); } catch { /* noop */ }
+  }, []);
+  const loadMiembros = useCallback(async () => {
+    try { const d = await fetch(`${API}/miembros-fundamentacion`).then((r) => r.json()); setMiembrosFund(d.data || []); } catch { /* noop */ }
+  }, []);
 
-  const reloadWs = useCallback(() => loadWs(task?.pieza_id ?? null), [loadWs, task?.pieza_id]);
+  useEffect(() => { loadTasks(); loadCatalogo(); loadMiembros(); }, [loadTasks, loadCatalogo, loadMiembros]);
+  useEffect(() => { loadCodigos(taskId); loadWs(task?.pieza_id ?? null); loadReqs(taskId); setSelCond(null); }, [taskId, task?.pieza_id, loadCodigos, loadWs, loadReqs]);
+
+  const loadGraph = useCallback(async (piezaId: number | null) => {
+    if (!piezaId) { setPiezaGraph({ nodes: [], edges: [] }); return; }
+    try { const d = await fetch(`${API}/pieza-grafo?pieza_id=${piezaId}`).then((r) => r.json()); setPiezaGraph(d.data || { nodes: [], edges: [] }); } catch { /* noop */ }
+  }, []);
+  const reloadWs = useCallback(async () => { await loadWs(task?.pieza_id ?? null); await loadGraph(task?.pieza_id ?? null); }, [loadWs, loadGraph, task?.pieza_id]);
+  useEffect(() => { loadGraph(task?.pieza_id ?? null); }, [task?.pieza_id, loadGraph]);
 
   // ── Pieza: tipo / códigos ─────────────────────────────────────────────────
   const setTipo = async (tipo: string) => {
@@ -100,6 +121,17 @@ export default function GestionDeCondicionesSystem({ isAdmin }: { system?: any; 
   const reopen = async () => {
     if (!task) return;
     try { await mutate(`${API}/tareas`, 'PATCH', { id: task.id, action: 'reopen' }); toast.success('Tarea reabierta'); await loadTasks(); await reloadWs(); }
+    catch (e: any) { toast.error(e.message); }
+  };
+
+  const addReq = async () => {
+    if (!task || !newReq.titulo.trim()) { toast.error('Título requerido'); return; }
+    try { await mutate(`${API}/requerimientos`, 'POST', { task_id: task.id, ...newReq }); setNewReq({ titulo: '', descripcion: '' }); await loadReqs(task.id); }
+    catch (e: any) { toast.error(e.message); }
+  };
+  const delReq = async (id: number) => { if (!task) return; try { await mutate(`${API}/requerimientos`, 'DELETE', { id }); await loadReqs(task.id); } catch (e: any) { toast.error(e.message); } };
+  const tomar = async (kind: 'ticket' | 'project', id: number) => {
+    try { await mutate(`${API}/tomar`, 'POST', { kind, id }); toast.success(kind === 'ticket' ? 'Ticket tomado' : 'Te uniste al proyecto'); if (task) await loadReqs(task.id); }
     catch (e: any) { toast.error(e.message); }
   };
 
@@ -160,10 +192,52 @@ export default function GestionDeCondicionesSystem({ isAdmin }: { system?: any; 
                 </div>
               </div>
             ) : tab === 'subtareas' ? (
-              <div className="flex-1 flex items-center justify-center p-6">
-                <p className="text-[12px] text-digi-muted text-center max-w-sm" style={mf}>Las <b className="text-digi-text">subtareas</b> (requerimientos con tickets/proyectos de paso fundamentación y autorización saltada) se desarrollarán en la siguiente fase.</p>
+              <div className="flex-1 overflow-y-auto p-3">
+                <p className="text-[11.5px] text-digi-muted mb-2" style={mf}>Cada requerimiento genera <b>tickets o proyectos reales</b> (tú eres el cliente). Solo miembros de <b>paso fundamentación</b> pueden tomarlos; su autorización de acceso se salta.</p>
+                <div className="space-y-2 mb-3">
+                  {reqs.map((r) => (
+                    <div key={r.id} className="border border-digi-border rounded-md p-2.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[12.5px] font-semibold text-digi-text flex-1" style={mf}>{r.titulo}</span>
+                        <button onClick={() => setEntregableFor(r.id)} className="text-[10.5px] text-accent hover:underline inline-flex items-center gap-0.5"><Plus className="w-3 h-3" /> Entregable</button>
+                        <button onClick={() => delReq(r.id)} className="text-digi-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                      </div>
+                      {r.descripcion && <p className="text-[11px] text-digi-muted mb-1.5" style={mf}>{r.descripcion}</p>}
+                      <div className="space-y-1">
+                        {r.tickets.map((t: any) => (
+                          <EntregableRow key={`t${t.id}`} kind="ticket" item={t} onTomar={() => tomar('ticket', t.id)} />
+                        ))}
+                        {r.projects.map((p: any) => (
+                          <EntregableRow key={`p${p.id}`} kind="project" item={p} onTomar={() => tomar('project', p.id)} />
+                        ))}
+                        {r.tickets.length === 0 && r.projects.length === 0 && <p className="text-[10.5px] text-digi-muted" style={mf}>Sin entregables. Agrega tickets o proyectos.</p>}
+                      </div>
+                    </div>
+                  ))}
+                  {reqs.length === 0 && <p className="text-[11.5px] text-digi-muted" style={mf}>Sin requerimientos aún.</p>}
+                </div>
+                <div className="border border-dashed border-digi-border rounded-md p-2.5">
+                  <p className="text-[11px] font-semibold text-digi-text mb-1" style={df}>Nuevo requerimiento</p>
+                  <input className={`${INPUT} mb-1.5`} value={newReq.titulo} onChange={(e) => setNewReq((f) => ({ ...f, titulo: e.target.value }))} placeholder="Título del requerimiento" />
+                  <div className="flex gap-1.5">
+                    <input className={`${INPUT} flex-1`} value={newReq.descripcion} onChange={(e) => setNewReq((f) => ({ ...f, descripcion: e.target.value }))} placeholder="Descripción (opcional)" />
+                    <button onClick={addReq} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md" style={mf}>Agregar</button>
+                  </div>
+                </div>
               </div>
             ) : (
+              <div className="flex-1 min-h-0 flex flex-col">
+                <div className="px-3 py-1.5 border-b border-digi-border flex items-center gap-1.5">
+                  {(['panel', 'universo'] as const).map((v) => (
+                    <button key={v} onClick={() => setPiezaView(v)} className={`px-2.5 py-1 text-[11px] rounded-md border transition-colors capitalize ${piezaView === v ? 'bg-accent text-white border-accent' : 'border-digi-border text-digi-muted hover:text-digi-text'}`} style={mf}>{v === 'panel' ? 'Panel' : 'Universo de gráficos'}</button>
+                  ))}
+                  <span className="text-[10px] text-digi-muted ml-1" style={mf}>Mismos íconos que Gestión de Datos: código, pieza, condición, variable.</span>
+                </div>
+                {piezaView === 'universo' ? (
+                  <div className="flex-1 min-h-0">
+                    <GdGraph nodes={piezaGraph.nodes} edges={piezaGraph.edges} selectedKey={null} onSelect={() => {}} fitSignal={String(task.pieza_id || '')} />
+                  </div>
+                ) : (
               <div className="flex-1 min-h-0 flex">
                 {/* Pieza + condiciones (lista) */}
                 <div className="w-[300px] shrink-0 border-r border-digi-border flex flex-col">
@@ -223,12 +297,15 @@ export default function GestionDeCondicionesSystem({ isAdmin }: { system?: any; 
                   </div>
                 </div>
               </div>
+                )}
+              </div>
             )}
           </>
         )}
       </div>
 
       {modal === 'catalogo' && <CatalogoModal catalogo={catalogo} onClose={() => setModal(null)} onChanged={loadCatalogo} />}
+      {entregableFor != null && <EntregableModal reqId={entregableFor} miembros={miembrosFund} onClose={() => setEntregableFor(null)} onSaved={async () => { setEntregableFor(null); if (task) await loadReqs(task.id); }} />}
 
       <PixelConfirm
         open={confirmComplete}
@@ -457,6 +534,73 @@ function CatalogoModal({ catalogo, onClose, onChanged }: { catalogo: CatVar[]; o
             );
           })}
           {catalogo.length === 0 && <p className="text-[11px] text-digi-muted" style={mf}>Catálogo vacío.</p>}
+        </div>
+      </div>
+    </FloatingWindow>
+  );
+}
+
+// ── Fila de entregable (ticket/proyecto) ──────────────────────────────────────
+function EntregableRow({ kind, item, onTomar }: { kind: 'ticket' | 'project'; item: any; onTomar: () => void }) {
+  const taken = kind === 'ticket' ? !!item.member_id : !!item.assigned_member_id;
+  const href = kind === 'ticket' ? `/dashboard/tickets/${item.id}` : `/dashboard/projects/${item.id}`;
+  return (
+    <div className="flex items-center gap-2 text-[11.5px] bg-black/[0.02] border border-digi-border rounded px-2 py-1.5">
+      <span className={`text-[9px] px-1.5 py-0.5 rounded shrink-0 ${kind === 'ticket' ? 'bg-sky-50 text-sky-600 border border-sky-200' : 'bg-violet-50 text-violet-600 border border-violet-200'}`}>{kind === 'ticket' ? 'Ticket' : 'Proyecto'}</span>
+      <span className="text-digi-text truncate flex-1" style={mf}>{item.title}</span>
+      <span className="text-[10px] text-digi-muted" style={mf}>{taken ? (item.member_name || 'Asignado') : 'Público'}</span>
+      <a href={href} target="_blank" rel="noreferrer" className="text-accent hover:underline text-[10.5px]" style={mf}>Ver</a>
+      {!taken && <button onClick={onTomar} className="text-[10.5px] text-white bg-accent hover:bg-accent/90 rounded px-1.5 py-0.5" style={mf}>{kind === 'ticket' ? 'Tomar' : 'Participar'}</button>}
+    </div>
+  );
+}
+
+// ── Modal: crear entregable (ticket/proyecto real) ────────────────────────────
+function EntregableModal({ reqId, miembros, onClose, onSaved }: { reqId: number; miembros: { id: number; name: string }[]; onClose: () => void; onSaved: () => void }) {
+  const [kind, setKind] = useState<'ticket' | 'project'>('ticket');
+  const [titulo, setTitulo] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [asignacion, setAsignacion] = useState<'publico' | 'miembro'>('publico');
+  const [memberId, setMemberId] = useState('');
+
+  const save = async () => {
+    if (!titulo.trim()) { toast.error('Título requerido'); return; }
+    if (asignacion === 'miembro' && !memberId) { toast.error('Elige un miembro de paso fundamentación'); return; }
+    try {
+      await mutate(`${API}/entregables`, 'POST', { requerimiento_id: reqId, kind, titulo, descripcion, member_id: asignacion === 'miembro' ? Number(memberId) : null });
+      toast.success(kind === 'ticket' ? 'Ticket creado' : 'Proyecto creado');
+      onSaved();
+    } catch (e: any) { toast.error(e.message); }
+  };
+  return (
+    <FloatingWindow open onClose={onClose} title="Nuevo entregable (ticket / proyecto)" initialWidth={480} initialHeight={460}>
+      <div className="p-4 space-y-3">
+        <p className="text-[11.5px] text-digi-muted" style={mf}>Se crea real en el módulo correspondiente, contigo como cliente y marcado para paso fundamentación.</p>
+        <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
+          {(['ticket', 'project'] as const).map((k) => (
+            <button key={k} onClick={() => setKind(k)} className={`px-3 py-1.5 text-[12px] ${kind === k ? 'bg-accent text-white' : 'text-digi-text hover:bg-black/[0.03]'}`} style={mf}>{k === 'ticket' ? 'Ticket' : 'Proyecto'}</button>
+          ))}
+        </div>
+        <div><label className="block text-[11px] font-medium text-digi-text mb-1" style={mf}>Título</label><input className={INPUT} value={titulo} onChange={(e) => setTitulo(e.target.value)} autoFocus /></div>
+        <div><label className="block text-[11px] font-medium text-digi-text mb-1" style={mf}>Descripción</label><textarea className={`${INPUT} resize-none`} rows={3} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} /></div>
+        <div>
+          <label className="block text-[11px] font-medium text-digi-text mb-1" style={mf}>Asignación</label>
+          <div className="inline-flex rounded-md border border-digi-border overflow-hidden mb-1.5">
+            {(['publico', 'miembro'] as const).map((a) => (
+              <button key={a} onClick={() => setAsignacion(a)} className={`px-3 py-1.5 text-[12px] ${asignacion === a ? 'bg-accent text-white' : 'text-digi-text hover:bg-black/[0.03]'}`} style={mf}>{a === 'publico' ? 'Público' : 'Asignar miembro'}</button>
+            ))}
+          </div>
+          {asignacion === 'miembro' && (
+            <select className={INPUT} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+              <option value="">Miembro de paso fundamentación…</option>
+              {miembros.map((m) => <option key={m.id} value={m.id} className="bg-white">{m.name}</option>)}
+            </select>
+          )}
+          {asignacion === 'publico' && <p className="text-[10.5px] text-digi-muted" style={mf}>Queda visible; el primer miembro de paso fundamentación que lo tome lo ejecuta.</p>}
+        </div>
+        <div className="flex justify-end gap-2 pt-1">
+          <button onClick={onClose} className="px-3 py-1.5 text-[12px] text-digi-text border border-digi-border rounded-md hover:border-accent" style={mf}>Cancelar</button>
+          <button onClick={save} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md" style={mf}>Crear</button>
         </div>
       </div>
     </FloatingWindow>

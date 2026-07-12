@@ -51,6 +51,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
             );
             if (pmRes.rows.length > 0) hasAccess = true;
           }
+          // Proyecto de origen "Gestión de Condiciones": la autorización se SALTA para
+          // cualquier miembro de paso fundamentación (se presume su competencia).
+          if (!hasAccess && project.source_system === 'condiciones') {
+            const pasoRes = await pool.query(`SELECT paso FROM gcc_world.members WHERE id = $1`, [mId]);
+            if (pasoRes.rows[0]?.paso === 'fundamentacion') hasAccess = true;
+          }
         }
       } else if (user.role === 'client') {
         const clientRes = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [user.email]);

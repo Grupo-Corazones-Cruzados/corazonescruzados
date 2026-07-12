@@ -49,9 +49,11 @@ export type GdNodeType =
   | 'pieza'
   | 'rompecabezas'
   | 'subtema'
-  | 'tema';
+  | 'tema'
+  | 'condicion'   // universo de Gestión de Condiciones
+  | 'variable';   // universo de Gestión de Condiciones
 
-export type GdShape = 'triangle' | 'circle' | 'square' | 'diamond' | 'hexagon' | 'star' | 'pentagon' | 'doc' | 'card' | 'octagon';
+export type GdShape = 'triangle' | 'circle' | 'square' | 'diamond' | 'hexagon' | 'star' | 'pentagon' | 'doc' | 'card' | 'octagon' | 'ring' | 'dot';
 
 export const GD_NODE_META: Record<GdNodeType, { label: string; plural: string; color: string; shape: GdShape }> = {
   problema:       { label: 'Problema',       plural: 'Problemas',       color: '#f59e0b', shape: 'triangle' }, // ámbar
@@ -64,6 +66,8 @@ export const GD_NODE_META: Record<GdNodeType, { label: string; plural: string; c
   rompecabezas:   { label: 'Rompecabezas',   plural: 'Rompecabezas',    color: '#818cf8', shape: 'doc' },       // índigo
   subtema:        { label: 'Subtema',        plural: 'Subtemas',        color: '#f472b6', shape: 'card' },      // rosa
   tema:           { label: 'Tema',           plural: 'Temas',           color: '#fb923c', shape: 'octagon' },   // naranja
+  condicion:      { label: 'Condición',      plural: 'Condiciones',     color: '#38bdf8', shape: 'ring' },      // celeste
+  variable:       { label: 'Variable',       plural: 'Variables',       color: '#a3e635', shape: 'dot' },       // lima
 };
 
 /** Color de un código no verificado (gris) — el verificado usa el color esmeralda del meta. */

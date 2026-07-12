@@ -285,12 +285,32 @@ Stack estándar de la casa, con particularidades de este repo:
     Dinámica Condiciológica), `gc_condiciones` + `gc_condicion_variables`/`_eventos`/`_restricciones`. Dominio de
     restricciones/factores en `condiciologia.ts` (`RESTRICCION_TIPOS`, `FACTORES`, `causaLabel`). **8 rutas API**
     `app/api/centralized/condiciones/**`.
-  - **Verificado:** tsc + `next build` OK (8 rutas) + **flujo probado contra la BD real de Railway (8/8, ROLLBACK)**:
+  - **Verificado (Fase 1):** tsc + `next build` OK (8 rutas) + **flujo probado contra la BD real de Railway (8/8, ROLLBACK)**:
     condición→variables(catálogo+fija)+evento+restricción → completar materializa la pieza con tipo_var y restricciones
     correctos → pieza completa/tarea completada → reabrir revierte.
-  - **PENDIENTE (Fase 2+):** pestaña **Subtareas** (tickets/proyectos con autorización saltada), **universo de gráficos con
-    drag-drop** de variables en el workspace, sistemas **Dinámica Condiciológica** (define el catálogo real de variables) y
-    **Laboratorio Condiciológico**, módulo **Alertas**. **Falta validación visual en vivo.**
+  - **FASE 2 (2026-07-11, HECHA):** integración REAL con Tickets/Proyectos + universo de gráficos.
+    - **Subtareas (requerimientos):** pestaña funcional. `gc_requerimientos` + `gc_requerimiento_tickets`/`_projects`.
+      Cada requerimiento crea **tickets/proyectos REALES** (`createReqTicket`/`createReqProject`, usuario=cliente vía
+      `ensureUserClientAccount`, INSERT directo a `gcc_world.tickets`/`projects`, marcados `source_system='condiciones'`,
+      `source_paso='fundamentacion'`). Asignación: **miembro paso fundamentación** (member_id / `setResponsible` invited) o
+      **público** (open_for_proposals / status=open, is_private=false). **Tomar** (`/tomar`): `takeTicket`/`joinProject` con
+      enforcement **solo paso fundamentación** (candidatos/otros → error). **Autorización saltada:** los públicos no tienen
+      gate; además el gate de proyecto privado (`app/api/projects/[id]/route.ts`) tiene **bypass** si `source_system=
+      'condiciones'` y el miembro es paso fundamentación. Columnas nuevas `tickets/projects.source_system`/`source_paso`
+      (+ `tickets.open_for_proposals` que faltaba en prod) vía `ADD COLUMN IF NOT EXISTS`. Rutas `/requerimientos`,
+      `/entregables`, `/tomar`, `/miembros-fundamentacion`. En la UI: fila de entregable con estado/asignado, "Ver" (link al
+      módulo real), "Tomar/Participar".
+    - **Universo de gráficos (workspace de pieza):** toggle **Panel/Universo** en la pestaña Pieza; `getPiezaGraph` +
+      `GdGraph` con los MISMOS íconos (código hexágono, pieza pentágono) + **condición (anillo celeste)** y **variable
+      (punto lima)**. Nodos nuevos `condicion`/`variable` en `GD_NODE_META` + formas `ring`/`dot`; condición no verificada
+      atenuada (como código). Ruta `/pieza-grafo`.
+    - Verificado: tsc + `next build` OK (14 rutas condiciones) + **BD real 5/5 (ROLLBACK)**: INSERT ticket (service_id NULL)
+      y proyecto (público) con las columnas reales; 1 miembro paso fundamentación disponible.
+    - **Nota:** los tickets creados llevan `service_id=NULL` (no aplica servicio) y estado 'pending'; aparecen en el módulo
+      Tickets. **PENDIENTE fino:** botón "Tomar" en la UI de los módulos Tickets/Proyectos (hoy se toma desde Gestión de
+      Condiciones); drag-drop de variables al crear condición (hoy por modal); scoping de la lista de tickets por paso.
+  - **PENDIENTE (sistemas hermanos):** **Dinámica Condiciológica** (catálogo real de variables), **Laboratorio
+    Condiciológico**, módulo **Alertas**. **Falta validación visual en vivo.**
 - **Sistema "Metodología Condiciológica" — Centralizado · global · fundamentación (Fase 1, 2026-07-11):** nuevo sistema
   built-in (celda "Condiciología", slug `metodologia-condiciologica`; sembrado en `ensureTable()` de systems + dispatch por
   slug). Es **"el lector"**: aplica la metodología de **6 pasos** (Reconocer→Controlar→Predecir→Experimentar→Convertir→

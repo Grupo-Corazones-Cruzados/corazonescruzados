@@ -16,6 +16,7 @@ const BG = '#000000';
 function colorOf(n: GdGraphNode): string {
   if (n.type === 'codigo' && !n.verificado) return CODIGO_UNVERIFIED_COLOR;
   if (n.type === 'pieza' && n.incompleta) return CODIGO_UNVERIFIED_COLOR;
+  if (n.type === 'condicion' && !n.verificado) return CODIGO_UNVERIFIED_COLOR;
   return GD_NODE_META[n.type].color;
 }
 function shapeOf(n: GdGraphNode): string {
@@ -77,6 +78,9 @@ function traceShape(ctx: CanvasRenderingContext2D, shape: string, x: number, y: 
       i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
     }
     ctx.closePath();
+  } else if (shape === 'ring' || shape === 'dot') {
+    // Anillo (condición) y punto (variable) se dibujan como círculos.
+    ctx.arc(x, y, shape === 'dot' ? r * 0.8 : r, 0, 2 * Math.PI);
   } else {
     // star
     const spikes = 5, outer = r * 1.15, inner = r * 0.5;
@@ -251,7 +255,8 @@ export default function GdGraph({
             const c = colorOf(nn);
             const meta = GD_NODE_META[nn.type];
             const state = nn.type === 'codigo' ? (nn.verificado ? ' · Verificado' : ' · No verificado')
-              : nn.type === 'pieza' ? (nn.incompleta ? ' · Incompleta' : ' · Completa') : '';
+              : nn.type === 'pieza' ? (nn.incompleta ? ' · Incompleta' : ' · Completa')
+              : nn.type === 'condicion' ? (nn.verificado ? ' · Verificada' : ' · No verificada') : '';
             const cred = nn.type === 'fuente_premisa' && nn.credibilidad != null ? ` · ${Math.round(nn.credibilidad)}%` : '';
             const sub = nn.subtitle ? `<div style="font-size:11px;color:#a9aac2;line-height:1.3;margin-top:3px">${escapeHtml(nn.subtitle.slice(0, 120))}${nn.subtitle.length > 120 ? '…' : ''}</div>` : '';
             return `<div style="max-width:260px;padding:8px 10px;background:#181826;border:1px solid #2b2b40;border-radius:8px;color:#e8e8f2;font-family:'Segoe UI',system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.4)">
@@ -280,7 +285,7 @@ export default function GdGraph({
             const lit = isLit(node.id);
             const isActiveNode = node.id === active;
             const isSel = node.id === selectedKey;
-            const muted = (n.type === 'codigo' && !n.verificado) || (n.type === 'pieza' && n.incompleta);
+            const muted = (n.type === 'codigo' && !n.verificado) || (n.type === 'pieza' && n.incompleta) || (n.type === 'condicion' && !n.verificado);
             const alpha = lit ? (muted ? 0.62 : 1) : (filtering ? 0.07 : 0.2);
 
             // Halo

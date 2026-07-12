@@ -5,6 +5,9 @@
 import { pool } from '@/lib/db';
 import { ensureGestionDatosTables, getCodigoDetalle } from '@/lib/centralized/gestion-datos-db';
 import { ensureMetodologiaTables } from '@/lib/centralized/metodologia-db';
+import { gdKey, type GdGraph } from '@/lib/centralized/gestion-datos';
+import { addParticipant, setResponsible } from '@/lib/projects/members';
+import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
 
 let ready = false;
 
@@ -68,7 +71,166 @@ export async function ensureCondicionesTables(): Promise<void> {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
 
+  // ── Subtareas (requerimientos) → tickets/proyectos reales de paso fundamentación ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gc_requerimientos (
+      id SERIAL PRIMARY KEY,
+      task_id INT NOT NULL REFERENCES gcc_world.mc_tasks(id) ON DELETE CASCADE,
+      titulo TEXT NOT NULL,
+      descripcion TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS gc_requerimientos_task_idx ON gcc_world.gc_requerimientos(task_id)`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gc_requerimiento_tickets (
+      id SERIAL PRIMARY KEY,
+      requerimiento_id INT NOT NULL REFERENCES gcc_world.gc_requerimientos(id) ON DELETE CASCADE,
+      ticket_id INT NOT NULL,
+      UNIQUE (requerimiento_id, ticket_id)
+    )`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gc_requerimiento_projects (
+      id SERIAL PRIMARY KEY,
+      requerimiento_id INT NOT NULL REFERENCES gcc_world.gc_requerimientos(id) ON DELETE CASCADE,
+      project_id INT NOT NULL,
+      UNIQUE (requerimiento_id, project_id)
+    )`);
+  // Marca de origen en tickets/proyectos: 'condiciones' + paso al que se restringe la toma.
+  await pool.query(`ALTER TABLE gcc_world.tickets  ADD COLUMN IF NOT EXISTS source_system TEXT`);
+  await pool.query(`ALTER TABLE gcc_world.tickets  ADD COLUMN IF NOT EXISTS source_paso   TEXT`);
+  await pool.query(`ALTER TABLE gcc_world.tickets  ADD COLUMN IF NOT EXISTS open_for_proposals BOOLEAN DEFAULT false`);
+  await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS source_system TEXT`);
+  await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS source_paso   TEXT`);
+
   ready = true;
+}
+
+// ── Miembros de paso fundamentación (posibles tomadores) ──────────────────────
+export async function listMembersFundamentacion() {
+  await ensureCondicionesTables();
+  const { rows } = await pool.query(
+    `SELECT id, name FROM gcc_world.members WHERE paso = 'fundamentacion' AND COALESCE(is_active, true) = true ORDER BY name ASC`,
+  );
+  return rows;
+}
+
+async function currentMemberPaso(userId: string): Promise<{ member_id: number | null; paso: string | null }> {
+  const { rows } = await pool.query(
+    `SELECT m.id AS member_id, m.paso FROM gcc_world.users u JOIN gcc_world.members m ON m.id = u.member_id WHERE u.id = $1`,
+    [userId],
+  );
+  return { member_id: rows[0]?.member_id ?? null, paso: rows[0]?.paso ?? null };
+}
+
+// ── Requerimientos (subtareas) ────────────────────────────────────────────────
+export async function listRequerimientos(taskId: number) {
+  await ensureCondicionesTables();
+  const { rows } = await pool.query(
+    `SELECT id, titulo, descripcion, created_at FROM gcc_world.gc_requerimientos WHERE task_id = $1 ORDER BY created_at ASC`,
+    [taskId],
+  );
+  const out = [];
+  for (const r of rows) {
+    const { rows: tks } = await pool.query(
+      `SELECT t.id, t.title, t.status, t.member_id, t.open_for_proposals, m.name AS member_name
+         FROM gcc_world.gc_requerimiento_tickets rt
+         JOIN gcc_world.tickets t ON t.id = rt.ticket_id
+         LEFT JOIN gcc_world.members m ON m.id = t.member_id
+        WHERE rt.requerimiento_id = $1 ORDER BY rt.id ASC`, [r.id]);
+    const { rows: prs } = await pool.query(
+      `SELECT p.id, p.title, p.status, p.is_private, p.assigned_member_id, m.name AS member_name
+         FROM gcc_world.gc_requerimiento_projects rp
+         JOIN gcc_world.projects p ON p.id = rp.project_id
+         LEFT JOIN gcc_world.members m ON m.id = p.assigned_member_id
+        WHERE rp.requerimiento_id = $1 ORDER BY rp.id ASC`, [r.id]);
+    out.push({ ...r, tickets: tks, projects: prs });
+  }
+  return out;
+}
+
+export async function createRequerimiento(taskId: number, titulo: string, descripcion?: string) {
+  await ensureCondicionesTables();
+  if (!titulo?.trim()) throw new Error('El título del requerimiento es requerido.');
+  const { rows } = await pool.query(`INSERT INTO gcc_world.gc_requerimientos (task_id, titulo, descripcion) VALUES ($1, $2, $3) RETURNING *`, [taskId, titulo.trim(), (descripcion || '').trim()]);
+  return rows[0];
+}
+export async function deleteRequerimiento(id: number) {
+  await ensureCondicionesTables();
+  await pool.query(`DELETE FROM gcc_world.gc_requerimientos WHERE id = $1`, [id]);
+}
+
+/** Enlaza un ticket/proyecto YA CREADO (por los endpoints reales) al requerimiento y lo
+ *  marca como origen 'condiciones · fundamentación'. */
+export async function linkEntregable(requerimientoId: number, kind: 'ticket' | 'project', refId: number) {
+  await ensureCondicionesTables();
+  if (kind === 'ticket') {
+    await pool.query(`UPDATE gcc_world.tickets SET source_system = 'condiciones', source_paso = 'fundamentacion' WHERE id = $1`, [refId]);
+    await pool.query(`INSERT INTO gcc_world.gc_requerimiento_tickets (requerimiento_id, ticket_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [requerimientoId, refId]);
+  } else {
+    await pool.query(`UPDATE gcc_world.projects SET source_system = 'condiciones', source_paso = 'fundamentacion' WHERE id = $1`, [refId]);
+    await pool.query(`INSERT INTO gcc_world.gc_requerimiento_projects (requerimiento_id, project_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [requerimientoId, refId]);
+  }
+}
+
+export async function unlinkEntregable(kind: 'ticket' | 'project', refId: number) {
+  await ensureCondicionesTables();
+  if (kind === 'ticket') await pool.query(`DELETE FROM gcc_world.gc_requerimiento_tickets WHERE ticket_id = $1`, [refId]);
+  else await pool.query(`DELETE FROM gcc_world.gc_requerimiento_projects WHERE project_id = $1`, [refId]);
+}
+
+/** Crea un TICKET real (usuario=cliente) bajo un requerimiento, marcado origen condiciones.
+ *  assigned=miembro fundamentación asignado; si no, público (open_for_proposals). */
+export async function createReqTicket(userId: string, requerimientoId: number, titulo: string, descripcion: string, memberId: number | null) {
+  await ensureCondicionesTables();
+  if (!titulo?.trim()) throw new Error('El título del ticket es requerido.');
+  const clientId = await ensureUserClientAccount(userId);
+  const open = !memberId;
+  const { rows } = await pool.query(
+    `INSERT INTO gcc_world.tickets (title, description, service_id, member_id, client_id, user_id, open_for_proposals, status, source_system, source_paso, created_at, updated_at)
+     VALUES ($1, $2, NULL, $3, $4, $5, $6, 'pending', 'condiciones', 'fundamentacion', NOW(), NOW()) RETURNING id`,
+    [titulo.trim(), (descripcion || '').trim(), memberId, clientId, userId, open],
+  );
+  const ticketId = rows[0].id;
+  await pool.query(`INSERT INTO gcc_world.gc_requerimiento_tickets (requerimiento_id, ticket_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [requerimientoId, ticketId]);
+  return { id: ticketId };
+}
+
+/** Crea un PROYECTO real (usuario=cliente) bajo un requerimiento, marcado origen condiciones. */
+export async function createReqProject(userId: string, requerimientoId: number, titulo: string, descripcion: string, memberId: number | null) {
+  await ensureCondicionesTables();
+  if (!titulo?.trim()) throw new Error('El título del proyecto es requerido.');
+  const clientId = await ensureUserClientAccount(userId);
+  const isPrivate = !!memberId; // asignado → privado; público → abierto
+  const { rows } = await pool.query(
+    `INSERT INTO gcc_world.projects (title, description, status, is_private, client_id, created_by_user_id, source_system, source_paso, created_at, updated_at)
+     VALUES ($1, $2, 'open', $3, $4, $5, 'condiciones', 'fundamentacion', NOW(), NOW()) RETURNING id`,
+    [titulo.trim(), (descripcion || '').trim(), isPrivate, clientId, String(userId)],
+  );
+  const projectId = rows[0].id;
+  if (memberId) await setResponsible(projectId, memberId, { invited: true });
+  await pool.query(`INSERT INTO gcc_world.gc_requerimiento_projects (requerimiento_id, project_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [requerimientoId, projectId]);
+  return { id: projectId };
+}
+
+// ── Tomar (solo miembros paso fundamentación) ─────────────────────────────────
+export async function takeTicket(userId: string, ticketId: number) {
+  await ensureCondicionesTables();
+  const me = await currentMemberPaso(userId);
+  if (!me.member_id || me.paso !== 'fundamentacion') throw new Error('Solo miembros de paso fundamentación pueden tomar este ticket.');
+  const { rows } = await pool.query(`SELECT member_id, source_system FROM gcc_world.tickets WHERE id = $1`, [ticketId]);
+  const t = rows[0];
+  if (!t) throw new Error('Ticket inexistente.');
+  if (t.member_id) throw new Error('Este ticket ya fue tomado.');
+  await pool.query(`UPDATE gcc_world.tickets SET member_id = $1, open_for_proposals = false, updated_at = NOW() WHERE id = $2`, [me.member_id, ticketId]);
+  return { member_id: me.member_id };
+}
+
+export async function joinProject(userId: string, projectId: number) {
+  await ensureCondicionesTables();
+  const me = await currentMemberPaso(userId);
+  if (!me.member_id || me.paso !== 'fundamentacion') throw new Error('Solo miembros de paso fundamentación pueden participar en este proyecto.');
+  await addParticipant(projectId, me.member_id);
+  return { member_id: me.member_id };
 }
 
 // ── Bandeja de tareas (todas las de Metodología, ascendente) ──────────────────
@@ -247,6 +409,44 @@ export async function completeTask(taskId: number) {
   await pool.query(`UPDATE gcc_world.gd_piezas SET estado = 'completa' WHERE id = $1`, [piezaId]);
   await pool.query(`UPDATE gcc_world.mc_tasks SET estado = 'completada' WHERE id = $1`, [taskId]);
   return { piezaId };
+}
+
+// ── Universo de gráficos del workspace de la pieza ────────────────────────────
+// Reusa los mismos iconos de Gestión de Datos: código (hexágono), pieza (pentágono),
+// + condición (anillo) y variable (punto). Estructura: código→pieza→condición→variable.
+export async function getPiezaGraph(piezaId: number): Promise<GdGraph> {
+  await ensureCondicionesTables();
+  const { rows: pz } = await pool.query(`SELECT id, tipo, estado FROM gcc_world.gd_piezas WHERE id = $1`, [piezaId]);
+  const pieza = pz[0];
+  if (!pieza) return { nodes: [], edges: [] };
+  const nodes: GdGraph['nodes'] = [];
+  const edges: GdGraph['edges'] = [];
+
+  nodes.push({
+    key: gdKey('pieza', pieza.id), type: 'pieza', id: pieza.id,
+    title: pieza.tipo === 'correccion' ? 'Pieza · Corrección' : 'Pieza · Revisión',
+    incompleta: pieza.estado !== 'completa',
+  });
+
+  const { rows: pcods } = await pool.query(`SELECT codigo_id FROM gcc_world.gd_pieza_codigos WHERE pieza_id = $1`, [piezaId]);
+  for (const pc of pcods) {
+    const d = await getCodigoDetalle(pc.codigo_id);
+    if (d) {
+      nodes.push({ key: gdKey('codigo', d.id), type: 'codigo', id: d.id, title: d.nomenclatura, verificado: d.verificado });
+      edges.push({ source: gdKey('codigo', d.id), target: gdKey('pieza', pieza.id), kind: 'compone' });
+    }
+  }
+
+  const conds = await listCondiciones(piezaId);
+  for (const cond of conds as any[]) {
+    nodes.push({ key: gdKey('condicion', cond.id), type: 'condicion', id: cond.id, title: cond.nombre, verificado: cond.verificada });
+    edges.push({ source: gdKey('pieza', pieza.id), target: gdKey('condicion', cond.id), kind: 'agrupa' });
+    for (const v of cond.variables as any[]) {
+      nodes.push({ key: gdKey('variable', v.id), type: 'variable', id: v.id, title: v.nombre, subtitle: `${v.factor}${v.causa ? '/' + v.causa : ''}` });
+      edges.push({ source: gdKey('condicion', cond.id), target: gdKey('variable', v.id), kind: 'compone' });
+    }
+  }
+  return { nodes, edges };
 }
 
 export async function reopenTask(taskId: number) {
