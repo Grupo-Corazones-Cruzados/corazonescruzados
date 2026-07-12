@@ -21,10 +21,18 @@ import {
 } from '@/lib/centralized/gestion-datos';
 
 let ready = false;
+let ensuring: Promise<void> | null = null;
 
 export async function ensureGestionDatosTables(): Promise<void> {
   if (ready) return;
+  // Serializa: si ya hay un ensure en curso, esperamos ESE (evita DDL/migración concurrentes cuando
+  // loadAll dispara ~10 fetches en paralelo, que en Postgres pueden chocar en CREATE TABLE/ALTER).
+  if (ensuring) return ensuring;
+  ensuring = doEnsureGestionDatosTables().then(() => { ready = true; }).finally(() => { ensuring = null; });
+  return ensuring;
+}
 
+async function doEnsureGestionDatosTables(): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.gd_problematicas (
       id SERIAL PRIMARY KEY,
@@ -296,8 +304,6 @@ export async function ensureGestionDatosTables(): Promise<void> {
     }
     await pool.query(`UPDATE gcc_world.gd_fuentes SET referencia_id = $1 WHERE id = $2`, [refId, f.id]);
   }
-
-  ready = true;
 }
 
 // ── Helpers internos ──────────────────────────────────────────────────────────
