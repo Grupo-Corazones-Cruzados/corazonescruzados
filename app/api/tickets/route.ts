@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = req.nextUrl;
     const status = searchParams.get('status');
+    const openMode = searchParams.get('open') === '1'; // pestaña "Abiertos" (open_for_proposals)
     const search = searchParams.get('search');
     const page = Number(searchParams.get('page') || 1);
     const limit = Number(searchParams.get('limit') || 15);
@@ -38,7 +39,10 @@ export async function GET(req: NextRequest) {
     // Status-filtered where extends the base.
     let where = baseWhere;
     const params: any[] = [...baseParams];
-    if (status && status !== 'all') {
+    if (openMode) {
+      // Pestaña "Abiertos": tickets abiertos a propuestas (sin miembro asignado).
+      where += ` AND t.open_for_proposals = true`;
+    } else if (status && status !== 'all') {
       params.push(status);
       where += ` AND t.status = $${params.length}`;
     }
@@ -58,6 +62,12 @@ export async function GET(req: NextRequest) {
     let allCount = 0;
     for (const r of countsQ.rows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
     counts.all = allCount;
+    // Conteo de la pestaña "Abiertos".
+    const openCountQ = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere} AND t.open_for_proposals = true`,
+      baseParams,
+    );
+    counts.open = Number(openCountQ.rows[0].n);
 
     const countQ = await pool.query(`SELECT COUNT(*) FROM gcc_world.tickets t ${where}`, params);
     params.push(limit, offset);

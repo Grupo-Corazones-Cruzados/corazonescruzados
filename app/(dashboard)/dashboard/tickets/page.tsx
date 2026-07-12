@@ -16,7 +16,7 @@ import { accessRoleOf } from '@/lib/dashboard/access';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
-  X, ArrowRight, Ticket as TicketIcon,
+  X, ArrowRight, Ticket as TicketIcon, DoorOpen,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -24,6 +24,7 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_TABS = [
   { value: 'all', label: 'Todos', Icon: Inbox },
+  { value: 'open', label: 'Abiertos', Icon: DoorOpen },
   { value: 'pending', label: 'Pendientes', Icon: Clock },
   { value: 'confirmed', label: 'Confirmados', Icon: CircleCheck },
   { value: 'completed', label: 'Completados', Icon: CheckCircle2 },
@@ -92,7 +93,8 @@ export default function TicketsPage() {
 
   const fetchTickets = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
-    if (tab !== 'all') params.set('status', tab);
+    if (tab === 'open') params.set('open', '1');
+    else if (tab !== 'all') params.set('status', tab);
     if (search) params.set('search', search);
     try {
       const res = await fetch(`/api/tickets?${params}`);
@@ -195,7 +197,7 @@ export default function TicketsPage() {
         <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
           <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
           <div className="space-y-0.5">
-            {STATUS_TABS.map((s) => (
+            {STATUS_TABS.filter((s) => s.value !== 'open' || accessRoleOf(user) !== 'client').map((s) => (
               <RailItem key={s.value} active={tab === s.value} Icon={s.Icon} label={s.label}
                 count={counts[s.value]} onClick={() => setTab(s.value)} />
             ))}

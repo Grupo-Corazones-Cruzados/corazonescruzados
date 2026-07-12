@@ -11,7 +11,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 
@@ -43,7 +43,10 @@ export default function TicketDetailPage() {
   const { user } = useAuth();
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'resumen' | 'acciones'>('resumen');
+  const [tab, setTab] = useState<'resumen' | 'acciones' | 'propuestas'>('resumen');
+  const [bids, setBids] = useState<any[]>([]);
+  const [proposalText, setProposalText] = useState('');
+  const [sendingBid, setSendingBid] = useState(false);
 
   // Edit state
   const [editing, setEditing] = useState(false);
@@ -109,6 +112,35 @@ export default function TicketDetailPage() {
   }, [id]);
 
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
+
+  const loadBids = useCallback(async () => {
+    try { const res = await fetch(`/api/tickets/${id}/bids`); const d = await res.json(); setBids(d.data || []); }
+    catch { setBids([]); }
+  }, [id]);
+  useEffect(() => { if (ticket?.open_for_proposals) loadBids(); }, [ticket?.open_for_proposals, loadBids]);
+
+  const sendProposal = async () => {
+    setSendingBid(true);
+    try {
+      const res = await fetch(`/api/tickets/${id}/bids`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proposal: proposalText }) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Error');
+      toast.success('Propuesta enviada');
+      setProposalText('');
+      await loadBids();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSendingBid(false); }
+  };
+  const acceptProposal = async (bidId: number) => {
+    try {
+      const res = await fetch(`/api/tickets/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: bidId }) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Error');
+      toast.success('Propuesta aceptada — miembro asignado');
+      await fetchTicket();
+      await loadBids();
+    } catch (e: any) { toast.error(e.message); }
+  };
 
   // Carga clientes ya facturados al abrir el modal de completar (para autocompletar adquirente)
   useEffect(() => {
@@ -411,7 +443,14 @@ export default function TicketDetailPage() {
   // Is this a request from a client to this member?
   const isRequestForMe = isPending && isMember && user?.member_id && ticket.member_id === user.member_id;
   const showActions = !isPending && ticket.status !== 'withdrawn';
-  const activeTab = tab === 'acciones' && showActions ? 'acciones' : 'resumen';
+  // Propuestas (tickets abiertos a propuestas).
+  const isOpen = !!ticket.open_for_proposals;
+  const isOwner = !!ticket.user_id && String(ticket.user_id) === String(user?.id);
+  const myBid = bids.find((b: any) => b.member_id === user?.member_id);
+  const canBid = isOpen && !isOwner && !!user?.member_id;
+  const activeTab = tab === 'acciones' && showActions ? 'acciones'
+    : tab === 'propuestas' && isOpen ? 'propuestas'
+    : 'resumen';
   // Completar y FACTURAR es exclusivo del admin (regla de negocio).
   const canCompleteTicket = ticket.status === 'confirmed' && isAdmin;
 
@@ -586,6 +625,10 @@ export default function TicketDetailPage() {
                 <SectionRailItem active={activeTab === 'acciones'} Icon={ListChecks} label="Acciones"
                   count={(ticket.actions || []).length} onClick={() => setTab('acciones')} />
               )}
+              {isOpen && (
+                <SectionRailItem active={activeTab === 'propuestas'} Icon={Send} label="Propuestas"
+                  count={bids.length} onClick={() => setTab('propuestas')} />
+              )}
             </div>
           </aside>
 
@@ -677,6 +720,64 @@ export default function TicketDetailPage() {
                 </div>
               );
             })()}
+
+            {activeTab === 'propuestas' && (
+              <div className="space-y-3">
+                {canBid && !myBid && (
+                  <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
+                    <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-2" style={pf}>Postularme a este ticket</h3>
+                    <textarea
+                      className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none"
+                      rows={3} value={proposalText} onChange={(e) => setProposalText(e.target.value)}
+                      placeholder="Cuéntale al cliente por qué eres la persona indicada…"
+                    />
+                    <div className="flex justify-end mt-2">
+                      <button onClick={sendProposal} disabled={sendingBid} className="pixel-btn pixel-btn-primary text-sm inline-flex items-center gap-1.5 disabled:opacity-50">
+                        <Send className="w-3.5 h-3.5" /> {sendingBid ? 'Enviando…' : 'Enviar propuesta'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {myBid && (
+                  <div className="bg-accent-light border border-accent/20 rounded-lg p-3 text-[12px] text-digi-text" style={mf}>
+                    Ya enviaste tu propuesta{myBid.status === 'accepted' ? ' y fue aceptada ✓' : myBid.status === 'rejected' ? ' (no fue seleccionada).' : ' — a la espera de que el cliente decida.'}
+                  </div>
+                )}
+                {!isOwner && !canBid && !myBid && (
+                  <p className="text-[11px] text-digi-muted" style={mf}>Solo miembros pueden postularse a este ticket.</p>
+                )}
+                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-digi-border">
+                    <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Propuestas ({bids.length})</h3>
+                  </div>
+                  <div className="p-2">
+                    {bids.length > 0 ? bids.map((b: any) => (
+                      <div key={b.id} className="flex items-start gap-3 px-3 py-2.5 rounded hover:bg-[#f3f2f1] transition-colors">
+                        <div className="w-8 h-8 rounded-full bg-accent-light border border-accent/20 flex items-center justify-center shrink-0 text-[12px] font-semibold text-accent" style={df}>
+                          {(b.member_name || '?').charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[12.5px] font-medium text-digi-text truncate" style={mf}>{b.member_name || `Miembro #${b.member_id}`}</span>
+                            <span className={`text-[9.5px] px-1.5 py-0.5 rounded-full ${b.status === 'accepted' ? 'bg-green-100 text-green-700' : b.status === 'rejected' ? 'bg-black/[0.06] text-digi-muted' : 'bg-amber-100 text-amber-700'}`} style={mf}>
+                              {b.status === 'accepted' ? 'Aceptada' : b.status === 'rejected' ? 'No seleccionada' : 'Pendiente'}
+                            </span>
+                          </div>
+                          {b.proposal && <p className="text-[11.5px] text-digi-text mt-1 leading-snug whitespace-pre-wrap" style={mf}>{b.proposal}</p>}
+                        </div>
+                        {isOwner && b.status === 'pending' && (
+                          <button onClick={() => acceptProposal(b.id)} className="inline-flex items-center gap-1 text-[11px] text-white bg-green-600 hover:bg-green-700 rounded px-2 py-1 shrink-0 transition-colors" style={mf}>
+                            <Check className="w-3 h-3" /> Aceptar
+                          </button>
+                        )}
+                      </div>
+                    )) : (
+                      <p className="text-[11px] text-digi-muted px-3 py-5 text-center" style={mf}>Aún no hay propuestas.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="w-full lg:w-[300px] shrink-0">

@@ -267,6 +267,23 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Tickets: pestaña "Abiertos" + Propuestas (2026-07-11):** los tickets **solicitados con "abierto a propuestas"**
+  (`open_for_proposals=true`, sin miembro) ahora tienen su propia gestión:
+  - **Pestaña "Abiertos"** en el rail de `/dashboard/tickets` (icono **`DoorOpen`**, el mismo que la pestaña Abiertos de
+    Proyectos), **oculta a clientes** (visible a candidato/miembro/admin). Filtro backend: `GET /api/tickets?open=1` →
+    `WHERE t.open_for_proposals = true` (candidatos/miembros/admin ya ven todos los tickets; el scoping por pertenencia solo
+    afecta al rol `client`). Se añadió el conteo `counts.open`.
+  - **Sección "Propuestas"** en el detalle del ticket (`tickets/[id]`, `SectionRailItem` icono `Send`, visible si
+    `open_for_proposals`): miembros con `member_id` (no el creador) **"Postularme"** (textarea → `POST /api/tickets/[id]/bids`);
+    el **CREADOR** (`ticket.user_id === user.id`) o admin ve las propuestas con nombre y **"Aceptar"** (`PATCH bids {bid_id}`).
+  - **DB** `lib/tickets/bids.ts` (tabla nueva `gcc_world.ticket_bids` id/ticket_id/member_id/proposal/status
+    pending|accepted|rejected, UNIQUE(ticket_id,member_id)); `createTicketBid` (ON CONFLICT actualiza; guard: ticket abierto),
+    `acceptTicketBid` (marca accepted, las demás rejected, y **UPDATE tickets SET member_id=… , open_for_proposals=false**),
+    `listTicketBids` (JOIN members para el nombre). **Rutas** `app/api/tickets/[id]/bids` (GET/POST/PATCH/DELETE, guard:
+    creador/admin para aceptar; POST resuelve `member_id` del usuario). **Notificaciones:** al proponer → notif `ticket_proposal`
+    al creador; al aceptar → notif `ticket_accepted` al miembro aceptado (tabla `notifications`).
+  - Verificado: tsc + `next build` OK + **flujo probado contra la BD real de Railway (6/6, ROLLBACK)**: abierto→listar→proponer→
+    reproponer(ON CONFLICT)→aceptar(asigna+cierra+rechaza).
 - **Módulo "Notificaciones" (dashboard, debajo de "Mi día", 2026-07-11):** nuevo módulo `/dashboard/notificaciones` que
   muestra las notificaciones del usuario, cada una **clicable → su `href`** (proyecto/ticket). Combina **dos orígenes**:
   - **(1) Tabla EXISTENTE `gcc_world.notifications`** (¡ya existía en la BD con 10+ filas reales tipo `payment_submitted`/
