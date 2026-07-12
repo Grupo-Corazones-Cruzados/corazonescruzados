@@ -276,8 +276,25 @@ Stack estándar de la casa, con particularidades de este repo:
   ahora expone `problematica_id`), reutilizable N veces + guard anti doble-envío. Además, el **"Tipo de dato"**
   (cantidad/cualidad) de una fuente pasó a ser **editable al editar** (antes solo al crear): `updateFuente` y la
   ruta PATCH `/fuentes` aceptan `tipo_dato`. Verificado: tsc + build + BD real (2 pesos + edición, ROLLBACK).
-- **Gestión de Datos — referencia bibliográfica APA 7 por fuente (2026-07-12):** al crear/editar una **fuente**
-  se puede adjuntar una referencia bibliográfica en **formato APA (7.ª ed.)**. Módulo PURO
+- **Gestión de Datos — referencias APA NORMALIZADAS y reutilizables (por asociación, 2026-07-12):** ⭐ **supera
+  el modelo inline** de la entrada de abajo. Las referencias viven en su propia tabla GLOBAL `gd_referencias`
+  (`ref_tipo`, `ref_datos jsonb`, `updated_at`); las fuentes se **asocian** por `gd_fuentes.referencia_id`
+  (FK `ON DELETE SET NULL`). **Editar una referencia afecta a TODAS las fuentes que la usan** (leen por join).
+  Se pueden **reutilizar** referencias existentes o crear/editar una desde el formulario de fuente. **Migración
+  idempotente** en `ensureGestionDatosTables`: mueve las referencias inline (`ref_tipo`/`ref_datos` que aún viven
+  como columnas en `gd_fuentes`, ahora en desuso pero NO se borraron) a `gd_referencias` **deduplicando idénticas**
+  (mismo `ref_tipo`+`ref_datos::jsonb`) y enlaza `referencia_id`; solo procesa filas sin migrar. CRUD
+  `listReferencias`(+conteo `usos`)/`createReferencia`/`updateReferencia`/`deleteReferencia` + ruta
+  `/api/centralized/gestion-datos/referencias`. `listFuentes` lee la referencia por `LEFT JOIN gd_referencias`;
+  `create/updateFuente` asocian `referencia_id` (ya NO escriben ref inline). **UI:** `ReferenciaPicker` (selector de
+  existentes + «Nueva referencia» + «Editar referencia» que hace PATCH a la tabla y propaga) reemplaza el editor
+  inline; `ApaRefEditor` (borrador `{ref_tipo,ref_datos}` con IA + tipo + campos + preview) se reutiliza para
+  crear/editar; el `FuenteForm` ya solo guarda `referencia_id`. Verificado BD real (ROLLBACK): migración, dedup
+  (2 idénticas→1), asociación, propagación de edición a varias fuentes, ON DELETE SET NULL. **Nota:** las columnas
+  `gd_fuentes.ref_tipo/ref_datos` quedaron como fuente de la migración; nuevas fuentes no las usan.
+- **Gestión de Datos — referencia bibliográfica APA 7 por fuente (2026-07-12):** (modelo INICIAL, luego
+  **normalizado** — ver entrada de arriba) al crear/editar una **fuente** se puede adjuntar una referencia
+  bibliográfica en **formato APA (7.ª ed.)**. Módulo PURO
   `lib/centralized/apa.ts` (importable cliente+servidor): `APA_TIPOS` (catálogo data-driven de tipos con sus
   campos requeridos: **libro, artículo de revista, artículo científico, contenido académico, página web, video
   de YouTube, otro/manual**), `apaAuthors` (une autores «A», «A, & B», «A, B, & C»; cada autor se escribe como
