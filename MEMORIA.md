@@ -1530,6 +1530,18 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Gestión de Datos — "no se guardó el problema" = doble-clic + nodo invisible (2026-07-12):** el usuario
+  reportó que al agregar un problema no aparecía en el grafo. Diagnóstico contra la BD real: **sí se había
+  guardado, DOS veces** (dos filas idénticas creadas con ~0.3s de diferencia). Dos bugs combinados:
+  1. **Doble-envío:** los handlers `save*` (problema/fuente/problemática) NO tenían guard en curso → el segundo
+     clic reejecutaba el POST y creaba un duplicado. Y el primer toast quedaba **oculto detrás del panel
+     flotante** (mismo gotcha top-layer de los toasts), por eso el 1er clic "no hacía nada". **Fix:** estado
+     `busy` (early-return si `busy` + `try/finally`) y botones deshabilitados con "Guardando…". Regla: TODO
+     handler que muta debe tener guard anti doble-envío.
+  2. **Nodo suelto invisible en el grafo:** en `GdGraph` el `fitSignal` dependía solo de `probId` → agregar un
+     nodo NO reajustaba la vista; y un nodo suelto (degree 0) no mostraba etiqueta salvo con zoom ≥1.15. **Fix:**
+     `fitSignal={`${probId}:${graph.nodes.length}`}` (zoom-to-fit al agregar/eliminar) + mostrar label también
+     para `problema` y para cualquier nodo aislado. Se borró el duplicado (problema id 2) de la BD.
 - **Doble login en "Colaborar" → faltaba el JWT de staff (2026-06-30):** el login de miembro
   (`MemberLoginModal`) usa endpoints de PERSONAJE (`/api/character/auth/member-login/verify` y
   `passkey/login/finish`). En la rama "tiene personaje" seteaban solo las cookies de personaje
