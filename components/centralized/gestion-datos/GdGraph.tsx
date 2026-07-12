@@ -184,6 +184,26 @@ export default function GdGraph({
   const linkActive = (l: any) => !!active && (linkId(l, 'source') === active || linkId(l, 'target') === active);
   const linkLit = (l: any) => (filtering ? (matchesFilter(linkId(l, 'source')) && matchesFilter(linkId(l, 'target'))) : (!active || linkActive(l)));
 
+  // Ajuste propio con TOPE de zoom: zoomToFit sobre-acerca cuando hay 1–2 nodos sueltos
+  // (encaja un "punto" y el nodo llena la pantalla). Calculamos el encuadre y capamos el zoom.
+  const MAX_FIT_ZOOM = 2.4;
+  const fitView = (duration = 500) => {
+    const fg = fgRef.current;
+    if (!fg) return;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, count = 0;
+    for (const o of graphData.nodes as any[]) {
+      if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) continue;
+      minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x);
+      minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y); count++;
+    }
+    if (!count) { fg.zoomToFit?.(duration, 90); return; }
+    const pad = 90;
+    const bw = (maxX - minX) + pad * 2, bh = (maxY - minY) + pad * 2;
+    const z = Math.min(width / bw, height / bh, MAX_FIT_ZOOM);
+    fg.centerAt((minX + maxX) / 2, (minY + maxY) / 2, duration);
+    fg.zoom(Number.isFinite(z) && z > 0 ? z : 1, duration);
+  };
+
   useEffect(() => {
     const t = setTimeout(() => {
       const fg = fgRef.current;
@@ -191,13 +211,13 @@ export default function GdGraph({
       fg.d3Force('charge')?.strength(-480).distanceMax(800);
       fg.d3Force('link')?.distance(150).strength(0.65);
       fg.d3ReheatSimulation?.();
-      if (fittedRef.current !== fitSignal) { fittedRef.current = fitSignal; setTimeout(() => fgRef.current?.zoomToFit?.(600, 90), 700); }
+      if (fittedRef.current !== fitSignal) { fittedRef.current = fitSignal; setTimeout(() => fitView(600), 700); }
     }, 300);
     return () => clearTimeout(t);
   }, [fitSignal, ForceGraph2D]);
 
   const zoomBy = (f: number) => { const fg = fgRef.current; if (fg) fg.zoom(fg.zoom() * f, 250); };
-  const fit = () => fgRef.current?.zoomToFit(400, 70);
+  const fit = () => fitView(400);
   const reheat = () => fgRef.current?.d3ReheatSimulation();
 
   const Ctrl = ({ onClick, title, children }: any) => (
