@@ -157,8 +157,10 @@ export async function ensureGestionDatosTables(): Promise<void> {
       id SERIAL PRIMARY KEY,
       problematica_id INT NOT NULL REFERENCES gcc_world.gd_problematicas(id) ON DELETE CASCADE,
       tipo TEXT NOT NULL,                      -- 'revision' | 'correccion'
+      estado TEXT NOT NULL DEFAULT 'incompleta', -- 'incompleta' | 'completa'
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
+  await pool.query(`ALTER TABLE gcc_world.gd_piezas ADD COLUMN IF NOT EXISTS estado TEXT NOT NULL DEFAULT 'incompleta'`);
   await pool.query(`CREATE INDEX IF NOT EXISTS gd_piezas_prob_idx ON gcc_world.gd_piezas(problematica_id)`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.gd_pieza_codigos (
@@ -783,7 +785,7 @@ export async function listPiezas(problematicaId: number) {
   await ensureGestionDatosTables();
   const ref = await getProblematicaRef(problematicaId);
   const { rows } = await pool.query(
-    `SELECT id, tipo, created_at FROM gcc_world.gd_piezas WHERE problematica_id = $1 ORDER BY created_at ASC`,
+    `SELECT id, tipo, estado, created_at FROM gcc_world.gd_piezas WHERE problematica_id = $1 ORDER BY created_at ASC`,
     [problematicaId],
   );
   const out = [];
@@ -814,6 +816,80 @@ export async function createPieza(problematicaId: number, tipo: PiezaTipo, codig
 export async function deletePieza(id: number) {
   await ensureGestionDatosTables();
   await pool.query(`DELETE FROM gcc_world.gd_piezas WHERE id = $1`, [id]);
+}
+
+/** Crea una pieza VACÍA (estado incompleta) — la usa el sistema Metodología Condiciológica
+ *  al generar una tarea; se completa luego en Gestión de Condiciones. */
+export async function createEmptyPieza(problematicaId: number, tipo: PiezaTipo = 'revision') {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `INSERT INTO gcc_world.gd_piezas (problematica_id, tipo, estado) VALUES ($1, $2, 'incompleta') RETURNING *`,
+    [problematicaId, tipo],
+  );
+  return rows[0];
+}
+
+export async function setPiezaEstado(id: number, estado: 'incompleta' | 'completa') {
+  await ensureGestionDatosTables();
+  await pool.query(`UPDATE gcc_world.gd_piezas SET estado = $1 WHERE id = $2`, [estado, id]);
+}
+
+// ── Lectores para Metodología Condiciológica (Reconocer) ──────────────────────
+/** Todos los códigos VERIFICADOS (de todas las problemáticas), con su referencia. */
+export async function listVerifiedCodigos() {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `SELECT c.id, c.texto, c.problematica_id, pr.ref AS problematica_ref, pr.name AS problematica_name
+       FROM gcc_world.gd_codigos c
+       JOIN gcc_world.gd_problematicas pr ON pr.id = c.problematica_id
+      WHERE c.verificado = TRUE
+      ORDER BY pr.ref ASC, c.created_at ASC`,
+  );
+  const out = [];
+  for (const c of rows) {
+    const us = await codigoUnidades(c.id);
+    out.push({ id: c.id, texto: c.texto, problematica_id: c.problematica_id, problematica_ref: c.problematica_ref, problematica_name: c.problematica_name, nomenclatura: codigoRef(c.problematica_ref, us) });
+  }
+  return out;
+}
+
+/** Detalle de un código para la revisión (Reconocer): premisas asociadas con sus pesos,
+ *  y premisas de enfrentamiento. */
+export async function getCodigoDetalle(codigoId: number) {
+  await ensureGestionDatosTables();
+  const { rows: cRows } = await pool.query(
+    `SELECT c.id, c.texto, c.verificado, c.problematica_id, pr.ref
+       FROM gcc_world.gd_codigos c JOIN gcc_world.gd_problematicas pr ON pr.id = c.problematica_id
+      WHERE c.id = $1`, [codigoId]);
+  const c = cRows[0];
+  if (!c) return null;
+  const ref = c.ref;
+  const { rows: units } = await pool.query(
+    `SELECT unidad_kind, fuente_id, enfrentamiento_id FROM gcc_world.gd_codigo_unidades WHERE codigo_id = $1 ORDER BY id ASC`, [codigoId]);
+  const premisas = [];
+  const enfrentadas = [];
+  for (const u of units) {
+    if (u.unidad_kind === 'premisa') {
+      const { rows: fr } = await pool.query(
+        `SELECT id, seq, contenido, credibilidad::float AS credibilidad, credibilidad_efectiva::float AS credibilidad_efectiva
+           FROM gcc_world.gd_fuentes WHERE id = $1`, [u.fuente_id]);
+      const f = fr[0];
+      if (f) {
+        const pesos = await listPesosDePremisa(f.id); // [{peso_nomenclatura, peso_contenido, peso_credibilidad, cred_antes, cred_despues, modo?}]
+        premisas.push({ id: f.id, nomenclatura: fuentePremisaRef(ref, f.seq), contenido: f.contenido, credibilidad: f.credibilidad, credibilidad_efectiva: f.credibilidad_efectiva, pesos });
+      }
+    } else {
+      const { rows: er } = await pool.query(
+        `SELECT e.id, e.texto, gf.seq AS gano_seq, gf.contenido AS gano_contenido, pf.seq AS perdio_seq, pf.contenido AS perdio_contenido
+           FROM gcc_world.gd_enfrentamientos e
+           JOIN gcc_world.gd_fuentes gf ON gf.id = e.ganadora_fuente_id
+           JOIN gcc_world.gd_fuentes pf ON pf.id = e.perdedora_fuente_id
+          WHERE e.id = $1`, [u.enfrentamiento_id]);
+      const e = er[0];
+      if (e) enfrentadas.push({ id: e.id, nomenclatura: enfrentamientoRef(ref, e.gano_seq, e.perdio_seq), texto: e.texto, gano_seq: e.gano_seq, gano_contenido: e.gano_contenido, perdio_seq: e.perdio_seq, perdio_contenido: e.perdio_contenido });
+    }
+  }
+  return { id: c.id, texto: c.texto, verificado: c.verificado, nomenclatura: codigoRef(ref, await codigoUnidades(c.id)), premisas, enfrentadas };
 }
 
 // ── Fase B: Rompecabezas ──────────────────────────────────────────────────────
@@ -1083,13 +1159,13 @@ export async function getProblematicaGraph(problematicaId: number): Promise<GdGr
 
   // Piezas (+ aristas desde sus códigos).
   const { rows: piezas } = await pool.query(
-    `SELECT id, tipo FROM gcc_world.gd_piezas WHERE problematica_id = $1 ORDER BY created_at ASC`,
+    `SELECT id, tipo, estado FROM gcc_world.gd_piezas WHERE problematica_id = $1 ORDER BY created_at ASC`,
     [problematicaId],
   );
   for (const pz of piezas) {
     const { rows: pcods } = await pool.query(`SELECT codigo_id FROM gcc_world.gd_pieza_codigos WHERE pieza_id = $1 ORDER BY id ASC`, [pz.id]);
     const codigoIds = pcods.map((r: any) => r.codigo_id);
-    nodes.push({ key: gdKey('pieza', pz.id), type: 'pieza', id: pz.id, title: piezaRef(pz.tipo as PiezaTipo, await piezaBaseNomencl(codigoIds, ref)) });
+    nodes.push({ key: gdKey('pieza', pz.id), type: 'pieza', id: pz.id, title: piezaRef(pz.tipo as PiezaTipo, await piezaBaseNomencl(codigoIds, ref)), incompleta: pz.estado !== 'completa' });
     for (const r of pcods) edges.push({ source: gdKey('codigo', r.codigo_id), target: gdKey('pieza', pz.id), kind: 'compone' });
   }
 

@@ -78,6 +78,7 @@ export interface GdGraphNode {
   title: string;      // nomenclatura o título legible
   subtitle?: string;  // p.ej. contenido corto / credibilidad
   verificado?: boolean; // solo códigos
+  incompleta?: boolean; // solo piezas (aún en construcción en Gestión de Condiciones)
   credibilidad?: number; // solo fuentes premisa (efectiva)
 }
 export interface GdGraphEdge {

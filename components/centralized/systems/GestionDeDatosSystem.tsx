@@ -30,7 +30,7 @@ type Evento = { id: number; titulo: string; url: string };
 type Codigo = { id: number; texto: string; verificado: boolean; nomenclatura: string; unidades: any[]; eventos: Evento[] };
 type Categoria = { id: number; seq: number; nombre: string; nomenclatura: string; codigos: { id: number; nomenclatura: string; verificado: boolean }[] };
 type PiezaVar = { id: number; factor: VariableFactor; nombre: string; tipo_var: string; restricciones: any };
-type Pieza = { id: number; tipo: PiezaTipo; nomenclatura: string; codigoIds: number[]; variables: PiezaVar[] };
+type Pieza = { id: number; tipo: PiezaTipo; estado?: string; nomenclatura: string; codigoIds: number[]; variables: PiezaVar[] };
 type Situacion = { id: number; nombre: string };
 type Materia = { id: number; nombre: string };
 type Rompecabezas = { id: number; nombre: string; situacion_id: number | null; situacion_nombre: string | null; piezaIds: number[] };
@@ -643,7 +643,13 @@ function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias
     return (
       <div>
         {header}
-        <Meta rows={[['Tipo', PIEZA_TIPO_LABEL[pz.tipo]], ['Códigos', String(pz.codigoIds.length)], ['Variables', String(pz.variables.length)]]} />
+        <Meta rows={[['Tipo', PIEZA_TIPO_LABEL[pz.tipo]], ['Estado', pz.estado === 'completa' ? 'Completa' : 'Incompleta'], ['Códigos', String(pz.codigoIds.length)], ['Variables', String(pz.variables.length)]]} />
+        {pz.estado !== 'completa' && (
+          <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 rounded-md bg-white/[0.04] border border-white/10">
+            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+            <span className="text-[11px] text-white/70" style={mf}>En construcción en Gestión de Condiciones.</span>
+          </div>
+        )}
         <p className="text-[10.5px] text-white/45 mt-2 mb-2" style={mf}>Las piezas provienen del sistema de metodología condiciológica (aquí son de solo lectura).</p>
         {pz.variables.length > 0 && (
           <div className="space-y-1">

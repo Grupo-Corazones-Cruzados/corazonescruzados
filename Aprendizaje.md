@@ -250,8 +250,17 @@ rompecabezas/temas las leen); solo se quitó la edición desde aquí. Verificado
     - Al terminar → **marcar la tarea como completada** ⇒ la pieza queda **completa/verificada** y usable en Gestión de Datos.
 
 ### Preguntas abiertas del roadmap
-#### P7 — Factores: ¿`mental` o `cognitivo`? · ⏸ (el modelo actual de `gd_pieza_variables` usa `mental|corporal|ambiental`; el usuario ahora dice `cognitivo|corporal|ambiental`. Reconciliar al construir Dinámica/Gestión de Condiciones.)
-#### P8 — **Piso/paso** exactos de **Metodología Condiciológica** y **Dinámica Condiciológica** (Gestión de Condiciones = piso controlador · paso fundamentación, confirmado). · ⏸
+#### P7 — Factores · ✅ RESUELTA (usuario 2026-07-11): los 3 factores son **mental, corporal, ambiental** (mi modelo era correcto). Tienen **causas**: mental→[cognitivo, social], corporal→[estructural, funcional], ambiental→[positivo, universo]. Cada causa tendrá **variables** (las define Dinámica Condiciológica). Registrado en `lib/centralized/condiciologia.ts` (`FACTORES`).
+#### P8 — Piso/paso · ✅ PARCIAL (usuario 2026-07-11): **Metodología Condiciológica = global · fundamentación** (celda "Condiciología"). Gestión de Condiciones = **controlador · fundamentación**. **Dinámica Condiciológica** = por confirmar.
+
+### Estado de construcción del roadmap (2026-07-11)
+- **Metodología Condiciológica — FASE 1 HECHA:** proyectos de investigación + 6 pestañas (solo **Reconocer** desarrollado:
+  códigos verificados multi-selección + detalle premisas/pesos[hover]/enfrentadas + generar tarea) + gestión de listas
+  globales (situaciones/materias) + `createTask` pre-crea **pieza vacía incompleta**. tsc + build OK + BD real 6/6 (ROLLBACK).
+  Gestión de Datos refleja `gd_piezas.estado` (piezas incompletas atenuadas). Botón "Listas" quitado de Gestión de Datos.
+  **Pendiente:** 5 pasos restantes; sistemas Gestión de Condiciones, Dinámica Condiciológica, Laboratorio; módulo Alertas;
+  migrar talentos/valores a listas editables. **P9/P10** siguen abiertas (variables/condiciones; vinculación tarea↔pieza ya
+  parcialmente resuelta con `mc_task_pieza` + estado incompleta).
 #### P9 — Modelo de **variables** (Dinámica Condiciológica: factor→causa→variable) y de **condiciones** (registros con variables + eventos de verificación + restricciones): tablas nuevas + de dónde salen. · ⏸
 #### P10 — Vinculación **tarea (Metodología)→pieza precreada vacía** y estados de pieza (`incompleta`) reflejados en Gestión de Datos. · ⏸
 

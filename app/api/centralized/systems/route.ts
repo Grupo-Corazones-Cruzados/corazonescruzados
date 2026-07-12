@@ -63,6 +63,17 @@ async function ensureTable() {
             'pilar', 'fundamentacion', 'Academia', 'gestion-de-datos'
      WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'gestion-de-datos')`,
   );
+  // Sistema built-in "Metodología Condiciológica" (global · fundamentación, celda "Condiciología").
+  // El "lector": crea proyectos de investigación, aplica la metodología de 6 pasos y genera tareas
+  // (desde códigos verificados) hacia Gestión de Condiciones. Es el espacio único de edición de las
+  // listas globales (situaciones, materias, talentos, valores…). Sembrado idempotente por slug.
+  await pool.query(
+    `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+     SELECT 'Metodología Condiciológica',
+            'Aplica la metodología condiciológica de 6 pasos (Reconocer, Controlar, Predecir, Experimentar, Convertir, Cambiar) sobre proyectos de investigación: revisa los códigos verificados de Gestión de Datos y genera tareas para obtener piezas y descubrir condiciones.',
+            'global', 'fundamentacion', 'Condiciología', 'metodologia-condiciologica'
+     WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'metodologia-condiciologica')`,
+  );
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (

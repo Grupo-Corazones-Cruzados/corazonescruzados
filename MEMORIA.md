@@ -267,6 +267,32 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Sistema "Metodología Condiciológica" — Centralizado · global · fundamentación (Fase 1, 2026-07-11):** nuevo sistema
+  built-in (celda "Condiciología", slug `metodologia-condiciologica`; sembrado en `ensureTable()` de systems + dispatch por
+  slug). Es **"el lector"**: aplica la metodología de **6 pasos** (Reconocer→Controlar→Predecir→Experimentar→Convertir→
+  Cambiar) sobre **proyectos de investigación** (con finalidad productiva) y genera **tareas** desde códigos verificados.
+  **Es el espacio ÚNICO de edición de listas globales** (situaciones, materias; talentos/valores pendientes de migrar).
+  - **UI** `components/centralized/systems/MetodologiaCondiciologicaSystem.tsx` (estilo corp light): panel izq = Proyectos de
+    investigación (CRUD) + botón "Listas globales"; derecha = **6 pestañas**. Solo **Reconocer** desarrollado: sub-panel de
+    **códigos verificados** (agrupados por problemática, multi-selección) + **detalle** del código (premisas con credibilidad,
+    **pesos** como chips con **burbuja al hover**, premisas de enfrentamiento) + **"Generar tarea"** (título + notas + proyecto).
+    Las otras 5 pestañas = placeholder. Lista de "Tareas generadas" del proyecto (→ van a Gestión de Condiciones).
+  - **DB** `lib/centralized/metodologia-db.ts` (prefijo `mc_`): `mc_research_projects`, `mc_tasks` (estado pendiente|
+    completada), `mc_task_codigos`, `mc_task_pieza`. **Al crear una tarea** (`createTask`) se **pre-crea una PIEZA VACÍA
+    (estado `incompleta`)** en la problemática de los códigos (vía `createEmptyPieza` de gestion-datos-db) y se enlaza a la
+    tarea; borrar la tarea elimina la pieza si sigue incompleta. Dominio compartido `lib/centralized/condiciologia.ts`
+    (6 pasos + **factores mental/corporal/ambiental → causas**: mental[cognitivo,social], corporal[estructural,funcional],
+    ambiental[positivo,universo]). **APIs** `app/api/centralized/metodologia/{proyectos,tareas,reconocer,codigo}`.
+  - **Gestión de Datos** ahora refleja el **estado de las piezas**: `gd_piezas.estado` (ALTER idempotente); las piezas
+    **incompletas** se ven atenuadas/gris en el grafo (como código no verificado) y el detalle muestra "En construcción en
+    Gestión de Condiciones". Se quitó el botón "Listas" de Gestión de Datos (ahora se edita desde Metodología).
+  - **Decisiones (usuario 2026-07-11):** Metodología = **global·fundamentación**; factores = mental/corporal/ambiental (con
+    causas); listas globales editables solo desde Metodología. Verificado: tsc + `next build` OK (4 rutas) + **flujo probado
+    contra la BD real de Railway (6/6, ROLLBACK)**: tarea→pieza incompleta en la problemática, borrado limpia, solo verificados.
+  - **PENDIENTE:** los 5 pasos restantes; **sistema "Gestión de Condiciones"** (consume las tareas: subtareas con tickets/
+    proyectos de paso-fundamentación con autorización saltada + workspace de pieza con universo de gráficos, condiciones,
+    variables factor→causa→variable, eventos y restricciones); **Dinámica Condiciológica** (define variables); **Laboratorio
+    Condiciológico**; módulo **Alertas**. Detalle en `Aprendizaje.md` → "ROADMAP — sistemas condiciológicos".
 - **Sistema "Gestión de Datos" — Centralizado · pilar · fundamentación (Fases A+B+C COMPLETO, 2026-07-11):** nuevo sistema built-in
   (celda "Academia", slug `gestion-de-datos`, sembrado idempotente en `ensureTable()` de
   `app/api/centralized/systems/route.ts`; dispatch por slug en `[piso]/[paso]/[slug]/page.tsx` →
