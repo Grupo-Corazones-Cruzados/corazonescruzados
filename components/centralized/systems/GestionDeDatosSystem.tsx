@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   FolderPlus, Pencil, Trash2, Plus, Database, GitCompareArrows, Hexagon,
-  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, BookOpen,
+  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, BookOpen, Sparkles,
 } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -389,7 +389,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
 
               {/* Panel flotante de detalle / creación */}
               {(creating || selectedNode) && (
-                <aside className={`absolute bottom-3 right-3 w-[352px] max-h-[calc(100%-24px)] overflow-y-auto ${GLASS} p-3`}>
+                <aside className={`absolute bottom-3 right-3 ${creating === 'fuente' ? 'w-[680px] max-w-[calc(100%-24px)]' : 'w-[352px]'} max-h-[calc(100%-24px)] overflow-y-auto ${GLASS} p-3`}>
                   {creating === 'fuente' ? (
                     <FuenteForm form={fuenteForm} setForm={setFuenteForm} onCancel={() => setCreating(null)} onSave={saveFuente} saving={busy} />
                   ) : creating === 'problema' ? (
@@ -561,8 +561,40 @@ function ApaRefFields({ form, setForm }: any) {
   const def = APA_TIPOS.find((t) => t.value === tipo);
   const setDato = (key: string, val: string) => setForm((f: any) => ({ ...f, ref_datos: { ...(f.ref_datos || {}), [key]: val } }));
   const previewText = formatApaText(tipo, datos);
+  const [aiText, setAiText] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
+  const runAi = async () => {
+    if (!aiText.trim() || aiBusy) return;
+    setAiBusy(true);
+    try {
+      const res = await fetch(`${API}/fuentes/apa-extract`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: aiText }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'No se pudo interpretar');
+      setForm((f: any) => ({ ...f, ref_tipo: d.data.ref_tipo, ref_datos: d.data.ref_datos || {} }));
+      toast.success('Referencia interpretada con IA');
+    } catch (e: any) { toast.error(e.message); }
+    finally { setAiBusy(false); }
+  };
   return (
     <div className="rounded-md border border-white/10 bg-white/[0.03] p-2.5 space-y-2.5">
+      {/* Autocompletar con IA */}
+      <div className="rounded-md border border-accent/30 bg-accent/[0.07] p-2 space-y-1.5">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-accent" />
+          <span className="text-[11px] font-semibold text-white/90" style={mf}>Autocompletar con IA</span>
+        </div>
+        <textarea
+          className={`${GLASS_INPUT} resize-none`} rows={3} value={aiText}
+          onChange={(e) => setAiText(e.target.value)}
+          placeholder="Pega los datos del documento (portada, ficha de catálogo, cita suelta…) y la IA detectará el tipo y rellenará los campos."
+        />
+        <button
+          onClick={runAi} disabled={aiBusy || !aiText.trim()}
+          className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-40 disabled:cursor-not-allowed" style={mf}
+        >
+          <Sparkles className="w-3.5 h-3.5" />{aiBusy ? 'Interpretando…' : 'Interpretar y rellenar'}
+        </button>
+      </div>
       <Field label="Referencia bibliográfica (APA)">
         <select
           className={GLASS_INPUT}
@@ -603,24 +635,34 @@ function FuenteForm({ form, setForm, onCancel, onSave, saving }: any) {
         <h3 className="text-[13px] font-semibold text-white" style={df}>{form.id ? 'Editar fuente' : 'Nueva fuente'}</h3>
         <button onClick={onCancel} className="text-white/50 hover:text-white"><X className="w-4 h-4" /></button>
       </div>
-      {!form.id && (
-        <>
-          <Field label="Tipo de dato">
-            <Segmented value={form.tipo_dato} onChange={(v: TipoDato) => setForm((f: any) => ({ ...f, tipo_dato: v }))} options={[{ value: 'cantidad', label: TIPO_DATO_LABEL.cantidad }, { value: 'cualidad', label: TIPO_DATO_LABEL.cualidad }]} />
+      {/* 2 columnas: referencia bibliográfica a la IZQUIERDA · datos de la fuente a la derecha.
+          Así el formulario no crece en altura (la referencia puede tener muchos campos). */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Izquierda: referencia bibliográfica (APA) */}
+        <div>
+          <ApaRefFields form={form} setForm={setForm} />
+        </div>
+        {/* Derecha: datos de la fuente */}
+        <div className="space-y-3">
+          {!form.id && (
+            <>
+              <Field label="Tipo de dato">
+                <Segmented value={form.tipo_dato} onChange={(v: TipoDato) => setForm((f: any) => ({ ...f, tipo_dato: v }))} options={[{ value: 'cantidad', label: TIPO_DATO_LABEL.cantidad }, { value: 'cualidad', label: TIPO_DATO_LABEL.cualidad }]} />
+              </Field>
+              <Field label="Tipo de lógica">
+                <Segmented value={form.tipo_logica} onChange={(v: TipoLogica) => setForm((f: any) => ({ ...f, tipo_logica: v }))} options={[{ value: 'premisa', label: TIPO_LOGICA_LABEL.premisa }, { value: 'peso', label: TIPO_LOGICA_LABEL.peso }]} />
+                <p className="text-[10.5px] text-white/45 mt-1" style={mf}>{form.tipo_logica === 'premisa' ? 'Premisa: aporta a una verdad lógica (se codifica REF-n).' : 'Peso: altera la credibilidad de una premisa (Ref-n global).'}</p>
+              </Field>
+            </>
+          )}
+          <Field label="Contenido (la verdad que dice la fuente)">
+            <textarea className={`${GLASS_INPUT} resize-none`} rows={3} value={form.contenido} onChange={(e) => setForm((f: any) => ({ ...f, contenido: e.target.value }))} placeholder="Ej. 30 de cada 100 niños ingresan a una escuela particular." autoFocus />
           </Field>
-          <Field label="Tipo de lógica">
-            <Segmented value={form.tipo_logica} onChange={(v: TipoLogica) => setForm((f: any) => ({ ...f, tipo_logica: v }))} options={[{ value: 'premisa', label: TIPO_LOGICA_LABEL.premisa }, { value: 'peso', label: TIPO_LOGICA_LABEL.peso }]} />
-            <p className="text-[10.5px] text-white/45 mt-1" style={mf}>{form.tipo_logica === 'premisa' ? 'Premisa: aporta a una verdad lógica (se codifica REF-n).' : 'Peso: altera la credibilidad de una premisa (Ref-n global).'}</p>
+          <Field label="Nivel de confianza / credibilidad">
+            <CredSlider value={form.credibilidad} onChange={(v) => setForm((f: any) => ({ ...f, credibilidad: v }))} />
           </Field>
-        </>
-      )}
-      <Field label="Contenido (la verdad que dice la fuente)">
-        <textarea className={`${GLASS_INPUT} resize-none`} rows={3} value={form.contenido} onChange={(e) => setForm((f: any) => ({ ...f, contenido: e.target.value }))} placeholder="Ej. 30 de cada 100 niños ingresan a una escuela particular." autoFocus />
-      </Field>
-      <ApaRefFields form={form} setForm={setForm} />
-      <Field label="Nivel de confianza / credibilidad">
-        <CredSlider value={form.credibilidad} onChange={(v) => setForm((f: any) => ({ ...f, credibilidad: v }))} />
-      </Field>
+        </div>
+      </div>
       <div className="flex justify-end gap-2">
         <button onClick={onCancel} disabled={saving} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
         <button onClick={onSave} disabled={saving} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{saving ? 'Guardando…' : form.id ? 'Guardar' : 'Agregar'}</button>

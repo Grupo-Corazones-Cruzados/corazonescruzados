@@ -162,7 +162,9 @@ function buildRef(tipo: string, d: Record<string, string>): string {
   switch (tipo) {
     case 'libro': {
       if (!g('titulo') && !who) return '';
-      const ed = g('edicion') ? ` (${g('edicion')}.ª ed.)` : '';
+      // Edición: si es solo un número → «3.ª ed.»; si ya trae texto (p. ej. «Pbk. ed.») se usa tal cual.
+      const edVal = g('edicion');
+      const ed = edVal ? ` (${/^\d+$/.test(edVal) ? `${edVal}.ª ed.` : edVal})` : '';
       const editorial = g('editorial') ? ` ${g('editorial')}.` : '';
       const url = g('url') ? ` ${g('url')}` : '';
       return clean(`${lead}(${g('anio') || 's. f.'}). ${it(g('titulo'))}${ed}.${editorial}${url}`);
@@ -225,4 +227,54 @@ export function formatApaSegments(tipo?: string | null, datos?: Record<string, s
 /** Referencia APA como texto plano (para copiar). */
 export function formatApaText(tipo?: string | null, datos?: Record<string, string> | null): string {
   return formatApaSegments(tipo, datos).map((s) => s.t).join('');
+}
+
+// ── Extracción con IA ──────────────────────────────────────────────────────────
+/** Describe el catálogo de tipos y sus campos para el system prompt del modelo (siempre en sync). */
+export function apaSchemaForPrompt(): string {
+  return APA_TIPOS.map((t) => {
+    const campos = t.campos.map((c) => `${c.key}${c.required ? '*' : ''}`).join(', ');
+    return `- "${t.value}" (${t.label}): ${campos}`;
+  }).join('\n');
+}
+
+/** Valida/limpia la salida del modelo: solo tipos y campos conocidos, todo string. */
+export function sanitizeApaExtraction(raw: any): { ref_tipo: string; ref_datos: Record<string, string> } | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const tipo = String(raw.ref_tipo || '').trim();
+  const def = APA_TIPOS.find((t) => t.value === tipo);
+  if (!def) return null;
+  const allowed = new Set(def.campos.map((c) => c.key));
+  const src = raw.ref_datos && typeof raw.ref_datos === 'object' ? raw.ref_datos : {};
+  const out: Record<string, string> = {};
+  for (const k of Object.keys(src)) {
+    if (allowed.has(k) && src[k] != null && String(src[k]).trim()) out[k] = String(src[k]).trim();
+  }
+  return { ref_tipo: tipo, ref_datos: out };
+}
+
+/** System prompt para que el modelo interprete un texto y devuelva la referencia APA estructurada. */
+export function apaExtractionSystemPrompt(): string {
+  return `Eres un bibliotecario experto en normas APA (7.ª edición). Recibes un texto libre con los
+datos de una fuente (metadatos de catálogo, portada, cita mal formateada, ficha de biblioteca, etc.) y
+debes IDENTIFICAR el tipo de referencia y EXTRAER sus campos.
+
+Devuelve EXCLUSIVAMENTE un objeto JSON con esta forma:
+{ "ref_tipo": "<uno de los tipos>", "ref_datos": { <clave: valor de string> } }
+
+Tipos disponibles y sus claves (las marcadas con * son las más importantes):
+${apaSchemaForPrompt()}
+
+Reglas:
+- Elige el "ref_tipo" que mejor describa la fuente (un libro → "libro"; un paper de revista científica con
+  DOI → "articulo_cientifico"; una revista/magazine → "articulo_revista"; una tesis/informe → "contenido_academico";
+  una página web → "pagina_web"; un video de YouTube → "video_youtube"; si no encaja en ninguno → "otro").
+- "autores": cada autor en formato APA "Apellido, Iniciales." (p. ej. "Bowles, S."), varios separados por "; ".
+  Ignora anotaciones como "joint author", "ed.", "coord.". Si el autor es una organización, escríbela tal cual.
+- "anio": solo el año en dígitos (p. ej. "1976"). "fecha": año y, si existe, mes/día (p. ej. "2021, marzo").
+- Títulos de libros/artículos: usa mayúscula inicial y nombres propios (sentence case), sin comillas.
+- No inventes datos: si un campo no aparece en el texto, OMÍTELO (no lo incluyas). Deja fuera "editorial",
+  "doi", "url", etc. si no están.
+- Para "otro" usa la clave "referencia" con la cita completa ya formateada en APA.
+- Responde solo el JSON, sin texto adicional ni explicaciones.`;
 }
