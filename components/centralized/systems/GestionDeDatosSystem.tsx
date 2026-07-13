@@ -363,6 +363,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                 nodes={graph.nodes}
                 edges={graph.edges}
                 selectedKey={selectedKey}
+                centerKey={selectedKey}
                 filter={legendFilter}
                 fitSignal={`${probId}:${graph.nodes.length}`}
                 onSelect={(n) => { setSelectedKey(n?.key ?? null); setCreating(null); }}
@@ -417,6 +418,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                     <ProblemaForm form={problemaForm} setForm={setProblemaForm} onCancel={() => setCreating(null)} onSave={saveProblema} saving={busy} />
                   ) : selectedNode ? (
                     <NodeDetail
+                      key={selectedNode.key}
                       node={selectedNode}
                       fuentes={fuentes}
                       pesos={pesos}

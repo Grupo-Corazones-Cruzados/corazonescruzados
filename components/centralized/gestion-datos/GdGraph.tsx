@@ -117,7 +117,7 @@ function useSize<T extends HTMLElement>() {
 export type GdLegendFilter = { kind: 'type' | 'state'; value: string } | null;
 
 export default function GdGraph({
-  nodes, edges, selectedKey, onSelect, fitSignal = '', filter = null,
+  nodes, edges, selectedKey, onSelect, fitSignal = '', filter = null, centerKey = null,
 }: {
   nodes: GdGraphNode[];
   edges: GdGraphEdge[];
@@ -125,6 +125,7 @@ export default function GdGraph({
   onSelect: (n: GdGraphNode | null) => void;
   fitSignal?: string;
   filter?: GdLegendFilter;
+  centerKey?: string | null;
 }) {
   const fgRef = useRef<any>(null);
   const fittedRef = useRef<string | null>(null);
@@ -215,6 +216,15 @@ export default function GdGraph({
     }, 300);
     return () => clearTimeout(t);
   }, [fitSignal, ForceGraph2D]);
+
+  // Recentrar el grafo sobre un nodo cuando se selecciona desde fuera (p. ej. el panel de filtro).
+  useEffect(() => {
+    if (!centerKey) return;
+    const fg = fgRef.current;
+    const o = nodeObjRef.current.get(centerKey);
+    if (fg && o && Number.isFinite(o.x) && Number.isFinite(o.y)) fg.centerAt(o.x, o.y, 500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centerKey]);
 
   const zoomBy = (f: number) => { const fg = fgRef.current; if (fg) fg.zoom(fg.zoom() * f, 250); };
   const fit = () => fitView(400);
