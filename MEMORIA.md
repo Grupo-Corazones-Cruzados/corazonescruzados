@@ -1637,6 +1637,15 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **`FloatingWindow` anidado dentro de un panel con `backdrop-filter`/`overflow` quedaba atrapado (2026-07-13):**
+  un `FloatingWindow` (modal `position:fixed`) renderizado DENTRO del panel flotante de detalle de Gestión de
+  Datos (que usa `GLASS` = `backdrop-blur-md`) no se podía usar: `backdrop-filter` (como `filter`/`transform`)
+  **crea un bloque contenedor** para los descendientes `position:fixed`, así que el modal quedaba relativo/recortado
+  por ese panel (con `overflow-y-auto` + `max-h`), no por el viewport. **Fix:** `FloatingWindow` ahora se renderiza
+  con **`createPortal`** al contenedor **`.corp`** (`document.querySelector('.corp') || document.body`) — escapa del
+  bloque contenedor y del overflow, queda fixed respecto al viewport, y conserva el tema (el `.corp`+`.dark` vive en
+  un div de `app/(dashboard)/layout.tsx`, NO en body; portalear a body perdería el tema). Regla: cualquier modal
+  fixed que pueda renderizarse dentro de un contenedor con transform/filter/backdrop-filter debe portalear a `.corp`.
 - **`ensureGestionDatosTables` concurrente → DDL/migración en paralelo rompía un endpoint (2026-07-12):** el
   detalle de una fuente aparecía **solo con el header** (sin cuerpo). Causa: `loadAll` dispara ~10 fetches en
   paralelo y **todos** llaman a `ensureGestionDatosTables`; al añadir `gd_referencias` + columna `referencia_id`
