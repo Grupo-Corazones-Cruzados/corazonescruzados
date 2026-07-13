@@ -7,7 +7,7 @@ import { existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { searchScopus, openAlexAbstract } from '@/lib/centralized/scopus';
 import {
-  getPremisaForAgent, getStyleExamplesPesos, agentListSessionWeights,
+  getPremisaForAgent, getStyleExamplesPesos, agentListSessionWeights, getPremisaExistingWeights,
   agentAddWeight, agentUpdateWeight, agentDeleteWeight,
 } from '@/lib/centralized/gestion-datos-db';
 
@@ -70,20 +70,25 @@ Cada peso se sustenta en un estudio real: usa el "abstract" del candidato para r
 CONCRETOS (no inventes cifras que no estén en el abstract) y guarda su "doi".`;
 }
 
-function queriesPrompt(userMessage: string, sessionWeights: any[]): string {
+function queriesPrompt(userMessage: string, sessionWeights: any[], existing: { contenido: string; doi: string }[]): string {
   const w = sessionWeights.map((x) => ({ id: x.id, tipo: x.tipo_dato, cred: x.credibilidad, contenido: String(x.contenido || '').slice(0, 120) }));
+  const ya = existing.map((e) => ({ doi: e.doi, resumen: String(e.contenido || '').slice(0, 90) }));
   return `PETICIÓN DEL USUARIO: "${userMessage}"
 PESOS YA CREADOS EN ESTA SESIÓN (${w.length}): ${JSON.stringify(w)}
+PESOS QUE YA EXISTEN EN LA PREMISA (de esta y de sesiones anteriores) — NO busques lo mismo ni repitas estos temas/referencias (${ya.length}): ${JSON.stringify(ya)}
 Para atender la petición, ¿qué búsquedas en Scopus harías? Cada "query" = 2-3 PALABRAS CLAVE GENERALES en INGLÉS
 (ej. "unemployment crime", "youth unemployment", "joblessness social unrest"), nunca frases largas ni español.
+Elige ángulos/palabras DISTINTAS a lo ya cubierto para hallar evidencia NUEVA.
 Responde SOLO con este JSON: {"queries":["...","..."]} (de 1 a 4 queries). Si la petición NO requiere buscar
 (p. ej. solo modificar o eliminar pesos existentes), responde {"queries":[]}.`;
 }
 
-function generatePrompt(userMessage: string, candidates: any[], sessionWeights: any[]): string {
+function generatePrompt(userMessage: string, candidates: any[], sessionWeights: any[], existing: { contenido: string; doi: string }[]): string {
   const w = sessionWeights.map((x) => ({ id: x.id, tipo: x.tipo_dato, cred: x.credibilidad, contenido: String(x.contenido || '').slice(0, 160) }));
-  return `CANDIDATOS de Scopus (usa su "abstract" para redactar; SOLO puedes usar DOIs de esta lista):
+  const ya = existing.map((e) => ({ doi: e.doi, resumen: String(e.contenido || '').slice(0, 90) }));
+  return `CANDIDATOS de Scopus (usa su "abstract" para redactar; SOLO puedes usar DOIs de esta lista; ya excluí los DOIs repetidos):
 ${JSON.stringify(candidates)}
+PESOS QUE YA EXISTEN EN LA PREMISA — NO los repitas (mismo dato o misma referencia) (${ya.length}): ${JSON.stringify(ya)}
 PESOS DE ESTA SESIÓN que puedes modificar/eliminar (por su "id"): ${JSON.stringify(w)}
 PETICIÓN DEL USUARIO: "${userMessage}"
 Responde SOLO con este JSON (sin texto fuera del JSON):
@@ -131,26 +136,29 @@ export async function runAgentTurn(params: {
   let claudeSid = params.claudeSessionId;
   const systemPrompt = claudeSid ? undefined : baseSystemPrompt(prem, await getStyleExamplesPesos(15), yearFrom);
   const before = await agentListSessionWeights(premisaId, sessionId);
+  // TODOS los pesos ya en la premisa (de cualquier sesión) → para no repetir referencias/datos.
+  const existing = await getPremisaExistingWeights(premisaId);
+  const usedDois = new Set(existing.map((e) => e.doi).filter(Boolean));
 
   // Paso 1 — el modelo propone las búsquedas.
   let queries: string[] = [];
   try {
-    const { obj, sessionId: sid } = await callClaudeJSON(queriesPrompt(params.userMessage, before), { resume: claudeSid, systemPrompt });
+    const { obj, sessionId: sid } = await callClaudeJSON(queriesPrompt(params.userMessage, before, existing), { resume: claudeSid, systemPrompt });
     claudeSid = sid;
     queries = Array.isArray(obj?.queries) ? obj.queries.map((q: any) => String(q).trim()).filter(Boolean).slice(0, 4) : [];
   } catch (e: any) { activity.push({ role: 'tool', kind: 'error', label: `No se pudieron generar búsquedas: ${e.message}` }); }
 
-  // Paso 2 — el servidor busca en Scopus y enriquece con abstracts (OpenAlex). Dedup por DOI.
+  // Paso 2 — el servidor busca en Scopus y enriquece con abstracts (OpenAlex). Dedup por DOI y EXCLUYE DOIs ya usados en la premisa.
   const byDoi = new Map<string, any>();
   for (const q of queries) {
     activity.push({ role: 'tool', kind: 'scopus_search', label: `Buscó en Scopus: “${q}”` });
     try {
       const results = await searchScopus(q, 8, yearFrom);
-      const fresh = results.filter((r) => r.doi && !byDoi.has(r.doi)).slice(0, 6);
+      const fresh = results.filter((r) => r.doi && !byDoi.has(r.doi) && !usedDois.has(r.doi.toLowerCase())).slice(0, 6);
       const absMap = new Map<string, string>();
       await Promise.all(fresh.map(async (r) => { absMap.set(r.doi, (await openAlexAbstract(r.doi)).slice(0, 1000)); }));
       for (const r of results) {
-        if (!r.doi || byDoi.has(r.doi)) continue;
+        if (!r.doi || byDoi.has(r.doi) || usedDois.has(r.doi.toLowerCase())) continue; // salta repetidos y ya usados
         byDoi.set(r.doi, { titulo: r.title, autor: r.creator, anio: r.year, revista: r.journal, doi: r.doi, citas: r.citedby, abstract: absMap.get(r.doi) || '' });
       }
     } catch (e: any) { activity.push({ role: 'tool', kind: 'error', label: `Búsqueda falló: ${e.message}` }); }
@@ -161,7 +169,7 @@ export async function runAgentTurn(params: {
   // Paso 3 — el modelo genera pesos/updates/deletes en un solo JSON.
   let gen: any = {};
   try {
-    const { obj, sessionId: sid } = await callClaudeJSON(generatePrompt(params.userMessage, candidates, before), { resume: claudeSid });
+    const { obj, sessionId: sid } = await callClaudeJSON(generatePrompt(params.userMessage, candidates, before, existing), { resume: claudeSid });
     claudeSid = sid; gen = obj || {};
   } catch (e: any) { activity.push({ role: 'tool', kind: 'error', label: `No se pudo generar la respuesta: ${e.message}` }); }
 

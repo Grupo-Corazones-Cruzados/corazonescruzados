@@ -569,6 +569,28 @@ export async function getStyleExamplesPesos(limit = 15): Promise<string[]> {
   return rows.map((r: any) => r.contenido);
 }
 
+const extractDoi = (d: any): string => {
+  if (!d) return '';
+  const raw = d.doi || d.url || '';
+  const m = String(raw).match(/10\.\d{4,9}\/[^\s"']+/);
+  return m ? m[0].toLowerCase() : '';
+};
+
+/** TODOS los pesos aplicados a la premisa (de cualquier sesión): contenido + DOI de su referencia.
+ *  Sirve para que el agente NO repita referencias ya usadas en sesiones anteriores. */
+export async function getPremisaExistingWeights(premisaId: number): Promise<{ contenido: string; doi: string }[]> {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `SELECT f.contenido, r.ref_datos
+       FROM gcc_world.gd_fuentes f
+       JOIN gcc_world.gd_fuente_pesos p ON p.peso_fuente_id = f.id AND p.premisa_fuente_id = $1
+       LEFT JOIN gcc_world.gd_referencias r ON r.id = f.referencia_id
+      ORDER BY f.created_at ASC`,
+    [premisaId],
+  );
+  return rows.map((r: any) => ({ contenido: r.contenido || '', doi: extractDoi(r.ref_datos) }));
+}
+
 export async function agentListSessionWeights(premisaId: number, sessionId: string) {
   await ensureGestionDatosTables();
   const { rows } = await pool.query(
@@ -605,6 +627,12 @@ export async function agentAddWeight(
   if (!input.contenido?.trim()) throw new Error('El peso requiere contenido.');
   // Referencia bibliográfica OBLIGATORIA (por DOI → Crossref).
   if (!input.doi?.trim()) throw new Error('El peso requiere un DOI para su referencia bibliográfica.');
+  // Guard anti-duplicado: no agregar un peso con una referencia (DOI) que la premisa ya usa.
+  const cleanDoi = extractDoi({ doi: input.doi });
+  if (cleanDoi) {
+    const existing = await getPremisaExistingWeights(premisaId);
+    if (existing.some((e) => e.doi && e.doi === cleanDoi)) throw new Error('Ya existe un peso con esa referencia (DOI) en esta premisa; usa una fuente distinta.');
+  }
   const apa = await crossrefToApa(input.doi);
   if (!apa) throw new Error('No se pudo resolver el DOI a una referencia (Crossref).');
   const ref = await createReferencia(apa.ref_tipo, apa.ref_datos);
