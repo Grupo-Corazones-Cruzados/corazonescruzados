@@ -262,6 +262,27 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     { type: 'pieza' }, { type: 'rompecabezas' }, { type: 'subtema' }, { type: 'tema' },
   ];
 
+  // Panel derecho: registros del filtro aplicado (pinFilter) en el universo de gráficos.
+  const matchesLegendFilter = (n: GdGraphNode, f: NonNullable<GdLegendFilter>) => {
+    if (f.kind === 'state') { if (n.type !== 'codigo') return false; return f.value === 'verificado' ? !!n.verificado : !n.verificado; }
+    return n.type === f.value;
+  };
+  const filteredNodes = useMemo(() => (pinFilter ? graph.nodes.filter((n) => matchesLegendFilter(n, pinFilter)) : []), [graph.nodes, pinFilter]);
+  const filterLabel = pinFilter
+    ? (pinFilter.kind === 'state' ? (pinFilter.value === 'verificado' ? 'Códigos verificados' : 'Códigos no verificados') : GD_NODE_META[pinFilter.value as GdNodeType].plural)
+    : '';
+  const filterColor = pinFilter
+    ? (pinFilter.kind === 'state' ? (pinFilter.value === 'verificado' ? '#34d399' : '#6b7280') : GD_NODE_META[pinFilter.value as GdNodeType].color)
+    : '#888';
+  const nodeBrief = (n: GdGraphNode): string => {
+    if (n.type === 'fuente_premisa' || n.type === 'fuente_peso') return fuentes.find((x) => x.id === n.id)?.contenido || '';
+    if (n.type === 'problema') return (problemas.find((x) => x.id === n.id) as any)?.description || '';
+    if (n.type === 'codigo') return (codigos.find((x) => x.id === n.id) as any)?.texto || '';
+    if (n.type === 'enfrentamiento') return (enfrentamientos.find((x) => x.id === n.id) as any)?.texto || '';
+    if (n.type === 'categoria') return (categorias.find((x) => x.id === n.id) as any)?.nombre || '';
+    return n.subtitle || '';
+  };
+
   return (
     <div className="flex gap-4 h-[calc(100dvh-130px)]">
       {/* ── Panel izquierdo: Problemáticas ── */}
@@ -424,6 +445,38 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
           </>
         )}
       </div>
+
+      {/* ── Panel derecho: registros del filtro aplicado ── */}
+      {prob && pinFilter && (
+        <aside className="w-[268px] shrink-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+          <div className="px-3 py-2.5 border-b border-digi-border flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: filterColor }} />
+              <span className="text-[12px] font-semibold text-digi-text truncate" style={df}>{filterLabel}</span>
+              <span className="text-[11px] text-digi-muted shrink-0" style={mf}>{filteredNodes.length}</span>
+            </div>
+            <button onClick={() => setPinFilter(null)} className="p-1 text-digi-muted hover:text-digi-text shrink-0" title="Quitar filtro"><X className="w-3.5 h-3.5" /></button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
+            {filteredNodes.length === 0 && (
+              <p className="text-[12px] text-digi-muted px-2 py-4 text-center" style={mf}>Sin registros para este filtro.</p>
+            )}
+            {filteredNodes.map((n) => (
+              <button
+                key={n.key}
+                onClick={() => { setSelectedKey(n.key); setCreating(null); }}
+                className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors ${selectedKey === n.key ? 'bg-accent-light border border-accent/30' : 'hover:bg-black/[0.03] border border-transparent'}`}
+              >
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ ...df, background: `${GD_NODE_META[n.type].color}22`, color: GD_NODE_META[n.type].color }}>{n.title}</span>
+                {nodeBrief(n) && <p className="text-[11px] text-digi-muted mt-1 line-clamp-2" style={mf}>{nodeBrief(n)}</p>}
+              </button>
+            ))}
+          </div>
+          <div className="p-2 border-t border-digi-border">
+            <p className="text-[10.5px] text-digi-muted text-center" style={mf}>Selecciona un registro para ver su detalle completo.</p>
+          </div>
+        </aside>
+      )}
 
       {/* ── Modal: Problemática ── */}
       {modal === 'problematica' && (
@@ -1043,9 +1096,57 @@ function DetailActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete: ()
   );
 }
 
+// Modal para buscar, ver el detalle y seleccionar un peso existente a conectar con la premisa.
+function PesoConnectModal({ pesos, busy, onClose, onSelect }: { pesos: Fuente[]; busy: boolean; onClose: () => void; onSelect: (id: number) => void }) {
+  const [q, setQ] = useState('');
+  const [sel, setSel] = useState<Fuente | null>(null);
+  const filtered = pesos.filter((p) => { const t = q.trim().toLowerCase(); return !t || `${p.nomenclatura} ${p.contenido}`.toLowerCase().includes(t); });
+  return (
+    <FloatingWindow open onClose={onClose} title="Conectar peso existente" initialWidth={560} initialHeight={580} minWidth={380} minHeight={360}>
+      <div className="flex flex-col h-full bg-[#0d0d14]">
+        <div className="p-2 border-b border-white/10">
+          <input className={GLASS_INPUT} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nomenclatura o contenido…" autoFocus />
+          <p className="text-[10px] text-white/40 mt-1 px-0.5" style={mf}>{filtered.length} de {pesos.length} pesos</p>
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
+          {filtered.length === 0 && <p className="text-[12px] text-white/45 text-center py-6" style={mf}>Sin pesos que coincidan.</p>}
+          {filtered.map((p) => (
+            <button key={p.id} onClick={() => setSel(p)} className={`w-full text-left rounded-md px-2.5 py-2 border transition-colors ${sel?.id === p.id ? 'bg-accent/20 border-accent/40' : 'bg-white/[0.04] border-white/8 hover:bg-white/10'}`}>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{p.nomenclatura}</span>
+                <span className="text-[10.5px] text-white/50" style={mf}>{Math.round(p.credibilidad)}%</span>
+                <span className="text-[10px] text-white/35 ml-auto" style={mf}>{TIPO_DATO_LABEL[p.tipo_dato]}</span>
+              </div>
+              <p className="text-[11.5px] text-white/75 mt-0.5 line-clamp-2" style={mf}>{p.contenido}</p>
+            </button>
+          ))}
+        </div>
+        {sel && (
+          <div className="border-t border-white/10 p-2.5 space-y-2 max-h-[46%] overflow-y-auto shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{sel.nomenclatura}</span>
+              <span className="text-[10.5px] text-white/50" style={mf}>Credibilidad {Math.round(sel.credibilidad)}%</span>
+            </div>
+            <p className="text-[12px] text-white/85 leading-relaxed" style={mf}>{sel.contenido}</p>
+            {sel.ref_tipo && formatApaText(sel.ref_tipo, sel.ref_datos) && (
+              <div className="rounded-md border border-white/10 bg-white/[0.03] p-2">
+                <p className="text-[9px] uppercase tracking-wide text-white/40 mb-0.5" style={df}>Referencia · {apaTipoLabel(sel.ref_tipo)}</p>
+                <ApaReference tipo={sel.ref_tipo} datos={sel.ref_datos} className="text-[11px] text-white/70 leading-relaxed" />
+              </div>
+            )}
+            <div className="flex justify-end">
+              <button onClick={() => onSelect(sel.id)} disabled={busy} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{busy ? 'Conectando…' : 'Conectar este peso'}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </FloatingWindow>
+  );
+}
+
 function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuente; pesos: Fuente[]; onReload: () => void; onOpenAgent?: (p: Fuente) => void }) {
   const [applied, setApplied] = useState<any[]>([]);
-  const [pesoId, setPesoId] = useState<string>('');
+  const [showConnect, setShowConnect] = useState(false);
   const [busy, setBusy] = useState(false);
   // Formulario inline para crear un peso nuevo y aplicarlo (una premisa puede tener varios pesos).
   const [showNew, setShowNew] = useState(false);
@@ -1057,13 +1158,13 @@ function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuen
   }, [premisa.id]);
   useEffect(() => { load(); }, [load]);
 
-  const applyExisting = async () => {
-    if (!pesoId || busy) { if (!pesoId) toast.error('Elige una fuente peso'); return; }
+  const applyExisting = async (id: number) => {
+    if (!id || busy) return;
     setBusy(true);
     try {
-      await mutate(`${API}/pesos`, 'POST', { premisa_fuente_id: premisa.id, peso_fuente_id: Number(pesoId) });
-      toast.success('Peso aplicado');
-      setPesoId('');
+      await mutate(`${API}/pesos`, 'POST', { premisa_fuente_id: premisa.id, peso_fuente_id: id });
+      toast.success('Peso conectado');
+      setShowConnect(false);
       await load(); await onReload();
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(false); }
@@ -1114,15 +1215,14 @@ function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuen
           </div>
         ))}
       </div>
-      {/* Reusar un peso ya existente */}
+      {/* Reusar un peso ya existente → modal de búsqueda/detalle/selección */}
       {usableP.length > 0 && (
-        <div className="flex items-center gap-1.5 mb-2">
-          <select className={`${GLASS_INPUT} flex-1`} value={pesoId} onChange={(e) => setPesoId(e.target.value)}>
-            <option value="">Aplicar peso existente…</option>
-            {usableP.map((p) => <option key={p.id} value={p.id} className="bg-[#181826]">{p.nomenclatura} ({Math.round(p.credibilidad)}%) · {p.contenido.slice(0, 28)}</option>)}
-          </select>
-          <button onClick={applyExisting} disabled={busy} className={`${GLASS_BTN} px-2 py-1.5`} title="Aplicar peso"><Plus className="w-3.5 h-3.5" /></button>
-        </div>
+        <button onClick={() => setShowConnect(true)} className={`${GLASS_BTN} w-full mb-2 px-2.5 py-1.5 text-[11.5px]`} style={mf}>
+          <Search className="w-3.5 h-3.5" /> Conectar peso existente ({usableP.length})
+        </button>
+      )}
+      {showConnect && (
+        <PesoConnectModal pesos={usableP} busy={busy} onClose={() => setShowConnect(false)} onSelect={applyExisting} />
       )}
       {/* Crear un peso nuevo y aplicarlo */}
       {!showNew ? (
