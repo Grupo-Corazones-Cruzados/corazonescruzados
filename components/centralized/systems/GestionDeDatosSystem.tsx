@@ -1096,47 +1096,86 @@ function DetailActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete: ()
   );
 }
 
-// Modal para buscar, ver el detalle y seleccionar un peso existente a conectar con la premisa.
-function PesoConnectModal({ pesos, busy, onClose, onSelect }: { pesos: Fuente[]; busy: boolean; onClose: () => void; onSelect: (id: number) => void }) {
+// Modal "Conexión de pesos": pestaña para conectar un peso existente + pestaña de los pesos ya conectados.
+function ConexionPesosModal({ allPesos, usableP, applied, busy, initialTab = 'conectar', onConnect, onRemove, onClose }: {
+  allPesos: Fuente[]; usableP: Fuente[]; applied: any[]; busy: boolean; initialTab?: 'conectar' | 'conectados';
+  onConnect: (id: number) => void; onRemove: (pfId: number) => void; onClose: () => void;
+}) {
+  const [tab, setTab] = useState<'conectar' | 'conectados'>(initialTab);
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<Fuente | null>(null);
-  const filtered = pesos.filter((p) => { const t = q.trim().toLowerCase(); return !t || `${p.nomenclatura} ${p.contenido}`.toLowerCase().includes(t); });
+  const filtered = usableP.filter((p) => { const t = q.trim().toLowerCase(); return !t || `${p.nomenclatura} ${p.contenido}`.toLowerCase().includes(t); });
+  const TabBtn = ({ id, label, count }: { id: 'conectar' | 'conectados'; label: string; count: number }) => (
+    <button onClick={() => setTab(id)} className={`px-3 py-1.5 text-[12px] font-medium border-b-2 transition-colors ${tab === id ? 'border-accent text-white' : 'border-transparent text-white/50 hover:text-white/80'}`} style={mf}>
+      {label} <span className="text-[10.5px] text-white/40">({count})</span>
+    </button>
+  );
   return (
-    <FloatingWindow open onClose={onClose} title="Conectar peso existente" initialWidth={560} initialHeight={580} minWidth={380} minHeight={360}>
+    <FloatingWindow open onClose={onClose} title="Conexión de pesos" initialWidth={580} initialHeight={600} minWidth={400} minHeight={380}>
       <div className="flex flex-col h-full bg-[#0d0d14]">
-        <div className="p-2 border-b border-white/10">
-          <input className={GLASS_INPUT} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nomenclatura o contenido…" autoFocus />
-          <p className="text-[10px] text-white/40 mt-1 px-0.5" style={mf}>{filtered.length} de {pesos.length} pesos</p>
+        <div className="flex items-center gap-1 px-2 border-b border-white/10 shrink-0">
+          <TabBtn id="conectar" label="Conectar peso" count={usableP.length} />
+          <TabBtn id="conectados" label="Conectados" count={applied.length} />
         </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
-          {filtered.length === 0 && <p className="text-[12px] text-white/45 text-center py-6" style={mf}>Sin pesos que coincidan.</p>}
-          {filtered.map((p) => (
-            <button key={p.id} onClick={() => setSel(p)} className={`w-full text-left rounded-md px-2.5 py-2 border transition-colors ${sel?.id === p.id ? 'bg-accent/20 border-accent/40' : 'bg-white/[0.04] border-white/8 hover:bg-white/10'}`}>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{p.nomenclatura}</span>
-                <span className="text-[10.5px] text-white/50" style={mf}>{Math.round(p.credibilidad)}%</span>
-                <span className="text-[10px] text-white/35 ml-auto" style={mf}>{TIPO_DATO_LABEL[p.tipo_dato]}</span>
-              </div>
-              <p className="text-[11.5px] text-white/75 mt-0.5 line-clamp-2" style={mf}>{p.contenido}</p>
-            </button>
-          ))}
-        </div>
-        {sel && (
-          <div className="border-t border-white/10 p-2.5 space-y-2 max-h-[46%] overflow-y-auto shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{sel.nomenclatura}</span>
-              <span className="text-[10.5px] text-white/50" style={mf}>Credibilidad {Math.round(sel.credibilidad)}%</span>
+
+        {tab === 'conectar' ? (
+          <>
+            <div className="p-2 border-b border-white/10 shrink-0">
+              <input className={GLASS_INPUT} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nomenclatura o contenido…" autoFocus />
+              <p className="text-[10px] text-white/40 mt-1 px-0.5" style={mf}>{filtered.length} de {usableP.length} pesos disponibles</p>
             </div>
-            <p className="text-[12px] text-white/85 leading-relaxed" style={mf}>{sel.contenido}</p>
-            {sel.ref_tipo && formatApaText(sel.ref_tipo, sel.ref_datos) && (
-              <div className="rounded-md border border-white/10 bg-white/[0.03] p-2">
-                <p className="text-[9px] uppercase tracking-wide text-white/40 mb-0.5" style={df}>Referencia · {apaTipoLabel(sel.ref_tipo)}</p>
-                <ApaReference tipo={sel.ref_tipo} datos={sel.ref_datos} className="text-[11px] text-white/70 leading-relaxed" />
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
+              {filtered.length === 0 && <p className="text-[12px] text-white/45 text-center py-6" style={mf}>{usableP.length === 0 ? 'No hay otros pesos para conectar.' : 'Sin pesos que coincidan.'}</p>}
+              {filtered.map((p) => (
+                <button key={p.id} onClick={() => setSel(p)} className={`w-full text-left rounded-md px-2.5 py-2 border transition-colors ${sel?.id === p.id ? 'bg-accent/20 border-accent/40' : 'bg-white/[0.04] border-white/8 hover:bg-white/10'}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{p.nomenclatura}</span>
+                    <span className="text-[10.5px] text-white/50" style={mf}>{Math.round(p.credibilidad)}%</span>
+                    <span className="text-[10px] text-white/35 ml-auto" style={mf}>{TIPO_DATO_LABEL[p.tipo_dato]}</span>
+                  </div>
+                  <p className="text-[11.5px] text-white/75 mt-0.5 line-clamp-2" style={mf}>{p.contenido}</p>
+                </button>
+              ))}
+            </div>
+            {sel && (
+              <div className="border-t border-white/10 p-2.5 space-y-2 max-h-[46%] overflow-y-auto shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{sel.nomenclatura}</span>
+                  <span className="text-[10.5px] text-white/50" style={mf}>Credibilidad {Math.round(sel.credibilidad)}%</span>
+                </div>
+                <p className="text-[12px] text-white/85 leading-relaxed" style={mf}>{sel.contenido}</p>
+                {sel.ref_tipo && formatApaText(sel.ref_tipo, sel.ref_datos) && (
+                  <div className="rounded-md border border-white/10 bg-white/[0.03] p-2">
+                    <p className="text-[9px] uppercase tracking-wide text-white/40 mb-0.5" style={df}>Referencia · {apaTipoLabel(sel.ref_tipo)}</p>
+                    <ApaReference tipo={sel.ref_tipo} datos={sel.ref_datos} className="text-[11px] text-white/70 leading-relaxed" />
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <button onClick={() => onConnect(sel.id)} disabled={busy} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{busy ? 'Conectando…' : 'Conectar este peso'}</button>
+                </div>
               </div>
             )}
-            <div className="flex justify-end">
-              <button onClick={() => onSelect(sel.id)} disabled={busy} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{busy ? 'Conectando…' : 'Conectar este peso'}</button>
-            </div>
+          </>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-2 space-y-1.5 min-h-0">
+            {applied.length === 0 && <p className="text-[12px] text-white/45 text-center py-6" style={mf}>Aún no hay pesos conectados a esta premisa.</p>}
+            {applied.map((a) => {
+              const full = allPesos.find((p) => p.id === a.peso_fuente_id);
+              return (
+                <div key={a.id} className="rounded-md px-2.5 py-2 bg-white/[0.04] border border-white/8">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{a.peso_nomenclatura}</span>
+                    <span className="text-[10.5px] text-white/50 tabular-nums" style={mf}>{Math.round(a.cred_antes)}→{Math.round(a.cred_despues)}%</span>
+                    {full && <span className="text-[10px] text-white/35" style={mf}>{TIPO_DATO_LABEL[full.tipo_dato]}</span>}
+                    <button onClick={() => onRemove(a.peso_fuente_id)} disabled={busy} className="ml-auto text-white/40 hover:text-red-400 disabled:opacity-40" title="Quitar de la premisa"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                  <p className="text-[11.5px] text-white/80 mt-1 leading-relaxed" style={mf}>{full?.contenido || a.peso_contenido}</p>
+                  {full?.ref_tipo && formatApaText(full.ref_tipo, full.ref_datos) && (
+                    <p className="text-[10.5px] text-white/45 mt-1" style={mf}>{formatApaText(full.ref_tipo, full.ref_datos)}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1146,7 +1185,7 @@ function PesoConnectModal({ pesos, busy, onClose, onSelect }: { pesos: Fuente[];
 
 function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuente; pesos: Fuente[]; onReload: () => void; onOpenAgent?: (p: Fuente) => void }) {
   const [applied, setApplied] = useState<any[]>([]);
-  const [showConnect, setShowConnect] = useState(false);
+  const [connectTab, setConnectTab] = useState<'conectar' | 'conectados' | null>(null);
   const [busy, setBusy] = useState(false);
   // Formulario inline para crear un peso nuevo y aplicarlo (una premisa puede tener varios pesos).
   const [showNew, setShowNew] = useState(false);
@@ -1164,7 +1203,6 @@ function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuen
     try {
       await mutate(`${API}/pesos`, 'POST', { premisa_fuente_id: premisa.id, peso_fuente_id: id });
       toast.success('Peso conectado');
-      setShowConnect(false);
       await load(); await onReload();
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(false); }
@@ -1206,7 +1244,7 @@ function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuen
       )}
       {applied.length === 0 && <p className="text-[11px] text-white/45 mb-2" style={mf}>Ninguno aplicado aún.</p>}
       <div className="space-y-1 mb-2">
-        {applied.map((a) => (
+        {applied.slice(0, 6).map((a) => (
           <div key={a.id} className="flex items-center gap-2 text-[11px] bg-white/[0.04] rounded px-2 py-1">
             <span className="font-bold text-[#60a5fa]" style={df}>{a.peso_nomenclatura}</span>
             <span className="text-white/50 truncate flex-1" style={mf}>{a.peso_contenido?.slice(0, 24)}</span>
@@ -1214,15 +1252,23 @@ function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuen
             <button onClick={() => remove(a.peso_fuente_id)} className="text-white/40 hover:text-red-400"><X className="w-3 h-3" /></button>
           </div>
         ))}
+        {applied.length > 6 && (
+          <button onClick={() => setConnectTab('conectados')} className="w-full inline-flex items-center justify-center gap-1 text-[11px] text-accent hover:underline py-0.5" style={mf}>
+            Ver más ({applied.length - 6}) <ExternalLink className="w-3 h-3" />
+          </button>
+        )}
       </div>
-      {/* Reusar un peso ya existente → modal de búsqueda/detalle/selección */}
+      {/* Conectar un peso existente → modal "Conexión de pesos" (pestaña Conectar) */}
       {usableP.length > 0 && (
-        <button onClick={() => setShowConnect(true)} className={`${GLASS_BTN} w-full mb-2 px-2.5 py-1.5 text-[11.5px]`} style={mf}>
+        <button onClick={() => setConnectTab('conectar')} className={`${GLASS_BTN} w-full mb-2 px-2.5 py-1.5 text-[11.5px]`} style={mf}>
           <Search className="w-3.5 h-3.5" /> Conectar peso existente ({usableP.length})
         </button>
       )}
-      {showConnect && (
-        <PesoConnectModal pesos={usableP} busy={busy} onClose={() => setShowConnect(false)} onSelect={applyExisting} />
+      {connectTab && (
+        <ConexionPesosModal
+          allPesos={pesos} usableP={usableP} applied={applied} busy={busy} initialTab={connectTab}
+          onConnect={applyExisting} onRemove={remove} onClose={() => setConnectTab(null)}
+        />
       )}
       {/* Crear un peso nuevo y aplicarlo */}
       {!showNew ? (

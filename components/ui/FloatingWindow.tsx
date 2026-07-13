@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, GripHorizontal } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -22,6 +23,10 @@ export default function FloatingWindow({
   initialWidth?: number; initialHeight?: number; minWidth?: number; minHeight?: number;
 }) {
   const [rect, setRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  // Portal: se monta en el contenedor `.corp` (conserva el tema Fluent/oscuro) para NO quedar atrapado
+  // por ancestros con overflow/backdrop-filter (que crean bloque contenedor para position:fixed).
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
+  useEffect(() => { setPortalEl((document.querySelector('.corp') as HTMLElement) || document.body); }, []);
 
   useEffect(() => {
     if (open && !rect && typeof window !== 'undefined') {
@@ -60,9 +65,9 @@ export default function FloatingWindow({
     document.addEventListener('pointerup', onUp);
   };
 
-  if (!open || !rect) return null;
+  if (!open || !rect || !portalEl) return null;
 
-  return (
+  return createPortal(
     <div className="fixed z-[70] bg-digi-card border border-digi-border rounded-xl shadow-2xl flex flex-col overflow-hidden" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
       {/* Cabecera (arrastrar) */}
       <div onPointerDown={start('move')} className="flex items-center gap-2 px-3.5 py-2.5 border-b border-digi-border bg-digi-dark cursor-move select-none shrink-0">
@@ -83,6 +88,7 @@ export default function FloatingWindow({
       <div onPointerDown={start('ne')} className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize" />
       <div onPointerDown={start('sw')} className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize" />
       <div onPointerDown={start('se')} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize" />
-    </div>
+    </div>,
+    portalEl,
   );
 }
