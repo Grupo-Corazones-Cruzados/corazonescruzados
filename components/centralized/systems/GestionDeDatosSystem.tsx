@@ -1099,14 +1099,35 @@ function DetailActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete: ()
 }
 
 // Modal "Conexión de pesos": pestaña para conectar un peso existente + pestaña de los pesos ya conectados.
-function ConexionPesosModal({ allPesos, usableP, applied, busy, initialTab = 'conectar', onConnect, onRemove, onClose }: {
-  allPesos: Fuente[]; usableP: Fuente[]; applied: any[]; busy: boolean; initialTab?: 'conectar' | 'conectados';
+function ConexionPesosModal({ premisaId, allPesos, usableP, applied, busy, initialTab = 'conectar', onConnect, onRemove, onClose }: {
+  premisaId: number; allPesos: Fuente[]; usableP: Fuente[]; applied: any[]; busy: boolean; initialTab?: 'conectar' | 'conectados';
   onConnect: (id: number) => void; onRemove: (pfId: number) => void; onClose: () => void;
 }) {
   const [tab, setTab] = useState<'conectar' | 'conectados'>(initialTab);
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<Fuente | null>(null);
-  const filtered = usableP.filter((p) => { const t = q.trim().toLowerCase(); return !t || `${p.nomenclatura} ${p.contenido}`.toLowerCase().includes(t); });
+  // Sugerencias de IA: pesos existentes pertinentes para la premisa.
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggested, setSuggested] = useState<Record<number, string>>({});
+  const runSuggest = async () => {
+    if (suggesting) return;
+    setSuggesting(true);
+    try {
+      const res = await fetch(`${API}/pesos-suggest`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ premisa_id: premisaId }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'No se pudo evaluar con IA');
+      const map: Record<number, string> = {};
+      (d.suggestions || []).forEach((s: any) => { map[s.id] = s.motivo; });
+      setSuggested(map);
+      const n = Object.keys(map).length;
+      if (n > 0) toast.success(`La IA sugiere ${n} peso(s) pertinente(s)`);
+      else toast(`La IA evaluó ${d.evaluados || 0} pesos: ninguno claramente pertinente.`);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSuggesting(false); }
+  };
+  const filtered = usableP
+    .filter((p) => { const t = q.trim().toLowerCase(); return !t || `${p.nomenclatura} ${p.contenido}`.toLowerCase().includes(t); })
+    .sort((a, b) => (suggested[b.id] ? 1 : 0) - (suggested[a.id] ? 1 : 0));
   const TabBtn = ({ id, label, count }: { id: 'conectar' | 'conectados'; label: string; count: number }) => (
     <button onClick={() => setTab(id)} className={`px-3 py-1.5 text-[12px] font-medium border-b-2 transition-colors ${tab === id ? 'border-accent text-white' : 'border-transparent text-white/50 hover:text-white/80'}`} style={mf}>
       {label} <span className="text-[10.5px] text-white/40">({count})</span>
@@ -1122,22 +1143,32 @@ function ConexionPesosModal({ allPesos, usableP, applied, busy, initialTab = 'co
 
         {tab === 'conectar' ? (
           <>
-            <div className="p-2 border-b border-white/10 shrink-0">
+            <div className="p-2 border-b border-white/10 shrink-0 space-y-1.5">
               <input className={GLASS_INPUT} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nomenclatura o contenido…" autoFocus />
-              <p className="text-[10px] text-white/40 mt-1 px-0.5" style={mf}>{filtered.length} de {usableP.length} pesos disponibles</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] text-white/40 px-0.5" style={mf}>{filtered.length} de {usableP.length} pesos disponibles</p>
+                <button onClick={runSuggest} disabled={suggesting || usableP.length === 0} className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-white bg-accent/90 hover:bg-accent rounded-md disabled:opacity-40 disabled:cursor-not-allowed" style={mf}>
+                  <Sparkles className="w-3.5 h-3.5" />{suggesting ? 'Evaluando…' : 'Sugerir con IA'}
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
               {filtered.length === 0 && <p className="text-[12px] text-white/45 text-center py-6" style={mf}>{usableP.length === 0 ? 'No hay otros pesos para conectar.' : 'Sin pesos que coincidan.'}</p>}
-              {filtered.map((p) => (
-                <button key={p.id} onClick={() => setSel(p)} className={`w-full text-left rounded-md px-2.5 py-2 border transition-colors ${sel?.id === p.id ? 'bg-accent/20 border-accent/40' : 'bg-white/[0.04] border-white/8 hover:bg-white/10'}`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{p.nomenclatura}</span>
-                    <span className="text-[10.5px] text-white/50" style={mf}>{Math.round(p.credibilidad)}%</span>
-                    <span className="text-[10px] text-white/35 ml-auto" style={mf}>{TIPO_DATO_LABEL[p.tipo_dato]}</span>
-                  </div>
-                  <p className="text-[11.5px] text-white/75 mt-0.5 line-clamp-2" style={mf}>{p.contenido}</p>
-                </button>
-              ))}
+              {filtered.map((p) => {
+                const motivo = suggested[p.id];
+                return (
+                  <button key={p.id} onClick={() => setSel(p)} className={`w-full text-left rounded-md px-2.5 py-2 border transition-colors ${sel?.id === p.id ? 'bg-accent/20 border-accent/40' : motivo ? 'bg-accent/[0.08] border-accent/30 hover:bg-accent/15' : 'bg-white/[0.04] border-white/8 hover:bg-white/10'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{p.nomenclatura}</span>
+                      <span className="text-[10.5px] text-white/50" style={mf}>{Math.round(p.credibilidad)}%</span>
+                      {motivo && <span className="inline-flex items-center gap-0.5 text-[9.5px] font-semibold text-accent" style={df}><Sparkles className="w-2.5 h-2.5" /> IA</span>}
+                      <span className="text-[10px] text-white/35 ml-auto" style={mf}>{TIPO_DATO_LABEL[p.tipo_dato]}</span>
+                    </div>
+                    <p className="text-[11.5px] text-white/75 mt-0.5 line-clamp-2" style={mf}>{p.contenido}</p>
+                    {motivo && <p className="text-[10.5px] text-accent/90 mt-1 italic" style={mf}>✨ {motivo}</p>}
+                  </button>
+                );
+              })}
             </div>
             {sel && (
               <div className="border-t border-white/10 p-2.5 space-y-2 max-h-[46%] overflow-y-auto shrink-0">
@@ -1268,7 +1299,7 @@ function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuen
       )}
       {connectTab && (
         <ConexionPesosModal
-          allPesos={pesos} usableP={usableP} applied={applied} busy={busy} initialTab={connectTab}
+          premisaId={premisa.id} allPesos={pesos} usableP={usableP} applied={applied} busy={busy} initialTab={connectTab}
           onConnect={applyExisting} onRemove={remove} onClose={() => setConnectTab(null)}
         />
       )}

@@ -616,6 +616,24 @@ async function assertSessionWeight(premisaId: number, sessionId: string, id: num
   if (!rows.length) throw new Error('Ese peso no pertenece a esta sesión/premisa; no se puede modificar.');
 }
 
+/** Pesos (de la misma problemática) que AÚN NO están conectados a la premisa, con su referencia. */
+export async function getUnconnectedPesos(premisaId: number) {
+  await ensureGestionDatosTables();
+  const prem = await getPremisaForAgent(premisaId);
+  if (!prem) return [];
+  const { rows } = await pool.query(
+    `SELECT f.id, f.seq, f.contenido, r.ref_tipo, r.ref_datos
+       FROM gcc_world.gd_fuentes f
+       LEFT JOIN gcc_world.gd_referencias r ON r.id = f.referencia_id
+      WHERE f.tipo_logica = 'peso' AND f.problematica_id = $1
+        AND NOT EXISTS (SELECT 1 FROM gcc_world.gd_fuente_pesos p WHERE p.peso_fuente_id = f.id AND p.premisa_fuente_id = $2)
+      ORDER BY f.created_at DESC
+      LIMIT 80`,
+    [prem.problematica_id, premisaId],
+  );
+  return rows.map((r: any) => ({ id: r.id, nomenclatura: fuentePesoRef(r.seq), contenido: r.contenido || '', ref_tipo: r.ref_tipo, ref_datos: r.ref_datos }));
+}
+
 export async function agentAddWeight(
   premisaId: number,
   sessionId: string,

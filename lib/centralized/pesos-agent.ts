@@ -6,9 +6,10 @@ import { promisify } from 'util';
 import { existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { searchScopus, openAlexAbstract } from '@/lib/centralized/scopus';
+import { formatApaText } from '@/lib/centralized/apa';
 import {
   getPremisaForAgent, getStyleExamplesPesos, agentListSessionWeights, getPremisaExistingWeights,
-  agentAddWeight, agentUpdateWeight, agentDeleteWeight,
+  getUnconnectedPesos, agentAddWeight, agentUpdateWeight, agentDeleteWeight,
 } from '@/lib/centralized/gestion-datos-db';
 
 const execFileAsync = promisify(execFile);
@@ -120,6 +121,32 @@ function normCred(v: any): number {
 async function callClaudeJSON(input: string, opts: { resume?: string; systemPrompt?: string }): Promise<{ obj: any; sessionId: string }> {
   const { result, sessionId } = await callClaude(input, opts);
   return { obj: parseAction(result), sessionId };
+}
+
+// Sugerir, con IA, cuáles pesos EXISTENTES (no conectados) son pertinentes para reforzar la premisa.
+// Single-shot: se le pasan todos los candidatos (contenido + referencia) y devuelve los pertinentes.
+export async function suggestPesosForPremisa(premisaId: number): Promise<{ suggestions: { id: number; motivo: string }[]; evaluados: number }> {
+  const prem = await getPremisaForAgent(premisaId);
+  if (!prem) throw new Error('La premisa no existe o no es de tipo premisa.');
+  const candidates = await getUnconnectedPesos(premisaId);
+  if (!candidates.length) return { suggestions: [], evaluados: 0 };
+  const compact = candidates.map((c: any) => ({ id: c.id, nomen: c.nomenclatura, contenido: String(c.contenido || '').slice(0, 450), referencia: formatApaText(c.ref_tipo, c.ref_datos) }));
+  const sys = `Eres un evaluador que decide qué PESOS existentes (datos con su referencia bibliográfica) son PERTINENTES
+para reforzar una premisa. No tienes herramientas ni acceso a archivos: LEES lo que te doy y respondes ÚNICAMENTE
+con un objeto JSON en texto plano (sin markdown ni fences).
+PREMISA A REFORZAR: "${prem.contenido}"
+Un peso es PERTINENTE si su contenido/dato APOYA o se relaciona directamente con la premisa (mismo fenómeno o
+evidencia que la sostiene). Descarta los que no tengan relación clara. Sé exigente: mejor pocos y buenos.`;
+  const user = `PESOS CANDIDATOS (no conectados a la premisa):
+${JSON.stringify(compact)}
+Devuelve SOLO este JSON: {"suggestions":[{"id":<id>,"motivo":"por qué refuerza la premisa, 1 frase en español"}]}.
+Incluye ÚNICAMENTE ids que aparezcan en la lista y que sean pertinentes. Si ninguno aplica, {"suggestions":[]}.`;
+  const { obj } = await callClaudeJSON(user, { systemPrompt: sys });
+  const valid = new Set(candidates.map((c: any) => c.id));
+  const suggestions = Array.isArray(obj?.suggestions)
+    ? obj.suggestions.filter((s: any) => valid.has(Number(s.id))).map((s: any) => ({ id: Number(s.id), motivo: String(s.motivo || '').slice(0, 220) }))
+    : [];
+  return { suggestions, evaluados: candidates.length };
 }
 
 // Un turno = 3 pasos orquestados por el servidor (evita el loop iterativo que confundía al CLI):
