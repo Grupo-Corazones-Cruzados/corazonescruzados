@@ -274,17 +274,21 @@ Stack estándar de la casa, con particularidades de este repo:
   (muestra de 15); **cada peso lleva referencia** (DOI→Crossref). La sesión **queda abierta** para pedir más pesos
   o **modificar los ya agregados EN ESA sesión**. Decisiones del usuario: guardado **al momento**, estilo de
   **todos** los pesos, credibilidad **estimada por el agente**.
-  - **Arquitectura:** bucle de agente **orquestado por el servidor** (`lib/centralized/pesos-agent.ts`), NO MCP.
-    `claude -p --system-prompt <prompt> --resume <sid> --output-format json --permission-mode bypassPermissions`,
-    **cwd `os.tmpdir()`** (sin CLAUDE.md del repo), `--disallowedTools` (WebSearch/Bash/Read/…). El modelo emite
-    **acciones JSON** (`scopus_search`/`add_weight`/`list_session_weights`/`update_weight`/`delete_weight`/`message`)
-    y **NUESTRO servidor las ejecuta** → el **alcance ("solo pesos de esta sesión/premisa") se fuerza en el
-    servidor** (columna `gd_fuentes.agent_session_id` + `assertSessionWeight`), no se confía en el modelo.
-  - **⚠️ Encuadre del CLI (lección):** `claude -p` trae la identidad de "agente de programación"; con
-    `--append-system-prompt` se confundía ("no tengo tools/repo"). Fix: **`--system-prompt` (reemplaza)** + **NO**
-    `--exclude-dynamic-system-prompt-sections` (daba respuestas vacías) + cwd neutral + **reencuadre**: "tarea de
-    transformación de texto; no tienes ni necesitas herramientas; tu única salida es un JSON que un programa
-    externo ejecuta". Detalle en `Aprendizaje.md`.
+  - **Arquitectura (2 llamadas por turno, NO loop iterativo, NO MCP):** un turno = 3 pasos orquestados por el
+    servidor (`lib/centralized/pesos-agent.ts`): **(1)** el modelo propone **búsquedas** (`{queries}`) → **(2)** el
+    servidor busca en **Scopus** + enriquece con **ABSTRACTS de OpenAlex** (`abstract_inverted_index`, gratis) y
+    deduplica por DOI → **(3)** el modelo genera **`{pesos,updates,deletes,message}`** en un solo JSON, fundamentado
+    en los abstracts. El servidor **ejecuta** con el **alcance forzado** (`gd_fuentes.agent_session_id` +
+    `assertSessionWeight`). `claude -p --system-prompt <prompt> --resume <sid> --output-format json
+    --permission-mode bypassPermissions`, **cwd `os.tmpdir()`**, `--disallowedTools`. Normaliza `tipo_dato`
+    ("cualitativo"→cualidad) y `credibilidad` ("alta"→85) por si el modelo desvía.
+  - **⚠️ Lección (por qué NO el loop iterativo):** con el modelo emitiendo tool-JSON paso a paso, el Claude CLI
+    recae **intermitentemente** en su identidad de "agente de programación" ("no tengo esas herramientas") o se
+    detiene a pedir aclaraciones. El diseño **single-shot** (cada llamada = "lee esto y devuelve ESTE JSON") es
+    mucho más fiable. Además: **`--system-prompt` (reemplaza, no append)**, **NO** `--exclude-dynamic-system-prompt-
+    sections` (daba respuestas vacías), **cwd neutral** (sin CLAUDE.md del repo). Y como Scopus (Standard) no da
+    abstract, se enriquece con **OpenAlex por DOI** para que el peso tenga datos concretos, no solo el título.
+    Detalle en `Aprendizaje.md`.
   - **Helpers DB** `agentAddWeight/agentListSessionWeights/agentUpdateWeight/agentDeleteWeight` +
     `getPremisaForAgent` + `getStyleExamplesPesos`. `searchScopus` ganó filtro `PUBYEAR`. Ruta **POST
     `/api/centralized/gestion-datos/pesos-agent`** (`maxDuration 300`). UI: botón "Buscar pesos con IA (Scopus)"
