@@ -503,8 +503,19 @@ export async function updateFuente(
   if (credibilidad != null) await recomputeCredibilidad(id);
 }
 
-export async function deleteFuente(id: number) {
+export async function deleteFuente(id: number, deletePesos?: boolean) {
   await ensureGestionDatosTables();
+  if (deletePesos) {
+    // Elimina los pesos conectados a esta premisa que NO estén conectados a OTRA premisa (exclusivos),
+    // para no borrar pesos compartidos con otras premisas.
+    await pool.query(
+      `DELETE FROM gcc_world.gd_fuentes AS f
+        WHERE f.tipo_logica = 'peso'
+          AND EXISTS (SELECT 1 FROM gcc_world.gd_fuente_pesos p WHERE p.peso_fuente_id = f.id AND p.premisa_fuente_id = $1)
+          AND NOT EXISTS (SELECT 1 FROM gcc_world.gd_fuente_pesos p2 WHERE p2.peso_fuente_id = f.id AND p2.premisa_fuente_id <> $1)`,
+      [id],
+    );
+  }
   await pool.query(`DELETE FROM gcc_world.gd_fuentes WHERE id = $1`, [id]);
 }
 

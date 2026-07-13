@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import PixelModal from '@/components/ui/PixelModal';
 import GdGraph, { type GdLegendFilter } from '@/components/centralized/gestion-datos/GdGraph';
 import {
   GD_NODE_META, TIPO_DATO_LABEL, TIPO_LOGICA_LABEL,
@@ -233,7 +234,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   };
 
   // ── Eliminar nodo ───────────────────────────────────────────────────────────
-  const deleteNode = async (n: GdGraphNode) => {
+  const deleteNode = async (n: GdGraphNode, deletePesos?: boolean) => {
     const routeByType: Record<GdNodeType, string> = {
       problema: 'problemas', fuente_premisa: 'fuentes', fuente_peso: 'fuentes',
       enfrentamiento: 'enfrentamientos', codigo: 'codigos', categoria: 'categorias',
@@ -241,8 +242,9 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       condicion: '', variable: '', // no aparecen en el grafo de Gestión de Datos
     };
     try {
-      await mutate(`${API}/${routeByType[n.type]}`, 'DELETE', { id: n.id });
-      toast.success(`${GD_NODE_META[n.type].label} eliminado`);
+      const body = n.type === 'fuente_premisa' && deletePesos ? { id: n.id, delete_pesos: true } : { id: n.id };
+      await mutate(`${API}/${routeByType[n.type]}`, 'DELETE', body);
+      toast.success(deletePesos ? 'Premisa y pesos eliminados' : `${GD_NODE_META[n.type].label} eliminado`);
       setSelectedKey(null);
       await reload();
     } catch (e: any) { toast.error(e.message); }
@@ -527,15 +529,25 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
         <TemaModal probId={probId!} subtemas={subtemas} materias={materias} problemas={problemas} edit={editTema} onClose={() => { setModal(null); setEditTema(null); }} onSaved={async () => { setModal(null); setEditTema(null); await reload(); }} />
       )}
 
-      <PixelConfirm
-        open={!!confirmNode}
-        title="Eliminar elemento"
-        message={confirmNode ? `¿Eliminar ${GD_NODE_META[confirmNode.type].label.toLowerCase()} "${confirmNode.title}"? Esta acción no se puede deshacer y elimina lo que dependa de él.` : ''}
-        confirmLabel="Eliminar"
-        danger
-        onConfirm={() => { if (confirmNode) deleteNode(confirmNode); setConfirmNode(null); }}
-        onCancel={() => setConfirmNode(null)}
-      />
+      {confirmNode?.type === 'fuente_premisa' ? (
+        <PremisaDeleteConfirm
+          node={confirmNode}
+          pesoCount={graph.edges.filter((e) => e.kind === 'peso' && e.target === confirmNode.key).length}
+          onCancel={() => setConfirmNode(null)}
+          onDeleteOnly={() => { deleteNode(confirmNode, false); setConfirmNode(null); }}
+          onDeleteWithPesos={() => { deleteNode(confirmNode, true); setConfirmNode(null); }}
+        />
+      ) : (
+        <PixelConfirm
+          open={!!confirmNode}
+          title="Eliminar elemento"
+          message={confirmNode ? `¿Eliminar ${GD_NODE_META[confirmNode.type].label.toLowerCase()} "${confirmNode.title}"? Esta acción no se puede deshacer y elimina lo que dependa de él.` : ''}
+          confirmLabel="Eliminar"
+          danger
+          onConfirm={() => { if (confirmNode) deleteNode(confirmNode); setConfirmNode(null); }}
+          onCancel={() => setConfirmNode(null)}
+        />
+      )}
       <PixelConfirm
         open={!!confirmProb}
         title="Eliminar problemática"
@@ -1095,6 +1107,37 @@ function DetailActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete: ()
       {onEdit && <button onClick={onEdit} className={`${GLASS_BTN} px-2.5 py-1.5 text-[12px]`} style={mf}><Pencil className="w-3 h-3" /> Editar</button>}
       <button onClick={onDelete} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] text-red-300 border border-red-400/30 bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors" style={mf}><Trash2 className="w-3 h-3" /> Eliminar</button>
     </div>
+  );
+}
+
+// Confirmación de borrado de una premisa: permite eliminar solo la premisa o también sus pesos asociados.
+function PremisaDeleteConfirm({ node, pesoCount, onCancel, onDeleteOnly, onDeleteWithPesos }: {
+  node: GdGraphNode; pesoCount: number; onCancel: () => void; onDeleteOnly: () => void; onDeleteWithPesos: () => void;
+}) {
+  return (
+    <PixelModal open onClose={onCancel} title="Eliminar premisa" size="sm">
+      <div className="space-y-4">
+        <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>
+          ¿Eliminar la premisa <b>{node.title}</b>? Esta acción no se puede deshacer.{' '}
+          {pesoCount > 0
+            ? <>Tiene <b>{pesoCount}</b> peso{pesoCount === 1 ? '' : 's'} asociado{pesoCount === 1 ? '' : 's'}; elige si eliminarlos también o conservarlos.</>
+            : 'No tiene pesos asociados.'}
+        </p>
+        <div className="flex flex-col gap-2">
+          {pesoCount > 0 && (
+            <button type="button" onClick={onDeleteWithPesos} className="dlg-btn dlg-btn--danger px-4 py-2 text-[10px] border-2 border-red-500/60 text-red-400 hover:bg-red-950/30 transition-colors" style={df}>
+              Eliminar la premisa y sus {pesoCount} peso{pesoCount === 1 ? '' : 's'}
+            </button>
+          )}
+          <button type="button" onClick={onDeleteOnly} className="dlg-btn dlg-btn--danger px-4 py-2 text-[10px] border-2 border-red-500/60 text-red-400 hover:bg-red-950/30 transition-colors" style={df}>
+            Eliminar solo la premisa{pesoCount > 0 ? ' (conservar pesos)' : ''}
+          </button>
+          <button type="button" onClick={onCancel} className="dlg-btn px-3 py-2 text-[10px] border-2 border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={df}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </PixelModal>
   );
 }
 

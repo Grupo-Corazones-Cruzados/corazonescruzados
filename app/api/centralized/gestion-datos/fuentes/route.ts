@@ -54,9 +54,9 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   try {
     if (!(await guard())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    const { id } = await req.json();
+    const { id, delete_pesos } = await req.json();
     if (!id) return NextResponse.json({ error: 'Falta el id' }, { status: 400 });
-    await deleteFuente(Number(id));
+    await deleteFuente(Number(id), !!delete_pesos);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error('GD fuentes DELETE error:', err.message);
