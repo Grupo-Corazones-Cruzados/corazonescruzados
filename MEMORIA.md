@@ -267,6 +267,32 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Gestión de Datos — AGENTE IA (Claude CLI local) que genera pesos de una premisa desde Scopus (2026-07-12):**
+  chat conversacional (modal **arrastrable/redimensionable** reusando `FloatingWindow`) que, sobre una **premisa**
+  elegida, usa el **Claude CLI del servidor local** (NO la API de OpenAI) para buscar en Scopus datos de los
+  **últimos 5 años** y crear **PESOS** que la refuerzan, **aprendiendo la redacción** de TODOS los pesos existentes
+  (muestra de 15); **cada peso lleva referencia** (DOI→Crossref). La sesión **queda abierta** para pedir más pesos
+  o **modificar los ya agregados EN ESA sesión**. Decisiones del usuario: guardado **al momento**, estilo de
+  **todos** los pesos, credibilidad **estimada por el agente**.
+  - **Arquitectura:** bucle de agente **orquestado por el servidor** (`lib/centralized/pesos-agent.ts`), NO MCP.
+    `claude -p --system-prompt <prompt> --resume <sid> --output-format json --permission-mode bypassPermissions`,
+    **cwd `os.tmpdir()`** (sin CLAUDE.md del repo), `--disallowedTools` (WebSearch/Bash/Read/…). El modelo emite
+    **acciones JSON** (`scopus_search`/`add_weight`/`list_session_weights`/`update_weight`/`delete_weight`/`message`)
+    y **NUESTRO servidor las ejecuta** → el **alcance ("solo pesos de esta sesión/premisa") se fuerza en el
+    servidor** (columna `gd_fuentes.agent_session_id` + `assertSessionWeight`), no se confía en el modelo.
+  - **⚠️ Encuadre del CLI (lección):** `claude -p` trae la identidad de "agente de programación"; con
+    `--append-system-prompt` se confundía ("no tengo tools/repo"). Fix: **`--system-prompt` (reemplaza)** + **NO**
+    `--exclude-dynamic-system-prompt-sections` (daba respuestas vacías) + cwd neutral + **reencuadre**: "tarea de
+    transformación de texto; no tienes ni necesitas herramientas; tu única salida es un JSON que un programa
+    externo ejecuta". Detalle en `Aprendizaje.md`.
+  - **Helpers DB** `agentAddWeight/agentListSessionWeights/agentUpdateWeight/agentDeleteWeight` +
+    `getPremisaForAgent` + `getStyleExamplesPesos`. `searchScopus` ganó filtro `PUBYEAR`. Ruta **POST
+    `/api/centralized/gestion-datos/pesos-agent`** (`maxDuration 300`). UI: botón "Buscar pesos con IA (Scopus)"
+    en `PesosManager` + componente `PesosAgentChat`. `ensureGestionDatosTables` ya está **serializado** (guard
+    ensuring) — importante porque loadAll dispara ~10 fetches y esto añadió columna nueva.
+  - **SOLO LOCAL:** el `claude` CLI vive en el equipo local (en Railway no está autenticado). Opcional
+    `CLAUDE_CLI_PATH`. Coste ~$0.10+/turno de la cuenta Claude. Verificado: tsc+build; loop real (claude+Scopus)
+    reformula si no hay DOI y agrega pesos con DOI; alcance de sesión en BD (ROLLBACK). **Falta validación visual.**
 - **Gestión de Datos — conector Scopus (buscar fuentes) + Crossref (referencia APA completa, 2026-07-12):** en el
   editor de referencia del formulario de fuente hay una caja **"Buscar en Scopus"**: consulta la **Scopus Search
   API** de Elsevier (`https://api.elsevier.com/content/search/scopus`, view **Standard**) por tema/título/autor;

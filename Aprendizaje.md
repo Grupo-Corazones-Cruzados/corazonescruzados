@@ -30,8 +30,26 @@
 - **Scoping:** columna nueva `gd_fuentes.agent_session_id`; las acciones update/delete solo tocan pesos con ese `session_id` + esa premisa. Los pesos son reales (aplicados a la premisa vía `gd_fuente_pesos`), quedan tras la sesión.
 - **Solo local:** el `claude` CLI vive en el equipo local; en Railway no está autenticado → feature **local-only** (herramienta interna). Coste ~$0.10/turno de la cuenta Claude del usuario.
 
-### Preguntas abiertas (bloquean el build) — ver §Preguntas
-- P-A1 Guardado inmediato vs propuestas a aprobar. · P-A2 Fuente de los ejemplos de estilo. · P-A3 Quién define la credibilidad del peso.
+### Decisiones del usuario (2026-07-12)
+- **P-A1 Guardado:** se guardan **al momento** (pesos reales aplicados a la premisa, modificables en la sesión).
+- **P-A2 Estilo:** aprende de **todos** los pesos existentes (muestra de 15, solo lectura).
+- **P-A3 Credibilidad:** la **estima el agente** (recencia/revista/citas).
+
+### Lección técnica clave — encuadre del Claude CLI como agente de protocolo JSON
+- `claude -p` trae la **identidad de "agente de programación"** de Claude Code; con `--append-system-prompt` el
+  modelo se confundía ("no tengo acceso al repo", inventaba acciones, decía "me faltan herramientas").
+- **Fixes que lo resolvieron:** (1) **`--system-prompt`** (REEMPLAZA el prompt, no append) — quita la identidad
+  de coder. (2) **NO** usar `--exclude-dynamic-system-prompt-sections` (causaba respuestas VACÍAS). (3) **cwd
+  neutral** (`os.tmpdir()`) para no cargar el CLAUDE.md del repo. (4) **Reencuadre del prompt**: "TAREA DE
+  TRANSFORMACIÓN DE TEXTO; no dispones de herramientas ni las necesitas; tu única salida es UN JSON en texto
+  plano que un programa externo ejecuta; así 'buscas' y 'guardas'". (5) `--disallowedTools` de las tools del CLI.
+  (6) recordatorio de acciones válidas en cada RESULTADO. Con esto el loop completa: reformula si no hay DOI,
+  agrega pesos con DOI y termina con message. Verificado con Scopus real.
+- **Solo local:** el `claude` CLI vive en el equipo local (no en Railway). Coste ~$0.10+/turno de la cuenta Claude.
+
+### Progreso
+- **% de información para el objetivo: 100%** — implementado y verificado (tsc+build; loop real claude+Scopus;
+  alcance de sesión en BD con ROLLBACK). Falta solo la **validación visual en vivo** (login) del chat.
 
 ---
 
