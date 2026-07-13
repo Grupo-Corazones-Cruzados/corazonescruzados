@@ -114,6 +114,26 @@ export async function searchScopus(query: string, count = 10, yearFrom?: number)
   }));
 }
 
+/** Reconstruye el abstract desde el índice invertido de OpenAlex. */
+function fromInverted(inv: Record<string, number[]> | null | undefined): string {
+  if (!inv) return '';
+  const words: string[] = [];
+  for (const [w, ps] of Object.entries(inv)) for (const p of ps) words[p] = w;
+  return words.filter(Boolean).join(' ');
+}
+
+/** Obtiene el abstract de un DOI vía OpenAlex (gratis, sin key). '' si no lo tiene. */
+export async function openAlexAbstract(doi: string): Promise<string> {
+  const clean = (doi || '').trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '');
+  if (!clean) return '';
+  try {
+    const res = await fetch(`https://api.openalex.org/works/doi:${encodeURIComponent(clean)}?mailto=${encodeURIComponent(CROSSREF_MAILTO)}`, { headers: { Accept: 'application/json' } });
+    if (!res.ok) return '';
+    const w = await res.json();
+    return fromInverted(w?.abstract_inverted_index);
+  } catch { return ''; }
+}
+
 function crossrefTypeToTipo(t: string): string {
   const x = (t || '').toLowerCase();
   if (x.includes('journal-article')) return 'articulo_cientifico';

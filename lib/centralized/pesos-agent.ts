@@ -5,14 +5,13 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { existsSync } from 'fs';
 import { tmpdir } from 'os';
-import { searchScopus } from '@/lib/centralized/scopus';
+import { searchScopus, openAlexAbstract } from '@/lib/centralized/scopus';
 import {
   getPremisaForAgent, getStyleExamplesPesos, agentListSessionWeights,
   agentAddWeight, agentUpdateWeight, agentDeleteWeight,
 } from '@/lib/centralized/gestion-datos-db';
 
 const execFileAsync = promisify(execFile);
-const MAX_STEPS = 16;
 
 export type AgentMsg =
   | { role: 'assistant'; text: string }
@@ -42,9 +41,6 @@ async function callClaude(input: string, opts: { resume?: string; systemPrompt?:
   return { result: parsed.result ?? '', sessionId: parsed.session_id };
 }
 
-// Recordatorio breve de acciones válidas (se añade a cada RESULTADO para evitar que el modelo derive).
-const ACTIONS_HINT = 'Acciones válidas: scopus_search, add_weight, list_session_weights, update_weight, delete_weight, message.';
-
 /** Extrae el objeto JSON de acción de la respuesta del modelo (tolerante a fences/prosa). */
 function parseAction(raw: string): any {
   const s = (raw || '').trim();
@@ -54,133 +50,141 @@ function parseAction(raw: string): any {
   return { action: 'message', text: s };
 }
 
-function buildSystemPrompt(prem: any, styles: string[], yearFrom: number): string {
+function baseSystemPrompt(prem: any, styles: string[], yearFrom: number): string {
   const ejemplos = styles.length
     ? styles.map((s, i) => `  ${i + 1}. ${s}`).join('\n')
-    : '  (aún no hay ejemplos; redacta una afirmación clara y concisa que exprese el dato)';
-  return `TAREA DE TRANSFORMACIÓN DE TEXTO GUIADA POR UN PROGRAMA EXTERNO. No dispones de herramientas y NO las
-necesitas; NUNCA digas que te faltan herramientas ni intentes leer archivos o repositorios. En CADA turno tu
-ÚNICA salida es UN objeto JSON en TEXTO PLANO (sin ningún texto adicional, sin markdown, sin fences). Un programa
-externo lee tu JSON, ejecuta la acción y te responde con el RESULTADO como un nuevo mensaje; entonces produces el
-siguiente JSON. Así "buscas" y "guardas": escribiendo el JSON correspondiente, no usando herramientas.
+    : '  (aún no hay ejemplos; redacta un texto claro y argumentado que exprese el dato)';
+  return `Ayudas a REFORZAR una premisa creando PESOS (datos con referencia) a partir de evidencia reciente de Scopus
+(últimos 5 años, desde ${yearFrom}). NO eres un asistente de programación; NO tienes herramientas ni acceso a
+archivos: LEES lo que te doy y RESPONDES ÚNICAMENTE con el objeto JSON que se te pide en cada mensaje (en texto
+plano, sin markdown, sin fences, sin texto extra).
 
-ROL: agente que REFUERZA una premisa creando PESOS con evidencia reciente de Scopus (últimos 5 años, desde ${yearFrom}).
-
-PREMISA A REFORZAR (su tipo de dato base es "${prem.tipo_dato}"):
+PREMISA A REFORZAR (tipo de dato base "${prem.tipo_dato}"):
 "${prem.contenido}"
 
-Cada PESO (el JSON add_weight DEBE incluir SIEMPRE los 4 campos: contenido, tipo_dato, credibilidad, doi):
-- "contenido": frase NO vacía con el hallazgo del estudio que apoya la premisa (dato de CANTIDAD: cifra/estadística,
-  o de CUALIDAD: observación cualitativa). Los resultados de Scopus traen título/revista/año pero NO el resumen;
-  redacta el hallazgo principal del estudio de forma clara y específica, imitando el estilo de estos ejemplos:
+Un PESO es un dato de CANTIDAD (cifra/estadística) o de CUALIDAD (observación) que APOYA la premisa, redactado en
+español imitando el REGISTRO de estos ejemplos (si son párrafos elaborados y argumentados, redacta así, no frases
+sueltas):
 ${ejemplos}
-- "doi": el "doi" de un resultado de Scopus. Si un resultado NO tiene "doi", NO lo agregues.
-- "tipo_dato": "cantidad" o "cualidad". "credibilidad": entero 0-100 que TÚ estimas por recencia, revista y nº de citas.
-
-PROTOCOLO — responde SIEMPRE con UN ÚNICO objeto JSON en texto plano, UNA acción por turno:
-- {"action":"scopus_search","query":"palabras clave en inglés"}   // el programa filtra a los últimos 5 años
-- {"action":"add_weight","contenido":"...","tipo_dato":"cantidad|cualidad","credibilidad":0-100,"doi":"10...."}
-- {"action":"list_session_weights"}   // lista los pesos que has creado en ESTA sesión (para modificarlos)
-- {"action":"update_weight","id":<id>,"contenido"?:"...","tipo_dato"?:"...","credibilidad"?:0-100}
-- {"action":"delete_weight","id":<id>}
-- {"action":"message","text":"resumen para el usuario"}   // termina el turno
-
-REGLAS:
-- Empieza con términos GENERALES (2-4 palabras en inglés). Si una búsqueda no trae resultados con "doi", REFORMULA
-  con términos más amplios; no te rindas tras un solo intento.
-- Agrega SOLO pesos con "doi" verificable y datos recientes (>= ${yearFrom}).
-- SOLO puedes modificar/eliminar pesos creados en ESTA sesión (te los listaré). NUNCA toques otras fuentes.
-- Agrega entre 2 y 5 pesos de buena calidad y termina con "message" resumiendo. Redacta el "contenido" y el "text" en español.`;
+Cada peso se sustenta en un estudio real: usa el "abstract" del candidato para redactar su "contenido" con datos
+CONCRETOS (no inventes cifras que no estén en el abstract) y guarda su "doi".`;
 }
 
+function queriesPrompt(userMessage: string, sessionWeights: any[]): string {
+  const w = sessionWeights.map((x) => ({ id: x.id, tipo: x.tipo_dato, cred: x.credibilidad, contenido: String(x.contenido || '').slice(0, 120) }));
+  return `PETICIÓN DEL USUARIO: "${userMessage}"
+PESOS YA CREADOS EN ESTA SESIÓN (${w.length}): ${JSON.stringify(w)}
+Para atender la petición, ¿qué búsquedas en Scopus harías? Cada "query" = 2-3 PALABRAS CLAVE GENERALES en INGLÉS
+(ej. "unemployment crime", "youth unemployment", "joblessness social unrest"), nunca frases largas ni español.
+Responde SOLO con este JSON: {"queries":["...","..."]} (de 1 a 4 queries). Si la petición NO requiere buscar
+(p. ej. solo modificar o eliminar pesos existentes), responde {"queries":[]}.`;
+}
+
+function generatePrompt(userMessage: string, candidates: any[], sessionWeights: any[]): string {
+  const w = sessionWeights.map((x) => ({ id: x.id, tipo: x.tipo_dato, cred: x.credibilidad, contenido: String(x.contenido || '').slice(0, 160) }));
+  return `CANDIDATOS de Scopus (usa su "abstract" para redactar; SOLO puedes usar DOIs de esta lista):
+${JSON.stringify(candidates)}
+PESOS DE ESTA SESIÓN que puedes modificar/eliminar (por su "id"): ${JSON.stringify(w)}
+PETICIÓN DEL USUARIO: "${userMessage}"
+Responde SOLO con este JSON (sin texto fuera del JSON):
+{"pesos":[{"contenido":"...","tipo_dato":"cantidad|cualidad","credibilidad":0-100,"doi":"..."}],
+ "updates":[{"id":0,"contenido":"...","tipo_dato":"cantidad|cualidad","credibilidad":0}],
+ "deletes":[0],
+ "message":"resumen breve para el usuario en español"}
+- "pesos": de 0 a 5 pesos NUEVOS, cada uno fundamentado en el "abstract" de un candidato (con su "doi"), en español,
+  imitando el estilo. Prefiere candidatos con "abstract". No repitas pesos ya creados en la sesión.
+  "tipo_dato" debe ser EXACTAMENTE "cantidad" o "cualidad". "credibilidad" debe ser un NÚMERO entero 0-100 (no texto).
+- "updates"/"deletes": SOLO si la petición lo pide, sobre pesos de la sesión (por su "id"). Si no aplica, deja [].
+- Si no hay candidatos útiles con "abstract", deja "pesos":[] y explica por qué en "message".`;
+}
+
+// El modelo a veces escribe "cualitativo"/"cuantitativo" o credibilidad como texto ("alta"/"media"). Normalizamos.
+function normTipo(v: any): 'cantidad' | 'cualidad' {
+  return String(v || '').toLowerCase().startsWith('cual') ? 'cualidad' : 'cantidad';
+}
+function normCred(v: any): number {
+  const n = Number(v);
+  if (Number.isFinite(n)) return Math.max(0, Math.min(100, n));
+  const s = String(v || '').toLowerCase();
+  if (/alta|high|muy alta/.test(s)) return 85;
+  if (/media|medium|moderad/.test(s)) return 60;
+  if (/baja|low/.test(s)) return 40;
+  return 60;
+}
+
+async function callClaudeJSON(input: string, opts: { resume?: string; systemPrompt?: string }): Promise<{ obj: any; sessionId: string }> {
+  const { result, sessionId } = await callClaude(input, opts);
+  return { obj: parseAction(result), sessionId };
+}
+
+// Un turno = 3 pasos orquestados por el servidor (evita el loop iterativo que confundía al CLI):
+// (1) el modelo propone búsquedas → (2) el servidor busca en Scopus + enriquece abstracts (OpenAlex) →
+// (3) el modelo genera los pesos/updates/deletes en un JSON, que el servidor ejecuta con el alcance forzado.
 export async function runAgentTurn(params: {
-  premisaId: number;
-  sessionId: string;
-  claudeSessionId?: string;
-  userMessage: string;
+  premisaId: number; sessionId: string; claudeSessionId?: string; userMessage: string;
 }): Promise<{ claudeSessionId: string; activity: AgentMsg[]; sessionWeights: any[] }> {
   const { premisaId, sessionId } = params;
-  const yearFrom = new Date().getFullYear() - 4; // últimos 5 años (inclusive)
+  const yearFrom = new Date().getFullYear() - 4;
   const activity: AgentMsg[] = [];
-
+  const prem = await getPremisaForAgent(premisaId);
+  if (!prem) throw new Error('La premisa no existe o no es de tipo premisa.');
   let claudeSid = params.claudeSessionId;
-  let systemPrompt: string | undefined;
-  if (!claudeSid) {
-    const prem = await getPremisaForAgent(premisaId);
-    if (!prem) throw new Error('La premisa no existe o no es de tipo premisa.');
-    const styles = await getStyleExamplesPesos(15);
-    systemPrompt = buildSystemPrompt(prem, styles, yearFrom);
-  }
+  const systemPrompt = claudeSid ? undefined : baseSystemPrompt(prem, await getStyleExamplesPesos(15), yearFrom);
+  const before = await agentListSessionWeights(premisaId, sessionId);
 
-  let input = params.userMessage;
-  let step = 0;
-  while (step < MAX_STEPS) {
-    step++;
-    const { result, sessionId: sid } = await callClaude(input, { resume: claudeSid, systemPrompt: claudeSid ? undefined : systemPrompt });
+  // Paso 1 — el modelo propone las búsquedas.
+  let queries: string[] = [];
+  try {
+    const { obj, sessionId: sid } = await callClaudeJSON(queriesPrompt(params.userMessage, before), { resume: claudeSid, systemPrompt });
     claudeSid = sid;
-    const action = parseAction(result);
-    const kind = action?.action;
+    queries = Array.isArray(obj?.queries) ? obj.queries.map((q: any) => String(q).trim()).filter(Boolean).slice(0, 4) : [];
+  } catch (e: any) { activity.push({ role: 'tool', kind: 'error', label: `No se pudieron generar búsquedas: ${e.message}` }); }
 
-    if (!kind || kind === 'message') {
-      activity.push({ role: 'assistant', text: action?.text || result || '(sin respuesta)' });
-      break;
-    }
-    if (kind === 'scopus_search') {
-      const query = String(action.query || '').trim();
-      activity.push({ role: 'tool', kind: 'scopus_search', label: `Buscó en Scopus: “${query}”` });
-      try {
-        const results = await searchScopus(query, 10, yearFrom);
-        const compact = results.map((r, i) => ({ i, title: r.title, autor: r.creator, anio: r.year, revista: r.journal, doi: r.doi, citas: r.citedby, tipo: r.aggregationType }));
-        const conDoi = compact.filter((c) => c.doi).length;
-        const nudge = conDoi === 0
-          ? 'Ninguno tiene DOI o no hubo resultados: reformula "scopus_search" con términos MÁS GENERALES.'
-          : 'Usa "add_weight" con el "doi" de un resultado (omite los que no tengan doi).';
-        input = `RESULTADO scopus_search (${compact.length} resultados, ${conDoi} con DOI, últimos 5 años):\n${JSON.stringify(compact)}\n${nudge} ${ACTIONS_HINT}`;
-      } catch (e: any) { input = `RESULTADO scopus_search ERROR: ${e.message}`; }
-      continue;
-    }
-    if (kind === 'add_weight') {
-      try {
-        const w = await agentAddWeight(premisaId, sessionId, { contenido: String(action.contenido || ''), tipoDato: action.tipo_dato, credibilidad: Number(action.credibilidad), doi: String(action.doi || '') });
-        activity.push({ role: 'tool', kind: 'add_weight', label: `Agregó peso ${w.nomenclatura || ''} · ${action.tipo_dato} · ${Math.round(Number(action.credibilidad) || 0)}%`, text: String(action.contenido || '') });
-        input = `RESULTADO add_weight: OK, peso id ${w.id} (${w.nomenclatura || ''}) creado y aplicado. Agrega otro con add_weight o termina con message. ${ACTIONS_HINT}`;
-      } catch (e: any) {
-        activity.push({ role: 'tool', kind: 'error', label: `No se pudo agregar el peso: ${e.message}` });
-        input = `RESULTADO add_weight ERROR: ${e.message}`;
+  // Paso 2 — el servidor busca en Scopus y enriquece con abstracts (OpenAlex). Dedup por DOI.
+  const byDoi = new Map<string, any>();
+  for (const q of queries) {
+    activity.push({ role: 'tool', kind: 'scopus_search', label: `Buscó en Scopus: “${q}”` });
+    try {
+      const results = await searchScopus(q, 8, yearFrom);
+      const fresh = results.filter((r) => r.doi && !byDoi.has(r.doi)).slice(0, 6);
+      const absMap = new Map<string, string>();
+      await Promise.all(fresh.map(async (r) => { absMap.set(r.doi, (await openAlexAbstract(r.doi)).slice(0, 1000)); }));
+      for (const r of results) {
+        if (!r.doi || byDoi.has(r.doi)) continue;
+        byDoi.set(r.doi, { titulo: r.title, autor: r.creator, anio: r.year, revista: r.journal, doi: r.doi, citas: r.citedby, abstract: absMap.get(r.doi) || '' });
       }
-      continue;
-    }
-    if (kind === 'update_weight') {
-      try {
-        await agentUpdateWeight(premisaId, sessionId, Number(action.id), { contenido: action.contenido != null ? String(action.contenido) : undefined, tipoDato: action.tipo_dato, credibilidad: action.credibilidad != null ? Number(action.credibilidad) : undefined });
-        activity.push({ role: 'tool', kind: 'update_weight', label: `Modificó el peso id ${action.id}` });
-        input = `RESULTADO update_weight: OK`;
-      } catch (e: any) {
-        activity.push({ role: 'tool', kind: 'error', label: e.message });
-        input = `RESULTADO update_weight ERROR: ${e.message}`;
-      }
-      continue;
-    }
-    if (kind === 'delete_weight') {
-      try {
-        await agentDeleteWeight(premisaId, sessionId, Number(action.id));
-        activity.push({ role: 'tool', kind: 'delete_weight', label: `Eliminó el peso id ${action.id}` });
-        input = `RESULTADO delete_weight: OK`;
-      } catch (e: any) {
-        activity.push({ role: 'tool', kind: 'error', label: e.message });
-        input = `RESULTADO delete_weight ERROR: ${e.message}`;
-      }
-      continue;
-    }
-    if (kind === 'list_session_weights') {
-      const list = await agentListSessionWeights(premisaId, sessionId);
-      input = `RESULTADO list_session_weights:\n${JSON.stringify(list.map((w: any) => ({ id: w.id, nomen: w.nomenclatura, tipo: w.tipo_dato, cred: w.credibilidad, contenido: w.contenido })))}`;
-      continue;
-    }
-    input = `ERROR: acción desconocida "${kind}". Usa scopus_search | add_weight | update_weight | delete_weight | list_session_weights | message.`;
+    } catch (e: any) { activity.push({ role: 'tool', kind: 'error', label: `Búsqueda falló: ${e.message}` }); }
   }
-  if (step >= MAX_STEPS) activity.push({ role: 'assistant', text: '(Alcancé el límite de pasos de este turno. Escríbeme para continuar.)' });
+  const all = Array.from(byDoi.values());
+  const candidates = [...all.filter((c) => c.abstract), ...all.filter((c) => !c.abstract)].slice(0, 12);
 
+  // Paso 3 — el modelo genera pesos/updates/deletes en un solo JSON.
+  let gen: any = {};
+  try {
+    const { obj, sessionId: sid } = await callClaudeJSON(generatePrompt(params.userMessage, candidates, before), { resume: claudeSid });
+    claudeSid = sid; gen = obj || {};
+  } catch (e: any) { activity.push({ role: 'tool', kind: 'error', label: `No se pudo generar la respuesta: ${e.message}` }); }
+
+  // Paso 4 — el servidor ejecuta (alcance forzado a la sesión/premisa).
+  for (const p of Array.isArray(gen.pesos) ? gen.pesos : []) {
+    try {
+      const tipo = normTipo(p.tipo_dato); const cred = normCred(p.credibilidad);
+      const wgt = await agentAddWeight(premisaId, sessionId, { contenido: String(p.contenido || ''), tipoDato: tipo, credibilidad: cred, doi: String(p.doi || '') });
+      activity.push({ role: 'tool', kind: 'add_weight', label: `Agregó peso ${wgt.nomenclatura || ''} · ${tipo} · ${Math.round(cred)}%`, text: String(p.contenido || '') });
+    } catch (e: any) { activity.push({ role: 'tool', kind: 'error', label: `No se pudo agregar un peso: ${e.message}` }); }
+  }
+  for (const u of Array.isArray(gen.updates) ? gen.updates : []) {
+    try {
+      await agentUpdateWeight(premisaId, sessionId, Number(u.id), { contenido: u.contenido != null ? String(u.contenido) : undefined, tipoDato: u.tipo_dato != null ? normTipo(u.tipo_dato) : undefined, credibilidad: u.credibilidad != null ? normCred(u.credibilidad) : undefined });
+      activity.push({ role: 'tool', kind: 'update_weight', label: `Modificó el peso id ${u.id}` });
+    } catch (e: any) { activity.push({ role: 'tool', kind: 'error', label: e.message }); }
+  }
+  for (const id of Array.isArray(gen.deletes) ? gen.deletes : []) {
+    try { await agentDeleteWeight(premisaId, sessionId, Number(id)); activity.push({ role: 'tool', kind: 'delete_weight', label: `Eliminó el peso id ${id}` }); }
+    catch (e: any) { activity.push({ role: 'tool', kind: 'error', label: e.message }); }
+  }
+
+  activity.push({ role: 'assistant', text: String(gen.message || '').trim() || 'Listo.' });
   const sessionWeights = await agentListSessionWeights(premisaId, sessionId);
   return { claudeSessionId: claudeSid!, activity, sessionWeights };
 }
