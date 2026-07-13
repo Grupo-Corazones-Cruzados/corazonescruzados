@@ -267,6 +267,24 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Gestión de Datos — conector Scopus (buscar fuentes) + Crossref (referencia APA completa, 2026-07-12):** en el
+  editor de referencia del formulario de fuente hay una caja **"Buscar en Scopus"**: consulta la **Scopus Search
+  API** de Elsevier (`https://api.elsevier.com/content/search/scopus`, view **Standard**) por tema/título/autor;
+  al elegir un resultado, se **enriquece por DOI con Crossref** (`api.crossref.org/works/{doi}`, gratis, sin key)
+  para traer la **lista COMPLETA de autores** y se rellena la referencia APA (tipo + campos), lista para asociar.
+  - **Auth:** `SCOPUS_API_KEY` en **`.env.local`** (gitignored, NUNCA versionar ni poner en MEMORIA). ⚠️ **Para
+    producción hay que añadir `SCOPUS_API_KEY` en las variables de entorno de Railway.** Key institucional UPS.
+  - **Hallazgo clave:** la API key **funciona desde nuestra IP** (fuera de la red UPS) para el view **Standard**
+    (devuelve resultados) — NO hizo falta InstToken. El view **COMPLETE** sí da 401 (requiere IP/InstToken), pero
+    Standard basta (título, **primer** autor, revista, año, vol, número, páginas, DOI, tipo, citas). Por eso se
+    completan los autores con Crossref por DOI.
+  - **Código:** `lib/centralized/scopus.ts` (`searchScopus` view Standard; `scopusEntryToApa` arranque con primer
+    autor + "et al."; `crossrefToApa(doi)` autores completos y mapeo por tipo: journal-article→`articulo_cientifico`,
+    book→`libro`, dissertation→`contenido_academico`, book-chapter→`otro`). Rutas `GET /fuentes/scopus-search?q=` y
+    `POST /fuentes/apa-from-doi {doi}`. UI: `ApaRefEditor` gana el buscador (resultados + "Usar esta").
+  - Verificado con las APIs reales: Scopus 200 con entitlement; Crossref completa autores; APA end-to-end correcta.
+  - **Nota:** límites de tasa Scopus (~20k/semana) y términos de uso no comercial. `/fuentes/apa-from-doi` sirve
+    también para resolver cualquier DOI a APA (reutilizable).
 - **Gestión de Datos — varios pesos por premisa (inline) + tipo_dato editable (2026-07-12):** el modelo YA
   soportaba N pesos por premisa (`gd_fuente_pesos` acumula filas; `recomputeCredibilidad` re-aplica todos en
   orden: p.ej. base 100 → peso 50 = 75 → peso 80 = 77.5). Lo que faltaba era UX: solo se podían aplicar
