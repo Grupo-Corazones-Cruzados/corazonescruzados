@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   FolderPlus, Pencil, Trash2, Plus, Database, GitCompareArrows, Hexagon,
-  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, BookOpen, Sparkles,
+  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, BookOpen, Sparkles, Search,
 } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -595,6 +595,38 @@ function ApaRefEditor({ draft, setDraft }: { draft: { ref_tipo: string; ref_dato
     } catch (e: any) { toast.error(e.message); }
     finally { setAiBusy(false); }
   };
+  // Buscar en Scopus e importar la referencia (autores completos vía Crossref por DOI).
+  const [scoQ, setScoQ] = useState('');
+  const [scoBusy, setScoBusy] = useState(false);
+  const [scoRes, setScoRes] = useState<any[]>([]);
+  const [usingId, setUsingId] = useState<string | null>(null);
+  const searchScopus = async () => {
+    if (!scoQ.trim() || scoBusy) return;
+    setScoBusy(true); setScoRes([]);
+    try {
+      const res = await fetch(`${API}/fuentes/scopus-search?q=${encodeURIComponent(scoQ)}`);
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Error en Scopus');
+      setScoRes(d.data || []);
+      if (!(d.data || []).length) toast('Sin resultados en Scopus');
+    } catch (e: any) { toast.error(e.message); }
+    finally { setScoBusy(false); }
+  };
+  const useScopusResult = async (r: any) => {
+    if (usingId) return;
+    setUsingId(r.scopusId);
+    try {
+      if (r.doi) {
+        const res = await fetch(`${API}/fuentes/apa-from-doi`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ doi: r.doi }) });
+        const d = await res.json().catch(() => ({}));
+        if (res.ok && d.data) { setDraft(() => ({ ref_tipo: d.data.ref_tipo, ref_datos: d.data.ref_datos || {} })); toast.success('Referencia importada de Scopus'); setScoRes([]); return; }
+      }
+      setDraft(() => ({ ref_tipo: r.apa.ref_tipo, ref_datos: r.apa.ref_datos || {} }));
+      toast.success('Referencia importada de Scopus');
+      setScoRes([]);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setUsingId(null); }
+  };
   return (
     <div className="space-y-2.5">
       {/* Autocompletar con IA */}
@@ -614,6 +646,35 @@ function ApaRefEditor({ draft, setDraft }: { draft: { ref_tipo: string; ref_dato
         >
           <Sparkles className="w-3.5 h-3.5" />{aiBusy ? 'Interpretando…' : 'Interpretar y rellenar'}
         </button>
+      </div>
+      {/* Buscar en Scopus */}
+      <div className="rounded-md border border-white/12 bg-white/[0.03] p-2 space-y-1.5">
+        <div className="flex items-center gap-1.5">
+          <Search className="w-3.5 h-3.5 text-[#f59e0b]" />
+          <span className="text-[11px] font-semibold text-white/90" style={mf}>Buscar en Scopus</span>
+        </div>
+        <div className="flex gap-1.5">
+          <input
+            className={`${GLASS_INPUT} flex-1`} value={scoQ}
+            onChange={(e) => setScoQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); searchScopus(); } }}
+            placeholder="Tema, título o autor…"
+          />
+          <button onClick={searchScopus} disabled={scoBusy || !scoQ.trim()} className={`${GLASS_BTN} px-2.5 py-1.5 text-[12px]`} style={mf}>{scoBusy ? '…' : 'Buscar'}</button>
+        </div>
+        {scoRes.length > 0 && (
+          <div className="max-h-56 overflow-y-auto space-y-1 pt-0.5">
+            {scoRes.map((r) => (
+              <div key={r.scopusId} className="rounded bg-white/[0.04] border border-white/8 p-1.5">
+                <p className="text-[11.5px] text-white/90 leading-tight" style={mf}>{r.title}</p>
+                <p className="text-[10px] text-white/50 mt-0.5" style={mf}>{r.creator}{r.authorCount > 1 ? ' et al.' : ''}{r.journal ? ` · ${r.journal}` : ''}{r.year ? ` · ${r.year}` : ''}{r.citedby ? ` · ${r.citedby} citas` : ''}</p>
+                <div className="flex justify-end mt-1">
+                  <button onClick={() => useScopusResult(r)} disabled={!!usingId} className="text-[10.5px] text-accent hover:underline disabled:opacity-50" style={mf}>{usingId === r.scopusId ? 'Importando…' : 'Usar esta'}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <Field label="Tipo de referencia (APA)">
         <select
