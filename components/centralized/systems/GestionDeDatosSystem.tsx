@@ -1625,56 +1625,93 @@ function PremSelect({ value, onChange, premisas }: { value: string; onChange: (v
 function CodigoModal({ probId, premisas, enfrentamientos, onClose, onSaved }: { probId: number; premisas: Fuente[]; enfrentamientos: Enfrentamiento[]; onClose: () => void; onSaved: () => void }) {
   const [sel, setSel] = useState<{ kind: 'premisa' | 'enfrentamiento'; id: number }[]>([]);
   const [texto, setTexto] = useState('');
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const toggle = (kind: 'premisa' | 'enfrentamiento', id: number) => {
     setSel((s) => s.some((u) => u.kind === kind && u.id === id) ? s.filter((u) => !(u.kind === kind && u.id === id)) : [...s, { kind, id }]);
   };
   const on = (kind: 'premisa' | 'enfrentamiento', id: number) => sel.some((u) => u.kind === kind && u.id === id);
+  const term = q.trim().toLowerCase();
+  const fPrem = premisas.filter((p) => !term || `${p.nomenclatura} ${p.contenido}`.toLowerCase().includes(term));
+  const fEnf = enfrentamientos.filter((e) => !term || `${e.nomenclatura} ${e.texto || ''}`.toLowerCase().includes(term));
 
   const save = async () => {
+    if (busy) return;
     if (sel.length < 1) { toast.error('Elige al menos una premisa'); return; }
+    setBusy(true);
     try {
       await mutate(`${API}/codigos`, 'POST', { problematica_id: probId, texto, unidades: sel });
       toast.success('Código creado (no verificado)');
       onSaved();
     } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
   };
+
+  const Item = ({ kind, id, nomen, detalle, color }: { kind: 'premisa' | 'enfrentamiento'; id: number; nomen: string; detalle: string; color: string }) => (
+    <button onClick={() => toggle(kind, id)} className={`w-full flex items-start gap-2 text-left px-2 py-1.5 rounded text-[11.5px] transition-colors ${on(kind, id) ? 'bg-accent/25 border border-accent/40' : 'bg-white/[0.04] border border-transparent hover:bg-white/10'}`} style={mf}>
+      <span className={`w-3.5 h-3.5 mt-0.5 rounded border flex items-center justify-center shrink-0 ${on(kind, id) ? 'bg-accent border-accent' : 'border-white/30'}`}>{on(kind, id) && <Check className="w-2.5 h-2.5 text-white" />}</span>
+      <span className="font-bold shrink-0" style={{ ...df, color }}>{nomen}</span>
+      <span className="text-white/65 line-clamp-2">{detalle}</span>
+    </button>
+  );
+
   return (
-    <FloatingWindow open onClose={onClose} title="Nuevo código" initialWidth={520} initialHeight={600}>
-      <div className="p-4 space-y-3">
-        <p className="text-[11.5px] text-white/60" style={mf}>Junta varias premisas (sueltas o enfrentadas) en una verdad consecuente. Nace <b>no verificado</b>; se verifica con eventos de demostración.</p>
-        <div>
-          <p className="text-[11px] font-semibold text-white/70 mb-1" style={df}>Premisas ({premisas.length})</p>
-          <div className="max-h-40 overflow-y-auto space-y-1">
-            {premisas.map((p) => (
-              <button key={p.id} onClick={() => toggle('premisa', p.id)} className={`w-full flex items-center gap-2 text-left px-2 py-1.5 rounded text-[11.5px] transition-colors ${on('premisa', p.id) ? 'bg-accent/25 border border-accent/40' : 'bg-white/[0.04] border border-transparent hover:bg-white/10'}`} style={mf}>
-                <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${on('premisa', p.id) ? 'bg-accent border-accent' : 'border-white/30'}`}>{on('premisa', p.id) && <Check className="w-2.5 h-2.5 text-white" />}</span>
-                <span className="font-bold text-[#22d3ee]" style={df}>{p.nomenclatura}</span>
-                <span className="text-white/70 truncate">{p.contenido}</span>
-              </button>
-            ))}
+    <FloatingWindow open onClose={onClose} title="Nuevo código" initialWidth={800} initialHeight={620} minWidth={560} minHeight={440}>
+      <div className="flex h-full gap-3">
+        {/* Izquierda: TODAS las premisas / enfrentamientos (buscador + scroll a lo alto) */}
+        <div className="w-[45%] flex flex-col min-h-0 border-r border-white/10 pr-3">
+          <p className="text-[11px] font-semibold text-white/70 mb-1.5" style={df}>Premisas y enfrentamientos</p>
+          <input className={GLASS_INPUT} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nomenclatura o contenido…" autoFocus />
+          <div className="flex-1 overflow-y-auto min-h-0 mt-2 space-y-2">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-white/40 mb-1 px-0.5" style={df}>Premisas ({fPrem.length})</p>
+              <div className="space-y-1">
+                {fPrem.map((p) => <Item key={`p${p.id}`} kind="premisa" id={p.id} nomen={p.nomenclatura} detalle={p.contenido} color="#22d3ee" />)}
+                {fPrem.length === 0 && <p className="text-[11px] text-white/35 px-1" style={mf}>Sin coincidencias.</p>}
+              </div>
+            </div>
+            {enfrentamientos.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-white/40 mb-1 px-0.5" style={df}>Premisas enfrentadas ({fEnf.length})</p>
+                <div className="space-y-1">
+                  {fEnf.map((e) => <Item key={`e${e.id}`} kind="enfrentamiento" id={e.id} nomen={e.nomenclatura} detalle={e.texto || '(sin texto)'} color="#a855f7" />)}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        {enfrentamientos.length > 0 && (
-          <div>
-            <p className="text-[11px] font-semibold text-white/70 mb-1" style={df}>Premisas enfrentadas ({enfrentamientos.length})</p>
-            <div className="max-h-32 overflow-y-auto space-y-1">
-              {enfrentamientos.map((e) => (
-                <button key={e.id} onClick={() => toggle('enfrentamiento', e.id)} className={`w-full flex items-center gap-2 text-left px-2 py-1.5 rounded text-[11.5px] transition-colors ${on('enfrentamiento', e.id) ? 'bg-accent/25 border border-accent/40' : 'bg-white/[0.04] border border-transparent hover:bg-white/10'}`} style={mf}>
-                  <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${on('enfrentamiento', e.id) ? 'bg-accent border-accent' : 'border-white/30'}`}>{on('enfrentamiento', e.id) && <Check className="w-2.5 h-2.5 text-white" />}</span>
-                  <span className="font-bold text-[#a855f7]" style={df}>{e.nomenclatura}</span>
-                  <span className="text-white/70 truncate">{e.texto || '(sin texto)'}</span>
-                </button>
-              ))}
+
+        {/* Derecha: seleccionadas + verdad consecuente + acciones */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 space-y-3 pr-0.5">
+            <div>
+              <p className="text-[11px] font-semibold text-white/70 mb-1.5" style={df}>Seleccionadas para el código ({sel.length})</p>
+              {sel.length === 0 && <p className="text-[11px] text-white/40 bg-white/[0.03] border border-dashed border-white/10 rounded-md px-2.5 py-3 text-center" style={mf}>Elige premisas (sueltas o enfrentadas) del panel izquierdo.</p>}
+              <div className="space-y-1">
+                {sel.map((u) => {
+                  const isP = u.kind === 'premisa';
+                  const item: any = isP ? premisas.find((p) => p.id === u.id) : enfrentamientos.find((e) => e.id === u.id);
+                  if (!item) return null;
+                  return (
+                    <div key={`${u.kind}${u.id}`} className="flex items-start gap-2 text-[11.5px] bg-white/[0.05] border border-white/10 rounded-md px-2 py-1.5">
+                      <span className="font-bold shrink-0" style={{ ...df, color: isP ? '#22d3ee' : '#a855f7' }}>{item.nomenclatura}</span>
+                      <span className="text-white/70 line-clamp-2 flex-1" style={mf}>{isP ? item.contenido : (item.texto || '(sin texto)')}</span>
+                      <button onClick={() => toggle(u.kind, u.id)} className="text-white/40 hover:text-red-400 shrink-0" title="Quitar"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+            <Field label="Verdad consecuente (crece con el texto)">
+              <AutoTextarea className={GLASS_INPUT} value={texto} onChange={(e: any) => setTexto(e.target.value)} placeholder="La interpretación lógica que surge de juntar las premisas seleccionadas…" minHeight={90} />
+            </Field>
+            <p className="text-[10.5px] text-white/40" style={mf}>Nace <b>no verificado</b>; se verifica con eventos de demostración en su detalle.</p>
           </div>
-        )}
-        <Field label="Verdad consecuente">
-          <AutoTextarea className={GLASS_INPUT} value={texto} onChange={(e: any) => setTexto(e.target.value)} placeholder="La interpretación lógica de las premisas juntas." />
-        </Field>
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
-          <button onClick={save} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md" style={mf}>Crear código</button>
+          <div className="flex justify-end gap-2 pt-2 mt-2 border-t border-white/10 shrink-0">
+            <button onClick={onClose} disabled={busy} className={`${GLASS_BTN} px-3 py-1.5 text-[12px]`} style={mf}>Cancelar</button>
+            <button onClick={save} disabled={busy || sel.length < 1} className="px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" style={mf}>{busy ? 'Creando…' : 'Crear código'}</button>
+          </div>
         </div>
       </div>
     </FloatingWindow>
