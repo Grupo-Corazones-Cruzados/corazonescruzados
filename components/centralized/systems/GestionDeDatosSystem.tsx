@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   FolderPlus, Pencil, Trash2, Plus, Database, GitCompareArrows, Hexagon,
-  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, BookOpen, Sparkles, Search,
+  Star, AlertTriangle, Check, X, ExternalLink, ShieldCheck, Weight, Puzzle, FileText, Layers, BookOpen, Sparkles, Search, Bot, Send,
 } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -86,6 +86,8 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   // Confirmaciones.
   const [confirmNode, setConfirmNode] = useState<GdGraphNode | null>(null);
   const [confirmProb, setConfirmProb] = useState<Problematica | null>(null);
+  // Chat del agente de pesos (IA) sobre una premisa.
+  const [agentPremisa, setAgentPremisa] = useState<Fuente | null>(null);
 
   const prob = useMemo(() => problematicas.find((p) => p.id === probId) || null, [problematicas, probId]);
   const selectedNode = useMemo(() => graph.nodes.find((n) => n.key === selectedKey) || null, [graph, selectedKey]);
@@ -413,6 +415,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                       onReload={reload}
                       onDelete={() => setConfirmNode(selectedNode)}
                       onClose={() => setSelectedKey(null)}
+                      onOpenAgent={(f: Fuente) => setAgentPremisa(f)}
                     />
                   ) : null}
                 </aside>
@@ -487,6 +490,9 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
         onConfirm={() => { if (confirmProb) deleteProblematica(confirmProb); setConfirmProb(null); }}
         onCancel={() => setConfirmProb(null)}
       />
+      {agentPremisa && (
+        <PesosAgentChat premisa={agentPremisa} onClose={() => setAgentPremisa(null)} onReload={reload} />
+      )}
     </div>
   );
 }
@@ -855,7 +861,7 @@ function ProblemaForm({ form, setForm, onCancel, onSave, saving }: any) {
 }
 
 // Detalle del nodo seleccionado (por tipo).
-function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias, problemas, piezas, rompecabezasList, subtemasList, temasList, onEditFuente, onEditProblema, onEditRomp, onEditSubtema, onEditTema, onReload, onDelete, onClose }: any) {
+function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias, problemas, piezas, rompecabezasList, subtemasList, temasList, onEditFuente, onEditProblema, onEditRomp, onEditSubtema, onEditTema, onReload, onDelete, onClose, onOpenAgent }: any) {
   const meta = GD_NODE_META[node.type as GdNodeType];
   const header = (
     <div className="flex items-start justify-between gap-2 mb-2">
@@ -887,7 +893,7 @@ function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias
             <ApaReference tipo={f.ref_tipo} datos={f.ref_datos} className="text-[12px] text-white/85 leading-relaxed" />
           </div>
         )}
-        {f.tipo_logica === 'premisa' && <PesosManager premisa={f} pesos={pesos} onReload={onReload} />}
+        {f.tipo_logica === 'premisa' && <PesosManager premisa={f} pesos={pesos} onReload={onReload} onOpenAgent={onOpenAgent} />}
         <DetailActions onEdit={() => onEditFuente(f)} onDelete={onDelete} />
       </div>
     );
@@ -1037,7 +1043,7 @@ function DetailActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete: ()
   );
 }
 
-function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fuente[]; onReload: () => void }) {
+function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuente; pesos: Fuente[]; onReload: () => void; onOpenAgent?: (p: Fuente) => void }) {
   const [applied, setApplied] = useState<any[]>([]);
   const [pesoId, setPesoId] = useState<string>('');
   const [busy, setBusy] = useState(false);
@@ -1092,6 +1098,11 @@ function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fu
     <div className="mt-3 pt-2.5 border-t border-white/10">
       <p className="text-[11px] font-semibold text-white/70 mb-1.5 flex items-center gap-1.5" style={df}><Weight className="w-3.5 h-3.5 text-[#60a5fa]" /> Pesos que la refuerzan</p>
       <p className="text-[10.5px] text-white/40 mb-1.5" style={mf}>Una premisa puede tener varios pesos; cada uno aporta credibilidad (promedio). Para contradecir, enfrenta dos premisas.</p>
+      {onOpenAgent && (
+        <button onClick={() => onOpenAgent(premisa)} className="w-full mb-2 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-[11.5px] font-medium text-white bg-accent/90 hover:bg-accent rounded-md" style={mf}>
+          <Bot className="w-3.5 h-3.5" /> Buscar pesos con IA (Scopus)
+        </button>
+      )}
       {applied.length === 0 && <p className="text-[11px] text-white/45 mb-2" style={mf}>Ninguno aplicado aún.</p>}
       <div className="space-y-1 mb-2">
         {applied.map((a) => (
@@ -1136,6 +1147,98 @@ function PesosManager({ premisa, pesos, onReload }: { premisa: Fuente; pesos: Fu
         </div>
       )}
     </div>
+  );
+}
+
+// Chat con el agente IA (Claude CLI local) que genera pesos desde Scopus para una premisa.
+function PesosAgentChat({ premisa, onClose, onReload }: { premisa: Fuente; onClose: () => void; onReload: () => void }) {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [claudeSid, setClaudeSid] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [input, setInput] = useState('');
+  const startedRef = useRef(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const sessRef = useRef<{ s: string | null; c: string | null }>({ s: null, c: null });
+
+  const runTurn = async (message: string) => {
+    if (busy) return;
+    setBusy(true);
+    setMessages((m) => [...m, { role: 'user', text: message }]);
+    try {
+      const res = await fetch(`${API}/pesos-agent`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ premisa_id: premisa.id, session_id: sessRef.current.s, claude_session_id: sessRef.current.c, message }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Error del agente');
+      sessRef.current = { s: d.session_id, c: d.claude_session_id };
+      setSessionId(d.session_id); setClaudeSid(d.claude_session_id);
+      setMessages((m) => [...m, ...(d.activity || [])]);
+      await onReload();
+    } catch (e: any) {
+      setMessages((m) => [...m, { role: 'error', text: e.message }]);
+    } finally { setBusy(false); }
+  };
+
+  useEffect(() => {
+    if (startedRef.current) return; startedRef.current = true;
+    runTurn('Busca en Scopus datos recientes (últimos 5 años) que refuercen esta premisa y agrégalos como pesos, imitando el estilo de los pesos existentes.');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages, busy]);
+
+  const send = () => { const t = input.trim(); if (!t || busy) return; setInput(''); runTurn(t); };
+
+  const toolIcon = (kind: string) => {
+    if (kind === 'scopus_search') return <Search className="w-3 h-3 text-[#f59e0b]" />;
+    if (kind === 'add_weight') return <Weight className="w-3 h-3 text-[#60a5fa]" />;
+    if (kind === 'error') return <AlertTriangle className="w-3 h-3 text-red-400" />;
+    return <Check className="w-3 h-3 text-emerald-400" />;
+  };
+
+  return (
+    <FloatingWindow open onClose={onClose} title={`Agente de pesos · ${premisa.nomenclatura}`} initialWidth={580} initialHeight={640} minWidth={380} minHeight={360}>
+      <div className="flex flex-col h-full bg-[#0d0d14]">
+        <div className="px-3 py-1.5 border-b border-white/10 flex items-center gap-1.5 text-[10.5px] text-white/50" style={mf}>
+          <Bot className="w-3.5 h-3.5 text-accent" /> Refuerza la premisa con pesos de Scopus (últimos 5 años). Solo trabaja sobre los pesos de esta sesión.
+        </div>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2">
+          {messages.map((m, i) => {
+            if (m.role === 'user') return (
+              <div key={i} className="flex justify-end"><div className="max-w-[85%] rounded-lg bg-accent/25 border border-accent/30 px-2.5 py-1.5 text-[12px] text-white" style={mf}>{m.text}</div></div>
+            );
+            if (m.role === 'assistant') return (
+              <div key={i} className="flex justify-start"><div className="max-w-[88%] rounded-lg bg-white/[0.06] border border-white/10 px-2.5 py-1.5 text-[12px] text-white/90 whitespace-pre-wrap" style={mf}>{m.text}</div></div>
+            );
+            if (m.role === 'error') return (
+              <div key={i} className="text-[11.5px] text-red-300 bg-red-500/10 border border-red-400/20 rounded px-2 py-1" style={mf}>⚠ {m.text}</div>
+            );
+            // tool
+            return (
+              <div key={i} className="flex items-start gap-1.5 text-[11px] text-white/60 pl-1" style={mf}>
+                <span className="mt-0.5">{toolIcon(m.kind)}</span>
+                <div><span className="text-white/75">{m.label}</span>{m.text ? <p className="text-white/45 mt-0.5">{m.text}</p> : null}</div>
+              </div>
+            );
+          })}
+          {busy && (
+            <div className="flex items-center gap-1.5 text-[11px] text-white/50" style={mf}>
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" /> El agente está trabajando…
+            </div>
+          )}
+        </div>
+        <div className="border-t border-white/10 p-2 flex gap-2">
+          <input
+            className={`${GLASS_INPUT} flex-1`} value={input} disabled={busy}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }}
+            placeholder={busy ? 'Espera a que termine…' : 'Pídele más pesos o cambios (ej. "agrega 2 más sobre X")'}
+          />
+          <button onClick={send} disabled={busy || !input.trim()} className="px-2.5 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1" style={mf}><Send className="w-3.5 h-3.5" /></button>
+        </div>
+      </div>
+    </FloatingWindow>
   );
 }
 

@@ -72,14 +72,16 @@ function scopusEntryToApa(e: any): { ref_tipo: string; ref_datos: Record<string,
   return { ref_tipo: tipo, ref_datos: datos };
 }
 
-/** Busca en Scopus (Search API, view Standard). Devuelve resultados normalizados + APA de arranque. */
-export async function searchScopus(query: string, count = 10): Promise<ScopusResult[]> {
+/** Busca en Scopus (Search API, view Standard). Devuelve resultados normalizados + APA de arranque.
+ *  Si `yearFrom` se indica, filtra a publicaciones de ese año en adelante (PUBYEAR > yearFrom-1). */
+export async function searchScopus(query: string, count = 10, yearFrom?: number): Promise<ScopusResult[]> {
   const apiKey = process.env.SCOPUS_API_KEY;
   if (!apiKey) throw new Error('Scopus no está configurado (SCOPUS_API_KEY)');
   const q = (query || '').trim();
   if (!q) return [];
   // Si el usuario no usa códigos de campo de Scopus, buscamos en título/resumen/keywords.
-  const scopusQuery = /[():]/.test(q) ? q : `TITLE-ABS-KEY(${q})`;
+  let scopusQuery = /[():]/.test(q) ? q : `TITLE-ABS-KEY(${q})`;
+  if (yearFrom && Number.isFinite(yearFrom)) scopusQuery = `${scopusQuery} AND PUBYEAR > ${yearFrom - 1}`;
   const fields = [
     'dc:identifier', 'dc:title', 'dc:creator', 'prism:publicationName', 'prism:coverDate',
     'prism:volume', 'prism:issueIdentifier', 'prism:pageRange', 'prism:doi',

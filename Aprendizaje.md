@@ -5,7 +5,37 @@
 >
 > **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
-## Objetivo ACTUAL (declarado 2026-07-11) — Sistema "Gestión de Datos" en Centralizado
+## Objetivo ACTUAL (declarado 2026-07-12) — Agente IA (Claude CLI) que genera PESOS de una premisa desde Scopus
+
+**Necesidad:** desde una **fuente premisa** seleccionada, lanzar un **agente conversacional** que:
+- Lee el **contenido de la premisa** para entender QUÉ buscar.
+- Busca en **Scopus** datos de los **últimos 5 años** (el agente decide cómo buscar/filtrar).
+- Genera **pesos** (cantidad/cualidad) que refuerzan la premisa, **aprendiendo la redacción** de los pesos ya existentes.
+- **Cada peso lleva su referencia bibliográfica** (Scopus/Crossref → gd_referencias).
+- Sesión **conversacional que queda abierta**: pedirle más búsquedas/más pesos y **modificar** los pesos ya agregados EN ESTA sesión.
+- **Alcance estricto:** la sesión solo trabaja sobre **los pesos que ella misma añade** a la premisa elegida; NO sobre pesos previos, ni otras premisas, ni pesos de otras premisas.
+- **Backend IA:** NO usa la API key de OpenAI. Usa el **Claude CLI del servidor local** (headless).
+- **UI:** botón en la premisa → **modal de chat arrastrable/redimensionable** (reusar `FloatingWindow`).
+
+### Viabilidad verificada (2026-07-12)
+- **Claude CLI** instalado (`~/.local/bin/claude`, v2.1.207) y **autenticado**. `claude -p "…" --output-format json --max-turns 1` → `{"result":"OK","session_id":…,"total_cost_usd":~0.10}`. Soporta `--resume <session_id>` (continuar sesión), `--mcp-config`, `--allowedTools`, `--append-system-prompt`, `--permission-mode bypassPermissions`, `--input/output-format stream-json`.
+- **`FloatingWindow`** ya es **arrastrable + redimensionable** (barra move + 8 tiradores). Se reusa.
+- **Scopus + Crossref**: ya integrados (`lib/centralized/scopus.ts`).
+- Precedente de spawn de procesos: `lib/dev-servers.ts` (child_process).
+
+### Arquitectura propuesta (decisión de diseño)
+**Bucle de agente orquestado por NUESTRO servidor** (no MCP), para máximo control del alcance:
+- Un turno = `claude -p --resume <sid> --output-format json` con un **system prompt** que le da el contexto (contenido de la premisa, ejemplos de estilo, pesos de la sesión) y le indica que responda con **acciones JSON**: `scopus_search`, `add_weight`, `update_weight`, `delete_weight`, `message`.
+- NUESTRO servidor **ejecuta** cada acción (Scopus/Crossref/DB) — así el alcance ("solo pesos de esta sesión") se **fuerza en el servidor**, no confiamos en el modelo — y reanuda la sesión con el resultado hasta que el agente emita `message` final.
+- **Scoping:** columna nueva `gd_fuentes.agent_session_id`; las acciones update/delete solo tocan pesos con ese `session_id` + esa premisa. Los pesos son reales (aplicados a la premisa vía `gd_fuente_pesos`), quedan tras la sesión.
+- **Solo local:** el `claude` CLI vive en el equipo local; en Railway no está autenticado → feature **local-only** (herramienta interna). Coste ~$0.10/turno de la cuenta Claude del usuario.
+
+### Preguntas abiertas (bloquean el build) — ver §Preguntas
+- P-A1 Guardado inmediato vs propuestas a aprobar. · P-A2 Fuente de los ejemplos de estilo. · P-A3 Quién define la credibilidad del peso.
+
+---
+
+## Objetivo previo (declarado 2026-07-11) — Sistema "Gestión de Datos" en Centralizado
 
 **Necesidad:** nuevo sistema en `/dashboard/centralized`, piso **pilar**, paso **fundamentación**
 (slug propuesto `gestion-de-datos`). Gestiona y ordena los **datos recolectados** aplicando la

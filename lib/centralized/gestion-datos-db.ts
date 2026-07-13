@@ -2,6 +2,7 @@
 // (schema gcc_world). Prefijo de tablas: gd_. Fase A: problemáticas, problemas, fuentes,
 // pesos, enfrentamientos, códigos (+ eventos de verificación), categorías.
 import { pool } from '@/lib/db';
+import { crossrefToApa } from '@/lib/centralized/scopus';
 import {
   aplicarPeso,
   categoriaRef,
@@ -70,6 +71,8 @@ async function doEnsureGestionDatosTables(): Promise<void> {
   // Referencia bibliográfica (APA 7) opcional por fuente: tipo + datos estructurados (jsonb).
   await pool.query(`ALTER TABLE gcc_world.gd_fuentes ADD COLUMN IF NOT EXISTS ref_tipo TEXT`);
   await pool.query(`ALTER TABLE gcc_world.gd_fuentes ADD COLUMN IF NOT EXISTS ref_datos JSONB`);
+  // Sesión del agente IA que creó este peso (para acotar qué pesos puede modificar la sesión).
+  await pool.query(`ALTER TABLE gcc_world.gd_fuentes ADD COLUMN IF NOT EXISTS agent_session_id TEXT`);
 
   // Aplicación de una fuente peso sobre una premisa: SIEMPRE aporta credibilidad (promedio).
   // La contradicción NO se hace con pesos, sino enfrentando dos premisas.
@@ -543,6 +546,103 @@ export async function deleteReferencia(id: number) {
   await ensureGestionDatosTables();
   // Las fuentes que la usan quedan sin referencia (ON DELETE SET NULL).
   await pool.query(`DELETE FROM gcc_world.gd_referencias WHERE id = $1`, [id]);
+}
+
+// ── Agente de pesos IA (Claude CLI) — helpers acotados por sesión ──────────────
+// Un peso creado por el agente lleva `agent_session_id`; la sesión SOLO puede modificar/eliminar
+// pesos con ese session_id aplicados a la premisa elegida (alcance forzado en el servidor).
+export async function getPremisaForAgent(premisaId: number) {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `SELECT id, problematica_id, tipo_dato, contenido FROM gcc_world.gd_fuentes WHERE id = $1 AND tipo_logica = 'premisa'`,
+    [premisaId],
+  );
+  return rows[0] || null;
+}
+
+export async function getStyleExamplesPesos(limit = 15): Promise<string[]> {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `SELECT contenido FROM gcc_world.gd_fuentes WHERE tipo_logica = 'peso' AND COALESCE(contenido, '') <> '' ORDER BY created_at DESC LIMIT $1`,
+    [limit],
+  );
+  return rows.map((r: any) => r.contenido);
+}
+
+export async function agentListSessionWeights(premisaId: number, sessionId: string) {
+  await ensureGestionDatosTables();
+  const { rows } = await pool.query(
+    `SELECT f.id, f.contenido, f.tipo_dato, f.credibilidad::float AS credibilidad, f.seq,
+            r.ref_tipo, r.ref_datos
+       FROM gcc_world.gd_fuentes f
+       JOIN gcc_world.gd_fuente_pesos p ON p.peso_fuente_id = f.id AND p.premisa_fuente_id = $1
+       LEFT JOIN gcc_world.gd_referencias r ON r.id = f.referencia_id
+      WHERE f.agent_session_id = $2 AND f.tipo_logica = 'peso'
+      ORDER BY f.created_at ASC`,
+    [premisaId, sessionId],
+  );
+  return rows.map((r: any) => ({ ...r, nomenclatura: fuentePesoRef(r.seq) }));
+}
+
+async function assertSessionWeight(premisaId: number, sessionId: string, id: number) {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM gcc_world.gd_fuentes f
+       JOIN gcc_world.gd_fuente_pesos p ON p.peso_fuente_id = f.id AND p.premisa_fuente_id = $1
+      WHERE f.id = $2 AND f.agent_session_id = $3 AND f.tipo_logica = 'peso'`,
+    [premisaId, id, sessionId],
+  );
+  if (!rows.length) throw new Error('Ese peso no pertenece a esta sesión/premisa; no se puede modificar.');
+}
+
+export async function agentAddWeight(
+  premisaId: number,
+  sessionId: string,
+  input: { contenido: string; tipoDato: TipoDato; credibilidad: number; doi?: string },
+) {
+  await ensureGestionDatosTables();
+  const prem = await getPremisaForAgent(premisaId);
+  if (!prem) throw new Error('La premisa no existe.');
+  if (!input.contenido?.trim()) throw new Error('El peso requiere contenido.');
+  // Referencia bibliográfica OBLIGATORIA (por DOI → Crossref).
+  if (!input.doi?.trim()) throw new Error('El peso requiere un DOI para su referencia bibliográfica.');
+  const apa = await crossrefToApa(input.doi);
+  if (!apa) throw new Error('No se pudo resolver el DOI a una referencia (Crossref).');
+  const ref = await createReferencia(apa.ref_tipo, apa.ref_datos);
+  const tipoDato: TipoDato = input.tipoDato === 'cualidad' ? 'cualidad' : 'cantidad';
+  const cred = clampCred(Number(input.credibilidad));
+  const peso = await createFuente(prem.problematica_id, tipoDato, 'peso', input.contenido, cred, ref.id);
+  await pool.query(`UPDATE gcc_world.gd_fuentes SET agent_session_id = $1 WHERE id = $2`, [sessionId, peso.id]);
+  await aplicarPesoAFuente(premisaId, peso.id);
+  const list = await agentListSessionWeights(premisaId, sessionId);
+  return list.find((w: any) => w.id === peso.id) || { id: peso.id, nomenclatura: fuentePesoRef(peso.seq) };
+}
+
+export async function agentUpdateWeight(
+  premisaId: number,
+  sessionId: string,
+  id: number,
+  patch: { contenido?: string; tipoDato?: TipoDato; credibilidad?: number },
+) {
+  await ensureGestionDatosTables();
+  await assertSessionWeight(premisaId, sessionId, id);
+  const sets: string[] = [];
+  const params: any[] = [];
+  if (patch.contenido != null) { sets.push(`contenido = $${params.length + 1}`); params.push(patch.contenido.trim()); }
+  if (patch.tipoDato && ['cantidad', 'cualidad'].includes(patch.tipoDato)) { sets.push(`tipo_dato = $${params.length + 1}`); params.push(patch.tipoDato); }
+  if (patch.credibilidad != null) {
+    const c = clampCred(Number(patch.credibilidad));
+    sets.push(`credibilidad = $${params.length + 1}`); params.push(c);
+    sets.push(`credibilidad_efectiva = $${params.length + 1}`); params.push(c);
+  }
+  if (sets.length) { params.push(id); await pool.query(`UPDATE gcc_world.gd_fuentes SET ${sets.join(', ')} WHERE id = $${params.length}`, params); }
+  await recomputeCredibilidad(premisaId); // el cambio del peso re-promedia la credibilidad de la premisa
+}
+
+export async function agentDeleteWeight(premisaId: number, sessionId: string, id: number) {
+  await ensureGestionDatosTables();
+  await assertSessionWeight(premisaId, sessionId, id);
+  await pool.query(`DELETE FROM gcc_world.gd_fuentes WHERE id = $1`, [id]);
+  await recomputeCredibilidad(premisaId);
 }
 
 /** Re-aplica en orden todos los pesos registrados sobre una premisa, desde su base. */
