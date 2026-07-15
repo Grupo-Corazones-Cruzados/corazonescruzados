@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import {
+  CalendarDays, ChevronLeft, ChevronRight, RefreshCw, CalendarPlus, Bell, Clock, AlertTriangle,
+} from 'lucide-react';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
 import EventDetailsModal from '@/components/calendar/EventDetailsModal';
 import ProposalModal, { type ProposalPayload } from '@/components/calendar/ProposalModal';
@@ -14,7 +18,13 @@ import {
 } from '@/lib/calendar/recurrence';
 import { type AvailabilityStatus, AVAILABILITY } from '@/lib/calendar/availability';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
+// Dashboard Fluent (.corp): ambas fuentes resuelven a Segoe UI.
+const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
+
+const VIEWS: { value: CalendarViewMode; label: string }[] = [
+  { value: 'month', label: 'Mes' }, { value: 'week', label: 'Semana' }, { value: 'day', label: 'Día' },
+];
 
 export default function PublicCalendarPage() {
   const params = useParams<{ memberId: string }>();
@@ -183,86 +193,82 @@ export default function PublicCalendarPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-digi-dark">
-        <div className="text-[12px] text-digi-muted" style={pf}>Cargando calendario…</div>
+      <div className="corp min-h-screen flex items-center justify-center">
+        <div className="inline-flex items-center gap-2 text-[13px] text-digi-muted" style={mf}>
+          <CalendarDays className="w-4 h-4 animate-pulse" /> Cargando calendario…
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-digi-dark p-6">
-        <div className="pixel-card max-w-md w-full text-center space-y-2">
-          <div className="text-sm text-red-400" style={pf}>ENLACE NO DISPONIBLE</div>
-          <div className="text-[11px] text-digi-muted">{error}</div>
+      <div className="corp min-h-screen flex items-center justify-center p-6">
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-6 max-w-md w-full text-center space-y-1.5">
+          <div className="text-[15px] font-semibold text-digi-text" style={df}>Enlace no disponible</div>
+          <div className="text-[13px] text-digi-muted" style={mf}>{error}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-digi-dark p-4 md:p-8">
+    <div className="corp min-h-screen py-6 px-4 md:px-8">
       <div className="max-w-6xl mx-auto space-y-4">
-        <div className="pixel-card">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
+          {/* Encabezado: miembro + disponibilidad + zona horaria/última sincronización */}
+          <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 border-b border-digi-border">
             <div>
-              <div className="text-[10px] text-digi-muted" style={pf}>CALENDARIO PÚBLICO</div>
-              <div className="text-lg text-accent-glow" style={pf}>{memberName}</div>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span
-                  className="w-2.5 h-2.5 border border-digi-border"
-                  style={{ backgroundColor: AVAILABILITY[memberStatus].color }}
-                />
-                <span className="text-[10px] text-digi-text" style={pf}>
-                  {AVAILABILITY[memberStatus].label.toUpperCase()}
-                </span>
+              <div className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Calendario público</div>
+              <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2 mt-0.5" style={df}>
+                <CalendarDays className="w-5 h-5 text-accent" /> {memberName}
+              </h1>
+              <div className="inline-flex items-center gap-1.5 mt-1">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[memberStatus].color }} />
+                <span className="text-[12px] text-digi-muted" style={mf}>{AVAILABILITY[memberStatus].label}</span>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] text-digi-muted" style={pf}>GMT-5 · Ecuador</div>
-              <div className="text-[9px] text-digi-muted mt-1" style={pf}>
-                {lastSync ? `ACTUALIZADO: ${fmtSync(lastSync)}` : 'SIN SINCRONIZAR'}
+              <div className="text-[12px] text-digi-muted inline-flex items-center gap-1" style={mf}>
+                <Clock className="w-3.5 h-3.5" /> GMT-5 · Ecuador
+              </div>
+              <div className="text-[11px] text-digi-muted mt-1" style={mf}>
+                {lastSync ? `Actualizado: ${fmtSync(lastSync)}` : 'Sin sincronizar'}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Command bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border">
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentDate(new Date())}
-                className="px-3 py-1.5 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors"
-                style={pf}
-              >
-                HOY
-              </button>
-              <button onClick={goPrev} className="w-8 h-8 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent" style={pf}>&lt;</button>
-              <button onClick={goNext} className="w-8 h-8 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent" style={pf}>&gt;</button>
-              <div className="text-sm text-accent-glow px-2" style={pf}>{label}</div>
+              <button onClick={() => setCurrentDate(new Date())} className={`${BTN_SECONDARY} !py-1.5`}>Hoy</button>
+              <div className="flex items-center gap-1">
+                <button onClick={goPrev} aria-label="Anterior" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                <button onClick={goNext} aria-label="Siguiente" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
+              </div>
+              <span className="text-[15px] font-semibold text-digi-text capitalize ml-1" style={mf}>{label}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex border-2 border-digi-border">
-                {(['month', 'week', 'day'] as CalendarViewMode[]).map((v) => (
+              <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
+                {VIEWS.map((v) => (
                   <button
-                    key={v}
-                    onClick={() => setView(v)}
-                    className={`px-3 py-1.5 text-[10px] transition-colors ${
-                      view === v ? 'bg-accent/20 text-accent-glow' : 'text-digi-muted hover:text-digi-text'
-                    }`}
-                    style={pf}
+                    key={v.value}
+                    onClick={() => setView(v.value)}
+                    className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`}
+                    style={mf}
                   >
-                    {v === 'month' ? 'MES' : v === 'week' ? 'SEMANA' : 'DÍA'}
+                    {v.label}
                   </button>
                 ))}
               </div>
               <button
                 onClick={() => load()}
                 disabled={loading}
-                className="px-3 py-1.5 text-[10px] border-2 border-digi-border text-digi-text hover:border-accent transition-colors disabled:opacity-50"
-                style={pf}
+                className={`${BTN_SECONDARY} !py-1.5`}
                 title={lastSync ? `Última actualización: ${fmtSync(lastSync)}` : 'Sincronizar calendario'}
               >
-                {loading ? 'SINCRONIZANDO…' : '↻ SINCRONIZAR'}
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> {loading ? 'Sincronizando…' : 'Sincronizar'}
               </button>
               <BookingCTA
                 meLoaded={meLoaded}
@@ -273,7 +279,8 @@ export default function PublicCalendarPage() {
             </div>
           </div>
 
-          <div className="mt-4">
+          {/* Grid */}
+          <div className="p-3">
             <CalendarView
               view={view}
               currentDate={currentDate}
@@ -283,21 +290,23 @@ export default function PublicCalendarPage() {
             />
           </div>
 
-          <div className="flex flex-wrap gap-4 text-[10px] text-digi-muted pt-3" style={pf}>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.progreso, backgroundColor: `${EVENT_COLORS.progreso}30` }} />
-              PROGRESO
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 border-l-2" style={{ borderLeftColor: EVENT_COLORS.personal, backgroundColor: `${EVENT_COLORS.personal}30` }} />
-              PERSONAL
-            </div>
+          {/* Leyenda */}
+          <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted" style={mf}>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.progreso}30`, borderLeft: `3px solid ${EVENT_COLORS.progreso}` }} /> Progreso
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.personal}30`, borderLeft: `3px solid ${EVENT_COLORS.personal}` }} /> Personal
+            </span>
           </div>
         </div>
 
-        <div className="pixel-card">
-          <div className="text-[10px] text-accent-glow mb-2" style={pf}>SUSCRIBIRSE A ACTUALIZACIONES</div>
-          <p className="text-[11px] text-digi-muted mb-3">
+        {/* Suscripción a actualizaciones */}
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-4">
+          <div className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-2" style={df}>
+            <Bell className="w-4 h-4 text-accent" /> Suscribirse a actualizaciones
+          </div>
+          <p className="text-[12.5px] text-digi-muted mt-1 mb-3" style={mf}>
             Recibe un correo cuando {memberName} agregue, modifique o elimine un evento.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -307,26 +316,21 @@ export default function PublicCalendarPage() {
               value={subscribeEmail}
               onChange={(e) => setSubscribeEmail(e.target.value)}
               disabled={subscribing}
-              className="flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              className="field-control flex-1 rounded-md text-sm text-digi-text focus:outline-none disabled:opacity-60"
+              style={mf}
             />
-            <button
-              onClick={submitSubscribe}
-              disabled={subscribing}
-              className="px-4 py-2 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors disabled:opacity-50"
-              style={pf}
-            >
-              {subscribing ? 'ENVIANDO…' : 'SUSCRIBIRME'}
+            <button onClick={submitSubscribe} disabled={subscribing} className={BTN_PRIMARY}>
+              {subscribing ? 'Enviando…' : 'Suscribirme'}
             </button>
           </div>
           {subscribeMsg && (
             <div
-              className={`mt-2 text-[10px] px-3 py-2 border ${
+              className={`mt-2 text-[12px] px-3 py-2 rounded-md border ${
                 subscribeMsg.kind === 'ok'
-                  ? 'border-green-500/40 text-green-400 bg-green-950/20'
-                  : 'border-red-500/40 text-red-400 bg-red-950/20'
+                  ? 'border-green-300 text-green-700 bg-green-50'
+                  : 'border-red-300 text-red-600 bg-red-50'
               }`}
-              style={pf}
+              style={mf}
             >
               {subscribeMsg.text}
             </div>
@@ -365,12 +369,8 @@ function BookingCTA({
 
   if (!me) {
     return (
-      <a
-        href={`/auth?redirect=${encodeURIComponent(returnUrl)}`}
-        className="px-3 py-1.5 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors"
-        style={pf}
-      >
-        REGISTRARSE PARA AGENDAR
+      <a href={`/auth?redirect=${encodeURIComponent(returnUrl)}`} className={BTN_PRIMARY}>
+        <CalendarPlus className="w-4 h-4" /> Registrarse para agendar
       </a>
     );
   }
@@ -378,22 +378,17 @@ function BookingCTA({
   if (!me.email) {
     return (
       <span
-        className="px-3 py-1.5 text-[10px] border-2 border-amber-500/50 text-amber-400 bg-amber-950/20"
-        style={pf}
+        className="inline-flex items-center gap-1.5 px-3 py-2 border border-amber-300 rounded text-sm font-medium text-amber-700 bg-amber-50"
         title="Agrega un correo a tu cuenta para poder agendar"
       >
-        FALTA CORREO EN TU CUENTA
+        <AlertTriangle className="w-4 h-4" /> Falta correo en tu cuenta
       </span>
     );
   }
 
   return (
-    <button
-      onClick={onOpen}
-      className="px-3 py-1.5 text-[10px] border-2 border-accent bg-accent/20 text-accent-glow hover:bg-accent/30 transition-colors"
-      style={pf}
-    >
-      + AGENDAR ESPACIO
+    <button onClick={onOpen} className={BTN_PRIMARY}>
+      <CalendarPlus className="w-4 h-4" /> Agendar espacio
     </button>
   );
 }

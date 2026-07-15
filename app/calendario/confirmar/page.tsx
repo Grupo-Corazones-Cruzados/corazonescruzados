@@ -2,8 +2,11 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
+// Dashboard Fluent (.corp): las fuentes resuelven a Segoe UI.
+const mf = { fontFamily: 'var(--font-body)' } as const;
+const df = { fontFamily: 'var(--font-display)' } as const;
 
 function ConfirmSubscriptionInner() {
   const search = useSearchParams();
@@ -28,24 +31,28 @@ function ConfirmSubscriptionInner() {
   }, [token]);
 
   return (
-    <div className="pixel-card max-w-md w-full text-center space-y-3">
+    <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-6 max-w-md w-full text-center space-y-2">
       {state === 'loading' && (
-        <div className="text-[12px] text-digi-muted" style={pf}>Verificando…</div>
+        <div className="inline-flex items-center gap-2 text-[13px] text-digi-muted" style={mf}>
+          <Loader2 className="w-4 h-4 animate-spin" /> Verificando…
+        </div>
       )}
       {state === 'ok' && (
         <>
-          <div className="text-sm text-accent-glow" style={pf}>SUSCRIPCIÓN CONFIRMADA</div>
-          <div className="text-[11px] text-digi-text">
+          <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto" />
+          <div className="text-[15px] font-semibold text-digi-text" style={df}>Suscripción confirmada</div>
+          <div className="text-[13px] text-digi-muted" style={mf}>
             {email
-              ? <>Recibirás notificaciones en <strong>{email}</strong>.</>
+              ? <>Recibirás notificaciones en <strong className="text-digi-text">{email}</strong>.</>
               : 'Tu suscripción fue confirmada correctamente.'}
           </div>
         </>
       )}
       {state === 'err' && (
         <>
-          <div className="text-sm text-red-400" style={pf}>NO SE PUDO CONFIRMAR</div>
-          <div className="text-[11px] text-digi-muted">{error}</div>
+          <XCircle className="w-8 h-8 text-red-600 mx-auto" />
+          <div className="text-[15px] font-semibold text-digi-text" style={df}>No se pudo confirmar</div>
+          <div className="text-[13px] text-digi-muted" style={mf}>{error}</div>
         </>
       )}
     </div>
@@ -54,11 +61,13 @@ function ConfirmSubscriptionInner() {
 
 export default function ConfirmSubscriptionPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-digi-dark p-6">
+    <div className="corp min-h-screen flex items-center justify-center p-6">
       <Suspense
         fallback={
-          <div className="pixel-card max-w-md w-full text-center space-y-3">
-            <div className="text-[12px] text-digi-muted" style={pf}>Verificando…</div>
+          <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-6 max-w-md w-full text-center">
+            <div className="inline-flex items-center gap-2 text-[13px] text-digi-muted" style={mf}>
+              <Loader2 className="w-4 h-4 animate-spin" /> Verificando…
+            </div>
           </div>
         }
       >
