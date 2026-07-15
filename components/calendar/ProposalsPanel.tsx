@@ -23,6 +23,7 @@ interface Proposal {
   proposer_email: string | null;
   proposer_first_name: string | null;
   proposer_last_name: string | null;
+  proposer_guest_name: string | null;
 }
 
 function fmt(d: Date, tz?: string) {
@@ -103,6 +104,7 @@ export default function ProposalsPanel({ onDecision }: Props) {
       <div className="space-y-2">
         {proposals.map((p) => {
           const proposer = [p.proposer_first_name, p.proposer_last_name].filter(Boolean).join(' ').trim()
+            || p.proposer_guest_name
             || p.proposer_email
             || 'Cliente';
           return (

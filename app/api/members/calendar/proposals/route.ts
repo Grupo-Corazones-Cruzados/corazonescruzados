@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 
 async function resolveMemberId(userId: string): Promise<string | null> {
   const { rows } = await pool.query(
@@ -17,6 +18,8 @@ export async function GET() {
     const memberId = await resolveMemberId(user.userId);
     if (!memberId) return NextResponse.json({ error: 'Not a member' }, { status: 403 });
 
+    await ensureCalendarGuestColumns();
+
     const { rows } = await pool.query(
       `SELECT
          e.id, e.title, e.description,
@@ -24,9 +27,10 @@ export async function GET() {
          e.recurrence_type, e.recurrence_days, e.recurrence_interval, e.recurrence_until,
          e.created_at,
          u.id AS proposer_id,
-         u.email AS proposer_email,
+         COALESCE(u.email, e.guest_email) AS proposer_email,
          u.first_name AS proposer_first_name,
-         u.last_name AS proposer_last_name
+         u.last_name AS proposer_last_name,
+         e.guest_name AS proposer_guest_name
        FROM gcc_world.member_calendar_events e
        LEFT JOIN gcc_world.users u ON u.id = e.created_by
        WHERE e.member_id = $1 AND e.status = 'proposed'

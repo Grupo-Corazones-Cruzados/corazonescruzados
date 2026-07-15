@@ -267,6 +267,31 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Calendario público — agendar SIN cuenta + confidencialidad de eventos + arreglos UI (2026-07-15):**
+  segunda pasada sobre `/calendario/[memberId]` (tras migrarlo a `.corp`). Cambios:
+  - **Confidencialidad (libre/ocupado):** el endpoint público `GET /api/members/calendar/public/[memberId]`
+    ya **NO** expone `title`/`description`/`client`/categoría de los eventos del miembro; los normaliza a un
+    bloque neutro **"Ocupado"** (color `#64748b`). El visitante solo ve **qué franjas están ocupadas** para
+    poder agendar (personales y laborales quedan ocultos). La leyenda pasó a "Ocupado / Tu propuesta
+    (pendiente)". El `EventDetailsModal` recibe `hideType/hideClientName/hideDescription` en el público.
+  - **Título temporal del propio evento:** al enviar una propuesta, se agrega al estado local con su título
+    real (solo lo ve quien lo creó); **al recargar** el endpoint lo devuelve como "Ocupado". Por eso
+    `submitProposal` **ya no llama `load()`**: hace append optimista.
+  - **Agendar anónimo (sin login):** se quitó el gate de sesión. El botón "Registrarse para agendar" es ahora
+    **"Agendar espacio"** y abre el `ProposalModal`, que pide **nombre (opcional) + correo (requerido)**. La
+    idea futura: cada miembro asociará una **cuenta de Gmail** para auto-crear **Google Meet** invitando al
+    correo del visitante (pendiente, no implementado). El correo se guarda ya.
+  - **DB:** `member_calendar_events` ganó `guest_email`/`guest_name` (TEXT, `ADD COLUMN IF NOT EXISTS` vía
+    `lib/calendar/guest.ts` → `ensureCalendarGuestColumns()`, promise singleton). El endpoint `propose` inserta
+    con `created_by=NULL` + `guest_email/guest_name`; `proposals` (lista) y `proposals/[eventId]` (decisión)
+    resuelven el proponente con `COALESCE(u.email, e.guest_email)` + `guest_name`. `ProposalsPanel` muestra el
+    nombre del visitante externo. Notificaciones (Resend) al miembro y de decisión al visitante siguen igual.
+  - **Arreglos UI:** (1) `EventDetailsModal` tenía **doble cerrar** (X del header + botón "Cerrar" al pie) →
+    se quitó el botón del pie. (2) En el header público el **estado del miembro se solapaba con el nombre**:
+    el `<h1>` y el estado eran ambos `inline-flex` (nivel inline) → misma línea; fix: `<h1>` a `flex` y el
+    estado en su propia línea (`mt-1.5`).
+  - Verificado: tsc + `next build` OK + **BD real (ROLLBACK)**: migración idempotente, insert guest, query
+    pública sin columnas de detalle, lista/decisión con COALESCE. Commit+push a main.
 - **Calendario compartido/público con diseño corporativo (2026-07-15):** la vista que ve el destinatario al
   **compartir** desde "Mi día" (`app/calendario/[memberId]/page.tsx` + `app/calendario/confirmar/page.tsx`)
   seguía **pixelart** (`bg-digi-dark`, `pixel-card`, fuente **Silkscreen**, `text-[10px]` mayúsculas). Estas

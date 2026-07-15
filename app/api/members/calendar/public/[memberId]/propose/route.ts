@@ -1,24 +1,28 @@
 import { pool } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { findOverlappingInstances, type OverlapCandidate } from '@/lib/calendar/overlap';
 import { sendProposalReceivedToMember } from '@/lib/integrations/resend';
+import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 import type { CalendarEvent } from '@/lib/calendar/recurrence';
 
 type RouteCtx = { params: Promise<{ memberId: string }> };
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest, ctx: RouteCtx) {
   try {
     const { memberId } = await ctx.params;
 
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Debes iniciar sesión para agendar' }, { status: 401 });
-    }
-
     const body = await req.json();
     const token = String(body.token || '').trim();
     if (!token) return NextResponse.json({ error: 'Token requerido' }, { status: 401 });
+
+    // Visitante externo/anónimo: se identifica solo con su correo (sin cuenta).
+    const guestEmail = String(body.guest_email || '').trim().toLowerCase();
+    const guestName = String(body.guest_name || '').trim();
+    if (!EMAIL_RE.test(guestEmail)) {
+      return NextResponse.json({ error: 'Ingresa un correo electrónico válido' }, { status: 400 });
+    }
 
     const memberRes = await pool.query(
       `SELECT m.id, m.name, m.email, m.calendar_public_token
@@ -29,21 +33,10 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
     const member = memberRes.rows[0];
     if (!member) return NextResponse.json({ error: 'Enlace inválido' }, { status: 404 });
 
-    const userRes = await pool.query(
-      `SELECT id, email, first_name, last_name, member_id FROM gcc_world.users WHERE id = $1`,
-      [user.userId],
-    );
-    const userRec = userRes.rows[0];
-    if (!userRec || !userRec.email) {
-      return NextResponse.json({ error: 'Tu cuenta no tiene correo asociado' }, { status: 400 });
-    }
-
-    if (userRec.member_id && String(userRec.member_id) === String(memberId)) {
-      return NextResponse.json({ error: 'No puedes proponer en tu propio calendario' }, { status: 400 });
-    }
-
     const validationError = validateProposalPayload(body);
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
+
+    await ensureCalendarGuestColumns();
 
     const candidate: OverlapCandidate = {
       start_at: body.start_at,
@@ -82,12 +75,12 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
          member_id, title, description, event_type, client_id,
          start_at, end_at, all_day, timezone,
          recurrence_type, recurrence_days, recurrence_interval, recurrence_until,
-         color, status, created_by
+         color, status, created_by, guest_email, guest_name
        ) VALUES (
          $1, $2, $3, 'progreso', NULL,
          $4, $5, FALSE, $6,
          $7, $8, $9, $10,
-         NULL, 'proposed', $11
+         NULL, 'proposed', NULL, $11, $12
        ) RETURNING id, start_at, end_at`,
       [
         memberId,
@@ -100,12 +93,13 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
         candidate.recurrence_days,
         candidate.recurrence_interval,
         candidate.recurrence_until,
-        user.userId,
+        guestEmail,
+        guestName || null,
       ],
     );
 
     const created = insertRes.rows[0];
-    const clientName = [userRec.first_name, userRec.last_name].filter(Boolean).join(' ').trim() || userRec.email;
+    const clientName = guestName || guestEmail;
 
     if (member.email) {
       try {
@@ -113,7 +107,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
           memberEmail: member.email,
           memberName: member.name,
           clientName,
-          clientEmail: userRec.email,
+          clientEmail: guestEmail,
           eventTitle: body.title,
           eventStart: new Date(created.start_at),
           eventEnd: new Date(created.end_at),

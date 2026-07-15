@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
-  CalendarDays, ChevronLeft, ChevronRight, RefreshCw, CalendarPlus, Bell, Clock, AlertTriangle,
+  CalendarDays, ChevronLeft, ChevronRight, RefreshCw, CalendarPlus, Bell, Clock,
 } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
@@ -13,7 +13,6 @@ import {
   type CalendarEvent,
   type EventInstance,
   expandEvents,
-  EVENT_COLORS,
   MONTH_LABELS_ES,
 } from '@/lib/calendar/recurrence';
 import { type AvailabilityStatus, AVAILABILITY } from '@/lib/calendar/availability';
@@ -21,6 +20,9 @@ import { type AvailabilityStatus, AVAILABILITY } from '@/lib/calendar/availabili
 // Dashboard Fluent (.corp): ambas fuentes resuelven a Segoe UI.
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
+
+// Color neutro de los bloques "Ocupado" (coincide con el del endpoint público).
+const BUSY_COLOR = '#64748b';
 
 const VIEWS: { value: CalendarViewMode; label: string }[] = [
   { value: 'month', label: 'Mes' }, { value: 'week', label: 'Semana' }, { value: 'day', label: 'Día' },
@@ -60,19 +62,7 @@ export default function PublicCalendarPage() {
   };
 
   const [detail, setDetail] = useState<EventInstance | null>(null);
-
-  const [me, setMe] = useState<{ id: string; email: string | null } | null>(null);
-  const [meLoaded, setMeLoaded] = useState(false);
   const [proposalOpen, setProposalOpen] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.user) setMe({ id: data.user.id, email: data.user.email });
-      })
-      .finally(() => setMeLoaded(true));
-  }, []);
 
   const submitProposal = async (payload: ProposalPayload) => {
     const res = await fetch(`/api/members/calendar/public/${memberId}/propose`, {
@@ -82,7 +72,28 @@ export default function PublicCalendarPage() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Error al enviar propuesta');
-    await load();
+    // El evento propuesto se muestra TEMPORALMENTE con su título real (solo para quien lo
+    // creó), agregándolo al estado local sin recargar. Al recargar la página, el endpoint
+    // público lo devuelve como "Ocupado" (confidencialidad de los eventos del miembro).
+    const localEvent: CalendarEvent = {
+      id: data.id || `local-${Date.now()}`,
+      title: payload.title,
+      description: payload.description,
+      event_type: 'progreso',
+      client_id: null,
+      client_name: null,
+      start_at: payload.start_at,
+      end_at: payload.end_at,
+      all_day: false,
+      timezone: payload.timezone,
+      recurrence_type: payload.recurrence_type,
+      recurrence_days: payload.recurrence_days,
+      recurrence_interval: payload.recurrence_interval,
+      recurrence_until: payload.recurrence_until,
+      color: null,
+      status: 'proposed',
+    };
+    setEvents((prev) => [...prev, localEvent]);
   };
 
   const [subscribeEmail, setSubscribeEmail] = useState('');
@@ -218,12 +229,12 @@ export default function PublicCalendarPage() {
         <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
           {/* Encabezado: miembro + disponibilidad + zona horaria/última sincronización */}
           <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 border-b border-digi-border">
-            <div>
+            <div className="min-w-0">
               <div className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Calendario público</div>
-              <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2 mt-0.5" style={df}>
-                <CalendarDays className="w-5 h-5 text-accent" /> {memberName}
+              <h1 className="text-[20px] font-semibold text-digi-text flex items-center gap-2 mt-0.5" style={df}>
+                <CalendarDays className="w-5 h-5 text-accent shrink-0" /> <span className="min-w-0 break-words">{memberName}</span>
               </h1>
-              <div className="inline-flex items-center gap-1.5 mt-1">
+              <div className="flex items-center gap-1.5 mt-1.5">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[memberStatus].color }} />
                 <span className="text-[12px] text-digi-muted" style={mf}>{AVAILABILITY[memberStatus].label}</span>
               </div>
@@ -270,12 +281,9 @@ export default function PublicCalendarPage() {
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> {loading ? 'Sincronizando…' : 'Sincronizar'}
               </button>
-              <BookingCTA
-                meLoaded={meLoaded}
-                me={me}
-                onOpen={() => setProposalOpen(true)}
-                returnUrl={typeof window !== 'undefined' ? window.location.pathname + window.location.search : ''}
-              />
+              <button onClick={() => setProposalOpen(true)} className={BTN_PRIMARY}>
+                <CalendarPlus className="w-4 h-4" /> Agendar espacio
+              </button>
             </div>
           </div>
 
@@ -290,14 +298,15 @@ export default function PublicCalendarPage() {
             />
           </div>
 
-          {/* Leyenda */}
+          {/* Leyenda — el calendario público es libre/ocupado (sin exponer el detalle de los eventos) */}
           <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted" style={mf}>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.progreso}30`, borderLeft: `3px solid ${EVENT_COLORS.progreso}` }} /> Progreso
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${BUSY_COLOR}30`, borderLeft: `3px solid ${BUSY_COLOR}` }} /> Ocupado
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.personal}30`, borderLeft: `3px solid ${EVENT_COLORS.personal}` }} /> Personal
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#f59e0b1f', borderLeft: '3px dashed #f59e0b' }} /> Tu propuesta (pendiente)
             </span>
+            <span className="ml-auto">Solo se muestran las franjas ocupadas, no el detalle de los eventos.</span>
           </div>
         </div>
 
@@ -342,6 +351,9 @@ export default function PublicCalendarPage() {
         open={!!detail}
         onClose={() => setDetail(null)}
         event={detail}
+        hideType
+        hideClientName
+        hideDescription
       />
 
       <ProposalModal
@@ -351,44 +363,5 @@ export default function PublicCalendarPage() {
         memberName={memberName || 'el miembro'}
       />
     </div>
-  );
-}
-
-function BookingCTA({
-  meLoaded,
-  me,
-  onOpen,
-  returnUrl,
-}: {
-  meLoaded: boolean;
-  me: { id: string; email: string | null } | null;
-  onOpen: () => void;
-  returnUrl: string;
-}) {
-  if (!meLoaded) return null;
-
-  if (!me) {
-    return (
-      <a href={`/auth?redirect=${encodeURIComponent(returnUrl)}`} className={BTN_PRIMARY}>
-        <CalendarPlus className="w-4 h-4" /> Registrarse para agendar
-      </a>
-    );
-  }
-
-  if (!me.email) {
-    return (
-      <span
-        className="inline-flex items-center gap-1.5 px-3 py-2 border border-amber-300 rounded text-sm font-medium text-amber-700 bg-amber-50"
-        title="Agrega un correo a tu cuenta para poder agendar"
-      >
-        <AlertTriangle className="w-4 h-4" /> Falta correo en tu cuenta
-      </span>
-    );
-  }
-
-  return (
-    <button onClick={onOpen} className={BTN_PRIMARY}>
-      <CalendarPlus className="w-4 h-4" /> Agendar espacio
-    </button>
   );
 }

@@ -1,8 +1,7 @@
 'use client';
 
 import PixelModal from '@/components/ui/PixelModal';
-import { BTN_SECONDARY } from '@/components/ui/Button';
-import { X, Repeat } from 'lucide-react';
+import { Repeat } from 'lucide-react';
 import type { EventInstance } from '@/lib/calendar/recurrence';
 import { colorForEvent, MONTH_LABELS_ES } from '@/lib/calendar/recurrence';
 
@@ -15,6 +14,8 @@ interface Props {
   event: EventInstance | null;
   hideClientName?: boolean;
   hideDescription?: boolean;
+  /** Oculta la categoría (Progreso/Personal): calendario público confidencial. */
+  hideType?: boolean;
 }
 
 function fmtDateTime(d: Date) {
@@ -22,7 +23,7 @@ function fmtDateTime(d: Date) {
   return `${d.getDate()} ${MONTH_LABELS_ES[d.getMonth()].slice(0, 3)} ${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function EventDetailsModal({ open, onClose, event, hideClientName, hideDescription }: Props) {
+export default function EventDetailsModal({ open, onClose, event, hideClientName, hideDescription, hideType }: Props) {
   if (!event) return null;
   const color = colorForEvent(event);
 
@@ -36,15 +37,17 @@ export default function EventDetailsModal({ open, onClose, event, hideClientName
           />
           <div className="flex-1">
             <div className="text-[15px] font-semibold text-digi-text mb-1" style={pf}>{event.title}</div>
-            <div className="flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
-              {event.event_type === 'progreso' ? 'Progreso' : 'Personal'}
-              {event.isRecurring && (
-                <>
-                  <span>·</span>
-                  <Repeat className="w-3.5 h-3.5" /> Recurrente
-                </>
-              )}
-            </div>
+            {(!hideType || event.isRecurring) && (
+              <div className="flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
+                {!hideType && (event.event_type === 'progreso' ? 'Progreso' : 'Personal')}
+                {event.isRecurring && (
+                  <>
+                    {!hideType && <span>·</span>}
+                    <Repeat className="w-3.5 h-3.5" /> Recurrente
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -77,12 +80,6 @@ export default function EventDetailsModal({ open, onClose, event, hideClientName
             </div>
           </div>
         )}
-
-        <div className="flex justify-end pt-2 border-t border-digi-border">
-          <button onClick={onClose} className={BTN_SECONDARY} style={mf}>
-            <X className="w-4 h-4" /> Cerrar
-          </button>
-        </div>
       </div>
     </PixelModal>
   );

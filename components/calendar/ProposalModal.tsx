@@ -23,7 +23,11 @@ export interface ProposalPayload {
   recurrence_days: number[] | null;
   recurrence_interval: number;
   recurrence_until: string | null;
+  guest_name: string | null;
+  guest_email: string;
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface Props {
   open: boolean;
@@ -82,6 +86,8 @@ function todayInTz(tz: string): string {
 }
 
 export default function ProposalModal({ open, onClose, onSubmit, memberName }: Props) {
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState<string>(() => todayInTz(detectTz()));
@@ -100,6 +106,8 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
     const detected = detectTz();
     setTz(detected);
     setDate(todayInTz(detected));
+    setGuestName('');
+    setGuestEmail('');
     setTitle('');
     setDescription('');
     setStartTime('10:00');
@@ -132,6 +140,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
 
   const submit = async () => {
     setError(null);
+    if (!EMAIL_RE.test(guestEmail.trim())) { setError('Ingresa un correo electrónico válido'); return; }
     if (!title.trim()) { setError('El título es requerido'); return; }
     if (endUTC.getTime() <= startUTC.getTime()) { setError('La hora fin debe ser posterior al inicio'); return; }
     if (startUTC.getTime() < Date.now() - 60_000) { setError('No puedes proponer horarios en el pasado'); return; }
@@ -147,6 +156,8 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
       recurrence_days: recurrence === 'weekly' ? days : null,
       recurrence_interval: 1,
       recurrence_until: recurrence === 'weekly' && until ? until : null,
+      guest_name: guestName.trim() || null,
+      guest_email: guestEmail.trim().toLowerCase(),
     };
     setSaving(true);
     try {
@@ -163,9 +174,26 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
     <PixelModal open={open} onClose={onClose} title="Proponer espacio" size="lg">
       <div className="space-y-4">
         <p className="text-[13px] text-digi-muted" style={mf}>
-          Propón un espacio con <strong>{memberName}</strong>. Tu propuesta se marcará como pendiente
-          hasta que {memberName} la acepte o rechace (recibirás un correo con la decisión).
+          Solicita un espacio con <strong>{memberName}</strong>. No necesitas una cuenta: déjanos tu
+          correo y tu propuesta quedará pendiente hasta que {memberName} la acepte o rechace
+          (te avisaremos por correo).
         </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <PixelInput
+            label="TU NOMBRE (OPCIONAL)"
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            placeholder="Nombre y apellido"
+          />
+          <PixelInput
+            type="email"
+            label="TU CORREO"
+            value={guestEmail}
+            onChange={(e) => setGuestEmail(e.target.value)}
+            placeholder="tu@correo.com"
+          />
+        </div>
 
         <PixelInput
           label="TÍTULO"

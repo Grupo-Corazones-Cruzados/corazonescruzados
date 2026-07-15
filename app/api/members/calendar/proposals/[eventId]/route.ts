@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendProposalDecisionToClient } from '@/lib/integrations/resend';
 import { notifyCalendarSubscribers } from '@/lib/calendar/notify';
+import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 
 type RouteCtx = { params: Promise<{ eventId: string }> };
 
@@ -31,9 +32,13 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
       return NextResponse.json({ error: 'Acción inválida' }, { status: 400 });
     }
 
+    await ensureCalendarGuestColumns();
+
     const evRes = await pool.query(
       `SELECT e.id, e.title, e.start_at, e.end_at, e.created_by,
-              u.email AS proposer_email, u.first_name AS proposer_first_name, u.last_name AS proposer_last_name
+              COALESCE(u.email, e.guest_email) AS proposer_email,
+              u.first_name AS proposer_first_name, u.last_name AS proposer_last_name,
+              e.guest_name AS proposer_guest_name
          FROM gcc_world.member_calendar_events e
          LEFT JOIN gcc_world.users u ON u.id = e.created_by
         WHERE e.id = $1 AND e.member_id = $2 AND e.status = 'proposed'`,
@@ -63,6 +68,7 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
 
     if (ev.proposer_email) {
       const clientName = [ev.proposer_first_name, ev.proposer_last_name].filter(Boolean).join(' ').trim()
+        || ev.proposer_guest_name
         || ev.proposer_email;
       try {
         await sendProposalDecisionToClient({
