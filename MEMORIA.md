@@ -267,6 +267,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Calendario compartido/público con diseño corporativo (2026-07-15):** la vista que ve el destinatario al
+  **compartir** desde "Mi día" (`app/calendario/[memberId]/page.tsx` + `app/calendario/confirmar/page.tsx`)
+  seguía **pixelart** (`bg-digi-dark`, `pixel-card`, fuente **Silkscreen**, `text-[10px]` mayúsculas). Estas
+  páginas viven **fuera** del layout del dashboard, así que **no** heredaban el scope `.corp`. **Fix:** se
+  envuelve el return en `<div className="corp min-h-screen …">` (tema light Fluent; solo `.corp`, sin `.dark`)
+  y se reescribe su chrome propio al idiom de **Mi día**: tarjetas `bg-digi-card border border-digi-border
+  rounded-xl shadow-sm`, `BTN_PRIMARY`/`BTN_SECONDARY` (`components/ui/Button`), toggle de vista
+  (activo `bg-accent text-white`), prev/next `w-8 h-8 rounded-md border`, íconos **lucide** y fuentes
+  `var(--font-body)`/`--font-display` (Segoe UI bajo `.corp`). **Clave:** `CalendarView` y los modales
+  `EventDetailsModal`/`ProposalModal` **ya eran corp-aware** (usan tokens `digi-*` + `PixelModal` + `var(--font-*)`),
+  así que basta el wrapper `.corp` para que se vean corporativos sin tocarlos. **Regla general:** cualquier página
+  fuera de `app/(dashboard)` que deba verse corporativa se envuelve en `.corp` (los estilos `.corp …` son globales
+  en `globals.css`, no dependen del layout del dashboard). Verificado: tsc + `next build` OK. Commit+push a main.
 - **Gestión de Datos — AGENTE IA (Claude CLI local) que genera pesos de una premisa desde Scopus (2026-07-12):**
   chat conversacional (modal **arrastrable/redimensionable** reusando `FloatingWindow`) que, sobre una **premisa**
   elegida, usa el **Claude CLI del servidor local** (NO la API de OpenAI) para buscar en Scopus datos de los
