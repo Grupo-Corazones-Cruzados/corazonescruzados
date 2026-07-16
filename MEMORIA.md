@@ -283,9 +283,10 @@ Stack estándar de la casa, con particularidades de este repo:
     contador. Ej.: Luis Fernando González Muyulema → `lfgonzalezm0`; Ruth Gabriela Domínguez Alfaro → `rgdomingueza0`.
     En `lib/workspace/username.ts`.
   - **FASE 1 HECHA (2026-07-16):** al **aprobar** una postulación (`SolicitudesTab` + `candidate-proposals/[id]/approve`),
-    un modal pide los 4 nombres y sugiere el usuario (editable); el backend garantiza unicidad (contador vs
-    `clients.workspace_username` + `users.email`) y guarda `workspace_username`/`workspace_email` (nuevas cols en
-    `clients`). Sin Google aún.
+    un modal pide **solo el nombre de usuario** (con la nomenclatura como guía; NO se piden los nombres porque son
+    variables — 1 nombre, 3+ apellidos…); el candidato completará su nombre al crear su cuenta. El backend garantiza
+    unicidad (contador vs `clients.workspace_username` + `users.email`) y guarda `workspace_username`/`workspace_email`
+    (nuevas cols en `clients`). Sin Google aún.
   - **PENDIENTE fases:** (2) crear la cuenta **Cloud Identity gratis** `usuario@grupocc.org` cuando el candidato crea su
     cuenta (Admin SDK Directory API `users.insert`; **cuidado:** verificar que NO consuma licencia pagada — auto-assign
     de licencias; asignar Cloud Identity Free explícito si hace falta). (3) **Sincronía perfil ↔ Google**: empujar foto/
