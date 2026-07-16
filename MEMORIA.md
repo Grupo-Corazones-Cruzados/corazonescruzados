@@ -328,6 +328,10 @@ Stack estándar de la casa, con particularidades de este repo:
     Meet estándar si falla. Los artefactos quedan en el Drive de la cuenta organizadora.
   - **Enlace de reunión en "Mi día" (2026-07-16):** el GET de eventos devuelve `meeting_url`/`meeting_provider` y
     `EventModal` muestra un banner "Enlace de la reunión" (Unirse a Meet + copiar) en el evento aceptado.
+  - **Cancelar reunión al eliminar el evento (2026-07-16):** al aceptar se guarda también `meeting_event_id` (id del
+    evento en el Calendar de la cuenta organizadora). Cuando el miembro **elimina** el evento (DELETE
+    `events/[eventId]`), si tiene `meeting_event_id` se llama `deleteMeetEvent()` (borra el evento en Google con
+    `sendUpdates:'all'` → cancela el Meet y avisa a los invitados; idempotente ante 404/410). Verificado en vivo.
   - **UX calendario público (2026-07-16):** clic en zona libre de la grilla abre "Agendar espacio" con esa hora
     prellenada; los **horarios ocupados se bloquean** en el form (aviso + submit deshabilitado, vía `isBusy`); se quitó
     el banner de zona horaria; el visitante puede **cancelar su reserva propia** de la sesión (clic → detalle real +
