@@ -267,6 +267,32 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Cuentas corporativas Google Workspace por persona + nomenclatura (2026-07-16, en curso):** decisión del usuario
+  tras aclarar el costo/licenciamiento de Google:
+  - **Reuniones/grabación/calendario de la org = cuenta del LÍDER (ya implementado):** TODAS las reuniones las organiza
+    y **graba** la cuenta `lfgonzalezm0@grupocc.org` (`GOOGLE_WORKSPACE_ORGANIZER`), invitando a la persona + cliente →
+    el líder ve el calendario de toda la organización y tiene las grabaciones. **NO se paga licencia por miembro** para
+    esto. (El modelo "cada miembro organiza desde su cuenta" se descartó: requeriría licencia pagada por miembro y no
+    aporta a los objetivos de fondo.)
+  - **Realidad de licencias Google (importante):** una **Gmail/Calendar `@grupocc.org` propia exige licencia PAGADA**
+    (Business Standard+ para grabar). **Cloud Identity es GRATIS** pero solo da **identidad + perfil (nombre/foto/
+    teléfono)** — sin Gmail, sin Calendar, sin grabación. Unirse a un Meet sí es gratis (con la identidad o como invitado).
+  - **Modelo elegido:** candidatos/miembros tendrán **Cloud Identity GRATIS** `@grupocc.org` solo para **identidad +
+    perfil sincronizado con la app**. (No se crean buzones ni se paga por nadie.)
+  - **Nomenclatura de usuario:** inicial(1er nombre)+inicial(2º nombre)+(1er apellido completo)+inicial(2º apellido)+
+    contador. Ej.: Luis Fernando González Muyulema → `lfgonzalezm0`; Ruth Gabriela Domínguez Alfaro → `rgdomingueza0`.
+    En `lib/workspace/username.ts`.
+  - **FASE 1 HECHA (2026-07-16):** al **aprobar** una postulación (`SolicitudesTab` + `candidate-proposals/[id]/approve`),
+    un modal pide los 4 nombres y sugiere el usuario (editable); el backend garantiza unicidad (contador vs
+    `clients.workspace_username` + `users.email`) y guarda `workspace_username`/`workspace_email` (nuevas cols en
+    `clients`). Sin Google aún.
+  - **PENDIENTE fases:** (2) crear la cuenta **Cloud Identity gratis** `usuario@grupocc.org` cuando el candidato crea su
+    cuenta (Admin SDK Directory API `users.insert`; **cuidado:** verificar que NO consuma licencia pagada — auto-assign
+    de licencias; asignar Cloud Identity Free explícito si hace falta). (3) **Sincronía perfil ↔ Google**: empujar foto/
+    datos al perfil de Google al guardar en Configuración (Directory API `users.photos`/patch) + botón "Sincronizar con
+    Google" (traer cambios) + campos básicos que falten. **Scopes a delegar (browser, pendiente del usuario):**
+    `https://www.googleapis.com/auth/admin.directory.user,https://www.googleapis.com/auth/apps.licensing` en el Client ID
+    `111768031245769195077`. Habilitar Admin SDK (`admin.googleapis.com`) + Licensing API por gcloud.
 - **Calendario público — agendar SIN cuenta + confidencialidad de eventos + arreglos UI (2026-07-15):**
   segunda pasada sobre `/calendario/[memberId]` (tras migrarlo a `.corp`). Cambios:
   - **Confidencialidad (libre/ocupado):** el endpoint público `GET /api/members/calendar/public/[memberId]`
