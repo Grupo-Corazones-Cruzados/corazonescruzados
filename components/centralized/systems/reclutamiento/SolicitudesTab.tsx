@@ -5,9 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
-import PixelInput from '@/components/ui/PixelInput';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
-import { buildUsername } from '@/lib/workspace/username';
 import {
   Inbox, Mail, Check, X, ShieldCheck, ShieldAlert, Megaphone, CalendarDays, UserPlus, Search, AtSign,
 } from 'lucide-react';
@@ -68,21 +66,12 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
 
   // Aprobación: abre un modal para fijar el usuario corporativo (nomenclatura).
   const [approving, setApproving] = useState<any | null>(null);
-  const [np, setNp] = useState({ firstName: '', secondName: '', firstSurname: '', secondSurname: '' });
   const [username, setUsername] = useState('');
-  const [userEdited, setUserEdited] = useState(false);
 
   const openApprove = (p: any) => {
-    setNp({ firstName: '', secondName: '', firstSurname: '', secondSurname: '' });
     setUsername('');
-    setUserEdited(false);
     setApproving(p);
   };
-
-  // Sugerir el usuario automáticamente al escribir los nombres (mientras no se edite a mano).
-  useEffect(() => {
-    if (approving && !userEdited) setUsername(buildUsername(np, 0));
-  }, [np, approving, userEdited]);
 
   const submitApprove = async () => {
     const p = approving;
@@ -227,15 +216,12 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
         <div className="space-y-4">
           <p className="text-[13px] text-digi-muted" style={mf}>
             Define el <strong>usuario corporativo</strong> del candidato <strong>{approving?.email}</strong>.
-            Se sugiere según la nomenclatura (inicial 1er nombre + inicial 2º nombre + 1er apellido +
-            inicial 2º apellido + número). Puedes editarlo; el sistema garantiza que sea único.
+            El candidato completará su nombre al crear su cuenta.
           </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <PixelInput label="PRIMER NOMBRE" value={np.firstName} onChange={(e) => setNp((s) => ({ ...s, firstName: e.target.value }))} placeholder="Luis" />
-            <PixelInput label="SEGUNDO NOMBRE" value={np.secondName} onChange={(e) => setNp((s) => ({ ...s, secondName: e.target.value }))} placeholder="Fernando" />
-            <PixelInput label="PRIMER APELLIDO" value={np.firstSurname} onChange={(e) => setNp((s) => ({ ...s, firstSurname: e.target.value }))} placeholder="González" />
-            <PixelInput label="SEGUNDO APELLIDO" value={np.secondSurname} onChange={(e) => setNp((s) => ({ ...s, secondSurname: e.target.value }))} placeholder="Muyulema" />
+          <div className="rounded-md border border-digi-border bg-digi-darker p-3 text-[12px] text-digi-muted leading-relaxed" style={mf}>
+            <strong className="text-digi-text">Nomenclatura sugerida:</strong> inicial del 1er nombre + inicial del 2º nombre +
+            1er apellido + inicial del 2º apellido + número. Ej.: <em>Luis Fernando González Muyulema → </em>
+            <span className="text-accent font-medium">lfgonzalezm0</span>. Si el usuario ya existe, el sistema usa el siguiente número.
           </div>
 
           <div>
@@ -245,7 +231,7 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
                 <AtSign className="w-4 h-4 text-digi-muted ml-2.5 shrink-0" />
                 <input
                   value={username}
-                  onChange={(e) => { setUserEdited(true); setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '')); }}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
                   className="field-control flex-1 bg-transparent border-0 px-2 py-1.5 text-[14px] text-digi-text focus:outline-none"
                   style={mf}
                   placeholder="lfgonzalezm0"
