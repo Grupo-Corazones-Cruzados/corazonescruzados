@@ -1,6 +1,8 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveWorkspaceEmail } from '@/lib/workspace/account';
+import { isGoogleWorkspaceConfigured, updateGoogleProfile } from '@/lib/integrations/google-workspace';
 
 function normalizeHandle(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
@@ -37,6 +39,20 @@ export async function PUT(req: NextRequest) {
       [first_name || null, last_name || null, phone || null, avatar_url || null,
        youtube, tiktok, instagram, facebook, user.userId]
     );
+
+    // Refleja nombre/teléfono en el perfil de Google (si tiene cuenta corporativa).
+    try {
+      const we = await resolveWorkspaceEmail(user.userId);
+      if (we && isGoogleWorkspaceConfigured()) {
+        await updateGoogleProfile(we, {
+          givenName: first_name || '',
+          familyName: last_name || '',
+          phone: phone || '',
+        });
+      }
+    } catch (e: any) {
+      console.error('Sync perfil → Google falló:', e?.response?.data ? JSON.stringify(e.response.data) : e?.message);
+    }
 
     return NextResponse.json({ message: 'Perfil actualizado' });
   } catch (err: any) {

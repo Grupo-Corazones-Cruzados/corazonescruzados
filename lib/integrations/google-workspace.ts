@@ -256,6 +256,58 @@ export async function deleteWorkspaceUser(email: string): Promise<void> {
   }
 }
 
+const b64ToUrl = (s: string) => s.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64UrlToStd = (s: string) => s.replace(/-/g, '+').replace(/_/g, '/');
+
+/** Empuja nombre/teléfono al perfil de Google (patch parcial). */
+export async function updateGoogleProfile(email: string, data: {
+  givenName?: string; familyName?: string; phone?: string;
+}): Promise<void> {
+  const dir = google.admin({ version: 'directory_v1', auth: getAuth([SCOPE_DIRECTORY]) });
+  const body: any = {};
+  if (data.givenName !== undefined || data.familyName !== undefined) {
+    body.name = {};
+    if (data.givenName !== undefined) body.name.givenName = data.givenName || '-';
+    if (data.familyName !== undefined) body.name.familyName = data.familyName || '-';
+  }
+  if (data.phone !== undefined) {
+    body.phones = data.phone ? [{ value: data.phone, type: 'work', primary: true }] : [];
+  }
+  if (Object.keys(body).length === 0) return;
+  await dir.users.patch({ userKey: email, requestBody: body });
+}
+
+/** Establece la foto de perfil de Google desde bytes de imagen. */
+export async function setGooglePhoto(email: string, imageBase64Std: string, mimeType: string): Promise<void> {
+  const dir = google.admin({ version: 'directory_v1', auth: getAuth([SCOPE_DIRECTORY]) });
+  await dir.users.photos.update({ userKey: email, requestBody: { photoData: b64ToUrl(imageBase64Std), mimeType } });
+}
+
+/** Lee el perfil de Google (nombre, teléfono) + la foto (base64 estándar), para traer a la app. */
+export async function getGoogleProfile(email: string): Promise<{
+  givenName: string | null; familyName: string | null; phone: string | null;
+  photoBase64Std: string | null; photoMime: string | null;
+}> {
+  const dir = google.admin({ version: 'directory_v1', auth: getAuth([SCOPE_DIRECTORY]) });
+  const u = (await dir.users.get({ userKey: email })).data;
+  const phones = (u.phones as any[]) || [];
+  const primaryPhone = phones.find((p) => p.primary)?.value || phones[0]?.value || null;
+  let photoBase64Std: string | null = null;
+  let photoMime: string | null = null;
+  try {
+    const ph = (await dir.users.photos.get({ userKey: email })).data;
+    if (ph.photoData) { photoBase64Std = b64UrlToStd(ph.photoData); photoMime = ph.mimeType || 'image/jpeg'; }
+  } catch (e: any) {
+    if ((e?.code || e?.response?.status) !== 404) throw e; // 404 = sin foto
+  }
+  return {
+    givenName: (u.name as any)?.givenName || null,
+    familyName: (u.name as any)?.familyName || null,
+    phone: primaryPhone,
+    photoBase64Std, photoMime,
+  };
+}
+
 /**
  * Cancela una reunión: borra el evento de Google Calendar de la cuenta organizadora
  * (con `sendUpdates:'all'` para notificar a los invitados). Esto quita el evento y su

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import SettingsPanel from '@/components/settings/SettingsPanel';
-import { User, Camera } from 'lucide-react';
+import { User, Camera, RefreshCw } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -23,7 +23,28 @@ export default function ProfilePanel() {
   const [facebook, setFacebook] = useState(user?.facebook_handle || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Trae nombre/teléfono/foto desde el perfil de Google del usuario.
+  const handleGoogleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/users/google-sync', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al sincronizar');
+      if (data.first_name != null) setFirstName(data.first_name);
+      if (data.last_name != null) setLastName(data.last_name);
+      if (data.phone != null) setPhone(data.phone);
+      if (data.avatar_url) setAvatarPreview(data.avatar_url);
+      await refreshUser();
+      toast.success('Sincronizado con Google');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al sincronizar');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,10 +118,17 @@ export default function ProfilePanel() {
             <p className="text-[13px] text-digi-text font-medium truncate" style={mf}>{user?.email}</p>
             <p className="text-[11px] text-digi-muted mb-2.5" style={mf}>ID: {user?.id?.slice(0, 8)}…</p>
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={handleAvatarUpload} className="hidden" />
-            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-50" style={mf}>
-              <Camera className="w-3.5 h-3.5" /> {uploading ? 'Subiendo...' : 'Cambiar foto'}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                className="inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-50" style={mf}>
+                <Camera className="w-3.5 h-3.5" /> {uploading ? 'Subiendo...' : 'Cambiar foto'}
+              </button>
+              <button type="button" onClick={handleGoogleSync} disabled={syncing}
+                className="inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-50" style={mf}
+                title="Traer nombre, teléfono y foto desde tu perfil de Google">
+                <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} /> {syncing ? 'Sincronizando...' : 'Sincronizar con Google'}
+              </button>
+            </div>
           </div>
         </div>
 

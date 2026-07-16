@@ -2,6 +2,8 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { uploadImage, cloudinaryConfigured } from '@/lib/cloudinary';
 import { NextResponse } from 'next/server';
+import { resolveWorkspaceEmail } from '@/lib/workspace/account';
+import { isGoogleWorkspaceConfigured, setGooglePhoto } from '@/lib/integrations/google-workspace';
 
 const MAX_SIZE = 2 * 1024 * 1024; // 2MB
 
@@ -42,6 +44,16 @@ export async function POST(req: Request) {
       `UPDATE gcc_world.users SET avatar_url = $1, updated_at = NOW() WHERE id = $2`,
       [avatarUrl, user.userId]
     );
+
+    // Refleja la foto en el perfil de Google del usuario (si tiene cuenta corporativa).
+    try {
+      const we = await resolveWorkspaceEmail(user.userId);
+      if (we && isGoogleWorkspaceConfigured()) {
+        await setGooglePhoto(we, buffer.toString('base64'), mimeMap[ext] || 'image/png');
+      }
+    } catch (e: any) {
+      console.error('Sync foto → Google falló:', e?.response?.data ? JSON.stringify(e.response.data) : e?.message);
+    }
 
     return NextResponse.json({ avatar_url: avatarUrl });
   } catch (err: any) {
