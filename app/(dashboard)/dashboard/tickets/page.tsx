@@ -261,8 +261,8 @@ export default function TicketsPage() {
                   <span className={`truncate text-[13px] font-medium ${selected?.id === t.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{t.title}</span>
                 </span>
               ) },
-              { key: 'client', header: 'Cliente', width: '160px', render: (t: any) => <span className="text-[12px] text-digi-text" style={mf}>{t.client_name || '—'}</span> },
-              { key: 'final_cost', header: 'Costo', width: '100px', render: (t: any) => {
+              { key: 'client', header: 'Cliente', width: '160px', hideOnMobile: true, render: (t: any) => <span className="text-[12px] text-digi-text" style={mf}>{t.client_name || '—'}</span> },
+              { key: 'final_cost', header: 'Costo', width: '100px', hideOnMobile: true, render: (t: any) => {
                 const v = t.invoice_total ?? t.estimated_cost;
                 return <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{v != null && v !== '' ? `$${fmt2(Number(v))}` : '—'}</span>;
               } },

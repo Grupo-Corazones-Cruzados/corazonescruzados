@@ -63,7 +63,7 @@ export default function DetailHeader({ breadcrumb, title, status, chips, actions
         </div>
 
         {(actions || hasOverflow) && (
-          <div className="flex items-center gap-2 shrink-0" ref={ref}>
+          <div className="flex flex-wrap items-center gap-2 justify-end" ref={ref}>
             {actions}
             {hasOverflow && (
               <div className="relative">

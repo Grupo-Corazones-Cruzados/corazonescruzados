@@ -10,6 +10,8 @@ interface Column<T> {
   width?: string;
   /** Si se define, la columna es ordenable por esta clave (clic en el encabezado). */
   sortKey?: string;
+  /** Oculta la columna en pantallas chicas (< 640px) para que la tabla quepa en móvil. */
+  hideOnMobile?: boolean;
 }
 
 interface PixelDataTableProps<T> {
@@ -102,7 +104,7 @@ export default function PixelDataTable<T>({
                 return (
                   <th
                     key={col.key}
-                    className={`dt-th sticky top-0 z-10 bg-digi-card border-b-2 border-digi-border px-3 py-2.5 text-left text-[9px] text-digi-muted uppercase tracking-wider ${singleLine ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}
+                    className={`dt-th sticky top-0 z-10 bg-digi-card border-b-2 border-digi-border px-3 py-2.5 text-left text-[9px] text-digi-muted uppercase tracking-wider ${singleLine ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''} ${col.hideOnMobile ? 'hidden sm:table-cell' : ''}`}
                     style={{ fontFamily: 'var(--font-display)', width: col.width }}
                   >
                     {sortable ? (
@@ -136,7 +138,7 @@ export default function PixelDataTable<T>({
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={`dt-td px-3 py-2.5 text-xs text-digi-text ${singleLine ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}
+                    className={`dt-td px-3 py-2.5 text-xs text-digi-text ${singleLine ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''} ${col.hideOnMobile ? 'hidden sm:table-cell' : ''}`}
                     style={{ fontFamily: 'var(--font-body)', width: singleLine ? col.width : undefined }}
                   >
                     {col.render(item)}
