@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { isGoogleWorkspaceConfigured, sendViaGmail } from "./google-workspace";
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -9,6 +10,23 @@ function getResend() {
 const FROM_EMAIL =
   process.env.EMAIL_FROM || "GCC World <noreply@gccworld.com>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3002";
+
+/**
+ * Envío de correo unificado. Preferimos la **Gmail API** (cuenta grupocc.org); si no
+ * está configurada o falla, caemos a **Resend** (respaldo durante la transición).
+ * Las funciones `send*` de abajo llaman a esto en vez de a Resend directamente.
+ */
+async function deliver(opts: { from?: string; to: string | string[]; subject: string; html: string }) {
+  const from = opts.from || FROM_EMAIL;
+  if (isGoogleWorkspaceConfigured()) {
+    try {
+      return await sendViaGmail({ from, to: opts.to, subject: opts.subject, html: opts.html });
+    } catch (e: any) {
+      console.error("Gmail send falló, fallback a Resend:", e?.message);
+    }
+  }
+  return getResend().emails.send({ from, to: opts.to as any, subject: opts.subject, html: opts.html });
+}
 
 /* ── Diseño de correos = tema corporativo `.corp` del /dashboard ──────────────────
  * Fondo claro, tarjeta blanca, tipografía Segoe UI (seria, NO videojuego), acento
@@ -111,7 +129,7 @@ export async function sendCharacterRecoveryCodeEmail(
     emailCodeBox(code) +
     emailNote('Si no fuiste tú, ignora este correo. Tu contraseña no ha cambiado.'),
   );
-  return getResend().emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to: email,
     subject: 'Código de acceso — GCC World',
@@ -131,7 +149,7 @@ export async function sendCharacterVerificationEmail(
     emailButton(url, 'Confirmar mi cuenta') +
     emailNote('Este enlace expira en 24 horas. Si no fuiste tú, puedes ignorar este correo.'),
   );
-  return getResend().emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to: email,
     subject: 'Confirma tu cuenta — GCC World',
@@ -150,7 +168,7 @@ export async function sendCandidateProposalVerificationEmail(
     emailButton(url, 'Verificar mi correo') +
     emailNote('Si no fuiste tú quien se postuló, puedes ignorar este correo.'),
   );
-  return getResend().emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to: email,
     subject: 'Verifica tu correo — Postulación GCC',
@@ -166,7 +184,7 @@ export async function sendCandidateApprovalEmail(email: string) {
     emailButton(url, 'Ir al sitio y continuar') +
     emailNote('Hasta que completes tu cuenta, tu postulación queda como una solicitud aprobada; no necesitas ninguna contraseña temporal.'),
   );
-  return getResend().emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to: email,
     subject: '¡Postulación aprobada! — GCC World',
@@ -195,7 +213,7 @@ export async function sendProjectClientInvitationEmail(params: {
     emailButton(url, 'Unirme a GCC World') +
     emailNote('Si no esperabas esta invitación, puedes ignorar este correo.'),
   );
-  return getResend().emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to: params.email,
     subject: `Te invitaron al proyecto "${params.projectTitle}" — GCC World`,
@@ -215,7 +233,7 @@ export async function sendVerificationEmail(
     emailButton(url, 'Verificar mi cuenta') +
     emailNote('Este enlace expira en 24 horas.'),
   );
-  return getResend().emails.send({ from: FROM_EMAIL, to: email, subject: "Verifica tu cuenta — GCC World", html });
+  return deliver({ from: FROM_EMAIL, to: email, subject: "Verifica tu cuenta — GCC World", html });
 }
 
 export type CalendarEmailAction = 'created' | 'updated' | 'deleted';
@@ -232,7 +250,7 @@ export async function sendCalendarSubscribeVerification(
     emailButton(url, 'Confirmar suscripción') +
     emailNote('Si no solicitaste esta suscripción, ignora este correo.'),
   );
-  return getResend().emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to: email,
     subject: `Confirma tu suscripción al calendario de ${memberName}`,
@@ -262,7 +280,7 @@ export async function sendCalendarEventNotification(params: {
     emailButton(publicUrl, 'Ver calendario'),
   );
 
-  return getResend().emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to: email,
     subject: `${actionTitle}: ${eventTitle} — ${memberName}`,
@@ -289,7 +307,7 @@ export async function sendProposalReceivedToMember(params: {
     emailButton(url, 'Revisar y responder') +
     emailNote(`${escapeHtml(clientName)} recibirá un correo automático con tu decisión.`, 'center'),
   );
-  return getResend().emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to: memberEmail,
     subject: `Propuesta de ${clientName}: ${eventTitle}`,
@@ -307,8 +325,9 @@ export async function sendProposalDecisionToClient(params: {
   eventEnd: Date;
   memberId: string;
   publicToken: string | null;
+  meetingUrl?: string | null;
 }) {
-  const { clientEmail, clientName, memberName, action, eventTitle, eventStart, eventEnd, memberId, publicToken } = params;
+  const { clientEmail, clientName, memberName, action, eventTitle, eventStart, eventEnd, memberId, publicToken, meetingUrl } = params;
   const accepted = action === 'accepted';
   const color = accepted ? CORP.success : CORP.danger;
   const label = accepted ? 'PROPUESTA ACEPTADA' : 'PROPUESTA RECHAZADA';
@@ -328,11 +347,14 @@ export async function sendProposalDecisionToClient(params: {
       : `<strong>${escapeHtml(memberName)}</strong> no pudo aceptar tu propuesta en este momento.`)) +
     emailInfoBox('FECHA Y HORA', range) +
     (accepted
-      ? emailButton(url, 'Ver calendario')
+      ? (meetingUrl
+          ? emailButton(meetingUrl, 'Unirse a la reunión (Google Meet)') +
+            emailNote(`Enlace de la reunión: <a href="${meetingUrl}" style="color:${CORP.accent};">${escapeHtml(meetingUrl)}</a><br/>También recibirás la invitación de calendario con este enlace.`, 'center')
+          : emailButton(url, 'Ver calendario'))
       : emailNote('Puedes intentar con otro horario desde el mismo enlace.', 'center')),
   );
 
-  return getResend().emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to: clientEmail,
     subject,
@@ -367,7 +389,7 @@ export async function sendPasswordResetEmail(
     emailButton(url, 'Restablecer contraseña') +
     emailNote('Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.'),
   );
-  return getResend().emails.send({ from: FROM_EMAIL, to: email, subject: "Restablecer contraseña — GCC World", html });
+  return deliver({ from: FROM_EMAIL, to: email, subject: "Restablecer contraseña — GCC World", html });
 }
 
 /* ── Helpers de diseño reusables para correos construidos en otras rutas

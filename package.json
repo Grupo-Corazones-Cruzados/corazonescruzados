@@ -27,6 +27,7 @@
     "dotenv": "^17.3.1",
     "ec-sri-invoice-signer": "^1.7.2",
     "framer-motion": "^11.15.0",
+    "googleapis": "^173.0.0",
     "jose": "^6.2.2",
     "lucide-react": "^0.468.0",
     "next": "^15.1.0",
