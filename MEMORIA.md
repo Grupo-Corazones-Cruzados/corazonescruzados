@@ -294,6 +294,24 @@ Stack estándar de la casa, con particularidades de este repo:
     Meet) con `sendUpdates:'all'`. Secretos (`GOOGLE_SA_KEY` JSON, `GOOGLE_MEET_ORGANIZER`) en `.env.local` +
     Railway, **NUNCA** en el repo/MEMORIA. Se guardará `meeting_url`/`meeting_provider` en `member_calendar_events`.
     **PENDIENTE de setup del usuario** (Workspace GCC + proyecto GCP + service account) antes de construir/probar.
+  - **SETUP hecho (2026-07-16):** dominio **`grupocc.org`** con **Google Workspace** (el correo se movió de Microsoft
+    365 a Gmail; DNS se administraba en M365 pero se logró apuntar MX a Google). Cuenta admin/emisora
+    **`lfgonzalezm0@grupocc.org`**. GCP proyecto **`grupo-corazones-cruzados`** (org **769172010311**). Service
+    account **`meet-creator@grupo-corazones-cruzados.iam.gserviceaccount.com`**, **Client ID `111768031245769195077`**.
+    Se sobrescribió el org-policy `iam.disableServiceAccountKeyCreation` (enforce=false a nivel proyecto) para poder
+    crear la clave. La **clave privada JSON** vive SOLO en `data/google-sa.json` (**gitignored**) + (a futuro) env de
+    Railway — NUNCA en el repo. Env locales: `GOOGLE_SA_KEY_PATH=./data/google-sa.json`,
+    `GOOGLE_WORKSPACE_ORGANIZER=lfgonzalezm0@grupocc.org`. `EMAIL_FROM` ya = `Corazones Cruzados <lfgonzalezm0@grupocc.org>`.
+    **También se decidió (2026-07-16)** migrar TODO el envío de correo de **Resend → Gmail API** (misma service account,
+    scope `gmail.send`, impersonando a `lfgonzalezm0@grupocc.org`); el módulo `lib/integrations/resend.ts` mantendrá su
+    API pública (mismas funciones/plantillas), solo cambia el transporte. Transición segura: Gmail principal + Resend
+    fallback hasta verificar en prod, luego se quita Resend (y del DNS: MX `send`/amazonses, `resend._domainkey`, y el
+    `include:amazonses.com` del SPF). Límite Gmail Workspace ~2.000 destinatarios/día.
+    **Delegación de dominio (browser):** Client ID `111768031245769195077` con scopes
+    `https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/gmail.send` en admin.google.com →
+    Seguridad → Control de APIs → Delegación de todo el dominio. **Falta:** autorizar la delegación + activar grabación
+    de Meet (Admin console), luego construir `lib/integrations/google-meet.ts` + swap de correo a Gmail + `meeting_url`/
+    `meeting_provider` en `member_calendar_events` + enganche en aceptar propuesta, y probar en vivo.
   - **DB:** `member_calendar_events` ganó `guest_email`/`guest_name` (TEXT, `ADD COLUMN IF NOT EXISTS` vía
     `lib/calendar/guest.ts` → `ensureCalendarGuestColumns()`, promise singleton). El endpoint `propose` inserta
     con `created_by=NULL` + `guest_email/guest_name`; `proposals` (lista) y `proposals/[eventId]` (decisión)
