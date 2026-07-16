@@ -276,11 +276,11 @@ export default function ProjectsPage() {
                   <span className={`truncate text-[13px] font-medium ${selected?.id === p.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.title}</span>
                 </span>
               ) },
-              { key: 'client', header: 'Cliente', width: '150px', render: (p: any) => <span className="text-[12px] text-digi-text" style={mf}>{p.client_name || '—'}</span> },
-              { key: 'budget', header: 'Presupuesto', width: '130px', render: (p: any) => (
+              { key: 'client', header: 'Cliente', width: '150px', hideOnMobile: true, render: (p: any) => <span className="text-[12px] text-digi-text" style={mf}>{p.client_name || '—'}</span> },
+              { key: 'budget', header: 'Presupuesto', width: '130px', hideOnMobile: true, render: (p: any) => (
                 <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{p.budget_min ? `$${p.budget_min}${p.budget_max ? `–${p.budget_max}` : ''}` : '—'}</span>
               ) },
-              { key: 'final_cost', header: 'Costo final', width: '110px', render: (p: any) => (
+              { key: 'final_cost', header: 'Costo final', width: '110px', hideOnMobile: true, render: (p: any) => (
                 <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{p.final_cost ? `$${fmt2(Number(p.final_cost))}` : '—'}</span>
               ) },
               { key: 'deadline', header: 'Límite', width: '110px', render: (p: any) => (
