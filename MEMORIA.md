@@ -318,9 +318,21 @@ Stack estándar de la casa, con particularidades de este repo:
     Verificado en vivo: Gmail (con acentos) + Meet reales creados/borrados; tsc+build; migración/UPDATE en BD (ROLLBACK).
   - **PENDIENTE producción (Railway):** agregar env vars **`GOOGLE_SA_KEY`** (el JSON completo de `data/google-sa.json`
     en una línea) y **`GOOGLE_WORKSPACE_ORGANIZER=lfgonzalezm0@grupocc.org`**. Sin ellas, prod sigue con Resend
-    (fallback). Luego: verificar el flujo real desde la UI (proponer→aceptar→llega correo+Meet), activar **grabación de
-    Meet** en Admin si falta, y —una vez confirmado Gmail en prod— **quitar Resend** (código + DNS: MX `send`/amazonses,
+    (fallback). Luego: —una vez confirmado Gmail en prod— **quitar Resend** (código + DNS: MX `send`/amazonses,
     `resend._domainkey`, `include:amazonses.com` del SPF).
+  - **Auto-grabación/transcripción/notas (2026-07-16):** `createMeetEvent` crea el espacio con la **Google Meet API**
+    (`meet.spaces.create`, `config.artifactConfig`: recording/transcription/**smartNotes** autoGeneration=ON — el plan
+    de GCC soporta las tres, incl. notas Gemini) y lo **adjunta** al evento de Calendar (conferenceData importada →
+    Meet nativo). Así graba/transcribe/toma-notas **solo** al iniciar (cuando entra un participante con licencia del
+    dominio, p. ej. el miembro). Requiere scope `meetings.space.created` (ya delegado) + Meet API habilitada. Fallback a
+    Meet estándar si falla. Los artefactos quedan en el Drive de la cuenta organizadora.
+  - **Enlace de reunión en "Mi día" (2026-07-16):** el GET de eventos devuelve `meeting_url`/`meeting_provider` y
+    `EventModal` muestra un banner "Enlace de la reunión" (Unirse a Meet + copiar) en el evento aceptado.
+  - **UX calendario público (2026-07-16):** clic en zona libre de la grilla abre "Agendar espacio" con esa hora
+    prellenada; los **horarios ocupados se bloquean** en el form (aviso + submit deshabilitado, vía `isBusy`); se quitó
+    el banner de zona horaria; el visitante puede **cancelar su reserva propia** de la sesión (clic → detalle real +
+    "Cancelar reserva" → `DELETE /propose` con token+eventId+guest_email; solo borra `proposed` que coincidan); los
+    bloques "Ocupado" del miembro no abren detalle (confidencial).
   - **DB:** `member_calendar_events` ganó `guest_email`/`guest_name` (TEXT, `ADD COLUMN IF NOT EXISTS` vía
     `lib/calendar/guest.ts` → `ensureCalendarGuestColumns()`, promise singleton). El endpoint `propose` inserta
     con `created_by=NULL` + `guest_email/guest_name`; `proposals` (lista) y `proposals/[eventId]` (decisión)
