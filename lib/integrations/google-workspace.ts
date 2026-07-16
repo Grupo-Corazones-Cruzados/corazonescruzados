@@ -23,6 +23,7 @@ const ORGANIZER = process.env.GOOGLE_WORKSPACE_ORGANIZER || '';
 
 const SCOPE_GMAIL = 'https://www.googleapis.com/auth/gmail.send';
 const SCOPE_CALENDAR = 'https://www.googleapis.com/auth/calendar';
+const SCOPE_MEET = 'https://www.googleapis.com/auth/meetings.space.created';
 
 type SAKey = { client_email: string; private_key: string };
 
@@ -133,10 +134,41 @@ export async function createMeetEvent(opts: {
   timezone: string;
   attendees: { email: string; name?: string | null }[];
 }): Promise<{ meetUrl: string | null; eventId: string | null; htmlLink: string | null }> {
-  const auth = getAuth([SCOPE_CALENDAR]);
-  const cal = google.calendar({ version: 'v3', auth });
-  const requestId = `gcc-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  const cal = google.calendar({ version: 'v3', auth: getAuth([SCOPE_CALENDAR]) });
 
+  // 1) Crear el ESPACIO de Meet con AUTO-grabación + transcripción + notas (Gemini).
+  //    Así la reunión se graba y transcribe sola al iniciar (cuando entra un participante
+  //    con licencia del dominio, p. ej. el miembro). Si falla (licencia/API), caemos a un
+  //    Meet estándar creado por el propio evento (sin auto-grabación).
+  let conferenceData: any = null;
+  let meetUri: string | null = null;
+  try {
+    const meet = google.meet({ version: 'v2', auth: getAuth([SCOPE_MEET]) });
+    const space = (await meet.spaces.create({
+      requestBody: {
+        config: {
+          accessType: 'OPEN',
+          artifactConfig: {
+            recordingConfig: { autoRecordingGeneration: 'ON' },
+            transcriptionConfig: { autoTranscriptionGeneration: 'ON' },
+            smartNotesConfig: { autoSmartNotesGeneration: 'ON' },
+          },
+        },
+      },
+    })).data;
+    meetUri = space.meetingUri || null;
+    if (meetUri && space.meetingCode) {
+      conferenceData = {
+        conferenceId: space.meetingCode,
+        conferenceSolution: { key: { type: 'hangoutsMeet' }, name: 'Google Meet' },
+        entryPoints: [{ entryPointType: 'video', uri: meetUri, label: meetUri }],
+      };
+    }
+  } catch (e: any) {
+    console.error('Meet space (auto-grabación) error, uso Meet estándar:', e?.response?.data ? JSON.stringify(e.response.data) : e.message);
+  }
+
+  const requestId = `gcc-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
   const res = await cal.events.insert({
     calendarId: 'primary',
     conferenceDataVersion: 1,
@@ -149,14 +181,15 @@ export async function createMeetEvent(opts: {
       attendees: opts.attendees
         .filter((a) => a.email)
         .map((a) => ({ email: a.email, displayName: a.name || undefined })),
-      conferenceData: {
+      // Adjunta el espacio con auto-grabación; si no se pudo crear, Meet estándar.
+      conferenceData: conferenceData || {
         createRequest: { requestId, conferenceSolutionKey: { type: 'hangoutsMeet' } },
       },
     },
   });
 
   return {
-    meetUrl: res.data.hangoutLink || null,
+    meetUrl: res.data.hangoutLink || meetUri,
     eventId: res.data.id || null,
     htmlLink: res.data.htmlLink || null,
   };
