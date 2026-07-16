@@ -293,9 +293,9 @@ export default function SubscriptionsPage() {
                       </span>
                     );
                   } },
-                  { key: 'title', header: 'Razón / Título', render: (s: any) => <span className="text-[12px] text-digi-text" style={mf}>{s.title}</span> },
+                  { key: 'title', header: 'Razón / Título', hideOnMobile: true, render: (s: any) => <span className="text-[12px] text-digi-text" style={mf}>{s.title}</span> },
                   { key: 'cost', header: 'Costo', width: '100px', render: (s: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${fmt2(Number(s.monthly_cost))}</span> },
-                  { key: 'next', header: 'Próximo cobro', width: '200px', render: (s: any) => {
+                  { key: 'next', header: 'Próximo cobro', width: '200px', hideOnMobile: true, render: (s: any) => {
                     if (s.status === 'cancelled') return <span className="text-digi-muted/50 text-[12px]">—</span>;
                     if (!s.next_due) return <span className="text-green-600 text-[12px] font-medium" style={mf}>Al día</span>;
                     return (
@@ -305,7 +305,7 @@ export default function SubscriptionsPage() {
                       </div>
                     );
                   } },
-                  { key: 'paid', header: 'Pagados', width: '90px', render: (s: any) => (
+                  { key: 'paid', header: 'Pagados', width: '90px', hideOnMobile: true, render: (s: any) => (
                     <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{s.paid_count}/{s.total_periods}</span>
                   ) },
                 ]}
@@ -461,7 +461,7 @@ export default function SubscriptionsPage() {
 
           <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-2" style={mf}>Suscripción</h4>
           <PixelInput label="Razón / Título del cobro *" value={cTitle} onChange={e => setCTitle(e.target.value)} placeholder="Ej. Mantenimiento mensual del sitio web" />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <PixelInput label="Costo mensual ($) *" type="number" value={cCost} onChange={e => setCCost(e.target.value)} placeholder="0.00" />
               <span className="text-[11px] text-digi-muted block mt-0.5" style={mf}>Valor neto · sin IVA</span>
