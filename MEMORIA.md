@@ -278,9 +278,22 @@ Stack estándar de la casa, con particularidades de este repo:
     real (solo lo ve quien lo creó); **al recargar** el endpoint lo devuelve como "Ocupado". Por eso
     `submitProposal` **ya no llama `load()`**: hace append optimista.
   - **Agendar anónimo (sin login):** se quitó el gate de sesión. El botón "Registrarse para agendar" es ahora
-    **"Agendar espacio"** y abre el `ProposalModal`, que pide **nombre (opcional) + correo (requerido)**. La
-    idea futura: cada miembro asociará una **cuenta de Gmail** para auto-crear **Google Meet** invitando al
-    correo del visitante (pendiente, no implementado). El correo se guarda ya.
+    **"Agendar espacio"** y abre el `ProposalModal`, que pide **nombre (opcional) + correo (requerido)**. El
+    correo se guarda ya (`guest_email`) para el flujo de reunión automática (abajo).
+  - **DECISIÓN reunión/grabación (2026-07-15): GCC ANFITRIÓN CENTRAL en Google Meet.** Cuando el miembro
+    **acepta** una propuesta, se creará automáticamente una reunión **Google Meet** bajo una **cuenta
+    organizadora única de GCC** (Google Workspace de pago, Business Standard+), invitando al **miembro** (con su
+    Gmail/Outlook existente) y al **correo del visitante**; el enlace Meet va en el correo de aceptación. Motivos:
+    Meet da **acceso por navegador sin app ni cuenta** al visitante, y centralizar el hosting en GCC garantiza la
+    **grabación** (va al Drive de GCC) **sin que los miembros necesiten cuenta nueva ni licencia de pago**.
+    Se descartó Teams (empuja a app/cuenta Outlook) y el enfoque por-cuenta-de-miembro + bot grabador (más costo/
+    complejidad). **Ojo clave a verificar:** que la reunión se **auto-grabe** aunque el miembro no pertenezca a la
+    org de GCC (cuenta organizadora de GCC como host/co-organizador, o auto-record por Admin/Meet API).
+    **Implementación técnica prevista:** service account de GCP con **domain-wide delegation** que impersona a la
+    cuenta organizadora e inserta el evento vía **Google Calendar API** (`conferenceData.createRequest` → link
+    Meet) con `sendUpdates:'all'`. Secretos (`GOOGLE_SA_KEY` JSON, `GOOGLE_MEET_ORGANIZER`) en `.env.local` +
+    Railway, **NUNCA** en el repo/MEMORIA. Se guardará `meeting_url`/`meeting_provider` en `member_calendar_events`.
+    **PENDIENTE de setup del usuario** (Workspace GCC + proyecto GCP + service account) antes de construir/probar.
   - **DB:** `member_calendar_events` ganó `guest_email`/`guest_name` (TEXT, `ADD COLUMN IF NOT EXISTS` vía
     `lib/calendar/guest.ts` → `ensureCalendarGuestColumns()`, promise singleton). El endpoint `propose` inserta
     con `created_by=NULL` + `guest_email/guest_name`; `proposals` (lista) y `proposals/[eventId]` (decisión)
