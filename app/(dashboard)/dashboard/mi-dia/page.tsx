@@ -42,6 +42,17 @@ interface Horario { subject: { kind: string; id: string } | null; tasks: HTask[]
  */
 export default function MiDiaPage() {
   const [view, setView] = useState<CalendarViewMode>('month');
+  // En pantallas chicas se usa siempre la vista de DÍA (la grilla de 7 días queda muy
+  // apretada en móvil); los botones Mes/Semana solo aparecen si la pantalla lo permite.
+  const [allowMultiView, setAllowMultiView] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const apply = () => setAllowMultiView(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  useEffect(() => { if (!allowMultiView) setView('day'); }, [allowMultiView]);
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [clients, setClients] = useState<ClientOption[]>([]);
@@ -319,12 +330,14 @@ export default function MiDiaPage() {
               </div>
               <span className="text-[15px] font-semibold text-digi-text capitalize ml-1" style={mf}>{label}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
-                {VIEWS.map((v) => (
-                  <button key={v.value} onClick={() => setView(v.value)} className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`} style={mf}>{v.label}</button>
-                ))}
-              </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {allowMultiView && (
+                <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
+                  {VIEWS.map((v) => (
+                    <button key={v.value} onClick={() => setView(v.value)} className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`} style={mf}>{v.label}</button>
+                  ))}
+                </div>
+              )}
               <div className="inline-flex items-center gap-1.5 rounded-md border border-digi-border pl-2.5 pr-1.5 py-1" title="Tu disponibilidad">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[availability].color }} />
                 <select value={availability} disabled={savingAvail} onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)} className="bg-transparent text-[12.5px] text-digi-text focus:outline-none cursor-pointer disabled:opacity-50" style={mf} aria-label="Disponibilidad">
