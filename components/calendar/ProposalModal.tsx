@@ -8,7 +8,6 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Send, X, AlertTriangle, Crosshair } from 'lucide-react';
 import { DAY_LABELS_ES_SHORT } from '@/lib/calendar/recurrence';
 
-const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export type ProposalRecurrence = 'none' | 'weekly';
@@ -63,14 +62,21 @@ function detectTz(): string {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || MEMBER_TZ; } catch { return MEMBER_TZ; }
 }
 
+// Convierte una hora de pared en la zona `tz` a UTC, de forma INDEPENDIENTE de la zona
+// horaria del navegador (usa Intl.formatToParts, no `new Date(string)`).
 function zonedWallclockToUTC(dateStr: string, timeStr: string, tz: string): Date {
   const [y, mo, d] = dateStr.split('-').map(Number);
   const [h, mi] = timeStr.split(':').map(Number);
   if (!y || !mo || !d || Number.isNaN(h) || Number.isNaN(mi)) return new Date(NaN);
-  const utcGuess = new Date(Date.UTC(y, mo - 1, d, h, mi));
-  const asTz = new Date(utcGuess.toLocaleString('en-US', { timeZone: tz }));
-  const offset = utcGuess.getTime() - asTz.getTime();
-  return new Date(utcGuess.getTime() + offset);
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  const p = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(guess));
+  const g = (t: string) => Number(p.find((x) => x.type === t)?.value ?? 0);
+  const asUTC = Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second'));
+  const tzOffset = asUTC - guess; // offset de `tz` en ese instante
+  return new Date(guess - tzOffset);
 }
 
 function formatInTz(d: Date, tz: string): string {
@@ -96,7 +102,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
   const [guestEmail, setGuestEmail] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState<string>(() => todayInTz(detectTz()));
+  const [date, setDate] = useState<string>(() => todayInTz(MEMBER_TZ));
   const [startTime, setStartTime] = useState<string>('10:00');
   const [endTime, setEndTime] = useState<string>('11:00');
   const [tz, setTz] = useState<string>(() => detectTz());
@@ -123,7 +129,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
       const e2 = new Date(s.getTime() + 60 * 60 * 1000);
       setEndTime(`${pad2(e2.getHours())}:${pad2(e2.getMinutes())}`);
     } else {
-      setDate(todayInTz(detected));
+      setDate(todayInTz(MEMBER_TZ));
       setStartTime('10:00');
       setEndTime('11:00');
     }
@@ -138,8 +144,10 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
     }
   }, [open, initialStart]);
 
-  const startUTC = useMemo(() => zonedWallclockToUTC(date, startTime, tz), [date, startTime, tz]);
-  const endUTC = useMemo(() => zonedWallclockToUTC(date, endTime, tz), [date, endTime, tz]);
+  // La FECHA/INICIO/FIN se interpretan SIEMPRE en horario del miembro (Ecuador GMT-5).
+  // La zona del visitante solo se usa para mostrarle la equivalencia ("Tu horario").
+  const startUTC = useMemo(() => zonedWallclockToUTC(date, startTime, MEMBER_TZ), [date, startTime]);
+  const endUTC = useMemo(() => zonedWallclockToUTC(date, endTime, MEMBER_TZ), [date, endTime]);
 
   // Choque con un espacio ocupado del calendario del miembro (aviso en vivo + bloqueo).
   const slotBusy = useMemo(() => {
@@ -205,7 +213,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <PixelInput
-            label="TU NOMBRE (OPCIONAL)"
+            label="TU NOMBRE"
             value={guestName}
             onChange={(e) => setGuestName(e.target.value)}
             placeholder="Nombre y apellido"
@@ -235,6 +243,10 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
             className="field-control w-full mt-1 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none"
             style={mf}
           />
+        </div>
+
+        <div className="text-[12px] font-medium text-accent" style={mf}>
+          Fecha y hora en horario del miembro · Ecuador (GMT-5)
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -283,15 +295,15 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px]">
+          <div className="rounded-lg border border-accent bg-accent-light p-3 space-y-1" style={mf}>
+            <div className="text-accent text-[12px] font-medium">Horario del miembro · Ecuador (GMT-5)</div>
+            <div className="text-digi-text">Inicio: {formatInTz(startUTC, MEMBER_TZ)}</div>
+            <div className="text-digi-text">Fin: {formatInTz(endUTC, MEMBER_TZ)}</div>
+          </div>
           <div className="rounded-lg border border-digi-border bg-digi-darker p-3 space-y-1" style={mf}>
             <div className="text-digi-muted text-[12px] font-medium">Tu horario ({tz})</div>
             <div className="text-digi-text">Inicio: {formatInTz(startUTC, tz)}</div>
             <div className="text-digi-text">Fin: {formatInTz(endUTC, tz)}</div>
-          </div>
-          <div className="rounded-lg border border-accent bg-accent-light p-3 space-y-1" style={mf}>
-            <div className="text-accent text-[12px] font-medium">Horario del miembro (Ecuador GMT-5)</div>
-            <div className="text-digi-text">Inicio: {formatInTz(startUTC, MEMBER_TZ)}</div>
-            <div className="text-digi-text">Fin: {formatInTz(endUTC, MEMBER_TZ)}</div>
           </div>
         </div>
 

@@ -24,6 +24,19 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 // Color neutro de los bloques "Ocupado" (coincide con el del endpoint público).
 const BUSY_COLOR = '#64748b';
 
+const MEMBER_TZ = 'America/Guayaquil';
+
+// Devuelve un Date cuya hora LOCAL coincide con la hora de Ecuador del instante dado.
+// Sirve para "forzar" que la grilla (que pinta con hora local) muestre horario de Ecuador.
+function toEcuadorClock(d: Date): Date {
+  const p = new Intl.DateTimeFormat('en-US', {
+    timeZone: MEMBER_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  }).formatToParts(d);
+  const g = (t: string) => Number(p.find((x) => x.type === t)?.value ?? 0);
+  return new Date(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second'));
+}
+
 const VIEWS: { value: CalendarViewMode; label: string }[] = [
   { value: 'month', label: 'Mes' }, { value: 'week', label: 'Semana' }, { value: 'day', label: 'Día' },
 ];
@@ -133,7 +146,15 @@ export default function PublicCalendarPage() {
   };
 
   // Clic en la grilla (zona libre) → abre el formulario con esa fecha/hora prellenada.
-  const onGridClick = (date: Date) => { setProposalStart(date); setProposalOpen(true); };
+  const onGridClick = (date: Date) => {
+    // La grilla ya muestra horario de Ecuador; las partes locales del clic representan esa
+    // hora, que el formulario interpreta como Ecuador. En vista Mes (clic de día a medianoche)
+    // se usa una hora por defecto razonable.
+    const d = new Date(date);
+    if (view === 'month') d.setHours(10, 0, 0, 0);
+    setProposalStart(d);
+    setProposalOpen(true);
+  };
 
   // ¿El rango [startMs,endMs) choca con algún evento del miembro? (para bloquear en el form)
   const isBusy = useCallback((startMs: number, endMs: number) => {
@@ -221,6 +242,15 @@ export default function PublicCalendarPage() {
   }, [view, currentDate]);
 
   const instances = useMemo(() => expandEvents(events, range.s, range.e), [events, range]);
+
+  // El calendario público SIEMPRE se muestra en horario del miembro (Ecuador, GMT-5),
+  // independientemente de la zona del visitante. Para lograrlo sin tocar el componente
+  // compartido, se "desplazan" las instancias para que su hora local coincida con la de
+  // Ecuador (así la grilla, que pinta con la hora local del navegador, muestra Ecuador).
+  const displayInstances = useMemo(
+    () => instances.map((i) => ({ ...i, instanceStart: toEcuadorClock(i.instanceStart), instanceEnd: toEcuadorClock(i.instanceEnd) })),
+    [instances],
+  );
 
   const goPrev = () => {
     const d = new Date(currentDate);
@@ -340,7 +370,7 @@ export default function PublicCalendarPage() {
             <CalendarView
               view={view}
               currentDate={currentDate}
-              instances={instances}
+              instances={displayInstances}
               onDayClick={onGridClick}
               onEventClick={onEventClick}
             />
