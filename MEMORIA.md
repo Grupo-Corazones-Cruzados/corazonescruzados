@@ -307,11 +307,20 @@ Stack estándar de la casa, con particularidades de este repo:
     API pública (mismas funciones/plantillas), solo cambia el transporte. Transición segura: Gmail principal + Resend
     fallback hasta verificar en prod, luego se quita Resend (y del DNS: MX `send`/amazonses, `resend._domainkey`, y el
     `include:amazonses.com` del SPF). Límite Gmail Workspace ~2.000 destinatarios/día.
-    **Delegación de dominio (browser):** Client ID `111768031245769195077` con scopes
-    `https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/gmail.send` en admin.google.com →
-    Seguridad → Control de APIs → Delegación de todo el dominio. **Falta:** autorizar la delegación + activar grabación
-    de Meet (Admin console), luego construir `lib/integrations/google-meet.ts` + swap de correo a Gmail + `meeting_url`/
-    `meeting_provider` en `member_calendar_events` + enganche en aceptar propuesta, y probar en vivo.
+    **Delegación de dominio:** Client ID `111768031245769195077` con scopes
+    `.../auth/calendar,.../auth/gmail.send` — **AUTORIZADA (2026-07-16)**.
+  - **CONSTRUIDO Y VERIFICADO (2026-07-16):** `lib/integrations/google-workspace.ts`
+    (`isGoogleWorkspaceConfigured`, `sendViaGmail`, `createMeetEvent`; clave desde `GOOGLE_SA_KEY` JSON-env en prod o
+    `GOOGLE_SA_KEY_PATH` archivo en local). El correo (`lib/integrations/resend.ts`) ahora envía por **Gmail** vía
+    `deliver()` con **Resend de respaldo** (mismas funciones/plantillas). Al **aceptar** una propuesta
+    (`proposals/[eventId]`) se crea el **Meet**, se guarda `meeting_url`/`meeting_provider` (nuevas columnas) y el enlace
+    va en el correo de decisión + invitación de calendario (invita a visitante + miembro). Dep `googleapis@173`.
+    Verificado en vivo: Gmail (con acentos) + Meet reales creados/borrados; tsc+build; migración/UPDATE en BD (ROLLBACK).
+  - **PENDIENTE producción (Railway):** agregar env vars **`GOOGLE_SA_KEY`** (el JSON completo de `data/google-sa.json`
+    en una línea) y **`GOOGLE_WORKSPACE_ORGANIZER=lfgonzalezm0@grupocc.org`**. Sin ellas, prod sigue con Resend
+    (fallback). Luego: verificar el flujo real desde la UI (proponer→aceptar→llega correo+Meet), activar **grabación de
+    Meet** en Admin si falta, y —una vez confirmado Gmail en prod— **quitar Resend** (código + DNS: MX `send`/amazonses,
+    `resend._domainkey`, `include:amazonses.com` del SPF).
   - **DB:** `member_calendar_events` ganó `guest_email`/`guest_name` (TEXT, `ADD COLUMN IF NOT EXISTS` vía
     `lib/calendar/guest.ts` → `ensureCalendarGuestColumns()`, promise singleton). El endpoint `propose` inserta
     con `created_by=NULL` + `guest_email/guest_name`; `proposals` (lista) y `proposals/[eventId]` (decisión)
