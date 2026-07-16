@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { hashPassword } from '@/lib/auth/password';
 import { grantCandidateDashboardSession } from '@/lib/auth/candidateSession';
+import { isGoogleWorkspaceConfigured, createWorkspaceUser } from '@/lib/integrations/google-workspace';
 import {
   AUTH_COOKIE,
   AUTH_COOKIE_MAX_AGE,
@@ -67,7 +68,11 @@ export async function POST(req: Request) {
     const authToken = randomBytes(32).toString('hex');
 
     await pool.query(
-      `ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false`,
+      `ALTER TABLE gcc_world.clients
+         ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false,
+         ADD COLUMN IF NOT EXISTS workspace_username text,
+         ADD COLUMN IF NOT EXISTS workspace_email text,
+         ADD COLUMN IF NOT EXISTS workspace_created_at timestamptz`,
     );
     await pool.query(
       `UPDATE gcc_world.clients
@@ -93,6 +98,32 @@ export async function POST(req: Request) {
         row.id,
       ],
     );
+
+    // Cuenta corporativa: al crear su cuenta, si el aprobador le asignó un usuario
+    // (workspace_email) y aún no se creó la cuenta de Google, se crea ahora en la unidad
+    // "Candidatos". No bloquea el flujo si Google falla o no está configurado.
+    try {
+      if (isGoogleWorkspaceConfigured()) {
+        const wr = await pool.query(
+          `SELECT workspace_email, workspace_created_at FROM gcc_world.clients WHERE id = $1`,
+          [row.id],
+        );
+        const ws = wr.rows[0];
+        if (ws?.workspace_email && !ws.workspace_created_at) {
+          const created = await createWorkspaceUser({
+            email: ws.workspace_email,
+            fullName: typeof fullName === 'string' ? fullName.trim() : '',
+          });
+          await pool.query(
+            `UPDATE gcc_world.clients SET workspace_created_at = NOW() WHERE id = $1`,
+            [row.id],
+          );
+          console.log('Workspace account:', created.created ? 'creada' : 'ya existía', created.email);
+        }
+      }
+    } catch (e) {
+      console.error('Crear cuenta corporativa (complete-profile) falló:', e);
+    }
 
     // Migración propuesta → candidato finalizada: se elimina la propuesta.
     if (row.email) {

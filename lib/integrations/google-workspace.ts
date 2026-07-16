@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { randomBytes } from 'crypto';
 import { google } from 'googleapis';
 
 // Tipo del cliente JWT tal como lo produce `googleapis` (evita el conflicto con la
@@ -24,6 +25,11 @@ const ORGANIZER = process.env.GOOGLE_WORKSPACE_ORGANIZER || '';
 const SCOPE_GMAIL = 'https://www.googleapis.com/auth/gmail.send';
 const SCOPE_CALENDAR = 'https://www.googleapis.com/auth/calendar';
 const SCOPE_MEET = 'https://www.googleapis.com/auth/meetings.space.created';
+const SCOPE_DIRECTORY = 'https://www.googleapis.com/auth/admin.directory.user';
+
+// Unidad organizativa donde viven las cuentas de candidatos/miembros (para excluirla de
+// la asignación automática de licencias → cuentas gratis Cloud Identity, cuando aplique).
+export const CANDIDATES_OU = '/Candidatos';
 
 type SAKey = { client_email: string; private_key: string };
 
@@ -193,6 +199,61 @@ export async function createMeetEvent(opts: {
     eventId: res.data.id || null,
     htmlLink: res.data.htmlLink || null,
   };
+}
+
+/** Contraseña aleatoria fuerte para la cuenta inicial (el usuario la cambia al ingresar). */
+function randomPassword(): string {
+  return 'Gcc-' + randomBytes(12).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 14) + '9x';
+}
+
+function splitFullName(fullName: string): { givenName: string; familyName: string } {
+  const parts = (fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { givenName: 'Miembro', familyName: 'GCC' };
+  if (parts.length === 1) return { givenName: parts[0], familyName: parts[0] };
+  return { givenName: parts[0], familyName: parts.slice(1).join(' ') };
+}
+
+/**
+ * Crea la cuenta corporativa `usuario@grupocc.org` en la unidad organizativa de
+ * candidatos. Devuelve `created:false` si ya existía (409). La cuenta se crea con
+ * contraseña aleatoria y `changePasswordAtNextLogin`.
+ */
+export async function createWorkspaceUser(opts: {
+  email: string;
+  fullName?: string;
+  orgUnitPath?: string;
+}): Promise<{ email: string; id: string | null; created: boolean; password?: string }> {
+  const dir = google.admin({ version: 'directory_v1', auth: getAuth([SCOPE_DIRECTORY]) });
+  const { givenName, familyName } = splitFullName(opts.fullName || opts.email.split('@')[0]);
+  const password = randomPassword();
+  try {
+    const res = await dir.users.insert({
+      requestBody: {
+        primaryEmail: opts.email,
+        name: { givenName, familyName },
+        password,
+        changePasswordAtNextLogin: true,
+        orgUnitPath: opts.orgUnitPath || CANDIDATES_OU,
+      },
+    });
+    return { email: res.data.primaryEmail || opts.email, id: res.data.id || null, created: true, password };
+  } catch (e: any) {
+    const code = e?.code || e?.response?.status;
+    if (code === 409) return { email: opts.email, id: null, created: false };
+    throw e;
+  }
+}
+
+/** Elimina una cuenta corporativa (idempotente ante 404). */
+export async function deleteWorkspaceUser(email: string): Promise<void> {
+  const dir = google.admin({ version: 'directory_v1', auth: getAuth([SCOPE_DIRECTORY]) });
+  try {
+    await dir.users.delete({ userKey: email });
+  } catch (e: any) {
+    const code = e?.code || e?.response?.status;
+    if (code === 404) return;
+    throw e;
+  }
 }
 
 /**
