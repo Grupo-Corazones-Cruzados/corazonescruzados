@@ -124,6 +124,41 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
   }
 }
 
+/**
+ * Cancelar una propuesta PROPIA aún pendiente (el visitante externo, sin cuenta, cancela
+ * la reserva que acaba de crear en su sesión). Requiere el token del enlace + el id del
+ * evento + el correo con el que se creó (solo borra propuestas `proposed` que coincidan).
+ */
+export async function DELETE(req: NextRequest, ctx: RouteCtx) {
+  try {
+    const { memberId } = await ctx.params;
+    const body = await req.json().catch(() => ({}));
+    const token = String(body.token || '').trim();
+    const eventId = String(body.eventId || '').trim();
+    const guestEmail = String(body.guest_email || '').trim().toLowerCase();
+    if (!token) return NextResponse.json({ error: 'Token requerido' }, { status: 401 });
+    if (!eventId || !guestEmail) return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
+
+    const memberRes = await pool.query(
+      `SELECT id FROM gcc_world.members WHERE id = $1 AND calendar_public_token = $2 LIMIT 1`,
+      [memberId, token],
+    );
+    if (!memberRes.rows[0]) return NextResponse.json({ error: 'Enlace inválido' }, { status: 404 });
+
+    await ensureCalendarGuestColumns();
+    const del = await pool.query(
+      `DELETE FROM gcc_world.member_calendar_events
+        WHERE id = $1 AND member_id = $2 AND status = 'proposed' AND lower(guest_email) = $3`,
+      [eventId, memberId, guestEmail],
+    );
+    if (!del.rowCount) return NextResponse.json({ error: 'No se encontró la reserva para cancelar' }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error('Propose DELETE error:', err.message);
+    return NextResponse.json({ error: 'Error al cancelar' }, { status: 500 });
+  }
+}
+
 function validateProposalPayload(b: any): string | null {
   if (!b || typeof b !== 'object') return 'Payload inválido';
   if (!b.title || !String(b.title).trim()) return 'Título requerido';

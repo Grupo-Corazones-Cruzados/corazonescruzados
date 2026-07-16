@@ -34,7 +34,13 @@ interface Props {
   onClose: () => void;
   onSubmit: (payload: ProposalPayload) => Promise<void>;
   memberName: string;
+  /** Fecha/hora inicial (al abrir desde un clic en la grilla del calendario). */
+  initialStart?: Date | null;
+  /** Devuelve true si el rango [startMs,endMs) choca con un espacio ocupado. */
+  isBusy?: (startMs: number, endMs: number) => boolean;
 }
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
 
 const MEMBER_TZ = 'America/Guayaquil';
 
@@ -85,7 +91,7 @@ function todayInTz(tz: string): string {
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
-export default function ProposalModal({ open, onClose, onSubmit, memberName }: Props) {
+export default function ProposalModal({ open, onClose, onSubmit, memberName, initialStart, isBusy }: Props) {
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [title, setTitle] = useState('');
@@ -105,13 +111,22 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
     if (!open) return;
     const detected = detectTz();
     setTz(detected);
-    setDate(todayInTz(detected));
     setGuestName('');
     setGuestEmail('');
     setTitle('');
     setDescription('');
-    setStartTime('10:00');
-    setEndTime('11:00');
+    if (initialStart && !Number.isNaN(initialStart.getTime())) {
+      // Prellenado desde un clic en la grilla (hora local del visitante).
+      const s = initialStart;
+      setDate(`${s.getFullYear()}-${pad2(s.getMonth() + 1)}-${pad2(s.getDate())}`);
+      setStartTime(`${pad2(s.getHours())}:${pad2(s.getMinutes())}`);
+      const e2 = new Date(s.getTime() + 60 * 60 * 1000);
+      setEndTime(`${pad2(e2.getHours())}:${pad2(e2.getMinutes())}`);
+    } else {
+      setDate(todayInTz(detected));
+      setStartTime('10:00');
+      setEndTime('11:00');
+    }
     setRecurrence('none');
     setDays([]);
     setUntil('');
@@ -121,10 +136,18 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
     } else {
       setTzList(TZ_OPTIONS);
     }
-  }, [open]);
+  }, [open, initialStart]);
 
   const startUTC = useMemo(() => zonedWallclockToUTC(date, startTime, tz), [date, startTime, tz]);
   const endUTC = useMemo(() => zonedWallclockToUTC(date, endTime, tz), [date, endTime, tz]);
+
+  // Choque con un espacio ocupado del calendario del miembro (aviso en vivo + bloqueo).
+  const slotBusy = useMemo(() => {
+    if (!isBusy) return false;
+    const s = startUTC.getTime(), e = endUTC.getTime();
+    if (Number.isNaN(s) || Number.isNaN(e) || e <= s) return false;
+    return isBusy(s, e);
+  }, [isBusy, startUTC, endUTC]);
 
   const autoDetectTz = () => {
     const d = detectTz();
@@ -144,6 +167,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
     if (!title.trim()) { setError('El título es requerido'); return; }
     if (endUTC.getTime() <= startUTC.getTime()) { setError('La hora fin debe ser posterior al inicio'); return; }
     if (startUTC.getTime() < Date.now() - 60_000) { setError('No puedes proponer horarios en el pasado'); return; }
+    if (slotBusy) { setError('Ese horario ya está ocupado. Elige otro.'); return; }
     if (recurrence === 'weekly' && days.length === 0) { setError('Selecciona al menos un día'); return; }
 
     const payload: ProposalPayload = {
@@ -213,14 +237,6 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
           />
         </div>
 
-        <div className="flex items-start gap-2 border border-amber-300 bg-amber-50 rounded-md px-3 py-2 text-[12px] text-amber-700 leading-relaxed" style={mf}>
-          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>
-            El calendario de {memberName} se maneja en zona horaria de Ecuador (GMT-5).
-            Elige tu zona horaria abajo para ver la equivalencia antes de enviar.
-          </span>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <PixelInput
             type="date"
@@ -241,6 +257,13 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
             onChange={(e) => setEndTime(e.target.value)}
           />
         </div>
+
+        {slotBusy && (
+          <div className="flex items-center gap-2 border border-amber-300 bg-amber-50 rounded-md px-3 py-2 text-[12.5px] text-amber-700" style={mf}>
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            Ese horario ya está ocupado. Elige otra fecha u hora.
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-end">
           <PixelSelect
@@ -336,11 +359,11 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName }: P
           <button
             type="button"
             onClick={submit}
-            disabled={saving}
+            disabled={saving || slotBusy}
             className={BTN_PRIMARY}
             style={mf}
           >
-            <Send className="w-4 h-4" /> {saving ? 'Enviando…' : 'Enviar propuesta'}
+            <Send className="w-4 h-4" /> {saving ? 'Enviando…' : slotBusy ? 'Horario ocupado' : 'Enviar propuesta'}
           </button>
         </div>
       </div>

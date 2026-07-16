@@ -63,6 +63,12 @@ export default function PublicCalendarPage() {
 
   const [detail, setDetail] = useState<EventInstance | null>(null);
   const [proposalOpen, setProposalOpen] = useState(false);
+  // Fecha/hora inicial cuando se abre el formulario desde un clic en la grilla.
+  const [proposalStart, setProposalStart] = useState<Date | null>(null);
+  // Reservas creadas en ESTA sesión (id → correo del visitante). Solo estas se pueden
+  // ver en detalle y cancelar; al recargar se pierden (el resto son "Ocupado" confidencial).
+  const [ownProposals, setOwnProposals] = useState<Map<string, string>>(new Map());
+  const [canceling, setCanceling] = useState(false);
 
   const submitProposal = async (payload: ProposalPayload) => {
     const res = await fetch(`/api/members/calendar/public/${memberId}/propose`, {
@@ -75,8 +81,9 @@ export default function PublicCalendarPage() {
     // El evento propuesto se muestra TEMPORALMENTE con su título real (solo para quien lo
     // creó), agregándolo al estado local sin recargar. Al recargar la página, el endpoint
     // público lo devuelve como "Ocupado" (confidencialidad de los eventos del miembro).
+    const id = data.id || `local-${Date.now()}`;
     const localEvent: CalendarEvent = {
-      id: data.id || `local-${Date.now()}`,
+      id,
       title: payload.title,
       description: payload.description,
       event_type: 'progreso',
@@ -94,7 +101,47 @@ export default function PublicCalendarPage() {
       status: 'proposed',
     };
     setEvents((prev) => [...prev, localEvent]);
+    setOwnProposals((m) => new Map(m).set(id, payload.guest_email));
   };
+
+  // Cancelar una reserva PROPIA (aún pendiente, en esta sesión).
+  const cancelProposal = async (ev: EventInstance) => {
+    const guestEmail = ownProposals.get(ev.id);
+    if (!guestEmail) return;
+    setCanceling(true);
+    try {
+      const res = await fetch(`/api/members/calendar/public/${memberId}/propose`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, eventId: ev.id, guest_email: guestEmail }),
+      });
+      if (!res.ok) throw new Error();
+      setEvents((prev) => prev.filter((e) => e.id !== ev.id));
+      setOwnProposals((m) => { const n = new Map(m); n.delete(ev.id); return n; });
+      setDetail(null);
+    } catch {
+      /* si falla, se deja el detalle abierto para reintentar */
+    } finally {
+      setCanceling(false);
+    }
+  };
+
+  // Clic en un evento: solo se abre el detalle si es una reserva PROPIA de esta sesión;
+  // los bloques "Ocupado" del miembro son confidenciales (no se abren).
+  const onEventClick = (ev: EventInstance) => {
+    if (ownProposals.has(ev.id)) setDetail(ev);
+  };
+
+  // Clic en la grilla (zona libre) → abre el formulario con esa fecha/hora prellenada.
+  const onGridClick = (date: Date) => { setProposalStart(date); setProposalOpen(true); };
+
+  // ¿El rango [startMs,endMs) choca con algún evento del miembro? (para bloquear en el form)
+  const isBusy = useCallback((startMs: number, endMs: number) => {
+    const dayStart = new Date(startMs); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+    return expandEvents(events, dayStart, dayEnd)
+      .some((ev) => ev.instanceStart.getTime() < endMs && ev.instanceEnd.getTime() > startMs);
+  }, [events]);
 
   const [subscribeEmail, setSubscribeEmail] = useState('');
   const [subscribing, setSubscribing] = useState(false);
@@ -281,20 +328,21 @@ export default function PublicCalendarPage() {
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> {loading ? 'Sincronizando…' : 'Sincronizar'}
               </button>
-              <button onClick={() => setProposalOpen(true)} className={BTN_PRIMARY}>
+              <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={BTN_PRIMARY}>
                 <CalendarPlus className="w-4 h-4" /> Agendar espacio
               </button>
             </div>
           </div>
 
-          {/* Grid */}
+          {/* Grid — clic en zona libre abre el formulario con esa hora; clic en un bloque
+              ocupado no muestra detalle (confidencial), salvo tu propia reserva reciente */}
           <div className="p-3">
             <CalendarView
               view={view}
               currentDate={currentDate}
               instances={instances}
-              onDayClick={() => {}}
-              onEventClick={(ev) => setDetail(ev)}
+              onDayClick={onGridClick}
+              onEventClick={onEventClick}
             />
           </div>
 
@@ -347,13 +395,14 @@ export default function PublicCalendarPage() {
         </div>
       </div>
 
+      {/* El detalle solo se abre para reservas PROPIAS de esta sesión → muestra el dato
+          real y permite cancelarla (mientras no se recargue la página). */}
       <EventDetailsModal
         open={!!detail}
         onClose={() => setDetail(null)}
         event={detail}
-        hideType
-        hideClientName
-        hideDescription
+        onCancel={detail ? () => cancelProposal(detail) : undefined}
+        canceling={canceling}
       />
 
       <ProposalModal
@@ -361,6 +410,8 @@ export default function PublicCalendarPage() {
         onClose={() => setProposalOpen(false)}
         onSubmit={submitProposal}
         memberName={memberName || 'el miembro'}
+        initialStart={proposalStart}
+        isBusy={isBusy}
       />
     </div>
   );

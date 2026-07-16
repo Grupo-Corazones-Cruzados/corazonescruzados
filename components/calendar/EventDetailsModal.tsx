@@ -1,7 +1,8 @@
 'use client';
 
 import PixelModal from '@/components/ui/PixelModal';
-import { Repeat } from 'lucide-react';
+import { BTN_DANGER } from '@/components/ui/Button';
+import { Repeat, Trash2 } from 'lucide-react';
 import type { EventInstance } from '@/lib/calendar/recurrence';
 import { colorForEvent, MONTH_LABELS_ES } from '@/lib/calendar/recurrence';
 
@@ -16,6 +17,9 @@ interface Props {
   hideDescription?: boolean;
   /** Oculta la categoría (Progreso/Personal): calendario público confidencial. */
   hideType?: boolean;
+  /** Si se pasa, muestra un botón para cancelar la reserva (solo la propia, aún pendiente). */
+  onCancel?: () => void;
+  canceling?: boolean;
 }
 
 function fmtDateTime(d: Date) {
@@ -23,7 +27,7 @@ function fmtDateTime(d: Date) {
   return `${d.getDate()} ${MONTH_LABELS_ES[d.getMonth()].slice(0, 3)} ${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function EventDetailsModal({ open, onClose, event, hideClientName, hideDescription, hideType }: Props) {
+export default function EventDetailsModal({ open, onClose, event, hideClientName, hideDescription, hideType, onCancel, canceling }: Props) {
   if (!event) return null;
   const color = colorForEvent(event);
 
@@ -78,6 +82,14 @@ export default function EventDetailsModal({ open, onClose, event, hideClientName
             <div className="text-[13px] text-digi-text whitespace-pre-wrap" style={mf}>
               {event.description}
             </div>
+          </div>
+        )}
+
+        {onCancel && (
+          <div className="flex justify-end pt-2 border-t border-digi-border">
+            <button onClick={onCancel} disabled={canceling} className={BTN_DANGER} style={mf}>
+              <Trash2 className="w-4 h-4" /> {canceling ? 'Cancelando…' : 'Cancelar reserva'}
+            </button>
           </div>
         )}
       </div>
