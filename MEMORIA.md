@@ -287,13 +287,22 @@ Stack estándar de la casa, con particularidades de este repo:
     variables — 1 nombre, 3+ apellidos…); el candidato completará su nombre al crear su cuenta. El backend garantiza
     unicidad (contador vs `clients.workspace_username` + `users.email`) y guarda `workspace_username`/`workspace_email`
     (nuevas cols en `clients`). Sin Google aún.
-  - **PENDIENTE fases:** (2) crear la cuenta **Cloud Identity gratis** `usuario@grupocc.org` cuando el candidato crea su
-    cuenta (Admin SDK Directory API `users.insert`; **cuidado:** verificar que NO consuma licencia pagada — auto-assign
-    de licencias; asignar Cloud Identity Free explícito si hace falta). (3) **Sincronía perfil ↔ Google**: empujar foto/
-    datos al perfil de Google al guardar en Configuración (Directory API `users.photos`/patch) + botón "Sincronizar con
-    Google" (traer cambios) + campos básicos que falten. **Scopes a delegar (browser, pendiente del usuario):**
-    `https://www.googleapis.com/auth/admin.directory.user,https://www.googleapis.com/auth/apps.licensing` en el Client ID
-    `111768031245769195077`. Habilitar Admin SDK (`admin.googleapis.com`) + Licensing API por gcloud.
+  - **Scopes delegados (2026-07-16, HECHO):** los 5 en el Client ID `111768031245769195077`: calendar, gmail.send,
+    meetings.space.created, **admin.directory.user, apps.licensing**. APIs habilitadas: admin/licensing/cloudidentity.
+  - **⚠️ Licencias — auto-asignación ON:** la org **auto-asigna Business Standard (pagada) a CADA usuario nuevo**;
+    **quitar la licencia por código NO funciona** (y la auto-asignación la re-pone). Estás en **trial** (10 licencias,
+    gratis) — no se puede desactivar la auto-asignación hasta que el trial pase a pago. **Decisión:** se creó la unidad
+    organizativa **`/Candidatos`**; las cuentas se crean ahí para poder **excluirla de la auto-asignación** (→ gratis
+    Cloud Identity) cuando el trial termine. Por ahora las cuentas nuevas usan licencia de trial (gratis ≤10).
+  - **FASE 2 HECHA (2026-07-16):** `lib/integrations/google-workspace.ts` → `createWorkspaceUser` (Directory API
+    `users.insert` en `/Candidatos`, `CANDIDATES_OU`, pass aleatoria + changePasswordAtNextLogin, 409→ya existía) y
+    `deleteWorkspaceUser`. En `complete-profile` (candidato crea su cuenta), si tiene `workspace_email` y aún no hay
+    cuenta, se crea en Google y se marca `workspace_created_at` (cols nuevas en `clients`). No bloquea si Google falla.
+    Verificado en vivo (crea en `/Candidatos`, flujo integrado, limpieza). **PENDIENTE dashboard "Colaborar":** ver si
+    hay otro punto de creación de cuenta de candidato que también deba disparar la creación (hoy solo `complete-profile`).
+  - **PENDIENTE FASE 3 — Sincronía perfil ↔ Google:** empujar foto/datos al perfil de Google al guardar en
+    Configuración (Directory API `users.update`/`users.photos.update`) + botón "Sincronizar con Google" (traer cambios) +
+    campos básicos que falten en el módulo de perfil. Requiere que la persona tenga cuenta (`workspace_email`).
 - **Calendario público — agendar SIN cuenta + confidencialidad de eventos + arreglos UI (2026-07-15):**
   segunda pasada sobre `/calendario/[memberId]` (tras migrarlo a `.corp`). Cambios:
   - **Confidencialidad (libre/ocupado):** el endpoint público `GET /api/members/calendar/public/[memberId]`
