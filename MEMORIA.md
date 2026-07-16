@@ -300,9 +300,18 @@ Stack estándar de la casa, con particularidades de este repo:
     cuenta, se crea en Google y se marca `workspace_created_at` (cols nuevas en `clients`). No bloquea si Google falla.
     Verificado en vivo (crea en `/Candidatos`, flujo integrado, limpieza). **PENDIENTE dashboard "Colaborar":** ver si
     hay otro punto de creación de cuenta de candidato que también deba disparar la creación (hoy solo `complete-profile`).
-  - **PENDIENTE FASE 3 — Sincronía perfil ↔ Google:** empujar foto/datos al perfil de Google al guardar en
-    Configuración (Directory API `users.update`/`users.photos.update`) + botón "Sincronizar con Google" (traer cambios) +
-    campos básicos que falten en el módulo de perfil. Requiere que la persona tenga cuenta (`workspace_email`).
+  - **FASE 3 HECHA (2026-07-16) — Sincronía perfil ↔ Google:** `google-workspace.ts`: `updateGoogleProfile`
+    (nombre/teléfono, `users.patch`), `setGooglePhoto` (`users.photos.update`, base64url), `getGoogleProfile`
+    (lee nombre/teléfono/foto). `lib/workspace/account.ts`: `resolveWorkspaceEmail(userId)` = `users.workspace_email`
+    o la fila de candidato enlazada (`clients.user_id`); asegura ambas cols `workspace_email`. **App→Google:**
+    `/api/users/profile` PUT empuja nombre/teléfono; `/api/users/avatar` POST refleja la foto (try/catch, no bloquea).
+    **Google→App:** `POST /api/users/google-sync` trae nombre/teléfono/foto (sube la foto a Cloudinary); botón
+    "Sincronizar con Google" en `ProfilePanel`. Se enlazó el **admin** (`users.workspace_email='lfgonzalezm0@grupocc.org'`,
+    email de login `lfgonzalezm0@outlook.com`) para que funcione. El módulo de perfil ya cubre los campos básicos de
+    Google (nombre, teléfono, foto). Verificado en vivo (round-trip push/pull + lectura del perfil real del admin).
+  - **PENDIENTE producción:** las fases 2-3 (crear cuenta + sync) solo actúan si `isGoogleWorkspaceConfigured()`; en
+    Railway falta agregar `GOOGLE_SA_KEY` + `GOOGLE_WORKSPACE_ORGANIZER` (ver arriba). Y cuando termine el trial:
+    excluir `/Candidatos` de la auto-asignación de licencias (cuentas gratis).
 - **Calendario público — agendar SIN cuenta + confidencialidad de eventos + arreglos UI (2026-07-15):**
   segunda pasada sobre `/calendario/[memberId]` (tras migrarlo a `.corp`). Cambios:
   - **Confidencialidad (libre/ocupado):** el endpoint público `GET /api/members/calendar/public/[memberId]`
