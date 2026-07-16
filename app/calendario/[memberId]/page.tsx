@@ -48,6 +48,17 @@ export default function PublicCalendarPage() {
   const memberId = params.memberId;
 
   const [view, setView] = useState<CalendarViewMode>('week');
+  // En pantallas chicas (teléfono) solo se permite la vista de DÍA; los botones de
+  // Semana/Mes aparecen solo si la pantalla lo permite (≥ 768px).
+  const [allowMultiView, setAllowMultiView] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const apply = () => setAllowMultiView(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  useEffect(() => { if (!allowMultiView) setView('day'); }, [allowMultiView]);
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [memberName, setMemberName] = useState<string>('');
@@ -337,29 +348,36 @@ export default function PublicCalendarPage() {
               <span className="text-[15px] font-semibold text-digi-text capitalize ml-1" style={mf}>{label}</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
-                {VIEWS.map((v) => (
-                  <button
-                    key={v.value}
-                    onClick={() => setView(v.value)}
-                    className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`}
-                    style={mf}
-                  >
-                    {v.label}
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Toggle Mes/Semana/Día: solo en pantallas que lo permiten (≥ 768px);
+                  en móvil se usa siempre la vista de Día y se navega con ‹ ›. */}
+              {allowMultiView && (
+                <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
+                  {VIEWS.map((v) => (
+                    <button
+                      key={v.value}
+                      onClick={() => setView(v.value)}
+                      className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`}
+                      style={mf}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <button
                 onClick={() => load()}
                 disabled={loading}
                 className={`${BTN_SECONDARY} !py-1.5`}
                 title={lastSync ? `Última actualización: ${fmtSync(lastSync)}` : 'Sincronizar calendario'}
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> {loading ? 'Sincronizando…' : 'Sincronizar'}
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{loading ? 'Sincronizando…' : 'Sincronizar'}</span>
               </button>
               <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={BTN_PRIMARY}>
-                <CalendarPlus className="w-4 h-4" /> Agendar espacio
+                <CalendarPlus className="w-4 h-4" />
+                <span className="sm:hidden">Agendar</span>
+                <span className="hidden sm:inline">Agendar espacio</span>
               </button>
             </div>
           </div>
