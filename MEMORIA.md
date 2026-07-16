@@ -267,6 +267,21 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Responsividad móvil/tablet — patrones reutilizables (2026-07-16, en curso):** el dashboard ya venía bastante
+  responsive (shell/sidebar off-canvas con hamburguesa en `<lg`; home con `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`;
+  detalles con rieles `w-full lg:w-[…]` y grids `grid-cols-1 sm:grid-cols-*`; `PixelDataTable` con scroll interno).
+  Mejoras aplicadas y **patrones a reutilizar** en los demás módulos:
+  - **Calendarios (público + Mi día):** en `<768px` se **fuerza vista de Día** y se ocultan los botones Mes/Semana
+    (`matchMedia('(min-width:768px)')` + `allowMultiView`; efecto que hace `setView('day')`). La grilla de 7 días es
+    inusable en móvil.
+  - **`PixelDataTable` → columna `hideOnMobile`:** oculta columnas no esenciales en `<640px` (`hidden sm:table-cell`).
+    Aplicado en tickets (Cliente/Costo ocultas; quedan ID/Título/Límite). Usar en las demás tablas densas.
+  - **`DetailHeader` (compartido):** las acciones del header ahora **envuelven** (`flex flex-wrap justify-end`) para que
+    botones largos no desborden en móvil. Beneficia a todos los detalles.
+  - **Command bars:** `flex flex-wrap`; en botones, texto oculto en móvil con `hidden sm:inline` (icono solo) y CTAs
+    acortados con `sm:hidden`/`hidden sm:inline`.
+  - **Módulos hechos:** dashboard (home/Mi día) y **tickets** (lista + detalle). Pendientes: proyectos, facturas,
+    clientes, suscripciones, marketplace, y los sistemas del módulo Centralizado.
 - **Cuentas corporativas Google Workspace por persona + nomenclatura (2026-07-16, en curso):** decisión del usuario
   tras aclarar el costo/licenciamiento de Google:
   - **Reuniones/grabación/calendario de la org = cuenta del LÍDER (ya implementado):** TODAS las reuniones las organiza
