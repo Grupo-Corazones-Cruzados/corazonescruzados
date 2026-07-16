@@ -3,6 +3,24 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { generateClientToken } from '@/lib/world/session';
 import { sendCandidateApprovalEmail } from '@/lib/integrations/resend';
+import { splitBaseCounter, isValidUsername } from '@/lib/workspace/username';
+
+/** Devuelve el primer usuario libre `base{n}` (revisa clients + users). */
+async function resolveFreeUsername(desired: string): Promise<string | null> {
+  const { base, start } = splitBaseCounter(desired);
+  if (!base) return null;
+  for (let n = start; n < start + 1000; n++) {
+    const candidate = `${base}${n}`;
+    if (!isValidUsername(candidate)) continue;
+    const taken = await pool.query(
+      `SELECT 1 FROM gcc_world.clients WHERE workspace_username = $1
+       UNION SELECT 1 FROM gcc_world.users WHERE LOWER(email) = $2 LIMIT 1`,
+      [candidate, `${candidate}@grupocc.org`],
+    );
+    if (taken.rowCount === 0) return candidate;
+  }
+  return null;
+}
 
 // POST — aprueba una postulación: deja la fila de candidato en gcc_world.clients
 // APROBADA pero SIN contraseña (queda como una solicitud aprobada) y le envía el
@@ -16,6 +34,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
     const { id } = await params;
+
+    const body = await req.json().catch(() => ({}));
+    const desiredUsername = String(body?.username || '').trim().toLowerCase();
 
     const pr = await pool.query(
       `SELECT id, email, ip_hash, status FROM gcc_world.candidate_proposals WHERE id = $1 LIMIT 1`,
@@ -37,8 +58,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       `ALTER TABLE gcc_world.clients
          ADD COLUMN IF NOT EXISTS account_type text DEFAULT 'candidate',
          ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false,
-         ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false`,
+         ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false,
+         ADD COLUMN IF NOT EXISTS workspace_username text,
+         ADD COLUMN IF NOT EXISTS workspace_email text`,
     );
+
+    // Usuario corporativo definido por el aprobador (nomenclatura). Se garantiza único
+    // (contador). La cuenta de Google se crea después, al completar la cuenta el candidato.
+    let workspaceUsername: string | null = null;
+    if (desiredUsername) {
+      if (!isValidUsername(splitBaseCounter(desiredUsername).base + '0')) {
+        return NextResponse.json({ error: 'Nombre de usuario inválido' }, { status: 400 });
+      }
+      workspaceUsername = await resolveFreeUsername(desiredUsername);
+      if (!workspaceUsername) {
+        return NextResponse.json({ error: 'No se pudo asignar un usuario libre' }, { status: 409 });
+      }
+    }
+    const workspaceEmail = workspaceUsername ? `${workspaceUsername}@grupocc.org` : null;
 
     // Crea o actualiza la fila del candidato (sin personaje aún). Queda APROBADA, con
     // correo verificado, SIN contraseña (password_hash intacto/null) y profile_completed=false.
@@ -53,17 +90,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         `UPDATE gcc_world.clients
             SET email_verified = true, approved = true,
                 account_type = 'candidate', profile_completed = false,
-                client_token = $1, ip_hash = COALESCE($2, ip_hash)
+                client_token = $1, ip_hash = COALESCE($2, ip_hash),
+                workspace_username = COALESCE($4, workspace_username),
+                workspace_email = COALESCE($5, workspace_email)
           WHERE id = $3`,
-        [clientToken, proposal.ip_hash, existing.rows[0].id],
+        [clientToken, proposal.ip_hash, existing.rows[0].id, workspaceUsername, workspaceEmail],
       );
     } else {
       await pool.query(
         `INSERT INTO gcc_world.clients
             (name, email, alias, email_verified, approved,
-             account_type, profile_completed, client_token, ip_hash, last_seen_at)
-         VALUES ($1, $1, 'Candidato', true, true, 'candidate', false, $2, $3, NOW())`,
-        [cleanEmail, clientToken, proposal.ip_hash],
+             account_type, profile_completed, client_token, ip_hash, last_seen_at,
+             workspace_username, workspace_email)
+         VALUES ($1, $1, 'Candidato', true, true, 'candidate', false, $2, $3, NOW(), $4, $5)`,
+        [cleanEmail, clientToken, proposal.ip_hash, workspaceUsername, workspaceEmail],
       );
     }
 
@@ -86,7 +126,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       );
     }
 
-    return NextResponse.json({ ok: true, emailSent: true });
+    return NextResponse.json({ ok: true, emailSent: true, username: workspaceUsername, workspaceEmail });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'unknown error';
     console.error('Approve proposal error:', msg);

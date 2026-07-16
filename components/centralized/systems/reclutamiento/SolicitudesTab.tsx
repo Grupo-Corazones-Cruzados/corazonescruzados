@@ -4,9 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
-import { BTN_PRIMARY, BTN_DANGER } from '@/components/ui/Button';
+import PixelModal from '@/components/ui/PixelModal';
+import PixelInput from '@/components/ui/PixelInput';
+import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
+import { buildUsername } from '@/lib/workspace/username';
 import {
-  Inbox, Mail, Check, X, ShieldCheck, ShieldAlert, Megaphone, CalendarDays, UserPlus, Search,
+  Inbox, Mail, Check, X, ShieldCheck, ShieldAlert, Megaphone, CalendarDays, UserPlus, Search, AtSign,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -63,14 +66,52 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
 
   const selected = useMemo(() => proposals.find((p) => String(p.id) === selectedId) || null, [proposals, selectedId]);
 
-  const decide = async (p: any, action: 'approve' | 'reject') => {
-    if (action === 'reject' && !window.confirm(`¿Rechazar la postulación de ${p.email}? Se eliminará y el correo quedará libre.`)) return;
+  // Aprobación: abre un modal para fijar el usuario corporativo (nomenclatura).
+  const [approving, setApproving] = useState<any | null>(null);
+  const [np, setNp] = useState({ firstName: '', secondName: '', firstSurname: '', secondSurname: '' });
+  const [username, setUsername] = useState('');
+  const [userEdited, setUserEdited] = useState(false);
+
+  const openApprove = (p: any) => {
+    setNp({ firstName: '', secondName: '', firstSurname: '', secondSurname: '' });
+    setUsername('');
+    setUserEdited(false);
+    setApproving(p);
+  };
+
+  // Sugerir el usuario automáticamente al escribir los nombres (mientras no se edite a mano).
+  useEffect(() => {
+    if (approving && !userEdited) setUsername(buildUsername(np, 0));
+  }, [np, approving, userEdited]);
+
+  const submitApprove = async () => {
+    const p = approving;
+    if (!p) return;
+    if (!username.trim()) { toast.error('Escribe el nombre de usuario'); return; }
     setBusyId(String(p.id));
     try {
-      const res = await fetch(`/api/admin/candidate-proposals/${p.id}/${action}`, { method: 'POST' });
+      const res = await fetch(`/api/admin/candidate-proposals/${p.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim().toLowerCase() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Error');
+      toast.success(`Postulación aprobada — usuario ${data.username}@grupocc.org`);
+      setApproving(null);
+      await load();
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setBusyId(null); }
+  };
+
+  const reject = async (p: any) => {
+    if (!window.confirm(`¿Rechazar la postulación de ${p.email}? Se eliminará y el correo quedará libre.`)) return;
+    setBusyId(String(p.id));
+    try {
+      const res = await fetch(`/api/admin/candidate-proposals/${p.id}/reject`, { method: 'POST' });
       if (!res.ok) throw new Error((await res.json()).error || 'Error');
-      toast.success(action === 'approve' ? 'Postulación aprobada — cuenta de candidato creada' : 'Postulación rechazada');
-      if (action === 'reject' && selectedId === String(p.id)) setSelectedId(null);
+      toast.success('Postulación rechazada');
+      if (selectedId === String(p.id)) setSelectedId(null);
       await load();
     } catch (e: any) { toast.error(e.message || 'Error'); }
     finally { setBusyId(null); }
@@ -162,10 +203,10 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
 
               {isAdmin && selected.status !== 'approved' && (
                 <div className="flex gap-2 pt-1">
-                  <button onClick={() => decide(selected, 'approve')} disabled={busyId === String(selected.id)} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
+                  <button onClick={() => openApprove(selected)} disabled={busyId === String(selected.id)} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
                     <Check className="w-4 h-4" /> {busyId === String(selected.id) ? '...' : 'Aprobar'}
                   </button>
-                  <button onClick={() => decide(selected, 'reject')} disabled={busyId === String(selected.id)} className={`${BTN_DANGER} flex-1 disabled:opacity-50`}>
+                  <button onClick={() => reject(selected)} disabled={busyId === String(selected.id)} className={`${BTN_DANGER} flex-1 disabled:opacity-50`}>
                     <X className="w-4 h-4" /> Rechazar
                   </button>
                 </div>
@@ -180,6 +221,50 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
           </div>
         )}
       </aside>
+
+      {/* Modal de aprobación: define el usuario corporativo (nomenclatura) */}
+      <PixelModal open={!!approving} onClose={() => setApproving(null)} title="Aprobar postulación" size="md">
+        <div className="space-y-4">
+          <p className="text-[13px] text-digi-muted" style={mf}>
+            Define el <strong>usuario corporativo</strong> del candidato <strong>{approving?.email}</strong>.
+            Se sugiere según la nomenclatura (inicial 1er nombre + inicial 2º nombre + 1er apellido +
+            inicial 2º apellido + número). Puedes editarlo; el sistema garantiza que sea único.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PixelInput label="PRIMER NOMBRE" value={np.firstName} onChange={(e) => setNp((s) => ({ ...s, firstName: e.target.value }))} placeholder="Luis" />
+            <PixelInput label="SEGUNDO NOMBRE" value={np.secondName} onChange={(e) => setNp((s) => ({ ...s, secondName: e.target.value }))} placeholder="Fernando" />
+            <PixelInput label="PRIMER APELLIDO" value={np.firstSurname} onChange={(e) => setNp((s) => ({ ...s, firstSurname: e.target.value }))} placeholder="González" />
+            <PixelInput label="SEGUNDO APELLIDO" value={np.secondSurname} onChange={(e) => setNp((s) => ({ ...s, secondSurname: e.target.value }))} placeholder="Muyulema" />
+          </div>
+
+          <div>
+            <label className="text-[12px] font-medium text-digi-muted" style={mf}>NOMBRE DE USUARIO</label>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 flex items-center rounded-md border-2 border-digi-border bg-digi-darker focus-within:border-accent">
+                <AtSign className="w-4 h-4 text-digi-muted ml-2.5 shrink-0" />
+                <input
+                  value={username}
+                  onChange={(e) => { setUserEdited(true); setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '')); }}
+                  className="field-control flex-1 bg-transparent border-0 px-2 py-1.5 text-[14px] text-digi-text focus:outline-none"
+                  style={mf}
+                  placeholder="lfgonzalezm0"
+                />
+                <span className="text-[13px] text-digi-muted pr-3 shrink-0" style={mf}>@grupocc.org</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
+            <button type="button" onClick={() => setApproving(null)} className={BTN_SECONDARY} style={mf}>
+              <X className="w-4 h-4" /> Cancelar
+            </button>
+            <button type="button" onClick={submitApprove} disabled={busyId === String(approving?.id) || !username.trim()} className={BTN_PRIMARY} style={mf}>
+              <Check className="w-4 h-4" /> {busyId === String(approving?.id) ? 'Aprobando…' : 'Aprobar candidato'}
+            </button>
+          </div>
+        </div>
+      </PixelModal>
     </div>
   );
 }
