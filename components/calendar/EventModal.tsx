@@ -6,7 +6,7 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
-import { Save, Trash2, X, AlertTriangle } from 'lucide-react';
+import { Save, Trash2, X, AlertTriangle, Video, Copy, Check } from 'lucide-react';
 import type { CalendarEvent, RecurrenceType, EventType } from '@/lib/calendar/recurrence';
 import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES } from '@/lib/calendar/recurrence';
 
@@ -288,6 +288,8 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
       initialHeight={640}
     >
       <div className="space-y-4">
+        {event?.meeting_url && <MeetingLink url={event.meeting_url} />}
+
         <PixelInput
           label="TÍTULO"
           value={form.title}
@@ -566,5 +568,40 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         onCancel={() => setConfirmDelete(false)}
       />
     </FloatingWindow>
+  );
+}
+
+/** Banner del enlace de la reunión (Google Meet) de un evento agendado. */
+function MeetingLink({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { /* noop */ }
+  };
+  return (
+    <div className="rounded-lg border border-accent/40 bg-accent-light p-3" style={mf}>
+      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-accent mb-2">
+        <Video className="w-4 h-4" /> Enlace de la reunión
+      </div>
+      <div className="flex items-center gap-2">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${BTN_PRIMARY} flex-1 !py-1.5 text-[12.5px]`}
+        >
+          <Video className="w-4 h-4" /> Unirse a Google Meet
+        </a>
+        <button type="button" onClick={copy} className={`${BTN_SECONDARY} !py-1.5 !px-2.5`} title="Copiar enlace">
+          {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+        </button>
+      </div>
+      <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1.5 block text-[11px] text-accent/80 hover:underline truncate">
+        {url}
+      </a>
+    </div>
   );
 }

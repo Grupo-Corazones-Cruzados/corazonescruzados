@@ -20,6 +20,8 @@ export interface CalendarEvent {
   color: string | null;
   status: EventStatus;
   alternative_id?: number | null; // tarea del Horario de Vida que justifica el evento
+  meeting_url?: string | null; // enlace de reunión (Google Meet) si se agendó desde el calendario público
+  meeting_provider?: string | null;
 }
 
 export interface EventInstance extends CalendarEvent {

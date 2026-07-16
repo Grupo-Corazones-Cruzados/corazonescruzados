@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { notifyCalendarSubscribers } from '@/lib/calendar/notify';
+import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 
 async function resolveMemberId(userId: string): Promise<string | null> {
   const { rows } = await pool.query(
@@ -31,6 +32,8 @@ const SELECT_SQL = `
     e.color,
     e.status,
     e.alternative_id,
+    e.meeting_url,
+    e.meeting_provider,
     e.created_at,
     e.updated_at
   FROM gcc_world.member_calendar_events e
@@ -44,6 +47,8 @@ export async function GET() {
 
     const memberId = await resolveMemberId(user.userId);
     if (!memberId) return NextResponse.json({ data: [] });
+
+    await ensureCalendarGuestColumns();
 
     const { rows } = await pool.query(
       `${SELECT_SQL} WHERE e.member_id = $1 ORDER BY e.start_at`,
