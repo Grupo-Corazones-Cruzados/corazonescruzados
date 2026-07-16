@@ -333,6 +333,15 @@ Stack estándar de la casa, con particularidades de este repo:
     el banner de zona horaria; el visitante puede **cancelar su reserva propia** de la sesión (clic → detalle real +
     "Cancelar reserva" → `DELETE /propose` con token+eventId+guest_email; solo borra `proposed` que coincidan); los
     bloques "Ocupado" del miembro no abren detalle (confidencial).
+  - **Zona horaria — SIEMPRE horario del miembro (Ecuador GMT-5) (2026-07-16, decisión del usuario):** el calendario
+    público y el formulario "Proponer espacio" se manejan **siempre en hora de Ecuador**, sin importar la zona del
+    visitante. En el form, FECHA/INICIO/FIN son hora de Ecuador; abajo se muestra "Horario del miembro (Ecuador)" (=lo
+    ingresado) y "Tu horario (<tz del visitante>)" (equivalente). La grilla se pinta en hora de Ecuador desplazando las
+    instancias con `toEcuadorClock` (hace que la hora local del navegador coincida con la de Ecuador). **BUG corregido:**
+    `zonedWallclockToUTC` (ProposalModal) usaba `new Date(string)` → **dependía de la zona del navegador** y daba horas
+    erróneas; se reescribió con `Intl.formatToParts` (independiente de la zona local; verificado en UTC/Ecuador/Madrid/
+    Tokyo). Edge menor: el bucketing de columnas por día usa la fecha local del navegador (para visitantes muy lejanos
+    podría desalinear un día en el borde; irrelevante para el público de Ecuador).
   - **DB:** `member_calendar_events` ganó `guest_email`/`guest_name` (TEXT, `ADD COLUMN IF NOT EXISTS` vía
     `lib/calendar/guest.ts` → `ensureCalendarGuestColumns()`, promise singleton). El endpoint `propose` inserta
     con `created_by=NULL` + `guest_email/guest_name`; `proposals` (lista) y `proposals/[eventId]` (decisión)
