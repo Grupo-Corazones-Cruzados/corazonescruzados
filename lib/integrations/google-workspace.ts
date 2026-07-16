@@ -194,3 +194,19 @@ export async function createMeetEvent(opts: {
     htmlLink: res.data.htmlLink || null,
   };
 }
+
+/**
+ * Cancela una reunión: borra el evento de Google Calendar de la cuenta organizadora
+ * (con `sendUpdates:'all'` para notificar a los invitados). Esto quita el evento y su
+ * Meet de todos los calendarios. Idempotente: si ya no existe (410/404) no falla.
+ */
+export async function deleteMeetEvent(calendarEventId: string): Promise<void> {
+  const cal = google.calendar({ version: 'v3', auth: getAuth([SCOPE_CALENDAR]) });
+  try {
+    await cal.events.delete({ calendarId: 'primary', eventId: calendarEventId, sendUpdates: 'all' });
+  } catch (e: any) {
+    const code = e?.code || e?.response?.status;
+    if (code === 404 || code === 410) return; // ya estaba borrado/cancelado
+    throw e;
+  }
+}

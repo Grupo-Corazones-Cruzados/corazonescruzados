@@ -6,6 +6,8 @@ import { pool } from '@/lib/db';
  *    calendario público (sin cuenta); `created_by` queda NULL en esos casos.
  *  - `meeting_url`/`meeting_provider`: enlace de la reunión creada al aceptar la
  *    propuesta (hoy Google Meet). Se guarda para reenviarlo y evitar recrearlo.
+ *  - `meeting_event_id`: id del evento en Google Calendar de la cuenta organizadora,
+ *    para poder CANCELAR la reunión (borrar el evento) si el miembro cancela.
  * Idempotente y serializado con un promise singleton (varios endpoints pueden
  * llamarlo en paralelo).
  */
@@ -19,7 +21,8 @@ export function ensureCalendarGuestColumns(): Promise<void> {
           ADD COLUMN IF NOT EXISTS guest_email      TEXT,
           ADD COLUMN IF NOT EXISTS guest_name       TEXT,
           ADD COLUMN IF NOT EXISTS meeting_url      TEXT,
-          ADD COLUMN IF NOT EXISTS meeting_provider TEXT
+          ADD COLUMN IF NOT EXISTS meeting_provider TEXT,
+          ADD COLUMN IF NOT EXISTS meeting_event_id TEXT
       `)
       .then(() => undefined)
       .catch((err: unknown) => { ensuring = null; throw err; });

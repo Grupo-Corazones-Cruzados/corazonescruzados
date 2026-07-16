@@ -81,8 +81,9 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
           if (meetingUrl) {
             await pool.query(
               `UPDATE gcc_world.member_calendar_events
-                  SET meeting_url = $1, meeting_provider = 'google_meet' WHERE id = $2`,
-              [meetingUrl, eventId],
+                  SET meeting_url = $1, meeting_provider = 'google_meet', meeting_event_id = $2
+                WHERE id = $3`,
+              [meetingUrl, meet.eventId, eventId],
             );
           }
         } catch (err: any) {

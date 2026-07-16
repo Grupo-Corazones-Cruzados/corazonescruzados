@@ -2,6 +2,8 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { notifyCalendarSubscribers } from '@/lib/calendar/notify';
+import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
+import { isGoogleWorkspaceConfigured, deleteMeetEvent } from '@/lib/integrations/google-workspace';
 
 async function resolveMemberId(userId: string): Promise<string | null> {
   const { rows } = await pool.query(
@@ -123,19 +125,31 @@ export async function DELETE(_req: NextRequest, ctx: RouteCtx) {
     if (!memberId) return NextResponse.json({ error: 'Not a member' }, { status: 403 });
 
     const { eventId } = await ctx.params;
+    await ensureCalendarGuestColumns();
     const existing = await pool.query(
-      `SELECT title, start_at, end_at FROM gcc_world.member_calendar_events
+      `SELECT title, start_at, end_at, meeting_event_id FROM gcc_world.member_calendar_events
        WHERE id = $1 AND member_id = $2`,
       [eventId, memberId],
     );
     if (existing.rowCount === 0) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+
+    const prev = existing.rows[0];
+
+    // Si el evento tiene una reunión de Google Meet asociada, se cancela también
+    // (borra el evento de Calendar de la cuenta organizadora y avisa a los invitados).
+    if (prev.meeting_event_id && isGoogleWorkspaceConfigured()) {
+      try {
+        await deleteMeetEvent(prev.meeting_event_id);
+      } catch (err: any) {
+        console.error('Meet cancel error:', err?.response?.data ? JSON.stringify(err.response.data) : err.message);
+      }
+    }
 
     await pool.query(
       `DELETE FROM gcc_world.member_calendar_events WHERE id = $1 AND member_id = $2`,
       [eventId, memberId],
     );
 
-    const prev = existing.rows[0];
     notifyCalendarSubscribers({
       memberId,
       action: 'deleted',
