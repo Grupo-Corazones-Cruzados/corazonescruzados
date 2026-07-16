@@ -108,10 +108,10 @@ export default function MarketplacePage() {
         { key: 'id', header: 'ID', width: '60px', render: (o: any) => <span className="tabular-nums text-digi-muted">#{o.id}</span> },
         { key: 'items', header: 'Productos', render: (o: any) => (o.items?.length ? (o.items.map((i: any) => i.product_title).filter(Boolean).join(', ') || '—') : '—') },
         { key: 'total', header: 'Total', width: '100px', render: (o: any) => <span className="text-accent tabular-nums">${fmt2(Number(o.total || 0))}</span> },
-        { key: 'status', header: 'Estado', width: '120px', render: (o: any) => (
+        { key: 'status', header: 'Estado', width: '120px', hideOnMobile: true, render: (o: any) => (
           <PixelBadge variant={ORDER_STATUS[o.status] || 'default'}>{ORDER_LABEL[o.status] || o.status}</PixelBadge>
         ) },
-        { key: 'date', header: 'Fecha', width: '110px', render: (o: any) => <span className="text-digi-muted">{o.created_at ? new Date(o.created_at).toLocaleDateString('es-EC') : '—'}</span> },
+        { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (o: any) => <span className="text-digi-muted">{o.created_at ? new Date(o.created_at).toLocaleDateString('es-EC') : '—'}</span> },
       ]}
       data={orders}
       onRowClick={(o: any) => { setSelectedOrder(o); setOrderModal(true); }}
