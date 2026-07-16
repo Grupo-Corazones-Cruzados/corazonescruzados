@@ -574,10 +574,10 @@ function InvoicesPageInner() {
           ) },
           { key: 'client', header: 'Cliente', render: (i: any) => <span className="text-digi-text">{i.client_name_sri || i.client_name || '-'}</span> },
           { key: 'total', header: 'Total', width: '100px', render: (i: any) => <span className="text-accent tabular-nums">${fmt2(Number(i.total || 0))}</span> },
-          { key: 'sri', header: 'SRI', width: '150px', render: (i: any) => i.sri_status ? (
+          { key: 'sri', header: 'SRI', width: '150px', hideOnMobile: true, render: (i: any) => i.sri_status ? (
             <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
           ) : <span className="text-digi-muted">-</span> },
-          { key: 'date', header: 'Fecha', width: '110px', render: (i: any) => <span className="text-digi-muted">{i.created_at ? new Date(i.created_at).toLocaleDateString('es-EC') : '-'}</span> },
+          { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (i: any) => <span className="text-digi-muted">{i.created_at ? new Date(i.created_at).toLocaleDateString('es-EC') : '-'}</span> },
         ]}
         data={invoices}
         onRowClick={(i: any) => setSelected(i)}
