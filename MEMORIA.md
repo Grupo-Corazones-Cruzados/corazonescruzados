@@ -391,6 +391,10 @@ Stack estándar de la casa, con particularidades de este repo:
     erróneas; se reescribió con `Intl.formatToParts` (independiente de la zona local; verificado en UTC/Ecuador/Madrid/
     Tokyo). Edge menor: el bucketing de columnas por día usa la fecha local del navegador (para visitantes muy lejanos
     podría desalinear un día en el borde; irrelevante para el público de Ecuador).
+  - **Responsive móvil (2026-07-16):** en pantallas **< 768px** el calendario público **fuerza la vista de DÍA** y
+    **oculta los botones Mes/Semana** (se navega día a día con ‹ ›); en ≥768px reaparecen los tres (matchMedia +
+    `allowMultiView`). Command bar: "Sincronizar" solo icono en móvil, "Agendar espacio"→"Agendar". El panel del
+    formulario "Proponer espacio" ya es full-width en móvil (`max-width:100vw`) y sus grids apilan.
   - **DB:** `member_calendar_events` ganó `guest_email`/`guest_name` (TEXT, `ADD COLUMN IF NOT EXISTS` vía
     `lib/calendar/guest.ts` → `ensureCalendarGuestColumns()`, promise singleton). El endpoint `propose` inserta
     con `created_by=NULL` + `guest_email/guest_name`; `proposals` (lista) y `proposals/[eventId]` (decisión)
