@@ -238,13 +238,13 @@ export default function FlowsTable() {
                       </div>
                     );
                   } },
-                  { key: 'type', header: 'Tipo', width: '140px', render: (f: Flow) => (
+                  { key: 'type', header: 'Tipo', width: '140px', hideOnMobile: true, render: (f: Flow) => (
                     <span className="text-[12px] text-digi-text" style={mf}>{(FLOW_TYPES[f.type] || FLOW_TYPES.custom).label}</span>
                   ) },
                   { key: 'status', header: 'Estado', width: '110px', render: (f: Flow) => (
                     <PixelBadge variant={FLOW_STATUS_V[f.status] || 'default'}>{FLOW_STATUS_LABELS[f.status] || f.status}</PixelBadge>
                   ) },
-                  { key: 'date', header: 'Creado', width: '110px', render: (f: Flow) => (
+                  { key: 'date', header: 'Creado', width: '110px', hideOnMobile: true, render: (f: Flow) => (
                     <span className="text-[12px] text-digi-muted" style={mf}>{new Date(f.created_at).toLocaleDateString('es-EC')}</span>
                   ) },
                 ]}

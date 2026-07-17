@@ -275,11 +275,11 @@ export default function ClientsPage() {
                       {c.is_consumidor_final && <PixelBadge variant="info" className="shrink-0">CF</PixelBadge>}
                     </span>
                   ) },
-                  { key: 'id', header: 'Identificación', width: '150px', render: (c: any) => <span className="text-[12px] text-digi-text" style={mf}>{c.ruc}</span> },
-                  { key: 'email', header: 'Email', width: '160px', render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{c.email || '—'}</span> },
-                  { key: 'facturas', header: 'Facturas', width: '90px', sortKey: 'facturas', render: (c: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{c.facturas}</span> },
+                  { key: 'id', header: 'Identificación', width: '150px', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-text" style={mf}>{c.ruc}</span> },
+                  { key: 'email', header: 'Email', width: '160px', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{c.email || '—'}</span> },
+                  { key: 'facturas', header: 'Facturas', width: '90px', sortKey: 'facturas', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{c.facturas}</span> },
                   { key: 'total', header: 'Total facturado', width: '130px', sortKey: 'total', render: (c: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${fmt2(Number(c.total))}</span> },
-                  { key: 'ultima', header: 'Última factura', width: '140px', sortKey: 'ultima', render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{fechaEs(c.ultima)}</span> },
+                  { key: 'ultima', header: 'Última factura', width: '140px', sortKey: 'ultima', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{fechaEs(c.ultima)}</span> },
                 ]}
               />
               <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-digi-border text-[12px]" style={mf}>
