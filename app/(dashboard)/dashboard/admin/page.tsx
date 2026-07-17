@@ -141,9 +141,9 @@ function TeamSection() {
       emptyDesc="No hay miembros registrados."
       columns={[
         { key: 'name', header: 'Nombre', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{m.name}</span> },
-        { key: 'email', header: 'Email', render: (m: any) => <span className="text-[12px] text-digi-muted" style={mf}>{m.email}</span> },
-        { key: 'position', header: 'Posición', width: '160px', render: (m: any) => <span className="text-[12px] text-digi-text" style={mf}>{m.position_name || '—'}</span> },
-        { key: 'rate', header: 'Tarifa/h', width: '90px', render: (m: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{m.hourly_rate ? `$${m.hourly_rate}` : '—'}</span> },
+        { key: 'email', header: 'Email', hideOnMobile: true, render: (m: any) => <span className="text-[12px] text-digi-muted" style={mf}>{m.email}</span> },
+        { key: 'position', header: 'Posición', width: '160px', hideOnMobile: true, render: (m: any) => <span className="text-[12px] text-digi-text" style={mf}>{m.position_name || '—'}</span> },
+        { key: 'rate', header: 'Tarifa/h', width: '90px', hideOnMobile: true, render: (m: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{m.hourly_rate ? `$${m.hourly_rate}` : '—'}</span> },
         { key: 'active', header: 'Activo', width: '100px', render: (m: any) => (
           <PixelBadge variant={m.is_active ? 'success' : 'default'}>{m.is_active ? 'Activo' : 'Inactivo'}</PixelBadge>
         ) },
@@ -168,12 +168,12 @@ function ClientsSection() {
       emptyDesc="No hay clientes registrados."
       columns={[
         { key: 'name', header: 'Nombre', render: (c: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{`${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email}</span> },
-        { key: 'email', header: 'Email', render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{c.email}</span> },
-        { key: 'phone', header: 'Teléfono', width: '140px', render: (c: any) => <span className="text-[12px] text-digi-text" style={mf}>{c.phone || '—'}</span> },
+        { key: 'email', header: 'Email', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{c.email}</span> },
+        { key: 'phone', header: 'Teléfono', width: '140px', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-text" style={mf}>{c.phone || '—'}</span> },
         { key: 'verified', header: 'Verificado', width: '120px', render: (c: any) => (
           <PixelBadge variant={c.is_verified ? 'success' : 'warning'}>{c.is_verified ? 'Sí' : 'No'}</PixelBadge>
         ) },
-        { key: 'date', header: 'Registro', width: '110px', render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(c.created_at).toLocaleDateString('es-EC')}</span> },
+        { key: 'date', header: 'Registro', width: '110px', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(c.created_at).toLocaleDateString('es-EC')}</span> },
       ]}
     />
   );
@@ -227,14 +227,14 @@ function ProposalsSection() {
         emptyDesc="No hay postulaciones de candidatos."
         columns={[
           { key: 'email', header: 'Correo', render: (p: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{p.email}</span> },
-          { key: 'reason', header: 'Motivación', render: (p: any) => <span className="text-[12px] text-digi-muted truncate max-w-[260px] inline-block" style={mf}>{p.reason || '—'}</span> },
-          { key: 'verified', header: 'Correo', width: '130px', render: (p: any) => (
+          { key: 'reason', header: 'Motivación', hideOnMobile: true, render: (p: any) => <span className="text-[12px] text-digi-muted truncate max-w-[260px] inline-block" style={mf}>{p.reason || '—'}</span> },
+          { key: 'verified', header: 'Correo', width: '130px', hideOnMobile: true, render: (p: any) => (
             <PixelBadge variant={p.email_verified ? 'success' : 'warning'}>{p.email_verified ? 'Verificado' : 'Sin verificar'}</PixelBadge>
           ) },
-          { key: 'status', header: 'Estado', width: '120px', render: (p: any) => (
+          { key: 'status', header: 'Estado', width: '120px', hideOnMobile: true, render: (p: any) => (
             <PixelBadge variant={PROP_STATUS_V[p.status] || 'default'}>{PROP_STATUS_LABEL[p.status] || p.status}</PixelBadge>
           ) },
-          { key: 'date', header: 'Fecha', width: '110px', render: (p: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(p.created_at).toLocaleDateString('es-EC')}</span> },
+          { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (p: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(p.created_at).toLocaleDateString('es-EC')}</span> },
           { key: 'actions', header: '', width: '200px', render: (p: any) => (
             <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
               {p.status !== 'approved' && (
@@ -313,15 +313,15 @@ function DigiIncidents() {
         emptyDesc="No hay incidentes con este filtro."
         columns={[
           { key: 'title', header: 'Título', render: (i: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{i.title}</span> },
-          { key: 'project', header: 'Proyecto', width: '150px', render: (i: any) => <span className="text-[12px] text-accent" style={mf}>{projectName(i.projectId)}</span> },
-          { key: 'client', header: 'Cliente', width: '150px', render: (i: any) => <span className="text-[12px] text-digi-text" style={mf}>{i.clientName || '—'}</span> },
-          { key: 'severity', header: 'Severidad', width: '110px', render: (i: any) => (
+          { key: 'project', header: 'Proyecto', width: '150px', hideOnMobile: true, render: (i: any) => <span className="text-[12px] text-accent" style={mf}>{projectName(i.projectId)}</span> },
+          { key: 'client', header: 'Cliente', width: '150px', hideOnMobile: true, render: (i: any) => <span className="text-[12px] text-digi-text" style={mf}>{i.clientName || '—'}</span> },
+          { key: 'severity', header: 'Severidad', width: '110px', hideOnMobile: true, render: (i: any) => (
             <PixelBadge variant={SEV_V[i.severity] || 'default'}>{SEV_L[i.severity] || i.severity}</PixelBadge>
           ) },
           { key: 'status', header: 'Estado', width: '120px', render: (i: any) => (
             <PixelBadge variant={INC_V[i.status] || 'default'}>{INC_L[i.status] || i.status}</PixelBadge>
           ) },
-          { key: 'date', header: 'Fecha', width: '110px', render: (i: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(i.createdAt).toLocaleDateString('es-EC')}</span> },
+          { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (i: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(i.createdAt).toLocaleDateString('es-EC')}</span> },
         ]}
       />
     </div>

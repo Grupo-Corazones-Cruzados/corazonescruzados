@@ -79,16 +79,16 @@ export default function AdminIncidentsPage() {
         emptyDesc="No hay incidentes con este filtro."
         columns={[
           { key: 'title', header: 'Título', render: (i: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{i.title}</span> },
-          { key: 'project', header: 'Proyecto', width: '150px', render: (i: any) => <span className="text-[12px] text-accent" style={mf}>{projectName(i.projectId)}</span> },
-          { key: 'client', header: 'Cliente', width: '150px', render: (i: any) => <span className="text-[12px] text-digi-text" style={mf}>{i.clientName || '—'}</span> },
-          { key: 'severity', header: 'Severidad', width: '110px', render: (i: any) => (
+          { key: 'project', header: 'Proyecto', width: '150px', hideOnMobile: true, render: (i: any) => <span className="text-[12px] text-accent" style={mf}>{projectName(i.projectId)}</span> },
+          { key: 'client', header: 'Cliente', width: '150px', hideOnMobile: true, render: (i: any) => <span className="text-[12px] text-digi-text" style={mf}>{i.clientName || '—'}</span> },
+          { key: 'severity', header: 'Severidad', width: '110px', hideOnMobile: true, render: (i: any) => (
             <PixelBadge variant={SEV_V[i.severity] || 'default'}>{SEV_L[i.severity] || i.severity}</PixelBadge>
           ) },
           { key: 'status', header: 'Estado', width: '120px', render: (i: any) => (
             <PixelBadge variant={INC_V[i.status] || 'default'}>{INC_L[i.status] || i.status}</PixelBadge>
           ) },
-          { key: 'images', header: 'Imgs', width: '70px', render: (i: any) => <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{i.imageCount || 0}</span> },
-          { key: 'date', header: 'Fecha', width: '110px', render: (i: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(i.createdAt).toLocaleDateString('es-EC')}</span> },
+          { key: 'images', header: 'Imgs', width: '70px', hideOnMobile: true, render: (i: any) => <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{i.imageCount || 0}</span> },
+          { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (i: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(i.createdAt).toLocaleDateString('es-EC')}</span> },
         ]}
       />
     </div>

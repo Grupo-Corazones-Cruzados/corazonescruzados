@@ -94,9 +94,9 @@ export default function SupportPage() {
                       <span className={`truncate text-[13px] font-medium ${selected?.id === t.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{t.subject}</span>
                     </span>
                   ) },
-                  { key: 'type', header: 'Tipo', width: '130px', render: (t: any) => <span className="text-[12px] text-digi-muted" style={mf}>{TYPE_LABELS[t.type] || t.type}</span> },
-                  { key: 'replies', header: 'Respuestas', width: '100px', render: (t: any) => <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{t.reply_count || 0}</span> },
-                  { key: 'date', header: 'Fecha', width: '110px', render: (t: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(t.created_at).toLocaleDateString('es-EC')}</span> },
+                  { key: 'type', header: 'Tipo', width: '130px', hideOnMobile: true, render: (t: any) => <span className="text-[12px] text-digi-muted" style={mf}>{TYPE_LABELS[t.type] || t.type}</span> },
+                  { key: 'replies', header: 'Respuestas', width: '100px', hideOnMobile: true, render: (t: any) => <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{t.reply_count || 0}</span> },
+                  { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (t: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(t.created_at).toLocaleDateString('es-EC')}</span> },
                 ]}
               />
             </div>

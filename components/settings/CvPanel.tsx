@@ -351,7 +351,7 @@ export default function CvPanel() {
             <PixelInput label="Institución" value={eduForm.draft.institution} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, institution: e.target.value } })} autoFocus />
             <PixelInput label="Título" value={eduForm.draft.degree} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, degree: e.target.value } })} />
             <PixelInput label="Campo" value={eduForm.draft.field} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, field: e.target.value } })} />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <PixelInput label="Año inicio" value={eduForm.draft.start_year} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, start_year: e.target.value } })} placeholder="2020" />
               <PixelInput label="Año fin" value={eduForm.draft.end_year} onChange={(e) => setEduForm({ ...eduForm, draft: { ...eduForm.draft, end_year: e.target.value } })} placeholder="2024" />
             </div>
@@ -370,7 +370,7 @@ export default function CvPanel() {
               <textarea value={expForm.draft.description} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, description: e.target.value } })} rows={3} placeholder="Responsabilidades y logros…"
                 className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <PixelInput label="Año inicio" value={expForm.draft.start_year} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, start_year: e.target.value } })} placeholder="2020" />
               <PixelInput label="Año fin" value={expForm.draft.end_year} onChange={(e) => setExpForm({ ...expForm, draft: { ...expForm.draft, end_year: e.target.value } })} placeholder="Actual" />
             </div>
@@ -388,7 +388,7 @@ export default function CvPanel() {
               <textarea value={svcForm.draft.description} onChange={(e) => setSvcForm({ ...svcForm, draft: { ...svcForm.draft, description: e.target.value } })} rows={3} placeholder="Qué incluye el servicio…"
                 className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
             </div>
-            <div className="grid grid-cols-2 gap-3 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
               <PixelInput label="Precio (USD)" type="number" value={svcForm.draft.base_price} onChange={(e) => setSvcForm({ ...svcForm, draft: { ...svcForm.draft, base_price: e.target.value } })} placeholder="0,00" />
               <label className="flex items-center gap-2 text-[13px] text-digi-text cursor-pointer pb-2.5" style={mf} title="Activo: visible al crear tickets">
                 <input type="checkbox" checked={svcForm.draft.is_active} onChange={(e) => setSvcForm({ ...svcForm, draft: { ...svcForm.draft, is_active: e.target.checked } })} className="accent-accent w-4 h-4" /> Activo (visible al crear tickets)
