@@ -283,8 +283,15 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Módulos hechos (2026-07-16/17):** dashboard (home/Mi día), **tickets**, **proyectos**, **facturas**,
     **suscripciones**, **marketplace**, **clientes**, **automatizaciones** (FlowsTable), **herramientas**. En casi todos
     el cambio fue marcar `hideOnMobile` en las columnas no esenciales de la tabla (los detalles/rieles ya apilaban por
-    `w-full lg:w-*`/`grid-cols-1 …`, y el `DetailHeader` compartido ya envuelve). **Pendiente:** el módulo
-    **Centralizado** (sistemas densos: grafos, paneles a 2-3 columnas, ventanas flotantes) — requiere pasada dedicada.
+    `w-full lg:w-*`/`grid-cols-1 …`, y el `DetailHeader` compartido ya envuelve).
+  - **Centralizado (2026-07-17): HECHO.** Patrón para sus sistemas de 2-3 paneles con altura fija (aside `w-[Npx]
+    shrink-0` + contenido, root `flex gap-4 h-[calc(100dvh-130px)]`): **apilar en móvil** → root `flex flex-col
+    lg:flex-row gap-4 lg:h-[calc(...)]` (altura fija solo en lg); asides `w-full lg:w-[Npx] max-h-[40-50vh]
+    lg:max-h-none` (lista arriba con scroll); contenido `min-h-[55vh] lg:min-h-0`. Splits **anidados** (lista+detalle)
+    también apilan (`flex-col lg:flex-row`, `border-r`→`border-b`). Sistemas con **grafo** (Comandos, Apoyo, Gestión de
+    Datos): el canvas recibe `h-[70vh]/min-h-[70vh] lg:h-full/lg:min-h-0` (usable con pan/zoom; overlays GLASS ya tenían
+    `max-w`). **Encuadre, Dinámica, Metodología, Gestión de Condiciones, Comandos, Apoyo, Gestión de Datos** editados;
+    **Horario de Vida, Reclutamiento, Solicitudes** ya eran responsive. Todos los módulos del dashboard: responsive.
 - **Cuentas corporativas Google Workspace por persona + nomenclatura (2026-07-16, en curso):** decisión del usuario
   tras aclarar el costo/licenciamiento de Google:
   - **Reuniones/grabación/calendario de la org = cuenta del LÍDER (ya implementado):** TODAS las reuniones las organiza
