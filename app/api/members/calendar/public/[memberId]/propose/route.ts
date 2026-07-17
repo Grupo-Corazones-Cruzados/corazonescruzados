@@ -25,7 +25,13 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
     }
 
     const memberRes = await pool.query(
-      `SELECT m.id, m.name, m.email, m.calendar_public_token
+      `SELECT m.id, m.name, m.calendar_public_token,
+              COALESCE(
+                NULLIF(m.email, ''),
+                (SELECT u.email FROM gcc_world.users u
+                  WHERE u.member_id = m.id AND u.email IS NOT NULL AND u.email <> ''
+                  ORDER BY u.created_at LIMIT 1)
+              ) AS email
          FROM gcc_world.members m
         WHERE m.id = $1 AND m.calendar_public_token = $2 LIMIT 1`,
       [memberId, token],
