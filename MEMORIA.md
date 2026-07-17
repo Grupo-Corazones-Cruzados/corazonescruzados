@@ -291,7 +291,12 @@ Stack estándar de la casa, con particularidades de este repo:
     también apilan (`flex-col lg:flex-row`, `border-r`→`border-b`). Sistemas con **grafo** (Comandos, Apoyo, Gestión de
     Datos): el canvas recibe `h-[70vh]/min-h-[70vh] lg:h-full/lg:min-h-0` (usable con pan/zoom; overlays GLASS ya tenían
     `max-w`). **Encuadre, Dinámica, Metodología, Gestión de Condiciones, Comandos, Apoyo, Gestión de Datos** editados;
-    **Horario de Vida, Reclutamiento, Solicitudes** ya eran responsive. Todos los módulos del dashboard: responsive.
+    **Horario de Vida, Reclutamiento, Solicitudes** ya eran responsive.
+  - **Resto del dashboard (2026-07-17): HECHO.** Soporte, Admin (4 tablas: miembros/usuarios/postulaciones/
+    incidencias), Admin·Incidencias → `hideOnMobile` en columnas secundarias. Configuración/CV (`CvPanel`) → pares de
+    campos `grid-cols-1 sm:grid-cols-2`. Notificaciones, Soporte(detalle), Availability, Portfolio ya eran responsive.
+    **Excepción (no aplica móvil):** editores del mundo (`admin/world`, `admin/sprites`, `admin/digimundo-projects`) son
+    herramientas de canvas de escritorio. **TODA la app (dashboard + calendario público) queda responsive.**
 - **Cuentas corporativas Google Workspace por persona + nomenclatura (2026-07-16, en curso):** decisión del usuario
   tras aclarar el costo/licenciamiento de Google:
   - **Reuniones/grabación/calendario de la org = cuenta del LÍDER (ya implementado):** TODAS las reuniones las organiza
