@@ -111,9 +111,9 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
   }, [codigos]);
 
   return (
-    <div className="flex gap-4 h-[calc(100dvh-130px)]">
+    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
       {/* ── Panel izquierdo: Proyectos de investigación ── */}
-      <aside className="w-[260px] shrink-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      <aside className="w-full lg:w-[260px] shrink-0 max-h-[40vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <FlaskConical className="w-4 h-4 text-accent" />
@@ -145,7 +145,7 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
       </aside>
 
       {/* ── Centro: pestañas de la metodología ── */}
-      <div className="flex-1 min-w-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 min-h-[55vh] lg:min-h-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         {!proy ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -172,9 +172,9 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
             </div>
 
             {tab === 'reconocer' ? (
-              <div className="flex-1 min-h-0 flex">
+              <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
                 {/* Lista de códigos verificados */}
-                <div className="w-[280px] shrink-0 border-r border-digi-border flex flex-col">
+                <div className="w-full lg:w-[280px] shrink-0 max-h-[40vh] lg:max-h-none border-b lg:border-b-0 lg:border-r border-digi-border flex flex-col">
                   <div className="px-3 py-2 border-b border-digi-border flex items-center justify-between">
                     <span className="text-[11px] font-semibold text-digi-text" style={df}>Códigos verificados</span>
                     <span className="text-[10.5px] text-digi-muted" style={mf}>{sel.length} sel.</span>

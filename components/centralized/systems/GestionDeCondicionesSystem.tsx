@@ -138,9 +138,9 @@ export default function GestionDeCondicionesSystem({ isAdmin }: { system?: any; 
   const completed = ws?.estado === 'completa';
 
   return (
-    <div className="flex gap-4 h-[calc(100dvh-130px)]">
+    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
       {/* ── Bandeja de tareas ── */}
-      <aside className="w-[270px] shrink-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      <aside className="w-full lg:w-[270px] shrink-0 max-h-[40vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center justify-between">
           <div className="flex items-center gap-1.5"><Inbox className="w-4 h-4 text-accent" /><span className="text-[12px] font-semibold text-digi-text" style={df}>Tareas</span></div>
           <button onClick={() => setModal('catalogo')} className="text-[10.5px] text-digi-muted hover:text-accent inline-flex items-center gap-1" style={mf} title="Catálogo de variables (Dinámica)"><Beaker className="w-3.5 h-3.5" /> Variables</button>
@@ -160,7 +160,7 @@ export default function GestionDeCondicionesSystem({ isAdmin }: { system?: any; 
       </aside>
 
       {/* ── Detalle de tarea ── */}
-      <div className="flex-1 min-w-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 min-h-[55vh] lg:min-h-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         {!task ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -238,9 +238,9 @@ export default function GestionDeCondicionesSystem({ isAdmin }: { system?: any; 
                     <GdGraph nodes={piezaGraph.nodes} edges={piezaGraph.edges} selectedKey={null} onSelect={() => {}} fitSignal={String(task.pieza_id || '')} />
                   </div>
                 ) : (
-              <div className="flex-1 min-h-0 flex">
+              <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
                 {/* Pieza + condiciones (lista) */}
-                <div className="w-[300px] shrink-0 border-r border-digi-border flex flex-col">
+                <div className="w-full lg:w-[300px] shrink-0 max-h-[40vh] lg:max-h-none border-b lg:border-b-0 lg:border-r border-digi-border flex flex-col">
                   <div className="p-3 border-b border-digi-border">
                     <div className="flex items-center gap-1.5 mb-2"><Puzzle className="w-4 h-4 text-teal-500" /><span className="text-[12px] font-semibold text-digi-text" style={df}>Pieza</span>{ws && <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded ${completed ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>{completed ? 'Completa' : 'Incompleta'}</span>}</div>
                     <div className="flex gap-1 mb-2">

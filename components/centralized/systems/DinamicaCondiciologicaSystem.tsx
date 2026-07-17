@@ -49,9 +49,9 @@ export default function DinamicaCondiciologicaSystem({ isAdmin }: { system?: any
   };
 
   return (
-    <div className="flex gap-4 h-[calc(100dvh-130px)]">
+    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
       {/* ── Panel de factores ── */}
-      <aside className="w-[200px] shrink-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      <aside className="w-full lg:w-[200px] shrink-0 max-h-[40vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-1.5">
           <Atom className="w-4 h-4 text-accent" />
           <span className="text-[12px] font-semibold text-digi-text" style={df}>Factores</span>
@@ -71,7 +71,7 @@ export default function DinamicaCondiciologicaSystem({ isAdmin }: { system?: any
       </aside>
 
       {/* ── Variables por causa ── */}
-      <div className="flex-1 min-w-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 min-h-[45vh] lg:min-h-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-2">
           <span className="w-3 h-3 rounded-full" style={{ background: factor.color }} />
           <span className="text-[13px] font-semibold text-digi-text" style={df}>Factor {factor.label}</span>
@@ -107,7 +107,7 @@ export default function DinamicaCondiciologicaSystem({ isAdmin }: { system?: any
       </div>
 
       {/* ── Editor de variable ── */}
-      <aside className="w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      <aside className="w-full lg:w-[300px] shrink-0 max-h-[50vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         {selVar ? (
           <VariableEditor key={selVar.id} variable={selVar} onSaved={load} onDelete={() => setConfirmDel(selVar)} />
         ) : (
