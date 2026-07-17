@@ -780,3 +780,56 @@ usadas en Apoyo.
 - **Efectos "serios"**: se quitó la "luz que se movía" (sweep) del banner; queda un flotado sutil. Menos fantasía, más profesional.
 - **Enforcement transversal**: un `PolicyEffectsProvider` en el layout provee {policies, blockedModules} a banner + sidebar + guard;
   refresca por `pathname` y por `visibilitychange`.
+
+---
+
+## Objetivo (2026-07-16/17) — Integración Google Workspace (Meet + correo + cuentas) + Responsividad total · ✅ RESUELTO
+
+> Objetivo previo (agente de pesos, 2026-07-12) quedó resuelto. Esta sección acumula los aprendizajes de la
+> sesión del 2026-07-16/17. El detalle de implementación vive en `MEMORIA.md`; aquí van las **preguntas técnicas
+> y sus respuestas/descubrimientos** (lo que costó averiguar).
+
+### Rol asumido
+Integrador de sistemas / arquitecto cloud (Google Workspace Admin SDK, Calendar/Meet/Gmail API) + front responsive.
+
+### Preguntas y respuestas (aprendizajes clave)
+
+#### P1 — ¿Se puede grabar/transcribir un Google Meet automáticamente por API? · ✅ Resuelta
+- **Respuesta:** Sí, con la **Meet REST API v2** (`meet.spaces.create`) y `config.artifactConfig`:
+  `recordingConfig.autoRecordingGeneration=ON`, `transcriptionConfig.autoTranscriptionGeneration=ON`,
+  `smartNotesConfig.autoSmartNotesGeneration=ON` (notas Gemini). Se **adjunta** el space al evento de Calendar
+  con `conferenceData` importada (conferenceId + entryPoints) → el evento queda con el Meet nativo que auto-graba.
+  Requiere scope `meetings.space.created`. Verificado en vivo: el plan de GCC soporta las tres. (fuente: pruebas
+  con la cuenta real)
+
+#### P2 — ¿Un miembro puede tener Gmail `@dominio` gratis? · ✅ Resuelta (NO)
+- **Respuesta:** **No.** Gmail/Calendar propios de un dominio **exigen licencia PAGADA** (Business Standard+ para
+  grabar). **Cloud Identity es GRATIS** pero solo da **identidad + perfil (nombre/foto/teléfono)** — sin Gmail,
+  sin Calendar, sin grabación. Unirse a un Meet sí es gratis. → Decisión: cuentas de miembros = Cloud Identity
+  gratis (identidad+perfil); las reuniones las organiza y **graba la cuenta del líder** (una sola licencia).
+
+#### P3 — ¿Se puede evitar por código la licencia pagada auto-asignada? · ✅ Resuelta (NO)
+- **Respuesta:** **No.** La org tenía **auto-asignación de licencias ON** → cada usuario nuevo recibe Business
+  Standard; `licenseAssignments.delete` no la quita (y la auto-asignación la re-pone). La ÚNICA vía limpia es
+  **desactivar la auto-asignación** (Admin → Facturación), idealmente **por unidad organizativa** (se creó `/Candidatos`).
+  Durante el **trial** no se puede desactivar hasta pasar a pago. (fuente: pruebas creando/borrando usuarios de test)
+
+#### P4 — Crear la clave JSON de la service account estaba bloqueado · ✅ Resuelta
+- **Respuesta:** Política "segura por defecto" `iam.disableServiceAccountKeyCreation`. Se sobrescribe con
+  `gcloud org-policies set-policy` (enforce=false a nivel proyecto), teniendo `roles/orgpolicy.policyAdmin`.
+
+#### P5 — Bug de zona horaria en el formulario del calendario público · ✅ Resuelta
+- **Respuesta:** `zonedWallclockToUTC` usaba `new Date(string)` → **dependía de la zona del navegador** y daba
+  horas erróneas. Se reescribió con `Intl.formatToParts` (independiente de la zona local; verificado en
+  UTC/Ecuador/Madrid/Tokyo). Decisión de UX: el calendario público SIEMPRE en horario del miembro (Ecuador).
+
+#### P6 — Patrón de responsividad reutilizable para toda la app · ✅ Resuelta
+- **Respuesta:** 3 piezas: (1) `hideOnMobile` por columna en `PixelDataTable` (`hidden sm:table-cell`);
+  (2) `DetailHeader` con acciones que **envuelven** (`flex-wrap`); (3) apilar-con-altura-condicional:
+  `flex-col lg:flex-row` + `w-full lg:w-[Npx]` + `max-h-[..]/min-h-[..] lg:…-none/0`, y en calendarios,
+  forzar **vista de Día** en `<768px`. Aplicado a TODO el dashboard. Excepción: editores de canvas del mundo.
+
+### Estado
+- **% de información para el objetivo: 100%** — todo implementado y verificado en vivo (Gmail/Meet reales,
+  cuentas de prueba, BD ROLLBACK, tsc+build). **Pendiente NO técnico:** env `GOOGLE_SA_KEY`/`GOOGLE_WORKSPACE_ORGANIZER`
+  en Railway (prod) y, al pasar el trial, excluir `/Candidatos` de la auto-asignación de licencias.
