@@ -391,10 +391,18 @@ Stack estándar de la casa, con particularidades de este repo:
     (`proposals/[eventId]`) se crea el **Meet**, se guarda `meeting_url`/`meeting_provider` (nuevas columnas) y el enlace
     va en el correo de decisión + invitación de calendario (invita a visitante + miembro). Dep `googleapis@173`.
     Verificado en vivo: Gmail (con acentos) + Meet reales creados/borrados; tsc+build; migración/UPDATE en BD (ROLLBACK).
-  - **PENDIENTE producción (Railway):** agregar env vars **`GOOGLE_SA_KEY`** (el JSON completo de `data/google-sa.json`
-    en una línea) y **`GOOGLE_WORKSPACE_ORGANIZER=lfgonzalezm0@grupocc.org`**. Sin ellas, prod sigue con Resend
-    (fallback). Luego: —una vez confirmado Gmail en prod— **quitar Resend** (código + DNS: MX `send`/amazonses,
-    `resend._domainkey`, `include:amazonses.com` del SPF).
+  - **RESEND ELIMINADO POR COMPLETO (2026-07-17):** el correo va **100% por Gmail API**. `lib/integrations/resend.ts`
+    → renombrado a **`lib/integrations/email.ts`** (transporte solo Gmail, sin fallback). `sendViaGmail` ahora soporta
+    **cc/bcc/adjuntos** (MIME multipart). Las 8 rutas que usaban Resend directo (tickets, invoices manual/from-ticket/
+    resend, projects complete/proforma, subscriptions pay, flows campaigns) convertidas a `sendViaGmail` (facturas/
+    proformas conservan su PDF adjunto). Paquete `resend` desinstalado. Verificado en vivo (envío con adjunto + bcc).
+    **Ojo:** el From debe ser la cuenta impersonada (`lfgonzalezm0@grupocc.org`) o un alias "enviar como"; campañas con
+    `from_email` distinto necesitarían ese alias. `RESEND_API_KEY` en `.env.local` quedó sin uso (se puede borrar).
+    **PENDIENTE DNS (limpieza):** quitar `TXT resend._domainkey`, `MX send → …amazonses.com`, y el `include:amazonses.com`
+    del SPF (dejar `v=spf1 include:_spf.google.com -all`).
+  - **PENDIENTE producción (Railway):** env vars **`GOOGLE_SA_KEY`** (JSON de `data/google-sa.json` en una línea) y
+    **`GOOGLE_WORKSPACE_ORGANIZER=lfgonzalezm0@grupocc.org`** — **SIN ellas el correo ya NO tiene fallback** (Resend se
+    quitó), así que en prod el envío depende de que estén configuradas.
   - **Auto-grabación/transcripción/notas (2026-07-16):** `createMeetEvent` crea el espacio con la **Google Meet API**
     (`meet.spaces.create`, `config.artifactConfig`: recording/transcription/**smartNotes** autoGeneration=ON — el plan
     de GCC soporta las tres, incl. notas Gemini) y lo **adjunta** al evento de Calendar (conferenceData importada →
