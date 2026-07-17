@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { hashPassword } from '@/lib/auth/password';
-import { sendCharacterVerificationEmail } from '@/lib/integrations/resend';
+import { sendCharacterVerificationEmail } from '@/lib/integrations/email';
 import { CLIENT_COOKIE, getClientIp, hashIp } from '@/lib/world/session';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

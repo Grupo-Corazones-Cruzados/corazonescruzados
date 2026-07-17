@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { generateClientToken } from '@/lib/world/session';
-import { sendCandidateApprovalEmail } from '@/lib/integrations/resend';
+import { sendCandidateApprovalEmail } from '@/lib/integrations/email';
 import { splitBaseCounter, isValidUsername } from '@/lib/workspace/username';
 
 /** Devuelve el primer usuario libre `base{n}` (revisa clients + users). */

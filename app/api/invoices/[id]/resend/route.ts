@@ -1,14 +1,9 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
-  return _resend;
-}
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -45,7 +40,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     }
 
-    await getResend().emails.send({
+    await sendViaGmail({
       from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
       to: emails,
       bcc: 'lfgonzalezm0@grupocc.org',
@@ -82,7 +77,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    console.error('Resend error:', err.message);
+    console.error('Email error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

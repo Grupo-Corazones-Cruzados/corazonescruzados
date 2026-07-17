@@ -3,13 +3,8 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
 import { createNotification } from '@/lib/notifications';
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import { sendViaGmail } from '@/lib/integrations/google-workspace';
 
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
-  return _resend;
-}
 
 export async function GET(req: NextRequest) {
   try {
@@ -242,7 +237,7 @@ export async function POST(req: NextRequest) {
     if (resolvedClientEmail) {
       try {
         const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/dashboard/tickets/${ticket.id}`;
-        await getResend().emails.send({
+        await sendViaGmail({
           from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
           to: resolvedClientEmail,
           bcc: 'lfgonzalezm0@grupocc.org',

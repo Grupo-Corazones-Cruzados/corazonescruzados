@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { sendCalendarSubscribeVerification } from '@/lib/integrations/resend';
+import { sendCalendarSubscribeVerification } from '@/lib/integrations/email';
 
 type RouteCtx = { params: Promise<{ memberId: string }> };
 

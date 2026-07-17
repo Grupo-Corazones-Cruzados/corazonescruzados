@@ -1,31 +1,16 @@
-import { Resend } from "resend";
-import { isGoogleWorkspaceConfigured, sendViaGmail } from "./google-workspace";
-
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || "");
-  return _resend;
-}
+import { sendViaGmail } from "./google-workspace";
 
 const FROM_EMAIL =
-  process.env.EMAIL_FROM || "GCC World <noreply@gccworld.com>";
+  process.env.EMAIL_FROM || "Corazones Cruzados <lfgonzalezm0@grupocc.org>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3002";
 
 /**
- * Envío de correo unificado. Preferimos la **Gmail API** (cuenta grupocc.org); si no
- * está configurada o falla, caemos a **Resend** (respaldo durante la transición).
- * Las funciones `send*` de abajo llaman a esto en vez de a Resend directamente.
+ * Envío de correo unificado por la **Gmail API** (cuenta corporativa grupocc.org).
+ * Todas las funciones `send*` de abajo llaman a esto. (Resend se eliminó por completo.)
  */
 async function deliver(opts: { from?: string; to: string | string[]; subject: string; html: string }) {
   const from = opts.from || FROM_EMAIL;
-  if (isGoogleWorkspaceConfigured()) {
-    try {
-      return await sendViaGmail({ from, to: opts.to, subject: opts.subject, html: opts.html });
-    } catch (e: any) {
-      console.error("Gmail send falló, fallback a Resend:", e?.message);
-    }
-  }
-  return getResend().emails.send({ from, to: opts.to as any, subject: opts.subject, html: opts.html });
+  return sendViaGmail({ from, to: opts.to, subject: opts.subject, html: opts.html });
 }
 
 /* ── Diseño de correos = tema corporativo `.corp` del /dashboard ──────────────────

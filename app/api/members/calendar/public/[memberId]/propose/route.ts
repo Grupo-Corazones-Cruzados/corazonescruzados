@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { findOverlappingInstances, type OverlapCandidate } from '@/lib/calendar/overlap';
-import { sendProposalReceivedToMember } from '@/lib/integrations/resend';
+import { sendProposalReceivedToMember } from '@/lib/integrations/email';
 import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 import type { CalendarEvent } from '@/lib/calendar/recurrence';
 

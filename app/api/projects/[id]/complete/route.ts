@@ -3,14 +3,9 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createInvoiceFromProject, sendInvoiceToSri, projectHasInvoice } from '@/lib/integrations/sri';
 import { addProjectIncomeToFinance } from '@/lib/finance';
-import { Resend } from 'resend';
+import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
-  return _resend;
-}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -132,7 +127,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
                 projectUrl += `?token=${newToken}`;
               }
 
-              await getResend().emails.send({
+              await sendViaGmail({
                 from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
                 to: client_email,
                 bcc: 'lfgonzalezm0@grupocc.org',

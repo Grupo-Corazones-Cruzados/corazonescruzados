@@ -1,13 +1,8 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import { sendViaGmail } from '@/lib/integrations/google-workspace';
 
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
-  return _resend;
-}
 
 function buildEmailHtml(bodyHtml: string, footerHtml: string): string {
   const footer = footerHtml
@@ -65,7 +60,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       [campaignId]
     );
 
-    const resend = getResend();
     const html = buildEmailHtml(campaign.body_html, campaign.footer_html);
 
     // Parse attachments
@@ -82,7 +76,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Send emails one by one to track individual results
     for (const contact of contacts) {
       try {
-        const result = await resend.emails.send({
+        const result = await sendViaGmail({
           from: campaign.from_email,
           to: contact.email,
           subject: campaign.subject,
@@ -90,7 +84,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           ...(attachments.length > 0 ? { attachments } : {}),
         });
 
-        const resendId = result.data?.id || null;
+        const resendId = result.id || null;
 
         await pool.query(
           `INSERT INTO gcc_world.flow_campaign_sends (campaign_id, contact_name, contact_email, resend_id, status, sent_at)

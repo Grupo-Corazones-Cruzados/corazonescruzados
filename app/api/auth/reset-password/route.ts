@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { pool } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
-import { sendPasswordResetEmail } from "@/lib/integrations/resend";
+import { sendPasswordResetEmail } from "@/lib/integrations/email";
 
 export async function POST(req: NextRequest) {
   try {

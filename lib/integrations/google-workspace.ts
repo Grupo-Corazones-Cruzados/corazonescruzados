@@ -92,33 +92,76 @@ function b64url(buf: Buffer): string {
   return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-/** Envía un correo HTML por la Gmail API impersonando a la cuenta organizadora. */
+export interface GmailAttachment {
+  filename: string;
+  /** Bytes del adjunto: Buffer o string base64. Alternativamente usar `path` (URL). */
+  content?: Buffer | string;
+  /** URL a descargar como adjunto (si no se pasa `content`). */
+  path?: string;
+  contentType?: string;
+}
+
+/** Envía un correo HTML por la Gmail API (con cc/bcc y adjuntos opcionales). */
 export async function sendViaGmail(opts: {
   from?: string;
   to: string | string[];
+  cc?: string | string[];
+  bcc?: string | string[];
   subject: string;
   html: string;
+  attachments?: GmailAttachment[];
 }): Promise<{ id: string | null }> {
   const auth = getAuth([SCOPE_GMAIL]);
   const gmail = google.gmail({ version: 'v1', auth });
   const from = opts.from || ORGANIZER;
-  const to = Array.isArray(opts.to) ? opts.to.join(', ') : opts.to;
+  const list = (v?: string | string[]) => (Array.isArray(v) ? v.join(', ') : (v || ''));
 
-  // From con display name: "Nombre <correo>" → encodear solo el display name.
   const fromHeader = (() => {
     const m = /^(.*)<(.+)>\s*$/.exec(from);
     if (m) return `${encodeHeader(m[1].trim())} <${m[2].trim()}>`;
     return from;
   })();
 
-  const mime =
+  // Resolver adjuntos (content Buffer/base64 o path=URL a descargar) → base64.
+  const atts: { filename: string; b64: string; contentType: string }[] = [];
+  for (const a of opts.attachments || []) {
+    let buf: Buffer | null = null;
+    if (a.content) buf = Buffer.isBuffer(a.content) ? a.content : Buffer.from(String(a.content), 'base64');
+    else if (a.path) { const r = await fetch(a.path); buf = Buffer.from(await r.arrayBuffer()); }
+    if (!buf) continue;
+    atts.push({ filename: a.filename, b64: buf.toString('base64'), contentType: a.contentType || 'application/octet-stream' });
+  }
+
+  const headers =
     `From: ${fromHeader}\r\n` +
-    `To: ${to}\r\n` +
+    `To: ${list(opts.to)}\r\n` +
+    (opts.cc ? `Cc: ${list(opts.cc)}\r\n` : '') +
+    (opts.bcc ? `Bcc: ${list(opts.bcc)}\r\n` : '') +
     `Subject: ${encodeHeader(opts.subject)}\r\n` +
-    `MIME-Version: 1.0\r\n` +
+    `MIME-Version: 1.0\r\n`;
+
+  let mime: string;
+  const htmlPart =
     `Content-Type: text/html; charset=utf-8\r\n` +
     `Content-Transfer-Encoding: base64\r\n\r\n` +
     Buffer.from(opts.html, 'utf8').toString('base64');
+
+  if (atts.length === 0) {
+    mime = headers + htmlPart;
+  } else {
+    const boundary = `gcc_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+    let body = headers + `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n`;
+    body += `--${boundary}\r\n` + htmlPart + `\r\n`;
+    for (const a of atts) {
+      body += `--${boundary}\r\n` +
+        `Content-Type: ${a.contentType}; name="${a.filename}"\r\n` +
+        `Content-Transfer-Encoding: base64\r\n` +
+        `Content-Disposition: attachment; filename="${a.filename}"\r\n\r\n` +
+        (a.b64.match(/.{1,76}/g)?.join('\r\n') || a.b64) + `\r\n`;
+    }
+    body += `--${boundary}--`;
+    mime = body;
+  }
 
   const res = await gmail.users.messages.send({
     userId: 'me',

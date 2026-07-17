@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
-import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/resend';
+import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/email';
 
 function maskEmail(email: string): string {
   const [user, domain] = email.split('@');

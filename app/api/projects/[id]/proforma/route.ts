@@ -2,14 +2,9 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { Resend } from 'resend';
+import { sendViaGmail } from '@/lib/integrations/google-workspace';
 // puppeteer loaded dynamically at runtime to avoid webpack bundling
 
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
-  return _resend;
-}
 
 async function ensureProformaColumn() {
   try {
@@ -141,7 +136,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     });
 
     try {
-      await getResend().emails.send({
+      await sendViaGmail({
         from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
         to: emailList,
         bcc: 'lfgonzalezm0@grupocc.org',

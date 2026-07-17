@@ -3,14 +3,9 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addProjectIncomeToFinance } from '@/lib/finance';
-import { Resend } from 'resend';
+import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
-  return _resend;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -126,7 +121,7 @@ export async function POST(req: NextRequest) {
             projectLinks.push(`<a href="${url}" style="display:inline-block;padding:8px 16px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:12px;font-weight:bold;border-radius:4px;margin:4px;">${p.title}</a>`);
           }
 
-          await getResend().emails.send({
+          await sendViaGmail({
             from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
             to: client_email,
             bcc: 'lfgonzalezm0@grupocc.org',

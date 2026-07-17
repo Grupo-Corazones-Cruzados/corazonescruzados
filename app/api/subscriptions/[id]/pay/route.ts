@@ -4,13 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addSubscriptionIncomeToFinance } from '@/lib/finance';
 import { ensureSubscriptionTables, computePeriods } from '@/lib/subscriptions';
-import { Resend } from 'resend';
+import { sendViaGmail } from '@/lib/integrations/google-workspace';
 
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
-  return _resend;
-}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -174,7 +169,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               <p style="font-size:12px;color:#888;margin-top:20px;">Gracias por su preferencia.<br/>GCC World</p>
             </div>
           </div>`;
-        await getResend().emails.send({
+        await sendViaGmail({
           from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
           to: sub.client_email_sri,
           bcc: 'lfgonzalezm0@grupocc.org',

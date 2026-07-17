@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { sendProposalDecisionToClient } from '@/lib/integrations/resend';
+import { sendProposalDecisionToClient } from '@/lib/integrations/email';
 import { notifyCalendarSubscribers } from '@/lib/calendar/notify';
 import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 import { isGoogleWorkspaceConfigured, createMeetEvent } from '@/lib/integrations/google-workspace';

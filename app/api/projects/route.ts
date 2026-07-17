@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, setResponsible } from '@/lib/projects/members';
 import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
 import { ensureAdminMember } from '@/lib/ensure-admin-member';
-import { sendProjectClientInvitationEmail } from '@/lib/integrations/resend';
+import { sendProjectClientInvitationEmail } from '@/lib/integrations/email';
 
 export async function GET(req: NextRequest) {
   try {

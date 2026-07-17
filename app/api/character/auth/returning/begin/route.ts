@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyPassword } from '@/lib/auth/password';
-import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/resend';
+import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/email';
 import { CLIENT_COOKIE } from '@/lib/world/session';
 
 function maskEmail(email: string): string {

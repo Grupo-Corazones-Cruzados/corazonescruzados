@@ -3,7 +3,7 @@ import { randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import { pool } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
-import { sendVerificationEmail } from "@/lib/integrations/resend";
+import { sendVerificationEmail } from "@/lib/integrations/email";
 import { getClientIp, hashIp } from "@/lib/world/session";
 
 const CLIENT_REF_COOKIE = "gcc_client_ref";

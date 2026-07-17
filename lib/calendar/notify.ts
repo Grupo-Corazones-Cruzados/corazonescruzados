@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { sendCalendarEventNotification, type CalendarEmailAction } from '@/lib/integrations/resend';
+import { sendCalendarEventNotification, type CalendarEmailAction } from '@/lib/integrations/email';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002';
 

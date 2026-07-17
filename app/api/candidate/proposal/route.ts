@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { getClientIp, hashIp, CLIENT_COOKIE } from '@/lib/world/session';
-import { sendCandidateProposalVerificationEmail } from '@/lib/integrations/resend';
+import { sendCandidateProposalVerificationEmail } from '@/lib/integrations/email';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Cookie de dispositivo para reconocer al postulante aunque cambie su IP.
