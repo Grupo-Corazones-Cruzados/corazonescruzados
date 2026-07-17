@@ -217,17 +217,17 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
   }, [selectedNode, graph]);
 
   return (
-    <div className="flex gap-4 h-[calc(100dvh-130px)]">
-      <UsersList selected={user} onSelect={setUser} className="w-[240px] shrink-0 h-full" />
+    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
+      <UsersList selected={user} onSelect={setUser} className="w-full lg:w-[240px] shrink-0 max-h-[40vh] lg:max-h-none lg:h-full" />
 
       {!user ? (
-        <div className="flex-1 min-w-0 h-full bg-digi-card border border-digi-border rounded-xl flex flex-col items-center justify-center text-center px-4">
+        <div className="flex-1 min-w-0 h-[70vh] lg:h-full bg-digi-card border border-digi-border rounded-xl flex flex-col items-center justify-center text-center px-4">
           <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mb-3"><MousePointerClick className="w-6 h-6 text-digi-muted" /></div>
           <p className="text-[13px] font-medium text-digi-text" style={mf}>Selecciona un candidato o miembro</p>
           <p className="text-[12px] text-digi-muted mt-1 max-w-sm" style={mf}>Verás su grafo de situaciones, problemas, causas y soluciones.</p>
         </div>
       ) : (
-        <div className="flex-1 min-w-0 h-full bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
+        <div className="flex-1 min-w-0 h-[70vh] lg:h-full bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
           {/* Barra superior */}
           <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 border-b border-digi-border shrink-0">
             <div className="flex items-center gap-2 min-w-0">

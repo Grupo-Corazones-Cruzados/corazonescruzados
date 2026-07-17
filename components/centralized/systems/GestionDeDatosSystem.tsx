@@ -286,9 +286,9 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
   };
 
   return (
-    <div className="flex gap-4 h-[calc(100dvh-130px)]">
+    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
       {/* ── Panel izquierdo: Problemáticas ── */}
-      <aside className="w-[248px] shrink-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      <aside className="w-full lg:w-[248px] shrink-0 max-h-[40vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Database className="w-4 h-4 text-accent" />
@@ -328,7 +328,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
       </aside>
 
       {/* ── Centro: grafo + toolbar ── */}
-      <div className="flex-1 min-w-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 min-h-[70vh] lg:min-h-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         {!prob ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -452,7 +452,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
 
       {/* ── Panel derecho: registros del filtro aplicado ── */}
       {prob && pinFilter && (
-        <aside className="w-[268px] shrink-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+        <aside className="w-full lg:w-[268px] shrink-0 max-h-[50vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
           <div className="px-3 py-2.5 border-b border-digi-border flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: filterColor }} />
