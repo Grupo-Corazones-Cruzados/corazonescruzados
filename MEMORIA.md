@@ -280,8 +280,11 @@ Stack estándar de la casa, con particularidades de este repo:
     botones largos no desborden en móvil. Beneficia a todos los detalles.
   - **Command bars:** `flex flex-wrap`; en botones, texto oculto en móvil con `hidden sm:inline` (icono solo) y CTAs
     acortados con `sm:hidden`/`hidden sm:inline`.
-  - **Módulos hechos:** dashboard (home/Mi día) y **tickets** (lista + detalle). Pendientes: proyectos, facturas,
-    clientes, suscripciones, marketplace, y los sistemas del módulo Centralizado.
+  - **Módulos hechos (2026-07-16/17):** dashboard (home/Mi día), **tickets**, **proyectos**, **facturas**,
+    **suscripciones**, **marketplace**, **clientes**, **automatizaciones** (FlowsTable), **herramientas**. En casi todos
+    el cambio fue marcar `hideOnMobile` en las columnas no esenciales de la tabla (los detalles/rieles ya apilaban por
+    `w-full lg:w-*`/`grid-cols-1 …`, y el `DetailHeader` compartido ya envuelve). **Pendiente:** el módulo
+    **Centralizado** (sistemas densos: grafos, paneles a 2-3 columnas, ventanas flotantes) — requiere pasada dedicada.
 - **Cuentas corporativas Google Workspace por persona + nomenclatura (2026-07-16, en curso):** decisión del usuario
   tras aclarar el costo/licenciamiento de Google:
   - **Reuniones/grabación/calendario de la org = cuenta del LÍDER (ya implementado):** TODAS las reuniones las organiza
