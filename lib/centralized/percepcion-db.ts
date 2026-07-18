@@ -33,7 +33,7 @@ async function doEnsure(): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.ps_capturas (
       id SERIAL PRIMARY KEY,
-      user_id INT NOT NULL,
+      user_id TEXT NOT NULL,
       lat DOUBLE PRECISION,
       lng DOUBLE PRECISION,
       accuracy DOUBLE PRECISION,
@@ -50,6 +50,18 @@ async function doEnsure(): Promise<void> {
   `);
   // claimed_at: marca cuándo el worker local tomó la captura (para re-encolar las que quedaron colgadas).
   await pool.query(`ALTER TABLE gcc_world.ps_capturas ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ`);
+  // users.id es UUID → user_id debe ser TEXT (una versión temprana lo creó como INT). Migración idempotente.
+  await pool.query(`
+    DO $$ BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='gcc_world' AND table_name='ps_capturas' AND column_name='user_id'
+          AND data_type <> 'text'
+      ) THEN
+        ALTER TABLE gcc_world.ps_capturas ALTER COLUMN user_id TYPE TEXT USING user_id::text;
+      END IF;
+    END $$;
+  `);
   await pool.query(`CREATE INDEX IF NOT EXISTS ps_capturas_user_idx ON gcc_world.ps_capturas(user_id)`);
   await pool.query(`CREATE INDEX IF NOT EXISTS ps_capturas_estado_idx ON gcc_world.ps_capturas(estado)`);
   await pool.query(`
@@ -78,12 +90,12 @@ async function doEnsure(): Promise<void> {
 }
 
 /** Cláusula de propiedad: un colaborador solo toca SUS capturas; el admin, todas. */
-function ownerClause(userId: number, isAdmin: boolean, col = 'user_id'): { sql: string; params: any[] } {
+function ownerClause(userId: string, isAdmin: boolean, col = 'user_id'): { sql: string; params: any[] } {
   return isAdmin ? { sql: '', params: [] } : { sql: ` AND ${col} = $OWNER`, params: [userId] };
 }
 
 export async function createCaptura(
-  userId: number,
+  userId: string,
   loc: { lat?: number | null; lng?: number | null; accuracy?: number | null; direccion?: string | null; notas?: string | null },
   fotos: string[],
 ): Promise<{ id: number }> {
@@ -113,7 +125,7 @@ export async function createCaptura(
   }
 }
 
-export async function listCapturas(userId: number, isAdmin: boolean): Promise<any[]> {
+export async function listCapturas(userId: string, isAdmin: boolean): Promise<any[]> {
   await ensurePercepcionTables();
   const own = ownerClause(userId, isAdmin, 'c.user_id');
   const sql = `
@@ -137,7 +149,7 @@ export async function listCapturas(userId: number, isAdmin: boolean): Promise<an
   return rows;
 }
 
-export async function getCaptura(id: number, userId: number, isAdmin: boolean): Promise<any | null> {
+export async function getCaptura(id: number, userId: string, isAdmin: boolean): Promise<any | null> {
   await ensurePercepcionTables();
   const own = ownerClause(userId, isAdmin);
   const { rows } = await pool.query(
@@ -159,7 +171,7 @@ export async function getCaptura(id: number, userId: number, isAdmin: boolean): 
 }
 
 /** Fotos (urls ordenadas) de una captura, verificando propiedad. Para el análisis IA. */
-export async function getCapturaFotos(id: number, userId: number, isAdmin: boolean): Promise<string[] | null> {
+export async function getCapturaFotos(id: number, userId: string, isAdmin: boolean): Promise<string[] | null> {
   await ensurePercepcionTables();
   const own = ownerClause(userId, isAdmin);
   const { rows } = await pool.query(
@@ -213,7 +225,7 @@ export async function claimForWorker(limit: number): Promise<{ id: number; fotos
 }
 
 /** Re-encola una captura (error/colgada) para que el worker la vuelva a tomar. Respeta propiedad. */
-export async function requeueCaptura(id: number, userId: number, isAdmin: boolean): Promise<boolean> {
+export async function requeueCaptura(id: number, userId: string, isAdmin: boolean): Promise<boolean> {
   await ensurePercepcionTables();
   const own = ownerClause(userId, isAdmin);
   const { rowCount } = await pool.query(
@@ -270,7 +282,7 @@ export async function setCapturaError(id: number, error: string): Promise<void> 
   );
 }
 
-export async function deleteCaptura(id: number, userId: number, isAdmin: boolean): Promise<boolean> {
+export async function deleteCaptura(id: number, userId: string, isAdmin: boolean): Promise<boolean> {
   await ensurePercepcionTables();
   const own = ownerClause(userId, isAdmin);
   const { rowCount } = await pool.query(

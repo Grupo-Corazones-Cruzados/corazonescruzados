@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 async function guard() {
   const user = await getCurrentUser();
   if (!user || !['admin', 'member'].includes(user.role)) return null;
-  return { userId: Number(user.userId), isAdmin: user.role === 'admin' };
+  return { userId: user.userId, isAdmin: user.role === 'admin' };
 }
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

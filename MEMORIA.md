@@ -303,6 +303,12 @@ Stack estándar de la casa, con particularidades de este repo:
     (4) **`--system-prompt`** reencuadrándolo como analista visual ("tu única salida es UN JSON", NO coder), (5) `cwd` =
     el dir temporal (sin CLAUDE.md). Devuelve el JSON dentro de `parsed.result` → parseo de 2 capas (como pesos-agent).
     Esta lógica vive en `scripts/percepcion-worker.mjs`.
+  - **BUG corregido (2026-07-18):** al guardar una captura en la web salía `invalid input syntax for type integer:
+    "NaN"`. Causa: `ps_capturas.user_id` se creó como `INT` y el código hacía `Number(user.userId)`, pero **`users.id`
+    es UUID** (lo confirma `notifications.user_id UUID`) → `Number(uuid)=NaN`. Fix: `user_id` es **TEXT** (migración
+    idempotente INT→TEXT en `ensurePercepcionTables`) y las rutas pasan `user.userId` (string), sin `Number()`. Verificado
+    contra la BD real (columna migrada a text; insert con UUID OK). **Gotcha general: los `user_id` que refieran a
+    `users.id` deben ser TEXT/UUID; NUNCA `Number(user.userId)`.**
   - **Config de despliegue:** en el server (local y **Railway**) definir `PERCEPCION_WORKER_TOKEN` (secreto). En la
     máquina del worker: `PERCEPCION_WORKER_TOKEN` (mismo valor), `PERCEPCION_APP_URL` (base de la app; default
     `http://localhost:3002`), opcional `CLAUDE_CLI_PATH`/`PERCEPCION_POLL_MS`/`PERCEPCION_BATCH`. Correr
