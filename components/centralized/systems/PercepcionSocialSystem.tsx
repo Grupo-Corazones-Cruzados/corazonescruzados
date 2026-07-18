@@ -369,7 +369,7 @@ function DetailPanel({ detalle, onRequeue, onDelete }: { detalle: Detalle; onReq
 function ElementCard({ el, color }: { el: Elemento; color: string }) {
   const props = Object.entries(el.propiedades || {});
   return (
-    <div className="rounded-lg border border-digi-border bg-white/60 px-2.5 py-2">
+    <div className="rounded-lg border border-digi-border bg-black/[0.03] px-2.5 py-2">
       <div className="flex items-center gap-2">
         <span className="text-[12.5px] font-semibold text-digi-text flex-1" style={mf}>{el.nombre}</span>
         {el.confianza != null && (
@@ -532,7 +532,7 @@ function CaptureOverlay({ onClose, onSaved }: { onClose: () => void; onSaved: (i
         <button
           onClick={takePhoto}
           disabled={!camReady || saving}
-          className="w-16 h-16 rounded-full bg-white border-4 border-white/40 flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform"
+          className="w-16 h-16 rounded-full bg-[#fff] border-4 border-white/40 flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform"
           title="Tomar foto"
         >
           <Camera className="w-6 h-6 text-black" />
