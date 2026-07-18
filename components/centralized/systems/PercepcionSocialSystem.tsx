@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  Camera, MapPin, Sparkles, Trash2, RefreshCw, Loader2, X, Check,
+  Camera, MapPin, Trash2, RefreshCw, Loader2, X, Check,
   Package, PawPrint, User, ExternalLink, ScanEye, Images, ImageOff, CircleDot,
 } from 'lucide-react';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -26,6 +26,9 @@ type Captura = {
   analizado_en: string | null;
   fotos_count: number;
   elementos_count: number;
+  objetos_count: number;
+  personas_count: number;
+  animales_count: number;
   cover: string | null;
 };
 type Elemento = {
@@ -223,7 +226,18 @@ export default function PercepcionSocialSystem({ isAdmin }: { system?: any; isAd
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-[11px] text-digi-muted" style={mf}>{fmtFecha(c.capturado_en)}</span>
                         {c.estado === 'analizado' && (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-accent font-medium" style={mf}><Sparkles className="w-3 h-3" /> {c.elementos_count}</span>
+                          <span className="inline-flex items-center gap-2 text-[11px]" style={mf}>
+                            {([
+                              { icon: Package, n: c.objetos_count, label: 'Objetos' },
+                              { icon: User, n: c.personas_count, label: 'Personas' },
+                              { icon: PawPrint, n: c.animales_count, label: 'Animales' },
+                            ] as const).map(({ icon: Icon, n, label }) => (
+                              <span key={label} className="inline-flex items-center gap-0.5" title={`${label}: ${n}`}>
+                                <Icon className={`w-3 h-3 ${n > 0 ? 'text-accent' : 'text-digi-muted'}`} />
+                                <span className={n > 0 ? 'text-digi-text font-medium' : 'text-digi-muted'}>{n}</span>
+                              </span>
+                            ))}
+                          </span>
                         )}
                       </div>
                     </div>

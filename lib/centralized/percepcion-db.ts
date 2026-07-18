@@ -133,6 +133,9 @@ export async function listCapturas(userId: string, isAdmin: boolean): Promise<an
            c.capturado_en, c.analizado_en,
            COALESCE(f.cnt, 0)::int AS fotos_count,
            COALESCE(e.cnt, 0)::int AS elementos_count,
+           COALESCE(e.objetos, 0)::int AS objetos_count,
+           COALESCE(e.personas, 0)::int AS personas_count,
+           COALESCE(e.animales, 0)::int AS animales_count,
            f.cover
     FROM gcc_world.ps_capturas c
     LEFT JOIN (
@@ -141,7 +144,11 @@ export async function listCapturas(userId: string, isAdmin: boolean): Promise<an
       FROM gcc_world.ps_fotos GROUP BY captura_id
     ) f ON f.captura_id = c.id
     LEFT JOIN (
-      SELECT captura_id, COUNT(*) AS cnt FROM gcc_world.ps_elementos GROUP BY captura_id
+      SELECT captura_id, COUNT(*) AS cnt,
+             COUNT(*) FILTER (WHERE categoria = 'objeto')  AS objetos,
+             COUNT(*) FILTER (WHERE categoria = 'persona') AS personas,
+             COUNT(*) FILTER (WHERE categoria = 'animal')  AS animales
+      FROM gcc_world.ps_elementos GROUP BY captura_id
     ) e ON e.captura_id = c.id
     WHERE 1=1${own.sql.replace('$OWNER', '$1')}
     ORDER BY c.capturado_en DESC`;
