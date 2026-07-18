@@ -44,10 +44,14 @@ async function doEnsure(): Promise<void> {
       notas TEXT,
       capturado_en TIMESTAMPTZ DEFAULT NOW(),
       analizado_en TIMESTAMPTZ,
+      claimed_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  // claimed_at: marca cuándo el worker local tomó la captura (para re-encolar las que quedaron colgadas).
+  await pool.query(`ALTER TABLE gcc_world.ps_capturas ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ`);
   await pool.query(`CREATE INDEX IF NOT EXISTS ps_capturas_user_idx ON gcc_world.ps_capturas(user_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS ps_capturas_estado_idx ON gcc_world.ps_capturas(estado)`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.ps_fotos (
       id SERIAL PRIMARY KEY,
@@ -173,6 +177,50 @@ export async function getCapturaFotos(id: number, userId: number, isAdmin: boole
 export async function setCapturaEstado(id: number, estado: PsEstado): Promise<void> {
   await ensurePercepcionTables();
   await pool.query(`UPDATE gcc_world.ps_capturas SET estado = $2 WHERE id = $1`, [id, estado]);
+}
+
+/**
+ * El WORKER LOCAL reclama capturas pendientes para analizarlas con el Claude CLI. Marca las tomadas
+ * como 'analizando' (con claimed_at) de forma atómica (FOR UPDATE SKIP LOCKED → apto para varios
+ * workers). Re-reclama las 'analizando' colgadas hace >10 min (worker caído a mitad). Devuelve, por
+ * captura, sus fotos (URLs). El alcance NO es por usuario: el worker procesa las de todos.
+ */
+export async function claimForWorker(limit: number): Promise<{ id: number; fotos: string[] }[]> {
+  await ensurePercepcionTables();
+  const { rows } = await pool.query(
+    `UPDATE gcc_world.ps_capturas SET estado = 'analizando', claimed_at = NOW()
+     WHERE id IN (
+       SELECT id FROM gcc_world.ps_capturas
+       WHERE estado = 'pendiente'
+          OR (estado = 'analizando' AND (claimed_at IS NULL OR claimed_at < NOW() - INTERVAL '10 minutes'))
+       ORDER BY capturado_en ASC
+       LIMIT $1
+       FOR UPDATE SKIP LOCKED
+     )
+     RETURNING id`,
+    [Math.max(1, Math.min(20, limit || 3))],
+  );
+  const ids: number[] = rows.map((r: { id: number }) => r.id);
+  if (!ids.length) return [];
+  const { rows: fotoRows } = await pool.query(
+    `SELECT captura_id, url FROM gcc_world.ps_fotos WHERE captura_id = ANY($1::int[]) ORDER BY captura_id, orden`,
+    [ids],
+  );
+  const map = new Map<number, string[]>();
+  ids.forEach((id) => map.set(id, []));
+  for (const fr of fotoRows as { captura_id: number; url: string }[]) map.get(fr.captura_id)?.push(fr.url);
+  return ids.map((id) => ({ id, fotos: map.get(id) || [] }));
+}
+
+/** Re-encola una captura (error/colgada) para que el worker la vuelva a tomar. Respeta propiedad. */
+export async function requeueCaptura(id: number, userId: number, isAdmin: boolean): Promise<boolean> {
+  await ensurePercepcionTables();
+  const own = ownerClause(userId, isAdmin);
+  const { rowCount } = await pool.query(
+    `UPDATE gcc_world.ps_capturas SET estado = 'pendiente', error = NULL, claimed_at = NULL WHERE id = $1${own.sql.replace('$OWNER', '$2')}`,
+    isAdmin ? [id] : [id, userId],
+  );
+  return (rowCount ?? 0) > 0;
 }
 
 /** Guarda el resultado del análisis: reemplaza elementos, fija resumen y estado 'analizado'. */

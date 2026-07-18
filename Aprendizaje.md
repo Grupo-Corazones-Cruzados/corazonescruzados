@@ -99,12 +99,29 @@ clave del futuro Sistema de Control Psicosocial** (piso global · paso creación
 - **Frontend:** `components/centralized/systems/PercepcionSocialSystem.tsx` — rail (Nueva captura + filtros con conteos) + galería de capturas + panel de detalle (fotos con `ImageGallery`, elementos agrupados por objeto/animal/persona con chips de propiedades, link Maps) + **overlay de cámara** (getUserMedia `facingMode:environment`, canvas→blob, GPS auto, tira de fotos). Auto-analiza tras guardar.
 - **Verificación:** `tsc --noEmit` limpio · `next build` OK (3 rutas API registradas) · **PRUEBA EN VIVO DEL CLAUDE CLI VISION:** replicando los args del agente sobre `public/PaisajeVioleta1.png`, `claude` **leyó la imagen con Read** (2 turnos) y devolvió el JSON exacto esperado (`resumen` + 13 `elementos` con categoria/nombre/confianza/propiedades/foto_indices), `is_error:false`, ~36s. **El mecanismo de visión headless FUNCIONA.**
 - **Lección técnica clave (visión con Claude CLI):** para que el modelo VEA imágenes en modo headless, hay que (1) escribirlas a disco, (2) pasar sus **rutas absolutas** en el `-p`, (3) **`--allowedTools Read`** (Claude Code lee imágenes visualmente), (4) `--system-prompt` que lo reencuadre como analista visual "tu única salida es UN JSON" (NO coder), (5) `cwd` = dir temporal de las fotos. Devuelve el JSON dentro de `parsed.result` → parseo de 2 capas.
-- **Local-only:** el análisis IA solo corre con Next.js local (binario `claude` + child_process); en Railway NO (igual que el agente de pesos). Captura/subida/exploración sí funcionan en cualquier entorno.
+- **Local-only (modelo inicial, DESCARTADO):** al principio el server ejecutaba `claude` in-process → solo funcionaba con Next local, no en Railway.
+
+### REFACTOR a "worker local + app web" (decisión usuario 2026-07-18)
+El usuario aclaró que quiere **capturar desde la web publicada** dejando un procesador local encendido. Se refactorizó al
+modelo desacoplado que él había descrito al inicio ("servidor local conectado con claude cli"):
+- La app (local/Railway) **solo guarda** capturas como `pendiente`. El **worker local** (`scripts/percepcion-worker.mjs`)
+  sondea, reclama, analiza con `claude` y devuelve el resultado. Auth por **token compartido** `PERCEPCION_WORKER_TOKEN`.
+- Cambios: se eliminó `percepcion-agent.ts` (server ya no ejecuta claude); `[id]/analyze` ahora **re-encola** (no spawnea);
+  nuevos `worker/pending` (claim atómico `FOR UPDATE SKIP LOCKED` + re-reclamo de colgadas >10min con `claimed_at`) y
+  `worker/result` (persiste); `percepcion-db.ts` ganó `claimForWorker`/`requeueCaptura`/columna `claimed_at`; el
+  componente ahora **encola + hace polling** (pendiente="en cola", analizando=spinner, error=reintentar) en vez de
+  análisis in-process. La lógica de visión vive ahora SOLO en el worker `.mjs` (autónomo, `--once` para cron).
+- **HTTPS (aclaración al usuario):** la cámara/GPS exigen contexto seguro; la web (Railway) ya es HTTPS → funcionan. `dev:https`
+  solo hace falta para pruebas locales desde otro dispositivo (no localhost). El HTTPS NO es la limitación; la limitación
+  era el Claude CLI, ahora resuelta con el worker.
+- **Config despliegue:** server (local+Railway) `PERCEPCION_WORKER_TOKEN`; worker `PERCEPCION_WORKER_TOKEN`+`PERCEPCION_APP_URL`
+  (+opc `CLAUDE_CLI_PATH`/`PERCEPCION_POLL_MS`/`PERCEPCION_BATCH`) → `node scripts/percepcion-worker.mjs`.
 
 ### Progreso
-- **% de información para el objetivo: 95%** — sistema construido y verificado (tsc+build+CLI vision en vivo). Falta la
-  **validación visual in-app** (login + cámara + GPS + flujo completo de captura→análisis→detalle en el navegador),
-  no realizable sin sesión/dispositivo.
+- **% de información para el objetivo: 97%** — sistema construido y **verificado end-to-end**: `tsc`+`next build` OK (5 rutas
+  API) + prueba REAL del worker (dev server con token → captura pendiente en BD → `worker --once` reclamó, llamó a `claude`,
+  reconoció 18 elementos con propiedades y devolvió el resultado → captura `analizado`; datos de prueba borrados). Falta solo
+  la **validación visual in-app** en el navegador (login + cámara + GPS), no realizable sin sesión/dispositivo.
 
 ---
 

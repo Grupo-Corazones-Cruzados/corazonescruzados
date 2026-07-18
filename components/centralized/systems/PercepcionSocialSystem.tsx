@@ -71,7 +71,6 @@ export default function PercepcionSocialSystem({ isAdmin }: { system?: any; isAd
   const [selId, setSelId] = useState<number | null>(null);
   const [detalle, setDetalle] = useState<Detalle | null>(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
-  const [analyzingId, setAnalyzingId] = useState<number | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [confirmDel, setConfirmDel] = useState<Captura | null>(null);
 
@@ -101,18 +100,16 @@ export default function PercepcionSocialSystem({ isAdmin }: { system?: any; isAd
     return capturas.filter((c) => c.estado === filter);
   }, [capturas, filter]);
 
-  const analyze = useCallback(async (id: number) => {
-    setAnalyzingId(id);
-    setCapturas((cs) => cs.map((c) => (c.id === id ? { ...c, estado: 'analizando' } : c)));
+  // Re-encola una captura (error/colgada) para que el worker local la vuelva a tomar.
+  const requeue = useCallback(async (id: number) => {
     try {
       const res = await fetch(`${API}/${id}/analyze`, { method: 'POST' });
       const d = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(d.error || 'Error al analizar');
-      toast.success(`Análisis completado: ${(d.elementos || []).length} elemento(s)`);
+      if (!res.ok) throw new Error(d.error || 'No se pudo encolar');
+      toast.success('Captura encolada para análisis');
     } catch (e: any) {
-      toast.error(e.message || 'Falló el análisis');
+      toast.error(e.message);
     } finally {
-      setAnalyzingId(null);
       await load();
       if (selId === id) await loadDetalle(id);
     }
@@ -120,9 +117,16 @@ export default function PercepcionSocialSystem({ isAdmin }: { system?: any; isAd
 
   const onSaved = useCallback(async (newId: number) => {
     await load();
-    setSelId(newId);
-    analyze(newId);
-  }, [load, analyze]);
+    setSelId(newId); // queda 'pendiente'; el worker local la procesará (polling la refresca).
+  }, [load]);
+
+  // Polling: mientras la captura seleccionada esté pendiente/analizando, refresca hasta que el worker termine.
+  const enProceso = detalle && (detalle.estado === 'pendiente' || detalle.estado === 'analizando');
+  useEffect(() => {
+    if (!enProceso || selId == null) return;
+    const t = setInterval(() => { loadDetalle(selId); load(); }, 4000);
+    return () => clearInterval(t);
+  }, [enProceso, selId, loadDetalle, load]);
 
   const del = async (c: Captura) => {
     try {
@@ -132,8 +136,6 @@ export default function PercepcionSocialSystem({ isAdmin }: { system?: any; isAd
       await load();
     } catch (e: any) { toast.error(e.message); }
   };
-
-  const isBusy = (id: number, estado: Captura['estado']) => analyzingId === id || estado === 'analizando';
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
@@ -209,7 +211,7 @@ export default function PercepcionSocialSystem({ isAdmin }: { system?: any; isAd
                       <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/55 text-white text-[10px]" style={mf}>
                         <Images className="w-3 h-3" /> {c.fotos_count}
                       </span>
-                      <span className={`absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/55 text-white text-[10px] ${isBusy(c.id, c.estado) ? '' : ''}`} style={mf}>
+                      <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/55 text-white text-[10px]" style={mf}>
                         <span className={`w-1.5 h-1.5 rounded-full ${est.dot}`} /> {est.label}
                       </span>
                     </div>
@@ -244,8 +246,7 @@ export default function PercepcionSocialSystem({ isAdmin }: { system?: any; isAd
         ) : detalle ? (
           <DetailPanel
             detalle={detalle}
-            busy={isBusy(detalle.id, detalle.estado)}
-            onAnalyze={() => analyze(detalle.id)}
+            onRequeue={() => requeue(detalle.id)}
             onDelete={() => setConfirmDel(detalle)}
           />
         ) : null}
@@ -268,7 +269,7 @@ export default function PercepcionSocialSystem({ isAdmin }: { system?: any; isAd
 }
 
 /* ─────────────────────────── Panel de detalle ─────────────────────────── */
-function DetailPanel({ detalle, busy, onAnalyze, onDelete }: { detalle: Detalle; busy: boolean; onAnalyze: () => void; onDelete: () => void }) {
+function DetailPanel({ detalle, onRequeue, onDelete }: { detalle: Detalle; onRequeue: () => void; onDelete: () => void }) {
   const est = ESTADO[detalle.estado];
   const fotos = detalle.fotos.map((f) => f.url);
   const porCategoria = (cat: string) => detalle.elementos.filter((e) => e.categoria === cat);
@@ -303,22 +304,23 @@ function DetailPanel({ detalle, busy, onAnalyze, onDelete }: { detalle: Detalle;
         </div>
 
         {/* Estado del análisis */}
-        {busy ? (
+        {detalle.estado === 'analizando' ? (
           <div className="flex items-center gap-2 px-3 py-3 rounded-lg bg-accent-light border border-accent/20 text-[12px] text-accent" style={mf}>
-            <Loader2 className="w-4 h-4 animate-spin" /> Analizando el entorno con IA… puede tardar un momento.
+            <Loader2 className="w-4 h-4 animate-spin" /> Analizando el entorno con IA…
+          </div>
+        ) : detalle.estado === 'pendiente' ? (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-700" style={mf}>
+            <Loader2 className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>En cola para análisis. Se procesará cuando el <b>procesador local</b> (worker con Claude CLI) esté activo.</span>
           </div>
         ) : detalle.estado === 'error' ? (
           <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[12px] text-red-600" style={mf}>
             <p className="font-medium mb-1">No se pudo analizar</p>
             {detalle.error && <p className="text-[11px] mb-2">{detalle.error}</p>}
-            <button onClick={onAnalyze} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white border border-red-200 text-red-600 hover:bg-red-100 text-[11px] font-medium">
+            <button onClick={onRequeue} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white border border-red-200 text-red-600 hover:bg-red-100 text-[11px] font-medium">
               <RefreshCw className="w-3.5 h-3.5" /> Reintentar análisis
             </button>
           </div>
-        ) : detalle.estado === 'pendiente' ? (
-          <button onClick={onAnalyze} className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-accent text-white text-[12px] font-semibold hover:bg-accent/90" style={mf}>
-            <Sparkles className="w-4 h-4" /> Analizar con IA
-          </button>
         ) : null}
 
         {/* Resumen del entorno */}
