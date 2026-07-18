@@ -267,6 +267,37 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Sistema "Percepción Social" — 1er sistema del piso COLABORADOR (2026-07-17):** Centralizado · `colaborador/gestion`
+  · celda **"Líder"** · slug `percepcion-social` · URL `/dashboard/centralized/colaborador/gestion/percepcion-social`.
+  Captura eventos del entorno del colaborador: **ubicación GPS + conjunto de fotos** tomadas con la **cámara del
+  dispositivo**, que una **IA de visión (Claude CLI local)** analiza para reconocer **objetos/animales/personas** y
+  **todas sus propiedades** (color, material, cantidad, raza, tipo de cabello, vestimenta…). Los registros alimentarán
+  a futuro un **mapa/simulación del mundo real** para el futuro **Sistema de Control Psicosocial** (global·creacion).
+  - **Decisiones (usuario):** paso=**gestión**; cámara **in-app `getUserMedia`** (video en vivo + varias fotos con
+    preview, no selector nativo); **sin mapa** por ahora (solo lat/lng + link a Google Maps; el mapa real será un sistema
+    futuro dedicado — NO se instaló librería de mapas); capturas **privadas por colaborador** (admin ve todas).
+  - **Backend:** `lib/centralized/percepcion-db.ts` (tablas `ps_capturas`/`ps_fotos`/`ps_elementos`, prefijo `ps_`,
+    promise-singleton `ensurePercepcionTables`, alcance forzado por `user_id` en `ownerClause`). `lib/centralized/
+    percepcion-agent.ts` (visión con Claude CLI headless). Rutas `app/api/centralized/percepcion/capturas/{route,
+    [id]/route,[id]/analyze/route}` (POST multipart→Cloudinary carpeta `corazones-cruzados/percepcion-social`, fallback
+    base64; analyze `maxDuration=300`). Semilla en `systems/route.ts ensureTable` + rama en el switch del renderer
+    `[piso]/[paso]/[slug]/page.tsx`.
+  - **Frontend:** `components/centralized/systems/PercepcionSocialSystem.tsx` — rail (botón "Nueva captura" + filtros
+    Todas/Analizadas/En proceso/Con error con conteos) + galería de capturas (thumbnail/estado/GPS/nº elementos) + panel
+    de detalle (fotos con `ImageGallery`, elementos **agrupados por objeto/animal/persona** con chips de propiedades,
+    link "Ver en Maps") + **overlay de cámara full-screen** (getUserMedia `facingMode:environment`, canvas→blob JPEG,
+    GPS `getCurrentPosition` auto, tira de fotos con borrar). Al guardar → auto-dispara el análisis.
+  - **Lección técnica — VISIÓN con Claude CLI local (NUEVO patrón, verificado en vivo):** para que el CLI headless VEA
+    imágenes: (1) escribir las fotos a un `mkdtemp`, (2) pasar sus **rutas absolutas** en `-p`, (3) **`--allowedTools
+    Read`** (el Read de Claude Code lee imágenes visualmente — el agente de pesos lo DESHABILITA; aquí es lo contrario),
+    (4) **`--system-prompt`** reencuadrándolo como analista visual ("tu única salida es UN JSON", NO coder), (5) `cwd` =
+    el dir temporal (sin CLAUDE.md). Devuelve el JSON dentro de `parsed.result` → parseo de 2 capas (como pesos-agent).
+    **Verificado:** sobre `public/PaisajeVioleta1.png`, `claude` leyó la imagen (2 turnos) y devolvió `{resumen,
+    elementos:[{categoria,nombre,confianza,propiedades,foto_indices}]}` correcto (~36s, `is_error:false`).
+  - **Local-only:** el análisis IA solo corre con Next.js local (binario `claude` + child_process); **NO en Railway**
+    (igual que el agente de pesos de Gestión de Datos). Captura/subida/exploración sí funcionan en prod.
+  - Verificado: `tsc` limpio + `next build` OK (3 rutas API) + CLI vision en vivo. **PENDIENTE:** validación visual
+    in-app (login + cámara + GPS + flujo captura→análisis→detalle). Ver `Aprendizaje.md`.
 - **Responsividad móvil/tablet — patrones reutilizables (2026-07-16, en curso):** el dashboard ya venía bastante
   responsive (shell/sidebar off-canvas con hamburguesa en `<lg`; home con `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`;
   detalles con rieles `w-full lg:w-[…]` y grids `grid-cols-1 sm:grid-cols-*`; `PixelDataTable` con scroll interno).

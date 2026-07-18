@@ -16,6 +16,7 @@ import MetodologiaCondiciologicaSystem from '@/components/centralized/systems/Me
 import GestionDeCondicionesSystem from '@/components/centralized/systems/GestionDeCondicionesSystem';
 import DinamicaCondiciologicaSystem from '@/components/centralized/systems/DinamicaCondiciologicaSystem';
 import EncuadreCondiciologicoSystem from '@/components/centralized/systems/EncuadreCondiciologicoSystem';
+import PercepcionSocialSystem from '@/components/centralized/systems/PercepcionSocialSystem';
 import { isPiso, isPaso, cellName as cellNameFor } from '@/lib/centralized/systems';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -126,6 +127,8 @@ export default function CentralizedSystemPage() {
           <DinamicaCondiciologicaSystem system={system} isAdmin={isAdmin} />
         ) : slug === 'encuadre-condiciologico' ? (
           <EncuadreCondiciologicoSystem system={system} isAdmin={isAdmin} />
+        ) : slug === 'percepcion-social' ? (
+          <PercepcionSocialSystem system={system} isAdmin={isAdmin} />
         ) : (
           <div className="bg-digi-card border border-digi-border rounded-xl text-center py-16">
             <div className="w-12 h-12 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center mx-auto mb-3">

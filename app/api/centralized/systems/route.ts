@@ -104,6 +104,17 @@ async function ensureTable() {
             'global', 'creacion', 'Control Psicosocial', 'encuadre-condiciologico'
      WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'encuadre-condiciologico')`,
   );
+  // Sistema built-in "Percepción Social" (colaborador · gestión, celda "Líder"). Primer sistema del
+  // piso Colaborador: captura eventos del entorno (ubicación + fotos), los analiza con IA (Claude CLI
+  // local) para reconocer objetos/animales/personas y sus propiedades, y registra el resultado. Estos
+  // registros alimentarán a futuro un mapa/simulación del mundo real para el Sistema de Control Psicosocial.
+  await pool.query(
+    `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+     SELECT 'Percepción Social',
+            'Captura eventos del entorno del colaborador: su ubicación y un conjunto de fotos que una IA analiza para reconocer los objetos, animales y personas presentes y sus propiedades. Los registros alimentarán el mapa del mundo real del Control Psicosocial.',
+            'colaborador', 'gestion', 'Líder', 'percepcion-social'
+     WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'percepcion-social')`,
+  );
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (

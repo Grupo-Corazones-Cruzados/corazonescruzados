@@ -5,6 +5,109 @@
 >
 > **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
+## Objetivo ACTUAL (declarado 2026-07-17) — Sistema "Percepción Social" (Centralizado · piso COLABORADOR)
+
+**Rol asumido:** arquitecto full-stack + integrador de IA de visión (Claude CLI local) para GCC World.
+
+### Necesidad (base verbatim del usuario, 2026-07-17)
+Primer sistema del **piso Colaborador** del Centralizado. El piso Colaborador permite que los colaboradores
+**ejecuten tareas de sistemas delegados** o **generen registros que alimentarán sistemas futuros**.
+
+**Sistema "Percepción Social" = capturar eventos del entorno del sujeto que usa la app:**
+1. El usuario envía a la app su **ubicación actual** (GPS).
+2. Con la **cámara del dispositivo** toma un **conjunto de fotos** del entorno.
+3. Las fotos + un **prompt** se envían a una **IA** que analiza cada imagen y **distingue los elementos**
+   presentes: **objetos, animales o personas**.
+4. La IA entrega, por cada elemento, **todas las propiedades** que reconozca (color del árbol, raza del
+   animal, tipo de cabello de la persona, etc.) — análisis libre, la IA decide qué propiedades reporta.
+5. El resultado se **registra en la app**; luego, dentro del mismo sistema, se puede **acceder y revisar**
+   lo interpretado por la IA.
+
+**Backend IA:** un **servidor local conectado con el Claude CLI** recibe el conjunto de imágenes + prompt,
+analiza y devuelve el resultado (MISMO patrón que el agente de Gestión de Datos — local-only).
+
+**Propósito / futuro:** estos registros alimentarán a futuro un sistema que dibuja un **mapa real** y
+**simula el mundo real** (objetos/animales/personas en los terrenos). Ese mundo virtual será una **pieza
+clave del futuro Sistema de Control Psicosocial** (piso global · paso creación, celda "Control Psicosocial").
+
+**Interfaz:** el usuario pide **creatividad** para navegar y acceder al contenido del sistema.
+
+### Hallazgos de investigación en el repo (2026-07-17) — todo verificado por exploración del código
+- **Cómo se agrega un sistema al Centralizado** (dirigido por datos, no páginas hardcodeadas):
+  1. `lib/centralized/<sys>-db.ts` con `ensure<Sys>Tables()` (patrón `CREATE/ALTER/INDEX IF NOT EXISTS`,
+     prefijo de tabla propio; **guard promise-singleton** anti-DDL-concurrente como `gestion-datos-db.ts:24-34`).
+  2. `app/api/centralized/<sys>/.../route.ts` (llaman a `ensure<Sys>Tables()`; auth `getCurrentUser` + roles).
+  3. `components/centralized/systems/<Sys>System.tsx` (recibe `{ system, isAdmin }`).
+  4. Registrar el componente en el switch de `app/(dashboard)/dashboard/centralized/[piso]/[paso]/[slug]/page.tsx`.
+  5. Sembrar el sistema con `INSERT ... WHERE NOT EXISTS` en `ensureTable()` de
+     `app/api/centralized/systems/route.ts` (piso/paso/cell_name/slug exactos). `CELL_MAP` está **duplicado**
+     en `lib/centralized/systems.ts` y en esa route → mantener en sync.
+  - **Modelo 4P:** pisos = global/pilar/controlador/colaborador; pasos = fundamentacion/creacion/implementacion/
+    gestion. `colaborador·fundamentacion = "Investigador"` (ya lo ocupa Dinámica Condiciológica; pueden coexistir
+    varios sistemas por celda).
+- **Patrón Claude CLI local** (a calcar de `lib/centralized/pesos-agent.ts`):
+  - `execFile(claudeBin(), ['-p', input, '--output-format','json','--permission-mode','bypassPermissions', ...])`,
+    `cwd` neutral, `maxBuffer` grande, `timeout`. `claudeBin()` = `CLAUDE_CLI_PATH` → `$HOME/.local/bin/claude` → `claude`.
+  - Parseo de dos capas: `JSON.parse(stdout)` → `parsed.result` + `parsed.session_id`; luego `parseAction` extrae el
+    JSON que el modelo escribió dentro de `result` (tolerante a fences/prosa).
+  - Sesión: `claude_session_id` viaja al cliente y se reinyecta con `--resume`; `--system-prompt` (REEMPLAZA) solo
+    en el 1er turno. Reencuadre "tarea de transformación de texto, tu salida es UN JSON" para quitar identidad de coder.
+  - **Local-only:** el binario `claude` corre como `child_process` DENTRO del server Next.js local; **no funciona en
+    Railway** (igual que el agente de pesos). Feature interna.
+  - **CLAVE para imágenes:** hoy NINGUNA invocación pasa imágenes (todo texto). El Read tool de Claude Code **lee
+    imágenes visualmente** → estrategia: **escribir las fotos a disco (rutas absolutas) y pasarlas en el prompt
+    PERMITIENDO la tool `Read`** (el agente de pesos la deshabilita; aquí NO), con `cwd` = carpeta de esas fotos.
+- **Imágenes/subida (reutilizable):** `lib/cloudinary.ts` (`uploadImage`/`uploadImages` → `secure_url`, fallback
+  base64); patrón multipart `app/api/users/avatar/route.ts` (recibe `File`→arrayBuffer→base64→Cloudinary); multi-archivo
+  por registro en `incidents/[id]/images` y `projects/[id]/images` (columna `TEXT[]`, POST append / GET / DELETE por índice,
+  **array Postgres es 1-based**). Servido optimizado con `sharp`.
+- **Cámara:** NO existe captura (`getUserMedia`/`capture=`) en el repo → se construye desde cero. HTTPS disponible
+  (`server.cjs`, `npm run dev:https`) — requisito para cámara+GPS fuera de localhost.
+- **Geolocalización:** NO existe (`navigator.geolocation` a cero) → desde cero. Sin columnas GPS en BD.
+- **Mapas:** solo el mundo gamificado por tiles (grid discreto, no geográfico). **No hay librería de mapa geográfico**
+  instalada (ni leaflet/maplibre/mapbox). Grafo canvas reutilizable: `react-force-graph-2d` (`GdGraph`/`KnowledgeGraph`/
+  `PolicyGraph`) + `FloatingWindow` (arrastrable/redimensionable).
+- **UI estándar:** patrón "Explorador Azure" (rail Pisos + lista + panel) y grafo canvas oscuro + panel glass (Diseño.md).
+
+### Arquitectura propuesta (borrador, a confirmar con las preguntas abiertas)
+- **Slug:** `percepcion-social`. **Piso:** colaborador. **Paso:** por confirmar (propuesta: `fundamentacion`, celda "Investigador").
+- **Modelo de datos (prefijo `ps_`):**
+  - `ps_capturas` (id, user_id, session_id, lat, lng, accuracy, direccion?, capturado_en, estado
+    [pendiente|analizando|analizado|error], claude_session_id?, resumen?, notas?).
+  - `ps_fotos` (id, captura_id FK, url [Cloudinary], orden, width?, height?).
+  - `ps_elementos` (id, captura_id FK, categoria [objeto|animal|persona], nombre, confianza?, resumen?,
+    propiedades JSONB [libres, lo que la IA reconozca], foto_indices? [en qué fotos aparece]).
+- **Flujo:** cámara (getUserMedia) toma N fotos + GPS → POST multipart → server sube a Cloudinary (persistencia/UI)
+  y **escribe copias a disco temporal** → invoca Claude CLI con prompt + rutas absolutas (tool Read habilitada) →
+  la IA devuelve JSON `{ resumen, elementos:[{categoria,nombre,propiedades,foto_indices,confianza}] }` → server
+  persiste elementos → estado `analizado`. Alcance forzado en server (solo las fotos de ESA captura).
+- **UI (creativa):** (1) **Modo Captura** — botón grande "Nueva captura del entorno" → cámara + preview de fotos +
+  GPS auto → enviar. (2) **Explorador** — rail (estado/fecha) + lista/galería de capturas georreferenciadas + panel de
+  detalle. (3) **Detalle** — galería de fotos + elementos agrupados por categoría (objetos/animales/personas) con sus
+  propiedades; opción de **grafo** captura→elementos→propiedades (motor reusable). (4) A futuro: pins en mapa real.
+
+### Decisiones del usuario (2026-07-17) — todas resueltas
+- **P1 — Paso:** ✅ **Gestión** → `colaborador/gestion`, celda **"Líder"**. URL `/dashboard/centralized/colaborador/gestion/percepcion-social`.
+- **P2 — Captura de cámara:** ✅ **in-app con `getUserMedia`** (video en vivo + tomar varias fotos con preview/borrar). Requiere HTTPS fuera de localhost (`npm run dev:https`).
+- **P3 — Mapa:** ✅ **solo coordenadas + link a Google Maps** por ahora (el mapa real se deja para el sistema futuro dedicado). NO se instala librería de mapas.
+- **P4 — Visibilidad:** ✅ **privadas por colaborador** (cada quien ve las suyas; el admin ve todas). Alcance forzado en la capa DB (`ownerClause`) y en las rutas (`getCurrentUser` + rol).
+- **P5 — Análisis por conjunto:** ✅ la IA analiza el **conjunto** de fotos y devuelve **UNA lista consolidada** de elementos con `foto_indices`.
+
+### Construido y verificado (2026-07-17)
+- **Backend:** `lib/centralized/percepcion-db.ts` (tablas `ps_capturas`/`ps_fotos`/`ps_elementos`, promise-singleton, CRUD con propiedad forzada) · `lib/centralized/percepcion-agent.ts` (Claude CLI local: escribe fotos a `mkdtemp`, `claude -p ... --allowedTools Read --system-prompt`, cwd=dir temporal, parseo 2 capas + normalizadores) · rutas `app/api/centralized/percepcion/capturas/{route,[id]/route,[id]/analyze/route}` (multipart→Cloudinary; analyze `maxDuration=300`).
+- **Registro:** semilla en `systems/route.ts` `ensureTable` (colaborador·gestion·Líder·percepcion-social) + rama en el switch de `[piso]/[paso]/[slug]/page.tsx`.
+- **Frontend:** `components/centralized/systems/PercepcionSocialSystem.tsx` — rail (Nueva captura + filtros con conteos) + galería de capturas + panel de detalle (fotos con `ImageGallery`, elementos agrupados por objeto/animal/persona con chips de propiedades, link Maps) + **overlay de cámara** (getUserMedia `facingMode:environment`, canvas→blob, GPS auto, tira de fotos). Auto-analiza tras guardar.
+- **Verificación:** `tsc --noEmit` limpio · `next build` OK (3 rutas API registradas) · **PRUEBA EN VIVO DEL CLAUDE CLI VISION:** replicando los args del agente sobre `public/PaisajeVioleta1.png`, `claude` **leyó la imagen con Read** (2 turnos) y devolvió el JSON exacto esperado (`resumen` + 13 `elementos` con categoria/nombre/confianza/propiedades/foto_indices), `is_error:false`, ~36s. **El mecanismo de visión headless FUNCIONA.**
+- **Lección técnica clave (visión con Claude CLI):** para que el modelo VEA imágenes en modo headless, hay que (1) escribirlas a disco, (2) pasar sus **rutas absolutas** en el `-p`, (3) **`--allowedTools Read`** (Claude Code lee imágenes visualmente), (4) `--system-prompt` que lo reencuadre como analista visual "tu única salida es UN JSON" (NO coder), (5) `cwd` = dir temporal de las fotos. Devuelve el JSON dentro de `parsed.result` → parseo de 2 capas.
+- **Local-only:** el análisis IA solo corre con Next.js local (binario `claude` + child_process); en Railway NO (igual que el agente de pesos). Captura/subida/exploración sí funcionan en cualquier entorno.
+
+### Progreso
+- **% de información para el objetivo: 95%** — sistema construido y verificado (tsc+build+CLI vision en vivo). Falta la
+  **validación visual in-app** (login + cámara + GPS + flujo completo de captura→análisis→detalle en el navegador),
+  no realizable sin sesión/dispositivo.
+
+---
+
 ## Objetivo ACTUAL (declarado 2026-07-12) — Agente IA (Claude CLI) que genera PESOS de una premisa desde Scopus
 
 **Necesidad:** desde una **fuente premisa** seleccionada, lanzar un **agente conversacional** que:
