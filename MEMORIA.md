@@ -2117,6 +2117,22 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **`SELECT DISTINCT` + `ORDER BY` de una expresión NO seleccionada = consulta inválida (2026-07-19):**
+  "Mis chats" salía **vacío** aunque el usuario tuviera 7 proyectos sin completar. Causa:
+  `SELECT DISTINCT p.id::text AS ref_id … ORDER BY p.id DESC` — con `DISTINCT`, Postgres exige
+  que **toda expresión del ORDER BY esté en la lista de selección**, y ahí estaba `p.id::text`,
+  no `p.id`. La consulta lanzaba **42P10** en tiempo de planificación → la ruta devolvía 500 →
+  el cliente lo tragaba (`r.ok ? r.json() : null`) y pintaba "Sin chats abiertos".
+  **Fix:** añadir `p.id` a la lista de selección. **Es la MISMA familia de fallo que el `id`
+  ambiguo del grafo de Gestión de Datos:** un endpoint que revienta + un cliente que traga el
+  error se ve **idéntico a "no hay datos"**.
+- **Probar el CONCEPTO no es probar el CÓDIGO (2026-07-19):** el fallo anterior pasó una batería
+  de 19 comprobaciones contra la BD real porque el script de prueba tenía **SQL simplificado
+  escrito a mano**, no las consultas del código. Desde entonces las verificaciones de chat
+  **EXTRAEN las consultas reales** de `participants.ts`/`chat-db.ts` (parseando sus template
+  literals, sustituyendo las interpolaciones) y las ejecutan. Misma idea que ya se aplicó al DDL
+  y al seed en Railway. **Regla: si la prueba no ejecuta la cadena que corre en producción, no
+  prueba nada.**
 - **`FloatingWindow` anidado dentro de un panel con `backdrop-filter`/`overflow` quedaba atrapado (2026-07-13):**
   un `FloatingWindow` (modal `position:fixed`) renderizado DENTRO del panel flotante de detalle de Gestión de
   Datos (que usa `GLASS` = `backdrop-blur-md`) no se podía usar: `backdrop-filter` (como `filter`/`transform`)
