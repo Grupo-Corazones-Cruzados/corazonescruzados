@@ -303,6 +303,37 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Es idempotente y se auto-repara:** su entrada son los pensamientos con `category IS NULL`,
     y `setCategory` solo escribe si la fila sigue sin etiquetar. Si una noche falla o no corre, la
     siguiente recupera lo pendiente; repetirlo no duplica trabajo ni dos ejecuciones se pisan.
+- **Railway — servicio de cron CREADO y verificado (2026-07-19):** en el proyecto **Servidor-GCC**
+  (`9879300f-745e-4929-b9cb-3d6a03ce0117`, env `production`) ahora hay **3 servicios**:
+  `corazonescruzados` (web), `Postgres` y el nuevo **`pensamientos-cron`**
+  (`90aaf5dc-5530-4a95-a8a8-c1d8a51cff3f`).
+  - Config del cron: `cronSchedule = 0 6 * * *` (**UTC** → 01:00 Ecuador) ·
+    `startCommand = node scripts/pensamientos-cron.mjs` · `restartPolicyType = NEVER` (un cron no
+    debe reintentar en bucle; espera al siguiente disparo) · `watchPatterns =
+    ["scripts/pensamientos-cron.mjs"]` (no se redespliega en cada push a la app) ·
+    `buildCommand = echo …` — **se anula el build**: el disparador solo hace un `fetch` (nativo en
+    Node 18+, cero dependencias), así que compilar todo Next.js sería minutos desperdiciados y un
+    punto de fallo extra.
+  - Variables: **`CRON_TOKEN`** (secreto de 43 car., generado con `crypto.randomBytes(32)`) en
+    **ambos** servicios, y `APP_URL=https://app.grupocc.org` en el de cron.
+  - El CLI de Railway **no** sabe fijar `cronSchedule`/`startCommand`; se hizo por su **API
+    GraphQL** (`backboard.railway.com/graphql/v2`, mutación `serviceInstanceUpdate`) usando el
+    token del propio CLI (`~/.railway/config.json`).
+- **LECCIÓN Railway — cambiar el cron NO basta: hay que REDESPLEGAR (2026-07-19):** tras
+  `serviceInstanceUpdate` con un `cronSchedule` nuevo, el servicio siguió sin dispararse porque el
+  **despliegue vigente conserva el snapshot de configuración anterior**. Confirmado empíricamente:
+  con el horario cambiado pero sin redesplegar, dos disparos programados pasaron de largo y los
+  logs quedaron vacíos; tras `serviceInstanceDeployV2` el cron se ejecutó puntualmente. Regla:
+  todo cambio de `cronSchedule`/`startCommand` va seguido de un redespliegue.
+  (También documentado: el intervalo mínimo entre ejecuciones es de **5 minutos** y el servicio
+  **debe terminar** — si sigue vivo, Railway se salta la siguiente ejecución.)
+- **Verificación en PRODUCCIÓN (2026-07-19):** endpoint `POST /api/pensamientos/cron/etiquetar`
+  → **401 sin token**, **401 con token inválido**, **200 con el correcto**. Prueba de extremo a
+  extremo: 4 pensamientos sin etiquetar insertados en la BD real → cron ejecutado → **4/4
+  etiquetados correctamente por la IA** (mental/corporal/laboral/social), `categorized_at`
+  relleno, 0 pendientes, bitácora registrada. Disparo real del servicio de cron comprobado en sus
+  logs. **Datos de prueba eliminados**: `pn_thoughts` y `pn_tagging_runs` quedaron en 0.
+
 - **PENDIENTE acordado (2026-07-19) — "Gestión Social · pestaña Recursos" + valoración global:**
   el usuario especificó el siguiente desarrollo, que usará los pensamientos:
   - En **Gestión Social → Recursos**: panel izquierdo con **candidatos y miembros**; al elegir uno,

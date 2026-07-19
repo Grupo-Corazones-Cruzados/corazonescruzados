@@ -62,15 +62,14 @@ usuario). **Propuesta:** alinear el resto.
 
 ## Operación
 
-### O1 — El servicio de Cron de Railway aún no está creado · 🔵 Aprobada (pendiente de configurar)
-**Del lado del código está todo listo** (endpoint + `scripts/pensamientos-cron.mjs`), pero el
-servicio de cron vive **solo en el panel de Railway** y lo tiene que crear el usuario:
-servicio nuevo del mismo repo · start `node scripts/pensamientos-cron.mjs` · schedule **`0 6 * * *`**
-(UTC = 01:00 Ecuador) · env `CRON_TOKEN` (igual que en el web) y `APP_URL`.
-Mientras tanto el etiquetado se puede lanzar a mano como admin (mismo endpoint). Como el trabajo es
-idempotente y se auto-repara, un retraso en configurarlo no pierde datos.
-No hay `railway.json`/`railway.toml` en el repo, así que esta configuración no queda versionada;
-si se quiere declarativa, habría que añadir ese archivo.
+### O1 — Servicio de Cron de Railway · 🟢 Implementada (2026-07-19)
+Creado en **Servidor-GCC** el servicio `pensamientos-cron` (mismo repo) con
+`0 6 * * *` (UTC = 01:00 Ecuador), `node scripts/pensamientos-cron.mjs`, `restartPolicyType=NEVER`,
+build anulado y `watchPatterns` acotado al script. `CRON_TOKEN` en ambos servicios y `APP_URL` en el
+de cron. Verificado en producción de extremo a extremo (4/4 etiquetados por la IA) y comprobado el
+disparo real del cron. Hecho por la **API GraphQL** de Railway: el CLI no expone `cronSchedule`.
+**Nota:** esta configuración vive solo en Railway, no versionada. Si se quiere declarativa, habría
+que añadir un `railway.json` con `deploy.cronSchedule` y apuntar el servicio a él.
 
 ## Funcionalidad
 

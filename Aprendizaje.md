@@ -70,9 +70,26 @@ paleta (es canónica en media app); se compensó con **forma de marcador + icono
 También se evitó el error clásico de poner intensidad como **segundo eje Y**: va como tamaño de
 punto o en un gráfico aparte.
 
+### Infraestructura desplegada (2026-07-19) — Railway, hecho por mí a pedido del usuario
+- Proyecto **Servidor-GCC**: creado el servicio **`pensamientos-cron`** (mismo repo) con
+  `0 6 * * *` (UTC = 01:00 Ecuador), `node scripts/pensamientos-cron.mjs`, `restartPolicyType=NEVER`,
+  **build anulado** (el disparador no usa dependencias) y `watchPatterns` acotado al script.
+  `CRON_TOKEN` (43 car. aleatorios) en el servicio web y en el de cron; `APP_URL` en el de cron.
+- El **CLI de Railway no expone `cronSchedule`/`startCommand`** → se usó su **API GraphQL**
+  (`serviceInstanceUpdate`) con el token del propio CLI.
+- **⚠️ Lección cara: cambiar el cron NO surte efecto sin REDESPLEGAR.** El despliegue vigente
+  conserva el snapshot de configuración anterior. Dos disparos programados pasaron de largo con el
+  horario ya cambiado; solo tras `serviceInstanceDeployV2` se ejecutó. Lo descubrí porque probé el
+  disparo real en vez de darlo por bueno al ver la config correcta en la API.
+- Docs de Railway: intervalo mínimo **5 minutos**, todo en **UTC**, y el servicio **debe terminar**
+  (si sigue vivo, se salta la siguiente ejecución).
+- **Verificado en producción:** 401 sin token · 401 con token inválido · 200 con el correcto ·
+  4 pensamientos reales → **4/4 etiquetados por la IA** · disparo real del cron visto en sus logs ·
+  datos de prueba borrados (`pn_thoughts` y `pn_tagging_runs` en 0).
+
 ### Progreso
-- **% de información para el objetivo:** 100% — construido y verificado.
-- **Pendiente del usuario:** crear el servicio de Cron en Railway (ver PROPUESTAS.md → O1).
+- **% de información para el objetivo:** 100% — construido, desplegado y verificado de extremo a
+  extremo en producción. Sin pendientes del usuario.
 
 ## Objetivo ACTUAL (declarado 2026-07-19) — Sistema "Gestión Social" (Centralizado · CONTROLADOR · gestión) + módulo "Experiencias"
 
