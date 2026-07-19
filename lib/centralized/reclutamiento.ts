@@ -18,12 +18,27 @@ export interface CriteriaGroup {
 /** Balance de un valor: tareas completadas (positivo) vs no completadas (negativo). */
 export interface ValueBalance { completed: number; failed: number; }
 
+/**
+ * VALORACIÓN GLOBAL asignada a mano desde "Gestión Social · Recursos" tras leer los
+ * pensamientos del sujeto. Puntos ABSOLUTOS que REEMPLAZAN (hoy 5, mañana 3 → vale 3).
+ * Va SEPARADA de `talents`/`valuesBalance`, que se derivan del cumplimiento de tareas (±1):
+ * un porcentaje de tareas cumplidas y unos puntos que pone una persona no son sumables.
+ */
+export interface AssessmentScores {
+  talents: { itemKey: string; points: number }[];
+  values: { itemKey: string; points: number }[];
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
 export interface CandidateCriteria {
   talents: TalentScore[];          // hasta 10, se ordenan de mayor a menor
   values: CriteriaGroup;           // por key de VALUE_ITEMS (compat; hoy vacío)
   valuesBalance?: { [key: string]: ValueBalance }; // barra divergente por valor
   dimensions: CriteriaGroup;       // por key de DIMENSION_ITEMS
   apoyo: CriteriaGroup;            // por key de APOYO_ITEMS
+  /** Valoración manual de Gestión Social. No se mezcla con lo anterior. */
+  assessment?: AssessmentScores;
 }
 
 export interface CriterionItem { key: string; label: string; }

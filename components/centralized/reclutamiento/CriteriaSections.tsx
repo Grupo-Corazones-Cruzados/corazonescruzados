@@ -1,17 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, Gem, Activity, HeartHandshake, Info, ChevronDown } from 'lucide-react';
+import { Sparkles, Gem, Activity, HeartHandshake, Info, ChevronDown, Star } from 'lucide-react';
 import { VALUE_ITEMS, DIMENSION_ITEMS, APOYO_ITEMS, sortedTalents, type CandidateCriteria, type CriterionItem } from '@/lib/centralized/reclutamiento';
+import { VALOR_LABEL } from '@/lib/centralized/valores';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
 /**
- * Criterios de desarrollo de un sujeto (candidato o miembro), en 4 secciones colapsables:
- * Talento (top 10 %), Valores (barra divergente completadas/fallidas), Dimensiones
- * (carga de problemas) y Apoyo. Reutilizable en la pestaña de Candidatos y en la
- * prospección de Miembros. Sin datos → se muestra como "sin evaluar" (—).
+ * Criterios de desarrollo de un sujeto (candidato o miembro), en secciones colapsables:
+ * Valoración (puntos asignados a mano en Gestión Social), Talento (top 10 %), Valores
+ * (barra divergente completadas/fallidas), Dimensiones (carga de problemas) y Apoyo.
+ * Reutilizable en la pestaña de Candidatos y en la prospección de Miembros.
+ * Sin datos → se muestra como "sin evaluar" (—).
+ *
+ * ⚠️ "Valoración" va en su PROPIA sección y nunca se suma a Talento/Valores: son puntos
+ * absolutos que pone una persona, frente a porcentajes derivados del cumplimiento de tareas.
+ * Mezclarlos daría un número sin significado.
  */
 export default function CriteriaSections({ criteria, defaultOpen = false }: { criteria: CandidateCriteria | null; defaultOpen?: boolean }) {
   return (
@@ -22,6 +28,53 @@ export default function CriteriaSections({ criteria, defaultOpen = false }: { cr
           Aún no hay datos de criterios. Se llenan desde Apoyo y Autoayuda (dimensiones) y el Horario de Vida (talentos/valores).
         </div>
       )}
+
+      {(() => {
+        const a = criteria?.assessment;
+        const has = !!a && (a.talents.length > 0 || a.values.length > 0);
+        if (!has) return null;
+        const tot = (xs: { points: number }[]) => xs.reduce((sm, x) => sm + x.points, 0);
+        return (
+          <Section
+            title="Valoración" Icon={Star}
+            subtitle="Puntos asignados desde Gestión Social · Recursos (reemplazan, no se acumulan)"
+            count={a!.talents.length + a!.values.length} defaultOpen={defaultOpen}
+          >
+            <div className="space-y-3">
+              {a!.talents.length > 0 && (
+                <div>
+                  <p className="text-[10.5px] uppercase tracking-wide text-digi-muted mb-1.5" style={df}>
+                    Talentos <span className="tabular-nums">({tot(a!.talents) >= 0 ? '+' : ''}{tot(a!.talents)})</span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {a!.talents.map((x) => (
+                      <span key={x.itemKey} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border bg-sky-500/15 border-sky-400/30 text-sky-600 text-[10.5px]" style={mf}>
+                        <Sparkles className="w-3 h-3" /> {x.itemKey}
+                        <strong className="tabular-nums">{x.points >= 0 ? `+${x.points}` : x.points}</strong>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {a!.values.length > 0 && (
+                <div>
+                  <p className="text-[10.5px] uppercase tracking-wide text-digi-muted mb-1.5" style={df}>
+                    Valores <span className="tabular-nums">({tot(a!.values) >= 0 ? '+' : ''}{tot(a!.values)})</span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {a!.values.map((x) => (
+                      <span key={x.itemKey} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border bg-violet-500/15 border-violet-400/30 text-violet-500 text-[10.5px]" style={mf}>
+                        <Gem className="w-3 h-3" /> {VALOR_LABEL[x.itemKey] || x.itemKey}
+                        <strong className="tabular-nums">{x.points >= 0 ? `+${x.points}` : x.points}</strong>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Section>
+        );
+      })()}
 
       <Section title="Talento" Icon={Sparkles} subtitle="Top 10 talentos, de mayor a menor potencial" count={sortedTalents(criteria?.talents).length || 10} defaultOpen={defaultOpen}>
         {(() => {

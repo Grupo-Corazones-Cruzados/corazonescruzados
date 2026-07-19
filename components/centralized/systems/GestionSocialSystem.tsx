@@ -7,6 +7,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
+import RecursosTab from '@/components/centralized/systems/gestion-social/RecursosTab';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import { VALORES, VALOR_LABEL } from '@/lib/centralized/valores';
 import { TALENTOS } from '@/lib/centralized/talentos';
@@ -103,7 +104,9 @@ export default function GestionSocialSystem({ isAdmin }: { system?: any; isAdmin
           onChange={setTab}
         />
       </div>
-      {tab === 'eventos' ? <EventosTab isAdmin={isAdmin} /> : <ComingSoon name={tab === 'recursos' ? 'Recursos' : 'Discusión'} />}
+      {tab === 'eventos' ? <EventosTab isAdmin={isAdmin} />
+        : tab === 'recursos' ? <RecursosTab />
+        : <ComingSoon name="Discusión" />}
     </div>
   );
 }

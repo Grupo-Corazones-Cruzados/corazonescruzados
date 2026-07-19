@@ -139,6 +139,46 @@ export async function listThoughts(s: Subject, day?: string, limit = 200): Promi
   return rows.map(mapThought);
 }
 
+/* ── Lectura por la ORGANIZACIÓN (Gestión Social · Recursos) ──────────────────
+ * Estas dos funciones leen los pensamientos de OTRA persona. Son la excepción a la
+ * privacidad por fila y solo deben llamarse desde rutas que ya hayan comprobado el acceso
+ * al sistema `gestion-social` (ver `lib/centralized/system-access.ts`).
+ */
+
+/** Pensamientos de un sujeto, opcionalmente filtrados por categoría. */
+export async function listThoughtsOfSubject(s: Subject, categoria?: string, limit = 300): Promise<Thought[]> {
+  await ensurePensamientosTables();
+  const params: any[] = [s.kind, s.id];
+  let clause = '';
+  if (categoria && CATEGORIES_SET.has(categoria)) { params.push(categoria); clause = `AND t.category = $3`; }
+  params.push(limit);
+  const { rows } = await pool.query(
+    `SELECT t.id, t.content, t.char_count, t.category, t.created_at, t.updated_at,
+            to_char(${LOCAL_DAY}, 'YYYY-MM-DD') AS day
+       FROM gcc_world.pn_thoughts t
+      WHERE t.subject_kind = $1 AND t.subject_id = $2 ${clause}
+      ORDER BY t.created_at DESC
+      LIMIT $${params.length}`,
+    params,
+  );
+  return rows.map(mapThought);
+}
+
+/** Conteo de pensamientos por categoría de un sujeto (para el rail de tipos). */
+export async function countByCategory(s: Subject): Promise<Record<string, number>> {
+  await ensurePensamientosTables();
+  const { rows } = await pool.query(
+    `SELECT COALESCE(category, '_sin') AS k, COUNT(*)::int AS n
+       FROM gcc_world.pn_thoughts
+      WHERE subject_kind = $1 AND subject_id = $2
+      GROUP BY 1`,
+    [s.kind, s.id],
+  );
+  const out: Record<string, number> = { _todas: 0 };
+  for (const r of rows) { out[r.k] = Number(r.n); out._todas += Number(r.n); }
+  return out;
+}
+
 /* ── Escritura ───────────────────────────────────────────────────────────────── */
 
 export async function createThought(s: Subject, content: string): Promise<Thought> {
