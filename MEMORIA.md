@@ -304,9 +304,11 @@ Stack estándar de la casa, con particularidades de este repo:
   **`scripts/nightly-cron.mjs`**, que recorre una **lista de trabajos** (`JOBS`): etiquetado de
   Pensamientos + purga del chat. **Añadir un trabajo nocturno nuevo ya no requiere otro servicio
   de cron en Railway**: basta con sumarlo a `JOBS`. Un trabajo que falla no impide los demás.
-  - ⚠️ Se conserva `scripts/pensamientos-cron.mjs` como **alias** que delega en el nuevo, porque
-    el servicio de Railway aún apunta al nombre viejo; sin él la ejecución nocturna habría fallado
-    con "módulo no encontrado". Se puede borrar cuando el servicio use `nightly-cron.mjs`.
+  - El servicio de Railway se actualizó a `node scripts/nightly-cron.mjs`, se **renombró de
+    `pensamientos-cron` a `nightly-cron`** (ya no es solo de Pensamientos) y el alias temporal
+    `scripts/pensamientos-cron.mjs` **se eliminó** tras comprobar el disparo real con el script
+    nuevo (`*/5` de prueba → ambos trabajos en verde → restaurado `0 6 * * *`).
+    Orden aplicado a propósito: **verificar primero, retirar la red de seguridad después.**
   - **Verificado en producción:** el disparador completo devuelve `✓ Pensamientos` y
     `✓ Chat · purga`, 0 fallidos; el chat rechaza sin sesión (403); BD real **13/13 con ROLLBACK**
     (unicidad del grupal, orden, `?after=`, no leídos con GREATEST y mensajes propios, retención

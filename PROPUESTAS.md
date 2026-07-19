@@ -63,8 +63,8 @@ usuario). **Propuesta:** alinear el resto.
 ## Operación
 
 ### O1 — Servicio de Cron de Railway · 🟢 Implementada (2026-07-19)
-Creado en **Servidor-GCC** el servicio `pensamientos-cron` (mismo repo) con
-`0 6 * * *` (UTC = 01:00 Ecuador), `node scripts/pensamientos-cron.mjs`, `restartPolicyType=NEVER`,
+Creado en **Servidor-GCC** el servicio **`nightly-cron`** (mismo repo) con
+`0 6 * * *` (UTC = 01:00 Ecuador), `node scripts/nightly-cron.mjs`, `restartPolicyType=NEVER`,
 build anulado y `watchPatterns` acotado al script. `CRON_TOKEN` en ambos servicios y `APP_URL` en el
 de cron. Verificado en producción de extremo a extremo (4/4 etiquetados por la IA) y comprobado el
 disparo real del cron. Hecho por la **API GraphQL** de Railway: el CLI no expone `cronSchedule`.
