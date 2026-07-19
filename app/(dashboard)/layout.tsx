@@ -7,6 +7,7 @@ import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardBreadcrumb from '@/components/dashboard/DashboardBreadcrumb';
 import DashboardAccessGuard from '@/components/dashboard/DashboardAccessGuard';
 import PolicyBanner from '@/components/dashboard/PolicyBanner';
+import GroupChat from '@/components/chat/GroupChat';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(false);
@@ -45,6 +46,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <DashboardAccessGuard>{children}</DashboardAccessGuard>
           </main>
           <DashboardBreadcrumb collapsed={collapsed} />
+          {/* Chat grupal flotante: se ancla encima de la barra de ruta. Dentro de `.corp` para heredar el tema. */}
+          <GroupChat />
         </div>
       </PolicyEffectsProvider>
     </AuthGuard>
