@@ -151,6 +151,95 @@ Alternativa libre: Pixelorama 1.1.10.
 - **Phaser NO tree-shakea** (no hay campo `sideEffects` ni subpath exports; varios blogs afirman lo
   contrario y se equivocan) ⇒ ~347KB gz. Mitigación: split por ruta, solo carga en el juego.
 
+### ADENDA (2026-07-19, tarde) — el usuario levanta la restricción del editor de escritorio
+**Dijo:** que descargar algo a su PC y subirlo a la app "no lo veo tan mal", incluso "así sea Godot",
+porque necesita "un buen motor para trabajar y poder diseñar lo que quiera sin tantas limitaciones
+como quizás tengo actualmente con mi motor de edición muy inmaduro". Su única preocupación:
+"asegurar que existan las validaciones de usuario y reglas de usuario".
+
+**Corrección a mi análisis previo:** descarté Tiled/LDtk infiriendo que el editor en navegador era
+intocable. **Esa inferencia era mía y era incorrecta.** Tiled pasa de descartado a **recomendado**.
+La distinción que lo resuelve: **el editor de autoría y el runtime son capas separables**. La
+objeción del `<iframe>`/auth aplica SOLO al runtime; jamás aplicó a la herramienta de autoría.
+
+**Verificado por mí leyendo el tarball de `phaser@4.2.1`** (no búsqueda web):
+- **25 archivos de parser de Tiled, cada uno con su test unitario.** Soporta mapas **infinitos por
+  chunks** (`ParseTileLayers.js:46,101-135`) ⇒ **es la cura del canvas de 1 GB y del crash en iOS**;
+  **tiles animados** con duración (`ParseTilesets.js:90-119`) ⇒ el agua congelada se animaría;
+  **Wang sets** (`ParseWangsets.js`), object layers completos, group layers, image layers,
+  Collection of Images, y las 4 orientaciones. Shaders de luz reales (`ApplyLighting.glsl`).
+- ⚠️ **Corrijo un error de mi 1er informe:** dije que Phaser no soporta "Collection of Images". Eso
+  era cierto en Phaser 3, **NO en Phaser 4**.
+- ⚠️ **GOTCHA CRÍTICO — tilesets externos `.tsx` NO soportados** (`ParseTilesets.js:38`): el fallo es
+  un `console.warn`, **no una excepción**. Un mapa exportado sin "Embed Tilesets" **carga sin sus
+  tilesets, en silencio**. Debe ser regla del pipeline Y rechazo duro del validador.
+- **Auto-tiling:** es ayuda de AUTORÍA. Tiled resuelve los tiles al pintar y exporta índices ya
+  resueltos; el runtime no necesita entender nada. Phaser parsea los wangsets solo como extra.
+
+**Godot 4.7.1 — números MEDIDOS (se descargó el `.tpz` oficial y se comprimió localmente):**
+- `godot.wasm` sin hilos: **37,68 MiB crudo / 6,58 MiB brotli**. La cifra oficial que circula
+  ("~5 MB en 4.3") está **desactualizada en un 31%**. Payload realista total: **9-19 MB**.
+  Ratio contra Phaser: **24,4×**. **Suelo inamovible de ~7 MB.** Threads NO cuesta tamaño.
+- ✅ **A favor, y corrige mi objeción del puente frágil:** `library_godot_fetch.js` (4.7-stable)
+  construye `fetch(url,{method,headers,body})` **sin campo `credentials`** ⇒ por spec el default es
+  `same-origin` ⇒ **servido desde `public/game/`, las cookies httpOnly de sesión viajan solas**.
+  Es la integración más segura posible. Pero **obliga a same-origin para siempre** (un CDN de otro
+  dominio rompe la auth de forma permanente). Se monta sin iframe con `new Engine({canvas,...})`.
+- ❌ **`godot#76266` ABIERTO y SIN ASIGNAR:** la iluminación 2D se calcula **por píxel del viewport
+  destino, no a resolución del arte** ⇒ en pixel art escalado los degradados rompen la estética de
+  píxel. Calinou: *"nadie está trabajando en implementarlo"*. El workaround (buffer de baja
+  resolución) **imposibilita zoom, paneo y movimiento suave**. Su ventaja de luz viene con asterisco
+  justo en nuestro estilo.
+- ❌ `godot#70621` (OOM en iOS por límite de 2 GB de wasm) **abierto, actualizado 2026-06-01**.
+
+**Única ventaja visual REAL de Godot: sombras por oclusión** (`LightOccluder2D`+`OccluderPolygon2D`)
+— que una columna proyecte sombra sobre el suelo. **Phaser 4 NO la trae**: hace `setSelfShadow()`
+(relieve DENTRO de un sprite) pero no proyecta entre objetos. Es la **desventaja honesta** de la
+opción A; implementable a mano (shadow casting 2D) pero es trabajo propio.
+
+**Normal maps — la respuesta que faltaba, y reencuadra el objetivo del usuario:**
+- **Laigter VIVO y gratis** (v1.13.1 2025-12-16, GPL-3, solo 4 issues abiertos). Verificado en su
+  `main.cpp`: **CLI headless real** (`--no-gui --normal --specular --occlusion --parallax --preset`,
+  recursivo por defecto) ⇒ **sí se automatiza un tileset entero en CI**.
+- **PERO el coste es de ARTE, no de motor:** Cardboard Sword invirtió **~3 meses-persona** en normal
+  maps a mano solo para los tilesets de *The Siege and the Sandfox*. La comunidad estima **2-4× el
+  tiempo de arte base**. Las herramientas son **más flojas justo en animación**.
+- ⇒ **"Las mejores sombras" es una partida de presupuesto de arte, no una elección de motor.**
+  Elegir Godot por las sombras NO ahorra esos meses. **Plan: probar Laigter automático +
+  `setSelfShadow()` sobre 2-3 assets reales ANTES de comprometer meses de arte o cambiar de motor.**
+
+**Descartados con motivo nuevo:**
+- **LDtk — por mantenimiento, no por diseño:** sin release estable desde **v1.5.3 (2024-01-15)**; los
+  commits de 2026 son solo CI. Su UX (auto-layer rules, IntGrid) sigue siendo superior, pero el
+  paquete de tipos de referencia está en un repo **archivado** apuntando al formato 0.8.
+- **Híbrido "autoría en Godot → runtime Phaser" = TRAMPA.** No existe conversor (búsqueda: 9 repos,
+  ninguno lo es). Motivo técnico: el `.tscn` es parseable pero **la carga útil del tilemap es un blob
+  binario opaco y dependiente de versión** (G3 `PackedInt32Array` → G4 `PackedByteArray`); existe un
+  conversor cuyo propósito literal es arreglar la **"pérdida silenciosa de datos de tiles"**. Sería
+  montar el pipeline sobre la parte menos estable y no documentada del formato.
+
+**Validación de mapas subidos (la preocupación explícita del usuario):**
+- **Concepto clave:** un TMJ subido es **contenido de ADMIN**, no estado de jugador. Son dos niveles
+  de confianza que no se mezclan. **Regla de oro: el mapa es geometría y decoración; JAMÁS premios
+  ni saldos.** El mapa dice *dónde hay un cofre*, nunca *que este usuario tenga su contenido*.
+  Con las recompensas acuñadas en servidor, un mapa malicioso rompe el render, no crea fichas.
+- Capas, en orden: (1) límite de tamaño **antes** de parsear (un TMJ de 200 MB es DoS trivial contra
+  el Node de Railway); (2) ruta con sesión de admin (`getAuthedClient()`); (3) Zod `.strict()` para
+  forma y límites — **NO** validar el payload de tiles con `z.array(z.number())` sobre millones de
+  gids (lentísimo); usar bucle plano para longitud y rango; (4) **rechazo duro de tilesets con
+  propiedad `source`**; (5) allowlist de rutas de imagen (anti path-traversal/SSRF); (6) integridad
+  referencial — **extender el patrón que YA existe en `lib/validation.ts` (`validateWorldConfig`)**;
+  (7) guardar TMJ original + normalizado y versionar; (8) devolver errores agregados, no el primero.
+
+⚠️ **Caveat de fuentes:** el sub-agente que investigó iluminación reportó que **Reddit estaba
+bloqueado y agotó su presupuesto de búsqueda** ⇒ esa parte **no incluye a ningún desarrollador de
+juego publicado hablando en primera persona**. Ausencia de evidencia con fuentes bloqueadas, no
+evidencia de ausencia.
+
+**Entregable:** propuesta en HTML para el usuario (artifact privado)
+`https://claude.ai/code/artifact/921a0c67-b2da-4b6c-9b51-b523270c4e84`, fuente en scratchpad
+`propuesta-motor-juego.html`. **El usuario aún NO ha decidido** — no hay aprobación de nada.
+
 ### Preguntas abiertas para el usuario
 ### PJ1 — ¿Se unifican los dos juegos (A "El Mundo" y B "Digimundo") o B se retira? · ❓ Abierta
 - **Por qué importa:** mantener dos motores, dos formatos de mundo y dos persistencias duplica todo
