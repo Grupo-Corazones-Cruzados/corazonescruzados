@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Share2, CalendarDays, ListTodo, Lock, Ticket, FolderKanban,
-  Briefcase, Dumbbell, Brain, Users, ShieldCheck, Clock,
+  Briefcase, Dumbbell, Brain, Users, ShieldCheck, Clock, PartyPopper,
 } from 'lucide-react';
 import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
 import EventModal, { type EventFormPayload, type ClientOption, type TaskOption } from '@/components/calendar/EventModal';
@@ -33,7 +33,10 @@ const dayHeader = (ds: string) => { const d = new Date(`${ds}T00:00:00`); return
 type Status = 'pending' | 'completed' | 'failed';
 interface HTask { id: number; title: string; problems: { dimension: string | null }[]; values: string[]; talents: string[]; link: { source: 'ticket' | 'project'; title: string } | null }
 interface GenTask { id: number; groupId: string; day: string; title: string; detail: string; values: string[]; talents: string[]; allDay: boolean; startTime: string | null; endTime: string | null; status: Status; policyName: string }
-interface Horario { subject: { kind: string; id: string } | null; tasks: HTask[]; schedule: { id: number; alternativeId: number; day: string; status: Status }[]; auto: { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string; status: Status }[]; generated: GenTask[] }
+/** Tarea de un evento de "Gestión Social" que el usuario tomó desde el módulo Experiencias.
+ *  Es FIJA y está BLOQUEADA (`locked`) mientras el organizador no marque el inicio del evento. */
+interface SocialTask { id: number; taskId: number; eventId: number; eventName: string; eventStatus: string; day: string; title: string; detail: string; values: string[]; talents: string[]; allDay: boolean; startTime: string | null; endTime: string | null; status: Status; locked: boolean }
+interface Horario { subject: { kind: string; id: string } | null; tasks: HTask[]; schedule: { id: number; alternativeId: number; day: string; status: Status }[]; auto: { alternativeId: number; day: string; source: 'ticket' | 'project'; refTitle: string; status: Status }[]; generated: GenTask[]; social: SocialTask[] }
 
 /**
  * "Mi día": el calendario del miembro (mes/semana/día, mismo que estaba en Configuración)
@@ -57,7 +60,7 @@ export default function MiDiaPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [horario, setHorario] = useState<Horario>({ subject: null, tasks: [], schedule: [], auto: [], generated: [] });
+  const [horario, setHorario] = useState<Horario>({ subject: null, tasks: [], schedule: [], auto: [], generated: [], social: [] });
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
@@ -113,7 +116,7 @@ export default function MiDiaPage() {
     try {
       const res = await fetch(`/api/centralized/horario/me?from=${from}&to=${to}`);
       const d = await res.json();
-      setHorario(d.data || { subject: null, tasks: [], schedule: [], auto: [], generated: [] });
+      setHorario(d.data || { subject: null, tasks: [], schedule: [], auto: [], generated: [], social: [] });
     } catch { /* deja lo que haya */ }
   }, [range.s, range.e]);
   useEffect(() => { loadHorario(); }, [loadHorario]);
@@ -155,11 +158,13 @@ export default function MiDiaPage() {
   const rangeGroups = useMemo(() => {
     const from = ymd(range.s), to = ymd(range.e); // [from, to)
     const inRange = (ds: string) => ds >= from && ds < to;
-    const byDay = new Map<string, { key: string; id?: number; alternativeId: number; status: Status; auto: boolean; source?: 'ticket' | 'project'; refTitle?: string; gen?: boolean; title?: string; policyName?: string; timeLabel?: string }[]>();
+    const byDay = new Map<string, { key: string; id?: number; alternativeId: number; status: Status; auto: boolean; source?: 'ticket' | 'project'; refTitle?: string; gen?: boolean; title?: string; policyName?: string; timeLabel?: string; social?: boolean; eventName?: string; locked?: boolean }[]>();
     const add = (ds: string, item: any) => { const a = byDay.get(ds) || []; a.push(item); byDay.set(ds, a); };
     for (const e of horario.schedule) if (inRange(e.day)) add(e.day, { key: `m-${e.id}`, id: e.id, alternativeId: e.alternativeId, status: e.status, auto: false });
     for (const e of horario.auto) if (inRange(e.day)) add(e.day, { key: `a-${e.alternativeId}-${e.day}`, alternativeId: e.alternativeId, status: e.status, auto: true, source: e.source, refTitle: e.refTitle });
     for (const g of horario.generated) if (inRange(g.day)) add(g.day, { key: `g-${g.id}`, id: g.id, alternativeId: -1, status: g.status, auto: false, gen: true, title: g.title, policyName: g.policyName, timeLabel: g.allDay ? 'Todo el día' : (g.startTime && g.endTime ? `${g.startTime}–${g.endTime}` : undefined) });
+    // Tareas de eventos de Gestión Social (Experiencias): fijas y bloqueadas hasta que inicie el evento.
+    for (const s of horario.social) if (inRange(s.day)) add(s.day, { key: `s-${s.id}`, id: s.id, alternativeId: -1, status: s.status, auto: false, social: true, title: s.title, eventName: s.eventName, locked: s.locked, timeLabel: s.allDay || !s.startTime ? 'Todo el día' : `${s.startTime}${s.endTime ? `–${s.endTime}` : ''}` });
     return Array.from(byDay.entries()).sort(([a], [b]) => (a < b ? -1 : 1)).map(([day, items]) => ({ day, items }));
   }, [horario, range]);
   const totalTasks = useMemo(() => rangeGroups.reduce((s, g) => s + g.items.length, 0), [rangeGroups]);
@@ -195,7 +200,19 @@ export default function MiDiaPage() {
 
   // Marca el estado (completada/fallida/pendiente) de una tarea del rail; optimista.
   // Manual → PATCH /schedule por id; automática (ticket/proyecto) → POST /auto-status por día.
-  const setTaskStatus = async (it: { id?: number; alternativeId: number; auto: boolean; gen?: boolean }, day: string, status: Status) => {
+  const setTaskStatus = async (it: { id?: number; alternativeId: number; auto: boolean; gen?: boolean; social?: boolean; locked?: boolean }, day: string, status: Status) => {
+    // Gestión Social: bloqueada mientras el evento no esté en curso.
+    if (it.social) {
+      if (!it.id || it.locked) return;
+      setHorario((h) => ({ ...h, social: h.social.map((s) => (s.id === it.id ? { ...s, status } : s)) }));
+      try {
+        const res = await fetch('/api/centralized/horario/social', {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: it.id, status }),
+        });
+        if (!res.ok) throw new Error();
+      } catch { toast.error('No se pudo actualizar el estado'); loadHorario(); }
+      return;
+    }
     if (it.gen) {
       if (!it.id) return;
       setHorario((h) => ({ ...h, generated: h.generated.map((g) => (g.id === it.id ? { ...g, status } : g)) }));
@@ -391,17 +408,35 @@ export default function MiDiaPage() {
                 )}
                 <div className="space-y-2">
                   {g.items.map((it) => {
-                    const t = it.gen ? undefined : taskById.get(it.alternativeId);
+                    const t = (it.gen || it.social) ? undefined : taskById.get(it.alternativeId);
                     const dims = Array.from(new Set((t?.problems || []).map((p) => p.dimension).filter(Boolean))) as string[];
-                    const borderCls = it.status === 'completed' ? 'border-emerald-400/40' : it.status === 'failed' ? 'border-red-400/40' : (it.gen ? 'border-violet-400/40' : 'border-digi-border');
+                    const borderCls = it.status === 'completed' ? 'border-emerald-400/40' : it.status === 'failed' ? 'border-red-400/40' : (it.gen ? 'border-violet-400/40' : it.social ? 'border-amber-400/40' : 'border-digi-border');
                     return (
-                      <div key={it.key} className={`rounded-lg border p-2.5 bg-digi-darker/40 ${borderCls}`}>
+                      <div key={it.key} className={`rounded-lg border p-2.5 bg-digi-darker/40 ${borderCls} ${it.social ? 'border-dashed' : ''}`}>
                         <div className="flex items-center gap-1.5">
                           {it.gen && <ShieldCheck className="w-3 h-3 shrink-0 text-violet-400" />}
+                          {it.social && <PartyPopper className="w-3 h-3 shrink-0 text-amber-500" />}
                           {it.auto && <Lock className="w-3 h-3 shrink-0 text-sky-400" />}
                           {dims.map((dm) => { const DI = DIM_ICON[dm]; return DI ? <DI key={dm} title={DIMENSION_LABEL[dm] || dm} className="w-3.5 h-3.5 shrink-0" style={{ color: DIMENSION_COLOR[dm] || '#888' }} /> : null; })}
-                          <span className="text-[12.5px] font-medium text-digi-text leading-snug min-w-0 flex-1 truncate" style={mf}>{it.gen ? it.title : (t?.title || 'Tarea')}</span>
+                          <span className="text-[12.5px] font-medium text-digi-text leading-snug min-w-0 flex-1 truncate" style={mf}>{(it.gen || it.social) ? it.title : (t?.title || 'Tarea')}</span>
                         </div>
+                        {/* Origen "Gestión Social": etiqueta ámbar + evento + aviso de bloqueo. */}
+                        {it.social && (
+                          <>
+                            <p className="text-[10.5px] mt-1 flex items-center gap-1.5 flex-wrap" style={mf}>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-600">
+                                <PartyPopper className="w-2.5 h-2.5" /> Gestión Social
+                              </span>
+                              <span className="text-amber-600 truncate">{it.eventName}</span>
+                              {it.timeLabel && <span className="inline-flex items-center gap-1 text-digi-muted"><Clock className="w-2.5 h-2.5" /> {it.timeLabel}</span>}
+                            </p>
+                            {it.locked && (
+                              <p className="text-[10.5px] text-digi-muted mt-1 inline-flex items-center gap-1" style={mf}>
+                                <Lock className="w-2.5 h-2.5" /> Bloqueada hasta que inicie el evento
+                              </p>
+                            )}
+                          </>
+                        )}
                         {it.auto && (
                           <p className="text-[10.5px] text-sky-500 mt-1 inline-flex items-center gap-1" style={mf}>
                             {it.source === 'ticket' ? <Ticket className="w-2.5 h-2.5" /> : <FolderKanban className="w-2.5 h-2.5" />} {it.refTitle}
@@ -413,8 +448,8 @@ export default function MiDiaPage() {
                             {it.timeLabel && <span className="inline-flex items-center gap-1 text-digi-muted"><Clock className="w-2.5 h-2.5" /> {it.timeLabel}</span>}
                           </p>
                         )}
-                        <TaskStatusButtons className="mt-2" value={it.status} onChange={(s) => setTaskStatus(it, g.day, s)} />
-                        {!it.gen && (
+                        <TaskStatusButtons className="mt-2" value={it.status} onChange={(s) => setTaskStatus(it, g.day, s)} disabled={!!it.locked} />
+                        {!it.gen && !it.social && (
                           <button onClick={() => openTaskEvent(it.alternativeId, g.day)} className="mt-1.5 w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border border-accent/40 bg-accent-light text-[11.5px] font-medium text-accent hover:bg-accent hover:text-white transition-colors" style={mf}>
                             <Plus className="w-3 h-3" /> Registrar tiempo
                           </button>

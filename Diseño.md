@@ -406,6 +406,36 @@ Archivos: `components/centralized/systems/HorarioDeVidaSystem.tsx` (calendario s
   por estado; su clic abre el popover de estado (no el `EventModal`). Aparecen en los 3 sitios: panel Eventos,
   grilla del calendario y rail de Tareas.
 
+### Rail de filtro (`FilterRail`) — definición ÚNICA
+`components/ui/FilterRail.tsx` (2026-07-19). Es el rail del patrón "Explorador Azure" extraído a
+componente. **Cualquier lista con filtro por estado/categoría lo usa**; no se recompone a mano.
+```tsx
+const FILTERS: FilterRailItem<string>[] = [
+  { value: 'all', label: 'Todos', Icon: Layers },
+  { value: 'published', label: 'Publicados', Icon: Megaphone },
+];
+<FilterRail title="Estado" items={FILTERS.map(f => ({ ...f, count: counts[f.value] }))}
+            value={filter} onChange={setFilter} />
+```
+Clases (las del estándar): tarjeta `w-full lg:w-[200px] shrink-0 bg-digi-card border
+border-digi-border rounded-lg p-2` · título `text-[10px] font-semibold text-digi-muted uppercase
+tracking-wide px-2 pt-1 pb-2` (`--font-display`) · ítem `w-full flex items-center gap-2.5 px-3
+py-2 rounded-md border-l-2`; activo `bg-accent-light border-accent text-accent`, inactivo
+`border-transparent text-digi-text hover:bg-black/[0.03]` · badge `text-[10px] px-1.5 py-0.5
+rounded-full tabular-nums`. `hideZeroCounts` oculta la burbuja en 0.
+
+### Tarea de EVENTO (Gestión Social) en Mi día — 3ª variante de entrada FIJA
+Añadida 2026-07-19 junto a las dos de la sección anterior (auto sky · política violeta). Color
+**ámbar** y **`border-dashed`**, icono **`PartyPopper`**. Bajo el título, un chip de origen
+`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 border
+border-amber-400/30 text-amber-600` con el texto **"Gestión Social"**, seguido del **nombre del
+evento** y el horario (`Clock`). Mientras el evento no esté `active`, `TaskStatusButtons` recibe
+**`disabled`** y se muestra la nota `Lock` + "Bloqueada hasta que inicie el evento". Filas de
+`gs_task_signups`; estado vía `PATCH /api/centralized/horario/social`.
+- **`TaskStatusButtons` gana `disabled`** (2026-07-19): conserva el color del estado activo para
+  poder leerlo, quita hover y añade `opacity-60 cursor-not-allowed`. Regla: para bloquear el
+  marcado de una tarea, usar esta prop — nunca ocultar los botones (el usuario perdería el estado).
+
 ### Configuración — Perfil fijo + pestañas (estándar de la página de ajustes)
 `settings/page.tsx` = **Perfil fijo a la izquierda** (`ProfilePanel`, `w-[400px]`) + a la derecha una tarjeta con **pestañas
 horizontales** (CV · Disponibilidad · Portafolio). Ambos lados **misma altura** (`items-stretch`). El contenido de cada pestaña
@@ -465,6 +495,20 @@ soportan variables CSS ni `<style>`).
   viejo estilo videojuego (Courier, fondo oscuro, morado `#7B5FBF`, bordes 2px pixel).
 
 ## Desviaciones detectadas y resolución
+- **2026-07-19 — El RAIL DE FILTRO estaba duplicado inline en ~13 sitios.** El control de la
+  captura del usuario (tarjeta + título en mayúsculas + ítems icono/label/burbuja de conteo,
+  activo con `bg-accent-light` + barra izquierda `border-accent`) NO era un componente: se
+  reescribía a mano como `RailItem`/`SectionRailItem` local en `tickets`, `projects`,
+  `tickets/[id]`, `projects/[id]`, `clients`, `subscriptions`, `invoices`, `support`,
+  `centralized`, `admin`, `marketplace`, `flows` y `ReclutamientoSystem`. Contradice el
+  principio de **diseño vinculado** (un cambio de estilo obligaría a tocar 13 archivos).
+  **Resuelto parcialmente:** se creó la definición única
+  **`components/ui/FilterRail.tsx`** (`<FilterRail title items value onChange hideZeroCounts />`,
+  `items = {value,label,Icon,count}[]`), calcada del canónico
+  `ReclutamientoSystem.tsx:53-76`, y la usan los dos consumidores nuevos (**Gestión Social** y
+  **Experiencias**). **PENDIENTE:** migrar los ~13 rails antiguos a este componente (ver
+  PROPUESTAS.md). Regla desde ahora: cualquier rail de filtro nuevo **importa `FilterRail`**;
+  no se recompone a mano.
 - **2026-07-09 — Correos con estilo "videojuego" (Courier, fondo oscuro, morado, bordes pixel).** El
   `emailShell` de `resend.ts` y sus plantillas usaban `'Courier New'`, `#0A0E17`, `#7B5FBF`, `border:2px` →
   inconsistente y poco serio. **Resuelto:** reescrito al tema `.corp` con helpers reusables (ver sección

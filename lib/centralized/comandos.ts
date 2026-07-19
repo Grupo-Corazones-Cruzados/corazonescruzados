@@ -57,6 +57,7 @@ export const FUNCTION_TYPE_META: Record<FunctionType, { color: string; shape: 'p
 export const BLOCKABLE_MODULES: { path: string; label: string }[] = [
   { path: '/dashboard', label: 'Inicio' },
   { path: '/dashboard/mi-dia', label: 'Mi día' },
+  { path: '/dashboard/experiencias', label: 'Experiencias' },
   { path: '/dashboard/tickets', label: 'Tickets' },
   { path: '/dashboard/projects', label: 'Proyectos' },
   { path: '/dashboard/clients', label: 'Clientes' },

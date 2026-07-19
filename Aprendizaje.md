@@ -5,7 +5,184 @@
 >
 > **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
-## Objetivo ACTUAL (declarado 2026-07-17) — Sistema "Percepción Social" (Centralizado · piso COLABORADOR)
+## Objetivo ACTUAL (declarado 2026-07-19) — Sistema "Gestión Social" (Centralizado · CONTROLADOR · gestión) + módulo "Experiencias"
+
+**Rol asumido:** arquitecto full-stack de la plataforma GCC World (modelo de datos Postgres +
+Next.js App Router + integración con el motor de puntuación de talentos/valores).
+
+### Necesidad (base verbatim del usuario, 2026-07-19)
+Dos piezas acopladas:
+1. **Sistema "Gestión Social"** — nuevo sistema del Centralizado, piso **controlador**, paso
+   **gestión** (celda **"Soluciones"**). Tres pestañas: **Eventos** (única funcional ahora),
+   **Recursos** y **Discusión** (vacías, para futuro).
+   - En Eventos se **generan eventos**; cada evento contiene un **conjunto de tareas**.
+   - Cada tarea lleva **etiquetas de valores y talentos** (igual que el Horario de Vida) y una
+     propiedad **plazas** = cuántas personas pueden tomarla.
+   - El usuario del sistema marca **INICIO** del evento manualmente (aunque tenga fecha/hora
+     asignada) y después marca **FIN**.
+   - Al finalizar: se conservan las tareas marcadas **completadas**; las tomadas y **no**
+     completadas pasan automáticamente a **no completado** (`failed`).
+   - **Filtro de estado de eventos** con el patrón de rail de la app (icono + label + conteo).
+2. **Módulo "Experiencias"** (dashboard, nuevo) — el miembro ve los eventos publicados, entra a
+   uno, revisa sus tareas, **toma una tarea si quedan plazas** y confirma asistencia. Esa tarea
+   se **auto-asigna en su "Mi día"**, con **etiqueta distintiva** de que viene de Gestión Social,
+   y queda **bloqueada** (no puede marcar completada/fallida) mientras el evento no esté iniciado.
+
+### Hallazgos de investigación en el repo (2026-07-19) — verificado leyendo el código
+
+**A. Cómo se registra un sistema del Centralizado** (NO hay array de registro único; son 2 sitios):
+- Ruta 100% dinámica: solo existen `app/(dashboard)/dashboard/centralized/page.tsx` y
+  `app/(dashboard)/dashboard/centralized/[piso]/[paso]/[slug]/page.tsx`. Los pisos/pasos son
+  constantes en `lib/centralized/systems.ts:9-21`; la celda sale de `CELL_MAP` (`systems.ts:49-54`).
+  **`controlador` × `gestion` = celda "Soluciones"** ✅.
+- **(1) Fila sembrada en Postgres**: `INSERT … WHERE NOT EXISTS` por slug dentro de `ensureTable()`
+  en `app/api/centralized/systems/route.ts:30-132` (el de `percepcion-social` está en :111-117).
+  Tabla `gcc_world.centralized_systems (id,name,description,piso,paso,cell_name,is_active,slug)`.
+  **No hay columna `icon`.**
+- **(2) Rama en el ternario** de `[piso]/[paso]/[slug]/page.tsx:110-141` que mapea slug → componente.
+  Sin esa rama, un sistema creado en BD cae al fallback "La interfaz estará disponible pronto".
+- Añadir un sistema = seed SQL + import/rama en el ternario + componente en
+  `components/centralized/systems/` + `lib/centralized/<x>-db.ts` + rutas `app/api/centralized/<x>/`.
+- **Control de acceso**: en `app/api/centralized/systems/route.ts:164-184` — un miembro ve los
+  sistemas de **su piso y los pisos por debajo**, pero **solo en su paso exacto**
+  (`pisosAtOrBelow`, `systems.ts:32-43`); admin lo salta todo; escape hatch =
+  `centralized_member_access` (ShareAccessModal). ⚠️ Ese filtro vive SOLO en `systems/route.ts`;
+  las rutas de datos de cada sistema solo comprueban `['admin','member']`.
+
+**B. Cómo las tareas puntúan talentos y valores** (el corazón del acople):
+- Listas canónicas (fuente única, hardcoded, NO son tablas):
+  `lib/centralized/valores.ts` → `VALORES` = 9 `{key,label}`; `lib/centralized/talentos.ts` →
+  `TALENTOS` ≈600 strings planos. Se eligen con **`components/ui/MultiSelectSearch.tsx`**
+  (multi-select con buscador, chips debajo, tope `maxVisible=60`).
+  ⚠️ **Los valores se guardan por `key`; los talentos por su string literal.**
+- Motor único: **`getSubjectsProfileScores()` en `lib/centralized/horario-db.ts:304-353`**.
+  - Une **dos fuentes con el MISMO formato** `(subject_id, status, value_tags, talent_tags)`,
+    ambas filtradas a `status IN ('completed','failed')`:
+    (1) `hv_schedule` JOIN `hv_task_labels`; (2) `cv_generated_tasks`.
+  - Regla: `completed` = **+1** a **cada** etiqueta de la tarea; `failed` = **−1**;
+    `pending` **no puntúa** (lo excluye el WHERE). **Sin pesos.**
+  - Talentos: `net = c − f`, se descartan `net<=0`, top 10, y cada uno recibe
+    `round(net/sum*100)` → **porcentaje RELATIVO al propio sujeto** (no comparable entre personas).
+  - Valores: `valuesBalance[v] = {completed, failed}` en crudo (barra divergente).
+- Consumo: `getSubjectsCriteria` (`lib/centralized/criteria.ts:11-26`) → `/api/admin/candidates`
+  y `/api/admin/team` → `components/centralized/reclutamiento/CriteriaSections.tsx`.
+  También ordena candidatos en `app/api/tickets/assignees/route.ts:44-70`.
+- 🔑 **Punto de integración**: para que las tareas de Gestión Social puntúen basta con **añadir
+  una TERCERA query** con ese mismo shape a `getSubjectsProfileScores`. Sin tocar la fórmula.
+
+**C. Cómo se pintan las tareas FIJAS en "Mi día"** (plantilla exacta a calcar):
+- Página: `app/(dashboard)/dashboard/mi-dia/page.tsx` (465 líneas, todo inline; **no hay
+  componente TaskCard**). Rail de tareas en :393-424.
+- Precedente perfecto = **Comandos Violeta**: tabla `cv_generated_tasks`
+  (`lib/centralized/comandos-db.ts:53-76`) con `subject_kind/subject_id/title/detail/
+  value_tags/talent_tags/all_day/start_time/end_time/day/status`. Sus filas aterrizan en Mi día
+  como entradas **fijas** (el usuario solo cambia estado/etiquetas).
+- Distintivo de origen en Mi día: **no hay columna `origin`** — se infiere por tabla/booleanos
+  del view-model (`auto`, `gen`, `source`, `policyName`). Iconos: `ShieldCheck` violeta (política),
+  `Lock` sky (ticket/proyecto). Color de borde por estado (:396).
+- Estado: **`components/centralized/TaskStatusButtons.tsx`** (Completada/Fallida/Pendiente).
+  ⚠️ **Hoy NO acepta `disabled`** — habrá que añadírselo (default `false`) para el bloqueo.
+- Escritura de estado: 3 endpoints según origen (`/horario/schedule`, `/horario/auto-status`,
+  `/horario/generated`), todos optimistas con rollback vía `loadHorario()`.
+- ⚠️ Los endpoints de escritura exigen `['admin','member']` → **un candidato puede leer pero no
+  marcar estado** (hueco latente ya existente).
+
+**D. El filtro de estado que pidió el usuario (la captura)**
+- Es el **"rail" del patrón "Explorador Azure"** (`Diseño.md:104-119`): tarjeta
+  `bg-digi-card border border-digi-border rounded-lg p-2` + título
+  `text-[10px] font-semibold text-digi-muted uppercase tracking-wide` + ítems
+  `w-full flex items-center gap-2.5 px-3 py-2 rounded-md border-l-2`; activo =
+  `bg-accent-light border-accent text-accent`; badge de conteo
+  `text-[10px] px-1.5 py-0.5 rounded-full tabular-nums`.
+- ⚠️ **NO es un componente compartido**: está duplicado inline en ~13 sitios (`RailItem` local en
+  clients/tickets/projects/centralized/flows…). El canónico visualmente idéntico a la captura es
+  `components/centralized/systems/ReclutamientoSystem.tsx:53-76`.
+  → Contradice el principio de "diseño vinculado" de `Diseño.md`; ver Propuestas.
+
+**E. "Experiencias" NO existe** (verificado: ni ruta, ni sidebar, ni componente). Alta de módulo =
+  carpeta en `app/(dashboard)/dashboard/experiencias/` + `NavItem` en `NAV_GROUPS`
+  (`components/dashboard/DashboardSidebar.tsx:16-58`) + entrada en `MODULE_ACCESS`
+  (`lib/dashboard/access.ts:28-49`, roles `'candidate'|'client'|'member'|'admin'`).
+
+### Arquitectura propuesta (borrador — a confirmar con las preguntas abiertas)
+Prefijo de tablas **`gs_`**, en `lib/centralized/gestion-social-db.ts` con `ensure` de
+**promise-singleton** (patrón de `percepcion-db.ts:20-30`, obligatorio: varios fetch en paralelo).
+
+- **`gs_events`**: `id, name, description, event_date DATE, start_time, end_time, location,
+  status ('draft'|'published'|'active'|'finished'|'cancelled'), started_at, ended_at,
+  created_by, created_at`.
+- **`gs_event_tasks`**: `id, event_id FK ON DELETE CASCADE, title, detail,
+  value_tags TEXT[], talent_tags TEXT[], plazas INT, all_day, start_time, end_time, position`.
+- **`gs_task_signups`**: `id, task_id FK CASCADE, event_id, subject_kind, subject_id,
+  status ('pending'|'completed'|'failed'), signed_up_at,
+  UNIQUE(task_id, subject_kind, subject_id)`.
+  Plazas disponibles = `plazas − COUNT(signups)`; la toma debe ser **atómica** (ver Riesgos).
+
+Ciclo de vida: `draft → published → (INICIO manual) active → (FIN manual) finished`.
+Al pasar a `finished`: `UPDATE gs_task_signups SET status='failed' WHERE status='pending'`.
+Bloqueo en Mi día: `TaskStatusButtons` deshabilitado mientras `gs_events.status <> 'active'`.
+
+### Decisiones del usuario (2026-07-19) — todas ✅ resueltas
+- **P1 · Una sola tarea por evento y persona.** Un miembro toma **máximo 1 tarea por evento**
+  (reparte plazas, evita solapes en Mi día). → `UNIQUE (event_id, subject_kind, subject_id)`
+  **además** del unique por tarea. *Por eso `gs_task_signups` lleva `event_id` denormalizado.*
+- **P2 · Se puede soltar solo ANTES del inicio.** Con el evento en `published` el miembro puede
+  liberar la plaza; con el evento `active` o posterior, ya no (queda comprometido).
+- **P3 · Horario del evento, con override por tarea.** La tarea hereda `event_date` +
+  `start_time`/`end_time` del evento; si la tarea define horario propio, ese manda
+  (`COALESCE(t.start_time, e.start_time)`).
+- **P4 · Miembros y candidatos.** Ambos ven Experiencias y pueden tomar tareas (para el candidato,
+  demostrar valores es su meta de afiliación). ⚠️ Implica **habilitar la escritura de estado para
+  candidatos** en el endpoint de estado de las tareas de Gestión Social (los endpoints de horario
+  existentes exigen `['admin','member']`; el nuevo debe resolver el sujeto del logueado y permitir
+  candidato **solo sobre sus propias filas**).
+
+### Construido y verificado (2026-07-19)
+**Backend**
+- `lib/centralized/gestion-social-db.ts` — DDL (promise-singleton) de `gs_events`,
+  `gs_event_tasks`, `gs_task_signups` + toda la lógica: listar/crear/editar/borrar eventos y
+  tareas, `startEvent`/`finishEvent`, `takeTask`/`releaseTask`, `listEventsForSubject`,
+  `getSubjectSocialTasks`, `setSocialTaskStatus`, `sanitizeTags`.
+- `lib/centralized/subject.ts` — `resolveSubject()` **extraído** de la ruta de horario
+  (definición única; ahora la usan Mi día y Experiencias).
+- `lib/centralized/horario-db.ts` — **3ª fuente de scoring** añadida a
+  `getSubjectsProfileScores` + `social[]` en `getSubjectHorario`.
+- Rutas: `api/centralized/gestion-social/{eventos,eventos/[id],eventos/[id]/estado,
+  eventos/[id]/tareas,tareas/[id]}`, `api/experiencias/{,[id],tareas/[id]}`,
+  `api/centralized/horario/social`.
+- Seed del sistema en `app/api/centralized/systems/route.ts` (slug `gestion-social`).
+
+**Frontend**
+- `components/centralized/systems/GestionSocialSystem.tsx` — pestañas Eventos/Recursos/
+  Discusión; rail de filtro por estado; lista + panel de detalle; formularios de evento y de
+  tarea (con `MultiSelectSearch` de valores/talentos y campo Plazas).
+- `components/ui/FilterRail.tsx` — **NUEVO componente compartido** del rail de filtro.
+- `app/(dashboard)/dashboard/experiencias/page.tsx` + sidebar + `MODULE_ACCESS` + módulo
+  bloqueable en `comandos.ts`.
+- `components/centralized/TaskStatusButtons.tsx` — prop `disabled` (para el bloqueo).
+- Mi día: tarjeta ámbar punteada con `PartyPopper`, chip **"Gestión Social"**, nombre del
+  evento, aviso "Bloqueada hasta que inicie el evento" y botones deshabilitados.
+
+**Verificación**
+- `tsc --noEmit` OK · `next build` OK (todas las rutas nuevas registradas).
+- **Prueba E2E contra Postgres REAL con ROLLBACK: 23/23 ✅** — DDL idempotente, agregados de
+  plazas, bloqueo en draft, una-tarea-por-evento (UNIQUE 23505), plazas agotadas, soltar solo
+  en published, inicio/fin manuales, autorización por fila, auto-`failed` al finalizar, las
+  3 fuentes de scoring, herencia de horario evento↔tarea, y CASCADE al borrar.
+  Confirmado que el rollback no dejó ninguna tabla `gs_*`.
+
+### Pendientes / notas
+- Las tablas `gs_*` **aún no existen en la BD**: las crea `ensureGestionSocialTables()` en el
+  primer uso real (patrón de la casa).
+- Las tareas de Gestión Social se ven en el **rail de tareas** de Mi día. Pintarlas también
+  como **bloques en la grilla** del calendario (como se hizo con las de Comandos Violeta) está
+  **pendiente** — decidir con el usuario si lo quiere.
+- `FilterRail` es nuevo; los ~13 rails duplicados inline siguen sin migrar (ver PROPUESTAS.md).
+
+### Progreso
+- **% de información para el objetivo:** 100% — construido y verificado contra BD real.
+
+## Objetivo ANTERIOR (declarado 2026-07-17) — Sistema "Percepción Social" (Centralizado · piso COLABORADOR)
 
 **Rol asumido:** arquitecto full-stack + integrador de IA de visión (Claude CLI local) para GCC World.
 

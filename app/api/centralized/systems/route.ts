@@ -115,6 +115,17 @@ async function ensureTable() {
             'colaborador', 'gestion', 'Líder', 'percepcion-social'
      WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'percepcion-social')`,
   );
+  // Sistema built-in "Gestión Social" (controlador · gestión, celda "Soluciones"). Genera EVENTOS
+  // con un conjunto de tareas etiquetadas (valores/talentos) y con plazas; los miembros las toman
+  // desde el módulo "Experiencias" y la tarea aterriza en su "Mi día", bloqueada hasta que el
+  // usuario del sistema marque el INICIO del evento.
+  await pool.query(
+    `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+     SELECT 'Gestión Social',
+            'Organiza la vida social de la organización: crea eventos con un conjunto de tareas etiquetadas por valores y talentos, cada una con sus plazas. Los miembros toman una tarea desde el módulo Experiencias y esta se agenda en su Mi día; el cumplimiento durante el evento puntúa su perfil de talentos y valores.',
+            'controlador', 'gestion', 'Soluciones', 'gestion-social'
+     WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'gestion-social')`,
+  );
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (

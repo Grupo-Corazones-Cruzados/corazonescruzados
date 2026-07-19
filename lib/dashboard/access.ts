@@ -34,6 +34,9 @@ export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   { path: '/dashboard', roles: ['candidate', 'member', 'admin'] }, // Inicio (exacto)
   { path: '/dashboard/mi-dia', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/notificaciones', roles: ALL },
+  // Experiencias: eventos de Gestión Social abiertos a miembros Y candidatos (para el
+  // candidato, participar es parte de demostrar sus valores en la afiliación).
+  { path: '/dashboard/experiencias', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/tickets', roles: ALL },
   { path: '/dashboard/projects', roles: ALL },
   { path: '/dashboard/clients', roles: ['candidate', 'member', 'admin'] },

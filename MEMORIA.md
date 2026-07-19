@@ -267,6 +267,43 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Sistema "Gestión Social" + módulo "Experiencias" (2026-07-19):** Centralizado ·
+  `controlador/gestion` · celda **"Soluciones"** · slug `gestion-social` · URL
+  `/dashboard/centralized/controlador/gestion/gestion-social`. Pestañas **Eventos** (funcional),
+  **Recursos** y **Discusión** (vacías, para futuro).
+  - **Modelo:** `gs_events` (name, description, location, event_date, start_time/end_time,
+    all_day, status, started_at, ended_at) · `gs_event_tasks` (event_id CASCADE, title, detail,
+    `value_tags`/`talent_tags` TEXT[], **plazas**, start_time/end_time propios opcionales) ·
+    `gs_task_signups` (task_id, event_id, subject_kind/subject_id, status). DDL en
+    `lib/centralized/gestion-social-db.ts` con **promise-singleton** (obligatorio, ver lecciones).
+  - **Ciclo de vida MANUAL:** `draft → published → (INICIO) active → (FIN) finished`. Aunque el
+    evento tenga fecha/hora, **solo el usuario del sistema** marca inicio y fin. Publicar exige
+    ≥1 tarea. Al **finalizar**, las tomas que sigan `pending` pasan **automáticamente a `failed`**
+    (transacción única con el cambio de estado del evento).
+  - **Reglas decididas por el usuario (2026-07-19):** (1) **una sola tarea por evento y persona**
+    → `UNIQUE(event_id, subject_kind, subject_id)` además del unique por tarea (por eso
+    `event_id` va denormalizado en signups); (2) se puede **soltar solo mientras el evento esté
+    `published`** (iniciado, queda comprometido); (3) la tarea ocupa en Mi día el **horario del
+    evento**, salvo que la tarea defina el suyo (`COALESCE(t.start_time, e.start_time)`);
+    (4) **miembros Y candidatos** participan.
+  - **Toma ATÓMICA:** `takeTask` usa transacción con `SELECT … FOR UPDATE OF t` sobre la tarea
+    antes de contar plazas — sin ese bloqueo dos clics simultáneos sobre-asignan la última plaza.
+  - **Puntuación:** `gs_task_signups` es la **TERCERA fuente** de `getSubjectsProfileScores`
+    (`horario-db.ts`), con el mismo formato `(subject_id, status, value_tags, talent_tags)`.
+    Completada = +1 a cada etiqueta, fallida = −1, pendiente no puntúa. Las etiquetas viven en la
+    **tarea del evento** (no por persona); el estado, en la toma.
+  - **Mi día:** las tomas aparecen como entradas **FIJAS**, tarjeta **ámbar punteada** con icono
+    `PartyPopper`, chip **"Gestión Social"** + nombre del evento, y **`TaskStatusButtons`
+    deshabilitados** (`locked = event.status !== 'active'`) con la nota "Bloqueada hasta que
+    inicie el evento". Estado vía `PATCH /api/centralized/horario/social`, que —a diferencia del
+    resto de endpoints de horario— **acepta candidatos** (autoriza por fila: la toma debe ser suya
+    y el evento estar `active`).
+  - **Módulo "Experiencias"** (`/dashboard/experiencias`, sidebar bajo "Mi día", icono
+    `PartyPopper`, roles `candidate/member/admin`): lista de eventos abiertos + drill-in con las
+    tareas, plazas libres y botón "Tomar y confirmar asistencia" / "Soltar tarea".
+  - **Verificado:** tsc + `next build` OK + **BD real 23/23 con ROLLBACK**.
+  - **Pendiente:** pintar estas tareas también como **bloques en la grilla** del calendario de
+    Mi día (hoy solo en el rail), como se hizo con las de Comandos Violeta.
 - **Sistema "Percepción Social" — 1er sistema del piso COLABORADOR (2026-07-17):** Centralizado · `colaborador/gestion`
   · celda **"Líder"** · slug `percepcion-social` · URL `/dashboard/centralized/colaborador/gestion/percepcion-social`.
   Captura eventos del entorno del colaborador: **ubicación GPS + conjunto de fotos** tomadas con la **cámara del

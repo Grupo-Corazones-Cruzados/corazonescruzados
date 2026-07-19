@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { ensureApoyoTables } from '@/lib/centralized/apoyo-db';
 import { ensureGeneratedTasksTable } from '@/lib/centralized/comandos-db';
+import { ensureGestionSocialTables, getSubjectSocialTasks, type SocialTask } from '@/lib/centralized/gestion-social-db';
 
 /**
  * Tablas del sistema "Horario de Vida":
@@ -137,11 +138,13 @@ export async function getSubjectGeneratedTasks(subjectKind: string, subjectId: s
  * las entradas AUTOMÁTICAS del ticket/proyecto asociado (todos los días entre su fecha de
  * inicio y su fecha límite), acotadas a la ventana [from, to] si se indica.
  */
-export async function getSubjectHorario(subjectKind: string, subjectId: string, from?: string, to?: string): Promise<{ tasks: HorarioTask[]; schedule: ScheduleEntry[]; auto: AutoEntry[]; generated: GeneratedTask[] }> {
+export async function getSubjectHorario(subjectKind: string, subjectId: string, from?: string, to?: string): Promise<{ tasks: HorarioTask[]; schedule: ScheduleEntry[]; auto: AutoEntry[]; generated: GeneratedTask[]; social: SocialTask[] }> {
   await ensureHorarioTables();
 
   // Tareas generadas por políticas (independientes de las alternativas de Apoyo).
   const generated = await getSubjectGeneratedTasks(subjectKind, subjectId, from, to);
+  // Tareas de eventos de Gestión Social que el sujeto tomó (también independientes).
+  const social = await getSubjectSocialTasks(subjectKind, subjectId, from, to);
 
   // Alternativas del sujeto (por sus problemas).
   const taskRows = (await pool.query(
@@ -156,7 +159,7 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
   )).rows;
 
   const ids = taskRows.map((r: any) => Number(r.id));
-  if (ids.length === 0) return { tasks: [], schedule: [], auto: [], generated };
+  if (ids.length === 0) return { tasks: [], schedule: [], auto: [], generated, social };
 
   // Problemas que aborda cada alternativa (contexto en la tarjeta).
   const probRows = (await pool.query(
@@ -259,7 +262,7 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
     }
   }
 
-  return { tasks, schedule, auto, generated };
+  return { tasks, schedule, auto, generated, social };
 }
 
 /** Cambia el estado (pending/completed/failed) de una tarea generada (por id de fila/día). */
@@ -306,10 +309,14 @@ export async function getSubjectsProfileScores(subjectKind: string, subjectIds: 
   if (subjectIds.length === 0) return out;
   await ensureHorarioTables();
   await ensureGeneratedTasksTable();
-  // Dos fuentes con el MISMO formato (subject_id, status, value_tags, talent_tags):
+  await ensureGestionSocialTables();
+  // TRES fuentes con el MISMO formato (subject_id, status, value_tags, talent_tags):
   //   1) tareas del Horario de Vida (alternativas agendadas)
   //   2) tareas GENERADAS por políticas de Comandos Violeta (su historial puntúa aunque la
   //      política se haya desactivado — el cumplimiento ya ocurrió).
+  //   3) tareas de EVENTOS de Gestión Social tomadas por el sujeto (las etiquetas viven en
+  //      la tarea del evento; el estado, en la toma). Al finalizar el evento, las que
+  //      quedaron pendientes ya se marcaron `failed`, así que aquí puntúan en negativo.
   const { rows: schedRows } = await pool.query(
     `SELECT h.subject_id, h.status, l.value_tags, l.talent_tags
        FROM gcc_world.hv_schedule h
@@ -323,7 +330,14 @@ export async function getSubjectsProfileScores(subjectKind: string, subjectIds: 
       WHERE g.subject_kind = $1 AND g.subject_id = ANY($2::text[]) AND g.status IN ('completed','failed')`,
     [subjectKind, subjectIds],
   );
-  const rows = [...schedRows, ...genRows];
+  const { rows: socialRows } = await pool.query(
+    `SELECT s.subject_id, s.status, t.value_tags, t.talent_tags
+       FROM gcc_world.gs_task_signups s
+       JOIN gcc_world.gs_event_tasks t ON t.id = s.task_id
+      WHERE s.subject_kind = $1 AND s.subject_id = ANY($2::text[]) AND s.status IN ('completed','failed')`,
+    [subjectKind, subjectIds],
+  );
+  const rows = [...schedRows, ...genRows, ...socialRows];
 
   type Tally = { c: number; f: number };
   const agg = new Map<string, { talents: Map<string, Tally>; values: Map<string, Tally> }>();
