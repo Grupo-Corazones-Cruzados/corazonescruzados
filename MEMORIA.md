@@ -267,6 +267,56 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Módulo "Pensamientos" (dashboard, 2026-07-19):** cuaderno personal de captura rápida para
+  **miembros y candidatos** (`/dashboard/pensamientos`, sidebar bajo "Experiencias", icono
+  `BrainCircuit`). Un pensamiento no tiene título (la captura debe ser inmediata): solo texto,
+  corto o una lectura muy amplia. Guardado con ⌘/Ctrl+Enter.
+  - **Tabla `pn_thoughts`** (`lib/centralized/pensamientos-db.ts`, ensure con promise-singleton):
+    `subject_kind/subject_id, content, char_count, category, categorized_at, created_at, updated_at`.
+    Índice **PARCIAL** `WHERE category IS NULL` para la cola del trabajo nocturno. Bitácora en
+    `pn_tagging_runs`. Constantes puras (categorías, intensidad, TZ) en `lib/centralized/
+    pensamientos.ts` — separadas del `-db` para que las importe el cliente sin arrastrar `pool`.
+  - **PRIVACIDAD (decisión del usuario):** un pensamiento **solo lo lee su autor**; la
+    autorización es **por fila** (subject propio), nunca por rol — ni el admin los ve desde aquí.
+  - **Día LOCAL:** todo se agrupa por `(created_at AT TIME ZONE 'America/Guayaquil')::date`, no
+    por el día UTC del contenedor de Railway.
+  - **Intensidad** = `char_count`, con bandas únicas (Breve <280 · Media <900 · Alta <2500 ·
+    Profunda). Se muestra en el compositor, en cada tarjeta y como tamaño de punto en el gráfico.
+  - **Etiquetado por IA:** las 4 categorías son EXACTAMENTE las `DIMENSIONS` de Apoyo
+    (laboral·corporal·mental·social) — fuente única, mismos colores. `pensamientos-ai.ts` llama a
+    **OpenAI `gpt-4o-mini`** por LOTES de 20, `response_format: json_object`, `temperature: 0`,
+    recorte a 4000 car./pensamiento. **Probado contra OpenAI real: 6/6 aciertos**, incluidos
+    casos cortos y ambiguos (~516 tokens de entrada por lote de 6).
+  - **Editar un pensamiento LIMPIA su categoría** (`category = NULL`) para que la IA lo
+    reetiquete esa noche: si cambió el texto, la etiqueta vieja ya no es necesariamente válida.
+  - **Gráficos** (modal, SVG a mano, sin librería): (1) puntos unidos = pensamientos por día, con
+    el **tamaño del punto** = intensidad; (2) 4 líneas = tipo por mes; (3) barras = intensidad
+    mensual. Ver `Diseño.md` para por qué la intensidad NO va como segundo eje.
+- **Trabajo NOCTURNO (cron) — 01:00 America/Guayaquil (2026-07-19):**
+  - Next.js en Railway **no ejecuta nada por su cuenta**: hace falta un disparador externo.
+    Decisión del usuario: **servicio de tipo Cron en Railway**.
+  - Endpoint `POST /api/pensamientos/cron/etiquetar`, autorizado por **secreto compartido
+    `CRON_TOKEN`** (cabecera `x-cron-token`, `lib/cron-auth.ts`, fail-closed) **o** por un admin
+    logueado (para forzarlo a mano). Disparador: `scripts/pensamientos-cron.mjs` (llama y sale).
+  - **Railway usa UTC** → el cron es **`0 6 * * *`** (06:00 UTC = 01:00 Ecuador, sin DST).
+    Env del servicio de cron: `CRON_TOKEN` (igual que en el web) + `APP_URL`.
+  - **Es idempotente y se auto-repara:** su entrada son los pensamientos con `category IS NULL`,
+    y `setCategory` solo escribe si la fila sigue sin etiquetar. Si una noche falla o no corre, la
+    siguiente recupera lo pendiente; repetirlo no duplica trabajo ni dos ejecuciones se pisan.
+- **PENDIENTE acordado (2026-07-19) — "Gestión Social · pestaña Recursos" + valoración global:**
+  el usuario especificó el siguiente desarrollo, que usará los pensamientos:
+  - En **Gestión Social → Recursos**: panel izquierdo con **candidatos y miembros**; al elegir uno,
+    un panel para elegir **tipo** (mental/corporal/social/laboral); a la derecha **sus pensamientos**
+    de ese tipo, seleccionables para leer el texto completo. Ahí el usuario del sistema podrá
+    acceder a los pensamientos de todos **por políticas internas de la organización** (por eso el
+    modelo guarda subject_kind/subject_id y no ata el pensamiento al usuario logueado).
+  - **Valoración global:** desde ese panel se eligen **varios talentos, cada uno con su puntuación**,
+    y **varios valores, cada uno con su puntuación**, asignados al sujeto.
+  - ⚠️ **Es una puntuación FIJA, NO acumulativa** — semántica distinta del conteo ±1 de tareas:
+    si hoy vale 5 y mañana 3, el perfil pasa a mostrar **3**, no 8. Requerirá su propia tabla
+    (una fila por sujeto+talento / sujeto+valor, que se **reemplaza**) y su propia mezcla dentro
+    de `getSubjectsProfileScores`, sin sumarse al tally de tareas.
+
 - **Sistema "Gestión Social" + módulo "Experiencias" (2026-07-19):** Centralizado ·
   `controlador/gestion` · celda **"Soluciones"** · slug `gestion-social` · URL
   `/dashboard/centralized/controlador/gestion/gestion-social`. Pestañas **Eventos** (funcional),

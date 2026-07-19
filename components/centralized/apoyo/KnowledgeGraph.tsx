@@ -4,14 +4,15 @@ import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Maximize2, Plus, Minus, Shuffle, Briefcase, Dumbbell, Brain, Users, Ticket, FolderKanban } from 'lucide-react';
 import { NODE_META, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
+import { DIMENSION_ICON } from '@/components/centralized/dimensionIcons';
 import type { GraphNode, GraphEdge } from '@/lib/centralized/apoyo';
 
 // Iconos que se pre-renderizan a imagen para dibujarlos en los badges del canvas:
 // dimensión (mismo criterio que el Horario) + fuente de asociación (ticket/proyecto,
 // mismos iconos que el menú de módulos: Ticket / FolderKanban).
 const ICON_COMP: Record<string, any> = {
-  laboral: Briefcase, corporal: Dumbbell, mental: Brain, social: Users,
-  ticket: Ticket, project: FolderKanban,
+  ...DIMENSION_ICON,                       // dimensiones: definición única compartida
+  ticket: Ticket, project: FolderKanban,   // fuente de asociación
 };
 
 // react-force-graph usa d3-force (física) + canvas (render), como el grafo de Obsidian.

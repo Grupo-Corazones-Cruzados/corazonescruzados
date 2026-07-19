@@ -10,7 +10,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
-  LogOut, Sun, Moon, CalendarDays, Bell, PartyPopper, type LucideIcon,
+  LogOut, Sun, Moon, CalendarDays, Bell, PartyPopper, BrainCircuit, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem {
@@ -35,6 +35,7 @@ const NAV_GROUPS: NavGroup[] = [
     { label: 'Inicio', href: '/dashboard', icon: Home },
     { label: 'Mi día', href: '/dashboard/mi-dia', icon: CalendarDays },
     { label: 'Experiencias', href: '/dashboard/experiencias', icon: PartyPopper },
+    { label: 'Pensamientos', href: '/dashboard/pensamientos', icon: BrainCircuit },
     { label: 'Notificaciones', href: '/dashboard/notificaciones', icon: Bell },
   ] },
   { title: 'Operación', items: [

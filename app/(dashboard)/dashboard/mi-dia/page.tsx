@@ -18,6 +18,7 @@ import {
 } from '@/lib/calendar/recurrence';
 import { type AvailabilityStatus, AVAILABILITY, AVAILABILITY_ORDER } from '@/lib/calendar/availability';
 import { DIMENSION_COLOR, DIMENSION_LABEL } from '@/lib/centralized/apoyo';
+import { DIMENSION_ICON as DIM_ICON } from '@/components/centralized/dimensionIcons';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -25,7 +26,6 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 const VIEWS: { value: CalendarViewMode; label: string }[] = [
   { value: 'month', label: 'Mes' }, { value: 'week', label: 'Semana' }, { value: 'day', label: 'Día' },
 ];
-const DIM_ICON: Record<string, any> = { laboral: Briefcase, corporal: Dumbbell, mental: Brain, social: Users };
 const DAY_ABBR = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const dayHeader = (ds: string) => { const d = new Date(`${ds}T00:00:00`); return `${DAY_ABBR[d.getDay()]} ${d.getDate()} ${MONTH_LABELS_ES[d.getMonth()].slice(0, 3)}`; };
@@ -458,7 +458,7 @@ export default function MiDiaPage() {
                           {it.gen && <ShieldCheck className="w-3 h-3 shrink-0 text-violet-400" />}
                           {it.social && <PartyPopper className="w-3 h-3 shrink-0 text-amber-500" />}
                           {it.auto && <Lock className="w-3 h-3 shrink-0 text-sky-400" />}
-                          {dims.map((dm) => { const DI = DIM_ICON[dm]; return DI ? <DI key={dm} title={DIMENSION_LABEL[dm] || dm} className="w-3.5 h-3.5 shrink-0" style={{ color: DIMENSION_COLOR[dm] || '#888' }} /> : null; })}
+                          {dims.map((dm) => { const DI = DIM_ICON[dm]; return DI ? <span key={dm} title={DIMENSION_LABEL[dm] || dm} className="inline-flex shrink-0"><DI className="w-3.5 h-3.5" style={{ color: DIMENSION_COLOR[dm] || '#888' }} /></span> : null; })}
                           <span className="text-[12.5px] font-medium text-digi-text leading-snug min-w-0 flex-1 truncate" style={mf}>{(it.gen || it.social) ? it.title : (t?.title || 'Tarea')}</span>
                         </div>
                         {/* Origen "Gestión Social": etiqueta ámbar + evento + aviso de bloqueo. */}

@@ -5,6 +5,75 @@
 >
 > **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
+## Objetivo ACTUAL (declarado 2026-07-19, 2ª parte) — Módulo "Pensamientos" + etiquetado IA nocturno
+
+**Rol asumido:** arquitecto full-stack + diseño de visualización de datos.
+
+### Necesidad (base verbatim del usuario)
+Módulo donde candidatos y miembros capturan pensamientos rápidamente (texto corto o lectura
+amplia). Panel izquierdo con las fechas en que se escribió; al elegir una, sus pensamientos.
+Modal con gráfico de puntos unidos = cantidad por fecha, más un indicador de **intensidad** basado
+en la cantidad de texto. Otro gráfico con la **categoría** que una IA asigna **cada noche a la
+01:00** a los pensamientos sin etiquetar: mental (filosófico/salud mental/reflexión de vida),
+social (personas, realidad social), laboral (relaciones laborales, metas laborales o proyectos
+personales), corporal (salud física, autocuidado, alimentación, medicación). Ese gráfico muestra
+cantidad por tipo en el mes e intensidad mensual por caracteres.
+
+### Hallazgos clave (verificados en el código)
+- **Las 4 categorías YA EXISTEN**: son las `DIMENSIONS` de `lib/centralized/apoyo.ts:24-31`
+  (laboral·corporal·mental·social, con color). Se reutilizan como fuente única en vez de inventar
+  una lista nueva.
+- **OpenAI**: el repo llama por `fetch` directo a `/v1/chat/completions` con
+  `response_format: json_object` y valida a mano tras el `JSON.parse` (`lib/openai.ts`,
+  `apa-extract/route.ts`). La dependencia `openai` solo se usa para audio.
+- **NO hay ninguna infraestructura de tareas programadas**: sin `node-cron`, sin cola, sin
+  `railway.json`/`Procfile`/`Dockerfile`. Producción arranca con `next start -p $PORT`.
+  El patrón que sí existe es **endpoint protegido por secreto compartido** llamado desde fuera
+  (`lib/centralized/percepcion-worker.ts`, cabecera `x-worker-token`, fail-closed).
+- **No hay librería de gráficos** (solo `react-force-graph-2d` para el grafo). El repo dibuja a
+  mano (`CriteriaSections.tsx`, `KnowledgeGraph.tsx`).
+- **`DIM_ICON` estaba duplicado en 3 archivos** — habría sido la 4ª copia.
+
+### Decisiones del usuario (2026-07-19) — ✅ resueltas
+- **Cron:** servicio de tipo **Cron en Railway**. (Sí hace falta algo externo.)
+- **Privacidad:** los pensamientos son **solo del autor**. *Matiz del usuario:* más adelante un
+  sistema del Centralizado accederá a los de todos **por políticas internas de la organización**.
+- **Alcance:** módulo **aislado** por ahora. *Matiz del usuario:* después, desde **Gestión Social →
+  Recursos**, se usarán para dar una **valoración global** de talentos y valores (spec completa
+  registrada en `MEMORIA.md` → "PENDIENTE acordado"). Ojo: esa puntuación es **fija, no
+  acumulativa** (semántica distinta del ±1 de tareas).
+
+### Construido y verificado (2026-07-19)
+- `lib/centralized/pensamientos.ts` (puro: categorías, TZ, bandas de intensidad) ·
+  `pensamientos-db.ts` (DDL + consultas + stats) · `pensamientos-ai.ts` (clasificador) ·
+  `pensamientos-runner.ts` (trabajo nocturno) · `lib/cron-auth.ts` (`CRON_TOKEN`).
+- Rutas `api/pensamientos/{,[id],stats,cron/etiquetar}` · página · `ThoughtCharts.tsx` ·
+  `scripts/pensamientos-cron.mjs` · sidebar + `MODULE_ACCESS` + módulo bloqueable.
+- `components/centralized/dimensionIcons.ts` (`DIMENSION_ICON` + `DIMENSION_SHAPE`) y **migradas
+  las 3 copias duplicadas**.
+- **Verificación:** `tsc` + `next build` OK · **IA contra OpenAI real 6/6** (incluye casos cortos y
+  ambiguos) · **BD real 13/13 con ROLLBACK** (agrupación por día local, filtro por fecha, privacidad
+  por fila, series mensuales, cola del nocturno, idempotencia de `setCategory`, limpieza de
+  categoría al editar, bitácora). Tablas `pn_thoughts`/`pn_tagging_runs` **creadas en producción**
+  (vacías, confirmado).
+
+### Lección técnica — separar constantes puras de la capa de datos
+`intensityOf` vivía en `pensamientos-db.ts`, que importa `pool`. Importarlo desde un componente
+`'use client'` habría arrastrado Postgres al bundle del navegador. Se partió en `pensamientos.ts`
+(puro) + `pensamientos-db.ts`, el mismo corte que ya existía en `apoyo.ts` / `apoyo-db.ts`.
+**Regla:** toda constante que consuma el cliente vive en un módulo sin `pool`.
+
+### Lección de visualización — el color se valida, no se opina
+Al validar `DIMENSION_COLOR` con un comprobador de daltonismo: **mental ↔ corporal ΔE 3.7 en
+deuteranopia** (mínimo 8) y dos colores por debajo de 3:1 de contraste en claro. No se cambió la
+paleta (es canónica en media app); se compensó con **forma de marcador + icono + vista de tabla**.
+También se evitó el error clásico de poner intensidad como **segundo eje Y**: va como tamaño de
+punto o en un gráfico aparte.
+
+### Progreso
+- **% de información para el objetivo:** 100% — construido y verificado.
+- **Pendiente del usuario:** crear el servicio de Cron en Railway (ver PROPUESTAS.md → O1).
+
 ## Objetivo ACTUAL (declarado 2026-07-19) — Sistema "Gestión Social" (Centralizado · CONTROLADOR · gestión) + módulo "Experiencias"
 
 **Rol asumido:** arquitecto full-stack de la plataforma GCC World (modelo de datos Postgres +

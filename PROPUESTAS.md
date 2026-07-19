@@ -8,6 +8,17 @@
 
 ## Diseño / UX
 
+### D2 — Re-escalonar la paleta de dimensiones (accesibilidad) · 🟡 Propuesta
+**Detectado:** 2026-07-19, al construir los gráficos de Pensamientos (validador de paletas).
+`DIMENSION_COLOR` falla dos comprobaciones: **mental `#ec4899` ↔ corporal `#14b8a6` dan ΔE 3.7 en
+deuteranopia** (el mínimo aceptable es 8) y, sobre fondo claro, `#14b8a6` (2.42) y `#eab308` (1.87)
+quedan por debajo de 3:1 de contraste.
+**Mitigado, no resuelto:** los gráficos nuevos añaden forma de marcador + icono + vista de tabla,
+así que la identidad nunca depende del color. Pero el **grafo de Apoyo** sigue distinguiendo
+dimensiones solo por el color del anillo.
+**Propuesta:** re-escalonar mental y corporal a pasos que superen ΔE 8 y 3:1. **Requiere OK**: es un
+cambio visible en Apoyo, Mi día, Horario de Vida y Reclutamiento a la vez.
+
 ### D1 — Migrar los ~13 rails de filtro duplicados a `FilterRail` · 🟡 Propuesta
 **Detectado:** 2026-07-19, al construir Gestión Social.
 El rail de filtro (icono + label + burbuja de conteo, activo con barra izquierda accent) estaba
@@ -48,6 +59,18 @@ en todas las rutas de `api/centralized/*` y filtra texto crudo de errores de Pos
 **Hecho parcialmente:** las rutas nuevas de Gestión Social registran el detalle con `console.error`
 y devuelven un mensaje genérico (los 409 de regla de negocio sí llevan mensaje, porque son para el
 usuario). **Propuesta:** alinear el resto.
+
+## Operación
+
+### O1 — El servicio de Cron de Railway aún no está creado · 🔵 Aprobada (pendiente de configurar)
+**Del lado del código está todo listo** (endpoint + `scripts/pensamientos-cron.mjs`), pero el
+servicio de cron vive **solo en el panel de Railway** y lo tiene que crear el usuario:
+servicio nuevo del mismo repo · start `node scripts/pensamientos-cron.mjs` · schedule **`0 6 * * *`**
+(UTC = 01:00 Ecuador) · env `CRON_TOKEN` (igual que en el web) y `APP_URL`.
+Mientras tanto el etiquetado se puede lanzar a mano como admin (mismo endpoint). Como el trabajo es
+idempotente y se auto-repara, un retraso en configurarlo no pierde datos.
+No hay `railway.json`/`railway.toml` en el repo, así que esta configuración no queda versionada;
+si se quiere declarativa, habría que añadir ese archivo.
 
 ## Funcionalidad
 

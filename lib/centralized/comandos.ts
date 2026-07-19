@@ -58,6 +58,7 @@ export const BLOCKABLE_MODULES: { path: string; label: string }[] = [
   { path: '/dashboard', label: 'Inicio' },
   { path: '/dashboard/mi-dia', label: 'Mi día' },
   { path: '/dashboard/experiencias', label: 'Experiencias' },
+  { path: '/dashboard/pensamientos', label: 'Pensamientos' },
   { path: '/dashboard/tickets', label: 'Tickets' },
   { path: '/dashboard/projects', label: 'Proyectos' },
   { path: '/dashboard/clients', label: 'Clientes' },

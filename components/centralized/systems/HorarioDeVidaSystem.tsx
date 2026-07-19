@@ -13,6 +13,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { VALORES, VALOR_LABEL } from '@/lib/centralized/valores';
 import { DIMENSION_COLOR, DIMENSION_LABEL } from '@/lib/centralized/apoyo';
+import { DIMENSION_ICON as DIM_ICON } from '@/components/centralized/dimensionIcons';
 import { TALENTOS } from '@/lib/centralized/talentos';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -34,7 +35,6 @@ interface GenTask { id: number; groupId: string; day: string; title: string; det
 interface TaskContext { problems: { title: string; dimension: string | null }[]; situations: string[]; causes: string[] }
 
 // Icono que representa cada dimensión (con su color de `DIMENSION_COLOR`).
-const DIM_ICON: Record<string, any> = { laboral: Briefcase, corporal: Dumbbell, mental: Brain, social: Users };
 
 const VALOR_OPTIONS = VALORES.map((v) => ({ value: v.key, label: v.label }));
 const TALENTO_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));

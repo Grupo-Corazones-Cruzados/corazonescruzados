@@ -446,6 +446,42 @@ evento** y el horario (`Clock`). Mientras el evento no esté `active`, `TaskStat
   poder leerlo, quita hover y añade `opacity-60 cursor-not-allowed`. Regla: para bloquear el
   marcado de una tarea, usar esta prop — nunca ocultar los botones (el usuario perdería el estado).
 
+### Gráficos (SVG a mano) — estándar del módulo Pensamientos
+No hay librería de gráficos en el repo (solo `react-force-graph-2d` para el grafo) y no se añade
+una: los gráficos se dibujan en **SVG inline** con `viewBox` + `w-full h-auto` (responsive), ejes y
+rejilla en `var(--color-digi-border)` y textos en `var(--color-digi-muted)`, así que funcionan en
+claro y oscuro sin código extra. Canónico: `components/pensamientos/ThoughtCharts.tsx`.
+- **Puntos unidos (línea + marcador)**: `<polyline stroke-width={2}>` + un marcador por punto con
+  anillo de 2px del color de la superficie (`stroke="var(--color-digi-card)"`) para separarlo de la
+  línea. Zonas de hover (`<rect fill="transparent">`) **más anchas que el punto**, con una guía
+  vertical en el punto activo.
+- **Nunca dos ejes Y en un mismo plot.** Alinear dos escalas distintas inventa una correlación que
+  no está en los datos. Cuando hay dos medidas: o se codifica la segunda en un canal distinto
+  (**tamaño del punto** = intensidad, con área ∝ valor → radio `√`), o va en un **gráfico aparte**
+  (así está "Intensidad por mes", separado de las líneas por categoría).
+- **Números** con `tabular-nums` y `Intl.NumberFormat('es-ES')`; sin dato → `—` en `text-digi-muted/50`.
+
+### Color en gráficos — la identidad nunca depende solo del color
+La paleta de dimensiones (`DIMENSION_COLOR`) se validó con un comprobador de daltonismo y **no
+supera la separación mínima**: **mental `#ec4899` ↔ corporal `#14b8a6` dan ΔE 3.7 en deuteranopia**
+(el mínimo es 8), y sobre fondo claro `#14b8a6` y `#eab308` quedan por debajo de 3:1 de contraste.
+**No se cambian esos colores** — son canónicos y repintarían el grafo de Apoyo, Mi día y el Horario.
+En su lugar, todo gráfico por dimensión **añade canales no cromáticos**:
+1. **Forma del marcador** por categoría — `DIMENSION_SHAPE` (laboral círculo · corporal cuadrado ·
+   mental triángulo · social rombo). Mismo recurso que ya usa `KnowledgeGraph` (la forma codifica
+   el tipo además del color).
+2. **Icono** en la leyenda — `DIMENSION_ICON`.
+3. **Vista de TABLA** conmutable, obligatoria por el aviso de contraste: el dato siempre se puede
+   leer sin depender del color.
+Regla: si añades un gráfico con estos 4 colores, replica los tres canales. No basta el color.
+
+### Iconos de dimensión — definición única
+`components/centralized/dimensionIcons.ts` exporta **`DIMENSION_ICON`** (Briefcase/Dumbbell/Brain/
+Users) y **`DIMENSION_SHAPE`**. Este mapa estaba **copiado literalmente en 3 archivos**
+(`mi-dia/page.tsx`, `HorarioDeVidaSystem.tsx`, `KnowledgeGraph.tsx` como `ICON_COMP`); los tres se
+migraron a esta definición el 2026-07-19. Vive en `components/` y no en `lib/centralized/apoyo.ts`
+para no arrastrar `lucide-react` a los módulos de servidor que importan las dimensiones.
+
 ### Configuración — Perfil fijo + pestañas (estándar de la página de ajustes)
 `settings/page.tsx` = **Perfil fijo a la izquierda** (`ProfilePanel`, `w-[400px]`) + a la derecha una tarjeta con **pestañas
 horizontales** (CV · Disponibilidad · Portafolio). Ambos lados **misma altura** (`items-stretch`). El contenido de cada pestaña
@@ -505,6 +541,18 @@ soportan variables CSS ni `<style>`).
   viejo estilo videojuego (Courier, fondo oscuro, morado `#7B5FBF`, bordes 2px pixel).
 
 ## Desviaciones detectadas y resolución
+- **2026-07-19 — El mapa de iconos de dimensión estaba duplicado en 3 archivos.** `DIM_ICON`
+  (laboral/corporal/mental/social → lucide) se reescribía a mano en `mi-dia/page.tsx`,
+  `HorarioDeVidaSystem.tsx` y `KnowledgeGraph.tsx` (como `ICON_COMP`, superset con ticket/proyecto).
+  Los gráficos de Pensamientos habrían sido la **cuarta copia**. **Resuelto:** extraído a
+  `components/centralized/dimensionIcons.ts` y los tres consumidores migrados (el de KnowledgeGraph
+  compone `{...DIMENSION_ICON, ticket, project}`). Verificado tsc + build.
+- **2026-07-19 — La paleta de dimensiones no es segura para daltonismo.** Comprobado con un
+  validador: mental `#ec4899` ↔ corporal `#14b8a6` = **ΔE 3.7 en deuteranopia** (mínimo 8), y
+  `#14b8a6`/`#eab308` por debajo de 3:1 de contraste sobre fondo claro. **Decisión:** NO tocar
+  `DIMENSION_COLOR` (es canónica en Apoyo/Mi día/Horario; cambiarla repintaría medio dashboard) y
+  compensar con **forma + icono + vista de tabla** en todo gráfico por dimensión (ver catálogo).
+  Pendiente evaluar un re-escalonado de la paleta si algún día se rediseña Apoyo → PROPUESTAS.md.
 - **2026-07-19 — El RAIL DE FILTRO estaba duplicado inline en ~13 sitios.** El control de la
   captura del usuario (tarjeta + título en mayúsculas + ítems icono/label/burbuja de conteo,
   activo con `bg-accent-light` + barra izquierda `border-accent`) NO era un componente: se
