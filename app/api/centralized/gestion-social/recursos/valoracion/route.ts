@@ -5,11 +5,12 @@ import { getAssessment, saveAssessment, type AssessmentItem } from '@/lib/centra
 
 export const dynamic = 'force-dynamic';
 
-async function guard() {
+/** Devuelve el usuario, o el código con el que rechazar: 401 sin sesión, 403 sin acceso. */
+async function guard(): Promise<{ user: any } | { status: 401 | 403 }> {
   const user = await getCurrentUser();
-  if (!user) return null;
-  if (!(await canAccessSystem(user.userId, user.role, 'gestion-social'))) return null;
-  return user;
+  if (!user) return { status: 401 };
+  if (!(await canAccessSystem(user.userId, user.role, 'gestion-social'))) return { status: 403 };
+  return { user };
 }
 
 function subjectOf(sp: URLSearchParams) {
@@ -20,8 +21,8 @@ function subjectOf(sp: URLSearchParams) {
 
 // GET — valoración actual del sujeto.
 export async function GET(req: NextRequest) {
-  const user = await guard();
-  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  const g = await guard();
+  if ('status' in g) return NextResponse.json({ error: 'No autorizado' }, { status: g.status });
   try {
     const s = subjectOf(req.nextUrl.searchParams);
     if (!s) return NextResponse.json({ error: 'Falta el sujeto.' }, { status: 400 });
@@ -39,14 +40,14 @@ export async function GET(req: NextRequest) {
  * que es exactamente la semántica pedida (hoy 5 puntos, mañana 3 → queda en 3).
  */
 export async function PUT(req: NextRequest) {
-  const user = await guard();
-  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  const g = await guard();
+  if ('status' in g) return NextResponse.json({ error: 'No autorizado' }, { status: g.status });
   try {
     const s = subjectOf(req.nextUrl.searchParams);
     if (!s) return NextResponse.json({ error: 'Falta el sujeto.' }, { status: 400 });
     const b = await req.json();
     const items: AssessmentItem[] = Array.isArray(b?.items) ? b.items : [];
-    const res = await saveAssessment(s.kind, s.id, items, user.userId);
+    const res = await saveAssessment(s.kind, s.id, items, g.user.userId);
     return NextResponse.json({ ok: true, ...res });
   } catch (err: any) {
     console.error('Valoración PUT:', err.message);

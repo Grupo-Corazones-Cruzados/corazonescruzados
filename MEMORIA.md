@@ -381,7 +381,34 @@ Stack estándar de la casa, con particularidades de este repo:
   relleno, 0 pendientes, bitácora registrada. Disparo real del servicio de cron comprobado en sus
   logs. **Datos de prueba eliminados**: `pn_thoughts` y `pn_tagging_runs` quedaron en 0.
 
-- **PENDIENTE acordado (2026-07-19) — "Gestión Social · pestaña Recursos" + valoración global:**
+- **Gestión Social · pestaña RECURSOS + VALORACIÓN GLOBAL (2026-07-19, HECHO):** tres paneles —
+  **personas** (candidatos y miembros, reusa `UsersList`) → **tipo** de pensamiento
+  (mental/corporal/social/laboral + "Sin etiquetar", reusa `FilterRail`) → **sus pensamientos**,
+  con lectura completa en modal. Desde ahí se asignan **varios talentos y varios valores, cada
+  uno con su puntuación**. Componente `components/centralized/systems/gestion-social/RecursosTab.tsx`.
+  - **⚠️ Puntuación FIJA, NO ACUMULATIVA.** Guardar **reemplaza el conjunto entero** del sujeto:
+    hoy 5 puntos y mañana 3 → el perfil muestra **3**, no 8. Tabla propia **`gs_valoraciones`**
+    (`subject_kind, subject_id, kind 'talent'|'value', item_key, points, updated_by`) con
+    **UNIQUE(subject_kind, subject_id, kind, item_key)**. `saveAssessment` borra y reinserta
+    dentro de una **transacción** (atómico, y evita construir un `record[]` con nombres de
+    talento que llevan espacios y acentos — fuente segura de errores de escapado).
+    Rango por punto: −100…100, admite negativos. **Tabla creada en producción.**
+  - **⚠️ NO se mezcla con el conteo ±1 de tareas.** Viaja como `CandidateCriteria.assessment`
+    (`lib/centralized/criteria.ts`) y se pinta como su **propia sección "Valoración"** en
+    `CriteriaSections`. Sumar un porcentaje derivado de tareas cumplidas con puntos absolutos
+    que pone una persona daría un número sin significado.
+  - **SEGURIDAD — esta pestaña lee pensamientos PRIVADOS de terceros.** Por eso NO basta
+    `['admin','member']`: se creó **`lib/centralized/system-access.ts` → `canAccessSystem()`**,
+    que replica la regla real del Centralizado (**piso jerárquico + paso exacto**, admin pasa,
+    más la puerta `centralized_member_access`) y la exigen las dos rutas de Recursos.
+    **Esto cierra la propuesta A2**, que estaba abierta justo para este caso.
+    Las funciones `listThoughtsOfSubject`/`countByCategory` de `pensamientos-db.ts` son la
+    excepción documentada a la privacidad por fila y solo deben llamarse tras ese guard.
+  - **Verificado:** tsc + build OK · **BD real 12/12 con ROLLBACK** (reemplazo vs acumulación,
+    eliminación de ítems, puntuaciones independientes y negativas, nombres con acentos, UNIQUE,
+    aislamiento entre sujetos) · en producción las dos rutas responden **401 sin sesión** y
+    **403 sin acceso al sistema**.
+- **Histórico — spec original de esta funcionalidad (2026-07-19):**
   el usuario especificó el siguiente desarrollo, que usará los pensamientos:
   - En **Gestión Social → Recursos**: panel izquierdo con **candidatos y miembros**; al elegir uno,
     un panel para elegir **tipo** (mental/corporal/social/laboral); a la derecha **sus pensamientos**

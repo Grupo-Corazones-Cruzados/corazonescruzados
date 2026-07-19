@@ -43,15 +43,13 @@ en cada llamada). Es exactamente el fallo ya documentado en `MEMORIA.md` → Lec
 ("ensureGestionDatosTables concurrente"), que rompió un endpoint en producción.
 **Propuesta:** aplicar el mismo patrón a los 6.
 
-### A2 — El filtro piso/paso del Centralizado no protege las rutas de datos · 🟡 Propuesta
-**Detectado:** 2026-07-19.
-La regla "un miembro ve su piso y los de abajo, solo en su paso" vive **únicamente** en
-`app/api/centralized/systems/route.ts`. Las rutas de datos de cada sistema solo comprueban
-`['admin','member']`. En Percepción Social no importa (las filas son del propio usuario), pero
-para sistemas con datos **compartidos** —como el nuevo Gestión Social— cualquier miembro puede
-llamar al endpoint directamente aunque la UI no le muestre el sistema.
-**Propuesta:** un helper `assertSystemAccess(userId, slug)` reutilizable en el `guard()` de las
-rutas de sistemas con datos compartidos.
+### A2 — El filtro piso/paso del Centralizado no protege las rutas de datos · 🟢 Implementada (2026-07-19)
+Se creó **`lib/centralized/system-access.ts` → `canAccessSystem(userId, role, slug)`**, que
+replica la regla real (piso jerárquico + paso exacto, admin pasa, más `centralized_member_access`)
+y ya la exigen las rutas de **Gestión Social · Recursos**, que leen pensamientos privados de
+terceros y eran el caso que motivó la propuesta.
+**Pendiente (menor):** aplicarlo también al resto de rutas de sistemas con datos compartidos; las
+de Percepción Social no lo necesitan porque filtran por propiedad de la fila.
 
 ### A3 — Las rutas del Centralizado devuelven `err.message` al cliente · 🟡 Propuesta
 El patrón `catch (err) { return NextResponse.json({ error: err.message }, { status: 500 }) }` está
