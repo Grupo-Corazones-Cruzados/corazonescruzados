@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { accessRoleOf } from '@/lib/dashboard/access';
+import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { MessageCircle, X, ChevronDown, Send, Loader2, AlertCircle } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -307,14 +308,15 @@ export default function GroupChat() {
 
           {/* Compositor */}
           <div className="shrink-0 border-t border-digi-border p-2 flex items-end gap-2">
-            <textarea
+            <AutoGrowTextarea
               ref={taRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKeyDown}
-              rows={1}
+              minRows={1}
+              maxHeight={140}
               placeholder="Escribe un mensaje…"
-              className="flex-1 max-h-24 px-2.5 py-2 bg-digi-darker border border-digi-border rounded-lg text-[12.5px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none"
+              className="flex-1 px-2.5 py-2 bg-digi-darker border border-digi-border rounded-lg text-[12.5px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
             />
             <button onClick={send} disabled={sending || !draft.trim()} aria-label="Enviar mensaje"
               className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg bg-accent text-white hover:bg-accent-hover disabled:opacity-40 disabled:pointer-events-none transition-colors">

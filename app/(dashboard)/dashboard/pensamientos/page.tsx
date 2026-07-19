@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import ThoughtCharts, { type DayBucket, type MonthBucket } from '@/components/pensamientos/ThoughtCharts';
 import { DIMENSION_LABEL, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
@@ -184,14 +185,14 @@ export default function PensamientosPage() {
 
         {/* Compositor: siempre visible, la captura tiene que ser inmediata */}
         <div className="bg-digi-card border border-digi-border rounded-lg p-3 mb-3">
-          <textarea
+          <AutoGrowTextarea
             ref={taRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKey}
-            rows={4}
+            minRows={4}
             placeholder="Escribe un pensamiento… puede ser una línea o una lectura larga."
-            className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-y"
+            className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
             style={mf}
           />
           <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -265,9 +266,9 @@ function ThoughtCard({ t, editing, onEditChange, onStartEdit, onCancelEdit, onSa
   if (editing !== null) {
     return (
       <div className="rounded-lg border border-accent bg-digi-card p-3">
-        <textarea
-          value={editing} onChange={(e) => onEditChange(e.target.value)} rows={6}
-          className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none resize-y"
+        <AutoGrowTextarea
+          value={editing} onChange={(e) => onEditChange(e.target.value)} minRows={6}
+          className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none"
           style={mf}
         />
         <div className="flex justify-end gap-2 mt-2">
