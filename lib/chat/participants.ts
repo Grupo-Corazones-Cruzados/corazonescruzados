@@ -126,7 +126,7 @@ export async function openScopesFor(userId: string): Promise<ScopeChat[]> {
   const out: ScopeChat[] = [];
 
   const { rows: tickets } = await pool.query(
-    `SELECT DISTINCT t.id::text AS ref_id, t.title, t.status
+    `SELECT DISTINCT t.id, t.id::text AS ref_id, t.title, t.status
        FROM gcc_world.tickets t
        LEFT JOIN gcc_world.clients c ON c.id = t.client_id
        LEFT JOIN gcc_world.users um ON um.member_id = t.member_id
@@ -138,7 +138,7 @@ export async function openScopesFor(userId: string): Promise<ScopeChat[]> {
   for (const r of tickets) out.push({ kind: 'ticket', refId: r.ref_id, title: r.title || `Ticket #${r.ref_id}`, status: r.status });
 
   const { rows: projects } = await pool.query(
-    `SELECT DISTINCT p.id::text AS ref_id, p.title, p.status
+    `SELECT DISTINCT p.id, p.id::text AS ref_id, p.title, p.status
        FROM gcc_world.projects p
        LEFT JOIN gcc_world.clients c ON c.id = p.client_id
        LEFT JOIN gcc_world.users ua ON ua.member_id = p.assigned_member_id
@@ -156,7 +156,7 @@ export async function openScopesFor(userId: string): Promise<ScopeChat[]> {
   for (const r of projects) out.push({ kind: 'project', refId: r.ref_id, title: r.title || `Proyecto #${r.ref_id}`, status: r.status });
 
   const { rows: events } = await pool.query(
-    `SELECT DISTINCT e.id::text AS ref_id, e.name AS title, e.status
+    `SELECT DISTINCT e.id, e.id::text AS ref_id, e.name AS title, e.status
        FROM gcc_world.gs_events e
        LEFT JOIN gcc_world.gs_task_signups s ON s.event_id = e.id
        LEFT JOIN gcc_world.users um ON s.subject_kind = 'member' AND um.member_id::text = s.subject_id
