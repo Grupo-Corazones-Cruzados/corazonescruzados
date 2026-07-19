@@ -267,6 +267,51 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **CHAT de la aplicación — chat grupal flotante (2026-07-19):** widget fijo en la esquina
+  **inferior derecha**, justo **encima de la barra de ruta** (`DashboardBreadcrumb` es
+  `fixed bottom-0 h-9 z-20` → el chat va en `bottom-11`, `z-[90]`). Montado dentro del div
+  **`.corp`** de `app/(dashboard)/layout.tsx` para heredar el tema claro/oscuro. Estilo Facebook:
+  pastilla con burbuja de no leídos que se despliega en un panel (estado en `localStorage`).
+  - **Acceso: solo candidatos y miembros (y admin).** Un cliente puro no lo ve. El JWT solo lleva
+    `userId/email/role`, así que "candidato" NO se deduce del token: se resuelve en BD
+    (`clients.account_type='candidate'`) en **`lib/chat/access.ts`** → `requireChatUser()`.
+    Se comprueba en el **servidor** además de ocultar el widget en el cliente.
+  - **Es un ÚNICO chat grupal**; no hay chats persona a persona.
+  - **Modelo** (`lib/chat/chat-db.ts`, ensure promise-singleton): `ch_conversations`
+    (kind, ref_id, title, retention_days) · `ch_messages` (conversation_id, user_id, body) ·
+    `ch_reads` (conversation_id, user_id, last_read_id). **Tablas creadas en producción** y el
+    grupal sembrado (`id=1`, kind='group', ref_id='', retention_days NULL = permanente).
+  - **⚠️ GOTCHA (verificado contra la BD antes de decidir): `ref_id` es `NOT NULL DEFAULT ''`,
+    no NULL.** En Postgres los NULL se consideran **distintos entre sí** dentro de un índice
+    único, así que con `ref_id NULL` el `UNIQUE (kind, ref_id)` NO habría impedido crear varios
+    chats grupales (dos INSERT idénticos pasaron en la prueba). Con `''` el unique sí protege.
+  - **Entrega por SONDEO, no SSE.** El único SSE del repo (`app/api/chat/route.ts`) es de uso
+    **local** (lanza el CLI de Claude) y **no tiene keepalive**; la convención del repo es
+    `setInterval`+`fetch`. Panel abierto → `GET /api/chat/grupo?after=<últimoId>` cada **4 s**
+    (solo lo nuevo); cerrado → `?only=unread` cada **30 s**; **se pausa con la pestaña oculta**.
+  - **UX:** burbujas propias a la derecha (color de marca) y ajenas a la izquierda con avatar,
+    autor y rol; separadores por día (Hoy/Ayer); mensajes consecutivos del mismo autor encadenados
+    (<5 min); "Ver mensajes anteriores" conservando la posición de scroll; **no arrastra el scroll
+    hacia abajo si el usuario está leyendo historial**; Enter envía, Shift+Enter salta línea.
+  - **No leídos:** `ch_reads.last_read_id` con `GREATEST` al marcar (no retrocede por una carrera);
+    los mensajes **propios** nunca cuentan.
+- **Chats TEMPORALES (futuro) + retención de 30 días (2026-07-19):** el modelo ya los contempla —
+  serán conversaciones `(kind, ref_id)` de ticket/proyecto/experiencia/reunión con
+  `retention_days = 30`. `POST /api/chat/cron/purgar` borra los mensajes que superan la retención
+  de SU conversación; **el grupal (`retention_days` NULL) nunca se purga**. Aún no hay UI para
+  ellos: `getOrCreateScopedConversation()` queda lista.
+- **Disparador nocturno GENERALIZADO (2026-07-19):** `scripts/pensamientos-cron.mjs` →
+  **`scripts/nightly-cron.mjs`**, que recorre una **lista de trabajos** (`JOBS`): etiquetado de
+  Pensamientos + purga del chat. **Añadir un trabajo nocturno nuevo ya no requiere otro servicio
+  de cron en Railway**: basta con sumarlo a `JOBS`. Un trabajo que falla no impide los demás.
+  - ⚠️ Se conserva `scripts/pensamientos-cron.mjs` como **alias** que delega en el nuevo, porque
+    el servicio de Railway aún apunta al nombre viejo; sin él la ejecución nocturna habría fallado
+    con "módulo no encontrado". Se puede borrar cuando el servicio use `nightly-cron.mjs`.
+  - **Verificado en producción:** el disparador completo devuelve `✓ Pensamientos` y
+    `✓ Chat · purga`, 0 fallidos; el chat rechaza sin sesión (403); BD real **13/13 con ROLLBACK**
+    (unicidad del grupal, orden, `?after=`, no leídos con GREATEST y mensajes propios, retención
+    30d vs permanente, idempotencia y CASCADE).
+
 - **Módulo "Pensamientos" (dashboard, 2026-07-19):** cuaderno personal de captura rápida para
   **miembros y candidatos** (`/dashboard/pensamientos`, sidebar bajo "Experiencias", icono
   `BrainCircuit`). Un pensamiento no tiene título (la captura debe ser inmediata): solo texto,
