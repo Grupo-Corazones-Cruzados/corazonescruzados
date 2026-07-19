@@ -5,7 +5,182 @@
 >
 > **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
-## Objetivo ACTUAL (declarado 2026-07-19, 2ª parte) — Módulo "Pensamientos" + etiquetado IA nocturno
+## Objetivo ACTUAL (declarado 2026-07-19, 3ª parte) — JUEGO GCC WORLD: motor, librerías y arquitectura
+
+**Rol asumido:** *arquitecto de motor de videojuego web + diseñador de sistemas/economía de juego.*
+Elegido porque la decisión crítica no es artística sino de arquitectura: qué capa de render se
+reemplaza, qué se conserva, y cómo se hace **autoritativa en servidor** una economía cuyas fichas
+se canjean por productos y servicios REALES.
+
+### Necesidad (verbatim del usuario, 2026-07-19)
+Juego con finalidad de **enseñanza** y **retos**, con **economía de fichas internas** que luego se
+aprovecha para ofrecer productos y servicios **gratuitos** a quien cumpla retos y gane fichas.
+Aventura con **secretos y retos que involucran la vida real**, con datos que solo se encuentran
+**investigando entre el mundo del juego y el `/dashboard` del usuario**. A ciertas etapas **solo se
+avanza según los resultados REALES registrados en la app** o condiciones particulares. Jugabilidad
+tipo **RPG que consume recursos de la cuenta del usuario**; ante el **fracaso**, el usuario debe
+ganar recursos que **a veces no vienen del juego sino de tareas de los módulos del `/dashboard`**.
+El usuario irá indicando dinámicas, misiones, etapas e historias. Encargo a Claude: **investigar
+proyectos/librerías** para diseñar el juego, crear **secuencias/escenas programadas** y los ajustes
+que requiere un videojuego. Es pixel art, pero **abierto a reformulaciones completas** para lograr
+mejor imagen, sombras, rendimiento y edición de mundos.
+
+### Hallazgo que reencuadra el encargo (auditoría del código, 2026-07-19)
+El encargo asumía "hay que montar el juego". La realidad: **ya existen ~16.100 líneas de juego**, y
+lo valioso NO es el código de dibujado (que es justo lo que un motor regala) sino **los editores
+integrados en la app con auth y BD**, que ninguna herramienta estándar da:
+
+| Archivo | Líneas | Qué es |
+|---|---|---|
+| `components/landing/world/MapEditor.tsx` | **6.341** | Editor de mapas completo en navegador |
+| `components/landing/CharacterGameplay.tsx` | **2.590** | Runtime del juego A |
+| `app/(main)/world/page.tsx` | 1.496 | Runtime del juego B (legacy, digimon) |
+| `NpcEditor` / `CinematicEditor` / `SceneManagerEditor` / `items.ts` | ~3.650 | Editores + catálogo |
+
+**Hay DOS juegos sin una línea compartida:** (A) "El Mundo" — LPC 64×64, tilemaps, NPCs, luces,
+cinemáticas, en la landing; (B) "Digimundo" (`/world`) — canvas único, sprites generados con
+fal.ai/OpenAI, afinidad 0-100. Dos sistemas de sprites, dos formatos de mundo, dos persistencias.
+
+### Estado técnico real del juego A (verificado, con rutas)
+- **Sin motor, sin WebGL.** Canvas 2D + **DOM/CSS**: los tiles son un `<canvas>` del **mundo entero**
+  pintado 1 vez (`WorldMap.tsx:40`), pero el jugador y los NPCs son **~12 `<div>` apilados** por
+  personaje con `background-position` (`CharacterCreator.tsx:848-1010`). Cámara = `translate` CSS.
+- **No hay un game loop:** hay **4 RAF independientes + 2 `setInterval`**, todos disparando
+  `setState` de React ⇒ **React ES el render loop**. El `fps` declarado por animación no se usa:
+  todo avanza con un `setInterval(130ms)` global (`CharacterGameplay.tsx:611`).
+- **Mapas:** tilemap **disperso** (array de tiles con coords absolutas), tile 32px ×2 en pantalla.
+  El campo `s` es un **índice posicional** en `SHEETS` — reordenar el array **corrompe todos los
+  mapas guardados** (advertido en `sheets.ts:1-2`).
+- **Colisión de UN SOLO PUNTO** en los pies, sin AABB ni sweep; con `factor` capado a 5 hay
+  desplazamientos de hasta 9,5px por paso ⇒ **tunneling**. Movimiento en 4 direcciones puras.
+- **Iluminación:** gradientes radiales sin oclusión (la luz atraviesa muros), sin normal maps, sin
+  sombras proyectadas (`GroundShadow` es un `div` con `radial-gradient`).
+- **Cinemáticas = diapositivas**, no timeline: `{backdrop, characters[], dialog, duration}`, `<img>`
+  estáticos en un stage 1280×720. Sin tweening ni animación de sprite.
+- **Diálogos = `string[]` plano.** Sin ramas, sin condiciones, sin variables. **No hay quests.**
+
+### ⚠️ Riesgos CRÍTICOS detectados (bloquean el objetivo del usuario)
+1. **Economía inexistente Y falsificable.** Cero coincidencias de coin/ficha/reward/xp/score en todo
+   el juego. Peor: `POST /api/world/inventory` acepta cualquier `{placementId, itemId}`
+   **sin validar que ese placement exista ni que el jugador esté cerca** (`inventory/route.ts:29-45`).
+   Como las fichas darán productos reales, esto es explotable con un `fetch` desde la consola.
+2. **Canvas del mundo completo = bomba de memoria.** `WorldMap` crea un canvas de `width*32 ×
+   height*32`. Con el máximo permitido (500×500 tiles) son **16000×16000px ≈ 1 GB de VRAM**, y se
+   instancian **tres a la vez** (`below`, `above`, y `LightOverlay` a 64px ⇒ 32000×32000). Un mapa
+   de 200×200 **ya revienta el límite de canvas de Safari/iOS**. Sin culling ni chunking.
+3. **Progreso casi todo en `localStorage` o en memoria.** Cinemáticas vistas → `localStorage`
+   (*"clearing browser data replays them"*, `events.ts:20-33`); triggers de props → `Set` en memoria.
+   **No se guarda posición ni escena actual.** Incompatible con "avanzar según resultados reales".
+4. **Esquema del juego NO versionado.** `sql/migrations/` **ya no existe** (verificado: `find` da 0
+   archivos `.sql`) y el juego no está en Prisma. Las 4 tablas (`scenes`, `world_maps`, `npcs`,
+   `lights`) solo existen en la BD de producción. Además hay **DDL en el hot path**: un
+   `ALTER TABLE ADD COLUMN IF NOT EXISTS` **en cada GET y cada PUT** de `/api/world/map`.
+   ⚠️ Esto **contradice `MEMORIA.md`**, que dice que las migraciones viven en `sql/migrations/`.
+5. **Autorización de edición por email hardcodeado**: `ADMIN_EMAIL = 'lfgonzalezm0@outlook.com'`
+   (`lib/world/auth.ts:5`).
+6. **Sin soporte móvil/táctil**: el control es exclusivamente teclado.
+
+### Decisión de arquitectura propuesta (investigación web, 2026-07-19)
+**Reemplazo quirúrgico, NO migración total:** cambiar solo la capa de dibujado (~1.500 líneas) a
+**Phaser 4**, y **conservar los ~14.500 de editores + las rutas API**, que siguen siendo React+Postgres.
+
+- **Motor: Phaser 4.2.1** (MIT). Razón decisiva para este caso: **`sprite.setLighting(true)` con
+  normal maps y self-shadows nativos** — exactamente el "mejores sombras" que pide el usuario, hoy
+  imposible con gradientes radiales. Existe plantilla oficial Next 15 + Phaser 4 + React 19.
+  ⚠️ *Aviso oficial:* activar lighting **rompe el batching** ⇒ aplicar selectivamente.
+- **Descartados y por qué:** Godot/Unity/Cocos/Defold/GDevelop → producen un **iframe**, lo que
+  **pierde el contexto de auth de la app** (inaceptable si las fichas dan productos reales) y pesa
+  MB en vez de KB. `@pixi/react` → bugs abiertos con **React 19.2 + StrictMode + Next dev**
+  (issues #630/#602/#648), sin push desde 2026-01. Kaplay → v4000 lleva 2 trimestres de retraso.
+- **NO adoptar Tiled ni LDtk** (aunque sean "el estándar"): obligarían a instalar una app de
+  escritorio y subir ficheros, **perdiendo el editor en navegador con auth y BD**, que es una
+  ventaja de producto. (Dato: LDtk no tiene release estable desde enero de 2024.)
+- **NO montar servidor de juego** (Colyseus/Nakama): un RPG single-player no tiene simulación
+  adversarial en tiempo real; añadiría una **segunda fuente de verdad** para la economía sin quitar
+  confianza al cliente. Bastan Route Handlers + Postgres.
+- **NO ECS** (bitECS/Miniplex): decenas de entidades, no miles. Además el estado autoritativo debe
+  ser **diffable y expresable como filas**; los TypedArrays SoA de bitECS pelean contra Postgres.
+- **NO Howler**: congelado (v2.2.4 es de sept-2023; en nov-2025 el único commit **añadió publicidad
+  de un patrocinador**; nadie respondió a la propuesta de fork de feb-2026). Usar el audio de Phaser,
+  que es el único que maneja el estado **no estándar `'interrupted'`** de iOS y el backgrounding.
+
+### Reencuadre clave para la economía (lo más importante del análisis)
+**Las fichas no son una variable de juego: son un sistema de pagos.** Deben modelarse como
+**libro contable append-only** (tabla `ficha_transaction` con clave de idempotencia + UNIQUE, saldo
+**derivado**), no como una columna entera mutable. Eso da auditoría cuando se dispute un canje y
+hace la duplicación **detectable a posteriori** en vez de invisible. Corolarios:
+- El cliente manda **acciones** ("interactué con NPC 7 en el paso 3"), **nunca resultados**
+  ("misión completa, págame"). Máquina de estados de misiones **en el servidor**.
+- **Loguear el stream de acciones desde el día uno** — es el insumo para detectar anomalías y no se
+  puede reconstruir retroactivamente.
+- **Fricción en el canje, no durante el juego.** Topes diarios y rendimientos decrecientes: la
+  amenaza real no es "tengo 10.000 fichas" (eso lo mata la autoridad del servidor) sino
+  **"un script repite la misma misión legítima 400 veces de noche"** — eso es un ataque económico y
+  se defiende con **diseño**, no con código cliente.
+- La defensa en cliente es inútil, con evidencia: el speedhack es **una extensión de navegador** en
+  la Chrome Web Store que sobreescribe `Date.now`/`performance.now`/`requestAnimationFrame`, y
+  **falsea `Function.prototype.toString`** para seguir reportando `[native code]`. WASM tampoco
+  salva (existe Cetus, un Cheat Engine para WASM).
+
+### Paquetes a instalar (versiones VERIFICADAS contra el registro npm el 2026-07-19)
+```bash
+npm i phaser@4.2.1        # MIT — motor + lighting con normal maps + audio iOS-safe
+npm i inkjs@2.4.0         # MIT, 0 deps — diálogos ramificados; ToJson()/LoadJson() serializa
+                          #   TODO el estado narrativo ⇒ se persiste y revalida en Postgres
+npm i pure-rand@8.4.2     # MIT — RNG con semilla y estado serializable (loot auditable)
+npm i -D free-tex-packer-core@0.3.8   # MIT — exportador Phaser nativo
+npm i -D @kayahr/aseprite@2.1.0       # MIT — tipos TS del JSON de Aseprite
+# zustand@^5.0.0 YA está instalado → usar zustand/vanilla como puente Phaser↔React
+```
+Fuera de npm: **Aseprite** ($19.99) — Phaser tiene loader nativo (`this.load.aseprite`) y convierte
+**los tags en animaciones automáticamente**; Pixi NO (declara `frameTags` pero nunca los lee).
+Alternativa libre: Pixelorama 1.1.10.
+**NO instalar:** `howler`, `use-sound`, `@pixi/react`, `bondage`/`yarn-bound` (lenguaje de 2020),
+`react-game-engine` (archivado), ningún ECS, ningún framework de servidor de juego.
+
+### Reglas de integración no negociables (Next 15 + React 19)
+- `ssr:false` **no está permitido en Server Components** en Next 15 ⇒ hace falta un wrapper
+  `'use client'` fino con `dynamic(..., { ssr:false })`.
+- **React 19 StrictMode monta dos veces** y el `import()` es asíncrono ⇒ montaje idempotente con
+  bandera `disposed`, o se filtra un juego huérfano sin cleanup (phaser#4305).
+  **NO desactivar `reactStrictMode`** (dev-only; ocultaría bugs en TODA la app, no solo en `/world`).
+- **Lo que cambia cada frame NO toca React jamás.** Posiciones/velocidades solo en Phaser; React
+  solo pinta HUD, inventario y diálogo, leyendo de `zustand/vanilla`.
+- **Riesgo de despliegue (alta probabilidad):** Railway con `output:'standalone'` **no copia
+  `public/`** ⇒ todos los sprites y audios dan 404 en producción funcionando perfecto en local.
+- **Phaser NO tree-shakea** (no hay campo `sideEffects` ni subpath exports; varios blogs afirman lo
+  contrario y se equivocan) ⇒ ~347KB gz. Mitigación: split por ruta, solo carga en el juego.
+
+### Preguntas abiertas para el usuario
+### PJ1 — ¿Se unifican los dos juegos (A "El Mundo" y B "Digimundo") o B se retira? · ❓ Abierta
+- **Por qué importa:** mantener dos motores, dos formatos de mundo y dos persistencias duplica todo
+  el trabajo y ninguno de los dos hereda las mejoras del otro. Afecta al alcance de la migración.
+
+### PJ2 — ¿Qué "resultados reales del `/dashboard`" desbloquean etapas, exactamente? · ❓ Abierta
+- **Por qué importa:** es el corazón del diseño. Los módulos disponibles hoy son tickets, proyectos,
+  calendario, finanzas, suscripciones, pensamientos, centralizado. Necesito saber qué eventos
+  concretos (¿cerrar un ticket? ¿asistir a una reunión? ¿registrar pensamientos N días seguidos?)
+  emiten señal al juego, para diseñar el bus de eventos y la máquina de estados server-side.
+
+### PJ3 — ¿Qué son "los recursos de la cuenta" que consume el RPG? · ❓ Abierta
+- **Por qué importa:** el usuario dice que la jugabilidad **consume recursos que el usuario tiene en
+  su cuenta**. ¿Son las mismas fichas, o un recurso distinto (energía/tiempo)? De esto depende si el
+  libro contable es uno o varios, y si el fracaso puede dejar a alguien bloqueado sin salida.
+
+### PJ4 — ¿Las fichas se pueden transferir entre usuarios? · ❓ Abierta
+- **Por qué importa:** si son transferibles, el riesgo pasa de "farming" a "mercado secundario" y
+  cambia por completo el modelo antifraude (y posiblemente sus implicaciones legales/fiscales).
+
+### PJ5 — ¿Se rehace el arte o se conserva LPC? · ❓ Abierta
+- **Por qué importa:** las sombras con normal maps de Phaser 4 **exigen normal maps por asset**. El
+  set LPC actual (19MB en `public/character/`) no los tiene. Generarlos o rehacer el arte es un coste
+  real que hay que decidir antes de prometer "las mejores sombras".
+
+### PJ6 — ¿Móvil es requisito? · ❓ Abierta
+- **Por qué importa:** hoy el control es 100% teclado y el canvas de mundo completo **ya revienta en
+  iOS**. Si móvil es requisito, el chunking del render deja de ser optimización y pasa a bloqueante.
+
+## Objetivo ANTERIOR (declarado 2026-07-19, 2ª parte) — Módulo "Pensamientos" + etiquetado IA nocturno
 
 **Rol asumido:** arquitecto full-stack + diseño de visualización de datos.
 

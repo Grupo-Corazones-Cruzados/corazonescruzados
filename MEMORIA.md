@@ -207,7 +207,15 @@ Stack estándar de la casa, con particularidades de este repo:
   - Cliente Prisma generado en `lib/generated/prisma` (no el default `@prisma/client`).
   - **Schema de BD = `gcc_world`** (no `public`); `search_path=gcc_world,public`. Ver `lib/db.ts`.
   - Prisma `schema.prisma` solo modela Project/Module/Section/Subsection/Incident; el resto
-    de tablas se gestionan con **migraciones SQL manuales en `sql/migrations/`** (001–020+).
+    de tablas se gestionan con **migraciones SQL manuales**.
+    ⚠️ **CORRECCIÓN (verificado 2026-07-19):** `sql/migrations/` **ya NO existe** — se borró en la
+    limpieza del 2026-06-07 ("migraciones ya aplicadas"). Hoy `find . -name "*.sql"` da **0
+    resultados**. Consecuencia real: **el esquema de las tablas que no están en Prisma solo existe
+    en la BD de producción**, sin versionar. El patrón que se usa en su lugar es
+    `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ADD COLUMN IF NOT EXISTS` en código
+    (`ensureSubscriptionTables()`, `ensureBillingClientsTable()`), y en el juego eso llegó a
+    **DDL en el hot path** (un ALTER por request en `/api/world/map`). Al crear tablas nuevas,
+    **restaurar `sql/migrations/` y NO borrar las migraciones tras aplicarlas.**
 - **Auth**: propia, **JWT (`jose`) + `bcryptjs`**, roles/permisos por sección. Passkeys
   (`@simplewebauthn`) para clientes.
 - **Deploy**: Railway (nixpacks.toml). `build` corre `prisma generate && next build`.
@@ -267,6 +275,42 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **JUEGO GCC WORLD — nueva línea de trabajo (2026-07-19):** el usuario abre el frente del
+  **videojuego** con finalidad de **enseñanza + retos + economía de fichas** canjeables por
+  **productos y servicios reales gratuitos**. Aventura con secretos que **cruzan el mundo del juego
+  con el `/dashboard`**: hay etapas que **solo se desbloquean con resultados REALES registrados en la
+  app**. RPG que **consume recursos de la cuenta**; ante el fracaso, el usuario debe reponerlos a
+  veces **haciendo tareas de los módulos del dashboard**, no jugando. El usuario irá definiendo
+  dinámicas, misiones, etapas e historias; el detalle técnico completo (auditoría del código
+  existente, comparativa de motores, paquetes con versiones verificadas y preguntas abiertas PJ1–PJ6)
+  está en **`Aprendizaje.md` → "Objetivo ACTUAL (3ª parte)"**. Titulares que no hay que reaprender:
+  - **Ya existen ~16.100 líneas de juego** y **DOS juegos sin código compartido**: (A) "El Mundo"
+    (landing, LPC, tilemaps, NPCs, cinemáticas) y (B) "Digimundo" (`/world`, sprites por IA,
+    afinidad). Lo caro y valioso son los **editores en navegador con auth y BD** (`MapEditor.tsx`
+    solo ya son 6.341 líneas), no el código de dibujado.
+  - **Decisión de arquitectura propuesta: reemplazo quirúrgico, no migración.** Cambiar solo la capa
+    de render (~1.500 líneas) a **Phaser 4.2.1** y **conservar los editores y las rutas API**.
+    Motivo decisivo: `setLighting(true)` con **normal maps y self-shadows nativos** es lo único que
+    da el salto de calidad en sombras que pide el usuario.
+  - **Rechazar explícitamente** (aunque sean "lo estándar"): **Godot/Unity/Cocos** → obligan a
+    `<iframe>` y **pierden el contexto de auth de la app**, inaceptable con fichas canjeables por
+    bienes reales; **Tiled/LDtk** → matarían el editor en navegador, que es ventaja de producto;
+    **servidor de juego** (Colyseus/Nakama) → segunda fuente de verdad para la economía sin ganar
+    nada en un RPG single-player; **ECS**; **Howler** (congelado desde 2023).
+  - **REGLA RECTORA de la economía: las fichas NO son una variable de juego, son un sistema de
+    pagos.** Modelarlas como **libro contable append-only con idempotencia** (saldo *derivado*,
+    nunca una columna mutable). El cliente envía **acciones, jamás resultados**. La defensa vive en
+    el servidor y en el **diseño** (topes diarios, rendimientos decrecientes, fricción en el canje);
+    en el cliente es inútil por definición.
+  - **Agujero de seguridad ya presente:** `POST /api/world/inventory` acepta cualquier
+    `{placementId, itemId}` **sin validar existencia ni cercanía** (`inventory/route.ts:29-45`).
+    Hoy es inofensivo (no hay economía); **el día que haya fichas es dinero regalado**.
+  - **Bloqueante técnico ya presente:** `WorldMap` crea un canvas del **mundo entero**
+    (`width*32 × height*32`) y se instancian **tres a la vez**; a 500×500 tiles son **~1 GB de VRAM**
+    y un mapa de 200×200 **ya revienta el límite de canvas de iOS/Safari**. Sin culling ni chunking.
+  - **El progreso hoy NO se guarda:** cinemáticas vistas en `localStorage` (borrar datos las
+    repite), triggers en memoria, y **ni la posición ni la escena actual se persisten**. Es
+    incompatible con "avanzar según resultados reales" y hay que rehacerlo contra Postgres.
 - **CHAT de la aplicación — chat grupal flotante (2026-07-19):** widget fijo en la esquina
   **inferior derecha**, justo **encima de la barra de ruta** (`DashboardBreadcrumb` es
   `fixed bottom-0 h-9 z-20` → el chat va en `bottom-11`, `z-[90]`). Montado dentro del div
