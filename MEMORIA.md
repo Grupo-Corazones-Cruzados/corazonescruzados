@@ -295,7 +295,42 @@ Stack estándar de la casa, con particularidades de este repo:
     hacia abajo si el usuario está leyendo historial**; Enter envía, Shift+Enter salta línea.
   - **No leídos:** `ch_reads.last_read_id` con `GREATEST` al marcar (no retrocede por una carrera);
     los mensajes **propios** nunca cuentan.
-- **Chats TEMPORALES (futuro) + retención de 30 días (2026-07-19):** el modelo ya los contempla —
+- **CHATS PRIVADOS por ticket / proyecto / evento + PRESENCIA (2026-07-19, HECHO):** segundo
+  lanzador **"Mis chats"** a la derecha del de Chat general, en el mismo muelle
+  (`components/chat/ChatDock.tsx`). Panel con **lista de chats a la izquierda y mensajes del
+  seleccionado a la derecha** (`PersonalPanel`), burbuja de no leídos por chat y en el lanzador.
+  - **Un chat por cada origen NO completado** en el que el usuario participa. Estados activos
+    tomados de la propia app: tickets `pending|confirmed|in_progress`; proyectos
+    `draft|open|in_progress|review|in_review` (**⚠️ `review` e `in_review` son el MISMO estado
+    escrito de dos formas en el código** — la API graba `review`, parte de la UI usa
+    `in_review`; se contemplan los dos); eventos `published|active`.
+  - **PRIVACIDAD sin tabla de miembros:** la autorización se **recalcula en cada petición**
+    desde quién participa hoy en el origen (`lib/chat/participants.ts` + `lib/chat/scope-guard.ts`).
+    Si alguien deja de participar, pierde el acceso al instante. Participan: ticket → cliente +
+    miembro asignado + creador; proyecto → cliente + responsable + participantes activos +
+    pujas aceptadas + creador; evento → organizador (`gs_events.created_by`, que YA es un
+    `users.id`) + quienes tomaron tarea.
+  - **⚠️ Todo se normaliza a `users.id` COMO TEXTO**: `tickets.user_id` es uuid,
+    `projects.created_by_user_id` es TEXT y `ch_messages.user_id` es TEXT. Sin castear, los
+    comparadores no cruzan.
+  - **Límite conocido:** un cliente dado de alta solo por email (`clients.user_id IS NULL`) no
+    tiene cuenta, así que no puede entrar. No hay a quién dar acceso.
+  - **PRESENCIA — tabla `ch_presence` (user_id, last_seen_at).** No hizo falta canal aparte: el
+    chat ya sondea (4 s abierto / 30 s cerrado), así que **ese sondeo actúa de latido** y la
+    presencia sale gratis (`touchPresence` en cada endpoint de chat). En línea = visto hace
+    <90 s. El botón del header del chat abre una **burbuja con los participantes**, su papel y su
+    estado (En línea / Hace X) con punto verde. Refleja actividad **dentro de la app**, que es
+    justo lo que significa "conectado". Antes NO existía ningún seguimiento de presencia.
+  - **Retención:** estos chats nacen con `retention_days = 30` y los purga el trabajo nocturno;
+    el grupal sigue permanente (`retention_days` NULL).
+  - **Refactor:** el hilo se extrajo a **`components/chat/ChatThread.tsx`** (definición única que
+    comparten el grupal y los personales) y `GroupChat` se dividió en `ChatDock` + `GroupPanel` +
+    `PersonalPanel`.
+  - **Verificado:** tsc + build OK · **BD real 19/19 con ROLLBACK** (participantes por origen,
+    listas por usuario, ticket completado deja de generar chat, aislamiento de terceros, unicidad
+    de conversación por origen, retención 30d, y presencia en línea/desconectado sin acumular
+    filas) · en producción las 3 rutas responden **401 sin sesión**.
+- **Chats TEMPORALES — spec original (2026-07-19):** el modelo ya los contempla —
   serán conversaciones `(kind, ref_id)` de ticket/proyecto/experiencia/reunión con
   `retention_days = 30`. `POST /api/chat/cron/purgar` borra los mensajes que superan la retención
   de SU conversación; **el grupal (`retention_days` NULL) nunca se purga**. Aún no hay UI para
