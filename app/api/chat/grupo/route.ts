@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireChatUser } from '@/lib/chat/access';
-import { getGroupConversation, listMessages, postMessage, getUnreadCount } from '@/lib/chat/chat-db';
+import { getGroupConversation, listMessages, postMessage, getUnreadCount, touchPresence } from '@/lib/chat/chat-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
   const u = await requireChatUser();
   if (!u) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   try {
+    // Cualquier sondeo del chat prueba que el usuario sigue activo en la app.
+    await touchPresence(u.userId);
     const conv = await getGroupConversation();
     const sp = req.nextUrl.searchParams;
 

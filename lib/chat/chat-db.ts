@@ -66,6 +66,13 @@ async function doEnsure(): Promise<void> {
       PRIMARY KEY (conversation_id, user_id)
     )`);
 
+  // PRESENCIA: última vez que se vio activo a cada usuario dentro de la app.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.ch_presence (
+      user_id TEXT PRIMARY KEY,
+      last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+
   // Siembra idempotente del chat grupal (permanente: retention_days NULL).
   await pool.query(
     `INSERT INTO gcc_world.ch_conversations (kind, ref_id, title, retention_days)
@@ -141,6 +148,72 @@ export async function getOrCreateScopedConversation(
   );
   const r = rows[0];
   return { id: Number(r.id), kind: r.kind, refId: r.ref_id, title: r.title, retentionDays: r.retention_days ?? null };
+}
+
+/**
+ * Asegura de una vez las conversaciones de varios orígenes y devuelve `kind:refId` → id.
+ * Evita el N+1 de llamar a `getOrCreateScopedConversation` por cada chat de la lista.
+ */
+export async function ensureScopedConversations(
+  scopes: { kind: string; refId: string; title?: string }[],
+): Promise<Map<string, number>> {
+  await ensureChatTables();
+  const out = new Map<string, number>();
+  if (scopes.length === 0) return out;
+
+  const kinds = scopes.map((s) => s.kind);
+  const refs = scopes.map((s) => s.refId);
+  const titles = scopes.map((s) => s.title ?? '');
+  await pool.query(
+    `INSERT INTO gcc_world.ch_conversations (kind, ref_id, title, retention_days)
+     SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[]) AS t(kind, ref_id, title),
+                  LATERAL (SELECT $4::int) AS r(retention_days)
+     ON CONFLICT (kind, ref_id) DO NOTHING`,
+    [kinds, refs, titles, TEMP_RETENTION_DAYS],
+  );
+  const { rows } = await pool.query(
+    `SELECT id, kind, ref_id FROM gcc_world.ch_conversations
+      WHERE (kind, ref_id) IN (SELECT * FROM UNNEST($1::text[], $2::text[]))`,
+    [kinds, refs],
+  );
+  for (const r of rows) out.set(`${r.kind}:${r.ref_id}`, Number(r.id));
+  return out;
+}
+
+/** No leídos y último mensaje de varias conversaciones a la vez. */
+export async function summarizeConversations(
+  conversationIds: number[], userId: string,
+): Promise<Record<number, { unread: number; lastAt: string | null; lastBody: string | null }>> {
+  await ensureChatTables();
+  const out: Record<number, { unread: number; lastAt: string | null; lastBody: string | null }> = {};
+  if (conversationIds.length === 0) return out;
+  const { rows } = await pool.query(
+    `SELECT c.id,
+            COALESCE(un.n, 0)::int AS unread,
+            last.created_at AS last_at,
+            last.body AS last_body
+       FROM gcc_world.ch_conversations c
+       LEFT JOIN LATERAL (
+         SELECT COUNT(*) AS n FROM gcc_world.ch_messages m
+          WHERE m.conversation_id = c.id AND m.user_id <> $2
+            AND m.id > COALESCE((SELECT last_read_id FROM gcc_world.ch_reads
+                                  WHERE conversation_id = c.id AND user_id = $2), 0)
+       ) un ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT m.created_at, m.body FROM gcc_world.ch_messages m
+          WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1
+       ) last ON TRUE
+      WHERE c.id = ANY($1::bigint[])`,
+    [conversationIds, userId],
+  );
+  for (const r of rows) {
+    out[Number(r.id)] = {
+      unread: Number(r.unread),
+      lastAt: r.last_at ? new Date(r.last_at).toISOString() : null,
+      lastBody: r.last_body ?? null,
+    };
+  }
+  return out;
 }
 
 /* ── Mensajes ────────────────────────────────────────────────────────────────── */
@@ -224,6 +297,62 @@ export async function markRead(conversationId: number, userId: string, lastId: n
                    updated_at = NOW()`,
     [conversationId, userId, lastId],
   );
+}
+
+/* ── Presencia ───────────────────────────────────────────────────────────────
+ * "Estado de conexión en la app". No hace falta un canal aparte: el chat ya sondea
+ * (4 s abierto / 30 s cerrado), así que ese mismo sondeo actúa de LATIDO y la presencia
+ * sale gratis. Consecuencia honesta: solo refleja a quien tiene el dashboard abierto —
+ * que es exactamente lo que significa "conectado en la app".
+ */
+
+/** Umbral para considerar a alguien EN LÍNEA. Holgado sobre el sondeo de 30 s del panel cerrado. */
+export const ONLINE_SECONDS = 90;
+
+export async function touchPresence(userId: string): Promise<void> {
+  await ensureChatTables();
+  await pool.query(
+    `INSERT INTO gcc_world.ch_presence (user_id, last_seen_at) VALUES ($1, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET last_seen_at = NOW()`,
+    [userId],
+  );
+}
+
+export interface Participant {
+  userId: string;
+  name: string;
+  avatar: string | null;
+  role: string;
+  /** Papel dentro de ESTE chat (cliente, responsable, participante…). */
+  relation: string;
+  online: boolean;
+  lastSeenAt: string | null;
+}
+
+/** Resuelve nombre, avatar y presencia de un conjunto de usuarios. */
+export async function describeUsers(userIds: string[], relations: Record<string, string> = {}): Promise<Participant[]> {
+  await ensureChatTables();
+  if (userIds.length === 0) return [];
+  const { rows } = await pool.query(
+    `SELECT u.id, u.first_name, u.last_name, u.email, u.avatar_url, u.role,
+            p.last_seen_at,
+            (p.last_seen_at IS NOT NULL AND p.last_seen_at > NOW() - ($2 || ' seconds')::interval) AS online
+       FROM gcc_world.users u
+       LEFT JOIN gcc_world.ch_presence p ON p.user_id = u.id::text
+      WHERE u.id::text = ANY($1::text[])`,
+    [userIds, String(ONLINE_SECONDS)],
+  );
+  const list: Participant[] = rows.map((r: any) => ({
+    userId: String(r.id),
+    name: [r.first_name, r.last_name].filter(Boolean).join(' ').trim() || r.email || 'Usuario',
+    avatar: r.avatar_url ?? null,
+    role: r.role || '',
+    relation: relations[String(r.id)] || '',
+    online: !!r.online,
+    lastSeenAt: r.last_seen_at ? new Date(r.last_seen_at).toISOString() : null,
+  }));
+  // Primero los conectados, y dentro de cada grupo por nombre.
+  return list.sort((a, b) => Number(b.online) - Number(a.online) || a.name.localeCompare(b.name, 'es'));
 }
 
 /* ── Retención (trabajo nocturno) ────────────────────────────────────────────── */
