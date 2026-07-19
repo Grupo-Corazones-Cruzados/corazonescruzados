@@ -51,11 +51,11 @@ usuario). **Propuesta:** alinear el resto.
 
 ## Funcionalidad
 
-### F1 — Tareas de Gestión Social como BLOQUES en la grilla de Mi día · 🟡 Propuesta
-Hoy aparecen en el **rail de tareas**. Las de Comandos Violeta además se pintan en la grilla del
-calendario (mes/semana/día) como `EventInstance` sintéticos punteados con color por estado, y en el
-panel "Eventos" izquierdo. **Propuesta:** hacer lo mismo con las de Gestión Social (color ámbar /
-por estado) para que el miembro vea el evento ocupando su franja horaria.
+### F1 — Tareas de Gestión Social como BLOQUES en la grilla de Mi día · 🟢 Implementada (2026-07-19)
+Pedido por el usuario y hecho el mismo día: se pintan en la grilla (mes/semana/día) como
+`EventInstance` sintéticos punteados en ámbar/verde/rojo, fuera del cómputo de horas, con popover
+de estado que respeta el bloqueo; y en el panel "Eventos" con `PartyPopper` + "· evento".
+`EventInstance` ganó `taskKind: 'policy' | 'social'` para distinguir el origen del bloque.
 
 ### F2 — El % de talento no es comparable entre personas · 🟡 Propuesta
 `getSubjectsProfileScores` normaliza los talentos **dentro del top 10 del propio sujeto**: alguien

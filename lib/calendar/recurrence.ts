@@ -28,11 +28,17 @@ export interface EventInstance extends CalendarEvent {
   instanceStart: Date;
   instanceEnd: Date;
   isRecurring: boolean;
-  // Bloque SINTÉTICO de una tarea generada por política (no es un evento real del calendario):
-  // se pinta en la grilla con color según su estado y su clic abre un popover para marcarlo.
+  // Bloque SINTÉTICO de una TAREA (no es un evento real del calendario): se pinta punteado en
+  // la grilla con color según su estado, no cuenta en las horas del día, y su clic abre un
+  // popover para marcarlo (nunca el editor de eventos).
+  // `generated` = "es un bloque sintético"; `taskKind` dice de qué sistema viene.
   generated?: boolean;
   generatedId?: number;
   generatedStatus?: 'pending' | 'completed' | 'failed';
+  /** Origen del bloque: política de Comandos Violeta o evento de Gestión Social. */
+  taskKind?: 'policy' | 'social';
+  /** Solo `social`: el evento aún no ha iniciado (o ya terminó) → no se puede marcar. */
+  socialLocked?: boolean;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;

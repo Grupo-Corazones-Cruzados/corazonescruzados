@@ -69,7 +69,7 @@ export default function MiDiaPage() {
   const [initialTaskId, setInitialTaskId] = useState<number | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   // Popover para marcar el estado de una tarea generada al hacer clic en su bloque del calendario.
-  const [genPopover, setGenPopover] = useState<{ id: number; title: string; status: Status; x: number; y: number } | null>(null);
+  const [genPopover, setGenPopover] = useState<{ id: number; title: string; status: Status; x: number; y: number; kind: 'policy' | 'social'; locked?: boolean; eventName?: string } | null>(null);
   const [availability, setAvailability] = useState<AvailabilityStatus>('conectado');
   const [savingAvail, setSavingAvail] = useState(false);
   // Grupos de fecha del panel de eventos: contraídos por defecto (Set de días expandidos).
@@ -145,11 +145,43 @@ export default function MiDiaPage() {
       recurrence_type: 'none', recurrence_days: null, recurrence_interval: 1, recurrence_until: null,
       color, status: 'confirmed', alternative_id: null,
       instanceStart: start, instanceEnd: end, isRecurring: false,
-      generated: true, generatedId: g.id, generatedStatus: g.status,
+      generated: true, generatedId: g.id, generatedStatus: g.status, taskKind: 'policy',
     } as EventInstance;
   }), [horario.generated]);
-  // Solo el calendario recibe eventos + tareas generadas; el panel "Eventos" izquierdo usa `instances`.
-  const allInstances = useMemo(() => [...instances, ...generatedInstances], [instances, generatedInstances]);
+
+  // Bloques SINTÉTICOS de las tareas de eventos de Gestión Social. Mismo mecanismo que los de
+  // política, pero en ÁMBAR mientras están pendientes (y bloqueadas si el evento no ha iniciado).
+  const socialInstances: EventInstance[] = useMemo(() => horario.social.map((s) => {
+    const start = new Date(`${s.day}T00:00:00`);
+    const end = new Date(`${s.day}T00:00:00`);
+    const allDay = s.allDay || !s.startTime;
+    if (allDay) { start.setHours(0, 0, 0, 0); end.setHours(23, 59, 0, 0); }
+    else {
+      const [sh, sm] = (s.startTime || '09:00').split(':').map((n) => parseInt(n, 10));
+      const [eh, em] = (s.endTime || '10:00').split(':').map((n) => parseInt(n, 10));
+      start.setHours(Number.isFinite(sh) ? sh : 9, Number.isFinite(sm) ? sm : 0, 0, 0);
+      end.setHours(Number.isFinite(eh) ? eh : 10, Number.isFinite(em) ? em : 0, 0, 0);
+      if (end.getTime() <= start.getTime()) end.setTime(start.getTime() + 60 * 60 * 1000);
+    }
+    const color = s.status === 'completed' ? '#22c55e' : s.status === 'failed' ? '#ef4444' : '#f59e0b';
+    return {
+      id: `soc-${s.id}`, title: s.title, description: s.detail || null,
+      event_type: 'personal', client_id: null, client_name: null,
+      start_at: start.toISOString(), end_at: end.toISOString(),
+      all_day: allDay, timezone: 'America/Guayaquil',
+      recurrence_type: 'none', recurrence_days: null, recurrence_interval: 1, recurrence_until: null,
+      color, status: 'confirmed', alternative_id: null,
+      instanceStart: start, instanceEnd: end, isRecurring: false,
+      generated: true, generatedId: s.id, generatedStatus: s.status,
+      taskKind: 'social', socialLocked: s.locked,
+    } as EventInstance;
+  }), [horario.social]);
+
+  // Solo el calendario recibe eventos + tareas sintéticas; el panel "Eventos" izquierdo usa `instances`.
+  const allInstances = useMemo(
+    () => [...instances, ...generatedInstances, ...socialInstances],
+    [instances, generatedInstances, socialInstances],
+  );
 
   const taskById = useMemo(() => new Map(horario.tasks.map((t) => [t.id, t])), [horario.tasks]);
   const taskOptions: TaskOption[] = useMemo(() => horario.tasks.map((t) => ({ id: t.id, title: t.title })), [horario.tasks]);
@@ -247,15 +279,22 @@ export default function MiDiaPage() {
     }
   };
 
-  // Clic en un bloque de tarea generada → abre el popover de estado en el punto del clic.
+  // Clic en un bloque sintético (política o Gestión Social) → popover de estado en el punto del clic.
   const onGeneratedBlockClick = (ev: EventInstance, e: React.MouseEvent) => {
+    if (ev.taskKind === 'social') {
+      const s = horario.social.find((x) => x.id === ev.generatedId);
+      if (!s) return;
+      setGenPopover({ id: s.id, title: s.title, status: s.status, x: e.clientX, y: e.clientY, kind: 'social', locked: s.locked, eventName: s.eventName });
+      return;
+    }
     const g = horario.generated.find((x) => x.id === ev.generatedId);
     if (!g) return;
-    setGenPopover({ id: g.id, title: g.title, status: g.status, x: e.clientX, y: e.clientY });
+    setGenPopover({ id: g.id, title: g.title, status: g.status, x: e.clientX, y: e.clientY, kind: 'policy' });
   };
   const setGenPopoverStatus = (status: Status) => {
-    if (!genPopover) return;
-    setTaskStatus({ id: genPopover.id, alternativeId: -1, auto: false, gen: true }, '', status);
+    if (!genPopover || genPopover.locked) return;
+    const isSocial = genPopover.kind === 'social';
+    setTaskStatus({ id: genPopover.id, alternativeId: -1, auto: false, gen: !isSocial, social: isSocial, locked: genPopover.locked }, '', status);
     setGenPopover((p) => (p ? { ...p, status } : p));
   };
 
@@ -308,10 +347,12 @@ export default function MiDiaPage() {
                         <span className="w-1 rounded-full shrink-0" style={{ background: color }} />
                         <div className="min-w-0 flex-1">
                           <p className="text-[12.5px] font-medium text-digi-text truncate leading-snug inline-flex items-center gap-1" style={mf}>
-                            {ev.generated && <ShieldCheck className="w-3 h-3 shrink-0 text-violet-400" />}
+                            {ev.generated && (ev.taskKind === 'social'
+                              ? <PartyPopper className="w-3 h-3 shrink-0 text-amber-500" />
+                              : <ShieldCheck className="w-3 h-3 shrink-0 text-violet-400" />)}
                             <span className="truncate">{ev.title}</span>
                           </p>
-                          <p className="text-[10.5px] text-digi-muted mt-0.5" style={mf}>{ev.all_day ? 'Todo el día' : `${fmtTime(ev.instanceStart)}–${fmtTime(ev.instanceEnd)}`}{ev.client_name ? ` · ${ev.client_name}` : ''}{ev.generated ? ' · política' : ''}</p>
+                          <p className="text-[10.5px] text-digi-muted mt-0.5" style={mf}>{ev.all_day ? 'Todo el día' : `${fmtTime(ev.instanceStart)}–${fmtTime(ev.instanceEnd)}`}{ev.client_name ? ` · ${ev.client_name}` : ''}{ev.generated ? (ev.taskKind === 'social' ? ' · evento' : ' · política') : ''}</p>
                         </div>
                       </button>
                     );
@@ -479,18 +520,29 @@ export default function MiDiaPage() {
 
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
 
-      {/* Popover de estado de una tarea generada (clic en su bloque del calendario) */}
+      {/* Popover de estado de una tarea sintética (clic en su bloque del calendario) */}
       {genPopover && (
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setGenPopover(null)} />
           <div className="fixed z-[61] w-[224px] p-2.5 rounded-lg bg-digi-card border border-digi-border shadow-xl -translate-x-1/2"
             style={{ left: Math.min(Math.max(genPopover.x, 120), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 120), top: genPopover.y + 10 }}>
             <div className="flex items-start gap-1.5 mb-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-violet-400" />
+              {genPopover.kind === 'social'
+                ? <PartyPopper className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
+                : <ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-violet-400" />}
               <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{genPopover.title}</p>
             </div>
-            <p className="text-[10.5px] text-digi-muted mb-2" style={mf}>Marca el estado de esta tarea.</p>
-            <TaskStatusButtons value={genPopover.status} onChange={setGenPopoverStatus} />
+            {genPopover.kind === 'social' && genPopover.eventName && (
+              <p className="text-[10.5px] text-amber-600 mb-1.5 inline-flex items-center gap-1" style={mf}>
+                <PartyPopper className="w-2.5 h-2.5" /> Gestión Social · {genPopover.eventName}
+              </p>
+            )}
+            <p className="text-[10.5px] text-digi-muted mb-2 flex items-center gap-1" style={mf}>
+              {genPopover.locked
+                ? <><Lock className="w-2.5 h-2.5 shrink-0" /> Bloqueada hasta que inicie el evento.</>
+                : 'Marca el estado de esta tarea.'}
+            </p>
+            <TaskStatusButtons value={genPopover.status} onChange={setGenPopoverStatus} disabled={!!genPopover.locked} />
           </div>
         </>
       )}

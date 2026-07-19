@@ -171,12 +171,21 @@ Bloqueo en Mi día: `TaskStatusButtons` deshabilitado mientras `gs_events.status
   3 fuentes de scoring, herencia de horario evento↔tarea, y CASCADE al borrar.
   Confirmado que el rollback no dejó ninguna tabla `gs_*`.
 
+### Ampliación de la misma sesión (2026-07-19), a pedido del usuario
+- **Bloques en el calendario:** las tomas se pintan en la grilla de Mi día como `EventInstance`
+  sintéticos punteados (ámbar/verde/rojo), fuera del cómputo de horas, con popover de estado que
+  respeta el bloqueo; y en el panel "Eventos" con `PartyPopper` + "· evento".
+  `EventInstance` ganó **`taskKind: 'policy' | 'social'`** y `socialLocked` — `generated` pasó a
+  significar "bloque sintético" y `taskKind` identifica el sistema de origen.
+- **Tablas creadas en la BD real** (`gs_events`, `gs_event_tasks`, `gs_task_signups` + índices +
+  los 2 unique) y **sistema sembrado** en `centralized_systems` (id 12). El DDL se aplicó
+  **extrayendo el SQL del propio `gestion-social-db.ts`** (parseando sus template literals) para
+  garantizar cero deriva entre el script y la librería.
+- **Verificación extra:** 9/9 con datos reales insertados y luego borrados (ventana [from,to) del
+  calendario, horario propio vs heredado, color por estado, `locked`, y que una tarea sin tomar no
+  genera bloque en el calendario de nadie).
+
 ### Pendientes / notas
-- Las tablas `gs_*` **aún no existen en la BD**: las crea `ensureGestionSocialTables()` en el
-  primer uso real (patrón de la casa).
-- Las tareas de Gestión Social se ven en el **rail de tareas** de Mi día. Pintarlas también
-  como **bloques en la grilla** del calendario (como se hizo con las de Comandos Violeta) está
-  **pendiente** — decidir con el usuario si lo quiere.
 - `FilterRail` es nuevo; los ~13 rails duplicados inline siguen sin migrar (ver PROPUESTAS.md).
 
 ### Progreso

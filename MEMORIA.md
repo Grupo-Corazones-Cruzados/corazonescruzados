@@ -301,9 +301,21 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Módulo "Experiencias"** (`/dashboard/experiencias`, sidebar bajo "Mi día", icono
     `PartyPopper`, roles `candidate/member/admin`): lista de eventos abiertos + drill-in con las
     tareas, plazas libres y botón "Tomar y confirmar asistencia" / "Soltar tarea".
-  - **Verificado:** tsc + `next build` OK + **BD real 23/23 con ROLLBACK**.
-  - **Pendiente:** pintar estas tareas también como **bloques en la grilla** del calendario de
-    Mi día (hoy solo en el rail), como se hizo con las de Comandos Violeta.
+  - **Bloques en el calendario (2026-07-19, mismo día):** además del rail, las tomas se pintan en la
+    grilla de Mi día como `EventInstance` sintéticos punteados (ámbar pendiente · verde completada ·
+    rojo fallida), no cuentan en las horas del día, y su clic abre el **popover** de estado (con los
+    botones deshabilitados y la nota de bloqueo si el evento no ha iniciado). También en el panel
+    "Eventos" con `PartyPopper` ámbar + "· evento". Para ello `EventInstance` (`lib/calendar/
+    recurrence.ts`) ganó **`taskKind: 'policy' | 'social'`** y `socialLocked`: `generated` ahora
+    significa "bloque sintético de tarea" y `taskKind` dice de qué sistema viene.
+  - **TABLAS YA CREADAS EN LA BD (2026-07-19)** — `gs_events`, `gs_event_tasks`, `gs_task_signups`
+    con sus índices y los DOS unique de signups; y la fila del sistema sembrada en
+    `centralized_systems` (id 12). El DDL se aplicó **extrayendo el SQL del propio
+    `gestion-social-db.ts`** para que no hubiera deriva entre script y librería.
+  - **Verificado:** tsc + `next build` OK · **BD real 23/23 con ROLLBACK** (reglas de negocio) ·
+    **9/9 con datos reales insertados y borrados** (generación del bloque de calendario: ventana
+    [from,to), horario propio vs heredado, color, `locked`, y que una tarea sin tomar no genera
+    bloque).
 - **Sistema "Percepción Social" — 1er sistema del piso COLABORADOR (2026-07-17):** Centralizado · `colaborador/gestion`
   · celda **"Líder"** · slug `percepcion-social` · URL `/dashboard/centralized/colaborador/gestion/percepcion-social`.
   Captura eventos del entorno del colaborador: **ubicación GPS + conjunto de fotos** tomadas con la **cámara del

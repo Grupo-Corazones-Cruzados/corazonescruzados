@@ -432,6 +432,16 @@ border-amber-400/30 text-amber-600` con el texto **"Gestión Social"**, seguido 
 evento** y el horario (`Clock`). Mientras el evento no esté `active`, `TaskStatusButtons` recibe
 **`disabled`** y se muestra la nota `Lock` + "Bloqueada hasta que inicie el evento". Filas de
 `gs_task_signups`; estado vía `PATCH /api/centralized/horario/social`.
+- **También como BLOQUES en el calendario** (2026-07-19), igual que las de política: `EventInstance`
+  sintéticos punteados en su franja, color por estado (**ámbar `#f59e0b` pendiente** · verde
+  completada · rojo fallida), excluidos de las horas del día; clic → **popover** con
+  `TaskStatusButtons` (deshabilitados y con la nota de bloqueo si el evento no ha iniciado). Y en el
+  panel "Eventos" izquierdo con `PartyPopper` ámbar + sufijo **"· evento"**. Aparecen en los 3
+  sitios: panel Eventos, grilla y rail de Tareas.
+- **`EventInstance` generalizado:** `generated` pasó a significar "bloque sintético de una tarea"
+  y se añadió **`taskKind: 'policy' | 'social'`** (+ `socialLocked`) para distinguir el origen.
+  Regla: para inyectar un nuevo tipo de bloque no-evento, añadir un valor a `taskKind` — no crear
+  otro flag booleano paralelo.
 - **`TaskStatusButtons` gana `disabled`** (2026-07-19): conserva el color del estado activo para
   poder leerlo, quita hover y añade `opacity-60 cursor-not-allowed`. Regla: para bloquear el
   marcado de una tarea, usar esta prop — nunca ocultar los botones (el usuario perdería el estado).
