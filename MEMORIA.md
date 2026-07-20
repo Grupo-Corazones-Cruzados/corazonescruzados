@@ -275,6 +275,35 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **JUEGO — decisiones del usuario y primer bloque APLICADO (2026-07-20):**
+  - **Se elige la opción A: Phaser 4 + Tiled** (editor de escritorio). El usuario levantó la
+    restricción de "todo en navegador": descargar herramientas y subir datos le parece bien.
+  - **Fichas: se ganan SOLO jugando**; se gastarán en el dashboard/marketplace por productos y
+    servicios reales. **A futuro serán TRANSFERIBLES entre usuarios** ⇒ el listón antifraude es de
+    sistema de pagos, no de puntuación.
+    ⚠️ **Contradicción sin resolver:** al inicio dijo que ante el fracaso se reponen recursos con
+    **tareas del dashboard**; ahora dice que las fichas se ganan **solo en el juego**. Por eso el
+    libro contable se hizo **multi-moneda**, para soportar ambos casos sin rehacerlo. **Preguntar.**
+  - **MÓVIL ES REQUISITO** (teléfono, tablet y computadora). Esto convierte el canvas del mundo
+    entero en **bloqueante**, no en optimización, y obliga a añadir controles táctiles (hoy solo
+    hay teclado).
+  - **Primera regla de desbloqueo (provisional, la definirá con la historia):** la etapa
+    `primer-ticket` se abre **al cerrarse el primer ticket** de la cuenta.
+  - **`sql/migrations/` RESTAURADO** con runner `scripts/migrate.mjs` (`npm run migrate` /
+    `migrate:status`); registra lo aplicado en `gcc_world.schema_migrations` y **falla si alguien
+    edita una migración ya aplicada**. Numeración **desde 021** (001-020 existieron y se borraron).
+  - **Migración `021` APLICADA Y VERIFICADA en producción (Railway) el 2026-07-20.** Tablas nuevas:
+    `game_currencies`, `ledger_entries`, `ledger_balances`, `player_progress`, `player_flags`,
+    `game_stages`, `player_stage_unlocks`, `game_action_log`. Verificado en vivo que el
+    `CHECK (balance >= 0)` **rechaza** de verdad un saldo negativo.
+  - **Agujero de seguridad CERRADO:** `POST /api/world/inventory` ya **ignora el `itemId` del
+    cliente** y lo deduce del mapa (`lib/game/pickup.ts`), valida proximidad contra la posición
+    conocida del servidor y aplica el tope de inventario. El cliente ahora manda `sceneSlug` y
+    **persiste su posición al cambiar de tile** (`POST /api/world/position`) — sin eso, el servidor
+    rechaza toda recogida.
+  - **Tiled 1.12.2 instalado** en `/Applications/Tiled.app` + CLI en `/opt/homebrew/bin/tiled`
+    (exporta a `json`/TMJ ⇒ el pipeline se puede automatizar). **Aseprite NO está en brew** (es de
+    pago, ~$20, lo compra el usuario); alternativa libre **Pixelorama** sí está en brew.
 - **JUEGO GCC WORLD — nueva línea de trabajo (2026-07-19):** el usuario abre el frente del
   **videojuego** con finalidad de **enseñanza + retos + economía de fichas** canjeables por
   **productos y servicios reales gratuitos**. Aventura con secretos que **cruzan el mundo del juego
