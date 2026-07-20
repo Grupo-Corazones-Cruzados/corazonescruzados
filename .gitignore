@@ -10,3 +10,5 @@ certificates/
 
 # Claude Code local tooling state (no es parte de la app)
 .claude/
+
+juego_shot.png
