@@ -400,17 +400,16 @@ Stack estándar de la casa, con particularidades de este repo:
     cada cambio de mapa exige un despliegue, hace falta su computadora, y **`gcc_world.world_maps`
     queda sin uso**. ⇒ **`public/game/` SÍ va al repositorio** (es lo que Railway sirve); el wasm
     solo cambia al subir de versión de Godot y git reutiliza el blob idéntico.
-  - **FLUJO DE PUBLICACIÓN DEL JUEGO (2026-07-20) — el orden importa:**
-    ```
-    1. godot --headless --path godot --script res://tools/export_manifest.gd
-    2. node scripts/sync-item-manifest.mjs      ← sin esto el servidor rechaza las recogidas
-    3. godot --headless --path godot --export-release "Web"
-    4. commit de public/game/ + desplegar
-    ```
-    ⚠️ **El paso 2 no es opcional.** Al vivir los mundos en Godot, el servidor se queda sin saber
-    qué objetos existen. `gcc_world.item_placements` es la copia que él sí controla; si no se
-    sincroniza, `validatePickup` no encuentra la colocación y devuelve 403. Es el precio de haber
-    movido la autoría a Godot conservando la validación en el servidor.
+  - **PUBLICAR EL JUEGO = UN SOLO COMANDO (2026-07-20):** `npm run juego:publicar` (o con mensaje:
+    `npm run juego:publicar "mi mensaje"`). Script `scripts/publicar-juego.sh`. Hace todo el pipeline
+    en orden: reimporta Godot → exporta el manifiesto de objetos → **lo sincroniza a Postgres** →
+    exporta a web (`public/game/`) → `git add`+`commit`+`pull --rebase`+`push`. El `pull --rebase`
+    resuelve la sincronización con el remoto para que el push no falle por estar detrás. Probado
+    de punta a punta. **Cada ejecución dispara un deploy en Railway** (auto-deploy en push).
+    ⚠️ **El sync a Postgres NO es opcional** (paso interno): al vivir los mundos en Godot, el
+    servidor se queda sin saber qué objetos existen. `gcc_world.item_placements` es la copia que él
+    controla; sin sincronizar, `validatePickup` devuelve 403. El comando lo hace solo, por eso es
+    la forma correcta de publicar (no exportar a mano y olvidar el sync).
   - ⚠️ **NUNCA ejecutar `next build` con el servidor de desarrollo levantado:** sobrescribe `.next`
     y deja `/_next/static/` en **404** ⇒ la página se queda en blanco sin CSS ni JS. Costó dos
     diagnósticos. Matar `server.cjs` antes de compilar.
