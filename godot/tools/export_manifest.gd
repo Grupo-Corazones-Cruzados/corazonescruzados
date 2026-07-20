@@ -27,8 +27,12 @@ const TILE_PX := 64.0
 func _initialize() -> void:
 	var dir := DirAccess.open(DIR_MUNDOS)
 	if dir == null:
-		push_error("No hay mundos en %s" % DIR_MUNDOS)
-		quit(1)
+		# Aún no hay mundos construidos: manifiesto vacío en vez de fallar, para
+		# que el comando de publicación no se rompa con el proyecto recién
+		# reiniciado. El sync a Postgres no borrará nada (no hay escenas).
+		_escribir({"tilePx": TILE_PX, "placements": []})
+		print("✔ Sin mundos todavía; manifiesto vacío → %s" % SALIDA)
+		quit(0)
 		return
 
 	var colocaciones: Array = []
@@ -64,17 +68,21 @@ func _initialize() -> void:
 		quit(1)
 		return
 
-	var json := JSON.stringify({"tilePx": TILE_PX, "placements": colocaciones}, "  ")
+	_escribir({"tilePx": TILE_PX, "placements": colocaciones})
+	print("✔ %d objeto(s) en %d escena(s) → %s" % [colocaciones.size(), escenas, SALIDA])
+	quit(0)
+
+
+## Escribe el manifiesto a disco. La carpeta puede no existir tras un reinicio.
+func _escribir(datos: Dictionary) -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SALIDA.get_base_dir()))
 	var f := FileAccess.open(SALIDA, FileAccess.WRITE)
 	if f == null:
 		push_error("No se pudo escribir %s" % SALIDA)
 		quit(1)
 		return
-	f.store_string(json)
+	f.store_string(JSON.stringify(datos, "  "))
 	f.close()
-
-	print("✔ %d objeto(s) en %d escena(s) → %s" % [colocaciones.size(), escenas, SALIDA])
-	quit(0)
 
 
 ## Recorre el árbol entero: los objetos pueden estar anidados en contenedores.
