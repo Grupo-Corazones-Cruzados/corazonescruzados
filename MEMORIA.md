@@ -275,6 +275,24 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **JUEGO — DIRECCIÓN DE ARTE fijada (2026-07-20):** el juego será estilo **Guardian Tales**:
+  vista **top-down 3/4** (NO cenital plano, NO isométrico — el suelo va en cuadrícula recta y los
+  objetos se dibujan "de pie" mostrando su cara frontal + altura), con **movimiento en todas las
+  direcciones**. Personajes con **4 direcciones** (frente/espalda/lado + volteo para el lado
+  opuesto). **Tamaños base** (densidad de píxel única, exportar a 1× con fondo transparente):
+  tile de suelo **32×32**, personaje lienzo **48×48**, recogible **16×16**, mobiliario con altura
+  **32×64**, árbol **64×96**, casa **128×128** (múltiplos de 32), decoración de suelo **32×32**,
+  efectos **32×32**, retrato de diálogo **96×96** (aquí sí vale ilustración de Procreate), iconos
+  UI **32×32**. Iluminación: luz cenital + **sombra ovalada** bajo personajes/objetos (los normal
+  maps son paso avanzado, más adelante). **Guía visual completa en `GUIA-SPRITES.html`** (raíz del
+  repo, referencia local; no se despliega).
+- **Herramientas de arte (2026-07-20):** el usuario tiene **iPad Pro 11 + Apple Pencil** y ya tiene
+  **Pixaki** (editor de pixel art para iPad; el "Aseprite del iPad"). Flujo: dibujar/animar en
+  Pixaki → exportar **spritesheet PNG a escala 1×, fondo transparente** → pasar a la Mac (AirDrop/
+  iCloud) → importar a Godot con `AnimatedSprite2D` + `SpriteFrames` ("Añadir frames desde hoja de
+  sprites"). **Aseprite NO existe para iPad** (por eso Pixaki). **Procreate** solo sirve para
+  fondos/ilustración/retratos, NO para pixel art preciso. Aseprite (desktop, $20) + plugin
+  `godot-aseprite-wizard` sería el flujo alternativo si algún día dibuja en la Mac.
 - **JUEGO — REINICIO DESDE 0 + FRONTERA app↔Godot + FLUJO DE ENTRADA (2026-07-20).** Decisión del
   usuario: **todo lo hecho hasta ahora en el juego eran PRUEBAS**; se arranca el desarrollo del
   juego **desde 0 a nivel de CONTENIDO**, conservando los **SISTEMAS/mecanismos** ya construidos

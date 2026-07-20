@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de tamaños de sprites — GCC World</title>
+<style>
+  :root {
+    --bg: #12101a;
+    --surface: #1b1725;
+    --surface-2: #221d31;
+    --ink: #ededf3;
+    --muted: #a29ab8;
+    --accent: #a88be0;
+    --accent-dim: #6d5aa0;
+    --line: #2e2840;
+    --ok: #7fc49e;
+    --ok-bg: #14241c;
+    --warn: #d9b368;
+    --warn-bg: #251e10;
+    --grid: rgba(168, 139, 224, 0.22);
+    --grid-strong: rgba(168, 139, 224, 0.5);
+    --f-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --f-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f4fb; --surface: #ffffff; --surface-2: #f0ecf9;
+      --ink: #1a1626; --muted: #5c5570; --accent: #4b2d8e; --accent-dim: #8b78c0;
+      --line: #e2dcee; --ok: #2c6a4a; --ok-bg: #e9f4ee; --warn: #8a6512; --warn-bg: #fbf3e2;
+      --grid: rgba(75, 45, 142, 0.16); --grid-strong: rgba(75, 45, 142, 0.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--f-sans); font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+
+  header.top { border-bottom: 2px solid var(--accent); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  .eyebrow { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.7rem); line-height: 1.1; margin: 0.5rem 0 0.6rem; letter-spacing: -0.02em; }
+  .lede { color: var(--muted); font-size: 1.06rem; max-width: 60ch; margin: 0; }
+
+  h2 { font-size: 1.4rem; letter-spacing: -0.01em; margin: 3rem 0 1rem; }
+  h2 .n { font-family: var(--f-mono); color: var(--accent); font-size: 1rem; }
+  p { max-width: 65ch; }
+
+  .callout { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  .callout.warn { border-left-color: var(--warn); background: var(--warn-bg); }
+  .callout .tag { font-family: var(--f-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: var(--accent); display: block; margin-bottom: 0.35rem; }
+  .callout.ok .tag { color: var(--ok); }
+  .callout.warn .tag { color: var(--warn); }
+
+  /* Diagrama de perspectiva */
+  .persp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 1.5rem 0; }
+  .persp > div { background: var(--surface); padding: 1.25rem 1rem; text-align: center; }
+  .persp h4 { margin: 0.75rem 0 0.25rem; font-size: 0.95rem; }
+  .persp small { color: var(--muted); font-size: 0.8rem; }
+  .persp .this { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .persp .this h4 { color: var(--accent); }
+  @media (max-width: 640px) { .persp { grid-template-columns: 1fr; } }
+
+  /* Tarjetas de tipo de elemento */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1.4rem; margin: 1rem 0; display: grid; grid-template-columns: 1fr auto; gap: 1.25rem 1.5rem; align-items: start; }
+  @media (max-width: 640px) { .card { grid-template-columns: 1fr; } }
+  .card .head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap; }
+  .card .num { font-family: var(--f-mono); font-size: 0.8rem; font-weight: 700; color: var(--bg); background: var(--accent); border-radius: 6px; padding: 0.15rem 0.5rem; }
+  .card .name { font-size: 1.15rem; font-weight: 650; }
+  .card .size { font-family: var(--f-mono); font-size: 0.95rem; color: var(--accent); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 0.15rem 0.55rem; margin-left: auto; }
+  .card .body { display: flex; flex-direction: column; gap: 0.6rem; }
+  .card .row { display: flex; gap: 0.6rem; font-size: 0.92rem; }
+  .card .row .k { font-family: var(--f-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); min-width: 5.5rem; padding-top: 0.15rem; }
+  .card .demo-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+  .card .demo-cap { font-family: var(--f-mono); font-size: 0.68rem; color: var(--muted); }
+
+  /* Cuadrícula de píxeles */
+  .grid-demo {
+    position: relative;
+    background-color: var(--surface-2);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    border: 1px solid var(--grid-strong);
+    border-radius: 4px;
+  }
+  .grid-demo svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* Comparación de tamaños */
+  .compare { display: flex; align-items: flex-end; gap: 1.25rem; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .compare figure { margin: 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+  .compare figcaption { font-family: var(--f-mono); font-size: 0.68rem; color: var(--muted); }
+
+  ul.check { list-style: none; padding: 0; margin: 1rem 0; display: flex; flex-direction: column; gap: 0.55rem; }
+  ul.check li { padding-left: 1.9rem; position: relative; max-width: 68ch; }
+  ul.check li::before { content: "✔"; position: absolute; left: 0; color: var(--ok); font-weight: 700; }
+
+  code { font-family: var(--f-mono); font-size: 0.88em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0.05em 0.35em; color: var(--accent); }
+  strong { font-weight: 650; }
+  footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+  .pixel { shape-rendering: crispedges; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="eyebrow">GCC World · Referencia de arte</div>
+    <h1>Guía de tamaños de sprites</h1>
+    <p class="lede">Para un juego estilo <strong>Guardian Tales</strong>: vista top-down 3/4 y movimiento en todas las direcciones. Ten esta guía abierta mientras dibujas en Pixaki para que cada sprite calce bien al llevarlo a Godot.</p>
+  </header>
+
+  <div class="callout">
+    <span class="tag">La regla de oro</span>
+    <p style="margin:0">Dibuja siempre a <strong>tamaño nativo pequeño</strong> (los píxeles que ves en la tabla) y exporta a <strong>escala 1×</strong>. Godot agranda el arte sin perder nitidez. Nunca dibujes en grande y reduzcas, y no mezcles arte fino con arte grueso: <strong>todo debe tener la misma densidad de píxel</strong>.</p>
+  </div>
+
+  <h2>Primero: la vista del juego</h2>
+  <p>Guardian Tales usa una vista <strong>top-down 3/4</strong>. No es cenital plano ni isométrico. Entender esto es lo que hace que tus dibujos calcen:</p>
+
+  <div class="persp">
+    <div>
+      <svg width="90" height="70" viewBox="0 0 90 70" class="pixel" aria-hidden="true">
+        <rect x="20" y="20" width="50" height="30" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <line x1="20" y1="35" x2="70" y2="35" stroke="var(--line)" stroke-width="1"/>
+        <line x1="45" y1="20" x2="45" y2="50" stroke="var(--line)" stroke-width="1"/>
+      </svg>
+      <h4>Cenital plano</h4>
+      <small>Todo desde arriba, sin altura. (Zelda NES)</small>
+    </div>
+    <div>
+      <svg width="90" height="70" viewBox="0 0 90 70" class="pixel" aria-hidden="true">
+        <polygon points="45,18 72,34 45,50 18,34" fill="none" stroke="var(--muted)" stroke-width="2"/>
+      </svg>
+      <h4>Isométrico</h4>
+      <small>Cuadrícula en diamante. Más difícil. (Diablo)</small>
+    </div>
+    <div class="this">
+      <svg width="90" height="70" viewBox="0 0 90 70" class="pixel" aria-hidden="true">
+        <rect x="20" y="38" width="50" height="22" fill="none" stroke="var(--accent-dim)" stroke-width="2"/>
+        <line x1="20" y1="49" x2="70" y2="49" stroke="var(--line)" stroke-width="1"/>
+        <rect x="38" y="16" width="14" height="24" fill="var(--accent)" opacity="0.5" stroke="var(--accent)" stroke-width="1.5"/>
+        <ellipse cx="45" cy="41" rx="10" ry="3" fill="#000" opacity="0.35"/>
+      </svg>
+      <h4>Top-down 3/4 ← el tuyo</h4>
+      <small>Suelo en cuadrícula recta; los objetos se dibujan "de pie".</small>
+    </div>
+  </div>
+
+  <p>En la práctica esto significa: el <strong>suelo</strong> se ve casi desde arriba (cuadrícula recta), pero los <strong>personajes y objetos con altura</strong> se dibujan mostrando su <strong>cara frontal</strong>, como si estuvieran parados frente a ti. Cada objeto tiene una <strong>base</strong> (donde toca el suelo) y crece hacia arriba.</p>
+
+  <h2><span class="n">01–10</span> &nbsp;Tamaños por tipo de elemento</h2>
+
+  <!-- 1 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">01</span><span class="name">Tile de suelo (piso)</span>
+      <span class="size">32 × 32 px</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Vista</span><span>Casi cenital: el suelo visto desde arriba con leve inclinación. Plano, sin altura.</span></div>
+      <div class="row"><span class="k">Cómo</span><span>Se repite en cuadrícula. Diseña los bordes para que conecten con los tiles vecinos (pasto→tierra, etc.).</span></div>
+      <div class="row"><span class="k">Sombra</span><span>Ninguna: el suelo no proyecta sombra.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:128px;height:128px;background-size:16px 16px">
+        <svg viewBox="0 0 32 32" class="pixel"><rect x="0" y="0" width="32" height="32" fill="var(--accent)" opacity="0.18"/></svg>
+      </div>
+      <span class="demo-cap">1 casilla · mostrado 4×</span>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">02</span><span class="name">Personaje (jugador y NPCs)</span>
+      <span class="size">lienzo 48 × 48 px</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Vista</span><span>3/4 frontal, de pie, como si caminara hacia ti. El cuerpo ocupa ~28 ancho × 40 alto; deja margen arriba para cabeza/pelo.</span></div>
+      <div class="row"><span class="k">Direcciones</span><span>Dibuja <strong>3 sets</strong>: <strong>frente</strong> (abajo), <strong>espalda</strong> (arriba) y <strong>lado</strong> (derecha). La izquierda es el lado <strong>volteado</strong>.</span></div>
+      <div class="row"><span class="k">Línea de base</span><span>Los <strong>pies siempre en el mismo punto</strong> del lienzo en todos los frames, o el personaje "temblará" al animar.</span></div>
+      <div class="row"><span class="k">Sombra</span><span>Óvalo bajo los pies para anclarlo al suelo.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:144px;height:144px;background-size:18px 18px">
+        <svg viewBox="0 0 48 48" class="pixel">
+          <ellipse cx="24" cy="42" rx="11" ry="3" fill="#000" opacity="0.35"/>
+          <circle cx="24" cy="14" r="7" fill="var(--accent)" opacity="0.7"/>
+          <rect x="17" y="20" width="14" height="18" rx="3" fill="var(--accent)" opacity="0.55"/>
+          <line x1="8" y1="42" x2="40" y2="42" stroke="var(--warn)" stroke-width="0.7" stroke-dasharray="2 2"/>
+        </svg>
+      </div>
+      <span class="demo-cap">línea de base ↑ (los pies)</span>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">03</span><span class="name">Objeto recogible pequeño</span>
+      <span class="size">16 × 16 px</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Ejemplos</span><span>Moneda, ficha, fruta, llave, gema, poción pequeña.</span></div>
+      <div class="row"><span class="k">Vista</span><span>3/4, de frente. Puede "flotar" un poco sobre el suelo.</span></div>
+      <div class="row"><span class="k">Nota</span><span>Si tiene detalle fino, súbelo a <code>32 × 32</code>. Sombrita pequeña debajo para que no parezca pegado en el aire.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:96px;height:96px;background-size:6px 6px">
+        <svg viewBox="0 0 16 16" class="pixel">
+          <ellipse cx="8" cy="13" rx="4" ry="1.3" fill="#000" opacity="0.3"/>
+          <circle cx="8" cy="7" r="4.5" fill="var(--warn)" opacity="0.85"/>
+        </svg>
+      </div>
+      <span class="demo-cap">mostrado 6×</span>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">04</span><span class="name">Objeto con altura / mobiliario</span>
+      <span class="size">32 × 64 px</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Ejemplos</span><span>Cofre, barril, farola, letrero, arbusto, tonel.</span></div>
+      <div class="row"><span class="k">Vista</span><span>3/4: se ve la cara frontal y su altura. Crece <strong>hacia arriba</strong> desde la base.</span></div>
+      <div class="row"><span class="k">La base manda</span><span>La <strong>parte inferior (≈32×32)</strong> es la que ocupa la casilla del suelo y choca. Lo alto solo sobresale. Alinea la base a la cuadrícula.</span></div>
+      <div class="row"><span class="k">Sombra</span><span>En la base, sobre el suelo.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:96px;height:192px;background-size:24px 24px">
+        <svg viewBox="0 0 32 64" class="pixel">
+          <ellipse cx="16" cy="60" rx="11" ry="3" fill="#000" opacity="0.35"/>
+          <rect x="8" y="24" width="16" height="36" rx="2" fill="var(--accent)" opacity="0.6"/>
+          <rect x="0" y="60" width="32" height="4" fill="var(--warn)" opacity="0.5"/>
+          <text x="16" y="52" font-size="4" fill="var(--ink)" text-anchor="middle" font-family="monospace">base</text>
+        </svg>
+      </div>
+      <span class="demo-cap">base = 1 casilla ▮</span>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">05</span><span class="name">Árbol / vegetación grande</span>
+      <span class="size">64 × 96 px</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Vista</span><span>3/4: tronco delgado en la base (ancla al suelo), copa ancha arriba.</span></div>
+      <div class="row"><span class="k">Nota</span><span>La copa puede <strong>tapar al personaje</strong> cuando pase por detrás — eso se resuelve en Godot ordenando por posición. Base angosta, copa ancha.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:128px;height:192px;background-size:32px 32px">
+        <svg viewBox="0 0 64 96" class="pixel">
+          <ellipse cx="32" cy="90" rx="14" ry="4" fill="#000" opacity="0.35"/>
+          <rect x="27" y="60" width="10" height="30" fill="var(--warn)" opacity="0.6"/>
+          <circle cx="32" cy="38" r="26" fill="var(--ok)" opacity="0.6"/>
+        </svg>
+      </div>
+      <span class="demo-cap">ancho 2 casillas</span>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">06</span><span class="name">Edificio / casa</span>
+      <span class="size">128 × 128 px</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Vista</span><span>3/4: fachada frontal + insinuación de techo y lados (un poco de perspectiva).</span></div>
+      <div class="row"><span class="k">Tamaño</span><span>Siempre en <strong>múltiplos de 32</strong> (96, 128, 160…). La <strong>base</strong> define qué casillas ocupa y bloquea.</span></div>
+      <div class="row"><span class="k">Nota</span><span>La puerta al nivel del suelo, por donde el personaje entra/sale.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:160px;height:160px;background-size:40px 40px">
+        <svg viewBox="0 0 128 128" class="pixel">
+          <ellipse cx="64" cy="120" rx="46" ry="6" fill="#000" opacity="0.3"/>
+          <rect x="24" y="52" width="80" height="66" fill="var(--accent)" opacity="0.5"/>
+          <polygon points="18,52 110,52 64,20" fill="var(--accent)" opacity="0.75"/>
+          <rect x="54" y="92" width="20" height="26" fill="var(--bg)"/>
+        </svg>
+      </div>
+      <span class="demo-cap">4 × 4 casillas</span>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">07</span><span class="name">Decoración de suelo plana</span>
+      <span class="size">32 × 32 px</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Ejemplos</span><span>Flores, hierba baja, charco, camino, alfombra, grieta.</span></div>
+      <div class="row"><span class="k">Vista</span><span>Casi cenital, <strong>acostada sobre el piso</strong>, con poca o ninguna altura. Se pinta encima del tile de suelo.</span></div>
+      <div class="row"><span class="k">Sombra</span><span>No proyecta: está pegada al suelo.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:128px;height:128px;background-size:32px 32px">
+        <svg viewBox="0 0 32 32" class="pixel">
+          <circle cx="10" cy="12" r="2.5" fill="var(--warn)" opacity="0.8"/>
+          <circle cx="20" cy="20" r="2.5" fill="var(--accent)" opacity="0.8"/>
+          <circle cx="24" cy="9" r="2" fill="var(--ok)" opacity="0.8"/>
+        </svg>
+      </div>
+      <span class="demo-cap">plana sobre el suelo</span>
+    </div>
+  </div>
+
+  <!-- 8 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">08</span><span class="name">Efectos y partículas</span>
+      <span class="size">32 × 32 px</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Ejemplos</span><span>Chispa, brillo, humo, golpe, destello al recoger algo.</span></div>
+      <div class="row"><span class="k">Vista</span><span>Frontal a la cámara (mira al jugador). Varios frames para animar.</span></div>
+      <div class="row"><span class="k">Nota</span><span>Pueden subir a <code>64 × 64</code> si son grandes. Fondo transparente.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:128px;height:128px;background-size:16px 16px">
+        <svg viewBox="0 0 32 32" class="pixel">
+          <path d="M16 4 L18 14 L28 16 L18 18 L16 28 L14 18 L4 16 L14 14 Z" fill="var(--warn)" opacity="0.85"/>
+        </svg>
+      </div>
+      <span class="demo-cap">varios frames</span>
+    </div>
+  </div>
+
+  <!-- 9 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">09</span><span class="name">Retrato de diálogo</span>
+      <span class="size">96 × 96 px o más</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Qué es</span><span>La cara del personaje que aparece en la caja de texto cuando habla.</span></div>
+      <div class="row"><span class="k">Vista</span><span>Frontal, busto o cara. No necesita direcciones.</span></div>
+      <div class="row"><span class="k">Nota</span><span>Aquí <strong>sí</strong> puedes usar Procreate si quieres un retrato ilustrado de más detalle — es de los pocos elementos donde una ilustración no rompe el estilo, porque va en la interfaz, no en el mundo.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:144px;height:144px;background-size:24px 24px">
+        <svg viewBox="0 0 96 96" class="pixel">
+          <rect x="10" y="10" width="76" height="76" rx="6" fill="none" stroke="var(--accent)" stroke-width="2" opacity="0.5"/>
+          <circle cx="48" cy="40" r="18" fill="var(--accent)" opacity="0.6"/>
+          <path d="M24 86 Q48 60 72 86 Z" fill="var(--accent)" opacity="0.5"/>
+        </svg>
+      </div>
+      <span class="demo-cap">interfaz, no mundo</span>
+    </div>
+  </div>
+
+  <!-- 10 -->
+  <div class="card">
+    <div class="head">
+      <span class="num">10</span><span class="name">Iconos de interfaz (UI)</span>
+      <span class="size">32 × 32 px</span>
+    </div>
+    <div class="body">
+      <div class="row"><span class="k">Ejemplos</span><span>Botón, casilla de inventario, ícono de ficha, corazón de vida, flecha.</span></div>
+      <div class="row"><span class="k">Vista</span><span><strong>Frontal plano</strong>, de frente, sin perspectiva 3/4. Son símbolos, no objetos del mundo.</span></div>
+      <div class="row"><span class="k">Nota</span><span>Deben leerse a tamaño pequeño: formas simples y bordes claros. Sube a <code>48 × 48</code> si necesitan más detalle.</span></div>
+    </div>
+    <div class="demo-wrap">
+      <div class="grid-demo" style="width:128px;height:128px;background-size:16px 16px">
+        <svg viewBox="0 0 32 32" class="pixel">
+          <path d="M16 27 C6 19 4 12 9 8 C12 6 15 8 16 11 C17 8 20 6 23 8 C28 12 26 19 16 27 Z" fill="var(--accent)" opacity="0.8"/>
+        </svg>
+      </div>
+      <span class="demo-cap">frontal, plano</span>
+    </div>
+  </div>
+
+  <h2>Tamaños uno al lado del otro</h2>
+  <p>Así se ven las proporciones entre sí (a la misma escala visual), para que un árbol no te quede más pequeño que un personaje:</p>
+  <div class="compare">
+    <figure>
+      <div class="grid-demo" style="width:32px;height:32px;background-size:8px 8px"></div>
+      <figcaption>Tile 32</figcaption>
+    </figure>
+    <figure>
+      <div class="grid-demo" style="width:32px;height:32px;background-size:8px 8px;position:relative">
+        <svg viewBox="0 0 16 16" style="position:absolute;inset:auto 0 0 0;height:100%"><rect x="4" y="2" width="8" height="14" rx="2" fill="var(--warn)" opacity="0.8"/></svg>
+      </div>
+      <figcaption>Recogible 16</figcaption>
+    </figure>
+    <figure>
+      <div class="grid-demo" style="width:48px;height:48px;background-size:8px 8px;position:relative">
+        <svg viewBox="0 0 48 48" style="position:absolute;inset:0"><circle cx="24" cy="14" r="7" fill="var(--accent)" opacity="0.7"/><rect x="17" y="20" width="14" height="18" rx="3" fill="var(--accent)" opacity="0.55"/></svg>
+      </div>
+      <figcaption>Personaje 48</figcaption>
+    </figure>
+    <figure>
+      <div class="grid-demo" style="width:64px;height:96px;background-size:8px 8px;position:relative">
+        <svg viewBox="0 0 64 96" style="position:absolute;inset:0"><rect x="27" y="60" width="10" height="30" fill="var(--warn)" opacity="0.6"/><circle cx="32" cy="38" r="26" fill="var(--ok)" opacity="0.6"/></svg>
+      </div>
+      <figcaption>Árbol 64×96</figcaption>
+    </figure>
+    <figure>
+      <div class="grid-demo" style="width:128px;height:128px;background-size:8px 8px;position:relative">
+        <svg viewBox="0 0 128 128" style="position:absolute;inset:0"><rect x="24" y="52" width="80" height="66" fill="var(--accent)" opacity="0.5"/><polygon points="18,52 110,52 64,20" fill="var(--accent)" opacity="0.75"/></svg>
+      </div>
+      <figcaption>Casa 128</figcaption>
+    </figure>
+  </div>
+
+  <h2>Antes de exportar desde Pixaki — repasa esto</h2>
+  <ul class="check">
+    <li><strong>Fondo transparente</strong>, nunca blanco. Godot necesita la transparencia.</li>
+    <li><strong>Escala 1×</strong> (tamaño nativo). Si Pixaki ofrece exportar a 2× o 4×, no lo uses: Godot agranda mejor.</li>
+    <li><strong>Misma densidad de píxel</strong> en todo el arte. No mezcles sprites finos con gruesos.</li>
+    <li>En animaciones, <strong>todos los frames del mismo tamaño de lienzo</strong>.</li>
+    <li>En personajes, los <strong>pies en el mismo punto</strong> en todos los frames (línea de base).</li>
+    <li>Exporta como <strong>spritesheet</strong> (todos los frames en una cuadrícula uniforme).</li>
+    <li>Objetos con altura: la <strong>base alineada a la cuadrícula</strong> de 32 px.</li>
+  </ul>
+
+  <div class="callout warn">
+    <span class="tag">Recordatorio de iluminación</span>
+    <p style="margin:0">Para el look de Guardian Tales: luz general desde arriba y una <strong>sombra ovalada bajo cada personaje y objeto con altura</strong> para "pegarlos" al suelo. Las luces con relieve (normal maps) son un paso avanzado para más adelante — no te compliques con eso al empezar.</p>
+  </div>
+
+  <footer>
+    <p>Estos tamaños son un punto de partida sólido para el estilo top-down 3/4; puedes ajustarlos, pero mantén la <strong>consistencia</strong> una vez elijas. Cuando tengas tu primer personaje con sus 3 direcciones, se conecta el movimiento en Godot.<br>
+    GCC World · guía de referencia de arte.</p>
+  </footer>
+
+</div>
+</body>
+</html>
