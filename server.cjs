@@ -19,6 +19,14 @@ app.prepare().then(() => {
     handle(req, res, parsedUrl);
   }).listen(3002, '0.0.0.0', () => {
     console.log('> HTTPS server ready on https://localhost:3002');
-    console.log('> iPhone access: https://192.168.100.13:3002');
+    // La IP se calcula en vez de estar fija: cambia al reconectar a la red, y
+    // una IP obsoleta aquí manda a probar a una dirección que ya no existe.
+    const nets = require('os').networkInterfaces();
+    for (const iface of Object.values(nets).flat()) {
+      if (iface && iface.family === 'IPv4' && !iface.internal) {
+        console.log(`> Acceso desde el móvil: https://${iface.address}:3002`);
+      }
+    }
+    console.log('> Godot necesita HTTPS (contexto seguro); por HTTP plano no arranca.');
   });
 });
