@@ -298,9 +298,18 @@ Stack estándar de la casa, con particularidades de este repo:
     EN USO (las texturas descomprimidas cuentan) y los sprites LPC solos son 19 MB de PNG ⇒
     **volver a medir con contenido real cargado**. No bloquea; es punto de control.
   - **Números MEDIDOS aquí del export web:** `index.wasm` **37,68 MB crudo / 9,59 MB gzip /
-    6,58 MB brotli** (coincide con la investigación). **Next sirve `public/` con gzip, NO brotli**
-    ⇒ lo transferido son ~9,7 MB, no 6,6. El servidor de **desarrollo lo manda SIN COMPRIMIR
-    (39,5 MB)**; hay que verificar la compresión en Railway.
+    6,58 MB brotli** (coincide con la investigación).
+    ✅ **VERIFICADO EN PRODUCCIÓN (2026-07-20):** `https://app.grupocc.org/game/index.wasm`
+    responde con **`content-encoding: gzip`** ⇒ se transfiere ~9,6 MB, no 38. El servidor de
+    **desarrollo** sí lo manda sin comprimir (39,5 MB), pero eso solo afecta a las pruebas locales.
+  - **DESPLEGADO A PRODUCCIÓN (2026-07-20):** el juego vive en **`https://app.grupocc.org/juego`**
+    (HTTP 200 verificado). Railway **auto-despliega en push a `main`** (repo GitHub
+    `Grupo-Corazones-Cruzados/corazonescruzados`). El dominio de producción es **`app.grupocc.org`**
+    (`NEXT_PUBLIC_APP_URL`). El sitio **aún no lo consumen usuarios**, así que el usuario revisa
+    directamente allí en vez de en local. Cache-revalidación de `/game/` activa en prod.
+    **Andamiaje de prueba que fue a producción** y hay que sustituir por contenido real: 3 objetos
+    (Moneda1/Manzana1/Espada1 cerca del spawn), el segundo mundo `refugio` (rectángulo de piedra) y
+    la puerta que exige `primer-ticket`.
   - ⚠️ **CORRECCIÓN a la investigación:** era FALSO que bastara servir desde el mismo dominio y
     usar rutas relativas. **`HTTPRequest` NO acepta rutas relativas** (error 31, parámetro
     inválido). Hay que leer `window.location.origin` con **`JavaScriptBridge`** y componer la URL
