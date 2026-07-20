@@ -240,6 +240,68 @@ evidencia de ausencia.
 `https://claude.ai/code/artifact/921a0c67-b2da-4b6c-9b51-b523270c4e84`, fuente en scratchpad
 `propuesta-motor-juego.html`. **El usuario aún NO ha decidido** — no hay aprobación de nada.
 
+## Objetivo ACTUAL (declarado 2026-07-20, 4ª parte) — REINICIO desde 0, frontera app↔Godot y flujo de entrada
+
+**Rol asumido:** arquitecto de la integración app↔motor de juego.
+
+### Necesidad (verbatim del usuario)
+Iniciar el desarrollo del juego **desde 0** (todo lo anterior eran pruebas para ver cómo
+funcionaría). Poder **distinguir lo desarrollado a nivel de APP y lo desarrollado a nivel de MOTOR
+Godot**. Mantener una **forma de trabajar** concreta para la entrada: al pulsar **"Entrar"** debe
+ejecutarse una transición que **desvanece y oscurece la página hasta negro completo**; cuando la
+pantalla está en negro, **inicia el videojuego en su primera escena**. Los **puntos de guardado**
+sirven para que al pulsar "Entrar" el usuario **recupere su partida donde se quedó**. Hoy, al pulsar
+"Entrar", la app hace la transición de **"se apaga la TV"** y aparece en el punto de guardado, **con
+validación de usuario**: si el usuario no está validado y la página está recién refrescada, se le
+**pide validación** (ya configurado); tras validar, **sigue el videojuego donde se quedó**. El
+usuario quiere **mantener esa forma de trabajar** y que quede grabada.
+**Ampliación (mismo día):** eliminar del proyecto Godot **todo el código de juego** y dejar **solo
+las carpetas de assets**, para que el juego de Godot se desarrolle y despliegue sin confusiones.
+
+### Hallazgo que explica "el juego sigue igual en producción" (auditoría 2026-07-20)
+El usuario reporta que en producción entra al juego y **sigue igual, con el editor**. La causa,
+verificada en el código:
+- **Coexisten DOS (tres) juegos:** (A) el juego **viejo** = `components/landing/CharacterGameplay.tsx`,
+  montado como **overlay dentro de la landing** (`app/page.tsx`, ~5.392 líneas). Incluye el
+  **editor** (`SceneManagerEditor`). (B) **Godot** = `app/juego/page.tsx` + `GodotGame.tsx`, servido
+  desde `public/game/`. (C) una versión intermedia en **Phaser** (`components/game/{GameClient,
+  PhaserGame}.tsx`), **latente, no montada en ninguna ruta**.
+- **El botón "Entrar" de la landing monta el juego VIEJO**, no Godot. **Godot vive en `/juego`, una
+  URL SUELTA sin ningún enlace ni navegación hacia ella.** Por eso el usuario, que entra por la
+  landing, **nunca ve Godot** y "el juego sigue igual". Yo desplegué Godot correctamente, pero en una
+  ruta que el flujo de entrada no toca.
+- **Esta es la confusión a eliminar:** un solo juego (Godot), enganchado al botón "Entrar".
+
+### Los dos niveles (resumen; detalle en MEMORIA.md)
+- **APP** = cáscara + autoridad: landing, "Entrar", transición, login/validación, dashboard, y todo
+  lo autoritativo (fichas, etapas, progreso, validación de recogidas) en Postgres + `app/api/*`.
+- **GODOT** = el videojuego: mundos, personaje, NPCs, diálogos, objetos, transiciones, cinemáticas.
+  Consume las APIs de la app; no posee estado autoritativo.
+- **Frontera:** la app valida y hace la transición, luego cede el control a Godot; Godot arranca
+  leyendo el punto de guardado y reporta acciones que el servidor decide.
+
+### Flujo de entrada canónico (a mantener) — ver MEMORIA.md para los 6 pasos
+Entrar → (validar si no hay sesión) → transición a negro (apagado de TV) → montar Godot → Godot
+recupera escena+posición del punto de guardado (o primera escena si es nuevo) → jugar.
+
+### Estado y trabajo pendiente para ese flujo
+- ⚠️ **Conectar "Entrar" → Godot** (hoy `/juego` está desconectado): es el cambio que hará que al
+  entrar se vea Godot y no el juego viejo.
+- ⚠️ **Recuperar partida NO existe:** `player_progress`/`savePosition`/`GET position` existen y Godot
+  **guarda**, pero **nadie LEE** la posición al entrar. Falta: al iniciar la escena, leer
+  `GET /api/world/position` y arrancar ahí (o en la primera escena si no hay guardado).
+- ⚠️ **Retirar los juegos viejos** (CharacterGameplay overlay + Phaser latente) para no confundir.
+- La transición `bulbOff` (CRT) ya existe en `globals.css:240-245` + `app/page.tsx`; decidir cómo se
+  encadena con la navegación a `/juego` (página separada).
+
+### PJ7 — ¿Alcance del "desde 0" en Godot: solo contenido o también los sistemas? · ⏸ Bloqueada (espera al usuario)
+- **Por qué importa:** los scripts de Godot son de DOS tipos. **Contenido de prueba** (mundos
+  `main`/`refugio`, objetos sembrados, `tools/sembrar_*`) — claramente desechable. Y **sistemas
+  reutilizables** (`Personaje.gd` compone el personaje LPC, `Dialogo.gd`, `Objeto.gd`,
+  `Transicion.gd`, y el pipeline `import_maps`/`export_manifest`) — funcionan y probamos. Borrarlos
+  y reescribirlos sería desperdicio; conservarlos acelera el desarrollo real. TODO está en git
+  (recuperable), así que la decisión no es irreversible.
+
 ### Preguntas abiertas para el usuario
 ### PJ1 — ¿Se unifican los dos juegos (A "El Mundo" y B "Digimundo") o B se retira? · ❓ Abierta
 - **Por qué importa:** mantener dos motores, dos formatos de mundo y dos persistencias duplica todo

@@ -275,6 +275,83 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **JUEGO — REINICIO DESDE 0 + FRONTERA app↔Godot + FLUJO DE ENTRADA (2026-07-20).** Decisión del
+  usuario: **todo lo hecho hasta ahora en el juego eran PRUEBAS**; se arranca el desarrollo del
+  juego **desde 0 a nivel de CONTENIDO**, conservando los **SISTEMAS/mecanismos** ya construidos
+  (son "la forma de trabajar" que quiere mantener). Detalle vivo en `Aprendizaje.md → 4ª parte`.
+
+  ### Los DOS niveles de desarrollo — hay que distinguirlos SIEMPRE
+  Regla rectora del proyecto de aquí en adelante. Al trabajar en el juego, tener claro en qué nivel
+  se está tocando:
+  - **NIVEL APP (Next.js/React + Postgres) = la CÁSCARA y la AUTORIDAD.** Vive en `app/`,
+    `components/`, `lib/`. Incluye: la landing y el **botón "Entrar"**, la **transición de entrada**
+    (apagado de TV), la **validación/login del usuario**, el `/dashboard`, y **todo lo autoritativo**
+    (libro contable de fichas, etapas, progreso, validación de recogidas) en Postgres + rutas
+    `app/api/*`. **El juego nunca decide aquí; pregunta.**
+  - **NIVEL GODOT (motor) = el VIDEOJUEGO.** Vive en `godot/` (fuente) y se compila a `public/game/`
+    (lo que sirve Railway). Incluye: mundos/escenas, personaje, NPCs, diálogos, objetos,
+    transiciones entre escenas, cinemáticas, jugabilidad. **Consume las APIs de la app** para sesión
+    (cookie same-origin), personaje (`/api/character/layers`), progreso (`/api/world/position`),
+    etapas (`/api/game/stages`) y economía. **No posee estado autoritativo.**
+  - **LA FRONTERA (contrato):** la app **valida al usuario y ejecuta la transición**, luego **cede
+    el control** montando Godot. Godot arranca **leyendo el punto de guardado** del servidor
+    (escena + posición) y corre el juego, **reportando acciones** que el servidor decide.
+
+  ### Flujo de ENTRADA canónico (lo que hay que MANTENER)
+  Es la forma de trabajar que el usuario quiere conservar. Pasos:
+  1. **App** — usuario pulsa **"Entrar"** en la landing.
+  2. **App valida** — si no hay sesión (página recién refrescada), **pide validación** (login de
+     candidato/miembro/cliente, como YA está: `gateGameEntry`, `savedAuth`, modales de login,
+     cookies `gcc_client_token` + `gcc_player_auth`, gate `approved` + `email_verified`).
+  3. **App — transición** — animación que **desvanece y oscurece la página hasta NEGRO COMPLETO**
+     (el "apagado de TV" estilo CRT; hoy existe como keyframes **`bulbOff`** en `globals.css` y
+     `windBlowAway` para el hero).
+  4. **Cuando la pantalla está en negro → arranca Godot** (montar el motor).
+  5. **Godot RECUPERA la partida** — consulta el punto de guardado y **arranca en la escena +
+     posición donde el usuario se quedó** (o en la **primera escena** si es partida nueva).
+  6. Godot corre el juego.
+
+  ### EJECUTADO (2026-07-20) — reinicio + conexión Entrar→Godot
+  - **Godot limpiado a CONTENIDO 0, sistemas conservados.** Borrados: `godot/mundos/*` (main,
+    refugio), `godot/import/*`, `tools/sembrar_*`. Conservados: `godot/assets/*` (tiles + 55
+    objetos), y los sistemas reutilizables `Personaje.gd`, `Dialogo.gd`, `Objeto.gd`,
+    `Transicion.gd`, pipeline `import_maps`/`export_manifest`. `Main.gd` reescrito como
+    **esqueleto/orquestador limpio**: sin contenido de prueba, y si no hay mundo construido genera un
+    **lienzo mínimo** (`_lienzo_minimo`). Los mundos reales se construyen en el editor de Godot y se
+    guardan en `godot/mundos/`.
+  - ✅ **RECUPERACIÓN DE PARTIDA IMPLEMENTADA** (era el pendiente del flujo): `Main.gd` llama
+    `GET /api/world/position` al arrancar y coloca al jugador en la escena+posición guardada
+    (verificado: arrancó en la casilla 20,8 guardada, no en el spawn).
+  - ✅ **"ENTRAR" → GODOT conectado** (`app/page.tsx`): donde la transición a negro terminaba y
+    montaba el juego VIEJO (`setGameplayActive(true)`), ahora **navega a `/juego`**. Se conserva
+    intacto el flujo previo (validación/login + transición `bulbOff`). El jugador nuevo guarda su
+    personaje (`await /api/character/save`) antes de entrar. Verificado: landing intacta (hero +
+    "Entrar"/"Colaborar", sin errores); Godot arranca en `/juego`.
+  - ✅ **Phaser ELIMINADO** (era código muerto): borrados `components/game/{GameClient,PhaserGame,
+    TouchPad}.tsx` y `lib/game/phaser/*`; **`phaser` fuera de `package.json` y del lock**.
+  - ⚠️ **Juego VIEJO A (`CharacterGameplay.tsx` + `components/landing/world/*` = el editor viejo)
+    quedó DESCONECTADO** (ya no se importa ni se monta en `app/page.tsx`) **pero NO borrado
+    físicamente**: está **acoplado con el juego B (Digimundo, `/world`)** vía
+    `components/world/CinematicPlayer.tsx`, así que borrarlo en cadena rompería el juego B. Borrado
+    físico = trabajo futuro con cuidado (o cuando se decida el destino del juego B). Funcionalmente
+    ya no aparece: al pulsar "Entrar" se va a Godot.
+
+  ### Estado actual vs lo que faltaba para ese flujo (verificado 2026-07-20; varios ya resueltos arriba)
+  - ⚠️ **`/juego` (Godot) está DESCONECTADO de la landing:** es una URL suelta, **sin ningún
+    enlace ni navegación** hacia ella. El botón "Entrar" hoy monta el juego VIEJO (`CharacterGameplay`
+    como overlay en `app/page.tsx`), no Godot.
+  - ⚠️ **La recuperación de partida NO existe todavía:** la infraestructura de guardado sí
+    (`gcc_world.player_progress`, `savePosition`, `GET /api/world/position`), y **Godot ya GUARDA**
+    la posición al moverse, pero **nadie la LEE al entrar** — ni el juego viejo ni Godot. Arrancar en
+    "donde se quedó" es trabajo pendiente (leer `GET /api/world/position` al iniciar la escena).
+  - La transición `bulbOff` vive en la landing (`app/page.tsx` + `globals.css:240-245`); al ser
+    `/juego` una página separada (navegación dura), habrá que decidir cómo se encadena (la app la
+    ejecuta y navega, o `/juego` hace su propio fundido desde negro).
+  - **Juegos LATENTES a retirar en el reinicio:** el juego viejo (`CharacterGameplay.tsx`, overlay en
+    `app/page.tsx`) y la versión intermedia en **Phaser** (`components/game/{GameClient,PhaserGame}.tsx`,
+    no montada en ninguna ruta). El motor definitivo es **Godot**.
+
+
 - **JUEGO — GIRO A GODOT (2026-07-20, mismo día, posterior a lo de abajo):**
   El usuario preguntó *"¿no hay otra opción que no sea Tiled para manejar todo en un mismo
   lugar?"*. Se le presentaron 3 (mejorar su editor / Godot para todo / Tiled solo mapas) y

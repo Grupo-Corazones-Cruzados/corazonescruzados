@@ -10,8 +10,9 @@ import GodotGame from '@/components/game/GodotGame';
  * pesado (el motor, ~10 MB) se descarga en tiempo de ejecución desde
  * `public/game/`, no forma parte del bundle de JavaScript.
  *
- * Motor: Godot. El anterior en Phaser sigue en el repositorio (`GameClient`)
- * hasta que este alcance paridad de funciones; se retirará entonces.
+ * A esta ruta se llega desde el botón "Entrar" de la landing, tras validar al
+ * usuario y hacer la transición a negro (NIVEL APP). Aquí empieza el NIVEL
+ * MOTOR (Godot).
  */
 export default function JuegoPage() {
   return (

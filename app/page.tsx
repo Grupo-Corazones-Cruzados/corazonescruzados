@@ -7,7 +7,6 @@ import PointerCursor from '@/components/landing/PointerCursor';
 import CharacterCreator, {
   type CharacterConfig,
 } from '@/components/landing/CharacterCreator';
-import CharacterGameplay from '@/components/landing/CharacterGameplay';
 import SavePointIndicator from '@/components/landing/SavePointIndicator';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 import OnboardingSlidersModal from '@/components/landing/OnboardingSlidersModal';
@@ -1144,8 +1143,12 @@ export default function LandingPage() {
       stop(peligroMusicRef.current);
       setBulbOff(true);
     }, 1100);
+    // Cuando la pantalla ya está en negro (apagado de TV), se cede el control al
+    // motor: se navega a /juego, que arranca sobre fondo negro y recupera la
+    // partida donde el usuario se quedó. Antes montaba el juego VIEJO
+    // (CharacterGameplay); ahora el juego es Godot.
     window.setTimeout(() => {
-      setGameplayActive(true);
+      window.location.href = '/juego';
     }, 2200);
   }, []);
 
@@ -3961,48 +3964,33 @@ export default function LandingPage() {
             }
             setCharacterConfig(cfg);
             setCharacterCreatorVisible(false);
-            setGameplayActive(true);
-            fetch('/api/character/save', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ alias: cfg.name, characterData: cfg }),
-            })
-              .then((r) => {
-                if (r.ok) setSavePointTrigger((n) => n + 1);
-              })
-              .catch(() => undefined);
+            // Guardar el personaje ANTES de entrar: el juego (Godot) lo lee del
+            // servidor por /api/character/layers, así que debe existir ya.
+            try {
+              const r = await fetch('/api/character/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ alias: cfg.name, characterData: cfg }),
+              });
+              if (r.ok) setSavePointTrigger((n) => n + 1);
+            } catch {
+              /* si falla el guardado, el juego mostrará el marcador y podrá reintentar */
+            }
+            // Transición a negro (apagado de TV) y entrar a Godot.
+            setBulbOff(true);
+            window.setTimeout(() => {
+              window.location.href = '/juego';
+            }, 1100);
           }}
         />
       )}
 
-      {/* ====== GAMEPLAY ====== */}
-      {gameplayActive && characterConfig && (
-        <CharacterGameplay
-          config={characterConfig}
-          initialAuth={savedAuth ?? undefined}
-          isReturning={!!savedAuth}
-          isMemberSession={enteredAsMember}
-          freshAuth={freshAuth}
-          onAuthOverlayChange={setGameAuthOverlay}
-          onChangeEntryType={async () => {
-            // Volver al menú "¿Cómo quieres ingresar?" para cambiar de cuenta.
-            // Primero DESVINCULA el dispositivo (logout): limpia cookies + tokens
-            // e ip_hash, así "Entrar" ya no reconoce la cuenta anterior. Luego
-            // recarga y reabre el menú (la landing usa animaciones irreversibles).
-            try {
-              window.sessionStorage.setItem('gcc_entry_choice', entryDestination);
-            } catch {
-              /* ignore */
-            }
-            try {
-              await fetch('/api/character/auth/logout', { method: 'POST' });
-            } catch {
-              /* ignore */
-            }
-            window.location.reload();
-          }}
-        />
-      )}
+      {/* ====== JUEGO ======
+           El juego ES Godot y vive en /juego (NIVEL MOTOR). La landing (NIVEL
+           APP) solo valida al usuario y hace la transición a negro; luego cede
+           el control navegando a /juego. El juego viejo embebido
+           (CharacterGameplay) se retiró: había tres juegos coexistiendo y el
+           botón "Entrar" montaba el viejo, por eso "el juego seguía igual". */}
 
       <SavePointIndicator trigger={savePointTrigger} />
 
