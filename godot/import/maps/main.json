@@ -8305,6 +8305,17 @@
         "clothingColor": "brown",
         "clothingStyle": "shortsleeve"
       },
+      "layers": [
+        "/character/body/female/black.png",
+        "/character/pants/female/gray.png",
+        "/character/shoes/slippers/female/black.png",
+        "/character/clothes/shortsleeve/female/brown.png",
+        "/character/head/female_elderly/black.png",
+        "/character/eyes/brown.png",
+        "/character/hair/ponytail/female/white.png",
+        "/character/glasses/nerd/brown.png"
+      ],
+      "scale": 0.8,
       "x": 34,
       "y": 35,
       "facing": "s",

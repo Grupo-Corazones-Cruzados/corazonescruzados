@@ -83,7 +83,20 @@ func cargar_desde_servidor() -> bool:
 	if typeof(desc) != TYPE_DICTIONARY or not desc.has("layers"):
 		return false
 
-	var rutas: Array = desc["layers"]
+	return await componer_desde(desc["layers"], str(desc.get("bodyType", "medio")))
+
+
+## Compone el personaje a partir de una lista de rutas de imagen ya resuelta.
+##
+## Lo usan tanto el jugador (con las capas que devuelve el servidor) como los
+## NPCs (con las capas calculadas al exportar el mapa). Así hay un solo camino
+## de composición y los NPCs se ven exactamente igual que el jugador.
+func componer_desde(rutas: Array, complexion := "medio", escala_extra := 1.0) -> bool:
+	if _origen.is_empty() and OS.has_feature("web"):
+		var o: Variant = JavaScriptBridge.eval("window.location.origin", true)
+		if typeof(o) == TYPE_STRING:
+			_origen = str(o)
+
 	var imagenes: Array[Image] = []
 	for ruta in rutas:
 		var img: Image = await _descargar_imagen(_origen + str(ruta))
@@ -94,7 +107,7 @@ func cargar_desde_servidor() -> bool:
 		return false
 
 	_componer(imagenes)
-	_aplicar_complexion(str(desc.get("bodyType", "medio")))
+	_aplicar_complexion(complexion, escala_extra)
 	reproducir("idle", _mirando)
 	listo.emit()
 	return true
@@ -147,9 +160,11 @@ func _componer(capas: Array[Image]) -> void:
 	sprite.sprite_frames = frames
 
 
-func _aplicar_complexion(complexion: String) -> void:
+func _aplicar_complexion(complexion: String, escala_extra := 1.0) -> void:
 	var factor: float = ANCHO_POR_COMPLEXION.get(complexion, 1.0)
-	sprite.scale = Vector2(ESCALA * factor, ESCALA)
+	# `escala_extra` viene del editor anterior: permitía hacer un NPC más grande
+	# o más pequeño que el jugador (un niño, una figura imponente).
+	sprite.scale = Vector2(ESCALA * factor * escala_extra, ESCALA * escala_extra)
 
 
 ## Cambia la animación solo si de verdad cambió: llamar a play() cada frame

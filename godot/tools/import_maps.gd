@@ -205,7 +205,12 @@ func _convertir(mapa: Dictionary, hojas: Dictionary) -> bool:
 			)
 			m.set_meta("dialogo", n.get("dialogue", []))
 			m.set_meta("mirando", n.get("facing", "s"))
-			m.set_meta("config_lpc", n.get("config", {}))
+			# Capas ya resueltas al exportar. Evita que el motor tenga que
+			# conocer las tablas de estilos o pedirlas por red NPC a NPC.
+			m.set_meta("capas", n.get("layers", []))
+			m.set_meta("complexion", (n.get("config", {}) as Dictionary).get("bodyType", "medio"))
+			m.set_meta("escala", n.get("scale", 1))
+			m.set_meta("animacion", n.get("animation", "idle"))
 			cont.add_child(m)
 			m.owner = raiz
 

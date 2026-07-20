@@ -18,6 +18,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import pg from 'pg';
+// Node 24 importa TypeScript directamente, así que las capas de cada NPC se
+// resuelven AQUÍ, con la misma función que usa la app. Alternativa descartada:
+// que el motor pidiera las capas de cada NPC por red al arrancar — una petición
+// por NPC y una tabla de estilos duplicada en GDScript.
+import { resolveCharacterLayers } from '../lib/game/lpc-catalog.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -64,9 +69,24 @@ async function main() {
   const npcsByMap = new Map();
   for (const n of npcRows) {
     if (!npcsByMap.has(n.map_name)) npcsByMap.set(n.map_name, []);
+    // `config` trae el CharacterConfig LPC más campos sueltos (escala,
+    // comportamiento) embebidos por el editor anterior.
+    const cfg = n.config ?? {};
+    let layers = [];
+    try {
+      // Los NPCs no llevan mochila: es del jugador.
+      layers = resolveCharacterLayers(cfg, false);
+    } catch {
+      // Un NPC con configuración incompleta no debe romper la exportación
+      // entera; se queda sin capas y el motor lo dibuja como marcador.
+      layers = [];
+    }
+
     npcsByMap.get(n.map_name).push({
       name: n.name,
-      config: n.config,
+      config: cfg,
+      layers,
+      scale: typeof cfg.scale === 'number' ? cfg.scale : 1,
       x: n.x,
       y: n.y,
       facing: n.facing,
