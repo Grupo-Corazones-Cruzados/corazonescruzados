@@ -28,9 +28,23 @@ func _ready() -> void:
 	estado.text = "Motor arrancado.\nConsultando la sesión…"
 
 	http.request_completed.connect(_on_respuesta)
-	# Ruta relativa a propósito: obliga a que sea mismo origen, que es la
-	# condición para que la cookie de sesión viaje.
-	var err := http.request("/api/game/stages")
+
+	# HALLAZGO: `HTTPRequest` NO acepta rutas relativas — devuelve el error 31
+	# (parámetro inválido). Hay que darle una URL absoluta, así que incluso para
+	# llamar a nuestra propia API hace falta el puente con JavaScript y leer el
+	# origen del navegador. Es un ejemplo de lo que cuesta aquí cada cosa que en
+	# un motor web es una línea.
+	var origen := ""
+	if OS.has_feature("web"):
+		var res: Variant = JavaScriptBridge.eval("window.location.origin", true)
+		if typeof(res) == TYPE_STRING:
+			origen = res as String
+
+	if origen.is_empty():
+		estado.text = "No se pudo determinar el origen del navegador."
+		return
+
+	var err := http.request(origen + "/api/game/stages")
 	if err != OK:
 		estado.text = "No se pudo lanzar la petición (código %d)" % err
 

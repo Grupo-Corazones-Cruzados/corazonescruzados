@@ -15,7 +15,6 @@ config_version=5
 config/name="GCC World"
 run/main_scene="res://Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
-config/icon="res://icon.svg"
 
 [display]
 
