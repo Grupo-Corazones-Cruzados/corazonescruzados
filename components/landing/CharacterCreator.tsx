@@ -2,21 +2,40 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-export type Gender = 'masculino' | 'femenino';
-// Contextura: ajusta la silueta (ancho) vía scaleX, manteniendo la ropa alineada.
-export type BodyType =
-  | 'muy_delgado'
-  | 'delgado'
-  | 'medio'
-  | 'obeso'
-  | 'muy_obeso';
-export type CharHeight = 'bajo' | 'medio' | 'alto';
+// Los tipos y las tablas de estilos viven en lib/game/lpc-catalog.ts, que es un
+// módulo de datos puros sin React. Motivo: este archivo lleva 'use client', y
+// cuando el servidor importa una constante de un módulo de cliente recibe un
+// proxy en vez del array. Se reexportan aquí para no romper lo que ya las
+// importaba desde este archivo.
+import {
+  ANIMATIONS,
+  BEARD_STYLES,
+  CLOTHING_STYLES,
+  EXTENDED_ANIMATIONS,
+  GLASSES_STYLES,
+  HAIR_STYLES,
+  ONE_SHOT_ANIMATIONS,
+  SHOES_STYLES,
+  type BodyType,
+  type CharacterAnimation,
+  type CharacterConfig,
+  type CharHeight,
+  type Gender,
+  type HairOpt,
+  type Opt,
+} from '@/lib/game/lpc-catalog';
 
-type Opt = { id: string; label: string; preview?: string; supportsSit?: boolean };
-type HairOpt = Opt & {
-  file: string | null;
-  gendered?: boolean;
+export {
+  ANIMATIONS,
+  BEARD_STYLES,
+  CLOTHING_STYLES,
+  EXTENDED_ANIMATIONS,
+  GLASSES_STYLES,
+  HAIR_STYLES,
+  ONE_SHOT_ANIMATIONS,
+  SHOES_STYLES,
 };
+export type { BodyType, CharacterAnimation, CharacterConfig, CharHeight, Gender };
 
 export const SKIN_TONES: Opt[] = [
   { id: 'light', label: 'Muy clara', preview: '#F4D6BA' },
@@ -62,27 +81,7 @@ export const CLOTHING_COLORS: Opt[] = [
   { id: 'brown', label: 'Café', preview: '#7B4A28' },
 ];
 
-export const HAIR_STYLES: HairOpt[] = [
-  { id: 'none', label: 'Rapado', file: null, supportsSit: true },
-  { id: 'buzzcut', label: 'Buzzcut', file: 'buzzcut', supportsSit: true },
-  { id: 'bob', label: 'Bob', file: 'bob', supportsSit: true },
-  { id: 'bedhead', label: 'Despeinado', file: 'bedhead', gendered: true },
-  { id: 'ponytail', label: 'Cola', file: 'ponytail', gendered: true },
-  { id: 'long', label: 'Largo', file: 'long', gendered: true },
-  { id: 'curly_long', label: 'Rizado', file: 'curly_long', gendered: true },
-];
 
-export const CLOTHING_STYLES: Opt[] = [
-  { id: 'none', label: 'Sin ropa', supportsSit: true },
-  // Only sit-compatible clothing in LPC base assets is the female
-  // tshirt; shown to all but rendered as female sprites under the hood.
-  { id: 'tshirt', label: 'T-Shirt (♀)', supportsSit: true },
-  { id: 'shortsleeve', label: 'Camiseta' },
-  { id: 'longsleeve', label: 'Manga larga' },
-  { id: 'sleeveless', label: 'Sin mangas' },
-  { id: 'vest', label: 'Chaleco' },
-  { id: 'vest_open', label: 'Chaleco abierto' },
-];
 
 export const FACE_SHAPES_M: Opt[] = [
   { id: 'standard', label: 'Estándar' },
@@ -102,22 +101,7 @@ export const EYEBROW_STYLES: Opt[] = [
   { id: 'thin', label: 'Delgadas' },
 ];
 
-export const BEARD_STYLES: { id: string; label: string; file: string | null }[] = [
-  { id: 'none', label: 'Sin barba', file: null },
-  { id: '5oclock_shadow', label: 'Sombra', file: '5oclock_shadow' },
-  { id: 'trimmed', label: 'Recortada', file: 'trimmed' },
-  { id: 'basic', label: 'Básica', file: 'basic' },
-  { id: 'medium', label: 'Mediana', file: 'medium' },
-];
 
-export const GLASSES_STYLES: { id: string; label: string; file: string | null }[] = [
-  { id: 'none', label: 'Sin lentes', file: null },
-  { id: 'nerd', label: 'Nerd', file: 'nerd' },
-  { id: 'round', label: 'Redondos', file: 'round' },
-  { id: 'sunglasses', label: 'Sol', file: 'sunglasses' },
-  { id: 'halfmoon', label: 'Media luna', file: 'halfmoon' },
-  { id: 'shades', label: 'Sombra', file: 'shades' },
-];
 
 export const GLASSES_COLORS: Opt[] = [
   { id: 'black', label: 'Negro', preview: '#1A1A1A' },
@@ -125,14 +109,6 @@ export const GLASSES_COLORS: Opt[] = [
   { id: 'bronze', label: 'Bronce', preview: '#B88660' },
 ];
 
-export const SHOES_STYLES: Opt[] = [
-  { id: 'none', label: 'Descalzo', supportsSit: true },
-  { id: 'shoes2', label: 'Zapatos (sit)', supportsSit: true },
-  { id: 'shoes', label: 'Zapatos' },
-  { id: 'boots', label: 'Botas' },
-  { id: 'sandals', label: 'Sandalias' },
-  { id: 'slippers', label: 'Pantuflas' },
-];
 
 export const BODY_TYPES: Opt[] = [
   { id: 'muy_delgado', label: 'Muy delgado' },
@@ -142,26 +118,6 @@ export const BODY_TYPES: Opt[] = [
   { id: 'muy_obeso', label: 'Muy grueso' },
 ];
 
-export type CharacterConfig = {
-  name: string;
-  gender: Gender;
-  skinId: string;
-  bodyType: BodyType;
-  height: CharHeight;
-  faceShape: string;
-  hairStyle: string;
-  hairColor: string;
-  eyeColor: string;
-  eyebrowStyle: string;
-  beardStyle: string;
-  glassesStyle: string;
-  glassesColor: string;
-  clothingStyle: string;
-  clothingColor: string;
-  pantsColor: string;
-  shoesStyle: string;
-  shoesColor: string;
-};
 
 const NAKED_CONFIG: CharacterConfig = {
   name: '',
@@ -186,61 +142,6 @@ const NAKED_CONFIG: CharacterConfig = {
 
 type Direction = 'n' | 'w' | 's' | 'e';
 const DIR_ROW: Record<Direction, number> = { n: 8, w: 9, s: 10, e: 11 };
-
-// LPC Universal sheet animations that exist across every layer
-// (body, head, eyes, hair, clothes, shoes, etc.). Extended animations
-// like sit / jump / climb only ship on a subset of layers and are
-// intentionally left out for now to avoid a half-rendered character.
-export type CharacterAnimation =
-  | 'idle'
-  | 'walk'
-  | 'cast'
-  | 'thrust'
-  | 'slash'
-  | 'shoot'
-  | 'hurt'
-  | 'sit';
-
-// Animations that live past row 20 of the LPC sheet. Most accessory
-// layers (clothes, shoes, hair) only ship the base 21 rows, so we
-// gate them at render time to avoid showing the wrong frame.
-export const EXTENDED_ANIMATIONS = new Set<CharacterAnimation>(['sit']);
-
-type AnimationDef = {
-  // Either a per-direction row map, or a single row used for every
-  // direction (hurt is south-only in LPC).
-  rows: Record<Direction, number> | number;
-  frames: number;
-  fps: number;
-};
-
-export const ANIMATIONS: Record<CharacterAnimation, AnimationDef> = {
-  // Frame 0 of the walk row is the "standing" pose.
-  idle:   { rows: { n: 8,  w: 9,  s: 10, e: 11 }, frames: 1,  fps: 1 },
-  walk:   { rows: { n: 8,  w: 9,  s: 10, e: 11 }, frames: 9,  fps: 8 },
-  cast:   { rows: { n: 0,  w: 1,  s: 2,  e: 3  }, frames: 7,  fps: 8 },
-  thrust: { rows: { n: 4,  w: 5,  s: 6,  e: 7  }, frames: 8,  fps: 10 },
-  slash:  { rows: { n: 12, w: 13, s: 14, e: 15 }, frames: 6,  fps: 12 },
-  shoot:  { rows: { n: 16, w: 17, s: 18, e: 19 }, frames: 13, fps: 12 },
-  // Hurt only has the south-facing row.
-  hurt:   { rows: 20,                              frames: 6,  fps: 6 },
-  // Sit lives in the universal sheet's extended block (rows 30-33).
-  // Only items with `supportsSit` show up; the rest are skipped at
-  // render time to avoid a half-finished pose.
-  sit:    { rows: { n: 30, w: 31, s: 32, e: 33 }, frames: 3,  fps: 4 },
-};
-
-// Animaciones que se reproducen UNA vez y se quedan en el último frame (poses
-// que terminan en un estado: sentarse, lanzar, golpear…). 'idle' y 'walk' son
-// cíclicas (idle = 1 frame; walk reproduce el ciclo de pasos).
-export const ONE_SHOT_ANIMATIONS = new Set<CharacterAnimation>([
-  'sit',
-  'cast',
-  'thrust',
-  'slash',
-  'shoot',
-  'hurt',
-]);
 
 // Frame a mostrar para un NPC dado un contador MONÓTONO (siempre creciente):
 // las cíclicas hacen módulo (bucle); las de una sola vez avanzan hasta el último

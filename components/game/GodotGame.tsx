@@ -100,7 +100,13 @@ export default function GodotGame() {
 
         setStatus('Iniciando el mundo…');
         await instance.startGame();
-        if (!disposed) setStatus('');
+        if (!disposed) {
+          setStatus('');
+          // Godot escucha el teclado en el CANVAS, no en la ventana. Sin foco,
+          // las flechas no llegan al juego y el personaje no se mueve hasta que
+          // el jugador hace clic — que nadie adivina que hay que hacer.
+          canvasRef.current?.focus();
+        }
       } catch (err) {
         if (!disposed) {
           setError(err instanceof Error ? err.message : 'No se pudo iniciar el juego');

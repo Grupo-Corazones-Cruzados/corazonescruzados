@@ -16,7 +16,7 @@ const TILE_VISUAL := 64.0  ## 32 px de tile a escala 2
 @onready var hud: Label = $UI/Hud
 
 var _mundo: Node2D
-var _jugador: CharacterBody2D
+var _jugador: Personaje
 var _camara: Camera2D
 var _velocidad := 190.0
 
@@ -30,35 +30,33 @@ func _ready() -> void:
 	_mundo = escena.instantiate()
 	add_child(_mundo)
 
-	_crear_jugador()
+	# La sesión se consulta ANTES de esperar al personaje: así el HUD muestra
+	# fichas y etapas mientras las capas todavía se descargan.
 	_consultar_sesion()
+	await _crear_jugador()
 
 
 func _crear_jugador() -> void:
-	# Marcador provisional: el personaje LPC son 12 capas que hay que componer,
-	# y es el siguiente paso. Lo que importa ahora es validar que el mapa
-	# convertido tiene colisiones reales y se puede recorrer.
-	_jugador = CharacterBody2D.new()
-	_jugador.name = "Jugador"
-
-	var cuerpo := ColorRect.new()
-	cuerpo.color = Color(0.47, 0.35, 0.85)
-	cuerpo.size = Vector2(28, 44)
-	cuerpo.position = Vector2(-14, -34)
-	_jugador.add_child(cuerpo)
-
-	var forma := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	# La caja son los pies, no el alto entero: si no, el personaje choca con
-	# las paredes por la cabeza y no puede pasar por huecos de un tile.
-	rect.size = Vector2(20, 12)
-	forma.shape = rect
-	forma.position = Vector2(0, -6)
-	_jugador.add_child(forma)
+	var p := Personaje.new()
+	p.name = "Jugador"
+	_jugador = p
 
 	var spawn := _mundo.get_node_or_null("Spawn")
 	_jugador.position = spawn.position if spawn != null else Vector2(400, 400)
 	add_child(_jugador)
+
+	# Se dibuja por encima del mapa. Sin esto quedaría bajo las capas de tiles.
+	p.z_index = 100
+
+	# La carga es asíncrona (descarga ~11 imágenes). Si falla —sin sesión, o el
+	# jugador aún no creó su personaje— se deja un marcador visible en vez de
+	# nada, para que se distinga de un fallo del motor.
+	if not await p.cargar_desde_servidor():
+		var marca := ColorRect.new()
+		marca.color = Color(0.47, 0.35, 0.85)
+		marca.size = Vector2(28, 44)
+		marca.position = Vector2(-14, -40)
+		p.add_child(marca)
 
 	_camara = Camera2D.new()
 	# Suavizado: la cámara anterior se movía por traslación directa y daba
@@ -99,12 +97,22 @@ func _area_pintada() -> Rect2i:
 func _physics_process(_delta: float) -> void:
 	if _jugador == null:
 		return
-	var dir := Vector2(
-		Input.get_axis("ui_left", "ui_right"), Input.get_axis("ui_up", "ui_down")
-	)
+	var dir := Vector2(Input.get_axis("ui_left", "ui_right"), Input.get_axis("ui_up", "ui_down"))
 	# Normalizar para que la diagonal no sea más rápida que recto.
 	_jugador.velocity = dir.normalized() * _velocidad
 	_jugador.move_and_slide()
+
+	# Animación según el movimiento. La dirección se decide por el eje dominante:
+	# LPC solo tiene 4 vistas, no diagonales.
+	if dir == Vector2.ZERO:
+		_jugador.reproducir("idle", _jugador.mirando())
+	else:
+		var mirando := _jugador.mirando()
+		if absf(dir.x) > absf(dir.y):
+			mirando = "e" if dir.x > 0.0 else "w"
+		else:
+			mirando = "s" if dir.y > 0.0 else "n"
+		_jugador.reproducir("walk", mirando)
 
 
 func _consultar_sesion() -> void:
@@ -139,10 +147,12 @@ func _on_sesion(
 		hud.text = "Respuesta inesperada"
 		return
 	var saldos: Variant = datos.get("balances", {})
-	var fichas: Variant = saldos.get("ficha", 0) if typeof(saldos) == TYPE_DICTIONARY else 0
+	# El saldo es un entero: JSON lo entrega como float y se vería "0.0", que
+	# parece un precio y no una cantidad de fichas.
+	var fichas: int = int(saldos.get("ficha", 0)) if typeof(saldos) == TYPE_DICTIONARY else 0
 	var etapas: Array = datos.get("stages", [])
 	var abiertas := 0
 	for e in etapas:
 		if bool(e.get("unlocked", false)):
 			abiertas += 1
-	hud.text = "Fichas: %s    Etapas: %d/%d" % [str(fichas), abiertas, etapas.size()]
+	hud.text = "Fichas: %d    Etapas: %d/%d" % [fichas, abiertas, etapas.size()]
