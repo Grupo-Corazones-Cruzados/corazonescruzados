@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" path="res://assets/tiles/terrain.png" id="1_5mlj8"]
 [ext_resource type="Texture2D" path="res://assets/tiles/colors.png" id="2_gv83y"]
 [ext_resource type="Script" path="res://Objeto.gd" id="3_gv83y"]
+[ext_resource type="Script" path="res://Transicion.gd" id="4_njph2"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_njph2"]
 texture = ExtResource("1_5mlj8")
@@ -71,3 +72,9 @@ item_id = "apple"
 position = Vector2(1888, 2208)
 script = ExtResource("3_gv83y")
 item_id = "sword"
+
+[node name="Puerta" type="Area2D" parent="." unique_id=2085370610]
+position = Vector2(1888, 2080)
+script = ExtResource("4_njph2")
+destino = "refugio"
+etapa_requerida = "primer-ticket"

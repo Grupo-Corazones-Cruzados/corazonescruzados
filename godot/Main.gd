@@ -35,6 +35,16 @@ var _objetos: Array[Objeto] = []
 var _objeto_cerca: Objeto = null
 ## Recogidas en vuelo, para que pulsar dos veces no envie dos peticiones.
 var _recogiendo := {}
+## Etapas abiertas y, para las cerradas, qué falta. Lo dice el servidor.
+var _etapas_abiertas := {}
+var _etapas_pendientes := {}
+var _transiciones: Array[Transicion] = []
+## Evita reentrar en la transición nada más aparecer al otro lado.
+var _transicion_en_curso := false
+## Hasta cuándo se conserva un aviso puntual sin que lo pise la pista de "pulsa
+## E". Sin esto, el bucle de proximidad reescribe el texto en el mismo frame y
+## el mensaje no llega a verse nunca.
+var _aviso_hasta := 0.0
 
 ## Nombre de la escena actual, tal como lo conoce el servidor.
 var _escena := "main"
@@ -78,8 +88,70 @@ func _recolectar_objetos() -> void:
 func _buscar_objetos(nodo: Node) -> void:
 	if nodo is Objeto:
 		_objetos.append(nodo as Objeto)
+	elif nodo is Transicion:
+		var t := nodo as Transicion
+		_transiciones.append(t)
+		t.cruzada.connect(_on_transicion)
 	for hijo in nodo.get_children():
 		_buscar_objetos(hijo)
+
+
+## Intento de cruzar un paso. La decisión es del servidor: aquí solo se obedece
+## lo que dijo al consultar las etapas.
+func _on_transicion(t: Transicion) -> void:
+	if _transicion_en_curso:
+		return
+	if not t.abierta(_etapas_abiertas):
+		_aviso(t.motivo(_etapas_pendientes))
+		return
+	if t.destino.is_empty():
+		return
+	_transicion_en_curso = true
+	await _cambiar_mundo(t.destino, t.casilla_destino)
+	_transicion_en_curso = false
+
+
+## Cambia de mundo sin recargar la página: se descarta la escena actual y se
+## instancia la nueva. El personaje NO se recompone (sus capas ya están en
+## memoria), así que el cambio es inmediato.
+func _cambiar_mundo(slug: String, casilla: Vector2i) -> void:
+	var ruta := "res://mundos/%s.tscn" % slug
+	if not ResourceLoader.exists(ruta):
+		_aviso("Ese lugar todavía no existe")
+		return
+	var empaquetada: PackedScene = load(ruta)
+	if empaquetada == null:
+		_aviso("No se pudo abrir ese lugar")
+		return
+
+	for npc in _npcs:
+		if is_instance_valid(npc):
+			npc.queue_free()
+	_npcs.clear()
+	_objetos.clear()
+	_transiciones.clear()
+
+	_mundo.queue_free()
+	_mundo = empaquetada.instantiate()
+	add_child(_mundo)
+	move_child(_mundo, 0)
+	_escena = slug
+
+	if casilla.x >= 0 and casilla.y >= 0:
+		_jugador.position = Vector2(
+			(casilla.x + 0.5) * TILE_VISUAL, (casilla.y + 0.5) * TILE_VISUAL
+		)
+	else:
+		var spawn := _mundo.get_node_or_null("Spawn")
+		if spawn != null:
+			_jugador.position = spawn.position
+
+	_ajustar_limites_camara()
+	await _crear_npcs()
+	_recolectar_objetos()
+	# Forzar el envío de posición: el servidor tiene que saber que cambió de
+	# escena, o rechazará las recogidas del mundo nuevo por "demasiado lejos".
+	_ultima_casilla = Vector2i(-9999, -9999)
 
 
 ## Aviso flotante de "pulsa para hablar". Va en la interfaz y no en el mundo
@@ -139,6 +211,10 @@ func _crear_npcs() -> void:
 func _crear_jugador() -> void:
 	var p := Personaje.new()
 	p.name = "Jugador"
+	# El grupo es lo que usan las transiciones para saber quién cruza. Buscar
+	# por nombre de nodo no vale: Godot autogenera nombres a los nodos creados
+	# por código y la comprobación fallaría en silencio.
+	p.add_to_group(Transicion.GRUPO_JUGADOR)
 	_jugador = p
 
 	var spawn := _mundo.get_node_or_null("Spawn")
@@ -164,18 +240,27 @@ func _crear_jugador() -> void:
 	_camara.position_smoothing_enabled = true
 	_camara.position_smoothing_speed = 6.0
 
-	# Límites al área realmente pintada, no al tamaño declarado del mapa.
-	# El mapa dice 60×40 pero solo tiene contenido en parte; sin límites se ve
-	# el vacío de fondo y parece que el juego está roto.
-	var usado := _area_pintada()
-	if usado.size != Vector2i.ZERO:
-		_camara.limit_left = int(usado.position.x * TILE_VISUAL)
-		_camara.limit_top = int(usado.position.y * TILE_VISUAL)
-		_camara.limit_right = int((usado.position.x + usado.size.x + 1) * TILE_VISUAL)
-		_camara.limit_bottom = int((usado.position.y + usado.size.y + 1) * TILE_VISUAL)
-
 	_jugador.add_child(_camara)
 	_camara.make_current()
+	_ajustar_limites_camara()
+
+
+## Ajusta la cámara al área realmente pintada del mundo actual.
+##
+## Se recalcula al cambiar de mundo: cada mapa tiene su propio tamaño, y dejar
+## los límites del anterior mostraría el vacío de fondo, que parece un fallo.
+## Se usa lo PINTADO y no el tamaño declarado, porque un mapa puede declarar
+## 60×40 y tener contenido solo en una parte.
+func _ajustar_limites_camara() -> void:
+	if _camara == null:
+		return
+	var usado := _area_pintada()
+	if usado.size == Vector2i.ZERO:
+		return
+	_camara.limit_left = int(usado.position.x * TILE_VISUAL)
+	_camara.limit_top = int(usado.position.y * TILE_VISUAL)
+	_camara.limit_right = int((usado.position.x + usado.size.x + 1) * TILE_VISUAL)
+	_camara.limit_bottom = int((usado.position.y + usado.size.y + 1) * TILE_VISUAL)
 
 
 ## Rectángulo, en tiles, que abarca todo lo pintado en todas las capas.
@@ -244,13 +329,17 @@ func _guardar_posicion() -> void:
 	)
 	if casilla == _ultima_casilla:
 		return
-	_ultima_casilla = casilla
 
 	if _http_pos == null:
 		_http_pos = HTTPRequest.new()
 		add_child(_http_pos)
-	# Si el envío anterior sigue en vuelo se descarta este: la próxima casilla
-	# lo corregirá, y encolar peticiones por cada paso saturaría la conexión.
+	# Si el envío anterior sigue en vuelo, se deja para el siguiente frame.
+	#
+	# Ojo con el orden: `_ultima_casilla` se actualiza DESPUÉS de conseguir
+	# enviar. Marcarla antes hacía que las casillas atravesadas mientras había
+	# una petición en curso se dieran por enviadas y se perdieran, dejando al
+	# servidor con una posición vieja — y con ella, recogidas rechazadas por
+	# "demasiado lejos" sin motivo aparente.
 	if _http_pos.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
 		return
 
@@ -262,12 +351,13 @@ func _guardar_posicion() -> void:
 			"facing": _jugador.mirando(),
 		}
 	)
-	_http_pos.request(
+	if _http_pos.request(
 		_origen + "/api/world/position",
 		["Content-Type: application/json"],
 		HTTPClient.METHOD_POST,
 		cuerpo
-	)
+	) == OK:
+		_ultima_casilla = casilla
 
 
 ## Busca el NPC hablable más cercano y muestra el aviso.
@@ -299,6 +389,9 @@ func _actualizar_npc_cercano() -> void:
 			_objeto_cerca = obj
 
 	if _pista == null:
+		return
+	# Un aviso en curso manda sobre la pista.
+	if Time.get_ticks_msec() / 1000.0 < _aviso_hasta:
 		return
 	if _objeto_cerca != null:
 		_pista.visible = true
@@ -357,12 +450,12 @@ func _recoger(obj: Objeto) -> void:
 
 
 ## Mensaje breve en el aviso inferior. Se restaura solo.
-func _aviso(texto: String) -> void:
+func _aviso(texto: String, segundos := 2.2) -> void:
 	if _pista == null:
 		return
 	_pista.text = texto
 	_pista.visible = true
-	await get_tree().create_timer(1.6).timeout
+	_aviso_hasta = Time.get_ticks_msec() / 1000.0 + segundos
 
 
 func _unhandled_input(evento: InputEvent) -> void:
@@ -444,7 +537,15 @@ func _on_sesion(
 	var fichas: int = int(saldos.get("ficha", 0)) if typeof(saldos) == TYPE_DICTIONARY else 0
 	var etapas: Array = datos.get("stages", [])
 	var abiertas := 0
+	_etapas_abiertas.clear()
+	_etapas_pendientes.clear()
 	for e in etapas:
+		var slug := str(e.get("slug", ""))
 		if bool(e.get("unlocked", false)):
 			abiertas += 1
+			_etapas_abiertas[slug] = true
+		else:
+			# El servidor explica qué falta ("Cierra 1 ticket más"); se guarda
+			# para mostrarlo en la puerta en vez de un "no puedes pasar".
+			_etapas_pendientes[slug] = str(e.get("pending", ""))
 	hud.text = "Fichas: %d    Etapas: %d/%d" % [fichas, abiertas, etapas.size()]

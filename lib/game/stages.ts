@@ -56,10 +56,18 @@ async function checkRule(
         [clientId],
       );
       const have = rows[0]?.n ?? 0;
+      const faltan = need - have;
       return {
         met: have >= need,
         evidence: { kind: 'ticket_closed', have, need },
-        pending: have >= need ? null : `Cierra ${need - have} ticket(s) más.`,
+        // El texto se muestra tal cual dentro del juego, así que se escribe
+        // como se diría en voz alta: "Cierra 1 ticket más", no "1 ticket(s)".
+        pending:
+          have >= need
+            ? null
+            : faltan === 1
+              ? 'Cierra un ticket para abrir este paso.'
+              : `Cierra ${faltan} tickets para abrir este paso.`,
       };
     }
 
