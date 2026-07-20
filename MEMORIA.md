@@ -291,7 +291,32 @@ Stack estándar de la casa, con particularidades de este repo:
     **móvil**, y Godot pesa **6,6 MB comprimidos solo el motor** (~7-19 MB el juego) con
     `godot#70621` (OOM en iOS) **abierto**; (b) quiere **las mejores sombras**, y `godot#76266`
     (iluminación 2D sin pixel-snapping en juegos escalados) está **abierto y sin asignar**.
-  - **PRUEBA DE HUMO ANTES DE REHACER NADA** (en curso): proyecto mínimo en `godot/` que se exporta
+  - ✅ **PRUEBA DE HUMO SUPERADA en el iPhone real del usuario (2026-07-20):** arranque **0,82 s**
+    en móvil vs 0,64 s en escritorio, **Safari NO recargó la página** (el OOM de iOS no apareció)
+    y la petición llegó a la API (HTTP 401 = correcto sin sesión). **Luz verde a Godot.**
+    ⚠️ **Matiz importante:** el `.pck` de la prueba son **4,9 KB**. El riesgo de iOS es por memoria
+    EN USO (las texturas descomprimidas cuentan) y los sprites LPC solos son 19 MB de PNG ⇒
+    **volver a medir con contenido real cargado**. No bloquea; es punto de control.
+  - **Números MEDIDOS aquí del export web:** `index.wasm` **37,68 MB crudo / 9,59 MB gzip /
+    6,58 MB brotli** (coincide con la investigación). **Next sirve `public/` con gzip, NO brotli**
+    ⇒ lo transferido son ~9,7 MB, no 6,6. El servidor de **desarrollo lo manda SIN COMPRIMIR
+    (39,5 MB)**; hay que verificar la compresión en Railway.
+  - ⚠️ **CORRECCIÓN a la investigación:** era FALSO que bastara servir desde el mismo dominio y
+    usar rutas relativas. **`HTTPRequest` NO acepta rutas relativas** (error 31, parámetro
+    inválido). Hay que leer `window.location.origin` con **`JavaScriptBridge`** y componer la URL
+    absoluta. Una vez hecho, la sesión sí viaja.
+  - ⚠️ **Godot web exige CONTEXTO SEGURO:** por `http://` desde otra máquina **no arranca**
+    ("Secure Context - Check web server configuration"). `localhost` vale; una IP de LAN por HTTP
+    no. Para probar en móvil hay que usar **`npm run dev:https`** (`server.cjs`). El certificado se
+    regeneró con `mkcert` para la IP actual; `server.cjs` ahora calcula la IP en vez de tenerla fija.
+  - **PUBLICACIÓN DE MUNDOS — decisión del usuario:** **exportar y desplegar** (flujo normal de
+    Godot). Los mundos son parte del proyecto Godot, NO de Postgres. Consecuencias aceptadas:
+    cada cambio de mapa exige un despliegue, hace falta su computadora, y **`gcc_world.world_maps`
+    queda sin uso**. ⇒ **`public/game/` SÍ va al repositorio** (es lo que Railway sirve); el wasm
+    solo cambia al subir de versión de Godot y git reutiliza el blob idéntico.
+  - **Fricciones acumuladas de Godot en un solo día** (ninguna fatal, todas con solución, pero en
+    Phaser no existen): rutas relativas, HTTPS obligatorio, wasm sin comprimir por defecto.
+  - **PRUEBA DE HUMO (histórico del montaje):** proyecto mínimo en `godot/` que se exporta
     a web, se sirve desde la app y **se abre en el teléfono real del usuario**. Verifica a la vez
     (1) que carga y va fluido en móvil y (2) que la **cookie de sesión llega** (petición a ruta
     relativa `/api/game/stages`; al ser mismo origen, `HTTPRequest` manda `same-origin` por

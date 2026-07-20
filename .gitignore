@@ -16,10 +16,14 @@ char_este.png
 char_norte.png
 juego_char.png
 
-# Godot: caché del editor y salida del export web.
-# El export incluye un wasm de ~37 MB; no va al repositorio.
+# Godot: caché del editor.
 godot/.godot/
 godot/android/
-public/game/
+
+# NOTA: public/game/ SÍ va al repositorio. El flujo elegido es exportar y
+# desplegar, así que el resultado del export es lo que Railway sirve.
+# El wasm son ~38 MB pero solo cambia al subir de versión de Godot; git
+# reutiliza el blob idéntico entre exports, así que reexportar no lo duplica.
+# Lo que cambia en cada edición es index.pck, que es pequeño.
 godot_shot.png
 godot_shot2.png
