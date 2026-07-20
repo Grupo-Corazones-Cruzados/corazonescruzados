@@ -1,26 +1,22 @@
-import GameClient from '@/components/game/GameClient';
+import GodotGame from '@/components/game/GodotGame';
 
 /**
- * Ruta de pruebas del motor nuevo (Phaser 4).
+ * El juego, a pantalla completa.
  *
- * Vive aparte a propósito: el juego actual sigue intacto en la landing hasta
- * que este alcance paridad de funciones. Así se puede comparar uno al lado del
- * otro sin romper nada de lo que ya funciona.
+ * Fuera del layout `(main)` a propósito: un juego no lleva el sidebar de la app
+ * encima. `fixed inset-0` evita heredar padding o scroll del body.
  *
- * `?scene=` permite abrir cualquier mapa para probarlo.
+ * No hace falta importarlo de forma dinámica: el componente es pequeño y lo
+ * pesado (el motor, ~10 MB) se descarga en tiempo de ejecución desde
+ * `public/game/`, no forma parte del bundle de JavaScript.
+ *
+ * Motor: Godot. El anterior en Phaser sigue en el repositorio (`GameClient`)
+ * hasta que este alcance paridad de funciones; se retirará entonces.
  */
-export default async function JuegoPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ scene?: string }>;
-}) {
-  const { scene } = await searchParams;
-  // `fixed inset-0` en vez de `h-dvh`: así el juego ocupa la ventana entera sin
-  // heredar padding ni scroll del body, y no aparece la barra de navegación de
-  // la app encima. Un juego se juega a pantalla completa.
+export default function JuegoPage() {
   return (
     <main className="fixed inset-0 overflow-hidden">
-      <GameClient sceneSlug={scene || 'main'} />
+      <GodotGame />
     </main>
   );
 }

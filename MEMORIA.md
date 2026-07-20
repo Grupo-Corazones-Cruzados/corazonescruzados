@@ -329,9 +329,15 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Fichas: se ganan SOLO jugando**; se gastarán en el dashboard/marketplace por productos y
     servicios reales. **A futuro serán TRANSFERIBLES entre usuarios** ⇒ el listón antifraude es de
     sistema de pagos, no de puntuación.
-    ⚠️ **Contradicción sin resolver:** al inicio dijo que ante el fracaso se reponen recursos con
-    **tareas del dashboard**; ahora dice que las fichas se ganan **solo en el juego**. Por eso el
-    libro contable se hizo **multi-moneda**, para soportar ambos casos sin rehacerlo. **Preguntar.**
+    ✅ **RESUELTO (2026-07-20):** el usuario confirma que **el recurso que se repone haciendo tareas
+    del dashboard SON LAS MISMAS FICHAS**. Es **UNA sola moneda con DOS fuentes**: jugando y
+    haciendo tareas de los módulos. Esto **corrige** su frase previa de "se consiguen solo en el
+    juego". El libro multi-moneda se conserva igual (no estorba y ya está hecho), pero de momento
+    solo existe `ficha`.
+    ⚠️ **Consecuencia de diseño a vigilar:** si las tareas del dashboard acuñan fichas y las fichas
+    compran productos reales, **el trabajo real de la organización pasa a tener precio en fichas**.
+    El tope diario (500) y los rendimientos decrecientes dejan de ser antifraude y pasan a ser
+    también una decisión económica del negocio.
   - **MÓVIL ES REQUISITO** (teléfono, tablet y computadora). Esto convierte el canvas del mundo
     entero en **bloqueante**, no en optimización, y obliga a añadir controles táctiles (hoy solo
     hay teclado).

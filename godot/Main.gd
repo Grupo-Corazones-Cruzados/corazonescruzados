@@ -1,90 +1,148 @@
 extends Node2D
 
-## Prueba de humo del export web de Godot dentro de GCC World.
+## Escena principal del juego.
 ##
-## Comprueba lo que de verdad decide si Godot es viable aquí:
+## Carga el mundo convertido desde el editor anterior y lo muestra con una
+## cámara que sigue al jugador. Sustituye a la prueba de humo, que ya cumplió su
+## función: confirmó que el motor arranca en móvil (0,82 s en iPhone, sin que
+## Safari recargue) y que la sesión de la app llega al juego.
 ##
-##  1. **Que arranca en un teléfono real.** Es el riesgo conocido: el motor pesa
-##     ~6,6 MB comprimidos y hay un problema de memoria en iOS abierto. Si el
-##     navegador recarga la página al abrirla, lo sabremos aquí y no después de
-##     rehacer los NPCs, los diálogos y las cinemáticas.
-##
-##  2. **Que la sesión del usuario llega.** Al servirse desde el mismo dominio
-##     que la app, `HTTPRequest` manda las peticiones con `same-origin` por
-##     defecto, así que la cookie httpOnly de sesión debería viajar sola, sin
-##     tener que pasar tokens a mano. Si esto funciona, la integración con el
-##     dashboard (etapas, fichas) está resuelta.
+## Pendiente de portar desde el motor anterior: personaje LPC compuesto, NPCs
+## con diálogo, objetos recogibles, transiciones entre mapas y cinemáticas.
 
-@onready var titulo: Label = $UI/Titulo
-@onready var estado: Label = $UI/Estado
-@onready var http: HTTPRequest = $HTTPRequest
+const MUNDO := "res://mundos/main.tscn"
+const TILE_VISUAL := 64.0  ## 32 px de tile a escala 2
 
-var _t0_ms: int = 0
+@onready var hud: Label = $UI/Hud
+
+var _mundo: Node2D
+var _jugador: CharacterBody2D
+var _camara: Camera2D
+var _velocidad := 190.0
 
 
 func _ready() -> void:
-	_t0_ms = Time.get_ticks_msec()
-	titulo.text = "GCC World — prueba de motor"
-	estado.text = "Motor arrancado.\nConsultando la sesión…"
-
-	http.request_completed.connect(_on_respuesta)
-
-	# HALLAZGO: `HTTPRequest` NO acepta rutas relativas — devuelve el error 31
-	# (parámetro inválido). Hay que darle una URL absoluta, así que incluso para
-	# llamar a nuestra propia API hace falta el puente con JavaScript y leer el
-	# origen del navegador. Es un ejemplo de lo que cuesta aquí cada cosa que en
-	# un motor web es una línea.
-	var origen := ""
-	if OS.has_feature("web"):
-		var res: Variant = JavaScriptBridge.eval("window.location.origin", true)
-		if typeof(res) == TYPE_STRING:
-			origen = res as String
-
-	if origen.is_empty():
-		estado.text = "No se pudo determinar el origen del navegador."
+	var escena: PackedScene = load(MUNDO)
+	if escena == null:
+		hud.text = "No se encontró el mundo.\nEjecuta el importador de mapas."
 		return
 
-	var err := http.request(origen + "/api/game/stages")
-	if err != OK:
-		estado.text = "No se pudo lanzar la petición (código %d)" % err
+	_mundo = escena.instantiate()
+	add_child(_mundo)
+
+	_crear_jugador()
+	_consultar_sesion()
 
 
-func _on_respuesta(
-	_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray
+func _crear_jugador() -> void:
+	# Marcador provisional: el personaje LPC son 12 capas que hay que componer,
+	# y es el siguiente paso. Lo que importa ahora es validar que el mapa
+	# convertido tiene colisiones reales y se puede recorrer.
+	_jugador = CharacterBody2D.new()
+	_jugador.name = "Jugador"
+
+	var cuerpo := ColorRect.new()
+	cuerpo.color = Color(0.47, 0.35, 0.85)
+	cuerpo.size = Vector2(28, 44)
+	cuerpo.position = Vector2(-14, -34)
+	_jugador.add_child(cuerpo)
+
+	var forma := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	# La caja son los pies, no el alto entero: si no, el personaje choca con
+	# las paredes por la cabeza y no puede pasar por huecos de un tile.
+	rect.size = Vector2(20, 12)
+	forma.shape = rect
+	forma.position = Vector2(0, -6)
+	_jugador.add_child(forma)
+
+	var spawn := _mundo.get_node_or_null("Spawn")
+	_jugador.position = spawn.position if spawn != null else Vector2(400, 400)
+	add_child(_jugador)
+
+	_camara = Camera2D.new()
+	# Suavizado: la cámara anterior se movía por traslación directa y daba
+	# tirones al cambiar de dirección.
+	_camara.position_smoothing_enabled = true
+	_camara.position_smoothing_speed = 6.0
+
+	# Límites al área realmente pintada, no al tamaño declarado del mapa.
+	# El mapa dice 60×40 pero solo tiene contenido en parte; sin límites se ve
+	# el vacío de fondo y parece que el juego está roto.
+	var usado := _area_pintada()
+	if usado.size != Vector2i.ZERO:
+		_camara.limit_left = int(usado.position.x * TILE_VISUAL)
+		_camara.limit_top = int(usado.position.y * TILE_VISUAL)
+		_camara.limit_right = int((usado.position.x + usado.size.x + 1) * TILE_VISUAL)
+		_camara.limit_bottom = int((usado.position.y + usado.size.y + 1) * TILE_VISUAL)
+
+	_jugador.add_child(_camara)
+	_camara.make_current()
+
+
+## Rectángulo, en tiles, que abarca todo lo pintado en todas las capas.
+func _area_pintada() -> Rect2i:
+	var min_c := Vector2i(1 << 30, 1 << 30)
+	var max_c := Vector2i(-(1 << 30), -(1 << 30))
+	var hubo := false
+	for hijo in _mundo.get_children():
+		if hijo is TileMapLayer:
+			for celda in (hijo as TileMapLayer).get_used_cells():
+				min_c = min_c.min(celda)
+				max_c = max_c.max(celda)
+				hubo = true
+	if not hubo:
+		return Rect2i()
+	return Rect2i(min_c, max_c - min_c)
+
+
+func _physics_process(_delta: float) -> void:
+	if _jugador == null:
+		return
+	var dir := Vector2(
+		Input.get_axis("ui_left", "ui_right"), Input.get_axis("ui_up", "ui_down")
+	)
+	# Normalizar para que la diagonal no sea más rápida que recto.
+	_jugador.velocity = dir.normalized() * _velocidad
+	_jugador.move_and_slide()
+
+
+func _consultar_sesion() -> void:
+	var http := HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(_on_sesion)
+
+	# HTTPRequest NO acepta rutas relativas (da error 31), así que hay que leer
+	# el origen del navegador y componer la URL absoluta. Fuera de la web no
+	# hay sesión que consultar.
+	if not OS.has_feature("web"):
+		hud.text = "Modo escritorio (sin sesión)"
+		return
+	var origen: Variant = JavaScriptBridge.eval("window.location.origin", true)
+	if typeof(origen) != TYPE_STRING:
+		hud.text = "Sin origen"
+		return
+	http.request(str(origen) + "/api/game/stages")
+
+
+func _on_sesion(
+	_r: int, codigo: int, _h: PackedStringArray, cuerpo: PackedByteArray
 ) -> void:
-	var arranque_s := (Time.get_ticks_msec() - _t0_ms) / 1000.0
-	var lineas: Array[String] = []
-	lineas.append("Motor: Godot %s" % Engine.get_version_info().string)
-	lineas.append("Arranque: %.2f s" % arranque_s)
-	lineas.append("Respuesta del servidor: HTTP %d" % response_code)
-
-	match response_code:
-		200:
-			var datos: Variant = JSON.parse_string(body.get_string_from_utf8())
-			if typeof(datos) == TYPE_DICTIONARY and datos.has("stages"):
-				lineas.append("")
-				lineas.append("✔ LA SESIÓN LLEGA AL JUEGO")
-				lineas.append("Etapas recibidas: %d" % (datos["stages"] as Array).size())
-				var saldos: Variant = datos.get("balances", {})
-				if typeof(saldos) == TYPE_DICTIONARY:
-					lineas.append("Fichas: %s" % str(saldos.get("ficha", 0)))
-			else:
-				lineas.append("Respondió, pero sin el formato esperado.")
-		401:
-			# No es un fallo del motor: significa que no hay sesión iniciada en
-			# el navegador. La prueba de red sí pasó.
-			lineas.append("")
-			lineas.append("✔ La red funciona (HTTP 401 = sin sesión iniciada)")
-			lineas.append("Inicia sesión en la app y recarga para ver tus datos.")
-		_:
-			lineas.append("Respuesta inesperada.")
-
-	estado.text = "\n".join(lineas)
-
-
-func _process(_delta: float) -> void:
-	# Movimiento mínimo: si esto se ve fluido en el teléfono, el motor va bien
-	# ahí. Si se ve a tirones, es un aviso temprano.
-	var t := Time.get_ticks_msec() / 1000.0
-	$Testigo.position = Vector2(480.0 + cos(t) * 220.0, 400.0 + sin(t * 2.0) * 60.0)
-	$Testigo.rotation = t
+	if codigo == 401:
+		hud.text = "Sin sesión iniciada"
+		return
+	if codigo != 200:
+		hud.text = "Servidor: HTTP %d" % codigo
+		return
+	var datos: Variant = JSON.parse_string(cuerpo.get_string_from_utf8())
+	if typeof(datos) != TYPE_DICTIONARY:
+		hud.text = "Respuesta inesperada"
+		return
+	var saldos: Variant = datos.get("balances", {})
+	var fichas: Variant = saldos.get("ficha", 0) if typeof(saldos) == TYPE_DICTIONARY else 0
+	var etapas: Array = datos.get("stages", [])
+	var abiertas := 0
+	for e in etapas:
+		if bool(e.get("unlocked", false)):
+			abiertas += 1
+	hud.text = "Fichas: %s    Etapas: %d/%d" % [str(fichas), abiertas, etapas.size()]

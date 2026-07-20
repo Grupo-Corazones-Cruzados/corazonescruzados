@@ -20,8 +20,13 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 
 window/size/viewport_width=960
 window/size/viewport_height=540
-; El arte es pixelado: sin esto el escalado lo emborrona.
-window/stretch/mode="canvas_items"
+; Sin estirado: el viewport toma el tamaño real del canvas y se dibuja 1:1.
+;
+; Con "canvas_items" Godot mantenía su viewport de 960×540 dentro de un canvas
+; más alto y dejaba una franja gris abajo. En un juego movido por cámara no hace
+; falta escalar: lo que se ve más o menos mundo es la cámara, no el estirado, y
+; así cada píxel del arte cae en un píxel de pantalla.
+window/stretch/mode="disabled"
 window/stretch/aspect="expand"
 
 [rendering]
@@ -30,4 +35,8 @@ window/stretch/aspect="expand"
 ; en navegador. Forward+ no está soportado en web.
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+; Nearest: sin esto el arte pixelado se interpola y pierde el filo.
 textures/canvas_textures/default_texture_filter=0
+; El gris por defecto de Godot se confunde con un fallo cuando la cámara llega
+; al borde. Un color oscuro de la paleta del juego se lee como "aquí no hay nada".
+environment/defaults/default_clear_color=Color(0.051, 0.043, 0.078, 1)

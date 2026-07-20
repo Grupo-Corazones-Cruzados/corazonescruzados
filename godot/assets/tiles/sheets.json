@@ -1,0 +1,16 @@
+{
+  "tileSize": 32,
+  "sheets": [
+    {
+      "index": 0,
+      "id": "terrain",
+      "cols": 32,
+      "rows": 32,
+      "file": "terrain.png"
+    }
+  ],
+  "colors": [
+    "#6ec6ff"
+  ],
+  "colorsFile": "colors.png"
+}
