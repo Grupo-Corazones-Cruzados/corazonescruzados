@@ -417,6 +417,18 @@ Stack estándar de la casa, con particularidades de este repo:
   - **La identidad de un objeto es su RUTA DE NODO en la escena de Godot** (`Objetos/Moneda1`).
     Moverlo no la cambia; **renombrarlo sí**, y eso hace que un objeto ya recogido **reaparezca una
     vez para todos los jugadores**.
+  - ⚠️ **Railway "Error configuring network" al desplegar = TRANSITORIO, no es el código
+    (2026-07-20):** el deploy del reinicio falló en la fase *Deploy › Configure network* con
+    `next start` recibiendo SIGTERM. Pero el build pasó y `next start` llegó a "Ready in 402ms"
+    (el servidor arrancó y escuchaba), así que el fallo es de la infra de red de Railway, no de la
+    app. **Producción NO se cayó** (Railway mantiene el deploy anterior). **Solución: redeploy** —
+    `railway redeploy --service corazonescruzados -y` (el servicio de la app web es
+    **`corazonescruzados`**; hay también `nightly-cron` y `Postgres`). El 2º intento pasó.
+    **Cómo confirmar qué versión sirve producción:** comparar `curl -s -o /dev/null -w '%{size_download}'
+    https://app.grupocc.org/game/index.pck` contra `stat -f%z public/game/index.pck`.
+  - ⚠️ **El servicio tiene "app sleeping" activado:** la 1ª petición tras inactividad tarda ~8 s
+    (el servicio despierta). Para un juego, ese arranque lento puede molestar; se puede desactivar el
+    sleeping para que esté siempre despierto. **Pendiente de decidir con el usuario.**
   - **Fricciones acumuladas de Godot en un solo día** (ninguna fatal, todas con solución, pero en
     Phaser no existen): rutas relativas, HTTPS obligatorio, wasm sin comprimir por defecto.
   - **PRUEBA DE HUMO (histórico del montaje):** proyecto mínimo en `godot/` que se exporta
