@@ -311,6 +311,25 @@ Stack estándar de la casa, con particularidades de este repo:
      posición donde el usuario se quedó** (o en la **primera escena** si es partida nueva).
   6. Godot corre el juego.
 
+  ### GODOT EN BLANCO TOTAL (2026-07-20, decisión posterior del usuario)
+  El usuario pidió empezar Godot **realmente desde 0**: los sistemas que se habían conservado le
+  generaban dudas ("no sé qué son, puedo estar omitiendo cosas"). Se **borraron de `godot/` TODOS
+  los scripts** (`Main.gd`, `Personaje.gd`, `Dialogo.gd`, `Objeto.gd`, `Transicion.gd`,
+  `tools/*`) y el manifiesto residual. `godot/` queda con **solo**: `assets/` (tiles + 55 objetos),
+  `project.godot`, `export_presets.cfg`, y `Main.tscn` = **escena vacía** ("Proyecto nuevo — empieza
+  a construir"). Todo lo borrado sigue en git (recuperable) por si se quiere rescatar el compositor
+  de personaje, etc.
+  - **La ECONOMÍA queda PENDIENTE y FUERA de `godot/`** (decisión del usuario): no hay nada de
+    economía en la carpeta de Godot. La capa de economía del **NIVEL APP** (`lib/game/{ledger,
+    stages,pickup}.ts`, `app/api/game/stages`, `app/api/world/{inventory,position}`, tablas
+    `ledger_*`/`item_placements`/etc. ya aplicadas en producción) se **deja LATENTE, no se borró**:
+    las tablas están en producción y el usuario dijo "pendiente", no "eliminar". Se reconectará
+    cuando se retome la economía.
+  - **El comando `npm run juego:publicar` se SIMPLIFICÓ** a 3 pasos (reimport → export web → git),
+    sin el paso de manifiesto/sync de objetos (era economía). Volverá a incluirlo cuando se retome.
+  - Verificado: Godot en blanco arranca (pantalla "Proyecto nuevo — empieza a construir"), tsc
+    limpio, 0 archivos de economía en `godot/`.
+
   ### EJECUTADO (2026-07-20) — reinicio + conexión Entrar→Godot
   - **Godot limpiado a CONTENIDO 0, sistemas conservados.** Borrados: `godot/mundos/*` (main,
     refugio), `godot/import/*`, `tools/sembrar_*`. Conservados: `godot/assets/*` (tiles + 55
