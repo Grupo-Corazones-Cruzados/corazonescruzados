@@ -314,6 +314,23 @@ Stack estándar de la casa, con particularidades de este repo:
     cada cambio de mapa exige un despliegue, hace falta su computadora, y **`gcc_world.world_maps`
     queda sin uso**. ⇒ **`public/game/` SÍ va al repositorio** (es lo que Railway sirve); el wasm
     solo cambia al subir de versión de Godot y git reutiliza el blob idéntico.
+  - **FLUJO DE PUBLICACIÓN DEL JUEGO (2026-07-20) — el orden importa:**
+    ```
+    1. godot --headless --path godot --script res://tools/export_manifest.gd
+    2. node scripts/sync-item-manifest.mjs      ← sin esto el servidor rechaza las recogidas
+    3. godot --headless --path godot --export-release "Web"
+    4. commit de public/game/ + desplegar
+    ```
+    ⚠️ **El paso 2 no es opcional.** Al vivir los mundos en Godot, el servidor se queda sin saber
+    qué objetos existen. `gcc_world.item_placements` es la copia que él sí controla; si no se
+    sincroniza, `validatePickup` no encuentra la colocación y devuelve 403. Es el precio de haber
+    movido la autoría a Godot conservando la validación en el servidor.
+  - ⚠️ **NUNCA ejecutar `next build` con el servidor de desarrollo levantado:** sobrescribe `.next`
+    y deja `/_next/static/` en **404** ⇒ la página se queda en blanco sin CSS ni JS. Costó dos
+    diagnósticos. Matar `server.cjs` antes de compilar.
+  - **La identidad de un objeto es su RUTA DE NODO en la escena de Godot** (`Objetos/Moneda1`).
+    Moverlo no la cambia; **renombrarlo sí**, y eso hace que un objeto ya recogido **reaparezca una
+    vez para todos los jugadores**.
   - **Fricciones acumuladas de Godot en un solo día** (ninguna fatal, todas con solución, pero en
     Phaser no existen): rutas relativas, HTTPS obligatorio, wasm sin comprimir por defecto.
   - **PRUEBA DE HUMO (histórico del montaje):** proyecto mínimo en `godot/` que se exporta

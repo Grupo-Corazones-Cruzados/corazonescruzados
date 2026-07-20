@@ -31,6 +31,17 @@ var _dialogo: Dialogo
 var _npcs: Array[Personaje] = []
 var _pista: Label
 var _npc_cerca: Personaje = null
+var _objetos: Array[Objeto] = []
+var _objeto_cerca: Objeto = null
+## Recogidas en vuelo, para que pulsar dos veces no envie dos peticiones.
+var _recogiendo := {}
+
+## Nombre de la escena actual, tal como lo conoce el servidor.
+var _escena := "main"
+var _origen := ""
+## Última casilla enviada, para no repetir la escritura en cada frame.
+var _ultima_casilla := Vector2i(-9999, -9999)
+var _http_pos: HTTPRequest
 
 
 func _ready() -> void:
@@ -55,6 +66,20 @@ func _ready() -> void:
 	# descargas competirían y el jugador (que es lo primero que se mira)
 	# tardaría más en aparecer.
 	await _crear_npcs()
+	_recolectar_objetos()
+
+
+## Indexa los objetos que vienen colocados en la escena del mundo.
+func _recolectar_objetos() -> void:
+	_objetos.clear()
+	_buscar_objetos(_mundo)
+
+
+func _buscar_objetos(nodo: Node) -> void:
+	if nodo is Objeto:
+		_objetos.append(nodo as Objeto)
+	for hijo in nodo.get_children():
+		_buscar_objetos(hijo)
 
 
 ## Aviso flotante de "pulsa para hablar". Va en la interfaz y no en el mundo
@@ -200,6 +225,50 @@ func _physics_process(_delta: float) -> void:
 			mirando = "s" if dir.y > 0.0 else "n"
 		_jugador.reproducir("walk", mirando)
 
+	_guardar_posicion()
+
+
+## Envía la casilla del jugador cuando cambia.
+##
+## No es telemetría: el servidor la necesita para poder comprobar que una
+## recogida ocurre CERCA del objeto. Sin posición conocida rechaza la recogida,
+## que es lo correcto cuando hay fichas canjeables de por medio.
+##
+## Solo se envía al cambiar de casilla, no por frame: cada envío es una
+## escritura en base de datos.
+func _guardar_posicion() -> void:
+	if _origen.is_empty():
+		return
+	var casilla := Vector2i(
+		int(floor(_jugador.position.x / TILE_VISUAL)), int(floor(_jugador.position.y / TILE_VISUAL))
+	)
+	if casilla == _ultima_casilla:
+		return
+	_ultima_casilla = casilla
+
+	if _http_pos == null:
+		_http_pos = HTTPRequest.new()
+		add_child(_http_pos)
+	# Si el envío anterior sigue en vuelo se descarta este: la próxima casilla
+	# lo corregirá, y encolar peticiones por cada paso saturaría la conexión.
+	if _http_pos.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+		return
+
+	var cuerpo := JSON.stringify(
+		{
+			"sceneSlug": _escena,
+			"x": casilla.x,
+			"y": casilla.y,
+			"facing": _jugador.mirando(),
+		}
+	)
+	_http_pos.request(
+		_origen + "/api/world/position",
+		["Content-Type: application/json"],
+		HTTPClient.METHOD_POST,
+		cuerpo
+	)
+
 
 ## Busca el NPC hablable más cercano y muestra el aviso.
 ##
@@ -216,14 +285,90 @@ func _actualizar_npc_cercano() -> void:
 			mejor = npc
 
 	_npc_cerca = mejor
-	if _pista != null:
-		_pista.visible = mejor != null
-		if mejor != null:
-			_pista.text = "Pulsa E para hablar con %s" % str(mejor.get_meta("titulo", "…"))
+
+	# Objeto recogible más cercano. Tiene prioridad sobre hablar: si hay un
+	# objeto a los pies, lo que uno espera al pulsar es recogerlo.
+	_objeto_cerca = null
+	var dist_obj := ALCANCE_DIALOGO
+	for obj in _objetos:
+		if not is_instance_valid(obj):
+			continue
+		var d := _jugador.position.distance_to(obj.global_position)
+		if d <= dist_obj:
+			dist_obj = d
+			_objeto_cerca = obj
+
+	if _pista == null:
+		return
+	if _objeto_cerca != null:
+		_pista.visible = true
+		_pista.text = "Pulsa E para recoger"
+	elif mejor != null:
+		_pista.visible = true
+		_pista.text = "Pulsa E para hablar con %s" % str(mejor.get_meta("titulo", "…"))
+	else:
+		_pista.visible = false
+
+
+## Pide al servidor recoger el objeto.
+##
+## El cliente solo dice QUÉ colocación toca; el servidor decide qué objeto es y
+## cuántos entrega, comprobando además que el jugador esté cerca de verdad. El
+## objeto no desaparece hasta que el servidor confirma: si se quitara antes,
+## un rechazo dejaría el mundo y el inventario descuadrados.
+func _recoger(obj: Objeto) -> void:
+	if _origen.is_empty() or _recogiendo.has(obj):
+		return
+	_recogiendo[obj] = true
+
+	var http := HTTPRequest.new()
+	add_child(http)
+	var cuerpo := JSON.stringify(
+		{"sceneSlug": _escena, "placementId": obj.id_colocacion()}
+	)
+	var err := http.request(
+		_origen + "/api/world/inventory",
+		["Content-Type: application/json"],
+		HTTPClient.METHOD_POST,
+		cuerpo
+	)
+	if err != OK:
+		_recogiendo.erase(obj)
+		http.queue_free()
+		return
+
+	var res: Array = await http.request_completed
+	http.queue_free()
+	_recogiendo.erase(obj)
+
+	var codigo := int(res[1])
+	if codigo == 200:
+		_objetos.erase(obj)
+		obj.queue_free()
+		_aviso("Recogido")
+	elif codigo == 409:
+		_aviso("Inventario lleno")
+	elif codigo == 403:
+		# Pasa si el servidor aún no conoce la posición del jugador, o si el
+		# manifiesto no está sincronizado con lo que hay en el mapa.
+		_aviso("No se pudo recoger aquí")
+	else:
+		_aviso("Error al recoger (%d)" % codigo)
+
+
+## Mensaje breve en el aviso inferior. Se restaura solo.
+func _aviso(texto: String) -> void:
+	if _pista == null:
+		return
+	_pista.text = texto
+	_pista.visible = true
+	await get_tree().create_timer(1.6).timeout
 
 
 func _unhandled_input(evento: InputEvent) -> void:
-	if _dialogo == null or _dialogo.activo() or _npc_cerca == null:
+	if _dialogo == null or _dialogo.activo():
+		return
+	if _npc_cerca == null and _objeto_cerca == null:
 		return
 
 	var hablar := false
@@ -235,6 +380,12 @@ func _unhandled_input(evento: InputEvent) -> void:
 		hablar = true
 
 	if not hablar:
+		return
+
+	# Recoger tiene prioridad: si hay un objeto a los pies, es lo que se espera.
+	if _objeto_cerca != null:
+		get_viewport().set_input_as_handled()
+		_recoger(_objeto_cerca)
 		return
 
 	var lineas: Array = _npc_cerca.get_meta("dialogo", [])
@@ -270,7 +421,8 @@ func _consultar_sesion() -> void:
 	if typeof(origen) != TYPE_STRING:
 		hud.text = "Sin origen"
 		return
-	http.request(str(origen) + "/api/game/stages")
+	_origen = str(origen)
+	http.request(_origen + "/api/game/stages")
 
 
 func _on_sesion(

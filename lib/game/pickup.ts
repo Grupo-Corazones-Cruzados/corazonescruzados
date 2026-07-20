@@ -17,14 +17,18 @@ import { pool } from '@/lib/db';
 const MAX_PICKUP_DISTANCE_TILES = 3;
 
 export type PickupCheck =
-  | { ok: true; itemId: string }
+  | { ok: true; itemId: string; quantity: number }
   | { ok: false; reason: 'unknown_scene' | 'unknown_placement' | 'too_far' | 'no_position' };
 
-type ItemPlacement = { id: string; itemId: string; x: number; y: number };
-
 /**
- * Comprueba que la colocación exista en el mapa indicado y que el jugador esté
- * lo bastante cerca. Devuelve el itemId REAL según el mapa.
+ * Comprueba que la colocación exista y que el jugador esté lo bastante cerca.
+ * Devuelve el itemId REAL según el manifiesto, no el que diga el cliente.
+ *
+ * La fuente es `item_placements`, que se sincroniza desde el proyecto de Godot
+ * (`scripts/sync-item-manifest.mjs`). Antes se leía de `world_maps`, pero los
+ * mundos ya no viven en la base de datos: se diseñan en Godot y forman parte
+ * del build. El manifiesto existe justamente para que el servidor conserve su
+ * propia copia y pueda seguir validando sin fiarse del juego.
  */
 export async function validatePickup(
   clientId: number,
@@ -32,14 +36,17 @@ export async function validatePickup(
   placementId: string,
 ): Promise<PickupCheck> {
   const { rows } = await pool.query(
-    'SELECT items FROM gcc_world.world_maps WHERE name = $1 LIMIT 1',
-    [sceneSlug],
+    `SELECT item_id, quantity, x, y
+       FROM gcc_world.item_placements
+      WHERE scene = $1 AND placement_id = $2
+      LIMIT 1`,
+    [sceneSlug, placementId],
   );
-  if (rows.length === 0) return { ok: false, reason: 'unknown_scene' };
-
-  const items: ItemPlacement[] = Array.isArray(rows[0].items) ? rows[0].items : [];
-  const placement = items.find((p) => p && p.id === placementId);
-  if (!placement || typeof placement.itemId !== 'string') {
+  const placement = rows[0];
+  if (!placement) {
+    // No se distingue "escena desconocida" de "objeto desconocido": para quien
+    // sondea desde fuera, ambas son lo mismo y dar detalle solo ayuda a mapear
+    // qué existe.
     return { ok: false, reason: 'unknown_placement' };
   }
 
@@ -68,7 +75,11 @@ export async function validatePickup(
     return { ok: false, reason: 'too_far' };
   }
 
-  return { ok: true, itemId: placement.itemId };
+  return {
+    ok: true,
+    itemId: String(placement.item_id),
+    quantity: Number(placement.quantity) || 1,
+  };
 }
 
 /**

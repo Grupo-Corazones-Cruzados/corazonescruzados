@@ -2,6 +2,7 @@
 
 [ext_resource type="Texture2D" path="res://assets/tiles/terrain.png" id="1_5mlj8"]
 [ext_resource type="Texture2D" path="res://assets/tiles/colors.png" id="2_gv83y"]
+[ext_resource type="Script" path="res://Objeto.gd" id="3_gv83y"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_njph2"]
 texture = ExtResource("1_5mlj8")
@@ -54,3 +55,19 @@ metadata/capas = ["/character/body/female/black.png", "/character/pants/female/g
 metadata/complexion = "medio"
 metadata/escala = 0.8
 metadata/animacion = "walk"
+
+[node name="Objetos" type="Node2D" parent="." unique_id=455893088]
+
+[node name="Moneda1" type="Node2D" parent="Objetos" unique_id=26745532]
+position = Vector2(2016, 2336)
+script = ExtResource("3_gv83y")
+
+[node name="Manzana1" type="Node2D" parent="Objetos" unique_id=1259747091]
+position = Vector2(1760, 2336)
+script = ExtResource("3_gv83y")
+item_id = "apple"
+
+[node name="Espada1" type="Node2D" parent="Objetos" unique_id=399172606]
+position = Vector2(1888, 2208)
+script = ExtResource("3_gv83y")
+item_id = "sword"

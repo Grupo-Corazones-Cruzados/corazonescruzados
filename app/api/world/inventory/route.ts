@@ -83,7 +83,8 @@ export async function POST(req: Request) {
         { status: 409 },
       );
     }
-    inv[itemId] = (inv[itemId] ?? 0) + 1;
+    // La cantidad la decide el manifiesto del servidor, no el cliente.
+    inv[itemId] = (inv[itemId] ?? 0) + check.quantity;
     const newPicked = [...picked, placementId];
     await pool.query(
       `UPDATE gcc_world.clients
@@ -92,6 +93,12 @@ export async function POST(req: Request) {
         WHERE id = $3`,
       [JSON.stringify(inv), JSON.stringify(newPicked), me.id],
     );
+    // También se registran las recogidas ACEPTADAS, no solo los rechazos.
+    // El valor del registro está en el flujo completo: sin los aciertos no se
+    // puede distinguir a alguien que juega mucho de un script que repite una
+    // acción legítima toda la noche, que es la amenaza económica real.
+    await logAction(me.id, 'pickup', { sceneSlug, placementId, itemId, cantidad: check.quantity });
+
     return NextResponse.json({
       ok: true,
       inventory: inv,
