@@ -1,13 +1,13 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://btc5hqwnbmtyj"]
 
-[ext_resource type="Script" path="res://Main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://ds3lcaqdnwdwv" path="res://Main.gd" id="1_main"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=1121650948]
 script = ExtResource("1_main")
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=692705848]
 
-[node name="Hud" type="Label" parent="UI"]
+[node name="Hud" type="Label" parent="UI" unique_id=1930577099]
 offset_left = 16.0
 offset_top = 12.0
 offset_right = 940.0
