@@ -34,6 +34,18 @@ async function fetchMap(slug: string) {
   return res.json();
 }
 
+/** Trae el personaje del jugador. Null si no hay sesión: el juego sigue igual. */
+async function fetchCharacter() {
+  try {
+    const res = await fetch('/api/character/me');
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.characterData ?? json?.character_data ?? json?.config ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Guarda la posición, con reintento silencioso: perderla no rompe la partida. */
 function persistPosition(sceneSlug: string, x: number, y: number, facing: string) {
   fetch('/api/world/position', {
@@ -72,6 +84,7 @@ export default function PhaserGame({ sceneSlug, showTouchControls }: Props) {
         const game = createGame(containerRef.current, {
           sceneSlug,
           loadMap: fetchMap,
+          loadCharacter: fetchCharacter,
           onTileChange: persistPosition,
         });
         gameRef.current = game;

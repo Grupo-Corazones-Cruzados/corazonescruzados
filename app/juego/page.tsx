@@ -15,8 +15,11 @@ export default async function JuegoPage({
   searchParams: Promise<{ scene?: string }>;
 }) {
   const { scene } = await searchParams;
+  // `fixed inset-0` en vez de `h-dvh`: así el juego ocupa la ventana entera sin
+  // heredar padding ni scroll del body, y no aparece la barra de navegación de
+  // la app encima. Un juego se juega a pantalla completa.
   return (
-    <main className="h-dvh w-full">
+    <main className="fixed inset-0 overflow-hidden">
       <GameClient sceneSlug={scene || 'main'} />
     </main>
   );

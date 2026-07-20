@@ -2,6 +2,13 @@ import Phaser from 'phaser';
 import type { LayerData, Tile } from '@/components/landing/world/sheets';
 import { tileZ } from '@/components/landing/world/sheets';
 import { registerSheetsForMap, toGid, TILE_PX, type SheetRegistration } from './tilesets';
+import {
+  animKey,
+  buildCharacterTexture,
+  registerCharacterAnimations,
+  type Direction,
+} from './character';
+import type { CharacterConfig } from '@/components/landing/CharacterCreator';
 
 /**
  * Escena principal del mundo.
@@ -36,8 +43,26 @@ export type WorldSceneInit = {
   sceneSlug: string;
   /** Trae los datos del mapa. Se inyecta para poder probar la escena sin red. */
   loadMap: (slug: string) => Promise<WorldMapData>;
+  /** Trae el personaje del jugador. Devuelve null si no hay sesión. */
+  loadCharacter?: () => Promise<CharacterConfig | null>;
   /** Avisa del cambio de tile, para persistir la posición. */
   onTileChange?: (sceneSlug: string, x: number, y: number, facing: string) => void;
+};
+
+/** Escala de dibujo del personaje, heredada del juego anterior (frame 64 → 192). */
+const CHARACTER_SCALE = 3;
+
+/**
+ * Variación de anchura por complexión. LPC solo trae 3 siluetas, así que los 5
+ * niveles se diferencian estirando horizontalmente, igual que hacía el
+ * renderer anterior.
+ */
+const WIDTH_FACTOR: Record<string, number> = {
+  muy_delgado: 0.86,
+  delgado: 0.94,
+  medio: 1,
+  obeso: 1.08,
+  muy_obeso: 1.2,
 };
 
 export class WorldScene extends Phaser.Scene {
@@ -45,7 +70,11 @@ export class WorldScene extends Phaser.Scene {
 
   private slug!: string;
   private loadMap!: WorldSceneInit['loadMap'];
+  private loadCharacter?: WorldSceneInit['loadCharacter'];
   private onTileChange?: WorldSceneInit['onTileChange'];
+  private textureKey: string | null = null;
+  /** Última animación pedida, para no reiniciarla en cada frame. */
+  private currentAnim = '';
 
   private map?: Phaser.Tilemaps.Tilemap;
   private collisionLayers: Phaser.Tilemaps.TilemapLayer[] = [];
@@ -66,6 +95,7 @@ export class WorldScene extends Phaser.Scene {
   init(data: WorldSceneInit) {
     this.slug = data.sceneSlug;
     this.loadMap = data.loadMap;
+    this.loadCharacter = data.loadCharacter;
     this.onTileChange = data.onTileChange;
   }
 
@@ -83,7 +113,7 @@ export class WorldScene extends Phaser.Scene {
     const registry = await registerSheetsForMap(this, usedSheets);
 
     this.buildTilemap(data, registry);
-    this.buildPlayer(data);
+    await this.buildPlayer(data);
     this.buildCamera(data);
     this.buildInput();
   }
@@ -200,22 +230,41 @@ export class WorldScene extends Phaser.Scene {
   // Jugador y cámara
   // -------------------------------------------------------------------------
 
-  private buildPlayer(data: WorldMapData) {
+  private async buildPlayer(data: WorldMapData) {
     const spawnX = ((data.spawnX ?? 2) + 0.5) * TILE_PX * WORLD_SCALE;
     const spawnY = ((data.spawnY ?? 2) + 0.5) * TILE_PX * WORLD_SCALE;
 
-    // Marcador provisional. La composición del personaje LPC (12 capas
-    // apiladas: cuerpo, pelo, ropa…) es el siguiente paso; se hace componiendo
-    // las capas en UNA textura en vez de apilar divs como hasta ahora.
-    const g = this.make.graphics({ x: 0, y: 0 }, false);
-    g.fillStyle(0x4b2d8e, 1);
-    g.fillRoundedRect(0, 0, 28, 44, 6);
-    g.generateTexture('player-placeholder', 28, 44);
-    g.destroy();
+    const config = (await this.loadCharacter?.()) ?? null;
 
-    this.player = this.physics.add.sprite(spawnX, spawnY, 'player-placeholder');
+    if (config) {
+      this.textureKey = await buildCharacterTexture(this, config, true);
+      registerCharacterAnimations(this, this.textureKey);
+      this.player = this.physics.add.sprite(spawnX, spawnY, this.textureKey);
+
+      const wf = WIDTH_FACTOR[config.bodyType] ?? 1;
+      this.player.setScale(CHARACTER_SCALE * wf, CHARACTER_SCALE);
+      this.player.play(animKey(this.textureKey, 'idle', 's'));
+    } else {
+      // Sin sesión no hay personaje que componer. Se dibuja un marcador en vez
+      // de dejar la pantalla vacía, que parecería un fallo.
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      g.fillStyle(0x4b2d8e, 1);
+      g.fillRoundedRect(0, 0, 28, 44, 6);
+      g.generateTexture('player-placeholder', 28, 44);
+      g.destroy();
+      this.player = this.physics.add.sprite(spawnX, spawnY, 'player-placeholder');
+    }
+
     this.player.setDepth(1000);
     this.player.setCollideWorldBounds(true);
+
+    // La caja de colisión son los PIES, no el marco de 64×64: el personaje
+    // ocupa la parte baja del frame y el resto es aire. Con el marco entero,
+    // la cabeza chocaría con las paredes.
+    if (config) {
+      this.player.body?.setSize(20, 12);
+      (this.player.body as Phaser.Physics.Arcade.Body | undefined)?.setOffset(22, 48);
+    }
 
     for (const layer of this.collisionLayers) {
       this.physics.add.collider(this.player, layer);
@@ -278,9 +327,25 @@ export class WorldScene extends Phaser.Scene {
 
     player.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED);
 
-    if (vx !== 0 || vy !== 0) {
+    const moving = vx !== 0 || vy !== 0;
+    if (moving) {
       this.facing =
         Math.abs(vx) > Math.abs(vy) ? (vx > 0 ? 'e' : 'w') : vy > 0 ? 's' : 'n';
+    }
+
+    // Animar según el estado. Se compara la clave antes de llamar a `play`
+    // para no reiniciar el ciclo de pasos en cada frame, que dejaría al
+    // personaje congelado en su primer fotograma.
+    if (this.textureKey) {
+      const wanted = animKey(
+        this.textureKey,
+        moving ? 'walk' : 'idle',
+        this.facing as Direction,
+      );
+      if (wanted !== this.currentAnim) {
+        this.currentAnim = wanted;
+        player.play(wanted, true);
+      }
     }
 
     // Avisar solo al cambiar de tile: el guardado es una escritura en base de
