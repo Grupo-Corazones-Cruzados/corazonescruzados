@@ -15,3 +15,9 @@ juego_shot.png
 char_este.png
 char_norte.png
 juego_char.png
+
+# Godot: caché del editor y salida del export web.
+# El export incluye un wasm de ~37 MB; no va al repositorio.
+godot/.godot/
+godot/android/
+public/game/

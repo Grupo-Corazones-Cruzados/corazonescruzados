@@ -1,0 +1,34 @@
+; Proyecto Godot de GCC World — prueba de humo.
+;
+; Objetivo de esta prueba: comprobar DOS cosas antes de rehacer nada.
+;   1. Que el export web carga y va bien en un teléfono real (el móvil es
+;      requisito, y es justo donde Godot tiene riesgo: 7-19 MB de descarga y un
+;      problema de memoria en iOS abierto).
+;   2. Que la sesión de la app llega al juego. Al servirse desde el mismo
+;      dominio, las peticiones de Godot viajan con `credentials: same-origin`
+;      por defecto, así que la cookie httpOnly de sesión debería ir sola.
+
+config_version=5
+
+[application]
+
+config/name="GCC World"
+run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=960
+window/size/viewport_height=540
+; El arte es pixelado: sin esto el escalado lo emborrona.
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+; Compatibilidad en vez de Forward+: es lo que funciona de verdad en móvil y
+; en navegador. Forward+ no está soportado en web.
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0

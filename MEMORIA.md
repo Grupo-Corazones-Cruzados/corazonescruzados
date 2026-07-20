@@ -275,6 +275,29 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **JUEGO — GIRO A GODOT (2026-07-20, mismo día, posterior a lo de abajo):**
+  El usuario preguntó *"¿no hay otra opción que no sea Tiled para manejar todo en un mismo
+  lugar?"*. Se le presentaron 3 (mejorar su editor / Godot para todo / Tiled solo mapas) y
+  **eligió Godot para todo**, aceptando rehacer NPCs, diálogos y cinemáticas.
+  - **Lección de proceso:** se le preguntó "¿retiramos el editor de la app?" tratándolo como UNA
+    cosa, cuando son **cuatro** (`MapEditor` 6.341 líneas / `NpcEditor` 1.117 / `CinematicEditor`
+    910 / `SceneManagerEditor` 801) y **Tiled solo sustituye al primero**. Retirar los cuatro le
+    habría dejado sin poder crear NPCs ni cinemáticas salvo escribiendo JSON a mano. Se detectó y
+    se le advirtió ANTES de borrar nada. **Al proponer retirar algo, enumerar qué cubre cada pieza.**
+  - **Motivo real del usuario: quiere TODO EN UN MISMO LUGAR.** Ese es su criterio rector, por
+    encima del peso del bundle. Godot es la única herramienta que lo unifica de verdad (mapas,
+    entidades, cinemáticas con línea de tiempo, audio).
+  - ⚠️ **Tensión no resuelta con sus propios requisitos, ya advertida dos veces:** (a) él exige
+    **móvil**, y Godot pesa **6,6 MB comprimidos solo el motor** (~7-19 MB el juego) con
+    `godot#70621` (OOM en iOS) **abierto**; (b) quiere **las mejores sombras**, y `godot#76266`
+    (iluminación 2D sin pixel-snapping en juegos escalados) está **abierto y sin asignar**.
+  - **PRUEBA DE HUMO ANTES DE REHACER NADA** (en curso): proyecto mínimo en `godot/` que se exporta
+    a web, se sirve desde la app y **se abre en el teléfono real del usuario**. Verifica a la vez
+    (1) que carga y va fluido en móvil y (2) que la **cookie de sesión llega** (petición a ruta
+    relativa `/api/game/stages`; al ser mismo origen, `HTTPRequest` manda `same-origin` por
+    defecto). **NO se borra el trabajo de Phaser hasta que la prueba pase** — es la red de seguridad.
+  - Instalado **Godot 4.7.1** (`/Applications/Godot.app` + CLI en `/opt/homebrew/bin/godot`).
+    Las plantillas de exportación van aparte (~1 GB, `.tpz` de GitHub releases).
 - **JUEGO — decisiones del usuario y primer bloque APLICADO (2026-07-20):**
   - **Se elige la opción A: Phaser 4 + Tiled** (editor de escritorio). El usuario levantó la
     restricción de "todo en navegador": descargar herramientas y subir datos le parece bien.
