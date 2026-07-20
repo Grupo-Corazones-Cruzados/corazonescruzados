@@ -7,6 +7,8 @@
     "dev:https": "node server.cjs",
     "build": "prisma generate && next build",
     "start": "next start -p $PORT",
+    "migrate": "node scripts/migrate.mjs",
+    "migrate:status": "node scripts/migrate.mjs --status",
     "postinstall": "prisma generate"
   },
   "dependencies": {

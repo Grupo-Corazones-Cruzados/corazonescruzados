@@ -326,6 +326,13 @@ export default function CharacterGameplay({
   // scene-scoped fetch. `pendingSpawnRef` carries spawn coords through
   // a transition swap (when set, applied on next loadScene).
   const [currentScene, setCurrentScene] = useState<string>(DEFAULT_SCENE_SLUG);
+  // El servidor exige saber en qué escena ocurre cada recogida (valida la
+  // colocación contra el mapa real). pickupCheck corre dentro de un updater de
+  // estado, así que necesita un ref y no el valor capturado del render.
+  const currentSceneRef = useRef<string>(DEFAULT_SCENE_SLUG);
+  useEffect(() => {
+    currentSceneRef.current = currentScene;
+  }, [currentScene]);
   const [sceneMeta, setSceneMeta] = useState<SceneMeta | null>(null);
   const [transitions, setTransitions] = useState<Transition[]>([]);
   const transitionsRef = useRef<Transition[]>([]);
@@ -474,8 +481,9 @@ export default function CharacterGameplay({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        sceneSlug: currentSceneRef.current,
         placementId: item.id,
-        itemId: item.itemId,
+        // El itemId ya no se envía: lo decide el servidor leyendo el mapa.
       }),
     })
       .then((r) => r.json())
@@ -796,6 +804,34 @@ export default function CharacterGameplay({
   // default "place here" position in the NPC editor).
   const playerTileX = Math.floor((pos.x + HALF_W) / TILE_PX_DISPLAY);
   const playerTileY = Math.floor((pos.y + HALF_H) / TILE_PX_DISPLAY);
+
+  // Persistir la posición al cambiar de tile (no por frame: es una escritura en
+  // base de datos). El servidor la usa para validar que una recogida ocurre
+  // cerca del objeto, así que sin esto las recogidas se rechazan. También es lo
+  // que permitirá retomar la partida donde se dejó.
+  const lastSavedTileRef = useRef<string>('');
+  useEffect(() => {
+    if (!Number.isFinite(playerTileX) || !Number.isFinite(playerTileY)) return;
+    const key = `${currentScene}:${playerTileX},${playerTileY}`;
+    if (lastSavedTileRef.current === key) return;
+    lastSavedTileRef.current = key;
+    const t = setTimeout(() => {
+      fetch('/api/world/position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sceneSlug: currentScene,
+          x: playerTileX,
+          y: playerTileY,
+          facing: direction,
+        }),
+      }).catch(() => undefined);
+    }, 150);
+    return () => clearTimeout(t);
+    // `direction` se lee pero no dispara el guardado: solo interesa cuando ya
+    // cambió el tile, y añadirlo a las deps reenviaría en cada giro en el sitio.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentScene, playerTileX, playerTileY]);
 
   // Real lights (from DB) + per-prop synthetic lights + the equipped
   // item's light (if any). Synthetic ids are negative so they never

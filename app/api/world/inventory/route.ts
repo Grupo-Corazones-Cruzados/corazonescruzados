@@ -1,6 +1,8 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { getAuthedClient } from '@/lib/world/auth';
+import { validatePickup } from '@/lib/game/pickup';
+import { logAction } from '@/lib/game/ledger';
 
 export async function GET() {
   try {
@@ -25,8 +27,15 @@ export async function GET() {
   }
 }
 
-// POST: pick up an item placement.
-// Body: { placementId: string, itemId: string }
+/** Tope de tipos distintos en el inventario. Se aplica en el servidor: el
+ *  cliente ya lo comprobaba, pero esa comprobación no vale como defensa. */
+const MAX_INVENTORY_SLOTS = 10;
+
+// POST: recoger un objeto colocado en el mapa.
+// Body: { sceneSlug: string, placementId: string }
+//
+// El `itemId` YA NO se acepta del cliente: lo decide el servidor leyendo el
+// mapa. Antes se confiaba en él, lo que permitía inventarse cualquier objeto.
 export async function POST(req: Request) {
   try {
     const me = await getAuthedClient();
@@ -35,13 +44,22 @@ export async function POST(req: Request) {
         { error: 'No autenticado' },
         { status: 401 },
       );
-    const { placementId, itemId } = await req.json();
-    if (typeof placementId !== 'string' || typeof itemId !== 'string') {
+    const body = await req.json();
+    const placementId = body?.placementId;
+    const sceneSlug = body?.sceneSlug;
+    if (typeof placementId !== 'string' || typeof sceneSlug !== 'string') {
       return NextResponse.json(
-        { error: 'placementId e itemId requeridos' },
+        { error: 'sceneSlug y placementId requeridos' },
         { status: 400 },
       );
     }
+
+    const check = await validatePickup(me.id, sceneSlug, placementId);
+    if (!check.ok) {
+      await logAction(me.id, 'pickup', { sceneSlug, placementId }, false, check.reason);
+      return NextResponse.json({ error: 'Recogida no válida' }, { status: 403 });
+    }
+    const itemId = check.itemId;
 
     const r = await pool.query(
       `SELECT inventory, picked_items FROM gcc_world.clients WHERE id = $1`,
@@ -58,6 +76,13 @@ export async function POST(req: Request) {
       });
     }
     const inv: Record<string, number> = { ...(row?.inventory ?? {}) };
+    if (!(itemId in inv) && Object.keys(inv).length >= MAX_INVENTORY_SLOTS) {
+      await logAction(me.id, 'pickup', { sceneSlug, placementId, itemId }, false, 'inventory_full');
+      return NextResponse.json(
+        { error: 'Inventario lleno', inventory: inv, pickedItems: picked },
+        { status: 409 },
+      );
+    }
     inv[itemId] = (inv[itemId] ?? 0) + 1;
     const newPicked = [...picked, placementId];
     await pool.query(

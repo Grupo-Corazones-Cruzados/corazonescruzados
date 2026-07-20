@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { addTicketIncomeToFinance } from '@/lib/finance';
+import { evaluateStages } from '@/lib/game/stages';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -75,6 +76,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       try {
         await addTicketIncomeToFinance(String(ticket.id), ticket.title, Number(ticket.estimated_cost) || 0);
       } catch (finErr: any) { console.error('Finance ticket registration error:', finErr.message); }
+    }
+
+    // Cerrar un ticket puede abrir una etapa del juego (regla 'primer-ticket').
+    // Se reevalúa aquí para que el desbloqueo quede registrado en el momento en
+    // que ocurre el hecho real, y no la próxima vez que el usuario entre a jugar.
+    if (ticket.status === 'completed' && ticket.client_id) {
+      try {
+        await evaluateStages(Number(ticket.client_id));
+      } catch (stageErr: any) {
+        // Nunca debe impedir cerrar el ticket: el desbloqueo se recuperaría
+        // igualmente al consultar /api/game/stages.
+        console.error('Stage evaluation error:', stageErr.message);
+      }
     }
 
     return NextResponse.json({ data: ticket });
