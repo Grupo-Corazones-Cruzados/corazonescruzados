@@ -11,7 +11,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 
@@ -51,7 +51,6 @@ export default function TicketDetailPage() {
   const { user } = useAuth();
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'resumen' | 'acciones' | 'propuestas'>('resumen');
   const [bids, setBids] = useState<any[]>([]);
   const [proposalText, setProposalText] = useState('');
   const [sendingBid, setSendingBid] = useState(false);
@@ -530,23 +529,21 @@ export default function TicketDetailPage() {
   const isOwner = !!ticket.user_id && String(ticket.user_id) === String(user?.id);
   const myBid = bids.find((b: any) => b.member_id === user?.member_id);
   const canBid = isOpen && !isOwner && !!user?.member_id;
-  const activeTab = tab === 'acciones' && showActions ? 'acciones'
-    : tab === 'propuestas' && isOpen ? 'propuestas'
-    : 'resumen';
   // Completar y FACTURAR es exclusivo del admin (regla de negocio).
   const canCompleteTicket = ticket.status === 'confirmed' && isAdmin;
 
-  const SectionRailItem = ({ active, Icon, label, count, onClick }: any) => (
-    <button onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}>
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-      {count !== undefined && (
-        <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count}</span>
-      )}
-    </button>
+  // Cabecera de sección reutilizable dentro del panel unificado (icono + título + contador opcional).
+  const SectionHead = ({ Icon, title, count, action }: any) => (
+    <div className="flex items-center justify-between gap-2 mb-3">
+      <div className="flex items-center gap-2 min-w-0">
+        <Icon className="w-4 h-4 text-accent shrink-0" />
+        <h3 className="text-[12px] font-semibold text-digi-text uppercase tracking-wide truncate" style={df}>{title}</h3>
+        {count !== undefined && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/10 text-accent tabular-nums shrink-0">{count}</span>
+        )}
+      </div>
+      {action}
+    </div>
   );
 
   // Editor de días de trabajo, INLINE dentro de la tarjeta "Días de trabajo" (no cambia de página).
@@ -725,90 +722,36 @@ export default function TicketDetailPage() {
           </div>
         </div>
       ) : (
-        /* ========== VIEW MODE (tabs + property rail) ========== */
+        /* ========== VIEW MODE — panel unificado (sin pestañas) + property rail ========== */
         <div className="flex flex-col lg:flex-row gap-4 items-start">
-          {/* Section rail */}
-          <aside className="w-full lg:w-[200px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-            <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Secciones</p>
-            <div className="space-y-0.5">
-              <SectionRailItem active={activeTab === 'resumen'} Icon={LayoutList} label="Resumen" onClick={() => setTab('resumen')} />
-              {showActions && (
-                <SectionRailItem active={activeTab === 'acciones'} Icon={ListChecks} label="Acciones"
-                  count={(ticket.actions || []).length} onClick={() => setTab('acciones')} />
-              )}
-              {isOpen && (
-                <SectionRailItem active={activeTab === 'propuestas'} Icon={Send} label="Propuestas"
-                  count={bids.length} onClick={() => setTab('propuestas')} />
-              )}
-            </div>
-          </aside>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0 w-full">
-            {activeTab === 'resumen' && (
-              <div className="space-y-4">
-                {ticket.open_for_talent && (
-                  <div className="bg-digi-card border border-accent/30 rounded-lg p-4 shadow-sm">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <DoorOpen className="w-4 h-4 text-accent" />
-                      <h3 className="text-[12px] font-semibold text-digi-text" style={df}>Abierto por talento</h3>
-                    </div>
-                    <p className="text-[11.5px] text-digi-muted mb-2" style={mf}>Un miembro con al menos uno de los talentos requeridos puede tomar este ticket de inmediato.</p>
-                    {(ticket.required_talents || []).length > 0 && (
-                      <div className="flex items-center gap-1 flex-wrap mb-2">
-                        <Sparkles className="w-3.5 h-3.5 text-digi-muted shrink-0" />
-                        {(ticket.required_talents || []).map((t: string) => (
-                          <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded bg-black/[0.05] text-digi-text" style={mf}>{t}</span>
-                        ))}
-                      </div>
-                    )}
-                    {!isOwner && !!user?.member_id && (
-                      <button onClick={takeByTalent} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md px-3 py-1.5" style={mf}>
-                        <Check className="w-3.5 h-3.5" /> Tomar este ticket
-                      </button>
-                    )}
-                    {isOwner && <p className="text-[10.5px] text-digi-muted" style={mf}>Estás esperando a que un miembro con el talento lo tome.</p>}
-                  </div>
-                )}
-                {ticket.description && (
-                  <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
-                    <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-2" style={pf}>Descripción</h3>
-                    <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{ticket.description}</p>
-                  </div>
-                )}
-                <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Días de trabajo</h3>
-                    {canEdit && !isClosed && !editingSlots && (
-                      <button onClick={startEditSlots} className="text-[10px] text-accent border border-digi-border rounded px-2 py-1 hover:bg-accent/5 transition-colors" style={pf}>Editar días</button>
-                    )}
-                  </div>
-                  {editingSlots ? (
-                    renderSlotEditor()
-                  ) : timeSlots.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {timeSlots.map((slot: any, i: number) => (
-                        <div key={i} className={`px-2.5 py-1.5 border rounded text-center ${slot.is_event ? 'border-accent/40 bg-accent-light' : 'border-digi-border bg-[#faf9f8]'}`}>
-                          {slot.is_event && (
-                            <span className="inline-block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent" style={mf}>Evento</span>
-                          )}
-                          <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
-                          {slot.start_time && <p className="text-[11px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
-                          {slot.is_event && slot.meeting_url && (
-                            <a href={slot.meeting_url} target="_blank" rel="noopener noreferrer"
-                              className="inline-block mt-1 text-[10.5px] font-medium text-accent hover:underline" style={mf}>Unirse (Meet)</a>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-digi-muted" style={mf}>Sin días asignados</p>
-                  )}
+          {/* Columna principal: TODO en un solo espacio (resumen + acciones combinados) */}
+          <div className="flex-1 min-w-0 w-full space-y-4">
+            {ticket.open_for_talent && (
+              <div className="bg-digi-card border border-accent/30 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <DoorOpen className="w-4 h-4 text-accent" />
+                  <h3 className="text-[12px] font-semibold text-digi-text" style={df}>Abierto por talento</h3>
                 </div>
+                <p className="text-[11.5px] text-digi-muted mb-2" style={mf}>Un miembro con al menos uno de los talentos requeridos puede tomar este ticket de inmediato.</p>
+                {(ticket.required_talents || []).length > 0 && (
+                  <div className="flex items-center gap-1 flex-wrap mb-2">
+                    <Sparkles className="w-3.5 h-3.5 text-digi-muted shrink-0" />
+                    {(ticket.required_talents || []).map((t: string) => (
+                      <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded bg-black/[0.05] text-digi-text" style={mf}>{t}</span>
+                    ))}
+                  </div>
+                )}
+                {!isOwner && !!user?.member_id && (
+                  <button onClick={takeByTalent} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md px-3 py-1.5" style={mf}>
+                    <Check className="w-3.5 h-3.5" /> Tomar este ticket
+                  </button>
+                )}
+                {isOwner && <p className="text-[10.5px] text-digi-muted" style={mf}>Estás esperando a que un miembro con el talento lo tome.</p>}
               </div>
             )}
 
-            {activeTab === 'acciones' && (() => {
+            {/* ── PANEL DE TRABAJO: descripción + días + registro/sesiones, todo en una tarjeta ── */}
+            {(() => {
               const estimated = Number(ticket.estimated_cost) || 0;
               const actions = ticket.actions || [];
               const total = Number(ticket.actions_total) || 0;
@@ -821,101 +764,148 @@ export default function TicketDetailPage() {
               const runningSession = actions.find((a: any) => a.session_started_at && !a.session_ended_at);
               return (
                 <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
-                  {estimated > 0 && (
-                    <div className="px-4 pt-4">
-                      <div className="flex items-center justify-between text-[11px] mb-1.5" style={mf}>
-                        <span className="text-digi-muted">Presupuesto</span>
-                        <span className="text-digi-text">${fmt2(total)} / ${fmt2(estimated)} · disp. <span className={remaining <= 0 ? 'text-red-500' : 'text-green-600'}>${fmt2(remaining)}</span></span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-[#edebe9] overflow-hidden">
-                        <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
-                      </div>
+                  {/* Descripción */}
+                  {ticket.description && (
+                    <div className="p-4 border-b border-digi-border">
+                      <SectionHead Icon={LayoutList} title="Descripción" />
+                      <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{ticket.description}</p>
                     </div>
                   )}
-                  {/* Sesión en vivo ("inicio ahora"): inicia reunión + cronómetro; cobra el tiempo real. */}
-                  {canManageActions && (
-                    <div className="mx-2 mt-3 mb-1 rounded-md border border-accent/25 bg-accent-light/60 p-3">
-                      {runningSession ? (
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-semibold text-accent flex items-center gap-1.5" style={mf}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Sesión en curso
-                            </p>
-                            <p className="text-[20px] font-bold text-digi-text tabular-nums leading-tight" style={df}>{elapsedLabel(runningSession.session_started_at)}</p>
-                            {serviceRate > 0 && (
-                              <p className="text-[10px] text-digi-muted" style={mf}>
-                                ${fmt2(serviceRate)}/h · llevas ${fmt2((Math.max(0, (Date.now() - new Date(runningSession.session_started_at).getTime()) / 1000) / 3600) * serviceRate)}
-                              </p>
+
+                  {/* Días de trabajo */}
+                  <div className="p-4 border-b border-digi-border">
+                    <SectionHead Icon={CalendarDays} title="Días de trabajo" count={timeSlots.length || undefined}
+                      action={canEdit && !isClosed && !editingSlots ? (
+                        <button onClick={startEditSlots} className="text-[10px] text-accent border border-digi-border rounded px-2 py-1 hover:bg-accent/5 transition-colors" style={pf}>Editar días</button>
+                      ) : undefined} />
+                    {editingSlots ? (
+                      renderSlotEditor()
+                    ) : timeSlots.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {timeSlots.map((slot: any, i: number) => (
+                          <div key={i} className={`px-2.5 py-1.5 border rounded text-center ${slot.is_event ? 'border-accent/40 bg-accent-light' : 'border-digi-border bg-[#faf9f8]'}`}>
+                            {slot.is_event && (
+                              <span className="inline-block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent" style={mf}>Evento</span>
+                            )}
+                            <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
+                            {slot.start_time && <p className="text-[11px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
+                            {slot.is_event && slot.meeting_url && (
+                              <a href={slot.meeting_url} target="_blank" rel="noopener noreferrer"
+                                className="inline-block mt-1 text-[10.5px] font-medium text-accent hover:underline" style={mf}>Unirse (Meet)</a>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            {runningSession.meeting_url && (
-                              <a href={runningSession.meeting_url} target="_blank" rel="noopener noreferrer" className={BTN_SECONDARY}>Unirse (Meet)</a>
-                            )}
-                            <button onClick={() => handleFinishSession(runningSession.id)} disabled={sessionBusy} className={`${BTN_PRIMARY} disabled:opacity-50`}>
-                              <Check className="w-4 h-4" /> {sessionBusy ? '...' : 'Terminar sesión'}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <div className="min-w-0">
-                            <p className="text-[12px] font-semibold text-digi-text" style={mf}>Iniciar sesión ahora</p>
-                            <p className="text-[10.5px] text-digi-muted" style={mf}>
-                              {serviceRate > 0
-                                ? `Crea la reunión (Meet) e inicia el cronómetro. Se cobra el tiempo real a $${fmt2(serviceRate)}/h.`
-                                : 'El servicio del ticket no tiene precio por hora definido.'}
-                            </p>
-                          </div>
-                          <button onClick={handleStartSession} disabled={sessionBusy || serviceRate <= 0} className={`${BTN_PRIMARY} disabled:opacity-50`}>
-                            {sessionBusy ? '...' : 'Iniciar sesión ahora'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="p-2">
-                    {actions.length > 0 ? actions.map((a: any) => {
-                      const isRunning = a.session_started_at && !a.session_ended_at;
-                      return (
-                      <div key={a.id} className="group flex items-center gap-3 px-3 py-2 rounded hover:bg-[#f3f2f1] transition-colors">
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isRunning ? 'bg-red-500 animate-pulse' : 'bg-accent'}`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[12px] text-digi-text break-words" style={mf}>{a.description}</p>
-                          <p className="text-[10px] text-digi-muted" style={mf}>{new Date(a.created_at).toLocaleDateString()}</p>
-                        </div>
-                        {isRunning ? (
-                          <span className="text-[12px] font-semibold text-accent shrink-0 tabular-nums" style={mf}>{elapsedLabel(a.session_started_at)}</span>
-                        ) : (
-                          <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${fmt2(Number(a.cost))}</span>
-                        )}
-                        {canManageActions && (
-                          <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 transition-opacity shrink-0"><X className="w-3.5 h-3.5" /></button>
-                        )}
+                        ))}
                       </div>
-                      );
-                    }) : (
-                      <p className="text-[11px] text-digi-muted px-3 py-5 text-center" style={mf}>Sin acciones registradas</p>
+                    ) : (
+                      <p className="text-[11px] text-digi-muted" style={mf}>Sin días asignados</p>
                     )}
                   </div>
-                  {canManageActions && (
-                    estimated <= 0 ? (
-                      <p className="text-[11px] text-amber-600 px-4 pb-4" style={mf}>Define un costo estimado en el ticket para registrar acciones.</p>
-                    ) : budgetExhausted ? (
-                      <p className="text-[11px] text-amber-600 px-4 pb-4" style={mf}>Presupuesto agotado. No puedes agregar más acciones.</p>
-                    ) : (
-                      <div className="border-t border-digi-border p-3 flex flex-col sm:flex-row gap-2 sm:items-end">
-                        <div className="flex-1"><PixelInput label="Nueva acción" value={actionForm.description} onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })} placeholder="Qué se hizo..." /></div>
-                        <div className="w-full sm:w-36"><PixelInput label={`Costo (máx $${fmt2(remaining)})`} type="number" value={actionForm.cost} onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })} placeholder="0.00" /></div>
-                        <button onClick={handleAddAction} disabled={savingAction || !actionForm.description.trim() || !actionForm.cost} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50 shrink-0">{savingAction ? '...' : 'Agregar'}</button>
+
+                  {/* Registro de trabajo y sesiones (antes pestaña "Acciones") */}
+                  {showActions && (
+                    <div className="p-4">
+                      <SectionHead Icon={ListChecks} title="Registro de trabajo" count={actions.length || undefined} />
+
+                      {estimated > 0 && (
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between text-[11px] mb-1.5" style={mf}>
+                            <span className="text-digi-muted">Presupuesto</span>
+                            <span className="text-digi-text">${fmt2(total)} / ${fmt2(estimated)} · disp. <span className={remaining <= 0 ? 'text-red-500' : 'text-green-600'}>${fmt2(remaining)}</span></span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-[#edebe9] overflow-hidden">
+                            <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Sesión en vivo ("inicio ahora"): inicia reunión + cronómetro; cobra el tiempo real. */}
+                      {canManageActions && (
+                        <div className="mb-2 rounded-md border border-accent/25 bg-accent-light/60 p-3">
+                          {runningSession ? (
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="min-w-0">
+                                <p className="text-[11px] font-semibold text-accent flex items-center gap-1.5" style={mf}>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Sesión en curso
+                                </p>
+                                <p className="text-[20px] font-bold text-digi-text tabular-nums leading-tight" style={df}>{elapsedLabel(runningSession.session_started_at)}</p>
+                                {serviceRate > 0 && (
+                                  <p className="text-[10px] text-digi-muted" style={mf}>
+                                    ${fmt2(serviceRate)}/h · llevas ${fmt2((Math.max(0, (Date.now() - new Date(runningSession.session_started_at).getTime()) / 1000) / 3600) * serviceRate)}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {runningSession.meeting_url && (
+                                  <a href={runningSession.meeting_url} target="_blank" rel="noopener noreferrer" className={BTN_SECONDARY}>Unirse (Meet)</a>
+                                )}
+                                <button onClick={() => handleFinishSession(runningSession.id)} disabled={sessionBusy} className={`${BTN_PRIMARY} disabled:opacity-50`}>
+                                  <Check className="w-4 h-4" /> {sessionBusy ? '...' : 'Terminar sesión'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="min-w-0">
+                                <p className="text-[12px] font-semibold text-digi-text" style={mf}>Iniciar sesión ahora</p>
+                                <p className="text-[10.5px] text-digi-muted" style={mf}>
+                                  {serviceRate > 0
+                                    ? `Crea la reunión (Meet) e inicia el cronómetro. Se cobra el tiempo real a $${fmt2(serviceRate)}/h.`
+                                    : 'El servicio del ticket no tiene precio por hora definido.'}
+                                </p>
+                              </div>
+                              <button onClick={handleStartSession} disabled={sessionBusy || serviceRate <= 0} className={`${BTN_PRIMARY} disabled:opacity-50`}>
+                                {sessionBusy ? '...' : 'Iniciar sesión ahora'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="-mx-1">
+                        {actions.length > 0 ? actions.map((a: any) => {
+                          const isRunning = a.session_started_at && !a.session_ended_at;
+                          return (
+                          <div key={a.id} className="group flex items-center gap-3 px-3 py-2 rounded hover:bg-[#f3f2f1] transition-colors">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isRunning ? 'bg-red-500 animate-pulse' : 'bg-accent'}`} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] text-digi-text break-words" style={mf}>{a.description}</p>
+                              <p className="text-[10px] text-digi-muted" style={mf}>{new Date(a.created_at).toLocaleDateString()}</p>
+                            </div>
+                            {isRunning ? (
+                              <span className="text-[12px] font-semibold text-accent shrink-0 tabular-nums" style={mf}>{elapsedLabel(a.session_started_at)}</span>
+                            ) : (
+                              <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${fmt2(Number(a.cost))}</span>
+                            )}
+                            {canManageActions && (
+                              <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 transition-opacity shrink-0"><X className="w-3.5 h-3.5" /></button>
+                            )}
+                          </div>
+                          );
+                        }) : (
+                          <p className="text-[11px] text-digi-muted px-3 py-5 text-center" style={mf}>Sin acciones registradas</p>
+                        )}
                       </div>
-                    )
+
+                      {canManageActions && (
+                        estimated <= 0 ? (
+                          <p className="text-[11px] text-amber-600 pt-2" style={mf}>Define un costo estimado en el ticket para registrar acciones.</p>
+                        ) : budgetExhausted ? (
+                          <p className="text-[11px] text-amber-600 pt-2" style={mf}>Presupuesto agotado. No puedes agregar más acciones.</p>
+                        ) : (
+                          <div className="border-t border-digi-border pt-3 mt-2 flex flex-col sm:flex-row gap-2 sm:items-end">
+                            <div className="flex-1"><PixelInput label="Nueva acción" value={actionForm.description} onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })} placeholder="Qué se hizo..." /></div>
+                            <div className="w-full sm:w-36"><PixelInput label={`Costo (máx $${fmt2(remaining)})`} type="number" value={actionForm.cost} onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })} placeholder="0.00" /></div>
+                            <button onClick={handleAddAction} disabled={savingAction || !actionForm.description.trim() || !actionForm.cost} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50 shrink-0">{savingAction ? '...' : 'Agregar'}</button>
+                          </div>
+                        )
+                      )}
+                    </div>
                   )}
                 </div>
               );
             })()}
 
-            {activeTab === 'propuestas' && (
+            {isOpen && (
               <div className="space-y-3">
                 {canBid && !myBid && (
                   <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">

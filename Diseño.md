@@ -541,6 +541,17 @@ soportan variables CSS ni `<style>`).
   viejo estilo videojuego (Courier, fondo oscuro, morado `#7B5FBF`, bordes 2px pixel).
 
 ## Desviaciones detectadas y resolución
+- **2026-07-21 — Detalle de ticket: se eliminaron las pestañas y se unificó en un solo panel.**
+  `tickets/[id]` usaba un rail de secciones con pestañas (Resumen / Acciones / Propuestas) y
+  `SectionRailItem` local. Por pedido del cliente se **fusionó Resumen + Acciones en un único
+  panel** (una sola tarjeta con sub-secciones separadas por `border-b`: Descripción → Días de
+  trabajo → Registro de trabajo/sesiones), sin componente de pestañas. Propuestas queda como
+  tarjeta apilada debajo cuando el ticket está abierto. Se introdujo un encabezado de sección
+  reutilizable **`SectionHead`** (icono accent + título display en mayúsculas + burbuja de conteo
+  opcional + slot de acción a la derecha) como patrón para agrupar contenido dentro de una tarjeta
+  sin pestañas. El **property rail** derecho (metadatos + "Acciones rápidas") se mantiene. Verificado
+  tsc + build. Nota: `SectionHead` es hoy local a `tickets/[id]`; si se reusa en otra página,
+  extraerlo a un componente compartido (principio de diseño vinculado).
 - **2026-07-19 — El mapa de iconos de dimensión estaba duplicado en 3 archivos.** `DIM_ICON`
   (laboral/corporal/mental/social → lucide) se reescribía a mano en `mi-dia/page.tsx`,
   `HorarioDeVidaSystem.tsx` y `KnowledgeGraph.tsx` (como `ICON_COMP`, superset con ticket/proyecto).
