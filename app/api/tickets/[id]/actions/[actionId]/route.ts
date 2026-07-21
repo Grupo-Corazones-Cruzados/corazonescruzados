@@ -1,6 +1,8 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureTicketActionColumns, loadTicketForSession, canManageTicket } from '@/lib/tickets/schema';
+import { isGoogleWorkspaceConfigured, deleteMeetEvent } from '@/lib/integrations/google-workspace';
 
 export async function DELETE(
   _req: NextRequest,
@@ -12,25 +14,29 @@ export async function DELETE(
 
     const { id, actionId } = await params;
 
-    const { rows: tRows } = await pool.query(
-      `SELECT member_id FROM gcc_world.tickets WHERE id = $1`,
-      [id]
-    );
-    const ticket = tRows[0];
+    const ticket = await loadTicketForSession(id);
     if (!ticket) return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 });
-
-    const isAdmin = user.role === 'admin';
-    let isAssignedMember = false;
-    if (user.role === 'member') {
-      const { rows: mRows } = await pool.query(
-        `SELECT member_id FROM gcc_world.users WHERE id = $1 LIMIT 1`,
-        [user.userId]
-      );
-      const memberId = mRows[0]?.member_id ? Number(mRows[0].member_id) : null;
-      isAssignedMember = !!memberId && Number(ticket.member_id) === memberId;
-    }
-    if (!isAdmin && !isAssignedMember) {
+    if (!(await canManageTicket(user, ticket.member_id))) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
+    await ensureTicketActionColumns();
+
+    // Si la acción es una sesión, limpia su reunión de Meet y el evento del calendario.
+    const { rows: aRows } = await pool.query(
+      `SELECT meeting_event_id, calendar_event_id FROM gcc_world.ticket_actions
+        WHERE id = $1 AND ticket_id = $2`,
+      [actionId, id],
+    );
+    const action = aRows[0];
+    if (action?.meeting_event_id && isGoogleWorkspaceConfigured()) {
+      try { await deleteMeetEvent(action.meeting_event_id); }
+      catch (err: any) { console.error('Action Meet delete error:', err.message); }
+    }
+    if (action?.calendar_event_id) {
+      try {
+        await pool.query(`DELETE FROM gcc_world.member_calendar_events WHERE id = $1`, [action.calendar_event_id]);
+      } catch (err: any) { console.error('Action calendar delete error:', err.message); }
     }
 
     await pool.query(

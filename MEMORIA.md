@@ -2423,6 +2423,22 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Tickets: días "Evento" (Meet) + sesiones en vivo "inicio ahora" con cobro por tiempo (2026-07-21):**
+  En el detalle del ticket, los **días de trabajo** (`ticket_time_slots`) ahora pueden marcarse como
+  **Evento** (columnas nuevas `is_event`, `meeting_url`, `meeting_event_id`): al guardarlos con hora de
+  inicio/fin se crea una reunión de **Google Meet** que invita al **cliente** del ticket y al **miembro**
+  (`createMeetEvent`, horario Ecuador GMT-5, ISO vía offset fijo -05:00). El `PUT /time-slots` **conserva**
+  la reunión si el evento (fecha+horario) no cambió y **cancela** en Google las que desaparecen (evita
+  recrear Meets en cada guardado). Además, botón **"Iniciar sesión ahora"** en la pestaña Acciones
+  (`POST /api/tickets/[id]/sessions`): crea Meet + un evento en el **calendario in-app del miembro**
+  (`member_calendar_events`) + una **acción-cronómetro** `Sesión {fecha/hora}` (columnas nuevas en
+  `ticket_actions`: `session_started_at/ended_at`, `meeting_url`, `meeting_event_id`, `calendar_event_id`).
+  Al **Terminar** (`PATCH /sessions/[actionId]`) el costo = **tiempo real × precio/hora del servicio**
+  (`services.base_price`, decisión del usuario 2026-07-21), se renombra la acción con rango+duración y se
+  ajusta el fin del evento del calendario. La sesión **puede superar** el `estimated_cost` (se avisa, no se
+  bloquea) — a diferencia de las acciones manuales que sí se topan. Helpers compartidos en
+  `lib/tickets/schema.ts` (ensurers idempotentes, `ecuadorWallclockToISO`, `formatEcuador`, `canManageTicket`,
+  `loadTicketForSession`). La tarifa/hora sale del **precio del servicio**, no de `estimated_cost/horas`.
 - **Correos de propuestas del calendario mostraban la hora del SERVIDOR, no la del miembro/cliente (2026-07-21):**
   Los correos de "Mi día" / calendario público (propuesta recibida, aceptada/rechazada, notificación a
   suscriptores) mostraban una hora incorrecta. Causa: `formatEmailDateTime` en `lib/integrations/email.ts`

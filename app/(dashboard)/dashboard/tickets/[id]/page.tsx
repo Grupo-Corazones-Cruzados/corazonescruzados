@@ -35,6 +35,14 @@ const STATUSES = [
 ];
 const STATUS_LABEL: Record<string, string> = Object.fromEntries(STATUSES.map((s) => [s.value, s.label]));
 
+/** Cronómetro en vivo "HH:MM:SS" desde un instante ISO hasta ahora. */
+function elapsedLabel(startISO: string): string {
+  const start = new Date(startISO).getTime();
+  const s = Math.max(0, Math.floor((Date.now() - start) / 1000));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+}
+
 type SelectedDates = string[];
 
 export default function TicketDetailPage() {
@@ -61,8 +69,19 @@ export default function TicketDetailPage() {
   // Time slots editing
   const [editingSlots, setEditingSlots] = useState(false);
   const [selectedDates, setSelectedDates] = useState<SelectedDates>([]);
+  // Config por día marcado como "Evento" (con reunión Meet): { date: { is_event, start_time, end_time } }
+  const [slotCfg, setSlotCfg] = useState<Record<string, { is_event: boolean; start_time: string; end_time: string }>>({});
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
   const [savingSlots, setSavingSlots] = useState(false);
+
+  // Sesiones en vivo ("inicio ahora")
+  const [sessionBusy, setSessionBusy] = useState(false);
+  // Tick de reloj para refrescar el cronómetro de la sesión en curso cada segundo.
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setNowTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // Delete confirm
   const [deleteModal, setDeleteModal] = useState(false);
@@ -391,43 +410,71 @@ export default function TicketDetailPage() {
   };
 
   // --- Time slots ---
+  // Construye el payload de días, validando que los eventos tengan horas coherentes.
+  const buildSlotsPayload = (): { date: string; is_event: boolean; start_time: string | null; end_time: string | null }[] | null => {
+    const out = [];
+    for (const d of selectedDates) {
+      const cfg = slotCfg[d];
+      if (cfg?.is_event) {
+        if (!cfg.start_time || !cfg.end_time) { toast.error(`El evento del ${d} necesita hora de inicio y fin`); return null; }
+        if (cfg.end_time <= cfg.start_time) { toast.error(`El evento del ${d}: la hora de fin debe ser posterior al inicio`); return null; }
+        out.push({ date: d, is_event: true, start_time: cfg.start_time, end_time: cfg.end_time });
+      } else {
+        out.push({ date: d, is_event: false, start_time: null, end_time: null });
+      }
+    }
+    return out;
+  };
+
   const startEditSlots = () => {
     const existing = (ticket.time_slots || []).map((s: any) => s.date?.split('T')[0]).filter(Boolean);
+    const cfg: Record<string, { is_event: boolean; start_time: string; end_time: string }> = {};
+    for (const s of (ticket.time_slots || [])) {
+      const d = s.date?.split('T')[0];
+      if (d) cfg[d] = { is_event: !!s.is_event, start_time: s.start_time || '', end_time: s.end_time || '' };
+    }
     setSelectedDates(existing);
+    setSlotCfg(cfg);
     setEditingSlots(true);
   };
 
   const handleSaveSlots = async () => {
     if (selectedDates.length === 0) { toast.error('Agrega al menos un dia'); return; }
+    const payload = buildSlotsPayload();
+    if (!payload) return;
     setSavingSlots(true);
     try {
       const res = await fetch(`/api/tickets/${id}/time-slots`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ time_slots: selectedDates.map(d => ({ date: d })) }),
+        body: JSON.stringify({ time_slots: payload }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error); }
       toast.success('Dias de trabajo actualizados');
       setEditingSlots(false);
       fetchTicket();
-    } catch { toast.error('Error al guardar dias'); }
+    } catch (e: any) { toast.error(e?.message || 'Error al guardar dias'); }
     finally { setSavingSlots(false); }
   };
 
   const handleAccept = () => {
     setSelectedDates([]);
+    setSlotCfg({});
     setEditingSlots(true);
   };
 
   const handleAcceptWithSlots = async () => {
     if (selectedDates.length === 0) { toast.error('Agrega al menos un dia de trabajo'); return; }
+    const payload = buildSlotsPayload();
+    if (!payload) return;
     setSavingSlots(true);
     try {
-      await fetch(`/api/tickets/${id}/time-slots`, {
+      const res = await fetch(`/api/tickets/${id}/time-slots`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ time_slots: selectedDates.map(d => ({ date: d })) }),
+        body: JSON.stringify({ time_slots: payload }),
       });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error); }
       await fetch(`/api/tickets/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -436,8 +483,34 @@ export default function TicketDetailPage() {
       toast.success('Ticket aceptado');
       setEditingSlots(false);
       fetchTicket();
-    } catch { toast.error('Error'); }
+    } catch (e: any) { toast.error(e?.message || 'Error'); }
     finally { setSavingSlots(false); }
+  };
+
+  // --- Sesiones en vivo ("inicio ahora") ---
+  const handleStartSession = async () => {
+    setSessionBusy(true);
+    try {
+      const res = await fetch(`/api/tickets/${id}/sessions`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error);
+      toast.success('Sesión iniciada');
+      await fetchTicket();
+    } catch (e: any) { toast.error(e?.message || 'Error al iniciar la sesión'); }
+    finally { setSessionBusy(false); }
+  };
+
+  const handleFinishSession = async (actionId: number) => {
+    setSessionBusy(true);
+    try {
+      const res = await fetch(`/api/tickets/${id}/sessions/${actionId}`, { method: 'PATCH' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error);
+      toast.success(`Sesión terminada · ${data.durationLabel} · $${fmt2(Number(data.cost))}`);
+      if (data.overBudget) toast.warning(`Se superó el presupuesto estimado en $${fmt2(Number(data.over))}`);
+      await fetchTicket();
+    } catch (e: any) { toast.error(e?.message || 'Error al terminar la sesión'); }
+    finally { setSessionBusy(false); }
   };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando ticket..." /></div>;
@@ -534,7 +607,13 @@ export default function TicketDetailPage() {
         const deadlineStr = ticket.deadline ? ticket.deadline.split('T')[0] : '';
         const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
         const dayNames = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
-        const toggleDate = (d: string) => setSelectedDates(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort());
+        const toggleDate = (d: string) => setSelectedDates(prev => {
+          if (prev.includes(d)) { setSlotCfg(c => { const n = { ...c }; delete n[d]; return n; }); return prev.filter(x => x !== d); }
+          setSlotCfg(c => c[d] ? c : { ...c, [d]: { is_event: false, start_time: '', end_time: '' } });
+          return [...prev, d].sort();
+        });
+        const setCfg = (d: string, patch: Partial<{ is_event: boolean; start_time: string; end_time: string }>) =>
+          setSlotCfg(c => ({ ...c, [d]: { ...(c[d] ?? { is_event: false, start_time: '', end_time: '' }), ...patch } }));
         const prevMonth = () => setCalMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
         const nextMonth = () => setCalMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
         const cells: (number | null)[] = [];
@@ -568,15 +647,38 @@ export default function TicketDetailPage() {
               })}
             </div>
             {selectedDates.length > 0 && (
-              <div className="border-t border-digi-border pt-2 mb-3">
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedDates.map(d => (
-                    <span key={d} className="text-[11px] px-2 py-0.5 rounded bg-accent-light border border-accent/30 text-accent flex items-center gap-1" style={mf}>
-                      {new Date(d + 'T12:00:00').toLocaleDateString('es', { day: '2-digit', month: 'short' })}
-                      <button onClick={() => toggleDate(d)} className="text-digi-muted hover:text-red-500">×</button>
-                    </span>
-                  ))}
-                </div>
+              <div className="border-t border-digi-border pt-2 mb-3 space-y-2">
+                {selectedDates.map(d => {
+                  const cfg = slotCfg[d] || { is_event: false, start_time: '', end_time: '' };
+                  return (
+                    <div key={d} className="border border-digi-border rounded-md p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[12px] font-medium text-digi-text" style={mf}>
+                          {new Date(d + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: '2-digit', month: 'short' })}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-1.5 text-[11px] text-digi-text cursor-pointer" style={mf}>
+                            <input type="checkbox" checked={cfg.is_event} onChange={(e) => setCfg(d, { is_event: e.target.checked })}
+                              className="accent-[var(--accent,#7c6cf5)]" />
+                            Evento (reunión Meet)
+                          </label>
+                          <button onClick={() => toggleDate(d)} className="text-digi-muted hover:text-red-500 text-[14px] leading-none">×</button>
+                        </div>
+                      </div>
+                      {cfg.is_event && (
+                        <div className="flex items-end gap-2 mt-2">
+                          <div className="flex-1"><PixelInput label="Inicio" type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} /></div>
+                          <div className="flex-1"><PixelInput label="Fin" type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} /></div>
+                        </div>
+                      )}
+                      {cfg.is_event && (
+                        <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
+                          Se creará una reunión de Google Meet invitando al cliente{ticket.client_name ? ` (${ticket.client_name})` : ''} y al miembro. Horario de Ecuador (GMT-5).
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
             <div className="flex gap-2">
@@ -684,9 +786,16 @@ export default function TicketDetailPage() {
                   {timeSlots.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {timeSlots.map((slot: any, i: number) => (
-                        <div key={i} className="px-2.5 py-1.5 border border-digi-border rounded bg-[#faf9f8] text-center">
+                        <div key={i} className={`px-2.5 py-1.5 border rounded text-center ${slot.is_event ? 'border-accent/40 bg-accent-light' : 'border-digi-border bg-[#faf9f8]'}`}>
+                          {slot.is_event && (
+                            <span className="inline-block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent" style={mf}>Evento</span>
+                          )}
                           <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
                           {slot.start_time && <p className="text-[11px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
+                          {slot.is_event && slot.meeting_url && (
+                            <a href={slot.meeting_url} target="_blank" rel="noopener noreferrer"
+                              className="inline-block mt-1 text-[10.5px] font-medium text-accent hover:underline" style={mf}>Unirse (Meet)</a>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -706,6 +815,8 @@ export default function TicketDetailPage() {
                 (isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id)) && !isClosed;
               const budgetExhausted = estimated > 0 && remaining <= 0;
               const pct = estimated > 0 ? Math.min(100, (total / estimated) * 100) : 0;
+              const serviceRate = Number(ticket.service_base_price) || 0;
+              const runningSession = actions.find((a: any) => a.session_started_at && !a.session_ended_at);
               return (
                 <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
                   {estimated > 0 && (
@@ -719,20 +830,69 @@ export default function TicketDetailPage() {
                       </div>
                     </div>
                   )}
+                  {/* Sesión en vivo ("inicio ahora"): inicia reunión + cronómetro; cobra el tiempo real. */}
+                  {canManageActions && (
+                    <div className="mx-2 mt-3 mb-1 rounded-md border border-accent/25 bg-accent-light/60 p-3">
+                      {runningSession ? (
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-semibold text-accent flex items-center gap-1.5" style={mf}>
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Sesión en curso
+                            </p>
+                            <p className="text-[20px] font-bold text-digi-text tabular-nums leading-tight" style={df}>{elapsedLabel(runningSession.session_started_at)}</p>
+                            {serviceRate > 0 && (
+                              <p className="text-[10px] text-digi-muted" style={mf}>
+                                ${fmt2(serviceRate)}/h · llevas ${fmt2((Math.max(0, (Date.now() - new Date(runningSession.session_started_at).getTime()) / 1000) / 3600) * serviceRate)}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {runningSession.meeting_url && (
+                              <a href={runningSession.meeting_url} target="_blank" rel="noopener noreferrer" className={BTN_SECONDARY}>Unirse (Meet)</a>
+                            )}
+                            <button onClick={() => handleFinishSession(runningSession.id)} disabled={sessionBusy} className={`${BTN_PRIMARY} disabled:opacity-50`}>
+                              <Check className="w-4 h-4" /> {sessionBusy ? '...' : 'Terminar sesión'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-semibold text-digi-text" style={mf}>Iniciar sesión ahora</p>
+                            <p className="text-[10.5px] text-digi-muted" style={mf}>
+                              {serviceRate > 0
+                                ? `Crea la reunión (Meet) e inicia el cronómetro. Se cobra el tiempo real a $${fmt2(serviceRate)}/h.`
+                                : 'El servicio del ticket no tiene precio por hora definido.'}
+                            </p>
+                          </div>
+                          <button onClick={handleStartSession} disabled={sessionBusy || serviceRate <= 0} className={`${BTN_PRIMARY} disabled:opacity-50`}>
+                            {sessionBusy ? '...' : 'Iniciar sesión ahora'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="p-2">
-                    {actions.length > 0 ? actions.map((a: any) => (
+                    {actions.length > 0 ? actions.map((a: any) => {
+                      const isRunning = a.session_started_at && !a.session_ended_at;
+                      return (
                       <div key={a.id} className="group flex items-center gap-3 px-3 py-2 rounded hover:bg-[#f3f2f1] transition-colors">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isRunning ? 'bg-red-500 animate-pulse' : 'bg-accent'}`} />
                         <div className="flex-1 min-w-0">
                           <p className="text-[12px] text-digi-text break-words" style={mf}>{a.description}</p>
                           <p className="text-[10px] text-digi-muted" style={mf}>{new Date(a.created_at).toLocaleDateString()}</p>
                         </div>
-                        <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${fmt2(Number(a.cost))}</span>
+                        {isRunning ? (
+                          <span className="text-[12px] font-semibold text-accent shrink-0 tabular-nums" style={mf}>{elapsedLabel(a.session_started_at)}</span>
+                        ) : (
+                          <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${fmt2(Number(a.cost))}</span>
+                        )}
                         {canManageActions && (
                           <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 transition-opacity shrink-0"><X className="w-3.5 h-3.5" /></button>
                         )}
                       </div>
-                    )) : (
+                      );
+                    }) : (
                       <p className="text-[11px] text-digi-muted px-3 py-5 text-center" style={mf}>Sin acciones registradas</p>
                     )}
                   </div>

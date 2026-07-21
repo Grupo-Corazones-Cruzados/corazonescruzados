@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { addTicketIncomeToFinance } from '@/lib/finance';
 import { evaluateStages } from '@/lib/game/stages';
+import { ensureTicketSlotColumns, ensureTicketActionColumns } from '@/lib/tickets/schema';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -10,18 +11,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id } = await params;
-    await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.ticket_time_slots (
-      id SERIAL PRIMARY KEY, ticket_id INT NOT NULL, date DATE NOT NULL,
-      start_time TEXT, end_time TEXT, status VARCHAR(20) DEFAULT 'scheduled', created_at TIMESTAMPTZ DEFAULT NOW()
-    )`);
-    await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.ticket_actions (
-      id SERIAL PRIMARY KEY, ticket_id INT NOT NULL, description TEXT NOT NULL,
-      cost NUMERIC(12,2) NOT NULL DEFAULT 0, created_by TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
-    )`);
+    await ensureTicketSlotColumns();
+    await ensureTicketActionColumns();
     const { rows } = await pool.query(
       `SELECT t.*, c.name as client_name, c.email as client_email,
               c.phone as client_phone, c.ruc as client_ruc, c.address as client_address,
-              m.name as member_name, s.name as service_name,
+              m.name as member_name, s.name as service_name, s.base_price as service_base_price,
               (SELECT json_agg(ts ORDER BY ts.date) FROM gcc_world.ticket_time_slots ts WHERE ts.ticket_id = t.id) as time_slots,
               (SELECT json_agg(ta ORDER BY ta.created_at) FROM gcc_world.ticket_actions ta WHERE ta.ticket_id = t.id) as actions,
               (SELECT COALESCE(SUM(cost), 0) FROM gcc_world.ticket_actions WHERE ticket_id = t.id) as actions_total
