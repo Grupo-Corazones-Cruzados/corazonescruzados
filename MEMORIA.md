@@ -275,6 +275,34 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **JUEGO — CONSTRUCCIÓN ARRANCADA en Godot: personaje "Violeta" caminando (2026-07-21).** El
+  usuario ya está desarrollando el juego real en el editor de Godot.
+  - **Personaje: "Violeta".** Spritesheet dibujado en Pixaki (iPad) en
+    `godot/assets/Sprites/Personajes/Violeta/Modo Oscuro/Violeta.png` (**384×96 px, celda 48×48**).
+    Convención de carpetas del usuario: `assets/Sprites/Personajes/<nombre>/<variante>/`.
+  - **Escena `godot/Main.tscn`** (escena principal del proyecto). Estructura:
+    `Violeta (Node2D) → CharacterBody2D [script Violeta.gd] → AnimatedSprite2D + CollisionShape2D`.
+  - **8 animaciones creadas** en el `AnimatedSprite2D`, nombradas en **minúscula**:
+    `caminar_abajo/arriba/derecha/izquierda` + `idle_abajo/arriba/derecha/izquierda`.
+  - **`godot/Violeta.gd`** (lo escribí yo): movimiento en 4 direcciones sobre `CharacterBody2D`
+    (`move_and_slide`), entrada **teclado** (`ui_*` = flechas) **+ táctil** (joystick relativo:
+    tocar y arrastrar). Elige animación por **eje dominante**; guarda la **última dirección** para la
+    pose de parado. Los nombres de animación son **`@export`** (editables en el Inspector, agrupados
+    "Caminar" / "Parado (idle)"). Es **a prueba de fallos**: si una animación de idle no existe, se
+    congela el fotograma sin error.
+  - ⚠️ **BUG detectado (2026-07-21) — ABAJO y ARRIBA cruzados en el Inspector del usuario:** en
+    `Main.tscn`, `anim_abajo="caminar_arriba"` y `anim_arriba="caminar_abajo"` (invertidos), igual con
+    los idle. Efecto: al caminar hacia abajo se ve la de espaldas y viceversa. **Hay que corregirlo en
+    el Inspector** (poner `anim_abajo=caminar_abajo`, `anim_arriba=caminar_arriba`, ídem idle).
+  - **LECCIÓN (Godot):** un script solo funciona en un nodo del **tipo del que hereda** (`extends
+    CharacterBody2D` → va en un `CharacterBody2D`). Y `$Hijo` busca un **hijo directo** con ese
+    nombre. El usuario primero puso el script en el Node2D raíz por error; se movió al CharacterBody2D.
+  - **Ejecutar en Godot:** `F6` (Fn+F6 en Mac) = escena actual; `F5` = proyecto (pide escena principal).
+  - ⚠️ **PENDIENTES del proyecto Godot (borrados por el usuario al limpiar):**
+    (1) **`export_presets.cfg` fue borrado** → `npm run juego:publicar` fallará hasta **recrear la
+    configuración de exportación Web** (preset "Web" → `../public/game/index.html`, sin hilos, sin PWA).
+    (2) Los **assets de prueba** (55 objetos + tiles) fueron **borrados** por el usuario (empezó
+    limpio); dibuja los suyos en Pixaki.
 - **JUEGO — DIRECCIÓN DE ARTE fijada (2026-07-20):** el juego será estilo **Guardian Tales**:
   vista **top-down 3/4** (NO cenital plano, NO isométrico — el suelo va en cuadrícula recta y los
   objetos se dibujan "de pie" mostrando su cara frontal + altura), con **movimiento en todas las
