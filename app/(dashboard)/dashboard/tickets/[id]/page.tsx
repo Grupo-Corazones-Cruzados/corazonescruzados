@@ -549,6 +549,99 @@ export default function TicketDetailPage() {
     </button>
   );
 
+  // Editor de días de trabajo, INLINE dentro de la tarjeta "Días de trabajo" (no cambia de página).
+  const renderSlotEditor = () => {
+    const { year, month } = calMonth;
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const deadlineStr = ticket.deadline ? ticket.deadline.split('T')[0] : '';
+    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const dayNames = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
+    const toggleDate = (d: string) => setSelectedDates(prev => {
+      if (prev.includes(d)) { setSlotCfg(c => { const n = { ...c }; delete n[d]; return n; }); return prev.filter(x => x !== d); }
+      setSlotCfg(c => c[d] ? c : { ...c, [d]: { is_event: false, start_time: '', end_time: '' } });
+      return [...prev, d].sort();
+    });
+    const setCfg = (d: string, patch: Partial<{ is_event: boolean; start_time: string; end_time: string }>) =>
+      setSlotCfg(c => ({ ...c, [d]: { ...(c[d] ?? { is_event: false, start_time: '', end_time: '' }), ...patch } }));
+    const prevMonth = () => setCalMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
+    const nextMonth = () => setCalMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+    return (
+      <div>
+        <div className="max-w-sm">
+          <div className="flex items-center justify-between mb-2">
+            <button onClick={prevMonth} className="p-1.5 text-digi-muted hover:text-accent border border-digi-border rounded hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+            <span className="text-[13px] font-semibold text-digi-text" style={mf}>{monthNames[month]} {year}</span>
+            <button onClick={nextMonth} className="p-1.5 text-digi-muted hover:text-accent border border-digi-border rounded hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {dayNames.map(d => <div key={d} className="text-center text-[10px] text-digi-muted py-1 font-medium" style={mf}>{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1 mb-3">
+            {cells.map((day, i) => {
+              if (day === null) return <div key={`e${i}`} />;
+              const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              const isSelected = selectedDates.includes(dateStr);
+              const isOutOfRange = dateStr < todayStr || (!!deadlineStr && dateStr > deadlineStr);
+              return (
+                <button key={dateStr} onClick={() => !isOutOfRange && toggleDate(dateStr)} disabled={isOutOfRange}
+                  className={`py-1.5 text-[12px] text-center rounded border transition-colors ${isSelected ? 'bg-accent border-accent text-white font-medium' : isOutOfRange ? 'border-transparent text-digi-muted/30 cursor-default' : 'border-digi-border/60 text-digi-text hover:border-accent hover:bg-accent-light'}`}
+                  style={mf}>{day}</button>
+              );
+            })}
+          </div>
+        </div>
+        {selectedDates.length > 0 && (
+          <div className="border-t border-digi-border pt-3 mb-3 space-y-2">
+            {selectedDates.map(d => {
+              const cfg = slotCfg[d] || { is_event: false, start_time: '', end_time: '' };
+              return (
+                <div key={d} className="border border-digi-border rounded-md p-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-[12px] font-medium text-digi-text" style={mf}>
+                      {new Date(d + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: '2-digit', month: 'short' })}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 text-[11px] text-digi-text cursor-pointer" style={mf}>
+                        <input type="checkbox" checked={cfg.is_event} onChange={(e) => setCfg(d, { is_event: e.target.checked })}
+                          className="accent-[var(--accent,#7c6cf5)]" />
+                        Evento (reunión Meet)
+                      </label>
+                      <button onClick={() => toggleDate(d)} className="text-digi-muted hover:text-red-500 text-[14px] leading-none">×</button>
+                    </div>
+                  </div>
+                  {cfg.is_event && (
+                    <div className="flex items-end gap-2 mt-2 max-w-xs">
+                      <div className="flex-1"><PixelInput label="Inicio" type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} /></div>
+                      <div className="flex-1"><PixelInput label="Fin" type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} /></div>
+                    </div>
+                  )}
+                  {cfg.is_event && (
+                    <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
+                      Se creará una reunión de Google Meet invitando al cliente{ticket.client_name ? ` (${ticket.client_name})` : ''} y al miembro. Horario de Ecuador (GMT-5).
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="flex gap-2 max-w-sm">
+          <button onClick={() => setEditingSlots(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
+          <button onClick={isRequestForMe ? handleAcceptWithSlots : handleSaveSlots} disabled={savingSlots || selectedDates.length === 0}
+            className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
+            {savingSlots ? 'Guardando...' : isRequestForMe ? `Aceptar (${selectedDates.length} días)` : `Guardar (${selectedDates.length} días)`}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
       <DetailHeader
@@ -598,99 +691,6 @@ export default function TicketDetailPage() {
         </div>
       )}
 
-      {/* ========== CALENDAR EDITOR ========== */}
-      {editingSlots && (() => {
-        const { year, month } = calMonth;
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const todayStr = new Date().toISOString().split('T')[0];
-        const deadlineStr = ticket.deadline ? ticket.deadline.split('T')[0] : '';
-        const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-        const dayNames = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
-        const toggleDate = (d: string) => setSelectedDates(prev => {
-          if (prev.includes(d)) { setSlotCfg(c => { const n = { ...c }; delete n[d]; return n; }); return prev.filter(x => x !== d); }
-          setSlotCfg(c => c[d] ? c : { ...c, [d]: { is_event: false, start_time: '', end_time: '' } });
-          return [...prev, d].sort();
-        });
-        const setCfg = (d: string, patch: Partial<{ is_event: boolean; start_time: string; end_time: string }>) =>
-          setSlotCfg(c => ({ ...c, [d]: { ...(c[d] ?? { is_event: false, start_time: '', end_time: '' }), ...patch } }));
-        const prevMonth = () => setCalMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
-        const nextMonth = () => setCalMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
-        const cells: (number | null)[] = [];
-        for (let i = 0; i < firstDay; i++) cells.push(null);
-        for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-        return (
-          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 mb-4 max-w-md">
-            <h3 className="text-[13px] font-semibold text-digi-text mb-3" style={mf}>
-              {isRequestForMe ? 'Selecciona los días de trabajo para aceptar' : 'Editar días de trabajo'}
-            </h3>
-            <div className="flex items-center justify-between mb-2">
-              <button onClick={prevMonth} className="p-1.5 text-digi-muted hover:text-accent border border-digi-border rounded hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-              <span className="text-[13px] font-semibold text-digi-text" style={mf}>{monthNames[month]} {year}</span>
-              <button onClick={nextMonth} className="p-1.5 text-digi-muted hover:text-accent border border-digi-border rounded hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
-            </div>
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {dayNames.map(d => <div key={d} className="text-center text-[10px] text-digi-muted py-1 font-medium" style={mf}>{d}</div>)}
-            </div>
-            <div className="grid grid-cols-7 gap-1 mb-3">
-              {cells.map((day, i) => {
-                if (day === null) return <div key={`e${i}`} />;
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const isSelected = selectedDates.includes(dateStr);
-                const isOutOfRange = dateStr < todayStr || (!!deadlineStr && dateStr > deadlineStr);
-                return (
-                  <button key={dateStr} onClick={() => !isOutOfRange && toggleDate(dateStr)} disabled={isOutOfRange}
-                    className={`py-1.5 text-[12px] text-center rounded border transition-colors ${isSelected ? 'bg-accent border-accent text-white font-medium' : isOutOfRange ? 'border-transparent text-digi-muted/30 cursor-default' : 'border-digi-border/60 text-digi-text hover:border-accent hover:bg-accent-light'}`}
-                    style={mf}>{day}</button>
-                );
-              })}
-            </div>
-            {selectedDates.length > 0 && (
-              <div className="border-t border-digi-border pt-2 mb-3 space-y-2">
-                {selectedDates.map(d => {
-                  const cfg = slotCfg[d] || { is_event: false, start_time: '', end_time: '' };
-                  return (
-                    <div key={d} className="border border-digi-border rounded-md p-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[12px] font-medium text-digi-text" style={mf}>
-                          {new Date(d + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: '2-digit', month: 'short' })}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <label className="flex items-center gap-1.5 text-[11px] text-digi-text cursor-pointer" style={mf}>
-                            <input type="checkbox" checked={cfg.is_event} onChange={(e) => setCfg(d, { is_event: e.target.checked })}
-                              className="accent-[var(--accent,#7c6cf5)]" />
-                            Evento (reunión Meet)
-                          </label>
-                          <button onClick={() => toggleDate(d)} className="text-digi-muted hover:text-red-500 text-[14px] leading-none">×</button>
-                        </div>
-                      </div>
-                      {cfg.is_event && (
-                        <div className="flex items-end gap-2 mt-2">
-                          <div className="flex-1"><PixelInput label="Inicio" type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} /></div>
-                          <div className="flex-1"><PixelInput label="Fin" type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} /></div>
-                        </div>
-                      )}
-                      {cfg.is_event && (
-                        <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
-                          Se creará una reunión de Google Meet invitando al cliente{ticket.client_name ? ` (${ticket.client_name})` : ''} y al miembro. Horario de Ecuador (GMT-5).
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <div className="flex gap-2">
-              <button onClick={() => setEditingSlots(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
-              <button onClick={isRequestForMe ? handleAcceptWithSlots : handleSaveSlots} disabled={savingSlots || selectedDates.length === 0}
-                className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
-                {savingSlots ? 'Guardando...' : isRequestForMe ? `Aceptar (${selectedDates.length} días)` : `Guardar (${selectedDates.length} días)`}
-              </button>
-            </div>
-          </div>
-        );
-      })()}
 
       {editing ? (
         /* ========== EDIT MODE ========== */
@@ -724,7 +724,7 @@ export default function TicketDetailPage() {
             </button>
           </div>
         </div>
-      ) : !editingSlots && (
+      ) : (
         /* ========== VIEW MODE (tabs + property rail) ========== */
         <div className="flex flex-col lg:flex-row gap-4 items-start">
           {/* Section rail */}
@@ -779,11 +779,13 @@ export default function TicketDetailPage() {
                 <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Días de trabajo</h3>
-                    {canEdit && !isClosed && (
+                    {canEdit && !isClosed && !editingSlots && (
                       <button onClick={startEditSlots} className="text-[10px] text-accent border border-digi-border rounded px-2 py-1 hover:bg-accent/5 transition-colors" style={pf}>Editar días</button>
                     )}
                   </div>
-                  {timeSlots.length > 0 ? (
+                  {editingSlots ? (
+                    renderSlotEditor()
+                  ) : timeSlots.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {timeSlots.map((slot: any, i: number) => (
                         <div key={i} className={`px-2.5 py-1.5 border rounded text-center ${slot.is_event ? 'border-accent/40 bg-accent-light' : 'border-digi-border bg-[#faf9f8]'}`}>
