@@ -115,6 +115,7 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
           eventTitle: ev.title,
           eventStart: new Date(ev.start_at),
           eventEnd: new Date(ev.end_at),
+          timezone: ev.timezone,
           memberId: member.id,
           publicToken: member.calendar_public_token,
           meetingUrl,

@@ -256,12 +256,12 @@ export async function sendCalendarEventNotification(params: {
   const actionLabel = action === 'created' ? 'nuevo evento' : action === 'updated' ? 'evento actualizado' : 'evento eliminado';
   const actionTitle = action === 'created' ? 'Nuevo evento' : action === 'updated' ? 'Evento actualizado' : 'Evento eliminado';
   const actionColor = action === 'deleted' ? CORP.danger : CORP.accent;
-  const range = `${formatEmailDateTime(eventStart)} — ${formatEmailDateTime(eventEnd)}`;
+  const range = `${formatEmailDateTime(eventStart, MEMBER_TZ)} — ${formatEmailDateTime(eventEnd, MEMBER_TZ)}`;
 
   const html = emailShell(
     emailBadge(actionTitle.toUpperCase(), actionColor) +
     emailHeading(escapeHtml(eventTitle), `${escapeHtml(memberName)} registró un ${actionLabel} en su calendario.`) +
-    emailInfoBox('FECHA Y HORA', range, 'Zona horaria: América/Guayaquil (GMT-5)') +
+    emailInfoBox('FECHA Y HORA', range, tzNote(MEMBER_TZ, eventStart)) +
     emailButton(publicUrl, 'Ver calendario'),
   );
 
@@ -283,12 +283,13 @@ export async function sendProposalReceivedToMember(params: {
   eventEnd: Date;
 }) {
   const { memberEmail, memberName, clientName, clientEmail, eventTitle, eventStart, eventEnd } = params;
-  const range = `${formatEmailDateTime(eventStart)} — ${formatEmailDateTime(eventEnd)}`;
+  // El miembro siempre agenda en su horario (Ecuador): mostramos la propuesta en su zona.
+  const range = `${formatEmailDateTime(eventStart, MEMBER_TZ)} — ${formatEmailDateTime(eventEnd, MEMBER_TZ)}`;
   const url = `${APP_URL}/dashboard/settings/calendar`;
   const html = emailShell(
     emailBadge('NUEVA PROPUESTA', CORP.warning) +
     emailHeading(escapeHtml(eventTitle), `<strong>${escapeHtml(clientName)}</strong> (${escapeHtml(clientEmail)}) te propuso un espacio en tu calendario.`) +
-    emailInfoBox('FECHA Y HORA', range) +
+    emailInfoBox('FECHA Y HORA', range, tzNote(MEMBER_TZ, eventStart)) +
     emailButton(url, 'Revisar y responder') +
     emailNote(`${escapeHtml(clientName)} recibirá un correo automático con tu decisión.`, 'center'),
   );
@@ -308,18 +309,22 @@ export async function sendProposalDecisionToClient(params: {
   eventTitle: string;
   eventStart: Date;
   eventEnd: Date;
+  /** Zona horaria que eligió el cliente al proponer (columna `timezone` del evento). */
+  timezone?: string | null;
   memberId: string;
   publicToken: string | null;
   meetingUrl?: string | null;
 }) {
-  const { clientEmail, clientName, memberName, action, eventTitle, eventStart, eventEnd, memberId, publicToken, meetingUrl } = params;
+  const { clientEmail, clientName, memberName, action, eventTitle, eventStart, eventEnd, timezone, memberId, publicToken, meetingUrl } = params;
   const accepted = action === 'accepted';
   const color = accepted ? CORP.success : CORP.danger;
   const label = accepted ? 'PROPUESTA ACEPTADA' : 'PROPUESTA RECHAZADA';
   const subject = accepted
     ? `Confirmado: ${eventTitle} con ${memberName}`
     : `Rechazada: ${eventTitle} con ${memberName}`;
-  const range = `${formatEmailDateTime(eventStart)} — ${formatEmailDateTime(eventEnd)}`;
+  // El cliente ve la reunión en SU zona horaria (la que eligió al proponer).
+  const clientTz = timezone || MEMBER_TZ;
+  const range = `${formatEmailDateTime(eventStart, clientTz)} — ${formatEmailDateTime(eventEnd, clientTz)}`;
   const url = publicToken
     ? `${APP_URL}/calendario/${memberId}?token=${publicToken}`
     : `${APP_URL}/calendario/${memberId}`;
@@ -330,7 +335,7 @@ export async function sendProposalDecisionToClient(params: {
     emailParagraph(`Hola <strong>${escapeHtml(clientName)}</strong>,<br/>` + (accepted
       ? `<strong>${escapeHtml(memberName)}</strong> aceptó tu propuesta.`
       : `<strong>${escapeHtml(memberName)}</strong> no pudo aceptar tu propuesta en este momento.`)) +
-    emailInfoBox('FECHA Y HORA', range) +
+    emailInfoBox('FECHA Y HORA', range, tzNote(clientTz, eventStart)) +
     (accepted
       ? (meetingUrl
           ? emailButton(meetingUrl, 'Unirse a la reunión (Google Meet)') +
@@ -347,10 +352,48 @@ export async function sendProposalDecisionToClient(params: {
   });
 }
 
-function formatEmailDateTime(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
+const MEMBER_TZ = 'America/Guayaquil';
+
+/**
+ * Formatea un instante (Date UTC) en una zona horaria EXPLÍCITA, independiente de la
+ * zona del servidor. Sin esto, el correo mostraba la hora local del servidor (UTC en
+ * Railway), que no corresponde ni a la del miembro ni a la del cliente.
+ */
+function formatEmailDateTime(d: Date, timeZone: string = MEMBER_TZ): string {
   const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(d);
+  const g = (t: string) => p.find((x) => x.type === t)?.value ?? '';
+  return `${g('day')} ${months[Number(g('month')) - 1]} ${g('year')} ${g('hour')}:${g('minute')}`;
+}
+
+/** Nombres amigables de las zonas ofrecidas al cliente en el formulario de propuesta. */
+const TZ_LABELS: Record<string, string> = {
+  'America/Guayaquil': 'Ecuador',
+  'America/Bogota': 'Colombia',
+  'America/Lima': 'Perú',
+  'America/Mexico_City': 'México',
+  'America/New_York': 'Nueva York',
+  'America/Los_Angeles': 'Los Ángeles',
+  'America/Chicago': 'Chicago',
+  'America/Argentina/Buenos_Aires': 'Argentina',
+  'America/Santiago': 'Chile',
+  'Europe/Madrid': 'España',
+  'Europe/London': 'Londres',
+  'UTC': 'UTC',
+};
+
+/** Nota "Zona horaria: Ecuador (GMT-5)" para la caja FECHA Y HORA, con offset real (respeta DST). */
+function tzNote(timeZone: string, at: Date): string {
+  let offset = '';
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'shortOffset' }).formatToParts(at);
+    offset = parts.find((x) => x.type === 'timeZoneName')?.value ?? '';
+  } catch { /* si la zona no es válida, se omite el offset */ }
+  const name = TZ_LABELS[timeZone] || timeZone;
+  return offset ? `Zona horaria: ${name} (${offset})` : `Zona horaria: ${name}`;
 }
 
 function escapeHtml(s: string): string {

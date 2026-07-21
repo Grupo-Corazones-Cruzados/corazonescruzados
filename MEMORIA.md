@@ -2423,6 +2423,18 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Correos de propuestas del calendario mostraban la hora del SERVIDOR, no la del miembro/cliente (2026-07-21):**
+  Los correos de "Mi día" / calendario público (propuesta recibida, aceptada/rechazada, notificación a
+  suscriptores) mostraban una hora incorrecta. Causa: `formatEmailDateTime` en `lib/integrations/email.ts`
+  usaba `d.getHours()/getDate()/getMonth()`, que renderizan en la **zona local del proceso Node** (UTC en
+  Railway) → la hora no era ni la del miembro ni la del cliente. **Modelo de datos:** `start_at/end_at` son
+  instantes UTC reales; el visitante siempre elige la hora en **horario del miembro = `America/Guayaquil`**
+  (forzado en `ProposalModal`), y la columna `timezone` del evento guarda **la zona que eligió el cliente**.
+  **Fix:** `formatEmailDateTime(d, timeZone)` usa `Intl.DateTimeFormat` con zona explícita (independiente del
+  servidor); correo al **miembro/suscriptores** → `America/Guayaquil`; correo al **cliente** → `ev.timezone`
+  (se pasa desde `proposals/[eventId]/route.ts`). Se añadió `tzNote()` (offset real con `shortOffset`,
+  respeta DST) en la caja FECHA Y HORA. Misma familia que el bug de "FECHA EMISION EXTEMPORANEA" del SRI:
+  **nunca formatear un instante con `getHours()` — siempre `Intl` con `timeZone` explícito.**
 - **`SELECT DISTINCT` + `ORDER BY` de una expresión NO seleccionada = consulta inválida (2026-07-19):**
   "Mis chats" salía **vacío** aunque el usuario tuviera 7 proyectos sin completar. Causa:
   `SELECT DISTINCT p.id::text AS ref_id … ORDER BY p.id DESC` — con `DISTINCT`, Postgres exige
