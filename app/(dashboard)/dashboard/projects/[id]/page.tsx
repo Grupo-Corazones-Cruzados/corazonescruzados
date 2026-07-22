@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
+import ClientPicker from '@/components/clients/ClientPicker';
 import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
@@ -102,6 +103,8 @@ export default function ProjectDetailPage() {
   // Inline edit states
   const [editingTitle, setEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
+  const [editingClient, setEditingClient] = useState(false);
+  const [editClient, setEditClient] = useState<{ clientId: string; clientEmail: string }>({ clientId: '', clientEmail: '' });
   const [editingBudget, setEditingBudget] = useState(false);
   const [editBudgetMin, setEditBudgetMin] = useState('');
   const [editBudgetMax, setEditBudgetMax] = useState('');
@@ -1772,7 +1775,29 @@ export default function ProjectDetailPage() {
           <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
             <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Propiedades</h3>
             <dl className="space-y-2.5 text-[12px]" style={mf}>
-              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Cliente</dt><dd className="text-digi-text text-right break-words min-w-0">{project.client_name || '-'}</dd></div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="text-digi-muted shrink-0">Cliente</dt>
+                <dd className="text-right min-w-0">
+                  {editingClient ? (
+                    <div className="w-56 max-w-full text-left">
+                      <ClientPicker clientId={editClient.clientId} clientEmail={editClient.clientEmail} onChange={setEditClient} label="" />
+                      <div className="flex gap-1 justify-end mt-1">
+                        <button onClick={async () => {
+                          if (!editClient.clientId && !editClient.clientEmail) { toast.error('Elige un cliente o escribe un correo'); return; }
+                          await saveField(editClient.clientId ? { client_id: Number(editClient.clientId) } : { client_email: editClient.clientEmail });
+                          setEditingClient(false); toast.success('Cliente actualizado');
+                        }} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
+                        <button onClick={() => setEditingClient(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className={`text-digi-text break-words ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`}
+                      onClick={() => { if (isOwner && !isTerminal) { setEditClient({ clientId: project.client_id ? String(project.client_id) : '', clientEmail: '' }); setEditingClient(true); } }}>
+                      {project.client_name || '-'}
+                    </span>
+                  )}
+                </dd>
+              </div>
               <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Miembro</dt><dd className="text-digi-text text-right break-words min-w-0">{project.assigned_member_name || '-'}</dd></div>
               <div className="flex items-start justify-between gap-3">
                 <dt className="text-digi-muted shrink-0">Presupuesto</dt>

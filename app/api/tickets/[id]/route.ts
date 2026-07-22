@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { addTicketIncomeToFinance } from '@/lib/finance';
 import { evaluateStages } from '@/lib/game/stages';
 import { ensureTicketSlotColumns, ensureTicketActionColumns } from '@/lib/tickets/schema';
+import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -43,6 +44,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { id } = await params;
     const body = await req.json();
+
+    // Cliente por CORREO nuevo: se resuelve a un placeholder inactivo (ligado al creador) y se
+    // usa como client_id. Así editar un ticket puede asignar un cliente nuevo por correo.
+    if (body.client_email && String(body.client_email).trim() && !body.client_id) {
+      const createdBy = await resolveMemberId(user.userId);
+      const ph = await findOrCreatePlaceholderByEmail(String(body.client_email).trim(), createdBy);
+      if (ph) body.client_id = ph.id;
+    }
+
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;

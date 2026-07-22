@@ -13,6 +13,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import ClientPicker from '@/components/clients/ClientPicker';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -191,6 +192,7 @@ export default function TicketDetailPage() {
       service_id: ticket.service_id ? String(ticket.service_id) : '',
       member_id: ticket.member_id ? String(ticket.member_id) : '',
       client_id: ticket.client_id ? String(ticket.client_id) : '',
+      client_email: '',
       deadline: ticket.deadline ? ticket.deadline.split('T')[0] : '',
       estimated_hours: ticket.estimated_hours ? String(ticket.estimated_hours) : '',
       estimated_cost: ticket.estimated_cost ? String(ticket.estimated_cost) : '',
@@ -218,6 +220,7 @@ export default function TicketDetailPage() {
           service_id: form.service_id ? Number(form.service_id) : null,
           member_id: form.member_id ? Number(form.member_id) : null,
           client_id: form.client_id ? Number(form.client_id) : null,
+          client_email: form.client_email?.trim() || undefined,
           deadline: form.deadline || null,
           estimated_hours: form.estimated_hours ? Number(form.estimated_hours) : null,
           estimated_cost: form.estimated_cost ? Number(form.estimated_cost) : null,
@@ -703,8 +706,8 @@ export default function TicketDetailPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <PixelSelect label="Miembro asignado" value={form.member_id} onChange={(e) => setForm({ ...form, member_id: e.target.value })}
               options={members.map((m: any) => ({ value: String(m.id), label: m.name }))} placeholder="-- Sin asignar --" />
-            <PixelSelect label="Cliente" value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-              options={clients.map((c: any) => ({ value: String(c.id), label: c.name || c.email }))} placeholder="-- Sin cliente --" />
+            <ClientPicker clientId={form.client_id} clientEmail={form.client_email || ''}
+              onChange={(v) => setForm({ ...form, client_id: v.clientId, client_email: v.clientEmail })} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <PixelInput label="Fecha limite" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />

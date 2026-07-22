@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, getProjectMembers } from '@/lib/projects/members';
+import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -185,12 +186,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
+    // Cliente por CORREO nuevo → placeholder inactivo (ligado al creador) usado como client_id.
+    if (body.client_email && String(body.client_email).trim() && !body.client_id) {
+      const createdBy = await resolveMemberId(user.userId);
+      const ph = await findOrCreatePlaceholderByEmail(String(body.client_email).trim(), createdBy);
+      if (ph) { body.client_id = ph.id; body.client_email = String(body.client_email).trim().toLowerCase(); }
+    }
+
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
 
     for (const [key, val] of Object.entries(body)) {
-      if (['title', 'description', 'status', 'budget_min', 'budget_max', 'final_cost', 'deadline', 'is_private', 'assigned_member_id', 'confirmed_at', 'digimundo_project_id', 'proforma'].includes(key)) {
+      if (['title', 'description', 'status', 'budget_min', 'budget_max', 'final_cost', 'deadline', 'is_private', 'assigned_member_id', 'confirmed_at', 'digimundo_project_id', 'proforma', 'client_id', 'client_email'].includes(key)) {
         fields.push(`${key} = $${idx++}`);
         values.push(val);
       }
