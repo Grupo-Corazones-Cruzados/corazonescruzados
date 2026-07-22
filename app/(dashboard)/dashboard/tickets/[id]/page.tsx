@@ -306,7 +306,10 @@ export default function TicketDetailPage() {
     setCompleteItems(buildItemsForMode(mode));
   };
 
-  const openCompleteModal = () => {
+  const openCompleteModal = async () => {
+    // Fase 2: para facturar, el ticket debe tener un cliente asignado.
+    if (!ticket?.client_id) { toast.error('Asigna un cliente al ticket antes de facturar (edítalo y elige el cliente).'); return; }
+    // Prellenado por defecto desde los datos del cliente del ticket.
     const ruc = ticket?.client_ruc || '';
     setCompleteClientName(ticket?.client_name || 'CONSUMIDOR FINAL');
     setCompleteClientRuc(ruc || '9999999999999');
@@ -317,6 +320,19 @@ export default function TicketDetailPage() {
     else if (ruc.length === 10) setCompleteIdType('05');
     else if (ruc.length > 0) setCompleteIdType('06');
     else setCompleteIdType('07');
+    // Si el cliente ya tiene cuenta de facturación, se prellena desde ahí (editable).
+    try {
+      const r = await fetch(`/api/billing-clients?portal_client_id=${ticket.client_id}`);
+      const { data: bc } = await r.json();
+      if (bc) {
+        setCompleteIdType(bc.id_type || '07');
+        setCompleteClientRuc(bc.ruc || '9999999999999');
+        setCompleteClientName(bc.name || 'CONSUMIDOR FINAL');
+        setCompleteClientEmail(bc.email || '');
+        setCompleteClientPhone(bc.phone || '');
+        setCompleteClientAddress(bc.address || '');
+      }
+    } catch { /* sin cuenta de facturación → se llena a mano */ }
     setCompletePaymentCode('20');
     setCompleteCurrency('USD');
     setCompleteExchangeRate('1');
@@ -1042,31 +1058,9 @@ export default function TicketDetailPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between border-b border-digi-border pb-1">
                 <h4 className="text-[12px] font-semibold text-digi-text" style={mf}>Adquirente</h4>
-                <button type="button" onClick={() => setHistoryOpen(o => !o)} className="text-[11px] px-2 py-0.5 rounded border border-accent/40 text-accent hover:bg-accent-light transition-colors" style={pf}>
-                  {historyOpen ? 'Cerrar' : `Cliente previo${clientHistory.length ? ` (${clientHistory.length})` : ''}`}
-                </button>
+                <span className="text-[10.5px] text-digi-muted" style={pf}>Datos del cliente del ticket</span>
               </div>
-              {historyOpen && (
-                <div className="border border-digi-border rounded-lg bg-digi-darker p-2 space-y-2">
-                  <input autoFocus value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="Buscar por nombre o RUC..." className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                  <div className="max-h-40 overflow-y-auto border border-digi-border/50">
-                    {filteredHistory.length === 0 ? (
-                      <div className="px-2 py-3 text-center text-[12px] text-digi-muted" style={pf}>{clientHistory.length === 0 ? 'No hay clientes previos' : 'Sin resultados'}</div>
-                    ) : (
-                      filteredHistory.slice(0, 50).map((c) => (
-                        <button key={c.client_ruc} type="button" onClick={() => applyPastClient(c)} className="w-full text-left px-2 py-1.5 border-b border-digi-border/30 last:border-b-0 hover:bg-accent/10 transition-colors">
-                          <div className="text-[12px] text-digi-text truncate" style={mf}>{c.client_name}</div>
-                          <div className="text-[11px] text-digi-muted flex gap-2" style={mf}>
-                            <span>{c.client_ruc}</span>
-                            {c.client_email && <span className="truncate">· {c.client_email}</span>}
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                  <div className="text-[11px] text-digi-muted" style={pf}>Elige uno para rellenar los campos, o cierra y llena manualmente.</div>
-                </div>
-              )}
+              <p className="text-[10.5px] text-digi-muted" style={pf}>Se prellenan desde la cuenta de facturación del cliente. Al facturar, los cambios se guardan para las próximas facturas.</p>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tipo ID <span className="text-red-500">*</span></label>
