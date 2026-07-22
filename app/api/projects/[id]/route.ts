@@ -146,6 +146,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Validate status transitions
     const VALID_TRANSITIONS: Record<string, string[]> = {
+      // 'cotizacion' = propuesta aún no aprobada por el cliente. Al aprobarse pasa a un proyecto
+      // real (draft/open); si el cliente la rechaza, se cancela.
+      cotizacion: ['open', 'draft', 'cancelled'],
       draft: ['open', 'cancelled'], open: ['in_progress', 'cancelled'], in_progress: ['review', 'cancelled'], review: ['completed'],
     };
     if (body.status && body.status !== current.status) {

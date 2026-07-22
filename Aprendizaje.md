@@ -5,6 +5,112 @@
 >
 > **Estados de pregunta:** ❓ Abierta · 🔎 Investigando · ✅ Resuelta · ⏸ Bloqueada (espera al usuario)
 
+---
+
+## Objetivo ACTUAL (declarado 2026-07-22) — MÓDULO DE COTIZACIONES con Agente SDK de Claude (Opus)
+
+**Rol asumido:** *arquitecto full-stack + integrador de agentes de IA* (Next.js/Postgres + Agent SDK de
+Claude + worker de sesión persistente + acceso público por token). Cubre datos, IA, infra y seguridad externa.
+
+### Necesidad (resumen del usuario, 2026-07-22)
+En **Proyectos**, botón **"Nueva cotización"** (solo **candidatos/miembros**) → **panel lateral izquierdo**:
+selector de **servicio** (de los del usuario, con su costo/hora), **detalle**, **instrucciones adicionales**
+(precio preestablecido / tareas obligatorias / etc.), y **selector de agente** (hoy solo "Cotizaciones Software").
+Botón **Generar cotización** → un **Agente SDK de Claude (Opus)** devuelve salida estructurada que rellena el
+**detalle del proyecto**: **requerimientos + costo por requerimiento + subtareas**, **fecha límite** (la pone la
+IA), **responsable = el usuario**, **cliente = pendiente**, **visibilidad = privado**. Costo en base al
+**costo/hora del servicio**; si hay precio preestablecido en instrucciones, se respeta; si no, lo fija la IA.
+
+- **Nuevo estado `cotizacion`** ANTES de `draft` (cotizaciones = proyectos aún no aprobados por el cliente; los de
+  "Nuevo/Solicitar proyecto" ya tienen aprobación). Se añade al **rail de filtros**.
+- **Sesión persistente del agente** (vía worker): tras generar, la sesión se conserva y queda disponible al entrar
+  a la cotización mediante un **chat flotante "GCC Bot"** (mismo patrón que los chats flotantes existentes) para
+  pedir cambios (agregar/quitar requerimientos, reformular, cambiar infraestructura…). Cada cambio → nueva
+  **versión** (historial `v1, v2, …`, conservando la v1).
+- **Tool del agente:** acceso a los **proyectos generados por el mismo usuario** (leer requerimientos, reconsiderar
+  precios y desglose).
+- **Compartir por token con expiración** (que fija el usuario) → se envía la **página de cotización por correo** al
+  cliente; el externo la ve, **acepta/rechaza** (botones grandes), puede **chatear con GCC Bot** y **agregar
+  observaciones**. El correo avisa que el agente puede ayudarle.
+- **En estado `cotizacion`:** ocultar Imágenes/visibilidad y pestaña **DigiMundo** (solo admin/miembro/candidato);
+  para cliente/externo, pestaña **"Observaciones"** (reusar el form de observaciones que antes venía de DigiMundo).
+  **Los proyectos ya NO vienen de DigiMundo**, vienen de aquí; observaciones → futuras tareas/recordatorios.
+- **Futuro (NO ahora):** múltiples agentes con distintas fuentes; panel para administrar prompts/tools/pipeline.
+  Dejar la **lista de agentes** preparada (hoy 1).
+
+### Hallazgos de exploración (2026-07-22)
+- **Agente/chat (RESUELTO):** el núcleo es `app/api/chat/route.ts` = `spawn('claude')` del **CLI local** (NO Agent
+  SDK ni API). Sesiones persistentes en `data/agent-sessions.json` por `sessionKey` + `--resume`. `ProformaChatPanel`
+  ya es un **agente de cotización de software** (genera proforma HTML + doc técnico de 20 secciones, comparte sesión
+  `project-{id}`). **Gateado a localhost**; `/api/chat` **sin auth**. `ChatDock` es solo humano-humano (no hay agente
+  en el dock). → Para producción/externo hay que **migrar el núcleo a Agent SDK/API de Claude** (con key), mover
+  sesión a Postgres, autenticar, y añadir lanzador "GCC Bot" al dock + endpoint conversacional público por token.
+- **Tokens/correo/aceptar-rechazar (RESUELTO):** patrón token = columnas en `projects` (`proforma_token`,
+  `proforma_token_expires_at`), `crypto.randomBytes(32).hex`, validación en ruta pública `?token=`. **NO existe
+  `resend.ts`** — correo por **Gmail API** (`lib/integrations/email.ts` → `sendViaGmail`; helpers `emailShell`,
+  `emailButton(url,label,variant)`, `emailBadge`, `emailInfoBox`). Flujo aceptar/rechazar existe en el calendario
+  público (externo por token ↔ interno decide). Middleware solo protege `/dashboard` → `/cotizacion/*` público sin
+  cambios. `createNotification(userId,{type,title,message,link})` solo a usuarios internos.
+
+### Esquema de proyectos (RESUELTO 2026-07-22)
+- **Estados** en `gcc_world.projects.status` (TEXT libre, sin enum → añadir `cotizacion` es seguro). Transiciones en
+  `app/api/projects/[id]/route.ts` `VALID_TRANSITIONS`. Estado inicial se fija en `POST /api/projects`. UI en
+  `projects/page.tsx` (`STATUS_TABS/STATUS_V/STATUS_LABEL`, ojo inconsistencia `in_review` vs `review`) y en
+  `[id]/page.tsx`. Acceso `member` excluye `draft` (excluir también `cotizacion`). `counts` = GROUP BY status.
+- **Requerimientos:** `project_requirements` (`title, description, cost, completed_at`) vía `POST .../requirements`.
+  **Subtareas:** `requirement_items` (`requirement_id, title, sort_order, is_completed`) vía `.../requirements/items`.
+  **Asignación/costo por miembro:** `requirement_assignments` (`proposed_cost, member_cost, status`), `syncFinalCost`.
+- **Servicios:** `gcc_world.services` (`base_price, member_id, talent, is_active`) vía `GET /api/members/[id]/services?active=1`.
+  ⚠️ `base_price` es **precio plano** (no hay "horas"). Decisión: tratar `base_price` como **tarifa/hora**; la IA estima
+  horas por requerimiento → `cost = horas × base_price` (salvo precio fijado en instrucciones).
+- **Creación:** modo `create` ya deja responsable=creador (`assigned_member_id`+`setResponsible {invited:false}`),
+  `is_private=true`, y acepta `client_id=null` (cliente pendiente). Exactamente lo que pide la cotización.
+- **Observaciones (DigiMundo):** hoy son `gcc_world."Incident"` (Prisma) ligadas al Project DigiMundo, no a
+  `projects`. Para desacoplar de DigiMundo → **nueva tabla `project_observations`** ligada a `projects.id`.
+- **Migraciones:** patrón idiomático = `ALTER TABLE ADD COLUMN IF NOT EXISTS` inline en el handler, o `ensureXxxTable()`
+  en `lib/` para tablas nuevas. (No hay migraciones formales salvo 2 del juego.)
+
+### DECISIONES DEL USUARIO (2026-07-22)
+- **D1 · Runtime:** **Agent SDK en worker dedicado** long-running (sesión viva; reanudable por session-id persistido).
+  La app web le habla por HTTP + token compartido (patrón Percepción). Nueva env: `COTIZADOR_WORKER_URL` +
+  `COTIZADOR_WORKER_TOKEN`. La sesión se guarda en `quote_sessions.worker_session_id`.
+- **D2 · Modelo:** **Opus 4.8** (`claude-opus-4-8`).
+- **D3 · Entrega:** **por fases, núcleo primero**. **Fase 1** = estado `cotizacion` + filtro + panel "Nueva
+  cotización" + generación IA (requerimientos/subtareas/costo/deadline; responsable=usuario, cliente pendiente,
+  privado) + detalle con chat **GCC Bot interno** + pestaña **Observaciones** + ocultar Imágenes/DigiMundo en
+  `cotizacion`. **Fase 2** = compartir por token + correo + aceptar/rechazar externo + chat externo + versionado.
+- **Bloqueador activo:** `ANTHROPIC_API_KEY` no configurada; el worker no se puede probar end-to-end hasta que el
+  usuario la provea (local + Railway) y despliegue el servicio worker. Construyo el andamiaje y verifico compilación.
+
+### Estado del aprendizaje (2026-07-22)
+- **% de información:** ~85%. Exploraciones completas + decisiones tomadas. Falta afinar el protocolo HTTP del worker
+  y el prompt/tools del agente (se detalla al construir la Fase 1d).
+- **Bloqueadores conocidos:**
+  - **P-A · Agent SDK + key:** NO instalado; solo `openai`. `ANTHROPIC_API_KEY` **comentada**. Hay que instalar
+    `@anthropic-ai/claude-agent-sdk` (o `@anthropic-ai/sdk`) y **el usuario debe proveer la key** (o reusar la del
+    worker de Percepción). (fuente: package.json/.env.local, 2026-07-22)
+  - **P-B · Modelo:** el usuario dijo "Opus 4.6"; el más reciente hoy es **Opus 4.8** (`claude-opus-4-8`). Confirmar
+    ID exacto. ⏸ espera al usuario.
+  - **P-C · Infra de sesión persistente:** decidir reusar `WORLD_SERVER_URL`/patrón worker Percepción (Claude CLI +
+    token) o servicio nuevo en Railway; o **replay de transcript** guardado en BD. ⏸ espera decisión.
+- **Decisiones preliminares:** costo = `service.base_price`/h × horas estimadas por la IA (salvo precio fijado);
+  salida JSON validada `{deadline, requirements:[{title,description,cost,hours,subtasks[]}], summary}`; tablas
+  nuevas `quote_sessions`, `quote_versions`, `quote_shares(token+exp)`, `project_observations`; chat "GCC Bot" como
+  tipo nuevo de `ChatDock`; acceso externo reusando patrón proforma/public-docs por token.
+- **Plan por fases:** (1) estado `cotizacion` en UI+API; (2) esquema/ensurers; (3) servicios del usuario;
+  (4) agente SDK Opus + tool "mis proyectos" + salida estructurada + worker de sesión; (5) panel "Nueva cotización";
+  (6) detalle: chat GCC Bot + Observaciones + ocultar Imágenes/DigiMundo; (7) versionado; (8) compartir por token +
+  correo + aceptar/rechazar + acceso externo.
+- **Riesgo principal:** sesión persistente del Agent SDK en Railway (serverless no mantiene procesos) → worker
+  long-running o replay de transcript. Coste/latencia de Opus por turno → acotar contexto + streaming. Seguridad del
+  acceso externo → token expirable de alcance limitado + rate-limit.
+
+> Detalle vivo de este objetivo abajo, al final del archivo, en la sección
+> **"═══ COTIZACIONES (2026-07-22) — Preguntas y respuestas ═══"**. El objetivo del JUEGO queda **archivado** a
+> continuación (histórico, no se borra).
+
+---
+
 ## Objetivo ACTUAL (declarado 2026-07-19, 3ª parte) — JUEGO GCC WORLD: motor, librerías y arquitectura
 
 **Rol asumido:** *arquitecto de motor de videojuego web + diseñador de sistemas/economía de juego.*

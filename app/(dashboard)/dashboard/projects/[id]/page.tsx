@@ -34,11 +34,11 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  draft: 'default', open: 'info', in_progress: 'warning', review: 'warning',
+  cotizacion: 'info', draft: 'default', open: 'info', in_progress: 'warning', review: 'warning',
   completed: 'success', closed: 'success', cancelled: 'error', on_hold: 'default',
 };
 const STATUS_LABEL: Record<string, string> = {
-  draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso', review: 'En revisión',
+  cotizacion: 'Cotización', draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso', review: 'En revisión',
   completed: 'Completado', closed: 'Cerrado', cancelled: 'Cancelado', on_hold: 'En pausa',
 };
 const SEV_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {

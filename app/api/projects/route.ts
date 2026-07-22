@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       if (mId) {
         accessParams.push(mId);
         const mIdx = accessParams.length;
-        accessWhere += ` AND ((p.is_private = false AND p.status != 'draft') OR p.assigned_member_id = $${mIdx} OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = $${mIdx}) OR EXISTS (SELECT 1 FROM gcc_world.project_members pm WHERE pm.project_id = p.id AND pm.member_id = $${mIdx}))`;
+        accessWhere += ` AND ((p.is_private = false AND p.status NOT IN ('draft','cotizacion')) OR p.assigned_member_id = $${mIdx} OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = $${mIdx}) OR EXISTS (SELECT 1 FROM gcc_world.project_members pm WHERE pm.project_id = p.id AND pm.member_id = $${mIdx}))`;
       }
     } else if (user.role === 'client') {
       const clientRes = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [user.email]);

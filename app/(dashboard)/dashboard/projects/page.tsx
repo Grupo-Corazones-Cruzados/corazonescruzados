@@ -24,7 +24,7 @@ import { accessRoleOf } from '@/lib/dashboard/access';
 import { fmt2 } from '@/lib/format';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
-  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check,
+  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -32,6 +32,7 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_TABS = [
   { value: 'all', label: 'Todos', Icon: FolderKanban },
+  { value: 'cotizacion', label: 'Cotizaciones', Icon: Calculator },
   { value: 'draft', label: 'Borrador', Icon: FileEdit },
   { value: 'open', label: 'Abiertos', Icon: DoorOpen },
   { value: 'in_progress', label: 'En progreso', Icon: Loader },
@@ -40,11 +41,11 @@ const STATUS_TABS = [
 ];
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  draft: 'default', open: 'info', in_progress: 'warning',
+  cotizacion: 'info', draft: 'default', open: 'info', in_progress: 'warning',
   in_review: 'info', completed: 'success', closed: 'success', cancelled: 'error',
 };
 const STATUS_LABEL: Record<string, string> = {
-  draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso',
+  cotizacion: 'Cotización', draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso',
   in_review: 'En revisión', completed: 'Completado', closed: 'Cerrado', cancelled: 'Cancelado',
 };
 // Punto de color por variante para mostrar el estado sin columna dedicada.
