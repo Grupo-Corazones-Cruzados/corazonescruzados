@@ -1427,9 +1427,21 @@ Stack estándar de la casa, con particularidades de este repo:
     para calibrar precios con proyectos previos del miembro. **Thinking extendido DESACTIVADO** (pedido del usuario).
     Cliente en la web: `lib/cotizaciones/worker.ts`. **Env:** `ANTHROPIC_API_KEY` (worker), `COTIZADOR_WORKER_URL`
     + `COTIZADOR_WORKER_TOKEN` (web↔worker), `COTIZADOR_MODEL=claude-opus-4-8`. **Deploy:** nuevo servicio Railway
-    con Root Directory `services/cotizador-worker` (ver su README). **Probado end-to-end local con Opus 4.8** (genera
-    + chat con reanudación). **Fase 2 pendiente:** compartir por token + correo + aceptar/rechazar del cliente
-    externo + chat externo + pestaña Observaciones para cliente/externo (reemplaza las observaciones de DigiMundo).
+    con Root Directory `services/cotizador-worker` (ver su README). **DESPLEGADO en Railway** (proyecto
+    `Servidor-GCC`, servicio `cotizador-worker`, **red privada** `cotizador-worker.railway.internal:4610`, no
+    público); el web (`corazonescruzados`) tiene `COTIZADOR_WORKER_URL`/`COTIZADOR_WORKER_TOKEN`. Probado
+    end-to-end con Opus 4.8 (genera + chat con reanudación).
+  - **Cotizaciones Fase 2 (HECHA, 2026-07-22): compartir + externo.** `ensureQuoteShareColumns` (en `projects`:
+    `quote_token`, `quote_token_expires_at`, `quote_status` pending/accepted/rejected, `quote_decided_at`,
+    `quote_client_email`) + `validateQuoteToken`. `POST/DELETE /api/quotes/[id]/share` genera/renueva enlace
+    (vigencia configurable) y lo manda por correo (`sendQuoteToClient`, Gmail API); botón flotante **Compartir**
+    (`QuoteShareButton`, dueño). **Página pública `/cotizacion/[id]?token=`** (`.corp`, **SOLO LECTURA**): detalle
+    + botones grandes **Aceptar/Rechazar** + **Observaciones** + **GCC Bot** (único medio para pedir cambios) vía
+    `POST /api/quotes/[id]/public/chat`. `POST /api/quotes/[id]/public/decision`: aceptar → proyecto pasa a `open`;
+    rechazar → sigue en cotización marcada; notifica al responsable (in-app + `sendQuoteDecisionToResponsible`).
+    **Observaciones** `GET/POST /api/quotes/[id]/observations` (externo por token / interno por sesión) reemplazan
+    las de DigiMundo; panel interno `QuoteObservationsPanel`. Helpers `materializeQuote/applyQuoteChange` en
+    `lib/cotizaciones/data.ts`. **Regla:** el enlace externo es solo lectura; los cambios SOLO por el agente.
   - **Facturación = SOLO ADMIN (regla de negocio, 2026-07-09):** se reforzó server-side: `POST /api/projects/[id]/complete`
     exige `role='admin'` (antes NO validaba rol, solo lo ocultaba la UI); `POST /api/invoices/from-ticket` pasó de
     "admin o miembro asignado" a **solo admin**; en tickets `canCompleteTicket` = solo admin. Verificado tsc + `next build`.

@@ -95,6 +95,14 @@ IA), **responsable = el usuario**, **cliente = pendiente**, **visibilidad = priv
   página pública `/cotizacion/[id]?token=` (`.corp`) con Aceptar/Rechazar grandes · chat GCC Bot para externo
   (endpoint conversacional público por token) · pestaña **Observaciones** (tabla `project_observations` ya creada)
   para cliente/externo · notificación al responsable al decidir. Versionado ya existe (`quote_versions`).
+  - **Aclaración del usuario (2026-07-22):** el enlace externo da acceso **SOLO LECTURA** de la cotización en la
+    interfaz (sin ningún control de edición); el cliente **solo puede solicitar cambios a través del agente
+    (GCC Bot)**, además de Aceptar/Rechazar. → La página pública renderiza la cotización read-only + GCC Bot
+    (chat público por token) + botones grandes Aceptar/Rechazar (+ Observaciones).
+- **Despliegue del worker (2026-07-22):** el usuario dio permiso; desplegando `cotizador-worker` como servicio
+  Railway en `Servidor-GCC` (red PRIVADA `cotizador-worker.railway.internal:4610`, no público). Vars:
+  ANTHROPIC_API_KEY, COTIZADOR_WORKER_TOKEN, COTIZADOR_MODEL, PORT=4610, DATABASE_URL=${{Postgres.DATABASE_URL}}.
+  Falta setear en web (corazonescruzados): COTIZADOR_WORKER_URL + COTIZADOR_WORKER_TOKEN.
 - **Bloqueadores conocidos:**
   - **P-A · Agent SDK + key:** NO instalado; solo `openai`. `ANTHROPIC_API_KEY` **comentada**. Hay que instalar
     `@anthropic-ai/claude-agent-sdk` (o `@anthropic-ai/sdk`) y **el usuario debe proveer la key** (o reusar la del
