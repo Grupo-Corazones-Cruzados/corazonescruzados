@@ -691,8 +691,44 @@ export default function TicketDetailPage() {
 
       {/* ========== VIEW MODE — panel unificado (sin pestañas) + property rail ========== */}
       <div className="flex flex-col lg:flex-row gap-4 items-start">
+          {/* ── IZQUIERDA: Días de trabajo ── */}
+          <aside className="w-full lg:w-[300px] shrink-0 order-2 lg:order-1">
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 lg:sticky lg:top-4">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}>
+                  <CalendarDays className="w-4 h-4 text-accent" /> Días de trabajo
+                  {timeSlots.length > 0 && <span className="text-digi-muted font-normal">({timeSlots.length})</span>}
+                </h3>
+                {canEdit && !isClosed && !editingSlots && (
+                  <button onClick={startEditSlots} className="shrink-0 text-[11px] text-accent border border-digi-border rounded px-2 py-1 hover:bg-accent/5 transition-colors" style={pf}>Editar</button>
+                )}
+              </div>
+              {editingSlots ? (
+                renderSlotEditor()
+              ) : timeSlots.length > 0 ? (
+                <div className="space-y-2">
+                  {timeSlots.map((slot: any, i: number) => (
+                    <div key={i} className={`px-2.5 py-2 border rounded ${slot.is_event ? 'border-accent/40 bg-accent-light' : 'border-digi-border bg-[#faf9f8]'}`}>
+                      {slot.is_event && (
+                        <span className="inline-block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent" style={mf}>Evento</span>
+                      )}
+                      <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
+                      {slot.start_time && <p className="text-[11px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
+                      {slot.is_event && slot.meeting_url && (
+                        <a href={slot.meeting_url} target="_blank" rel="noopener noreferrer"
+                          className="inline-block mt-1 text-[10.5px] font-medium text-accent hover:underline" style={mf}>Unirse (Meet)</a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-digi-muted" style={mf}>Sin días asignados</p>
+              )}
+            </div>
+          </aside>
+
           {/* Columna principal: TODO en un solo espacio (resumen + acciones combinados) */}
-          <div className="flex-1 min-w-0 w-full space-y-4">
+          <div className="flex-1 min-w-0 w-full space-y-4 order-1 lg:order-2">
             {ticket.open_for_talent && (
               <div className="bg-digi-card border border-accent/30 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center gap-2 mb-1.5">
@@ -729,6 +765,9 @@ export default function TicketDetailPage() {
               const pct = estimated > 0 ? Math.min(100, (total / estimated) * 100) : 0;
               const serviceRate = Number(ticket.service_base_price) || 0;
               const runningSession = actions.find((a: any) => a.session_started_at && !a.session_ended_at);
+              // Días de trabajo se movió al panel izquierdo; esta tarjeta solo agrupa
+              // Descripción + Registro. Si no hay ninguno, no se renderiza (evita caja vacía).
+              if (!ticket.description && !showActions) return null;
               return (
                 <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
                   {/* Descripción */}
@@ -738,35 +777,6 @@ export default function TicketDetailPage() {
                       <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{ticket.description}</p>
                     </div>
                   )}
-
-                  {/* Días de trabajo */}
-                  <div className="p-4 border-b border-digi-border">
-                    <SectionHead Icon={CalendarDays} title="Días de trabajo" count={timeSlots.length || undefined}
-                      action={canEdit && !isClosed && !editingSlots ? (
-                        <button onClick={startEditSlots} className="text-[10px] text-accent border border-digi-border rounded px-2 py-1 hover:bg-accent/5 transition-colors" style={pf}>Editar días</button>
-                      ) : undefined} />
-                    {editingSlots ? (
-                      renderSlotEditor()
-                    ) : timeSlots.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {timeSlots.map((slot: any, i: number) => (
-                          <div key={i} className={`px-2.5 py-1.5 border rounded text-center ${slot.is_event ? 'border-accent/40 bg-accent-light' : 'border-digi-border bg-[#faf9f8]'}`}>
-                            {slot.is_event && (
-                              <span className="inline-block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent" style={mf}>Evento</span>
-                            )}
-                            <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
-                            {slot.start_time && <p className="text-[11px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
-                            {slot.is_event && slot.meeting_url && (
-                              <a href={slot.meeting_url} target="_blank" rel="noopener noreferrer"
-                                className="inline-block mt-1 text-[10.5px] font-medium text-accent hover:underline" style={mf}>Unirse (Meet)</a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-digi-muted" style={mf}>Sin días asignados</p>
-                    )}
-                  </div>
 
                   {/* Registro de trabajo y sesiones (antes pestaña "Acciones") */}
                   {showActions && (
@@ -931,7 +941,7 @@ export default function TicketDetailPage() {
             )}
           </div>
 
-          <div className="w-full lg:w-[300px] shrink-0">
+          <div className="w-full lg:w-[300px] shrink-0 order-3">
           <PropertyRail
             items={[
               { label: 'Cliente', value: ticket.client_name || '-' },

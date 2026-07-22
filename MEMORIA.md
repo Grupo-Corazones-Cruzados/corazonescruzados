@@ -2503,6 +2503,12 @@ Módulos principales:
   bloquea) — a diferencia de las acciones manuales que sí se topan. Helpers compartidos en
   `lib/tickets/schema.ts` (ensurers idempotentes, `ecuadorWallclockToISO`, `formatEcuador`, `canManageTicket`,
   `loadTicketForSession`). La tarifa/hora sale del **precio del servicio**, no de `estimated_cost/horas`.
+  - **Detalle de ticket = panel izquierdo de Días de trabajo (2026-07-22):** "Días de trabajo" (con su
+    editor inline `renderSlotEditor` y el marcado Evento/Meet) se **movió a un `aside` izquierdo** de 300px
+    (`lg:sticky`), igual patrón que el panel izquierdo de Proyectos; el CENTRO queda con el panel unificado
+    (Descripción + Registro de trabajo), que **no se renderiza si no hay ninguno de los dos** (evita caja
+    vacía en solicitudes pendientes); DERECHA sigue el `PropertyRail`. Clases `order` para que en móvil el
+    centro vaya primero.
 - **Correos de propuestas del calendario mostraban la hora del SERVIDOR, no la del miembro/cliente (2026-07-21):**
   Los correos de "Mi día" / calendario público (propuesta recibida, aceptada/rechazada, notificación a
   suscriptores) mostraban una hora incorrecta. Causa: `formatEmailDateTime` en `lib/integrations/email.ts`
