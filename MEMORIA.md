@@ -2357,8 +2357,18 @@ Módulos principales:
   dueño (miembro/candidato asociado) con frecuencia escalada. Fases:
   - **Fase 1 (HECHA):** tablas `reminders` + `reminder_attachments` (adjuntos como data URL base64 en
     la BD, incluye `.txt` de transcripción para los de Meet); `lib/reminders/schema.ts`; API CRUD
-    `/api/reminders*`; página `/dashboard/recordatorios` (crear manual con tareas + adjuntos, editar,
-    marcar hecho); acceso candidate/member/admin.
+    `/api/reminders*`; acceso candidate/member/admin. Estados: `active` (Pendiente) · `expired`
+    (Vencido, tras el correo final) · `done` (Completado). Solo los `active` reciben correos (la
+    escalation filtra `status='active'`), así que **completar corta los correos**.
+  - **UI maestro-detalle (2026-07-22):** la página `/dashboard/recordatorios` adoptó el MISMO patrón
+    que Tickets/Proyectos: **rail de estado a la izquierda** (Todos/Pendientes/Vencidos/Completados con
+    conteos), **tabla `PixelDataTable` al centro** (punto de estado + ícono `Video` si es de reunión,
+    fecha, tareas), y **panel de detalle a la derecha** al hacer clic en una fila (notas, tareas
+    marcables que persisten, adjuntos descargables, y acciones **Marcar completado / Reactivar**,
+    Editar, Eliminar). Crear/editar sigue en `PixelModal`; el modal de edición trae también un check
+    "Marcar como completado". El estado efectivo se calcula en cliente (un `active` ya vencido se
+    muestra como Vencido aunque el cron no lo haya volteado). Deep-link `?open=<id>` **selecciona** la
+    fila (antes abría el modal). Campo Notas con alto fijo `h-40`.
   - **Fase 2 (HECHA):** `lib/reminders/escalation.ts` + `POST /api/reminders/cron/notify` envían
     correos escalados: ≤5h → 1 correo; ≤3h → 1/hora; ≤30min → 1/10min; al vencer → 1 correo final
     "vencido" y stop. Trackea `email_stage`/`last_email_at`/`expired_email_sent`.
