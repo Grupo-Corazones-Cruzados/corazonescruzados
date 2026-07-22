@@ -2509,6 +2509,14 @@ Módulos principales:
     (Descripción + Registro de trabajo), que **no se renderiza si no hay ninguno de los dos** (evita caja
     vacía en solicitudes pendientes); DERECHA sigue el `PropertyRail`. Clases `order` para que en móvil el
     centro vaya primero.
+- **Módulo Herramientas = maestro-detalle (2026-07-22).** `/dashboard/tools` dejó la galería de tarjetas +
+  modales y adoptó el patrón de Tickets/Proyectos: **rail de categorías a la izquierda** (`CATEGORIES`; por
+  ahora solo **"Edición"** además de "Todas", con conteos), **tabla `PixelDataTable` al centro** con las
+  herramientas de la categoría (hoy `convert` y `transcribe`, cada una con `category:'edicion'`), y al
+  seleccionar una fila, **panel de uso a la derecha** (antes eran modales) que ejecuta la herramienta ahí
+  mismo (formulario → progreso → resultado con "Usar de nuevo"). Las APIs `/api/tools/convert` y
+  `/api/tools/transcribe` no cambiaron. Para agregar herramientas: añadir a `TOOLS` con su `category` y su
+  render en `renderToolPanel`; nuevas categorías van en `CATEGORIES`.
 - **Correos de propuestas del calendario mostraban la hora del SERVIDOR, no la del miembro/cliente (2026-07-21):**
   Los correos de "Mi día" / calendario público (propuesta recibida, aceptada/rechazada, notificación a
   suscriptores) mostraban una hora incorrecta. Causa: `formatEmailDateTime` en `lib/integrations/email.ts`
