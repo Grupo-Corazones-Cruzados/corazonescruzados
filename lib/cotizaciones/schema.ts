@@ -18,6 +18,10 @@ let ensuring: Promise<void> | null = null;
 export function ensureQuoteTables(): Promise<void> {
   if (!ensuring) {
     ensuring = (async () => {
+      // La tabla `projects` tiene un CHECK `projects_status_check` con la lista de estados;
+      // hay que incluir 'cotizacion' o el INSERT falla. Se recrea idempotentemente.
+      await pool.query(`ALTER TABLE gcc_world.projects DROP CONSTRAINT IF EXISTS projects_status_check`);
+      await pool.query(`ALTER TABLE gcc_world.projects ADD CONSTRAINT projects_status_check CHECK (status IN ('cotizacion','draft','open','in_progress','review','completed','cancelled','on_hold','closed'))`);
       await pool.query(`
         CREATE TABLE IF NOT EXISTS gcc_world.quote_sessions (
           id BIGSERIAL PRIMARY KEY,
