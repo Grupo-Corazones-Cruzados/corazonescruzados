@@ -643,16 +643,16 @@ export default function TicketDetailPage() {
     <div>
       <DetailHeader
         breadcrumb={{ label: 'Tickets', href: '/dashboard/tickets' }}
-        title={editing ? 'Editando ticket' : (ticket.title || `Ticket #${ticket.id}`)}
-        status={!editing ? <PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{STATUS_LABEL[ticket.status] || ticket.status}</PixelBadge> : undefined}
-        chips={!editing ? (
+        title={ticket.title || `Ticket #${ticket.id}`}
+        status={<PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{STATUS_LABEL[ticket.status] || ticket.status}</PixelBadge>}
+        chips={(
           <>
             {ticket.client_name && <HeaderChip>{ticket.client_name}</HeaderChip>}
             {ticket.estimated_cost != null && ticket.estimated_cost !== '' && <HeaderChip>${fmt2(Number(ticket.estimated_cost))}</HeaderChip>}
             {ticket.deadline && <HeaderChip>Límite {new Date(ticket.deadline).toLocaleDateString()}</HeaderChip>}
           </>
-        ) : undefined}
-        actions={!editing && !editingSlots ? (
+        )}
+        actions={!editingSlots ? (
           <>
             {(ticket.status === 'pending' || ticket.status === 'withdrawn') && canEdit && !isRequestForMe && (
               <button onClick={() => updateStatus('confirmed')} className={BTN_PRIMARY}><Check className="w-4 h-4" /> Confirmar</button>
@@ -663,7 +663,7 @@ export default function TicketDetailPage() {
             {canEdit && <button onClick={startEdit} className={BTN_SECONDARY}><Pencil className="w-3.5 h-3.5" /> Editar</button>}
           </>
         ) : undefined}
-        overflow={!editing && !editingSlots ? [
+        overflow={!editingSlots ? [
           ...(isAdmin && ticket.status !== 'cancelled' ? [{ label: 'Cancelar ticket', onClick: () => updateStatus('cancelled'), danger: true }] : []),
           ...(isAdmin ? [{ label: 'Eliminar ticket', onClick: () => setDeleteModal(true), danger: true }] : []),
         ] : []}
@@ -689,41 +689,8 @@ export default function TicketDetailPage() {
       )}
 
 
-      {editing ? (
-        /* ========== EDIT MODE ========== */
-        <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5 space-y-4 max-w-3xl">
-          <PixelInput label="Título *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <div className="flex flex-col gap-1">
-            <label className="field-label text-[10px] text-accent-glow opacity-70" style={mf}>Descripción</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4}
-              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <PixelSelect label="Estado" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={STATUSES} />
-            <PixelSelect label="Servicio" value={form.service_id} onChange={(e) => setForm({ ...form, service_id: e.target.value })}
-              options={services.map((s: any) => ({ value: String(s.id), label: s.name }))} placeholder="-- Sin servicio --" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <PixelSelect label="Miembro asignado" value={form.member_id} onChange={(e) => setForm({ ...form, member_id: e.target.value })}
-              options={members.map((m: any) => ({ value: String(m.id), label: m.name }))} placeholder="-- Sin asignar --" />
-            <ClientPicker clientId={form.client_id} clientEmail={form.client_email || ''}
-              onChange={(v) => setForm({ ...form, client_id: v.clientId, client_email: v.clientEmail })} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <PixelInput label="Fecha limite" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
-            <PixelInput label="Horas estimadas" type="number" value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} />
-            <PixelInput label="Costo estimado (USD)" type="number" value={form.estimated_cost} onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} />
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setEditing(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
-            <button onClick={handleSave} disabled={saving || !form.title?.trim()} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
-            </button>
-          </div>
-        </div>
-      ) : (
-        /* ========== VIEW MODE — panel unificado (sin pestañas) + property rail ========== */
-        <div className="flex flex-col lg:flex-row gap-4 items-start">
+      {/* ========== VIEW MODE — panel unificado (sin pestañas) + property rail ========== */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
           {/* Columna principal: TODO en un solo espacio (resumen + acciones combinados) */}
           <div className="flex-1 min-w-0 w-full space-y-4">
             {ticket.open_for_talent && (
@@ -1017,7 +984,40 @@ export default function TicketDetailPage() {
           </PropertyRail>
           </div>
         </div>
-      )}
+
+      {/* ========== Modal de edición del ticket (overlay centrado) ========== */}
+      <PixelModal open={editing} onClose={() => setEditing(false)} title="Editar ticket" size="lg">
+        <div className="space-y-4">
+          <PixelInput label="Título *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <div className="flex flex-col gap-1">
+            <label className="field-label text-[10px] text-accent-glow opacity-70" style={mf}>Descripción</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4}
+              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PixelSelect label="Estado" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={STATUSES} />
+            <PixelSelect label="Servicio" value={form.service_id} onChange={(e) => setForm({ ...form, service_id: e.target.value })}
+              options={services.map((s: any) => ({ value: String(s.id), label: s.name }))} placeholder="-- Sin servicio --" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PixelSelect label="Miembro asignado" value={form.member_id} onChange={(e) => setForm({ ...form, member_id: e.target.value })}
+              options={members.map((m: any) => ({ value: String(m.id), label: m.name }))} placeholder="-- Sin asignar --" />
+            <ClientPicker clientId={form.client_id} clientEmail={form.client_email || ''}
+              onChange={(v) => setForm({ ...form, client_id: v.clientId, client_email: v.clientEmail })} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <PixelInput label="Fecha limite" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
+            <PixelInput label="Horas estimadas" type="number" value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} />
+            <PixelInput label="Costo estimado (USD)" type="number" value={form.estimated_cost} onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} />
+          </div>
+          <div className="flex gap-2 pt-2 border-t border-digi-border">
+            <button onClick={() => setEditing(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
+            <button onClick={handleSave} disabled={saving || !form.title?.trim()} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
+              {saving ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+          </div>
+        </div>
+      </PixelModal>
 
       <PixelModal open={completeModal} onClose={() => !completing && setCompleteModal(false)} title="Completar Ticket y Generar Factura" size="lg">
         {completing ? (
