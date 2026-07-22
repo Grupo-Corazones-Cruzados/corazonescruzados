@@ -35,6 +35,7 @@ Metodo de precios:
 
 Reglas de la cotizacion:
 - Desglosa el proyecto en REQUERIMIENTOS claros (modulos/entregables). Cada requerimiento tiene: title, description breve, hours (numero), cost (numero USD) y 2-6 subtasks (pasos concretos).
+- COSTOS ADICIONALES (additional_costs): servicios de PROVEEDORES EXTERNOS que el cliente debera adquirir aparte del desarrollo (p. ej. hosting/servidor, dominio, pasarela de pago, APIs de terceros, licencias, correo transaccional, SMS, almacenamiento, mapas). Segun el contexto del proyecto, propon los que apliquen con un costo estimado en USD (mensual o unico) y una breve descripcion. Si no aplica ninguno, devuelve una lista vacia.
 - Propon una FECHA LIMITE (deadline) realista en formato ISO (YYYY-MM-DD), acorde al total de horas.
 - Escribe en español. Se concreto y evita relleno.
 
@@ -63,6 +64,9 @@ Responde SOLO con este JSON (sin nada mas):
   "deadline": "YYYY-MM-DD",
   "requirements": [
     { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["...", "..."] }
+  ],
+  "additional_costs": [
+    { "label": "Servicio de proveedor externo", "description": "para que sirve", "amount": 0 }
   ]
 }`;
 }
@@ -83,7 +87,8 @@ Responde SOLO con este JSON (sin nada mas):
     "title": "...",
     "summary": "...",
     "deadline": "YYYY-MM-DD",
-    "requirements": [ { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["..."] } ]
+    "requirements": [ { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["..."] } ],
+    "additional_costs": [ { "label": "...", "description": "...", "amount": 0 } ]
   }
 }
 Incluye "quote" con la cotizacion completa SOLO si hubo cambios; si es solo una consulta, pon "quote": null.`;

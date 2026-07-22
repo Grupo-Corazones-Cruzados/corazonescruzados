@@ -26,7 +26,9 @@ export async function materializeQuote(projectId: number, payload: QuotePayload)
 
 /** Aplica un cambio de cotización: re-materializa, versiona y actualiza el proyecto. */
 export async function applyQuoteChange(projectId: number, payload: QuotePayload, note: string, createdBy: string): Promise<{ total: number; version: number }> {
-  const total = await materializeQuote(projectId, payload);
+  const reqTotal = await materializeQuote(projectId, payload);
+  const addTotal = (payload.additional_costs || []).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+  const total = reqTotal + addTotal;
   const { rows: [vr] } = await pool.query(`SELECT COALESCE(MAX(version), 0) + 1 AS next FROM gcc_world.quote_versions WHERE project_id = $1`, [projectId]);
   const version = Number(vr.next);
   await pool.query(
@@ -34,8 +36,8 @@ export async function applyQuoteChange(projectId: number, payload: QuotePayload,
     [projectId, version, JSON.stringify(payload), note, createdBy],
   );
   await pool.query(
-    `UPDATE gcc_world.projects SET title = COALESCE($2, title), description = $3, deadline = $4, final_cost = $5, updated_at = NOW() WHERE id = $1`,
-    [projectId, payload.title ? payload.title.slice(0, 200) : null, payload.summary || null, payload.deadline || null, total || null],
+    `UPDATE gcc_world.projects SET title = COALESCE($2, title), description = $3, deadline = $4, final_cost = $5, additional_costs = $6::jsonb, updated_at = NOW() WHERE id = $1`,
+    [projectId, payload.title ? payload.title.slice(0, 200) : null, payload.summary || null, payload.deadline || null, total || null, JSON.stringify(payload.additional_costs || [])],
   );
   return { total, version };
 }
@@ -45,6 +47,7 @@ export async function loadQuote(projectId: number): Promise<any | null> {
   const { rows: [p] } = await pool.query(
     `SELECT p.id, p.title, p.description, p.deadline, p.final_cost, p.status,
             p.quote_status, p.quote_token_expires_at, p.quote_client_email, p.quote_client_budget,
+            p.additional_costs,
             s.service_name, s.service_rate,
             m.name AS responsible_name
        FROM gcc_world.projects p
@@ -67,7 +70,11 @@ export async function loadQuote(projectId: number): Promise<any | null> {
     cost: r.cost != null ? Number(r.cost) : 0,
     subtasks: (Array.isArray(r.subtasks) ? r.subtasks : []).map((s: any) => s.title).filter(Boolean),
   }));
-  const total = requirements.reduce((s: number, r: any) => s + (r.cost || 0), 0);
+  const requirementsSubtotal = requirements.reduce((s: number, r: any) => s + (r.cost || 0), 0);
+  const additionalCosts = (Array.isArray(p.additional_costs) ? p.additional_costs : []).map((c: any) => ({
+    label: String(c?.label || ''), description: c?.description ? String(c.description) : '', amount: Number(c?.amount) || 0,
+  })).filter((c: any) => c.label);
+  const additionalTotal = additionalCosts.reduce((s: number, c: any) => s + (c.amount || 0), 0);
 
   return {
     id: Number(p.id),
@@ -82,6 +89,9 @@ export async function loadQuote(projectId: number): Promise<any | null> {
     responsibleName: p.responsible_name || '',
     service: { name: p.service_name || '', rate: p.service_rate != null ? Number(p.service_rate) : null },
     requirements,
-    total,
+    additionalCosts,
+    requirementsSubtotal,
+    additionalTotal,
+    total: requirementsSubtotal + additionalTotal,
   };
 }

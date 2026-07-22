@@ -90,11 +90,11 @@ export async function POST(req: NextRequest) {
     await ensureProjectMembersTable();
     await ensureQuoteTables();
     const title = (payload.title && payload.title.trim()) || `Cotización — ${service.name}`;
-    const total = payload.requirements.reduce((s, r) => s + (Number(r.cost) || 0), 0);
+    const total = payload.total || 0; // requerimientos + costos adicionales
     const { rows: [project] } = await pool.query(
-      `INSERT INTO gcc_world.projects (client_id, client_email, assigned_member_id, title, description, deadline, status, is_private, final_cost, created_by_user_id)
-       VALUES ($7, $8, $1, $2, $3, $4, 'cotizacion', true, $5, $6) RETURNING *`,
-      [respId, title.slice(0, 200), payload.summary || detail, payload.deadline || null, total || null, user.userId, clientId, clientEmail],
+      `INSERT INTO gcc_world.projects (client_id, client_email, assigned_member_id, title, description, deadline, status, is_private, final_cost, created_by_user_id, additional_costs)
+       VALUES ($7, $8, $1, $2, $3, $4, 'cotizacion', true, $5, $6, $9::jsonb) RETURNING *`,
+      [respId, title.slice(0, 200), payload.summary || detail, payload.deadline || null, total || null, user.userId, clientId, clientEmail, JSON.stringify(payload.additional_costs || [])],
     );
     await setResponsible(project.id, respId, { invited: false });
 

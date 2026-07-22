@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import GccBotChat from '@/components/cotizaciones/GccBotChat';
 import { Check, X, Calculator, ListChecks, CalendarDays, MessageSquare, Send, Wallet } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -157,6 +156,25 @@ export default function PublicQuotePage() {
               </div>
             ))}
           </div>
+
+          {/* Costos adicionales (servicios de proveedores externos) */}
+          {(quote.additionalCosts?.length ?? 0) > 0 && (
+            <div className="mt-4 pt-3 border-t border-digi-border">
+              <p className="text-[13px] font-semibold text-digi-text mb-2" style={mf}>Servicios externos (proveedores)</p>
+              <div className="space-y-1.5">
+                {quote.additionalCosts.map((c: any, i: number) => (
+                  <div key={i} className="flex items-start justify-between gap-3 text-[12.5px]">
+                    <div className="min-w-0">
+                      <span className="text-digi-text" style={mf}>{c.label}</span>
+                      {c.description && <span className="block text-[11.5px] text-digi-muted" style={mf}>{c.description}</span>}
+                    </div>
+                    <span className="text-digi-text tabular-nums shrink-0" style={mf}>{money(c.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-digi-border">
             <span className="text-[14px] font-semibold text-digi-text" style={mf}>Total</span>
             <span className="text-[20px] font-bold text-accent tabular-nums" style={df}>{money(quote.total)}</span>
@@ -166,7 +184,7 @@ export default function PublicQuotePage() {
         {/* Aceptar / Rechazar / Modificar presupuesto (grandes) */}
         {!decided && (
           <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
-            <p className="text-[13px] text-digi-muted text-center mb-3" style={mf}>¿Aceptas esta cotización? Si quieres ajustes, pídelos al asistente (abajo) o indica tu presupuesto para que la ajusten.</p>
+            <p className="text-[13px] text-digi-muted text-center mb-3" style={mf}>¿Aceptas esta cotización? Si el costo no se ajusta a lo que tienes, usa “Modificar presupuesto” e indícanos tu monto; el responsable la ajustará y te la compartirá de nuevo.</p>
             {quote.clientBudget != null && (
               <p className="text-[12px] text-center text-accent mb-3" style={mf}>Indicaste un presupuesto de <strong>{money(quote.clientBudget)}</strong>. El responsable ajustará la cotización.</p>
             )}
@@ -227,11 +245,8 @@ export default function PublicQuotePage() {
           )}
         </div>
 
-        <p className="text-center text-[11px] text-digi-muted pb-4" style={mf}>GCC World · Esta cotización es de solo lectura. Para cambios, usa el asistente GCC Bot.</p>
+        <p className="text-center text-[11px] text-digi-muted pb-4" style={mf}>GCC World · Esta cotización es de solo lectura. Puedes aceptarla, rechazarla o indicar tu presupuesto.</p>
       </div>
-
-      {/* GCC Bot (chat por token) — única vía para pedir cambios */}
-      {!decided && <GccBotChat projectId={String(id)} chatUrl={`/api/quotes/${id}/public/chat`} extraBody={{ token }} onChanged={() => { load(); }} />}
     </div>
   );
 }

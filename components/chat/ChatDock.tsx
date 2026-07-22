@@ -87,7 +87,7 @@ export default function ChatDock() {
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" data-chatdock-launchers>
         {canGroup && (
           <Launcher
             active={panel === 'group'} label="Chat" unread={groupUnread}

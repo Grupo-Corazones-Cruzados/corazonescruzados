@@ -22,9 +22,22 @@ export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody, s
   /** 'dock' = junto a los botones de chat (a su izquierda, mismo tamaño); 'right' = pill flotante (vista pública). */
   side?: 'right' | 'dock';
 }) {
-  // En 'dock' el launcher se ubica a la IZQUIERDA de los botones Chat/Mis chats del ChatDock
-  // (que ocupan ~208px desde el borde derecho). El panel abierto se ancla abajo-derecha.
-  const launcherRight = side === 'dock' ? 'right-[14rem]' : 'right-3';
+  // En 'dock' el launcher se ubica a la IZQUIERDA de los botones Chat/Mis chats del ChatDock,
+  // midiendo su ancho real para dejar la MISMA separación (8px). El panel abierto va abajo-derecha.
+  const [dockRight, setDockRight] = useState<number | null>(null);
+  useEffect(() => {
+    if (side !== 'dock') return;
+    const measure = () => {
+      const el = document.querySelector('[data-chatdock-launchers]') as HTMLElement | null;
+      if (el) { const r = el.getBoundingClientRect(); setDockRight(Math.round(window.innerWidth - r.left + 8)); }
+    };
+    measure();
+    const t1 = setTimeout(measure, 300);
+    const t2 = setTimeout(measure, 900);
+    window.addEventListener('resize', measure);
+    return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', measure); };
+  }, [side]);
+  const dockStyle = side === 'dock' ? { right: dockRight ?? 232 } : undefined;
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([{
     role: 'bot',
@@ -56,7 +69,7 @@ export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody, s
     <>
       {!open && (
         <button onClick={() => setOpen(true)} aria-label="Abrir GCC Bot"
-          className={`fixed bottom-11 ${launcherRight} z-[91] inline-flex items-center gap-2 h-10 pl-3 pr-4 rounded-full shadow-lg bg-accent text-white hover:bg-accent-hover transition-colors`} style={mf}>
+          className={`fixed bottom-11 ${side === 'dock' ? '' : 'right-3'} z-[91] inline-flex items-center gap-2 h-10 pl-3 pr-4 rounded-full shadow-lg bg-accent text-white hover:bg-accent-hover transition-colors`} style={{ ...mf, ...dockStyle }}>
           <Bot className="w-4 h-4" /> <span className="text-[12.5px] font-medium">GCC Bot</span>
         </button>
       )}

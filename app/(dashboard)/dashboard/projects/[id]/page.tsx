@@ -29,6 +29,7 @@ import useAgentChat from '@/hooks/useAgentChat';
 import GccBotChat from '@/components/cotizaciones/GccBotChat';
 import QuoteShareButton from '@/components/cotizaciones/QuoteShareButton';
 import QuoteObservationsPanel from '@/components/cotizaciones/QuoteObservationsPanel';
+import AdditionalCostsCard from '@/components/cotizaciones/AdditionalCostsCard';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -1969,36 +1970,22 @@ export default function ProjectDetailPage() {
             </dl>
           </div>
 
-          {/* Descripción del proyecto (movida aquí, bajo Propiedades) — editable por el responsable */}
+          {/* Descripción del proyecto (bajo Propiedades) — se edita en panel derecho */}
           {(project.description || (isOwner && !isTerminal)) && (
             <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Descripción</h3>
-                {isOwner && !isTerminal && !editingDesc && (
+                {isOwner && !isTerminal && (
                   <button onClick={() => { setEditDesc(project.description || ''); setEditingDesc(true); }} className="text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors" style={pf}>Editar</button>
                 )}
               </div>
-              {editingDesc ? (
-                <div className="space-y-2">
-                  <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={5} placeholder="Descripción del proyecto…"
-                    className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-y" style={mf} />
-                  <div className="flex gap-2 justify-end">
-                    <button onClick={() => setEditingDesc(false)} className="text-[12px] text-digi-muted border border-digi-border rounded px-2.5 py-1 hover:text-digi-text transition-colors" style={mf}>Cancelar</button>
-                    <button onClick={async () => {
-                      setSavingDesc(true);
-                      try {
-                        const res = await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description: editDesc }) });
-                        if (!res.ok) throw new Error((await res.json()).error || 'Error');
-                        setEditingDesc(false); await fetchProject(); toast.success('Descripción actualizada');
-                      } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
-                      finally { setSavingDesc(false); }
-                    }} disabled={savingDesc} className="text-[12px] font-medium text-white bg-accent rounded px-2.5 py-1 hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>{savingDesc ? 'Guardando…' : 'Guardar'}</button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{project.description || <span className="text-digi-muted">Sin descripción. Pulsa “Editar” para agregar una.</span>}</p>
-              )}
+              <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{project.description || <span className="text-digi-muted">Sin descripción. Pulsa “Editar” para agregar una.</span>}</p>
             </div>
+          )}
+
+          {/* Costos adicionales (servicios de proveedores externos) */}
+          {(project.status === 'cotizacion' || (project.additional_costs || []).length > 0) && (
+            <AdditionalCostsCard projectId={project.id} costs={project.additional_costs || []} canEdit={!!(isOwner && !isTerminal)} onSaved={fetchProject} />
           )}
 
           {/* Pagos (facturado vs pendiente) */}
@@ -2715,6 +2702,29 @@ export default function ProjectDetailPage() {
       {project.status === 'cotizacion' && <GccBotChat projectId={project.id} onChanged={fetchProject} side="dock" />}
       {/* Modal de compartir acceso (se abre desde el header). */}
       {project.status === 'cotizacion' && isOwner && <QuoteShareButton projectId={project.id} open={showShare} onClose={() => setShowShare(false)} />}
+
+      {/* Editar descripción — panel lateral derecho (overlay). */}
+      <PixelModal open={editingDesc} onClose={() => setEditingDesc(false)} title="Editar descripción" size="md">
+        <div className="space-y-3">
+          <div className="flex flex-col gap-1">
+            <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Descripción del proyecto</label>
+            <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={8} placeholder="Descripción del proyecto…"
+              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-y" style={mf} />
+          </div>
+          <div className="flex gap-2 pt-2 border-t border-digi-border">
+            <button onClick={() => setEditingDesc(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
+            <button onClick={async () => {
+              setSavingDesc(true);
+              try {
+                const res = await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description: editDesc }) });
+                if (!res.ok) throw new Error((await res.json()).error || 'Error');
+                setEditingDesc(false); await fetchProject(); toast.success('Descripción actualizada');
+              } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
+              finally { setSavingDesc(false); }
+            }} disabled={savingDesc} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>{savingDesc ? 'Guardando…' : 'Guardar'}</button>
+          </div>
+        </div>
+      </PixelModal>
     </div>
   );
 }

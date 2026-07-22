@@ -22,6 +22,8 @@ export function ensureQuoteTables(): Promise<void> {
       // hay que incluir 'cotizacion' o el INSERT falla. Se recrea idempotentemente.
       await pool.query(`ALTER TABLE gcc_world.projects DROP CONSTRAINT IF EXISTS projects_status_check`);
       await pool.query(`ALTER TABLE gcc_world.projects ADD CONSTRAINT projects_status_check CHECK (status IN ('cotizacion','draft','open','in_progress','review','completed','cancelled','on_hold','closed'))`);
+      // Costos adicionales (servicios de proveedores externos) — lista en el propio proyecto.
+      await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS additional_costs JSONB DEFAULT '[]'::jsonb`);
       await pool.query(`
         CREATE TABLE IF NOT EXISTS gcc_world.quote_sessions (
           id BIGSERIAL PRIMARY KEY,
@@ -107,13 +109,26 @@ export type QuoteRequirement = {
   cost: number;
   subtasks: string[];
 };
+/** Costo adicional: servicio de proveedor externo (hosting, dominio, APIs, licencias…). */
+export type AdditionalCost = { label: string; description?: string; amount: number };
+
 export type QuotePayload = {
   title?: string;
   summary?: string;
   deadline?: string | null;   // ISO date
   requirements: QuoteRequirement[];
+  additional_costs: AdditionalCost[];
   total?: number;
 };
+
+/** Normaliza una lista de costos adicionales (defensivo). */
+export function normalizeAdditionalCosts(raw: any): AdditionalCost[] {
+  return (Array.isArray(raw) ? raw : []).map((c: any) => ({
+    label: String(c?.label || '').trim() || 'Servicio externo',
+    description: c?.description ? String(c.description) : '',
+    amount: Number(c?.amount) || 0,
+  })).filter((c: AdditionalCost) => c.label);
+}
 
 /** Normaliza/valida el payload que devuelve el agente (defensivo). */
 export function normalizeQuotePayload(raw: any): QuotePayload {
@@ -124,11 +139,12 @@ export function normalizeQuotePayload(raw: any): QuotePayload {
     cost: Number(r?.cost) || 0,
     subtasks: Array.isArray(r?.subtasks) ? r.subtasks.map((s: any) => String(typeof s === 'string' ? s : s?.title || '').trim()).filter(Boolean) : [],
   })).filter((r: QuoteRequirement) => r.title) : [];
-  const total = reqs.reduce((s, r) => s + (Number(r.cost) || 0), 0);
+  const additional_costs = normalizeAdditionalCosts(raw?.additional_costs);
+  const total = reqs.reduce((s, r) => s + (Number(r.cost) || 0), 0) + additional_costs.reduce((s, c) => s + (Number(c.amount) || 0), 0);
   let deadline: string | null = null;
   if (raw?.deadline) {
     const d = new Date(raw.deadline);
     if (!Number.isNaN(d.getTime())) deadline = d.toISOString();
   }
-  return { title: raw?.title ? String(raw.title).slice(0, 200) : '', summary: raw?.summary ? String(raw.summary) : '', deadline, requirements: reqs, total };
+  return { title: raw?.title ? String(raw.title).slice(0, 200) : '', summary: raw?.summary ? String(raw.summary) : '', deadline, requirements: reqs, additional_costs, total };
 }
