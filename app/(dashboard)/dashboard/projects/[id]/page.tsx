@@ -1124,7 +1124,21 @@ export default function ProjectDetailPage() {
           {(() => {
             const team: any[] = project.project_members || [];
             const responsibleRow = project.responsible || team.find((t) => t.role === 'responsible' && t.status === 'active');
-            const participants = team.filter((t) => t.status === 'active' && String(t.member_id) !== String(responsibleRow?.member_id));
+            const responsibleId = String(responsibleRow?.member_id ?? '');
+            // Participantes = filas project_members activas + postulantes con propuesta ACEPTADA
+            // (unión por member_id, excluyendo al responsable). Así un bid aceptado SIEMPRE aparece
+            // como participante, aunque falte la fila project_members (p. ej. proyectos antiguos).
+            const participantMap = new Map<string, any>();
+            for (const t of team) {
+              if (t.status === 'active' && String(t.member_id) !== responsibleId) participantMap.set(String(t.member_id), t);
+            }
+            for (const b of (bids || [])) {
+              if (b.status !== 'accepted') continue;
+              const mid = String(b.member_id);
+              if (mid === responsibleId || participantMap.has(mid)) continue;
+              participantMap.set(mid, { member_id: b.member_id, member_name: b.member_name, photo_url: b.photo_url, role: 'participant', status: 'active' });
+            }
+            const participants = Array.from(participantMap.values());
             const Avatar = ({ m }: { m: any }) => m.photo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={m.photo_url} alt="" className="w-8 h-8 rounded-full border border-digi-border object-cover shrink-0" />
@@ -1194,9 +1208,9 @@ export default function ProjectDetailPage() {
                 )}
               </div>
             </div>
-            {bids.length > 0 ? (
+            {bids.filter((b: any) => b.status !== 'accepted').length > 0 ? (
               <div className="space-y-2.5">
-                {bids.map((b: any) => {
+                {bids.filter((b: any) => b.status !== 'accepted').map((b: any) => {
                   const bidLabel = ({ pending: 'Pendiente', accepted: 'Aceptada', rejected: 'Rechazada', invited: 'Invitado', counter: 'Contraoferta' } as Record<string, string>)[b.status] || b.status;
                   return (
                     <div key={b.id} className="rounded-lg border border-digi-border p-3.5">
@@ -1250,7 +1264,7 @@ export default function ProjectDetailPage() {
                 })}
               </div>
             ) : (
-              <p className="text-[12px] text-digi-muted text-center py-3" style={mf}>Sin participantes aún.</p>
+              <p className="text-[12px] text-digi-muted text-center py-3" style={mf}>No hay propuestas pendientes.</p>
             )}
           </div>
           </>)}
@@ -1711,53 +1725,6 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          {/* Participant Progress */}
-          {['in_progress', 'review', 'completed'].includes(project.status) && (() => {
-            const reqs = project.requirements || [];
-            // Build per-member progress
-            const memberMap: Record<string, { name: string; photo_url: string; total: number; completed: number }> = {};
-            for (const req of reqs) {
-              const assignments = req.assignments || [];
-              for (const a of assignments) {
-                if (a.status !== 'accepted') continue;
-                if (!memberMap[a.member_id]) memberMap[a.member_id] = { name: a.member_name, photo_url: a.photo_url, total: 0, completed: 0 };
-                memberMap[a.member_id].total++;
-                if (req.is_completed || req.completed_at) memberMap[a.member_id].completed++;
-              }
-            }
-            const members = Object.values(memberMap);
-            if (members.length === 0) return null;
-            return (
-              <div className="pixel-card">
-                <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Progreso del Equipo</h3>
-                <div className="space-y-2">
-                  {members.map((m, i) => {
-                    const pct = m.total > 0 ? Math.round((m.completed / m.total) * 100) : 0;
-                    return (
-                      <div key={i} className="flex items-center gap-2">
-                        {m.photo_url ? (
-                          <img src={m.photo_url} alt={m.name} className="w-6 h-6 rounded-full object-cover border border-digi-border shrink-0" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-accent-light border border-accent/50 flex items-center justify-center shrink-0">
-                            <span className="text-[11px] text-accent" style={pf}>{m.name?.charAt(0)}</span>
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-[11px] text-digi-text truncate" style={mf}>{m.name}</span>
-                            <span className="text-[11px] text-digi-muted shrink-0" style={mf}>{m.completed}/{m.total} ({pct}%)</span>
-                          </div>
-                          <div className="h-1.5 bg-digi-darker border border-digi-border overflow-hidden">
-                            <div className={`h-full transition-all duration-500 ${pct === 100 ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
           </>)}
 
           {/* Image Preview Modal (always rendered) */}
@@ -1813,70 +1780,9 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          {(<>
-          {/* Actions */}
-          {(isOwner || isMember) && (
-            <div className="pixel-card">
-              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Acciones</h3>
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                {/* Participant: Desistir / Salida Supervisada */}
-                {isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && (() => {
-                  const myReqs = projectRequests.filter((r: any) => String(r.member_id) === String(memberId));
-                  const hasRejectedWithdrawal = myReqs.some((r: any) => r.type === 'withdrawal' && r.status === 'rejected');
-                  const hasPendingWithdrawal = myReqs.some((r: any) => r.type === 'withdrawal' && r.status === 'pending');
-                  const hasPendingSupervisedExit = myReqs.some((r: any) => r.type === 'supervised_exit' && r.status === 'pending');
-                  return (
-                    <>
-                      {!hasPendingWithdrawal && !hasRejectedWithdrawal && (
-                        <button onClick={() => { setWithdrawType('withdrawal'); setWithdrawReason(''); setShowWithdrawModal(true); }}
-                          className="py-1.5 px-3 text-[11px] text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors" style={pf}>
-                          Desistir
-                        </button>
-                      )}
-                      {hasRejectedWithdrawal && !hasPendingSupervisedExit && (
-                        <button onClick={() => { setWithdrawType('supervised_exit'); setWithdrawReason(''); setShowWithdrawModal(true); }}
-                          className="py-1.5 px-3 text-[11px] text-red-600 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>
-                          Salida con Supervision
-                        </button>
-                      )}
-                    </>
-                  );
-                })()}
-                </div>
-                <p className="text-[11px] text-digi-muted leading-relaxed" style={mf}>
-                  {project.status === 'draft' && 'Publicar hara visible este proyecto para que miembros puedan postularse y trabajar en el.'}
-                  {project.status === 'open' && 'Iniciar cambia el estado a En Progreso, indicando que el equipo ya esta trabajando activamente.'}
-                  {project.status === 'in_progress' && 'Enviar a Revision notifica al administrador que el trabajo esta listo para ser evaluado. Todos los requerimientos deben estar completados al 100%.'}
-                  {project.status === 'review' && isAdmin && 'Completar finaliza el proyecto, genera la factura y lo publica en el marketplace.'}
-                  {project.status === 'completed' && 'Este proyecto ha sido completado exitosamente.'}
-                  {project.status === 'cancelled' && 'Este proyecto fue cancelado.'}
-                </p>
-                {project.status === 'completed' && isOwner && !project.marketplace_source_id && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(`/api/projects/${id}/publish`, {
-                          method: 'POST', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ publish: !project.is_marketplace_published }),
-                        });
-                        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-                        toast.success(project.is_marketplace_published ? 'Despublicado del marketplace' : 'Publicado en el marketplace');
-                        fetchProject();
-                      } catch (e: any) { toast.error(e.message || 'Error'); }
-                    }}
-                    className={`pixel-btn text-sm ${project.is_marketplace_published ? 'border border-amber-300 text-amber-700 hover:bg-amber-50' : 'pixel-btn-primary'}`}
-                  >
-                    {project.is_marketplace_published ? 'Despublicar Marketplace' : 'Publicar en Marketplace'}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-          </>)}
         </div>
 
-        {/* ====== DERECHA: Propiedades → DigiMundo → Imágenes ====== */}
+        {/* ====== DERECHA: Propiedades → Acciones → Progreso → DigiMundo → Imágenes ====== */}
         <div className="w-full lg:w-[360px] shrink-0 space-y-4">
           {/* Propiedades */}
           <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
@@ -1927,6 +1833,114 @@ export default function ProjectDetailPage() {
               <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Creado</dt><dd className="text-digi-text text-right">{new Date(project.created_at).toLocaleDateString()}</dd></div>
             </dl>
           </div>
+
+          {/* Acciones (estado del proyecto / participación) */}
+          {(isOwner || isMember) && (
+            <div className="pixel-card">
+              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Acciones</h3>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                {/* Participant: Desistir / Salida Supervisada */}
+                {isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && (() => {
+                  const myReqs = projectRequests.filter((r: any) => String(r.member_id) === String(memberId));
+                  const hasRejectedWithdrawal = myReqs.some((r: any) => r.type === 'withdrawal' && r.status === 'rejected');
+                  const hasPendingWithdrawal = myReqs.some((r: any) => r.type === 'withdrawal' && r.status === 'pending');
+                  const hasPendingSupervisedExit = myReqs.some((r: any) => r.type === 'supervised_exit' && r.status === 'pending');
+                  return (
+                    <>
+                      {!hasPendingWithdrawal && !hasRejectedWithdrawal && (
+                        <button onClick={() => { setWithdrawType('withdrawal'); setWithdrawReason(''); setShowWithdrawModal(true); }}
+                          className="py-1.5 px-3 text-[11px] text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors" style={pf}>
+                          Desistir
+                        </button>
+                      )}
+                      {hasRejectedWithdrawal && !hasPendingSupervisedExit && (
+                        <button onClick={() => { setWithdrawType('supervised_exit'); setWithdrawReason(''); setShowWithdrawModal(true); }}
+                          className="py-1.5 px-3 text-[11px] text-red-600 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>
+                          Salida con Supervision
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+                </div>
+                <p className="text-[11px] text-digi-muted leading-relaxed" style={mf}>
+                  {project.status === 'draft' && 'Publicar hara visible este proyecto para que miembros puedan postularse y trabajar en el.'}
+                  {project.status === 'open' && 'Iniciar cambia el estado a En Progreso, indicando que el equipo ya esta trabajando activamente.'}
+                  {project.status === 'in_progress' && 'Enviar a Revision notifica al administrador que el trabajo esta listo para ser evaluado. Todos los requerimientos deben estar completados al 100%.'}
+                  {project.status === 'review' && isAdmin && 'Completar finaliza el proyecto, genera la factura y lo publica en el marketplace.'}
+                  {project.status === 'completed' && 'Este proyecto ha sido completado exitosamente.'}
+                  {project.status === 'cancelled' && 'Este proyecto fue cancelado.'}
+                </p>
+                {project.status === 'completed' && isOwner && !project.marketplace_source_id && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/projects/${id}/publish`, {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ publish: !project.is_marketplace_published }),
+                        });
+                        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+                        toast.success(project.is_marketplace_published ? 'Despublicado del marketplace' : 'Publicado en el marketplace');
+                        fetchProject();
+                      } catch (e: any) { toast.error(e.message || 'Error'); }
+                    }}
+                    className={`pixel-btn text-sm w-full ${project.is_marketplace_published ? 'border border-amber-300 text-amber-700 hover:bg-amber-50' : 'pixel-btn-primary'}`}
+                  >
+                    {project.is_marketplace_published ? 'Despublicar Marketplace' : 'Publicar en Marketplace'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Progreso del equipo */}
+          {['in_progress', 'review', 'completed'].includes(project.status) && (() => {
+            const rqs = project.requirements || [];
+            const memberMap: Record<string, { name: string; photo_url: string; total: number; completed: number }> = {};
+            for (const req of rqs) {
+              const assignments = req.assignments || [];
+              for (const a of assignments) {
+                if (a.status !== 'accepted') continue;
+                if (!memberMap[a.member_id]) memberMap[a.member_id] = { name: a.member_name, photo_url: a.photo_url, total: 0, completed: 0 };
+                memberMap[a.member_id].total++;
+                if (req.is_completed || req.completed_at) memberMap[a.member_id].completed++;
+              }
+            }
+            const members = Object.values(memberMap);
+            if (members.length === 0) return null;
+            return (
+              <div className="pixel-card">
+                <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Progreso del equipo</h3>
+                <div className="space-y-2">
+                  {members.map((m, i) => {
+                    const pct = m.total > 0 ? Math.round((m.completed / m.total) * 100) : 0;
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        {m.photo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={m.photo_url} alt={m.name} className="w-6 h-6 rounded-full object-cover border border-digi-border shrink-0" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-accent-light border border-accent/50 flex items-center justify-center shrink-0">
+                            <span className="text-[11px] text-accent" style={pf}>{m.name?.charAt(0)}</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[11px] text-digi-text truncate" style={mf}>{m.name}</span>
+                            <span className="text-[11px] text-digi-muted shrink-0" style={mf}>{m.completed}/{m.total} ({pct}%)</span>
+                          </div>
+                          <div className="h-1.5 bg-digi-darker border border-digi-border overflow-hidden">
+                            <div className={`h-full transition-all duration-500 ${pct === 100 ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* DigiMundo */}
           {(<>
