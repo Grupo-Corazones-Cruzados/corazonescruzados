@@ -2352,6 +2352,29 @@ Módulos principales:
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
 ## Decisiones y reglas de negocio
+- **Modelo de CLIENTES y FACTURACIÓN (confirmado 2026-07-21).** Mapa detallado en el artefacto HTML
+  "Asociación de clientes" (auditoría del código). Reglas acordadas para el rediseño:
+  - **Tablas separadas** `clients` (identidad app) y `billing_clients` (facturación) — un cliente podrá
+    tener **varias cuentas de facturación** a futuro (hoy **una por cliente**).
+  - **`clients` tiene ESTADO**: `inactivo` (solo correo, sin dueño) · `pendiente` (registro sin verificar
+    correo) · `activo` (verificado, o miembro/candidato que generó su cuenta de cliente).
+  - **Crear cuenta de cliente: solo 3 rutas** — (1) self-signup en pantalla principal; (2) miembro/candidato
+    al "Solicitar ticket/proyecto" genera su cuenta de cliente con SUS mismos datos (sin re-rellenar),
+    asociada a su cuenta — el vínculo persiste aunque pase candidato↔miembro; (3) placeholder por correo
+    al asignar cliente en ticket/proyecto (fila `clients` `inactivo` solo-correo, ligada al miembro creador,
+    + invitación a crear cuenta).
+  - **Merge al registrarse con correo ya usado**: al completar signup/verificación, actualizar EN SITIO la
+    fila `clients` existente (misma fila → conserva vínculos a tickets/proyectos) y pasar a `activo`.
+  - **Campo cliente en crear ticket/proyecto = OBLIGATORIO**: elegir cliente ya usado por el creador (activo
+    o inactivo) o escribir un correo; la lista se muestra **siempre por correo**.
+  - **Facturación**: `billing_clients` siempre asociado a un `clients`; al facturar, si no tiene cuenta de
+    facturación → campos vacíos, se llenan y **se guardan como la cuenta del cliente**; futuras facturas del
+    mismo cliente **prellenan** desde ahí; si se **edita** un dato al facturar/refacturar → se **actualiza** la
+    cuenta. **Se quita** el selector de "datos de facturación de facturas anteriores".
+  - **Anular/refacturar**: no desvincular el cliente de la factura; refactura re-trae billing y re-completa estado.
+  - **Facturación por abono**: se ELIMINA la función actual de "facturar proyecto por adelantado" del módulo de
+    facturas. Futuro: facturar por abono desde ticket/proyecto + panel lateral de pagos (pagado vs pendiente).
+  - Implementación por fases; primero **quick wins** (quitar facturación por adelantado + anular/refacturar).
 - **BD multi-schema**: toda query (Prisma o `pg` cruda) opera sobre el schema `gcc_world`.
   Al crear tablas nuevas, hacerlo como migración SQL en `sql/migrations/` con numeración correlativa.
 - **Facturación = Ecuador / SRI**: firma electrónica con `.p12`; respetar formato XML SRI.

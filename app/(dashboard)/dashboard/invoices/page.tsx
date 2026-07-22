@@ -75,6 +75,9 @@ function InvoicesPageInner() {
   const [projectSearch, setProjectSearch] = useState('');
   const [projectResults, setProjectResults] = useState<any[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<any[]>([]);
+  // Al refacturar (re-emitir una factura anulada) recordamos el ticket/proyecto de origen
+  // para volver a marcarlo como completado y re-enlazar la nueva factura a su origen.
+  const [refactorSource, setRefactorSource] = useState<{ type: 'ticket' | 'project'; id: number; client_id: number | null } | null>(null);
   const [searchingProjects, setSearchingProjects] = useState(false);
   const searchTimeout = useRef<any>(null);
 
@@ -197,30 +200,6 @@ function InvoicesPageInner() {
     setSelectedProjects(prev => prev.filter(p => p.id !== id));
   };
 
-  const openManualModal = () => {
-    setManualStep('type');
-    setManualType('completo');
-    setMPaidAmount('');
-    setSelectedProjects([]);
-    setProjectSearch('');
-    setProjectResults([]);
-    setMIdType('07');
-    setMClientName('CONSUMIDOR FINAL');
-    setMClientRuc('9999999999999');
-    setMClientEmail('');
-    setMClientPhone('');
-    setMClientAddress('');
-    setMPaymentCode('20');
-    setMItems([]);
-    setMAdditionalFields([]);
-    setMSendEmail(true);
-    setMCurrency('USD');
-    setMExchangeRate('1');
-    setProcessing(false);
-    setProcessStep('');
-    setShowManual(true);
-  };
-
   // Refactor: prefill modal with data from an existing invoice (e.g. a voided one)
   const openRefactorModal = useCallback(async (sourceId: string) => {
     try {
@@ -232,6 +211,17 @@ function InvoicesPageInner() {
       const { data: inv } = await invRes.json();
       const itemsData = itemsRes.ok ? await itemsRes.json() : { data: [] };
       const items = itemsData.data || [];
+
+      // Recuerda el origen (ticket/proyecto) para re-completarlo al autorizar la refactura.
+      if (inv.source_type === 'ticket' && inv.source_id != null) {
+        setRefactorSource({ type: 'ticket', id: Number(inv.source_id), client_id: inv.client_id ?? null });
+      } else if (inv.ticket_id != null) {
+        setRefactorSource({ type: 'ticket', id: Number(inv.ticket_id), client_id: inv.client_id ?? null });
+      } else if (inv.project_id != null) {
+        setRefactorSource({ type: 'project', id: Number(inv.project_id), client_id: inv.client_id ?? null });
+      } else {
+        setRefactorSource(null);
+      }
 
       setManualStep('form');
       setManualType('completo');
@@ -418,7 +408,9 @@ function InvoicesPageInner() {
         (mSendEmail && mClientEmail && sriOk ? ' — Enviada por correo' : '')
       );
       if (sriError && !sriOk) toast.error(`SRI: ${sriError}`);
+      if (refactorSource && sriOk) toast.success(`${refactorSource.type === 'ticket' ? 'Ticket' : 'Proyecto'} marcado como completado nuevamente`);
 
+      setRefactorSource(null);
       setShowManual(false);
       fetchData();
     } catch {
@@ -459,6 +451,7 @@ function InvoicesPageInner() {
             discount: Number(it.discount) || 0,
           })),
           additional_fields: mAdditionalFields.filter(f => f.name.trim() && f.value.trim()),
+          refactor_source: refactorSource,
         }),
       });
       const data = await res.json();
@@ -489,7 +482,9 @@ function InvoicesPageInner() {
         (mSendEmail && mClientEmail && sriOk ? ' — Enviada por correo' : '')
       );
       if (sriError && !sriOk) toast.error(`SRI: ${sriError}`);
+      if (refactorSource && sriOk) toast.success(`${refactorSource.type === 'ticket' ? 'Ticket' : 'Proyecto'} marcado como completado nuevamente`);
 
+      setRefactorSource(null);
       setShowManual(false);
       fetchData();
     } catch {
@@ -551,11 +546,6 @@ function InvoicesPageInner() {
                 className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
                 style={mf} />
             </div>
-            {isAdmin && (
-              <button onClick={openManualModal} className={`${BTN_PRIMARY} shrink-0`}>
-                <Plus className="w-4 h-4" /> Factura manual
-              </button>
-            )}
           </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
@@ -679,90 +669,6 @@ function InvoicesPageInner() {
               ))}
             </div>
             <p className="text-center text-[12px] text-digi-muted" style={mf}>No cierres esta ventana hasta que el proceso termine</p>
-          </div>
-
-        ) : manualStep === 'type' ? (
-          <div className="space-y-4">
-            <p className="text-[10px] text-digi-muted" style={mf}>Selecciona el tipo de factura manual que deseas generar.</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => { setManualType('completo'); setManualStep('projects'); }}
-                className="p-4 border-2 border-digi-border hover:border-accent transition-colors text-left space-y-2">
-                <div className="text-[10px] text-accent font-semibold" style={pf}>Completo</div>
-                <p className="text-[11px] text-digi-muted" style={mf}>El cliente pago el monto total del proyecto. La factura se genera con el valor completo de los requerimientos.</p>
-              </button>
-              <button onClick={() => { setManualType('con_fallo'); setManualStep('projects'); }}
-                className="p-4 border-2 border-digi-border hover:border-orange-500/50 transition-colors text-left space-y-2">
-                <div className="text-[10px] text-orange-400 font-bold" style={pf}>Con Fallo</div>
-                <p className="text-[11px] text-digi-muted" style={mf}>El cliente envio un monto inferior al total. Se aplicara un descuento proporcional en los requerimientos para igualar lo pagado.</p>
-              </button>
-            </div>
-          </div>
-
-        ) : manualStep === 'projects' ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              {manualType === 'con_fallo' && <span className="text-[11px] px-1.5 py-0.5 border border-orange-500/40 text-orange-400" style={pf}>CON FALLO</span>}
-            </div>
-            <p className="text-[10px] text-digi-muted" style={mf}>Busca y selecciona los proyectos a incluir en la factura manual.</p>
-
-            {/* Project search */}
-            <div className="relative">
-              <input
-                value={projectSearch}
-                onChange={e => setProjectSearch(e.target.value)}
-                placeholder="Buscar proyecto por titulo..."
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                style={mf}
-              />
-              {searchingProjects && <span className="absolute right-3 top-2.5 text-[11px] text-digi-muted animate-pulse" style={pf}>...</span>}
-
-              {/* Dropdown results */}
-              {projectResults.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-digi-darker border-2 border-digi-border max-h-48 overflow-y-auto">
-                  {projectResults.map(p => (
-                    <button key={p.id} onClick={() => addProject(p)}
-                      className="w-full text-left px-3 py-2 hover:bg-accent/10 border-b border-digi-border/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-digi-text" style={mf}>#{p.id} — {p.title}</span>
-                        <PixelBadge variant={STATUS_V_PROJECT[p.status] || 'default'}>{STATUS_LABELS[p.status] || p.status}</PixelBadge>
-                      </div>
-                      <div className="flex gap-3 mt-0.5">
-                        <span className="text-[11px] text-digi-muted" style={mf}>{p.client_name || 'Sin cliente'}</span>
-                        {p.final_cost && <span className="text-[11px] text-accent" style={mf}>${fmt2(Number(p.final_cost))}</span>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Selected projects */}
-            {selectedProjects.length > 0 && (
-              <div className="space-y-1.5">
-                <label className="text-[11px] text-accent" style={pf}>Proyectos seleccionados ({selectedProjects.length})</label>
-                {selectedProjects.map(p => (
-                  <div key={p.id} className="flex items-center justify-between px-3 py-2 border border-accent/30 bg-accent/5">
-                    <div>
-                      <span className="text-xs text-digi-text" style={mf}>#{p.id} — {p.title}</span>
-                      <div className="flex gap-3 mt-0.5">
-                        <PixelBadge variant={STATUS_V_PROJECT[p.status] || 'default'}>{STATUS_LABELS[p.status] || p.status}</PixelBadge>
-                        {p.final_cost && <span className="text-[11px] text-accent" style={mf}>${fmt2(Number(p.final_cost))}</span>}
-                      </div>
-                    </div>
-                    <button onClick={() => removeProject(p.id)} className="text-red-600/60 hover:text-red-600 text-[11px] px-2 py-1 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>Quitar</button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Next button */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
-              <button onClick={() => setManualStep('type')} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Atras</button>
-              <button onClick={goToForm} disabled={selectedProjects.length === 0}
-                className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
-                Siguiente
-              </button>
-            </div>
           </div>
 
         ) : manualStep === 'form' ? (
@@ -1035,16 +941,10 @@ function InvoicesPageInner() {
                   <span className="text-[12px] text-digi-muted" style={mf}>Enviar por correo</span>
                 </label>
                 <div className="flex gap-2">
-                  <button onClick={() => setManualStep('projects')} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Atras</button>
-                  {manualType === 'con_fallo' ? (
-                    <button onClick={() => setManualStep('paid')} disabled={!isFormValid} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
-                      Siguiente
-                    </button>
-                  ) : (
-                    <button onClick={handleManualSubmit} disabled={!isFormValid} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
-                      Generar Factura
-                    </button>
-                  )}
+                  <button onClick={() => setShowManual(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
+                  <button onClick={handleManualSubmit} disabled={!isFormValid} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
+                    Generar Factura
+                  </button>
                 </div>
               </div>
             </div>

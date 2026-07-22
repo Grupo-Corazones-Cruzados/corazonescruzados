@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
-import { addProjectIncomeToFinance } from '@/lib/finance';
+import { addProjectIncomeToFinance, addTicketIncomeToFinance } from '@/lib/finance';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
       project_ids, client_id_type, client_name, client_ruc, client_email,
       client_phone, client_address, payment_code, invoice_items,
       additional_fields, send_email, currency, exchange_rate,
+      refactor_source,
     } = await req.json();
 
     if (!client_name?.trim()) return NextResponse.json({ error: 'Nombre del cliente requerido' }, { status: 400 });
@@ -48,6 +49,39 @@ export async function POST(req: NextRequest) {
     let sriResult: any = null;
     if (invoiceId) {
       sriResult = await sendInvoiceToSri(invoiceId);
+
+      // REFACTURA: si esta factura re-emite una anulada de un ticket/proyecto, al autorizar
+      // el SRI volvemos a marcar ese origen como COMPLETADO, re-registramos su ingreso y
+      // re-enlazamos la nueva factura a su origen (para que futuras anulaciones lo reviertan).
+      if (sriResult?.authorized && refactor_source?.id && (refactor_source.type === 'ticket' || refactor_source.type === 'project')) {
+        try {
+          const srcId = String(refactor_source.id);
+          const clientId = refactor_source.client_id != null ? Number(refactor_source.client_id) : null;
+          if (refactor_source.type === 'ticket') {
+            const { rows: [t] } = await pool.query(
+              `UPDATE gcc_world.tickets SET status = 'completed', updated_at = NOW() WHERE id = $1 RETURNING title, estimated_cost`,
+              [srcId]
+            );
+            if (t) await addTicketIncomeToFinance(srcId, t.title, Number(t.estimated_cost) || 0);
+            await pool.query(
+              `UPDATE gcc_world.invoices SET source_type = 'ticket', source_id = $1, ticket_id = $1${clientId ? ', client_id = $2' : ''} WHERE id = ${clientId ? '$3' : '$2'}`,
+              clientId ? [srcId, clientId, invoiceId] : [srcId, invoiceId]
+            );
+          } else {
+            const { rows: [p] } = await pool.query(
+              `UPDATE gcc_world.projects SET status = 'completed', updated_at = NOW() WHERE id = $1 RETURNING title, final_cost`,
+              [srcId]
+            );
+            if (p) await addProjectIncomeToFinance(srcId, p.title, Number(p.final_cost) || 0);
+            await pool.query(
+              `UPDATE gcc_world.invoices SET project_id = $1${clientId ? ', client_id = $2' : ''} WHERE id = ${clientId ? '$3' : '$2'}`,
+              clientId ? [srcId, clientId, invoiceId] : [srcId, invoiceId]
+            );
+          }
+        } catch (e: any) {
+          console.error('[manual] refactura re-complete error:', e.message);
+        }
+      }
 
       // Send invoice email
       if (send_email && client_email && sriResult?.authorized) {

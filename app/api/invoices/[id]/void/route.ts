@@ -120,6 +120,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         } catch (e: any) {
           console.error('[void] ticket revert error:', e.message);
         }
+      } else {
+        // Anular una factura de PROYECTO → el proyecto vuelve a 'review' (facturable) y se
+        // descuenta su ingreso. El proyecto se enlaza por `invoices.project_id` y/o por la
+        // tabla puente `invoice_projects`. El cliente NO se toca (sigue vinculado a la factura).
+        const projectIds = new Set<string>();
+        if (inv.project_id != null) projectIds.add(String(inv.project_id));
+        try {
+          const { rows: jr } = await pool.query(
+            `SELECT project_id FROM gcc_world.invoice_projects WHERE invoice_id = $1`,
+            [id]
+          );
+          for (const r of jr) if (r.project_id != null) projectIds.add(String(r.project_id));
+        } catch { /* invoice_projects puede no existir en algunos entornos */ }
+        for (const pid of projectIds) {
+          try {
+            await pool.query(
+              `UPDATE gcc_world.projects SET status = 'review', updated_at = NOW() WHERE id = $1 AND status = 'completed'`,
+              [pid]
+            );
+            await removeIncomeFromFinance('project', pid);
+          } catch (e: any) {
+            console.error('[void] project revert error:', e.message);
+          }
+        }
       }
 
       return NextResponse.json({ ok: true, creditNote: `NC-${numero}`, autorizacion: auth.numeroAutorizacion, subscriptionReverted });
