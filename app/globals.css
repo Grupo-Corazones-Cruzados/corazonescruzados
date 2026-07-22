@@ -1079,6 +1079,13 @@ html {
 .corp.dark .hover\:bg-black\/\[0\.03\]:hover,
 .corp.dark .hover\:bg-black\/\[0\.04\]:hover { background-color: rgba(255,255,255,0.07) !important; }
 
+/* Selectores nativos de hora/fecha: usar controles oscuros para que el icono del picker
+   (reloj/calendario) contraste en modo oscuro en vez de verse negro sobre fondo oscuro. */
+.corp.dark input[type="time"],
+.corp.dark input[type="date"],
+.corp.dark input[type="datetime-local"],
+.corp.dark input[type="month"] { color-scheme: dark; }
+
 /* Semantic tint surfaces */
 .corp.dark .bg-green-50 { background-color: rgba(107,183,0,0.13) !important; }
 .corp.dark .bg-red-50 { background-color: rgba(241,112,123,0.13) !important; }

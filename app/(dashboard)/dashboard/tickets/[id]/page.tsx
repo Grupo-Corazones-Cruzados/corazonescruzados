@@ -623,8 +623,8 @@ export default function TicketDetailPage() {
                     </div>
                   </div>
                   <div className="flex items-end gap-2 mt-2 max-w-xs">
-                    <div className="flex-1"><PixelInput label={cfg.is_event ? 'Inicio' : 'Inicio (opcional)'} type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} /></div>
-                    <div className="flex-1"><PixelInput label={cfg.is_event ? 'Fin' : 'Fin (opcional)'} type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} /></div>
+                    <div className="flex-1"><PixelInput label="Inicio" type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} /></div>
+                    <div className="flex-1"><PixelInput label="Fin" type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} /></div>
                   </div>
                   {cfg.is_event ? (
                     <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
@@ -635,11 +635,7 @@ export default function TicketDetailPage() {
                     <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
                       Bloque ocupado (Progreso) en tu calendario «Mi día» y una acción «Sesión»{slotRate > 0 ? ` · ${durLabel} × $${slotRate}/h = $${fmt2(sessionCost)}` : ' (sin costo: el servicio no tiene tarifa/hora)'}.
                     </p>
-                  ) : (
-                    <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
-                      Sin horas: solo se marca el día. Agrega inicio y fin para registrar una sesión con costo.
-                    </p>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
