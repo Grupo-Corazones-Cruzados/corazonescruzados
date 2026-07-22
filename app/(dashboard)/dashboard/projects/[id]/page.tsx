@@ -57,6 +57,8 @@ export default function ProjectDetailPage() {
   const { user } = useAuth();
   const [project, setProject] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
+  // Rail derecho como pestañas: Propiedades (default) / DigiMundo (solo admin).
+  const [rightTab, setRightTab] = useState<'propiedades' | 'digimundo'>('propiedades');
   const [loading, setLoading] = useState(true);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [digiProjects, setDigiProjects] = useState<any[]>([]);
@@ -1769,8 +1771,16 @@ export default function ProjectDetailPage() {
 
         </div>
 
-        {/* ====== DERECHA: Propiedades → Acciones → Progreso → DigiMundo → Imágenes ====== */}
+        {/* ====== DERECHA: pestañas Propiedades (default) / DigiMundo (admin) ====== */}
         <div className="w-full lg:w-[360px] shrink-0 space-y-4">
+          <div className="flex gap-1 bg-digi-card border border-digi-border rounded-lg p-1">
+            <button onClick={() => setRightTab('propiedades')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'propiedades' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Propiedades</button>
+            {isAdmin && (
+              <button onClick={() => setRightTab('digimundo')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'digimundo' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>DigiMundo</button>
+            )}
+          </div>
+
+          {rightTab === 'propiedades' && (<>
           {/* Propiedades */}
           <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
             <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Propiedades</h3>
@@ -1979,9 +1989,10 @@ export default function ProjectDetailPage() {
               </div>
             );
           })()}
+          </>)}
 
-          {/* DigiMundo */}
-          {(<>
+          {/* DigiMundo (pestaña admin) */}
+          {rightTab === 'digimundo' && isAdmin && (<>
           {isAdmin && (
             <div className="pixel-card" style={{ borderColor: project.digimundo_project_id ? 'var(--color-accent)' : undefined }}>
               <div className="flex items-center justify-between mb-3">
@@ -2233,8 +2244,8 @@ export default function ProjectDetailPage() {
           )}
           </>)}
 
-          {/* Imágenes */}
-          {(<>
+          {/* Imágenes (pestaña Propiedades) */}
+          {rightTab === 'propiedades' && (<>
           {/* Project Images */}
           {showImages && (
             <div className="pixel-card">
