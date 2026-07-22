@@ -15,20 +15,9 @@ import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Im
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
-import IncidentDetailPanel from '@/components/projects/IncidentDetailPanel';
-import FloatingChatWindow from '@/components/projects/FloatingChatWindow';
-import TaskQueueIndicator from '@/components/projects/TaskQueueIndicator';
-import ProformaChatPanel from '@/components/projects/ProformaChatPanel';
-import ProformaTokenButton from '@/components/projects/ProformaTokenButton';
-import VideoScriptPanel from '@/components/projects/VideoScriptPanel';
-import PublicDocsPanel from '@/components/projects/PublicDocsPanel';
-import SocialCopyPanel from '@/components/projects/SocialCopyPanel';
-import ScriptStoryboardEditor from '@/components/projects/ScriptStoryboardEditor';
-import type { StoryboardSegment } from '@/components/projects/ScriptStoryboardEditor';
-import useAgentChat from '@/hooks/useAgentChat';
+import IncidentsTab from '@/components/projects/IncidentsTab';
 import GccBotChat from '@/components/cotizaciones/GccBotChat';
 import QuoteShareButton from '@/components/cotizaciones/QuoteShareButton';
-import QuoteObservationsPanel from '@/components/cotizaciones/QuoteObservationsPanel';
 import AdditionalCostsCard from '@/components/cotizaciones/AdditionalCostsCard';
 import { fmt2 } from '@/lib/format';
 
@@ -62,7 +51,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
   // Rail derecho como pestañas: Propiedades (default) / Observaciones (cotización) / DigiMundo (solo admin).
-  const [rightTab, setRightTab] = useState<'propiedades' | 'observaciones' | 'digimundo'>('propiedades');
+  const [rightTab, setRightTab] = useState<'propiedades' | 'incidentes'>('propiedades');
   const [showShare, setShowShare] = useState(false);
   // Paneles de acceso rápido desde el header (Progreso / Imágenes).
   const [showProgresoModal, setShowProgresoModal] = useState(false);
@@ -88,7 +77,7 @@ export default function ProjectDetailPage() {
   const [videoStep, setVideoStep] = useState('');
   const [scriptAgentConfig, setScriptAgentConfig] = useState<{ agentId: string; agentName: string; projectPath: string } | null>(null);
   const [showStoryboard, setShowStoryboard] = useState(false);
-  const [storyboard, setStoryboard] = useState<StoryboardSegment[] | null>(null);
+  const [storyboard, setStoryboard] = useState<any[] | null>(null);
   const [showPublicDocs, setShowPublicDocs] = useState(false);
   const [publicDocsToken, setPublicDocsToken] = useState<string | null>(null);
   const [showSocialCopy, setShowSocialCopy] = useState(false);
@@ -241,7 +230,6 @@ export default function ProjectDetailPage() {
     } catch { toast.error('Error'); }
   };
 
-  const chat = useAgentChat({ digimundoProjectId: project?.digimundo_project_id || null, digiProjects });
 
   const fetchProject = useCallback(async () => {
     try {
@@ -712,14 +700,6 @@ export default function ProjectDetailPage() {
       body: JSON.stringify({ assignment_id: assignmentId, action }),
     });
     toast.success(action === 'accept' ? 'Aceptado' : 'Rechazado');
-    fetchProject();
-  };
-
-  const handleApproveIncident = (incident: { id: string; title: string; description: string; images: string[] }) => {
-    chat.enqueueIncident(incident);
-    if (!chat.chatOpen) { chat.setChatOpen(true); chat.setChatMinimized(false); }
-    toast.success(`Incidencia aprobada y enviada`);
-    setSelectedIncidentId(null);
     fetchProject();
   };
 
@@ -1906,20 +1886,15 @@ export default function ProjectDetailPage() {
 
         </div>
 
-        {/* ====== DERECHA: pestañas Propiedades (default) / DigiMundo (admin) ====== */}
+        {/* ====== DERECHA: pestañas Propiedades / Incidentes ====== */}
         <div className="w-full lg:w-[360px] shrink-0 space-y-4 order-3">
           <div className="flex gap-1 bg-digi-card border border-digi-border rounded-lg p-1">
             <button onClick={() => setRightTab('propiedades')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'propiedades' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Propiedades</button>
-            {project.status === 'cotizacion' && (
-              <button onClick={() => setRightTab('observaciones')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'observaciones' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Observaciones</button>
-            )}
-            {isAdmin && project.status !== 'cotizacion' && (
-              <button onClick={() => setRightTab('digimundo')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'digimundo' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>DigiMundo</button>
-            )}
+            <button onClick={() => setRightTab('incidentes')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'incidentes' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Incidentes</button>
           </div>
 
-          {rightTab === 'observaciones' && project.status === 'cotizacion' && (
-            <QuoteObservationsPanel projectId={project.id} canAdd />
+          {rightTab === 'incidentes' && (
+            <IncidentsTab projectId={id as string} canManage={!!isOwner} />
           )}
 
           {rightTab === 'propiedades' && (<>
@@ -2047,258 +2022,6 @@ export default function ProjectDetailPage() {
 
           </>)}
 
-          {/* DigiMundo (pestaña admin) */}
-          {rightTab === 'digimundo' && isAdmin && project.status !== 'cotizacion' && (<>
-          {isAdmin && (
-            <div className="pixel-card" style={{ borderColor: project.digimundo_project_id ? 'var(--color-accent)' : undefined }}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>DigiMundo</h3>
-                {project.digimundo_project_id && chat.citizen && (
-                  <div className="flex items-center gap-1.5">
-                    <TaskQueueIndicator count={chat.pendingQueue.length} items={chat.pendingQueue.map(q => ({ id: q.id, title: q.title }))} isProcessing={chat.isProcessing} />
-                    {!chat.chatOpen && (
-                      <button onClick={() => { chat.setChatOpen(true); chat.setChatMinimized(false); }} className="px-2 py-1 text-[11px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>Chat</button>
-                    )}
-                  </div>
-                )}
-              </div>
-              <select value={project.digimundo_project_id || ''} onChange={(e) => linkDigimundo(e.target.value)} disabled={linking}
-                className="w-full px-2 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none appearance-none cursor-pointer disabled:opacity-50 mb-2"
-                style={{ ...mf, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237B5FBF' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px' }}>
-                <option value="">Sin vincular</option>
-                {digiProjects.map((dp: any) => <option key={dp.id} value={dp.id}>{dp.name}</option>)}
-              </select>
-              {linkedDigiName && <p className="text-[11px] text-green-600" style={pf}>Vinculado a: {linkedDigiName}</p>}
-            </div>
-          )}
-
-          {/* Proforma */}
-          {project.digimundo_project_id && (project.has_proforma || chat.isLocalhost) && (
-            <div className="pixel-card" style={{ borderColor: project.has_proforma ? 'var(--color-accent)' : undefined }}>
-              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Proforma</h3>
-              {project.has_proforma ? (
-                <div className="space-y-2">
-                  <p className="text-[11px] text-green-600" style={pf}>Proforma guardada</p>
-                  <div className="flex gap-1.5 flex-wrap">
-                    <button onClick={() => window.open(`/api/projects/${id}/proforma?format=pdf`, '_blank')}
-                      className="flex-1 px-2 py-1.5 text-[11px] text-green-600 border border-green-700/50 hover:bg-green-50 transition-colors" style={pf}>
-                      PDF
-                    </button>
-                    {chat.isLocalhost && (
-                      <button onClick={openProformaChat}
-                        className="flex-1 px-2 py-1.5 text-[11px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
-                        Editar / Actualizar
-                      </button>
-                    )}
-                    <ProformaTokenButton projectId={id as string}
-                      className="flex-1 px-2 py-1.5 text-[11px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors" />
-                  </div>
-                </div>
-              ) : chat.isLocalhost ? (
-                <div className="space-y-2">
-                  <p className="text-[11px] text-digi-muted" style={mf}>Genera una proforma profesional con asistencia de IA.</p>
-                  <button onClick={openProformaChat}
-                    className="w-full px-2 py-2 text-[12px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors" style={pf}>
-                    Generar Proforma
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          )}
-
-          {/* Content (Script + Video) - Completed projects, admin */}
-          {isAdmin && project.status === 'completed' && project.digimundo_project_id && (
-            <div className="pixel-card" style={{ borderColor: (videoScript || videoUrl) ? 'var(--color-accent)' : undefined }}>
-              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Contenido</h3>
-              <div className="space-y-2">
-                {/* Script */}
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-digi-muted" style={mf}>Guion</span>
-                  <div className="flex gap-1">
-                    {videoScript && (
-                      <button
-                        onClick={() => {
-                          const blob = new Blob([videoScript], { type: 'text/plain' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url; a.download = `guion-${project.title.replace(/\s+/g, '-').toLowerCase()}.txt`;
-                          a.click(); URL.revokeObjectURL(url);
-                        }}
-                        className="px-2 py-0.5 text-[11px] text-green-600 border border-green-700/50 hover:bg-green-50 transition-colors"
-                        style={pf}
-                      >
-                        Descargar
-                      </button>
-                    )}
-                    {chat.isLocalhost && (
-                      <button
-                        onClick={openScriptPanel}
-                        className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors"
-                        style={pf}
-                      >
-                        {videoScript ? 'Regenerar' : 'Generar Guion'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {videoScript && (
-                  <div className="max-h-32 overflow-y-auto px-2 py-1.5 border border-digi-border/30 bg-digi-darker">
-                    <p className="text-[11px] text-digi-text whitespace-pre-wrap" style={mf}>{videoScript.slice(0, 500)}{videoScript.length > 500 ? '...' : ''}</p>
-                  </div>
-                )}
-
-                {/* Storyboard */}
-                {videoScript && projectImages.length > 0 && (
-                  <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-digi-muted" style={mf}>Storyboard</span>
-                      {storyboard && (
-                        <span className="text-[11px] text-accent/60" style={mf}>
-                          ({storyboard.filter(s => s.imageIndex !== null).length}/{storyboard.length} asignados)
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => setShowStoryboard(true)}
-                      className="px-2 py-0.5 text-[11px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors"
-                      style={pf}
-                    >
-                      {storyboard ? 'Editar' : 'Configurar'}
-                    </button>
-                  </div>
-                )}
-
-                {/* Video */}
-                <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
-                  <span className="text-[11px] text-digi-muted" style={mf}>Video</span>
-                  <div className="flex gap-1">
-                    {videoUrl && (
-                      <button
-                        onClick={() => window.open(`/api/projects/${id}/video?download=true`, '_blank')}
-                        className="px-2 py-0.5 text-[11px] text-green-600 border border-green-700/50 hover:bg-green-50 transition-colors"
-                        style={pf}
-                      >
-                        Descargar
-                      </button>
-                    )}
-                    {chat.isLocalhost && videoScript && (
-                      <button
-                        onClick={handleGenerateVideo}
-                        disabled={generatingVideo || projectImages.length === 0}
-                        className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors disabled:opacity-40"
-                        style={pf}
-                      >
-                        {generatingVideo ? videoStep || 'Generando...' : videoUrl ? 'Regenerar Video' : 'Generar Video'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {!videoScript && !chat.isLocalhost && (
-                  <p className="text-[11px] text-digi-muted text-center py-2" style={mf}>Sin contenido generado aun</p>
-                )}
-                {chat.isLocalhost && !videoScript && projectImages.length === 0 && (
-                  <p className="text-[11px] text-amber-700/70 mt-1" style={mf}>Sube imagenes al proyecto antes de generar contenido</p>
-                )}
-
-                {/* Public Docs */}
-                {chat.isLocalhost && (
-                  <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
-                    <span className="text-[11px] text-digi-muted" style={mf}>Docs publicas</span>
-                    <div className="flex gap-1 items-center">
-                      {publicDocsToken && (
-                        <>
-                          <span className="text-[11px] text-green-600" style={pf}>ACTIVA</span>
-                          <button
-                            onClick={async () => {
-                              const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org';
-                              const url = `${base}/docs/${publicDocsToken}`;
-                              try { await navigator.clipboard.writeText(url); toast.success('Enlace copiado'); }
-                              catch { toast.error('No se pudo copiar'); }
-                            }}
-                            className="px-2 py-0.5 text-[11px] text-purple-400 border border-purple-500/40 hover:bg-purple-900/20 transition-colors"
-                            style={pf}
-                          >
-                            Copiar
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={openPublicDocsPanel}
-                        className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors"
-                        style={pf}
-                      >
-                        {publicDocsToken ? 'Gestionar' : 'Generar'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Social Copy */}
-                {chat.isLocalhost && (
-                  <div className="flex items-center justify-between pt-2 border-t border-digi-border/30">
-                    <span className="text-[11px] text-digi-muted" style={mf}>Redes sociales</span>
-                    <div className="flex gap-1 items-center">
-                      {hasSocialCopy && <span className="text-[11px] text-green-600" style={pf}>LISTO</span>}
-                      <button
-                        onClick={openSocialCopyPanel}
-                        className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors"
-                        style={pf}
-                      >
-                        {hasSocialCopy ? 'Ver / Regenerar' : 'Generar Copy'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Incidents */}
-          {project.digimundo_project_id && (
-            <div className="pixel-card">
-              {selectedIncidentId ? (
-                <IncidentDetailPanel
-                  incidentId={selectedIncidentId}
-                  onClose={() => setSelectedIncidentId(null)}
-                  onApprove={handleApproveIncident}
-                  onReject={() => { setSelectedIncidentId(null); fetchProject(); toast.info('Rechazada'); }}
-                  onStatusChange={fetchProject}
-                  isLocalhost={chat.isLocalhost}
-                />
-              ) : (
-                <>
-                  <h3 className="text-[12px] font-semibold text-digi-text mb-2" style={pf}>Incidencias ({incidents.length})</h3>
-                  <div className="flex gap-1 flex-wrap mb-3">
-                    {['all', 'pending', 'proposal', 'approved', 'reviewing', 'completed', 'rejected'].map(s => (
-                      <button key={s} onClick={() => setIncidentFilter(s)}
-                        className={`px-1.5 py-0.5 text-[11px] border transition-colors ${incidentFilter === s ? 'border-accent text-accent-glow bg-accent/10' : 'border-digi-border/50 text-digi-muted hover:text-digi-text'}`} style={pf}>
-                        {s === 'all' ? 'Todos' : s}
-                      </button>
-                    ))}
-                  </div>
-                  {incidents.length === 0 ? (
-                    <p className="text-[10px] text-digi-muted" style={mf}>Sin incidencias</p>
-                  ) : (
-                    <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                      {incidents.filter((inc: any) => incidentFilter === 'all' || inc.status === incidentFilter).map((inc: any) => (
-                        <div key={inc.id} className="px-2.5 py-2 border border-digi-border/50 hover:border-accent/30 cursor-pointer transition-colors" onClick={() => setSelectedIncidentId(inc.id)}>
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <p className="text-[10px] text-digi-text leading-snug" style={mf}>{inc.title}</p>
-                            <PixelBadge variant={SEV_V[inc.severity] || 'default'}>{inc.severity}</PixelBadge>
-                          </div>
-                          <div className="flex items-center justify-between mt-1.5">
-                            <span className="text-[11px] text-digi-muted" style={mf}>{inc.clientName} &middot; {new Date(inc.createdAt).toLocaleDateString()}</span>
-                            <PixelBadge variant={INC_STATUS_V[inc.status] || 'default'}>{inc.status}</PixelBadge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-          </>)}
 
         </div>
       </div>
@@ -2522,98 +2245,6 @@ export default function ProjectDetailPage() {
           </button>
         </div>
       </PixelModal>
-
-      {/* Proforma Chat */}
-      {showProformaChat && proformaAgentConfig && (
-        <ProformaChatPanel
-          projectId={id as string}
-          agentId={proformaAgentConfig.agentId}
-          agentName={proformaAgentConfig.agentName}
-          projectPath={proformaAgentConfig.projectPath}
-          clientName={project.client_name}
-          clientEmail={project.client_email}
-          clientPhone={project.client_phone}
-          projectTitle={project.title}
-          hasProforma={!!project.has_proforma}
-          onClose={() => setShowProformaChat(false)}
-          onSaved={() => { setShowProformaChat(false); fetchProject(); }}
-        />
-      )}
-
-      {/* Video Script Panel */}
-      {showScriptPanel && scriptAgentConfig && (
-        <VideoScriptPanel
-          projectId={id as string}
-          agentId={scriptAgentConfig.agentId}
-          agentName={scriptAgentConfig.agentName}
-          projectPath={scriptAgentConfig.projectPath}
-          projectTitle={project.title}
-          projectDescription={project.description}
-          projectImages={projectImages}
-          existingScript={videoScript}
-          onClose={() => setShowScriptPanel(false)}
-          onSaved={(script: string) => { setVideoScript(script); setShowScriptPanel(false); fetchContent(); }}
-        />
-      )}
-
-      {/* Social Copy Panel */}
-      {showSocialCopy && scriptAgentConfig && (
-        <SocialCopyPanel
-          projectId={id as string}
-          agentId={scriptAgentConfig.agentId}
-          agentName={scriptAgentConfig.agentName}
-          projectPath={scriptAgentConfig.projectPath}
-          projectTitle={project.title}
-          projectDescription={project.description}
-          handles={{
-            youtube: user?.youtube_handle,
-            tiktok: user?.tiktok_handle,
-            instagram: user?.instagram_handle,
-            facebook: user?.facebook_handle,
-          }}
-          onClose={() => { setShowSocialCopy(false); fetchSocialCopy(); }}
-        />
-      )}
-
-      {/* Public Docs Panel */}
-      {showPublicDocs && scriptAgentConfig && (
-        <PublicDocsPanel
-          projectId={id as string}
-          agentId={scriptAgentConfig.agentId}
-          agentName={scriptAgentConfig.agentName}
-          projectPath={scriptAgentConfig.projectPath}
-          projectTitle={project.title}
-          projectDescription={project.description}
-          projectImages={projectImages}
-          onClose={() => setShowPublicDocs(false)}
-          onSaved={(token: string) => { setPublicDocsToken(token); }}
-        />
-      )}
-
-      {/* Storyboard Editor */}
-      {showStoryboard && videoScript && (
-        <ScriptStoryboardEditor
-          projectId={id as string}
-          script={videoScript}
-          projectImages={projectImages}
-          existingStoryboard={storyboard}
-          onClose={() => setShowStoryboard(false)}
-          onSaved={(sb) => { setStoryboard(sb); setShowStoryboard(false); }}
-        />
-      )}
-
-      {/* Floating Chat */}
-      {chat.chatOpen && chat.citizen && (
-        <FloatingChatWindow
-          citizen={chat.citizen} blocks={chat.blocks} onBlocksChange={chat.onBlocksChange}
-          externalMessage={chat.externalMessage} onExternalMessageConsumed={chat.onExternalMessageConsumed}
-          onClose={() => chat.setChatOpen(false)} minimized={chat.chatMinimized}
-          onMinimize={() => chat.setChatMinimized(true)} onRestore={() => chat.setChatMinimized(false)}
-          queueCount={chat.pendingQueue.length} isLocalhost={chat.isLocalhost}
-          projectName={linkedDigiName} isStreaming={chat.isStreaming} justCompleted={chat.justCompleted}
-          sessionKey={`project-${id}`}
-        />
-      )}
 
       <PixelConfirm
         open={confirmDeleteProject}
