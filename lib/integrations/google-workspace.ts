@@ -25,6 +25,7 @@ const ORGANIZER = process.env.GOOGLE_WORKSPACE_ORGANIZER || '';
 const SCOPE_GMAIL = 'https://www.googleapis.com/auth/gmail.send';
 const SCOPE_CALENDAR = 'https://www.googleapis.com/auth/calendar';
 const SCOPE_MEET = 'https://www.googleapis.com/auth/meetings.space.created';
+const SCOPE_MEET_READONLY = 'https://www.googleapis.com/auth/meetings.space.readonly';
 const SCOPE_DIRECTORY = 'https://www.googleapis.com/auth/admin.directory.user';
 
 // Unidad organizativa donde viven las cuentas de candidatos/miembros (para excluirla de
@@ -242,6 +243,66 @@ export async function createMeetEvent(opts: {
     eventId: res.data.id || null,
     htmlLink: res.data.htmlLink || null,
   };
+}
+
+/**
+ * Trae las TRANSCRIPCIONES de las reuniones de Meet terminadas desde `sinceMs`. Devuelve por
+ * cada conferenceRecord su meetingUri/meetingCode (para emparejar con el evento) y el texto
+ * completo de la transcripción (vacío si aún no está lista). Requiere el scope
+ * `meetings.space.readonly` en la delegación de dominio. Best-effort: si la API falla,
+ * devuelve lo que pudo (o []).
+ */
+export async function fetchRecentMeetTranscripts(sinceMs: number): Promise<
+  { meetingUri: string | null; meetingCode: string | null; endTime: string | null; text: string }[]
+> {
+  const meet: any = google.meet({ version: 'v2', auth: getAuth([SCOPE_MEET_READONLY]) });
+  const out: { meetingUri: string | null; meetingCode: string | null; endTime: string | null; text: string }[] = [];
+  const sinceIso = new Date(sinceMs).toISOString();
+
+  const records: any[] = [];
+  try {
+    let pageToken: string | undefined;
+    do {
+      const res: any = await meet.conferenceRecords.list({ filter: `end_time >= "${sinceIso}"`, pageSize: 50, pageToken });
+      for (const r of (res.data.conferenceRecords || [])) records.push(r);
+      pageToken = res.data.nextPageToken;
+    } while (pageToken && records.length < 200);
+  } catch (e: any) {
+    console.error('[meet] conferenceRecords.list error:', e?.response?.data ? JSON.stringify(e.response.data) : e.message);
+    return out;
+  }
+
+  for (const rec of records) {
+    let meetingUri: string | null = null, meetingCode: string | null = null;
+    try {
+      const sp: any = await meet.spaces.get({ name: rec.space });
+      meetingUri = sp.data.meetingUri || null;
+      meetingCode = sp.data.meetingCode || null;
+    } catch { /* sin acceso al space */ }
+
+    let text = '';
+    try {
+      const trRes: any = await meet.conferenceRecords.transcripts.list({ parent: rec.name });
+      for (const tr of (trRes.data.transcripts || [])) {
+        if (tr.state && tr.state !== 'ENDED') continue; // solo transcripciones terminadas
+        let etoken: string | undefined;
+        do {
+          const eRes: any = await meet.conferenceRecords.transcripts.entries.list({ parent: tr.name, pageSize: 1000, pageToken: etoken });
+          for (const e of (eRes.data.transcriptEntries || [])) if (e.text) text += `${e.text}\n`;
+          etoken = eRes.data.nextPageToken;
+        } while (etoken);
+      }
+    } catch { /* transcripción aún no lista */ }
+
+    out.push({ meetingUri, meetingCode, endTime: rec.endTime || null, text: text.trim() });
+  }
+  return out;
+}
+
+/** Actualiza la descripción de un evento de Google Calendar (best-effort). */
+export async function patchCalendarEventDescription(eventId: string, description: string): Promise<void> {
+  const cal = google.calendar({ version: 'v3', auth: getAuth([SCOPE_CALENDAR]) });
+  await cal.events.patch({ calendarId: 'primary', eventId, requestBody: { description } });
 }
 
 /** Contraseña aleatoria fuerte para la cuenta inicial (el usuario la cambia al ingresar). */

@@ -2359,16 +2359,24 @@ Módulos principales:
     la BD, incluye `.txt` de transcripción para los de Meet); `lib/reminders/schema.ts`; API CRUD
     `/api/reminders*`; página `/dashboard/recordatorios` (crear manual con tareas + adjuntos, editar,
     marcar hecho); acceso candidate/member/admin.
-  - **Fase 2 (pendiente):** worker cron **cada 10 min** (`CRON_TOKEN`) que envía correos escalados:
-    ≤5h → 1 correo; ≤3h → 1/hora; ≤30min → 1/10min; al vencer → 1 correo final "vencido" y stop.
-    Trackea `email_stage`/`last_email_at`/`expired_email_sent`.
-  - **Fase 3 (pendiente):** worker cron **cada 15 min** detecta reuniones de Meet terminadas (evento
+  - **Fase 2 (HECHA):** `lib/reminders/escalation.ts` + `POST /api/reminders/cron/notify` envían
+    correos escalados: ≤5h → 1 correo; ≤3h → 1/hora; ≤30min → 1/10min; al vencer → 1 correo final
+    "vencido" y stop. Trackea `email_stage`/`last_email_at`/`expired_email_sent`.
+  - **Cron (Railway):** el servicio `nightly-cron` se repurposa a **cada 10 min** con
+    `node scripts/frequent-cron.mjs` (un solo runner: frecuentes siempre + nocturnos en la ventana
+    06:00–06:09 UTC). El `CRON_TOKEN`/`APP_URL` ya estaban.
+  - **Fase 3 (HECHA):** `lib/reminders/meeting-gen.ts` + `POST /api/reminders/cron/generate-from-meetings`
+    detecta reuniones de Meet terminadas (evento
     de calendario con `meeting_url` cuyo fin pasó) → obtiene la transcripción (Meet API v2
     conferenceRecords→transcripts→entries; requiere scope `meetings.space.readonly` en la delegación
-    de dominio de Google Admin) → la analiza con Claude (título, **fecha/hora que la IA siempre
-    propone**, tareas) → crea el recordatorio (`source='meeting'`) + adjunta la transcripción `.txt` +
-    agrega en la **descripción del evento** un enlace al recordatorio. Destinatario = el miembro/
-    candidato dueño del evento (no el cliente).
+    de dominio de Google Admin — **ya agregado** por el usuario 2026-07-22) → la analiza con **OpenAI
+    gpt-4o** (`lib/reminders/meeting-ai.ts`; el proyecto no tiene ANTHROPIC key global, sí OPENAI) →
+    saca título, **fecha/hora que la IA siempre propone** (fallback: +3 días 09:00 si no hay una) y
+    tareas → crea el recordatorio (`source='meeting'`, `source_event_id`) + adjunta la transcripción
+    `.txt` + agrega en la **descripción del evento** (in-app `member_calendar_events` + Google Calendar
+    best-effort) un enlace `/dashboard/recordatorios?open=<id>`. Idempotente vía columnas
+    `member_calendar_events.reminder_status`/`reminder_id`; descarta si no hay transcripción tras 6h.
+    Destinatario = el miembro dueño del evento (no el cliente).
 - **Modelo de CLIENTES y FACTURACIÓN (confirmado 2026-07-21).** Mapa detallado en el artefacto HTML
   "Asociación de clientes" (auditoría del código). Reglas acordadas para el rediseño:
   - **Tablas separadas** `clients` (identidad app) y `billing_clients` (facturación) — un cliente podrá

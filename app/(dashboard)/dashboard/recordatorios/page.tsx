@@ -82,6 +82,13 @@ export default function RecordatoriosPage() {
     } catch { toast.error('Error al abrir el recordatorio'); }
   };
 
+  // Enlace profundo desde la reunión (?open=<id>) → abre ese recordatorio.
+  useEffect(() => {
+    const openId = new URLSearchParams(window.location.search).get('open');
+    if (openId) openEdit(Number(openId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const addTask = () => { const t = newTask.trim(); if (!t) return; setTasks(p => [...p, { id: `t${Date.now()}`, text: t, done: false }]); setNewTask(''); };
   const toggleTask = (id: string) => setTasks(p => p.map(t => t.id === id ? { ...t, done: !t.done } : t));
   const removeTask = (id: string) => setTasks(p => p.filter(t => t.id !== id));
