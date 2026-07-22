@@ -284,7 +284,9 @@ export async function fetchRecentMeetTranscripts(sinceMs: number): Promise<
     try {
       const trRes: any = await meet.conferenceRecords.transcripts.list({ parent: rec.name });
       for (const tr of (trRes.data.transcripts || [])) {
-        if (tr.state && tr.state !== 'ENDED') continue; // solo transcripciones terminadas
+        // Estados terminales con archivo disponible: ENDED / FILE_GENERATED. Solo se
+        // omite STARTED (transcripción aún en curso).
+        if (tr.state === 'STARTED') continue;
         let etoken: string | undefined;
         do {
           const eRes: any = await meet.conferenceRecords.transcripts.entries.list({ parent: tr.name, pageSize: 1000, pageToken: etoken });

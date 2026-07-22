@@ -37,11 +37,17 @@ export async function runMeetingReminderGeneration(): Promise<{ processed: numbe
   if (events.length === 0) return { processed: 0, created: 0 };
 
   // Trae las transcripciones recientes una sola vez y mapea por meetingUri y por meetingCode.
+  // Una misma sala puede tener varias reuniones (mismo código): nos quedamos siempre con la
+  // transcripción de MÁS texto para no pisar la buena con una sesión vacía.
   const transcripts = await fetchRecentMeetTranscripts(Date.now() - WINDOW_MS);
   const byKey = new Map<string, { text: string }>();
+  const put = (k: string, t: { text: string }) => {
+    const cur = byKey.get(k);
+    if (!cur || (t.text?.length || 0) > (cur.text?.length || 0)) byKey.set(k, t);
+  };
   for (const t of transcripts) {
-    if (t.meetingUri) byKey.set(t.meetingUri.replace(/\/+$/, ''), t);
-    if (t.meetingCode) byKey.set(t.meetingCode.replace(/-/g, '').toLowerCase(), t);
+    if (t.meetingUri) put(t.meetingUri.replace(/\/+$/, ''), t);
+    if (t.meetingCode) put(t.meetingCode.replace(/-/g, '').toLowerCase(), t);
   }
 
   let created = 0;
