@@ -1445,7 +1445,40 @@ Stack estándar de la casa, con particularidades de este repo:
     rechazar → sigue en cotización marcada; notifica al responsable (in-app + `sendQuoteDecisionToResponsible`).
     **Observaciones** `GET/POST /api/quotes/[id]/observations` (externo por token / interno por sesión) reemplazan
     las de DigiMundo; panel interno `QuoteObservationsPanel`. Helpers `materializeQuote/applyQuoteChange` en
-    `lib/cotizaciones/data.ts`. **Regla:** el enlace externo es solo lectura; los cambios SOLO por el agente.
+    `lib/cotizaciones/data.ts`.
+  - **Cotizaciones — ajustes/decisiones posteriores (2026-07-22, todas HECHAS):**
+    - **Estado inicial y cliente:** "Nueva cotización" exige **cliente o correo obligatorio** (como Nuevo proyecto);
+      el panel de creación va a la **DERECHA** (no izquierda). Estado `cotizacion` en el CHECK `projects_status_check`
+      (gotcha: había constraint fija; `ensureQuoteTables` la recrea idempotente con la lista completa + `cotizacion`).
+    - **Aceptar → `draft`** (no `open`): al aceptar, el proyecto pasa a **borrador** y se fija el **presupuesto**
+      (`budget_min`/`budget_max` = total cotizado). Desde ahí, gestión normal.
+    - **Rechazar → filtro propio:** rechazar deja `status='cotizacion'` + `quote_status='rejected'`; nuevo tab
+      **"Cotiz. rechazadas"** (`?status=cotizacion_rechazada`); el listado separa pendientes vs rechazadas con
+      conteos propios (`app/api/projects/route.ts`).
+    - **Modificar presupuesto (cliente):** 3er botón en la vista pública junto a Aceptar/Rechazar; guarda
+      `quote_client_budget` **sin cambiar estado** y **notifica al responsable** (in-app, enlace a `/dashboard/projects/[id]`).
+      Ese presupuesto se **pasa al agente** (chat interno y público) para reajustar. `POST /api/quotes/[id]/public/budget`.
+    - **Costos adicionales (proveedores externos):** columna `projects.additional_costs` (JSONB). Tarjeta bajo
+      Descripción con edición en **panel derecho** (`AdditionalCostsCard`); `PATCH /api/quotes/[id]/additional-costs`
+      recalcula el total (req + adicionales). **El agente los genera** en su salida (`additional_costs` en el prompt del
+      worker + `normalizeAdditionalCosts` + generate + `applyQuoteChange`). Se muestran en la vista pública y suman al total.
+    - **GCC Bot QUITADO de la vista pública del cliente** (la función Modificar presupuesto cubre el caso). El correo
+      al cliente (`sendQuoteToClient`) menciona "Modificar presupuesto", no el bot. GCC Bot sigue **solo interno**
+      (chat del responsable) en modo **dock**: mide el ancho real del `ChatDock` (`[data-chatdock-launchers]`) para
+      quedar a 8px a la izquierda de "Chat", mismo tamaño (`h-10 rounded-full`).
+    - **Requerimientos colapsables** (detalle de proyecto, general): contraídos por defecto muestran **título +
+      descripción** + resumen (N subtareas · N asignados · N pend.); al desplegar aparecen **botones Asignar
+      miembro/Subtareas** + miembros + subtareas (`expandedReqs`).
+    - **Descripción del proyecto** movida al **rail derecho** (bajo Propiedades) y editable por el responsable en
+      **panel derecho** (overlay), no inline. Títulos Descripción/Pagos/Acciones al estilo del de Propiedades.
+    - **Header reformulado (detalle de proyecto):** se quitaron del rail las tarjetas **Acciones, Progreso del equipo
+      e Imágenes**; ahora en el header (izquierda del ⋯): botón **Progreso N%** (panel avance general + por miembro),
+      botón **Imágenes (N)** (galería). En el **⋯**: Desistir/Salida supervisada (miembro) y Publicar/Despublicar
+      Marketplace. `DetailHeader` ganó prop **`trailing`** (botones a la DERECHA del ⋯; usado por "Compartir acceso").
+    - **Regla de diseño reforzada:** los formularios se abren siempre como **panel lateral derecho con overlay**
+      (PixelModal size md/lg), nunca edición inline.
+    **Regla de negocio:** el enlace externo es **solo lectura**; el cliente solo Acepta/Rechaza o **Modifica
+    presupuesto** (ya no chatea con el bot).
   - **Facturación = SOLO ADMIN (regla de negocio, 2026-07-09):** se reforzó server-side: `POST /api/projects/[id]/complete`
     exige `role='admin'` (antes NO validaba rol, solo lo ocultaba la UI); `POST /api/invoices/from-ticket` pasó de
     "admin o miembro asignado" a **solo admin**; en tickets `canCompleteTicket` = solo admin. Verificado tsc + `next build`.

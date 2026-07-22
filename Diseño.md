@@ -537,8 +537,47 @@ soportan variables CSS ni `<style>`).
   el objeto `EMAIL_THEME`. Todos los correos de auth/verificación/calendario/propuestas se componen con ellos.
 - **Correos con plantilla propia** (facturas, suscripciones, campañas, tickets, proyectos, proformas — con
   tablas/PDF) quedaron **alineados a los mismos tokens** (Segoe UI + `#faf9f8`/`#e1dfdd`/`#242424`/`#4B2D8E`).
-  A futuro, cualquier correo nuevo debe reusar los helpers de `resend.ts` o al menos sus tokens; **nunca** el
+  A futuro, cualquier correo nuevo debe reusar los helpers de correo o al menos sus tokens; **nunca** el
   viejo estilo videojuego (Courier, fondo oscuro, morado `#7B5FBF`, bordes 2px pixel).
+  > **CORRECCIÓN (verificado 2026-07-22):** ya **no existe `resend.ts`** (Resend se eliminó). La fuente única de
+  > correos es **`lib/integrations/email.ts`** → `deliver()` que envía por **Gmail API** (`sendViaGmail`,
+  > `lib/integrations/google-workspace.ts`). Los helpers (`emailShell`, `emailHeading`, `emailParagraph`,
+  > `emailButton(url,label,variant)`, `emailBadge`, `emailInfoBox`, `emailNote`, `accentStrong`) están en ese
+  > archivo con los mismos tokens `.corp`. `EMAIL_FROM`/`NEXT_PUBLIC_APP_URL` por env.
+
+### Módulo Cotizaciones — patrones nuevos (2026-07-22)
+Estándares introducidos con el módulo de Cotizaciones (proyectos en estado `cotizacion`). Reusar en otros módulos.
+
+- **Formularios = panel lateral DERECHO con overlay (reforzado como regla firme).** El usuario pidió que
+  **nunca** se edite inline: todo formulario (crear cotización, editar descripción, costos adicionales, compartir)
+  se abre como **panel lateral derecho con overlay** — `PixelModal size="md"` (que en `.corp` se renderiza como
+  panel derecho). Para un **drawer a medida** (p. ej. "Nueva cotización"): `fixed inset-0 flex justify-end` +
+  backdrop `bg-black/40` + `<aside className="w-full max-w-md h-full bg-digi-card border-l ml-auto overflow-y-auto">`.
+  El drawer de la izquierda (`justify-start` + `border-r`) se probó y se descartó (tapaba el sidebar).
+- **`DetailHeader` gana prop `trailing`** (`components/ui/DetailHeader.tsx`): botones a la **DERECHA** del menú ⋯
+  (los `actions` van a la izquierda del ⋯). Se usa para "Compartir acceso". Patrón: acciones primarias/estado en
+  `actions`, secundarias/destructivas en `overflow` (⋯), y una acción contextual clave en `trailing`.
+- **Accesos como botones del header en vez de tarjetas del rail.** En un detalle con rail derecho saturado,
+  reformular secciones (Progreso, Imágenes) a **botones del header** (junto al ⋯) que abren su contenido en
+  `PixelModal size="md"`; mover acciones secundarias (participación del miembro, Marketplace) al **⋯**. Deja el
+  rail limpio y aprovecha el header. (Detalle de proyecto, 2026-07-22.)
+- **Requerimientos/ítems colapsables:** lista de ítems con cabecera **siempre visible** (título + descripción +
+  resumen compacto "N subtareas · N asignados") y **chevron** (`ChevronDown` con `rotate-180`); **contraídos por
+  defecto** (estado `Set<number>` de expandidos). Al desplegar aparecen los controles (asignar/subtareas) y el
+  detalle (miembros, subtareas). Clic en el título o el chevron alterna.
+- **Chat flotante de agente en el "dock" de chats (`GccBotChat`, modo `dock`):** para no chocar con los
+  lanzadores del `ChatDock` (Chat / Mis chats, `fixed bottom-11 right-3`, botones `h-10 rounded-full`), un botón
+  de chat adicional debe: (1) usar el **mismo tamaño** (`h-10 pl-3 pr-4 rounded-full text-[12.5px]`), y (2)
+  **medir** el ancho real del dock para posicionarse a **8px a su izquierda** — `ChatDock` marca su fila de
+  lanzadores con `data-chatdock-launchers`; el otro botón mide `window.innerWidth - rect.left + 8` (con `resize`
+  listener) y lo aplica como `style={{ right }}`. Evita offsets fijos frágiles.
+- **Página pública compartida por token (`.corp`, solo lectura):** `app/cotizacion/[id]/page.tsx` — contenedor
+  `className="corp min-h-screen bg-digi-dark"`, tarjetas `rounded-xl`, y **botones de decisión GRANDES** (`py-3.5
+  rounded-lg text-[15px] font-semibold`): Rechazar (outline rojo), acción secundaria (outline accent), Aceptar
+  (verde sólido). El externo **no edita** la interfaz; solo acciona. Reusa el patrón token/expiración de proforma.
+- **`AdditionalCostsCard`** (`components/cotizaciones/`): tarjeta de lista + total con "Editar" → panel derecho
+  con filas (input label + monto + descripción + quitar) y "Agregar costo" (botón dashed). Patrón para editar una
+  **colección simple** dentro de un panel.
 
 ## Desviaciones detectadas y resolución
 - **2026-07-21 — Detalle de proyecto: se eliminaron las pestañas (mismo criterio que ticket).**

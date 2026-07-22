@@ -82,10 +82,29 @@ IA), **responsable = el usuario**, **cliente = pendiente**, **visibilidad = priv
 - **Bloqueador activo:** `ANTHROPIC_API_KEY` no configurada; el worker no se puede probar end-to-end hasta que el
   usuario la provea (local + Railway) y despliegue el servicio worker. Construyo el andamiaje y verifico compilación.
 
-### Estado del aprendizaje (2026-07-22)
+### Estado del aprendizaje (2026-07-22) — COMPLETADO ✅
+- **% de información:** **100%.** Objetivo CUMPLIDO. Fase 1 + Fase 2 + iteraciones construidas, verificadas
+  (`tsc`+`next build`) y **desplegadas**. Worker `cotizador-worker` **corriendo en Railway** (red privada). Detalle
+  vivo del módulo y todas las decisiones/gotchas en **`MEMORIA.md`** (buscar "MÓDULO COTIZACIONES"). Resumen de lo
+  entregado:
+  - Estado `cotizacion` (CHECK recreado idempotente), filtro + filtro "Cotiz. rechazadas".
+  - Panel "Nueva cotización" (DERECHA) con servicio + cliente obligatorio + detalle + instrucciones + agente.
+  - Worker Agent SDK Opus 4.8 (sesión reanudable; tool `list_my_projects`; **thinking OFF**; `canUseTool` en vez de
+    `bypassPermissions` por el root de Railway). Salida: requerimientos+subtareas+costo+deadline + **costos
+    adicionales** (proveedores).
+  - Chat GCC Bot **interno** (dock, junto a Chat/Mis chats). Versionado `quote_versions`.
+  - Compartir por token/vigencia + correo (Gmail API) + página pública `.corp` SOLO LECTURA con **Aceptar** (→ draft
+    + presupuesto), **Rechazar** (→ filtro rechazadas), **Modificar presupuesto** (guarda + notifica, no cambia estado).
+  - Observaciones (pestaña + endpoints). Costos adicionales editables en panel derecho + generados por la IA.
+  - Header del detalle reformulado (Progreso/Imágenes como botones + panel; Acciones/Marketplace al ⋯; `trailing`).
+- **Gotchas clave aprendidos:** (1) `bypassPermissions`/root en Railway → `canUseTool`. (2) `projects_status_check`
+  bloqueaba `cotizacion` → recrear constraint. (3) `railway up` desde subcarpeta subía el repo raíz → usar
+  `--path-as-root services/cotizador-worker`. (4) worker aislado por conflicto `zod3`(web)/`zod4`(SDK).
+- **Objetivo del JUEGO** queda archivado abajo (histórico).
+
+### Estado del aprendizaje (versión previa, 2026-07-22)
 - **% de información:** ~95%. Exploraciones + decisiones + **Fase 1 CONSTRUIDA y verificada** (tsc+build) +
-  **worker PROBADO end-to-end con Opus 4.8** (genera y chatea con reanudación de sesión). Falta: desplegar el worker
-  en Railway (usuario) y la Fase 2.
+  **worker PROBADO end-to-end con Opus 4.8** (genera y chatea con reanudación de sesión).
 - **Fase 1 entregada (commits):** estado `cotizacion` (b0fe508) · esquema+endpoint+panel (5c257e4) · worker
   (fe329fc) · chat GCC Bot + versionado + ocultar Imágenes/DigiMundo (538ebf1). Key de Claude guardada en
   `.env.local` (gitignore). Worker validado local: `services/cotizador-worker`.
