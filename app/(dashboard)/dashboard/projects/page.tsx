@@ -90,6 +90,8 @@ export default function ProjectsPage() {
   const [clientMode, setClientMode] = useState<'existing' | 'email'>('existing');
   const [createClientId, setCreateClientId] = useState('');
   const [createClientEmail, setCreateClientEmail] = useState('');
+  // Solicitar: casilla OBLIGATORIA para crear/usar la cuenta de cliente del solicitante.
+  const [confirmClientAccount, setConfirmClientAccount] = useState(false);
   const [myClients, setMyClients] = useState<any[]>([]);
   // request: responsable sugerido o abierto a propuestas
   const [createMemberId, setCreateMemberId] = useState('');
@@ -102,7 +104,7 @@ export default function ProjectsPage() {
   const openCreateModal = (mode: 'create' | 'request') => {
     setCreateMode(mode);
     setCreateTitle(''); setCreateDesc(''); setCreateBudgetMin(''); setCreateBudgetMax(''); setCreateDeadline('');
-    setCreateClientId(''); setCreateClientEmail(''); setClientMode('existing');
+    setCreateClientId(''); setCreateClientEmail(''); setClientMode('existing'); setConfirmClientAccount(false);
     setCreateMemberId(''); setOpenProposals(false); setRequestOption('invite'); setRequiredTalents([]);
     setShowCreate(true);
     if (mode === 'create') {
@@ -143,6 +145,15 @@ export default function ProjectsPage() {
 
   const createProject = async () => {
     if (!createTitle.trim()) return;
+    // Cliente OBLIGATORIO al crear; casilla obligatoria al solicitar.
+    if (createMode === 'create') {
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createClientEmail.trim());
+      if (clientMode === 'existing' && !createClientId) { toast.error('Selecciona un cliente o usa un correo'); return; }
+      if (clientMode === 'email' && !emailOk) { toast.error('Ingresa un correo de cliente válido'); return; }
+    }
+    if (createMode === 'request' && !confirmClientAccount) {
+      toast.error('Marca la casilla para crear/usar tu cuenta de cliente'); return;
+    }
     setCreating(true);
     try {
       const payload: any = {
@@ -415,25 +426,25 @@ export default function ProjectsPage() {
           </div>
 
           {createMode === 'create' ? (
-            /* ── Cliente (mis clientes o invitar por email) ── */
+            /* ── Cliente (mis clientes o usar un correo) ── */
             <div className="flex flex-col gap-1.5">
-              <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente</label>
+              <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente <span className="text-accent">*</span></label>
               <div className="flex gap-1.5">
                 <button type="button" onClick={() => setClientMode('existing')}
                   className={`flex-1 px-2.5 py-1.5 rounded text-[12px] border transition-colors ${clientMode === 'existing' ? 'border-accent text-accent bg-accent-light' : 'border-digi-border text-digi-muted'}`} style={mf}>Mis clientes</button>
                 <button type="button" onClick={() => setClientMode('email')}
-                  className={`flex-1 px-2.5 py-1.5 rounded text-[12px] border transition-colors ${clientMode === 'email' ? 'border-accent text-accent bg-accent-light' : 'border-digi-border text-digi-muted'}`} style={mf}>Invitar por email</button>
+                  className={`flex-1 px-2.5 py-1.5 rounded text-[12px] border transition-colors ${clientMode === 'email' ? 'border-accent text-accent bg-accent-light' : 'border-digi-border text-digi-muted'}`} style={mf}>Usar un correo</button>
               </div>
               {clientMode === 'existing' ? (
                 <select value={createClientId} onChange={(e) => setCreateClientId(e.target.value)}
                   className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                  <option value="">Sin cliente (definir luego)</option>
-                  {myClients.map((c) => <option key={c.id} value={c.id}>{c.name}{c.email ? ` — ${c.email}` : ''}</option>)}
+                  <option value="">-- Elige un cliente --</option>
+                  {myClients.map((c) => <option key={c.id} value={c.id}>{c.name}{c.email ? ` — ${c.email}` : ''}{c.status && c.status !== 'activo' ? ' · sin cuenta' : ''}</option>)}
                 </select>
               ) : (
                 <>
                   <PixelInput label="" value={createClientEmail} onChange={(e) => setCreateClientEmail(e.target.value)} placeholder="cliente@email.com" />
-                  <p className="text-[10.5px] text-digi-muted" style={mf}>Se registra el proyecto con este correo y se le envía una invitación a unirse al sistema.</p>
+                  <p className="text-[10.5px] text-digi-muted" style={mf}>Si el correo no tiene cuenta, se registra y se le invita a crearla.</p>
                 </>
               )}
             </div>
@@ -466,7 +477,12 @@ export default function ProjectsPage() {
                   </div>
                 )}
               </div>
-              <p className="text-[10.5px] text-digi-muted" style={mf}>Como cliente, se usará (o creará) tu cuenta de tipo cliente para esta solicitud.</p>
+              <label className="flex items-start gap-2 mt-1 cursor-pointer" style={mf}>
+                <input type="checkbox" checked={confirmClientAccount}
+                  onChange={(e) => setConfirmClientAccount(e.target.checked)}
+                  className="mt-0.5 accent-accent" />
+                <span className="text-[11px] text-digi-text">Crear/usar mi cuenta de tipo cliente para esta solicitud <span className="text-accent">*</span></span>
+              </label>
             </div>
           )}
 

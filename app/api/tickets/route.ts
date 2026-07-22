@@ -5,6 +5,7 @@ import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/a
 import { createNotification } from '@/lib/notifications';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
+import { sendClientInvitationEmail } from '@/lib/integrations/email';
 
 
 export async function GET(req: NextRequest) {
@@ -146,12 +147,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    let invitePlaceholderEmail: string | null = null;
     if (!resolvedClientId && resolvedClientEmail) {
       // RUTA 3: por correo → reusa el cliente existente o crea un placeholder inactivo,
-      // ligado al miembro que lo crea (para "mis clientes").
+      // ligado al miembro que lo crea (para "mis clientes"). Si es nuevo, se le invita.
       const createdBy = await resolveMemberId(user.userId);
       const ph = await findOrCreatePlaceholderByEmail(resolvedClientEmail, createdBy);
       resolvedClientId = ph?.id ?? null;
+      if (ph?.created) invitePlaceholderEmail = resolvedClientEmail;
     } else if (resolvedClientId && !resolvedClientEmail) {
       // Get email from existing client for notification
       const { rows: [c] } = await pool.query(`SELECT email FROM gcc_world.clients WHERE id = $1`, [resolvedClientId]);
@@ -261,6 +264,13 @@ export async function POST(req: NextRequest) {
       } catch (emailErr: any) {
         console.error('Error sending ticket email:', emailErr.message);
       }
+    }
+
+    // RUTA 3: si se creó un placeholder nuevo por correo, invítale a crear su cuenta de cliente.
+    if (invitePlaceholderEmail) {
+      try {
+        await sendClientInvitationEmail({ email: invitePlaceholderEmail, context: 'un ticket', contextTitle: title.trim() });
+      } catch (e: any) { console.error('Ticket client invite email failed:', e.message); }
     }
 
     return NextResponse.json({ data: ticket }, { status: 201 });

@@ -59,6 +59,8 @@ const emptyForm = {
   // talent=abierto por talento (miembro con el talento requerido lo toma de inmediato).
   request_option: 'invite' as 'invite' | 'proposals' | 'talent',
   required_talents: [] as string[],
+  // Solicitar: casilla OBLIGATORIA para crear/usar la cuenta de cliente del solicitante.
+  confirm_client_account: false,
 };
 
 const TALENT_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));
@@ -153,6 +155,16 @@ export default function TicketsPage() {
     // no al solicitarlo (yo soy el cliente).
     if (createMode === 'create' && user?.role === 'member' && selectedDates.length === 0) {
       toast.error('Debes indicar al menos un día de trabajo'); return;
+    }
+    // Cliente OBLIGATORIO al crear un ticket: elegir uno o escribir un correo.
+    if (createMode === 'create') {
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.client_email.trim());
+      if (form.client_mode === 'select' && !form.client_id) { toast.error('Selecciona un cliente o agrega un correo'); return; }
+      if (form.client_mode === 'email' && !emailOk) { toast.error('Ingresa un correo de cliente válido'); return; }
+    }
+    // Solicitar: la casilla de cuenta de cliente es obligatoria.
+    if (createMode === 'request' && !form.confirm_client_account) {
+      toast.error('Marca la casilla para crear/usar tu cuenta de cliente'); return;
     }
     setCreating(true);
     try {
@@ -467,30 +479,36 @@ export default function TicketsPage() {
                 <div className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-muted rounded" style={mf}>
                   Tú — {user?.email || 'tu cuenta cliente'}
                 </div>
-                <p className="text-[10.5px] text-digi-muted/80 mt-1" style={mf}>Se usará (o creará) tu cuenta de tipo cliente para esta solicitud.</p>
+                <label className="flex items-start gap-2 mt-1.5 cursor-pointer" style={mf}>
+                  <input type="checkbox" checked={form.confirm_client_account}
+                    onChange={(e) => setForm({ ...form, confirm_client_account: e.target.checked })}
+                    className="mt-0.5 accent-accent" />
+                  <span className="text-[11px] text-digi-text">Crear/usar mi cuenta de tipo cliente para esta solicitud <span className="text-accent">*</span></span>
+                </label>
               </div>
             ) : (
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente</label>
+                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente <span className="text-accent">*</span></label>
                   <button type="button" onClick={() => setForm(prev => ({
                     ...prev, client_mode: prev.client_mode === 'select' ? 'email' : 'select', client_id: '', client_email: '',
                   }))}
                     className="text-[11px] text-digi-muted hover:text-accent border border-digi-border rounded px-1.5 py-0.5 transition-colors" style={mf}>
-                    {form.client_mode === 'select' ? 'Invitar por email' : 'Seleccionar'}
+                    {form.client_mode === 'select' ? 'Usar un correo' : 'Elegir de mis clientes'}
                   </button>
                 </div>
                 {form.client_mode === 'select' ? (
                   <PixelSelect value={form.client_id}
                     onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-                    options={clients.map((c: any) => ({ value: String(c.id), label: c.name || c.email }))}
-                    placeholder="-- Sin cliente --" />
+                    options={clients.map((c: any) => ({ value: String(c.id), label: `${c.name || c.email}${c.status && c.status !== 'activo' ? ' · sin cuenta' : ''}` }))}
+                    placeholder="-- Elige un cliente --" />
                 ) : (
                   <input type="email" value={form.client_email}
                     onChange={(e) => setForm({ ...form, client_email: e.target.value })}
                     placeholder="correo@cliente.com"
                     className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
                 )}
+                <p className="text-[10.5px] text-digi-muted/80 mt-1" style={mf}>Si el correo no tiene cuenta, se registra y se le invita a crearla.</p>
               </div>
             )}
           </div>

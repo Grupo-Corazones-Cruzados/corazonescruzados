@@ -206,6 +206,36 @@ export async function sendProjectClientInvitationEmail(params: {
   });
 }
 
+/**
+ * Invitación genérica a crear cuenta de cliente cuando se asocia su correo a un ticket
+ * (o cualquier registro). El registro ya quedó a su nombre; al crear su cuenta con este
+ * mismo correo verá su historial. Best-effort.
+ */
+export async function sendClientInvitationEmail(params: {
+  email: string;
+  context: string;           // p. ej. 'un ticket', 'un servicio'
+  contextTitle?: string | null;
+  inviterName?: string | null;
+}) {
+  const url = `${APP_URL}/`;
+  const who = params.inviterName ? `${escapeHtml(params.inviterName)} de ${accentStrong('GCC World')}` : accentStrong('GCC World');
+  const html = emailShell(
+    emailBadge('INVITACIÓN', CORP.accent) +
+    emailHeading('Te registraron como cliente', 'Únete a GCC World para darle seguimiento') +
+    emailParagraph(`${who} registró ${escapeHtml(params.context)} a tu nombre${params.contextTitle ? `:` : '.'}`) +
+    (params.contextTitle ? emailInfoBox('DETALLE', escapeHtml(params.contextTitle)) : '') +
+    emailParagraph(`Crea tu cuenta de cliente en GCC World con este mismo correo para ver el avance y recibir la facturación. Ya quedó registrado con tu correo.`) +
+    emailButton(url, 'Unirme a GCC World') +
+    emailNote('Si no esperabas esta invitación, puedes ignorar este correo.'),
+  );
+  return deliver({
+    from: FROM_EMAIL,
+    to: params.email,
+    subject: `Te registraron como cliente en GCC World`,
+    html,
+  });
+}
+
 export async function sendVerificationEmail(
   email: string,
   token: string,
