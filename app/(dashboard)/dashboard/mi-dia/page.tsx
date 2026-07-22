@@ -384,9 +384,9 @@ export default function MiDiaPage() {
       </aside>
 
       <div className="flex-1 min-w-0 w-full">
-        {/* El contenedor del calendario no supera la altura de la página; su cuerpo
-            (la grilla de horas) se desplaza internamente para ver los horarios ocultos. */}
-        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col max-h-[calc(100dvh-4.5rem)]">
+        {/* El contenedor del calendario ocupa la altura disponible de la ventana; su cuerpo
+            (grilla de horas / celdas de mes) llena el espacio y se desplaza internamente. */}
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-4.5rem)]">
           {/* Command bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border shrink-0">
             <div className="flex items-center gap-2">
