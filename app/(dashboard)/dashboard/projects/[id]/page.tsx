@@ -26,6 +26,7 @@ import SocialCopyPanel from '@/components/projects/SocialCopyPanel';
 import ScriptStoryboardEditor from '@/components/projects/ScriptStoryboardEditor';
 import type { StoryboardSegment } from '@/components/projects/ScriptStoryboardEditor';
 import useAgentChat from '@/hooks/useAgentChat';
+import GccBotChat from '@/components/cotizaciones/GccBotChat';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -890,7 +891,8 @@ export default function ProjectDetailPage() {
   const isTerminal = ['completed', 'closed', 'cancelled'].includes(project.status);
   const hasReqs = reqs.length > 0;
   // Images: visible when project is not draft; editable by owner or accepted participant
-  const showImages = project.status !== 'draft';
+  // En 'cotizacion' se ocultan las imágenes del proyecto (aún no aprobado por el cliente).
+  const showImages = project.status !== 'draft' && project.status !== 'cotizacion';
   const isAcceptedParticipant = isMember && !isOwner && bids.some((b: any) => String(b.member_id) === String(memberId) && b.status === 'accepted');
   const canEditImages = showImages && (isOwner || isAcceptedParticipant);
   const myBid = bids.find((b: any) => String(b.member_id) === String(memberId));
@@ -1854,7 +1856,7 @@ export default function ProjectDetailPage() {
         <div className="w-full lg:w-[360px] shrink-0 space-y-4 order-3">
           <div className="flex gap-1 bg-digi-card border border-digi-border rounded-lg p-1">
             <button onClick={() => setRightTab('propiedades')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'propiedades' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Propiedades</button>
-            {isAdmin && (
+            {isAdmin && project.status !== 'cotizacion' && (
               <button onClick={() => setRightTab('digimundo')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'digimundo' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>DigiMundo</button>
             )}
           </div>
@@ -2071,7 +2073,7 @@ export default function ProjectDetailPage() {
           </>)}
 
           {/* DigiMundo (pestaña admin) */}
-          {rightTab === 'digimundo' && isAdmin && (<>
+          {rightTab === 'digimundo' && isAdmin && project.status !== 'cotizacion' && (<>
           {isAdmin && (
             <div className="pixel-card" style={{ borderColor: project.digimundo_project_id ? 'var(--color-accent)' : undefined }}>
               <div className="flex items-center justify-between mb-3">
@@ -2641,6 +2643,9 @@ export default function ProjectDetailPage() {
         }}
         onCancel={() => setConfirmDeleteProject(false)}
       />
+
+      {/* Chat flotante GCC Bot — solo mientras es cotización (sesión del agente para pedir cambios). */}
+      {project.status === 'cotizacion' && <GccBotChat projectId={project.id} onChanged={fetchProject} />}
     </div>
   );
 }
