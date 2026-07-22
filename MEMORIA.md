@@ -1425,6 +1425,10 @@ Stack estándar de la casa, con particularidades de este repo:
     (`/generate`, `/chat`, `/health`) con auth por token compartido `x-worker-token` (fail-closed). Mantiene la
     **sesión viva** del SDK y la reanuda por `sessionId`. Herramienta `list_my_projects` (solo lectura, Postgres)
     para calibrar precios con proyectos previos del miembro. **Thinking extendido DESACTIVADO** (pedido del usuario).
+    **GOTCHA (2026-07-22):** NO usar `permissionMode: 'bypassPermissions'` en el Agent SDK — pasa
+    `--dangerously-skip-permissions`, que Claude Code **rechaza al correr como root** (contenedor Railway):
+    "cannot be used with root/sudo privileges". Solución: callback `canUseTool` que aprueba solo la
+    herramienta read-only (`list_my_projects` vía `allowedTools`) y niega el resto, sin prompts (headless).
     Cliente en la web: `lib/cotizaciones/worker.ts`. **Env:** `ANTHROPIC_API_KEY` (worker), `COTIZADOR_WORKER_URL`
     + `COTIZADOR_WORKER_TOKEN` (web↔worker), `COTIZADOR_MODEL=claude-opus-4-8`. **Deploy:** nuevo servicio Railway
     con Root Directory `services/cotizador-worker` (ver su README). **DESPLEGADO en Railway** (proyecto
