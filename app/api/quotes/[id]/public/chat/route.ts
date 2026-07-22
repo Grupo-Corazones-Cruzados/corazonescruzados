@@ -23,10 +23,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const { rows: [s] } = await pool.query(
       `SELECT worker_session_id, service_id, service_name, service_rate, detail, instructions FROM gcc_world.quote_sessions WHERE project_id = $1`, [id]);
+    const budgetNote = p.quote_client_budget != null ? `\n\nPRESUPUESTO DEL CLIENTE: $${Number(p.quote_client_budget)} — ajusta la cotización a este presupuesto en lo posible.` : '';
     const context = {
       memberId: p.assigned_member_id ? Number(p.assigned_member_id) : null, userId: 'external',
       service: { id: s?.service_id ? Number(s.service_id) : null, name: s?.service_name || '', rate: s?.service_rate != null ? Number(s.service_rate) : null },
-      detail: s?.detail || '', instructions: s?.instructions || '',
+      detail: s?.detail || '', instructions: (s?.instructions || '') + budgetNote,
     };
     const out = await chatQuote({ sessionId: s?.worker_session_id || '', message, model: COTIZADOR_MODEL, context });
 

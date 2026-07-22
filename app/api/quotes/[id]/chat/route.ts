@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     await ensureQuoteTables();
     const { rows: [proj] } = await pool.query(
-      `SELECT p.id, p.status, p.assigned_member_id, p.created_by_user_id,
+      `SELECT p.id, p.status, p.assigned_member_id, p.created_by_user_id, p.quote_client_budget,
               s.worker_session_id, s.service_id, s.service_name, s.service_rate, s.detail, s.instructions
          FROM gcc_world.projects p
          LEFT JOIN gcc_world.quote_sessions s ON s.project_id = p.id
@@ -58,10 +58,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!isOwner) return NextResponse.json({ error: 'No tienes acceso a esta cotización' }, { status: 403 });
 
     const memberId = proj.assigned_member_id ? Number(proj.assigned_member_id) : null;
+    const budgetNote = proj.quote_client_budget != null ? `\n\nPRESUPUESTO DEL CLIENTE: $${Number(proj.quote_client_budget)} — ajusta la cotización a este presupuesto en lo posible.` : '';
     const context = {
       memberId, userId: user.userId,
       service: { id: proj.service_id ? Number(proj.service_id) : null, name: proj.service_name || '', rate: proj.service_rate != null ? Number(proj.service_rate) : null },
-      detail: proj.detail || '', instructions: proj.instructions || '',
+      detail: proj.detail || '', instructions: (proj.instructions || '') + budgetNote,
     };
 
     const out = await chatQuote({ sessionId: proj.worker_session_id || '', message, model: COTIZADOR_MODEL, context });

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import GccBotChat from '@/components/cotizaciones/GccBotChat';
-import { Check, X, Calculator, ListChecks, CalendarDays, MessageSquare, Send } from 'lucide-react';
+import { Check, X, Calculator, ListChecks, CalendarDays, MessageSquare, Send, Wallet } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -18,6 +18,9 @@ export default function PublicQuotePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deciding, setDeciding] = useState(false);
+  const [showBudget, setShowBudget] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
+  const [savingBudget, setSavingBudget] = useState(false);
   const [obs, setObs] = useState<any[]>([]);
   const [obsText, setObsText] = useState('');
   const [obsName, setObsName] = useState('');
@@ -57,6 +60,22 @@ export default function PublicQuotePage() {
       load();
     } catch (e: any) { toast.error(e.message || 'Error'); }
     finally { setDeciding(false); }
+  };
+
+  const submitBudget = async () => {
+    const amount = Number(budgetInput);
+    if (!Number.isFinite(amount) || amount <= 0) { toast.error('Ingresa un monto válido'); return; }
+    setSavingBudget(true);
+    try {
+      const r = await fetch(`/api/quotes/${id}/public/budget`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, amount }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Error');
+      toast.success('Presupuesto enviado al responsable');
+      setShowBudget(false); setBudgetInput(''); load();
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setSavingBudget(false); }
   };
 
   const sendObs = async () => {
@@ -144,20 +163,43 @@ export default function PublicQuotePage() {
           </div>
         </div>
 
-        {/* Aceptar / Rechazar (grandes) */}
+        {/* Aceptar / Rechazar / Modificar presupuesto (grandes) */}
         {!decided && (
           <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
-            <p className="text-[13px] text-digi-muted text-center mb-3" style={mf}>¿Aceptas esta cotización? Si quieres ajustes, pídelos al asistente (abajo a la derecha) antes de decidir.</p>
+            <p className="text-[13px] text-digi-muted text-center mb-3" style={mf}>¿Aceptas esta cotización? Si quieres ajustes, pídelos al asistente (abajo) o indica tu presupuesto para que la ajusten.</p>
+            {quote.clientBudget != null && (
+              <p className="text-[12px] text-center text-accent mb-3" style={mf}>Indicaste un presupuesto de <strong>{money(quote.clientBudget)}</strong>. El responsable ajustará la cotización.</p>
+            )}
             <div className="flex flex-col sm:flex-row gap-3">
               <button onClick={() => decide('reject')} disabled={deciding}
                 className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-lg border-2 border-red-400 text-red-500 text-[15px] font-semibold hover:bg-red-500/10 transition-colors disabled:opacity-50" style={mf}>
                 <X className="w-5 h-5" /> Rechazar
+              </button>
+              <button onClick={() => { setBudgetInput(quote.clientBudget != null ? String(quote.clientBudget) : ''); setShowBudget((v) => !v); }} disabled={deciding}
+                className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-lg border-2 border-accent text-accent text-[15px] font-semibold hover:bg-accent-light transition-colors disabled:opacity-50" style={mf}>
+                <Wallet className="w-5 h-5" /> Modificar presupuesto
               </button>
               <button onClick={() => decide('accept')} disabled={deciding}
                 className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-lg bg-green-600 text-white text-[15px] font-semibold hover:bg-green-700 transition-colors disabled:opacity-50" style={mf}>
                 <Check className="w-5 h-5" /> Aceptar cotización
               </button>
             </div>
+            {showBudget && (
+              <div className="mt-4 pt-4 border-t border-digi-border">
+                <label className="text-[12px] font-medium text-digi-text" style={mf}>¿Cuál es tu presupuesto para este proyecto?</label>
+                <div className="flex gap-2 mt-1.5">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-digi-muted text-sm" style={mf}>$</span>
+                    <input type="number" value={budgetInput} onChange={(e) => setBudgetInput(e.target.value)} placeholder="0.00" min="0"
+                      className="field-control w-full pl-7 pr-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                  </div>
+                  <button onClick={submitBudget} disabled={savingBudget || !budgetInput.trim()} className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
+                    <Send className="w-4 h-4" /> Enviar
+                  </button>
+                </div>
+                <p className="text-[11px] text-digi-muted mt-1.5" style={mf}>No cambia la cotización: le avisamos al responsable para que la ajuste a tu presupuesto y te la comparta de nuevo.</p>
+              </div>
+            )}
           </div>
         )}
 

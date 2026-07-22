@@ -81,6 +81,7 @@ export function ensureQuoteShareColumns(): Promise<void> {
       await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS quote_status VARCHAR(12) DEFAULT 'pending'`);
       await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS quote_decided_at TIMESTAMPTZ`);
       await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS quote_client_email TEXT`);
+      await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS quote_client_budget NUMERIC`);
     })().catch((e) => { ensuringShare = null; throw e; });
   }
   return ensuringShare;

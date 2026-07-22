@@ -26,9 +26,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const accepted = action === 'accept';
     if (accepted) {
-      // Aceptada → pasa a BORRADOR; desde aquí sigue la gestión normal del proyecto.
+      // Aceptada → pasa a BORRADOR y se fija el PRESUPUESTO del proyecto = total cotizado.
+      const q = await loadQuote(id);
+      const total = q?.total || 0;
       await pool.query(
-        `UPDATE gcc_world.projects SET quote_status = 'accepted', quote_decided_at = NOW(), status = 'draft', updated_at = NOW() WHERE id = $1`, [id]);
+        `UPDATE gcc_world.projects SET quote_status = 'accepted', quote_decided_at = NOW(), status = 'draft',
+            budget_min = $2, budget_max = $2, updated_at = NOW() WHERE id = $1`, [id, total || null]);
     } else {
       await pool.query(
         `UPDATE gcc_world.projects SET quote_status = 'rejected', quote_decided_at = NOW(), updated_at = NOW() WHERE id = $1`, [id]);

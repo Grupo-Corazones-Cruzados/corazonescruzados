@@ -44,7 +44,7 @@ export async function applyQuoteChange(projectId: number, payload: QuotePayload,
 export async function loadQuote(projectId: number): Promise<any | null> {
   const { rows: [p] } = await pool.query(
     `SELECT p.id, p.title, p.description, p.deadline, p.final_cost, p.status,
-            p.quote_status, p.quote_token_expires_at, p.quote_client_email,
+            p.quote_status, p.quote_token_expires_at, p.quote_client_email, p.quote_client_budget,
             s.service_name, s.service_rate,
             m.name AS responsible_name
        FROM gcc_world.projects p
@@ -78,6 +78,7 @@ export async function loadQuote(projectId: number): Promise<any | null> {
     quoteStatus: p.quote_status || 'pending',
     expiresAt: p.quote_token_expires_at || null,
     clientEmail: p.quote_client_email || null,
+    clientBudget: p.quote_client_budget != null ? Number(p.quote_client_budget) : null,
     responsibleName: p.responsible_name || '',
     service: { name: p.service_name || '', rate: p.service_rate != null ? Number(p.service_rate) : null },
     requirements,

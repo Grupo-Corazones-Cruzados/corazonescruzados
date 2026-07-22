@@ -1962,6 +1962,9 @@ export default function ProjectDetailPage() {
                   )}
                 </dd>
               </div>
+              {project.status === 'cotizacion' && project.quote_client_budget != null && (
+                <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Presup. cliente</dt><dd className="text-accent font-semibold text-right tabular-nums">${fmt2(Number(project.quote_client_budget))}</dd></div>
+              )}
               <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Creado</dt><dd className="text-digi-text text-right">{new Date(project.created_at).toLocaleDateString()}</dd></div>
             </dl>
           </div>
