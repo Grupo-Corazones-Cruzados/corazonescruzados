@@ -1399,8 +1399,14 @@ Stack estándar de la casa, con particularidades de este repo:
     participante (la lógica incluye la fila responsible). Aceptar una **propuesta** (bid) agrega participante.
   - **Invitación de liderazgo:** `POST /api/projects/[id]/responsible {action:'accept'|'decline'}`. El detalle muestra un
     **banner** al miembro invitado (`pending_responsible`). Participantes: `GET/POST/DELETE /api/projects/[id]/participants`
-    (gestiona el responsable activo o admin). El detalle tiene tarjeta **"Equipo del proyecto"** (responsable + participantes)
-    y renombró la sección de bids a **"Propuestas"**. GET detalle/lista dan acceso también vía `project_members`.
+    (gestiona el responsable activo o admin). GET detalle/lista dan acceso también vía `project_members`.
+  - **Detalle de proyecto = 3 columnas (2026-07-22):** panel **IZQUIERDO** (`aside` 280px) con **Equipo**
+    (responsable + hasta 5 participantes) arriba y **Propuestas** (hasta 5 pendientes, compactas) abajo;
+    **CENTRO** = Descripción + Requerimientos; **DERECHA** = pestañas Propiedades/DigiMundo. Si Equipo o
+    Propuestas superan **5**, botón **"Ver más (N)"** abre un **modal** de gestión completa
+    (`showTeamModal` / `showProposalsModal`) con agregar/quitar participante y aceptar/rechazar propuestas.
+    Helpers reutilizables `renderAvatar/renderTeamResponsible/renderParticipantRow/renderProposalCompact/
+    renderProposalFull` + handlers `acceptBid/rejectBid`. En móvil el centro va primero (`order`).
   - **Facturación = SOLO ADMIN (regla de negocio, 2026-07-09):** se reforzó server-side: `POST /api/projects/[id]/complete`
     exige `role='admin'` (antes NO validaba rol, solo lo ocultaba la UI); `POST /api/invoices/from-ticket` pasó de
     "admin o miembro asignado" a **solo admin**; en tickets `canCompleteTicket` = solo admin. Verificado tsc + `next build`.

@@ -169,6 +169,9 @@ export default function ProjectDetailPage() {
   const isOwner = isAdmin || isMemberCreator;
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [newParticipantId, setNewParticipantId] = useState('');
+  // Modales "Ver más" del panel izquierdo (equipo / propuestas completas).
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showProposalsModal, setShowProposalsModal] = useState(false);
   // ¿Me invitaron a tomar el liderazgo (responsable) de este proyecto?
   const myResponsibleInvite = !!(memberId && project?.pending_responsible && String(project.pending_responsible.member_id) === String(memberId));
 
@@ -208,6 +211,18 @@ export default function ProjectDetailPage() {
     try {
       const res = await fetch(`/api/projects/${id}/participants?member_id=${mid}`, { method: 'DELETE' });
       if (!res.ok) { toast.error((await res.json()).error || 'Error'); return; }
+      fetchProject();
+    } catch { toast.error('Error'); }
+  };
+  const acceptBid = async (bidId: number) => {
+    try {
+      await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: bidId, status: 'accepted' }) });
+      fetchProject(); toast.success('Propuesta aceptada');
+    } catch { toast.error('Error'); }
+  };
+  const rejectBid = async (bidId: number) => {
+    try {
+      await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: bidId, status: 'rejected' }) });
       fetchProject();
     } catch { toast.error('Error'); }
   };
@@ -883,6 +898,134 @@ export default function ProjectDetailPage() {
   const canBidInvited = isMember && !isOwner && myBid?.status === 'invited';
   const canBid = canBidNew || canBidInvited;
 
+  // ── Equipo del proyecto (responsable + participantes) para el panel izquierdo ──
+  const teamRows: any[] = project.project_members || [];
+  const acceptedBidders = bids.filter((b: any) => b.status === 'accepted');
+  let responsibleRow: any = project.responsible || teamRows.find((t) => t.role === 'responsible' && t.status === 'active');
+  // Si no hay responsable formal ni invitación pendiente pero hay una propuesta ACEPTADA,
+  // ese postulante ES el responsable (así se registraron los proyectos hasta ahora).
+  if (!responsibleRow && !project.pending_responsible && acceptedBidders.length > 0) {
+    const b = acceptedBidders[0];
+    responsibleRow = { member_id: b.member_id, member_name: b.member_name, photo_url: b.photo_url, role: 'responsible', status: 'active' };
+  }
+  const responsibleId = String(responsibleRow?.member_id ?? '');
+  const participantMap = new Map<string, any>();
+  for (const t of teamRows) {
+    if (t.status === 'active' && String(t.member_id) !== responsibleId) participantMap.set(String(t.member_id), t);
+  }
+  for (const b of acceptedBidders) {
+    const mid = String(b.member_id);
+    if (mid === responsibleId || participantMap.has(mid)) continue;
+    participantMap.set(mid, { member_id: b.member_id, member_name: b.member_name, photo_url: b.photo_url, role: 'participant', status: 'active' });
+  }
+  const participants = Array.from(participantMap.values());
+  const pendingBids = bids.filter((b: any) => b.status !== 'accepted');
+  const BID_LABEL: Record<string, string> = { pending: 'Pendiente', accepted: 'Aceptada', rejected: 'Rechazada', invited: 'Invitado', counter: 'Contraoferta' };
+
+  const renderAvatar = (m: any, size: 'sm' | 'md' = 'md') => m.photo_url ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={m.photo_url} alt="" className={`${size === 'sm' ? 'w-7 h-7' : 'w-8 h-8'} rounded-full border border-digi-border object-cover shrink-0`} />
+  ) : (
+    <div className={`${size === 'sm' ? 'w-7 h-7 text-[11px]' : 'w-8 h-8 text-[12px]'} rounded-full border border-accent/20 bg-accent-light flex items-center justify-center font-semibold text-accent shrink-0`} style={mf}>{(m.member_name || '?')[0].toUpperCase()}</div>
+  );
+
+  // Fila de responsable/participante (usada en panel y modal de equipo).
+  const renderTeamResponsible = () => (
+    responsibleRow ? (
+      <div className="flex items-center gap-2.5 rounded-lg border border-accent/30 bg-accent-light px-3 py-2">
+        {renderAvatar(responsibleRow)}
+        <span className="text-[13px] font-medium text-digi-text flex-1 min-w-0 truncate" style={mf}>{responsibleRow.member_name}</span>
+        <PixelBadge variant="info"><span className="inline-flex items-center gap-1"><Crown className="w-3 h-3" /> Responsable</span></PixelBadge>
+      </div>
+    ) : project.pending_responsible ? (
+      <div className="flex items-center gap-2.5 rounded-lg border border-digi-border px-3 py-2">
+        {renderAvatar(project.pending_responsible)}
+        <span className="text-[13px] font-medium text-digi-text flex-1 min-w-0 truncate" style={mf}>{project.pending_responsible.member_name}</span>
+        <PixelBadge variant="warning">Invitación pendiente</PixelBadge>
+      </div>
+    ) : (
+      <p className="text-[12px] text-digi-muted" style={mf}>Sin responsable asignado (abierto a propuestas).</p>
+    )
+  );
+  const renderParticipantRow = (m: any) => (
+    <div key={m.member_id} className="flex items-center gap-2.5 rounded-lg border border-digi-border px-3 py-1.5">
+      {renderAvatar(m)}
+      <span className="text-[12.5px] text-digi-text flex-1 min-w-0 truncate" style={mf}>{m.member_name}</span>
+      {isOwner && (
+        <button onClick={() => removeParticipant(String(m.member_id))} title="Quitar" className="shrink-0 p-1.5 rounded text-digi-muted hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+      )}
+    </div>
+  );
+
+  // Propuesta compacta (panel izquierdo).
+  const renderProposalCompact = (b: any) => (
+    <div key={b.id} className="rounded-lg border border-digi-border px-2.5 py-2">
+      <div className="flex items-center gap-2">
+        {renderAvatar(b, 'sm')}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[12.5px] font-medium text-digi-text truncate" style={mf}>{b.member_name}</span>
+            {b.bid_amount != null && <span className="text-[12px] font-semibold text-accent tabular-nums" style={mf}>${fmt2(Number(b.bid_amount))}</span>}
+          </div>
+        </div>
+        <PixelBadge variant={BID_V[b.status] || 'default'}>{BID_LABEL[b.status] || b.status}</PixelBadge>
+      </div>
+      {isOwner && b.status === 'pending' && (
+        <div className="flex gap-1.5 mt-2">
+          <button onClick={() => acceptBid(b.id)} className="flex-1 inline-flex items-center justify-center gap-1 text-[11.5px] font-medium text-white bg-green-600 rounded px-2 py-1 hover:bg-green-700 transition-colors" style={mf}><Check className="w-3 h-3" /> Aceptar</button>
+          <button onClick={() => rejectBid(b.id)} className="flex-1 inline-flex items-center justify-center gap-1 text-[11.5px] font-medium text-red-600 border border-red-300 rounded px-2 py-1 hover:bg-red-50 transition-colors" style={mf}><X className="w-3 h-3" /> Rechazar</button>
+        </div>
+      )}
+      {b.status === 'invited' && String(b.member_id) === String(memberId) && (
+        <button onClick={() => setShowBidModal(true)} className="w-full mt-2 inline-flex items-center justify-center gap-1 text-[11.5px] font-medium text-accent border border-accent/40 rounded px-2 py-1 hover:bg-accent-light transition-colors" style={mf}><Send className="w-3 h-3" /> Enviar propuesta</button>
+      )}
+    </div>
+  );
+
+  // Propuesta completa (modal "Ver más").
+  const renderProposalFull = (b: any) => (
+    <div key={b.id} className="rounded-lg border border-digi-border p-3.5">
+      <div className="flex items-start gap-3">
+        {renderAvatar(b, 'md')}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[13px] font-medium text-digi-text" style={mf}>{b.member_name}</span>
+            {b.bid_amount != null && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${fmt2(Number(b.bid_amount))}</span>}
+            {b.estimated_days && <span className="text-[11px] text-digi-muted" style={mf}>· {b.estimated_days}d</span>}
+            <PixelBadge variant={BID_V[b.status] || 'default'}>{BID_LABEL[b.status] || b.status}</PixelBadge>
+            {b.requirement_ids?.length > 0 && (
+              <span tabIndex={0} className="relative group/reqs inline-flex items-center gap-1 text-[11px] text-accent bg-accent-light border border-accent/20 rounded px-1.5 py-0.5 cursor-default outline-none" style={mf}>
+                <ListChecks className="w-3 h-3" /> {b.requirement_ids.length} req.
+                <span className="absolute left-0 top-full mt-1.5 z-30 w-64 max-w-[80vw] bg-digi-card border border-digi-border rounded-lg shadow-lg p-2.5 opacity-0 invisible group-hover/reqs:opacity-100 group-hover/reqs:visible group-focus-within/reqs:opacity-100 group-focus-within/reqs:visible transition-opacity" style={mf}>
+                  <span className="block text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1">Requerimientos</span>
+                  {b.requirement_ids.map((rid: number) => {
+                    const req = reqs.find((r: any) => r.id === rid || r.id === Number(rid));
+                    return req ? <span key={rid} className="block text-[11px] text-digi-text truncate">• {req.title}</span> : null;
+                  })}
+                </span>
+              </span>
+            )}
+          </div>
+          {b.proposal && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{b.proposal}</p>}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isOwner && b.status === 'pending' && (
+            <>
+              <button onClick={() => acceptBid(b.id)} className="inline-flex items-center gap-1 text-[12px] font-medium text-white bg-green-600 rounded px-2.5 py-1.5 hover:bg-green-700 transition-colors" style={mf}><Check className="w-3.5 h-3.5" /> Aceptar</button>
+              <button onClick={() => rejectBid(b.id)} className="inline-flex items-center gap-1 text-[12px] font-medium text-red-600 border border-red-300 rounded px-2.5 py-1.5 hover:bg-red-50 transition-colors" style={mf}><X className="w-3.5 h-3.5" /> Rechazar</button>
+            </>
+          )}
+          {b.status === 'invited' && String(b.member_id) === String(memberId) && (
+            <button onClick={() => setShowBidModal(true)} className="inline-flex items-center gap-1 text-[12px] font-medium text-accent border border-accent/40 rounded px-2.5 py-1.5 hover:bg-accent-light transition-colors" style={mf}><Send className="w-3.5 h-3.5" /> Enviar propuesta</button>
+          )}
+          {isOwner && b.status === 'invited' && String(b.member_id) !== String(memberId) && (
+            <span className="text-[11px] text-amber-700" style={mf}>Esperando</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div>
       {editingTitle ? (
@@ -978,8 +1121,55 @@ export default function ProjectDetailPage() {
       )}
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
+        {/* ====== IZQUIERDA: Equipo + Propuestas ====== */}
+        <aside className="w-full lg:w-[280px] shrink-0 space-y-4 order-2 lg:order-1">
+          {/* Equipo del proyecto (compacto: responsable + hasta 5 participantes) */}
+          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}><Users className="w-4 h-4 text-accent" /> Equipo</h3>
+              {isOwner && (
+                <button onClick={() => { setNewParticipantId(''); setShowAddParticipant(true); }} title="Agregar participante" className="shrink-0 p-1.5 rounded text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors"><UserPlus className="w-3.5 h-3.5" /></button>
+              )}
+            </div>
+            <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Responsable</p>
+            <div className="mb-3">{renderTeamResponsible()}</div>
+            <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Participantes ({participants.length})</p>
+            {participants.length > 0 ? (
+              <div className="space-y-1.5">{participants.slice(0, 5).map(renderParticipantRow)}</div>
+            ) : (
+              <p className="text-[11.5px] text-digi-muted" style={mf}>Aún no hay participantes. Se suman al aceptar sus propuestas o agregándolos.</p>
+            )}
+            {participants.length > 5 && (
+              <button onClick={() => setShowTeamModal(true)} className="w-full mt-2.5 text-[12px] font-medium text-accent border border-accent/40 rounded px-2.5 py-1.5 hover:bg-accent-light transition-colors" style={mf}>Ver más ({participants.length})</button>
+            )}
+          </div>
+
+          {/* Propuestas (compacto: hasta 5 pendientes) */}
+          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h3 className="text-[13px] font-semibold text-digi-text" style={mf}>Propuestas ({pendingBids.length})</h3>
+              <div className="flex gap-1.5">
+                {canInvite && (
+                  <button onClick={openInviteModal} title="Invitar" className="shrink-0 p-1.5 rounded text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors"><UserPlus className="w-3.5 h-3.5" /></button>
+                )}
+                {canBid && (
+                  <button onClick={() => setShowBidModal(true)} title="Postularme" className="shrink-0 p-1.5 rounded text-white bg-accent hover:bg-accent-hover transition-colors"><Send className="w-3.5 h-3.5" /></button>
+                )}
+              </div>
+            </div>
+            {pendingBids.length > 0 ? (
+              <div className="space-y-1.5">{pendingBids.slice(0, 5).map(renderProposalCompact)}</div>
+            ) : (
+              <p className="text-[11.5px] text-digi-muted text-center py-2" style={mf}>No hay propuestas pendientes.</p>
+            )}
+            {pendingBids.length > 5 && (
+              <button onClick={() => setShowProposalsModal(true)} className="w-full mt-2.5 text-[12px] font-medium text-accent border border-accent/40 rounded px-2.5 py-1.5 hover:bg-accent-light transition-colors" style={mf}>Ver más ({pendingBids.length})</button>
+            )}
+          </div>
+        </aside>
+
         {/* ====== PRINCIPAL: Resumen + Requerimientos combinados (sin pestañas) ====== */}
-        <div className="flex-1 min-w-0 space-y-4">
+        <div className="flex-1 min-w-0 space-y-4 order-1 lg:order-2">
           {(<>
           {project.description && (
             <div className="pixel-card">
@@ -1119,92 +1309,35 @@ export default function ProjectDetailPage() {
             )}
           </div>
 
-          {/* Equipo del proyecto: responsable + participantes (concepto project_members) */}
-          {(() => {
-            const team: any[] = project.project_members || [];
-            const acceptedBidders = (bids || []).filter((b: any) => b.status === 'accepted');
-            let responsibleRow: any = project.responsible || team.find((t) => t.role === 'responsible' && t.status === 'active');
-            // Si el proyecto no tiene responsable formal (ni invitación pendiente) pero una propuesta
-            // fue ACEPTADA, ese postulante ES el responsable — así se registraron los proyectos hasta
-            // ahora: el propio creador postula y lidera. No se lista además como participante.
-            if (!responsibleRow && !project.pending_responsible && acceptedBidders.length > 0) {
-              const b = acceptedBidders[0];
-              responsibleRow = { member_id: b.member_id, member_name: b.member_name, photo_url: b.photo_url, role: 'responsible', status: 'active' };
-            }
-            const responsibleId = String(responsibleRow?.member_id ?? '');
-            // Participantes = filas project_members activas + postulantes aceptados (unión por
-            // member_id), EXCLUYENDO al responsable (no se duplica arriba y abajo).
-            const participantMap = new Map<string, any>();
-            for (const t of team) {
-              if (t.status === 'active' && String(t.member_id) !== responsibleId) participantMap.set(String(t.member_id), t);
-            }
-            for (const b of acceptedBidders) {
-              const mid = String(b.member_id);
-              if (mid === responsibleId || participantMap.has(mid)) continue;
-              participantMap.set(mid, { member_id: b.member_id, member_name: b.member_name, photo_url: b.photo_url, role: 'participant', status: 'active' });
-            }
-            const participants = Array.from(participantMap.values());
-            const Avatar = ({ m }: { m: any }) => m.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={m.photo_url} alt="" className="w-8 h-8 rounded-full border border-digi-border object-cover shrink-0" />
-            ) : (
-              <div className="w-8 h-8 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[12px] font-semibold text-accent shrink-0" style={mf}>{(m.member_name || '?')[0].toUpperCase()}</div>
-            );
-            return (
-              <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <h3 className="text-[14px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}><Users className="w-4 h-4 text-accent" /> Equipo del proyecto</h3>
+          </>)}
+
+          {/* Modal "Ver más" — Equipo completo */}
+          <PixelModal open={showTeamModal} onClose={() => setShowTeamModal(false)} title="Equipo del proyecto" size="md">
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Responsable</p>
+                {renderTeamResponsible()}
+              </div>
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={mf}>Participantes ({participants.length})</p>
                   {isOwner && (
                     <button onClick={() => { setNewParticipantId(''); setShowAddParticipant(true); }} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1.5 hover:border-accent hover:text-accent transition-colors" style={mf}><UserPlus className="w-3.5 h-3.5" /> Agregar participante</button>
                   )}
                 </div>
-                {/* Responsable */}
-                <div className="mb-3">
-                  <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Responsable</p>
-                  {responsibleRow ? (
-                    <div className="flex items-center gap-2.5 rounded-lg border border-accent/30 bg-accent-light px-3 py-2">
-                      <Avatar m={responsibleRow} />
-                      <span className="text-[13px] font-medium text-digi-text flex-1 min-w-0 truncate" style={mf}>{responsibleRow.member_name}</span>
-                      <PixelBadge variant="info"><span className="inline-flex items-center gap-1"><Crown className="w-3 h-3" /> Responsable</span></PixelBadge>
-                    </div>
-                  ) : project.pending_responsible ? (
-                    <div className="flex items-center gap-2.5 rounded-lg border border-digi-border px-3 py-2">
-                      <Avatar m={project.pending_responsible} />
-                      <span className="text-[13px] font-medium text-digi-text flex-1 min-w-0 truncate" style={mf}>{project.pending_responsible.member_name}</span>
-                      <PixelBadge variant="warning">Invitación pendiente</PixelBadge>
-                    </div>
-                  ) : (
-                    <p className="text-[12px] text-digi-muted" style={mf}>Sin responsable asignado (abierto a propuestas).</p>
-                  )}
-                </div>
-                {/* Participantes */}
-                <div>
-                  <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Participantes ({participants.length})</p>
-                  {participants.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {participants.map((m) => (
-                        <div key={m.member_id} className="flex items-center gap-2.5 rounded-lg border border-digi-border px-3 py-1.5">
-                          <Avatar m={m} />
-                          <span className="text-[12.5px] text-digi-text flex-1 min-w-0 truncate" style={mf}>{m.member_name}</span>
-                          {isOwner && (
-                            <button onClick={() => removeParticipant(String(m.member_id))} title="Quitar" className="shrink-0 p-1.5 rounded text-digi-muted hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[12px] text-digi-muted" style={mf}>Aún no hay participantes. Se suman al aceptar sus propuestas o agregándolos.</p>
-                  )}
-                </div>
+                {participants.length > 0 ? (
+                  <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">{participants.map(renderParticipantRow)}</div>
+                ) : (
+                  <p className="text-[12px] text-digi-muted" style={mf}>Aún no hay participantes.</p>
+                )}
               </div>
-            );
-          })()}
+            </div>
+          </PixelModal>
 
-          {/* Propuestas (bids/postulaciones) */}
-          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="text-[14px] font-semibold text-digi-text" style={mf}>Propuestas</h3>
-              <div className="flex gap-2">
+          {/* Modal "Ver más" — Propuestas completas */}
+          <PixelModal open={showProposalsModal} onClose={() => setShowProposalsModal(false)} title="Propuestas" size="lg">
+            <div className="space-y-3">
+              <div className="flex items-center justify-end gap-2">
                 {canInvite && (
                   <button onClick={openInviteModal} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1.5 hover:border-accent hover:text-accent transition-colors" style={mf}><UserPlus className="w-3.5 h-3.5" /> Invitar</button>
                 )}
@@ -1212,67 +1345,13 @@ export default function ProjectDetailPage() {
                   <button onClick={() => setShowBidModal(true)} className={BTN_PRIMARY} style={mf}><Send className="w-4 h-4" /> Postularme</button>
                 )}
               </div>
+              {pendingBids.length > 0 ? (
+                <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">{pendingBids.map(renderProposalFull)}</div>
+              ) : (
+                <p className="text-[12px] text-digi-muted text-center py-3" style={mf}>No hay propuestas pendientes.</p>
+              )}
             </div>
-            {bids.filter((b: any) => b.status !== 'accepted').length > 0 ? (
-              <div className="space-y-2.5">
-                {bids.filter((b: any) => b.status !== 'accepted').map((b: any) => {
-                  const bidLabel = ({ pending: 'Pendiente', accepted: 'Aceptada', rejected: 'Rechazada', invited: 'Invitado', counter: 'Contraoferta' } as Record<string, string>)[b.status] || b.status;
-                  return (
-                    <div key={b.id} className="rounded-lg border border-digi-border p-3.5">
-                      <div className="flex items-start gap-3">
-                        {b.photo_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={b.photo_url} alt="" className="w-9 h-9 rounded-full border border-digi-border object-cover shrink-0" />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[13px] font-semibold text-accent shrink-0" style={mf}>{(b.member_name || '?')[0].toUpperCase()}</div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[13px] font-medium text-digi-text" style={mf}>{b.member_name}</span>
-                            {b.bid_amount != null && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${fmt2(Number(b.bid_amount))}</span>}
-                            {b.estimated_days && <span className="text-[11px] text-digi-muted" style={mf}>· {b.estimated_days}d</span>}
-                            <PixelBadge variant={BID_V[b.status] || 'default'}>{bidLabel}</PixelBadge>
-                            {b.requirement_ids?.length > 0 && (
-                              <span tabIndex={0} className="relative group/reqs inline-flex items-center gap-1 text-[11px] text-accent bg-accent-light border border-accent/20 rounded px-1.5 py-0.5 cursor-default outline-none" style={mf}>
-                                <ListChecks className="w-3 h-3" /> {b.requirement_ids.length} req.
-                                <span className="absolute left-0 top-full mt-1.5 z-30 w-64 max-w-[80vw] bg-digi-card border border-digi-border rounded-lg shadow-lg p-2.5 opacity-0 invisible group-hover/reqs:opacity-100 group-hover/reqs:visible group-focus-within/reqs:opacity-100 group-focus-within/reqs:visible transition-opacity" style={mf}>
-                                  <span className="block text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1">Requerimientos</span>
-                                  {b.requirement_ids.map((rid: number) => {
-                                    const req = reqs.find((r: any) => r.id === rid || r.id === Number(rid));
-                                    return req ? <span key={rid} className="block text-[11px] text-digi-text truncate">• {req.title}</span> : null;
-                                  })}
-                                </span>
-                              </span>
-                            )}
-                          </div>
-                          {b.proposal && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{b.proposal}</p>}
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {isOwner && b.status === 'pending' && (
-                            <>
-                              <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'accepted' }) }); fetchProject(); toast.success('Propuesta aceptada'); }}
-                                className="inline-flex items-center gap-1 text-[12px] font-medium text-white bg-green-600 rounded px-2.5 py-1.5 hover:bg-green-700 transition-colors" style={mf}><Check className="w-3.5 h-3.5" /> Aceptar</button>
-                              <button onClick={async () => { await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: b.id, status: 'rejected' }) }); fetchProject(); }}
-                                className="inline-flex items-center gap-1 text-[12px] font-medium text-red-600 border border-red-300 rounded px-2.5 py-1.5 hover:bg-red-50 transition-colors" style={mf}><X className="w-3.5 h-3.5" /> Rechazar</button>
-                            </>
-                          )}
-                          {b.status === 'invited' && String(b.member_id) === String(memberId) && (
-                            <button onClick={() => setShowBidModal(true)} className="inline-flex items-center gap-1 text-[12px] font-medium text-accent border border-accent/40 rounded px-2.5 py-1.5 hover:bg-accent-light transition-colors" style={mf}><Send className="w-3.5 h-3.5" /> Enviar propuesta</button>
-                          )}
-                          {isOwner && b.status === 'invited' && String(b.member_id) !== String(memberId) && (
-                            <span className="text-[11px] text-amber-700" style={mf}>Esperando</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-[12px] text-digi-muted text-center py-3" style={mf}>No hay propuestas pendientes.</p>
-            )}
-          </div>
-          </>)}
+          </PixelModal>
 
           {/* Invite Modal */}
           <PixelModal open={showInviteModal} onClose={() => setShowInviteModal(false)} title="Invitar miembros" size="md">
@@ -1772,7 +1851,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* ====== DERECHA: pestañas Propiedades (default) / DigiMundo (admin) ====== */}
-        <div className="w-full lg:w-[360px] shrink-0 space-y-4">
+        <div className="w-full lg:w-[360px] shrink-0 space-y-4 order-3">
           <div className="flex gap-1 bg-digi-card border border-digi-border rounded-lg p-1">
             <button onClick={() => setRightTab('propiedades')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'propiedades' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Propiedades</button>
             {isAdmin && (
