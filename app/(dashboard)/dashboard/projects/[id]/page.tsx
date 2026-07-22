@@ -2711,8 +2711,8 @@ export default function ProjectDetailPage() {
         onCancel={() => setConfirmDeleteProject(false)}
       />
 
-      {/* Cotización: chat flotante GCC Bot (a la izquierda, para no chocar con las burbujas de chat). */}
-      {project.status === 'cotizacion' && <GccBotChat projectId={project.id} onChanged={fetchProject} side="left" />}
+      {/* Cotización: chat GCC Bot junto a los botones de chat (a su izquierda, mismo tamaño). */}
+      {project.status === 'cotizacion' && <GccBotChat projectId={project.id} onChanged={fetchProject} side="dock" />}
       {/* Modal de compartir acceso (se abre desde el header). */}
       {project.status === 'cotizacion' && isOwner && <QuoteShareButton projectId={project.id} open={showShare} onClose={() => setShowShare(false)} />}
     </div>

@@ -19,10 +19,12 @@ export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody, s
   chatUrl?: string;
   /** Campos extra en el body (p. ej. { token } para la vista pública). */
   extraBody?: Record<string, any>;
-  /** Lado del launcher/panel. 'left' en el detalle interno (evita chocar con las burbujas de chat). */
-  side?: 'left' | 'right';
+  /** 'dock' = junto a los botones de chat (a su izquierda, mismo tamaño); 'right' = pill flotante (vista pública). */
+  side?: 'right' | 'dock';
 }) {
-  const pos = side === 'left' ? 'left-3' : 'right-3';
+  // En 'dock' el launcher se ubica a la IZQUIERDA de los botones Chat/Mis chats del ChatDock
+  // (que ocupan ~208px desde el borde derecho). El panel abierto se ancla abajo-derecha.
+  const launcherRight = side === 'dock' ? 'right-[14rem]' : 'right-3';
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([{
     role: 'bot',
@@ -53,13 +55,13 @@ export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody, s
   return (
     <>
       {!open && (
-        <button onClick={() => setOpen(true)}
-          className={`fixed bottom-11 ${pos} z-[92] inline-flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-accent text-white shadow-lg hover:bg-accent-hover transition-colors`} style={mf}>
-          <Bot className="w-4 h-4" /> GCC Bot
+        <button onClick={() => setOpen(true)} aria-label="Abrir GCC Bot"
+          className={`fixed bottom-11 ${launcherRight} z-[91] inline-flex items-center gap-2 h-10 pl-3 pr-4 rounded-full shadow-lg bg-accent text-white hover:bg-accent-hover transition-colors`} style={mf}>
+          <Bot className="w-4 h-4" /> <span className="text-[12.5px] font-medium">GCC Bot</span>
         </button>
       )}
       {open && (
-        <div className={`fixed bottom-11 ${pos} z-[92] w-[92vw] max-w-sm h-[70vh] max-h-[560px] flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-2xl overflow-hidden`}>
+        <div className={`fixed bottom-11 right-3 z-[92] w-[92vw] max-w-sm h-[70vh] max-h-[560px] flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-2xl overflow-hidden`}>
           <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-digi-border bg-accent text-white">
             <span className="inline-flex items-center gap-2 text-[13px] font-semibold" style={mf}><Bot className="w-4 h-4" /> GCC Bot · Cotización</span>
             <button onClick={() => setOpen(false)} className="text-white/80 hover:text-white" aria-label="Cerrar"><X className="w-4 h-4" /></button>
