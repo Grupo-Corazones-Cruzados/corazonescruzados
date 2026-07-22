@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { ensureClientColumns, markClientActive } from '@/lib/clients/account';
 
 /**
  * Garantiza que un usuario (candidato/miembro/admin) tenga una **cuenta de tipo cliente** en
@@ -12,6 +13,7 @@ import { pool } from '@/lib/db';
  */
 export async function ensureUserClientAccount(userId: string): Promise<number | null> {
   try {
+    await ensureClientColumns();
     // Datos del usuario (para nombre/correo de la cuenta cliente).
     const u = await pool.query(
       `SELECT email, first_name, last_name FROM gcc_world.users WHERE id = $1 LIMIT 1`,
@@ -26,9 +28,13 @@ export async function ensureUserClientAccount(userId: string): Promise<number | 
       `SELECT id FROM gcc_world.clients WHERE user_id = $1 ORDER BY (account_type = 'client') DESC, id ASC LIMIT 1`,
       [userId],
     );
-    if (byUser.rows[0]) return Number(byUser.rows[0].id);
+    if (byUser.rows[0]) {
+      const id = Number(byUser.rows[0].id);
+      await markClientActive(id);   // cuenta propia de un miembro/candidato → activa
+      return id;
+    }
 
-    // 2) por correo → enlazar user_id
+    // 2) por correo → enlazar user_id (fusiona un placeholder inactivo con el usuario)
     if (email) {
       const byEmail = await pool.query(
         `SELECT id, user_id FROM gcc_world.clients WHERE LOWER(email) = $1 LIMIT 1`,
@@ -39,14 +45,15 @@ export async function ensureUserClientAccount(userId: string): Promise<number | 
         if (byEmail.rows[0].user_id == null) {
           await pool.query(`UPDATE gcc_world.clients SET user_id = $1 WHERE id = $2`, [userId, id]).catch(() => undefined);
         }
+        await markClientActive(id);
         return id;
       }
     }
 
-    // 3) crear cuenta de tipo cliente con los datos del usuario
+    // 3) crear cuenta de tipo cliente con los datos del usuario → activa
     const ins = await pool.query(
-      `INSERT INTO gcc_world.clients (name, email, account_type, user_id, created_at, updated_at)
-       VALUES ($1, $2, 'client', $3, NOW(), NOW()) RETURNING id`,
+      `INSERT INTO gcc_world.clients (name, email, account_type, user_id, status, created_at, updated_at)
+       VALUES ($1, $2, 'client', $3, 'activo', NOW(), NOW()) RETURNING id`,
       [name, email || null, userId],
     );
     return Number(ins.rows[0].id);

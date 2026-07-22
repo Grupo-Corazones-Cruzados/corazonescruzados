@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
+import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { createNotification } from '@/lib/notifications';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
@@ -146,19 +147,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (!resolvedClientId && resolvedClientEmail) {
-      // Find existing client by email or create a new one
-      const existing = await pool.query(
-        `SELECT id, email FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [resolvedClientEmail]
-      );
-      if (existing.rows.length > 0) {
-        resolvedClientId = existing.rows[0].id;
-      } else {
-        const { rows: [newClient] } = await pool.query(
-          `INSERT INTO gcc_world.clients (name, email) VALUES ($1, $2) RETURNING id`,
-          [resolvedClientEmail, resolvedClientEmail.toLowerCase()]
-        );
-        resolvedClientId = newClient.id;
-      }
+      // RUTA 3: por correo → reusa el cliente existente o crea un placeholder inactivo,
+      // ligado al miembro que lo crea (para "mis clientes").
+      const createdBy = await resolveMemberId(user.userId);
+      const ph = await findOrCreatePlaceholderByEmail(resolvedClientEmail, createdBy);
+      resolvedClientId = ph?.id ?? null;
     } else if (resolvedClientId && !resolvedClientEmail) {
       // Get email from existing client for notification
       const { rows: [c] } = await pool.query(`SELECT email FROM gcc_world.clients WHERE id = $1`, [resolvedClientId]);

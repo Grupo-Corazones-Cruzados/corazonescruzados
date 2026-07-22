@@ -6,6 +6,7 @@ import {
   AUTH_COOKIE,
   AUTH_COOKIE_MAX_AGE,
 } from '@/lib/world/session';
+import { ensureClientColumns } from '@/lib/clients/account';
 
 function html(title: string, message: string, color = '#7B5FBF'): Response {
   const body = `<!DOCTYPE html>
@@ -27,6 +28,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const token = url.searchParams.get('token');
     if (!token) return html('Token faltante', 'Enlace inválido.', '#a13333');
+    await ensureClientColumns();
 
     const r = await pool.query(
       `SELECT id, alias, pending_email, pending_password_hash, verification_expires
@@ -67,6 +69,7 @@ export async function GET(req: Request) {
           SET email = $1,
               password_hash = $2,
               email_verified = TRUE,
+              status = CASE WHEN account_type = 'client' THEN 'activo' ELSE status END,
               pending_email = NULL,
               pending_password_hash = NULL,
               verification_token = NULL,

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, setResponsible } from '@/lib/projects/members';
 import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
+import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { ensureAdminMember } from '@/lib/ensure-admin-member';
 import { sendProjectClientInvitationEmail } from '@/lib/integrations/email';
 
@@ -201,11 +202,12 @@ export async function POST(req: NextRequest) {
       } else if (body.client_email) {
         clientEmail = String(body.client_email).trim().toLowerCase() || null;
         if (clientEmail) {
-          // Enlaza a un cliente real existente si lo hay; si no, NO se crea cuenta: se
-          // registra solo el correo y se envía invitación a unirse al sistema.
-          const ex = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = $1 LIMIT 1`, [clientEmail]);
-          if (ex.rows[0]) clientId = Number(ex.rows[0].id);
-          else inviteEmailTo = clientEmail;
+          // RUTA 3: por correo → reusa el cliente o crea un placeholder inactivo (solo correo),
+          // ligado al miembro creador, y siempre queda enlazado por client_id. Si es nuevo, se
+          // envía la invitación a crear su cuenta de cliente.
+          const createdBy = await resolveMemberId(user.userId);
+          const ph = await findOrCreatePlaceholderByEmail(clientEmail, createdBy);
+          if (ph) { clientId = ph.id; if (ph.created) inviteEmailTo = clientEmail; }
         }
       }
       status = 'draft'; isPrivate = true;

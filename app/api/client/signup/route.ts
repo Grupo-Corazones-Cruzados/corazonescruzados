@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { hashPassword } from '@/lib/auth/password';
 import { sendCharacterVerificationEmail } from '@/lib/integrations/email';
+import { ensureClientColumns } from '@/lib/clients/account';
 import {
   CLIENT_COOKIE,
   COOKIE_MAX_AGE,
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
          ADD COLUMN IF NOT EXISTS account_type text DEFAULT 'candidate',
          ADD COLUMN IF NOT EXISTS marketing boolean DEFAULT false`,
     );
+    await ensureClientColumns();
 
     // El correo no puede reutilizarse por una cuenta ya verificada.
     const taken = await pool.query(
@@ -68,28 +70,52 @@ export async function POST(req: Request) {
     const passwordHash = await hashPassword(password);
     const placeholderEmail = `client-${clientToken}@pending.gcc-world.local`;
 
-    await pool.query(
-      `INSERT INTO gcc_world.clients
-          (name, email, alias, full_name, country, address, phone, account_type, marketing,
-           pending_email, pending_password_hash, verification_token, verification_expires,
-           client_token, ip_hash, last_seen_at)
-       VALUES ($1, $2, $1, $1, $3, $4, $5, 'client', $6,
-               $7, $8, $9, NOW() + INTERVAL '24 hours',
-               $10, $11, NOW())`,
-      [
-        sFull,
-        placeholderEmail,
-        sCountry,
-        sAddr,
-        sPhone,
-        marketing === true,
-        sEmail,
-        passwordHash,
-        verificationToken,
-        clientToken,
-        ipHash,
-      ],
+    // MERGE: si ya existe un placeholder inactivo con ese correo (creado al asignarlo a un
+    // ticket/proyecto), se ACTUALIZA esa misma fila — así se conservan sus vínculos a
+    // tickets/proyectos (client_id). Si no, se crea una fila nueva. En ambos casos queda
+    // 'pendiente' hasta verificar el correo.
+    const existingPlaceholder = await pool.query(
+      `SELECT id FROM gcc_world.clients
+        WHERE LOWER(email) = $1 AND (email_verified IS DISTINCT FROM TRUE) AND user_id IS NULL
+        LIMIT 1`,
+      [sEmail],
     );
+    const params = [
+      sFull,            // $1
+      placeholderEmail, // $2
+      sCountry,         // $3
+      sAddr,            // $4
+      sPhone,           // $5
+      marketing === true, // $6
+      sEmail,           // $7
+      passwordHash,     // $8
+      verificationToken,// $9
+      clientToken,      // $10
+      ipHash,           // $11
+    ];
+    if (existingPlaceholder.rows[0]) {
+      await pool.query(
+        `UPDATE gcc_world.clients SET
+            name = $1, email = $2, alias = $1, full_name = $1, country = $3, address = $4,
+            phone = $5, account_type = 'client', marketing = $6, pending_email = $7,
+            pending_password_hash = $8, verification_token = $9,
+            verification_expires = NOW() + INTERVAL '24 hours', client_token = $10,
+            ip_hash = $11, status = 'pendiente', last_seen_at = NOW(), updated_at = NOW()
+          WHERE id = $12`,
+        [...params, existingPlaceholder.rows[0].id],
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO gcc_world.clients
+            (name, email, alias, full_name, country, address, phone, account_type, marketing,
+             pending_email, pending_password_hash, verification_token, verification_expires,
+             client_token, ip_hash, status, last_seen_at)
+         VALUES ($1, $2, $1, $1, $3, $4, $5, 'client', $6,
+                 $7, $8, $9, NOW() + INTERVAL '24 hours',
+                 $10, $11, 'pendiente', NOW())`,
+        params,
+      );
+    }
 
     const cookieStore = await cookies();
     cookieStore.set(CLIENT_COOKIE, clientToken, {
