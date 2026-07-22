@@ -2917,3 +2917,10 @@ Módulos principales:
     de la grilla = crear. **Día**: sin cambios. Día seleccionado se resalta (`ring-accent`).
   - **Panel "Eventos" (izquierda):** en vista de **mes** ahora lista solo los eventos del **día seleccionado**
     (`currentDate`); el encabezado del panel muestra ese día. Semana/día sin cambios.
+
+- **Panel de administración = DigiMundo (2026-07-22):** el módulo `/dashboard/admin` dejó de mostrar Equipo,
+  Clientes y Postulaciones (esa gestión vive en sus módulos oficiales; las rutas API `/api/admin/team|clients|
+  candidate-proposals` siguen existiendo pero sin acceso desde este panel). Ahora el left-rail del panel son
+  directamente las pestañas de DigiMundo: **Mundo, Proyectos, Incidentes, Sprites** (antes eran una sub-nav dentro
+  de la pestaña "DigiMundo"). Título del panel: "DigiMundo". El item del sidebar se renombró de "Admin"
+  (ShieldCheck) a **"DigiMundo"** (Gamepad2), misma ruta `/dashboard/admin`.

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/components/providers/AuthProvider';
 import PageHeader from '@/components/ui/PageHeader';
@@ -8,25 +8,19 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import BrandLoader from '@/components/ui/BrandLoader';
 import {
-  Users, UserRound, UserPlus, Gamepad2, Globe, FolderKanban,
-  AlertTriangle, Image as ImageIcon, Check, X, ShieldAlert,
+  Globe, FolderKanban, AlertTriangle, Image as ImageIcon, ShieldAlert,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
-const MAIN_TABS = [
-  { value: 'team', label: 'Equipo', Icon: Users },
-  { value: 'clients', label: 'Clientes', Icon: UserRound },
-  { value: 'proposals', label: 'Postulaciones', Icon: UserPlus },
-  { value: 'digimundo', label: 'DigiMundo', Icon: Gamepad2 },
-];
-
-const DIGI_TABS = [
-  { value: 'digi-world', label: 'Mundo', Icon: Globe },
-  { value: 'digi-projects', label: 'Proyectos', Icon: FolderKanban },
-  { value: 'digi-incidents', label: 'Incidentes', Icon: AlertTriangle },
-  { value: 'digi-sprites', label: 'Sprites', Icon: ImageIcon },
+// Panel de administración = DigiMundo. Las pestañas de equipo/clientes/postulaciones se
+// retiraron (esa gestión vive en sus módulos oficiales). Quedan solo las de DigiMundo.
+const TABS = [
+  { value: 'world', label: 'Mundo', Icon: Globe },
+  { value: 'projects', label: 'Proyectos', Icon: FolderKanban },
+  { value: 'incidents', label: 'Incidentes', Icon: AlertTriangle },
+  { value: 'sprites', label: 'Sprites', Icon: ImageIcon },
 ];
 
 const SEV_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -50,8 +44,7 @@ const ProjectsEditor = dynamic(() => import('@/app/(main)/projects/page'), {
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('team');
-  const [digiTab, setDigiTab] = useState('digi-world');
+  const [tab, setTab] = useState('world');
 
   if (user?.role !== 'admin') {
     return (
@@ -65,14 +58,14 @@ export default function AdminPage() {
 
   return (
     <div>
-      <PageHeader title="Administración" description="Gestiona equipo, clientes, postulaciones y DigiMundo" />
+      <PageHeader title="DigiMundo" description="Mundo, proyectos, incidentes y sprites del videojuego" />
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
-        {/* ── Left rail: secciones ── */}
+        {/* ── Left rail: secciones de DigiMundo ── */}
         <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Administración</p>
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>DigiMundo</p>
           <div className="space-y-0.5">
-            {MAIN_TABS.map((t) => {
+            {TABS.map((t) => {
               const active = tab === t.value;
               return (
                 <button key={t.value} onClick={() => setTab(t.value)}
@@ -89,175 +82,22 @@ export default function AdminPage() {
 
         {/* ── Content ── */}
         <div className="flex-1 min-w-0 w-full">
-          {tab === 'team' && <TeamSection />}
-          {tab === 'clients' && <ClientsSection />}
-          {tab === 'proposals' && <ProposalsSection />}
-          {tab === 'digimundo' && (
-            <div>
-              {/* DigiMundo sub-nav — segmented control */}
-              <div className="inline-flex flex-wrap gap-1 p-0.5 bg-black/[0.04] rounded-md mb-4">
-                {DIGI_TABS.map(dt => {
-                  const active = digiTab === dt.value;
-                  return (
-                    <button key={dt.value} onClick={() => setDigiTab(dt.value)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded transition-colors ${active ? 'bg-digi-card text-accent shadow-sm' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>
-                      <dt.Icon className="w-3.5 h-3.5" /> {dt.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {digiTab === 'digi-world' && (
-                <div className="border border-digi-border rounded-lg overflow-hidden relative" style={{ height: 'calc(100vh - 220px)', minHeight: 400 }}>
-                  <div className="absolute inset-0 overflow-hidden [&>div]:!m-0 [&>div]:!h-full"><WorldViewer /></div>
-                </div>
-              )}
-              {digiTab === 'digi-projects' && (
-                <div style={{ height: 'calc(100vh - 180px)' }}><ProjectsEditor /></div>
-              )}
-              {digiTab === 'digi-incidents' && <DigiIncidents />}
-              {digiTab === 'digi-sprites' && <SpritesEditor />}
+          {tab === 'world' && (
+            <div className="border border-digi-border rounded-lg overflow-hidden relative" style={{ height: 'calc(100vh - 180px)', minHeight: 400 }}>
+              <div className="absolute inset-0 overflow-hidden [&>div]:!m-0 [&>div]:!h-full"><WorldViewer /></div>
             </div>
           )}
+          {tab === 'projects' && (
+            <div style={{ height: 'calc(100vh - 160px)' }}><ProjectsEditor /></div>
+          )}
+          {tab === 'incidents' && <DigiIncidents />}
+          {tab === 'sprites' && <SpritesEditor />}
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Team ─── */
-function TeamSection() {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    fetch('/api/admin/team').then(r => r.json()).then(d => setData(d.data || [])).catch(() => {}).finally(() => setLoading(false));
-  }, []);
-  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando equipo..." /></div>;
-  return (
-    <PixelDataTable
-      singleLine
-      data={data}
-      emptyTitle="Sin miembros"
-      emptyDesc="No hay miembros registrados."
-      columns={[
-        { key: 'name', header: 'Nombre', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{m.name}</span> },
-        { key: 'email', header: 'Email', hideOnMobile: true, render: (m: any) => <span className="text-[12px] text-digi-muted" style={mf}>{m.email}</span> },
-        { key: 'position', header: 'Posición', width: '160px', hideOnMobile: true, render: (m: any) => <span className="text-[12px] text-digi-text" style={mf}>{m.position_name || '—'}</span> },
-        { key: 'rate', header: 'Tarifa/h', width: '90px', hideOnMobile: true, render: (m: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{m.hourly_rate ? `$${m.hourly_rate}` : '—'}</span> },
-        { key: 'active', header: 'Activo', width: '100px', render: (m: any) => (
-          <PixelBadge variant={m.is_active ? 'success' : 'default'}>{m.is_active ? 'Activo' : 'Inactivo'}</PixelBadge>
-        ) },
-      ]}
-    />
-  );
-}
-
-/* ─── Clients ─── */
-function ClientsSection() {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    fetch('/api/admin/clients').then(r => r.json()).then(d => setData(d.data || [])).catch(() => {}).finally(() => setLoading(false));
-  }, []);
-  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando clientes..." /></div>;
-  return (
-    <PixelDataTable
-      singleLine
-      data={data}
-      emptyTitle="Sin clientes"
-      emptyDesc="No hay clientes registrados."
-      columns={[
-        { key: 'name', header: 'Nombre', render: (c: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{`${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email}</span> },
-        { key: 'email', header: 'Email', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{c.email}</span> },
-        { key: 'phone', header: 'Teléfono', width: '140px', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-text" style={mf}>{c.phone || '—'}</span> },
-        { key: 'verified', header: 'Verificado', width: '120px', render: (c: any) => (
-          <PixelBadge variant={c.is_verified ? 'success' : 'warning'}>{c.is_verified ? 'Sí' : 'No'}</PixelBadge>
-        ) },
-        { key: 'date', header: 'Registro', width: '110px', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(c.created_at).toLocaleDateString('es-EC')}</span> },
-      ]}
-    />
-  );
-}
-
-/* ─── Postulaciones de candidatos ─── */
-const PROP_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  pending: 'warning', approved: 'success', rejected: 'error',
-};
-const PROP_STATUS_LABEL: Record<string, string> = { pending: 'Pendiente', approved: 'Aprobada', rejected: 'Rechazada' };
-
-function ProposalsSection() {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<number | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    fetch('/api/admin/candidate-proposals').then(r => r.json()).then(d => setData(d.data || [])).catch(() => {}).finally(() => setLoading(false));
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
-  const approve = async (p: any) => {
-    setBusyId(p.id); setMsg(null);
-    try {
-      const r = await fetch(`/api/admin/candidate-proposals/${p.id}/approve`, { method: 'POST' });
-      const j = await r.json();
-      if (!r.ok) { setMsg(j?.error ?? 'No se pudo aprobar'); return; }
-      setMsg(j.emailSent === false ? 'Aprobado (no se envió el correo).' : `Aprobado: se envió el correo a ${p.email}.`);
-      load();
-    } catch { setMsg('Error de red'); } finally { setBusyId(null); }
-  };
-  const reject = async (p: any) => {
-    setBusyId(p.id); setMsg(null);
-    try {
-      const r = await fetch(`/api/admin/candidate-proposals/${p.id}/reject`, { method: 'POST' });
-      if (!r.ok) { const j = await r.json(); setMsg(j?.error ?? 'No se pudo rechazar'); return; }
-      load();
-    } catch { setMsg('Error de red'); } finally { setBusyId(null); }
-  };
-
-  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando postulaciones..." /></div>;
-
-  return (
-    <div>
-      {msg && <div className="mb-3 px-3 py-2 rounded-lg border border-accent/30 bg-accent-light text-[12px] text-accent" style={mf}>{msg}</div>}
-      <PixelDataTable
-        data={data}
-        emptyTitle="Sin postulaciones"
-        emptyDesc="No hay postulaciones de candidatos."
-        columns={[
-          { key: 'email', header: 'Correo', render: (p: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{p.email}</span> },
-          { key: 'reason', header: 'Motivación', hideOnMobile: true, render: (p: any) => <span className="text-[12px] text-digi-muted truncate max-w-[260px] inline-block" style={mf}>{p.reason || '—'}</span> },
-          { key: 'verified', header: 'Correo', width: '130px', hideOnMobile: true, render: (p: any) => (
-            <PixelBadge variant={p.email_verified ? 'success' : 'warning'}>{p.email_verified ? 'Verificado' : 'Sin verificar'}</PixelBadge>
-          ) },
-          { key: 'status', header: 'Estado', width: '120px', hideOnMobile: true, render: (p: any) => (
-            <PixelBadge variant={PROP_STATUS_V[p.status] || 'default'}>{PROP_STATUS_LABEL[p.status] || p.status}</PixelBadge>
-          ) },
-          { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (p: any) => <span className="text-[12px] text-digi-muted" style={mf}>{new Date(p.created_at).toLocaleDateString('es-EC')}</span> },
-          { key: 'actions', header: '', width: '200px', render: (p: any) => (
-            <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
-              {p.status !== 'approved' && (
-                <button onClick={() => approve(p)} disabled={busyId === p.id}
-                  className="inline-flex items-center gap-1 text-[12px] font-medium text-white bg-green-600 rounded px-2.5 py-1 hover:bg-green-700 transition-colors disabled:opacity-50" style={mf}>
-                  <Check className="w-3.5 h-3.5" /> {busyId === p.id ? '...' : 'Aprobar'}
-                </button>
-              )}
-              {p.status !== 'rejected' && (
-                <button onClick={() => reject(p)} disabled={busyId === p.id}
-                  className="inline-flex items-center gap-1 text-[12px] font-medium text-red-600 border border-red-300 rounded px-2.5 py-1 hover:bg-red-50 transition-colors disabled:opacity-50" style={mf}>
-                  <X className="w-3.5 h-3.5" /> Rechazar
-                </button>
-              )}
-            </div>
-          ) },
-        ]}
-      />
-    </div>
-  );
-}
-
-/* ─── DigiMundo Dashboard ─── */
 /* ─── DigiMundo Incidents ─── */
 function DigiIncidents() {
   const [incidents, setIncidents] = useState<any[]>([]);
