@@ -686,3 +686,9 @@ Estándares introducidos con el módulo de Cotizaciones (proyectos en estado `co
   Herramientas/Configuración/Soporte/Admin + editores DigiMundo). Con **modo oscuro** y **es-ES**.
 - **Pendiente:** migrar las listas internas de `MapEditor` (categorías de sheets, capas) a `ListRow`
   para consistencia total del editor del mundo.
+
+### Días de trabajo — horas opcionales (2026-07-22)
+En el editor de días (`tickets/[id]`, `renderSlotEditor`) los `PixelInput type="time"` **Inicio/Fin** ahora se
+muestran **siempre** (label "Inicio/Fin (opcional)" en días normales; "Inicio/Fin" en días Evento donde son
+obligatorios). Debajo de cada día, nota `text-[10px] text-digi-muted` que explica el efecto (bloque ocupado en Mi
+día + acción «Sesión» con costo `duración × $tarifa/h`). Reusa controles y tokens existentes; sin nuevos estilos.

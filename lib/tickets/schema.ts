@@ -35,6 +35,24 @@ export function formatDuration(totalSeconds: number): string {
   return `${h}h ${m}m`;
 }
 
+/** Segundos de un día de trabajo con horas (fecha + inicio/fin en horario de Ecuador). */
+export function slotSeconds(date: string, start: string, end: string): number {
+  const s = new Date(ecuadorWallclockToISO(date, start)).getTime();
+  const e = new Date(ecuadorWallclockToISO(date, end)).getTime();
+  return Math.max(0, (e - s) / 1000);
+}
+
+/** Costo de una sesión = tiempo (segundos) × tarifa/hora del servicio, a centavos. */
+export function slotCost(seconds: number, ratePerHour: number): number {
+  return Math.round((seconds / 3600) * (Number(ratePerHour) || 0) * 100) / 100;
+}
+
+/** Descripción de la acción de un día programado: "Sesión 25 jul 2026 14:00–16:00 · 2h 0m". */
+export function slotSessionLabel(date: string, start: string, end: string): string {
+  const startInstant = new Date(ecuadorWallclockToISO(date, start));
+  return `Sesión ${formatEcuador(startInstant)}–${end} · ${formatDuration(slotSeconds(date, start, end))}`;
+}
+
 /** Columnas extra de ticket_time_slots para días marcados como "Evento" (con reunión Meet). */
 let ensuringSlots: Promise<void> | null = null;
 export function ensureTicketSlotColumns(): Promise<void> {
@@ -49,7 +67,8 @@ export function ensureTicketSlotColumns(): Promise<void> {
       ALTER TABLE gcc_world.ticket_time_slots
         ADD COLUMN IF NOT EXISTS is_event         BOOLEAN DEFAULT FALSE,
         ADD COLUMN IF NOT EXISTS meeting_url      TEXT,
-        ADD COLUMN IF NOT EXISTS meeting_event_id TEXT;
+        ADD COLUMN IF NOT EXISTS meeting_event_id TEXT,
+        ADD COLUMN IF NOT EXISTS action_id        INT;
     `)
     .then(() => undefined)
     .catch((err: unknown) => { ensuringSlots = null; throw err; });
@@ -92,6 +111,7 @@ export type TicketForSession = {
   title: string;
   status: string;
   service_base_price: number | null;
+  estimated_cost: number | null;
   member_name: string | null;
   member_email: string | null;
   client_name: string | null;
@@ -102,6 +122,7 @@ export type TicketForSession = {
 export async function loadTicketForSession(ticketId: string): Promise<TicketForSession | null> {
   const { rows } = await pool.query(
     `SELECT t.id, t.member_id, t.client_id, t.title, t.status,
+            t.estimated_cost,
             s.base_price AS service_base_price,
             m.name AS member_name,
             COALESCE(
@@ -127,6 +148,7 @@ export async function loadTicketForSession(ticketId: string): Promise<TicketForS
     title: r.title,
     status: r.status,
     service_base_price: r.service_base_price != null ? Number(r.service_base_price) : null,
+    estimated_cost: r.estimated_cost != null ? Number(r.estimated_cost) : null,
     member_name: r.member_name ?? null,
     member_email: r.member_email ?? null,
     client_name: r.client_name ?? null,

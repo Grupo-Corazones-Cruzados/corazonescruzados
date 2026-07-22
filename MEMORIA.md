@@ -2881,3 +2881,22 @@ Módulos principales:
   overflow de pestañas (reserva 44px), íconos elegidos por módulo, nivel del rojo en "Salir".
 - Opcional (fidelidad Azure): **footer sticky** con botones primario/secundario en los paneles de formulario.
 - **"Cliente previo"**: ya replicado en el modal de completar/facturar **tickets** (`tickets/[id]`) además de proyectos. ✅
+
+- **Días de trabajo con horas → sesión ocupada en Mi día + acción costeada (2026-07-22):** en `tickets/[id]`
+  las horas de un **día de trabajo** ahora son **opcionales** para cualquier día (antes solo aparecían si se
+  marcaba "Evento (reunión Meet)"). Al guardar (`PUT /api/tickets/[id]/time-slots`, reescrito):
+  - Un día **con horas y SIN evento Meet** crea un **bloque ocupado** en el calendario del miembro
+    (`member_calendar_events`, `event_type='progreso'`, `status='confirmed'`) **en la fecha/hora del propio día**
+    (no "hoy"). Los días **Evento (Meet)** siguen creando solo la reunión de Google (no bloque in-app).
+  - **Todo** día con horas (Meet o no) genera una **acción costeada** `Sesión {fecha hora · duración}` en
+    `ticket_actions`, **costo = tiempo programado × `services.base_price` (tarifa/hora)** — misma fórmula que la
+    sesión en vivo "Inicio ahora". Decisión del usuario: la acción se crea para **todos** los días con hora.
+  - **Bloqueo por presupuesto** (decisión del usuario): si `acciones no-slot + nuevas sesiones > estimated_cost`
+    el `PUT` **rechaza** (400) y no guarda. Sin `estimated_cost` no hay tope.
+  - **Editar/eliminar** un día propaga automático: el `PUT` reemplaza todos los slots dentro de una
+    **transacción**, borrando en cascada las acciones y bloques de calendario de los slots previos y recreándolos.
+    Enlaces: `ticket_time_slots.action_id` → acción; `ticket_actions.calendar_event_id` → bloque en Mi día
+    (se reutilizó la columna que ya usaba la sesión en vivo). Meet: se conserva por `slotKey` (fecha+horario) igual
+    que antes; los Meet huérfanos se cancelan tras el commit.
+  - Nuevos helpers en `lib/tickets/schema.ts`: `slotSeconds`, `slotCost`, `slotSessionLabel`; `loadTicketForSession`
+    ahora trae `estimated_cost`; `ensureTicketSlotColumns` añade `action_id`. Verificado `tsc` + `next build` OK.

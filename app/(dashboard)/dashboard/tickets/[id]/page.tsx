@@ -413,13 +413,17 @@ export default function TicketDetailPage() {
   const buildSlotsPayload = (): { date: string; is_event: boolean; start_time: string | null; end_time: string | null }[] | null => {
     const out = [];
     for (const d of selectedDates) {
-      const cfg = slotCfg[d];
-      if (cfg?.is_event) {
-        if (!cfg.start_time || !cfg.end_time) { toast.error(`El evento del ${d} necesita hora de inicio y fin`); return null; }
+      const cfg = slotCfg[d] || { is_event: false, start_time: '', end_time: '' };
+      const hasStart = !!cfg.start_time, hasEnd = !!cfg.end_time;
+      if (cfg.is_event) {
+        if (!hasStart || !hasEnd) { toast.error(`El evento del ${d} necesita hora de inicio y fin`); return null; }
         if (cfg.end_time <= cfg.start_time) { toast.error(`El evento del ${d}: la hora de fin debe ser posterior al inicio`); return null; }
         out.push({ date: d, is_event: true, start_time: cfg.start_time, end_time: cfg.end_time });
       } else {
-        out.push({ date: d, is_event: false, start_time: null, end_time: null });
+        // Horas opcionales; si pones una, pon ambas (y fin posterior al inicio).
+        if (hasStart !== hasEnd) { toast.error(`El día ${d}: indica hora de inicio y fin, o deja ambas vacías`); return null; }
+        if (hasStart && hasEnd && cfg.end_time <= cfg.start_time) { toast.error(`El día ${d}: la hora de fin debe ser posterior al inicio`); return null; }
+        out.push({ date: d, is_event: false, start_time: hasStart ? cfg.start_time : null, end_time: hasEnd ? cfg.end_time : null });
       }
     }
     return out;
@@ -553,6 +557,7 @@ export default function TicketDetailPage() {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const todayStr = new Date().toISOString().split('T')[0];
     const deadlineStr = ticket.deadline ? ticket.deadline.split('T')[0] : '';
+    const slotRate = Number(ticket.service_base_price) || 0;
     const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     const dayNames = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
     const toggleDate = (d: string) => setSelectedDates(prev => {
@@ -597,6 +602,11 @@ export default function TicketDetailPage() {
           <div className="border-t border-digi-border pt-3 mb-3 space-y-2">
             {selectedDates.map(d => {
               const cfg = slotCfg[d] || { is_event: false, start_time: '', end_time: '' };
+              const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+              const bothTimes = !!cfg.start_time && !!cfg.end_time && cfg.end_time > cfg.start_time;
+              const mins = bothTimes ? (toMin(cfg.end_time) - toMin(cfg.start_time)) : 0;
+              const sessionCost = Math.round((mins / 60) * slotRate * 100) / 100;
+              const durLabel = `${Math.floor(mins / 60)}h ${mins % 60}m`;
               return (
                 <div key={d} className="border border-digi-border rounded-md p-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -612,15 +622,22 @@ export default function TicketDetailPage() {
                       <button onClick={() => toggleDate(d)} className="text-digi-muted hover:text-red-500 text-[14px] leading-none">×</button>
                     </div>
                   </div>
-                  {cfg.is_event && (
-                    <div className="flex items-end gap-2 mt-2 max-w-xs">
-                      <div className="flex-1"><PixelInput label="Inicio" type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} /></div>
-                      <div className="flex-1"><PixelInput label="Fin" type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} /></div>
-                    </div>
-                  )}
-                  {cfg.is_event && (
+                  <div className="flex items-end gap-2 mt-2 max-w-xs">
+                    <div className="flex-1"><PixelInput label={cfg.is_event ? 'Inicio' : 'Inicio (opcional)'} type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} /></div>
+                    <div className="flex-1"><PixelInput label={cfg.is_event ? 'Fin' : 'Fin (opcional)'} type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} /></div>
+                  </div>
+                  {cfg.is_event ? (
                     <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
                       Se creará una reunión de Google Meet invitando al cliente{ticket.client_name ? ` (${ticket.client_name})` : ''} y al miembro. Horario de Ecuador (GMT-5).
+                      {bothTimes && ` Se registrará una acción «Sesión»${slotRate > 0 ? ` · ${durLabel} × $${slotRate}/h = $${fmt2(sessionCost)}` : ''}.`}
+                    </p>
+                  ) : bothTimes ? (
+                    <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
+                      Bloque ocupado (Progreso) en tu calendario «Mi día» y una acción «Sesión»{slotRate > 0 ? ` · ${durLabel} × $${slotRate}/h = $${fmt2(sessionCost)}` : ' (sin costo: el servicio no tiene tarifa/hora)'}.
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
+                      Sin horas: solo se marca el día. Agrega inicio y fin para registrar una sesión con costo.
                     </p>
                   )}
                 </div>
