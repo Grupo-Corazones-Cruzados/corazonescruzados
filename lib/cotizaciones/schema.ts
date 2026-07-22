@@ -64,6 +64,36 @@ export function ensureQuoteTables(): Promise<void> {
   return ensuring;
 }
 
+/**
+ * Columnas de COMPARTIR por token en `gcc_world.projects` (patrón proforma). El enlace da
+ * acceso SOLO LECTURA al cliente externo + decisión (aceptar/rechazar) + chat con el agente.
+ */
+let ensuringShare: Promise<void> | null = null;
+export function ensureQuoteShareColumns(): Promise<void> {
+  if (!ensuringShare) {
+    ensuringShare = (async () => {
+      await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS quote_token VARCHAR(64)`);
+      await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS quote_token_expires_at TIMESTAMPTZ`);
+      await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS quote_status VARCHAR(12) DEFAULT 'pending'`);
+      await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS quote_decided_at TIMESTAMPTZ`);
+      await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS quote_client_email TEXT`);
+    })().catch((e) => { ensuringShare = null; throw e; });
+  }
+  return ensuringShare;
+}
+
+/** Valida el token público de una cotización. Devuelve el proyecto o lanza un error tipado. */
+export async function validateQuoteToken(projectId: number, token: string): Promise<any> {
+  await ensureQuoteShareColumns();
+  const { rows: [p] } = await pool.query(
+    `SELECT * FROM gcc_world.projects WHERE id = $1`, [projectId]);
+  if (!p) { const e: any = new Error('Cotización no encontrada'); e.status = 404; throw e; }
+  if (p.status !== 'cotizacion') { const e: any = new Error('Este enlace ya no corresponde a una cotización'); e.status = 410; throw e; }
+  if (!p.quote_token || !token || token !== p.quote_token) { const e: any = new Error('Enlace inválido'); e.status = 403; throw e; }
+  if (p.quote_token_expires_at && new Date(p.quote_token_expires_at) < new Date()) { const e: any = new Error('El enlace ha expirado'); e.status = 403; throw e; }
+  return p;
+}
+
 /** Estructura de una cotización generada por el agente (la salida validada). */
 export type QuoteRequirement = {
   title: string;

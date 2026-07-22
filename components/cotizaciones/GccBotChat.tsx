@@ -13,7 +13,13 @@ type Msg = { role: 'user' | 'bot'; text: string };
  * permite pedir cambios (agregar/quitar requerimientos, reprecio, cambiar alcance…). Cuando
  * el agente reformula la cotización, se versiona en el backend y se refresca el detalle.
  */
-export default function GccBotChat({ projectId, onChanged }: { projectId: number | string; onChanged?: () => void }) {
+export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody }: {
+  projectId: number | string; onChanged?: () => void;
+  /** Endpoint del chat (interno por defecto; en la vista pública se pasa el endpoint por token). */
+  chatUrl?: string;
+  /** Campos extra en el body (p. ej. { token } para la vista pública). */
+  extraBody?: Record<string, any>;
+}) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([{
     role: 'bot',
@@ -29,8 +35,8 @@ export default function GccBotChat({ projectId, onChanged }: { projectId: number
     if (!text || busy) return;
     setInput(''); setMsgs((m) => [...m, { role: 'user', text }]); setBusy(true);
     try {
-      const r = await fetch(`/api/quotes/${projectId}/chat`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text }),
+      const r = await fetch(chatUrl || `/api/quotes/${projectId}/chat`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, ...(extraBody || {}) }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Error');

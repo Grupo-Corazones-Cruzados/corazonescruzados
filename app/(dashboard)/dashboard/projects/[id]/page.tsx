@@ -27,6 +27,8 @@ import ScriptStoryboardEditor from '@/components/projects/ScriptStoryboardEditor
 import type { StoryboardSegment } from '@/components/projects/ScriptStoryboardEditor';
 import useAgentChat from '@/hooks/useAgentChat';
 import GccBotChat from '@/components/cotizaciones/GccBotChat';
+import QuoteShareButton from '@/components/cotizaciones/QuoteShareButton';
+import QuoteObservationsPanel from '@/components/cotizaciones/QuoteObservationsPanel';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -1862,6 +1864,8 @@ export default function ProjectDetailPage() {
           </div>
 
           {rightTab === 'propiedades' && (<>
+          {/* Observaciones del cliente (solo en cotización) */}
+          {project.status === 'cotizacion' && <QuoteObservationsPanel projectId={project.id} />}
           {/* Propiedades */}
           <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
             <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Propiedades</h3>
@@ -2644,8 +2648,9 @@ export default function ProjectDetailPage() {
         onCancel={() => setConfirmDeleteProject(false)}
       />
 
-      {/* Chat flotante GCC Bot — solo mientras es cotización (sesión del agente para pedir cambios). */}
+      {/* Cotización: chat flotante GCC Bot + botón Compartir (dueño). */}
       {project.status === 'cotizacion' && <GccBotChat projectId={project.id} onChanged={fetchProject} />}
+      {project.status === 'cotizacion' && isOwner && <QuoteShareButton projectId={project.id} />}
     </div>
   );
 }

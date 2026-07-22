@@ -487,6 +487,37 @@ export async function sendPasswordResetEmail(
   return deliver({ from: FROM_EMAIL, to: email, subject: "Restablecer contraseña — GCC World", html });
 }
 
+/** Envía la COTIZACIÓN al cliente externo (enlace de solo lectura + agente + aceptar/rechazar). */
+export async function sendQuoteToClient(params: {
+  email: string; projectTitle: string; total: number; url: string; responsibleName?: string;
+}) {
+  const totalFmt = `$${params.total.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const html = emailShell(
+    emailBadge('COTIZACIÓN', CORP.accent) +
+    emailHeading('Tienes una cotización lista', params.responsibleName ? `Preparada por ${escapeHtml(params.responsibleName)}` : 'Revisa el detalle de tu proyecto') +
+    emailParagraph(`Preparamos la cotización de tu proyecto:`) +
+    emailInfoBox('PROYECTO', escapeHtml(params.projectTitle), `Total estimado: ${accentStrong(totalFmt)}`) +
+    emailParagraph(`Abre el enlace para ver el detalle (requerimientos, costos y tiempos) y ${accentStrong('aceptarla o rechazarla')}. Si tienes dudas o quieres cambios, nuestro ${accentStrong('agente de cotizaciones (GCC Bot)')} te ayuda ahí mismo: pídele que agregue, quite o ajuste lo que necesites.`) +
+    emailButton(params.url, 'Ver mi cotización') +
+    emailNote('Este enlace es personal y puede expirar. Si no reconoces este mensaje, ignóralo.'),
+  );
+  return deliver({ to: params.email, subject: `Tu cotización — ${params.projectTitle}`, html });
+}
+
+/** Avisa al responsable (miembro) que el cliente aceptó o rechazó la cotización. */
+export async function sendQuoteDecisionToResponsible(params: {
+  email: string; name?: string; projectTitle: string; action: 'accepted' | 'rejected'; clientEmail?: string; url: string;
+}) {
+  const accepted = params.action === 'accepted';
+  const html = emailShell(
+    emailBadge(accepted ? 'COTIZACIÓN ACEPTADA' : 'COTIZACIÓN RECHAZADA', accepted ? CORP.success : CORP.danger) +
+    emailHeading(accepted ? 'El cliente aceptó la cotización' : 'El cliente rechazó la cotización', escapeHtml(params.projectTitle)) +
+    emailParagraph(`${params.name ? `Hola ${accentStrong(escapeHtml(params.name))}, ` : ''}el cliente${params.clientEmail ? ` (${escapeHtml(params.clientEmail)})` : ''} ${accepted ? `${accentStrong('aceptó')} la cotización. Ya puedes convertirla en proyecto y comenzar.` : `${accentStrong('rechazó')} la cotización. Puedes revisarla, ajustarla con el agente y volver a compartirla.`}`) +
+    emailButton(params.url, accepted ? 'Ver el proyecto' : 'Revisar la cotización'),
+  );
+  return deliver({ to: params.email, subject: `${accepted ? 'Aceptada' : 'Rechazada'}: ${params.projectTitle}`, html });
+}
+
 /* ── Helpers de diseño reusables para correos construidos en otras rutas
  *    (facturas, suscripciones, campañas, tickets, proyectos, proformas). Exportados
  *    para que TODOS los correos compartan el mismo tema corporativo. ─────────────── */
