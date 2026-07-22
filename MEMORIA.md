@@ -2924,3 +2924,33 @@ Módulos principales:
   directamente las pestañas de DigiMundo: **Mundo, Proyectos, Incidentes, Sprites** (antes eran una sub-nav dentro
   de la pestaña "DigiMundo"). Título del panel: "DigiMundo". El item del sidebar se renombró de "Admin"
   (ShieldCheck) a **"DigiMundo"** (Gamepad2), misma ruta `/dashboard/admin`.
+
+- **Incidentes migrados a proyectos de la app (2026-07-22):** se reemplazó el sistema de incidentes del
+  DigiMundo (Prisma `Incident`/`Project`/`Module`/`Section`/`Subsection`, ligado a proyectos del DigiMundo por
+  `projects.digimundo_project_id`) por uno nuevo **raw SQL en `gcc_world`** ligado a **proyectos del módulo de
+  Proyectos**:
+  - Tablas: `project_incidents` (categoría/subcategoría guardadas por **nombre snapshot**, así editar el catálogo
+    no rompe históricos), `project_incident_categories` + `_subcategories`, y `projects.incidents_token`
+    (token **revocable, sin caducidad**, patrón de proforma). Helpers en `lib/incidents/schema.ts`.
+  - API: `/api/projects/[id]/incidents` (GET/POST) · `/[incidentId]` (GET/PATCH/DELETE) · `/categories` (GET/PUT
+    full-replace) · `/token` (POST/DELETE). Público sin login: `/api/incidents-public/[token]` (GET/POST) y
+    `/[incidentId]` (GET). Imágenes = base64 data-URI en el array `images` (máx 8).
+  - Detalle de proyecto: rail derecho ahora **Propiedades + Incidentes** (antes Propiedades/Observaciones/DigiMundo).
+    La pestaña **Incidentes** (visible a TODOS) vive en `components/projects/IncidentsTab.tsx`: lista, crear en
+    **panel lateral** (`PixelModal size="md"`), editor de **categorías/subcategorías** (solo responsable/admin),
+    y botón **Compartir** (genera/copia/revoca el enlace). Gestión (estado, borrar, categorías, token) gated a
+    `isOwner` (admin o responsable); crear/ver abierto a cualquiera con acceso.
+  - Portal público redeseñado `.corp`: `app/incidentes/[token]/` (page + `IncidentsPortal.tsx`) — el cliente
+    externo crea y ve incidentes con su estado, sin cuenta.
+  - **Se retiró del detalle de proyecto** (decisión del usuario): pestañas DigiMundo y Observaciones, el **chat del
+    agente** (`useAgentChat` + `FloatingChatWindow`) y los paneles **Proforma/Docs/Video/Social** (todos vía
+    `/api/chat` CLI). Panel **admin (DigiMundo)** quedó solo con **Mundo** y **Sprites** (se quitaron Proyectos e
+    Incidentes; sidebar ya se llamaba "DigiMundo").
+  - **Pendiente (destructivo, NO ejecutado):** los incidentes viejos viven en la tabla Prisma `gcc_world."Incident"`
+    y quedan **huérfanos/invisibles** (la UI nueva lee las tablas nuevas, vacías). Las tablas DigiMundo
+    (`Incident`/`Project`/`Module`/`Section`/`Subsection`) y rutas huérfanas (`/dashboard/admin/incidents`,
+    `/dashboard/admin/digimundo-projects`, `/portal/[projectId]`, `/api/incidents*`, `/api/project-structures`,
+    `/api/digimundo/projects`) siguen existiendo pero desconectadas. Falta confirmar con el usuario para
+    **DROPear** tablas y borrar rutas viejas. Queda **código muerto** del DigiMundo en el detalle de proyecto
+    (helpers `openProforma`/`openScript*`/`linkDigimundo`, estados, fetch de `digiProjects`) — compila pero
+    inalcanzable; limpiar en una pasada futura.
