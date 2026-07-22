@@ -1123,17 +1123,23 @@ export default function ProjectDetailPage() {
           {/* Equipo del proyecto: responsable + participantes (concepto project_members) */}
           {(() => {
             const team: any[] = project.project_members || [];
-            const responsibleRow = project.responsible || team.find((t) => t.role === 'responsible' && t.status === 'active');
+            const acceptedBidders = (bids || []).filter((b: any) => b.status === 'accepted');
+            let responsibleRow: any = project.responsible || team.find((t) => t.role === 'responsible' && t.status === 'active');
+            // Si el proyecto no tiene responsable formal (ni invitación pendiente) pero una propuesta
+            // fue ACEPTADA, ese postulante ES el responsable — así se registraron los proyectos hasta
+            // ahora: el propio creador postula y lidera. No se lista además como participante.
+            if (!responsibleRow && !project.pending_responsible && acceptedBidders.length > 0) {
+              const b = acceptedBidders[0];
+              responsibleRow = { member_id: b.member_id, member_name: b.member_name, photo_url: b.photo_url, role: 'responsible', status: 'active' };
+            }
             const responsibleId = String(responsibleRow?.member_id ?? '');
-            // Participantes = filas project_members activas + postulantes con propuesta ACEPTADA
-            // (unión por member_id, excluyendo al responsable). Así un bid aceptado SIEMPRE aparece
-            // como participante, aunque falte la fila project_members (p. ej. proyectos antiguos).
+            // Participantes = filas project_members activas + postulantes aceptados (unión por
+            // member_id), EXCLUYENDO al responsable (no se duplica arriba y abajo).
             const participantMap = new Map<string, any>();
             for (const t of team) {
               if (t.status === 'active' && String(t.member_id) !== responsibleId) participantMap.set(String(t.member_id), t);
             }
-            for (const b of (bids || [])) {
-              if (b.status !== 'accepted') continue;
+            for (const b of acceptedBidders) {
               const mid = String(b.member_id);
               if (mid === responsibleId || participantMap.has(mid)) continue;
               participantMap.set(mid, { member_id: b.member_id, member_name: b.member_name, photo_url: b.photo_url, role: 'participant', status: 'active' });
