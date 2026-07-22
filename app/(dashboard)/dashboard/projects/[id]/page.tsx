@@ -11,7 +11,7 @@ import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2 } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -60,8 +60,9 @@ export default function ProjectDetailPage() {
   const { user } = useAuth();
   const [project, setProject] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
-  // Rail derecho como pestañas: Propiedades (default) / DigiMundo (solo admin).
-  const [rightTab, setRightTab] = useState<'propiedades' | 'digimundo'>('propiedades');
+  // Rail derecho como pestañas: Propiedades (default) / Observaciones (cotización) / DigiMundo (solo admin).
+  const [rightTab, setRightTab] = useState<'propiedades' | 'observaciones' | 'digimundo'>('propiedades');
+  const [showShare, setShowShare] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [digiProjects, setDigiProjects] = useState<any[]>([]);
@@ -1086,6 +1087,11 @@ export default function ProjectDetailPage() {
             ...(isOwner && !isTerminal ? [{ label: 'Cancelar proyecto', onClick: () => updateStatus('cancelled'), danger: true }] : []),
             ...(isAdmin ? [{ label: 'Eliminar proyecto', onClick: () => setConfirmDeleteProject(true), danger: true }] : []),
           ]}
+          trailing={project.status === 'cotizacion' && isOwner ? (
+            <button onClick={() => setShowShare(true)} className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
+              <Share2 className="w-4 h-4" /> Compartir acceso
+            </button>
+          ) : undefined}
         />
       )}
 
@@ -1858,14 +1864,19 @@ export default function ProjectDetailPage() {
         <div className="w-full lg:w-[360px] shrink-0 space-y-4 order-3">
           <div className="flex gap-1 bg-digi-card border border-digi-border rounded-lg p-1">
             <button onClick={() => setRightTab('propiedades')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'propiedades' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Propiedades</button>
+            {project.status === 'cotizacion' && (
+              <button onClick={() => setRightTab('observaciones')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'observaciones' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Observaciones</button>
+            )}
             {isAdmin && project.status !== 'cotizacion' && (
               <button onClick={() => setRightTab('digimundo')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'digimundo' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>DigiMundo</button>
             )}
           </div>
 
+          {rightTab === 'observaciones' && project.status === 'cotizacion' && (
+            <QuoteObservationsPanel projectId={project.id} canAdd />
+          )}
+
           {rightTab === 'propiedades' && (<>
-          {/* Observaciones del cliente (solo en cotización) */}
-          {project.status === 'cotizacion' && <QuoteObservationsPanel projectId={project.id} />}
           {/* Propiedades */}
           <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
             <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Propiedades</h3>
@@ -2648,9 +2659,10 @@ export default function ProjectDetailPage() {
         onCancel={() => setConfirmDeleteProject(false)}
       />
 
-      {/* Cotización: chat flotante GCC Bot + botón Compartir (dueño). */}
-      {project.status === 'cotizacion' && <GccBotChat projectId={project.id} onChanged={fetchProject} />}
-      {project.status === 'cotizacion' && isOwner && <QuoteShareButton projectId={project.id} />}
+      {/* Cotización: chat flotante GCC Bot (a la izquierda, para no chocar con las burbujas de chat). */}
+      {project.status === 'cotizacion' && <GccBotChat projectId={project.id} onChanged={fetchProject} side="left" />}
+      {/* Modal de compartir acceso (se abre desde el header). */}
+      {project.status === 'cotizacion' && isOwner && <QuoteShareButton projectId={project.id} open={showShare} onClose={() => setShowShare(false)} />}
     </div>
   );
 }

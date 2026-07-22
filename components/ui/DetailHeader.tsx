@@ -20,13 +20,15 @@ interface DetailHeaderProps {
   actions?: React.ReactNode;
   /** Extra actions collapsed under a "⋯" menu. */
   overflow?: OverflowItem[];
+  /** Botón(es) a la DERECHA del menú ⋯ (p. ej. "Compartir acceso"). */
+  trailing?: React.ReactNode;
 }
 
 /**
  * Fluent/M365-style detail header: breadcrumb + title + status/chips on the left,
  * a command bar (actions + overflow menu) on the right, and a divider below.
  */
-export default function DetailHeader({ breadcrumb, title, status, chips, actions, overflow }: DetailHeaderProps) {
+export default function DetailHeader({ breadcrumb, title, status, chips, actions, overflow, trailing }: DetailHeaderProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const hasOverflow = !!overflow && overflow.length > 0;
@@ -62,7 +64,7 @@ export default function DetailHeader({ breadcrumb, title, status, chips, actions
           )}
         </div>
 
-        {(actions || hasOverflow) && (
+        {(actions || hasOverflow || trailing) && (
           <div className="flex flex-wrap items-center gap-2 justify-end" ref={ref}>
             {actions}
             {hasOverflow && (
@@ -93,6 +95,7 @@ export default function DetailHeader({ breadcrumb, title, status, chips, actions
                 )}
               </div>
             )}
+            {trailing}
           </div>
         )}
       </div>

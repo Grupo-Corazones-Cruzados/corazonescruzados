@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { Share2, Copy, Send } from 'lucide-react';
+import { Copy, Send } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -15,11 +15,11 @@ const DURATIONS = [
 ];
 
 /**
- * Botón/panel para compartir la cotización con el cliente externo por token con expiración
+ * Modal para compartir la cotización con el cliente externo por token con expiración
  * (enlace de solo lectura + agente + aceptar/rechazar). Puede enviarlo por correo o copiar el link.
+ * Controlado: se abre desde el botón "Compartir acceso" del header.
  */
-export default function QuoteShareButton({ projectId }: { projectId: number | string }) {
-  const [open, setOpen] = useState(false);
+export default function QuoteShareButton({ projectId, open, onClose }: { projectId: number | string; open: boolean; onClose: () => void }) {
   const [email, setEmail] = useState('');
   const [hours, setHours] = useState(168);
   const [busy, setBusy] = useState(false);
@@ -43,13 +43,7 @@ export default function QuoteShareButton({ projectId }: { projectId: number | st
   const copy = () => { if (url) { navigator.clipboard.writeText(url); toast.success('Enlace copiado'); } };
 
   return (
-    <>
-      <button onClick={() => setOpen(true)}
-        className="fixed bottom-11 left-3 z-[92] inline-flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-digi-card border border-digi-border text-digi-text shadow-lg hover:border-accent hover:text-accent transition-colors" style={mf}>
-        <Share2 className="w-4 h-4" /> Compartir
-      </button>
-
-      <PixelModal open={open} onClose={() => setOpen(false)} title="Compartir cotización">
+    <PixelModal open={open} onClose={onClose} title="Compartir acceso a la cotización">
         <div className="space-y-3">
           <p className="text-[12px] text-digi-muted" style={mf}>
             Genera un enlace de <strong>solo lectura</strong> para el cliente: verá la cotización, podrá <strong>aceptar/rechazar</strong> y pedir cambios al asistente GCC Bot.
@@ -80,7 +74,6 @@ export default function QuoteShareButton({ projectId }: { projectId: number | st
             </div>
           )}
         </div>
-      </PixelModal>
-    </>
+    </PixelModal>
   );
 }
