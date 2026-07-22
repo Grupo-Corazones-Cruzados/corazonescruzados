@@ -100,6 +100,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         [JSON.stringify({ credit_note: { numero: `NC-${numero}`, claveAcceso, autorizacion: auth.numeroAutorizacion, motivo: motivo.trim() } }), id]
       );
 
+      // Abonos: cada factura parcial registró su ingreso keyeado por invoiceId → se quita aquí.
+      try { await removeIncomeFromFinance('invoice', String(id)); } catch { /* no-op si no era abono */ }
+
       // If this invoice came from a subscription month, revert that month back to
       // pending (and drop its income) so it can be charged again.
       let subscriptionReverted = false;

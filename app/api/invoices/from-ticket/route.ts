@@ -2,8 +2,9 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoiceFromTicket, sendInvoiceToSri } from '@/lib/integrations/sri';
-import { addTicketIncomeToFinance } from '@/lib/finance';
+import { addTicketIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
+import { getTicketPayments } from '@/lib/payments';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
     const {
       ticket_id,
       skip_invoice,
+      is_abono,
       invoice_items: rawItems,
       client_id_type, client_name, client_ruc, client_email,
       client_phone, client_address, payment_code,
@@ -93,9 +95,11 @@ export async function POST(req: NextRequest) {
       exchangeRate: exchange_rate || 1,
     });
 
-    // Register as income
+    // Register as income. Un ABONO registra su ingreso por-factura (cada parcial es propio);
+    // una factura total lo registra por-ticket (comportamiento clásico).
     try {
-      await addTicketIncomeToFinance(String(ticket.id), ticket.title, total);
+      if (is_abono) await addInvoiceIncomeToFinance(String(invoiceId), `Abono — ${ticket.title}`, total);
+      else await addTicketIncomeToFinance(String(ticket.id), ticket.title, total);
     } catch (finErr: any) { console.error('Finance ticket registration error:', finErr.message); }
 
     // Fase 2: enlaza la factura al cliente del ticket y crea/actualiza su cuenta de facturación
@@ -111,9 +115,17 @@ export async function POST(req: NextRequest) {
     // Sign and send to SRI
     const sriResult = await sendInvoiceToSri(invoiceId);
 
-    // Mark ticket as completed (only if SRI authorized)
+    // Marcar completado (solo si el SRI autorizó). En modo ABONO no se completa hasta que
+    // lo facturado alcance el total (saldo pendiente 0); una factura total completa siempre.
     if (sriResult?.authorized) {
-      await pool.query(`UPDATE gcc_world.tickets SET status = 'completed', updated_at = NOW() WHERE id = $1`, [ticket_id]);
+      let shouldComplete = true;
+      if (is_abono) {
+        try { const pay = await getTicketPayments(ticket_id); shouldComplete = pay.pending <= 0.009; }
+        catch { shouldComplete = false; }
+      }
+      if (shouldComplete) {
+        await pool.query(`UPDATE gcc_world.tickets SET status = 'completed', updated_at = NOW() WHERE id = $1`, [ticket_id]);
+      }
     }
 
     // Generate permanent public token for ticket view link

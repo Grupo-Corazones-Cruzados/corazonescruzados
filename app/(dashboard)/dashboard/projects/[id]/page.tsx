@@ -146,6 +146,9 @@ export default function ProjectDetailPage() {
   const [completeClientAddress, setCompleteClientAddress] = useState('');
   const [completePaymentCode, setCompletePaymentCode] = useState('20');
   const [completeItems, setCompleteItems] = useState<{ description: string; quantity: string; unitPrice: string; ivaRate: string; discount: string }[]>([]);
+  // Fase 3: cobro por abono (monto parcial) en el modal de facturar.
+  const [abonoMode, setAbonoMode] = useState(false);
+  const [abonoAmount, setAbonoAmount] = useState('');
   const [completeAdditionalFields, setCompleteAdditionalFields] = useState<{ name: string; value: string }[]>([]);
   const [completeSendEmail, setCompleteSendEmail] = useState(true);
   const [completing, setCompleting] = useState(false);
@@ -449,6 +452,8 @@ export default function ProjectDetailPage() {
     setCompleteSendEmail(true);
     setHistoryOpen(false);
     setHistorySearch('');
+    setAbonoMode(false);
+    setAbonoAmount('');
     setShowCompleteModal(true);
   };
 
@@ -473,6 +478,14 @@ export default function ProjectDetailPage() {
     : clientHistory;
 
   const handleComplete = async (skipInvoice = false) => {
+    const pending = Number(payments?.pending ?? 0);
+    const abonoNum = Number(abonoAmount) || 0;
+    const useAbono = abonoMode && !skipInvoice;
+    if (useAbono) {
+      if (abonoNum <= 0) { toast.error('Ingresa el monto del abono'); return; }
+      if (payments && abonoNum > pending + 0.009) { toast.error(`El abono no puede superar el pendiente ($${fmt2(pending)})`); return; }
+    }
+    const abonoItems = [{ description: `Abono a cuenta — ${project.title}`, quantity: 1, unitPrice: abonoNum, ivaRate: 0, discount: 0 }];
     setCompleting(true);
     setCompleteStep('Completando proyecto...');
     try {
@@ -485,6 +498,7 @@ export default function ProjectDetailPage() {
         body: JSON.stringify({
           action: 'confirm_completion',
           skip_invoice: skipInvoice,
+          is_abono: useAbono,
           send_email: completeSendEmail,
           client_id_type: completeIdType,
           client_name: completeClientName,
@@ -493,7 +507,7 @@ export default function ProjectDetailPage() {
           client_phone: completeClientPhone,
           client_address: completeClientAddress,
           payment_code: completePaymentCode,
-          invoice_items: completeItems.map(it => ({
+          invoice_items: (useAbono ? abonoItems : completeItems).map(it => ({
             description: it.description,
             quantity: Number(it.quantity) || 1,
             unitPrice: Number(it.unitPrice) || 0,
@@ -1433,6 +1447,34 @@ export default function ProjectDetailPage() {
               </div>
             ) : (
             <div className="max-h-[80vh] overflow-y-auto pr-1">
+              {/* Fase 3: Tipo de cobro — factura total o abono parcial */}
+              {payments && (() => {
+                const hasInvoiced = (payments.invoices || []).some((i: any) => i.status !== 'cancelled');
+                return (
+                  <div className="mb-3">
+                    <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mb-2" style={pf}>Tipo de cobro</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => setAbonoMode(false)} disabled={hasInvoiced}
+                        className={`py-2 text-[12px] rounded border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${!abonoMode ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
+                        Factura total<br /><span className="text-[11px] opacity-70">${fmt2(payments.total)}</span>
+                      </button>
+                      <button type="button" onClick={() => { setAbonoMode(true); if (!abonoAmount) setAbonoAmount(String(payments.pending)); }}
+                        className={`py-2 text-[12px] rounded border transition-colors ${abonoMode ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
+                        Abono parcial<br /><span className="text-[11px] opacity-70">pendiente ${fmt2(payments.pending)}</span>
+                      </button>
+                    </div>
+                    {abonoMode && (
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <label className="text-[11px] text-digi-muted" style={pf}>Monto del abono ($)</label>
+                        <input value={abonoAmount} onChange={e => setAbonoAmount(e.target.value)} type="number" placeholder="0.00"
+                          className="field-control w-32 px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                        <span className="text-[11px] text-digi-muted" style={pf}>de ${fmt2(payments.pending)} pendiente · factura una línea &quot;Abono a cuenta&quot;</span>
+                      </div>
+                    )}
+                    <p className="text-[11px] text-digi-muted mt-1" style={pf}>El abono no completa el proyecto hasta cubrir el total.</p>
+                  </div>
+                );
+              })()}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* ─── LEFT: Adquirente + Pago ─── */}
                 <div className="space-y-2">

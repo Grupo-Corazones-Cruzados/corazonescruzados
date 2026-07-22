@@ -2,8 +2,9 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createInvoiceFromProject, sendInvoiceToSri, projectHasInvoice } from '@/lib/integrations/sri';
-import { addProjectIncomeToFinance } from '@/lib/finance';
+import { addProjectIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
+import { getProjectPayments } from '@/lib/payments';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Completar y FACTURAR un proyecto es exclusivo del admin (regla de negocio).
     if (user.role !== 'admin') return NextResponse.json({ error: 'Solo un administrador puede completar y facturar el proyecto.' }, { status: 403 });
     const { id } = await params;
-    const { action, skip_invoice, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
+    const { action, skip_invoice, is_abono, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
 
     let invoiceId: number | null = null;
     let sriResult: any = null;
@@ -63,20 +64,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         );
       }
 
-      // Auto-publish to marketplace unless this project came from marketplace
+      // Auto-publish to marketplace unless this project came from marketplace.
+      // En modo ABONO NO se completa ni se publica aún (se hace al alcanzar el 100% más abajo),
+      // y el ingreso se registra por-factura, no el final_cost completo.
       const autoPublish = !proj.marketplace_source_id;
-      await pool.query(
-        `UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = $1, marketplace_published_at = $2, updated_at = NOW() WHERE id = $3`,
-        [autoPublish, autoPublish ? new Date() : null, id]
-      );
+      if (!is_abono) {
+        await pool.query(
+          `UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = $1, marketplace_published_at = $2, updated_at = NOW() WHERE id = $3`,
+          [autoPublish, autoPublish ? new Date() : null, id]
+        );
 
-      // Register project as income in monthly finance
-      try {
-        const { rows: [projData] } = await pool.query(`SELECT title, final_cost FROM gcc_world.projects WHERE id = $1`, [id]);
-        if (projData) {
-          await addProjectIncomeToFinance(id, projData.title, Number(projData.final_cost) || 0);
-        }
-      } catch (finErr: any) { console.error('Finance registration error:', finErr.message); }
+        // Register project as income in monthly finance
+        try {
+          const { rows: [projData] } = await pool.query(`SELECT title, final_cost FROM gcc_world.projects WHERE id = $1`, [id]);
+          if (projData) {
+            await addProjectIncomeToFinance(id, projData.title, Number(projData.final_cost) || 0);
+          }
+        } catch (finErr: any) { console.error('Finance registration error:', finErr.message); }
+      }
 
       // Auto-generate SRI invoice — skipped if the project already has a
       // manual invoice, or if the user chose "Completar sin Facturar".
@@ -85,7 +90,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       } else {
       const existingInvoice = await projectHasInvoice(id);
       try {
-        if (existingInvoice.hasInvoice) {
+        if (!is_abono && existingInvoice.hasInvoice) {
           invoiceId = existingInvoice.invoiceId!;
           sriResult = { ok: true, authorized: true, skipped: true, message: 'Factura manual ya existente' };
         } else {
@@ -103,6 +108,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               email: client_email, phone: client_phone, address: client_address,
             });
           } catch (e: any) { console.error('[project complete] billing upsert error:', e.message); }
+
+          // Fase 3 (ABONO): ingreso por-factura y, si el saldo llega a 0, completar + publicar.
+          if (is_abono && sriResult?.authorized) {
+            try {
+              const { rows: [inv] } = await pool.query(`SELECT total FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
+              const { rows: [pj] } = await pool.query(`SELECT title FROM gcc_world.projects WHERE id = $1`, [id]);
+              await addInvoiceIncomeToFinance(String(invoiceId), `Abono — ${pj?.title || 'Proyecto'}`, Number(inv?.total) || 0);
+              const pay = await getProjectPayments(id);
+              if (pay.pending <= 0.009) {
+                await pool.query(
+                  `UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = $1, marketplace_published_at = $2, updated_at = NOW() WHERE id = $3`,
+                  [autoPublish, autoPublish ? new Date() : null, id]
+                );
+              }
+            } catch (e: any) { console.error('[project complete] abono income/complete error:', e.message); }
+          }
 
           // Send invoice email to client
           if (send_email && client_email && sriResult?.authorized) {

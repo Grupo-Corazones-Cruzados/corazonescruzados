@@ -106,6 +106,15 @@ export async function addTicketIncomeToFinance(ticketId: string, ticketTitle: st
 }
 
 /**
+ * Registra el ingreso de UNA factura concreta (usado para ABONOS: cada factura parcial
+ * es un ingreso propio, keyeado por su invoiceId). Al anular esa factura se quita con
+ * removeIncomeFromFinance('invoice', invoiceId).
+ */
+export async function addInvoiceIncomeToFinance(invoiceId: string, description: string, amount: number, date?: Date) {
+  await addIncomeToFinance('invoice', invoiceId, description, amount, date);
+}
+
+/**
  * Register the income of a paid subscription month. `sourceId` must be unique per
  * billed period (e.g. `<subscriptionId>-<YYYY-MM>`) so a month can't be double-counted.
  * `date` defaults to now → the income lands in the month the cuota is marked paid.
