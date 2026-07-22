@@ -92,10 +92,82 @@ export async function ensureBillingClientsTable() {
        )
   `);
 
+  // Dirección inversa: billing_clients → clients (enlaza/crea y copia correos faltantes).
+  try { await reconcileClientsAndBilling(); } catch (e: any) { console.error('reconcileClientsAndBilling error:', e.message); }
+
   _init = true;
 }
 
 export const CONSUMIDOR_FINAL_RUC = '9999999999999';
+
+/**
+ * Reconcilia `billing_clients` → `clients` (dirección que faltaba): por cada cuenta de
+ * facturación sin `portal_client_id`, enlaza a un cliente existente (por correo o RUC) o
+ * crea uno nuevo (`status='inactivo'`); y copia a `clients.email` el correo de su cuenta de
+ * facturación cuando el cliente no tiene correo. Así el selector de clientes (tabla `clients`)
+ * muestra los mismos clientes que el módulo de facturación, con sus correos. Idempotente.
+ */
+export async function reconcileClientsAndBilling(): Promise<void> {
+  // 1) billing_clients sin portal → enlazar o crear un `clients`
+  const { rows: unlinked } = await pool.query(
+    `SELECT id, name, email, ruc FROM gcc_world.billing_clients
+      WHERE portal_client_id IS NULL AND COALESCE(ruc, '') <> '${CONSUMIDOR_FINAL_RUC}'`,
+  );
+  for (const bc of unlinked) {
+    const email = (bc.email || '').trim().toLowerCase() || null;
+    const ruc = (bc.ruc || '').trim() || null;
+    let clientId: number | null = null;
+
+    if (email) {
+      const r = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = $1 LIMIT 1`, [email]);
+      if (r.rows[0]) clientId = Number(r.rows[0].id);
+    }
+    if (!clientId && ruc) {
+      const r = await pool.query(
+        `SELECT id FROM gcc_world.clients
+          WHERE COALESCE(ruc,'') <> ''
+            AND regexp_replace(ruc,'[^0-9A-Za-z]','','g') = regexp_replace($1,'[^0-9A-Za-z]','','g')
+          LIMIT 1`, [ruc],
+      );
+      if (r.rows[0]) clientId = Number(r.rows[0].id);
+    }
+    if (!clientId) {
+      try {
+        const ins = await pool.query(
+          `INSERT INTO gcc_world.clients (name, email, ruc, status, created_at, updated_at)
+           VALUES ($1, $2, $3, 'inactivo', NOW(), NOW()) RETURNING id`,
+          [bc.name || email || 'Cliente', email, ruc],
+        );
+        clientId = Number(ins.rows[0].id);
+      } catch {
+        // Conflicto de email UNIQUE → crea sin correo (queda ligado por RUC/nombre).
+        const ins = await pool.query(
+          `INSERT INTO gcc_world.clients (name, ruc, status, created_at, updated_at)
+           VALUES ($1, $2, 'inactivo', NOW(), NOW()) RETURNING id`,
+          [bc.name || 'Cliente', ruc],
+        );
+        clientId = Number(ins.rows[0].id);
+      }
+    }
+    if (clientId) {
+      await pool.query(`UPDATE gcc_world.billing_clients SET portal_client_id = $1 WHERE id = $2`, [clientId, bc.id]).catch(() => undefined);
+    }
+  }
+
+  // 2) clients sin correo → copiar el correo de su cuenta de facturación enlazada (si no colisiona)
+  const { rows: noEmail } = await pool.query(
+    `SELECT c.id, LOWER(bc.email) AS bemail
+       FROM gcc_world.clients c
+       JOIN gcc_world.billing_clients bc ON bc.portal_client_id = c.id
+      WHERE (c.email IS NULL OR c.email = '') AND bc.email IS NOT NULL AND bc.email <> ''`,
+  );
+  for (const row of noEmail) {
+    const clash = await pool.query(`SELECT 1 FROM gcc_world.clients WHERE LOWER(email) = $1 AND id <> $2 LIMIT 1`, [row.bemail, row.id]);
+    if (!clash.rows[0]) {
+      await pool.query(`UPDATE gcc_world.clients SET email = $1, updated_at = NOW() WHERE id = $2`, [row.bemail, row.id]).catch(() => undefined);
+    }
+  }
+}
 
 export type BillingData = {
   id_type?: string | null;
