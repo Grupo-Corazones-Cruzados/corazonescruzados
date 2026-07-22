@@ -541,6 +541,15 @@ soportan variables CSS ni `<style>`).
   viejo estilo videojuego (Courier, fondo oscuro, morado `#7B5FBF`, bordes 2px pixel).
 
 ## Desviaciones detectadas y resolución
+- **2026-07-21 — Detalle de proyecto: se eliminaron las pestañas (mismo criterio que ticket).**
+  `projects/[id]` usaba el rail de secciones con pestañas (Resumen / Requerimientos / DigiMundo /
+  Imágenes) y `SectionRailItem` local. Se **combinó Resumen + Requerimientos en la columna
+  principal** (descripción, requerimientos, equipo, propuestas, solicitudes, progreso y acciones,
+  todo apilado sin pestañas) y se movieron **DigiMundo** e **Imágenes** al **panel lateral
+  derecho**, en orden **Propiedades → DigiMundo → Imágenes** (rail derecho ensanchado a
+  `lg:w-[360px]`). La grilla de imágenes se ajustó a `grid-cols-3 sm:grid-cols-4` para el ancho del
+  rail. Se eliminaron `ptab`/`setPtab` y `SectionRailItem`. Verificado tsc + build. Refuerza el
+  patrón "sin pestañas, un solo espacio" ya adoptado en `tickets/[id]`.
 - **2026-07-21 — Detalle de ticket: se eliminaron las pestañas y se unificó en un solo panel.**
   `tickets/[id]` usaba un rail de secciones con pestañas (Resumen / Acciones / Propuestas) y
   `SectionRailItem` local. Por pedido del cliente se **fusionó Resumen + Acciones en un único

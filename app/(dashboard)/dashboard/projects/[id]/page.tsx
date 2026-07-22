@@ -55,7 +55,6 @@ export default function ProjectDetailPage() {
   const { user } = useAuth();
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [ptab, setPtab] = useState<'resumen' | 'requerimientos' | 'digimundo' | 'imagenes'>('resumen');
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [digiProjects, setDigiProjects] = useState<any[]>([]);
   const [linking, setLinking] = useState(false);
@@ -885,19 +884,6 @@ export default function ProjectDetailPage() {
   const canBidInvited = isMember && !isOwner && myBid?.status === 'invited';
   const canBid = canBidNew || canBidInvited;
 
-  const SectionRailItem = ({ active, Icon, label, count, onClick }: any) => (
-    <button onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}>
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-      {count !== undefined && (
-        <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count}</span>
-      )}
-    </button>
-  );
-
   return (
     <div>
       {editingTitle ? (
@@ -993,20 +979,9 @@ export default function ProjectDetailPage() {
       )}
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
-        {/* Section rail */}
-        <aside className="w-full lg:w-[200px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Secciones</p>
-          <div className="space-y-0.5">
-            <SectionRailItem active={ptab === 'resumen'} Icon={LayoutList} label="Resumen" onClick={() => setPtab('resumen')} />
-            <SectionRailItem active={ptab === 'requerimientos'} Icon={ListChecks} label="Requerimientos" count={reqs.length} onClick={() => setPtab('requerimientos')} />
-            <SectionRailItem active={ptab === 'digimundo'} Icon={Boxes} label="DigiMundo" onClick={() => setPtab('digimundo')} />
-            <SectionRailItem active={ptab === 'imagenes'} Icon={ImageIcon} label="Imágenes" onClick={() => setPtab('imagenes')} />
-          </div>
-        </aside>
-
-        {/* ====== CONTENT ====== */}
+        {/* ====== PRINCIPAL: Resumen + Requerimientos combinados (sin pestañas) ====== */}
         <div className="flex-1 min-w-0 space-y-4">
-          {ptab === 'resumen' && (<>
+          {(<>
           {project.description && (
             <div className="pixel-card">
               <h3 className="text-[12px] font-semibold text-digi-text mb-2" style={pf}>Descripcion</h3>
@@ -1015,7 +990,7 @@ export default function ProjectDetailPage() {
           )}
           </>)}
 
-          {ptab === 'requerimientos' && (<>
+          {(<>
           {/* Requirements */}
           <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
             <div className="flex items-center justify-between gap-3 mb-4">
@@ -1693,7 +1668,7 @@ export default function ProjectDetailPage() {
             )}
           </PixelModal>
 
-          {ptab === 'resumen' && (<>
+          {(<>
           {/* Withdrawal Requests */}
           {projectRequests.length > 0 && (
             <div className="pixel-card">
@@ -1785,74 +1760,6 @@ export default function ProjectDetailPage() {
           })()}
           </>)}
 
-          {ptab === 'imagenes' && (<>
-          {/* Project Images */}
-          {showImages && (
-            <div className="pixel-card">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>Imagenes del Proyecto ({projectImages.length}/30)</h3>
-                {canEditImages && projectImages.length < 30 && (
-                  <label className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors cursor-pointer" style={pf}>
-                    {uploadingImages ? 'Subiendo...' : '+ Subir'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      disabled={uploadingImages}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-
-              {projectImages.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-[11px] text-digi-muted" style={mf}>Sin imagenes aun</p>
-                  {canEditImages && (
-                    <label className="inline-block mt-2 px-3 py-1.5 text-[12px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors cursor-pointer" style={pf}>
-                      {uploadingImages ? 'Subiendo...' : 'Subir primera imagen'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        disabled={uploadingImages}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                  {projectImages.map((img, idx) => (
-                    <div key={idx} className="relative group aspect-square border border-digi-border/50 overflow-hidden bg-digi-darker">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={img}
-                        alt={`Imagen ${idx + 1}`}
-                        className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => setPreviewImage(img)}
-                      />
-                      {canEditImages && (
-                        <button
-                          onClick={() => handleImageDelete(idx)}
-                          disabled={deletingImageIdx === idx}
-                          className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded bg-red-600/90 text-white text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
-                          style={pf}
-                          title="Eliminar imagen"
-                        >
-                          {deletingImageIdx === idx ? '...' : 'x'}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          </>)}
-
           {/* Image Preview Modal (always rendered) */}
           {previewImage && (
             <div
@@ -1906,7 +1813,7 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          {ptab === 'resumen' && (<>
+          {(<>
           {/* Actions */}
           {(isOwner || isMember) && (
             <div className="pixel-card">
@@ -1967,7 +1874,62 @@ export default function ProjectDetailPage() {
             </div>
           )}
           </>)}
-          {ptab === 'digimundo' && (<>
+        </div>
+
+        {/* ====== DERECHA: Propiedades → DigiMundo → Imágenes ====== */}
+        <div className="w-full lg:w-[360px] shrink-0 space-y-4">
+          {/* Propiedades */}
+          <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
+            <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Propiedades</h3>
+            <dl className="space-y-2.5 text-[12px]" style={mf}>
+              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Cliente</dt><dd className="text-digi-text text-right break-words min-w-0">{project.client_name || '-'}</dd></div>
+              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Miembro</dt><dd className="text-digi-text text-right break-words min-w-0">{project.assigned_member_name || '-'}</dd></div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="text-digi-muted shrink-0">Presupuesto</dt>
+                <dd className="text-right min-w-0">
+                  {editingBudget ? (
+                    <div className="flex items-center gap-1 justify-end flex-wrap">
+                      <input value={editBudgetMin} onChange={(e) => setEditBudgetMin(e.target.value)} type="number" placeholder="Min" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
+                      <span className="text-digi-muted">-</span>
+                      <input value={editBudgetMax} onChange={(e) => setEditBudgetMax(e.target.value)} type="number" placeholder="Max" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
+                      <button onClick={saveBudget} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
+                      <button onClick={() => setEditingBudget(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
+                    </div>
+                  ) : (
+                    <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditBudgetMin(project.budget_min || ''); setEditBudgetMax(project.budget_max || ''); setEditingBudget(true); } }}>{project.budget_min ? `$${project.budget_min}${project.budget_max ? ` - $${project.budget_max}` : ''}` : '-'}</span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Costo final</dt><dd className="text-digi-text text-right">{totalAcceptedCost > 0 ? `$${fmt2(totalAcceptedCost)}` : '$0.00'}</dd></div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="text-digi-muted shrink-0">Límite</dt>
+                <dd className="text-right min-w-0">
+                  {editingDeadline ? (
+                    <div className="flex items-center gap-1 justify-end flex-wrap">
+                      <input value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} type="date" className="px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none" style={mf} />
+                      <button onClick={saveDeadline} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
+                      <button onClick={() => setEditingDeadline(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
+                    </div>
+                  ) : (
+                    <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditDeadline(project.deadline?.split('T')[0] || ''); setEditingDeadline(true); } }}>{project.deadline ? new Date(project.deadline).toLocaleDateString() : '-'}</span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="text-digi-muted shrink-0">Visibilidad</dt>
+                <dd className="text-right flex items-center gap-2 justify-end flex-wrap">
+                  <span className="text-digi-text">{project.is_private ? 'Privado' : 'Público'}</span>
+                  {isOwner && !isTerminal && hasReqs && (
+                    <button onClick={async () => { await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_private: !project.is_private }) }); toast.success(project.is_private ? 'Proyecto ahora es publico' : 'Proyecto ahora es privado'); fetchProject(); }} className="text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>{project.is_private ? 'Hacer público' : 'Hacer privado'}</button>
+                  )}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Creado</dt><dd className="text-digi-text text-right">{new Date(project.created_at).toLocaleDateString()}</dd></div>
+            </dl>
+          </div>
+
+          {/* DigiMundo */}
+          {(<>
           {isAdmin && (
             <div className="pixel-card" style={{ borderColor: project.digimundo_project_id ? 'var(--color-accent)' : undefined }}>
               <div className="flex items-center justify-between mb-3">
@@ -2218,60 +2180,75 @@ export default function ProjectDetailPage() {
             </div>
           )}
           </>)}
-        </div>
 
-        {/* ====== RIGHT (Propiedades + DigiMundo) ====== */}
-        <div className="w-full lg:w-[320px] shrink-0 space-y-4">
-          {/* Propiedades */}
-          <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm lg:sticky lg:top-4">
-            <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Propiedades</h3>
-            <dl className="space-y-2.5 text-[12px]" style={mf}>
-              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Cliente</dt><dd className="text-digi-text text-right break-words min-w-0">{project.client_name || '-'}</dd></div>
-              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Miembro</dt><dd className="text-digi-text text-right break-words min-w-0">{project.assigned_member_name || '-'}</dd></div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-digi-muted shrink-0">Presupuesto</dt>
-                <dd className="text-right min-w-0">
-                  {editingBudget ? (
-                    <div className="flex items-center gap-1 justify-end flex-wrap">
-                      <input value={editBudgetMin} onChange={(e) => setEditBudgetMin(e.target.value)} type="number" placeholder="Min" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
-                      <span className="text-digi-muted">-</span>
-                      <input value={editBudgetMax} onChange={(e) => setEditBudgetMax(e.target.value)} type="number" placeholder="Max" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
-                      <button onClick={saveBudget} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
-                      <button onClick={() => setEditingBudget(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
-                    </div>
-                  ) : (
-                    <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditBudgetMin(project.budget_min || ''); setEditBudgetMax(project.budget_max || ''); setEditingBudget(true); } }}>{project.budget_min ? `$${project.budget_min}${project.budget_max ? ` - $${project.budget_max}` : ''}` : '-'}</span>
-                  )}
-                </dd>
+          {/* Imágenes */}
+          {(<>
+          {/* Project Images */}
+          {showImages && (
+            <div className="pixel-card">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>Imagenes del Proyecto ({projectImages.length}/30)</h3>
+                {canEditImages && projectImages.length < 30 && (
+                  <label className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors cursor-pointer" style={pf}>
+                    {uploadingImages ? 'Subiendo...' : '+ Subir'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      disabled={uploadingImages}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
-              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Costo final</dt><dd className="text-digi-text text-right">{totalAcceptedCost > 0 ? `$${fmt2(totalAcceptedCost)}` : '$0.00'}</dd></div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-digi-muted shrink-0">Límite</dt>
-                <dd className="text-right min-w-0">
-                  {editingDeadline ? (
-                    <div className="flex items-center gap-1 justify-end flex-wrap">
-                      <input value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} type="date" className="px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none" style={mf} />
-                      <button onClick={saveDeadline} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
-                      <button onClick={() => setEditingDeadline(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
-                    </div>
-                  ) : (
-                    <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditDeadline(project.deadline?.split('T')[0] || ''); setEditingDeadline(true); } }}>{project.deadline ? new Date(project.deadline).toLocaleDateString() : '-'}</span>
-                  )}
-                </dd>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-digi-muted shrink-0">Visibilidad</dt>
-                <dd className="text-right flex items-center gap-2 justify-end flex-wrap">
-                  <span className="text-digi-text">{project.is_private ? 'Privado' : 'Público'}</span>
-                  {isOwner && !isTerminal && hasReqs && (
-                    <button onClick={async () => { await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_private: !project.is_private }) }); toast.success(project.is_private ? 'Proyecto ahora es publico' : 'Proyecto ahora es privado'); fetchProject(); }} className="text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>{project.is_private ? 'Hacer público' : 'Hacer privado'}</button>
-                  )}
-                </dd>
-              </div>
-              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Creado</dt><dd className="text-digi-text text-right">{new Date(project.created_at).toLocaleDateString()}</dd></div>
-            </dl>
-          </div>
 
+              {projectImages.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-[11px] text-digi-muted" style={mf}>Sin imagenes aun</p>
+                  {canEditImages && (
+                    <label className="inline-block mt-2 px-3 py-1.5 text-[12px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors cursor-pointer" style={pf}>
+                      {uploadingImages ? 'Subiendo...' : 'Subir primera imagen'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        disabled={uploadingImages}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {projectImages.map((img, idx) => (
+                    <div key={idx} className="relative group aspect-square border border-digi-border/50 overflow-hidden bg-digi-darker">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={`Imagen ${idx + 1}`}
+                        className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setPreviewImage(img)}
+                      />
+                      {canEditImages && (
+                        <button
+                          onClick={() => handleImageDelete(idx)}
+                          disabled={deletingImageIdx === idx}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded bg-red-600/90 text-white text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                          style={pf}
+                          title="Eliminar imagen"
+                        >
+                          {deletingImageIdx === idx ? '...' : 'x'}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          </>)}
         </div>
       </div>
 
