@@ -11,7 +11,7 @@ import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2 } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -105,6 +105,9 @@ export default function ProjectDetailPage() {
   const [savingReq, setSavingReq] = useState(false);
   const [newItemText, setNewItemText] = useState<Record<number, string>>({});
   const [subtaskReqId, setSubtaskReqId] = useState<number | null>(null);
+  // Requerimientos desplegados (por defecto TODOS contraídos).
+  const [expandedReqs, setExpandedReqs] = useState<Set<number>>(new Set());
+  const toggleReqExpand = (rid: number) => setExpandedReqs((s) => { const n = new Set(s); n.has(rid) ? n.delete(rid) : n.add(rid); return n; });
 
   // Inline edit states
   const [editingTitle, setEditingTitle] = useState(false);
@@ -1218,6 +1221,9 @@ export default function ProjectDetailPage() {
                   const items = r.items || [];
                   const canEditThis = canMemberEditReq(r.id);
                   const acceptedAssignments = assignments.filter((a: any) => a.status === 'accepted');
+                  const pendingAssignments = assignments.filter((a: any) => a.status !== 'accepted');
+                  const expanded = expandedReqs.has(r.id);
+                  const canManageThis = isOwner && (isAdmin || project.confirmed_at || isMemberCreator);
                   return (
                     <div key={r.id} className={`rounded-lg border border-digi-border bg-white overflow-hidden`}>
                       <div className={`p-2.5 border-l-[3px] ${r.is_completed ? 'border-l-green-500' : 'border-l-accent'}`}>
@@ -1230,36 +1236,60 @@ export default function ProjectDetailPage() {
                           >
                             {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
                           </button>
-                          <div className="min-w-0 flex-1">
+                          <button onClick={() => toggleReqExpand(r.id)} className="min-w-0 flex-1 text-left">
                             <p className={`text-[13px] font-medium ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</p>
                             {r.description && <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
-                            {acceptedAssignments.length > 0 && (
-                              <div className="flex items-center gap-1.5 mt-1.5">
-                                {acceptedAssignments.map((a: any) => (
-                                  a.photo_url ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img key={a.id} src={a.photo_url} alt="" title={`${a.member_name} · $${a.member_cost ?? a.proposed_cost}`} className="w-6 h-6 rounded-full border border-digi-border object-cover" />
-                                  ) : (
-                                    <div key={a.id} title={`${a.member_name} · $${a.member_cost ?? a.proposed_cost}`} className="w-6 h-6 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[11px] font-semibold text-accent" style={mf}>
-                                      {(a.member_name || '?')[0].toUpperCase()}
-                                    </div>
-                                  )
-                                ))}
-                              </div>
+                            {!expanded && (items.length > 0 || acceptedAssignments.length > 0 || pendingAssignments.length > 0) && (
+                              <p className="text-[11px] text-digi-muted/80 mt-0.5" style={mf}>
+                                {[items.length > 0 ? `${items.length} subtarea${items.length !== 1 ? 's' : ''}` : '', acceptedAssignments.length > 0 ? `${acceptedAssignments.length} asignado${acceptedAssignments.length !== 1 ? 's' : ''}` : '', pendingAssignments.length > 0 ? `${pendingAssignments.length} pendiente${pendingAssignments.length !== 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ')}
+                              </p>
                             )}
-                          </div>
+                          </button>
                           <div className="flex items-center gap-2 shrink-0">
                             {r.cost && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${r.cost}</span>}
                             {isOwner && (
                               <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="text-digi-muted/60 hover:text-red-600 transition-colors"><X className="w-4 h-4" /></button>
                             )}
+                            <button onClick={() => toggleReqExpand(r.id)} aria-label={expanded ? 'Contraer' : 'Ver detalle'} title={expanded ? 'Contraer' : 'Ver detalle'}
+                              className="text-digi-muted hover:text-accent transition-colors">
+                              <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                            </button>
                           </div>
                         </div>
 
+                        {/* Detalle desplegable: botones + miembros + subtareas */}
+                        {expanded && (<>
+                        {/* Botones de acción (solo al desplegar) */}
+                        {(canManageThis || canEditThis) && (
+                          <div className="flex flex-wrap items-center gap-2 mt-2.5 ml-[30px]">
+                            {canManageThis && (
+                              <button onClick={() => openAssignModal(r.id)} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><UserPlus className="w-3.5 h-3.5" /> Asignar miembro</button>
+                            )}
+                            {canEditThis && (
+                              <button onClick={() => setSubtaskReqId(r.id)} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><ListPlus className="w-3.5 h-3.5" /> Subtareas{items.length > 0 ? ` (${items.length})` : ''}</button>
+                            )}
+                          </div>
+                        )}
+
+                        {acceptedAssignments.length > 0 && (
+                          <div className="flex items-center gap-1.5 mt-2.5 ml-[30px]">
+                            {acceptedAssignments.map((a: any) => (
+                              a.photo_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img key={a.id} src={a.photo_url} alt="" title={`${a.member_name} · $${a.member_cost ?? a.proposed_cost}`} className="w-6 h-6 rounded-full border border-digi-border object-cover" />
+                              ) : (
+                                <div key={a.id} title={`${a.member_name} · $${a.member_cost ?? a.proposed_cost}`} className="w-6 h-6 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[11px] font-semibold text-accent" style={mf}>
+                                  {(a.member_name || '?')[0].toUpperCase()}
+                                </div>
+                              )
+                            ))}
+                          </div>
+                        )}
+
                         {/* Pending assignments (proposed / counter) */}
-                        {assignments.filter((a: any) => a.status !== 'accepted').length > 0 && (
+                        {pendingAssignments.length > 0 && (
                           <div className="mt-2.5 ml-[30px] space-y-1.5">
-                            {assignments.filter((a: any) => a.status !== 'accepted').map((a: any) => (
+                            {pendingAssignments.map((a: any) => (
                               <div key={a.id} className="flex items-center gap-2 flex-wrap rounded-md border border-digi-border bg-digi-darker px-2.5 py-1.5">
                                 {a.photo_url ? (
                                   // eslint-disable-next-line @next/next/no-img-element
@@ -1299,18 +1329,10 @@ export default function ProjectDetailPage() {
                             ))}
                           </ol>
                         )}
-
-                        {/* Action buttons */}
-                        {((isOwner && (isAdmin || project.confirmed_at || isMemberCreator)) || canEditThis) && (
-                          <div className="flex flex-wrap items-center gap-2 mt-3 ml-[30px]">
-                            {isOwner && (isAdmin || project.confirmed_at || isMemberCreator) && (
-                              <button onClick={() => openAssignModal(r.id)} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><UserPlus className="w-3.5 h-3.5" /> Asignar miembro</button>
-                            )}
-                            {canEditThis && (
-                              <button onClick={() => setSubtaskReqId(r.id)} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><ListPlus className="w-3.5 h-3.5" /> Subtareas{items.length > 0 ? ` (${items.length})` : ''}</button>
-                            )}
-                          </div>
+                        {acceptedAssignments.length === 0 && pendingAssignments.length === 0 && items.length === 0 && (
+                          <p className="text-[11.5px] text-digi-muted mt-2.5 ml-[30px]" style={mf}>Sin subtareas ni miembros asignados aún.</p>
                         )}
+                        </>)}
                       </div>
                     </div>
                   );
