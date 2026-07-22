@@ -11,7 +11,7 @@ import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, BarChart3 } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -64,6 +64,9 @@ export default function ProjectDetailPage() {
   // Rail derecho como pestañas: Propiedades (default) / Observaciones (cotización) / DigiMundo (solo admin).
   const [rightTab, setRightTab] = useState<'propiedades' | 'observaciones' | 'digimundo'>('propiedades');
   const [showShare, setShowShare] = useState(false);
+  // Paneles de acceso rápido desde el header (Progreso / Imágenes).
+  const [showProgresoModal, setShowProgresoModal] = useState(false);
+  const [showImagesModal, setShowImagesModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [digiProjects, setDigiProjects] = useState<any[]>([]);
@@ -1087,10 +1090,35 @@ export default function ProjectDetailPage() {
                 );
               })()}
               {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className={BTN_PRIMARY}><Receipt className="w-4 h-4" /> Completar y facturar</button>}
+              {/* Accesos rápidos reformulados como botones del header */}
+              {['in_progress', 'review', 'completed'].includes(project.status) && reqs.length > 0 && (
+                <button onClick={() => setShowProgresoModal(true)} className="inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border text-digi-text text-sm font-medium rounded hover:border-accent hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
+                  <BarChart3 className="w-4 h-4" /> Progreso {reqs.length ? `${Math.round((completedReqs / reqs.length) * 100)}%` : ''}
+                </button>
+              )}
+              {showImages && (
+                <button onClick={() => setShowImagesModal(true)} className="inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border text-digi-text text-sm font-medium rounded hover:border-accent hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
+                  <ImageIcon className="w-4 h-4" /> Imágenes{projectImages.length > 0 ? ` (${projectImages.length})` : ''}
+                </button>
+              )}
             </>
           }
           overflow={[
             ...(isOwner && !isTerminal ? [{ label: 'Editar nombre', onClick: () => { setEditTitle(project.title); setEditingTitle(true); } }] : []),
+            // Participación del miembro (antes en la tarjeta "Acciones")
+            ...(isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && !projectRequests.some((r: any) => String(r.member_id) === String(memberId) && r.type === 'withdrawal' && ['pending', 'rejected'].includes(r.status))
+              ? [{ label: 'Desistir del proyecto', onClick: () => { setWithdrawType('withdrawal'); setWithdrawReason(''); setShowWithdrawModal(true); } }] : []),
+            ...(isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && projectRequests.some((r: any) => String(r.member_id) === String(memberId) && r.type === 'withdrawal' && r.status === 'rejected') && !projectRequests.some((r: any) => String(r.member_id) === String(memberId) && r.type === 'supervised_exit' && r.status === 'pending')
+              ? [{ label: 'Solicitar salida supervisada', onClick: () => { setWithdrawType('supervised_exit'); setWithdrawReason(''); setShowWithdrawModal(true); }, danger: true }] : []),
+            // Marketplace (proyecto completado)
+            ...(project.status === 'completed' && isOwner && !project.marketplace_source_id
+              ? [{ label: project.is_marketplace_published ? 'Despublicar del Marketplace' : 'Publicar en Marketplace', onClick: async () => {
+                  try {
+                    const res = await fetch(`/api/projects/${id}/publish`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ publish: !project.is_marketplace_published }) });
+                    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+                    toast.success(project.is_marketplace_published ? 'Despublicado del marketplace' : 'Publicado en el marketplace'); fetchProject();
+                  } catch (e: any) { toast.error(e.message || 'Error'); }
+                } }] : []),
             ...(isOwner && !isTerminal ? [{ label: 'Cancelar proyecto', onClick: () => updateStatus('cancelled'), danger: true }] : []),
             ...(isAdmin ? [{ label: 'Eliminar proyecto', onClick: () => setConfirmDeleteProject(true), danger: true }] : []),
           ]}
@@ -2017,113 +2045,6 @@ export default function ProjectDetailPage() {
             );
           })()}
 
-          {/* Acciones (estado del proyecto / participación) — oculto en cotización */}
-          {(isOwner || isMember) && project.status !== 'cotizacion' && (
-            <div className="pixel-card">
-              <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Acciones</h3>
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                {/* Participant: Desistir / Salida Supervisada */}
-                {isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && (() => {
-                  const myReqs = projectRequests.filter((r: any) => String(r.member_id) === String(memberId));
-                  const hasRejectedWithdrawal = myReqs.some((r: any) => r.type === 'withdrawal' && r.status === 'rejected');
-                  const hasPendingWithdrawal = myReqs.some((r: any) => r.type === 'withdrawal' && r.status === 'pending');
-                  const hasPendingSupervisedExit = myReqs.some((r: any) => r.type === 'supervised_exit' && r.status === 'pending');
-                  return (
-                    <>
-                      {!hasPendingWithdrawal && !hasRejectedWithdrawal && (
-                        <button onClick={() => { setWithdrawType('withdrawal'); setWithdrawReason(''); setShowWithdrawModal(true); }}
-                          className="py-1.5 px-3 text-[11px] text-amber-700 border border-amber-300 hover:bg-amber-50 transition-colors" style={pf}>
-                          Desistir
-                        </button>
-                      )}
-                      {hasRejectedWithdrawal && !hasPendingSupervisedExit && (
-                        <button onClick={() => { setWithdrawType('supervised_exit'); setWithdrawReason(''); setShowWithdrawModal(true); }}
-                          className="py-1.5 px-3 text-[11px] text-red-600 border border-red-300 hover:bg-red-50 transition-colors" style={pf}>
-                          Salida con Supervision
-                        </button>
-                      )}
-                    </>
-                  );
-                })()}
-                </div>
-                <p className="text-[11px] text-digi-muted leading-relaxed" style={mf}>
-                  {project.status === 'draft' && 'Publicar hara visible este proyecto para que miembros puedan postularse y trabajar en el.'}
-                  {project.status === 'open' && 'Iniciar cambia el estado a En Progreso, indicando que el equipo ya esta trabajando activamente.'}
-                  {project.status === 'in_progress' && 'Enviar a Revision notifica al administrador que el trabajo esta listo para ser evaluado. Todos los requerimientos deben estar completados al 100%.'}
-                  {project.status === 'review' && isAdmin && 'Completar finaliza el proyecto, genera la factura y lo publica en el marketplace.'}
-                  {project.status === 'completed' && 'Este proyecto ha sido completado exitosamente.'}
-                  {project.status === 'cancelled' && 'Este proyecto fue cancelado.'}
-                </p>
-                {project.status === 'completed' && isOwner && !project.marketplace_source_id && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(`/api/projects/${id}/publish`, {
-                          method: 'POST', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ publish: !project.is_marketplace_published }),
-                        });
-                        if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-                        toast.success(project.is_marketplace_published ? 'Despublicado del marketplace' : 'Publicado en el marketplace');
-                        fetchProject();
-                      } catch (e: any) { toast.error(e.message || 'Error'); }
-                    }}
-                    className={`pixel-btn text-sm w-full ${project.is_marketplace_published ? 'border border-amber-300 text-amber-700 hover:bg-amber-50' : 'pixel-btn-primary'}`}
-                  >
-                    {project.is_marketplace_published ? 'Despublicar Marketplace' : 'Publicar en Marketplace'}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Progreso del equipo */}
-          {['in_progress', 'review', 'completed'].includes(project.status) && (() => {
-            const rqs = project.requirements || [];
-            const memberMap: Record<string, { name: string; photo_url: string; total: number; completed: number }> = {};
-            for (const req of rqs) {
-              const assignments = req.assignments || [];
-              for (const a of assignments) {
-                if (a.status !== 'accepted') continue;
-                if (!memberMap[a.member_id]) memberMap[a.member_id] = { name: a.member_name, photo_url: a.photo_url, total: 0, completed: 0 };
-                memberMap[a.member_id].total++;
-                if (req.is_completed || req.completed_at) memberMap[a.member_id].completed++;
-              }
-            }
-            const members = Object.values(memberMap);
-            if (members.length === 0) return null;
-            return (
-              <div className="pixel-card">
-                <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Progreso del equipo</h3>
-                <div className="space-y-2">
-                  {members.map((m, i) => {
-                    const pct = m.total > 0 ? Math.round((m.completed / m.total) * 100) : 0;
-                    return (
-                      <div key={i} className="flex items-center gap-2">
-                        {m.photo_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={m.photo_url} alt={m.name} className="w-6 h-6 rounded-full object-cover border border-digi-border shrink-0" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-accent-light border border-accent/50 flex items-center justify-center shrink-0">
-                            <span className="text-[11px] text-accent" style={pf}>{m.name?.charAt(0)}</span>
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-[11px] text-digi-text truncate" style={mf}>{m.name}</span>
-                            <span className="text-[11px] text-digi-muted shrink-0" style={mf}>{m.completed}/{m.total} ({pct}%)</span>
-                          </div>
-                          <div className="h-1.5 bg-digi-darker border border-digi-border overflow-hidden">
-                            <div className={`h-full transition-all duration-500 ${pct === 100 ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
           </>)}
 
           {/* DigiMundo (pestaña admin) */}
@@ -2379,76 +2300,90 @@ export default function ProjectDetailPage() {
           )}
           </>)}
 
-          {/* Imágenes (pestaña Propiedades) */}
-          {rightTab === 'propiedades' && (<>
-          {/* Project Images */}
-          {showImages && (
-            <div className="pixel-card">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[12px] font-semibold text-digi-text" style={pf}>Imagenes del Proyecto ({projectImages.length}/30)</h3>
-                {canEditImages && projectImages.length < 30 && (
-                  <label className="text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors cursor-pointer" style={pf}>
-                    {uploadingImages ? 'Subiendo...' : '+ Subir'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      disabled={uploadingImages}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-
-              {projectImages.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-[11px] text-digi-muted" style={mf}>Sin imagenes aun</p>
-                  {canEditImages && (
-                    <label className="inline-block mt-2 px-3 py-1.5 text-[12px] text-accent border border-accent/40 hover:bg-accent/10 transition-colors cursor-pointer" style={pf}>
-                      {uploadingImages ? 'Subiendo...' : 'Subir primera imagen'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        disabled={uploadingImages}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {projectImages.map((img, idx) => (
-                    <div key={idx} className="relative group aspect-square border border-digi-border/50 overflow-hidden bg-digi-darker">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={img}
-                        alt={`Imagen ${idx + 1}`}
-                        className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => setPreviewImage(img)}
-                      />
-                      {canEditImages && (
-                        <button
-                          onClick={() => handleImageDelete(idx)}
-                          disabled={deletingImageIdx === idx}
-                          className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded bg-red-600/90 text-white text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
-                          style={pf}
-                          title="Eliminar imagen"
-                        >
-                          {deletingImageIdx === idx ? '...' : 'x'}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          </>)}
         </div>
       </div>
+
+      {/* Panel: Progreso del equipo (se abre desde el header) */}
+      <PixelModal open={showProgresoModal} onClose={() => setShowProgresoModal(false)} title="Progreso del equipo" size="md">
+        {(() => {
+          const rqs = project.requirements || [];
+          const memberMap: Record<string, { name: string; photo_url: string; total: number; completed: number }> = {};
+          for (const req of rqs) {
+            for (const a of (req.assignments || [])) {
+              if (a.status !== 'accepted') continue;
+              if (!memberMap[a.member_id]) memberMap[a.member_id] = { name: a.member_name, photo_url: a.photo_url, total: 0, completed: 0 };
+              memberMap[a.member_id].total++;
+              if (req.is_completed || req.completed_at) memberMap[a.member_id].completed++;
+            }
+          }
+          const members = Object.values(memberMap);
+          const overallPct = reqs.length ? Math.round((completedReqs / reqs.length) * 100) : 0;
+          return (
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between text-[12px] mb-1" style={mf}><span className="text-digi-muted">Requerimientos completados</span><span className="text-digi-text tabular-nums">{completedReqs}/{reqs.length} ({overallPct}%)</span></div>
+                <div className="h-2 rounded-full bg-digi-border/60 overflow-hidden"><div className={`h-full rounded-full transition-all ${overallPct === 100 ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${overallPct}%` }} /></div>
+              </div>
+              {members.length > 0 ? (
+                <div>
+                  <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-2" style={mf}>Por miembro</p>
+                  <div className="space-y-2.5">
+                    {members.map((m, i) => {
+                      const pct = m.total > 0 ? Math.round((m.completed / m.total) * 100) : 0;
+                      return (
+                        <div key={i} className="flex items-center gap-2.5">
+                          {m.photo_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={m.photo_url} alt={m.name} className="w-7 h-7 rounded-full object-cover border border-digi-border shrink-0" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-accent-light border border-accent/40 flex items-center justify-center shrink-0"><span className="text-[12px] text-accent" style={mf}>{m.name?.charAt(0)}</span></div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-0.5"><span className="text-[12px] text-digi-text truncate" style={mf}>{m.name}</span><span className="text-[11px] text-digi-muted shrink-0" style={mf}>{m.completed}/{m.total} ({pct}%)</span></div>
+                            <div className="h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${pct}%` }} /></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[12px] text-digi-muted" style={mf}>Aún no hay miembros con requerimientos asignados.</p>
+              )}
+            </div>
+          );
+        })()}
+      </PixelModal>
+
+      {/* Panel: Imágenes del proyecto (se abre desde el header) */}
+      <PixelModal open={showImagesModal} onClose={() => setShowImagesModal(false)} title={`Imágenes del proyecto (${projectImages.length}/30)`} size="md">
+        <div className="space-y-3">
+          {canEditImages && projectImages.length < 30 && (
+            <label className="inline-flex items-center gap-1.5 text-[12px] text-accent border border-accent/40 rounded px-3 py-1.5 hover:bg-accent-light transition-colors cursor-pointer" style={mf}>
+              <Plus className="w-4 h-4" /> {uploadingImages ? 'Subiendo…' : 'Subir imágenes'}
+              <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploadingImages} className="hidden" />
+            </label>
+          )}
+          {projectImages.length === 0 ? (
+            <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Sin imágenes aún.</p>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {projectImages.map((img, idx) => (
+                <div key={idx} className="relative group aspect-square border border-digi-border/50 overflow-hidden bg-digi-darker rounded">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setPreviewImage(img)} />
+                  {canEditImages && (
+                    <button onClick={() => handleImageDelete(idx)} disabled={deletingImageIdx === idx} title="Eliminar imagen"
+                      className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded bg-red-600/90 text-white text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700">
+                      {deletingImageIdx === idx ? '…' : '✕'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </PixelModal>
 
       {/* Subtasks Modal (centered) */}
       <PixelModal open={subtaskReqId != null} onClose={() => setSubtaskReqId(null)} title="Subtareas" size="sm">
