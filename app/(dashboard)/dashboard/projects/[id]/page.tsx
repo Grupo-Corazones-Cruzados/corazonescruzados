@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -52,8 +52,10 @@ const BID_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   const [project, setProject] = useState<any>(null);
+  const [payments, setPayments] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [digiProjects, setDigiProjects] = useState<any[]>([]);
@@ -217,6 +219,7 @@ export default function ProjectDetailPage() {
       if (!res.ok) throw new Error();
       const { data } = await res.json();
       setProject(data);
+      fetch(`/api/projects/${id}/payments`).then(r => r.json()).then(d => setPayments(d.data || null)).catch(() => {});
     } catch { toast.error('Error al cargar proyecto'); }
     finally { setLoading(false); }
   }, [id]);
@@ -1810,6 +1813,35 @@ export default function ProjectDetailPage() {
               <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Creado</dt><dd className="text-digi-text text-right">{new Date(project.created_at).toLocaleDateString()}</dd></div>
             </dl>
           </div>
+
+          {/* Pagos (facturado vs pendiente) */}
+          {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0) && (() => {
+            const pct = payments.total > 0 ? Math.min(100, (payments.invoiced / payments.total) * 100) : 0;
+            return (
+              <div className="pixel-card">
+                <h3 className="text-[12px] font-semibold text-digi-text mb-2" style={pf}>Pagos</h3>
+                <div className="space-y-1 text-[12px]" style={mf}>
+                  <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(payments.total)}</span></div>
+                  <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(payments.invoiced)}</span></div>
+                  <div className="flex justify-between"><span className="text-digi-muted">Pendiente</span><span className={`tabular-nums ${payments.pending > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(payments.pending)}</span></div>
+                </div>
+                <div className="h-1.5 rounded-full bg-digi-darker border border-digi-border overflow-hidden my-2"><div className="h-full bg-green-500" style={{ width: `${pct}%` }} /></div>
+                {(payments.invoices || []).length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-digi-border space-y-0.5">
+                    {payments.invoices.map((inv: any) => (
+                      <button key={inv.id} onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="w-full flex items-center justify-between gap-2 text-[11.5px] hover:bg-black/[0.03] rounded px-1.5 py-1 transition-colors" style={mf}>
+                        <span className="min-w-0 truncate text-digi-text">{inv.invoice_number || `#${inv.id}`}</span>
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <span className={`tabular-nums ${inv.status === 'cancelled' ? 'line-through text-digi-muted' : 'text-digi-text'}`}>${fmt2(inv.total)}</span>
+                          {inv.status === 'cancelled' ? <span className="text-[9px] text-red-500">anulada</span> : inv.sri_status === 'authorized' ? <span className="text-[9px] text-green-600">SRI</span> : null}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Acciones (estado del proyecto / participación) */}
           {(isOwner || isMember) && (

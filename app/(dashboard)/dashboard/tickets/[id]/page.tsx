@@ -50,6 +50,7 @@ export default function TicketDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [ticket, setTicket] = useState<any>(null);
+  const [payments, setPayments] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [bids, setBids] = useState<any[]>([]);
   const [proposalText, setProposalText] = useState('');
@@ -122,6 +123,7 @@ export default function TicketDetailPage() {
       if (!res.ok) throw new Error();
       const { data } = await res.json();
       setTicket(data);
+      fetch(`/api/tickets/${id}/payments`).then(r => r.json()).then(d => setPayments(d.data || null)).catch(() => {});
     } catch {
       toast.error('Error al cargar ticket');
     } finally {
@@ -1003,6 +1005,33 @@ export default function TicketDetailPage() {
                 )}
               </div>
             )}
+            {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0) && (() => {
+              const pct = payments.total > 0 ? Math.min(100, (payments.invoiced / payments.total) * 100) : 0;
+              return (
+                <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
+                  <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-2" style={pf}>Pagos</h3>
+                  <div className="space-y-1 text-[12px]" style={mf}>
+                    <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(payments.total)}</span></div>
+                    <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(payments.invoiced)}</span></div>
+                    <div className="flex justify-between"><span className="text-digi-muted">Pendiente</span><span className={`tabular-nums ${payments.pending > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(payments.pending)}</span></div>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-[#edebe9] overflow-hidden my-2"><div className="h-full rounded-full bg-green-500" style={{ width: `${pct}%` }} /></div>
+                  {(payments.invoices || []).length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-digi-border space-y-0.5">
+                      {payments.invoices.map((inv: any) => (
+                        <button key={inv.id} onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="w-full flex items-center justify-between gap-2 text-[11.5px] hover:bg-black/[0.03] rounded px-1.5 py-1 transition-colors" style={mf}>
+                          <span className="min-w-0 truncate text-digi-text">{inv.invoice_number || `#${inv.id}`}</span>
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            <span className={`tabular-nums ${inv.status === 'cancelled' ? 'line-through text-digi-muted' : 'text-digi-text'}`}>${fmt2(inv.total)}</span>
+                            {inv.status === 'cancelled' ? <span className="text-[9px] text-red-500">anulada</span> : inv.sri_status === 'authorized' ? <span className="text-[9px] text-green-600">SRI</span> : null}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </PropertyRail>
           </div>
         </div>
