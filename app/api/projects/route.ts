@@ -5,6 +5,7 @@ import { ensureProjectMembersTable, setResponsible } from '@/lib/projects/member
 import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { ensureAdminMember } from '@/lib/ensure-admin-member';
+import { ensureQuoteShareColumns } from '@/lib/cotizaciones/schema';
 import { sendProjectClientInvitationEmail } from '@/lib/integrations/email';
 
 export async function GET(req: NextRequest) {
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest) {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     await ensureProjectMembersTable();
+    await ensureQuoteShareColumns(); // asegura `quote_status` para separar cotizaciones pendientes/rechazadas
 
     const { searchParams } = req.nextUrl;
     const status = searchParams.get('status');
@@ -55,6 +57,12 @@ export async function GET(req: NextRequest) {
     } else if (status === 'invited' && mId) {
       params.push(mId);
       where += ` AND (EXISTS (SELECT 1 FROM gcc_world.project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${params.length} AND pb2.status = 'invited') OR EXISTS (SELECT 1 FROM gcc_world.project_members pm2 WHERE pm2.project_id = p.id AND pm2.member_id = $${params.length} AND pm2.role = 'responsible' AND pm2.status = 'invited'))`;
+    } else if (status === 'cotizacion') {
+      // Cotizaciones PENDIENTES (no rechazadas).
+      where += ` AND p.status = 'cotizacion' AND COALESCE(p.quote_status, 'pending') <> 'rejected'`;
+    } else if (status === 'cotizacion_rechazada') {
+      // Cotizaciones RECHAZADAS por el cliente.
+      where += ` AND p.status = 'cotizacion' AND p.quote_status = 'rejected'`;
     } else if (status && status !== 'all' && status !== 'mine' && status !== 'invited') {
       params.push(status);
       where += ` AND p.status = $${params.length}`;
@@ -69,6 +77,14 @@ export async function GET(req: NextRequest) {
     let allCount = 0;
     for (const r of statusCountsQ.rows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
     counts.all = allCount;
+    // Separa las cotizaciones en pendientes vs rechazadas (el GROUP BY status las agrupa juntas).
+    const cotRejQ = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND p.status = 'cotizacion' AND p.quote_status = 'rejected'`,
+      accessParams,
+    );
+    const cotRej = Number(cotRejQ.rows[0].n);
+    counts.cotizacion_rechazada = cotRej;
+    counts.cotizacion = Math.max(0, Number(counts.cotizacion || 0) - cotRej);
     if (user.role === 'member' && mId) {
       const mineQ = await pool.query(
         `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND p.assigned_member_id = $${accessParams.length + 1}`,

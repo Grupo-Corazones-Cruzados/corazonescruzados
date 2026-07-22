@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, setResponsible } from '@/lib/projects/members';
 import { ensureAdminMember } from '@/lib/ensure-admin-member';
+import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { ensureQuoteTables } from '@/lib/cotizaciones/schema';
 import { generateQuote, cotizadorConfigured, COTIZADOR_MODEL } from '@/lib/cotizaciones/worker';
 
@@ -10,8 +11,8 @@ import { generateQuote, cotizadorConfigured, COTIZADOR_MODEL } from '@/lib/cotiz
  * Genera una COTIZACIÓN nueva (proyecto en estado `cotizacion`) con el agente de
  * Cotizaciones Software. Solo candidatos/miembros/admin (el creador es el responsable).
  *
- * Flujo: valida → resuelve servicio (costo/hora) → llama al worker del agente (Opus) →
- * crea el proyecto (privado, cliente pendiente, responsable = usuario) → materializa
+ * Flujo: valida (servicio + cliente/correo obligatorio) → llama al worker del agente (Opus) →
+ * crea el proyecto (privado, responsable = usuario, cliente elegido) → materializa
  * requerimientos + subtareas + costo + fecha límite → guarda sesión + versión v1.
  */
 export async function POST(req: NextRequest) {
@@ -28,8 +29,12 @@ export async function POST(req: NextRequest) {
     const instructions = String(body.instructions || '').trim();
     const serviceId = body.service_id ? Number(body.service_id) : null;
     const agentKey = String(body.agent_key || 'cotizaciones-software');
+    const clientIdIn = body.client_id ? Number(body.client_id) : null;
+    const clientEmailIn = body.client_email ? String(body.client_email).trim().toLowerCase() : '';
     if (!detail) return NextResponse.json({ error: 'El detalle de la cotización es requerido.' }, { status: 400 });
     if (!serviceId) return NextResponse.json({ error: 'Selecciona un servicio.' }, { status: 400 });
+    if (!clientIdIn && !clientEmailIn) return NextResponse.json({ error: 'Selecciona un cliente o ingresa un correo de cliente.' }, { status: 400 });
+    if (clientEmailIn && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmailIn)) return NextResponse.json({ error: 'El correo del cliente no es válido.' }, { status: 400 });
 
     // Rol: solo candidato/miembro/admin (el creador es responsable → necesita perfil de miembro).
     const uRow = (await pool.query(
@@ -66,16 +71,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El agente no devolvió requerimientos. Intenta reformular el detalle.' }, { status: 502 });
     }
 
-    // 2) Crea el proyecto-cotización.
+    // 2) Resuelve el cliente (obligatorio): uno existente o por correo (placeholder inactivo).
+    let clientId: number | null = clientIdIn;
+    let clientEmail: string | null = null;
+    if (clientId) {
+      const c = await pool.query(`SELECT email FROM gcc_world.clients WHERE id = $1`, [clientId]);
+      clientEmail = c.rows[0]?.email || null;
+    } else if (clientEmailIn) {
+      clientEmail = clientEmailIn;
+      const createdBy = await resolveMemberId(user.userId);
+      const ph = await findOrCreatePlaceholderByEmail(clientEmailIn, createdBy);
+      if (ph) clientId = ph.id;
+    }
+
+    // 3) Crea el proyecto-cotización.
     await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS created_by_user_id TEXT`);
+    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS client_email TEXT`);
     await ensureProjectMembersTable();
     await ensureQuoteTables();
     const title = (payload.title && payload.title.trim()) || `Cotización — ${service.name}`;
     const total = payload.requirements.reduce((s, r) => s + (Number(r.cost) || 0), 0);
     const { rows: [project] } = await pool.query(
       `INSERT INTO gcc_world.projects (client_id, client_email, assigned_member_id, title, description, deadline, status, is_private, final_cost, created_by_user_id)
-       VALUES (NULL, NULL, $1, $2, $3, $4, 'cotizacion', true, $5, $6) RETURNING *`,
-      [respId, title.slice(0, 200), payload.summary || detail, payload.deadline || null, total || null, user.userId],
+       VALUES ($7, $8, $1, $2, $3, $4, 'cotizacion', true, $5, $6) RETURNING *`,
+      [respId, title.slice(0, 200), payload.summary || detail, payload.deadline || null, total || null, user.userId, clientId, clientEmail],
     );
     await setResponsible(project.id, respId, { invited: false });
 

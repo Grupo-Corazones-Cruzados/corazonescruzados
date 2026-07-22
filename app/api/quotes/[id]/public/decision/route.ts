@@ -9,8 +9,9 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.grupocc.org';
 
 /**
  * El cliente externo ACEPTA o RECHAZA la cotización (por token). Aceptar → la cotización pasa
- * a proyecto real (`open`); rechazar → queda como cotización marcada 'rejected' para que el
- * responsable la ajuste y vuelva a compartir. Notifica al responsable (in-app + correo).
+ * a **borrador** (`draft`), y a partir de ahí sigue la gestión normal del proyecto; rechazar →
+ * queda como cotización marcada 'rejected' para que el responsable la ajuste y vuelva a
+ * compartir. Notifica al responsable (in-app + correo).
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -25,8 +26,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const accepted = action === 'accept';
     if (accepted) {
+      // Aceptada → pasa a BORRADOR; desde aquí sigue la gestión normal del proyecto.
       await pool.query(
-        `UPDATE gcc_world.projects SET quote_status = 'accepted', quote_decided_at = NOW(), status = 'open', updated_at = NOW() WHERE id = $1`, [id]);
+        `UPDATE gcc_world.projects SET quote_status = 'accepted', quote_decided_at = NOW(), status = 'draft', updated_at = NOW() WHERE id = $1`, [id]);
     } else {
       await pool.query(
         `UPDATE gcc_world.projects SET quote_status = 'rejected', quote_decided_at = NOW(), updated_at = NOW() WHERE id = $1`, [id]);

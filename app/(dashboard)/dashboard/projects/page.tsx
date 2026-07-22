@@ -24,7 +24,7 @@ import { accessRoleOf } from '@/lib/dashboard/access';
 import { fmt2 } from '@/lib/format';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
-  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator,
+  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -33,6 +33,7 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 const STATUS_TABS = [
   { value: 'all', label: 'Todos', Icon: FolderKanban },
   { value: 'cotizacion', label: 'Cotizaciones', Icon: Calculator },
+  { value: 'cotizacion_rechazada', label: 'Cotiz. rechazadas', Icon: XCircle },
   { value: 'draft', label: 'Borrador', Icon: FileEdit },
   { value: 'open', label: 'Abiertos', Icon: DoorOpen },
   { value: 'in_progress', label: 'En progreso', Icon: Loader },
@@ -41,11 +42,11 @@ const STATUS_TABS = [
 ];
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  cotizacion: 'info', draft: 'default', open: 'info', in_progress: 'warning',
+  cotizacion: 'info', cotizacion_rechazada: 'error', draft: 'default', open: 'info', in_progress: 'warning',
   in_review: 'info', completed: 'success', closed: 'success', cancelled: 'error',
 };
 const STATUS_LABEL: Record<string, string> = {
-  cotizacion: 'Cotización', draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso',
+  cotizacion: 'Cotización', cotizacion_rechazada: 'Rechazada', draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso',
   in_review: 'En revisión', completed: 'Completado', closed: 'Cerrado', cancelled: 'Cancelado',
 };
 // Punto de color por variante para mostrar el estado sin columna dedicada.
@@ -111,28 +112,39 @@ export default function ProjectsPage() {
   const [quoteInstructions, setQuoteInstructions] = useState('');
   const [quoteAgent, setQuoteAgent] = useState('cotizaciones-software');
   const [generatingQuote, setGeneratingQuote] = useState(false);
+  // Cliente obligatorio (uno de mis clientes o un correo), igual que al crear un proyecto.
+  const [quoteClientMode, setQuoteClientMode] = useState<'existing' | 'email'>('existing');
+  const [quoteClientId, setQuoteClientId] = useState('');
+  const [quoteClientEmail, setQuoteClientEmail] = useState('');
+  const [quoteClients, setQuoteClients] = useState<any[]>([]);
 
   const openQuotePanel = async () => {
     setQuoteServiceId(''); setQuoteDetail(''); setQuoteInstructions(''); setQuoteAgent('cotizaciones-software');
-    setQuoteServices([]);
+    setQuoteServices([]); setQuoteClientMode('existing'); setQuoteClientId(''); setQuoteClientEmail(''); setQuoteClients([]);
     setShowQuote(true);
     const mid = (user as any)?.member_id;
-    if (mid) {
-      try {
-        const r = await fetch(`/api/members/${mid}/services?active=1`);
-        const d = await r.json();
-        setQuoteServices(d.data || []);
-      } catch { setQuoteServices([]); }
-    }
+    const [svc, cli] = await Promise.all([
+      mid ? fetch(`/api/members/${mid}/services?active=1`).then(r => r.json()).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+      fetch('/api/clients?mine=1').then(r => r.json()).catch(() => ({ data: [] })),
+    ]);
+    setQuoteServices(svc.data || []);
+    setQuoteClients(cli.data || []);
   };
   const submitQuote = async () => {
     if (!quoteServiceId) { toast.error('Selecciona un servicio'); return; }
     if (!quoteDetail.trim()) { toast.error('Escribe el detalle de la cotización'); return; }
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(quoteClientEmail.trim());
+    if (quoteClientMode === 'existing' && !quoteClientId) { toast.error('Selecciona un cliente o usa un correo'); return; }
+    if (quoteClientMode === 'email' && !emailOk) { toast.error('Ingresa un correo de cliente válido'); return; }
     setGeneratingQuote(true);
     try {
       const r = await fetch('/api/quotes/generate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ service_id: quoteServiceId, detail: quoteDetail, instructions: quoteInstructions, agent_key: quoteAgent }),
+        body: JSON.stringify({
+          service_id: quoteServiceId, detail: quoteDetail, instructions: quoteInstructions, agent_key: quoteAgent,
+          client_id: quoteClientMode === 'existing' ? quoteClientId : undefined,
+          client_email: quoteClientMode === 'email' ? quoteClientEmail.trim() : undefined,
+        }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Error al generar');
@@ -459,11 +471,11 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Panel lateral IZQUIERDO — Nueva cotización (agente IA) */}
+      {/* Panel lateral DERECHO — Nueva cotización (agente IA) */}
       {showQuote && (
-        <div className="fixed inset-0 z-[95] flex">
+        <div className="fixed inset-0 z-[95] flex justify-end">
           <div className="absolute inset-0 bg-black/40" onClick={() => !generatingQuote && setShowQuote(false)} />
-          <aside className="relative w-full max-w-md h-full bg-digi-card border-r border-digi-border shadow-2xl overflow-y-auto">
+          <aside className="relative w-full max-w-md h-full bg-digi-card border-l border-digi-border shadow-2xl overflow-y-auto ml-auto">
             <div className="flex items-center justify-between p-4 border-b border-digi-border sticky top-0 bg-digi-card z-10">
               <h2 className="text-[15px] font-semibold text-digi-text inline-flex items-center gap-2" style={df}><Calculator className="w-5 h-5 text-accent" /> Nueva cotización</h2>
               <button onClick={() => !generatingQuote && setShowQuote(false)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
@@ -477,10 +489,6 @@ export default function ProjectsPage() {
               </div>
             ) : (
               <div className="p-4 space-y-3">
-                <p className="text-[11.5px] text-digi-muted" style={mf}>
-                  El agente genera una cotización (requerimientos, subtareas, costo y fecha límite) usando el costo/hora del servicio que elijas. Quedas como responsable, el cliente queda pendiente y la visibilidad es privada.
-                </p>
-
                 <div className="flex flex-col gap-1">
                   <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Servicio *</label>
                   <select value={quoteServiceId} onChange={(e) => setQuoteServiceId(e.target.value)}
@@ -491,6 +499,30 @@ export default function ProjectsPage() {
                     ))}
                   </select>
                   {quoteServices.length === 0 && <p className="text-[10.5px] text-amber-600" style={mf}>No tienes servicios activos. Créalos en Configuración → Mi CV.</p>}
+                </div>
+
+                {/* Cliente obligatorio */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente <span className="text-accent">*</span></label>
+                    <button type="button" onClick={() => { setQuoteClientMode(quoteClientMode === 'existing' ? 'email' : 'existing'); setQuoteClientId(''); setQuoteClientEmail(''); }}
+                      className="text-[11px] text-digi-muted hover:text-accent border border-digi-border rounded px-1.5 py-0.5 transition-colors" style={mf}>
+                      {quoteClientMode === 'existing' ? 'Usar un correo' : 'Elegir de mis clientes'}
+                    </button>
+                  </div>
+                  {quoteClientMode === 'existing' ? (
+                    <select value={quoteClientId} onChange={(e) => setQuoteClientId(e.target.value)}
+                      className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                      <option value="">— Elige un cliente —</option>
+                      {quoteClients.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.name || c.email}{c.status && c.status !== 'activo' ? ' · sin cuenta' : ''}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input type="email" value={quoteClientEmail} onChange={(e) => setQuoteClientEmail(e.target.value)} placeholder="correo@cliente.com"
+                      className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+                  )}
+                  <p className="text-[10.5px] text-digi-muted/80 mt-1" style={mf}>Si el correo no tiene cuenta, se registra y se le invita a crearla.</p>
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -505,7 +537,6 @@ export default function ProjectsPage() {
                   <textarea value={quoteInstructions} onChange={(e) => setQuoteInstructions(e.target.value)} rows={3}
                     placeholder="Ej: fijar el precio total en $X; incluir obligatoriamente la tarea Y; considerar tal infraestructura…"
                     className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-y" style={mf} />
-                  <p className="text-[10.5px] text-digi-muted" style={mf}>Si fijas un precio aquí, el agente lo respeta. Si no, el precio lo pone el agente según el servicio.</p>
                 </div>
 
                 <div className="flex flex-col gap-1">
