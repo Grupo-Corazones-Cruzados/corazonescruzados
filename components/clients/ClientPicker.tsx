@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { BadgeCheck } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-body)' } as const;
@@ -48,7 +49,7 @@ export default function ClientPicker({
   const emailExists = clients.some(c => (c.email || '').toLowerCase() === query.trim().toLowerCase());
 
   const display = selected
-    ? `${selected.name || selected.email}${selected.status && selected.status !== 'activo' ? ' · sin cuenta' : ''}`
+    ? (selected.name || selected.email)
     : (clientEmail ? `${clientEmail} · nuevo` : '');
 
   const pick = (c: ClientOpt) => { onChange({ clientId: String(c.id), clientEmail: '' }); setOpen(false); setQuery(''); };
@@ -73,16 +74,20 @@ export default function ClientPicker({
         )}
         {open && (
           <div className="absolute z-50 left-0 right-0 mt-1 bg-digi-card border-2 border-digi-border rounded-md shadow-lg max-h-56 overflow-y-auto">
-            {filtered.slice(0, 50).map(c => (
-              <button key={c.id} type="button" onClick={() => pick(c)}
-                className="w-full text-left px-3 py-1.5 hover:bg-accent/10 border-b border-digi-border/30 last:border-b-0 transition-colors">
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] text-digi-text truncate" style={mf}>{c.name || c.email}</span>
-                  {c.status && c.status !== 'activo' && <span className="text-[9.5px] text-amber-600 shrink-0">sin cuenta</span>}
-                </div>
-                {c.email && <span className="block text-[11px] text-digi-muted truncate" style={mf}>{c.email}</span>}
-              </button>
-            ))}
+            {filtered.slice(0, 50).map(c => {
+              const active = c.status === 'activo';
+              return (
+                <button key={c.id} type="button" onClick={() => pick(c)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-accent/10 border-b border-digi-border/30 last:border-b-0 transition-colors flex items-center gap-2">
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] text-digi-text truncate" style={mf}>{c.name || c.email}</span>
+                    {c.email && <span className="block text-[11px] text-digi-muted truncate" style={mf}>{c.email}</span>}
+                  </span>
+                  <BadgeCheck aria-label={active ? 'Cuenta activa' : 'Sin cuenta'}
+                    className={`w-4 h-4 shrink-0 ${active ? 'text-white fill-green-600' : 'text-digi-muted/50'}`} />
+                </button>
+              );
+            })}
             {isEmail && !emailExists && (
               <button type="button" onClick={useEmail}
                 className="w-full text-left px-3 py-1.5 text-accent hover:bg-accent/10 transition-colors text-[13px]" style={mf}>
