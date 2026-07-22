@@ -2352,6 +2352,23 @@ Módulos principales:
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
 ## Decisiones y reglas de negocio
+- **Módulo RECORDATORIOS (confirmado 2026-07-22).** Nuevo módulo (sidebar debajo de Pensamientos)
+  con recordatorios que tienen título, fecha/hora, lista de tareas y adjuntos; envían correos al
+  dueño (miembro/candidato asociado) con frecuencia escalada. Fases:
+  - **Fase 1 (HECHA):** tablas `reminders` + `reminder_attachments` (adjuntos como data URL base64 en
+    la BD, incluye `.txt` de transcripción para los de Meet); `lib/reminders/schema.ts`; API CRUD
+    `/api/reminders*`; página `/dashboard/recordatorios` (crear manual con tareas + adjuntos, editar,
+    marcar hecho); acceso candidate/member/admin.
+  - **Fase 2 (pendiente):** worker cron **cada 10 min** (`CRON_TOKEN`) que envía correos escalados:
+    ≤5h → 1 correo; ≤3h → 1/hora; ≤30min → 1/10min; al vencer → 1 correo final "vencido" y stop.
+    Trackea `email_stage`/`last_email_at`/`expired_email_sent`.
+  - **Fase 3 (pendiente):** worker cron **cada 15 min** detecta reuniones de Meet terminadas (evento
+    de calendario con `meeting_url` cuyo fin pasó) → obtiene la transcripción (Meet API v2
+    conferenceRecords→transcripts→entries; requiere scope `meetings.space.readonly` en la delegación
+    de dominio de Google Admin) → la analiza con Claude (título, **fecha/hora que la IA siempre
+    propone**, tareas) → crea el recordatorio (`source='meeting'`) + adjunta la transcripción `.txt` +
+    agrega en la **descripción del evento** un enlace al recordatorio. Destinatario = el miembro/
+    candidato dueño del evento (no el cliente).
 - **Modelo de CLIENTES y FACTURACIÓN (confirmado 2026-07-21).** Mapa detallado en el artefacto HTML
   "Asociación de clientes" (auditoría del código). Reglas acordadas para el rediseño:
   - **Tablas separadas** `clients` (identidad app) y `billing_clients` (facturación) — un cliente podrá

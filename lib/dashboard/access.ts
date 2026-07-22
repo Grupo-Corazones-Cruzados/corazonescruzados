@@ -39,6 +39,8 @@ export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   { path: '/dashboard/experiencias', roles: ['candidate', 'member', 'admin'] },
   // Pensamientos: cuaderno personal. Privado por fila (cada quien ve solo los suyos).
   { path: '/dashboard/pensamientos', roles: ['candidate', 'member', 'admin'] },
+  // Recordatorios: privado por fila; correos escalados según fecha/hora.
+  { path: '/dashboard/recordatorios', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/tickets', roles: ALL },
   { path: '/dashboard/projects', roles: ALL },
   { path: '/dashboard/clients', roles: ['candidate', 'member', 'admin'] },
