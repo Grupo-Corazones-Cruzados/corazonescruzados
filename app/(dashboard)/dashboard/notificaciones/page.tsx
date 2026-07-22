@@ -47,12 +47,9 @@ export default function NotificacionesPage() {
 
   return (
     <div className="flex flex-col h-[calc(100dvh-130px)]">
-      <div className="flex items-center gap-2 mb-4 shrink-0">
-        <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2" style={df}>
-          <Bell className="w-5 h-5 text-accent" /> Notificaciones
-        </h1>
+      <div className="flex items-center gap-2 mb-3 shrink-0">
         {items.length > 0 && (
-          <span className="text-[11px] font-semibold text-white bg-accent rounded-full px-2 py-0.5" style={mf}>{items.length}</span>
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white bg-accent rounded-full px-2 py-0.5" style={mf}><Bell className="w-3 h-3" /> {items.length}</span>
         )}
         <button onClick={load} className="ml-auto inline-flex items-center gap-1.5 text-[12px] text-digi-muted hover:text-accent transition-colors" style={mf}>
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Actualizar

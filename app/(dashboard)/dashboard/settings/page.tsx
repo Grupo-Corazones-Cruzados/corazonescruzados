@@ -6,10 +6,9 @@ import ProfilePanel from '@/components/settings/ProfilePanel';
 import CvPanel from '@/components/settings/CvPanel';
 import AvailabilityPanel from '@/components/settings/AvailabilityPanel';
 import PortfolioPanel from '@/components/settings/PortfolioPanel';
-import { Settings, FileText, CalendarClock, Briefcase, type LucideIcon } from 'lucide-react';
+import { FileText, CalendarClock, Briefcase, type LucideIcon } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 type TabKey = 'cv' | 'availability' | 'portfolio';
 const TABS: { key: TabKey; label: string; Icon: LucideIcon }[] = [
@@ -31,10 +30,6 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2 mb-3" style={df}>
-        <Settings className="w-5 h-5 text-accent" /> Configuración
-      </h1>
-
       {/* La fila llena el alto disponible del viewport (en desktop); las tarjetas se estiran
           (`items-stretch`) para aprovechar el espacio. Si el contenido es más alto, la fila
           crece y la página se desplaza (sin scroll interno). */}

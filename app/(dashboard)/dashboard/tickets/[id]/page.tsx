@@ -629,7 +629,7 @@ export default function TicketDetailPage() {
                   {cfg.is_event ? (
                     <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
                       Se creará una reunión de Google Meet invitando al cliente{ticket.client_name ? ` (${ticket.client_name})` : ''} y al miembro. Horario de Ecuador (GMT-5).
-                      {bothTimes && ` Se registrará una acción «Sesión»${slotRate > 0 ? ` · ${durLabel} × $${slotRate}/h = $${fmt2(sessionCost)}` : ''}.`}
+                      {bothTimes && ` Se registrará un bloque ocupado en «Mi día» y una acción «Sesión»${slotRate > 0 ? ` · ${durLabel} × $${slotRate}/h = $${fmt2(sessionCost)}` : ''}.`}
                     </p>
                   ) : bothTimes ? (
                     <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>

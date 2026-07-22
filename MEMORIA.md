@@ -2885,9 +2885,11 @@ Módulos principales:
 - **Días de trabajo con horas → sesión ocupada en Mi día + acción costeada (2026-07-22):** en `tickets/[id]`
   las horas de un **día de trabajo** ahora son **opcionales** para cualquier día (antes solo aparecían si se
   marcaba "Evento (reunión Meet)"). Al guardar (`PUT /api/tickets/[id]/time-slots`, reescrito):
-  - Un día **con horas y SIN evento Meet** crea un **bloque ocupado** en el calendario del miembro
+  - **Todo** día con horas (Meet o no) crea un **bloque ocupado** en el calendario del miembro
     (`member_calendar_events`, `event_type='progreso'`, `status='confirmed'`) **en la fecha/hora del propio día**
-    (no "hoy"). Los días **Evento (Meet)** siguen creando solo la reunión de Google (no bloque in-app).
+    (no "hoy"). Los días **Evento (Meet)** también crean el bloque in-app (decisión del usuario 2026-07-22),
+    guardando `meeting_url` para mostrar "Unirse" **pero NO `meeting_event_id`** (la reunión de Google la
+    administra el slot, no el bloque; así borrar el bloque no cancela el Meet). Título: `Reunión — …` vs `Sesión — …`.
   - **Todo** día con horas (Meet o no) genera una **acción costeada** `Sesión {fecha hora · duración}` en
     `ticket_actions`, **costo = tiempo programado × `services.base_price` (tarifa/hora)** — misma fórmula que la
     sesión en vivo "Inicio ahora". Decisión del usuario: la acción se crea para **todos** los días con hora.
@@ -2900,3 +2902,18 @@ Módulos principales:
     que antes; los Meet huérfanos se cancelan tras el commit.
   - Nuevos helpers en `lib/tickets/schema.ts`: `slotSeconds`, `slotCost`, `slotSessionLabel`; `loadTicketForSession`
     ahora trae `estimated_cost`; `ensureTicketSlotColumns` añade `action_id`. Verificado `tsc` + `next build` OK.
+
+- **Mi día / Configuración / Notificaciones — sin título de página + calendario acotado a la ventana (2026-07-22):**
+  - Se quitó el `<h1>` de encabezado ("Mi día", "Configuración", "Notificaciones") para recuperar altura; los
+    componentes suben. (Patrón: los módulos ya no llevan título repetido arriba.)
+  - **Calendario de Mi día**: el contenedor no supera la altura de la ventana (`max-h-[calc(100dvh-4.5rem)]`,
+    tarjeta `flex flex-col`; command bar y leyenda `shrink-0`). `CalendarView` recibe prop **`fillHeight`**: en
+    mes/semana/día el **encabezado (días) queda fijo** y el **cuerpo (grilla de horas / celdas de mes) hace scroll
+    interno**; semana/día auto-scrollean a las **07:00** al montar. La vista pública (`app/calendario/[memberId]`)
+    NO pasa `fillHeight` → comportamiento intacto.
+  - **Clic seleccionar vs crear:** nuevo prop **`onDaySelect`** en `CalendarView`. En **mes**, clic en el
+    encabezado de la celda (número + horas) = **seleccionar** ese día (cambia `currentDate`), y clic en el resto
+    de la celda = **crear** evento. En **semana**, clic en el encabezado del día = seleccionar; clic en una hora
+    de la grilla = crear. **Día**: sin cambios. Día seleccionado se resalta (`ring-accent`).
+  - **Panel "Eventos" (izquierda):** en vista de **mes** ahora lista solo los eventos del **día seleccionado**
+    (`currentDate`); el encabezado del panel muestra ese día. Semana/día sin cambios.

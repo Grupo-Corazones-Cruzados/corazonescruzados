@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import type { EventInstance } from '@/lib/calendar/recurrence';
 import { DAY_LABELS_ES_SHORT, DAY_LABELS_ES_LONG, colorForEvent, EVENT_COLORS } from '@/lib/calendar/recurrence';
 
@@ -15,10 +15,16 @@ interface Props {
   view: CalendarViewMode;
   currentDate: Date;
   instances: EventInstance[];
+  // Clic para CREAR un evento (día/hora concretos): abre el formulario de nuevo evento.
   onDayClick: (date: Date) => void;
+  // Clic para SELECCIONAR un día (encabezado/número): cambia el día enfocado, sin abrir formulario.
+  onDaySelect?: (date: Date) => void;
   onEventClick: (ev: EventInstance) => void;
   // Clic sobre un bloque de tarea GENERADA por política (abre popover de estado).
   onGeneratedClick?: (ev: EventInstance, e: React.MouseEvent) => void;
+  // Cuando es true, el calendario llena el alto de su contenedor y su cuerpo (grilla
+  // de horas / mes) se desplaza internamente; el encabezado (días) queda fijo arriba.
+  fillHeight?: boolean;
 }
 
 const WEEK_HOUR_START = 0;
@@ -128,7 +134,7 @@ function DayTotals({ totals }: { totals: { work: number; personal: number } }) {
   );
 }
 
-function MonthView({ currentDate, instances, onDayClick, onEventClick, onGeneratedClick }: Props) {
+function MonthView({ currentDate, instances, onDayClick, onDaySelect, onEventClick, onGeneratedClick, fillHeight }: Props) {
   const cells = useMemo(() => {
     const first = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const start = new Date(first);
@@ -143,8 +149,8 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick, onGenerat
   const today = new Date();
 
   return (
-    <div className="border border-digi-border rounded-lg overflow-hidden bg-digi-card">
-      <div className="grid grid-cols-7 border-b border-digi-border bg-digi-dark">
+    <div className={`border border-digi-border rounded-lg overflow-hidden bg-digi-card ${fillHeight ? 'h-full flex flex-col' : ''}`}>
+      <div className="grid grid-cols-7 border-b border-digi-border bg-digi-dark shrink-0">
         {DAY_LABELS_ES_SHORT.map((label) => (
           <div
             key={label}
@@ -155,10 +161,12 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick, onGenerat
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 grid-rows-6">
+      <div className={fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : ''}>
+      <div className={`grid grid-cols-7 grid-rows-6 ${fillHeight ? 'min-h-full' : ''}`}>
         {cells.map((day, idx) => {
           const inMonth = day.getMonth() === currentDate.getMonth();
           const isToday = sameDay(day, today);
+          const isSelected = sameDay(day, currentDate);
           const dayStart = startOfDay(day);
           const dayEnd = endOfDay(day);
           const dayEvents = instances
@@ -171,9 +179,14 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick, onGenerat
               onClick={() => onDayClick(day)}
               className={`min-h-[104px] p-1.5 border-r border-b border-digi-border last:border-r-0 cursor-pointer transition-colors ${
                 inMonth ? 'hover:bg-black/[0.02]' : 'bg-digi-dark/60 text-digi-muted'
-              } ${isToday ? 'bg-accent-light/50' : ''}`}
+              } ${isToday ? 'bg-accent-light/50' : ''} ${isSelected && !isToday ? 'ring-1 ring-accent ring-inset' : ''}`}
             >
-              <div className="flex items-center justify-between gap-1 mb-1">
+              {/* Clic en el encabezado (número + horas) = SELECCIONAR el día; el resto de la celda crea evento. */}
+              <div
+                className="flex items-center justify-between gap-1 mb-1 -mx-0.5 px-0.5 rounded hover:bg-accent/10"
+                onClick={(e) => { e.stopPropagation(); (onDaySelect || onDayClick)(day); }}
+                title="Seleccionar este día"
+              >
                 <span
                   className={`inline-flex items-center justify-center text-[11px] tabular-nums ${
                     isToday ? 'w-5 h-5 rounded-full bg-accent text-white font-semibold' : inMonth ? 'text-digi-text' : 'text-digi-muted'
@@ -217,11 +230,12 @@ function MonthView({ currentDate, instances, onDayClick, onEventClick, onGenerat
           );
         })}
       </div>
+      </div>
     </div>
   );
 }
 
-function WeekView({ currentDate, instances, onDayClick, onEventClick, onGeneratedClick }: Props) {
+function WeekView({ currentDate, instances, onDayClick, onDaySelect, onEventClick, onGeneratedClick, fillHeight }: Props) {
   const weekDays = useMemo(() => {
     const start = new Date(currentDate);
     start.setDate(start.getDate() - start.getDay());
@@ -236,20 +250,25 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick, onGenerate
   const hours = Array.from({ length: WEEK_HOUR_END - WEEK_HOUR_START + 1 }, (_, i) => i + WEEK_HOUR_START);
   const today = new Date();
   const now = useEcuadorNow();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Al mostrar el calendario acotado, arranca el scroll en la mañana (07:00) en vez de 00:00.
+  useEffect(() => { if (fillHeight && scrollRef.current) scrollRef.current.scrollTop = 7 * HOUR_PX; }, [fillHeight]);
 
   return (
-    <div className="border border-digi-border rounded-lg overflow-hidden bg-digi-card">
-      <div className="grid" style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}>
+    <div className={`border border-digi-border rounded-lg overflow-hidden bg-digi-card ${fillHeight ? 'h-full flex flex-col' : ''}`}>
+      <div className="grid shrink-0" style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}>
         <div className="border-r border-b border-digi-border bg-digi-dark" />
         {weekDays.map((day) => {
           const isToday = sameDay(day, today);
+          const isSelected = sameDay(day, currentDate);
           return (
             <div
               key={day.toISOString()}
-              onClick={() => onDayClick(day)}
+              onClick={() => (onDaySelect || onDayClick)(day)}
+              title="Seleccionar este día"
               className={`px-2 py-2 text-center border-r border-b border-digi-border last:border-r-0 cursor-pointer transition-colors ${
-                isToday ? 'bg-accent-light/50' : 'bg-digi-dark hover:bg-black/[0.02]'
-              }`}
+                isToday ? 'bg-accent-light/50' : isSelected ? 'bg-accent-light/30' : 'bg-digi-dark hover:bg-black/[0.02]'
+              } ${isSelected && !isToday ? 'ring-1 ring-accent ring-inset' : ''}`}
             >
               <div className="text-[10px] font-semibold text-digi-muted" style={mf}>
                 {DAY_LABELS_ES_SHORT[day.getDay()]}
@@ -264,6 +283,7 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick, onGenerate
           );
         })}
       </div>
+      <div ref={scrollRef} className={fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : ''}>
       <div className="grid relative" style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}>
         <div className="border-r border-digi-border">
           {hours.map((h) => (
@@ -289,16 +309,19 @@ function WeekView({ currentDate, instances, onDayClick, onEventClick, onGenerate
           />
         ))}
       </div>
+      </div>
     </div>
   );
 }
 
-function DayView({ currentDate, instances, onDayClick, onEventClick, onGeneratedClick }: Props) {
+function DayView({ currentDate, instances, onDayClick, onEventClick, onGeneratedClick, fillHeight }: Props) {
   const hours = Array.from({ length: WEEK_HOUR_END - WEEK_HOUR_START + 1 }, (_, i) => i + WEEK_HOUR_START);
   const now = useEcuadorNow();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (fillHeight && scrollRef.current) scrollRef.current.scrollTop = 7 * HOUR_PX; }, [fillHeight]);
   return (
-    <div className="border border-digi-border rounded-lg overflow-hidden bg-digi-card">
-      <div className="grid" style={{ gridTemplateColumns: '56px 1fr' }}>
+    <div className={`border border-digi-border rounded-lg overflow-hidden bg-digi-card ${fillHeight ? 'h-full flex flex-col' : ''}`}>
+      <div className="grid shrink-0" style={{ gridTemplateColumns: '56px 1fr' }}>
         <div className="border-r border-b border-digi-border bg-digi-dark" />
         <div className="px-3 py-2 border-b border-digi-border bg-digi-dark flex items-center justify-between gap-2">
           <div className="text-[13px] font-semibold text-digi-text capitalize" style={mf}>
@@ -307,6 +330,7 @@ function DayView({ currentDate, instances, onDayClick, onEventClick, onGenerated
           <DayTotals totals={dayTotals(instances, currentDate)} />
         </div>
       </div>
+      <div ref={scrollRef} className={fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : ''}>
       <div className="grid" style={{ gridTemplateColumns: '56px 1fr' }}>
         <div className="border-r border-digi-border">
           {hours.map((h) => (
@@ -328,6 +352,7 @@ function DayView({ currentDate, instances, onDayClick, onEventClick, onGenerated
           onEventClick={onEventClick}
           onGeneratedClick={onGeneratedClick}
         />
+      </div>
       </div>
     </div>
   );

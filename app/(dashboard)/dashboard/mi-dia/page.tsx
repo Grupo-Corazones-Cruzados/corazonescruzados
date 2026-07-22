@@ -223,6 +223,8 @@ export default function MiDiaPage() {
   }, [view, currentDate]);
 
   const handleDayClick = (date: Date) => { setEditingEvent(null); setInitialDate(date); setInitialType('progreso'); setInitialTaskId(null); setCurrentDate(new Date(date)); setModalOpen(true); };
+  // Seleccionar un día (clic en el encabezado/número) — cambia el día enfocado sin abrir el formulario.
+  const handleDaySelect = (date: Date) => setCurrentDate(new Date(date));
   const openNew = (type: EventType) => { setEditingEvent(null); setInitialDate(new Date()); setInitialType(type); setInitialTaskId(null); setModalOpen(true); };
   const openTaskEvent = (alternativeId: number, dayStr: string) => {
     const base = new Date(`${dayStr}T09:00:00`);
@@ -321,21 +323,25 @@ export default function MiDiaPage() {
 
   return (
     <div>
-      <h1 className="text-[20px] font-semibold text-digi-text inline-flex items-center gap-2 mb-3" style={df}><CalendarDays className="w-5 h-5 text-accent" /> Mi día</h1>
       <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* Panel izquierdo: eventos del rango de la vista + botón Nuevo */}
       <aside className="w-full xl:w-[260px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
           <CalendarDays className="w-4 h-4 text-digi-muted" />
-          <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Eventos · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : 'Mes'}</span>
+          <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Eventos · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : dayHeader(ymd(currentDate))}</span>
           <button onClick={() => openNew('progreso')} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent text-white text-[11.5px] font-medium hover:bg-accent-hover transition-colors" style={mf}><Plus className="w-3 h-3" /> Nuevo</button>
         </div>
         <div className="p-2.5 space-y-3 max-h-[calc(100dvh-220px)] overflow-y-auto">
-          {eventGroups.length === 0 ? (
-            <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Sin eventos en esta vista.</p>
+          {(() => {
+            // En vista de MES el panel muestra solo el día seleccionado (currentDate);
+            // en semana/día conserva el agrupado por día del rango de la vista.
+            const panelGroups = view === 'month' ? eventGroups.filter((g) => g.day === ymd(currentDate)) : eventGroups;
+            const expanded = view === 'day' || view === 'month';
+            return panelGroups.length === 0 ? (
+            <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>{view === 'month' ? 'Sin eventos este día.' : 'Sin eventos en esta vista.'}</p>
           ) : (
-            eventGroups.map((g) => {
-              const openG = view === 'day' || openEventDays.has(g.day);
+            panelGroups.map((g) => {
+              const openG = expanded || openEventDays.has(g.day);
               const list = (
                 <div className="space-y-1.5">
                   {g.items.map((ev) => {
@@ -359,7 +365,7 @@ export default function MiDiaPage() {
                   })}
                 </div>
               );
-              if (view === 'day') return <div key={g.day}>{list}</div>;
+              if (expanded) return <div key={g.day}>{list}</div>;
               return (
                 <div key={g.day}>
                   <button onClick={() => toggleEventDay(g.day)} className="w-full flex items-center gap-1.5 py-0.5 text-left hover:text-digi-text transition-colors" style={df}>
@@ -372,14 +378,17 @@ export default function MiDiaPage() {
                 </div>
               );
             })
-          )}
+          );
+          })()}
         </div>
       </aside>
 
       <div className="flex-1 min-w-0 w-full">
-        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
+        {/* El contenedor del calendario no supera la altura de la página; su cuerpo
+            (la grilla de horas) se desplaza internamente para ver los horarios ocultos. */}
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col max-h-[calc(100dvh-4.5rem)]">
           {/* Command bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border shrink-0">
             <div className="flex items-center gap-2">
               <button onClick={goToday} className={`${BTN_SECONDARY} !py-1.5`}>Hoy</button>
               <div className="flex items-center gap-1">
@@ -406,17 +415,17 @@ export default function MiDiaPage() {
             </div>
           </div>
 
-          {/* Grid */}
-          <div className="p-3">
+          {/* Grid — llena el alto disponible del contenedor; scroll interno en el cuerpo */}
+          <div className="p-3 flex-1 min-h-0 flex flex-col">
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-digi-muted" style={mf}><CalendarDays className="w-4 h-4 animate-pulse" /> Cargando…</div>
             ) : (
-              <CalendarView view={view} currentDate={currentDate} instances={allInstances} onDayClick={handleDayClick} onEventClick={handleEventClick} onGeneratedClick={onGeneratedBlockClick} />
+              <CalendarView view={view} currentDate={currentDate} instances={allInstances} onDayClick={handleDayClick} onDaySelect={handleDaySelect} onEventClick={handleEventClick} onGeneratedClick={onGeneratedBlockClick} fillHeight />
             )}
           </div>
 
           {/* Leyenda */}
-          <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted" style={mf}>
+          <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted shrink-0" style={mf}>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.progreso}30`, borderLeft: `3px solid ${EVENT_COLORS.progreso}` }} /> Progreso</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.personal}30`, borderLeft: `3px solid ${EVENT_COLORS.personal}` }} /> Personal</span>
             <span className="ml-auto tabular-nums">Zona horaria: América/Guayaquil (GMT-5)</span>

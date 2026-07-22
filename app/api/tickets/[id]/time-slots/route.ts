@@ -8,6 +8,7 @@ import {
   loadTicketForSession, canManageTicket,
 } from '@/lib/tickets/schema';
 import { isGoogleWorkspaceConfigured, createMeetEvent, deleteMeetEvent } from '@/lib/integrations/google-workspace';
+import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 
 /** Clave para reconocer un mismo evento entre guardados (misma fecha + horario). */
 const slotKey = (date: string, start?: string | null, end?: string | null) =>
@@ -39,6 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     await ensureTicketSlotColumns();
     await ensureTicketActionColumns();
+    await ensureCalendarGuestColumns(); // columnas meeting_* del bloque en "Mi día"
     // Esquemas legados: start_time/end_time NOT NULL y CHECK de status restrictivo.
     await pool.query(`ALTER TABLE gcc_world.ticket_time_slots ALTER COLUMN start_time DROP NOT NULL`);
     await pool.query(`ALTER TABLE gcc_world.ticket_time_slots ALTER COLUMN end_time DROP NOT NULL`);
@@ -180,28 +182,33 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         let actionId: number | null = null;
 
         if (s.hasTimes) {
-          // Bloque OCUPADO en "Mi día" solo para días normales (los Meet ya viven en Google).
+          // Bloque OCUPADO (progreso) en "Mi día" para TODO día con horas, sea Meet o no.
+          // En días Meet guarda meeting_url para mostrar "Unirse", pero NO meeting_event_id:
+          // la reunión de Google la administra el propio slot, no este bloque (evita cancelarla
+          // por error si se borra el bloque desde el calendario).
           let calendarEventId: string | null = null;
-          if (!s.isEvent && ticket.member_id != null) {
+          if (ticket.member_id != null) {
             const cal = await client.query(
               `INSERT INTO gcc_world.member_calendar_events (
                  member_id, title, description, event_type, client_id,
                  start_at, end_at, all_day, timezone,
                  recurrence_type, recurrence_days, recurrence_interval, recurrence_until,
-                 color, status, created_by
+                 color, status, created_by, meeting_url, meeting_provider
                ) VALUES (
                  $1, $2, $3, 'progreso', $4,
                  $5, $6, FALSE, $7,
                  'none', NULL, 1, NULL,
-                 NULL, 'confirmed', $8
+                 NULL, 'confirmed', $8, $9, $10
                ) RETURNING id`,
               [
                 ticket.member_id,
-                `Sesión — ${ticket.title}`,
+                `${s.isEvent ? 'Reunión' : 'Sesión'} — ${ticket.title}`,
                 `Día de trabajo del ticket #${ticket.id}.`,
                 ticket.client_id,
                 ecuadorWallclockToISO(s.date, s.start!), ecuadorWallclockToISO(s.date, s.end!), ECUADOR_TZ,
                 user.userId || null,
+                s.isEvent ? s.meetingUrl : null,
+                s.isEvent && s.meetingUrl ? 'google_meet' : null,
               ],
             );
             calendarEventId = cal.rows[0]?.id != null ? String(cal.rows[0].id) : null;
