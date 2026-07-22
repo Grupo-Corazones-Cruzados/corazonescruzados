@@ -112,6 +112,9 @@ export default function ProjectDetailPage() {
   // Inline edit states
   const [editingTitle, setEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [editDesc, setEditDesc] = useState('');
+  const [savingDesc, setSavingDesc] = useState(false);
   const [editingClient, setEditingClient] = useState(false);
   const [editClient, setEditClient] = useState<{ clientId: string; clientEmail: string }>({ clientId: '', clientEmail: '' });
   const [editingBudget, setEditingBudget] = useState(false);
@@ -1181,16 +1184,8 @@ export default function ProjectDetailPage() {
           </div>
         </aside>
 
-        {/* ====== PRINCIPAL: Resumen + Requerimientos combinados (sin pestañas) ====== */}
+        {/* ====== PRINCIPAL: Requerimientos (la Descripción se movió al rail derecho) ====== */}
         <div className="flex-1 min-w-0 space-y-4 order-1 lg:order-2">
-          {(<>
-          {project.description && (
-            <div className="pixel-card">
-              <h3 className="text-[12px] font-semibold text-digi-text mb-2" style={pf}>Descripcion</h3>
-              <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{project.description}</p>
-            </div>
-          )}
-          </>)}
 
           {(<>
           {/* Requirements */}
@@ -1971,12 +1966,44 @@ export default function ProjectDetailPage() {
             </dl>
           </div>
 
+          {/* Descripción del proyecto (movida aquí, bajo Propiedades) — editable por el responsable */}
+          {(project.description || (isOwner && !isTerminal)) && (
+            <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Descripción</h3>
+                {isOwner && !isTerminal && !editingDesc && (
+                  <button onClick={() => { setEditDesc(project.description || ''); setEditingDesc(true); }} className="text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors" style={pf}>Editar</button>
+                )}
+              </div>
+              {editingDesc ? (
+                <div className="space-y-2">
+                  <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={5} placeholder="Descripción del proyecto…"
+                    className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-y" style={mf} />
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setEditingDesc(false)} className="text-[12px] text-digi-muted border border-digi-border rounded px-2.5 py-1 hover:text-digi-text transition-colors" style={mf}>Cancelar</button>
+                    <button onClick={async () => {
+                      setSavingDesc(true);
+                      try {
+                        const res = await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description: editDesc }) });
+                        if (!res.ok) throw new Error((await res.json()).error || 'Error');
+                        setEditingDesc(false); await fetchProject(); toast.success('Descripción actualizada');
+                      } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
+                      finally { setSavingDesc(false); }
+                    }} disabled={savingDesc} className="text-[12px] font-medium text-white bg-accent rounded px-2.5 py-1 hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>{savingDesc ? 'Guardando…' : 'Guardar'}</button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{project.description || <span className="text-digi-muted">Sin descripción. Pulsa “Editar” para agregar una.</span>}</p>
+              )}
+            </div>
+          )}
+
           {/* Pagos (facturado vs pendiente) */}
           {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0) && (() => {
             const pct = payments.total > 0 ? Math.min(100, (payments.invoiced / payments.total) * 100) : 0;
             return (
               <div className="pixel-card">
-                <h3 className="text-[12px] font-semibold text-digi-text mb-2" style={pf}>Pagos</h3>
+                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Pagos</h3>
                 <div className="space-y-1 text-[12px]" style={mf}>
                   <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(payments.total)}</span></div>
                   <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(payments.invoiced)}</span></div>
@@ -2000,10 +2027,10 @@ export default function ProjectDetailPage() {
             );
           })()}
 
-          {/* Acciones (estado del proyecto / participación) */}
-          {(isOwner || isMember) && (
+          {/* Acciones (estado del proyecto / participación) — oculto en cotización */}
+          {(isOwner || isMember) && project.status !== 'cotizacion' && (
             <div className="pixel-card">
-              <h3 className="text-[12px] font-semibold text-digi-text mb-3" style={pf}>Acciones</h3>
+              <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Acciones</h3>
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
                 {/* Participant: Desistir / Salida Supervisada */}
