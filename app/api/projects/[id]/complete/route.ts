@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createInvoiceFromProject, sendInvoiceToSri, projectHasInvoice } from '@/lib/integrations/sri';
 import { addProjectIncomeToFinance } from '@/lib/finance';
+import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
@@ -93,6 +94,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // Sign and send to SRI
         if (invoiceId) {
           sriResult = await sendInvoiceToSri(invoiceId);
+
+          // Fase 2: crea/actualiza la cuenta de facturación del cliente del proyecto
+          // (para prellenar las próximas facturas del mismo cliente).
+          try {
+            if (clientId) await upsertBillingForClient(clientId, {
+              id_type: client_id_type, ruc: client_ruc, name: client_name,
+              email: client_email, phone: client_phone, address: client_address,
+            });
+          } catch (e: any) { console.error('[project complete] billing upsert error:', e.message); }
 
           // Send invoice email to client
           if (send_email && client_email && sriResult?.authorized) {

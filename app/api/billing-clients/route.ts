@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureBillingClientsTable } from '@/lib/billing-clients';
+import { ensureBillingClientsTable, getBillingForClient } from '@/lib/billing-clients';
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,6 +10,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     await ensureBillingClientsTable();
+
+    // `?portal_client_id=` → la cuenta de facturación (1 por cliente) para PRELLENAR el modal.
+    const portalClientId = new URL(req.url).searchParams.get('portal_client_id');
+    if (portalClientId) {
+      const bc = await getBillingForClient(portalClientId);
+      return NextResponse.json({ data: bc || null });
+    }
 
     const search = (new URL(req.url).searchParams.get('search') || '').trim();
     const params: any[] = [];

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoiceFromTicket, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addTicketIncomeToFinance } from '@/lib/finance';
+import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     // Load ticket
     const { rows: [ticket] } = await pool.query(
-      `SELECT id, title, member_id, estimated_cost, status FROM gcc_world.tickets WHERE id = $1`,
+      `SELECT id, title, member_id, estimated_cost, status, client_id FROM gcc_world.tickets WHERE id = $1`,
       [ticket_id]
     );
     if (!ticket) return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 });
@@ -53,6 +54,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (!client_name?.trim()) return NextResponse.json({ error: 'Nombre del cliente requerido' }, { status: 400 });
+    // Fase 2: para facturar, el ticket debe tener un cliente asociado.
+    if (!ticket.client_id) {
+      return NextResponse.json({ error: 'Asigna un cliente al ticket antes de facturar.' }, { status: 400 });
+    }
 
     // Normalize editable items array sent from the modal
     const invoice_items = Array.isArray(rawItems)
@@ -92,6 +97,16 @@ export async function POST(req: NextRequest) {
     try {
       await addTicketIncomeToFinance(String(ticket.id), ticket.title, total);
     } catch (finErr: any) { console.error('Finance ticket registration error:', finErr.message); }
+
+    // Fase 2: enlaza la factura al cliente del ticket y crea/actualiza su cuenta de facturación
+    // (para prellenar las próximas facturas del mismo cliente).
+    try {
+      await pool.query(`UPDATE gcc_world.invoices SET client_id = $1 WHERE id = $2`, [ticket.client_id, invoiceId]);
+      await upsertBillingForClient(ticket.client_id, {
+        id_type: client_id_type, ruc: client_ruc, name: client_name,
+        email: client_email, phone: client_phone, address: client_address,
+      });
+    } catch (e: any) { console.error('[from-ticket] billing upsert error:', e.message); }
 
     // Sign and send to SRI
     const sriResult = await sendInvoiceToSri(invoiceId);

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addProjectIncomeToFinance, addTicketIncomeToFinance } from '@/lib/finance';
+import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
@@ -77,6 +78,13 @@ export async function POST(req: NextRequest) {
               `UPDATE gcc_world.invoices SET project_id = $1${clientId ? ', client_id = $2' : ''} WHERE id = ${clientId ? '$3' : '$2'}`,
               clientId ? [srcId, clientId, invoiceId] : [srcId, invoiceId]
             );
+          }
+          // Fase 2: actualiza la cuenta de facturación del cliente con los datos re-emitidos.
+          if (clientId) {
+            await upsertBillingForClient(clientId, {
+              id_type: client_id_type, ruc: client_ruc, name: client_name,
+              email: client_email, phone: client_phone, address: client_address,
+            });
           }
         } catch (e: any) {
           console.error('[manual] refactura re-complete error:', e.message);
