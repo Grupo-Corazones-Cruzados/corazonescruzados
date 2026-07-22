@@ -385,6 +385,43 @@ export async function sendProposalDecisionToClient(params: {
 const MEMBER_TZ = 'America/Guayaquil';
 
 /**
+ * Correo de un RECORDATORIO (módulo Recordatorios). Se envía con frecuencia escalada según
+ * se acerca la fecha, y un último correo cuando VENCE. Incluye título, fecha/hora, tareas
+ * pendientes y un botón al módulo.
+ */
+export async function sendReminderEmail(params: {
+  email: string;
+  name?: string | null;
+  title: string;
+  remindAt?: string | Date | null;
+  tasks?: { text: string; done?: boolean }[];
+  notes?: string | null;
+  link: string;
+  expired?: boolean;
+}) {
+  const when = params.remindAt ? formatEmailDateTime(new Date(params.remindAt), MEMBER_TZ) : null;
+  const pending = (params.tasks || []).filter((t) => !t.done);
+  const tasksHtml = pending.length
+    ? `<ul style="margin:8px 0 20px;padding-left:18px;color:${CORP.text};font-family:${FONT};font-size:13px;">${pending.map((t) => `<li style="margin:4px 0;">${escapeHtml(t.text)}</li>`).join('')}</ul>`
+    : '';
+  const html = emailShell(
+    emailBadge(params.expired ? 'RECORDATORIO VENCIDO' : 'RECORDATORIO', params.expired ? CORP.danger : CORP.accent) +
+    emailHeading(escapeHtml(params.title), params.expired ? 'Se cumplió la fecha y hora del recordatorio.' : 'Se acerca la fecha de tu recordatorio.') +
+    (when ? emailInfoBox('FECHA Y HORA', when, 'Zona horaria: Ecuador (GMT-5)') : '') +
+    (params.notes ? emailParagraph(escapeHtml(params.notes)) : '') +
+    (tasksHtml ? emailParagraph('<strong>Tareas pendientes:</strong>') + tasksHtml : '') +
+    emailButton(params.link, 'Ver recordatorio') +
+    (params.expired ? emailNote('Este recordatorio ha vencido; no recibirás más correos de él.', 'center') : ''),
+  );
+  return deliver({
+    from: FROM_EMAIL,
+    to: params.email,
+    subject: `${params.expired ? 'Vencido' : 'Recordatorio'}: ${params.title} — GCC World`,
+    html,
+  });
+}
+
+/**
  * Formatea un instante (Date UTC) en una zona horaria EXPLÍCITA, independiente de la
  * zona del servidor. Sin esto, el correo mostraba la hora local del servidor (UTC en
  * Railway), que no corresponde ni a la del miembro ni a la del cliente.
