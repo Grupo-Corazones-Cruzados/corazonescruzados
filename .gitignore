@@ -46,3 +46,9 @@ godot_limpio.png
 landing_ok.png
 godot_blanco.png
 /*.png
+
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
+
+# macOS
+.DS_Store

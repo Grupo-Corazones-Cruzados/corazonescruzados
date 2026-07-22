@@ -156,13 +156,6 @@ export default function ProjectDetailPage() {
   const [completeCurrency, setCompleteCurrency] = useState('USD');
   const [completeExchangeRate, setCompleteExchangeRate] = useState('1');
   const [currencies, setCurrencies] = useState<{ code: string; symbol: string; name: string; rate: number }[]>([]);
-  const [clientHistory, setClientHistory] = useState<{
-    id_type: string; client_ruc: string; client_name: string;
-    client_email: string; client_phone: string; client_address: string;
-    last_used: string;
-  }[]>([]);
-  const [historySearch, setHistorySearch] = useState('');
-  const [historyOpen, setHistoryOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin';
   const isMember = user?.role === 'member';
@@ -279,15 +272,6 @@ export default function ProjectDetailPage() {
     fetch('/api/digimundo/projects').then(r => r.json()).then(d => setDigiProjects(d.data || [])).catch(() => {});
     fetch('/api/exchange-rates').then(r => r.json()).then(d => setCurrencies(d.currencies || [])).catch(() => {});
   }, [isAdmin]);
-
-  // Carga clientes ya facturados al abrir el modal de completar (para autocompletar adquirente)
-  useEffect(() => {
-    if (!showCompleteModal) return;
-    fetch('/api/invoices/clients-history')
-      .then(r => r.json())
-      .then(d => setClientHistory(d.data || []))
-      .catch(() => setClientHistory([]));
-  }, [showCompleteModal]);
 
   // Fetch members for assignment dropdown (accepted + all active)
   useEffect(() => {
@@ -450,32 +434,10 @@ export default function ProjectDetailPage() {
     setCompleteItems(reqItems.length > 0 ? reqItems : [{ description: `Servicios: ${project.title}`, quantity: '1', unitPrice: String(Number(project.final_cost) || 0), ivaRate: '0', discount: '0' }]);
     setCompleteAdditionalFields([]);
     setCompleteSendEmail(true);
-    setHistoryOpen(false);
-    setHistorySearch('');
     setAbonoMode(false);
     setAbonoAmount('');
     setShowCompleteModal(true);
   };
-
-  // Autocompleta el adquirente desde un cliente ya facturado
-  const applyPastClient = (c: typeof clientHistory[0]) => {
-    setCompleteIdType(c.id_type);
-    setCompleteClientRuc(c.client_ruc);
-    setCompleteClientName(c.client_name);
-    setCompleteClientEmail(c.client_email);
-    setCompleteClientPhone(c.client_phone);
-    setCompleteClientAddress(c.client_address);
-    setHistoryOpen(false);
-    setHistorySearch('');
-    toast.success(`Datos de ${c.client_name} cargados`);
-  };
-
-  const filteredHistory = historySearch.trim()
-    ? clientHistory.filter(c => {
-        const q = historySearch.trim().toLowerCase();
-        return c.client_name.toLowerCase().includes(q) || c.client_ruc.toLowerCase().includes(q);
-      })
-    : clientHistory;
 
   const handleComplete = async (skipInvoice = false) => {
     const pending = Number(payments?.pending ?? 0);

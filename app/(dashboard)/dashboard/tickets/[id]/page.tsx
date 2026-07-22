@@ -105,13 +105,6 @@ export default function TicketDetailPage() {
   const [completeClientEmail, setCompleteClientEmail] = useState('');
   const [completeClientPhone, setCompleteClientPhone] = useState('');
   const [completeClientAddress, setCompleteClientAddress] = useState('');
-  const [clientHistory, setClientHistory] = useState<{
-    id_type: string; client_ruc: string; client_name: string;
-    client_email: string; client_phone: string; client_address: string;
-    last_used: string;
-  }[]>([]);
-  const [historySearch, setHistorySearch] = useState('');
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [completePaymentCode, setCompletePaymentCode] = useState('20');
   const [completeItems, setCompleteItems] = useState<{ description: string; quantity: string; unitPrice: string; ivaRate: string; discount: string }[]>([]);
   const [completeAdditionalFields, setCompleteAdditionalFields] = useState<{ name: string; value: string }[]>([]);
@@ -173,34 +166,6 @@ export default function TicketDetailPage() {
       await fetchTicket();
     } catch (e: any) { toast.error(e.message); }
   };
-
-  // Carga clientes ya facturados al abrir el modal de completar (para autocompletar adquirente)
-  useEffect(() => {
-    if (!completeModal) return;
-    fetch('/api/invoices/clients-history')
-      .then(r => r.json())
-      .then(d => setClientHistory(d.data || []))
-      .catch(() => setClientHistory([]));
-  }, [completeModal]);
-
-  const applyPastClient = (c: typeof clientHistory[0]) => {
-    setCompleteIdType(c.id_type);
-    setCompleteClientRuc(c.client_ruc);
-    setCompleteClientName(c.client_name);
-    setCompleteClientEmail(c.client_email);
-    setCompleteClientPhone(c.client_phone);
-    setCompleteClientAddress(c.client_address);
-    setHistoryOpen(false);
-    setHistorySearch('');
-    toast.success(`Datos de ${c.client_name} cargados`);
-  };
-
-  const filteredHistory = historySearch.trim()
-    ? clientHistory.filter(c => {
-        const q = historySearch.trim().toLowerCase();
-        return c.client_name.toLowerCase().includes(q) || c.client_ruc.toLowerCase().includes(q);
-      })
-    : clientHistory;
 
   useEffect(() => {
     fetch('/api/exchange-rates').then(r => r.json()).then(d => setCurrencies(d.currencies || [])).catch(() => {});

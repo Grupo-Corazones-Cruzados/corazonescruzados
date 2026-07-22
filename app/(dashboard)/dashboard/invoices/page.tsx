@@ -63,23 +63,12 @@ function InvoicesPageInner() {
   const [selected, setSelected] = useState<any>(null);
   const isAdmin = user?.role === 'admin';
 
-  // Manual invoice modal states
+  // Factura manual: sólo se usa hoy para REFACTURAR (re-emitir una factura anulada) → paso 'form'.
   const [showManual, setShowManual] = useState(false);
-  const [manualType, setManualType] = useState<'completo' | 'con_fallo'>('completo');
-  const [manualStep, setManualStep] = useState<'type' | 'projects' | 'form' | 'paid' | 'processing'>('type');
-
-  // Paid amount (con fallo)
-  const [mPaidAmount, setMPaidAmount] = useState('');
-
-  // Project selector
-  const [projectSearch, setProjectSearch] = useState('');
-  const [projectResults, setProjectResults] = useState<any[]>([]);
-  const [selectedProjects, setSelectedProjects] = useState<any[]>([]);
-  // Al refacturar (re-emitir una factura anulada) recordamos el ticket/proyecto de origen
-  // para volver a marcarlo como completado y re-enlazar la nueva factura a su origen.
+  const [manualStep, setManualStep] = useState<'form' | 'processing'>('form');
+  // Al refacturar recordamos el ticket/proyecto de origen para volver a marcarlo como
+  // completado y re-enlazar la nueva factura a su origen.
   const [refactorSource, setRefactorSource] = useState<{ type: 'ticket' | 'project'; id: number; client_id: number | null } | null>(null);
-  const [searchingProjects, setSearchingProjects] = useState(false);
-  const searchTimeout = useRef<any>(null);
 
   // Client form
   const [mIdType, setMIdType] = useState('07');
@@ -170,36 +159,6 @@ function InvoicesPageInner() {
       })
     : clientHistory;
 
-  // Search projects for manual invoice
-  const searchProjects = useCallback(async (q: string) => {
-    if (!q.trim()) { setProjectResults([]); return; }
-    setSearchingProjects(true);
-    try {
-      const res = await fetch(`/api/projects?search=${encodeURIComponent(q)}&limit=20`);
-      const data = await res.json();
-      // Filter out already-selected projects
-      const selectedIds = new Set(selectedProjects.map(p => p.id));
-      setProjectResults((data.data || []).filter((p: any) => !selectedIds.has(p.id)));
-    } catch { setProjectResults([]); }
-    finally { setSearchingProjects(false); }
-  }, [selectedProjects]);
-
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => searchProjects(projectSearch), 300);
-    return () => clearTimeout(searchTimeout.current);
-  }, [projectSearch, searchProjects]);
-
-  const addProject = (p: any) => {
-    setSelectedProjects(prev => [...prev, p]);
-    setProjectResults(prev => prev.filter(r => r.id !== p.id));
-    setProjectSearch('');
-  };
-
-  const removeProject = (id: string) => {
-    setSelectedProjects(prev => prev.filter(p => p.id !== id));
-  };
-
   // Refactor: prefill modal with data from an existing invoice (e.g. a voided one)
   const openRefactorModal = useCallback(async (sourceId: string) => {
     try {
@@ -224,11 +183,6 @@ function InvoicesPageInner() {
       }
 
       setManualStep('form');
-      setManualType('completo');
-      setMPaidAmount('');
-      setSelectedProjects([]);
-      setProjectSearch('');
-      setProjectResults([]);
       setMIdType(inv.client_id_type || '07');
       setMClientName(inv.client_name_sri || 'CONSUMIDOR FINAL');
       setMClientRuc(inv.client_ruc || '9999999999999');
@@ -270,156 +224,6 @@ function InvoicesPageInner() {
     router.replace('/dashboard/invoices');
   }, [searchParams, isAdmin, openRefactorModal, router]);
 
-  // Advance from project selection to client form
-  const goToForm = async () => {
-    // Load requirements with their costs from selected projects
-    const allItems: typeof mItems = [];
-    for (const p of selectedProjects) {
-      try {
-        // Use the invoice-items endpoint that aggregates assignment costs properly
-        const res = await fetch(`/api/projects/${p.id}/invoice-items`);
-        const data = await res.json();
-        const items = data.data || [];
-        if (items.length > 0) {
-          for (const it of items) {
-            allItems.push({
-              description: it.description,
-              quantity: '1',
-              unitPrice: String(Number(it.cost) || 0),
-              ivaRate: '0',
-              discount: '0',
-            });
-          }
-        } else {
-          allItems.push({
-            description: `Servicios: ${p.title}`,
-            quantity: '1',
-            unitPrice: String(Number(p.final_cost) || 0),
-            ivaRate: '0',
-            discount: '0',
-          });
-        }
-      } catch {
-        allItems.push({
-          description: `Servicios: ${p.title}`,
-          quantity: '1',
-          unitPrice: String(Number(p.final_cost) || 0),
-          ivaRate: '0',
-          discount: '0',
-        });
-      }
-    }
-    setMItems(allItems.length > 0 ? allItems : [{ description: '', quantity: '1', unitPrice: '0', ivaRate: '0', discount: '0' }]);
-    setManualStep('form');
-  };
-
-  // For "con fallo": calculate items total in USD (before currency conversion)
-  const itemsTotalUsd = mItems.reduce((s, it) => {
-    const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
-    return s + base;
-  }, 0);
-
-  // Apply proportional discounts based on paid amount
-  const applyDiscountsAndSubmit = () => {
-    const paidUsd = Number(mPaidAmount) || 0;
-    if (paidUsd <= 0 || paidUsd >= itemsTotalUsd) {
-      // No discount needed or invalid
-      handleManualSubmit();
-      return;
-    }
-    const totalDiscount = itemsTotalUsd - paidUsd;
-    // Distribute discount proportionally across items based on each item's weight
-    const updatedItems = mItems.map(it => {
-      const itemBase = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
-      const weight = itemsTotalUsd > 0 ? itemBase / itemsTotalUsd : 0;
-      const itemDiscount = Math.round(totalDiscount * weight * 100) / 100;
-      return { ...it, discount: String(itemDiscount) };
-    });
-    // Fix rounding: adjust last item so total discount is exact
-    const appliedDiscount = updatedItems.reduce((s, it) => s + Number(it.discount), 0);
-    const diff = Math.round((totalDiscount - appliedDiscount) * 100) / 100;
-    if (diff !== 0 && updatedItems.length > 0) {
-      const last = updatedItems[updatedItems.length - 1];
-      last.discount = String(Math.round((Number(last.discount) + diff) * 100) / 100);
-    }
-    setMItems(updatedItems);
-    // Submit after state update via setTimeout
-    setTimeout(() => handleManualSubmitWithItems(updatedItems), 50);
-  };
-
-  const handleManualSubmitWithItems = async (itemsToUse: typeof mItems) => {
-    setManualStep('processing');
-    setProcessing(true);
-    setProcessStep('Guardando datos del cliente...');
-    try {
-      await new Promise(r => setTimeout(r, 300));
-      setProcessStep('Generando factura electronica...');
-
-      const res = await fetch('/api/invoices/manual', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project_ids: selectedProjects.map(p => p.id),
-          client_id_type: mIdType,
-          client_name: mClientName,
-          client_ruc: mClientRuc,
-          client_email: mClientEmail,
-          client_phone: mClientPhone,
-          client_address: mClientAddress,
-          payment_code: mPaymentCode,
-          send_email: mSendEmail,
-          currency: mCurrency,
-          exchange_rate: Number(mExchangeRate) || 1,
-          invoice_items: itemsToUse.map(it => ({
-            description: it.description,
-            quantity: Number(it.quantity) || 1,
-            unitPrice: Number(it.unitPrice) || 0,
-            ivaRate: Number(it.ivaRate) || 0,
-            discount: Number(it.discount) || 0,
-          })),
-          additional_fields: mAdditionalFields.filter(f => f.name.trim() && f.value.trim()),
-        }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || 'Error al crear factura');
-        setManualStep('form');
-        setProcessing(false);
-        return;
-      }
-
-      const sriOk = data.sriResult?.authorized;
-      const sriError = data.sriResult?.error;
-
-      if (data.invoiceId && sriOk) {
-        setProcessStep('Factura autorizada por el SRI');
-      } else if (data.invoiceId && sriError) {
-        setProcessStep(`Factura generada — SRI: ${sriError}`);
-      }
-
-      await new Promise(r => setTimeout(r, 500));
-      setProcessStep('Proceso completado');
-      await new Promise(r => setTimeout(r, 800));
-
-      toast.success(
-        'Factura manual creada' +
-        (sriOk ? ' — Autorizada por el SRI' : '') +
-        (mSendEmail && mClientEmail && sriOk ? ' — Enviada por correo' : '')
-      );
-      if (sriError && !sriOk) toast.error(`SRI: ${sriError}`);
-      if (refactorSource && sriOk) toast.success(`${refactorSource.type === 'ticket' ? 'Ticket' : 'Proyecto'} marcado como completado nuevamente`);
-
-      setRefactorSource(null);
-      setShowManual(false);
-      fetchData();
-    } catch {
-      toast.error('Error al crear factura manual');
-      setManualStep('form');
-      setProcessing(false);
-    }
-  };
-
   const handleManualSubmit = async () => {
     setManualStep('processing');
     setProcessing(true);
@@ -432,7 +236,7 @@ function InvoicesPageInner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          project_ids: selectedProjects.map(p => p.id),
+          project_ids: [],
           client_id_type: mIdType,
           client_name: mClientName,
           client_ruc: mClientRuc,
@@ -504,13 +308,6 @@ function InvoicesPageInner() {
     (mIdType === '07' || mClientEmail.trim()) && mItems.length > 0 &&
     !(mIdType === '04' && mClientRuc.length !== 13) && !(mIdType === '05' && mClientRuc.length !== 10) &&
     !consumidorFinalOver50;
-
-  const STATUS_LABELS: Record<string, string> = {
-    draft: 'Borrador', open: 'Abierto', in_progress: 'En Progreso', in_review: 'En Revision', completed: 'Completado', cancelled: 'Cancelado',
-  };
-  const STATUS_V_PROJECT: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-    draft: 'default', open: 'info', in_progress: 'warning', in_review: 'info', completed: 'success', cancelled: 'error',
-  };
 
   return (
     <div>
@@ -847,15 +644,6 @@ function InvoicesPageInner() {
                     className="text-[12px] text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={pf}>+ Campo adicional</button>
                 </div>
 
-                {/* Selected projects summary */}
-                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Proyectos ({selectedProjects.length})</h4>
-                <div className="space-y-1">
-                  {selectedProjects.map(p => (
-                    <div key={p.id} className="text-[11px] text-digi-muted px-2 py-1 border border-digi-border/30" style={mf}>
-                      #{p.id} — {p.title}
-                    </div>
-                  ))}
-                </div>
               </div>
 
               {/* RIGHT: Detalle + Totales */}
@@ -950,79 +738,6 @@ function InvoicesPageInner() {
             </div>
           </div>
 
-        ) : manualStep === 'paid' ? (
-          /* Paid amount step (con fallo) */
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] px-1.5 py-0.5 border border-orange-500/40 text-orange-400" style={pf}>CON FALLO</span>
-            </div>
-            <p className="text-[10px] text-digi-muted" style={mf}>Ingresa el monto que el cliente envio (en USD). El descuento se distribuira proporcionalmente entre los requerimientos.</p>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div>
-                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Total real de requerimientos (USD)</label>
-                  <div className="px-3 py-2 bg-digi-darker border border-digi-border text-xs text-digi-text" style={mf}>
-                    ${fmt2(itemsTotalUsd)}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[11px] text-accent mb-0.5 block" style={pf}>Monto pagado por el cliente (USD) <span className="text-red-600">*</span></label>
-                  <input value={mPaidAmount} onChange={e => setMPaidAmount(e.target.value)}
-                    type="number" min="0.01" step="0.01" placeholder="0.00"
-                    className="w-full px-3 py-2 bg-digi-darker border-2 border-accent/50 text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                </div>
-                {mCurrency !== 'USD' && Number(mPaidAmount) > 0 && (
-                  <div className="px-2 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent" style={mf}>
-                    En {mCurrency}: {currencies.find(c => c.code === mCurrency)?.symbol || ''}{fmt2((Number(mPaidAmount) * (Number(mExchangeRate) || 1)))}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                {Number(mPaidAmount) > 0 && Number(mPaidAmount) < itemsTotalUsd && (
-                  <>
-                    <div>
-                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Descuento total a aplicar (USD)</label>
-                      <div className="px-3 py-2 bg-red-50 border border-red-300 text-xs text-red-600 font-bold" style={mf}>
-                        -${fmt2((itemsTotalUsd - Number(mPaidAmount)))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Distribucion por item</label>
-                      <div className="space-y-1 max-h-40 overflow-y-auto">
-                        {mItems.map((it, i) => {
-                          const itemBase = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0);
-                          const weight = itemsTotalUsd > 0 ? itemBase / itemsTotalUsd : 0;
-                          const itemDiscount = Math.round((itemsTotalUsd - Number(mPaidAmount)) * weight * 100) / 100;
-                          return (
-                            <div key={i} className="flex justify-between text-[11px] px-2 py-1 border border-digi-border/30" style={mf}>
-                              <span className="text-digi-muted truncate max-w-[60%]">{it.description || `Item ${i + 1}`}</span>
-                              <span className="text-red-600">-${fmt2(itemDiscount)}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </>
-                )}
-                {Number(mPaidAmount) > 0 && Number(mPaidAmount) >= itemsTotalUsd && (
-                  <div className="px-3 py-2 border border-amber-300 bg-amber-50 text-[11px] text-amber-700" style={mf}>
-                    El monto pagado es igual o mayor al total. No se aplicara descuento. Usa el tipo "Completo" en su lugar.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3 border-t border-digi-border">
-              <button onClick={() => setManualStep('form')} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Atras</button>
-              <button onClick={applyDiscountsAndSubmit}
-                disabled={!Number(mPaidAmount) || Number(mPaidAmount) <= 0 || Number(mPaidAmount) >= itemsTotalUsd}
-                className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
-                Generar Factura con Descuento
-              </button>
-            </div>
-          </div>
         ) : null}
       </PixelModal>
     </div>
