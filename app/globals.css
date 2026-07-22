@@ -1066,6 +1066,11 @@ html {
 .corp.dark .bg-\[\#faf9f8\] { background-color: var(--color-digi-darker) !important; }
 .corp.dark .bg-\[\#f3f2f1\] { background-color: #2d2c2b !important; }
 .corp.dark .bg-\[\#edebe9\] { background-color: #3b3a39 !important; }
+/* Variantes :hover de literales/blancos claros → no deben verse blancas en oscuro. */
+.corp.dark .hover\:bg-white:hover { background-color: rgba(255,255,255,0.06) !important; }
+.corp.dark .hover\:bg-\[\#f3f2f1\]:hover { background-color: rgba(255,255,255,0.07) !important; }
+.corp.dark .hover\:bg-\[\#faf9f8\]:hover { background-color: rgba(255,255,255,0.05) !important; }
+.corp.dark .hover\:bg-\[\#f8f8f8\]:hover { background-color: rgba(255,255,255,0.05) !important; }
 
 .corp.dark .bg-black\/\[0\.02\],
 .corp.dark .bg-black\/\[0\.03\],

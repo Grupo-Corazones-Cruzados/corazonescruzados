@@ -72,18 +72,18 @@ export default function DetailHeader({ breadcrumb, title, status, chips, actions
                   onClick={() => setOpen((o) => !o)}
                   aria-label="Más acciones"
                   aria-expanded={open}
-                  className="w-9 h-9 flex items-center justify-center border border-digi-border rounded text-digi-muted hover:bg-[#f3f2f1] hover:text-digi-text transition-colors"
+                  className={`w-9 h-9 flex items-center justify-center border rounded transition-colors ${open ? 'border-accent/40 bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:bg-accent/10 hover:text-accent hover:border-accent/40'}`}
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
                 {open && (
-                  <div className="absolute right-0 top-full mt-1 z-30 min-w-44 bg-digi-card border border-digi-border shadow-lg rounded py-1">
+                  <div className="absolute right-0 top-full mt-1.5 z-30 min-w-48 bg-digi-card border border-digi-border shadow-lg rounded-lg p-1">
                     {overflow!.map((it, i) => (
                       <button
                         key={i}
                         type="button"
                         onClick={() => { it.onClick(); setOpen(false); }}
-                        className={`w-full text-left px-3 py-2 text-[11px] hover:bg-accent/10 transition-colors ${it.danger ? 'text-red-400' : 'text-digi-text'}`}
+                        className={`w-full text-left px-2.5 py-1.5 text-[12px] rounded-md transition-colors ${it.danger ? 'text-red-500 hover:bg-red-500/10' : 'text-digi-text hover:bg-accent/10'}`}
                         style={{ fontFamily: 'var(--font-body)' }}
                       >
                         {it.label}
