@@ -134,7 +134,13 @@ async function runAgent({ prompt, model, resume, memberId }) {
       systemPrompt: SYSTEM_PROMPT,
       mcpServers: { gcc: mcp },
       allowedTools: ['mcp__gcc__list_my_projects'],
-      permissionMode: 'bypassPermissions',
+      // NO usamos 'bypassPermissions' (pasa --dangerously-skip-permissions, que falla como
+      // root en Railway). En su lugar, un callback aprueba SOLO nuestra herramienta (read-only)
+      // y niega cualquier otra — sin prompts (headless).
+      canUseTool: async (toolName, input) =>
+        toolName === 'mcp__gcc__list_my_projects'
+          ? { behavior: 'allow', updatedInput: input }
+          : { behavior: 'deny', message: 'Herramienta no permitida en este agente' },
       settingSources: [],      // no cargar settings del filesystem
       maxTurns: 14,
       ...(resume ? { resume } : {}),
