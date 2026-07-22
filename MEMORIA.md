@@ -1407,6 +1407,29 @@ Stack estándar de la casa, con particularidades de este repo:
     (`showTeamModal` / `showProposalsModal`) con agregar/quitar participante y aceptar/rechazar propuestas.
     Helpers reutilizables `renderAvatar/renderTeamResponsible/renderParticipantRow/renderProposalCompact/
     renderProposalFull` + handlers `acceptBid/rejectBid`. En móvil el centro va primero (`order`).
+  - **MÓDULO COTIZACIONES con Agente SDK (Fase 1, 2026-07-22).** Nuevo estado de proyecto **`cotizacion`**
+    (antes de `draft`; TEXT libre, sin DDL): proyectos aún NO aprobados por el cliente (los de Nuevo/Solicitar
+    proyecto ya tienen aprobación). Tab "Cotizaciones" en el rail; transición `cotizacion → open/draft/cancelled`;
+    excluido del listado público de miembros. **Botón "Nueva cotización"** (candidato/miembro) → **panel lateral
+    IZQUIERDO** (`showQuote`) con **servicio** (`services.base_price` tratado como **tarifa/hora**), **detalle**,
+    **instrucciones adicionales** y **selector de agente** (hoy solo "Cotizaciones Software"). `POST /api/quotes/generate`
+    crea el proyecto (privado, cliente pendiente=NULL, responsable=usuario), llama al **worker** y **materializa**
+    requerimientos (`project_requirements.cost`) + subtareas (`requirement_items`) + fecha límite (la pone la IA).
+    Chat flotante **GCC Bot** (`components/cotizaciones/GccBotChat`, solo en estado `cotizacion`) → `POST
+    /api/quotes/[id]/chat` reanuda la sesión del agente, re-materializa y **versiona** (`quote_versions`). En
+    `cotizacion` se ocultan Imágenes y la pestaña DigiMundo. Costo = horas × tarifa/hora (salvo precio fijado en
+    instrucciones). Tablas nuevas (`lib/cotizaciones/schema.ts` `ensureQuoteTables`): `quote_sessions`
+    (`worker_session_id`, servicio, detalle, instrucciones), `quote_versions`, `project_observations`.
+  - **Worker de cotizaciones (Agent SDK, Opus 4.8) — infra.** Servicio **aislado** `services/cotizador-worker/`
+    (package.json propio: `@anthropic-ai/claude-agent-sdk` + `zod@4` — la web usa zod3, por eso se separa). HTTP
+    (`/generate`, `/chat`, `/health`) con auth por token compartido `x-worker-token` (fail-closed). Mantiene la
+    **sesión viva** del SDK y la reanuda por `sessionId`. Herramienta `list_my_projects` (solo lectura, Postgres)
+    para calibrar precios con proyectos previos del miembro. **Thinking extendido DESACTIVADO** (pedido del usuario).
+    Cliente en la web: `lib/cotizaciones/worker.ts`. **Env:** `ANTHROPIC_API_KEY` (worker), `COTIZADOR_WORKER_URL`
+    + `COTIZADOR_WORKER_TOKEN` (web↔worker), `COTIZADOR_MODEL=claude-opus-4-8`. **Deploy:** nuevo servicio Railway
+    con Root Directory `services/cotizador-worker` (ver su README). **Probado end-to-end local con Opus 4.8** (genera
+    + chat con reanudación). **Fase 2 pendiente:** compartir por token + correo + aceptar/rechazar del cliente
+    externo + chat externo + pestaña Observaciones para cliente/externo (reemplaza las observaciones de DigiMundo).
   - **Facturación = SOLO ADMIN (regla de negocio, 2026-07-09):** se reforzó server-side: `POST /api/projects/[id]/complete`
     exige `role='admin'` (antes NO validaba rol, solo lo ocultaba la UI); `POST /api/invoices/from-ticket` pasó de
     "admin o miembro asignado" a **solo admin**; en tickets `canCompleteTicket` = solo admin. Verificado tsc + `next build`.

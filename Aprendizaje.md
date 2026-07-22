@@ -83,8 +83,18 @@ IA), **responsable = el usuario**, **cliente = pendiente**, **visibilidad = priv
   usuario la provea (local + Railway) y despliegue el servicio worker. Construyo el andamiaje y verifico compilación.
 
 ### Estado del aprendizaje (2026-07-22)
-- **% de información:** ~85%. Exploraciones completas + decisiones tomadas. Falta afinar el protocolo HTTP del worker
-  y el prompt/tools del agente (se detalla al construir la Fase 1d).
+- **% de información:** ~95%. Exploraciones + decisiones + **Fase 1 CONSTRUIDA y verificada** (tsc+build) +
+  **worker PROBADO end-to-end con Opus 4.8** (genera y chatea con reanudación de sesión). Falta: desplegar el worker
+  en Railway (usuario) y la Fase 2.
+- **Fase 1 entregada (commits):** estado `cotizacion` (b0fe508) · esquema+endpoint+panel (5c257e4) · worker
+  (fe329fc) · chat GCC Bot + versionado + ocultar Imágenes/DigiMundo (538ebf1). Key de Claude guardada en
+  `.env.local` (gitignore). Worker validado local: `services/cotizador-worker`.
+- **Pendiente del usuario:** desplegar `services/cotizador-worker` como servicio Railway (Root Directory + envs) y
+  poner `COTIZADOR_WORKER_URL`/`COTIZADOR_WORKER_TOKEN` en el servicio web. Sin eso, `/api/quotes/*` responde 503.
+- **Fase 2 (siguiente):** `quote_token`+expiración en `projects` (patrón proforma) · correo (Gmail API) con botón ·
+  página pública `/cotizacion/[id]?token=` (`.corp`) con Aceptar/Rechazar grandes · chat GCC Bot para externo
+  (endpoint conversacional público por token) · pestaña **Observaciones** (tabla `project_observations` ya creada)
+  para cliente/externo · notificación al responsable al decidir. Versionado ya existe (`quote_versions`).
 - **Bloqueadores conocidos:**
   - **P-A · Agent SDK + key:** NO instalado; solo `openai`. `ANTHROPIC_API_KEY` **comentada**. Hay que instalar
     `@anthropic-ai/claude-agent-sdk` (o `@anthropic-ai/sdk`) y **el usuario debe proveer la key** (o reusar la del
