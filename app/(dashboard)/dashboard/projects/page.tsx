@@ -55,6 +55,9 @@ const STATUS_DOT: Record<string, string> = {
 
 const PER_PAGE = 15;
 
+// Agentes de cotización disponibles (a futuro: varios con distintas fuentes de datos).
+const QUOTE_AGENTS = [{ value: 'cotizaciones-software', label: 'Cotizaciones Software' }];
+
 export default function ProjectsPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -99,6 +102,46 @@ export default function ProjectsPage() {
   const [openProposals, setOpenProposals] = useState(false);
   const [requestOption, setRequestOption] = useState<'invite' | 'proposals' | 'talent'>('invite');
   const [requiredTalents, setRequiredTalents] = useState<string[]>([]);
+
+  // ── Nueva cotización (agente IA) ──
+  const [showQuote, setShowQuote] = useState(false);
+  const [quoteServices, setQuoteServices] = useState<any[]>([]);
+  const [quoteServiceId, setQuoteServiceId] = useState('');
+  const [quoteDetail, setQuoteDetail] = useState('');
+  const [quoteInstructions, setQuoteInstructions] = useState('');
+  const [quoteAgent, setQuoteAgent] = useState('cotizaciones-software');
+  const [generatingQuote, setGeneratingQuote] = useState(false);
+
+  const openQuotePanel = async () => {
+    setQuoteServiceId(''); setQuoteDetail(''); setQuoteInstructions(''); setQuoteAgent('cotizaciones-software');
+    setQuoteServices([]);
+    setShowQuote(true);
+    const mid = (user as any)?.member_id;
+    if (mid) {
+      try {
+        const r = await fetch(`/api/members/${mid}/services?active=1`);
+        const d = await r.json();
+        setQuoteServices(d.data || []);
+      } catch { setQuoteServices([]); }
+    }
+  };
+  const submitQuote = async () => {
+    if (!quoteServiceId) { toast.error('Selecciona un servicio'); return; }
+    if (!quoteDetail.trim()) { toast.error('Escribe el detalle de la cotización'); return; }
+    setGeneratingQuote(true);
+    try {
+      const r = await fetch('/api/quotes/generate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ service_id: quoteServiceId, detail: quoteDetail, instructions: quoteInstructions, agent_key: quoteAgent }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Error al generar');
+      toast.success('Cotización generada');
+      setShowQuote(false);
+      router.push(`/dashboard/projects/${d.data.projectId}`);
+    } catch (e: any) { toast.error(e.message || 'Error al generar la cotización'); }
+    finally { setGeneratingQuote(false); }
+  };
 
   const canCreateOwn = accessRoleOf(user) !== 'client'; // candidato/miembro/admin
 
@@ -268,6 +311,12 @@ export default function ProjectsPage() {
             <button onClick={() => openCreateModal('request')} className={`${BTN_SECONDARY} shrink-0`}>
               <Plus className="w-4 h-4" /> Solicitar proyecto
             </button>
+            {/* Nueva cotización (agente IA): solo candidato/miembro. */}
+            {canCreateOwn && (
+              <button onClick={openQuotePanel} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0" style={mf}>
+                <Calculator className="w-4 h-4" /> Nueva cotización
+              </button>
+            )}
             {/* Nuevo proyecto: solo candidato/miembro/admin (yo soy el responsable). */}
             {canCreateOwn && (
               <button onClick={() => openCreateModal('create')} className={`${BTN_PRIMARY} shrink-0`}>
@@ -409,6 +458,75 @@ export default function ProjectsPage() {
           </div>
         </div>
       </div>
+
+      {/* Panel lateral IZQUIERDO — Nueva cotización (agente IA) */}
+      {showQuote && (
+        <div className="fixed inset-0 z-[95] flex">
+          <div className="absolute inset-0 bg-black/40" onClick={() => !generatingQuote && setShowQuote(false)} />
+          <aside className="relative w-full max-w-md h-full bg-digi-card border-r border-digi-border shadow-2xl overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-digi-border sticky top-0 bg-digi-card z-10">
+              <h2 className="text-[15px] font-semibold text-digi-text inline-flex items-center gap-2" style={df}><Calculator className="w-5 h-5 text-accent" /> Nueva cotización</h2>
+              <button onClick={() => !generatingQuote && setShowQuote(false)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+            </div>
+
+            {generatingQuote ? (
+              <div className="p-8 text-center">
+                <div className="w-12 h-12 rounded-full border-2 border-accent/30 border-t-accent animate-spin mx-auto mb-4" />
+                <p className="text-[13px] font-medium text-digi-text" style={mf}>El agente está generando la cotización…</p>
+                <p className="text-[11.5px] text-digi-muted mt-1" style={mf}>Analiza el detalle y tus proyectos previos, desglosa requerimientos y calcula el costo. Puede tardar un poco.</p>
+              </div>
+            ) : (
+              <div className="p-4 space-y-3">
+                <p className="text-[11.5px] text-digi-muted" style={mf}>
+                  El agente genera una cotización (requerimientos, subtareas, costo y fecha límite) usando el costo/hora del servicio que elijas. Quedas como responsable, el cliente queda pendiente y la visibilidad es privada.
+                </p>
+
+                <div className="flex flex-col gap-1">
+                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Servicio *</label>
+                  <select value={quoteServiceId} onChange={(e) => setQuoteServiceId(e.target.value)}
+                    className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                    <option value="">— Elige un servicio —</option>
+                    {quoteServices.map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.name}{s.base_price != null ? ` ($${fmt2(Number(s.base_price))}/h)` : ''}</option>
+                    ))}
+                  </select>
+                  {quoteServices.length === 0 && <p className="text-[10.5px] text-amber-600" style={mf}>No tienes servicios activos. Créalos en Configuración → Mi CV.</p>}
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Detalle de la cotización *</label>
+                  <textarea value={quoteDetail} onChange={(e) => setQuoteDetail(e.target.value)} rows={6}
+                    placeholder="Describe qué necesita el cliente: alcance, funcionalidades, plataformas, integraciones…"
+                    className="field-control w-full h-40 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-y overflow-y-auto" style={mf} />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Instrucciones adicionales</label>
+                  <textarea value={quoteInstructions} onChange={(e) => setQuoteInstructions(e.target.value)} rows={3}
+                    placeholder="Ej: fijar el precio total en $X; incluir obligatoriamente la tarea Y; considerar tal infraestructura…"
+                    className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-y" style={mf} />
+                  <p className="text-[10.5px] text-digi-muted" style={mf}>Si fijas un precio aquí, el agente lo respeta. Si no, el precio lo pone el agente según el servicio.</p>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Agente</label>
+                  <select value={quoteAgent} onChange={(e) => setQuoteAgent(e.target.value)}
+                    className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                    {QUOTE_AGENTS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
+                  </select>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-digi-border">
+                  <button onClick={() => setShowQuote(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
+                  <button onClick={submitQuote} disabled={!quoteServiceId || !quoteDetail.trim()} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
+                    <Calculator className="w-4 h-4" /> Generar cotización
+                  </button>
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
 
       {/* Create/Request Modal */}
       <PixelModal open={showCreate} onClose={() => setShowCreate(false)} title={createMode === 'request' ? 'Solicitar proyecto' : 'Nuevo proyecto'}>
