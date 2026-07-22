@@ -497,7 +497,7 @@ export async function sendQuoteToClient(params: {
     emailHeading('Tienes una cotización lista', params.responsibleName ? `Preparada por ${escapeHtml(params.responsibleName)}` : 'Revisa el detalle de tu proyecto') +
     emailParagraph(`Preparamos la cotización de tu proyecto:`) +
     emailInfoBox('PROYECTO', escapeHtml(params.projectTitle), `Total estimado: ${accentStrong(totalFmt)}`) +
-    emailParagraph(`Abre el enlace para ver el detalle (requerimientos, costos y tiempos) y ${accentStrong('aceptarla o rechazarla')}. Si tienes dudas o quieres cambios, nuestro ${accentStrong('agente de cotizaciones (GCC Bot)')} te ayuda ahí mismo: pídele que agregue, quite o ajuste lo que necesites.`) +
+    emailParagraph(`Abre el enlace para ver el detalle (requerimientos, costos y tiempos) y ${accentStrong('aceptarla o rechazarla')}. Si el costo no se ajusta a lo que tienes disponible, usa la opción ${accentStrong('“Modificar presupuesto”')} para indicarnos tu monto: el responsable ajustará la cotización y te la compartirá de nuevo.`) +
     emailButton(params.url, 'Ver mi cotización') +
     emailNote('Este enlace es personal y puede expirar. Si no reconoces este mensaje, ignóralo.'),
   );
