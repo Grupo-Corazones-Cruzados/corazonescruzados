@@ -109,7 +109,7 @@ export default function PublicQuotePage() {
 
   return (
     <div className="corp page-dark min-h-screen">
-      <PublicHeader maxWidth="max-w-3xl" />
+      <PublicHeader />
       <div className="max-w-3xl mx-auto space-y-4 py-6 px-4 md:px-8">
         {/* Encabezado */}
         <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
