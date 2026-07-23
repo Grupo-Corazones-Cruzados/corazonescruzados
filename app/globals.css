@@ -842,6 +842,12 @@ html {
 /* Base typography for the whole dashboard scope */
 .corp { font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif; }
 
+/* Páginas públicas (enlaces compartidos desde el dashboard): fondo de PÁGINA oscuro,
+   manteniendo tarjetas/formularios en tema claro (.corp). `.corp` fija su propio fondo
+   claro, por eso el override necesita !important. El texto que va DIRECTO sobre el fondo
+   debe usar colores claros; las tarjetas (bg-digi-card) siguen blancas. */
+.corp.page-dark { background: #0a0a0a !important; }
+
 /* Form fields — Fluent text field / dropdown */
 .corp .field-control,
 .corp input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),

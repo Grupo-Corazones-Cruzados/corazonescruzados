@@ -263,8 +263,8 @@ export default function PublicCalendarPage() {
 
   if (loading) {
     return (
-      <div className="corp min-h-screen flex items-center justify-center">
-        <div className="inline-flex items-center gap-2 text-[13px] text-digi-muted" style={mf}>
+      <div className="corp page-dark min-h-screen flex items-center justify-center">
+        <div className="inline-flex items-center gap-2 text-[13px] text-white/70" style={mf}>
           <CalendarDays className="w-4 h-4 animate-pulse" /> Cargando calendario…
         </div>
       </div>
@@ -273,7 +273,7 @@ export default function PublicCalendarPage() {
 
   if (error) {
     return (
-      <div className="corp min-h-screen flex items-center justify-center p-6">
+      <div className="corp page-dark min-h-screen flex items-center justify-center p-6">
         <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-6 max-w-md w-full text-center space-y-1.5">
           <div className="text-[15px] font-semibold text-digi-text" style={df}>Enlace no disponible</div>
           <div className="text-[13px] text-digi-muted" style={mf}>{error}</div>
@@ -283,7 +283,7 @@ export default function PublicCalendarPage() {
   }
 
   return (
-    <div className="corp min-h-screen py-6 px-4 md:px-8">
+    <div className="corp page-dark min-h-screen py-6 px-4 md:px-8">
       <div className="max-w-6xl mx-auto space-y-4">
         <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-3rem)]">
           {/* Encabezado: miembro + disponibilidad + zona horaria/última sincronización */}

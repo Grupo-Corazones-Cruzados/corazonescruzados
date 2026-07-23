@@ -61,7 +61,7 @@ function ConfirmSubscriptionInner() {
 
 export default function ConfirmSubscriptionPage() {
   return (
-    <div className="corp min-h-screen flex items-center justify-center p-6">
+    <div className="corp page-dark min-h-screen flex items-center justify-center p-6">
       <Suspense
         fallback={
           <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-6 max-w-md w-full text-center">

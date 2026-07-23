@@ -93,9 +93,9 @@ export default function PublicQuotePage() {
     finally { setSendingObs(false); }
   };
 
-  if (loading) return <div className="corp min-h-screen flex items-center justify-center bg-digi-dark"><p className="text-digi-muted" style={mf}>Cargando cotización…</p></div>;
+  if (loading) return <div className="corp page-dark min-h-screen flex items-center justify-center"><p className="text-white/70" style={mf}>Cargando cotización…</p></div>;
   if (error) return (
-    <div className="corp min-h-screen flex items-center justify-center bg-digi-dark px-4">
+    <div className="corp page-dark min-h-screen flex items-center justify-center px-4">
       <div className="bg-digi-card border border-digi-border rounded-xl p-8 text-center max-w-md">
         <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3"><X className="w-6 h-6 text-red-500" /></div>
         <p className="text-[15px] font-semibold text-digi-text" style={mf}>No se pudo abrir la cotización</p>
@@ -107,7 +107,7 @@ export default function PublicQuotePage() {
   const decided = quote.quoteStatus === 'accepted' || quote.quoteStatus === 'rejected';
 
   return (
-    <div className="corp min-h-screen bg-digi-dark py-6 px-4 md:px-8">
+    <div className="corp page-dark min-h-screen py-6 px-4 md:px-8">
       <div className="max-w-3xl mx-auto space-y-4">
         {/* Encabezado */}
         <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">

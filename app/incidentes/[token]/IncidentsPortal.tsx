@@ -66,19 +66,19 @@ export default function IncidentsPortal({ token }: { token: string }) {
   };
 
   return (
-    <div className="corp min-h-screen bg-digi-dark">
+    <div className="corp page-dark min-h-screen">
       <Toaster position="top-center" richColors />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-9 h-9 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-accent" /></div>
           <div>
-            <h1 className="text-[18px] font-semibold text-digi-text leading-tight" style={df}>Portal de incidentes</h1>
-            {project && <p className="text-[12px] text-digi-muted" style={mf}>{project.title}</p>}
+            <h1 className="text-[18px] font-semibold text-white leading-tight" style={df}>Portal de incidentes</h1>
+            {project && <p className="text-[12px] text-white/60" style={mf}>{project.title}</p>}
           </div>
         </div>
 
         {loading ? (
-          <p className="text-[13px] text-digi-muted text-center py-16" style={mf}>Cargando…</p>
+          <p className="text-[13px] text-white/60 text-center py-16" style={mf}>Cargando…</p>
         ) : error ? (
           <div className="bg-digi-card border border-digi-border rounded-xl p-8 text-center mt-6">
             <p className="text-[14px] font-semibold text-digi-text" style={mf}>Enlace no disponible</p>
@@ -89,9 +89,9 @@ export default function IncidentsPortal({ token }: { token: string }) {
             <button onClick={() => setCreateOpen(true)} className={`${BTN_PRIMARY} w-full !py-3.5 !text-[15px] mt-5`}><Plus className="w-4 h-4" /> Reportar incidente</button>
 
             <div className="mt-5 space-y-2">
-              <p className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Incidentes ({incidents.length})</p>
+              <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wide" style={df}>Incidentes ({incidents.length})</p>
               {incidents.length === 0 ? (
-                <p className="text-[12px] text-digi-muted text-center py-8" style={mf}>Aún no hay incidentes reportados.</p>
+                <p className="text-[12px] text-white/50 text-center py-8" style={mf}>Aún no hay incidentes reportados.</p>
               ) : incidents.map((it) => (
                 <button key={it.id} onClick={() => openDetail(it.id)}
                   className="w-full text-left rounded-xl border border-digi-border bg-digi-card hover:border-accent/60 transition-colors p-3">
