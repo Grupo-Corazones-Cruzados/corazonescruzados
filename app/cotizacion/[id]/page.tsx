@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Check, X, Calculator, ListChecks, CalendarDays, MessageSquare, Send, Wallet } from 'lucide-react';
 import PublicHeader from '@/components/public/PublicHeader';
+import { QUOTE_NOTES } from '@/lib/cotizaciones/notes';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -187,22 +188,12 @@ export default function PublicQuotePage() {
         <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
           <h2 className="text-[15px] font-semibold text-digi-text mb-3 inline-flex items-center gap-2" style={df}><ListChecks className="w-4 h-4 text-accent" /> Notas adicionales</h2>
           <ul className="space-y-2">
-            <li className="flex items-start gap-2.5 text-[13px] text-digi-text leading-relaxed" style={mf}>
-              <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" strokeWidth={2.5} />
-              <span>Tras la entrega del proyecto se realiza el pago.</span>
-            </li>
-            <li className="flex items-start gap-2.5 text-[13px] text-digi-text leading-relaxed" style={mf}>
-              <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" strokeWidth={2.5} />
-              <span>Después de la entrega tienes 15 días de soporte gratis por si sucede algún error no contemplado.</span>
-            </li>
-            <li className="flex items-start gap-2.5 text-[13px] text-digi-text leading-relaxed" style={mf}>
-              <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" strokeWidth={2.5} />
-              <span>Eres propietario del código fuente del proyecto.</span>
-            </li>
-            <li className="flex items-start gap-2.5 text-[13px] text-digi-text leading-relaxed" style={mf}>
-              <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" strokeWidth={2.5} />
-              <span>Debes crear una cuenta de GitHub para subir el proyecto a tu repositorio.</span>
-            </li>
+            {QUOTE_NOTES.map((note, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-[13px] text-digi-text leading-relaxed" style={mf}>
+                <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" strokeWidth={2.5} />
+                <span>{note}</span>
+              </li>
+            ))}
           </ul>
         </div>
 

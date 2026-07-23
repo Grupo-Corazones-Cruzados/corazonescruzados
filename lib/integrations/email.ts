@@ -518,6 +518,32 @@ export async function sendQuoteDecisionToResponsible(params: {
   return deliver({ to: params.email, subject: `${accepted ? 'Aceptada' : 'Rechazada'}: ${params.projectTitle}`, html });
 }
 
+/** Envía al CLIENTE el PDF de la cotización ACEPTADA como adjunto (correo con tema GCC World). */
+export async function sendAcceptedQuoteToClient(params: {
+  email: string | string[]; projectTitle: string; total: number; responsibleName?: string; pdf: Buffer;
+}) {
+  const totalFmt = `$${Number(params.total).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const html = emailShell(
+    emailBadge('COTIZACIÓN ACEPTADA', CORP.success) +
+    emailHeading('¡Gracias! Tu cotización fue aceptada', escapeHtml(params.projectTitle)) +
+    emailParagraph('Adjuntamos el PDF con el detalle completo de la cotización aceptada: requerimientos, costos, total y las notas adicionales.') +
+    emailInfoBox('PROYECTO', escapeHtml(params.projectTitle), `Total: ${accentStrong(totalFmt)}`) +
+    emailParagraph(params.responsibleName
+      ? `Tu responsable ${accentStrong(escapeHtml(params.responsibleName))} se pondrá en contacto para los siguientes pasos.`
+      : 'Nos pondremos en contacto contigo para los siguientes pasos.') +
+    emailNote('Conserva este documento como respaldo de la cotización aceptada.'),
+  );
+  const safeName = (params.projectTitle || 'GCC').replace(/[^\w\-]+/g, '_').slice(0, 40) || 'GCC';
+  return sendViaGmail({
+    from: FROM_EMAIL,
+    to: params.email,
+    bcc: 'lfgonzalezm0@grupocc.org',
+    subject: `Cotización aceptada — ${params.projectTitle}`,
+    html,
+    attachments: [{ filename: `Cotizacion-${safeName}.pdf`, content: params.pdf, contentType: 'application/pdf' }],
+  });
+}
+
 /* ── Helpers de diseño reusables para correos construidos en otras rutas
  *    (facturas, suscripciones, campañas, tickets, proyectos, proformas). Exportados
  *    para que TODOS los correos compartan el mismo tema corporativo. ─────────────── */

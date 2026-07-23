@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateQuoteToken } from '@/lib/cotizaciones/schema';
 import { loadQuote } from '@/lib/cotizaciones/data';
 import { createNotification } from '@/lib/notifications';
-import { sendQuoteDecisionToResponsible } from '@/lib/integrations/email';
+import { sendQuoteDecisionToResponsible, sendAcceptedQuoteToClient } from '@/lib/integrations/email';
+import { renderQuotePdf } from '@/lib/cotizaciones/pdf';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.grupocc.org';
 
@@ -60,6 +61,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         });
       }
     } catch (e: any) { console.error('quote decision notify:', e.message); }
+
+    // Al ACEPTAR: enviar al cliente (correo al que se le compartió) el PDF con toda la
+    // cotización aceptada. Best-effort: no bloquea la aceptación si falla el PDF/correo.
+    if (accepted && p.quote_client_email) {
+      try {
+        const q2 = await loadQuote(id);
+        if (q2) {
+          const pdf = await renderQuotePdf({ ...q2, quoteDecidedAt: new Date() });
+          await sendAcceptedQuoteToClient({
+            email: p.quote_client_email,
+            projectTitle: q2.title || `Cotización #${id}`,
+            total: q2.total || 0,
+            responsibleName: q2.responsibleName,
+            pdf,
+          });
+        }
+      } catch (e: any) { console.error('accepted quote PDF to client:', e.message); }
+    }
 
     return NextResponse.json({ data: { quoteStatus: accepted ? 'accepted' : 'rejected' } });
   } catch (err: any) {
