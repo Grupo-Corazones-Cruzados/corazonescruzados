@@ -115,7 +115,7 @@ export default function PublicQuotePage() {
         <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-9 h-9 rounded-lg bg-accent-light border border-accent/15 flex items-center justify-center"><Calculator className="w-5 h-5 text-accent" /></div>
-            <span className="text-[11px] font-semibold text-accent uppercase tracking-wide" style={df}>Cotización · GCC World</span>
+            <span className="text-[11px] font-semibold text-accent uppercase tracking-wide" style={df}>Cotización · {quote.responsibleName || 'GCC World'}</span>
           </div>
           <h1 className="text-[22px] font-bold text-digi-text leading-tight" style={df}>{quote.title}</h1>
           {quote.summary && <p className="text-[13px] text-digi-muted mt-1.5 leading-relaxed" style={mf}>{quote.summary}</p>}

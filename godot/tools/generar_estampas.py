@@ -135,18 +135,44 @@ ESCENAS = [
     # ACTO 1 — La devoción
     (1, ["hoyo"], "Una mujer campesina camina llevando una cesta de frutos hacia el Hoyo (un agujero natural oscuro en la tierra, SIN muros de piedra), para dejarlos como ofrenda. Campo fértil y verde, luz dorada del atardecer, ambiente de gratitud y respeto."),
     (2, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
-        "CONTINUACIÓN EXACTA de la imagen de referencia (la escena anterior): es la MISMA "
-        "mujer campesina —mismo pañuelo verde en la cabeza, misma blusa blanca de mangas "
-        "arremangadas, misma falda larga marrón con delantal claro, mismos zapatos—, en el "
-        "MISMO campo verde y florido, junto al MISMO Hoyo (un agujero natural oscuro en la "
-        "tierra, SIN muros de piedra ni borde construido) y con la MISMA luz dorada del "
-        "atardecer y el mismo sol bajo en el horizonte. Ahora ella está de pie justo al "
-        "BORDE del Hoyo, ligeramente inclinada, VACIANDO su cesta de mimbre: varios frutos "
-        "coloridos (manzanas rojas, frutas amarillas y naranjas) caen por el aire hacia la "
-        "oscuridad del agujero. Su gesto es reverente, de ofrenda y gratitud. Conserva "
-        "IDÉNTICOS los colores, el diseño del personaje, la vegetación y el lugar."),
-    (3, ["A1", "A2"], "Niños y adultos rezan arrodillados alrededor del Hoyo, en comunidad, con esperanza."),
-    (4, ["A1", "A2"], "Un grupo de niños repite el rito: agradecen y rezan al Hoyo imitando a los mayores."),
+        "MISMA mujer campesina de la imagen de referencia (mismo pañuelo verde, blusa "
+        "blanca, falda marrón con delantal), misma luz dorada de atardecer, mismo campo "
+        "verde. PERO REENCUADRA la escena MÁS CERCA (plano medio): el Hoyo —un agujero "
+        "natural oscuro en la tierra, SIN muros de piedra— ocupa el PRIMER PLANO y buena "
+        "parte del encuadre, con su boca negra bien grande y visible. La mujer está "
+        "ARRODILLADA en el BORDE MISMO del agujero, sus rodillas tocando la orilla, inclinada "
+        "sobre el vacío, sosteniendo la cesta volcada SOBRE la boca del agujero. Caen UNOS "
+        "POCOS frutos (solo 4 o 5: un par de manzanas rojas, una amarilla, una naranja) que "
+        "están EN EL AIRE, suspendidos justo ENCIMA de la boca negra del Hoyo, en plena "
+        "caída HACIA DENTRO de la oscuridad. MUY IMPORTANTE: los frutos NO están apoyados "
+        "sobre la hierba, NO ruedan por el pasto, NO forman una fila larga ni una catarata; "
+        "son poquitos y caen dentro del agujero. La cesta aún conserva algo de fruta. Gesto "
+        "reverente de ofrenda y gratitud, luz dorada cálida."),
+    (3, ["assets/Prologo/escenas/escena_02.png", "hoyo"],
+        "MISMO lugar y estilo que la imagen de referencia: el MISMO campo verde y florido, "
+        "el MISMO Hoyo (agujero natural oscuro en la tierra, SIN muros de piedra) y la MISMA "
+        "luz dorada del atardecer. Plano un poco más amplio. Ahora un GRUPO de aldeanos "
+        "—varios adultos y también NIÑOS, con ropa campesina humilde de tonos tierra y "
+        "pañuelos— están ARRODILLADOS formando un semicírculo ALREDEDOR del borde del Hoyo, "
+        "de cara al agujero, con las cabezas inclinadas y las manos juntas en oración "
+        "reverente. Ambiente de comunidad, fe y esperanza, sereno y cálido. Se ve el Hoyo "
+        "en el centro y la gente rezando en torno a él. Deben verse CLARAMENTE VARIOS NIÑOS "
+        "pequeños (de distintas edades) arrodillados junto a sus padres, como familias que "
+        "transmiten la costumbre a sus hijos. Mantén IDÉNTICO el estilo de dibujo de "
+        "personajes, los colores y el lugar de la referencia."),
+    (4, ["assets/Prologo/escenas/escena_03.png", "hoyo"],
+        "USA la imagen de referencia SOLO para el LUGAR (el mismo campo verde y el mismo "
+        "Hoyo, agujero natural oscuro SIN muros de piedra) y el mismo estilo de dibujo 2D. "
+        "PERO es OTRO DÍA muchos años después, con cielo NUBLADO y luz fría (nada de "
+        "atardecer dorado). Las personas son AHORA un grupo de ADOLESCENTES (jóvenes de unos "
+        "14–16 años, NO niños pequeños, NO adultos mayores, NO campesinos). Van vestidos con "
+        "ROPA CLARAMENTE MODERNA Y ACTUAL: chaquetas, sudaderas con capucha, camisetas, "
+        "pantalones tipo jeans, zapatillas deportivas — nada de ropa campesina antigua ni "
+        "pañuelos ni delantales. Es la señal de que el mundo se ha modernizado con el paso "
+        "de las generaciones. Estos adolescentes están arrodillados en el borde del Hoyo "
+        "REPITIENDO la vieja costumbre: rezan y uno deja caer una flor dentro del agujero. "
+        "Mantén el estilo de dibujo, cambiando la edad (adolescentes), la ropa (moderna) y "
+        "el día (nublado, frío)."),
     (5, ["A1", "A2"], "Ya menos personas rezan al Hoyo; el grupo es más pequeño y la luz más fría."),
     (6, ["A1", "A2"], "Solo una viejita, sola, hace el último gesto de rezar al Hoyo."),
     # ACTO 2 — El abandono y la corrupción del Hoyo
