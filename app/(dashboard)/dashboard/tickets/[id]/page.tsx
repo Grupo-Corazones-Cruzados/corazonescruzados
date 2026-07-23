@@ -608,23 +608,21 @@ export default function TicketDetailPage() {
               const sessionCost = Math.round((mins / 60) * slotRate * 100) / 100;
               const durLabel = `${Math.floor(mins / 60)}h ${mins % 60}m`;
               return (
-                <div key={d} className="border border-digi-border rounded-md p-2">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-[12px] font-medium text-digi-text" style={mf}>
+                <div key={d} className="border border-digi-border rounded-md p-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] font-medium text-digi-text truncate min-w-0" style={mf}>
                       {new Date(d + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: '2-digit', month: 'short' })}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-1.5 text-[11px] text-digi-text cursor-pointer" style={mf}>
-                        <input type="checkbox" checked={cfg.is_event} onChange={(e) => setCfg(d, { is_event: e.target.checked })}
-                          className="accent-[var(--accent,#7c6cf5)]" />
-                        Evento (reunión Meet)
-                      </label>
-                      <button onClick={() => toggleDate(d)} className="text-digi-muted hover:text-red-500 text-[14px] leading-none">×</button>
-                    </div>
+                    <button onClick={() => toggleDate(d)} className="shrink-0 text-digi-muted hover:text-red-500 text-[15px] leading-none">×</button>
                   </div>
-                  <div className="flex items-end gap-2 mt-2 max-w-xs">
-                    <div className="flex-1"><PixelInput label="Inicio" type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} /></div>
-                    <div className="flex-1"><PixelInput label="Fin" type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} /></div>
+                  <label className="flex items-center gap-1.5 text-[11px] text-digi-text cursor-pointer mt-1.5" style={mf}>
+                    <input type="checkbox" checked={cfg.is_event} onChange={(e) => setCfg(d, { is_event: e.target.checked })}
+                      className="accent-[var(--accent,#7c6cf5)] shrink-0" />
+                    Evento (reunión Meet)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <PixelInput label="Inicio" type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} className="min-w-0 !px-2" />
+                    <PixelInput label="Fin" type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} className="min-w-0 !px-2" />
                   </div>
                   {cfg.is_event ? (
                     <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
