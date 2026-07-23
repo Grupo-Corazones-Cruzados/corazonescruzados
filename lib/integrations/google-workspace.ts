@@ -70,14 +70,17 @@ export function isGoogleWorkspaceConfigured(): boolean {
 
 const _jwtCache = new Map<string, JwtClient>();
 
-function getAuth(scopes: string[]): JwtClient {
+function getAuth(scopes: string[], subject?: string): JwtClient {
   const key = loadKey();
   if (!key) throw new Error('Google Workspace no configurado (falta la clave de service account)');
-  if (!ORGANIZER) throw new Error('Falta GOOGLE_WORKSPACE_ORGANIZER');
-  const cacheKey = scopes.join(' ');
+  // Por defecto se impersona la cuenta organizadora; con `subject` se puede impersonar a
+  // cualquier usuario del dominio (p. ej. cada miembro, para leer SUS reuniones de Meet).
+  const subj = subject || ORGANIZER;
+  if (!subj) throw new Error('Falta GOOGLE_WORKSPACE_ORGANIZER');
+  const cacheKey = `${subj}\n${scopes.join(' ')}`;
   const cached = _jwtCache.get(cacheKey);
   if (cached) return cached;
-  const jwt = new google.auth.JWT({ email: key.client_email, key: key.private_key, scopes, subject: ORGANIZER });
+  const jwt = new google.auth.JWT({ email: key.client_email, key: key.private_key, scopes, subject: subj });
   _jwtCache.set(cacheKey, jwt);
   return jwt;
 }
@@ -252,11 +255,11 @@ export async function createMeetEvent(opts: {
  * `meetings.space.readonly` en la delegación de dominio. Best-effort: si la API falla,
  * devuelve lo que pudo (o []).
  */
-export async function fetchRecentMeetTranscripts(sinceMs: number): Promise<
-  { meetingUri: string | null; meetingCode: string | null; endTime: string | null; text: string }[]
+export async function fetchRecentMeetTranscripts(sinceMs: number, subject?: string): Promise<
+  { recordName: string | null; meetingUri: string | null; meetingCode: string | null; endTime: string | null; text: string }[]
 > {
-  const meet: any = google.meet({ version: 'v2', auth: getAuth([SCOPE_MEET_READONLY]) });
-  const out: { meetingUri: string | null; meetingCode: string | null; endTime: string | null; text: string }[] = [];
+  const meet: any = google.meet({ version: 'v2', auth: getAuth([SCOPE_MEET_READONLY], subject) });
+  const out: { recordName: string | null; meetingUri: string | null; meetingCode: string | null; endTime: string | null; text: string }[] = [];
   const sinceIso = new Date(sinceMs).toISOString();
 
   const records: any[] = [];
@@ -296,7 +299,7 @@ export async function fetchRecentMeetTranscripts(sinceMs: number): Promise<
       }
     } catch { /* transcripción aún no lista */ }
 
-    out.push({ meetingUri, meetingCode, endTime: rec.endTime || null, text: text.trim() });
+    out.push({ recordName: rec.name || null, meetingUri, meetingCode, endTime: rec.endTime || null, text: text.trim() });
   }
   return out;
 }

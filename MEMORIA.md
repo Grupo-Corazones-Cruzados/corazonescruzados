@@ -2465,6 +2465,17 @@ Módulos principales:
     best-effort) un enlace `/dashboard/recordatorios?open=<id>`. Idempotente vía columnas
     `member_calendar_events.reminder_status`/`reminder_id`; descarta si no hay transcripción tras 6h.
     Destinatario = el miembro dueño del evento (no el cliente).
+  - **Fase 3b — reuniones INSTANTÁNEAS (HECHA 2026-07-23):** las reuniones "iniciar ahora" de Meet
+    NO son eventos de calendario, así que el pase original no las veía. Nuevo
+    `runInstantMeetingReminderGeneration()` (mismo endpoint `generate-from-meetings`, corre tras el
+    pase de agendadas): **impersona a CADA miembro** con `users.workspace_email` (antes solo se
+    impersonaba `GOOGLE_WORKSPACE_ORGANIZER`; `getAuth(scopes, subject?)` ahora acepta subject y
+    `fetchRecentMeetTranscripts(sinceMs, subject?)` expone `recordName`), lista SUS grabaciones de
+    Meet (48h), **descarta las que ya son eventos de calendario** (por meetingCode) y crea el
+    recordatorio a nombre de ese miembro con la transcripción `.txt`. Idempotente vía tabla nueva
+    `gcc_world.meet_orphan_records` (PK `record_name`; estados pending/done/skip; descarta sin
+    transcripción tras 6h). Requiere que la reunión se inicie desde la cuenta @grupocc.org del
+    miembro y que Google haya liberado la transcripción por API (puede tardar >15 min).
 - **Modelo de CLIENTES y FACTURACIÓN (confirmado 2026-07-21).** Mapa detallado en el artefacto HTML
   "Asociación de clientes" (auditoría del código). Reglas acordadas para el rediseño:
   - **Tablas separadas** `clients` (identidad app) y `billing_clients` (facturación) — un cliente podrá

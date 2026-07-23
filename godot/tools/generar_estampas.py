@@ -86,32 +86,65 @@ def tono(n: int) -> str:
     return " Casi monocromo gris, frío, solo detalles con tinte."  # Acto 4 — colapso
 
 
-# --- Las 5 ANCLAS (referencias maestras). A1 se hace primero. ---------------
+# --- Referencia de ESTILO: la escena que aprobó Fernando (se pasa a todo) ----
+ESTILO_REF = "assets/Prologo/escenas/escena_53.png"
+
+# --- Las ANCLAS (referencias maestras) --------------------------------------
+# Cada ref puede ser el nombre de otra ancla, o una ruta a un .png (p. ej. la
+# escena_53 de estilo). Se generan en orden; "isla" usa "hoyo" y "raices".
 ANCLAS = {
-    "A1": ([], "Imagen maestra de estilo para toda la serie: ILUSTRACIÓN 2D en pixel "
-               "art dibujada a mano (NO 3D, NO Minecraft, NO voxels), como el fondo de "
-               "un RPG 2D de 16 bits. Un campo fértil al atardecer dorado; en el centro, "
-               "un pozo circular de piedra antigua hundido en la tierra, con símbolos "
-               "rúnicos gastados tallados en el borde; un lugar sagrado y sereno."),
-    "A2": (["A1"], "Hoja de referencia: primer plano claro de un pozo circular de "
-                   "piedra antigua con símbolos rúnicos tallados en el borde. "
-                   "Diseño canónico que no debe cambiar nunca. Fondo neutro."),
-    "A3": (["A1"], "HOJA DE REFERENCIA DEL PROTAGONISTA: un/a joven visto como una "
-                   "SILUETA OSCURA con capucha; rostro y cuerpo NO distinguibles, "
-                   "siempre en sombra. Misterioso. Fondo neutro."),
-    "A4": (["A1"], "HOJA DE REFERENCIA DE LA ISLA: una isla vista de lejos, con el "
-                   "Hoyo en su centro. Mar alrededor."),
-    "A5": (["A1"], "HOJA DE REFERENCIA DE LA CORRUPCIÓN: raíces retorcidas de color "
-                   "gris que se ennegrecen, brotando de la tierra y pudriendo la "
-                   "naturaleza a su alrededor. Motivo visual del mal que se expande."),
+    "hoyo": ([ESTILO_REF],
+        "HOJA DE REFERENCIA — EL HOYO. Un agujero natural, oscuro e insondable, abierto "
+        "en la tierra como si el suelo se hubiera partido sin explicación. NO es un pozo "
+        "ni una alcantarilla: NO tiene muros, ni ladrillos, ni cemento, ni piedras "
+        "colocadas, ni borde construido por el hombre. Solo un boquete de tierra y roca "
+        "cruda, con el interior en negro absoluto, insondable. Suelo árido alrededor. "
+        "Vista ligeramente cenital. Fondo sobrio."),
+
+    "personaje": ([ESTILO_REF],
+        "HOJA DE REFERENCIA — EL PROTAGONISTA (es el jugador). Una persona de pie, de "
+        "complexión normal, PERO renderizada de modo que sea IMPOSIBLE reconocer NADA de "
+        "ella: ni el rostro, ni los rasgos, ni el cuerpo, ni la ropa, ni si es hombre o "
+        "mujer, ni su edad. NO lleva capa, NI capucha, NI se cubre con las manos: es una "
+        "persona normal a la que la propia luz de la imagen deja como una SILUETA "
+        "completamente negra, un vacío con forma humana a contraluz. Ningún detalle "
+        "visible. Fondo neutro. Mismo estilo de dibujo de personajes que la referencia."),
+
+    "raices": ([ESTILO_REF],
+        "HOJA DE REFERENCIA — LAS RAÍCES DE LA CORRUPCIÓN. Raíces retorcidas de color gris "
+        "ceniza que se ennegrecen en las puntas, brotando de la tierra y pudriendo la "
+        "naturaleza a su alrededor. Es el mal que se expande desde el Hoyo. Fondo sobrio."),
+
+    "isla": ([ESTILO_REF, "hoyo", "raices"],
+        "HOJA DE REFERENCIA — LA ISLA. Una isla MUY GRANDE y amplia en medio del mar. En "
+        "un punto de ella se ve el Hoyo (un agujero natural oscuro en la tierra, sin muros "
+        "de piedra), PEQUEÑO en proporción a la isla enorme. Alrededor del Hoyo, raíces "
+        "grises que empiezan a extenderse por el terreno. Vista amplia y elevada."),
+
+    "contexto": ([ESTILO_REF],
+        "HOJA DE REFERENCIA DE TONO — CRUDEZA REALISTA. Una escena cruda y realista con "
+        "PELIGRO REAL y contexto claro, con el mismo dramatismo y sentido aventurero de la "
+        "imagen de referencia: figuras adultas armadas con armas de fuego amenazando en "
+        "una calle en ruinas, tensión palpable, atmósfera sombría. Sirve para fijar el "
+        "nivel de crudeza y detalle realista de la serie (nada de símbolos vacíos)."),
 }
 
 
 # --- Las 66 escenas: (nº, [anclas], prompt) ---------------------------------
 ESCENAS = [
     # ACTO 1 — La devoción
-    (1, ["A1", "A2"], "Una mujer camina llevando una cesta de frutos hacia el Hoyo, en ofrenda; campo fértil, luz dorada."),
-    (2, ["A1", "A2"], "La misma mujer lanza los frutos dentro del Hoyo en gesto de gratitud."),
+    (1, ["hoyo"], "Una mujer campesina camina llevando una cesta de frutos hacia el Hoyo (un agujero natural oscuro en la tierra, SIN muros de piedra), para dejarlos como ofrenda. Campo fértil y verde, luz dorada del atardecer, ambiente de gratitud y respeto."),
+    (2, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
+        "CONTINUACIÓN EXACTA de la imagen de referencia (la escena anterior): es la MISMA "
+        "mujer campesina —mismo pañuelo verde en la cabeza, misma blusa blanca de mangas "
+        "arremangadas, misma falda larga marrón con delantal claro, mismos zapatos—, en el "
+        "MISMO campo verde y florido, junto al MISMO Hoyo (un agujero natural oscuro en la "
+        "tierra, SIN muros de piedra ni borde construido) y con la MISMA luz dorada del "
+        "atardecer y el mismo sol bajo en el horizonte. Ahora ella está de pie justo al "
+        "BORDE del Hoyo, ligeramente inclinada, VACIANDO su cesta de mimbre: varios frutos "
+        "coloridos (manzanas rojas, frutas amarillas y naranjas) caen por el aire hacia la "
+        "oscuridad del agujero. Su gesto es reverente, de ofrenda y gratitud. Conserva "
+        "IDÉNTICOS los colores, el diseño del personaje, la vegetación y el lugar."),
     (3, ["A1", "A2"], "Niños y adultos rezan arrodillados alrededor del Hoyo, en comunidad, con esperanza."),
     (4, ["A1", "A2"], "Un grupo de niños repite el rito: agradecen y rezan al Hoyo imitando a los mayores."),
     (5, ["A1", "A2"], "Ya menos personas rezan al Hoyo; el grupo es más pequeño y la luz más fría."),
@@ -249,12 +282,36 @@ def asegurar_anclas(client, forzar: bool) -> dict:
             imgs[aid] = Image.open(ruta)
             continue
         print(f"[ancla] {aid} ...")
-        refs = [imgs[r] for r in refs_ids if r in imgs]
+        refs = []
+        for r in refs_ids:
+            if r in imgs:                       # otra ancla ya generada
+                refs.append(imgs[r])
+            else:                               # ruta a un archivo (p. ej. la escena_53)
+                p = BASE.parent / r
+                if p.exists():
+                    refs.append(Image.open(p))
         img = generar(client, prompt + ESTILO, refs)
         guardar(img, ruta, prompt + ESTILO)
         imgs[aid] = img
         time.sleep(2)
     return imgs
+
+
+def _cargar_refs(refs_ids: list, anclas: dict) -> list:
+    """Referencias de una escena: SIEMPRE la escena de estilo (escena_53) primero,
+    luego las anclas o archivos que pida la escena (por nombre de ancla o ruta)."""
+    refs = []
+    p_estilo = BASE.parent / ESTILO_REF
+    if p_estilo.exists():
+        refs.append(Image.open(p_estilo))
+    for r in refs_ids:
+        if r in anclas:
+            refs.append(anclas[r])
+        else:
+            p = BASE.parent / r
+            if p.exists():
+                refs.append(Image.open(p))
+    return refs
 
 
 def main() -> None:
@@ -277,7 +334,7 @@ def main() -> None:
         if ruta.exists() and not forzar and not numeros:
             continue
         print(f"[escena {n:02d}/66] {prompt[:60]}...")
-        refs = [anclas[r] for r in refs_ids if r in anclas]
+        refs = _cargar_refs(refs_ids, anclas)
         prompt_final = f"Escena {n} del prólogo. {prompt}{tono(n)}{ESTILO}"
         try:
             img = generar(client, prompt_final, refs)

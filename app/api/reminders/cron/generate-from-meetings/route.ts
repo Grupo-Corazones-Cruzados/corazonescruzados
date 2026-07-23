@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cronTokenConfigured, checkCronToken } from '@/lib/cron-auth';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { runMeetingReminderGeneration } from '@/lib/reminders/meeting-gen';
+import { runMeetingReminderGeneration, runInstantMeetingReminderGeneration } from '@/lib/reminders/meeting-gen';
 
 /**
  * Genera recordatorios desde las reuniones de Meet terminadas (transcripción → IA). Se invoca
@@ -19,8 +19,9 @@ export async function POST(req: NextRequest) {
     }
   }
   try {
-    const result = await runMeetingReminderGeneration();
-    return NextResponse.json({ ok: true, ...result });
+    const scheduled = await runMeetingReminderGeneration();
+    const instant = await runInstantMeetingReminderGeneration();
+    return NextResponse.json({ ok: true, ...scheduled, instant });
   } catch (err: any) {
     console.error('Meeting reminders cron:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
