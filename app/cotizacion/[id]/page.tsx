@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Check, X, Calculator, ListChecks, CalendarDays, MessageSquare, Send, Wallet } from 'lucide-react';
+import PublicHeader from '@/components/public/PublicHeader';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -107,8 +108,9 @@ export default function PublicQuotePage() {
   const decided = quote.quoteStatus === 'accepted' || quote.quoteStatus === 'rejected';
 
   return (
-    <div className="corp page-dark min-h-screen py-6 px-4 md:px-8">
-      <div className="max-w-3xl mx-auto space-y-4">
+    <div className="corp page-dark min-h-screen">
+      <PublicHeader maxWidth="max-w-3xl" />
+      <div className="max-w-3xl mx-auto space-y-4 py-6 px-4 md:px-8">
         {/* Encabezado */}
         <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-2">

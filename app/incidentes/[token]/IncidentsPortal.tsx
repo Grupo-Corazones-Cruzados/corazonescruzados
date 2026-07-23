@@ -9,6 +9,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { AlertTriangle, Plus, X, ImagePlus } from 'lucide-react';
+import PublicHeader from '@/components/public/PublicHeader';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -68,6 +69,7 @@ export default function IncidentsPortal({ token }: { token: string }) {
   return (
     <div className="corp page-dark min-h-screen">
       <Toaster position="top-center" richColors />
+      <PublicHeader maxWidth="max-w-2xl" />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-9 h-9 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-accent" /></div>
