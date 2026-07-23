@@ -287,7 +287,7 @@ export default function PublicCalendarPage() {
     <div className="corp page-dark min-h-screen">
       <PublicHeader />
       <div className="max-w-6xl mx-auto space-y-4 py-6 px-4 md:px-8">
-        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-3rem)]">
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-6.5rem)]">
           {/* Encabezado: miembro + disponibilidad + zona horaria/última sincronización */}
           <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 border-b border-digi-border shrink-0">
             <div className="min-w-0">
