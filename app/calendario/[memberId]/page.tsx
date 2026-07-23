@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
-  CalendarDays, ChevronLeft, ChevronRight, RefreshCw, CalendarPlus, Bell, Clock,
+  CalendarDays, ChevronLeft, ChevronRight, RefreshCw, CalendarPlus, Clock,
 } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
@@ -174,35 +174,6 @@ export default function PublicCalendarPage() {
     return expandEvents(events, dayStart, dayEnd)
       .some((ev) => ev.instanceStart.getTime() < endMs && ev.instanceEnd.getTime() > startMs);
   }, [events]);
-
-  const [subscribeEmail, setSubscribeEmail] = useState('');
-  const [subscribing, setSubscribing] = useState(false);
-  const [subscribeMsg, setSubscribeMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
-
-  const submitSubscribe = async () => {
-    const email = subscribeEmail.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setSubscribeMsg({ kind: 'err', text: 'Ingresa un correo válido' });
-      return;
-    }
-    setSubscribing(true);
-    setSubscribeMsg(null);
-    try {
-      const res = await fetch(`/api/members/calendar/public/${memberId}/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, token }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Error al suscribir');
-      setSubscribeMsg({ kind: 'ok', text: 'Revisa tu correo para confirmar la suscripción.' });
-      setSubscribeEmail('');
-    } catch (err: any) {
-      setSubscribeMsg({ kind: 'err', text: err?.message || 'Error al suscribir' });
-    } finally {
-      setSubscribing(false);
-    }
-  };
 
   const load = useCallback(async () => {
     if (!token) { setError('Falta el token de acceso'); setLoading(false); return; }
@@ -405,42 +376,6 @@ export default function PublicCalendarPage() {
             </span>
             <span className="ml-auto">Solo se muestran las franjas ocupadas, no el detalle de los eventos.</span>
           </div>
-        </div>
-
-        {/* Suscripción a actualizaciones */}
-        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-4">
-          <div className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-2" style={df}>
-            <Bell className="w-4 h-4 text-accent" /> Suscribirse a actualizaciones
-          </div>
-          <p className="text-[12.5px] text-digi-muted mt-1 mb-3" style={mf}>
-            Recibe un correo cuando {memberName} agregue, modifique o elimine un evento.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="email"
-              placeholder="tu@correo.com"
-              value={subscribeEmail}
-              onChange={(e) => setSubscribeEmail(e.target.value)}
-              disabled={subscribing}
-              className="field-control flex-1 rounded-md text-sm text-digi-text focus:outline-none disabled:opacity-60"
-              style={mf}
-            />
-            <button onClick={submitSubscribe} disabled={subscribing} className={BTN_PRIMARY}>
-              {subscribing ? 'Enviando…' : 'Suscribirme'}
-            </button>
-          </div>
-          {subscribeMsg && (
-            <div
-              className={`mt-2 text-[12px] px-3 py-2 rounded-md border ${
-                subscribeMsg.kind === 'ok'
-                  ? 'border-green-300 text-green-700 bg-green-50'
-                  : 'border-red-300 text-red-600 bg-red-50'
-              }`}
-              style={mf}
-            >
-              {subscribeMsg.text}
-            </div>
-          )}
         </div>
       </div>
 
