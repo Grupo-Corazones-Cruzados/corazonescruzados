@@ -9,7 +9,6 @@ import RazonesPanel from '@/components/razones/RazonesPanel';
 import { Globe, Image as ImageIcon, Flame, ShieldAlert } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 // Panel de administración = DigiMundo. Mundo y Sprites del videojuego + "Razones"
 // (cuaderno personal del admin, tipo Pensamientos, sin clasificación por IA).
@@ -44,36 +43,31 @@ export default function AdminPage() {
     <div>
       <PageHeader title="Admin" description="Mundo, sprites y tus razones de lucha" />
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
-        {/* ── Left rail: secciones de DigiMundo ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Admin</p>
-          <div className="space-y-0.5">
-            {TABS.map((t) => {
-              const active = tab === t.value;
-              return (
-                <button key={t.value} onClick={() => setTab(t.value)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-                    active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-                  }`}>
-                  <t.Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-                  <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+      {/* ── Pestañas horizontales (arriba) ── */}
+      <div className="flex items-center gap-1 bg-digi-card border border-digi-border rounded-lg p-1 mb-4 overflow-x-auto">
+        {TABS.map((t) => {
+          const active = tab === t.value;
+          return (
+            <button key={t.value} onClick={() => setTab(t.value)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md whitespace-nowrap transition-colors ${
+                active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-black/[0.03]'
+              }`}>
+              <t.Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
+              <span className="text-[12.5px] font-medium" style={mf}>{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-        {/* ── Content ── */}
-        <div className="flex-1 min-w-0 w-full">
-          {tab === 'world' && (
-            <div className="border border-digi-border rounded-lg overflow-hidden relative" style={{ height: 'calc(100vh - 180px)', minHeight: 400 }}>
-              <div className="absolute inset-0 overflow-hidden [&>div]:!m-0 [&>div]:!h-full"><WorldViewer /></div>
-            </div>
-          )}
-          {tab === 'sprites' && <SpritesEditor />}
-          {tab === 'razones' && <RazonesPanel />}
-        </div>
+      {/* ── Contenido ── */}
+      <div className="w-full">
+        {tab === 'world' && (
+          <div className="border border-digi-border rounded-lg overflow-hidden relative" style={{ height: 'calc(100vh - 200px)', minHeight: 400 }}>
+            <div className="absolute inset-0 overflow-hidden [&>div]:!m-0 [&>div]:!h-full"><WorldViewer /></div>
+          </div>
+        )}
+        {tab === 'sprites' && <SpritesEditor />}
+        {tab === 'razones' && <RazonesPanel />}
       </div>
     </div>
   );
