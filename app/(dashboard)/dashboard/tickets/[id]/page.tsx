@@ -964,17 +964,6 @@ export default function TicketDetailPage() {
               { label: 'Creado', value: new Date(ticket.created_at).toLocaleDateString() },
             ]}
           >
-            {canEdit && !isClosed && !isRequestForMe && ((ticket.status === 'pending' || ticket.status === 'withdrawn') || canCompleteTicket) && (
-              <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm space-y-2">
-                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Acciones rápidas</h3>
-                {(ticket.status === 'pending' || ticket.status === 'withdrawn') && (
-                  <button onClick={() => updateStatus('confirmed')} className={`${BTN_PRIMARY} w-full`}><Check className="w-4 h-4" /> Confirmar</button>
-                )}
-                {canCompleteTicket && (
-                  <button onClick={openCompleteModal} className={`${BTN_PRIMARY} w-full`}><Receipt className="w-4 h-4" /> Completar y facturar</button>
-                )}
-              </div>
-            )}
             {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0) && (() => {
               const pct = payments.total > 0 ? Math.min(100, (payments.invoiced / payments.total) * 100) : 0;
               return (
