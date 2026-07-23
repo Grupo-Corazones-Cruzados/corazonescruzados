@@ -35,30 +35,32 @@ extends CharacterBody2D
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
+## Cuando es false, Violeta no responde a teclado ni táctil (se queda quieta).
+## La intro lo pone en false mientras la cámara baja del cielo, y lo devuelve a
+## true al aterrizar. En el juego normal siempre está en true.
+var control_habilitado: bool = true
+
 ## Última dirección hacia la que caminó, para elegir la pose de parado correcta.
 var _mirando: String = "abajo"
 
-# --- Táctil: joystick relativo (tocas en cualquier parte y arrastras el dedo
-#     para dar la dirección; ese primer toque es el centro). ---
-const RADIO_TOUCH := 60.0
-var _touch_id: int = -1
-var _touch_origen: Vector2 = Vector2.ZERO
-var _touch_vector: Vector2 = Vector2.ZERO
-
 
 func _physics_process(_delta: float) -> void:
+	# Si el control está bloqueado (p. ej. durante la intro), se queda quieta.
+	if not control_habilitado:
+		velocity = Vector2.ZERO
+		_animar(Vector2.ZERO)
+		return
 	var dir := _direccion()
 	velocity = dir * velocidad
 	move_and_slide()
 	_animar(dir)
 
 
-## Junta teclado y táctil en un solo vector de dirección (largo máximo 1).
+## Dirección de movimiento (largo máximo 1). Lee las acciones ui_left/right/up/down,
+## que alimentan tanto el TECLADO como el JOYSTICK táctil en pantalla
+## (ver ControlesTactiles.gd), así que aquí no hay que distinguir el dispositivo.
 func _direccion() -> Vector2:
-	var d := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-	if d == Vector2.ZERO and _touch_id != -1:
-		d = _touch_vector
-	return d.limit_length(1.0)
+	return Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down").limit_length(1.0)
 
 
 ## Anima según el estado: caminando (usa la dirección actual) o parado (usa la
@@ -106,19 +108,3 @@ func _anim_idle() -> String:
 func _reproducir(nombre: String) -> void:
 	if sprite.animation != nombre or not sprite.is_playing():
 		sprite.play(nombre)
-
-
-func _unhandled_input(evento: InputEvent) -> void:
-	if evento is InputEventScreenTouch:
-		var t := evento as InputEventScreenTouch
-		if t.pressed and _touch_id == -1:
-			_touch_id = t.index
-			_touch_origen = t.position
-			_touch_vector = Vector2.ZERO
-		elif not t.pressed and t.index == _touch_id:
-			_touch_id = -1
-			_touch_vector = Vector2.ZERO
-	elif evento is InputEventScreenDrag:
-		var d := evento as InputEventScreenDrag
-		if d.index == _touch_id:
-			_touch_vector = (d.position - _touch_origen).limit_length(RADIO_TOUCH) / RADIO_TOUCH

@@ -1,0 +1,5 @@
+# Caché e importaciones del motor Godot (se regeneran solas al abrir el proyecto)
+.godot/
+
+# macOS
+.DS_Store

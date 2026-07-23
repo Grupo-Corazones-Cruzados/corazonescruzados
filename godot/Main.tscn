@@ -1,7 +1,18 @@
-[gd_scene format=3 uid="uid://5coo0d128x2r"]
+[gd_scene format=4 uid="uid://5coo0d128x2r"]
 
+[ext_resource type="Script" uid="uid://dttka1mvcnpd5" path="res://Encuentro.gd" id="1_cm0pq"]
+[ext_resource type="Texture2D" uid="uid://cs0lm0ge07hs1" path="res://assets/Sprites/Suelos/Mundo Interno/Tile 1.png" id="1_r0du0"]
 [ext_resource type="Script" uid="uid://r178s64t7h55" path="res://Violeta.gd" id="1_uu6xs"]
 [ext_resource type="Texture2D" uid="uid://dk1xoeyicftcj" path="res://assets/Sprites/Personajes/Violeta/Modo Oscuro/Violeta.png" id="2_r0du0"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_cm0pq"]
+texture = ExtResource("1_r0du0")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_7yntv"]
+tile_size = Vector2i(32, 32)
+sources/0 = SubResource("TileSetAtlasSource_cm0pq")
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_cm0pq"]
 atlas = ExtResource("2_r0du0")
@@ -154,18 +165,19 @@ animations = [{
 size = Vector2(16, 40)
 
 [node name="Violeta" type="Node2D" unique_id=362562898]
+script = ExtResource("1_cm0pq")
+
+[node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=1139185879]
+tile_map_data = PackedByteArray("AAD//wEAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//AAAAAAAAAAAAAP7/AAAAAAAAAAD///7/AAAAAAAAAAD/////AAAAAAAAAAD//wAAAAAAAAAAAAD//+3/AAAAAAAAAAD//+7/AAAAAAAAAAD//+//AAAAAAAAAAD///D/AAAAAAAAAAD///H/AAAAAAAAAAD///L/AAAAAAAAAAD///P/AAAAAAAAAAD///T/AAAAAAAAAAD///X/AAAAAAAAAAD///b/AAAAAAAAAAD///f/AAAAAAAAAAD///j/AAAAAAAAAAD///n/AAAAAAAAAAD///r/AAAAAAAAAAD///v/AAAAAAAAAAD///z/AAAAAAAAAAD///3/AAAAAAAAAAAAAO3/AAAAAAAAAAAAAO7/AAAAAAAAAAAAAO//AAAAAAAAAAAAAPD/AAAAAAAAAAAAAPH/AAAAAAAAAAAAAPL/AAAAAAAAAAAAAPP/AAAAAAAAAAAAAPT/AAAAAAAAAAAAAPX/AAAAAAAAAAAAAPb/AAAAAAAAAAAAAPf/AAAAAAAAAAAAAPj/AAAAAAAAAAAAAPn/AAAAAAAAAAAAAPr/AAAAAAAAAAAAAPv/AAAAAAAAAAAAAPz/AAAAAAAAAAAAAP3/AAAAAAAAAAD+//r/AAAAAAAAAAD+//v/AAAAAAAAAAABAPr/AAAAAAAAAAABAPv/AAAAAAAAAAD+//T/AAAAAAAAAAD+//X/AAAAAAAAAAABAPT/AAAAAAAAAAABAPX/AAAAAAAAAAA=")
+tile_set = SubResource("TileSet_7yntv")
 
 [node name="CharacterBody2D" type="CharacterBody2D" parent="." unique_id=2109903652]
 position = Vector2(3, 1)
 script = ExtResource("1_uu6xs")
 anim_abajo = "caminar_arriba"
 anim_arriba = "caminar_abajo"
-anim_derecha = "caminar_derecha"
-anim_izquierda = "caminar_izquierda"
 idle_abajo = "idle_arriba"
 idle_arriba = "idle_abajo"
-idle_derecha = "idle_derecha"
-idle_izquierda = "idle_izquierda"
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="CharacterBody2D" unique_id=1194266910]
 sprite_frames = SubResource("SpriteFrames_7yntv")
@@ -174,3 +186,9 @@ animation = &"idle_derecha"
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CharacterBody2D" unique_id=1635201678]
 position = Vector2(-1, 2)
 shape = SubResource("RectangleShape2D_k5ehp")
+
+[node name="Camera2D" type="Camera2D" parent="CharacterBody2D" unique_id=2131190801]
+
+[node name="Nina" type="Sprite2D" parent="." unique_id=2129170085]
+position = Vector2(1, -645)
+texture = ExtResource("1_r0du0")
