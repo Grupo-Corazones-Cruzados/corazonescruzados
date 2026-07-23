@@ -5,17 +5,18 @@ import dynamic from 'next/dynamic';
 import { useAuth } from '@/components/providers/AuthProvider';
 import PageHeader from '@/components/ui/PageHeader';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { Globe, Image as ImageIcon, ShieldAlert } from 'lucide-react';
+import RazonesPanel from '@/components/razones/RazonesPanel';
+import { Globe, Image as ImageIcon, Flame, ShieldAlert } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
-// Panel de administración = DigiMundo. Quedan solo Mundo y Sprites (los proyectos e
-// incidentes del DigiMundo se retiraron; los incidentes viven ahora en cada proyecto
-// del módulo de Proyectos).
+// Panel de administración = DigiMundo. Mundo y Sprites del videojuego + "Razones"
+// (cuaderno personal del admin, tipo Pensamientos, sin clasificación por IA).
 const TABS = [
   { value: 'world', label: 'Mundo', Icon: Globe },
   { value: 'sprites', label: 'Sprites', Icon: ImageIcon },
+  { value: 'razones', label: 'Razones', Icon: Flame },
 ];
 
 const WorldViewer = dynamic(() => import('@/app/(main)/world/page'), {
@@ -41,7 +42,7 @@ export default function AdminPage() {
 
   return (
     <div>
-      <PageHeader title="DigiMundo" description="Mundo y sprites del videojuego" />
+      <PageHeader title="DigiMundo" description="Mundo, sprites y tus razones de lucha" />
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: secciones de DigiMundo ── */}
@@ -71,6 +72,7 @@ export default function AdminPage() {
             </div>
           )}
           {tab === 'sprites' && <SpritesEditor />}
+          {tab === 'razones' && <RazonesPanel />}
         </div>
       </div>
     </div>

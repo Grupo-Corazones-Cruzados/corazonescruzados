@@ -2954,3 +2954,11 @@ Módulos principales:
     **DROPear** tablas y borrar rutas viejas. Queda **código muerto** del DigiMundo en el detalle de proyecto
     (helpers `openProforma`/`openScript*`/`linkDigimundo`, estados, fetch de `digiProjects`) — compila pero
     inalcanzable; limpiar en una pasada futura.
+
+- **Pestaña "Razones" en DigiMundo (admin) (2026-07-22):** cuaderno personal del **admin** para registrar por qué
+  lucha en el proyecto / sucesos a recordar y releerlos cuando falte motivación. **Misma interfaz que Pensamientos**
+  (compositor siempre visible + fechas a la izquierda + lista con editar/eliminar) **pero SIN el cron de IA que
+  analiza/clasifica** (no hay categorías ni gráficos). Privado **por `user_id`**. Tabla `gcc_world.razones`
+  (`lib/razones/db.ts`), API `/api/razones` (GET días+lista, POST) y `/api/razones/[id]` (PATCH/DELETE). UI en
+  `components/razones/RazonesPanel.tsx`, montada como 3ª pestaña del panel admin (Mundo · Sprites · Razones).
+  La "intensidad" (Breve/Media/Extensa) es solo por longitud del texto, no clasificación.
