@@ -9,8 +9,8 @@ import { accessRoleOf, canAccessModule, isPathBlocked, type AccessRole } from '@
 import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
-  Settings, LifeBuoy, Workflow, Menu, ChevronsLeft, ChevronsRight,
-  LogOut, Sun, Moon, CalendarDays, Bell, PartyPopper, BrainCircuit, AlarmClock, Gamepad2, type LucideIcon,
+  Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
+  LogOut, Sun, Moon, CalendarDays, Bell, PartyPopper, BrainCircuit, AlarmClock, type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem {
@@ -55,7 +55,7 @@ const NAV_GROUPS: NavGroup[] = [
   { title: 'Sistema', items: [
     { label: 'Configuración', href: '/dashboard/settings', icon: Settings },
     { label: 'Soporte', href: '/dashboard/support', icon: LifeBuoy },
-    { label: 'DigiMundo', href: '/dashboard/admin', icon: Gamepad2 },
+    { label: 'Admin', href: '/dashboard/admin', icon: ShieldCheck },
   ] },
 ];
 

@@ -65,21 +65,19 @@ export default function IncidentsTab({ projectId, canManage }: { projectId: stri
 
   return (
     <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}>
-          <AlertTriangle className="w-4 h-4 text-accent" /> Incidentes
+      <div className="flex items-center gap-2 mb-2.5">
+        <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5 min-w-0" style={mf}>
+          <AlertTriangle className="w-4 h-4 text-accent shrink-0" /> Incidentes
           {incidents.length > 0 && <span className="text-digi-muted font-normal">({incidents.length})</span>}
         </h3>
-        <div className="ml-auto flex items-center gap-1.5 flex-wrap">
-          {canManage && (
-            <button onClick={() => setCatsOpen(true)} className={`${BTN_SECONDARY} !py-1.5 !text-[12px]`}><Tags className="w-3.5 h-3.5" /> Categorías</button>
-          )}
-          {canManage && (
-            <button onClick={() => setShareOpen(true)} className={`${BTN_SECONDARY} !py-1.5 !text-[12px]`}><Share2 className="w-3.5 h-3.5" /> Compartir</button>
-          )}
-          <button onClick={() => setCreateOpen(true)} className={`${BTN_PRIMARY} !py-1.5 !text-[12px]`}><Plus className="w-3.5 h-3.5" /> Nuevo</button>
-        </div>
+        <button onClick={() => setCreateOpen(true)} className={`${BTN_PRIMARY} ml-auto shrink-0 !py-1.5 !text-[12px]`}><Plus className="w-3.5 h-3.5" /> Nuevo</button>
       </div>
+      {canManage && (
+        <div className="flex items-center gap-2 mb-3">
+          <button onClick={() => setCatsOpen(true)} className={`${BTN_SECONDARY} flex-1 !py-1.5 !text-[12px]`}><Tags className="w-3.5 h-3.5" /> Categorías</button>
+          <button onClick={() => setShareOpen(true)} className={`${BTN_SECONDARY} flex-1 !py-1.5 !text-[12px]`}><Share2 className="w-3.5 h-3.5" /> Compartir</button>
+        </div>
+      )}
 
       {loading ? (
         <p className="text-[12px] text-digi-muted text-center py-8" style={mf}>Cargando…</p>

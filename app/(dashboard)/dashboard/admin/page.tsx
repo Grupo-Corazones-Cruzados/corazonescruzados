@@ -42,12 +42,12 @@ export default function AdminPage() {
 
   return (
     <div>
-      <PageHeader title="DigiMundo" description="Mundo, sprites y tus razones de lucha" />
+      <PageHeader title="Admin" description="Mundo, sprites y tus razones de lucha" />
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: secciones de DigiMundo ── */}
         <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>DigiMundo</p>
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Admin</p>
           <div className="space-y-0.5">
             {TABS.map((t) => {
               const active = tab === t.value;
