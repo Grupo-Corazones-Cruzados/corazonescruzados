@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Send, X, AlertTriangle, Crosshair } from 'lucide-react';
 import { DAY_LABELS_ES_SHORT } from '@/lib/calendar/recurrence';
@@ -43,20 +44,30 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 
 const MEMBER_TZ = 'America/Guayaquil';
 
-const TZ_OPTIONS = [
-  { value: MEMBER_TZ, label: 'Ecuador (GMT-5)' },
-  { value: 'America/Bogota', label: 'Colombia (GMT-5)' },
-  { value: 'America/Lima', label: 'Perú (GMT-5)' },
-  { value: 'America/Mexico_City', label: 'México (GMT-6)' },
-  { value: 'America/New_York', label: 'Nueva York (GMT-5/-4)' },
-  { value: 'America/Los_Angeles', label: 'Los Ángeles (GMT-8/-7)' },
-  { value: 'America/Chicago', label: 'Chicago (GMT-6/-5)' },
-  { value: 'America/Argentina/Buenos_Aires', label: 'Argentina (GMT-3)' },
-  { value: 'America/Santiago', label: 'Chile (GMT-4/-3)' },
-  { value: 'Europe/Madrid', label: 'España (GMT+1/+2)' },
-  { value: 'Europe/London', label: 'Londres (GMT+0/+1)' },
-  { value: 'UTC', label: 'UTC' },
+const TZ_FALLBACK = [
+  MEMBER_TZ, 'America/Bogota', 'America/Lima', 'America/Mexico_City', 'America/New_York',
+  'America/Los_Angeles', 'America/Chicago', 'America/Argentina/Buenos_Aires', 'America/Santiago',
+  'Europe/Madrid', 'Europe/London', 'UTC',
 ];
+
+/** Offset actual de una zona, p. ej. "GMT-5". */
+function tzOffsetLabel(zone: string): string {
+  try {
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'shortOffset' }).formatToParts(new Date());
+    return p.find((x) => x.type === 'timeZoneName')?.value || '';
+  } catch { return ''; }
+}
+
+/** Todas las zonas horarias IANA (con su offset), o una lista corta si el navegador no las expone. */
+function buildTzOptions(): { value: string; label: string }[] {
+  let zones: string[] = [];
+  try { zones = ((Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf?.('timeZone')) || []; } catch { /* noop */ }
+  if (!zones.length) zones = TZ_FALLBACK;
+  return zones.map((z) => {
+    const off = tzOffsetLabel(z);
+    return { value: z, label: off ? `${z.replace(/_/g, ' ')} (${off})` : z.replace(/_/g, ' ') };
+  });
+}
 
 function detectTz(): string {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || MEMBER_TZ; } catch { return MEMBER_TZ; }
@@ -106,7 +117,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
   const [startTime, setStartTime] = useState<string>('10:00');
   const [endTime, setEndTime] = useState<string>('11:00');
   const [tz, setTz] = useState<string>(() => detectTz());
-  const [tzList, setTzList] = useState(TZ_OPTIONS);
+  const tzList = useMemo(() => buildTzOptions(), []);
   const [recurrence, setRecurrence] = useState<ProposalRecurrence>('none');
   const [days, setDays] = useState<number[]>([]);
   const [until, setUntil] = useState<string>('');
@@ -137,11 +148,6 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
     setDays([]);
     setUntil('');
     setError(null);
-    if (detected && !TZ_OPTIONS.some((o) => o.value === detected)) {
-      setTzList([{ value: detected, label: `${detected} (auto)` }, ...TZ_OPTIONS]);
-    } else {
-      setTzList(TZ_OPTIONS);
-    }
   }, [open, initialStart]);
 
   // La FECHA/INICIO/FIN se interpretan SIEMPRE en horario del miembro (Ecuador GMT-5).
@@ -157,13 +163,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
     return isBusy(s, e);
   }, [isBusy, startUTC, endUTC]);
 
-  const autoDetectTz = () => {
-    const d = detectTz();
-    setTz(d);
-    if (d && !tzList.some((o) => o.value === d)) {
-      setTzList([{ value: d, label: `${d} (auto)` }, ...TZ_OPTIONS]);
-    }
-  };
+  const autoDetectTz = () => setTz(detectTz());
 
   const toggleDay = (dow: number) => {
     setDays((prev) => (prev.includes(dow) ? prev.filter((d) => d !== dow) : [...prev, dow].sort()));
@@ -278,11 +278,12 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-end">
-          <PixelSelect
+          <SearchableSelect
             label="TU ZONA HORARIA"
             value={tz}
-            onChange={(e) => setTz(e.target.value)}
-            options={tzList.map((t) => ({ value: t.value, label: t.label }))}
+            onChange={setTz}
+            options={tzList}
+            searchPlaceholder="Buscar zona horaria…"
           />
           <button
             type="button"
