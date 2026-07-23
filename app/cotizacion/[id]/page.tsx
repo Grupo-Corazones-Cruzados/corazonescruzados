@@ -195,6 +195,14 @@ export default function PublicQuotePage() {
               <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" strokeWidth={2.5} />
               <span>Después de la entrega tienes 15 días de soporte gratis por si sucede algún error no contemplado.</span>
             </li>
+            <li className="flex items-start gap-2.5 text-[13px] text-digi-text leading-relaxed" style={mf}>
+              <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" strokeWidth={2.5} />
+              <span>Eres propietario del código fuente del proyecto.</span>
+            </li>
+            <li className="flex items-start gap-2.5 text-[13px] text-digi-text leading-relaxed" style={mf}>
+              <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" strokeWidth={2.5} />
+              <span>Debes crear una cuenta de GitHub para subir el proyecto a tu repositorio.</span>
+            </li>
           </ul>
         </div>
 
