@@ -161,17 +161,18 @@ ESCENAS = [
         "transmiten la costumbre a sus hijos. Mantén IDÉNTICO el estilo de dibujo de "
         "personajes, los colores y el lugar de la referencia."),
     (4, ["hoyo"],
-        "Un campo de hierba verde bajo un cielo NUBLADO y luz fría (día gris, nada de "
-        "atardecer dorado). En el suelo, el Hoyo: un agujero natural oscuro en la tierra, "
-        "SIN muros de piedra. CLAVE — SOLO deben aparecer POCAS personas: un grupo PEQUEÑO "
-        "de apenas 4 o 5 ADOLESCENTES / jóvenes de unos 15–18 años, y NADIE MÁS. "
-        "ABSOLUTAMENTE NINGÚN adulto, NINGÚN padre o madre, NINGUNA persona mayor, NI niños "
-        "pequeños: únicamente esos pocos jóvenes. Visten ROPA MODERNA Y ACTUAL (sudaderas "
-        "con capucha, chaquetas, camisetas, jeans, zapatillas deportivas). Están arrodillados "
-        "juntos al borde del Hoyo repitiendo una vieja costumbre: rezan con las manos juntas "
-        "y uno deja caer una flor dentro del agujero. Se siente que ya casi nadie viene, "
-        "solo ellos. Estilo de ilustración 2D pixel-art (como la referencia de estilo), "
-        "coherente con la serie."),
+        "TOMA AMPLIA Y ELEVADA (vista desde arriba y algo lejos, como plano general), "
+        "IDÉNTICA composición al resto de la serie: el Hoyo —un agujero natural oscuro y "
+        "GRANDE, SIN muros de piedra— situado en el CENTRO-INFERIOR del encuadre y ocupando "
+        "una buena porción de la imagen (grande, como en las escenas del rito). Alrededor, "
+        "un amplio campo de hierba verde que se extiende hasta el horizonte, bajo un cielo "
+        "NUBLADO y gris (día frío, nada de atardecer dorado). Junto al borde del Hoyo, un "
+        "grupo PEQUEÑO de apenas 5 o 6 ADOLESCENTES (jóvenes de 15–18 años) y NADIE MÁS: "
+        "NINGÚN adulto, padre, persona mayor ni niño pequeño. Visten ROPA MODERNA Y ACTUAL "
+        "(sudaderas con capucha, chaquetas, jeans, zapatillas). Están arrodillados en un "
+        "arco alrededor del Hoyo (el círculo NO se completa, hay huecos vacíos porque ya "
+        "casi nadie viene), rezando; uno deja caer una flor dentro del agujero. Estilo de "
+        "ilustración 2D pixel-art coherente con la serie."),
     (5, ["A1", "A2"], "Ya menos personas rezan al Hoyo; el grupo es más pequeño y la luz más fría."),
     (6, ["A1", "A2"], "Solo una viejita, sola, hace el último gesto de rezar al Hoyo."),
     # ACTO 2 — El abandono y la corrupción del Hoyo

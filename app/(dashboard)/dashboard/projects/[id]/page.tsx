@@ -968,6 +968,97 @@ export default function ProjectDetailPage() {
   }
   const participants = Array.from(participantMap.values());
   const pendingBids = bids.filter((b: any) => b.status !== 'accepted');
+
+  // Descarga TXT del proyecto (descripción, propiedades, requerimientos, costos adicionales, equipo).
+  const downloadProjectTxt = () => {
+    const p = project;
+    const money = (n: any) => `$${Number(n || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const rule = '----------------------------------------';
+    const drule = '========================================';
+    const L: string[] = [];
+    const line = (s = '') => L.push(s);
+
+    line(`PROYECTO: ${p.title || ''}`);
+    line(drule);
+    line('');
+    line('PROPIEDADES');
+    line(rule);
+    line(`Estado: ${STATUS_LABEL[p.status] || p.status}`);
+    if (p.client_name || p.client_email) line(`Cliente: ${p.client_name || ''}${p.client_email ? ` <${p.client_email}>` : ''}`);
+    line(`Responsable: ${responsibleRow?.member_name || p.pending_responsible?.member_name || p.assigned_member_name || '—'}`);
+    const costRef = p.final_cost || p.budget_max || p.budget_min;
+    if (costRef) line(`Costo / Presupuesto: ${money(costRef)}`);
+    if (p.deadline) line(`Entrega estimada: ${new Date(p.deadline).toLocaleDateString('es-EC')}`);
+    line(`Visibilidad: ${p.is_private ? 'Privado' : 'Público'}`);
+    if (p.service_name || p.service?.name) line(`Servicio: ${p.service_name || p.service?.name}`);
+    if (p.created_at) line(`Creado: ${new Date(p.created_at).toLocaleDateString('es-EC')}`);
+    line('');
+
+    line('DESCRIPCIÓN');
+    line(rule);
+    line(p.description ? String(p.description) : '—');
+    line('');
+
+    const rlist: any[] = p.requirements || [];
+    line(`REQUERIMIENTOS (${rlist.length})`);
+    line(rule);
+    if (!rlist.length) line('—');
+    let reqSubtotal = 0;
+    rlist.forEach((r: any, i: number) => {
+      reqSubtotal += Number(r.cost || 0);
+      const done = r.is_completed || r.completed_at ? '  [Completado]' : '';
+      line(`${i + 1}. ${r.title}${r.cost ? '  —  ' + money(r.cost) : ''}${done}`);
+      if (r.description) line(`   ${String(r.description).replace(/\n/g, '\n   ')}`);
+      const items: any[] = r.items || [];
+      if (items.length) {
+        line('   Subtareas:');
+        items.forEach((it: any) => line(`     [${it.is_completed ? 'x' : ' '}] ${it.title}`));
+      }
+      const acc = (r.assignments || []).filter((a: any) => a.status === 'accepted');
+      if (acc.length) {
+        line('   Asignados:');
+        acc.forEach((a: any) => line(`     - ${a.member_name}${(a.member_cost ?? a.proposed_cost) != null ? ` (${money(a.member_cost ?? a.proposed_cost)})` : ''}`));
+      }
+      line('');
+    });
+
+    const adds: any[] = p.additional_costs || [];
+    line(`COSTOS ADICIONALES (${adds.length})`);
+    line(rule);
+    if (!adds.length) line('—');
+    let addSubtotal = 0;
+    adds.forEach((c: any) => {
+      addSubtotal += Number(c.amount || 0);
+      line(`- ${c.label}: ${money(c.amount)}`);
+      if (c.description) line(`  ${c.description}`);
+    });
+    line('');
+
+    line('TOTALES');
+    line(rule);
+    if (rlist.length) line(`Subtotal requerimientos: ${money(reqSubtotal)}`);
+    if (adds.length) line(`Costos adicionales: ${money(addSubtotal)}`);
+    line(`TOTAL: ${money(reqSubtotal + addSubtotal)}`);
+    line('');
+
+    line('EQUIPO');
+    line(rule);
+    line(`Responsable: ${responsibleRow?.member_name || p.pending_responsible?.member_name || p.assigned_member_name || '—'}`);
+    line(`Participantes (${participants.length}):`);
+    if (participants.length) participants.forEach((t: any) => line(`  - ${t.member_name}`));
+    else line('  —');
+    line('');
+    line(drule);
+    line(`Generado el ${new Date().toLocaleString('es-EC')} · GCC World`);
+
+    const blob = new Blob([L.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safe = (p.title || 'proyecto').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_').slice(0, 50) || 'proyecto';
+    a.href = url; a.download = `Proyecto-${safe}.txt`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
   const BID_LABEL: Record<string, string> = { pending: 'Pendiente', accepted: 'Aceptada', rejected: 'Rechazada', invited: 'Invitado', counter: 'Contraoferta' };
 
   const renderAvatar = (m: any, size: 'sm' | 'md' = 'md') => m.photo_url ? (
@@ -1137,6 +1228,8 @@ export default function ProjectDetailPage() {
             </>
           }
           overflow={[
+            // Descargar TXT del proyecto: disponible desde 'borrador' para arriba (no en cotización).
+            ...(project.status !== 'cotizacion' ? [{ label: 'Descargar TXT', onClick: downloadProjectTxt }] : []),
             ...(isOwner && !isTerminal ? [{ label: 'Editar nombre', onClick: () => { setEditTitle(project.title); setEditingTitle(true); } }] : []),
             // Participación del miembro (antes en la tarjeta "Acciones")
             ...(isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && !projectRequests.some((r: any) => String(r.member_id) === String(memberId) && r.type === 'withdrawal' && ['pending', 'rejected'].includes(r.status))
