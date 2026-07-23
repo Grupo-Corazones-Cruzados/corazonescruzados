@@ -11,7 +11,7 @@ import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, BarChart3 } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, BarChart3, Pencil } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -115,6 +115,12 @@ export default function ProjectDetailPage() {
   const [editBudgetMax, setEditBudgetMax] = useState('');
   const [editingDeadline, setEditingDeadline] = useState(false);
   const [editDeadline, setEditDeadline] = useState('');
+  // Edición inline de requerimientos y subtareas
+  const [editingReqId, setEditingReqId] = useState<number | null>(null);
+  const [editReqData, setEditReqData] = useState<{ title: string; description: string; cost: string }>({ title: '', description: '', cost: '' });
+  const [savingReqEdit, setSavingReqEdit] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editItemText, setEditItemText] = useState('');
 
   // Assignment states
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -642,6 +648,51 @@ export default function ProjectDetailPage() {
     } catch (e: any) { toast.error(e.message || 'Error'); fetchProject(); }
   };
 
+  const startEditReq = (r: any) => {
+    setEditingReqId(r.id);
+    setEditReqData({ title: r.title || '', description: r.description || '', cost: r.cost != null ? String(r.cost) : '' });
+  };
+  const saveReqEdit = async () => {
+    if (editingReqId == null) return;
+    const reqId = editingReqId;
+    const title = editReqData.title.trim();
+    if (!title) { toast.error('El título no puede quedar vacío'); return; }
+    const costStr = editReqData.cost.trim();
+    const cost = costStr === '' ? null : Number(costStr);
+    if (cost != null && !Number.isFinite(cost)) { toast.error('El costo no es válido'); return; }
+    const description = editReqData.description.trim() || null;
+    setSavingReqEdit(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/requirements`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requirement_id: reqId, title, description, cost }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'No se pudo actualizar');
+      setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => r.id === reqId ? { ...r, title, description, cost } : r) } : p);
+      setEditingReqId(null);
+      toast.success('Requerimiento actualizado');
+    } catch (e: any) { toast.error(e.message || 'Error'); }
+    finally { setSavingReqEdit(false); }
+  };
+
+  const startEditItem = (item: any) => { setEditingItemId(item.id); setEditItemText(item.title || ''); };
+  const saveItemEdit = async () => {
+    if (editingItemId == null) return;
+    const itemId = editingItemId;
+    const title = editItemText.trim();
+    if (!title) { toast.error('La subtarea no puede quedar vacía'); return; }
+    setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => ({ ...r, items: (r.items || []).map((it: any) => it.id === itemId ? { ...it, title } : it) })) } : p);
+    setEditingItemId(null);
+    try {
+      const res = await fetch(`/api/projects/${id}/requirements/items`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: itemId, title }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'No se pudo actualizar'); }
+    } catch (e: any) { toast.error(e.message || 'Error'); fetchProject(); }
+  };
+
   const openAssignModal = (reqId: number) => {
     setAssignReqId(reqId);
     setAssignMemberId('');
@@ -882,6 +933,8 @@ export default function ProjectDetailPage() {
     return sum + accepted.reduce((s: number, a: any) => s + Number(a.member_cost ?? a.proposed_cost ?? 0), 0);
   }, 0);
   const isTerminal = ['completed', 'closed', 'cancelled'].includes(project.status);
+  // Editar texto/costo de un requerimiento: dueño y en un estado que la API permite.
+  const canEditReqText = isOwner && !['review', 'completed', 'cancelled', 'closed'].includes(project.status);
   const hasReqs = reqs.length > 0;
   // Images: visible when project is not draft; editable by owner or accepted participant
   // En 'cotizacion' se ocultan las imágenes del proyecto (aún no aprobado por el cliente).
@@ -1231,6 +1284,43 @@ export default function ProjectDetailPage() {
                   return (
                     <div key={r.id} className={`rounded-lg border border-digi-border bg-white overflow-hidden`}>
                       <div className={`p-2.5 border-l-[3px] ${r.is_completed ? 'border-l-green-500' : 'border-l-accent'}`}>
+                        {editingReqId === r.id ? (
+                          <div className="flex items-start gap-3">
+                            <div className="mt-0.5 w-[18px] h-[18px] rounded-[5px] border border-accent bg-accent-light flex items-center justify-center shrink-0"><Pencil className="w-2.5 h-2.5 text-accent" /></div>
+                            <div className="min-w-0 flex-1 space-y-2">
+                              <input
+                                value={editReqData.title}
+                                onChange={(e) => setEditReqData((d) => ({ ...d, title: e.target.value }))}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveReqEdit(); } if (e.key === 'Escape') setEditingReqId(null); }}
+                                autoFocus placeholder="Título del requerimiento"
+                                className="field-control w-full px-2.5 py-1.5 bg-digi-darker border-2 border-accent text-[13px] font-medium text-digi-text focus:outline-none" style={mf}
+                              />
+                              <textarea
+                                value={editReqData.description}
+                                onChange={(e) => setEditReqData((d) => ({ ...d, description: e.target.value }))}
+                                onKeyDown={(e) => { if (e.key === 'Escape') setEditingReqId(null); }}
+                                rows={2} placeholder="Descripción (opcional)"
+                                className="field-control w-full px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf}
+                              />
+                              <div className="flex items-center gap-2">
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[12px] text-digi-muted pointer-events-none">$</span>
+                                  <input
+                                    value={editReqData.cost}
+                                    onChange={(e) => setEditReqData((d) => ({ ...d, cost: e.target.value }))}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveReqEdit(); } if (e.key === 'Escape') setEditingReqId(null); }}
+                                    type="number" placeholder="0.00"
+                                    className="field-control w-28 pl-5 pr-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text tabular-nums focus:border-accent focus:outline-none" style={mf}
+                                  />
+                                </div>
+                                <div className="ml-auto flex items-center gap-2">
+                                  <button onClick={() => setEditingReqId(null)} className="text-[12px] font-medium text-digi-muted border border-digi-border rounded px-3 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}>Cancelar</button>
+                                  <button onClick={saveReqEdit} disabled={savingReqEdit} className="text-[12px] font-medium text-white bg-accent rounded px-3 py-1 hover:opacity-90 transition-colors disabled:opacity-50" style={mf}>{savingReqEdit ? 'Guardando…' : 'Guardar'}</button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
                         <div className="flex items-start gap-3">
                           <button
                             onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
@@ -1251,6 +1341,9 @@ export default function ProjectDetailPage() {
                           </button>
                           <div className="flex items-center gap-2 shrink-0">
                             {r.cost && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${r.cost}</span>}
+                            {canEditReqText && (
+                              <button onClick={() => startEditReq(r)} aria-label="Editar requerimiento" title="Editar" className="text-digi-muted/60 hover:text-accent transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                            )}
                             {isOwner && (
                               <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="text-digi-muted/60 hover:text-red-600 transition-colors"><X className="w-4 h-4" /></button>
                             )}
@@ -1260,6 +1353,7 @@ export default function ProjectDetailPage() {
                             </button>
                           </div>
                         </div>
+                        )}
 
                         {/* Detalle desplegable: botones + miembros + subtareas */}
                         {expanded && (<>
@@ -2125,12 +2219,31 @@ export default function ProjectDetailPage() {
               <div className="space-y-1">
                 {items.length > 0 ? items.map((item: any) => (
                   <div key={item.id} className="flex items-center gap-2.5 group px-2 py-1.5 rounded hover:bg-[#f3f2f1]">
-                    <button onClick={() => canEditThis && toggleSubItem(item.id, !item.is_completed)} disabled={!canEditThis} aria-label={item.is_completed ? 'Marcar incompleto' : 'Marcar completo'} className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${item.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : ''}`}>
+                    <button onClick={() => canEditThis && toggleSubItem(item.id, !item.is_completed)} disabled={!canEditThis || editingItemId === item.id} aria-label={item.is_completed ? 'Marcar incompleto' : 'Marcar completo'} className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${item.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis && editingItemId !== item.id ? 'cursor-pointer hover:border-accent' : ''}`}>
                       {item.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
                     </button>
-                    <span className={`text-[13px] flex-1 ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
-                    {canEditThis && (
-                      <button onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
+                    {editingItemId === item.id ? (
+                      <>
+                        <input
+                          value={editItemText}
+                          onChange={(e) => setEditItemText(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveItemEdit(); } if (e.key === 'Escape') setEditingItemId(null); }}
+                          autoFocus
+                          className="field-control flex-1 min-w-0 px-2 py-1 bg-white border-2 border-accent text-[13px] text-digi-text focus:outline-none" style={mf}
+                        />
+                        <button onClick={saveItemEdit} aria-label="Guardar subtarea" title="Guardar" className="text-accent hover:opacity-80 transition-opacity shrink-0"><Check className="w-4 h-4" strokeWidth={3} /></button>
+                        <button onClick={() => setEditingItemId(null)} aria-label="Cancelar" title="Cancelar" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
+                      </>
+                    ) : (
+                      <>
+                        <span onDoubleClick={() => canEditThis && startEditItem(item)} className={`text-[13px] flex-1 break-words ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
+                        {canEditThis && (
+                          <>
+                            <button onClick={() => startEditItem(item)} aria-label="Editar subtarea" title="Editar" className="text-digi-muted/50 hover:text-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
+                          </>
+                        )}
+                      </>
                     )}
                   </div>
                 )) : (

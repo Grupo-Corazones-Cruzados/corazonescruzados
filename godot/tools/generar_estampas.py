@@ -160,19 +160,18 @@ ESCENAS = [
         "pequeños (de distintas edades) arrodillados junto a sus padres, como familias que "
         "transmiten la costumbre a sus hijos. Mantén IDÉNTICO el estilo de dibujo de "
         "personajes, los colores y el lugar de la referencia."),
-    (4, ["assets/Prologo/escenas/escena_03.png", "hoyo"],
-        "USA la imagen de referencia SOLO para el LUGAR (el mismo campo verde y el mismo "
-        "Hoyo, agujero natural oscuro SIN muros de piedra) y el mismo estilo de dibujo 2D. "
-        "PERO es OTRO DÍA muchos años después, con cielo NUBLADO y luz fría (nada de "
-        "atardecer dorado). Las personas son AHORA un grupo de ADOLESCENTES (jóvenes de unos "
-        "14–16 años, NO niños pequeños, NO adultos mayores, NO campesinos). Van vestidos con "
-        "ROPA CLARAMENTE MODERNA Y ACTUAL: chaquetas, sudaderas con capucha, camisetas, "
-        "pantalones tipo jeans, zapatillas deportivas — nada de ropa campesina antigua ni "
-        "pañuelos ni delantales. Es la señal de que el mundo se ha modernizado con el paso "
-        "de las generaciones. Estos adolescentes están arrodillados en el borde del Hoyo "
-        "REPITIENDO la vieja costumbre: rezan y uno deja caer una flor dentro del agujero. "
-        "Mantén el estilo de dibujo, cambiando la edad (adolescentes), la ropa (moderna) y "
-        "el día (nublado, frío)."),
+    (4, ["hoyo"],
+        "Un campo de hierba verde bajo un cielo NUBLADO y luz fría (día gris, nada de "
+        "atardecer dorado). En el suelo, el Hoyo: un agujero natural oscuro en la tierra, "
+        "SIN muros de piedra. CLAVE — SOLO deben aparecer POCAS personas: un grupo PEQUEÑO "
+        "de apenas 4 o 5 ADOLESCENTES / jóvenes de unos 15–18 años, y NADIE MÁS. "
+        "ABSOLUTAMENTE NINGÚN adulto, NINGÚN padre o madre, NINGUNA persona mayor, NI niños "
+        "pequeños: únicamente esos pocos jóvenes. Visten ROPA MODERNA Y ACTUAL (sudaderas "
+        "con capucha, chaquetas, camisetas, jeans, zapatillas deportivas). Están arrodillados "
+        "juntos al borde del Hoyo repitiendo una vieja costumbre: rezan con las manos juntas "
+        "y uno deja caer una flor dentro del agujero. Se siente que ya casi nadie viene, "
+        "solo ellos. Estilo de ilustración 2D pixel-art (como la referencia de estilo), "
+        "coherente con la serie."),
     (5, ["A1", "A2"], "Ya menos personas rezan al Hoyo; el grupo es más pequeño y la luz más fría."),
     (6, ["A1", "A2"], "Solo una viejita, sola, hace el último gesto de rezar al Hoyo."),
     # ACTO 2 — El abandono y la corrupción del Hoyo
