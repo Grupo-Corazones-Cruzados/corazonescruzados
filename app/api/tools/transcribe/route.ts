@@ -22,6 +22,26 @@ async function cleanup(files: string[]) {
   for (const f of files) { try { await fs.unlink(f); } catch {} }
 }
 
+/** Colapsa una palabra/token repetido 3+ veces seguidas (bounded → sin backtracking catastrófico). */
+function collapseWordRuns(text: string): string {
+  return text.replace(/\b([\p{L}\p{N}'’-]{1,40})(?:\s+\1\b){2,}/giu, '$1');
+}
+/** Colapsa oraciones idénticas consecutivas con un escaneo LINEAL (sin regex con backreference). */
+function collapseSentenceRuns(text: string): string {
+  const parts = text.split(/(?<=[.!?])\s+/);
+  const out: string[] = [];
+  let prevNorm = '';
+  for (const raw of parts) {
+    const s = raw.trim();
+    if (!s) continue;
+    const norm = s.toLowerCase();
+    if (norm === prevNorm) continue;
+    prevNorm = norm;
+    out.push(s);
+  }
+  return out.join(' ');
+}
+
 export async function POST(req: NextRequest) {
   const tempFiles: string[] = [];
   try {
@@ -61,8 +81,10 @@ export async function POST(req: NextRequest) {
       const segPath = join(tmpdir(), `tr-${id}-s${segIndex}.mp3`);
       try {
         await execFileAsync(FFMPEG, [
-          '-i', inputPath, '-y',
+          // -ss ANTES de -i = input seeking (busca directo, sin decodificar desde el inicio):
+          // clave para que el troceo de audios largos sea rápido.
           '-ss', String(segIndex * SEGMENT_SEC),
+          '-i', inputPath, '-y',
           '-t', String(SEGMENT_SEC),
           '-ac', '1', '-ar', '16000', '-b:a', '64k',
           '-f', 'mp3', segPath,
@@ -109,7 +131,7 @@ export async function POST(req: NextRequest) {
         }
       }
     };
-    await Promise.all(Array.from({ length: Math.min(3, segPaths.length) }, () => worker()));
+    await Promise.all(Array.from({ length: Math.min(5, segPaths.length) }, () => worker()));
 
     let fullText = segTexts.filter((t) => t.trim()).join('\n\n');
 
@@ -129,11 +151,13 @@ export async function POST(req: NextRequest) {
     for (const pattern of hallucinations) {
       fullText = fullText.replace(pattern, '');
     }
-    // Remove any phrase (up to 200 chars) repeated 3+ times consecutively
-    fullText = fullText.replace(/(.{5,200}?)(?:[\s.?!,]*\1){2,}/gi, (_match, phrase) => phrase.trim());
-    // Collapse runs of identical sentences separated by punctuation/whitespace
-    fullText = fullText.replace(/([^.!?\n]{10,}[.!?])(\s*\1){1,}/gi, '$1');
-    fullText = fullText.split('\n').filter(l => l.trim()).join('\n');
+    // Colapsa los bucles de Whisper (palabras/oraciones repetidas) con algoritmos LINEALES/ACOTADOS
+    // por párrafo, evitando el catastrophic backtracking que podía colgar la CPU en textos largos.
+    fullText = fullText
+      .split('\n\n')
+      .map((p) => collapseSentenceRuns(collapseWordRuns(p)))
+      .filter((p) => p.trim())
+      .join('\n\n');
 
     if (!fullText.trim()) {
       return NextResponse.json({ error: 'No se pudo extraer texto del audio' }, { status: 400 });
