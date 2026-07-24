@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://belywbra0n2ej"
-path="res://.godot/imported/A3.png-9e16e086cd376c2c3e14532590aaea89.ctex"
+uid="uid://r7uttr2bklj8"
+path="res://.godot/imported/personaje.png-ebd8b82aed7260471bbc8e47cd9573be.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/Prologo/anclas/A3.png"
-dest_files=["res://.godot/imported/A3.png-9e16e086cd376c2c3e14532590aaea89.ctex"]
+source_file="res://assets/Prologo/anclas/personaje.png"
+dest_files=["res://.godot/imported/personaje.png-ebd8b82aed7260471bbc8e47cd9573be.ctex"]
 
 [params]
 

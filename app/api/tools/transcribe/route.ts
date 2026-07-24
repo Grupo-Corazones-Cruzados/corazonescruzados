@@ -22,6 +22,36 @@ async function cleanup(files: string[]) {
   for (const f of files) { try { await fs.unlink(f); } catch {} }
 }
 
+/** True si el error de red/OpenAI es transitorio y vale la pena reintentar. */
+function isTransient(e: any): boolean {
+  const msg = String(e?.message || '').toLowerCase();
+  const status = e?.status ?? e?.code;
+  return msg.includes('aborted') || msg.includes('econnreset') || msg.includes('etimedout')
+    || msg.includes('timeout') || msg.includes('fetch failed') || msg.includes('socket')
+    || status === 429 || (typeof status === 'number' && status >= 500 && status < 600);
+}
+
+/**
+ * Transcribe UN segmento con reintentos: un corte transitorio de red hacia OpenAI (p. ej.
+ * "aborted"/ECONNRESET) ya no tumba toda la transcripción. Recrea el `File` en cada intento
+ * porque el stream se consume al enviarse.
+ */
+async function transcribeSegmentWithRetry(openai: OpenAI, opts: any, segBuffer: Buffer, name: string, attempts = 3): Promise<any> {
+  let lastErr: any;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const segFile = await toFile(segBuffer, name);
+      return await openai.audio.transcriptions.create({ ...opts, file: segFile });
+    } catch (e: any) {
+      lastErr = e;
+      if (!isTransient(e) || i === attempts - 1) throw e;
+      console.warn(`Transcribe ${name}: reintento ${i + 1} tras error transitorio (${e?.message})`);
+      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 export async function POST(req: NextRequest) {
   const tempFiles: string[] = [];
   try {
@@ -97,8 +127,7 @@ export async function POST(req: NextRequest) {
       console.log(`Transcribe segment ${segIndex}: ${(segSize / 1024).toFixed(0)}KB`);
 
       const segBuffer = await fs.readFile(segPath);
-      const segFile = await toFile(segBuffer, `segment-${segIndex}.mp3`);
-      const result: any = await openai.audio.transcriptions.create({ ...whisperOpts, file: segFile });
+      const result: any = await transcribeSegmentWithRetry(openai, whisperOpts, segBuffer, `segment-${segIndex}.mp3`);
 
       // Filter out clearly bad sub-segments using Whisper's per-segment metadata.
       // Only drop on strong signals — low-confidence audio (low avg_logprob) is often
@@ -172,6 +201,9 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     await cleanup(tempFiles);
     console.error('Transcribe error:', err.message);
-    return NextResponse.json({ error: err.message || 'Error al transcribir' }, { status: 500 });
+    const friendly = isTransient(err)
+      ? 'La transcripción se interrumpió (posible reinicio del servidor o corte de red). Vuelve a intentarlo en un momento.'
+      : (err.message || 'Error al transcribir');
+    return NextResponse.json({ error: friendly }, { status: 500 });
   }
 }

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bcekc6nfqrpdl"
-path="res://.godot/imported/A2.png-db03cf1a9241e6a0a6c5ff5e92b124fe.ctex"
+uid="uid://didfrwehodkpv"
+path="res://.godot/imported/isla.png-f3703142b597c3ad73f244c8594e226d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/Prologo/anclas/A2.png"
-dest_files=["res://.godot/imported/A2.png-db03cf1a9241e6a0a6c5ff5e92b124fe.ctex"]
+source_file="res://assets/Prologo/anclas/isla.png"
+dest_files=["res://.godot/imported/isla.png-f3703142b597c3ad73f244c8594e226d.ctex"]
 
 [params]
 

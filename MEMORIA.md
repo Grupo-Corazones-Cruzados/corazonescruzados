@@ -275,6 +275,12 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **★ VIDEOJUEGO — fuente de verdad viva: `godot/Videojuego.md` + skill `/videojuegogcc` (2026-07-23).**
+  Todo el desarrollo del videojuego (arquitectura Godot, historia/lore, pipeline de arte por IA
+  con Gemini/Nano Banana, REGLAS de consistencia del arte, diseño de fases y cómo trabajar con
+  Fernando) vive y se auto-actualiza en **`godot/Videojuego.md`**. La skill **`/videojuegogcc`**
+  lo carga/crea y lo mantiene al día — invocarla al retomar el juego. Docs hermanos:
+  `godot/HISTORIA.md` (guion/lore) y `godot/GUION_VISUAL.md` (66 estampas del prólogo).
 - **JUEGO — CONSTRUCCIÓN ARRANCADA en Godot: personaje "Violeta" caminando (2026-07-21).** El
   usuario ya está desarrollando el juego real en el editor de Godot.
   - **Personaje: "Violeta".** Spritesheet dibujado en Pixaki (iPad) en
