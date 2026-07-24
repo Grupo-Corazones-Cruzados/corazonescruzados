@@ -7,6 +7,9 @@ import { promisify } from 'util';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { Readable } from 'stream';
+import { createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
 // @ts-ignore
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 
@@ -20,6 +23,33 @@ const MIN_SEGMENT_SIZE = 5000; // 5KB — below this means empty/end of audio
 
 async function cleanup(files: string[]) {
   for (const f of files) { try { await fs.unlink(f); } catch {} }
+}
+
+/**
+ * Colapsa una palabra/token corto repetido 3+ veces seguidas ("gracias gracias gracias" →
+ * "gracias"). Regex ACOTADA (grupo ≤40 chars, repetición concreta) → sin backtracking catastrófico.
+ */
+function collapseWordRuns(text: string): string {
+  return text.replace(/\b([\p{L}\p{N}'’-]{1,40})(?:\s+\1\b){2,}/giu, '$1');
+}
+
+/**
+ * Colapsa oraciones idénticas consecutivas con un escaneo LINEAL (sin regex con backreference),
+ * que es lo que colgaba la CPU en transcripciones largas (bucles de Whisper repetidos miles de veces).
+ */
+function collapseSentenceRuns(text: string): string {
+  const parts = text.split(/(?<=[.!?])\s+/);
+  const out: string[] = [];
+  let prevNorm = '';
+  for (const raw of parts) {
+    const s = raw.trim();
+    if (!s) continue;
+    const norm = s.toLowerCase();
+    if (norm === prevNorm) continue; // salta la repetición consecutiva
+    prevNorm = norm;
+    out.push(s);
+  }
+  return out.join(' ');
 }
 
 /** Extrae el texto útil de un resultado de Whisper, descartando sub-segmentos claramente malos. */
@@ -91,8 +121,10 @@ export async function POST(req: NextRequest) {
     const inputPath = join(tmpdir(), `tr-${id}.${ext}`);
     tempFiles.push(inputPath);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(inputPath, buffer);
+    // Escribe el audio subido a disco por STREAMING (sin cargar todo el archivo en memoria a la
+    // vez). Un audio de más de 1 h triplicado en RAM (formData + arrayBuffer + Buffer) era la
+    // causa más probable del OOM que reiniciaba el contenedor con SIGTERM.
+    await pipeline(Readable.fromWeb(file.stream() as any), createWriteStream(inputPath));
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const whisperOpts = {
@@ -161,11 +193,13 @@ export async function POST(req: NextRequest) {
     for (const pattern of hallucinations) {
       fullText = fullText.replace(pattern, '');
     }
-    // Remove any phrase (up to 200 chars) repeated 3+ times consecutively
-    fullText = fullText.replace(/(.{5,200}?)(?:[\s.?!,]*\1){2,}/gi, (_match, phrase) => phrase.trim());
-    // Collapse runs of identical sentences separated by punctuation/whitespace
-    fullText = fullText.replace(/([^.!?\n]{10,}[.!?])(\s*\1){1,}/gi, '$1');
-    fullText = fullText.split('\n').filter(l => l.trim()).join('\n');
+    // Colapsa los bucles de Whisper (palabras/oraciones repetidas) con algoritmos LINEALES/ACOTADOS,
+    // por párrafo (segmento), evitando el catastrophic backtracking que colgaba la CPU con textos largos.
+    fullText = fullText
+      .split('\n\n')
+      .map((p) => collapseSentenceRuns(collapseWordRuns(p)))
+      .filter((p) => p.trim())
+      .join('\n\n');
 
     if (!fullText.trim()) {
       return NextResponse.json({ error: 'No se pudo extraer texto del audio' }, { status: 400 });
