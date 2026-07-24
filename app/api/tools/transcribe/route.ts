@@ -13,13 +13,30 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 const execFileAsync = promisify(execFile);
 const FFMPEG = ffmpegInstaller.path as string;
 
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 const SEGMENT_SEC = 600; // 10 minutes per segment
 const MIN_SEGMENT_SIZE = 5000; // 5KB — below this means empty/end of audio
 
 async function cleanup(files: string[]) {
   for (const f of files) { try { await fs.unlink(f); } catch {} }
+}
+
+/** Extrae el texto útil de un resultado de Whisper, descartando sub-segmentos claramente malos. */
+function extractSegmentText(result: any): string {
+  if (Array.isArray(result?.segments)) {
+    const kept = result.segments.filter((s: any) => {
+      const noSpeech = s.no_speech_prob ?? 0;
+      const compression = s.compression_ratio ?? 0;
+      const logprob = s.avg_logprob ?? 0;
+      if (noSpeech > 0.9) return false;              // Whisper casi seguro de que es silencio
+      if (compression > 2.4) return false;           // alucinación repetitiva (comprime mucho)
+      if (logprob < -1.0 && noSpeech > 0.6) return false; // baja confianza + sin voz
+      return true;
+    });
+    return kept.map((s: any) => s.text).join(' ').trim();
+  }
+  return (result?.text || '').trim();
 }
 
 /** True si el error de red/OpenAI es transitorio y vale la pena reintentar. */
@@ -85,15 +102,11 @@ export async function POST(req: NextRequest) {
       response_format: 'verbose_json' as const,
     };
 
-    // Split into 10-min segments, compress each individually, keep going until end of audio
-    const texts: string[] = [];
-    let segIndex = 0;
-    let hasMore = true;
-
-    while (hasMore) {
+    // 1) Segmentar TODO el audio en chunks de 10 min (secuencial y rápido: solo produce .mp3).
+    //    Límite de seguridad: 20 segmentos ≈ 3.3 h.
+    const segPaths: string[] = [];
+    for (let segIndex = 0; segIndex < 20; segIndex++) {
       const segPath = join(tmpdir(), `tr-${id}-s${segIndex}.mp3`);
-      tempFiles.push(segPath);
-
       try {
         await execFileAsync(FFMPEG, [
           '-i', inputPath, '-y',
@@ -103,65 +116,34 @@ export async function POST(req: NextRequest) {
           '-f', 'mp3', segPath,
         ], { timeout: 60000 });
       } catch {
-        // ffmpeg error usually means we're past the end
-        hasMore = false;
-        break;
+        break; // ffmpeg falla = pasamos del final del audio
       }
-
-      // Check if segment has actual audio content
       let segSize = 0;
-      try {
-        const stat = await fs.stat(segPath);
-        segSize = stat.size;
-      } catch {
-        hasMore = false;
-        break;
-      }
-
-      if (segSize < MIN_SEGMENT_SIZE) {
-        // Reached the end of the audio
-        hasMore = false;
-        break;
-      }
-
+      try { segSize = (await fs.stat(segPath)).size; } catch { break; }
+      if (segSize < MIN_SEGMENT_SIZE) { await fs.unlink(segPath).catch(() => {}); break; } // fin del audio
       console.log(`Transcribe segment ${segIndex}: ${(segSize / 1024).toFixed(0)}KB`);
-
-      const segBuffer = await fs.readFile(segPath);
-      const result: any = await transcribeSegmentWithRetry(openai, whisperOpts, segBuffer, `segment-${segIndex}.mp3`);
-
-      // Filter out clearly bad sub-segments using Whisper's per-segment metadata.
-      // Only drop on strong signals — low-confidence audio (low avg_logprob) is often
-      // legitimate speech with background noise, not hallucination.
-      let segText = '';
-      if (Array.isArray(result?.segments)) {
-        const kept = result.segments.filter((s: any) => {
-          const noSpeech = s.no_speech_prob ?? 0;
-          const compression = s.compression_ratio ?? 0;
-          const logprob = s.avg_logprob ?? 0;
-          // Drop only if Whisper itself is almost certain it's silence
-          if (noSpeech > 0.9) return false;
-          // Drop loop-style hallucinations (very repetitive text compresses heavily)
-          if (compression > 2.4) return false;
-          // Drop the rare combo of "low confidence" AND "no speech detected" — both wrong together
-          if (logprob < -1.0 && noSpeech > 0.6) return false;
-          return true;
-        });
-        segText = kept.map((s: any) => s.text).join(' ').trim();
-      } else {
-        segText = (result?.text || '').trim();
-      }
-
-      if (segText) texts.push(segText);
-
-      segIndex++;
-
-      // Safety limit: max 20 segments = ~3.3 hours
-      if (segIndex >= 20) {
-        hasMore = false;
-      }
+      segPaths.push(segPath);
+      tempFiles.push(segPath);
     }
 
-    let fullText = texts.join('\n\n');
+    // 2) Transcribir los segmentos EN PARALELO (concurrencia acotada) para terminar mucho más
+    //    rápido y reducir la ventana en la que un reinicio/timeout pueda abortar la petición.
+    const segTexts: string[] = new Array(segPaths.length).fill('');
+    const CONCURRENCY = 3;
+    let nextIdx = 0;
+    const worker = async () => {
+      while (true) {
+        const i = nextIdx++;
+        if (i >= segPaths.length) return;
+        const segBuffer = await fs.readFile(segPaths[i]);
+        const result: any = await transcribeSegmentWithRetry(openai, whisperOpts, segBuffer, `segment-${i}.mp3`);
+        segTexts[i] = extractSegmentText(result);
+        await fs.unlink(segPaths[i]).catch(() => {}); // libera disco al vuelo
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, segPaths.length) }, () => worker()));
+
+    let fullText = segTexts.filter((t) => t.trim()).join('\n\n');
 
     await cleanup(tempFiles);
 
