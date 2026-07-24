@@ -116,49 +116,30 @@ export default function ToolsPage() {
     }
   };
 
-  // --- Transcribe: sube el audio y sondea el trabajo en 2º plano (trocea + une + persiste) ---
+  // --- Transcribe (server-side via /api/tools/transcribe with FFmpeg segmentation) ---
   const handleTranscribe = async () => {
     if (!transcribeFile) return;
     setTranscribePhase('processing'); setTranscribeProgress(0); setTranscribeResult(null);
-    const name = transcribeFile.name.replace(/\.[^.]+$/, '') + '.txt';
+    const progressInterval = setInterval(() => setTranscribeProgress(prev => Math.min(prev + Math.random() * 6, 90)), 500);
     try {
       const form = new FormData();
       form.append('file', transcribeFile);
       const res = await fetch('/api/tools/transcribe', { method: 'POST', body: form });
+      clearInterval(progressInterval);
       if (!res.ok) {
-        let msg = 'Error al iniciar la transcripción';
+        let msg = 'Error al transcribir';
         try { const err = await res.json(); msg = err.error || msg; } catch {}
         throw new Error(msg);
       }
-      const { jobId } = await res.json();
-
-      const finish = (text: string, partial: boolean) => {
-        if (!text.trim()) throw new Error('No se pudo extraer texto del audio');
-        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-        setTranscribeProgress(100);
-        setTranscribeResult({ blob, name });
-        setTranscribePhase('done');
-        triggerDownload(blob, name);
-        if (partial) toast('Transcripción incompleta: se descargó lo procesado hasta ahora.');
-        else toast.success('Transcripción completada');
-      };
-
-      // El servidor procesa en segundo plano; aquí solo consultamos el progreso.
-      while (true) {
-        await new Promise((r) => setTimeout(r, 3000));
-        const sres = await fetch(`/api/tools/transcribe/status/${jobId}`);
-        if (!sres.ok) continue;
-        const job = await sres.json();
-        if (job.totalSegments) setTranscribeProgress(Math.min(99, Math.round((job.doneSegments / job.totalSegments) * 100)));
-        else setTranscribeProgress((p) => Math.min(p + 3, 12));
-        if (job.status === 'done') { finish(job.text || '', false); break; }
-        if (job.status === 'error') {
-          if ((job.text || '').trim()) finish(job.text, true);
-          else throw new Error(job.error || 'Error al transcribir');
-          break;
-        }
-      }
+      const blob = await res.blob();
+      const name = transcribeFile.name.replace(/\.[^.]+$/, '') + '.txt';
+      setTranscribeProgress(100);
+      setTranscribeResult({ blob, name });
+      setTranscribePhase('done');
+      triggerDownload(blob, name);
+      toast.success('Transcripción completada');
     } catch (err: any) {
+      clearInterval(progressInterval);
       toast.error(err.message || 'Error al transcribir');
       setTranscribeProgress(0);
       setTranscribePhase('idle');
@@ -281,7 +262,7 @@ export default function ToolsPage() {
             </div>
             <ProgressBar value={transcribeProgress} />
           </div>
-          <p className="text-[11px] text-digi-muted text-center" style={mf}>Transcribiendo en segundo plano… puede tardar varios minutos en audios largos. No cierres esta página.</p>
+          <p className="text-[11px] text-digi-muted text-center" style={mf}>Procesando… no cierres la página</p>
         </div>
       );
     }
