@@ -579,7 +579,75 @@ Estándares introducidos con el módulo de Cotizaciones (proyectos en estado `co
   con filas (input label + monto + descripción + quitar) y "Agregar costo" (botón dashed). Patrón para editar una
   **colección simple** dentro de un panel.
 
+### Modales de la landing en tema del dashboard — isla `.corp dark` (2026-07-25)
+Los **dos modales de la página de inicio** (`components/landing/EntryChoiceModal.tsx` = "¿Cómo quieres
+ingresar?" y `components/landing/OnboardingSlidersModal.tsx` = los 8 pasos de postulación) dejaron el
+pixelart y usan el **diseño del dashboard** en su **variante oscura** (pedido del usuario: "al estilo
+del modo oscuro"), para no chocar con la landing oscura.
+- **Cómo se monta una isla corp fuera de `/dashboard`:** el overlay lleva
+  `className="corp dark corp-overlay …"`. **`.corp-overlay`** es una utilidad nueva de `globals.css`
+  (`.corp.corp-overlay { background: transparent; min-height: 0; }`) que hereda tokens y tipografía
+  Fluent **sin** imponer el fondo de página ni el `min-height:100vh` de `.corp` — el velo lo pone el
+  propio overlay (`rgba(6,7,12,0.7)` + `backdrop-filter`). **Reusar esta clase** para cualquier
+  diálogo corp montado sobre la landing/juego. Quitar `dark` lo pasa a claro sin más cambios.
+- **Anatomía del diálogo simple** (EntryChoiceModal): tarjeta `bg-digi-card border border-digi-border
+  rounded-lg` con **cabecera** (chip de icono `bg-accent-light text-accent` 36×36 + título 17px
+  semibold + subtítulo `text-digi-muted` + cerrar **32×32** `hover:bg-[#f3f2f1]`), **cuerpo con fondo
+  de página** (`bg-digi-dark`, para que las tarjetas de opción se separen del diálogo) y **footer** con
+  la acción secundaria a la derecha (`<Button variant="secondary">`). Cierra con **Escape** y con clic
+  en el velo.
+- **Fila de opción** (patrón reusable para menús de elección): `group w-full flex items-start gap-3
+  rounded-md border p-3.5` + chip de icono + título 13.5px semibold + descripción 12.5px muted +
+  `ChevronRight`; hover `border-accent hover:bg-accent-light`. **Tonos**: `success` (`bg-green-50
+  border-green-300`) para "postulación aprobada" y `warning` (`bg-amber-50 border-amber-300`) para
+  estados en espera, con `PixelBadge` de estado ("Aprobada", "En revisión", "Verificación pendiente").
+  Carga = `Loader2` girando + texto muted (nunca spinners pixel).
+- **Anatomía del asistente de 8 pasos** (OnboardingSlidersModal) = **patrón "Explorador Azure"
+  adaptado a wizard**: `grid lg:[248px_minmax(0,1fr)]`.
+  - **Rail de pasos** (izquierda, `hidden lg:flex`): marca (`BrandLoader` + "GCC WORLD" + "Postulación
+    de candidato"), lista de los 8 pasos con **icono lucide por paso** (`Layers3/Wrench/Heart/Gavel/
+    TrendingUp/RefreshCw/BadgeCheck/Send`), activo `bg-accent-light border-l-2 border-accent
+    text-accent`, **`Check` verde** en los ya aceptados, número a la derecha en los pendientes, y
+    **deshabilitado** (`opacity-50`) mientras el paso no sea alcanzable (`canGoTo`: visitado o con
+    todos los anteriores aceptados). Al pie, **barra de progreso** + "Paso N de 8".
+  - **Contenido:** cabecera (chip del icono del paso + kicker "PASO N DE 8" + título + cerrar 32×32;
+    en móvil, donde el rail se oculta, aparecen los **segmentos de progreso**), cuerpo `bg-digi-dark`
+    con scroll, **franja de aceptación** (`AcceptTerms`: casilla 18px con `Check`, se tiñe
+    `bg-accent-light` al marcar) y **footer** con `Atrás` (secundario, izquierda) / `Siguiente ·
+    Postularme · Comenzar mi aventura` (primario, derecha, `flex-row-reverse` para que la flecha vaya
+    después del texto).
+  - **Fuente única de estilo del contenido:** las constantes del final del archivo (`pStyle`,
+    `cardBase`→tarjetas, `cardTitle`, `cardDesc`, `chip`, `noteBox`, `stepNum`, `kickerStyle`) apuntan
+    **todas a tokens** (`var(--color-digi-*)`, `var(--color-accent*)`), así que retematizan los 8 pasos
+    de una vez y funcionan en claro y oscuro. **NO** hex crudos en los sliders.
+- **Composiciones de contenido (aprovechar el ancho, evitar huecos):** los 4 **Pisos** se muestran como
+  **edificio** (tarjeta única con 4 filas separadas por `border-t`, chip numerado) en vez de la grilla
+  3+1 que dejaba un hueco; los 4 **Pasos** y las 6 indicaciones de **Afiliación** como **línea de
+  tiempo** (`ol` con conector `absolute left-4 top-9 bottom-0 w-px bg-digi-border` + burbuja
+  `rounded-full bg-accent text-white`); los valores de la Regla 1 en `grid sm:grid-cols-2`; pestañas
+  Pisos/Pasos con **`PixelTabs`** (pivot Fluent); acordeones con `ChevronDown` que rota y borde
+  `border-accent` al abrir; aviso rojo con `AlertTriangle` (`WarnBox`, `bg-red-50/border-red-300/
+  text-red-700` — literales con override en `.corp.dark`).
+- **SVG con tokens:** el diagrama de "Lideración sobre Acciones" colorea por **`style`**
+  (`style={{ fill: 'var(--color-accent)' }}`), **no** por atributos de presentación (`fill="var(…)"`
+  no es fiable en SVG), y hereda la tipografía con `style={{ fontFamily: 'var(--font-body)' }}` en el
+  `<svg>`. Así el diagrama se adapta a claro/oscuro sin duplicar colores.
+- **Se añadió `hover:bg-amber-100` a los overrides de `.corp.dark`** (faltaba; regla: todo literal
+  semántico usado debe tener su override oscuro).
+
 ## Desviaciones detectadas y resolución
+- **2026-07-25 — Los dos modales de la landing seguían en pixelart (fuera del estándar serio).**
+  `EntryChoiceModal` y `OnboardingSlidersModal` usaban Silkscreen + bordes 2px morados + emojis
+  (✕ ▸ ⚠ ● ›) + hex crudos (`#0e1118`, `#151a26`, `rgba(123,95,191,…)`) en estilos inline por archivo,
+  con un layout que dejaba huecos (grilla 3+1 en "Los 4 Pisos", modal de 860px con mucho aire).
+  **Resuelto:** rediseñados al **tema del dashboard en modo oscuro** (`corp dark corp-overlay`), con
+  iconos **lucide**, componentes compartidos (`Button`, `PixelInput`, `PixelTabs`, `PixelBadge`),
+  tokens en lugar de hex, wizard con **rail de pasos** y contenido recompuesto (edificio de pisos,
+  líneas de tiempo, grid de valores). Ver la sección "Modales de la landing…". Verificado `tsc` +
+  `next build` + recorrido real de los 8 pasos en el navegador (capturas). **Nota:** el resto de los
+  modales de la landing (`AccountRecoveryModal`, `MemberLoginModal`, `ClientLoginModal`,
+  `ProposalPendingModal`, `CharacterGameplay`/`SignupForm`) **sigue en pixelart** → hoy el flujo mezcla
+  los dos lenguajes; migrarlos a la misma isla `corp dark` queda **pendiente** (decisión del usuario).
 - **2026-07-21 — Detalle de proyecto: se eliminaron las pestañas (mismo criterio que ticket).**
   `projects/[id]` usaba el rail de secciones con pestañas (Resumen / Requerimientos / DigiMundo /
   Imágenes) y `SectionRailItem` local. Se **combinó Resumen + Requerimientos en la columna

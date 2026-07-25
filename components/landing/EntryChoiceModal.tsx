@@ -7,12 +7,33 @@
  * quiere ingresar. Si por su IP ya hay una postulación de candidato registrada,
  * la opción "Quiero postularme" se reemplaza por una tarjeta de "en proceso de
  * aprobación".
+ *
+ * DISEÑO (2026-07-25): usa el **diseño del dashboard** (Fluent) en vez del pixelart
+ * de la landing, en su variante **MODO OSCURO** (pedido del usuario) para no romper
+ * con la landing oscura. El overlay lleva `corp dark corp-overlay`: isla de tokens
+ * Fluent oscuros (`.corp.dark`) sin fondo de página (ver `.corp.corp-overlay` en
+ * globals.css). Los controles se componen con los tokens `digi-*`/`accent`, iconos
+ * `lucide-react` y los componentes compartidos (`Button`, `PixelBadge`). NO hay hex
+ * crudos aquí: cambiar los tokens de `.corp`/`.corp.dark` recolorea este modal.
+ * Para pasarlo a claro basta quitar la clase `dark` del overlay.
  */
 
 import { useEffect, useState } from 'react';
+import {
+  BadgeCheck,
+  Briefcase,
+  ChevronRight,
+  Loader2,
+  LogIn,
+  MailWarning,
+  ShieldCheck,
+  UserPlus,
+  X,
+} from 'lucide-react';
+import Button from '@/components/ui/Button';
+import PixelBadge from '@/components/ui/PixelBadge';
 
-const PIXEL = "'Silkscreen', cursive";
-const BODY = "'Inter', system-ui, -apple-system, sans-serif";
+type Tone = 'default' | 'success' | 'warning';
 
 export default function EntryChoiceModal({
   onCandidate,
@@ -53,6 +74,7 @@ export default function EntryChoiceModal({
     email?: string | null;
     verified?: boolean;
   } | null>(null);
+
   useEffect(() => {
     let alive = true;
     fetch('/api/candidate/proposal', { cache: 'no-store' })
@@ -75,92 +97,78 @@ export default function EntryChoiceModal({
       alive = false;
     };
   }, []);
+
+  // Cerrar con Escape (mismo comportamiento que los diálogos del dashboard).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
     <div
       role="dialog"
       aria-modal="true"
+      aria-label="¿Cómo quieres ingresar?"
+      className="corp dark corp-overlay fixed inset-0 z-[220] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 220,
-        background: 'radial-gradient(circle at 50% 30%, rgba(40,22,80,0.55), rgba(0,0,0,0.82))',
+        background: 'rgba(6,7,12,0.7)',
         backdropFilter: 'blur(4px)',
         WebkitBackdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
-        animation: 'pixelFadeIn 0.45s ease-out',
+        animation: 'pixelFadeIn 0.35s ease-out',
       }}
+      onClick={onClose}
     >
       <div
+        className="w-full max-w-[560px] my-auto bg-digi-card border border-digi-border rounded-lg overflow-hidden"
         style={{
-          width: '100%',
-          maxWidth: 540,
-          background: '#0e1118',
-          border: '2px solid var(--color-accent)',
-          borderRadius: 6,
-          boxShadow: '6px 6px 0 rgba(0,0,0,0.55), 0 0 36px rgba(75,45,142,0.4)',
-          position: 'relative',
-          padding: '30px 26px 26px',
+          boxShadow:
+            '0 6.4px 14.4px rgba(0,0,0,0.32), 0 1.2px 3.6px rgba(0,0,0,0.28)',
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          aria-label="Cerrar"
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 10,
-            right: 12,
-            background: 'transparent',
-            border: 0,
-            color: 'rgba(225,215,255,0.6)',
-            fontFamily: PIXEL,
-            fontSize: '0.85rem',
-            cursor: 'pointer',
-            padding: 6,
-          }}
-        >
-          ✕
-        </button>
+        {/* Header Fluent: icono + título + subtítulo, cerrar 32×32 a la derecha */}
+        <div className="flex items-start gap-3 px-5 py-4 border-b border-digi-border">
+          <span className="w-9 h-9 shrink-0 rounded-md bg-accent-light text-accent flex items-center justify-center">
+            <LogIn className="w-[18px] h-[18px]" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[17px] font-semibold text-digi-text leading-tight">
+              ¿Cómo quieres ingresar?
+            </h2>
+            <p className="text-[12.5px] text-digi-muted mt-0.5">Elige tu camino para continuar.</p>
+          </div>
+          <button
+            type="button"
+            aria-label="Cerrar"
+            onClick={onClose}
+            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-md text-digi-muted hover:bg-[#f3f2f1] hover:text-digi-text transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
-        <h2
-          style={{
-            fontFamily: PIXEL,
-            fontSize: '1.05rem',
-            color: '#f1eefb',
-            textAlign: 'center',
-            margin: '0 0 6px',
-            textShadow: '1px 1px 0 rgba(0,0,0,0.6)',
-          }}
-        >
-          ¿Cómo quieres ingresar?
-        </h2>
-        <p
-          style={{
-            fontFamily: BODY,
-            fontSize: '0.85rem',
-            color: '#b9b2cf',
-            textAlign: 'center',
-            margin: '0 0 22px',
-          }}
-        >
-          Elige tu camino para continuar.
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Opciones */}
+        {/* Fondo de "página" para que las tarjetas de opción se separen del diálogo */}
+        <div className="px-5 py-4 flex flex-col gap-2.5 bg-digi-dark">
           {proposal === null ? (
             <LoadingCard />
           ) : proposal.exists && proposal.status === 'approved' ? (
             <Option
               tone="success"
+              Icon={BadgeCheck}
+              badge="Aprobada"
               title="¡Tu postulación fue aprobada!"
               desc="Fuiste aceptado por el administrador. Continúa para crear tu cuenta (contraseña y datos) e ingresar como candidato."
               onClick={() => onProposalApproved({ email: proposal.email })}
             />
           ) : proposal.exists ? (
             <Option
+              tone="warning"
+              Icon={MailWarning}
+              badge="En revisión"
               title="Tu postulación está en proceso de aprobación"
               desc="Para avanzar más rápido, verifica tu correo con el enlace enviado a tu bandeja de entrada. Una vez seas aprobado podrás ingresar como candidato."
               onClick={() =>
@@ -172,26 +180,34 @@ export default function EntryChoiceModal({
             null
           ) : (
             <Option
+              Icon={UserPlus}
               title="Quiero postularme como candidato"
               desc="Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados."
               onClick={onCandidate}
             />
           )}
+
           <Option
+            Icon={LogIn}
             title="Soy candidato"
             desc={`Ya tengo una cuenta de candidato: iniciar sesión y ${dest}.`}
             onClick={onCandidateLogin}
           />
+
           {client === null ? (
             <LoadingCard label="Verificando tu cuenta de cliente…" />
           ) : client.exists && !client.verified ? (
             <Option
+              tone="warning"
+              Icon={MailWarning}
+              badge="Verificación pendiente"
               title="Tu cuenta de cliente requiere verificación"
               desc="Te enviamos un enlace de verificación a tu correo. Verifícalo para poder iniciar sesión. No es necesario crear otra cuenta."
               onClick={() => onClientPending({ email: client.email })}
             />
           ) : (
             <Option
+              Icon={Briefcase}
               title="Soy cliente"
               desc={
                 destination === 'dashboard'
@@ -201,11 +217,20 @@ export default function EntryChoiceModal({
               onClick={onClient}
             />
           )}
+
           <Option
+            Icon={ShieldCheck}
             title="Ingresar como miembro"
             desc={`Ya soy miembro o administrador: iniciar sesión y ${dest}.`}
             onClick={onMember}
           />
+        </div>
+
+        {/* Footer del diálogo (acción secundaria a la derecha, como en el dashboard) */}
+        <div className="flex justify-end px-5 py-3 border-t border-digi-border">
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
         </div>
       </div>
     </div>
@@ -216,95 +241,67 @@ function LoadingCard({ label = 'Verificando tu estado de postulación…' }: { l
   return (
     <div
       aria-busy="true"
-      style={{
-        width: '100%',
-        background: 'rgba(75,45,142,0.12)',
-        border: '1px solid rgba(123,95,191,0.3)',
-        borderRadius: 6,
-        padding: '16px 18px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        animation: 'breathe 1.6s ease-in-out infinite',
-      }}
+      className="flex items-center gap-3 rounded-md border border-digi-border bg-digi-card px-4 py-4"
     >
-      <span
-        style={{
-          width: 16,
-          height: 16,
-          flexShrink: 0,
-          borderRadius: '50%',
-          border: '2px solid rgba(123,95,191,0.4)',
-          borderTopColor: 'var(--color-accent-glow, #7B5FBF)',
-          animation: 'slowSpin 0.8s linear infinite',
-        }}
-      />
-      <span style={{ fontFamily: BODY, fontSize: '0.85rem', color: 'rgba(225,215,255,0.65)' }}>
-        {label}
-      </span>
+      <Loader2 className="w-4 h-4 shrink-0 text-accent animate-spin" />
+      <span className="text-[12.5px] text-digi-muted">{label}</span>
     </div>
   );
 }
 
+/** Fila de opción del diálogo: icono + título + descripción + chevron. */
 function Option({
   title,
   desc,
   onClick,
+  Icon,
   tone = 'default',
+  badge,
 }: {
   title: string;
   desc: string;
   onClick: () => void;
-  /** 'success' pinta la tarjeta en verde (p. ej. postulación aprobada). */
-  tone?: 'default' | 'success';
+  Icon: React.ComponentType<{ className?: string }>;
+  /** 'success' = postulación aprobada · 'warning' = a la espera de una acción. */
+  tone?: Tone;
+  badge?: string;
 }) {
-  const success = tone === 'success';
-  const bg = success ? 'rgba(40,120,70,0.18)' : 'rgba(75,45,142,0.18)';
-  const bgHover = success ? 'rgba(40,120,70,0.32)' : 'rgba(123,95,191,0.3)';
-  const border = success ? 'rgba(79,174,114,0.55)' : 'rgba(123,95,191,0.45)';
-  const borderHover = success ? '#4fae72' : 'var(--color-accent-glow, #7B5FBF)';
-  const arrow = success ? '#7fdca0' : 'var(--color-accent-glow, #7B5FBF)';
+  const card: Record<Tone, string> = {
+    default: 'bg-digi-card border-digi-border hover:border-accent hover:bg-accent-light',
+    success: 'bg-green-50 border-green-300 hover:bg-green-100',
+    warning: 'bg-amber-50 border-amber-300 hover:bg-amber-100',
+  };
+  const chip: Record<Tone, string> = {
+    default: 'bg-accent-light text-accent',
+    success: 'bg-white text-green-600',
+    warning: 'bg-white text-amber-600',
+  };
+  const arrow: Record<Tone, string> = {
+    default: 'text-digi-muted group-hover:text-accent',
+    success: 'text-green-600',
+    warning: 'text-amber-600',
+  };
+  const badgeVariant = tone === 'success' ? 'success' : tone === 'warning' ? 'warning' : 'info';
+
   return (
     <button
       type="button"
       onClick={onClick}
-      style={{
-        textAlign: 'left',
-        width: '100%',
-        cursor: 'pointer',
-        background: bg,
-        border: `1px solid ${border}`,
-        borderRadius: 6,
-        padding: '16px 18px',
-        transition: 'background 0.2s, border-color 0.2s, transform 0.15s',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = bgHover;
-        e.currentTarget.style.borderColor = borderHover;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = bg;
-        e.currentTarget.style.borderColor = border;
-      }}
+      className={`group w-full text-left flex items-start gap-3 rounded-md border p-3.5 transition-colors ${card[tone]}`}
     >
-      <div
-        style={{
-          fontFamily: PIXEL,
-          fontSize: '0.82rem',
-          color: '#f1eefb',
-          marginBottom: 6,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
-        }}
+      <span
+        className={`w-9 h-9 shrink-0 rounded-md flex items-center justify-center ${chip[tone]}`}
       >
-        <span>{title}</span>
-        <span style={{ color: arrow }}>→</span>
-      </div>
-      <div style={{ fontFamily: BODY, fontSize: '0.85rem', lineHeight: 1.5, color: '#cfc9e2' }}>
-        {desc}
-      </div>
+        <Icon className="w-[18px] h-[18px]" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2 flex-wrap">
+          <span className="text-[13.5px] font-semibold text-digi-text">{title}</span>
+          {badge && <PixelBadge variant={badgeVariant}>{badge}</PixelBadge>}
+        </span>
+        <span className="block text-[12.5px] leading-relaxed text-digi-muted mt-1">{desc}</span>
+      </span>
+      <ChevronRight className={`w-4 h-4 shrink-0 mt-2 transition-colors ${arrow[tone]}`} />
     </button>
   );
 }

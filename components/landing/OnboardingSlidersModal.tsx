@@ -11,19 +11,46 @@
  *   "¿Por qué quieres ser candidato de este proyecto?"
  *
  * Es data-driven: la lista `SLIDES` crecerá hasta 8 sliders. Por ahora están
- * desarrollados los 2 primeros (Modelo de Grupo · Herramientas); los demás se
- * agregarán conforme el usuario aporte su contenido.
+ * desarrollados los 7 primeros; el 8.º se agregará cuando el usuario aporte su
+ * contenido.
  *
- * Estilo: pixelart de la landing — borde/acento `var(--color-accent)` (#4B2D8E),
- * títulos en Silkscreen, cuerpo en una tipografía legible (Inter) por ser textos
- * largos. Sigue el patrón de overlay de `AccountRecoveryModal`.
+ * DISEÑO (2026-07-25): usa el **diseño del dashboard** (Fluent) en vez del pixelart
+ * de la landing, en su variante **MODO OSCURO** (pedido del usuario). La estructura
+ * es la del patrón "Explorador Azure": **rail de pasos** (izquierda, con iconos
+ * lucide y marca de completado) · **contenido** (derecha, con cabecera, cuerpo con
+ * scroll, franja de aceptación y footer de navegación). El overlay lleva
+ * `corp dark corp-overlay`: isla de tokens Fluent oscuros (`.corp.dark`) sin fondo
+ * de página (ver globals.css). Para pasarlo a claro, quitar la clase `dark`.
+ *
+ * FUENTE ÚNICA DE ESTILO de este modal: las constantes del final del archivo
+ * (`pStyle`, `cardBase`, `cardTitle`, `cardDesc`, `chip`, `noteBox`, `stepNum`,
+ * `kickerStyle`) — todas apuntan a los **tokens** `--color-digi-*` / `--color-accent*`,
+ * así que cambiarlas (o cambiar los tokens de `.corp`) retematiza los 8 pasos y
+ * funciona igual en claro y oscuro. NO usar hex crudos en los sliders.
  */
 
 import { useState } from 'react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  BadgeCheck,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Gavel,
+  Heart,
+  Layers3,
+  RefreshCw,
+  Send,
+  TrendingUp,
+  Wrench,
+  X,
+} from 'lucide-react';
 import BrandLoader from '@/components/ui/BrandLoader';
-
-const PIXEL = "'Silkscreen', cursive";
-const BODY = "'Inter', system-ui, -apple-system, sans-serif";
+import Button from '@/components/ui/Button';
+import PixelInput from '@/components/ui/PixelInput';
+import PixelTabs from '@/components/ui/PixelTabs';
 
 export type PostulacionData = {
   email: string;
@@ -32,10 +59,14 @@ export type PostulacionData = {
   marketing: boolean;
 };
 
+type IconType = React.ComponentType<{ className?: string }>;
+
 type Slide = {
   id: string;
   kicker: string;
   title: string;
+  /** Icono del paso en el rail y en la cabecera (lucide, estándar del dashboard). */
+  Icon: IconType;
   // Componente (no función llamada en render) para que sus hooks corran al nivel
   // superior del propio slider, no anidados dentro del padre.
   Component: React.FC;
@@ -92,83 +123,78 @@ const PASOS: { n: string; name: string; desc: string }[] = [
   },
 ];
 
+/** Los 4 Pisos como un edificio: una fila por piso, de la gobernanza a la ejecución. */
+function PisosBuilding() {
+  return (
+    <>
+      <p style={{ ...cardDesc, marginBottom: 10 }}>
+        Cuatro roles, cada uno experto en su área, que se complementan en toda iniciativa.
+      </p>
+      <div className="rounded-lg border border-digi-border bg-digi-card overflow-hidden">
+        {PISOS.map((p, i) => (
+          <div
+            key={p.name}
+            className={`flex items-start gap-3 p-3.5 ${i > 0 ? 'border-t border-digi-border' : ''}`}
+          >
+            <span style={stepNum}>{i + 1}</span>
+            <div className="min-w-0 flex-1">
+              <div style={cardTitle}>{p.name}</div>
+              <p style={{ ...cardDesc, marginTop: 3 }}>{p.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ ...kickerStyle, marginTop: 8 }}>
+        Del piso 1 (gobierno) al piso 4 (ejecución)
+      </div>
+    </>
+  );
+}
+
+/** Los 4 Pasos como línea de tiempo numerada (se recorren en orden). */
+function PasosTimeline() {
+  return (
+    <>
+      <p style={{ ...cardDesc, marginBottom: 10 }}>
+        Se recorren en orden; cada etapa resuelve una necesidad y prepara la siguiente.
+      </p>
+      <ol className="flex flex-col">
+        {PASOS.map((s, i) => (
+          <li key={s.name} className="relative flex gap-3 pb-3 last:pb-0">
+            {i < PASOS.length - 1 && (
+              <span
+                aria-hidden
+                className="absolute left-4 top-9 bottom-0 w-px bg-digi-border"
+              />
+            )}
+            <span className="relative z-10 w-8 h-8 shrink-0 rounded-full bg-accent text-white text-[11px] font-semibold flex items-center justify-center">
+              {s.n}
+            </span>
+            <div className="min-w-0 flex-1 rounded-lg border border-digi-border bg-digi-card p-3.5">
+              <div style={cardTitle}>{s.name}</div>
+              <p style={{ ...cardDesc, marginTop: 3 }}>{s.desc}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
 function ModeloTabs() {
   const [tab, setTab] = useState<'pisos' | 'pasos'>('pisos');
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Pestañas (estilo subrayado) */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 28,
-          borderBottom: '1px solid rgba(225,215,255,0.14)',
-        }}
-      >
-        {(
-          [
-            ['pisos', 'Los 4 Pisos'],
-            ['pasos', 'Los 4 Pasos'],
-          ] as const
-        ).map(([key, label]) => {
-          const on = tab === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTab(key)}
-              style={{
-                background: 'transparent',
-                border: 0,
-                padding: '0 2px 10px',
-                marginBottom: -1,
-                cursor: 'pointer',
-                fontFamily: PIXEL,
-                fontSize: '0.74rem',
-                letterSpacing: '0.04em',
-                color: on ? '#f1eefb' : 'rgba(225,215,255,0.5)',
-                borderBottom: on
-                  ? '2px solid var(--color-accent-glow, #7B5FBF)'
-                  : '2px solid transparent',
-                transition: 'color 0.2s, border-color 0.2s',
-              }}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Contenido según la pestaña */}
+    <div>
+      <PixelTabs
+        tabs={[
+          { value: 'pisos', label: 'Los 4 Pisos' },
+          { value: 'pasos', label: 'Los 4 Pasos' },
+        ]}
+        active={tab}
+        onChange={(v) => setTab(v as 'pisos' | 'pasos')}
+      />
       <div key={tab} style={{ animation: 'onbFadeUp 0.3s ease-out' }}>
-        {tab === 'pisos' ? (
-          <>
-            <p style={{ ...pStyle, fontSize: '0.82rem', opacity: 0.85, marginBottom: 12 }}>
-              Cuatro roles, cada uno experto en su área, que se complementan en toda iniciativa.
-            </p>
-            <div style={grid2}>
-              {PISOS.map((p, i) => (
-                <Card key={p.name} delay={i}>
-                  <span style={cardTitle}>{p.name}</span>
-                  <p style={cardDesc}>{p.desc}</p>
-                </Card>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <p style={{ ...pStyle, fontSize: '0.82rem', opacity: 0.85, marginBottom: 12 }}>
-              Se recorren en orden; cada etapa resuelve una necesidad y prepara la siguiente.
-            </p>
-            <div style={grid2}>
-              {PASOS.map((s, i) => (
-                <Card key={s.name} delay={i}>
-                  <span style={cardTitle}>{s.name}</span>
-                  <p style={cardDesc}>{s.desc}</p>
-                </Card>
-              ))}
-            </div>
-          </>
-        )}
+        {tab === 'pisos' ? <PisosBuilding /> : <PasosTimeline />}
       </div>
     </div>
   );
@@ -176,7 +202,7 @@ function ModeloTabs() {
 
 function SlideModelo() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <p style={pStyle}>
         Somos un <strong style={strong}>proyecto de desarrollo humano</strong>, y creemos que las
         grandes ideas necesitan una estructura que las sostenga. Por eso trabajamos con el{' '}
@@ -301,10 +327,9 @@ const TOOLS: AccordionItem[] = [
         <div
           style={{
             height: 8,
-            borderRadius: 2,
+            borderRadius: 4,
             margin: '2px 0 12px',
             background: 'linear-gradient(90deg, #d63b5a 0%, #7B5FBF 50%, #2f6bd6 100%)',
-            boxShadow: '0 0 14px rgba(123,95,191,0.5)',
           }}
         />
         <p style={cardDesc}>
@@ -483,19 +508,12 @@ const REGLAS: AccordionItem[] = [
           candidatos están en desarrollo de estos valores y trabajan, día a día, en encarnar quiénes
           somos. Cada valor se traduce en un compromiso concreto:
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, margin: '4px 0' }}>
+        <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2 my-3">
           {VALORES.map((v) => (
-            <div key={v.valor} style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
+            <div key={v.valor} className="flex items-start gap-2.5">
               <span
-                style={{
-                  flexShrink: 0,
-                  marginTop: 6,
-                  width: 7,
-                  height: 7,
-                  borderRadius: 2,
-                  transform: 'rotate(45deg)',
-                  background: 'var(--color-accent-glow, #7B5FBF)',
-                }}
+                aria-hidden
+                className="shrink-0 mt-[7px] w-1.5 h-1.5 rounded-full bg-accent"
               />
               <span style={cardDesc}>
                 <strong style={strong}>{v.valor}:</strong> {v.compromiso}
@@ -576,13 +594,13 @@ function SlideOnboarding() {
         Tres reglas rigen todo el proyecto y deben respetarse en cada paso. Toca cada una para
         leerla.
       </p>
-      <div style={warnBox}>
-        <strong style={{ color: '#ffd2d2' }}>⚠ Estas reglas no se negocian.</strong> Cualquier
-        intento de faltar a una sola de ellas implica la <strong style={{ color: '#ffd2d2' }}>destitución</strong>{' '}
+      <WarnBox>
+        <strong className="font-semibold">Estas reglas no se negocian.</strong> Cualquier intento de
+        faltar a una sola de ellas implica la <strong className="font-semibold">destitución</strong>{' '}
         del candidato —y aplica igual a los miembros en cualquier rol—. Quien es destituido no tiene
         una segunda oportunidad; solo los fallos <em>no intencionales</em> se evalúan y pueden no
         acarrear destitución.
-      </div>
+      </WarnBox>
       <Accordion items={REGLAS} />
     </div>
   );
@@ -662,15 +680,15 @@ function SlideMetodoCrecimiento() {
     n === 1 ? 'mayor importancia' : n === 4 ? 'menor importancia' : 'importancia intermedia';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <p style={pStyle}>
         El crecimiento de cada persona se analiza con un método de cuatro aspectos clave, ordenados
         por importancia. Toca cada nivel de la pirámide para conocer su justificación.
       </p>
 
       {/* Pirámide */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
-        <GrowthCaption>▲ Mayor importancia</GrowthCaption>
+      <div className="flex flex-col items-center gap-2">
+        <GrowthCaption>Mayor importancia</GrowthCaption>
         {CRECIMIENTO.map((s, i) => {
           const on = active === i;
           return (
@@ -678,121 +696,55 @@ function SlideMetodoCrecimiento() {
               key={s.title}
               type="button"
               onClick={() => setActive(i)}
-              style={{
-                width: widths[i],
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '11px 16px',
-                cursor: 'pointer',
-                borderRadius: 10,
-                textAlign: 'left',
-                transition: 'background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s',
-                background: on
-                  ? 'linear-gradient(135deg, var(--color-accent-glow, #7B5FBF), var(--color-accent, #4B2D8E))'
-                  : 'rgba(75,45,142,0.16)',
-                border: on
-                  ? '1px solid var(--color-accent-glow, #7B5FBF)'
-                  : '1px solid rgba(123,95,191,0.3)',
-                boxShadow: on ? '0 8px 24px rgba(123,95,191,0.4)' : 'none',
-                transform: on ? 'translateY(-1px)' : 'none',
-              }}
+              style={{ width: widths[i] }}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border text-left transition-colors ${
+                on
+                  ? 'bg-accent border-accent'
+                  : 'bg-digi-card border-digi-border hover:border-accent'
+              }`}
             >
               <span
-                style={{
-                  flexShrink: 0,
-                  width: 30,
-                  height: 30,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontFamily: PIXEL,
-                  fontSize: '0.72rem',
-                  color: on ? 'var(--color-accent, #4B2D8E)' : '#fff',
-                  background: on ? '#fff' : 'rgba(123,95,191,0.38)',
-                  border: on ? 'none' : '1px solid rgba(123,95,191,0.6)',
-                }}
+                className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ${
+                  on ? 'bg-white text-accent' : 'bg-accent-light text-accent'
+                }`}
               >
                 {s.n}
               </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
+              <span className="flex-1 min-w-0">
                 <span
-                  style={{
-                    display: 'block',
-                    fontFamily: PIXEL,
-                    fontSize: '0.72rem',
-                    lineHeight: 1.25,
-                    color: on ? '#fff' : '#ece8f7',
-                  }}
+                  className={`block text-[13px] font-semibold leading-tight ${
+                    on ? 'text-white' : 'text-digi-text'
+                  }`}
                 >
                   {s.title}
                 </span>
                 <span
-                  style={{
-                    display: 'block',
-                    fontFamily: BODY,
-                    fontSize: '0.72rem',
-                    marginTop: 2,
-                    color: on ? 'rgba(255,255,255,0.85)' : 'rgba(225,215,255,0.55)',
-                  }}
+                  className={`block text-[11.5px] mt-0.5 ${on ? 'text-white/80' : 'text-digi-muted'}`}
                 >
                   {s.tag}
                 </span>
               </span>
-              <span
-                style={{
-                  flexShrink: 0,
-                  fontFamily: PIXEL,
-                  fontSize: '0.66rem',
-                  color: on ? '#fff' : 'var(--color-accent-glow, #7B5FBF)',
-                  opacity: on ? 0.95 : 0.6,
-                }}
-              >
-                {on ? '●' : '›'}
-              </span>
+              <ChevronRight
+                className={`w-4 h-4 shrink-0 ${on ? 'text-white' : 'text-digi-muted'}`}
+              />
             </button>
           );
         })}
-        <GrowthCaption dim>Menor importancia ▼</GrowthCaption>
+        <GrowthCaption dim>Menor importancia</GrowthCaption>
       </div>
 
       {/* Detalle del nivel seleccionado */}
       <div
         key={active}
-        style={{
-          display: 'flex',
-          gap: 14,
-          alignItems: 'flex-start',
-          background: 'rgba(75,45,142,0.16)',
-          border: '1px solid rgba(123,95,191,0.4)',
-          borderRadius: 10,
-          padding: '16px',
-          animation: 'onbFadeUp 0.3s ease-out',
-        }}
+        className="flex items-start gap-3.5 rounded-lg border border-digi-border bg-digi-card p-4"
+        style={{ animation: 'onbFadeUp 0.3s ease-out' }}
       >
-        <div
-          style={{
-            flexShrink: 0,
-            width: 46,
-            height: 46,
-            borderRadius: 10,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: PIXEL,
-            fontSize: '1.15rem',
-            color: '#fff',
-            background:
-              'linear-gradient(135deg, var(--color-accent-glow, #7B5FBF), var(--color-accent, #4B2D8E))',
-            boxShadow: '0 4px 14px rgba(123,95,191,0.4)',
-          }}
-        >
+        <div className="w-11 h-11 shrink-0 rounded-lg bg-accent-light text-accent flex items-center justify-center text-[17px] font-semibold">
           {a.n}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: PIXEL, fontSize: '0.84rem', color: '#f1eefb' }}>{a.title}</div>
-          <div style={{ ...kickerStyle, marginTop: 3, marginBottom: 9 }}>
+        <div className="flex-1 min-w-0">
+          <div style={cardTitle}>{a.title}</div>
+          <div style={{ ...kickerStyle, marginTop: 3, marginBottom: 8 }}>
             {a.n} de 4 · {rank(a.n)}
           </div>
           <p style={cardDesc}>{a.text()}</p>
@@ -805,15 +757,11 @@ function SlideMetodoCrecimiento() {
 function GrowthCaption({ children, dim = false }: { children: React.ReactNode; dim?: boolean }) {
   return (
     <div
-      style={{
-        fontFamily: PIXEL,
-        fontSize: '0.58rem',
-        letterSpacing: '0.18em',
-        textTransform: 'uppercase',
-        color: dim ? 'rgba(225,215,255,0.4)' : 'var(--color-accent-glow, #7B5FBF)',
-        textAlign: 'center',
-      }}
+      className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider ${
+        dim ? 'text-digi-muted/70' : 'text-accent'
+      }`}
     >
+      {dim ? <ChevronDown className="w-3 h-3" /> : <ChevronDown className="w-3 h-3 rotate-180" />}
       {children}
     </div>
   );
@@ -823,8 +771,67 @@ function GrowthCaption({ children, dim = false }: { children: React.ReactNode; d
 /* Slider 6 — Lideración sobre Acciones (diagrama triangular)         */
 /* ------------------------------------------------------------------ */
 
+/** Nodo del diagrama: tarjeta Fluent (blanca o rellena de accent para el líder). */
+function CycleNode({
+  x,
+  y,
+  w,
+  h,
+  title,
+  lines,
+  filled = false,
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  title: string;
+  lines: string[];
+  filled?: boolean;
+}) {
+  const cx = x + w / 2;
+  return (
+    <g>
+      <rect
+        x={x}
+        y={y}
+        width={w}
+        height={h}
+        rx={8}
+        style={
+          filled
+            ? { fill: 'var(--color-accent)', stroke: 'var(--color-accent)' }
+            : { fill: 'var(--color-digi-card)', stroke: 'var(--color-digi-border)' }
+        }
+        strokeWidth={1.5}
+      />
+      <text
+        x={cx}
+        y={y + 22}
+        textAnchor="middle"
+        fontSize={13}
+        fontWeight={600}
+        style={{ fill: filled ? '#ffffff' : 'var(--color-digi-text)' }}
+      >
+        {title}
+      </text>
+      {lines.map((l, i) => (
+        <text
+          key={l}
+          x={cx}
+          y={y + 38 + i * 13}
+          textAnchor="middle"
+          fontSize={11}
+          style={{ fill: filled ? 'rgba(255,255,255,0.85)' : 'var(--color-digi-muted)' }}
+        >
+          {l}
+        </text>
+      ))}
+    </g>
+  );
+}
+
 function SlideLideracion() {
-  const GLOW = '#7B5FBF';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <p style={pStyle}>
@@ -832,162 +839,125 @@ function SlideLideracion() {
         continuo entre el líder, el grupo y sus miembros.
       </p>
 
-      <svg
-        viewBox="0 0 380 320"
-        width="100%"
-        style={{ maxWidth: 480, height: 'auto', display: 'block', margin: '4px auto' }}
-        role="img"
-        aria-label="Ciclo: el Líder escucha y decide; GCC ejecuta sin cuestionamientos; los Miembros discuten y corrigen; el ciclo vuelve al líder."
-      >
-        <defs>
-          <linearGradient id="lid-stroke" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#9b7fd6" />
-            <stop offset="100%" stopColor={GLOW} />
-          </linearGradient>
-          <linearGradient id="lid-leader" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(123,95,191,0.55)" />
-            <stop offset="100%" stopColor="rgba(75,45,142,0.30)" />
-          </linearGradient>
-          <marker
-            id="lid-arrow"
-            markerWidth="10"
-            markerHeight="10"
-            refX="7"
-            refY="3.2"
-            orient="auto"
-            markerUnits="userSpaceOnUse"
-          >
-            <path d="M0,0 L7,3.2 L0,6.4 Z" fill="#b39ddb" />
-          </marker>
-        </defs>
-
-        {/* Medallón central — el ciclo gira en torno a las acciones */}
-        <circle
-          cx={190}
-          cy={186}
-          r={31}
-          fill="rgba(123,95,191,0.10)"
-          stroke="rgba(123,95,191,0.35)"
-          strokeWidth={1}
-          strokeDasharray="3 3"
-        />
-        <text x={190} y={183} textAnchor="middle" fontFamily={PIXEL} fontSize={9} fill={GLOW}>
-          ACCIONES
-        </text>
-        <text
-          x={190}
-          y={196}
-          textAnchor="middle"
-          fontFamily={BODY}
-          fontSize={8}
-          fill="rgba(225,215,255,0.55)"
+      <div className="rounded-lg border border-digi-border bg-digi-card p-4">
+        <svg
+          viewBox="0 0 380 320"
+          width="100%"
+          style={{
+            maxWidth: 480,
+            height: 'auto',
+            display: 'block',
+            margin: '0 auto',
+            fontFamily: 'var(--font-body)',
+          }}
+          role="img"
+          aria-label="Ciclo: el Líder escucha y decide; GCC ejecuta sin cuestionamientos; los Miembros discuten y corrigen; el ciclo vuelve al líder."
         >
-          ciclo continuo
-        </text>
-
-        {/* Flechas curvas del ciclo: Líder → GCC → Miembros → Líder */}
-        <g
-          fill="none"
-          stroke="url(#lid-stroke)"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          markerEnd="url(#lid-arrow)"
-        >
-          <path d="M240 92 Q 326 150 296 224" />
-          <path d="M224 264 Q 190 300 156 264" />
-          <path d="M84 224 Q 54 150 144 92" />
-        </g>
-
-        {/* Badges de orden sobre el ciclo */}
-        {[
-          { x: 300, y: 154, n: 1 },
-          { x: 190, y: 286, n: 2 },
-          { x: 84, y: 154, n: 3 },
-        ].map((b) => (
-          <g key={b.n}>
-            <circle cx={b.x} cy={b.y} r={10} fill="var(--color-accent, #4B2D8E)" stroke="#b39ddb" />
-            <text
-              x={b.x}
-              y={b.y + 3.2}
-              textAnchor="middle"
-              fontFamily={PIXEL}
-              fontSize={9}
-              fill="#fff"
+          <defs>
+            <marker
+              id="lid-arrow"
+              markerWidth="10"
+              markerHeight="10"
+              refX="7"
+              refY="3.2"
+              orient="auto"
+              markerUnits="userSpaceOnUse"
             >
-              {b.n}
-            </text>
-          </g>
-        ))}
+              <path d="M0,0 L7,3.2 L0,6.4 Z" style={{ fill: 'var(--color-accent)' }} />
+            </marker>
+          </defs>
 
-        {/* Nodo superior — Líder (resaltado) */}
-        <g>
-          <rect
+          {/* Medallón central — el ciclo gira en torno a las acciones */}
+          <circle
+            cx={190}
+            cy={186}
+            r={35}
+            style={{ fill: 'var(--color-accent-light)', stroke: 'var(--color-accent)' }}
+            strokeWidth={1}
+            strokeDasharray="3 3"
+          />
+          <text
+            x={190}
+            y={183}
+            textAnchor="middle"
+            fontSize={9}
+            fontWeight={600}
+            style={{ fill: 'var(--color-accent)', letterSpacing: '0.08em' }}
+          >
+            ACCIONES
+          </text>
+          <text
+            x={190}
+            y={196}
+            textAnchor="middle"
+            fontSize={8}
+            style={{ fill: 'var(--color-digi-muted)' }}
+          >
+            ciclo continuo
+          </text>
+
+          {/* Flechas curvas del ciclo: Líder → GCC → Miembros → Líder */}
+          <g
+            fill="none"
+            style={{ stroke: 'var(--color-accent)' }}
+            strokeWidth={2}
+            strokeLinecap="round"
+            markerEnd="url(#lid-arrow)"
+          >
+            <path d="M240 92 Q 326 150 296 224" />
+            <path d="M224 264 Q 190 300 156 264" />
+            <path d="M84 224 Q 54 150 144 92" />
+          </g>
+
+          {/* Badges de orden sobre el ciclo */}
+          {[
+            { x: 300, y: 154, n: 1 },
+            { x: 190, y: 286, n: 2 },
+            { x: 84, y: 154, n: 3 },
+          ].map((b) => (
+            <g key={b.n}>
+              <circle cx={b.x} cy={b.y} r={10} style={{ fill: 'var(--color-accent)' }} />
+              <text
+                x={b.x}
+                y={b.y + 3.4}
+                textAnchor="middle"
+                fontSize={10}
+                fontWeight={600}
+                fill="#ffffff"
+              >
+                {b.n}
+              </text>
+            </g>
+          ))}
+
+          {/* Nodos del ciclo */}
+          <CycleNode
             x={124}
             y={28}
-            width={132}
-            height={58}
-            rx={10}
-            fill="url(#lid-leader)"
-            stroke={GLOW}
-            strokeWidth={2}
+            w={132}
+            h={58}
+            title="Líder"
+            lines={['Escucha y', 'Decide']}
+            filled
           />
-          <text x={190} y={50} textAnchor="middle" fontFamily={PIXEL} fontSize={13} fill="#fff">
-            Líder
-          </text>
-          <text x={190} y={66} textAnchor="middle" fontFamily={BODY} fontSize={11} fill="#e7e1f5">
-            Escucha y
-          </text>
-          <text x={190} y={79} textAnchor="middle" fontFamily={BODY} fontSize={11} fill="#e7e1f5">
-            Decide
-          </text>
-        </g>
-
-        {/* Nodo derecho — GCC */}
-        <g>
-          <rect
+          <CycleNode
             x={228}
             y={228}
-            width={132}
-            height={60}
-            rx={10}
-            fill="rgba(75,45,142,0.18)"
-            stroke="rgba(123,95,191,0.5)"
-            strokeWidth={1.5}
+            w={132}
+            h={60}
+            title="GCC"
+            lines={['Ejecuta sin', 'cuestionamientos']}
           />
-          <text x={294} y={250} textAnchor="middle" fontFamily={PIXEL} fontSize={13} fill="#f1eefb">
-            GCC
-          </text>
-          <text x={294} y={266} textAnchor="middle" fontFamily={BODY} fontSize={11} fill="#cfc9e2">
-            Ejecuta sin
-          </text>
-          <text x={294} y={279} textAnchor="middle" fontFamily={BODY} fontSize={11} fill="#cfc9e2">
-            cuestionamientos
-          </text>
-        </g>
-
-        {/* Nodo izquierdo — Miembros */}
-        <g>
-          <rect
+          <CycleNode
             x={20}
             y={228}
-            width={132}
-            height={60}
-            rx={10}
-            fill="rgba(75,45,142,0.18)"
-            stroke="rgba(123,95,191,0.5)"
-            strokeWidth={1.5}
+            w={132}
+            h={60}
+            title="Miembros"
+            lines={['Discuten y', 'Corrigen']}
           />
-          <text x={86} y={250} textAnchor="middle" fontFamily={PIXEL} fontSize={13} fill="#f1eefb">
-            Miembros
-          </text>
-          <text x={86} y={266} textAnchor="middle" fontFamily={BODY} fontSize={11} fill="#cfc9e2">
-            Discuten y
-          </text>
-          <text x={86} y={279} textAnchor="middle" fontFamily={BODY} fontSize={11} fill="#cfc9e2">
-            Corrigen
-          </text>
-        </g>
-      </svg>
+        </svg>
+      </div>
     </div>
   );
 }
@@ -1070,52 +1040,68 @@ const GRADOS = ['Candidato', 'Colaborador', 'Controlador', 'Pilar', 'Global', 'L
 
 function SlideAfiliacion() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <p style={pStyle}>
         La <strong style={strong}>afiliación</strong> es el proceso por el que un candidato se
         convierte en miembro, demostrando y representando los valores esperados. Sigue estas
         indicaciones:
       </p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Indicaciones como línea de tiempo numerada (6 pasos, en orden) */}
+      <ol className="flex flex-col">
         {AFIL_STEPS.map((s, i) => (
-          <Card key={s.name} delay={i} row>
-            <div style={stepNum}>{s.n}</div>
-            <div>
-              <div style={cardTitle}>{s.name}</div>
-              <p style={{ ...cardDesc, marginTop: 4 }}>{s.desc()}</p>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <SectionLabel>Tu pulsera = tu grado de afiliación</SectionLabel>
-      <p style={{ ...pStyle, marginTop: -10, fontSize: '0.82rem', opacity: 0.85 }}>
-        El tipo de pulsera del GCC representa tu grado dentro del proyecto. Empiezas como Candidato,
-        con la pulsera gris:
-      </p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-        {GRADOS.map((g, i) => (
-          <span key={g} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <span
-              style={
-                i === 0
-                  ? {
-                      ...chip,
-                      background: 'rgba(154,160,170,0.22)',
-                      border: '1px solid rgba(154,160,170,0.7)',
-                      color: '#eef0f3',
-                    }
-                  : chip
-              }
-            >
-              {g}
-            </span>
-            {i < GRADOS.length - 1 && (
-              <span style={{ color: 'rgba(225,215,255,0.4)', fontFamily: PIXEL }}>›</span>
+          <li key={s.name} className="relative flex gap-3 pb-3 last:pb-0">
+            {i < AFIL_STEPS.length - 1 && (
+              <span aria-hidden className="absolute left-4 top-9 bottom-0 w-px bg-digi-border" />
             )}
-          </span>
+            <span className="relative z-10 w-8 h-8 shrink-0 rounded-full bg-accent text-white text-[11px] font-semibold flex items-center justify-center">
+              {s.n}
+            </span>
+            <div className="min-w-0 flex-1 rounded-lg border border-digi-border bg-digi-card p-3.5">
+              <div style={cardTitle}>{s.name}</div>
+              <p style={{ ...cardDesc, marginTop: 3 }}>{s.desc()}</p>
+            </div>
+          </li>
         ))}
+      </ol>
+
+      <div>
+        <SectionLabel>Tu pulsera = tu grado de afiliación</SectionLabel>
+        <p style={{ ...cardDesc, margin: '8px 0 10px' }}>
+          El tipo de pulsera del GCC representa tu grado dentro del proyecto. Empiezas como
+          Candidato, con la pulsera gris:
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {GRADOS.map((g, i) => (
+            <span key={g} className="inline-flex items-center gap-2">
+              {i === 0 ? (
+                <span
+                  style={{
+                    ...chip,
+                    background: 'var(--color-digi-card)',
+                    border: '1px solid var(--color-digi-border)',
+                    color: 'var(--color-digi-text)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: '#9aa0aa' }}
+                  />
+                  {g}
+                </span>
+              ) : (
+                <span style={chip}>{g}</span>
+              )}
+              {i < GRADOS.length - 1 && (
+                <ChevronRight className="w-3.5 h-3.5 text-digi-muted/70" />
+              )}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div style={noteBox}>
@@ -1132,21 +1118,37 @@ function SlideAfiliacion() {
 /* ------------------------------------------------------------------ */
 
 const SLIDES: Slide[] = [
-  { id: 'modelo', kicker: 'Slider 1', title: 'Modelo de Grupo', Component: SlideModelo, consent: 'ack' },
+  {
+    id: 'modelo',
+    kicker: 'Slider 1',
+    title: 'Modelo de Grupo',
+    Icon: Layers3,
+    Component: SlideModelo,
+    consent: 'ack',
+  },
   {
     id: 'herramientas',
     kicker: 'Slider 2',
     title: 'Herramientas',
+    Icon: Wrench,
     Component: SlideHerramientas,
     consent: 'terms',
     consentSummary:
       'el uso continuo de las herramientas del grupo, incluidas las del Sistema de Control Psicosocial. Cada herramienta solicitará su propio permiso, de forma específica, antes de acceder a cualquier dato',
   },
-  { id: 'motivos', kicker: 'Slider 3', title: 'Motivos', Component: SlideMotivos, consent: 'ack' },
+  {
+    id: 'motivos',
+    kicker: 'Slider 3',
+    title: 'Motivos',
+    Icon: Heart,
+    Component: SlideMotivos,
+    consent: 'ack',
+  },
   {
     id: 'onboarding',
     kicker: 'Slider 4',
     title: 'Onboarding',
+    Icon: Gavel,
     Component: SlideOnboarding,
     consent: 'terms',
     consentSummary:
@@ -1156,6 +1158,7 @@ const SLIDES: Slide[] = [
     id: 'metodo-crecimiento',
     kicker: 'Slider 5',
     title: 'Método de crecimiento',
+    Icon: TrendingUp,
     Component: SlideMetodoCrecimiento,
     consent: 'ack',
   },
@@ -1163,6 +1166,7 @@ const SLIDES: Slide[] = [
     id: 'lideracion',
     kicker: 'Slider 6',
     title: 'Lideración sobre Acciones',
+    Icon: RefreshCw,
     Component: SlideLideracion,
     consent: 'ack',
   },
@@ -1170,6 +1174,7 @@ const SLIDES: Slide[] = [
     id: 'afiliacion',
     kicker: 'Slider 7',
     title: 'Afiliación',
+    Icon: BadgeCheck,
     Component: SlideAfiliacion,
     consent: 'terms',
     consentSummary:
@@ -1231,132 +1236,199 @@ export default function OnboardingSlidersModal({
     if (index > 0) go(index - 1, -1);
   };
 
+  /** Un paso es alcanzable si ya se visitó o si todos los anteriores están aceptados. */
+  const canGoTo = (i: number) => i <= index || SLIDES.slice(0, i).every((_, k) => accepted[k]);
+
   const animName = dir === 1 ? 'onbInRight' : 'onbInLeft';
   const SlideComponent = isForm ? null : current.Component;
+  const HeaderIcon: IconType = isForm ? Send : current.Icon;
+  const title = isForm ? '¿Por qué quieres ser candidato de este proyecto?' : current.title;
 
   return (
-    <div role="dialog" aria-modal="true" style={overlay}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Conoce el proyecto y postúlate"
+      className="corp dark corp-overlay fixed inset-0 z-[250] flex items-center justify-center p-3 sm:p-5"
+      style={{
+        background: 'rgba(6,7,12,0.72)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        animation: 'pixelFadeIn 0.35s ease-out',
+      }}
+    >
       <style>{KEYFRAMES}</style>
 
-      <div style={panel}>
-        {/* Cerrar */}
-        <button type="button" aria-label="Cerrar" onClick={onClose} style={closeBtn}>
-          ✕
-        </button>
+      <div
+        className="w-full max-w-[1080px] h-full max-h-[min(94vh,900px)] flex flex-col rounded-lg border border-digi-border bg-digi-card overflow-hidden"
+        style={{
+          boxShadow: '0 6.4px 14.4px rgba(0,0,0,0.32), 0 1.2px 3.6px rgba(0,0,0,0.28)',
+        }}
+      >
+        <div className="flex-1 min-h-0 grid lg:grid-cols-[248px_minmax(0,1fr)]">
+          {/* ── Rail de pasos (patrón "Explorador Azure" del dashboard) ── */}
+          <aside className="hidden lg:flex flex-col border-r border-digi-border bg-digi-card min-h-0">
+            <div className="flex items-center gap-2.5 px-4 py-4 border-b border-digi-border">
+              <BrandLoader size="sm" />
+              <div className="min-w-0">
+                <div className="text-[12.5px] font-semibold text-digi-text leading-tight">
+                  GCC WORLD
+                </div>
+                <div className="text-[11px] text-digi-muted">Postulación de candidato</div>
+              </div>
+            </div>
 
-        {/* Logo */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 6,
-            paddingTop: 18,
-          }}
-        >
-          <BrandLoader size="sm" />
-          <span
-            style={{ fontFamily: PIXEL, fontSize: '0.6rem', letterSpacing: '0.2em', color: '#fff' }}
-          >
-            GCC WORLD
-          </span>
-        </div>
+            <nav className="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-0.5">
+              <div style={{ ...kickerStyle, padding: '6px 10px 4px' }}>Pasos</div>
+              {[...SLIDES.map((s) => ({ label: s.title, Icon: s.Icon })), { label: 'Postulación', Icon: Send }].map(
+                (s, i) => {
+                  const on = i === index;
+                  const done = i < total ? accepted[i] : false;
+                  const enabled = canGoTo(i);
+                  return (
+                    <button
+                      key={s.label}
+                      type="button"
+                      disabled={!enabled}
+                      onClick={() => enabled && go(i, i > index ? 1 : -1)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md border-l-2 text-left transition-colors ${
+                        on
+                          ? 'bg-accent-light border-accent text-accent'
+                          : enabled
+                            ? 'border-transparent text-digi-text hover:bg-black/[0.03]'
+                            : 'border-transparent text-digi-muted opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <s.Icon className="w-4 h-4 shrink-0" />
+                      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate">
+                        {s.label}
+                      </span>
+                      {done ? (
+                        <Check className="w-3.5 h-3.5 shrink-0 text-green-600" />
+                      ) : (
+                        <span className="text-[10px] tabular-nums text-digi-muted shrink-0">
+                          {i + 1}
+                        </span>
+                      )}
+                    </button>
+                  );
+                }
+              )}
+            </nav>
 
-        {/* Header */}
-        <div style={{ padding: '14px 26px 14px' }}>
-          {isForm && <div style={kickerStyle}>Postulación</div>}
-          <h2 style={titleStyle}>
-            {isForm ? '¿Por qué quieres ser candidato de este proyecto?' : current.title}
-          </h2>
+            <div className="px-4 py-3 border-t border-digi-border">
+              <div className="h-1 rounded-full bg-digi-border overflow-hidden">
+                <div
+                  className="h-full bg-accent transition-[width] duration-300"
+                  style={{ width: `${((index + 1) / steps) * 100}%` }}
+                />
+              </div>
+              <div style={{ ...kickerStyle, marginTop: 6 }}>
+                {isForm ? `Último paso · ${steps} de ${steps}` : `Paso ${index + 1} de ${steps}`}
+              </div>
+            </div>
+          </aside>
 
-          {/* Progreso por segmentos */}
-          <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
-            {Array.from({ length: steps }).map((_, i) => (
-              <span
-                key={i}
-                style={{
-                  flex: 1,
-                  height: 4,
-                  borderRadius: 2,
-                  background:
-                    i <= index ? 'var(--color-accent-glow, #7B5FBF)' : 'rgba(225,215,255,0.16)',
-                  boxShadow: i === index ? '0 0 8px var(--color-accent-glow, #7B5FBF)' : 'none',
-                  transition: 'background 0.3s',
-                }}
+          {/* ── Contenido ── */}
+          <section className="flex flex-col min-h-0 bg-digi-dark">
+            {/* Cabecera */}
+            <header className="flex items-start gap-3 px-5 sm:px-6 py-4 border-b border-digi-border bg-digi-card">
+              <span className="w-9 h-9 shrink-0 rounded-md bg-accent-light text-accent flex items-center justify-center">
+                <HeaderIcon className="w-[18px] h-[18px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div style={kickerStyle}>
+                  {isForm ? 'Postulación' : `Paso ${index + 1} de ${steps}`}
+                </div>
+                <h2 className="text-[17px] font-semibold text-digi-text leading-snug mt-0.5">
+                  {title}
+                </h2>
+                {/* Progreso por segmentos — solo cuando el rail está oculto */}
+                <div className="flex gap-1 mt-3 lg:hidden">
+                  {Array.from({ length: steps }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`flex-1 h-1 rounded-full ${
+                        i <= index ? 'bg-accent' : 'bg-digi-border'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Cerrar"
+                onClick={onClose}
+                className="w-8 h-8 shrink-0 flex items-center justify-center rounded-md text-digi-muted hover:bg-[#f3f2f1] hover:text-digi-text transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </header>
+
+            {/* Cuerpo (scroll + animación de entrada) */}
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-5 sm:px-6 py-5">
+              <div key={index} style={{ animation: `${animName} 0.4s cubic-bezier(0.22,1,0.36,1)` }}>
+                {isForm || !SlideComponent ? (
+                  <CandidateForm
+                    email={email}
+                    setEmail={setEmail}
+                    emailOk={emailOk}
+                    reason={reason}
+                    setReason={setReason}
+                    termsAccepted={finalAccepted}
+                    onToggleTerms={() => setFinalAccepted((v) => !v)}
+                    marketing={marketing}
+                    onToggleMarketing={() => setMarketing((v) => !v)}
+                  />
+                ) : (
+                  <SlideComponent />
+                )}
+              </div>
+            </div>
+
+            {/* Aceptación de términos / "Entendido" según el slider */}
+            {!isForm && (
+              <AcceptTerms
+                mode={current.consent}
+                summary={current.consentSummary}
+                checked={!!acceptedHere}
+                onToggle={toggleAccept}
               />
-            ))}
-          </div>
-          <div style={{ ...kickerStyle, marginTop: 8, opacity: 0.7 }}>
-            {isForm ? `Último paso · ${steps} de ${steps}` : `Paso ${index + 1} de ${steps}`}
-          </div>
-        </div>
-
-        {/* Cuerpo (scroll + animación de entrada) */}
-        <div style={bodyWrap}>
-          <div key={index} style={{ animation: `${animName} 0.4s cubic-bezier(0.22,1,0.36,1)` }}>
-            {isForm || !SlideComponent ? (
-              <CandidateForm
-                email={email}
-                setEmail={setEmail}
-                emailOk={emailOk}
-                reason={reason}
-                setReason={setReason}
-                termsAccepted={finalAccepted}
-                onToggleTerms={() => setFinalAccepted((v) => !v)}
-                marketing={marketing}
-                onToggleMarketing={() => setMarketing((v) => !v)}
-              />
-            ) : (
-              <SlideComponent />
             )}
-          </div>
-        </div>
 
-        {/* Aceptación de términos / "Entendido" según el slider */}
-        {!isForm && (
-          <AcceptTerms
-            mode={current.consent}
-            summary={current.consentSummary}
-            checked={!!acceptedHere}
-            onToggle={toggleAccept}
-          />
-        )}
+            {/* Footer — secundaria a la izquierda, primaria a la derecha */}
+            <footer className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3.5 border-t border-digi-border bg-digi-card">
+              <Button
+                variant="secondary"
+                onClick={back}
+                disabled={index === 0}
+                icon={<ArrowLeft className="w-4 h-4" />}
+              >
+                Atrás
+              </Button>
 
-        {/* Footer */}
-        <div style={footer}>
-          <button
-            type="button"
-            onClick={back}
-            disabled={index === 0}
-            className="pixel-btn pixel-btn-secondary"
-            style={{ opacity: index === 0 ? 0.35 : 1, cursor: index === 0 ? 'default' : 'pointer' }}
-          >
-            ← Atrás
-          </button>
-
-          {isForm ? (
-            <button
-              type="button"
-              onClick={() =>
-                formOk && onComplete({ email: email.trim(), reason: reason.trim(), marketing })
-              }
-              disabled={!formOk}
-              className="pixel-btn pixel-btn-primary"
-              style={{ opacity: formOk ? 1 : 0.5, cursor: formOk ? 'pointer' : 'default' }}
-            >
-              Comenzar mi aventura →
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => acceptedHere && next()}
-              disabled={!acceptedHere}
-              className="pixel-btn pixel-btn-primary"
-              style={{ opacity: acceptedHere ? 1 : 0.5, cursor: acceptedHere ? 'pointer' : 'default' }}
-            >
-              {index === total - 1 ? 'Postularme →' : 'Siguiente →'}
-            </button>
-          )}
+              {isForm ? (
+                <Button
+                  onClick={() =>
+                    formOk && onComplete({ email: email.trim(), reason: reason.trim(), marketing })
+                  }
+                  disabled={!formOk}
+                  icon={<Send className="w-4 h-4" />}
+                >
+                  Comenzar mi aventura
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => acceptedHere && next()}
+                  disabled={!acceptedHere}
+                  className="flex-row-reverse"
+                  icon={<ArrowRight className="w-4 h-4" />}
+                >
+                  {index === total - 1 ? 'Postularme' : 'Siguiente'}
+                </Button>
+              )}
+            </footer>
+          </section>
         </div>
       </div>
     </div>
@@ -1392,53 +1464,29 @@ function AcceptTerms({
           onToggle();
         }
       }}
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 11,
-        padding: inline ? '14px 14px' : '12px 26px',
-        cursor: 'pointer',
-        borderTop: '1px solid rgba(225,215,255,0.12)',
-        borderRadius: inline ? 4 : 0,
-        border: inline ? '1px solid rgba(123,95,191,0.4)' : undefined,
-        background: checked ? 'rgba(75,45,142,0.14)' : 'transparent',
-        transition: 'background 0.2s',
-      }}
+      className={`flex items-start gap-3 cursor-pointer transition-colors ${
+        inline
+          ? `rounded-lg border p-3.5 ${
+              checked ? 'border-accent bg-accent-light' : 'border-digi-border bg-digi-card'
+            }`
+          : `px-5 sm:px-6 py-3 border-t border-digi-border ${
+              checked ? 'bg-accent-light' : 'bg-digi-card'
+            }`
+      }`}
     >
       <span
-        aria-hidden="true"
-        style={{
-          flexShrink: 0,
-          marginTop: 1,
-          width: 20,
-          height: 20,
-          borderRadius: 4,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.8rem',
-          color: '#fff',
-          background: checked ? 'var(--color-accent, #4B2D8E)' : 'transparent',
-          border: checked
-            ? '2px solid var(--color-accent-glow, #7B5FBF)'
-            : '2px solid rgba(123,95,191,0.6)',
-          transition: 'background 0.2s, border 0.2s',
-        }}
+        aria-hidden
+        className={`shrink-0 mt-px w-[18px] h-[18px] rounded border flex items-center justify-center transition-colors ${
+          checked ? 'bg-accent border-accent text-white' : 'bg-digi-darker border-digi-border'
+        }`}
       >
-        {checked ? '✓' : ''}
+        {checked && <Check className="w-3 h-3" />}
       </span>
-      <span
-        style={{
-          fontFamily: BODY,
-          fontSize: '0.78rem',
-          lineHeight: 1.5,
-          color: checked ? '#e9e6f5' : 'rgba(225,215,255,0.78)',
-        }}
-      >
+      <span className="text-[12.5px] leading-relaxed text-digi-muted">
         {mode === 'terms' ? (
           <>
-            Acepto lo indicado en este apartado: <strong style={{ color: '#fff' }}>{summary}</strong>
-            .
+            Acepto lo indicado en este apartado:{' '}
+            <strong className="font-semibold text-digi-text">{summary}</strong>.
           </>
         ) : mode === 'final' ? (
           <>
@@ -1448,16 +1496,16 @@ function AcceptTerms({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              style={{ color: '#c9b6ff', textDecoration: 'underline' }}
+              className="text-accent-glow underline"
             >
               términos y condiciones y la política de privacidad
             </a>{' '}
             del proyecto, y autorizo el tratamiento de los datos que proporcione conforme a ella.
             Entiendo que los permisos otorgados{' '}
-            <strong style={{ color: '#fff' }}>no podrán ser revocados</strong>, salvo que solicite
-            voluntariamente mi desafiliación del grupo, o que esta se produzca por incumplimiento de
-            las reglas; en cualquiera de los dos casos, los permisos previamente aceptados serán
-            retirados.
+            <strong className="font-semibold text-digi-text">no podrán ser revocados</strong>, salvo
+            que solicite voluntariamente mi desafiliación del grupo, o que esta se produzca por
+            incumplimiento de las reglas; en cualquiera de los dos casos, los permisos previamente
+            aceptados serán retirados.
           </>
         ) : mode === 'marketing' ? (
           <>
@@ -1467,8 +1515,8 @@ function AcceptTerms({
           </>
         ) : (
           <>
-            <strong style={{ color: '#fff' }}>Entendido.</strong> He leído y comprendido la
-            información de este apartado.
+            <strong className="font-semibold text-digi-text">Entendido.</strong> He leído y
+            comprendido la información de este apartado.
           </>
         )}
       </span>
@@ -1502,71 +1550,51 @@ function CandidateForm({
   onToggleMarketing: () => void;
 }) {
   const max = 1000;
+  const short = reason.trim().length < 10;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <p style={pStyle}>
         Ya conoces las bases del proyecto. Para iniciar tu postulación al{' '}
         <strong style={strong}>Grupo Corazones Cruzados</strong>, cuéntanos, con sinceridad, qué te
         mueve a formar parte de esto.
       </p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        <label style={{ ...kickerStyle, opacity: 0.9 }}>Correo electrónico</label>
-        <input
+      <div className="rounded-lg border border-digi-border bg-digi-card p-4 flex flex-col gap-4">
+        <PixelInput
+          label="Correo electrónico"
           type="email"
+          name="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tucorreo@ejemplo.com"
           autoComplete="email"
-          style={{
-            width: '100%',
-            padding: '11px 14px',
-            background: '#0f1320',
-            color: '#e9e6f5',
-            border: `2px solid ${email.length > 0 && !emailOk ? '#c8455c' : 'var(--color-accent)'}`,
-            borderRadius: 4,
-            fontFamily: BODY,
-            fontSize: '0.92rem',
-            outline: 'none',
-          }}
+          error={email.length > 0 && !emailOk ? 'Introduce un correo válido.' : undefined}
         />
-      </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        <textarea
-          value={reason}
-          onChange={(e) => setReason(e.target.value.slice(0, max))}
-          placeholder="Escribe aquí qué te mueve a formar parte de esto..."
-          autoFocus
-          rows={6}
-          style={{
-            width: '100%',
-            resize: 'vertical',
-            minHeight: 130,
-            padding: '12px 14px',
-            background: '#0f1320',
-            color: '#e9e6f5',
-            border: '2px solid var(--color-accent)',
-            borderRadius: 4,
-            fontFamily: BODY,
-            fontSize: '0.92rem',
-            lineHeight: 1.55,
-            outline: 'none',
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontFamily: BODY,
-            fontSize: '0.72rem',
-            color: 'rgba(225,215,255,0.6)',
-          }}
-        >
-          <span>{reason.trim().length < 10 ? 'Mínimo 10 caracteres.' : 'Listo para postular.'}</span>
-          <span>
-            {reason.length}/{max}
-          </span>
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="postulacion-motivo"
+            className="field-label text-[10px] text-accent-glow opacity-70"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            ¿Qué te mueve a formar parte de esto?
+          </label>
+          <textarea
+            id="postulacion-motivo"
+            value={reason}
+            onChange={(e) => setReason(e.target.value.slice(0, max))}
+            placeholder="Escribe aquí qué te mueve a formar parte de esto..."
+            autoFocus
+            rows={7}
+            className="field-control w-full resize-y min-h-[150px] px-3 py-2.5 bg-digi-darker border border-digi-border rounded text-sm text-digi-text placeholder:text-digi-muted/60 focus:border-accent focus:outline-none transition-colors"
+            style={{ fontFamily: 'var(--font-body)', lineHeight: 1.6 }}
+          />
+          <div className="flex justify-between text-[11.5px] text-digi-muted">
+            <span>{short ? 'Mínimo 10 caracteres.' : 'Listo para postular.'}</span>
+            <span className="tabular-nums">
+              {reason.length}/{max}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1586,46 +1614,39 @@ type AccordionItem = { name: string; summary: string; body: () => React.ReactNod
 function Accordion({ items }: { items: AccordionItem[] }) {
   const [open, setOpen] = useState(0);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="flex flex-col gap-2.5">
       {items.map((t, i) => {
         const isOpen = open === i;
         return (
-          <div key={t.name} style={{ ...cardBase, padding: 0, overflow: 'hidden' }}>
+          <div
+            key={t.name}
+            className={`rounded-lg border bg-digi-card overflow-hidden transition-colors ${
+              isOpen ? 'border-accent' : 'border-digi-border'
+            }`}
+          >
             <button
               type="button"
               onClick={() => setOpen(isOpen ? -1 : i)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '14px 16px',
-                background: 'transparent',
-                border: 0,
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
+              className="w-full flex items-center gap-3 p-3.5 text-left"
             >
-              <span style={{ ...stepNum, width: 30, height: 30, fontSize: '0.7rem' }}>{i + 1}</span>
-              <span style={{ flex: 1 }}>
+              <span style={stepNum}>{i + 1}</span>
+              <span className="flex-1 min-w-0">
                 <span style={cardTitle}>{t.name}</span>
                 {!isOpen && (
                   <span style={{ ...cardDesc, display: 'block', marginTop: 2 }}>{t.summary}</span>
                 )}
               </span>
-              <span
-                style={{
-                  color: 'var(--color-accent-glow, #7B5FBF)',
-                  fontFamily: PIXEL,
-                  transition: 'transform 0.25s',
-                  transform: isOpen ? 'rotate(90deg)' : 'none',
-                }}
-              >
-                ▸
-              </span>
+              <ChevronDown
+                className={`w-4 h-4 shrink-0 transition-transform ${
+                  isOpen ? 'rotate-180 text-accent' : 'text-digi-muted'
+                }`}
+              />
             </button>
             {isOpen && (
-              <div style={{ padding: '0 16px 16px 16px', animation: 'onbFadeUp 0.3s ease-out' }}>
+              <div
+                className="px-3.5 pb-4 pt-0 border-t border-digi-border flex flex-col gap-2.5"
+                style={{ animation: 'onbFadeUp 0.3s ease-out', paddingTop: 14 }}
+              >
                 {t.body()}
               </div>
             )}
@@ -1636,206 +1657,88 @@ function Accordion({ items }: { items: AccordionItem[] }) {
   );
 }
 
+/** Encabezado de sub-sección dentro de un slider (icono/barra accent + título). */
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        fontFamily: PIXEL,
-        fontSize: '0.74rem',
-        letterSpacing: '0.16em',
-        textTransform: 'uppercase',
-        color: 'var(--color-accent-glow, #7B5FBF)',
-        borderLeft: '3px solid var(--color-accent)',
-        paddingLeft: 10,
-      }}
-    >
+    <div className="border-l-2 border-accent pl-2.5 text-[12.5px] font-semibold text-digi-text">
       {children}
     </div>
   );
 }
 
-function Card({
-  children,
-  delay = 0,
-  row = false,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  row?: boolean;
-}) {
+/** Aviso de advertencia (rojo corp) — reusa los literales semánticos del dashboard. */
+function WarnBox({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        ...cardBase,
-        display: 'flex',
-        flexDirection: row ? 'row' : 'column',
-        alignItems: row ? 'flex-start' : 'stretch',
-        gap: row ? 14 : 6,
-        animation: 'onbFadeUp 0.4s ease-out both',
-        animationDelay: `${0.05 + delay * 0.06}s`,
-      }}
-    >
-      {children}
+    <div className="flex items-start gap-2.5 rounded-lg border border-red-300 bg-red-50 p-3.5">
+      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+      <p className="text-[13px] leading-relaxed text-red-700 m-0">{children}</p>
     </div>
   );
 }
 
-const overlay: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 250,
-  background: 'rgba(6,7,12,0.82)',
-  backdropFilter: 'blur(4px)',
-  WebkitBackdropFilter: 'blur(4px)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 20,
-  animation: 'pixelFadeIn 0.45s ease-out',
-};
-
-const panel: React.CSSProperties = {
-  width: '100%',
-  maxWidth: 860,
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  background: '#121722',
-  border: '1px solid rgba(255,255,255,0.10)',
-  borderRadius: 12,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-  position: 'relative',
-};
-
-const closeBtn: React.CSSProperties = {
-  position: 'absolute',
-  top: 10,
-  right: 12,
-  zIndex: 2,
-  background: 'transparent',
-  border: 0,
-  color: 'rgba(225,215,255,0.6)',
-  fontFamily: PIXEL,
-  fontSize: '0.85rem',
-  cursor: 'pointer',
-  padding: 6,
-};
-
-const bodyWrap: React.CSSProperties = {
-  flex: 1,
-  overflowY: 'auto',
-  overflowX: 'hidden',
-  padding: '6px 26px 22px',
-};
-
-const footer: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 12,
-  padding: '14px 26px',
-  borderTop: '1px solid rgba(225,215,255,0.12)',
-};
+/* --- Tokens de estilo del modal (fuente única; todos apuntan a `.corp`) --- */
 
 const kickerStyle: React.CSSProperties = {
-  fontFamily: PIXEL,
-  fontSize: '0.66rem',
-  letterSpacing: '0.22em',
+  fontSize: '0.6875rem',
+  fontWeight: 600,
+  letterSpacing: '0.08em',
   textTransform: 'uppercase',
-  color: 'var(--color-accent-glow, #7B5FBF)',
-};
-
-const titleStyle: React.CSSProperties = {
-  fontFamily: PIXEL,
-  fontSize: '1.15rem',
-  lineHeight: 1.35,
-  color: '#f1eefb',
-  margin: '8px 0 0',
-  textShadow: '1px 1px 0 rgba(0,0,0,0.6)',
+  color: 'var(--color-digi-muted)',
 };
 
 const pStyle: React.CSSProperties = {
-  fontFamily: BODY,
-  fontSize: '0.95rem',
-  lineHeight: 1.6,
-  color: '#d9d4ea',
+  fontSize: '0.9375rem',
+  lineHeight: 1.65,
+  color: 'var(--color-digi-text)',
   margin: 0,
 };
 
-const strong: React.CSSProperties = { color: '#fff', fontWeight: 700 };
-
-const cardBase: React.CSSProperties = {
-  background: '#151a26',
-  border: '1px solid rgba(123,95,191,0.35)',
-  borderRadius: 5,
-  padding: '14px 16px',
-};
-
-const grid2: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 12,
-};
+const strong: React.CSSProperties = { color: 'var(--color-digi-text)', fontWeight: 600 };
 
 const cardTitle: React.CSSProperties = {
-  fontFamily: PIXEL,
-  fontSize: '0.82rem',
-  color: '#f1eefb',
-  letterSpacing: '0.02em',
+  display: 'block',
+  fontSize: '0.8438rem',
+  fontWeight: 600,
+  color: 'var(--color-digi-text)',
 };
 
 const cardDesc: React.CSSProperties = {
-  fontFamily: BODY,
-  fontSize: '0.88rem',
-  lineHeight: 1.55,
-  color: '#cfc9e2',
+  fontSize: '0.8125rem',
+  lineHeight: 1.6,
+  color: 'var(--color-digi-muted)',
   margin: 0,
 };
 
 const stepNum: React.CSSProperties = {
-  width: 38,
-  height: 38,
+  width: 32,
+  height: 32,
   flexShrink: 0,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontFamily: PIXEL,
-  fontSize: '0.85rem',
-  color: '#fff',
-  background: 'var(--color-accent)',
-  border: '1px solid var(--color-accent-glow, #7B5FBF)',
-  borderRadius: 4,
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  color: 'var(--color-accent)',
+  background: 'var(--color-accent-light)',
+  borderRadius: 6,
 };
 
 const chip: React.CSSProperties = {
-  fontFamily: BODY,
-  fontSize: '0.78rem',
-  color: '#e9e6f5',
-  background: 'rgba(123,95,191,0.18)',
-  border: '1px solid rgba(123,95,191,0.45)',
+  fontSize: '0.75rem',
+  fontWeight: 500,
+  color: 'var(--color-accent)',
+  background: 'var(--color-accent-light)',
   borderRadius: 999,
   padding: '4px 10px',
 };
 
 const noteBox: React.CSSProperties = {
-  fontFamily: BODY,
-  fontSize: '0.9rem',
-  lineHeight: 1.55,
-  color: '#e9e6f5',
-  background: 'rgba(75,45,142,0.18)',
+  fontSize: '0.875rem',
+  lineHeight: 1.6,
+  color: 'var(--color-digi-text)',
+  background: 'var(--color-accent-light)',
   borderLeft: '3px solid var(--color-accent)',
-  borderRadius: 4,
-  padding: '12px 14px',
-};
-
-const warnBox: React.CSSProperties = {
-  fontFamily: BODY,
-  fontSize: '0.88rem',
-  lineHeight: 1.55,
-  color: '#f3dede',
-  background: 'rgba(160,40,55,0.16)',
-  borderLeft: '3px solid #c8455c',
-  borderRadius: 4,
+  borderRadius: 6,
   padding: '12px 14px',
 };
 

@@ -848,6 +848,13 @@ html {
    debe usar colores claros; las tarjetas (bg-digi-card) siguen blancas. */
 .corp.page-dark { background: #0a0a0a !important; }
 
+/* ISLA `.corp` sobre una página que NO es del dashboard (p. ej. los modales de la
+   landing pixelart: EntryChoiceModal, OnboardingSlidersModal). Hereda los tokens y la
+   tipografía Fluent, pero NO impone el fondo de página ni el alto mínimo: el overlay
+   pone su propio velo oscuro sobre la landing y la tarjeta/diálogo su propio alto.
+   Reusable por cualquier diálogo corp montado fuera de `/dashboard`. */
+.corp.corp-overlay { background: transparent; min-height: 0; }
+
 /* Form fields — Fluent text field / dropdown */
 .corp .field-control,
 .corp input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
@@ -1098,7 +1105,8 @@ html {
 .corp.dark .bg-amber-50, .corp.dark .bg-yellow-50 { background-color: rgba(224,179,77,0.13) !important; }
 .corp.dark .hover\:bg-green-50:hover, .corp.dark .hover\:bg-green-100:hover { background-color: rgba(107,183,0,0.18) !important; }
 .corp.dark .hover\:bg-red-50:hover { background-color: rgba(241,112,123,0.18) !important; }
-.corp.dark .hover\:bg-amber-50:hover { background-color: rgba(224,179,77,0.18) !important; }
+.corp.dark .hover\:bg-amber-50:hover,
+.corp.dark .hover\:bg-amber-100:hover { background-color: rgba(224,179,77,0.18) !important; }
 
 /* Semantic text on dark */
 .corp.dark .text-green-600, .corp.dark .text-green-700 { color: #7bc043 !important; }

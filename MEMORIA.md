@@ -275,6 +275,31 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **LANDING — los DOS modales de inicio pasan al diseño del dashboard, en MODO OSCURO (2026-07-25).**
+  Decisión del usuario: aplicar el diseño de `/dashboard` a `EntryChoiceModal` ("¿Cómo quieres
+  ingresar?") y `OnboardingSlidersModal` (los 8 pasos de postulación), y que sea **al estilo del modo
+  oscuro** (no el claro por defecto del dashboard) para no chocar con la landing oscura.
+  - **Cómo:** el overlay de cada modal es una **isla `corp dark corp-overlay`** (utilidad nueva
+    `.corp.corp-overlay` en `globals.css`: hereda tokens/tipografía Fluent sin imponer fondo de página
+    ni `min-height:100vh`). Iconos **lucide**, componentes compartidos (`Button`, `PixelInput`,
+    `PixelTabs`, `PixelBadge`) y **tokens** en vez de hex; se fueron Silkscreen, bordes pixel y emojis.
+    Quitar la clase `dark` lo pasa a claro sin más cambios.
+  - **El wizard de 8 pasos ahora tiene RAIL de pasos** (icono por paso, `Check` verde en los aceptados,
+    pasos bloqueados hasta aceptar el anterior, barra de progreso) + contenido con cabecera/scroll/
+    franja de aceptación/footer. Contenido recompuesto para llenar el ancho: 4 Pisos como "edificio",
+    4 Pasos y Afiliación como líneas de tiempo, valores en 2 columnas.
+  - **El contenido/textos y la lógica NO cambiaron** (mismos 7 sliders + formulario, mismas
+    aceptaciones `ack`/`terms`/`final`/`marketing`, mismo `PostulacionData`, mismos props). Solo
+    presentación. Detalle de diseño en `Diseño.md` → "Modales de la landing en tema del dashboard".
+  - **Pendiente:** el resto de modales de la landing (recuperación de cuenta, login de miembro/cliente,
+    postulación pendiente, creación de cuenta/`SignupForm`) **siguen en pixelart** → el flujo mezcla
+    dos lenguajes visuales hasta que el usuario decida migrarlos.
+  - **Lección (verificación visual):** correr `npm run build` mientras el `next dev` del usuario está
+    levantado **rompe su dev server** (comparten `.next`; aparece `ENOENT … .next/server/vendor-chunks/
+    lucide-react.js`). Hay que reiniciar dev (o borrar `.next`) después de un build. Para revisar UI se
+    usó **puppeteer con el Chrome del sistema** (`executablePath: '/Applications/Google
+    Chrome.app/Contents/MacOS/Google Chrome'`; el Chrome de puppeteer no está instalado) y `NODE_PATH`
+    apuntando a `node_modules` del repo cuando el script vive fuera del proyecto.
 - **★ VIDEOJUEGO — fuente de verdad viva: `godot/Videojuego.md` + skill `/videojuegogcc` (2026-07-23).**
   Todo el desarrollo del videojuego (arquitectura Godot, historia/lore, pipeline de arte por IA
   con Gemini/Nano Banana, REGLAS de consistencia del arte, diseño de fases y cómo trabajar con
