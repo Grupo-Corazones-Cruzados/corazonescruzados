@@ -1694,3 +1694,54 @@ Integrador de sistemas / arquitecto cloud (Google Workspace Admin SDK, Calendar/
 - **% de información para el objetivo: 100%** — todo implementado y verificado en vivo (Gmail/Meet reales,
   cuentas de prueba, BD ROLLBACK, tsc+build). **Pendiente NO técnico:** env `GOOGLE_SA_KEY`/`GOOGLE_WORKSPACE_ORGANIZER`
   en Railway (prod) y, al pasar el trial, excluir `/Candidatos` de la auto-asignación de licencias.
+
+---
+
+## Tema (2026-07-24) — HERRAMIENTA DE TRANSCRIPCIÓN de audio: fallos con audios largos
+
+**Rol asumido:** *ingeniero de plataforma / diagnóstico de fiabilidad en producción (Railway + Cloudflare + Next.js)*.
+
+### Necesidad
+La herramienta `/dashboard/tools → Transcribir Audio` (`POST /api/tools/transcribe`, Whisper) fallaba al
+transcribir un audio **largo (~1.5 h)**; el usuario valora la UX actual (una sola petición + barra de progreso)
+y no le importa mantener la app abierta. Objetivo: que funcione sin cambiar esa UX.
+
+### Preguntas y respuestas
+#### P1 — ¿Por qué salía `Transcribe error: aborted`? · ✅ Resuelta
+- **Respuesta:** en un primer episodio, **falta de créditos en OpenAI** → Whisper devolvía `aborted`. (fuente: usuario)
+  **Lección:** ante `aborted`/errores de API opacos, **verificar créditos/cuota del proveedor ANTES** de asumir
+  causas de infraestructura.
+
+#### P2 — ¿El `SIGTERM`/reinicio del contenedor era por despliegue o por OOM? · ✅ Resuelta (ninguno)
+- **Respuesta:** se descartó con evidencia. (a) **Deploy:** el historial de `corazonescruzados` mostró que NO
+  hubo despliegue durante los fallos del usuario (el activo era de horas antes). (b) **OOM:** hipótesis
+  razonable (el código cargaba todo el archivo en RAM), pero no era la causa. (c) **ReDoS:** las regex de
+  dedup se probaron y corrían en **0 ms** con entradas sintéticas → hipótesis retirada. **Lección:** verificar
+  cada hipótesis (historial de deploys por `railway deployment list --service <web>`, benchmark de regex)
+  en vez de encadenar suposiciones.
+
+#### P3 — ¿Cuál era la causa REAL? · ✅ Resuelta
+- **Respuesta:** **tope duro de ~300 s por petición en la plataforma** (Railway/Cloudflare — se vio Cloudflare
+  `172.66.x.x` en el network log). El HTTP log lo delató: `POST /api/tools/transcribe → 499 → 4min59s/5min`
+  (≈300 s exactos). **`export const maxDuration` NO lo sube** (se probó 600 y siguió cortando en 300). Con
+  un audio de 1.5 h, la transcripción **secuencial** no cabía en 300 s.
+
+#### P4 — ¿Cómo hacerlo caber en <300 s sin cambiar la UX? · ✅ Resuelta (funcionó en vivo)
+- **Respuesta:** tres optimizaciones invisibles al usuario:
+  1. **Troceo con input seeking** (`-ss` **antes** de `-i` en ffmpeg): evita re-decodificar desde el inicio en
+     cada segmento; el troceo pasa de minutos a segundos.
+  2. **Transcripción en PARALELO** (concurrencia 5, pool de workers, ensamblado por índice) en vez de uno por uno.
+  3. **Dedup lineal/acotado** (`collapseWordRuns`/`collapseSentenceRuns`) en vez de regex con backreference que
+     en transcripts reales largos podían colgar la CPU.
+  **Verificado en vivo:** el usuario confirmó que "al fin pudo finalizar" con un audio de ~1.5 h.
+
+### Decisión de proceso (importante)
+Se intentó una **reescritura a procesamiento en segundo plano** (job + polling + persistencia por segmento) que
+**el usuario rechazó** porque le cambiaba/rompía la barra de progreso que ya le funcionaba. **Regla:** ante un
+problema de fiabilidad, **optimizar primero dentro de la arquitectura existente** (que el usuario ya valida) y
+solo ir a un rediseño mayor si de verdad no hay forma (p. ej. audios de 3+ h que ni optimizados entren en 300 s),
+y aun así **conservando la UX** (barra vía sondeo).
+
+### Estado
+- **% de información para el objetivo: 100%** — causa raíz identificada (tope de ~300 s) y resuelta con
+  optimizaciones dentro de la misma UX; **verificado en producción** por el usuario.

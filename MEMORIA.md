@@ -2606,6 +2606,25 @@ Módulos principales:
   mismo (formulario → progreso → resultado con "Usar de nuevo"). Las APIs `/api/tools/convert` y
   `/api/tools/transcribe` no cambiaron. Para agregar herramientas: añadir a `TOOLS` con su `category` y su
   render en `renderToolPanel`; nuevas categorías van en `CATEGORIES`.
+- **Transcripción de audio: TOPE DURO de ~300 s por petición (Railway/Cloudflare) (2026-07-24).**
+  `/api/tools/transcribe` (Whisper) trocea el audio en segmentos de 10 min, los transcribe y une en un `.txt`.
+  Con un audio de **~1.5 h** (10 segmentos) empezó a fallar con **HTTP 499 a los ~300 s exactos** → **502** en
+  el navegador. **La causa NO era** créditos (aunque un episodio previo SÍ fue falta de créditos en OpenAI:
+  Whisper devolvía `aborted`), ni OOM, ni despliegues, ni ReDoS *per se*. Es un **límite de plataforma de ~300 s
+  por request que `export const maxDuration` NO puede subir** (subirlo a 600 no sirvió; el corte siguió en 300).
+  **Regla:** en peticiones largas, TODO debe terminar en **<300 s**; no confiar en `maxDuration`. **Cómo se
+  metió bajo 300 s (sin cambiar la UX de una sola petición + barra de progreso):**
+  (1) **Troceo con input seeking** — `-ss` **antes** de `-i` en ffmpeg (antes iba después = *output seeking*,
+  que re-decodifica desde el inicio en cada segmento → minutos en audios largos; con input seeking son segundos);
+  (2) **transcribir segmentos en PARALELO** (concurrencia 5) en vez de uno por uno: primero se trocea todo y
+  luego se transcribe con un pool de workers, ensamblando por índice; (3) **dedup del post-procesado con
+  algoritmos LINEALES/acotados** (`collapseWordRuns` con regex acotada + `collapseSentenceRuns` con escaneo
+  lineal), reemplazando las regex con backreference `/(.{5,200}?)(?:[\s.?!,]*\1){2,}/` que en un transcript
+  real largo podían colgar la CPU (aunque en pruebas sintéticas corrían en 0 ms). **Lección de proceso:** NO
+  reescribir a background/procesamiento-en-2º-plano por un diagnóstico apresurado — el usuario valora la UX
+  existente (petición única + barra); primero optimizar dentro de la misma arquitectura. Si algún día hay
+  audios de 3+ h que ni así entren en 300 s, la única salida es procesamiento en segundo plano **conservando la
+  barra vía sondeo (polling)**.
 - **Correos de propuestas del calendario mostraban la hora del SERVIDOR, no la del miembro/cliente (2026-07-21):**
   Los correos de "Mi día" / calendario público (propuesta recibida, aceptada/rechazada, notificación a
   suscriptores) mostraban una hora incorrecta. Causa: `formatEmailDateTime` en `lib/integrations/email.ts`
