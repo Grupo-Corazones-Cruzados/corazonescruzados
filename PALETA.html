@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paleta de colores — GCC World</title>
+<style>
+  :root{
+    --bg:#faf9f8; --card:#ffffff; --border:#e1dfdd; --text:#242424; --muted:#605e5c;
+    --accent:#4B2D8E; --accent-light:#EDEBFA; --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+    --code-bg:#f3f2f1;
+  }
+  html[data-theme="dark"]{
+    --bg:#1b1a19; --card:#252423; --border:#3b3a39; --text:#f3f2f1; --muted:#a19f9d;
+    --accent:#8267d4; --accent-light:#2d2647; --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+    --code-bg:#2d2c2b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+
+  /* ── Cabecera ─────────────────────────────────────────── */
+  header{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand-chip{
+    width:44px;height:44px;border-radius:10px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;letter-spacing:.5px;flex:none;
+  }
+  h1{font-size:24px;font-weight:600;margin:0}
+  .sub{color:var(--muted);font-size:13.5px;margin:2px 0 0}
+  .spacer{flex:1}
+  .toggle{
+    display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;cursor:pointer;
+    background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);
+    font:600 12.5px/1 'Segoe UI',system-ui,sans-serif;
+  }
+  .toggle:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ── Barra de resumen ─────────────────────────────────── */
+  .legend{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0 26px;
+    padding:12px 14px;background:var(--accent-light);border:1px solid var(--border);border-radius:8px;
+    font-size:12.5px;color:var(--text);
+  }
+  .legend b{color:var(--accent)}
+  .legend code{background:transparent;color:inherit;font-size:12px}
+
+  /* ── Secciones ────────────────────────────────────────── */
+  section{margin-bottom:34px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  h2{font-size:16.5px;font-weight:600;margin:0}
+  .src{
+    font-family:'Cascadia Mono',Consolas,'SF Mono',monospace;font-size:11.5px;color:var(--muted);
+    background:var(--code-bg);padding:2px 7px;border-radius:4px;
+  }
+  .sec-desc{color:var(--muted);font-size:13px;margin:0 0 14px;max-width:900px}
+
+  /* ── Grid de swatches ─────────────────────────────────── */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));gap:12px}
+  .sw{
+    background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;
+    box-shadow:var(--shadow);cursor:pointer;text-align:left;padding:0;font:inherit;color:inherit;
+    transition:transform .12s ease,border-color .12s ease;width:100%;
+  }
+  .sw:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .sw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .chip{
+    height:78px;display:flex;align-items:flex-end;justify-content:space-between;padding:8px 10px;
+    font-family:'Cascadia Mono',Consolas,'SF Mono',monospace;font-size:11px;font-weight:600;
+    border-bottom:1px solid var(--border);
+  }
+  .ratio{opacity:.85;font-size:10px;font-weight:600;letter-spacing:.2px}
+  .meta{padding:10px 11px 11px}
+  .tok{
+    font-family:'Cascadia Mono',Consolas,'SF Mono',monospace;font-size:11.5px;font-weight:600;
+    color:var(--accent);word-break:break-all;display:block;
+  }
+  .name{font-size:12.5px;font-weight:600;margin-top:3px}
+  .use{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.35}
+
+  /* ── Reglas ───────────────────────────────────────────── */
+  .rules{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px 18px;box-shadow:var(--shadow)}
+  .rules ul{margin:0;padding-left:18px}
+  .rules li{font-size:13px;margin-bottom:7px}
+  .rules li:last-child{margin-bottom:0}
+  .yes{color:#107c10;font-weight:700}
+  .no{color:#d13438;font-weight:700}
+  html[data-theme="dark"] .yes{color:#6bb700} html[data-theme="dark"] .no{color:#f1707b}
+  code{background:var(--code-bg);padding:1.5px 5px;border-radius:3px;
+       font-family:'Cascadia Mono',Consolas,'SF Mono',monospace;font-size:11.5px}
+
+  /* ── Tabla de pares claro/oscuro ──────────────────────── */
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  th,td{padding:9px 12px;text-align:left;font-size:12.5px;border-bottom:1px solid var(--border)}
+  th{background:var(--card);font-weight:600;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:none}
+  .cell{display:flex;align-items:center;gap:8px}
+  .dot{width:16px;height:16px;border-radius:4px;border:1px solid var(--border);flex:none}
+  .mono{font-family:'Cascadia Mono',Consolas,'SF Mono',monospace;font-size:11.5px}
+  .tbl-wrap{overflow-x:auto}
+
+  /* ── Toast ────────────────────────────────────────────── */
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);
+    background:var(--accent);color:#fff;padding:9px 18px;border-radius:6px;font-size:12.5px;font-weight:600;
+    opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;z-index:50;
+  }
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  footer{margin-top:34px;color:var(--muted);font-size:12px;border-top:1px solid var(--border);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-chip">GCC</div>
+      <div>
+        <h1>Paleta de colores — GCC World</h1>
+        <p class="sub">Fuente única de color de la organización. Clic en cualquier color para copiar el hex.</p>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="toggle" id="themeBtn">◐ Modo oscuro</button>
+  </header>
+
+  <div class="legend">
+    <span><b>Morado GCC #4B2D8E</b> es el color de marca.</span>
+    <span>Los colores viven en <code>app/globals.css</code> (tokens CSS) — cambiarlos ahí recolorea toda la app.</span>
+    <span>El número sobre cada muestra es su <b>ratio de contraste</b> contra el texto que lleva encima (AA ≥ 4.5).</span>
+  </div>
+
+  <div id="sections"></div>
+
+  <section>
+    <div class="sec-head"><h2>Equivalencias claro ↔ oscuro</h2></div>
+    <p class="sec-desc">El mismo token cambia de valor según el scope. Un componente que usa <code>bg-digi-card</code> o <code>text-accent</code> se adapta solo.</p>
+    <div class="tbl-wrap"><table id="pairs"></table></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Reglas de uso</h2></div>
+    <div class="rules">
+      <ul>
+        <li><span class="yes">SÍ</span> usar utilidades de token: <code>bg-accent</code>, <code>hover:bg-accent-hover</code>, <code>bg-accent-light</code>, <code>text-accent</code>, <code>bg-digi-card</code>, <code>border-digi-border</code>, <code>text-digi-muted</code>.</li>
+        <li><span class="no">NO</span> escribir hex crudos en componentes. Si hace falta un color nuevo, se añade como token en <code>app/globals.css</code>.</li>
+        <li><span class="yes">SÍ</span> usar <code>E.*</code> de <code>components/landing/world/editorUi.tsx</code> dentro del editor del mundo (usa azul Fluent, no el morado de marca).</li>
+        <li><span class="yes">SÍ</span> usar los helpers de <code>lib/integrations/email.ts</code> para correos (estilos inline; los clientes de correo no soportan variables CSS).</li>
+        <li><span class="no">NO</span> usar el estilo viejo de videojuego en correos (Courier, fondo oscuro, morado claro <code>#7B5FBF</code>, bordes pixel de 2px).</li>
+        <li><span class="yes">SÍ</span> dar override en <code>.corp.dark</code> a cualquier literal semántico de Tailwind que se use (<code>bg-red-50</code>, <code>bg-amber-50</code>, …); si no, se ve blanco sobre oscuro.</li>
+        <li>Texto <b>blanco</b> siempre sobre fondos de acento sólido (morado o azul del editor).</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    Generado desde el código real — <span class="mono">app/globals.css</span> ·
+    <span class="mono">components/landing/world/editorUi.tsx</span> ·
+    <span class="mono">lib/integrations/email.ts</span>.
+    Estándar completo en <span class="mono">Diseño.md</span>.
+  </footer>
+</div>
+
+<div id="toast">Copiado</div>
+
+<script>
+/* ── Datos: extraídos del código, no inventados ──────────────────────── */
+const SECTIONS = [
+  {
+    title: 'Marca — Morado GCC',
+    src: 'app/globals.css :13-17 · :702-706 · :1049-1053',
+    desc: 'El acento de la organización. Tres afinaciones del mismo morado: la landing oscura, el dashboard claro y el dashboard oscuro.',
+    colors: [
+      {hex:'#4B2D8E', tok:'--color-accent', name:'Morado GCC', use:'Color de marca. Botón primario, tabs activos, enlaces.'},
+      {hex:'#3A1F7A', tok:'--color-accent-hover (.corp)', name:'Morado hover (claro)', use:'Hover del primario sobre fondo claro.'},
+      {hex:'#2E1860', tok:'--color-accent-dark (.corp)', name:'Morado presionado', use:'Estado :active del botón primario.'},
+      {hex:'#EDEBFA', tok:'--color-accent-light', name:'Morado tenue', use:'Fondos de selección, chips de icono, filas activas.'},
+      {hex:'#5A3BA0', tok:'--color-accent-hover (landing)', name:'Morado hover (oscuro)', use:'Hover del primario en la landing pixelart.'},
+      {hex:'#7B5FBF', tok:'--color-accent-glow (landing)', name:'Morado brillo', use:'Texto/bordes de acento sobre fondo negro. NO usar sobre blanco.'},
+      {hex:'#8267d4', tok:'--color-accent (.corp.dark)', name:'Morado modo oscuro', use:'Fondo del primario en el dashboard oscuro.'},
+      {hex:'#9179df', tok:'--color-accent-hover (.corp.dark)', name:'Morado hover oscuro', use:'Hover del primario en oscuro.'},
+      {hex:'#a78bfa', tok:'--color-accent-glow (.corp.dark)', name:'Morado texto oscuro', use:'Texto de acento legible sobre fondo oscuro.'},
+      {hex:'#2d2647', tok:'--color-accent-light (.corp.dark)', name:'Tinte acento oscuro', use:'Equivalente de accent-light en modo oscuro.'},
+    ]
+  },
+  {
+    title: 'Dashboard — Fluent claro (scope .corp)',
+    src: 'app/globals.css :691-715',
+    desc: 'Neutrales Microsoft Fluent. Es el lenguaje serio de la app: dashboard, tickets, proyectos, clientes, cotizaciones.',
+    colors: [
+      {hex:'#faf9f8', tok:'--color-digi-dark', name:'Fondo de página', use:'Shell del dashboard.'},
+      {hex:'#ffffff', tok:'--color-digi-card', name:'Tarjeta / superficie', use:'Cards, sidebar, thead, inputs.'},
+      {hex:'#e1dfdd', tok:'--color-digi-border', name:'Borde neutro', use:'Bordes de tarjeta, tabla, campos.'},
+      {hex:'#242424', tok:'--color-digi-text', name:'Texto primario', use:'Títulos y cuerpo.'},
+      {hex:'#605e5c', tok:'--color-digi-muted', name:'Texto secundario', use:'Descripciones, labels, hints.'},
+      {hex:'#107c10', tok:'--color-digi-green', name:'Verde éxito', use:'Estados OK, confirmaciones.'},
+      {hex:'#f3f2f1', tok:'literal', name:'Gris hover', use:'Hover de botones de icono y cerrar.'},
+      {hex:'#a4262c', tok:'literal .dlg-btn--danger', name:'Rojo peligro', use:'Botón destructivo de diálogos.'},
+      {hex:'#8a1f24', tok:'literal', name:'Rojo peligro hover', use:'Hover del botón destructivo.'},
+      {hex:'#c8c6c4', tok:'literal', name:'Scrollbar', use:'Barra de scroll del dashboard (hover #a19f9d).'},
+    ]
+  },
+  {
+    title: 'Dashboard — Fluent oscuro (.corp.dark)',
+    src: 'app/globals.css :1040-1074',
+    desc: 'Se activa añadiendo .dark al shell .corp. Redefine los mismos tokens; los utilitarios digi-/accent se adaptan solos.',
+    colors: [
+      {hex:'#1b1a19', tok:'--color-digi-dark', name:'Fondo de página', use:'Shell oscuro.'},
+      {hex:'#201f1e', tok:'--color-digi-darker', name:'Superficie profunda', use:'Inputs y zonas hundidas.'},
+      {hex:'#252423', tok:'--color-digi-card', name:'Tarjeta / superficie', use:'Cards, sidebar, thead.'},
+      {hex:'#3b3a39', tok:'--color-digi-border', name:'Borde', use:'Bordes en oscuro.'},
+      {hex:'#f3f2f1', tok:'--color-digi-text', name:'Texto primario', use:'Títulos y cuerpo.'},
+      {hex:'#a19f9d', tok:'--color-digi-muted', name:'Texto secundario', use:'Descripciones y labels.'},
+      {hex:'#6bb700', tok:'--color-digi-green', name:'Verde éxito', use:'Estados OK en oscuro.'},
+      {hex:'#2d2c2b', tok:'literal', name:'Hover de fila', use:'Hover en tablas y superficies.'},
+      {hex:'#333231', tok:'literal', name:'Fondo de badge', use:'Badges de estado en oscuro.'},
+      {hex:'#4a4948', tok:'literal', name:'Scrollbar', use:'Barra de scroll (hover #5a5958).'},
+    ]
+  },
+  {
+    title: 'Landing y juego — pixelart oscuro',
+    src: 'app/globals.css :3-28 (@theme)',
+    desc: 'Identidad de videojuego: fuentes Silkscreen / JetBrains Mono, sombras duras. Es el default fuera del scope .corp.',
+    colors: [
+      {hex:'#0a0a0a', tok:'--color-digi-dark', name:'Fondo', use:'Fondo de la landing y del mundo.'},
+      {hex:'#000000', tok:'--color-digi-darker', name:'Negro profundo', use:'Superficie más honda, track de scroll.'},
+      {hex:'#1a1a1a', tok:'--color-digi-card', name:'Tarjeta pixel', use:'Paneles y cards de la landing.'},
+      {hex:'#2a2a2a', tok:'--color-digi-border', name:'Borde pixel', use:'Bordes de tarjeta y separadores.'},
+      {hex:'#e5e5e5', tok:'--color-digi-text', name:'Texto primario', use:'Cuerpo sobre fondo negro.'},
+      {hex:'#737373', tok:'--color-digi-muted', name:'Texto secundario', use:'Textos apagados.'},
+    ]
+  },
+  {
+    title: 'Editor del mundo — Fluent azul',
+    src: 'components/landing/world/editorUi.tsx :16-34 (objeto E)',
+    desc: 'Excepción intencional: el editor del mundo NO usa el morado de marca, usa el azul Microsoft Fluent. Su fuente única es el objeto E.',
+    colors: [
+      {hex:'#0078d4', tok:'E.accent', name:'Azul Fluent', use:'Botón primario, títulos de sección, indicador activo.'},
+      {hex:'#106ebe', tok:'E.accentHover', name:'Azul hover', use:'Hover del primario.'},
+      {hex:'#f3f9fd', tok:'E.accentSoft', name:'Azul tenue', use:'Fondo del ítem activo del nav rail.'},
+      {hex:'#deecf9', tok:'E.selected', name:'Azul selección', use:'Fila de lista seleccionada.'},
+      {hex:'#ffffff', tok:'E.surface', name:'Superficie', use:'Paneles del editor.'},
+      {hex:'#faf9f8', tok:'E.canvas', name:'Lienzo', use:'Fondo del área de trabajo.'},
+      {hex:'#f3f2f1', tok:'E.subtle', name:'Gris sutil', use:'Hover de filas.'},
+      {hex:'#edebe9', tok:'E.border', name:'Borde', use:'Bordes de panel.'},
+      {hex:'#d1d1d1', tok:'E.borderStrong', name:'Borde fuerte', use:'Borde del botón secundario.'},
+      {hex:'#323130', tok:'E.text', name:'Texto', use:'Texto primario del editor.'},
+      {hex:'#605e5c', tok:'E.textSoft', name:'Texto suave', use:'Subtítulos de fila.'},
+      {hex:'#a19f9d', tok:'E.textMuted', name:'Texto apagado', use:'Placeholders y estados vacíos.'},
+      {hex:'#a4262c', tok:'E.danger', name:'Rojo peligro', use:'Acciones destructivas.'},
+      {hex:'#fde7e9', tok:'E.dangerSoft', name:'Rojo tenue', use:'Fondo de aviso destructivo.'},
+    ]
+  },
+  {
+    title: 'Correos electrónicos',
+    src: 'lib/integrations/email.ts :20-32 (objeto CORP)',
+    desc: 'Los correos replican el tema .corp claro con estilos INLINE (los clientes de correo no soportan variables CSS). Tipografía Segoe UI.',
+    colors: [
+      {hex:'#faf9f8', tok:'CORP.bg', name:'Fondo del correo', use:'Body del email.'},
+      {hex:'#ffffff', tok:'CORP.card', name:'Tarjeta', use:'Contenedor del contenido.'},
+      {hex:'#e1dfdd', tok:'CORP.border', name:'Borde', use:'Borde de tarjeta (radio 12px).'},
+      {hex:'#242424', tok:'CORP.text', name:'Texto primario', use:'Cuerpo del mensaje.'},
+      {hex:'#605e5c', tok:'CORP.muted', name:'Texto secundario', use:'Notas y aclaraciones.'},
+      {hex:'#8a8886', tok:'CORP.soft', name:'Texto terciario', use:'Pie del correo.'},
+      {hex:'#4B2D8E', tok:'CORP.accent', name:'Acento', use:'Botón principal y enlaces.'},
+      {hex:'#107c10', tok:'CORP.success', name:'Éxito', use:'Badges y avisos positivos.'},
+      {hex:'#d13438', tok:'CORP.danger', name:'Peligro', use:'Botón destructivo y errores.'},
+      {hex:'#8a6900', tok:'CORP.warning', name:'Aviso', use:'Advertencias.'},
+    ]
+  },
+  {
+    title: 'Paleta semántica remapeada',
+    src: 'app/globals.css :1019-1031 (claro) · :1056-1060 (oscuro)',
+    desc: 'Las variantes 300/400 de Tailwind estaban afinadas para fondo oscuro y fallaban WCAG sobre blanco. Se remapean dentro de .corp, así se corrigen texto, bordes y modificadores de opacidad (/60, /70) de una sola vez.',
+    colors: [
+      {hex:'#b3261e', tok:'--color-red-400 / 300', name:'Rojo (claro)', use:'Errores y estados negativos sobre blanco.'},
+      {hex:'#0e700e', tok:'--color-green-400', name:'Verde (claro)', use:'Éxito sobre blanco.'},
+      {hex:'#8a6116', tok:'--color-amber/yellow-400', name:'Ámbar (claro)', use:'Advertencias sobre blanco.'},
+      {hex:'#c2410c', tok:'--color-orange-400', name:'Naranja (claro)', use:'Estados intermedios.'},
+      {hex:'#0f6cbd', tok:'--color-blue-400', name:'Azul (claro)', use:'Informativo.'},
+      {hex:'#5c2e91', tok:'--color-purple-400 / 300', name:'Morado (claro)', use:'Categorías moradas legibles sobre blanco.'},
+      {hex:'#be185d', tok:'--color-pink-400', name:'Rosa (claro)', use:'Categorías rosas.'},
+      {hex:'#f1707b', tok:'--color-red-400 / 300 (dark)', name:'Rojo (oscuro)', use:'Errores sobre fondo oscuro.'},
+      {hex:'#6bb700', tok:'--color-green-400 (dark)', name:'Verde (oscuro)', use:'Éxito sobre fondo oscuro.'},
+      {hex:'#e0b34d', tok:'--color-amber/yellow-400 (dark)', name:'Ámbar (oscuro)', use:'Advertencias en oscuro.'},
+      {hex:'#f08a4b', tok:'--color-orange-400 (dark)', name:'Naranja (oscuro)', use:'Estados intermedios en oscuro.'},
+      {hex:'#4aa3f0', tok:'--color-blue-400 (dark)', name:'Azul (oscuro)', use:'Informativo en oscuro.'},
+      {hex:'#b39ddb', tok:'--color-purple-400 / 300 (dark)', name:'Morado (oscuro)', use:'Categorías moradas en oscuro.'},
+      {hex:'#f472b6', tok:'--color-pink-400 (dark)', name:'Rosa (oscuro)', use:'Categorías rosas en oscuro.'},
+    ]
+  },
+];
+
+const PAIRS = [
+  ['--color-accent',       '#4B2D8E', '#8267d4', 'Acento de marca'],
+  ['--color-accent-hover', '#3A1F7A', '#9179df', 'Hover del primario'],
+  ['--color-accent-light', '#EDEBFA', '#2d2647', 'Tinte de selección'],
+  ['--color-accent-glow',  '#4B2D8E', '#a78bfa', 'Texto de acento'],
+  ['--color-digi-dark',    '#faf9f8', '#1b1a19', 'Fondo de página'],
+  ['--color-digi-darker',  '#ffffff', '#201f1e', 'Superficie profunda'],
+  ['--color-digi-card',    '#ffffff', '#252423', 'Tarjeta / sidebar'],
+  ['--color-digi-border',  '#e1dfdd', '#3b3a39', 'Borde'],
+  ['--color-digi-text',    '#242424', '#f3f2f1', 'Texto primario'],
+  ['--color-digi-muted',   '#605e5c', '#a19f9d', 'Texto secundario'],
+  ['--color-digi-green',   '#107c10', '#6bb700', 'Verde éxito'],
+];
+
+/* ── Contraste WCAG (calculado, no declarado a mano) ─────────────────── */
+function lum(hex){
+  const c = [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)/255)
+    .map(v => v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4));
+  return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2];
+}
+function ratio(a,b){
+  const [x,y] = [lum(a), lum(b)].sort((m,n)=>n-m);
+  return (x + 0.05) / (y + 0.05);
+}
+/** Texto legible encima de la muestra: el que dé mejor contraste. */
+function onColor(hex){ return ratio(hex,'#ffffff') >= ratio(hex,'#000000') ? '#ffffff' : '#000000'; }
+
+/* ── Render ──────────────────────────────────────────────────────────── */
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+document.getElementById('sections').innerHTML = SECTIONS.map(sec => `
+  <section>
+    <div class="sec-head">
+      <h2>${esc(sec.title)}</h2>
+      <span class="src">${esc(sec.src)}</span>
+    </div>
+    <p class="sec-desc">${esc(sec.desc)}</p>
+    <div class="grid">
+      ${sec.colors.map(c => {
+        const fg = onColor(c.hex);
+        const r  = ratio(c.hex, fg).toFixed(1);
+        return `<button class="sw" data-hex="${c.hex}">
+          <span class="chip" style="background:${c.hex};color:${fg}">
+            <span>${c.hex.toUpperCase()}</span>
+            <span class="ratio">${r}:1</span>
+          </span>
+          <span class="meta">
+            <span class="tok">${esc(c.tok)}</span>
+            <span class="name">${esc(c.name)}</span>
+            <span class="use">${esc(c.use)}</span>
+          </span>
+        </button>`;
+      }).join('')}
+    </div>
+  </section>
+`).join('');
+
+document.getElementById('pairs').innerHTML = `
+  <thead><tr><th>Token</th><th>Claro (.corp)</th><th>Oscuro (.corp.dark)</th><th>Para qué</th></tr></thead>
+  <tbody>
+    ${PAIRS.map(([tok,l,d,use]) => `
+      <tr>
+        <td class="mono">${esc(tok)}</td>
+        <td><span class="cell"><span class="dot" style="background:${l}"></span><span class="mono">${l.toUpperCase()}</span></span></td>
+        <td><span class="cell"><span class="dot" style="background:${d}"></span><span class="mono">${d.toUpperCase()}</span></span></td>
+        <td>${esc(use)}</td>
+      </tr>`).join('')}
+  </tbody>`;
+
+/* ── Copiar al portapapeles ──────────────────────────────────────────── */
+const toast = document.getElementById('toast');
+let toastTimer;
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('on'), 1400);
+}
+document.addEventListener('click', e => {
+  const sw = e.target.closest('.sw');
+  if (!sw) return;
+  const hex = sw.dataset.hex.toUpperCase();
+  navigator.clipboard?.writeText(hex)
+    .then(() => showToast(hex + ' copiado'))
+    .catch(() => showToast(hex));
+});
+
+/* ── Tema ────────────────────────────────────────────────────────────── */
+const btn = document.getElementById('themeBtn');
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  btn.textContent = t === 'dark' ? '◐ Modo claro' : '◐ Modo oscuro';
+}
+setTheme(matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+btn.addEventListener('click', () =>
+  setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+</script>
+</body>
+</html>

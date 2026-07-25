@@ -3,6 +3,13 @@
 > Fuente de verdad del ESTILO: tokens, reglas y el estándar de los controles. Se mantiene
 > vivo. El diseño está VINCULADO: cambiar la fuente única propaga a toda la sección.
 > Contexto de proyecto → `MEMORIA.md`.
+>
+> **Paleta visual:** `PALETA.html` (raíz, abrir en el navegador) — muestrario de TODOS los
+> colores de la organización agrupados por lenguaje visual (marca, dashboard claro/oscuro,
+> landing pixelart, editor del mundo, correos, paleta semántica remapeada), con token,
+> uso, ratio de contraste calculado y copiar-al-clic. Generado desde el código real
+> (`app/globals.css`, `editorUi.tsx`, `lib/integrations/email.ts`): si cambia un token,
+> actualizar también ese archivo.
 
 La app tiene **tres lenguajes visuales** distintos (intencional):
 1. **Landing / juego (pixelart oscuro):** fuente `Silkscreen`/`JetBrains Mono`, `var(--color-accent)`,
