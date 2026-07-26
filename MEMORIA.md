@@ -3132,3 +3132,22 @@ Módulos principales:
   bien y con los cambios encima otras 3/3 bien, así que **no lo causa ningún cambio concreto**; es un fallo
   del worker de Next. Si Railway falla con ese error, **reintentar el deploy**. No perseguirlo como si fuera
   un bug del código.
+
+- **Soporte — permisos por rol (2026-07-25, decisión del usuario):** cliente, candidato y miembro **crean**
+  tickets y ven **solo los suyos** con su estado; **solo el admin** responde y cambia el estado.
+  - **Faltaba poder crear tickets:** no existía `POST /api/support` ni formulario — el módulo solo listaba.
+    Se añadió el POST (tipo · asunto · descripción, con topes 200/5000) y el alta desde la lista en **panel
+    lateral derecho**. El `user_id` se toma **del token**, nunca del cuerpo.
+  - **Se corrigieron dos agujeros que ya existían:**
+    (1) la lista solo filtraba al rol `client`, así que **los miembros veían los tickets de todos** → ahora
+    filtra a todo el que no sea admin; (2) el `PATCH` de `/api/support/[id]` **no comprobaba nada**:
+    cualquier usuario autenticado podía responder o cambiar el estado de CUALQUIER ticket, incluso ajeno →
+    ahora exige `role === 'admin'`.
+  - En el detalle, al solicitante se le muestra un aviso del estado en lugar de la caja de respuesta, y el
+    botón "Cerrar" dejó de estar disponible para el dueño (antes podía cerrar su propio ticket).
+  - **Sin adjuntos en el alta**: la columna `attachment_url` existe y el detalle ya pinta la imagen, pero el
+    único endpoint de subida (`/api/chat-upload`) guarda en el **temporal del sistema** (no es una URL
+    duradera, y además no pide autenticación). Si se quieren adjuntos hay que resolver antes el
+    almacenamiento (Cloudinary ya está en el proyecto).
+  - Verificado contra la base: alta con `status='open'` por defecto, el no-admin ve 1 de 2 tickets y el admin
+    los 2, conteos por estado correctos; filas de prueba eliminadas.

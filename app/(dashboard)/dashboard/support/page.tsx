@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PageHeader from '@/components/ui/PageHeader';
-import { BTN_PRIMARY } from '@/components/ui/Button';
-import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight } from 'lucide-react';
+import PixelModal from '@/components/ui/PixelModal';
+import Button, { BTN_PRIMARY } from '@/components/ui/Button';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight, Plus } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -30,12 +33,27 @@ const STATUS_DOT: Record<string, string> = {
   success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-accent', default: 'bg-digi-muted',
 };
 
+const TYPE_OPTIONS = [
+  { value: 'bug', label: 'Error' },
+  { value: 'feature', label: 'Sugerencia' },
+  { value: 'question', label: 'Pregunta' },
+  { value: 'other', label: 'Otro' },
+];
+
+const emptyForm = { type: 'bug', subject: '', message: '' };
+
 export default function SupportPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [tickets, setTickets] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
   const [selected, setSelected] = useState<any>(null);
+
+  // Alta de ticket: panel lateral derecho con overlay (estándar de formularios).
+  const [form, setForm] = useState<typeof emptyForm | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
@@ -51,9 +69,39 @@ export default function SupportPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { setSelected(null); }, [tab]);
 
+  const create = async () => {
+    if (!form) return;
+    if (!form.subject.trim()) return toast.error('Ponle un asunto al ticket.');
+    if (!form.message.trim()) return toast.error('Cuéntanos qué ocurre.');
+    setSaving(true);
+    try {
+      const res = await fetch('/api/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || 'Error');
+      toast.success('Ticket enviado. Te responderemos por aquí.');
+      setForm(null);
+      setTab('all');
+      fetchData();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSaving(false); }
+  };
+
   return (
     <div>
-      <PageHeader title="Soporte" description="Tickets de soporte y su seguimiento" />
+      <PageHeader
+        title="Soporte"
+        description={isAdmin ? 'Todos los tickets de soporte y su seguimiento' : 'Tus tickets de soporte y su estado'}
+      />
+
+      <div className="flex justify-end mb-3">
+        <Button onClick={() => setForm({ ...emptyForm })} icon={<Plus className="w-4 h-4" />}>
+          Nuevo ticket
+        </Button>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: estado ── */}
@@ -85,7 +133,9 @@ export default function SupportPage() {
                 data={tickets}
                 onRowClick={(t: any) => setSelected(t)}
                 emptyTitle="Sin tickets"
-                emptyDesc="No hay tickets de soporte en este estado."
+                emptyDesc={isAdmin
+                  ? 'No hay tickets de soporte en este estado.'
+                  : 'No tienes tickets en este estado. Abre uno con "Nuevo ticket".'}
                 columns={[
                   { key: 'id', header: 'ID', width: '56px', render: (t: any) => <span className="tabular-nums text-digi-muted">#{t.id}</span> },
                   { key: 'subject', header: 'Asunto', render: (t: any) => (
@@ -142,6 +192,61 @@ export default function SupportPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Nuevo ticket (panel lateral derecho) ── */}
+      {form && (
+        <PixelModal open onClose={() => !saving && setForm(null)} title="Nuevo ticket de soporte" size="md" busy={saving}>
+          <div className="space-y-3.5">
+            <div className="flex flex-col gap-1">
+              <label className="field-label text-[12px] font-semibold text-digi-text" style={mf} htmlFor="s-type">Tipo</label>
+              <select
+                id="s-type"
+                value={form.type}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                className="field-control field-select w-full px-3 py-2 bg-digi-darker border border-digi-border rounded text-[13px] text-digi-text focus:border-accent focus:outline-none appearance-none cursor-pointer"
+                style={mf}
+              >
+                {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="field-label text-[12px] font-semibold text-digi-text" style={mf} htmlFor="s-subject">Asunto</label>
+              <input
+                id="s-subject"
+                value={form.subject}
+                onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                maxLength={200}
+                placeholder="Resume el problema en una línea"
+                className="field-control w-full px-3 py-2 bg-digi-darker border border-digi-border rounded text-[13px] text-digi-text placeholder:text-digi-muted/60 focus:border-accent focus:outline-none"
+                style={mf}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="field-label text-[12px] font-semibold text-digi-text" style={mf} htmlFor="s-message">Descripción</label>
+              <textarea
+                id="s-message"
+                value={form.message}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+                rows={6}
+                maxLength={5000}
+                placeholder="Qué pasó, qué esperabas y en qué parte del sistema."
+                className="field-control w-full px-3 py-2 bg-digi-darker border border-digi-border rounded text-[13px] text-digi-text placeholder:text-digi-muted/60 focus:border-accent focus:outline-none resize-y"
+                style={mf}
+              />
+              <span className="text-[11px] text-digi-muted" style={mf}>
+                El equipo de soporte responderá en este mismo ticket; verás su estado en la lista.
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-digi-border">
+              <Button variant="secondary" onClick={() => setForm(null)} disabled={saving}>Cancelar</Button>
+              <Button onClick={create} disabled={saving}>{saving ? 'Enviando...' : 'Enviar ticket'}</Button>
+            </div>
+          </div>
+        </PixelModal>
+      )}
     </div>
   );
 }

@@ -93,7 +93,6 @@ export default function SupportDetailPage() {
 
   const replies = ticket.replies || [];
   const isAdmin = user?.role === 'admin';
-  const isOwner = ticket.user_id === user?.id;
 
   return (
     <div>
@@ -113,7 +112,8 @@ export default function SupportDetailPage() {
                 <Check className="w-4 h-4" /> Resolver
               </button>
             )}
-            {(isAdmin || isOwner) && ticket.status !== 'closed' && (
+            {/* Cambiar el estado es solo del admin: el solicitante hace seguimiento. */}
+            {isAdmin && ticket.status !== 'closed' && (
               <button onClick={() => updateStatus('closed')} className={BTN_SECONDARY}><Lock className="w-4 h-4" /> Cerrar</button>
             )}
           </>
@@ -144,8 +144,22 @@ export default function SupportDetailPage() {
         ))}
       </div>
 
-        {/* Reply form */}
-        {ticket.status !== 'closed' ? (
+        {/* Responder: solo el equipo de soporte (admin). Al solicitante se le informa
+            del estado en vez de darle una caja de respuesta. */}
+        {!isAdmin ? (
+          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 text-center">
+            <p className="text-[12.5px] text-digi-text" style={mf}>
+              {ticket.status === 'closed'
+                ? 'Este ticket está cerrado.'
+                : ticket.status === 'resolved'
+                  ? 'El equipo de soporte marcó este ticket como resuelto.'
+                  : 'El equipo de soporte responderá aquí. Te avisaremos del avance en este mismo ticket.'}
+            </p>
+            <p className="text-[11.5px] text-digi-muted mt-1" style={mf}>
+              Si necesitas añadir algo más, abre un ticket nuevo desde Soporte.
+            </p>
+          </div>
+        ) : ticket.status !== 'closed' ? (
           <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
             <h3 className="text-[13px] font-semibold text-digi-text mb-2" style={mf}>Responder</h3>
             <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={3} placeholder="Escribe tu respuesta..."

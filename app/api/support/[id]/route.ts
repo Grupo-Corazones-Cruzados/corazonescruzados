@@ -40,10 +40,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 }
 
+/**
+ * PATCH — responder o cambiar el estado. **Solo admin**: el solicitante abre el ticket y
+ * sigue su estado, pero no responde ni lo mueve. (Antes cualquier usuario autenticado
+ * podía responder o cambiar el estado de CUALQUIER ticket, incluso ajeno.)
+ */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Solo el equipo de soporte puede responder o cambiar el estado.' }, { status: 403 });
+    }
 
     const { id } = await params;
     const { status, message, attachment_url } = await req.json();
