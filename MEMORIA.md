@@ -3209,17 +3209,22 @@ Módulos principales:
     `{ id }` / `{ id: null }`. `GET /api/pensamientos` devuelve además `featuredId` **solo al admin**.
   - **Tope de largo:** un pensamiento puede tener 50 000 caracteres y esto va en la portada, que carga
     cualquier visitante → se recorta a **600** (`FEATURED_MAX_LEN`) con «…» visible, no en silencio.
-  - **CORRECCIÓN (2026-07-26):** iba **bajo los botones** y, al llegar por fetch, **empujaba toda la portada
-    hacia arriba** (salto visible en cada carga). Ahora va **ENCIMA del distintivo "Grupo Corazones
-    Cruzados"** y, sobre todo, **absoluto** dentro del bloque central (`bottom: calc(100% + 14px)`), así que
-    **no ocupa sitio en el flujo y no desplaza nada**. Verificado midiendo el título y el botón antes y
-    después de que aparezca: la única variación es de 1-2 px y es la animación `breathe` que ya existía —
-    comprobado con un test de control en el que el pensamiento nunca llega y la posición oscila igual.
-  - **Recorte por altura de ventana:** al ir arriba, el sitio disponible es el hueco sobre el hero y se
-    encoge en portátiles bajos. Un pensamiento largo se salía por arriba, así que
-    `.featured-thought-text` (globals.css) recorta a **4 / 3 / 2 / 1 líneas** según `max-height` (860 / 780 /
-    700 px) y compacta el panel. Verificado con un texto de 572 caracteres en 1440×760, 1280×680 y 390×844:
-    cabe en las tres.
+  - **POSICIÓN — decidido tras tres iteraciones con el usuario (2026-07-26):** el bloque central (distintivo
+    · título · subtítulo · Entrar/Colaborar) **NO se toca ni se mueve**; el pensamiento **cuelga POR DEBAJO
+    en posición ABSOLUTA** (`top: calc(100% + 28px)` sobre el contenedor del hero, que es `relative`).
+    Se probó y se DESCARTÓ: (a) en el flujo bajo los botones → al llegar por fetch **empujaba la portada
+    hacia arriba**; (b) arriba del distintivo con panel destacado → al usuario le gustaba más el diseño
+    sutil; (c) en el flujo sobre los botones con hueco de alto fijo → movía los controles de sitio.
+    **Regla: en un hero centrado, cualquier cosa que llegue por fetch va FUERA del flujo.**
+  - **Verificado midiendo, con las animaciones congeladas** (`* { animation: none }`, si no la animación
+    `breathe` mete ±2 px de ruido y confunde): con y sin pensamiento el bloque central da **exactamente**
+    los mismos valores — distintivo 239, título 294, botones 522.
+  - **Cargador mientras llega** (tres bloques pixel latiendo, `@keyframes thoughtDot`), a petición del
+    usuario, para que la aparición se sienta esperada.
+  - **Recorte por altura de ventana:** el hueco bajo los botones se encoge en portátiles bajos, así que
+    `.featured-thought-text` recorta a **3 / 2 / 1 líneas** según `max-height` (820 / 720 px) y oculta la
+    fecha en las más bajas. Verificado con 494 caracteres en 1440×900, 1440×760, 1280×680 y 390×844: cabe
+    en las cuatro y siempre queda por debajo de los botones.
   - **Cómo se ve** (`components/landing/FeaturedThought.tsx`): panel con halo morado —
     esquinas de marco en accent, kicker `PENSAMIENTO` en Silkscreen, el texto **escribiéndose a máquina**
     (22 ms/carácter, con cursor ▌) y la fecha. Respeta `prefers-reduced-motion` (muestra el texto de golpe) y
