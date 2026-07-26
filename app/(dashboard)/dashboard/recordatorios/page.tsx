@@ -7,6 +7,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PageHeader from '@/components/ui/PageHeader';
+import FilterRail from '@/components/ui/FilterRail';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import {
@@ -245,18 +246,6 @@ export default function RecordatoriosPage() {
     } catch { toast.error('Error al actualizar la tarea'); }
   };
 
-  const RailItem = ({ active, Icon, label, count, onClick }: any) => (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}
-    >
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-      <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count ?? 0}</span>
-    </button>
-  );
 
   const detail = selDetail || selected;
   const detailStatus = detail ? effStatus(detail) : 'active';
@@ -267,15 +256,12 @@ export default function RecordatoriosPage() {
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: estado ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
-          <div className="space-y-0.5">
-            {STATUS_TABS.map((s) => (
-              <RailItem key={s.value} active={tab === s.value} Icon={s.Icon} label={s.label}
-                count={counts[s.value]} onClick={() => setTab(s.value)} />
-            ))}
-          </div>
-        </aside>
+        <FilterRail
+          title="Estado"
+          items={STATUS_TABS.map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] }))}
+          value={tab}
+          onChange={setTab}
+        />
 
         {/* ── Right region: command bar + table + detail ── */}
         <div className="flex-1 min-w-0 w-full">

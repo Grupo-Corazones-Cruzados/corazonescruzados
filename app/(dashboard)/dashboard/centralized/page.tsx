@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
+import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
@@ -20,7 +21,6 @@ import {
 } from '@/lib/centralized/systems';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 const PISO_ICONS: Record<string, any> = {
   global: Globe, pilar: Landmark, controlador: ClipboardList, colaborador: Wrench,
@@ -161,23 +161,6 @@ export default function CentralizedPage() {
   }
 
   /* ── Rail item ───────────────────────────────────────────────────────── */
-  const RailItem = ({ active, Icon, label, hint, count, onClick }: any) => (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}
-    >
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0">
-        <span className="block text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-        {hint && <span className="block text-[10px] text-digi-muted truncate" style={mf}>{hint}</span>}
-      </span>
-      {count !== undefined && (
-        <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count}</span>
-      )}
-    </button>
-  );
 
   return (
     <div>
@@ -185,19 +168,15 @@ export default function CentralizedPage() {
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: Pisos ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estructura 4P</p>
-          <div className="space-y-0.5">
-            <RailItem active={scopePiso === 'all'} Icon={Layers} label="Todos los sistemas"
-              count={allSystems.length} onClick={() => setScopePiso('all')} />
-            <div className="h-px bg-digi-border/60 my-1.5 mx-2" />
-            <p className="text-[9px] font-semibold text-digi-muted/70 uppercase tracking-wider px-2 pb-1" style={df}>Pisos</p>
-            {PISOS.map((p) => (
-              <RailItem key={p.key} active={scopePiso === p.key} Icon={PISO_ICONS[p.key]} label={p.label} hint={p.hint}
-                count={countByPiso[p.key] || 0} onClick={() => setScopePiso(p.key)} />
-            ))}
-          </div>
-        </aside>
+        <FilterRail
+          title="Estructura 4P"
+          sections={[
+            { items: [{ value: 'all', label: 'Todos los sistemas', Icon: Layers, count: allSystems.length }] },
+            { title: 'Pisos', items: PISOS.map((p) => ({ value: p.key, label: p.label, Icon: PISO_ICONS[p.key], hint: p.hint, count: countByPiso[p.key] || 0 })) },
+          ]}
+          value={scopePiso}
+          onChange={setScopePiso}
+        />
 
         {/* ── Right region: command bar + (list · detail) ── */}
         <div className="flex-1 min-w-0 w-full">

@@ -9,6 +9,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PageHeader from '@/components/ui/PageHeader';
+import FilterRail from '@/components/ui/FilterRail';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { TALENTOS } from '@/lib/centralized/talentos';
@@ -263,20 +264,6 @@ export default function ProjectsPage() {
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
-  const RailItem = ({ active, Icon, label, count, onClick }: any) => (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}
-    >
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-      {count !== undefined && (
-        <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count}</span>
-      )}
-    </button>
-  );
 
   return (
     <div>
@@ -284,27 +271,17 @@ export default function ProjectsPage() {
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: alcance + estado ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          {scopeItems.length > 0 && (
-            <>
-              <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Alcance</p>
-              <div className="space-y-0.5 mb-1.5">
-                {scopeItems.map((s) => (
-                  <RailItem key={s.value} active={tab === s.value} Icon={s.Icon} label={s.label}
-                    count={counts[s.value]} onClick={() => setTab(s.value)} />
-                ))}
-              </div>
-              <div className="h-px bg-digi-border/60 my-1 mx-2" />
-            </>
-          )}
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
-          <div className="space-y-0.5">
-            {STATUS_TABS.map((s) => (
-              <RailItem key={s.value} active={tab === s.value} Icon={s.Icon} label={s.label}
-                count={counts[s.value]} onClick={() => setTab(s.value)} />
-            ))}
-          </div>
-        </aside>
+        <FilterRail
+          sections={[
+            // "Alcance" solo aparece si el rol tiene más de un ámbito.
+            ...(scopeItems.length > 0
+              ? [{ title: 'Alcance', items: scopeItems.map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] })) }]
+              : []),
+            { title: 'Estado', items: STATUS_TABS.map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] })) },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
 
         {/* ── Right region: command bar + table ── */}
         <div className="flex-1 min-w-0 w-full">

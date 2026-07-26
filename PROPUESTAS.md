@@ -19,17 +19,22 @@ dimensiones solo por el color del anillo.
 **Propuesta:** re-escalonar mental y corporal a pasos que superen ΔE 8 y 3:1. **Requiere OK**: es un
 cambio visible en Apoyo, Mi día, Horario de Vida y Reclutamiento a la vez.
 
-### D1 — Migrar los ~13 rails de filtro duplicados a `FilterRail` · 🟡 Propuesta
-**Detectado:** 2026-07-19, al construir Gestión Social.
+### D1 — Migrar los rails de filtro duplicados a `FilterRail` · ✅ Implementada (2026-07-26)
+**Detectado:** 2026-07-19, al construir Gestión Social. **Cerrado:** 2026-07-26, a petición del usuario
+tras notar que Tickets y Soporte tenían el rail en distinta posición.
 El rail de filtro (icono + label + burbuja de conteo, activo con barra izquierda accent) estaba
-**reescrito inline** en `tickets`, `projects`, `tickets/[id]`, `projects/[id]`, `clients`,
-`subscriptions`, `invoices`, `support`, `centralized`, `admin`, `marketplace`,
-`flows/FlowsTable` y `ReclutamientoSystem` — como `RailItem`/`SectionRailItem` locales.
-**Hecho:** se creó la definición única `components/ui/FilterRail.tsx` y la usan los consumidores
-nuevos (Gestión Social, Experiencias).
-**Propuesta:** migrar los antiguos a ese componente para que un cambio de estilo se propague solo.
-**Riesgo:** bajo pero amplio (13 archivos); hacerlo en un bloque, verificando `tsc` + `build`.
-**Requiere OK del usuario** por ser un refactor transversal.
+**reescrito inline** en una docena de pantallas como `RailItem` local.
+**Hecho:** `components/ui/FilterRail.tsx` es la definición única y **la usan las 15 pantallas** que
+tienen este control: tickets, soporte, proyectos, clientes, suscripciones, facturas, recordatorios,
+herramientas, centralizado, marketplace, automatizaciones (`FlowsTable`), Reclutamiento, Gestión Social,
+Recursos y Experiencias. **No queda ningún `RailItem` local.**
+Para absorberlas se añadieron al componente `hint` (segunda línea del ítem, Centralizado) y `sections`
+(grupos con encabezado separados por línea: Proyectos = Alcance + Estado; Centralizado = "Todos" + Pisos;
+Automatizaciones = "Todos" + tipos). Ancho unificado en 220px.
+**Quedan fuera a propósito** (no son este control): las listas de fechas de Pensamientos y Razones (sin
+icono por ítem y de datos, no de filtro), la fila de chips de `PortfolioPanel`, los pasos del asistente de
+`OnboardingSlidersModal` y `HorarioDeVidaSystem`. Las páginas de detalle usan `PropertyRail`, que es otro
+componente.
 
 ## Arquitectura
 

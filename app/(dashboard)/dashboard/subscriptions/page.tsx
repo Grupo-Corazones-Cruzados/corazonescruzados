@@ -10,6 +10,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PageHeader from '@/components/ui/PageHeader';
+import FilterRail from '@/components/ui/FilterRail';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import {
@@ -18,7 +19,6 @@ import {
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_TABS = [
   { value: 'all', label: 'Todas', Icon: Layers },
@@ -224,16 +224,6 @@ export default function SubscriptionsPage() {
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
-  const RailItem = ({ active, Icon, label, count, onClick }: any) => (
-    <button onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}>
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-      <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count ?? 0}</span>
-    </button>
-  );
 
   return (
     <div>
@@ -241,15 +231,12 @@ export default function SubscriptionsPage() {
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: estado ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
-          <div className="space-y-0.5">
-            {STATUS_TABS.map((s) => (
-              <RailItem key={s.value} active={tab === s.value} Icon={s.Icon} label={s.label}
-                count={counts[s.value]} onClick={() => setTab(s.value)} />
-            ))}
-          </div>
-        </aside>
+        <FilterRail
+          title="Estado"
+          items={STATUS_TABS.map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] }))}
+          value={tab}
+          onChange={setTab}
+        />
 
         {/* ── Right region: command bar + (list · detail) ── */}
         <div className="flex-1 min-w-0 w-full">

@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
+import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelSelect from '@/components/ui/PixelSelect';
 import { fmt2 } from '@/lib/format';
@@ -296,18 +297,6 @@ export default function ToolsPage() {
     );
   };
 
-  const RailItem = ({ active, Icon, label, count, onClick }: any) => (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}
-    >
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-      <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count ?? 0}</span>
-    </button>
-  );
 
   return (
     <div>
@@ -315,15 +304,12 @@ export default function ToolsPage() {
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: categorías ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Categoría</p>
-          <div className="space-y-0.5">
-            {CATEGORIES.map((c) => (
-              <RailItem key={c.value} active={cat === c.value} Icon={c.Icon} label={c.label}
-                count={counts[c.value]} onClick={() => setCat(c.value)} />
-            ))}
-          </div>
-        </aside>
+        <FilterRail
+          title="Categoría"
+          items={CATEGORIES.map((c) => ({ value: c.value, label: c.label, Icon: c.Icon, count: counts[c.value] }))}
+          value={cat}
+          onChange={setCat}
+        />
 
         {/* ── Right region: buscador + tabla + panel de uso ── */}
         <div className="flex-1 min-w-0 w-full">

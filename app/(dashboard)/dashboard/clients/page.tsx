@@ -9,6 +9,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PageHeader from '@/components/ui/PageHeader';
+import FilterRail from '@/components/ui/FilterRail';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { PAISES } from '@/lib/countries';
 import { fmt2 } from '@/lib/format';
@@ -18,7 +19,6 @@ import {
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 const inputCls = 'field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none';
 const smallInputCls = 'field-control w-full px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none';
 const labelCls = 'field-label text-[11px] text-digi-muted mb-0.5 block';
@@ -216,16 +216,6 @@ export default function ClientsPage() {
     else if (inv.origin_type === 'subscription') router.push(`/dashboard/subscriptions`);
   };
 
-  const RailItem = ({ active, Icon, label, count, onClick }: any) => (
-    <button onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}>
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-      <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count ?? 0}</span>
-    </button>
-  );
 
   return (
     <div>
@@ -233,15 +223,12 @@ export default function ClientsPage() {
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: tipo de identificación ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Tipo de identificación</p>
-          <div className="space-y-0.5">
-            {ID_TYPE_TABS.map((t) => (
-              <RailItem key={t.value} active={scopeType === t.value} Icon={t.Icon} label={t.label}
-                count={countByType[t.value]} onClick={() => setScopeType(t.value)} />
-            ))}
-          </div>
-        </aside>
+        <FilterRail
+          title="Tipo de identificación"
+          items={ID_TYPE_TABS.map((t) => ({ value: t.value, label: t.label, Icon: t.Icon, count: countByType[t.value] }))}
+          value={scopeType}
+          onChange={setScopeType}
+        />
 
         {/* ── Right region: command bar + (list · detail) ── */}
         <div className="flex-1 min-w-0 w-full">

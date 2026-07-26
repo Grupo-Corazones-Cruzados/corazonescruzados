@@ -8,6 +8,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PageHeader from '@/components/ui/PageHeader';
+import FilterRail from '@/components/ui/FilterRail';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight, PenLine, Zap, Download, KeyRound, FileCheck2 } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
@@ -15,7 +16,6 @@ import { fmt2 } from '@/lib/format';
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_TABS = [
   { value: 'all', label: 'Todas', Icon: Receipt },
@@ -315,24 +315,12 @@ function InvoicesPageInner() {
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: estado ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
-          <div className="space-y-0.5">
-            {STATUS_TABS.map((s) => {
-              const active = tab === s.value;
-              return (
-                <button key={s.value} onClick={() => setTab(s.value)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-                    active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-                  }`}>
-                  <s.Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-                  <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{s.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{counts[s.value] ?? 0}</span>
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+        <FilterRail
+          title="Estado"
+          items={STATUS_TABS.map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] ?? 0 }))}
+          value={tab}
+          onChange={setTab}
+        />
 
         {/* ── Right region: command bar + tabla ── */}
         <div className="flex-1 min-w-0 w-full">

@@ -3171,3 +3171,23 @@ Módulos principales:
   - **Migración pendiente que avanza:** `FilterRail` documenta que el control estaba duplicado en más de una
     docena de páginas (proyectos, clientes, suscripciones, flows…). Con este cambio quedan migradas Tickets y
     Soporte; el resto sigue pendiente (ver PROPUESTAS.md).
+
+- **Migración completa de los rails de filtro a `FilterRail` (2026-07-26):** se cerró la propuesta D1. El
+  control estaba **reescrito a mano en una docena de pantallas** (como `RailItem` local), que era la causa de
+  que Tickets y Soporte se vieran distintos. Ahora **las 15 pantallas** que tienen rail de filtro usan
+  `components/ui/FilterRail.tsx` y **no queda ningún `RailItem` local**.
+  - Migradas en este bloque: clientes, herramientas, proyectos, centralizado, suscripciones, recordatorios,
+    facturas, automatizaciones (`FlowsTable`), Reclutamiento y Marketplace. (Tickets y Soporte ya se habían
+    migrado el día anterior.)
+  - **El componente creció para absorberlas:** `hint` (segunda línea del ítem, para los Pisos de
+    Centralizado) y `sections` (grupos con encabezado separados por una línea: Proyectos = Alcance + Estado;
+    Centralizado = "Todos" + Pisos; Automatizaciones = "Todos" + tipos). Ancho unificado en **220px** (era el
+    valor de 8 de las 10 páginas; el componente estaba en 200 y por eso Experiencias/Gestión Social se veían
+    algo más estrechas).
+  - **Normalización menor y deliberada:** el subtítulo "Pisos" de Centralizado pasa de 9px/opacidad 70 al
+    mismo estilo de encabezado que el resto; era justo el tipo de deriva que se quería eliminar.
+  - **Fuera a propósito** (no son este control, aunque compartan clases): las listas de fechas de
+    Pensamientos y Razones (sin icono por ítem, son datos y no filtros), los chips de `PortfolioPanel`, los
+    pasos de `OnboardingSlidersModal` y `HorarioDeVidaSystem`. Las páginas de detalle usan `PropertyRail`.
+  - De paso se limpiaron las constantes `df` y los imports que quedaron sin uso en los archivos tocados.
+  - Verificado: `tsc` y `next build` limpios; 260 líneas borradas frente a 144 añadidas.

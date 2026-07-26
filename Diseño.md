@@ -99,6 +99,7 @@ estilos ad-hoc por archivo.
 | Modal / Panel | `components/ui/PixelModal` | md/lg se vuelven **panel lateral derecho** (Fluent) |
 | Input / Select | `components/ui/PixelInput` · `PixelSelect` | `.corp .field-control` alto 34px |
 | Rail de propiedades | `components/ui/PropertyRail` | panel sticky de metadatos clave/valor |
+| Rail de filtro | `components/ui/FilterRail` | **único** rail de filtro: icono + label + conteo, activo con barra izq. accent. Admite `hint` (2ª línea) y `sections` (grupos con encabezado y separador). Ancho 220px. **Un rail nuevo se hace con este componente, nunca copiando el marcado** — estaba duplicado en 12 pantallas y por eso unas y otras se veían distintas (migradas todas el 2026-07-26) |
 | Header de detalle | `components/ui/DetailHeader` | breadcrumb + título + command bar + overflow ⋯ |
 | Confirmar | `components/ui/PixelConfirm` | NO usar `confirm()` del navegador (excepción puntual) |
 | Menú de acciones (⋮) | `components/centralized/ActionsMenu` | botón solo-icono `MoreVertical` → menú desplegable de acciones (items `{label,icon,onClick,danger,disabled}`); cierra al clic fuera. Reemplaza botones sueltos en cabeceras de detalle |

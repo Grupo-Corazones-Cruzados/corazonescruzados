@@ -8,6 +8,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import PixelDataTable from '@/components/ui/PixelDataTable';
+import FilterRail from '@/components/ui/FilterRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
@@ -154,18 +155,6 @@ export default function FlowsTable() {
 
   if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando flujos..." /></div>;
 
-  const RailItem = ({ active, Icon, label, count, onClick }: any) => (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}
-    >
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-      <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count}</span>
-    </button>
-  );
 
   const detailType = selected ? (FLOW_TYPES[selected.type] || FLOW_TYPES.custom) : null;
 
@@ -173,17 +162,15 @@ export default function FlowsTable() {
     <div>
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: tipos ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Tipos de flujo</p>
-          <div className="space-y-0.5">
-            <RailItem active={scopeType === 'all'} Icon={Workflow} label="Todos" count={flows.length} onClick={() => setScopeType('all')} />
-            <div className="h-px bg-digi-border/60 my-1.5 mx-2" />
-            {TYPE_ORDER.map((t) => (
-              <RailItem key={t} active={scopeType === t} Icon={FLOW_TYPES[t].Icon} label={FLOW_TYPES[t].label}
-                count={countByType[t] || 0} onClick={() => setScopeType(t)} />
-            ))}
-          </div>
-        </aside>
+        <FilterRail
+          title="Tipos de flujo"
+          sections={[
+            { items: [{ value: 'all', label: 'Todos', Icon: Workflow, count: flows.length }] },
+            { items: TYPE_ORDER.map((t) => ({ value: t, label: FLOW_TYPES[t].label, Icon: FLOW_TYPES[t].Icon, count: countByType[t] || 0 })) },
+          ]}
+          value={scopeType}
+          onChange={setScopeType}
+        />
 
         {/* ── Right region: command bar + (list · detail) ── */}
         <div className="flex-1 min-w-0 w-full">
