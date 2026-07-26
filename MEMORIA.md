@@ -3304,3 +3304,24 @@ Módulos principales:
     system prompt y las mismas herramientas; solo hubo que añadir `talents` al esquema JSON de su respuesta.
   - Verificado: endpoint rechaza sin token y responde con él; *"diseñar la interfaz"* → Diseño UX/UI (0.71).
     `tsc`, `next build` y `node --check` del worker, limpios.
+
+- **Despliegue del worker de cotizaciones — cómo se hace de verdad (2026-07-26):** el README decía que el
+  servicio apunta al repo, pero **NO es así**: `cotizador-worker` está en Railway como **subida por CLI**
+  (sin repo conectado). Verificado con `railway status --json` → `source.repo = null`, mientras
+  `corazonescruzados` y `nightly-cron` sí salen de `Grupo-Corazones-Cruzados/corazonescruzados`.
+  **Consecuencia: un push a `main` NO actualiza el worker.** Hay que desplegarlo a mano:
+  `cd services/cotizador-worker && railway up --service cotizador-worker --detach`.
+  - **`--detach` es obligatorio**: sin él, `railway up` se queda colgado en "Uploading…" y revienta con
+    `operation timed out` (probado varias veces, con y sin sandbox; la conectividad y el tamaño —84 KB— no
+    eran el problema). Con `--detach` sube y construye bien.
+  - Se añadió `services/cotizador-worker/.railwayignore` (node_modules, package-lock) por si acaso.
+  - **`/health` ahora reporta la configuración viva**: `{ ok, tools, talentSearch, model }`. Es la forma de
+    comprobar **sin generar una cotización** que el worker corre la versión esperada y que la búsqueda de
+    talentos está enchufada (`talentSearch: 'app'` = usa embeddings; `'respaldo-texto'` = falta `APP_URL`).
+  - **`APP_URL=https://app.grupocc.org` ya está puesta** en el servicio del worker.
+  - **La app se llama con el worker por red PRIVADA** (`COTIZADOR_WORKER_URL=http://cotizador-worker.railway.internal:4610`),
+    así que el worker **no necesita dominio público**.
+    **AVISO:** al investigar, `railway domain` **creó** uno (`cotizador-worker-production.up.railway.app`).
+    El CLI **no puede borrar dominios** → hay que quitarlo desde el panel (servicio → Settings → Networking).
+    Riesgo acotado: el worker es fail-closed y responde **401 "Token invalido"** sin el token correcto
+    (comprobado en `/generate` y `/chat`).

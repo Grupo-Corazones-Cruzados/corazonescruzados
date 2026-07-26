@@ -230,7 +230,17 @@ function readBody(req) {
 
 const server = http.createServer(async (req, res) => {
   try {
-    if (req.method === 'GET' && req.url === '/health') return send(res, 200, { ok: true });
+    // /health tambien reporta la CONFIGURACION viva: que herramientas expone el agente y si
+    // la busqueda de talentos esta enchufada. Sirve para comprobar, sin generar una
+    // cotizacion, que el servicio corre la version esperada.
+    if (req.method === 'GET' && req.url === '/health') {
+      return send(res, 200, {
+        ok: true,
+        tools: ['list_my_projects', 'buscar_talentos'],
+        talentSearch: APP_URL ? 'app' : 'respaldo-texto',
+        model: DEFAULT_MODEL,
+      });
+    }
 
     // Auth fail-closed.
     if (!TOKEN) return send(res, 503, { error: 'Worker sin COTIZADOR_WORKER_TOKEN configurado' });
