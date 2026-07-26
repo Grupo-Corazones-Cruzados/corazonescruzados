@@ -155,13 +155,22 @@ const hexA = (h: string, a: number) => { const { r, g, b } = hexToRgb(h); return
 const endId = (l: any, end: 'source' | 'target') => (typeof l[end] === 'object' ? l[end].id : l[end]);
 const tableId = (name: string) => `t:${name}`;
 
-/** Etiqueta y icono de cada tipo — los MISMOS del panel de tablas. */
-const KIND_META: { kind: Kind; label: string; Icon: typeof Boxes }[] = [
-  { kind: 'module', label: 'Módulos', Icon: Boxes },
-  { kind: 'system', label: 'Sistemas', Icon: Network },
-  { kind: 'subsystem', label: 'Subsistemas', Icon: GitBranch },
-  { kind: 'group', label: 'Otras', Icon: Folder },
-  { kind: 'table', label: 'Tablas', Icon: Table2 },
+/**
+ * Colores de la leyenda — mismo CRITERIO que el rail de tablas (módulo y sistema en el
+ * acento de marca, el resto apagado). No se usan los tokens `--color-accent`/`digi-muted`
+ * porque el lienzo del universo es siempre oscuro y el valor claro del token (morado
+ * #4B2D8E sobre negro) no se leería; se toman los valores del tema OSCURO.
+ */
+const LEGEND_ACCENT = '#a78bfa';                 // = --color-accent-glow de `.corp.dark`
+const LEGEND_MUTED = 'rgba(255,255,255,0.62)';   // equivalente a `text-digi-muted` en oscuro
+
+/** Etiqueta, icono y color de cada tipo — los MISMOS del panel de tablas. */
+const KIND_META: { kind: Kind; label: string; Icon: typeof Boxes; color: string }[] = [
+  { kind: 'module', label: 'Módulos', Icon: Boxes, color: LEGEND_ACCENT },
+  { kind: 'system', label: 'Sistemas', Icon: Network, color: LEGEND_ACCENT },
+  { kind: 'subsystem', label: 'Subsistemas', Icon: GitBranch, color: LEGEND_MUTED },
+  { kind: 'group', label: 'Otras', Icon: Folder, color: LEGEND_MUTED },
+  { kind: 'table', label: 'Tablas', Icon: Table2, color: LEGEND_MUTED },
 ];
 const KIND_ES: Record<Kind, string> = {
   module: 'Módulo', system: 'Sistema', subsystem: 'Subsistema', group: 'Carpeta', table: 'Tabla',
@@ -371,6 +380,7 @@ export default function FuentesGraph({
   useEffect(() => {
     if (!selectedTable) return;
     setPickedFolder(null);
+    setPinFilter(null);        // igual que al elegir en el grafo: el filtro se suelta
     if (focusSelected()) return;
     const t = setTimeout(() => focusRef.current(), 450);  // aún sin posición: reintenta
     return () => clearTimeout(t);
@@ -420,7 +430,7 @@ export default function FuentesGraph({
           Tipos
         </p>
         <div className="grid grid-cols-1 gap-0.5">
-          {KIND_META.map(({ kind, label, Icon }) => (
+          {KIND_META.map(({ kind, label, Icon, color }) => (
             <button
               key={kind}
               onMouseEnter={() => setHoverFilter(kind)}
@@ -430,7 +440,7 @@ export default function FuentesGraph({
                 pinFilter === kind ? 'bg-white/20' : 'hover:bg-white/10'
               }`}
             >
-              <Icon className="w-3.5 h-3.5 shrink-0 text-white/85" />
+              <Icon className="w-3.5 h-3.5 shrink-0" style={{ color }} />
               <span className="text-[11px] text-white/85 flex-1" style={{ fontFamily: 'var(--font-body)' }}>{label}</span>
               <span className="text-[10px] text-white/45" style={{ fontFamily: 'var(--font-body)' }}>
                 {countByKind.get(kind) ?? 0}
@@ -495,6 +505,10 @@ export default function FuentesGraph({
           onNodeClick={(n: any) => {
             const d: GNode | undefined = n?.ref;
             if (!d) return;
+            // Elegir un elemento suelta el filtro por tipo: si no, el filtro seguiría
+            // mandando sobre la selección y no se vería lo que se acaba de elegir.
+            setPinFilter(null);
+            setHoverFilter(null);
             if (d.kind === 'table') { setPickedFolder(null); onSelectTable(d.label); }
             else setPickedFolder((p) => (p === d.id ? null : d.id));
             fgRef.current?.centerAt(n.x, n.y, 500);

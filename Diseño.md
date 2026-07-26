@@ -704,7 +704,12 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   (`rounded-md bg-black/50 border border-white/10 backdrop-blur-sm p-2`), título `text-[9.5px] uppercase
   tracking-wide text-white/50` y una fila por tipo (icono + etiqueta + conteo). **Pasar el puntero
   previsualiza el resaltado; el clic lo fija/quita** (`hoverFilter ?? pinFilter`), y el filtro por tipo manda
-  sobre la selección. Igual en Gestión de Datos, Comandos Violeta, Apoyo y Fuentes.
+  sobre la selección — por eso **elegir un elemento suelta el filtro fijado** (si no, el filtro seguiría
+  mandando y no se vería lo recién elegido). Los iconos de la leyenda llevan **el mismo criterio de color
+  que el rail** (acento para módulo/sistema, apagado para el resto), pero con los valores del **tema
+  oscuro** (`#a78bfa`, blanco al 62%): el lienzo del universo es siempre oscuro y el token claro
+  (`--color-accent` = `#4B2D8E`) no se leería sobre negro. Igual en Gestión de Datos, Comandos Violeta,
+  Apoyo y Fuentes.
 - **Resaltado por selección en un grafo jerárquico.** Al enfocar una **carpeta** se encienden **todos sus
   descendientes** (subárbol completo, no solo los hijos directos) más sus ancestros; al enfocar una **hoja**,
   sus relaciones de datos más su cadena de ancestros. Las **aristas de la vecindad se resaltan** (más grosor,
