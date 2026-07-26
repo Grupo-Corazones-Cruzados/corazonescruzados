@@ -5,12 +5,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import BrandLoader from '@/components/ui/BrandLoader';
+import ModuleTutorialsModal from '@/components/dashboard/ModuleTutorialsModal';
 import { accessRoleOf, canAccessModule, isPathBlocked, type AccessRole } from '@/lib/dashboard/access';
+import { DASHBOARD_MODULES, MODULE_GROUPS } from '@/lib/dashboard/modules';
 import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
-  LogOut, Sun, Moon, CalendarDays, Bell, PartyPopper, BrainCircuit, AlarmClock, type LucideIcon,
+  LogOut, Sun, Moon, CalendarDays, Bell, PartyPopper, BrainCircuit, AlarmClock, Info,
+  type LucideIcon,
 } from 'lucide-react';
 
 interface NavItem {
@@ -28,36 +31,23 @@ const ROLE_LABEL_ES: Record<AccessRole, string> = {
   admin: 'Admin',
 };
 
+// Iconos por nombre: el catálogo de módulos (`lib/dashboard/modules.ts`) es data pura
+// (también lo usan rutas de servidor), así que el componente resuelve el icono aquí.
+const ICONS: Record<string, LucideIcon> = {
+  Home, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Bell, Ticket, FolderKanban,
+  CalendarClock, Users, ReceiptText, Store, Workflow, Wrench, Network, Settings,
+  LifeBuoy, ShieldCheck,
+};
+
 // La visibilidad por rol se decide con `canAccessModule` (lib/dashboard/access.ts),
-// la MISMA fuente de verdad que usa el guard de rutas.
-const NAV_GROUPS: NavGroup[] = [
-  { title: 'Principal', items: [
-    { label: 'Inicio', href: '/dashboard', icon: Home },
-    { label: 'Mi día', href: '/dashboard/mi-dia', icon: CalendarDays },
-    { label: 'Experiencias', href: '/dashboard/experiencias', icon: PartyPopper },
-    { label: 'Pensamientos', href: '/dashboard/pensamientos', icon: BrainCircuit },
-    { label: 'Recordatorios', href: '/dashboard/recordatorios', icon: AlarmClock },
-    { label: 'Notificaciones', href: '/dashboard/notificaciones', icon: Bell },
-  ] },
-  { title: 'Operación', items: [
-    { label: 'Tickets', href: '/dashboard/tickets', icon: Ticket },
-    { label: 'Proyectos', href: '/dashboard/projects', icon: FolderKanban },
-    { label: 'Suscripciones', href: '/dashboard/subscriptions', icon: CalendarClock },
-    { label: 'Clientes', href: '/dashboard/clients', icon: Users },
-    { label: 'Facturas', href: '/dashboard/invoices', icon: ReceiptText },
-  ] },
-  { title: 'Plataforma', items: [
-    { label: 'Marketplace', href: '/dashboard/marketplace', icon: Store },
-    { label: 'Automatizaciones', href: '/dashboard/automatizaciones', icon: Workflow },
-    { label: 'Herramientas', href: '/dashboard/tools', icon: Wrench },
-    { label: 'Centralizado', href: '/dashboard/centralized', icon: Network },
-  ] },
-  { title: 'Sistema', items: [
-    { label: 'Configuración', href: '/dashboard/settings', icon: Settings },
-    { label: 'Soporte', href: '/dashboard/support', icon: LifeBuoy },
-    { label: 'Admin', href: '/dashboard/admin', icon: ShieldCheck },
-  ] },
-];
+// la MISMA fuente de verdad que usa el guard de rutas. El orden y las etiquetas salen
+// del catálogo compartido `DASHBOARD_MODULES`.
+const NAV_GROUPS: NavGroup[] = MODULE_GROUPS.map((title) => ({
+  title,
+  items: DASHBOARD_MODULES
+    .filter((m) => m.group === title)
+    .map((m) => ({ label: m.label, href: m.href, icon: ICONS[m.icon] ?? Home })),
+}));
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -75,8 +65,24 @@ export default function DashboardSidebar({
   const { user, signOut } = useAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Módulo cuyo modal de tutoriales está abierto (null = ninguno). Al cerrarlo el
+  // modal se DESMONTA, así el iframe de YouTube deja de reproducir.
+  const [tutorialFor, setTutorialFor] = useState<NavItem | null>(null);
+  // Cuántos videos activos tiene cada módulo — solo para resaltar el botón ⓘ de los
+  // módulos que ya tienen tutorial publicado.
+  const [tutorialCounts, setTutorialCounts] = useState<Record<string, number>>({});
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    fetch('/api/tutoriales?counts=1')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (alive && j?.data) setTutorialCounts(j.data); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [user]);
 
   const accessRole = accessRoleOf(user);
   const { blockedModules } = usePolicyEffects();
@@ -126,20 +132,39 @@ export default function DashboardSidebar({
               <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const active = isActive(item.href);
+                  const hasTutorials = (tutorialCounts[item.href] ?? 0) > 0;
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      title={collapsed ? item.label : undefined}
-                      className={`relative flex items-center gap-2.5 rounded-md py-2 text-[13px] font-medium transition-colors ${collapsed ? 'justify-center px-0' : 'px-2.5'} ${
-                        active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-black/[0.04]'
-                      }`}
-                      style={mf}
-                    >
-                      {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-accent" />}
-                      <item.icon className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-accent' : ''}`} strokeWidth={2} />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
+                    <div key={item.href} className="relative">
+                      <Link
+                        href={item.href}
+                        title={collapsed ? item.label : undefined}
+                        className={`relative flex items-center gap-2.5 rounded-md py-2 text-[13px] font-medium transition-colors ${collapsed ? 'justify-center px-0' : 'pl-2.5 pr-9'} ${
+                          active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-black/[0.04]'
+                        }`}
+                        style={mf}
+                      >
+                        {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-accent" />}
+                        <item.icon className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-accent' : ''}`} strokeWidth={2} />
+                        {!collapsed && <span className="truncate">{item.label}</span>}
+                      </Link>
+
+                      {/* Botón de información: abre los videos tutoriales del módulo.
+                          Va al borde derecho del botón del módulo; se oculta con el
+                          sidebar colapsado (no hay ancho). Se resalta si ya hay video. */}
+                      {!collapsed && (
+                        <button
+                          type="button"
+                          onClick={() => setTutorialFor(item)}
+                          title={`Tutoriales de ${item.label}`}
+                          aria-label={`Tutoriales de ${item.label}`}
+                          className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-md transition-colors hover:bg-accent-light hover:text-accent ${
+                            hasTutorials ? 'text-accent' : 'text-digi-muted/40'
+                          }`}
+                        >
+                          <Info className="w-[15px] h-[15px]" strokeWidth={2} />
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -197,6 +222,15 @@ export default function DashboardSidebar({
           </div>
         </div>
       </aside>
+
+      {/* Modal de tutoriales del módulo (isla corp: el sidebar ya vive dentro de `.corp`) */}
+      {tutorialFor && (
+        <ModuleTutorialsModal
+          module={tutorialFor.href}
+          label={tutorialFor.label}
+          onClose={() => setTutorialFor(null)}
+        />
+      )}
     </>
   );
 }

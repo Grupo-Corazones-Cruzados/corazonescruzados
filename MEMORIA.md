@@ -3023,3 +3023,31 @@ Módulos principales:
   (`lib/razones/db.ts`), API `/api/razones` (GET días+lista, POST) y `/api/razones/[id]` (PATCH/DELETE). UI en
   `components/razones/RazonesPanel.tsx`, montada como 3ª pestaña del panel admin (Mundo · Sprites · Razones).
   La "intensidad" (Breve/Media/Extensa) es solo por longitud del texto, no clasificación.
+
+- **Tutoriales por módulo (botón ⓘ) + pestañas de utilidades del admin (2026-07-25):** cada módulo del
+  dashboard lleva un **botón de información al borde derecho de su botón del sidebar** que abre un modal con
+  los **videos de YouTube incrustados** de ese módulo. Decisión del usuario: los videos son de acceso solo por
+  enlace. **Aviso técnico registrado:** deben publicarse en YouTube como **No listado**, NO como *Privado* —
+  YouTube **bloquea la incrustación** de los privados en cualquier sitio, aunque se tenga el enlace; el aviso
+  está visible en el panel de Tutoriales.
+  - **Tabla `gcc_world.tutoriales`** (`lib/tutoriales/db.ts`, creación perezosa como razones): `module` (= href
+    del módulo, p. ej. `/dashboard/tickets`), `title`, `description`, `url`, `video_id`, `orden`, `active`.
+    El `video_id` **se extrae del enlace en el servidor** (`parseYouTubeId`: watch / youtu.be / embed / shorts /
+    live / ID pelado); se incrusta con `youtube-nocookie.com`.
+  - **API** `/api/tutoriales` (GET `?module=` público al dashboard · `?counts=1` para el sidebar · `?all=1`
+    admin · POST admin) y `/api/tutoriales/[id]` (PATCH/DELETE admin).
+  - **Catálogo de módulos compartido** nuevo: `lib/dashboard/modules.ts` (`DASHBOARD_MODULES`) — data pura sin
+    lucide para que también lo importen rutas de servidor. El **sidebar ahora deriva sus grupos de ahí**
+    (resuelve el icono por nombre con un `ICONS` local); antes duplicaba la lista. La CLAVE de un módulo es su
+    href, la misma de `lib/dashboard/access.ts`.
+  - **Pestaña "Fuentes"** (admin, después de Razones): **explorador genérico de las 171 tablas** del schema
+    `gcc_world` — rail de tablas con buscador y conteo exacto · tabla de registros con búsqueda y paginación ·
+    el registro se abre en **panel derecho con overlay** para ver/editar/eliminar, y botón "Nuevo registro".
+    Es una herramienta de **último recurso** (el usuario avisó que normalmente no la usará). Seguridad en
+    `lib/admin/fuentes.ts`: la tabla se valida contra `information_schema` y las columnas contra las suyas;
+    los identificadores se citan, los **valores siempre van parametrizados**; solo SELECT/INSERT/UPDATE/DELETE,
+    nunca DDL. La **clave primaria no se edita** (identifica la fila); tablas sin PK quedan de solo lectura
+    (verificado: las 171 tablas tienen PK). Columnas tipo password/token/hash se **enmascaran en la lista**.
+  - **Pestaña "Tutoriales"** (admin): administra los videos con rail de módulos + lista + panel derecho, y
+    **vista previa del video al pegar el enlace**. Existe porque cargar un tutorial desde Fuentes obligaría a
+    escribir el `video_id` a mano; aquí basta pegar la URL.

@@ -642,6 +642,39 @@ del modo oscuro"), para no chocar con la landing oscura.
 - **Se añadió `hover:bg-amber-100` a los overrides de `.corp.dark`** (faltaba; regla: todo literal
   semántico usado debe tener su override oscuro).
 
+### Botón de información (ⓘ) por módulo del sidebar (2026-07-25)
+Cada ítem del sidebar (`components/dashboard/DashboardSidebar.tsx`) es ahora un `div.relative` con el
+`<Link>` (padding `pl-2.5 pr-9` para dejar sitio) y, como **hermano**, un botón `absolute right-1
+top-1/2 -translate-y-1/2 w-7 h-7 rounded-md` con el icono lucide `Info` (15px). **Nunca anidar un
+`<button>` dentro del `<Link>`** (HTML inválido y el clic se traga la navegación) — por eso son hermanos.
+- **Estado del icono:** `text-accent` si el módulo YA tiene videos publicados, `text-digi-muted/40` si no;
+  hover `hover:bg-accent-light hover:text-accent`. El conteo viene de `/api/tutoriales?counts=1` (una sola
+  petición al montar el sidebar).
+- **Se oculta con el sidebar colapsado** (`w-16`): no hay ancho para dos objetivos de clic.
+- Abre `components/dashboard/ModuleTutorialsModal.tsx`, que **se monta solo cuando hay módulo elegido**
+  (`{tutorialFor && <…/>}`) para que al cerrar se desmonte el `<iframe>` y el video **deje de sonar**.
+- **Incrustar YouTube:** `https://www.youtube-nocookie.com/embed/<id>?rel=0&modestbranding=1` dentro de un
+  contenedor `aspect-video rounded-lg border border-digi-border bg-black`. Miniaturas de lista:
+  `https://i.ytimg.com/vi/<id>/mqdefault.jpg`.
+
+### Utilidades de administrador — pestañas del módulo Admin (2026-07-25)
+Las pestañas horizontales de `admin/page.tsx` son el sitio donde viven las **funciones de administrador**
+(no un módulo nuevo por cada una). Se añadieron **Fuentes** (`Database`) y **Tutoriales** (`Video`) tras
+Razones. Ambas reusan el **patrón "Explorador Azure" en su variante rail + contenido**:
+`grid lg:grid-cols-[240px_minmax(0,1fr)] gap-4`, rail = tarjeta `bg-digi-card border rounded-lg` con
+cabecera (icono accent + título + conteo a la derecha), buscador opcional y lista de botones cuyo activo es
+`bg-accent-light text-accent border-l-2 border-accent`.
+- **Tabla genérica (Fuentes):** cuando las columnas son dinámicas NO se usa `PixelDataTable` (asume columnas
+  fijas y alto calculado); se compone un `<table>` propio con las clases estándar `data-table` / `dt-th` /
+  `dt-row` / `dt-td` (así hereda el estilo Fluent de `globals.css`) dentro de un contenedor
+  `overflow-x-auto max-h-[58vh] overflow-y-auto` y `<thead className="sticky top-0 z-10 bg-digi-card">`.
+- **Formularios en panel derecho:** se reusa `PixelModal size="md"` (en `.corp` ya se renderiza como panel
+  lateral derecho con overlay), en vez de un drawer a medida. Footer con la acción **destructiva a la
+  izquierda** y `Cancelar` + primaria a la derecha.
+- **Campos dinámicos:** `field-control` + `field-label` (las clases compartidas), con `select` para
+  booleanos, `textarea` para texto largo/JSON/arreglos e `input` para el resto; cada campo lleva una línea
+  de ayuda `text-[11px] text-digi-muted` con el tipo y si es obligatorio.
+
 ## Desviaciones detectadas y resolución
 - **2026-07-25 — Los dos modales de la landing seguían en pixelart (fuera del estándar serio).**
   `EntryChoiceModal` y `OnboardingSlidersModal` usaban Silkscreen + bordes 2px morados + emojis

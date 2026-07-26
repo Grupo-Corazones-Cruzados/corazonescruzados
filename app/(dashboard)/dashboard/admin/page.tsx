@@ -6,16 +6,22 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import PageHeader from '@/components/ui/PageHeader';
 import BrandLoader from '@/components/ui/BrandLoader';
 import RazonesPanel from '@/components/razones/RazonesPanel';
-import { Globe, Image as ImageIcon, Flame, ShieldAlert } from 'lucide-react';
+import FuentesPanel from '@/components/admin/FuentesPanel';
+import TutorialesPanel from '@/components/admin/TutorialesPanel';
+import { Globe, Image as ImageIcon, Flame, ShieldAlert, Database, Video } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-// Panel de administración = DigiMundo. Mundo y Sprites del videojuego + "Razones"
-// (cuaderno personal del admin, tipo Pensamientos, sin clasificación por IA).
+// Panel de administración = DigiMundo. Mundo y Sprites del videojuego, "Razones"
+// (cuaderno personal del admin, tipo Pensamientos, sin clasificación por IA), y las
+// utilidades de administrador: "Fuentes" (tablas de la base) y "Tutoriales" (videos
+// que se ven desde el botón ⓘ de cada módulo).
 const TABS = [
   { value: 'world', label: 'Mundo', Icon: Globe },
   { value: 'sprites', label: 'Sprites', Icon: ImageIcon },
   { value: 'razones', label: 'Razones', Icon: Flame },
+  { value: 'fuentes', label: 'Fuentes', Icon: Database },
+  { value: 'tutoriales', label: 'Tutoriales', Icon: Video },
 ];
 
 const WorldViewer = dynamic(() => import('@/app/(main)/world/page'), {
@@ -41,7 +47,7 @@ export default function AdminPage() {
 
   return (
     <div>
-      <PageHeader title="Admin" description="Mundo, sprites y tus razones de lucha" />
+      <PageHeader title="Admin" description="Mundo, sprites, tus razones de lucha y las utilidades de administrador" />
 
       {/* ── Pestañas horizontales (arriba) ── */}
       <div className="flex items-center gap-1 bg-digi-card border border-digi-border rounded-lg p-1 mb-4 overflow-x-auto">
@@ -68,6 +74,8 @@ export default function AdminPage() {
         )}
         {tab === 'sprites' && <SpritesEditor />}
         {tab === 'razones' && <RazonesPanel />}
+        {tab === 'fuentes' && <FuentesPanel />}
+        {tab === 'tutoriales' && <TutorialesPanel />}
       </div>
     </div>
   );
