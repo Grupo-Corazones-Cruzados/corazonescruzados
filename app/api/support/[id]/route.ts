@@ -41,23 +41,36 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 /**
- * PATCH — responder o cambiar el estado. **Solo admin**: el solicitante abre el ticket y
- * sigue su estado, pero no responde ni lo mueve. (Antes cualquier usuario autenticado
- * podía responder o cambiar el estado de CUALQUIER ticket, incluso ajeno.)
+ * PATCH — comentar o cambiar el estado.
+ *  · **Comentar**: el admin y el **dueño** del ticket (mientras no esté cerrado).
+ *  · **Cambiar el estado**: solo el admin.
+ * (Antes no se comprobaba nada: cualquier usuario autenticado podía responder o mover
+ * CUALQUIER ticket, incluso ajeno.)
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    if (user.role !== 'admin') {
-      return NextResponse.json({ error: 'Solo el equipo de soporte puede responder o cambiar el estado.' }, { status: 403 });
-    }
 
     const { id } = await params;
     const { status, message, attachment_url } = await req.json();
 
+    const { rows: [ticket] } = await pool.query(
+      `SELECT user_id, status FROM gcc_world.support_tickets WHERE id = $1`, [id],
+    );
+    if (!ticket) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const isAdmin = user.role === 'admin';
+    const isOwner = ticket.user_id === user.userId;
+
     // Handle reply
     if (message) {
+      if (!isAdmin && !isOwner) {
+        return NextResponse.json({ error: 'No puedes comentar en este ticket.' }, { status: 403 });
+      }
+      if (!isAdmin && ticket.status === 'closed') {
+        return NextResponse.json({ error: 'Este ticket está cerrado.' }, { status: 403 });
+      }
       const { rows } = await pool.query(
         `INSERT INTO gcc_world.support_replies (ticket_id, user_id, message, attachment_url)
          VALUES ($1, $2, $3, $4) RETURNING *`,
@@ -66,8 +79,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ data: rows[0] }, { status: 201 });
     }
 
-    // Handle status change
+    // Handle status change — exclusivo del admin.
     if (status) {
+      if (!isAdmin) {
+        return NextResponse.json({ error: 'Solo el equipo de soporte puede cambiar el estado.' }, { status: 403 });
+      }
       const valid = ['open', 'in_progress', 'resolved', 'closed'];
       if (!valid.includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
 

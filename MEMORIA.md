@@ -3134,7 +3134,11 @@ Módulos principales:
   un bug del código.
 
 - **Soporte — permisos por rol (2026-07-25, decisión del usuario):** cliente, candidato y miembro **crean**
-  tickets y ven **solo los suyos** con su estado; **solo el admin** responde y cambia el estado.
+  tickets, ven **solo los suyos** con su estado y **pueden comentar en su propio ticket**; **solo el admin**
+  ve todos, responde a cualquiera y **cambia el estado**.
+  - **AJUSTE (mismo día):** la primera versión dejaba comentar solo al admin; el usuario pidió que **el dueño
+    también comente en su ticket**. Regla final: comentar = admin **o** dueño (el dueño no, si el ticket está
+    `closed`); cambiar estado = **solo admin**. Verificado con la matriz de casos contra la base.
   - **Faltaba poder crear tickets:** no existía `POST /api/support` ni formulario — el módulo solo listaba.
     Se añadió el POST (tipo · asunto · descripción, con topes 200/5000) y el alta desde la lista en **panel
     lateral derecho**. El `user_id` se toma **del token**, nunca del cuerpo.

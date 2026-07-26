@@ -67,25 +67,32 @@ export default function SupportDetailPage() {
 
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
 
+  // El PATCH puede responder 403 (p. ej. comentar en un ticket ya cerrado), así que se
+  // comprueba `res.ok` y se muestra el motivo real en vez de un "Error" genérico.
+  const patch = async (body: Record<string, unknown>) => {
+    const res = await fetch(`/api/support/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.error || 'No se pudo completar la acción.');
+    return j;
+  };
+
   const sendReply = async () => {
     if (!reply.trim()) return;
     setSending(true);
     try {
-      await fetch(`/api/support/${id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: reply }),
-      });
-      setReply(''); toast.success('Respuesta enviada'); fetchTicket();
-    } catch { toast.error('Error'); }
+      await patch({ message: reply });
+      setReply(''); toast.success('Enviado'); fetchTicket();
+    } catch (e: any) { toast.error(e.message); }
     finally { setSending(false); }
   };
 
   const updateStatus = async (status: string) => {
     try {
-      await fetch(`/api/support/${id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }),
-      });
+      await patch({ status });
       toast.success('Estado actualizado'); fetchTicket();
-    } catch { toast.error('Error'); }
+    } catch (e: any) { toast.error(e.message); }
   };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando ticket..." /></div>;
@@ -144,30 +151,25 @@ export default function SupportDetailPage() {
         ))}
       </div>
 
-        {/* Responder: solo el equipo de soporte (admin). Al solicitante se le informa
-            del estado en vez de darle una caja de respuesta. */}
-        {!isAdmin ? (
-          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 text-center">
-            <p className="text-[12.5px] text-digi-text" style={mf}>
-              {ticket.status === 'closed'
-                ? 'Este ticket está cerrado.'
-                : ticket.status === 'resolved'
-                  ? 'El equipo de soporte marcó este ticket como resuelto.'
-                  : 'El equipo de soporte responderá aquí. Te avisaremos del avance en este mismo ticket.'}
-            </p>
-            <p className="text-[11.5px] text-digi-muted mt-1" style={mf}>
-              Si necesitas añadir algo más, abre un ticket nuevo desde Soporte.
-            </p>
-          </div>
-        ) : ticket.status !== 'closed' ? (
+        {/* Comentar: el admin y el dueño del ticket. El estado, en cambio, solo lo
+            mueve el admin, así que al solicitante se le aclara. */}
+        {ticket.status !== 'closed' ? (
           <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
-            <h3 className="text-[13px] font-semibold text-digi-text mb-2" style={mf}>Responder</h3>
-            <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={3} placeholder="Escribe tu respuesta..."
+            <h3 className="text-[13px] font-semibold text-digi-text mb-2" style={mf}>
+              {isAdmin ? 'Responder' : 'Añadir un comentario'}
+            </h3>
+            {!isAdmin && (
+              <p className="text-[11.5px] text-digi-muted mb-2" style={mf}>
+                El equipo de soporte responderá en este mismo ticket y se encarga de su estado.
+              </p>
+            )}
+            <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={3}
+              placeholder={isAdmin ? 'Escribe tu respuesta...' : 'Añade información al ticket...'}
               className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none mb-3" style={mf} />
             <div className="flex justify-end">
               <button onClick={sendReply} disabled={sending || !reply.trim()}
                 className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50">
-                <Send className="w-4 h-4" /> {sending ? 'Enviando...' : 'Enviar respuesta'}
+                <Send className="w-4 h-4" /> {sending ? 'Enviando...' : isAdmin ? 'Enviar respuesta' : 'Enviar comentario'}
               </button>
             </div>
           </div>
