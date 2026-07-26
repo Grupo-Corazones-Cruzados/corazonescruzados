@@ -1173,3 +1173,15 @@ html {
    banner de políticas). Reutilizable. */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Pensamiento destacado de la portada (components/landing/FeaturedThought.tsx):
+   entra subiendo con un desenfoque que se resuelve, y el cursor de la máquina de
+   escribir parpadea mientras se revela el texto. */
+@keyframes featuredThoughtIn {
+  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+@keyframes thoughtCaret {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}

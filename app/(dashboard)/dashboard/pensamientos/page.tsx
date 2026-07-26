@@ -10,8 +10,9 @@ import ThoughtCharts, { type DayBucket, type MonthBucket } from '@/components/pe
 import { DIMENSION_LABEL, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
 import { DIMENSION_ICON } from '@/components/centralized/dimensionIcons';
 import { intensityOf } from '@/lib/centralized/pensamientos';
+import { useAuth } from '@/components/providers/AuthProvider';
 import {
-  BrainCircuit, Plus, LineChart, CalendarDays, Trash2, Pencil, X, Check, Clock,
+  BrainCircuit, Plus, LineChart, CalendarDays, Trash2, Pencil, X, Check, Clock, Megaphone, Globe,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -44,6 +45,10 @@ const todayLocal = () =>
  * el servidor filtra por fila; no hay forma de pedir los de otra persona desde aquí.
  */
 export default function PensamientosPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  // Id del pensamiento publicado en la landing (solo lo devuelve el API al admin).
+  const [featuredId, setFeaturedId] = useState<number | null>(null);
   const [days, setDays] = useState<DayBucket[]>([]);
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -65,10 +70,39 @@ export default function PensamientosPage() {
       if (!res.ok) throw new Error(j.error || 'Error');
       setDays(j.data.days || []);
       setThoughts(j.data.thoughts || []);
+      setFeaturedId(j.data.featuredId ?? null);
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(selectedDay); }, [load, selectedDay]);
+
+  /**
+   * Publica un pensamiento en la página de inicio (o lo quita). Se pide confirmación
+   * porque el texto pasa a ser PÚBLICO: lo ve cualquiera que abra la landing, sin
+   * necesidad de tener cuenta.
+   */
+  const toggleFeatured = (t: Thought) => {
+    const quitar = featuredId === t.id;
+    const apply = async () => {
+      setConfirm(null);
+      try {
+        const res = await fetch('/api/pensamientos/destacado', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: quitar ? null : t.id }),
+        });
+        const j = await res.json();
+        if (!res.ok) throw new Error(j.error || 'Error');
+        setFeaturedId(quitar ? null : t.id);
+        toast.success(quitar ? 'Ya no se muestra en la página de inicio.' : 'Publicado en la página de inicio.');
+      } catch (e: any) { toast.error(e.message); }
+    };
+    if (quitar) return apply();
+    setConfirm({
+      text: 'Este pensamiento se mostrará en la página de inicio, donde puede leerlo cualquiera que entre al sitio, tenga cuenta o no. Solo puede haber uno publicado: si ya había otro, se reemplaza. ¿Publicarlo?',
+      onOk: apply,
+    });
+  };
 
   const openCharts = async () => {
     setChartsOpen(true);
@@ -229,6 +263,9 @@ export default function PensamientosPage() {
                 onCancelEdit={() => setEditing(null)}
                 onSaveEdit={saveEdit}
                 onDelete={() => remove(t)}
+                canFeature={isAdmin}
+                featured={featuredId === t.id}
+                onToggleFeatured={() => toggleFeatured(t)}
               />
             ))}
           </div>
@@ -253,10 +290,17 @@ export default function PensamientosPage() {
 }
 
 /** Tarjeta de un pensamiento. Los largos se recortan y se expanden al pulsar. */
-function ThoughtCard({ t, editing, onEditChange, onStartEdit, onCancelEdit, onSaveEdit, onDelete }: {
+function ThoughtCard({
+  t, editing, onEditChange, onStartEdit, onCancelEdit, onSaveEdit, onDelete,
+  canFeature = false, featured = false, onToggleFeatured,
+}: {
   t: Thought; editing: string | null;
   onEditChange: (v: string) => void; onStartEdit: () => void; onCancelEdit: () => void;
   onSaveEdit: () => void; onDelete: () => void;
+  /** Solo el admin puede publicar un pensamiento en la página de inicio. */
+  canFeature?: boolean;
+  featured?: boolean;
+  onToggleFeatured?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const intensity = intensityOf(t.charCount);
@@ -280,7 +324,7 @@ function ThoughtCard({ t, editing, onEditChange, onStartEdit, onCancelEdit, onSa
   }
 
   return (
-    <div className="rounded-lg border border-digi-border bg-digi-card p-3 group">
+    <div className={`rounded-lg bg-digi-card p-3 group border ${featured ? 'border-accent ring-1 ring-accent/30' : 'border-digi-border'}`}>
       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
         <span className="inline-flex items-center gap-1 text-[11px] text-digi-muted tabular-nums" style={mf}>
           <Clock className="w-3 h-3" /> {fmtTime(t.createdAt)}
@@ -297,8 +341,23 @@ function ThoughtCard({ t, editing, onEditChange, onStartEdit, onCancelEdit, onSa
         ) : (
           <span className="text-[10.5px] text-digi-muted/60" style={mf}>Sin etiquetar</span>
         )}
+        {featured && (
+          <span className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full bg-accent-light text-accent border border-accent/30" style={mf}>
+            <Globe className="w-3 h-3" /> En la página de inicio
+          </span>
+        )}
         <span className="text-[11px] text-digi-muted/60 tabular-nums ml-auto" style={mf}>{nf.format(t.charCount)} car.</span>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <div className={`flex items-center gap-1 transition-opacity ${featured ? '' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'}`}>
+          {canFeature && (
+            <button
+              onClick={onToggleFeatured}
+              className={featured ? 'text-accent' : 'text-digi-muted hover:text-accent'}
+              title={featured ? 'Quitar de la página de inicio' : 'Mostrar en la página de inicio'}
+              aria-label={featured ? 'Quitar de la página de inicio' : 'Mostrar en la página de inicio'}
+            >
+              <Megaphone className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button onClick={onStartEdit} className="text-digi-muted hover:text-accent" aria-label="Editar pensamiento"><Pencil className="w-3.5 h-3.5" /></button>
           <button onClick={onDelete} className="text-digi-muted hover:text-red-500" aria-label="Eliminar pensamiento"><Trash2 className="w-3.5 h-3.5" /></button>
         </div>

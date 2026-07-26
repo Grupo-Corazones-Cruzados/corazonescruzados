@@ -3191,3 +3191,29 @@ Módulos principales:
     pasos de `OnboardingSlidersModal` y `HorarioDeVidaSystem`. Las páginas de detalle usan `PropertyRail`.
   - De paso se limpiaron las constantes `df` y los imports que quedaron sin uso en los archivos tocados.
   - Verificado: `tsc` y `next build` limpios; 260 líneas borradas frente a 144 añadidas.
+
+- **Pensamiento destacado en la portada (2026-07-26):** el administrador puede elegir **uno de SUS
+  pensamientos** para mostrarlo en la página de inicio pública (`/`, app.grupocc.org) — para poner mensajes
+  motivacionales que vea cualquier visitante.
+  - **Dónde se hace:** módulo Pensamientos, icono de **megáfono** en la tarjeta del pensamiento (visible
+    **solo para admin**). La tarjeta publicada queda con borde acento y el distintivo "En la página de
+    inicio". Al publicar se **pide confirmación avisando de que el texto pasa a ser público** para cualquiera
+    con o sin cuenta — es la única vía por la que un pensamiento sale de su dueño, así que el aviso importa.
+  - **Datos:** columna `featured_at` en `pn_thoughts` + **índice único parcial**
+    `pn_thoughts_featured_uniq ON ((featured_at IS NOT NULL)) WHERE featured_at IS NOT NULL`. Solo puede
+    haber **uno publicado**, y lo garantiza la base, no solo el código (verificado: el segundo UPDATE lo
+    rechaza Postgres). `setFeaturedThought` va en transacción y **comprueba la pertenencia**: nadie publica
+    un pensamiento ajeno aunque acierte el id.
+  - **API:** `GET /api/pensamientos/destacado` es **público a propósito** (la landing no exige sesión) y
+    devuelve **solo texto y fecha**: ni autor, ni id, ni categoría. `POST` (admin) publica o quita con
+    `{ id }` / `{ id: null }`. `GET /api/pensamientos` devuelve además `featuredId` **solo al admin**.
+  - **Tope de largo:** un pensamiento puede tener 50 000 caracteres y esto va en la portada, que carga
+    cualquier visitante → se recorta a **600** (`FEATURED_MAX_LEN`) con «…» visible, no en silencio.
+  - **Cómo se ve** (`components/landing/FeaturedThought.tsx`): bajo los botones, "transmisión" pixelart —
+    esquinas de marco en accent, kicker `PENSAMIENTO` en Silkscreen, el texto **escribiéndose a máquina**
+    (22 ms/carácter, con cursor ▌) y la fecha. Respeta `prefers-reduced-motion` (muestra el texto de golpe) y
+    se va con el viento (`windAway`) como el resto del hero. **Si no hay nada publicado no renderiza nada** y
+    la portada no depende de esta petición (si falla, no se muestra y ya).
+  - Verificado en navegador: con destacado se pinta y termina de escribirse; sin destacado el bloque no
+    existe, la portada sigue bien y no hay errores de JS. El pensamiento de prueba se borró (quedan los 8
+    reales intactos).

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import PixelStars from '@/components/landing/PixelStars';
+import FeaturedThought from '@/components/landing/FeaturedThought';
 import PointerCursor from '@/components/landing/PointerCursor';
 import CharacterCreator, {
   type CharacterConfig,
@@ -3080,6 +3081,10 @@ export default function LandingPage() {
               Colaborar
             </button>
             </div>
+
+            {/* Pensamiento elegido por el administrador (Pensamientos → publicar).
+                Si no hay ninguno publicado, no renderiza nada. */}
+            <FeaturedThought windAway={windAway} />
           </div>
         </div>
       </section>
