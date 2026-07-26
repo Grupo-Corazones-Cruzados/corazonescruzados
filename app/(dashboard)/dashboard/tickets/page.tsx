@@ -15,6 +15,7 @@ import { fmt2 } from '@/lib/format';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
+import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
@@ -203,18 +204,11 @@ export default function TicketsPage() {
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
-  const RailItem = ({ active, Icon, label, count, onClick }: any) => (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-        active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-      }`}
-    >
-      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{label}</span>
-      <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{count ?? 0}</span>
-    </button>
-  );
+  // Rail de estado: el componente compartido `FilterRail` (antes estaba duplicado aquí
+  // como `RailItem`, lo que hacía que Tickets y Soporte se vieran distintos).
+  const railItems: FilterRailItem<string>[] = STATUS_TABS
+    .filter((s) => s.value !== 'open' || accessRoleOf(user) !== 'client')
+    .map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] ?? 0 }));
 
   return (
     <div>
@@ -222,15 +216,7 @@ export default function TicketsPage() {
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: estado ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
-          <div className="space-y-0.5">
-            {STATUS_TABS.filter((s) => s.value !== 'open' || accessRoleOf(user) !== 'client').map((s) => (
-              <RailItem key={s.value} active={tab === s.value} Icon={s.Icon} label={s.label}
-                count={counts[s.value]} onClick={() => setTab(s.value)} />
-            ))}
-          </div>
-        </aside>
+        <FilterRail title="Estado" items={railItems} value={tab} onChange={setTab} />
 
         {/* ── Right region: command bar + table ── */}
         <div className="flex-1 min-w-0 w-full">

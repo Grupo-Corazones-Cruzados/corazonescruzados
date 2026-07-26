@@ -3155,3 +3155,19 @@ Módulos principales:
     almacenamiento (Cloudinary ya está en el proyecto).
   - Verificado contra la base: alta con `status='open'` por defecto, el no-admin ve 1 de 2 tickets y el admin
     los 2, conteos por estado correctos; filas de prueba eliminadas.
+
+- **Soporte y Tickets: rail de estado unificado + buscador en Soporte (2026-07-25):** el usuario notó que el
+  rail de filtros **no estaba en la misma posición** en los dos módulos y que Soporte **no tenía buscador**.
+  - **Causa de la diferencia:** el rail estaba **duplicado en línea** en cada página (en Tickets como
+    `RailItem` local) en vez de usar `components/ui/FilterRail.tsx`, que ya era la definición única — y
+    además el botón "Nuevo ticket" de Soporte estaba **encima** de la fila del rail, empujándolo hacia abajo,
+    mientras que en Tickets la barra de comandos va **a la derecha del rail**.
+  - **Ahora las dos páginas comparten estructura exacta:** `FilterRail` + región derecha con
+    `barra de comandos (buscador + acción)` sobre `grid [lista_340px]`. Al usar el mismo componente ya no
+    pueden separarse otra vez.
+  - **Buscador en Soporte** por asunto (`ILIKE`), servidor, igual que Tickets: entra en los **filtros base**,
+    así que los conteos del rail también reflejan la búsqueda. Verificado contra la base: respeta la
+    visibilidad (el no-admin no ve el ticket del admin ni buscando), ignora mayúsculas y los conteos cuadran.
+  - **Migración pendiente que avanza:** `FilterRail` documenta que el control estaba duplicado en más de una
+    docena de páginas (proyectos, clientes, suscripciones, flows…). Con este cambio quedan migradas Tickets y
+    Soporte; el resto sigue pendiente (ver PROPUESTAS.md).

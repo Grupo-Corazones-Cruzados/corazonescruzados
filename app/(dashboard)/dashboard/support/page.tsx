@@ -7,12 +7,12 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PageHeader from '@/components/ui/PageHeader';
 import PixelModal from '@/components/ui/PixelModal';
+import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import Button, { BTN_PRIMARY } from '@/components/ui/Button';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight, Plus } from 'lucide-react';
+import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight, Plus, Search } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_TABS = [
   { value: 'all', label: 'Todos', Icon: LifeBuoy },
@@ -49,6 +49,7 @@ export default function SupportPage() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
+  const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<any>(null);
 
   // Alta de ticket: panel lateral derecho con overlay (estándar de formularios).
@@ -58,16 +59,21 @@ export default function SupportPage() {
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams();
     if (tab !== 'all') params.set('status', tab);
+    if (search) params.set('search', search);
     try {
       const res = await fetch(`/api/support?${params}`);
       const data = await res.json();
       setTickets(data.data || []);
       setCounts(data.counts || {});
     } catch { setTickets([]); }
-  }, [tab]);
+  }, [tab, search]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { setSelected(null); }, [tab]);
+  useEffect(() => { setSelected(null); }, [tab, search]);
+
+  const railItems: FilterRailItem<string>[] = STATUS_TABS.map((s) => ({
+    value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] ?? 0,
+  }));
 
   const create = async () => {
     if (!form) return;
@@ -97,35 +103,32 @@ export default function SupportPage() {
         description={isAdmin ? 'Todos los tickets de soporte y su seguimiento' : 'Tus tickets de soporte y su estado'}
       />
 
-      <div className="flex justify-end mb-3">
-        <Button onClick={() => setForm({ ...emptyForm })} icon={<Plus className="w-4 h-4" />}>
-          Nuevo ticket
-        </Button>
-      </div>
-
       <div className="flex flex-col lg:flex-row gap-4 items-start">
-        {/* ── Left rail: estado ── */}
-        <aside className="w-full lg:w-[220px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Estado</p>
-          <div className="space-y-0.5">
-            {STATUS_TABS.map((s) => {
-              const active = tab === s.value;
-              return (
-                <button key={s.value} onClick={() => setTab(s.value)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-                    active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-                  }`}>
-                  <s.Icon className={`w-4 h-4 shrink-0 ${active ? 'text-accent' : 'text-digi-muted'}`} />
-                  <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{s.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{counts[s.value] ?? 0}</span>
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+        {/* ── Left rail: estado (mismo componente y misma posición que Tickets) ── */}
+        <FilterRail title="Estado" items={railItems} value={tab} onChange={setTab} />
 
-        {/* ── Right region: list · panel ── */}
+        {/* ── Right region: command bar + list · panel ── */}
         <div className="flex-1 min-w-0 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por asunto..."
+                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                style={mf}
+              />
+            </div>
+            <button
+              onClick={() => setForm({ ...emptyForm })}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+              style={mf}
+            >
+              <Plus className="w-4 h-4" /> Nuevo ticket
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
               <PixelDataTable

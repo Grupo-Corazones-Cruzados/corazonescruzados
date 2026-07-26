@@ -20,7 +20,9 @@ export async function GET(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const status = req.nextUrl.searchParams.get('status');
+    const search = req.nextUrl.searchParams.get('search');
 
+    // Filtros base (visibilidad + búsqueda), compartidos por la lista y los conteos.
     // Visibilidad: quien no es admin solo ve SUS tickets. (Antes solo se filtraba al rol
     // `client`, así que los miembros veían los tickets de todo el mundo.)
     let baseWhere = 'WHERE 1=1';
@@ -28,6 +30,10 @@ export async function GET(req: NextRequest) {
     if (user.role !== 'admin') {
       baseParams.push(user.userId);
       baseWhere += ` AND st.user_id = $${baseParams.length}`;
+    }
+    if (search) {
+      baseParams.push(`%${search}%`);
+      baseWhere += ` AND st.subject ILIKE $${baseParams.length}`;
     }
 
     let where = baseWhere;
