@@ -699,6 +699,12 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   fijas y alto calculado); se compone un `<table>` propio con las clases estándar `data-table` / `dt-th` /
   `dt-row` / `dt-td` (así hereda el estilo Fluent de `globals.css`) dentro de un contenedor
   `overflow-x-auto max-h-[58vh] overflow-y-auto` y `<thead className="sticky top-0 z-10 bg-digi-card">`.
+- **Reusar el panel de un módulo en otro sitio (en vez de duplicarlo).** Cuando una utilidad ya existe como
+  componente (p. ej. el editor de listas globales de Encuadre Condiciológico) y hace falta también en Admin,
+  se **monta el mismo componente**, no se reescribe: se le añade una prop mínima para que el alto lo ponga el
+  contenedor (`fill` → `h-full` en vez de su `calc(100dvh-…)` propio) y el host mide el espacio disponible.
+  Así una mejora del editor aparece en los dos sitios y no hay dos diseños que se separen con el tiempo.
+  Ejemplo: `components/admin/ListasPanel.tsx` monta `EncuadreCondiciologicoSystem`.
 - **Formularios en panel derecho:** se reusa `PixelModal size="md"` (en `.corp` ya se renderiza como panel
   lateral derecho con overlay), en vez de un drawer a medida. Footer con la acción **destructiva a la
   izquierda** y `Cancelar` + primaria a la derecha.

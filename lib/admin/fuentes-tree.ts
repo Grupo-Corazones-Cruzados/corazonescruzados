@@ -116,8 +116,13 @@ export const FUENTES_TAXONOMY: TreeSpec[] = [
             tables: ['gd_fuentes', 'gd_fuente_pesos', 'gd_referencias'] },
         ],
       },
+      // Listas globales del proyecto (se editan en Admin ▸ Listas y en este sistema).
+      // Las seis últimas nacen vacías y su tabla se crea al abrir el editor por primera
+      // vez; listarlas aquí de antemano evita que caigan en "Sin clasificar" cuando
+      // aparezcan (`buildFuentesTree` ignora las que aún no existen).
       { name: 'Encuadre Condiciológico', kind: 'system', hint: 'Piso Global · Fundamentación · listas globales',
-        tables: ['gd_talentos', 'gd_valores'] },
+        tables: ['gd_talentos', 'gd_valores', 'gd_acciones', 'gd_intenciones', 'gd_estados',
+                 'gd_lugares', 'gd_procesos_mentales', 'gd_moldes'] },
       { name: 'Gestión de Condiciones', kind: 'system', hint: 'Piso Controlador · Fundamentación',
         tables: ['gc_condiciones', 'gc_condicion_eventos', 'gc_condicion_restricciones',
                  'gc_condicion_variables', 'gc_requerimientos', 'gc_requerimiento_projects',

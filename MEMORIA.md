@@ -3089,3 +3089,22 @@ Módulos principales:
   - **Regla de negocio confirmada por el camino:** en el grafo se probaron relaciones *inferidas* por
     convención `<algo>_id` y el usuario detectó una que no existía → **solo valen relaciones reales
     (FKs declaradas)**. Aplica a cualquier futura visualización del esquema.
+
+- **Admin ▸ pestaña "Listas" (2026-07-25):** sexta pestaña del panel admin (tras Tutoriales) con las **listas
+  globales del proyecto**. NO se reimplementó nada: monta el **mismo componente** que el sistema Encuadre
+  Condiciológico (`components/centralized/systems/EncuadreCondiciologicoSystem.tsx`), que ya era la
+  definición única del editor; `components/admin/ListasPanel.tsx` es un envoltorio de ~35 líneas que solo
+  aporta el alto (mide hasta la barra de ruta, como Fuentes). Editar una lista aquí o en Centralizado es lo
+  mismo: van a las mismas tablas.
+  - **Son 10 listas**, no 3 — el catálogo vive en `GLOBAL_LISTS` (`lib/centralized/encuadre-db.ts`):
+    Talentos, Valores, Situaciones, Materias, Acciones, Intenciones, Estados, Lugares, Procesos mentales y
+    Moldes. API compartida: `/api/centralized/encuadre/listas` (GET/POST/DELETE, admin y member).
+  - **Dos formas de lista:** *simple* (una columna `nombre`) y *keyed* (`key` + `label`, hoy solo Valores:
+    se escribe el label y la key se genera como slug).
+  - **Talentos y Valores nacen sembrados** desde `lib/centralized/talentos.ts` y `valores.ts`; las otras seis
+    (acciones, intenciones, estados, lugares, procesos mentales, moldes) **nacen vacías y su tabla ni siquiera
+    existe** hasta que se abre el editor (`ensureEncuadreTables`). Por eso se pre-registraron en la taxonomía
+    de Fuentes: cuando aparezcan caen en su carpeta y no en "Sin clasificar".
+  - **Cambio menor en el componente compartido:** prop `fill` (el alto lo pone el contenedor) para poder
+    montarlo en Admin sin tocar su alto propio en la página del sistema. También se corrigió el pie del rail,
+    que decía "Se editan solo aquí" y ya no era cierto al existir dos entradas.

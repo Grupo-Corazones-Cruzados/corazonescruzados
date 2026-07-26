@@ -24,7 +24,18 @@ const LIST_ICON: Record<string, typeof Layers> = {
   acciones: Zap, intenciones: Target, estados: Gauge, lugares: MapIcon, procesos_mentales: Brain, moldes: Shapes,
 };
 
-export default function EncuadreCondiciologicoSystem({ isAdmin }: { system?: any; isAdmin?: boolean }) {
+/**
+ * Editor de las LISTAS GLOBALES del proyecto (talentos, valores, materias, situaciones…).
+ * Vive en el sistema Encuadre Condiciológico y se reusa tal cual en Admin ▸ Listas: una
+ * sola definición, así cualquier mejora aparece en los dos sitios.
+ *
+ * `fill` = el alto lo pone el contenedor (lo usa Admin, que mide el espacio disponible);
+ * sin él mantiene su alto propio, pensado para la página del sistema.
+ */
+export default function EncuadreCondiciologicoSystem({
+  isAdmin,
+  fill = false,
+}: { system?: any; isAdmin?: boolean; fill?: boolean }) {
   const [listas, setListas] = useState<Lista[]>([]);
   const [sel, setSel] = useState<string | null>(null);
   const [opciones, setOpciones] = useState<Opcion[]>([]);
@@ -66,7 +77,7 @@ export default function EncuadreCondiciologicoSystem({ isAdmin }: { system?: any
   }, [opciones, q]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
+    <div className={`flex flex-col lg:flex-row gap-4 ${fill ? 'h-full' : 'lg:h-[calc(100dvh-130px)]'}`}>
       {/* ── Panel de listas ── */}
       <aside className="w-full lg:w-[240px] shrink-0 max-h-[45vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-1.5">
@@ -86,7 +97,7 @@ export default function EncuadreCondiciologicoSystem({ isAdmin }: { system?: any
           })}
         </div>
         <div className="p-2.5 border-t border-digi-border">
-          <p className="text-[10px] text-digi-muted leading-snug" style={mf}>Listas compartidas por todos los sistemas. Se editan solo aquí.</p>
+          <p className="text-[10px] text-digi-muted leading-snug" style={mf}>Listas compartidas por todos los sistemas del proyecto.</p>
         </div>
       </aside>
 

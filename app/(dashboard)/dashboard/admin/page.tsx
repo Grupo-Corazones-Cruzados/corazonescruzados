@@ -8,20 +8,23 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import RazonesPanel from '@/components/razones/RazonesPanel';
 import FuentesPanel from '@/components/admin/FuentesPanel';
 import TutorialesPanel from '@/components/admin/TutorialesPanel';
-import { Globe, Image as ImageIcon, Flame, ShieldAlert, Database, Video } from 'lucide-react';
+import ListasPanel from '@/components/admin/ListasPanel';
+import { Globe, Image as ImageIcon, Flame, ShieldAlert, Database, Video, ListChecks } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 // Panel de administración = DigiMundo. Mundo y Sprites del videojuego, "Razones"
 // (cuaderno personal del admin, tipo Pensamientos, sin clasificación por IA), y las
-// utilidades de administrador: "Fuentes" (tablas de la base) y "Tutoriales" (videos
-// que se ven desde el botón ⓘ de cada módulo).
+// utilidades de administrador: "Fuentes" (tablas de la base), "Tutoriales" (videos
+// que se ven desde el botón ⓘ de cada módulo) y "Listas" (las listas globales del
+// proyecto: talentos, valores, materias… las mismas de Encuadre Condiciológico).
 const TABS = [
   { value: 'world', label: 'Mundo', Icon: Globe },
   { value: 'sprites', label: 'Sprites', Icon: ImageIcon },
   { value: 'razones', label: 'Razones', Icon: Flame },
   { value: 'fuentes', label: 'Fuentes', Icon: Database },
   { value: 'tutoriales', label: 'Tutoriales', Icon: Video },
+  { value: 'listas', label: 'Listas', Icon: ListChecks },
 ];
 
 const WorldViewer = dynamic(() => import('@/app/(main)/world/page'), {
@@ -76,6 +79,7 @@ export default function AdminPage() {
         {tab === 'razones' && <RazonesPanel />}
         {tab === 'fuentes' && <FuentesPanel />}
         {tab === 'tutoriales' && <TutorialesPanel />}
+        {tab === 'listas' && <ListasPanel />}
       </div>
     </div>
   );
