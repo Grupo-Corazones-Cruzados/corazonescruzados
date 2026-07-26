@@ -682,39 +682,19 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   **descontarla**, o su contenido queda por debajo y se corta:
   `height = innerHeight - rect.top - barraRuta.height - 12`. Medir la barra por su selector (no un 36
   hardcodeado). Pasó con la leyenda del rail de Fuentes.
-- **Dos vistas de un mismo módulo (segmentado a la derecha de la command bar).** Cuando un módulo ofrece
-  varias representaciones de lo mismo, el conmutador va **a la derecha de la barra de comandos**, como
-  segmentado: contenedor `flex items-center gap-0.5 p-0.5 rounded-md border border-digi-border bg-digi-card`
-  y botones `px-2.5 py-1.5 rounded text-[12px]` con el activo en `bg-accent text-white`. El rail de
-  navegación **se mantiene en todas las vistas** (solo cambia el lienzo de la derecha).
 - **Grafo "universo" (reusable).** Motor: `react-force-graph-2d` con importación dinámica
-  (`import('react-force-graph-2d')` en un `useEffect`, nunca en el bundle inicial), fondo negro
-  `#05060a`, controles Ajustar/Acercar/Alejar/Reorganizar arriba a la derecha como botones
-  `bg-white/10 border-white/10 backdrop-blur`. Reglas aprendidas: (1) **cachear los objetos de nodo por id**
-  entre renders o d3 pierde las posiciones y el grafo salta; (2) **etiquetas de las hojas solo con zoom,
-  hover o selección** (172 nombres a la vez se solapan); (3) si hay selección al montar, **centrar en ella
-  en vez de encuadrar** (el `zoomToFit` pisa el centrado). Referencias: `GdGraph.tsx` (Gestión de Datos) y
-  `FuentesGraph.tsx` (esquema de la base).
-- **Iconos del grafo = iconos de la UI.** Un nodo del universo se dibuja con **el mismo icono de lucide** que
-  representa a esa entidad en el resto de la interfaz, no con una forma geométrica suelta: se copia la
-  geometría del icono (lienzo 24×24: `path`/`rect`/`circle`/`line`) y se traza con `Path2D` en el canvas
-  (`ctx.lineWidth = 2`, `lineCap`/`lineJoin` `round`, escalado a `size/24`). **Cachear los `Path2D` por
-  tipo** — rehacerlos en cada frame con cientos de nodos cuesta caro. Así el grafo y el rail se leen igual.
-- **Leyenda-filtro del universo (patrón compartido).** Panel `absolute top-2.5 left-2.5` con vidrio
-  (`rounded-md bg-black/50 border border-white/10 backdrop-blur-sm p-2`), título `text-[9.5px] uppercase
-  tracking-wide text-white/50` y una fila por tipo (icono + etiqueta + conteo). **Pasar el puntero
-  previsualiza el resaltado; el clic lo fija/quita** (`hoverFilter ?? pinFilter`), y el filtro por tipo manda
-  sobre la selección — por eso **elegir un elemento suelta el filtro fijado** (si no, el filtro seguiría
-  mandando y no se vería lo recién elegido). Los iconos de la leyenda llevan **el mismo criterio de color
-  que el rail** (acento para módulo/sistema, apagado para el resto), pero con los valores del **tema
-  oscuro** (`#a78bfa`, blanco al 62%): el lienzo del universo es siempre oscuro y el token claro
-  (`--color-accent` = `#4B2D8E`) no se leería sobre negro. Igual en Gestión de Datos, Comandos Violeta,
-  Apoyo y Fuentes.
-- **Resaltado por selección en un grafo jerárquico.** Al enfocar una **carpeta** se encienden **todos sus
-  descendientes** (subárbol completo, no solo los hijos directos) más sus ancestros; al enfocar una **hoja**,
-  sus relaciones de datos más su cadena de ancestros. Las **aristas de la vecindad se resaltan** (más grosor,
-  más opacidad, punta de flecha mayor y partículas animadas en las de relación) y el resto se atenúa casi a
-  cero: sin eso el resaltado de nodos se pierde entre las líneas.
+  (`import('react-force-graph-2d')` en un `useEffect`, nunca en el bundle inicial), fondo negro,
+  controles Ajustar/Acercar/Alejar/Reorganizar arriba a la derecha como botones
+  `bg-white/10 border-white/10 backdrop-blur`, y **leyenda-filtro** arriba a la izquierda donde el puntero
+  previsualiza el resaltado y el clic lo fija (`hoverFilter ?? pinFilter`). Reglas aprendidas:
+  (1) **cachear los objetos de nodo por id** entre renders o d3 pierde las posiciones y el grafo salta;
+  (2) **etiquetas de las hojas solo con zoom, hover o selección** (cientos de nombres a la vez se solapan);
+  (3) si hay selección al montar, **centrar en ella en vez de encuadrar** (el `zoomToFit` pisa el centrado);
+  (4) al resaltar, subir también el **grosor y la opacidad de las aristas** y atenuar el resto casi a cero,
+  o el resaltado de nodos se pierde entre las líneas. Referencias vivas: `GdGraph.tsx` (Gestión de Datos),
+  `PolicyGraph` (Comandos Violeta).
+  > **Se probó y se DESCARTÓ** llevar este patrón al esquema de la base (pestaña Fuentes): ver el log de
+  > desviaciones. Fuentes se quedó solo con la vista de tabla.
 - **Tabla genérica (Fuentes):** cuando las columnas son dinámicas NO se usa `PixelDataTable` (asume columnas
   fijas y alto calculado); se compone un `<table>` propio con las clases estándar `data-table` / `dt-th` /
   `dt-row` / `dt-td` (así hereda el estilo Fluent de `globals.css`) dentro de un contenedor
@@ -727,6 +707,12 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   de ayuda `text-[11px] text-digi-muted` con el tipo y si es obligatorio.
 
 ## Desviaciones detectadas y resolución
+- **2026-07-25 — Vista "Universo" de Fuentes: construida y RETIRADA por decisión del usuario.**
+  Se implementó el esquema de la base como grafo de fuerzas (219 nodos, jerarquía + FKs, filtros por tipo,
+  iconos de lucide trazados en canvas) junto a la vista de tabla, con un conmutador segmentado. El usuario
+  la evaluó y concluyó que **la idea no aportaba**: se eliminó el grafo, su API de relaciones y el
+  conmutador; **Fuentes tiene una sola vista, la de tabla**. No re-proponerla. (Se conservan el rail en
+  árbol y el ajuste de alto, que sí quedaron.)
 - **2026-07-25 — Los dos modales de la landing seguían en pixelart (fuera del estándar serio).**
   `EntryChoiceModal` y `OnboardingSlidersModal` usaban Silkscreen + bordes 2px morados + emojis
   (✕ ▸ ⚠ ● ›) + hex crudos (`#0e1118`, `#151a26`, `rgba(123,95,191,…)`) en estilos inline por archivo,

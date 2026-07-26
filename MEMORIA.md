@@ -3073,44 +3073,19 @@ Módulos principales:
     `package_*`, `products`, `packages`, `modules`). Parecen heredadas de iteraciones anteriores; están
     clasificadas en su módulo por nombre, pero **habría que confirmar con el usuario si se pueden DROPear**.
 
-- **Fuentes: vista "Universo" de relaciones + arreglo de altura (2026-07-25):** la pestaña tiene ahora **dos
-  vistas** conmutables con un segmentado a la **derecha de la barra de comandos** (el rail de tablas se
-  mantiene en las dos): **Tabla** (registros, la de siempre) y **Universo** (grafo del esquema).
-  - **Universo** (`components/admin/FuentesGraph.tsx`) — mismo motor que el sistema Gestión de Datos
-    (`react-force-graph-2d`, d3-force sobre canvas, fondo negro). Nodos: 47 carpetas + 172 tablas = 219.
-    Formas: ★ módulo · ⬢ sistema · ◆ subsistema · ■ otras · ● tabla; **color por módulo raíz** (paleta de 20)
-    para que cada familia se vea como una constelación. Aristas: **199 de jerarquía** (el mismo árbol del
-    rail) + **175 de relación** entre tablas.
-  - **Relaciones** (`lib/admin/fuentes-graph.ts`, `GET /api/admin/fuentes?relations=1` — va como parámetro y
-    NO como subruta para no chocar con `/api/admin/fuentes/[table]`): **SOLO las 82 FK declaradas** en
-    `pg_constraint`. **CORRECCIÓN (2026-07-25, decisión del usuario):** se probó añadir ~93 relaciones
-    *inferidas* por convención `<algo>_id`; el usuario detectó que alguna no existía y pidió quitarlas —
-    **solo sirven relaciones reales**. Si sale una flecha, existe la restricción en Postgres. Las tablas sin
-    FK no quedan sueltas: cuelgan de su carpeta por la jerarquía.
-  - **Al elegir una tabla en el rail el grafo viaja hasta ella** (centra + zoom) y deja encendidas solo sus
-    relaciones y su cadena de carpetas hasta el módulo; el resto se atenúa. Ficha flotante con ruta, filas y
-    a qué apunta / quién le apunta. Clic en un nodo-tabla la selecciona (y la vista Tabla ya la tiene lista).
-  - **Gotcha resuelto:** el encuadre inicial (`zoomToFit`) **pisaba** el centrado cuando el universo se abría
-    con una tabla ya elegida. Ahora el temporizador de arranque hace `focusSelected()` y solo encuadra si no
-    hay selección.
-  - **Arreglo:** el rail se salía por abajo y **cortaba la leyenda** — el alto se calculaba contra
-    `window.innerHeight` sin descontar la **barra de ruta fija** del dashboard (`nav[aria-label="Ruta"]`,
-    36px). Ahora se mide esa barra y se resta. La columna de contenido usa el mismo alto, así la tabla y el
-    grafo llenan la pantalla y el scroll es interno.
+- **Fuentes: arreglo de altura del rail (2026-07-25):** el rail se salía por abajo y **cortaba la leyenda** —
+  el alto se calculaba contra `window.innerHeight` sin descontar la **barra de ruta fija** del dashboard
+  (`nav[aria-label="Ruta"]`, 36px). Ahora se mide esa barra y se resta. La columna de contenido usa el mismo
+  alto, así la tabla llena la pantalla y el scroll es interno.
 
-- **Fuentes/Universo — resaltado por selección y filtros (2026-07-25):** ajustes pedidos tras la primera
-  versión del grafo:
-  - **Seleccionar una carpeta enciende TODO su subárbol** (sus sistemas, subsistemas y tablas) más sus
-    ancestros — no solo los hijos directos. Verificado: Centralizado ilumina 65 tablas, Gestión de Datos 25,
-    Rompecabezas y piezas 6, Proyectos 17. Se selecciona con clic en el nodo del universo (`pickedFolder`);
-    volver a hacer clic o pulsar el fondo lo suelta.
-  - **Las flechas de la vecindad se resaltan**: las aristas encendidas suben de grosor y opacidad, la punta
-    de flecha crece y las de FK llevan **partículas animadas**; el resto casi desaparece.
-  - **Leyenda-filtro arriba a la izquierda** (sustituye al texto explicativo que había): Módulos · Sistemas ·
-    Subsistemas · Otras · Tablas, con su conteo. **Pasar el puntero previsualiza** el resaltado y el **clic lo
-    fija/quita**, igual que la leyenda de Gestión de Datos y Comandos Violeta. El filtro por tipo manda sobre
-    la selección.
-  - **Los nodos se dibujan con los MISMOS iconos de lucide del panel de tablas** (Boxes · Network · GitBranch ·
-    Folder · Table2), no con formas geométricas: se copió la geometría del icono (lienzo 24×24) a primitivas
-    y se traza con `Path2D` sobre el canvas, con los `Path2D` **cacheados por tipo** (reconstruirlos por frame
-    con 219 nodos es caro). `roundRect` lleva respaldo a `rect` por si el navegador no lo trae.
+- **Fuentes: la vista "Universo" se construyó y se RETIRÓ (2026-07-25).** Se implementó el esquema como grafo
+  de fuerzas junto a la vista de tabla (219 nodos = 47 carpetas + 172 tablas; aristas de jerarquía + las 82
+  FKs declaradas; filtros por tipo; iconos de lucide trazados en canvas con `Path2D`). Tras probarla, el
+  usuario decidió que **la idea no era buena** y pidió quitarla: se eliminaron `FuentesGraph.tsx`,
+  `lib/admin/fuentes-graph.ts`, el parámetro `?relations=1` de la API y el conmutador de vistas.
+  **Fuentes tiene una sola vista: la de tabla.** No re-proponer el grafo.
+  - Aprendizajes que sí quedaron registrados en `Diseño.md`: el patrón de grafo reusable (vive en `GdGraph`)
+    y la regla del alto disponible.
+  - **Regla de negocio confirmada por el camino:** en el grafo se probaron relaciones *inferidas* por
+    convención `<algo>_id` y el usuario detectó una que no existía → **solo valen relaciones reales
+    (FKs declaradas)**. Aplica a cualquier futura visualización del esquema.
