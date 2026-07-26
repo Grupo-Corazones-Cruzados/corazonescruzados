@@ -3108,3 +3108,27 @@ Módulos principales:
   - **Cambio menor en el componente compartido:** prop `fill` (el alto lo pone el contenedor) para poder
     montarlo en Admin sin tocar su alto propio en la página del sistema. También se corrigió el pie del rail,
     que decía "Se editan solo aquí" y ya no era cierto al existir dos entradas.
+
+- **Editor de listas globales: edición en panel derecho (2026-07-25):** rediseño pedido por el usuario sobre
+  `EncuadreCondiciologicoSystem` (afecta a los DOS sitios donde vive: Centralizado ▸ Encuadre Condiciológico
+  y Admin ▸ Listas — es el mismo componente).
+  - **Fuera** el título "Talentos · 525 opciones" y la fila separada de filtro: una sola barra con
+    **buscador + campo de alta + botón Agregar**. Los conteos siguen en el rail de listas.
+  - **Una sola columna** de opciones (antes `grid` de hasta 3), en orden alfabético ascendente (lo da el
+    servidor con `ORDER BY LOWER(...) ASC`).
+  - **Panel de detalle a la derecha** (320px), como Tickets/Proyectos: al elegir una opción se abre su
+    formulario (Nombre + metadatos Lista/Id/Clave) con **Guardar** y **Eliminar**. El borrado salió de la
+    fila (icono al pasar) y ahora pide confirmación con `PixelConfirm`. Al crear una opción queda
+    seleccionada en el panel.
+  - **NUEVO: se puede renombrar.** Antes solo había alta y baja. `updateListOption` + `PATCH` en
+    `/api/centralized/encuadre/listas`. En listas *keyed* (Valores) **solo cambia el `label`: la `key` se
+    mantiene estable** porque es lo que referencian los otros sistemas. Rechaza duplicados sin distinguir
+    mayúsculas y permite guardar el mismo nombre (no choca consigo mismo) — verificado contra la base con
+    una fila de prueba que se eliminó después.
+
+- **Lección: el build de este proyecto falla de forma INTERMITENTE (2026-07-25).** `next build` revienta a
+  veces al prerenderizar `/` con `TypeError: Cannot read properties of undefined (reading 'call')` en
+  `webpack-runtime.js`, y pasa al reintentar. Se comprobó de forma controlada: `main` limpio construyó 3/3
+  bien y con los cambios encima otras 3/3 bien, así que **no lo causa ningún cambio concreto**; es un fallo
+  del worker de Next. Si Railway falla con ese error, **reintentar el deploy**. No perseguirlo como si fuera
+  un bug del código.

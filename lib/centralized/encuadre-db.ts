@@ -137,6 +137,32 @@ export async function addListOption(key: string, value: string) {
   return rows[0];
 }
 
+/**
+ * Renombra una opción. En listas keyed **solo cambia el `label`**: la `key` es lo que
+ * referencian los otros sistemas, así que se mantiene estable aunque se corrija el texto.
+ */
+export async function updateListOption(key: string, id: number, value: string) {
+  await ensureEncuadreTables();
+  const m = meta(key);
+  const label = (value || '').trim();
+  if (!label) throw new Error('El nombre es requerido.');
+
+  const col = m.shape === 'keyed' ? m.labelCol : m.col;
+  const { rows } = await pool.query(
+    `UPDATE gcc_world.${m.table} SET ${col} = $1
+      WHERE id = $2
+        AND NOT EXISTS (SELECT 1 FROM gcc_world.${m.table} WHERE id <> $2 AND LOWER(${col}) = LOWER($1))
+      RETURNING id, ${col} AS label${m.shape === 'keyed' ? `, ${m.keyCol} AS key` : ''}`,
+    [label, id],
+  );
+  if (rows.length === 0) {
+    // O no existe la fila, o el nombre ya lo tiene otra opción.
+    const { rows: [exists] } = await pool.query(`SELECT 1 FROM gcc_world.${m.table} WHERE id = $1`, [id]);
+    throw new Error(exists ? 'Ya existe otra opción con ese nombre.' : 'No se encontró la opción.');
+  }
+  return rows[0];
+}
+
 export async function deleteListOption(key: string, id: number) {
   await ensureEncuadreTables();
   const m = meta(key);
