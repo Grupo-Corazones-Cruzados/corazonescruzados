@@ -3051,3 +3051,24 @@ Módulos principales:
   - **Pestaña "Tutoriales"** (admin): administra los videos con rail de módulos + lista + panel derecho, y
     **vista previa del video al pegar el enlace**. Existe porque cargar un tutorial desde Fuentes obligaría a
     escribir el `video_id` a mano; aquí basta pegar la URL.
+
+- **Fuentes: árbol de carpetas por módulo/sistema y rail a pantalla completa (2026-07-25):** el rail de tablas
+  dejó de ser una lista alfabética plana. Ahora es un **árbol desplegable módulo → sistema → subsistema →
+  tabla**, con icono distinto por tipo (`Boxes` módulo · `Network` sistema · `GitBranch` subsistema · `Folder`
+  otras · `Table2` tabla), leyenda al pie, botones desplegar/contraer todo, conteo por carpeta y buscador que
+  **filtra tablas Y carpetas** (al buscar se despliega solo lo que casa). El rail **ocupa todo el alto
+  disponible** (se mide su borde superior contra el alto de la ventana y se recalcula al redimensionar).
+  - **Taxonomía en `lib/admin/fuentes-tree.ts`** — mapa curado, derivado de **dónde se crea/usa cada tabla en
+    el código** (`lib/<módulo>/…`, `lib/centralized/<sistema>-db.ts`). Los sistemas de Centralizado llevan el
+    **nombre exacto** que tienen en `centralized_systems` (ojo: es **"Percepción Social"**, no "Sensorial").
+    Estructura resultante: **20 módulos, 47 carpetas, 172/172 tablas ubicadas** (verificado con un script que
+    contrasta la taxonomía contra `information_schema`: 0 duplicadas, 0 inexistentes, 0 sin clasificar).
+    Centralizado es el más grande (65 tablas) y dentro Gestión de Datos (25) se subdivide en Temas y materias ·
+    Problemas y situaciones · Rompecabezas y piezas · Códigos y categorías · Fuentes y referencias.
+  - **Regla de mantenimiento:** una tabla que no esté en la taxonomía **no se pierde** — cae sola en la carpeta
+    "Sin clasificar". Al crear una tabla nueva conviene añadirla a su grupo.
+  - **Hallazgo (2026-07-25):** hay tablas **sin ninguna referencia en el código** (`applicants`, `faq`,
+    `cart_items`, `recruitment_events`, `event_invitations`, `event_scores`, `schedule_exceptions`,
+    `user_api_keys`, `client_members`, `member_services`, `email_*`, `whatsapp_*`, `ticket_services`,
+    `package_*`, `products`, `packages`, `modules`). Parecen heredadas de iteraciones anteriores; están
+    clasificadas en su módulo por nombre, pero **habría que confirmar con el usuario si se pueden DROPear**.

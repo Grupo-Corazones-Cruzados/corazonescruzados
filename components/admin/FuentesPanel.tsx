@@ -1,13 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import Button from '@/components/ui/Button';
 import {
+  buildFuentesTree, filterTree, allNodeIds, type TreeNode, type NodeKind,
+} from '@/lib/admin/fuentes-tree';
+import {
   Database, Search, Plus, Trash2, ChevronLeft, ChevronRight, Table2, KeyRound, Lock,
+  Boxes, Network, GitBranch, Folder, ChevronsDownUp, ChevronsUpDown, type LucideIcon,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -28,6 +32,14 @@ const PAGE_SIZE = 50;
 
 /** Columnas cuyo valor NO se muestra en la tabla (se ve solo al abrir el registro). */
 const SENSITIVE = /(password|secret|token|hash|api_key|apikey)/i;
+
+/** Icono y etiqueta de cada tipo de carpeta del árbol (la tabla usa `Table2`). */
+const KIND: Record<NodeKind, { Icon: LucideIcon; label: string; className: string }> = {
+  module:    { Icon: Boxes,     label: 'Módulo',      className: 'text-accent' },
+  system:    { Icon: Network,   label: 'Sistema',     className: 'text-accent' },
+  subsystem: { Icon: GitBranch, label: 'Subsistema',  className: 'text-digi-muted' },
+  group:     { Icon: Folder,    label: 'Otras',       className: 'text-digi-muted' },
+};
 
 /** ¿El campo se edita con textarea? (textos largos, JSON y arreglos). */
 const isLong = (c: ColumnInfo) =>
@@ -201,57 +213,152 @@ export default function FuentesPanel() {
     });
   };
 
-  const shownTables = useMemo(() => {
-    const q = tableFilter.trim().toLowerCase();
-    return q ? tables.filter((t) => t.name.toLowerCase().includes(q)) : tables;
-  }, [tables, tableFilter]);
+  /* ── Árbol de carpetas del rail ─────────────────────────────────────── */
+  const tree = useMemo(() => buildFuentesTree(tables), [tables]);
+  const shownTree = useMemo(() => filterTree(tree, tableFilter), [tree, tableFilter]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Al buscar se despliega todo lo que casa (si no, los resultados quedan escondidos).
+  const searching = tableFilter.trim().length > 0;
+  const isOpen = (id: string) => searching || expanded.has(id);
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const expandAll = () => setExpanded(new Set(allNodeIds(tree)));
+  const collapseAll = () => setExpanded(new Set());
+
+  // El rail ocupa todo el alto disponible: desde su borde superior hasta el pie de la
+  // ventana. Se recalcula al redimensionar (y cuando ya hay datos que lo desplazan).
+  const railRef = useRef<HTMLElement>(null);
+  const [railH, setRailH] = useState<number>();
+  useEffect(() => {
+    const compute = () => {
+      const el = railRef.current;
+      if (!el) return;
+      const h = Math.max(window.innerHeight - el.getBoundingClientRect().top - 16, 280);
+      setRailH((prev) => (prev === undefined || Math.abs(prev - h) > 1 ? h : prev));
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, [loadingTables]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  return (
-    <div className="grid lg:grid-cols-[240px_minmax(0,1fr)] gap-4">
-      {/* ── Rail: tablas ───────────────────────────────────────────────── */}
-      <aside className="bg-digi-card border border-digi-border rounded-lg overflow-hidden self-start">
-        <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-2">
-          <Database className="w-4 h-4 text-accent" />
-          <span className="text-[12px] font-semibold text-digi-text" style={mf}>Tablas</span>
-          <span className="ml-auto text-[11px] text-digi-muted" style={mf}>{tables.length}</span>
-        </div>
-        <div className="p-2 border-b border-digi-border">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              value={tableFilter}
-              onChange={(e) => setTableFilter(e.target.value)}
-              placeholder="Buscar tabla..."
-              className={`${inputCls} pl-8 py-1.5 text-[12px]`}
-              style={mf}
-            />
-          </div>
-        </div>
-        <div className="max-h-[62vh] overflow-y-auto p-1.5">
-          {loadingTables ? (
-            <div className="py-8 flex justify-center"><BrandLoader size="sm" /></div>
-          ) : !shownTables.length ? (
-            <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Sin tablas.</p>
-          ) : (
-            shownTables.map((t) => {
+  /** Una carpeta del árbol y todo lo que cuelga de ella. */
+  const renderNode = (node: TreeNode, depth: number) => {
+    const open = isOpen(node.id);
+    const { Icon, label, className } = KIND[node.kind];
+    return (
+      <div key={node.id}>
+        <button
+          onClick={() => toggle(node.id)}
+          title={`${label}${node.hint ? ` · ${node.hint}` : ''} · ${node.tableCount} ${node.tableCount === 1 ? 'tabla' : 'tablas'}`}
+          className="w-full flex items-center gap-1.5 rounded-md py-1.5 pr-2 text-left text-digi-text hover:bg-black/[0.04] transition-colors"
+          style={{ paddingLeft: 6 + depth * 12 }}
+        >
+          <ChevronRight className={`w-3 h-3 shrink-0 text-digi-muted transition-transform ${open ? 'rotate-90' : ''}`} />
+          <Icon className={`w-3.5 h-3.5 shrink-0 ${className}`} />
+          <span className="text-[12px] font-medium truncate flex-1" style={mf}>{node.name}</span>
+          <span className="text-[10.5px] text-digi-muted shrink-0" style={mf}>{node.tableCount}</span>
+        </button>
+
+        {open && (
+          <>
+            {node.children.map((c) => renderNode(c, depth + 1))}
+            {node.tables.map((t) => {
               const active = selected === t.name;
               return (
                 <button
                   key={t.name}
                   onClick={() => pickTable(t.name)}
-                  className={`w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors ${
+                  title={`Tabla · ${nf.format(t.rows)} ${t.rows === 1 ? 'fila' : 'filas'}`}
+                  className={`w-full flex items-center gap-1.5 rounded-md py-1.5 pr-2 text-left transition-colors ${
                     active ? 'bg-accent-light text-accent border-l-2 border-accent' : 'text-digi-muted hover:bg-black/[0.04] hover:text-digi-text'
                   }`}
+                  style={{ paddingLeft: 6 + (depth + 1) * 12 + 18 }}
                 >
                   <Table2 className="w-3.5 h-3.5 shrink-0" />
                   <span className="text-[12px] font-medium truncate flex-1" style={mf}>{t.name}</span>
                   <span className="text-[10.5px] text-digi-muted shrink-0" style={mf}>{nf.format(t.rows)}</span>
                 </button>
               );
-            })
+            })}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="grid lg:grid-cols-[240px_minmax(0,1fr)] gap-4">
+      {/* ── Rail: tablas ───────────────────────────────────────────────── */}
+      <aside
+        ref={railRef}
+        className="bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col"
+        style={{ height: railH }}
+      >
+        <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-2 shrink-0">
+          <Database className="w-4 h-4 text-accent" />
+          <span className="text-[12px] font-semibold text-digi-text" style={mf}>Tablas</span>
+          <span className="text-[11px] text-digi-muted" style={mf}>{tables.length}</span>
+          <div className="ml-auto flex items-center gap-0.5">
+            <button
+              onClick={expandAll}
+              title="Desplegar todo" aria-label="Desplegar todo"
+              className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-accent-light transition-colors"
+            >
+              <ChevronsUpDown className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={collapseAll}
+              title="Contraer todo" aria-label="Contraer todo"
+              className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-accent-light transition-colors"
+            >
+              <ChevronsDownUp className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-2 border-b border-digi-border shrink-0">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              value={tableFilter}
+              onChange={(e) => setTableFilter(e.target.value)}
+              placeholder="Buscar tabla o carpeta..."
+              className={`${inputCls} pl-8 py-1.5 text-[12px]`}
+              style={mf}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-1.5">
+          {loadingTables ? (
+            <div className="py-8 flex justify-center"><BrandLoader size="sm" /></div>
+          ) : !shownTree.length ? (
+            <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Sin coincidencias.</p>
+          ) : (
+            shownTree.map((n) => renderNode(n, 0))
           )}
+        </div>
+
+        {/* Leyenda: qué significa cada icono del árbol */}
+        <div className="border-t border-digi-border px-2.5 py-2 flex flex-wrap gap-x-3 gap-y-1 shrink-0">
+          {(Object.keys(KIND) as NodeKind[]).map((k) => {
+            const { Icon, label, className } = KIND[k];
+            return (
+              <span key={k} className="inline-flex items-center gap-1 text-[10.5px] text-digi-muted" style={mf}>
+                <Icon className={`w-3 h-3 ${className}`} />{label}
+              </span>
+            );
+          })}
+          <span className="inline-flex items-center gap-1 text-[10.5px] text-digi-muted" style={mf}>
+            <Table2 className="w-3 h-3" />Tabla
+          </span>
         </div>
       </aside>
 

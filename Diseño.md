@@ -664,6 +664,19 @@ Razones. Ambas reusan el **patrón "Explorador Azure" en su variante rail + cont
 `grid lg:grid-cols-[240px_minmax(0,1fr)] gap-4`, rail = tarjeta `bg-digi-card border rounded-lg` con
 cabecera (icono accent + título + conteo a la derecha), buscador opcional y lista de botones cuyo activo es
 `bg-accent-light text-accent border-l-2 border-accent`.
+- **Rail a pantalla completa (patrón reusable):** cuando un rail debe ocupar todo el alto disponible se
+  **mide su borde superior** contra el alto de la ventana en vez de usar `vh` fijos (que no descuentan el
+  header ni las pestañas): `ref` en el `<aside>`, `height = max(innerHeight - rect.top - 16, 280)`,
+  recalculado en `resize`. El `<aside>` va `flex flex-col` con cabecera/buscador/leyenda `shrink-0` y la
+  lista `flex-1 overflow-y-auto`. **No** usar `self-start` (impide estirarse).
+- **Árbol de carpetas (rail de Fuentes):** filas con sangría por profundidad
+  (`paddingLeft: 6 + depth*12`), `ChevronRight` que rota 90° al abrir, **un icono por tipo de nodo**
+  (`Boxes` módulo · `Network` sistema · `GitBranch` subsistema · `Folder` otras · `Table2` tabla; las
+  carpetas de módulo/sistema en `text-accent`, el resto en `text-digi-muted`) y conteo a la derecha.
+  Hoja seleccionada = `bg-accent-light text-accent border-l-2 border-accent`, igual que el rail plano.
+  Al pie, **leyenda** de iconos (11px) para que el usuario sepa qué es cada cosa; en la cabecera,
+  desplegar/contraer todo (`ChevronsUpDown`/`ChevronsDownUp`). **Buscar despliega automáticamente** solo
+  las ramas que casan (si no, los resultados quedan escondidos tras carpetas cerradas).
 - **Tabla genérica (Fuentes):** cuando las columnas son dinámicas NO se usa `PixelDataTable` (asume columnas
   fijas y alto calculado); se compone un `<table>` propio con las clases estándar `data-table` / `dt-th` /
   `dt-row` / `dt-td` (así hereda el estilo Fluent de `globals.css`) dentro de un contenedor
