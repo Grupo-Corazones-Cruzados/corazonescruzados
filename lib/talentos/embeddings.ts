@@ -39,6 +39,10 @@ export function ensureTalentEmbeddings(): Promise<void> {
     await pool.query('CREATE EXTENSION IF NOT EXISTS vector');
     await pool.query(`ALTER TABLE gcc_world.gd_talentos ADD COLUMN IF NOT EXISTS embedding vector(${DIMS})`);
     await pool.query(`ALTER TABLE gcc_world.gd_talentos ADD COLUMN IF NOT EXISTS embedded_at TIMESTAMPTZ`);
+    // Texto EXACTO con el que se calculó el vector. Comparándolo con `nombre` se detecta
+    // cualquier renombrado, venga de donde venga (la pestaña Fuentes edita la tabla
+    // directamente, y ahí no pasa por `updateListOption`).
+    await pool.query(`ALTER TABLE gcc_world.gd_talentos ADD COLUMN IF NOT EXISTS embedded_text TEXT`);
     // Con 525 filas no es necesario, pero deja el camino hecho si la lista crece.
     await pool.query(`CREATE INDEX IF NOT EXISTS gd_talentos_embedding_idx
                         ON gcc_world.gd_talentos USING hnsw (embedding vector_cosine_ops)`)
@@ -67,14 +71,26 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
 
 const toVector = (v: number[]) => `[${v.join(',')}]`;
 
+/** Cuántos talentos están pendientes de vector (nuevos o con el nombre cambiado). */
+export async function countPending(): Promise<number> {
+  await ensureTalentEmbeddings();
+  const { rows: [r] } = await pool.query(
+    `SELECT COUNT(*)::int AS n FROM gcc_world.gd_talentos
+      WHERE embedding IS NULL OR embedded_text IS DISTINCT FROM nombre`);
+  return Number(r.n);
+}
+
 /**
- * Calcula los vectores que falten (los nuevos o los renombrados) en lotes.
- * Devuelve cuántos indexó. Es la única función que gasta API.
+ * Calcula los vectores que falten: los NUEVOS (sin embedding) y los RENOMBRADOS (el texto
+ * embebido ya no coincide con el nombre actual). Devuelve cuántos indexó.
+ * Es la única función que gasta API.
  */
 export async function reindexPending(limit = 1000): Promise<number> {
   await ensureTalentEmbeddings();
   const { rows } = await pool.query(
-    `SELECT id, nombre FROM gcc_world.gd_talentos WHERE embedding IS NULL ORDER BY id LIMIT $1`, [limit]);
+    `SELECT id, nombre FROM gcc_world.gd_talentos
+      WHERE embedding IS NULL OR embedded_text IS DISTINCT FROM nombre
+      ORDER BY id LIMIT $1`, [limit]);
   if (!rows.length) return 0;
 
   let done = 0;
@@ -85,8 +101,10 @@ export async function reindexPending(limit = 1000): Promise<number> {
     for (let k = 0; k < slice.length; k++) {
       if (!vectors[k]) continue;
       await pool.query(
-        `UPDATE gcc_world.gd_talentos SET embedding = $1::vector, embedded_at = NOW() WHERE id = $2`,
-        [toVector(vectors[k]), slice[k].id],
+        `UPDATE gcc_world.gd_talentos
+            SET embedding = $1::vector, embedded_at = NOW(), embedded_text = $3
+          WHERE id = $2`,
+        [toVector(vectors[k]), slice[k].id, slice[k].nombre],
       );
       done++;
     }

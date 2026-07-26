@@ -24,6 +24,7 @@
 const JOBS = [
   { name: 'Pensamientos · etiquetado IA', path: '/api/pensamientos/cron/etiquetar' },
   { name: 'Chat · purga por retención',   path: '/api/chat/cron/purgar' },
+  { name: 'Talentos · embeddings al día', path: '/api/talentos/cron/reindexar' },
 ];
 
 const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002').replace(/\/+$/, '');

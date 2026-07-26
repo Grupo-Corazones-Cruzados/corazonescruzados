@@ -3325,3 +3325,22 @@ Módulos principales:
     El CLI **no puede borrar dominios** → hay que quitarlo desde el panel (servicio → Settings → Networking).
     Riesgo acotado: el worker es fail-closed y responde **401 "Token invalido"** sin el token correcto
     (comprobado en `/generate` y `/chat`).
+
+- **Embeddings de talentos al día por el cron nocturno (2026-07-26):** se añadió el trabajo
+  **"Talentos · embeddings al día"** a `scripts/nightly-cron.mjs` (01:00 Ecuador / 06:00 UTC, el mismo
+  servicio `nightly-cron`, sin crear otro). Endpoint `POST /api/talentos/cron/reindexar` con la
+  autorización estándar (`x-cron-token` o admin logueado). **Idempotente: si no hay pendientes no gasta ni
+  una llamada a la API.**
+  - **Sí, renombrar obliga a recalcular** (respuesta a la duda del usuario): el vector representa el TEXTO,
+    así que si el texto cambia el vector deja de corresponder.
+  - **Hueco que se cerró:** la invalidación al renombrar estaba solo en `updateListOption`, pero la pestaña
+    **Fuentes edita `gd_talentos` directamente** y ahí no pasaba por esa función → el vector se quedaba
+    obsoleto sin que nadie se enterara. Ahora hay columna **`embedded_text`** con el texto exacto que se
+    embebió, y lo pendiente se detecta con `embedding IS NULL OR embedded_text IS DISTINCT FROM nombre`:
+    **detecta el cambio venga por donde venga** (Fuentes, SQL directo, la API de listas).
+  - Se rellenó `embedded_text` en los 525 ya indexados, para que el cron no los recalculara todos.
+  - Verificado end-to-end: se creó un talento nuevo y se simuló un renombrado "por fuera" (nombre cambiado
+    dejando el vector viejo) → el trabajo detectó **2 pendientes**, los indexó y quedó en **0**. Talentos de
+    prueba borrados; la lista sigue en 525 con 525 vectores y 0 pendientes.
+  - El reindexado perezoso de `searchTalentos` sigue existiendo: el cron solo evita que lo pague la primera
+    cotización de la mañana.
