@@ -3002,7 +3002,11 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col items-center gap-3 mt-10">
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {/* "Entrar" y "Colaborar" con el MISMO ancho, el del texto más largo
+                ("Colaborar"): en fila son dos columnas `1fr` de un grid ajustado al
+                contenido, así ambas miden lo que la más ancha sin fijar píxeles.
+                Apilados (móvil) el flex-col los estira al mismo ancho por igual. */}
+            <div className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
             <button
               onClick={() => {
                 if (landingLocked || windAway) return;
