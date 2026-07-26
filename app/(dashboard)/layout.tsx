@@ -8,6 +8,7 @@ import DashboardBreadcrumb from '@/components/dashboard/DashboardBreadcrumb';
 import DashboardAccessGuard from '@/components/dashboard/DashboardAccessGuard';
 import PolicyBanner from '@/components/dashboard/PolicyBanner';
 import ChatDock from '@/components/chat/ChatDock';
+import NotificationsDock from '@/components/notifications/NotificationsDock';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(false);
@@ -46,7 +47,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <DashboardAccessGuard>{children}</DashboardAccessGuard>
           </main>
           <DashboardBreadcrumb collapsed={collapsed} />
-          {/* Chats flotantes (grupal + personales): se anclan encima de la barra de ruta. Dentro de `.corp` para heredar el tema. */}
+          {/* Muelle inferior derecho, de derecha a izquierda: campanita · Mis chats · Chat
+              (y GCC Bot cuando hay cotización). La campanita es el ancla: los demás se miden
+              contra ella. Dentro de `.corp` para heredar el tema. */}
+          <NotificationsDock />
           <ChatDock />
         </div>
       </PolicyEffectsProvider>

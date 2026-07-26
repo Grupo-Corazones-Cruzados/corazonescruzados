@@ -18,6 +18,11 @@ type Panel = 'none' | 'group' | 'personal';
  * (`DashboardBreadcrumb` es `fixed bottom-0 h-9`, de ahí el `bottom-11`). Dentro del `.corp`
  * del layout para heredar el tema.
  *
+ * POSICIÓN: el ancla de la esquina es la **campanita de notificaciones**
+ * (`[data-notifications-dock]`); este muelle mide su ancho real y se coloca 8 px a su
+ * izquierda. A su vez `GccBotChat` mide este muelle y se pone a la izquierda de él, así que
+ * la fila queda **GCC Bot · Chat · Mis chats · 🔔** sin offsets fijos que se rompan.
+ *
  * Dos lanzadores en fila: **Chat general** (grupal, candidatos y miembros) y, a su derecha,
  * **Mis chats** (privados de ticket / proyecto / evento). Se abre uno u otro, nunca los dos:
  * en una esquina no caben dos paneles sin estorbarse.
@@ -32,6 +37,22 @@ export default function ChatDock() {
   // El chat grupal es solo de candidatos y miembros; los personales los tiene cualquiera
   // que participe en un ticket/proyecto/evento abierto (un cliente, por ejemplo).
   const canGroup = !!user && (role === 'candidate' || role === 'member' || role === 'admin');
+
+  // Se coloca a la izquierda de la campanita midiéndola (si no estuviera, cae al borde).
+  const [dockRight, setDockRight] = useState<number | null>(null);
+  useEffect(() => {
+    const measure = () => {
+      const el = document.querySelector('[data-notifications-dock]') as HTMLElement | null;
+      if (!el) { setDockRight(null); return; }
+      const r = el.getBoundingClientRect();
+      setDockRight(Math.round(window.innerWidth - r.left + 8));
+    };
+    measure();
+    const t1 = setTimeout(measure, 300);
+    const t2 = setTimeout(measure, 900);
+    window.addEventListener('resize', measure);
+    return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', measure); };
+  }, []);
 
   const [panel, setPanel] = useState<Panel>('none');
   const [groupUnread, setGroupUnread] = useState(0);
@@ -77,7 +98,10 @@ export default function ChatDock() {
   if (!user || (!canGroup && chats.length === 0)) return null;
 
   return (
-    <div className="fixed bottom-11 right-3 lg:right-4 z-[90] flex flex-col items-end" style={mf}>
+    <div
+      className={`fixed bottom-11 z-[90] flex flex-col items-end ${dockRight === null ? 'right-3 lg:right-4' : ''}`}
+      style={dockRight === null ? mf : { ...mf, right: dockRight }}
+    >
       {panel === 'group' && canGroup && (
         <div className="mb-2"><GroupPanel onClose={() => open('none')} onRead={() => setGroupUnread(0)} /></div>
       )}

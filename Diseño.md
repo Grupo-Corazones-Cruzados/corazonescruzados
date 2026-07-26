@@ -678,6 +678,16 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   Al pie, **leyenda** de iconos (11px) para que el usuario sepa qué es cada cosa; en la cabecera,
   desplegar/contraer todo (`ChevronsUpDown`/`ChevronsDownUp`). **Buscar despliega automáticamente** solo
   las ramas que casan (si no, los resultados quedan escondidos tras carpetas cerradas).
+- **Muelle inferior derecho (orden y anclaje).** De derecha a izquierda: **🔔 campanita ·
+  Mis chats · Chat · GCC Bot** (este último solo en cotizaciones). El **ancla es la campanita**
+  (`NotificationsDock`, `fixed bottom-11 right-3 lg:right-4`, marcada con
+  `[data-notifications-dock]`); `ChatDock` la mide y se coloca **8 px a su izquierda**, y
+  `GccBotChat` mide `[data-chatdock-launchers]` y se coloca a la izquierda de ese. **Nunca usar
+  offsets fijos**: al añadir o quitar un lanzador la fila se recoloca sola. Cada uno cae a
+  `right-3/4` si el de su derecha no está montado.
+- **Contador de no leídos:** burbuja roja `-top-1 -right-1 min-w-[18px] h-[18px]` con borde
+  `border-2 border-digi-card`. **Si no hay no leídos la burbuja NO se renderiza** (nunca un "0"),
+  pero el botón sigue activo. Tope visual `99+`.
 - **Alto disponible = ventana − barra de ruta.** El dashboard tiene una **barra de ruta FIJA abajo**
   (`nav[aria-label="Ruta"]`, `fixed bottom-0 h-9`). Cualquier panel que quiera ocupar "todo el alto" debe
   **descontarla**, o su contenido queda por debajo y se corta:

@@ -12,7 +12,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
-  LogOut, Sun, Moon, CalendarDays, Bell, PartyPopper, BrainCircuit, AlarmClock, Info,
+  LogOut, Sun, Moon, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -34,7 +34,7 @@ const ROLE_LABEL_ES: Record<AccessRole, string> = {
 // Iconos por nombre: el catálogo de módulos (`lib/dashboard/modules.ts`) es data pura
 // (también lo usan rutas de servidor), así que el componente resuelve el icono aquí.
 const ICONS: Record<string, LucideIcon> = {
-  Home, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Bell, Ticket, FolderKanban,
+  Home, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Ticket, FolderKanban,
   CalendarClock, Users, ReceiptText, Store, Workflow, Wrench, Network, Settings,
   LifeBuoy, ShieldCheck,
 };

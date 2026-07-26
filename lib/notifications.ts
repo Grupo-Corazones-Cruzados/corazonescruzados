@@ -46,3 +46,46 @@ export async function listUserNotifications(userId: string) {
   );
   return rows;
 }
+
+/* ── Marca de lectura ─────────────────────────────────────────────────────────
+ * El contador de la campanita mezcla dos orígenes: las filas de `notifications`
+ * (tienen `is_read`) y las invitaciones a proyectos, que se DERIVAN en vivo de
+ * `project_bids`/`project_members` y por tanto no se pueden marcar.
+ *
+ * Para que el contador pueda llegar a cero se guarda "hasta cuándo leyó" cada usuario:
+ * una invitación cuenta como no leída solo si es POSTERIOR a esa marca.
+ */
+let readyReads = false;
+
+async function ensureReadMarker(): Promise<void> {
+  if (readyReads) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.notification_reads (
+      user_id UUID PRIMARY KEY,
+      read_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+  readyReads = true;
+}
+
+/** Momento en que el usuario abrió por última vez sus notificaciones (o `null`). */
+export async function getReadAt(userId: string): Promise<string | null> {
+  await ensureReadMarker();
+  const { rows } = await pool.query(
+    `SELECT read_at FROM gcc_world.notification_reads WHERE user_id = $1::uuid`, [String(userId)]);
+  return rows.length ? new Date(rows[0].read_at).toISOString() : null;
+}
+
+/**
+ * Marca todo como leído: las filas persistentes y la marca temporal que apaga las
+ * invitaciones derivadas. Es lo que se dispara al abrir la ventana de la campanita.
+ */
+export async function markAllRead(userId: string): Promise<void> {
+  await ensureNotificationsTable();
+  await ensureReadMarker();
+  await pool.query(
+    `UPDATE gcc_world.notifications SET is_read = TRUE, read_at = NOW()
+      WHERE user_id = $1::uuid AND is_read = FALSE`, [String(userId)]);
+  await pool.query(
+    `INSERT INTO gcc_world.notification_reads (user_id, read_at) VALUES ($1::uuid, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET read_at = NOW()`, [String(userId)]);
+}

@@ -12,6 +12,7 @@ import type { User } from '@/lib/types';
  *
  * Matriz definida por el usuario (2026-07-06):
  *  Inicio          → candidate, member, admin
+ *  (Notificaciones dejó de ser un módulo: vive en la campanita del muelle inferior derecho.)
  *  Tickets         → todos
  *  Proyectos       → todos
  *  Clientes        → candidate, member, admin
@@ -33,7 +34,6 @@ const ALL: AccessRole[] = ['candidate', 'client', 'member', 'admin'];
 export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   { path: '/dashboard', roles: ['candidate', 'member', 'admin'] }, // Inicio (exacto)
   { path: '/dashboard/mi-dia', roles: ['candidate', 'member', 'admin'] },
-  { path: '/dashboard/notificaciones', roles: ALL },
   // Experiencias: eventos de Gestión Social abiertos a miembros Y candidatos (para el
   // candidato, participar es parte de demostrar sus valores en la afiliación).
   { path: '/dashboard/experiencias', roles: ['candidate', 'member', 'admin'] },

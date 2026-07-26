@@ -28,7 +28,6 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
   { href: '/dashboard/experiencias',     label: 'Experiencias',     group: 'Principal',  icon: 'PartyPopper' },
   { href: '/dashboard/pensamientos',     label: 'Pensamientos',     group: 'Principal',  icon: 'BrainCircuit' },
   { href: '/dashboard/recordatorios',    label: 'Recordatorios',    group: 'Principal',  icon: 'AlarmClock' },
-  { href: '/dashboard/notificaciones',   label: 'Notificaciones',   group: 'Principal',  icon: 'Bell' },
   { href: '/dashboard/tickets',          label: 'Tickets',          group: 'Operación',  icon: 'Ticket' },
   { href: '/dashboard/projects',         label: 'Proyectos',        group: 'Operación',  icon: 'FolderKanban' },
   { href: '/dashboard/subscriptions',    label: 'Suscripciones',    group: 'Operación',  icon: 'CalendarClock' },

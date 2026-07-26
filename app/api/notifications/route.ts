@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { listUserNotifications } from '@/lib/notifications';
+import { listUserNotifications, getReadAt, markAllRead } from '@/lib/notifications';
 import { NextResponse } from 'next/server';
 
 // Notificaciones del usuario, de dos orígenes:
@@ -13,6 +13,10 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
     const items: any[] = [];
+    // Las invitaciones derivadas no tienen `is_read`: se consideran leídas si son
+    // anteriores a la última vez que el usuario abrió sus notificaciones.
+    const readAt = await getReadAt(user.userId);
+    const readAtMs = readAt ? new Date(readAt).getTime() : 0;
 
     // (1) Notificaciones persistentes del usuario (tabla notifications).
     const stored = await listUserNotifications(user.userId);
@@ -44,14 +48,30 @@ export async function GET() {
           label: r.kind === 'responsible' ? 'Invitación a liderar el proyecto' : 'Invitación a participar en el proyecto',
           href: `/dashboard/projects/${r.project_id}`,
           date: r.invited_at,
+          read: r.invited_at ? new Date(r.invited_at).getTime() <= readAtMs : true,
         });
       }
     }
 
+    // Más recientes primero (es el orden en el que se listan en la campanita).
     items.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-    return NextResponse.json({ data: items });
+    const unread = items.filter((i) => !i.read).length;
+    return NextResponse.json({ data: items, unread });
   } catch (err: any) {
     console.error('Notifications GET error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+/** POST — marca TODAS como leídas. Lo dispara la campanita al abrirse. */
+export async function POST() {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    await markAllRead(user.userId);
+    return NextResponse.json({ data: { ok: true } });
+  } catch (err: any) {
+    console.error('Notifications POST error:', err.message);
+    return NextResponse.json({ error: 'No se pudieron marcar como leídas.' }, { status: 500 });
   }
 }

@@ -3217,3 +3217,25 @@ Módulos principales:
   - Verificado en navegador: con destacado se pinta y termina de escribirse; sin destacado el bloque no
     existe, la portada sigue bien y no hay errores de JS. El pensamiento de prueba se borró (quedan los 8
     reales intactos).
+
+- **Notificaciones: se elimina el módulo y pasan a una campanita del muelle (2026-07-26):** decisión del
+  usuario. Ya no existe `/dashboard/notificaciones` (fuera del sidebar, de `DASHBOARD_MODULES` y de
+  `MODULE_ACCESS`); la lista completa vive ahora en un botón fijo abajo a la derecha.
+  - **Orden del muelle (de derecha a izquierda): 🔔 · Mis chats · Chat · GCC Bot.** La **campanita es el
+    ancla** (`[data-notifications-dock]`): `ChatDock` la mide y se pone 8 px a su izquierda, y `GccBotChat`
+    sigue midiendo `[data-chatdock-launchers]`, así que al meter la campanita **todo se recolocó solo**.
+    Verificado en navegador: Chat @x=1164 · Mis chats @x=1252 · campanita @x=1384, separación de 8 px.
+  - **Ventana flotante** sobre el botón: lista completa con **scroll propio** (`max-h-[min(60vh,420px)]`),
+    de la más reciente a la más antigua, con icono por tipo, "hace X min/h" y punto de no leída. Cierra con
+    Escape o clic fuera.
+  - **Contador:** muestra las no leídas y **desaparece del todo cuando no hay** (nunca un "0"); el botón
+    sigue funcionando. **Abrir la ventana marca todo como leído** (optimista en la UI + `POST
+    /api/notifications`).
+  - **Gotcha resuelto:** las invitaciones a proyectos **no son filas**, se derivan en vivo de
+    `project_bids`/`project_members`, así que no se podían "marcar como leídas" y el contador nunca habría
+    llegado a cero. Se añadió la tabla **`notification_reads (user_id, read_at)`**: una invitación cuenta
+    como no leída solo si es POSTERIOR a esa marca. `GET /api/notifications` ahora devuelve también
+    `unread`.
+  - Verificado con sesión real en el servidor local: contador 6 → abrir → **desaparece**; orden correcto;
+    sin errores de JS. Los datos de prueba se borraron y **las 3 notificaciones reales que estaban sin leer
+    se devolvieron a "no leídas"**, junto con la marca de lectura que no existía antes.
