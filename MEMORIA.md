@@ -3239,3 +3239,11 @@ Módulos principales:
   - Verificado con sesión real en el servidor local: contador 6 → abrir → **desaparece**; orden correcto;
     sin errores de JS. Los datos de prueba se borraron y **las 3 notificaciones reales que estaban sin leer
     se devolvieron a "no leídas"**, junto con la marca de lectura que no existía antes.
+
+- **Mi día: los tres paneles a la misma altura (2026-07-26):** los rails de **Eventos** (izq.) y **Tareas**
+  (der.) crecían con su contenido, así que con pocos registros quedaban mucho más cortos que el calendario.
+  Ahora los dos llevan el **mismo alto fijo que el calendario** (`xl:h-[calc(100dvh-4.5rem)]`) con
+  `flex flex-col`: cabecera y nota `shrink-0`, y la lista `flex-1 min-h-0 overflow-y-auto` (se quitó el
+  `max-h-[calc(100dvh-…)]` en `xl`, se conserva por debajo). El alto fijo se aplica **solo desde `xl`**, que
+  es cuando van en fila; apilados en móvil tres paneles de pantalla completa serían absurdos.
+  Verificado en navegador a 1600×950: **878 px los tres**, con scroll interno propio en cada rail.

@@ -325,13 +325,16 @@ export default function MiDiaPage() {
     <div>
       <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* Panel izquierdo: eventos del rango de la vista + botón Nuevo */}
-      <aside className="w-full xl:w-[260px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
+      {/* Mismo alto FIJO que el calendario del centro (`h-[calc(100dvh-4.5rem)]`), aunque
+          haya pocos eventos: las tres columnas quedan alineadas. Solo desde `xl`, que es
+          cuando van en fila; apiladas en móvil conservan su alto propio. */}
+      <aside className="w-full xl:w-[260px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden flex flex-col xl:h-[calc(100dvh-4.5rem)]">
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border shrink-0">
           <CalendarDays className="w-4 h-4 text-digi-muted" />
           <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Eventos · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : dayHeader(ymd(currentDate))}</span>
           <button onClick={() => openNew('progreso')} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent text-white text-[11.5px] font-medium hover:bg-accent-hover transition-colors" style={mf}><Plus className="w-3 h-3" /> Nuevo</button>
         </div>
-        <div className="p-2.5 space-y-3 max-h-[calc(100dvh-220px)] overflow-y-auto">
+        <div className="p-2.5 space-y-3 flex-1 min-h-0 overflow-y-auto max-h-[calc(100dvh-220px)] xl:max-h-none">
           {(() => {
             // En vista de MES el panel muestra solo el día seleccionado (currentDate);
             // en semana/día conserva el agrupado por día del rango de la vista.
@@ -436,14 +439,15 @@ export default function MiDiaPage() {
       </div>
 
       {/* Rail: tareas planificadas del RANGO de la vista (Horario de Vida) */}
-      <aside className="w-full xl:w-[280px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2.5 bg-digi-dark border-b border-digi-border">
+      {/* Mismo alto fijo que el calendario (ver nota del panel de eventos). */}
+      <aside className="w-full xl:w-[280px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden flex flex-col xl:h-[calc(100dvh-4.5rem)]">
+        <div className="flex items-center gap-2 px-3 py-2.5 bg-digi-dark border-b border-digi-border shrink-0">
           <ListTodo className="w-4 h-4 text-digi-muted" />
           <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Tareas · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : 'Mes'}</span>
           <span className="ml-auto text-[11px] text-digi-muted tabular-nums" style={mf}>{totalTasks}</span>
         </div>
-        <p className="text-[11px] text-digi-muted px-3 pt-2 leading-snug" style={mf}>Planificadas según tu Horario de Vida en <span className="text-digi-text font-medium capitalize">{label}</span>. Crea un evento para justificar el tiempo.</p>
-        <div className="p-2.5 space-y-3 max-h-[calc(100dvh-260px)] overflow-y-auto">
+        <p className="text-[11px] text-digi-muted px-3 pt-2 leading-snug shrink-0" style={mf}>Planificadas según tu Horario de Vida en <span className="text-digi-text font-medium capitalize">{label}</span>. Crea un evento para justificar el tiempo.</p>
+        <div className="p-2.5 space-y-3 flex-1 min-h-0 overflow-y-auto max-h-[calc(100dvh-260px)] xl:max-h-none">
           {!horario.subject ? (
             <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>No tienes un horario asignado.</p>
           ) : totalTasks === 0 ? (
