@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureRequirementColumns, normalizeTalents } from '@/lib/projects/requirements';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,6 +21,11 @@ export async function GET(req: NextRequest) {
       ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_docs_token VARCHAR(64);
     `);
 
+    await ensureRequirementColumns();
+
+    // `baseWhere` = visibilidad + búsqueda. El filtro por TALENTO se añade encima, para
+    // poder calcular con la base las opciones del propio filtro (si no, al elegir un
+    // talento desaparecerían los demás del desplegable).
     let where = `WHERE p.is_marketplace_published = true AND p.status = 'completed'`;
     const params: any[] = [];
 
@@ -37,6 +43,18 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const baseWhere = where;
+    const baseParams = [...params];
+
+    // Filtro por TALENTO: encaja el proyecto si ALGUNO de sus requerimientos pide
+    // alguno de los talentos buscados.
+    const talents = normalizeTalents((req.nextUrl.searchParams.get('talents') || '').split(',').filter(Boolean));
+    if (talents.length) {
+      params.push(talents);
+      where += ` AND EXISTS (SELECT 1 FROM gcc_world.project_requirements pr
+                              WHERE pr.project_id = p.id AND pr.talents && $${params.length}::text[])`;
+    }
+
     const { rows } = await pool.query(
       `SELECT p.id, p.title, p.description, p.final_cost,
               p.marketplace_published_at, p.created_at,
@@ -49,14 +67,28 @@ export async function GET(req: NextRequest) {
                  WHERE pb.project_id = p.id AND pb.status = 'accepted'),
                 '[]'::json
               ) as team,
-              (SELECT COUNT(*) FROM gcc_world.project_requirements r WHERE r.project_id = p.id) as requirements_count
+              (SELECT COUNT(*) FROM gcc_world.project_requirements r WHERE r.project_id = p.id) as requirements_count,
+              COALESCE((SELECT SUM(r.slots)::int FROM gcc_world.project_requirements r WHERE r.project_id = p.id), 0) as slots_total,
+              COALESCE((SELECT ARRAY(SELECT DISTINCT UNNEST(ARRAY_AGG(r.talents)) ORDER BY 1)
+                          FROM gcc_world.project_requirements r WHERE r.project_id = p.id), '{}') as talents
        FROM gcc_world.projects p
        ${where}
        ORDER BY p.marketplace_published_at DESC`,
       params
     );
 
-    return NextResponse.json({ data: rows });
+    // Talentos disponibles para el desplegable del filtro: los que de verdad piden los
+    // proyectos visibles (así nunca se ofrece un talento que daría cero resultados).
+    const { rows: opt } = await pool.query(
+      `SELECT DISTINCT t AS talent
+         FROM gcc_world.projects p
+         JOIN gcc_world.project_requirements pr ON pr.project_id = p.id, UNNEST(pr.talents) AS t
+         ${baseWhere}
+         ORDER BY 1`,
+      baseParams,
+    );
+
+    return NextResponse.json({ data: rows, talentOptions: opt.map((r: any) => r.talent) });
   } catch (err: any) {
     console.error('Marketplace projects error:', err.message);
     return NextResponse.json({ data: [] });

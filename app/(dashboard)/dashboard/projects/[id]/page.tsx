@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
+import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import ClientPicker from '@/components/clients/ClientPicker';
 import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
@@ -95,6 +96,11 @@ export default function ProjectDetailPage() {
   const [reqTitle, setReqTitle] = useState('');
   const [reqDesc, setReqDesc] = useState('');
   const [reqCost, setReqCost] = useState('');
+  // Talentos y plazas del requerimiento. El catálogo sale de la LISTA GLOBAL viva
+  // (Admin ▸ Listas), no de una copia estática, para que refleje lo que hay hoy.
+  const [reqTalents, setReqTalents] = useState<string[]>([]);
+  const [reqSlots, setReqSlots] = useState('1');
+  const [talentOptions, setTalentOptions] = useState<{ value: string; label: string }[]>([]);
   const [savingReq, setSavingReq] = useState(false);
   const [newItemText, setNewItemText] = useState<Record<number, string>>({});
   const [subtaskReqId, setSubtaskReqId] = useState<number | null>(null);
@@ -555,13 +561,32 @@ export default function ProjectDetailPage() {
     setLinking(false);
   };
 
+  // Catálogo de talentos: se pide una sola vez, al abrir el modal por primera vez.
+  useEffect(() => {
+    if (!showReqModal || talentOptions.length) return;
+    fetch('/api/centralized/encuadre/listas?list=talentos')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const opts = (j?.data || []).map((o: any) => ({ value: o.label, label: o.label }));
+        if (opts.length) setTalentOptions(opts);
+      })
+      .catch(() => {});
+  }, [showReqModal, talentOptions.length]);
+
   const addRequirement = async () => {
     if (!reqTitle.trim()) return;
+    if (reqTalents.length === 0) { toast.error('Elige al menos un talento para el requerimiento.'); return; }
     setSavingReq(true);
     try {
-      const res = await fetch(`/api/projects/${id}/requirements`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: reqTitle, description: reqDesc, cost: reqCost ? Number(reqCost) : null }) });
+      const res = await fetch(`/api/projects/${id}/requirements`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: reqTitle, description: reqDesc, cost: reqCost ? Number(reqCost) : null,
+          talents: reqTalents, slots: Number(reqSlots) || 1,
+        }),
+      });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-      setReqTitle(''); setReqDesc(''); setReqCost(''); setShowReqModal(false);
+      setReqTitle(''); setReqDesc(''); setReqCost(''); setReqTalents([]); setReqSlots('1'); setShowReqModal(false);
       toast.success('Requerimiento agregado');
       fetchProject();
     } catch (e: any) { toast.error(e.message || 'Error al agregar requerimiento'); }
@@ -1426,6 +1451,18 @@ export default function ProjectDetailPage() {
                           <button onClick={() => toggleReqExpand(r.id)} className="min-w-0 flex-1 text-left">
                             <p className={`text-[13px] font-medium ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</p>
                             {r.description && <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
+                            {/* Talentos que pide el requerimiento y cuántas plazas ofrece:
+                                es lo que hace que el proyecto salga en el filtro por talento. */}
+                            {(r.talents?.length > 0 || r.slots > 1) && (
+                              <p className="flex flex-wrap items-center gap-1 mt-1">
+                                {(r.talents || []).map((t: string) => (
+                                  <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-accent-light text-accent border border-accent/20" style={mf}>{t}</span>
+                                ))}
+                                {r.slots > 1 && (
+                                  <span className="text-[10.5px] text-digi-muted" style={mf}>· {r.slots} plazas</span>
+                                )}
+                              </p>
+                            )}
                             {!expanded && (items.length > 0 || acceptedAssignments.length > 0 || pendingAssignments.length > 0) && (
                               <p className="text-[11px] text-digi-muted/80 mt-0.5" style={mf}>
                                 {[items.length > 0 ? `${items.length} subtarea${items.length !== 1 ? 's' : ''}` : '', acceptedAssignments.length > 0 ? `${acceptedAssignments.length} asignado${acceptedAssignments.length !== 1 ? 's' : ''}` : '', pendingAssignments.length > 0 ? `${pendingAssignments.length} pendiente${pendingAssignments.length !== 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ')}
@@ -2412,7 +2449,30 @@ export default function ProjectDetailPage() {
             <input value={reqCost} onChange={(e) => setReqCost(e.target.value)} type="number" placeholder="0.00 (opcional)"
               className="w-full px-3 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
           </div>
-          <button onClick={addRequirement} disabled={savingReq || !reqTitle.trim()} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+
+          {/* Talentos: OBLIGATORIO. Es lo que permite encontrar el proyecto desde el
+              filtro por talentos del Marketplace y de Proyectos. */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Talentos requeridos *</label>
+            <MultiSelectSearch
+              options={talentOptions}
+              selected={reqTalents}
+              onChange={setReqTalents}
+              placeholder="Busca el talento que necesita este requerimiento…"
+            />
+            <span className="text-[11px] text-digi-muted" style={mf}>
+              Con esto el requerimiento aparece a quien busque por ese talento.
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Plazas</label>
+            <input value={reqSlots} onChange={(e) => setReqSlots(e.target.value)} type="number" min={1} placeholder="1"
+              className="w-full px-3 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
+            <span className="text-[11px] text-digi-muted" style={mf}>Cuántas personas se necesitan para este requerimiento.</span>
+          </div>
+
+          <button onClick={addRequirement} disabled={savingReq || !reqTitle.trim() || reqTalents.length === 0} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
             {savingReq ? '...' : 'Agregar'}
           </button>
         </div>

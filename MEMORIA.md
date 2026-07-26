@@ -3247,3 +3247,30 @@ Módulos principales:
   `max-h-[calc(100dvh-…)]` en `xl`, se conserva por debajo). El alto fijo se aplica **solo desde `xl`**, que
   es cuando van en fila; apilados en móvil tres paneles de pantalla completa serían absurdos.
   Verificado en navegador a 1600×950: **878 px los tres**, con scroll interno propio en cada rail.
+
+- **Talentos y plazas POR REQUERIMIENTO + filtro por talento (2026-07-26):** cierra el círculo que pedía el
+  usuario: los proyectos no preguntaban talentos a nivel de trabajo, así que no se podían buscar por talento.
+  - **Dato nuevo en `project_requirements`:** `talents TEXT[] NOT NULL DEFAULT '{}'` y `slots INT NOT NULL
+    DEFAULT 1`, con **índice GIN** sobre `talents` (el filtro hace `talents && ARRAY[...]` sobre toda la
+    tabla). Helper compartido `lib/projects/requirements.ts` (`ensureRequirementColumns`, `normalizeTalents`,
+    `normalizeSlots`).
+  - **Talento OBLIGATORIO al crear** un requerimiento desde el detalle del proyecto (validado en el `POST` y
+    en el botón). El `PATCH` deja editar talentos/plazas y **no admite dejarlo sin talentos**.
+  - **OJO — otras vías de alta NO lo exigen:** los requerimientos que genera el flujo de **cotización**
+    (`/api/quotes/generate`, `/api/quotes/[id]/chat`, `lib/cotizaciones/data.ts`) y la compra de plantilla del
+    marketplace insertan por SQL directo y nacen **sin talentos**; habría que asignárselos a mano (o pedirle
+    al agente que los elija) antes de que el proyecto aparezca en el filtro. Decidido así para **no romper**
+    esos flujos, que no saben elegir entre 525 talentos.
+  - **Filtro por talento** en Marketplace (pestaña Proyectos) y en Proyectos: un proyecto encaja si **alguno
+    de sus requerimientos** pide alguno de los talentos buscados. Las **opciones del desplegable salen del
+    servidor** — los talentos que de verdad piden los proyectos visibles para ese usuario (respetando su
+    control de acceso), no la lista de 525, así nunca se ofrece una opción que daría cero resultados.
+  - En el Marketplace, al filtrar por talento se **excluyen los ítems de portafolio**: no tienen
+    requerimientos y solo ensuciarían el resultado.
+  - Ambas APIs devuelven ya `talents` (unión de los de sus requerimientos) y `slots_total` por proyecto.
+  - **Relleno pedido por el usuario:** los **84 requerimientos existentes** quedaron con **1 plaza** y el
+    talento **"Automatización de procesos"** (nombre exacto verificado contra `gd_talentos`). Solo se tocaron
+    los que estaban sin talento. Resultado: 16 proyectos localizables por ese talento.
+  - Verificado end-to-end contra el servidor real: crear sin talentos → rechazado con mensaje; con talento y
+    3 plazas → creado; filtro en `/api/projects` → 1 de 18; en marketplace → 10 con el talento y 0 con uno
+    inexistente. Datos de prueba borrados (84 requerimientos, como al empezar).

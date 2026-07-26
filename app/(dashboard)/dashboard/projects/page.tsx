@@ -184,21 +184,29 @@ export default function ProjectsPage() {
     ? [{ value: 'mine', label: 'Mis proyectos', Icon: UserRound }]
     : [];
 
+  // Filtro por TALENTO: encuentra proyectos cuyos REQUERIMIENTOS piden esos talentos.
+  const [talentFilter, setTalentFilter] = useState<string[]>([]);
+  const [talentOptions, setTalentOptions] = useState<string[]>([]);
+
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
     if (tab !== 'all') params.set('status', tab);
     if (search) params.set('search', search);
+    if (talentFilter.length) params.set('talents', talentFilter.join(','));
     try {
       const res = await fetch(`/api/projects?${params}`);
       const data = await res.json();
       setProjects(data.data || []);
       setTotal(data.total || 0);
       setCounts(data.counts || {});
+      // Las opciones vienen del servidor: son los talentos que de verdad piden los
+      // proyectos visibles para este usuario.
+      if (Array.isArray(data.talentOptions)) setTalentOptions(data.talentOptions);
     } catch { setProjects([]); }
-  }, [page, tab, search]);
+  }, [page, tab, search, talentFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search]);
+  useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search, talentFilter]);
 
   const createProject = async () => {
     if (!createTitle.trim()) return;
@@ -296,6 +304,17 @@ export default function ProjectsPage() {
                 style={mf}
               />
             </div>
+            {/* Filtro por talento: solo se ofrece si hay talentos que filtrar. */}
+            {talentOptions.length > 0 && (
+              <div className="w-full sm:w-[260px] shrink-0">
+                <MultiSelectSearch
+                  options={talentOptions.map((t) => ({ value: t, label: t }))}
+                  selected={talentFilter}
+                  onChange={setTalentFilter}
+                  placeholder="Filtrar por talento…"
+                />
+              </div>
+            )}
             {/* Solicitar proyecto: para TODOS (yo soy el cliente). */}
             <button onClick={() => openCreateModal('request')} className={`${BTN_SECONDARY} shrink-0`}>
               <Plus className="w-4 h-4" /> Solicitar proyecto

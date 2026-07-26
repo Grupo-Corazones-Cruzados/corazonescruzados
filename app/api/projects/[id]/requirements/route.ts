@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureRequirementColumns, normalizeTalents, normalizeSlots } from '@/lib/projects/requirements';
 
 async function syncFinalCost(projectId: string) {
   await pool.query(
@@ -40,6 +41,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
+    await ensureRequirementColumns();
 
     const { rows } = await pool.query(
       `SELECT *, (completed_at IS NOT NULL) as is_completed FROM gcc_world.project_requirements WHERE project_id = $1 ORDER BY id`,
@@ -62,13 +64,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'No se pueden agregar requerimientos en el estado actual' }, { status: 400 });
     }
 
-    const { title, description, cost } = await req.json();
+    const body = await req.json();
+    const { title, description, cost } = body;
     if (!title) return NextResponse.json({ error: 'title required' }, { status: 400 });
 
+    // Cada requerimiento debe declarar al menos un TALENTO: es lo que permite luego
+    // encontrar el proyecto desde el filtro por talentos del Marketplace y de Proyectos.
+    await ensureRequirementColumns();
+    const talents = normalizeTalents(body.talents);
+    if (talents.length === 0) {
+      return NextResponse.json({ error: 'Elige al menos un talento para el requerimiento.' }, { status: 400 });
+    }
+    const slots = normalizeSlots(body.slots);
+
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost)
-       VALUES ($1, $2, $3, $4) RETURNING *, (completed_at IS NOT NULL) as is_completed`,
-      [id, title, description || null, cost || null]
+      `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost, talents, slots)
+       VALUES ($1, $2, $3, $4, $5::text[], $6) RETURNING *, (completed_at IS NOT NULL) as is_completed`,
+      [id, title, description || null, cost || null, talents, slots]
     );
     await syncFinalCost(id);
     return NextResponse.json({ data: rows[0] }, { status: 201 });
@@ -82,7 +94,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
-    const { requirement_id, completed, title, description, cost } = await req.json();
+    const patchBody = await req.json();
+    const { requirement_id, completed, title, description, cost } = patchBody;
 
     if (!requirement_id) return NextResponse.json({ error: 'requirement_id required' }, { status: 400 });
 
@@ -124,6 +137,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     if (cost !== undefined) {
       await pool.query(`UPDATE gcc_world.project_requirements SET cost = $1, updated_at = NOW() WHERE id = $2`, [cost, requirement_id]);
+    }
+    if (patchBody.talents !== undefined) {
+      await ensureRequirementColumns();
+      const talents = normalizeTalents(patchBody.talents);
+      if (talents.length === 0) {
+        return NextResponse.json({ error: 'El requerimiento debe conservar al menos un talento.' }, { status: 400 });
+      }
+      await pool.query(`UPDATE gcc_world.project_requirements SET talents = $1::text[], updated_at = NOW() WHERE id = $2`, [talents, requirement_id]);
+    }
+    if (patchBody.slots !== undefined) {
+      await ensureRequirementColumns();
+      await pool.query(`UPDATE gcc_world.project_requirements SET slots = $1, updated_at = NOW() WHERE id = $2`, [normalizeSlots(patchBody.slots), requirement_id]);
     }
 
     if (cost !== undefined) {

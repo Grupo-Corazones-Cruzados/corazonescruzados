@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { ensureRequirementColumns, normalizeTalents } from '@/lib/projects/requirements';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, setResponsible } from '@/lib/projects/members';
@@ -100,6 +101,28 @@ export async function GET(req: NextRequest) {
       counts.mine = allCount;
     }
 
+    // Filtro por TALENTO: encaja el proyecto si ALGUNO de sus requerimientos pide alguno
+    // de los talentos buscados. Va después de los conteos del rail (que son por estado) y
+    // antes del conteo total y de la paginación, para que ambos lo respeten.
+    await ensureRequirementColumns();
+    const talents = normalizeTalents((req.nextUrl.searchParams.get('talents') || '').split(',').filter(Boolean));
+    if (talents.length) {
+      params.push(talents);
+      where += ` AND EXISTS (SELECT 1 FROM gcc_world.project_requirements pr
+                              WHERE pr.project_id = p.id AND pr.talents && $${params.length}::text[])`;
+    }
+
+    // Opciones del desplegable: los talentos que de verdad piden los proyectos visibles
+    // para este usuario (respetando su control de acceso), no los 525 de la lista.
+    const { rows: talentOpt } = await pool.query(
+      `SELECT DISTINCT t AS talent
+         FROM gcc_world.projects p
+         JOIN gcc_world.project_requirements pr ON pr.project_id = p.id, UNNEST(pr.talents) AS t
+         ${accessWhere}
+         ORDER BY 1`,
+      accessParams,
+    );
+
     const countQ = await pool.query(`SELECT COUNT(*) FROM gcc_world.projects p ${where}`, params);
     params.push(limit, offset);
 
@@ -118,7 +141,10 @@ export async function GET(req: NextRequest) {
               (p.proforma IS NOT NULL) as has_proforma,
               c.name as client_name,
               inv_info.invoice_id,
-              inv_info.invoice_sri_status
+              inv_info.invoice_sri_status,
+              COALESCE((SELECT SUM(r.slots)::int FROM gcc_world.project_requirements r WHERE r.project_id = p.id), 0) as slots_total,
+              COALESCE((SELECT ARRAY(SELECT DISTINCT UNNEST(ARRAY_AGG(r.talents)) ORDER BY 1)
+                          FROM gcc_world.project_requirements r WHERE r.project_id = p.id), '{}') as talents
        FROM gcc_world.projects p
        LEFT JOIN gcc_world.clients c ON c.id = p.client_id
        LEFT JOIN LATERAL (
@@ -141,7 +167,7 @@ export async function GET(req: NextRequest) {
       params
     );
 
-    return NextResponse.json({ data: dataQ.rows, total: Number(countQ.rows[0].count), counts });
+    return NextResponse.json({ data: dataQ.rows, total: Number(countQ.rows[0].count), counts, talentOptions: talentOpt.map((r: any) => r.talent) });
   } catch (err: any) {
     console.error('Projects error:', err.message);
     return NextResponse.json({ data: [], total: 0, counts: {} });

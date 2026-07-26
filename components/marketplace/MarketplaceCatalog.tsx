@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
+import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
@@ -62,6 +63,9 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
 
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  // Filtro por TALENTO sobre los requerimientos de cada proyecto publicado.
+  const [talentFilter, setTalentFilter] = useState<string[]>([]);
+  const [talentOptions, setTalentOptions] = useState<string[]>([]);
 
   // Image gallery modal
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -86,8 +90,11 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const fetchMarketplaceProjects = useCallback(async () => {
     try {
       // Fetch both: published completed projects + portfolio project items
+      const qs = new URLSearchParams();
+      if (search) qs.set('search', search);
+      if (talentFilter.length) qs.set('talents', talentFilter.join(','));
       const [mpRes, pfRes] = await Promise.all([
-        fetch(`/api/marketplace/projects${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+        fetch(`/api/marketplace/projects${qs.toString() ? `?${qs}` : ''}`),
         fetch(`/api/portfolio/public?type=project`),
       ]);
       const mpData = await mpRes.json();
@@ -96,11 +103,14 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
       const portfolioItems = (pfData.data || []).map((p: any) => ({
         ...p, source_type: 'portfolio', final_cost: p.price, team: [], requirements_count: 0, member_photo: p.member_photo,
       }));
+      if (Array.isArray(mpData.talentOptions)) setTalentOptions(mpData.talentOptions);
       const mpItems = (mpData.data || []).map((p: any) => ({ ...p, source_type: 'project' }));
 
-      setMarketplaceProjects([...mpItems, ...portfolioItems]);
+      // Al filtrar por talento se dejan fuera los ítems de PORTAFOLIO: no tienen
+      // requerimientos, así que no pueden cumplir el filtro y solo ensuciarían el resultado.
+      setMarketplaceProjects(talentFilter.length ? mpItems : [...mpItems, ...portfolioItems]);
     } catch { setMarketplaceProjects([]); }
-  }, [search]);
+  }, [search, talentFilter]);
 
   const fetchItems = useCallback(async () => {
     const type = TAB_TO_TYPE[tab];
@@ -390,11 +400,24 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
       {/* ── Right region: command bar + contenido ── */}
       <div className="flex-1 min-w-0 w-full">
         {isCatalog && (
-          <div className="relative w-full sm:max-w-xs mb-3">
-            <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
-              className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-              style={mf} />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
+                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                style={mf} />
+            </div>
+            {/* Filtro por TALENTO (solo en la pestaña de proyectos, que es la que los tiene). */}
+            {tab === 'projects' && talentOptions.length > 0 && (
+              <div className="w-full sm:w-[280px]">
+                <MultiSelectSearch
+                  options={talentOptions.map((t) => ({ value: t, label: t }))}
+                  selected={talentFilter}
+                  onChange={setTalentFilter}
+                  placeholder="Filtrar por talento…"
+                />
+              </div>
+            )}
           </div>
         )}
 
