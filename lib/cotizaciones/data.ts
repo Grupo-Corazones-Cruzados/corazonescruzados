@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import type { QuotePayload } from '@/lib/cotizaciones/schema';
+import { ensureRequirementColumns, normalizeTalents } from '@/lib/projects/requirements';
 
 /** Rehace requerimientos + subtareas del proyecto desde un payload. Devuelve el total. */
 export async function materializeQuote(projectId: number, payload: QuotePayload): Promise<number> {
@@ -9,12 +10,15 @@ export async function materializeQuote(projectId: number, payload: QuotePayload)
     await pool.query(`DELETE FROM gcc_world.requirement_assignments WHERE requirement_id = $1`, [r.id]);
   }
   await pool.query(`DELETE FROM gcc_world.project_requirements WHERE project_id = $1`, [projectId]);
+  await ensureRequirementColumns();
   let total = 0;
   for (const r of payload.requirements) {
     total += Number(r.cost) || 0;
+    // Las PLAZAS se dejan sin definir (NULL): las decide una persona después, no el agente.
     const { rows: [reqRow] } = await pool.query(
-      `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost) VALUES ($1, $2, $3, $4) RETURNING id`,
-      [projectId, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0],
+      `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost, talents, slots)
+       VALUES ($1, $2, $3, $4, $5::text[], NULL) RETURNING id`,
+      [projectId, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0, normalizeTalents(r.talents)],
     );
     let order = 0;
     for (const st of r.subtasks) {

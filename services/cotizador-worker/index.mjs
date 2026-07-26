@@ -20,6 +20,9 @@ import pg from 'pg';
 const PORT = Number(process.env.PORT || 4610);
 const TOKEN = process.env.COTIZADOR_WORKER_TOKEN || '';
 const DEFAULT_MODEL = process.env.COTIZADOR_MODEL || 'claude-opus-4-8';
+// URL de la app web: la usa la herramienta de talentos (la búsqueda semántica vive allí,
+// para que las claves de IA no tengan que estar también en el worker).
+const APP_URL = (process.env.APP_URL || '').replace(/\/+$/, '');
 const pool = process.env.DATABASE_URL
   ? new pg.Pool({ connectionString: (process.env.DATABASE_URL || '').replace(/[?&]schema=[^&]+/, ''), options: '-c search_path=gcc_world,public' })
   : null;
@@ -34,7 +37,9 @@ Metodo de precios:
 - Puedes usar la herramienta list_my_projects para revisar cotizaciones/proyectos previos del mismo miembro y calibrar precios y desglose.
 
 Reglas de la cotizacion:
-- Desglosa el proyecto en REQUERIMIENTOS claros (modulos/entregables). Cada requerimiento tiene: title, description breve, hours (numero), cost (numero USD) y 2-6 subtasks (pasos concretos).
+- Desglosa el proyecto en REQUERIMIENTOS claros (modulos/entregables). Cada requerimiento tiene: title, description breve, hours (numero), cost (numero USD), 2-6 subtasks (pasos concretos) y talents (talentos requeridos).
+- TALENTOS (obligatorio en cada requerimiento): describe con tus palabras el trabajo del requerimiento y llama a buscar_talentos para ver los talentos reales de la organizacion. Elige de los resultados 1-3 talentos, COPIANDO EL NOMBRE EXACTO tal como te lo devuelve la herramienta. No inventes talentos ni escribas variantes: si el nombre no vino de la herramienta, no vale. Busca por separado para cada requerimiento, porque cada uno necesita perfiles distintos.
+- NO indiques plazas ni cantidad de personas: eso lo define despues una persona.
 - COSTOS ADICIONALES (additional_costs): servicios de PROVEEDORES EXTERNOS que el cliente debera adquirir aparte del desarrollo (p. ej. hosting/servidor, dominio, pasarela de pago, APIs de terceros, licencias, correo transaccional, SMS, almacenamiento, mapas). Segun el contexto del proyecto, propon los que apliquen con un costo estimado en USD (mensual o unico) y una breve descripcion. Si no aplica ninguno, devuelve una lista vacia.
 - Propon una FECHA LIMITE (deadline) realista en formato ISO (YYYY-MM-DD), acorde al total de horas.
 - Escribe en español. Se concreto y evita relleno.
@@ -56,6 +61,7 @@ ${ctx?.instructions || '(ninguna)'}
 """
 
 Antes de decidir, si te sirve, revisa proyectos previos del miembro con list_my_projects.
+Para CADA requerimiento llama a buscar_talentos con una descripcion del trabajo y elige 1-3 talentos de los que te devuelva, con su nombre exacto.
 
 Responde SOLO con este JSON (sin nada mas):
 {
@@ -63,7 +69,7 @@ Responde SOLO con este JSON (sin nada mas):
   "summary": "resumen de 2-4 frases del alcance",
   "deadline": "YYYY-MM-DD",
   "requirements": [
-    { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["...", "..."] }
+    { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["...", "..."], "talents": ["Nombre exacto devuelto por buscar_talentos"] }
   ],
   "additional_costs": [
     { "label": "Servicio de proveedor externo", "description": "para que sirve", "amount": 0 }
@@ -87,7 +93,7 @@ Responde SOLO con este JSON (sin nada mas):
     "title": "...",
     "summary": "...",
     "deadline": "YYYY-MM-DD",
-    "requirements": [ { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["..."] } ],
+    "requirements": [ { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["..."], "talents": ["..."] } ],
     "additional_costs": [ { "label": "...", "description": "...", "amount": 0 } ]
   }
 }
@@ -124,6 +130,43 @@ function buildMcp(memberId) {
           }
         },
       ),
+      tool(
+        'buscar_talentos',
+        'Busca en la lista de talentos de la organizacion los que mejor encajan con una descripcion de trabajo. Devuelve candidatos con su NOMBRE EXACTO y un score de 0 a 1. Usalo para elegir los talentos de cada requerimiento; copia el nombre tal cual.',
+        { consulta: z.string().min(2), limite: z.number().int().min(1).max(25).optional() },
+        async (args) => {
+          const consulta = String(args?.consulta || '').trim();
+          if (!consulta) return { content: [{ type: 'text', text: '[]' }] };
+          // Camino principal: la app resuelve la busqueda semantica (embeddings + pgvector).
+          if (APP_URL && TOKEN) {
+            try {
+              const res = await fetch(`${APP_URL}/api/talentos/buscar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-worker-token': TOKEN },
+                body: JSON.stringify({ query: consulta, k: args?.limite || 8 }),
+              });
+              if (res.ok) {
+                const j = await res.json();
+                return { content: [{ type: 'text', text: JSON.stringify(j.data || []) }] };
+              }
+            } catch { /* cae al respaldo por texto */ }
+          }
+          // Respaldo: busqueda por texto contra la base (peor calidad, pero nunca deja al
+          // agente sin candidatos si la app no responde).
+          if (!pool) return { content: [{ type: 'text', text: '[]' }] };
+          try {
+            const { rows } = await pool.query(
+              `SELECT nombre FROM gcc_world.gd_talentos
+                WHERE LOWER(nombre) ILIKE '%' || LOWER($1) || '%'
+                ORDER BY LENGTH(nombre) LIMIT $2`,
+              [consulta, args?.limite || 8],
+            );
+            return { content: [{ type: 'text', text: JSON.stringify(rows.map((r) => ({ nombre: r.nombre, score: null }))) }] };
+          } catch (e) {
+            return { content: [{ type: 'text', text: `[] (error: ${e.message})` }] };
+          }
+        },
+      ),
     ],
   });
 }
@@ -138,12 +181,12 @@ async function runAgent({ prompt, model, resume, memberId }) {
       model: model || DEFAULT_MODEL,
       systemPrompt: SYSTEM_PROMPT,
       mcpServers: { gcc: mcp },
-      allowedTools: ['mcp__gcc__list_my_projects'],
+      allowedTools: ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'],
       // NO usamos 'bypassPermissions' (pasa --dangerously-skip-permissions, que falla como
       // root en Railway). En su lugar, un callback aprueba SOLO nuestra herramienta (read-only)
       // y niega cualquier otra — sin prompts (headless).
       canUseTool: async (toolName, input) =>
-        toolName === 'mcp__gcc__list_my_projects'
+        ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'].includes(toolName)
           ? { behavior: 'allow', updatedInput: input }
           : { behavior: 'deny', message: 'Herramienta no permitida en este agente' },
       settingSources: [],      // no cargar settings del filesystem

@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { ensureRequirementColumns, normalizeTalents } from '@/lib/projects/requirements';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureQuoteTables, type QuotePayload } from '@/lib/cotizaciones/schema';
@@ -11,13 +12,15 @@ async function materialize(projectId: number, payload: QuotePayload): Promise<nu
     await pool.query(`DELETE FROM gcc_world.requirement_items WHERE requirement_id = $1`, [r.id]);
     await pool.query(`DELETE FROM gcc_world.requirement_assignments WHERE requirement_id = $1`, [r.id]);
   }
+  await ensureRequirementColumns();
   await pool.query(`DELETE FROM gcc_world.project_requirements WHERE project_id = $1`, [projectId]);
   let total = 0;
   for (const r of payload.requirements) {
     total += Number(r.cost) || 0;
     const { rows: [reqRow] } = await pool.query(
-      `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost) VALUES ($1, $2, $3, $4) RETURNING id`,
-      [projectId, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0],
+      `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost, talents, slots)
+       VALUES ($1, $2, $3, $4, $5::text[], NULL) RETURNING id`,
+      [projectId, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0, normalizeTalents(r.talents)],
     );
     let order = 0;
     for (const st of r.subtasks) {

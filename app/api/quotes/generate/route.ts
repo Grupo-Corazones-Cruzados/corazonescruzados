@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { ensureRequirementColumns, normalizeTalents } from '@/lib/projects/requirements';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, setResponsible } from '@/lib/projects/members';
@@ -98,11 +99,14 @@ export async function POST(req: NextRequest) {
     );
     await setResponsible(project.id, respId, { invited: false });
 
-    // 3) Materializa requerimientos + subtareas + costo.
+    // 3) Materializa requerimientos + subtareas + costo. Las PLAZAS quedan sin definir
+    //    (NULL): las decide una persona, no el agente.
+    await ensureRequirementColumns();
     for (const r of payload.requirements) {
       const { rows: [reqRow] } = await pool.query(
-        `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost) VALUES ($1, $2, $3, $4) RETURNING id`,
-        [project.id, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0],
+        `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost, talents, slots)
+         VALUES ($1, $2, $3, $4, $5::text[], NULL) RETURNING id`,
+        [project.id, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0, normalizeTalents(r.talents)],
       );
       let order = 0;
       for (const st of r.subtasks) {

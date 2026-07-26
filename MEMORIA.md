@@ -3274,3 +3274,33 @@ Módulos principales:
   - Verificado end-to-end contra el servidor real: crear sin talentos → rechazado con mensaje; con talento y
     3 plazas → creado; filtro en `/api/projects` → 1 de 18; en marketplace → 10 con el talento y 0 con uno
     inexistente. Datos de prueba borrados (84 requerimientos, como al empezar).
+
+- **El agente de cotizaciones elige TALENTOS con búsqueda semántica (2026-07-26):** cierra el hueco que
+  quedaba — los requerimientos generados por cotización nacían sin talento y no salían en el filtro.
+  - **RECOMENDACIÓN TOMADA — embeddings, no búsqueda por texto.** Se midió antes de decidir: con trigramas
+    (`pg_trgm`) consultas como *"app movil"*, *"pantallas bonitas"* o *"automatizar tareas repetitivas"*
+    devuelven **CERO** resultados, porque no comparten palabras con el nombre del talento. Con embeddings
+    devuelven candidatos correctos (*automatizar tareas repetitivas* → Automatización de procesos, 0.74).
+    La otra opción evaluada (meter los 525 talentos en el prompt, ≈2 600 tokens) se descartó: son tokens en
+    **cada** turno del agente y la lista es editable y crece.
+  - **Cómo:** `text-embedding-3-small` de OpenAI (1536 dim; la clave ya estaba en el proyecto) + **pgvector**
+    (extensión `vector` habilitada, índice `hnsw`). Columna `embedding` en la propia `gd_talentos`.
+    **525 talentos indexados** (≈2 min, centavos). `lib/talentos/embeddings.ts`.
+  - **Mantenimiento automático:** un talento nuevo nace sin vector y **renombrar uno lo invalida**
+    (`encuadre-db.updateListOption`); la siguiente búsqueda reindexa lo pendiente. Botón de emergencia:
+    `POST /api/admin/talentos/reindex`.
+  - **Herramienta del agente:** `buscar_talentos(consulta, limite)` en el worker
+    (`services/cotizador-worker/index.mjs`). **No embebe en el worker**: llama a
+    `POST /api/talentos/buscar` de la app con `x-worker-token`, así las claves de IA se quedan en un solo
+    sitio. **Requiere la variable `APP_URL` en el servicio del worker**; si falta, la herramienta cae a
+    búsqueda por texto en vez de romperse.
+  - **Diseño deliberado:** la herramienta devuelve el **top-k con score** y el agente elige; no se toma el
+    top-1 automático. Se vio por qué: *"guardar y consultar informacion"* trae como primero *"Conservas y
+    encurtidos"* (falso amigo de "conservar") y como segundo el correcto, *"Administración de bases de
+    datos"*. El prompt le exige **copiar el nombre exacto** devuelto por la herramienta.
+  - **Plazas: las deja VACÍAS** (pedido del usuario). `slots` pasa a admitir NULL y la UI marca en ámbar
+    *"plazas sin definir"* para que una persona las ponga. Los 84 requerimientos viejos conservan su 1.
+  - **GCC Bot hereda todo solo:** reanuda la MISMA sesión del Agent SDK (`sessionId`), así que usa el mismo
+    system prompt y las mismas herramientas; solo hubo que añadir `talents` al esquema JSON de su respuesta.
+  - Verificado: endpoint rechaza sin token y responde con él; *"diseñar la interfaz"* → Diseño UX/UI (0.71).
+    `tsc`, `next build` y `node --check` del worker, limpios.

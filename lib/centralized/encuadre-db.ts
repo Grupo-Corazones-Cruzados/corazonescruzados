@@ -134,6 +134,7 @@ export async function addListOption(key: string, value: string) {
     [label],
   );
   if (rows.length === 0) throw new Error('Esa opción ya existe.');
+  // Un talento nuevo nace SIN vector; la próxima búsqueda del agente lo indexa.
   return rows[0];
 }
 
@@ -159,6 +160,13 @@ export async function updateListOption(key: string, id: number, value: string) {
     // O no existe la fila, o el nombre ya lo tiene otra opción.
     const { rows: [exists] } = await pool.query(`SELECT 1 FROM gcc_world.${m.table} WHERE id = $1`, [id]);
     throw new Error(exists ? 'Ya existe otra opción con ese nombre.' : 'No se encontró la opción.');
+  }
+  // Al RENOMBRAR un talento su embedding deja de corresponder al texto: se invalida para
+  // que la siguiente búsqueda del agente lo recalcule. (La columna solo existe si ya se
+  // usó la búsqueda semántica alguna vez, de ahí el try.)
+  if (key === 'talentos') {
+    try { await pool.query(`UPDATE gcc_world.gd_talentos SET embedding = NULL, embedded_at = NULL WHERE id = $1`, [id]); }
+    catch { /* aún no hay columna de embeddings: nada que invalidar */ }
   }
   return rows[0];
 }

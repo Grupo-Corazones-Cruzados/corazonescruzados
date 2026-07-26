@@ -23,7 +23,10 @@ export function ensureRequirementColumns(): Promise<void> {
   if (ensuring) return ensuring;
   ensuring = (async () => {
     await pool.query(`ALTER TABLE gcc_world.project_requirements ADD COLUMN IF NOT EXISTS talents TEXT[] NOT NULL DEFAULT '{}'`);
-    await pool.query(`ALTER TABLE gcc_world.project_requirements ADD COLUMN IF NOT EXISTS slots INT NOT NULL DEFAULT 1`);
+    await pool.query(`ALTER TABLE gcc_world.project_requirements ADD COLUMN IF NOT EXISTS slots INT DEFAULT 1`);
+    // Las plazas pueden quedar SIN DEFINIR (NULL): el agente de cotizaciones no las decide,
+    // las pone una persona al revisar el requerimiento.
+    await pool.query(`ALTER TABLE gcc_world.project_requirements ALTER COLUMN slots DROP NOT NULL`).catch(() => {});
     // Índice GIN: el filtro por talento hace `talents && ARRAY[...]` sobre todos los
     // requerimientos, y sin él sería un recorrido completo de la tabla.
     await pool.query(`CREATE INDEX IF NOT EXISTS project_requirements_talents_idx ON gcc_world.project_requirements USING GIN (talents)`);
@@ -46,10 +49,11 @@ export function normalizeTalents(input: unknown): string[] {
   return out;
 }
 
-/** Plazas: entero ≥ 1. Cualquier cosa rara cae a 1 (una plaza es el caso normal). */
-export function normalizeSlots(input: unknown): number {
+/** Plazas: entero ≥ 1, o `null` = sin definir (lo que deja el agente de cotizaciones). */
+export function normalizeSlots(input: unknown): number | null {
+  if (input === null || input === undefined || input === '') return null;
   const n = Math.floor(Number(input));
-  if (!Number.isFinite(n) || n < 1) return 1;
+  if (!Number.isFinite(n) || n < 1) return null;
   return Math.min(n, 999);
 }
 
