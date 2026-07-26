@@ -6,12 +6,14 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import Button from '@/components/ui/Button';
+import FuentesGraph, { type GraphRelation } from '@/components/admin/FuentesGraph';
 import {
   buildFuentesTree, filterTree, allNodeIds, type TreeNode, type NodeKind,
 } from '@/lib/admin/fuentes-tree';
 import {
   Database, Search, Plus, Trash2, ChevronLeft, ChevronRight, Table2, KeyRound, Lock,
-  Boxes, Network, GitBranch, Folder, ChevronsDownUp, ChevronsUpDown, type LucideIcon,
+  Boxes, Network, GitBranch, Folder, ChevronsDownUp, ChevronsUpDown, Orbit, Rows3,
+  type LucideIcon,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -230,21 +232,44 @@ export default function FuentesPanel() {
   const expandAll = () => setExpanded(new Set(allNodeIds(tree)));
   const collapseAll = () => setExpanded(new Set());
 
-  // El rail ocupa todo el alto disponible: desde su borde superior hasta el pie de la
-  // ventana. Se recalcula al redimensionar (y cuando ya hay datos que lo desplazan).
+  // El rail (y la columna de contenido) ocupan todo el alto disponible: desde su borde
+  // superior hasta la barra de ruta fija del dashboard, que hay que descontar o el
+  // contenido queda por debajo y se corta. Se recalcula al redimensionar.
   const railRef = useRef<HTMLElement>(null);
   const [railH, setRailH] = useState<number>();
   useEffect(() => {
     const compute = () => {
       const el = railRef.current;
       if (!el) return;
-      const h = Math.max(window.innerHeight - el.getBoundingClientRect().top - 16, 280);
+      const bar = document.querySelector('nav[aria-label="Ruta"]');
+      const barH = bar ? bar.getBoundingClientRect().height : 0;
+      const h = Math.max(window.innerHeight - el.getBoundingClientRect().top - barH - 12, 280);
       setRailH((prev) => (prev === undefined || Math.abs(prev - h) > 1 ? h : prev));
     };
     compute();
     window.addEventListener('resize', compute);
     return () => window.removeEventListener('resize', compute);
   }, [loadingTables]);
+
+  /* ── Vista: tabla o universo de relaciones ──────────────────────────── */
+  const [view, setView] = useState<'table' | 'universe'>('table');
+  const [relations, setRelations] = useState<GraphRelation[] | null>(null);
+  const [loadingRel, setLoadingRel] = useState(false);
+
+  // Las relaciones se piden una sola vez, y solo al abrir el universo (la vista de
+  // tabla no las necesita).
+  useEffect(() => {
+    if (view !== 'universe' || relations || loadingRel) return;
+    setLoadingRel(true);
+    fetch('/api/admin/fuentes?relations=1')
+      .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
+      .then(({ ok, j }) => {
+        if (!ok) throw new Error(j.error || 'Error');
+        setRelations(j.data.relations || []);
+      })
+      .catch((e: Error) => toast.error(e.message))
+      .finally(() => setLoadingRel(false));
+  }, [view, relations, loadingRel]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -362,22 +387,12 @@ export default function FuentesPanel() {
         </div>
       </aside>
 
-      {/* ── Centro: registros de la tabla ──────────────────────────────── */}
-      <div className="min-w-0">
-        {!selected ? (
-          <div className="bg-digi-card border border-digi-border rounded-lg text-center py-20">
-            <div className="w-11 h-11 rounded-lg bg-accent-light flex items-center justify-center mx-auto mb-3">
-              <Database className="w-5 h-5 text-accent" />
-            </div>
-            <p className="text-[13px] font-semibold text-digi-text" style={mf}>Elige una tabla</p>
-            <p className="text-[12px] text-digi-muted mt-1" style={mf}>
-              Selecciona una tabla del panel izquierdo para ver sus registros.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Command bar */}
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
+      {/* ── Centro: registros de la tabla o universo de relaciones ─────── */}
+      <div className="min-w-0 flex flex-col" style={{ height: railH }}>
+        {/* Command bar — el selector de vista va siempre a la derecha */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap shrink-0">
+          {view === 'table' && selected ? (
+            <>
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="w-3.5 h-3.5 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -394,8 +409,68 @@ export default function FuentesPanel() {
               <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />} disabled={!columns.length}>
                 Nuevo registro
               </Button>
+            </>
+          ) : (
+            <div className="flex-1 min-w-[160px]">
+              {view === 'universe' && (
+                <p className="text-[12px] text-digi-muted" style={mf}>
+                  {selected
+                    ? `${selected} · resaltando sus relaciones y su carpeta`
+                    : 'Elige una tabla en el panel izquierdo para viajar hasta ella.'}
+                </p>
+              )}
             </div>
+          )}
 
+          {/* Selector de vista (segmentado Fluent) */}
+          <div className="flex items-center gap-0.5 p-0.5 rounded-md border border-digi-border bg-digi-card shrink-0">
+            {([
+              { v: 'table', label: 'Tabla', Icon: Rows3 },
+              { v: 'universe', label: 'Universo', Icon: Orbit },
+            ] as const).map(({ v, label, Icon }) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                title={v === 'universe' ? 'Ver el esquema como grafo de relaciones' : 'Ver los registros de la tabla'}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[12px] font-medium transition-colors ${
+                  view === v ? 'bg-accent text-white' : 'text-digi-muted hover:text-digi-text hover:bg-black/[0.04]'
+                }`}
+                style={mf}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {view === 'universe' ? (
+          loadingRel || !relations ? (
+            <div className="flex-1 flex items-center justify-center bg-digi-card border border-digi-border rounded-lg">
+              <BrandLoader size="md" label="Trazando el universo..." />
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0">
+              <FuentesGraph
+                tree={tree}
+                relations={relations}
+                selectedTable={selected}
+                onSelectTable={pickTable}
+              />
+            </div>
+          )
+        ) : !selected ? (
+          <div className="bg-digi-card border border-digi-border rounded-lg text-center py-20">
+            <div className="w-11 h-11 rounded-lg bg-accent-light flex items-center justify-center mx-auto mb-3">
+              <Database className="w-5 h-5 text-accent" />
+            </div>
+            <p className="text-[13px] font-semibold text-digi-text" style={mf}>Elige una tabla</p>
+            <p className="text-[12px] text-digi-muted mt-1" style={mf}>
+              Selecciona una tabla del panel izquierdo para ver sus registros.
+            </p>
+          </div>
+        ) : (
+          <>
             {!editable && !!columns.length && (
               <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-md bg-amber-50 border border-amber-300">
                 <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
@@ -406,8 +481,8 @@ export default function FuentesPanel() {
             )}
 
             {/* Tabla */}
-            <div className="data-table bg-digi-card border border-digi-border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto max-h-[58vh] overflow-y-auto">
+            <div className="data-table bg-digi-card border border-digi-border rounded-lg overflow-hidden flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-auto">
                 {loadingRows ? (
                   <div className="py-16 flex justify-center"><BrandLoader size="md" label="Cargando registros..." /></div>
                 ) : !rows.length ? (
@@ -472,7 +547,7 @@ export default function FuentesPanel() {
 
             {/* Paginación */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-end gap-2 mt-3">
+              <div className="flex items-center justify-end gap-2 mt-3 shrink-0">
                 <span className="text-[12px] text-digi-muted" style={mf}>Página {page} de {totalPages}</span>
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}

@@ -3072,3 +3072,29 @@ Módulos principales:
     `user_api_keys`, `client_members`, `member_services`, `email_*`, `whatsapp_*`, `ticket_services`,
     `package_*`, `products`, `packages`, `modules`). Parecen heredadas de iteraciones anteriores; están
     clasificadas en su módulo por nombre, pero **habría que confirmar con el usuario si se pueden DROPear**.
+
+- **Fuentes: vista "Universo" de relaciones + arreglo de altura (2026-07-25):** la pestaña tiene ahora **dos
+  vistas** conmutables con un segmentado a la **derecha de la barra de comandos** (el rail de tablas se
+  mantiene en las dos): **Tabla** (registros, la de siempre) y **Universo** (grafo del esquema).
+  - **Universo** (`components/admin/FuentesGraph.tsx`) — mismo motor que el sistema Gestión de Datos
+    (`react-force-graph-2d`, d3-force sobre canvas, fondo negro). Nodos: 47 carpetas + 172 tablas = 219.
+    Formas: ★ módulo · ⬢ sistema · ◆ subsistema · ■ otras · ● tabla; **color por módulo raíz** (paleta de 20)
+    para que cada familia se vea como una constelación. Aristas: **199 de jerarquía** (el mismo árbol del
+    rail) + **175 de relación** entre tablas.
+  - **Relaciones** (`lib/admin/fuentes-graph.ts`, `GET /api/admin/fuentes?relations=1` — va como parámetro y
+    NO como subruta para no chocar con `/api/admin/fuentes/[table]`): **82 declaradas** (FK real de
+    `pg_constraint`, línea sólida) + **93 inferidas** (columna `<algo>_id` que casa con una tabla, línea
+    punteada y etiquetada como inferida). La inferencia prueba **primero dentro de la familia del prefijo**
+    (`aa_problem_causes.problem_id` → `aa_problems`, no `problems`), lo que sube la cobertura de 133 a **141
+    de 172 tablas** con al menos una relación. Las 31 restantes (catálogos, logs, semillas) siguen colgando
+    de su carpeta por la jerarquía.
+  - **Al elegir una tabla en el rail el grafo viaja hasta ella** (centra + zoom) y deja encendidas solo sus
+    relaciones y su cadena de carpetas hasta el módulo; el resto se atenúa. Ficha flotante con ruta, filas y
+    a qué apunta / quién le apunta. Clic en un nodo-tabla la selecciona (y la vista Tabla ya la tiene lista).
+  - **Gotcha resuelto:** el encuadre inicial (`zoomToFit`) **pisaba** el centrado cuando el universo se abría
+    con una tabla ya elegida. Ahora el temporizador de arranque hace `focusSelected()` y solo encuadra si no
+    hay selección.
+  - **Arreglo:** el rail se salía por abajo y **cortaba la leyenda** — el alto se calculaba contra
+    `window.innerHeight` sin descontar la **barra de ruta fija** del dashboard (`nav[aria-label="Ruta"]`,
+    36px). Ahora se mide esa barra y se resta. La columna de contenido usa el mismo alto, así la tabla y el
+    grafo llenan la pantalla y el scroll es interno.

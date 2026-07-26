@@ -677,6 +677,24 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   Al pie, **leyenda** de iconos (11px) para que el usuario sepa qué es cada cosa; en la cabecera,
   desplegar/contraer todo (`ChevronsUpDown`/`ChevronsDownUp`). **Buscar despliega automáticamente** solo
   las ramas que casan (si no, los resultados quedan escondidos tras carpetas cerradas).
+- **Alto disponible = ventana − barra de ruta.** El dashboard tiene una **barra de ruta FIJA abajo**
+  (`nav[aria-label="Ruta"]`, `fixed bottom-0 h-9`). Cualquier panel que quiera ocupar "todo el alto" debe
+  **descontarla**, o su contenido queda por debajo y se corta:
+  `height = innerHeight - rect.top - barraRuta.height - 12`. Medir la barra por su selector (no un 36
+  hardcodeado). Pasó con la leyenda del rail de Fuentes.
+- **Dos vistas de un mismo módulo (segmentado a la derecha de la command bar).** Cuando un módulo ofrece
+  varias representaciones de lo mismo, el conmutador va **a la derecha de la barra de comandos**, como
+  segmentado: contenedor `flex items-center gap-0.5 p-0.5 rounded-md border border-digi-border bg-digi-card`
+  y botones `px-2.5 py-1.5 rounded text-[12px]` con el activo en `bg-accent text-white`. El rail de
+  navegación **se mantiene en todas las vistas** (solo cambia el lienzo de la derecha).
+- **Grafo "universo" (reusable).** Motor: `react-force-graph-2d` con importación dinámica
+  (`import('react-force-graph-2d')` en un `useEffect`, nunca en el bundle inicial), fondo negro
+  `#05060a`, controles Ajustar/Acercar/Alejar/Reorganizar arriba a la derecha como botones
+  `bg-white/10 border-white/10 backdrop-blur`. Reglas aprendidas: (1) **cachear los objetos de nodo por id**
+  entre renders o d3 pierde las posiciones y el grafo salta; (2) **etiquetas de las hojas solo con zoom,
+  hover o selección** (172 nombres a la vez se solapan); (3) si hay selección al montar, **centrar en ella
+  en vez de encuadrar** (el `zoomToFit` pisa el centrado). Referencias: `GdGraph.tsx` (Gestión de Datos) y
+  `FuentesGraph.tsx` (esquema de la base).
 - **Tabla genérica (Fuentes):** cuando las columnas son dinámicas NO se usa `PixelDataTable` (asume columnas
   fijas y alto calculado); se compone un `<table>` propio con las clases estándar `data-table` / `dt-th` /
   `dt-row` / `dt-td` (así hereda el estilo Fluent de `globals.css`) dentro de un contenedor
