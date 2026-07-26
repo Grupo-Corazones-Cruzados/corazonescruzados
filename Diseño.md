@@ -695,6 +695,21 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   hover o selección** (172 nombres a la vez se solapan); (3) si hay selección al montar, **centrar en ella
   en vez de encuadrar** (el `zoomToFit` pisa el centrado). Referencias: `GdGraph.tsx` (Gestión de Datos) y
   `FuentesGraph.tsx` (esquema de la base).
+- **Iconos del grafo = iconos de la UI.** Un nodo del universo se dibuja con **el mismo icono de lucide** que
+  representa a esa entidad en el resto de la interfaz, no con una forma geométrica suelta: se copia la
+  geometría del icono (lienzo 24×24: `path`/`rect`/`circle`/`line`) y se traza con `Path2D` en el canvas
+  (`ctx.lineWidth = 2`, `lineCap`/`lineJoin` `round`, escalado a `size/24`). **Cachear los `Path2D` por
+  tipo** — rehacerlos en cada frame con cientos de nodos cuesta caro. Así el grafo y el rail se leen igual.
+- **Leyenda-filtro del universo (patrón compartido).** Panel `absolute top-2.5 left-2.5` con vidrio
+  (`rounded-md bg-black/50 border border-white/10 backdrop-blur-sm p-2`), título `text-[9.5px] uppercase
+  tracking-wide text-white/50` y una fila por tipo (icono + etiqueta + conteo). **Pasar el puntero
+  previsualiza el resaltado; el clic lo fija/quita** (`hoverFilter ?? pinFilter`), y el filtro por tipo manda
+  sobre la selección. Igual en Gestión de Datos, Comandos Violeta, Apoyo y Fuentes.
+- **Resaltado por selección en un grafo jerárquico.** Al enfocar una **carpeta** se encienden **todos sus
+  descendientes** (subárbol completo, no solo los hijos directos) más sus ancestros; al enfocar una **hoja**,
+  sus relaciones de datos más su cadena de ancestros. Las **aristas de la vecindad se resaltan** (más grosor,
+  más opacidad, punta de flecha mayor y partículas animadas en las de relación) y el resto se atenúa casi a
+  cero: sin eso el resaltado de nodos se pierde entre las líneas.
 - **Tabla genérica (Fuentes):** cuando las columnas son dinámicas NO se usa `PixelDataTable` (asume columnas
   fijas y alto calculado); se compone un `<table>` propio con las clases estándar `data-table` / `dt-th` /
   `dt-row` / `dt-td` (así hereda el estilo Fluent de `globals.css`) dentro de un contenedor

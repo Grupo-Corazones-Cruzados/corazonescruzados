@@ -1,28 +1,33 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Maximize2, Plus, Minus, Shuffle } from 'lucide-react';
+import { Maximize2, Plus, Minus, Shuffle, Boxes, Network, GitBranch, Folder, Table2 } from 'lucide-react';
 import type { TreeNode, NodeKind } from '@/lib/admin/fuentes-tree';
 
 /**
  * Vista "Universo" de Fuentes — el mismo motor de grafos que el sistema Gestión de Datos
  * (`react-force-graph-2d`: d3-force sobre canvas), aplicado al esquema de la base.
  *
- * En el universo conviven DOS tipos de arista:
- *  · **Jerarquía** (línea tenue): módulo → sistema → subsistema → tabla. Es exactamente el
- *    árbol del panel izquierdo, así que se ve a qué pertenece cada tabla.
- *  · **Relación** (línea marcada): tabla → tabla. Sólida si es una FK declarada, punteada
- *    si está inferida por el nombre de la columna (`<algo>_id`).
+ * Dos tipos de arista:
+ *  · **Jerarquía**: módulo → sistema → subsistema → tabla. Es exactamente el árbol del
+ *    panel izquierdo, así que se ve a qué pertenece cada tabla.
+ *  · **Relación**: tabla → tabla, y SOLO claves foráneas declaradas en la base.
  *
- * Al seleccionar una tabla (aquí o en el panel izquierdo) el grafo la centra y deja
- * encendidas solo sus relaciones y su cadena de carpetas; el resto se atenúa.
+ * Al seleccionar algo, el grafo enciende su vecindad y **resalta las flechas** que la
+ * conectan, atenuando el resto:
+ *  · una **tabla** → sus FKs + su cadena de carpetas hasta el módulo;
+ *  · una **carpeta** (módulo/sistema/subsistema) → **todo su subárbol** (sistemas,
+ *    subsistemas y tablas que contiene) + sus ancestros.
+ *
+ * Los iconos son los MISMOS de lucide que usa el panel de tablas, dibujados sobre el
+ * canvas a partir de la geometría del propio icono, para que el universo y el árbol se
+ * lean igual.
  */
 
 export interface GraphRelation {
   source: string;
   target: string;
   columns: string[];
-  declared: boolean;
 }
 
 type Kind = NodeKind | 'table';
@@ -40,6 +45,7 @@ interface GNode {
 }
 
 const BG = '#05060a';
+const GLASS = 'rounded-md bg-black/50 border border-white/10 backdrop-blur-sm';
 
 /** Paleta legible sobre negro; se reparte entre los módulos raíz por orden. */
 const PALETTE = [
@@ -48,44 +54,97 @@ const PALETTE = [
   '#aed581', '#64b5f6', '#dce775', '#a1887f',
 ];
 
-const RADIUS: Record<Kind, number> = {
-  module: 9, system: 7, subsystem: 5.5, group: 5.5, table: 4,
+/** Lado del icono en unidades del grafo (los iconos de lucide son 24×24). */
+const SIZE: Record<Kind, number> = {
+  module: 15, system: 12.5, subsystem: 10.5, group: 10.5, table: 8,
 };
 
-const tableId = (name: string) => `t:${name}`;
+/* ── Iconos: la MISMA geometría de lucide-react que usa el panel de tablas ──────
+   Se copian las primitivas del icono (lienzo 24×24) para poder trazarlas en canvas.
+   Fuente: lucide-react v0.468 → Boxes · Network · GitBranch · Folder · Table2.      */
+type Prim =
+  | { t: 'path'; d: string }
+  | { t: 'rect'; x: number; y: number; w: number; h: number; r: number }
+  | { t: 'circle'; cx: number; cy: number; r: number }
+  | { t: 'line'; x1: number; y1: number; x2: number; y2: number };
 
-function traceShape(ctx: CanvasRenderingContext2D, kind: Kind, x: number, y: number, r: number) {
-  ctx.beginPath();
-  if (kind === 'table') {
-    ctx.arc(x, y, r, 0, 2 * Math.PI);
-  } else if (kind === 'module') {
-    // Estrella
-    const outer = r * 1.15, inner = r * 0.5;
-    for (let i = 0; i < 10; i++) {
-      const rad = i % 2 === 0 ? outer : inner;
-      const a = -Math.PI / 2 + (i * Math.PI) / 5;
-      const px = x + rad * Math.cos(a), py = y + rad * Math.sin(a);
-      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+const ICON: Record<Kind, Prim[]> = {
+  // Boxes
+  module: [
+    { t: 'path', d: 'M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z' },
+    { t: 'path', d: 'm7 16.5-4.74-2.85' },
+    { t: 'path', d: 'm7 16.5 5-3' },
+    { t: 'path', d: 'M7 16.5v5.17' },
+    { t: 'path', d: 'M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z' },
+    { t: 'path', d: 'm17 16.5-5-3' },
+    { t: 'path', d: 'm17 16.5 4.74-2.85' },
+    { t: 'path', d: 'M17 16.5v5.17' },
+    { t: 'path', d: 'M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z' },
+    { t: 'path', d: 'M12 8 7.26 5.15' },
+    { t: 'path', d: 'm12 8 4.74-2.85' },
+    { t: 'path', d: 'M12 13.5V8' },
+  ],
+  // Network
+  system: [
+    { t: 'rect', x: 16, y: 16, w: 6, h: 6, r: 1 },
+    { t: 'rect', x: 2, y: 16, w: 6, h: 6, r: 1 },
+    { t: 'rect', x: 9, y: 2, w: 6, h: 6, r: 1 },
+    { t: 'path', d: 'M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3' },
+    { t: 'path', d: 'M12 12V8' },
+  ],
+  // GitBranch
+  subsystem: [
+    { t: 'line', x1: 6, y1: 3, x2: 6, y2: 15 },
+    { t: 'circle', cx: 18, cy: 6, r: 3 },
+    { t: 'circle', cx: 6, cy: 18, r: 3 },
+    { t: 'path', d: 'M18 9a9 9 0 0 1-9 9' },
+  ],
+  // Folder
+  group: [
+    { t: 'path', d: 'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z' },
+  ],
+  // Table2
+  table: [
+    { t: 'path', d: 'M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18' },
+  ],
+};
+
+/** Cache de Path2D por icono: reconstruirlos en cada frame es caro con 219 nodos. */
+const pathCache = new Map<string, Path2D[]>();
+function pathsOf(kind: Kind): Path2D[] {
+  const hit = pathCache.get(kind);
+  if (hit) return hit;
+  const out = ICON[kind].map((p) => {
+    if (p.t === 'path') return new Path2D(p.d);
+    const path = new Path2D();
+    if (p.t === 'rect') {
+      // `roundRect` es reciente; si no está, un rectángulo recto sirve igual.
+      if (typeof path.roundRect === 'function') path.roundRect(p.x, p.y, p.w, p.h, p.r);
+      else path.rect(p.x, p.y, p.w, p.h);
+    } else if (p.t === 'circle') {
+      path.arc(p.cx, p.cy, p.r, 0, 2 * Math.PI);
+    } else {
+      path.moveTo(p.x1, p.y1);
+      path.lineTo(p.x2, p.y2);
     }
-    ctx.closePath();
-  } else if (kind === 'system') {
-    // Hexágono
-    for (let i = 0; i < 6; i++) {
-      const a = Math.PI / 6 + (i * 2 * Math.PI) / 6;
-      const px = x + r * Math.cos(a), py = y + r * Math.sin(a);
-      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
-    }
-    ctx.closePath();
-  } else if (kind === 'subsystem') {
-    // Rombo
-    const rr = r * 1.15;
-    ctx.moveTo(x, y - rr); ctx.lineTo(x + rr, y); ctx.lineTo(x, y + rr); ctx.lineTo(x - rr, y);
-    ctx.closePath();
-  } else {
-    // Cuadrado (otras carpetas)
-    const s = r * 0.92;
-    ctx.rect(x - s, y - s, s * 2, s * 2);
-  }
+    return path;
+  });
+  pathCache.set(kind, out);
+  return out;
+}
+
+/** Dibuja el icono de lucide centrado en (x,y) con el lado `size`. */
+function drawIcon(ctx: CanvasRenderingContext2D, kind: Kind, x: number, y: number, size: number, color: string) {
+  const s = size / 24;
+  ctx.save();
+  ctx.translate(x - size / 2, y - size / 2);
+  ctx.scale(s, s);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;            // grosor de lucide, en unidades del lienzo 24×24
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const p of pathsOf(kind)) ctx.stroke(p);
+  ctx.restore();
 }
 
 const hexToRgb = (h: string) => {
@@ -94,6 +153,19 @@ const hexToRgb = (h: string) => {
 };
 const hexA = (h: string, a: number) => { const { r, g, b } = hexToRgb(h); return `rgba(${r},${g},${b},${a})`; };
 const endId = (l: any, end: 'source' | 'target') => (typeof l[end] === 'object' ? l[end].id : l[end]);
+const tableId = (name: string) => `t:${name}`;
+
+/** Etiqueta y icono de cada tipo — los MISMOS del panel de tablas. */
+const KIND_META: { kind: Kind; label: string; Icon: typeof Boxes }[] = [
+  { kind: 'module', label: 'Módulos', Icon: Boxes },
+  { kind: 'system', label: 'Sistemas', Icon: Network },
+  { kind: 'subsystem', label: 'Subsistemas', Icon: GitBranch },
+  { kind: 'group', label: 'Otras', Icon: Folder },
+  { kind: 'table', label: 'Tablas', Icon: Table2 },
+];
+const KIND_ES: Record<Kind, string> = {
+  module: 'Módulo', system: 'Sistema', subsystem: 'Subsistema', group: 'Carpeta', table: 'Tabla',
+};
 
 function useSize<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
@@ -118,10 +190,7 @@ function flatten(tree: TreeNode[]) {
 
   const walk = (node: TreeNode, parent: string | null, root: string, path: string[]) => {
     const here = [...path, node.name];
-    nodes.push({
-      id: node.id, kind: node.kind, label: node.name, root,
-      path: path.join(' ▸ '), parent,
-    });
+    nodes.push({ id: node.id, kind: node.kind, label: node.name, root, path: path.join(' ▸ '), parent });
     if (parent) links.push({ source: parent, target: node.id, rel: 'tree' });
 
     node.children.forEach((c) => walk(c, node.id, root, here));
@@ -154,6 +223,13 @@ export default function FuentesGraph({
   const [hover, setHover] = useState<string | null>(null);
   const [ForceGraph2D, setForceGraph2D] = useState<any>(null);
 
+  // Carpeta elegida DENTRO del universo (la tabla elegida vive en el panel izquierdo).
+  const [pickedFolder, setPickedFolder] = useState<string | null>(null);
+  // Filtro por tipo: el puntero lo previsualiza, el clic lo fija (igual que Gestión de Datos).
+  const [pinFilter, setPinFilter] = useState<Kind | null>(null);
+  const [hoverFilter, setHoverFilter] = useState<Kind | null>(null);
+  const filter = hoverFilter ?? pinFilter;
+
   useEffect(() => {
     let ok = true;
     import('react-force-graph-2d').then((m) => { if (ok) setForceGraph2D(() => m.default); });
@@ -166,16 +242,27 @@ export default function FuentesGraph({
     const ids = new Set(flat.nodes.map((n) => n.id));
     const rel = relations
       .filter((r) => ids.has(tableId(r.source)) && ids.has(tableId(r.target)))
-      .map((r) => ({
-        source: tableId(r.source),
-        target: tableId(r.target),
-        rel: (r.declared ? 'fk' : 'guess') as 'fk' | 'guess',
-        columns: r.columns,
-      }));
+      .map((r) => ({ source: tableId(r.source), target: tableId(r.target), rel: 'fk' as const, columns: r.columns }));
     return { nodes: flat.nodes, links: [...flat.links, ...rel] };
   }, [tree, relations]);
 
   const byId = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+  const countByKind = useMemo(() => {
+    const m = new Map<Kind, number>();
+    nodes.forEach((n) => m.set(n.kind, (m.get(n.kind) || 0) + 1));
+    return m;
+  }, [nodes]);
+
+  const childrenOf = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const n of nodes) {
+      if (!n.parent) continue;
+      const list = m.get(n.parent);
+      if (list) list.push(n.id);
+      else m.set(n.parent, [n.id]);
+    }
+    return m;
+  }, [nodes]);
 
   const colorByRoot = useMemo(() => {
     const roots = [...new Set(nodes.map((n) => n.root))];
@@ -213,21 +300,32 @@ export default function FuentesGraph({
   }, [nodes, links]);
 
   /* ── Resaltado ────────────────────────────────────────────────────────── */
-  const activeId = hover || (selectedTable ? tableId(selectedTable) : null);
+  const activeId = hover || pickedFolder || (selectedTable ? tableId(selectedTable) : null);
 
-  /** Nodo activo + sus relaciones de datos + su cadena de carpetas hasta el módulo. */
   const lit = useMemo(() => {
+    // El filtro por tipo manda sobre la selección.
+    if (filter) return new Set(nodes.filter((n) => n.kind === filter).map((n) => n.id));
     if (!activeId) return null;
+
     const set = new Set<string>([activeId]);
+    // Relaciones de datos (solo aplica a tablas).
     relNeighbors.get(activeId)?.forEach((k) => set.add(k));
+    // Ancestros: la cadena de carpetas hasta el módulo.
     let cur = byId.get(activeId)?.parent ?? null;
     while (cur) { set.add(cur); cur = byId.get(cur)?.parent ?? null; }
-    // Si el activo es una carpeta, se encienden sus hijos directos.
+    // Descendientes: si es carpeta, TODO su subárbol (sistemas, subsistemas y tablas).
     if (byId.get(activeId)?.kind !== 'table') {
-      nodes.forEach((n) => { if (n.parent === activeId) set.add(n.id); });
+      const stack = [activeId];
+      while (stack.length) {
+        for (const child of childrenOf.get(stack.pop()!) ?? []) {
+          if (set.has(child)) continue;
+          set.add(child);
+          stack.push(child);
+        }
+      }
     }
     return set;
-  }, [activeId, relNeighbors, byId, nodes]);
+  }, [filter, activeId, nodes, relNeighbors, byId, childrenOf]);
 
   const isLit = (id: string) => !lit || lit.has(id);
   const linkLit = (l: any) => !lit || (lit.has(endId(l, 'source')) && lit.has(endId(l, 'target')));
@@ -245,7 +343,7 @@ export default function FuentesGraph({
     fg.zoom(Math.max(fg.zoom(), 1.8), duration);
     return true;
   };
-  // Se lee dentro de los timeouts: así usan siempre la selección vigente.
+  // Se leen dentro de los timeouts: así usan siempre la selección vigente.
   const focusRef = useRef(focusSelected);
   focusRef.current = focusSelected;
   const selectedRef = useRef(selectedTable);
@@ -272,6 +370,7 @@ export default function FuentesGraph({
   // Al elegir una tabla en el panel izquierdo, el universo viaja hasta ella.
   useEffect(() => {
     if (!selectedTable) return;
+    setPickedFolder(null);
     if (focusSelected()) return;
     const t = setTimeout(() => focusRef.current(), 450);  // aún sin posición: reintenta
     return () => clearTimeout(t);
@@ -289,15 +388,20 @@ export default function FuentesGraph({
     </button>
   );
 
-  /* ── Ficha de la tabla seleccionada ───────────────────────────────────── */
-  const selNode = selectedTable ? byId.get(tableId(selectedTable)) : null;
+  /* ── Ficha de lo seleccionado ─────────────────────────────────────────── */
+  const focusNode = pickedFolder ? byId.get(pickedFolder) : selectedTable ? byId.get(tableId(selectedTable)) : null;
   const selRels = useMemo(() => {
-    if (!selectedTable) return { out: [] as GraphRelation[], in: [] as GraphRelation[] };
+    if (!selectedTable || pickedFolder) return { out: [] as GraphRelation[], in: [] as GraphRelation[] };
     return {
       out: relations.filter((r) => r.source === selectedTable),
       in: relations.filter((r) => r.target === selectedTable),
     };
-  }, [relations, selectedTable]);
+  }, [relations, selectedTable, pickedFolder]);
+  /** Cuántas tablas cuelgan de la carpeta enfocada (subárbol completo). */
+  const folderTables = useMemo(() => {
+    if (!pickedFolder || !lit) return 0;
+    return [...lit].filter((id) => byId.get(id)?.kind === 'table').length;
+  }, [pickedFolder, lit, byId]);
 
   return (
     <div ref={ref} style={{ background: BG }} className="relative w-full h-full overflow-hidden rounded-lg border border-digi-border">
@@ -310,34 +414,59 @@ export default function FuentesGraph({
         </div>
       )}
 
-      {/* Leyenda */}
-      <div className="absolute top-2.5 left-2.5 z-10 rounded-md bg-black/45 border border-white/10 backdrop-blur-sm px-2.5 py-2 text-white/70 pointer-events-none"
-           style={{ fontFamily: 'var(--font-body)', fontSize: 10.5 }}>
-        <p className="mb-1 text-white/90 font-semibold">Universo del esquema</p>
-        <p>★ módulo · ⬢ sistema · ◆ subsistema · ● tabla</p>
-        <p className="mt-0.5">— relación declarada (FK) · - - relación inferida · línea tenue: jerarquía</p>
+      {/* Leyenda-filtro: el puntero previsualiza el resaltado, el clic lo fija/quita. */}
+      <div className={`absolute top-2.5 left-2.5 z-10 ${GLASS} p-2 w-[168px]`}>
+        <p className="text-[9.5px] uppercase tracking-wide text-white/50 mb-1.5 px-0.5" style={{ fontFamily: 'var(--font-body)' }}>
+          Tipos
+        </p>
+        <div className="grid grid-cols-1 gap-0.5">
+          {KIND_META.map(({ kind, label, Icon }) => (
+            <button
+              key={kind}
+              onMouseEnter={() => setHoverFilter(kind)}
+              onMouseLeave={() => setHoverFilter(null)}
+              onClick={() => setPinFilter((p) => (p === kind ? null : kind))}
+              className={`flex items-center gap-1.5 px-1.5 py-1 rounded text-left transition-colors ${
+                pinFilter === kind ? 'bg-white/20' : 'hover:bg-white/10'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5 shrink-0 text-white/85" />
+              <span className="text-[11px] text-white/85 flex-1" style={{ fontFamily: 'var(--font-body)' }}>{label}</span>
+              <span className="text-[10px] text-white/45" style={{ fontFamily: 'var(--font-body)' }}>
+                {countByKind.get(kind) ?? 0}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Ficha de la selección */}
-      {selNode && (
-        <div className="absolute bottom-2.5 left-2.5 z-10 max-w-[330px] rounded-md bg-black/60 border border-white/10 backdrop-blur-sm px-3 py-2.5 text-white/80"
+      {/* Ficha de lo enfocado */}
+      {focusNode && (
+        <div className={`absolute bottom-2.5 left-2.5 z-10 max-w-[340px] ${GLASS} px-3 py-2.5 text-white/80`}
              style={{ fontFamily: 'var(--font-body)' }}>
-          <p className="text-[12.5px] font-semibold text-white">{selNode.label}</p>
-          <p className="text-[10.5px] text-white/55 mt-0.5">{selNode.path}</p>
-          <p className="text-[10.5px] text-white/55">
-            {(selNode.rows ?? 0).toLocaleString('es-ES')} filas ·{' '}
-            {selRels.out.length + selRels.in.length} relaciones
+          <p className="text-[12.5px] font-semibold text-white">{focusNode.label}</p>
+          <p className="text-[10.5px] text-white/55 mt-0.5">
+            {KIND_ES[focusNode.kind]}{focusNode.path ? ` · ${focusNode.path}` : ''}
           </p>
-          {!!selRels.out.length && (
-            <p className="text-[10.5px] mt-1.5">
-              <span className="text-white/50">Apunta a:</span>{' '}
-              {selRels.out.map((r) => r.target).join(', ')}
-            </p>
-          )}
-          {!!selRels.in.length && (
-            <p className="text-[10.5px] mt-0.5">
-              <span className="text-white/50">Le apuntan:</span>{' '}
-              {selRels.in.map((r) => r.source).join(', ')}
+          {focusNode.kind === 'table' ? (
+            <>
+              <p className="text-[10.5px] text-white/55">
+                {(focusNode.rows ?? 0).toLocaleString('es-ES')} filas · {selRels.out.length + selRels.in.length} relaciones
+              </p>
+              {!!selRels.out.length && (
+                <p className="text-[10.5px] mt-1.5">
+                  <span className="text-white/50">Apunta a:</span> {selRels.out.map((r) => r.target).join(', ')}
+                </p>
+              )}
+              {!!selRels.in.length && (
+                <p className="text-[10.5px] mt-0.5">
+                  <span className="text-white/50">Le apuntan:</span> {selRels.in.map((r) => r.source).join(', ')}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-[10.5px] text-white/55">
+              {folderTables} {folderTables === 1 ? 'tabla' : 'tablas'} en su interior
             </p>
           )}
         </div>
@@ -361,77 +490,73 @@ export default function FuentesGraph({
           d3VelocityDecay={0.3}
           nodeRelSize={4}
           enableNodeDrag
+          onBackgroundClick={() => { setPickedFolder(null); setPinFilter(null); }}
           onNodeHover={(n: any) => setHover(n ? n.id : null)}
           onNodeClick={(n: any) => {
-            const ref_: GNode | undefined = n?.ref;
-            if (ref_?.kind === 'table') onSelectTable(ref_.label);
-            if (n) fgRef.current?.centerAt(n.x, n.y, 500);
+            const d: GNode | undefined = n?.ref;
+            if (!d) return;
+            if (d.kind === 'table') { setPickedFolder(null); onSelectTable(d.label); }
+            else setPickedFolder((p) => (p === d.id ? null : d.id));
+            fgRef.current?.centerAt(n.x, n.y, 500);
           }}
           nodeLabel={(n: any) => {
             const d: GNode = n.ref;
-            const kindEs = d.kind === 'table' ? 'Tabla'
-              : d.kind === 'module' ? 'Módulo'
-              : d.kind === 'system' ? 'Sistema'
-              : d.kind === 'subsystem' ? 'Subsistema' : 'Carpeta';
             const rows = d.kind === 'table' ? ` · ${(d.rows ?? 0).toLocaleString('es-ES')} filas` : '';
             return `<div style="font-family:var(--font-body);font-size:11px;line-height:1.35">
-              <b>${d.label}</b><br/><span style="opacity:.65">${kindEs}${rows}</span>
+              <b>${d.label}</b><br/><span style="opacity:.65">${KIND_ES[d.kind]}${rows}</span>
               ${d.path ? `<br/><span style="opacity:.5">${d.path}</span>` : ''}
             </div>`;
           }}
           linkColor={(l: any) => {
-            if (!linkLit(l)) return 'rgba(255,255,255,0.03)';
-            if (l.rel === 'tree') return 'rgba(255,255,255,0.13)';
+            if (!linkLit(l)) return 'rgba(255,255,255,0.025)';
             const c = colorByRoot.get(byId.get(endId(l, 'source'))?.root ?? '') ?? '#ffffff';
-            return hexA(c, l.rel === 'fk' ? 0.85 : 0.5);
+            // Con algo enfocado, las aristas de la vecindad se encienden a tope.
+            if (lit) return l.rel === 'tree' ? hexA(c, 0.9) : '#ffffff';
+            return l.rel === 'tree' ? 'rgba(255,255,255,0.13)' : hexA(c, 0.75);
           }}
-          linkWidth={(l: any) => (l.rel === 'tree' ? 0.5 : linkLit(l) && lit ? 1.8 : 1)}
-          linkLineDash={(l: any) => (l.rel === 'guess' ? [3, 3] : null)}
-          linkDirectionalArrowLength={(l: any) => (l.rel === 'tree' ? 0 : 2.6)}
+          linkWidth={(l: any) => {
+            if (!lit) return l.rel === 'tree' ? 0.5 : 1;
+            if (!linkLit(l)) return 0.4;
+            return l.rel === 'tree' ? 1.6 : 2.4;
+          }}
+          linkDirectionalArrowLength={(l: any) => (l.rel === 'tree' ? 0 : linkLit(l) && lit ? 4.5 : 2.6)}
           linkDirectionalArrowRelPos={1}
+          linkDirectionalParticles={(l: any) => (lit && linkLit(l) && l.rel === 'fk' ? 2 : 0)}
+          linkDirectionalParticleWidth={2}
+          linkDirectionalParticleColor={() => '#ffffff'}
           nodeCanvasObject={(n: any, ctx: CanvasRenderingContext2D, scale: number) => {
             const d: GNode = n.ref;
             const on = isLit(n.id);
             const color = colorByRoot.get(d.root) ?? '#ffffff';
-            const r = RADIUS[d.kind];
-            const isSel = selectedTable && n.id === tableId(selectedTable);
+            const size = SIZE[d.kind];
+            const isFocus = n.id === activeId;
 
-            // Halo del seleccionado
-            if (isSel) {
+            // Halo del enfocado
+            if (isFocus) {
               ctx.beginPath();
-              ctx.arc(n.x, n.y, r + 5, 0, 2 * Math.PI);
-              ctx.fillStyle = hexA(color, 0.22);
+              ctx.arc(n.x, n.y, size * 0.85, 0, 2 * Math.PI);
+              ctx.fillStyle = hexA(color, 0.25);
               ctx.fill();
             }
 
-            traceShape(ctx, d.kind, n.x, n.y, r);
-            ctx.fillStyle = on ? color : hexA(color, 0.12);
-            ctx.fill();
-            if (d.kind !== 'table') {
-              ctx.strokeStyle = on ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.1)';
-              ctx.lineWidth = 0.7;
-              ctx.stroke();
-            }
-            if (isSel) {
-              ctx.strokeStyle = '#ffffff';
-              ctx.lineWidth = 1.4;
-              ctx.stroke();
-            }
+            drawIcon(ctx, d.kind, n.x, n.y, size, on ? (isFocus ? '#ffffff' : color) : hexA(color, 0.13));
 
             // Etiquetas: las carpetas siempre; las tablas solo con zoom, al pasar por
-            // encima o si están seleccionadas (si no, 172 nombres se solapan).
-            const showLabel = d.kind !== 'table' || scale > 2.2 || n.id === activeId || isSel;
+            // encima o si están enfocadas (si no, 172 nombres se solapan).
+            const showLabel = d.kind !== 'table' || scale > 2.2 || isFocus;
             if (showLabel && on) {
-              const size = (d.kind === 'module' ? 4.6 : d.kind === 'table' ? 3.2 : 3.8) * Math.min(1.6, 12 / scale);
-              ctx.font = `${d.kind === 'table' ? '' : '600 '}${size}px var(--font-body), sans-serif`;
+              const fs = (d.kind === 'module' ? 4.6 : d.kind === 'table' ? 3.2 : 3.8) * Math.min(1.6, 12 / scale);
+              ctx.font = `${d.kind === 'table' ? '' : '600 '}${fs}px var(--font-body), sans-serif`;
               ctx.textAlign = 'center';
               ctx.textBaseline = 'top';
               ctx.fillStyle = d.kind === 'table' ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.95)';
-              ctx.fillText(d.label, n.x, n.y + r + 1.5);
+              ctx.fillText(d.label, n.x, n.y + size / 2 + 1.5);
             }
           }}
           nodePointerAreaPaint={(n: any, color: string, ctx: CanvasRenderingContext2D) => {
-            traceShape(ctx, (n.ref as GNode).kind, n.x, n.y, RADIUS[(n.ref as GNode).kind] + 2);
+            const size = SIZE[(n.ref as GNode).kind];
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, size * 0.7, 0, 2 * Math.PI);
             ctx.fillStyle = color;
             ctx.fill();
           }}

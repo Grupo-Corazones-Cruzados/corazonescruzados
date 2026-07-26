@@ -3082,12 +3082,11 @@ Módulos principales:
     para que cada familia se vea como una constelación. Aristas: **199 de jerarquía** (el mismo árbol del
     rail) + **175 de relación** entre tablas.
   - **Relaciones** (`lib/admin/fuentes-graph.ts`, `GET /api/admin/fuentes?relations=1` — va como parámetro y
-    NO como subruta para no chocar con `/api/admin/fuentes/[table]`): **82 declaradas** (FK real de
-    `pg_constraint`, línea sólida) + **93 inferidas** (columna `<algo>_id` que casa con una tabla, línea
-    punteada y etiquetada como inferida). La inferencia prueba **primero dentro de la familia del prefijo**
-    (`aa_problem_causes.problem_id` → `aa_problems`, no `problems`), lo que sube la cobertura de 133 a **141
-    de 172 tablas** con al menos una relación. Las 31 restantes (catálogos, logs, semillas) siguen colgando
-    de su carpeta por la jerarquía.
+    NO como subruta para no chocar con `/api/admin/fuentes/[table]`): **SOLO las 82 FK declaradas** en
+    `pg_constraint`. **CORRECCIÓN (2026-07-25, decisión del usuario):** se probó añadir ~93 relaciones
+    *inferidas* por convención `<algo>_id`; el usuario detectó que alguna no existía y pidió quitarlas —
+    **solo sirven relaciones reales**. Si sale una flecha, existe la restricción en Postgres. Las tablas sin
+    FK no quedan sueltas: cuelgan de su carpeta por la jerarquía.
   - **Al elegir una tabla en el rail el grafo viaja hasta ella** (centra + zoom) y deja encendidas solo sus
     relaciones y su cadena de carpetas hasta el módulo; el resto se atenúa. Ficha flotante con ruta, filas y
     a qué apunta / quién le apunta. Clic en un nodo-tabla la selecciona (y la vista Tabla ya la tiene lista).
@@ -3098,3 +3097,20 @@ Módulos principales:
     `window.innerHeight` sin descontar la **barra de ruta fija** del dashboard (`nav[aria-label="Ruta"]`,
     36px). Ahora se mide esa barra y se resta. La columna de contenido usa el mismo alto, así la tabla y el
     grafo llenan la pantalla y el scroll es interno.
+
+- **Fuentes/Universo — resaltado por selección y filtros (2026-07-25):** ajustes pedidos tras la primera
+  versión del grafo:
+  - **Seleccionar una carpeta enciende TODO su subárbol** (sus sistemas, subsistemas y tablas) más sus
+    ancestros — no solo los hijos directos. Verificado: Centralizado ilumina 65 tablas, Gestión de Datos 25,
+    Rompecabezas y piezas 6, Proyectos 17. Se selecciona con clic en el nodo del universo (`pickedFolder`);
+    volver a hacer clic o pulsar el fondo lo suelta.
+  - **Las flechas de la vecindad se resaltan**: las aristas encendidas suben de grosor y opacidad, la punta
+    de flecha crece y las de FK llevan **partículas animadas**; el resto casi desaparece.
+  - **Leyenda-filtro arriba a la izquierda** (sustituye al texto explicativo que había): Módulos · Sistemas ·
+    Subsistemas · Otras · Tablas, con su conteo. **Pasar el puntero previsualiza** el resaltado y el **clic lo
+    fija/quita**, igual que la leyenda de Gestión de Datos y Comandos Violeta. El filtro por tipo manda sobre
+    la selección.
+  - **Los nodos se dibujan con los MISMOS iconos de lucide del panel de tablas** (Boxes · Network · GitBranch ·
+    Folder · Table2), no con formas geométricas: se copió la geometría del icono (lienzo 24×24) a primitivas
+    y se traza con `Path2D` sobre el canvas, con los `Path2D` **cacheados por tipo** (reconstruirlos por frame
+    con 219 nodos es caro). `roundRect` lleva respaldo a `rect` por si el navegador no lo trae.
