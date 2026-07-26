@@ -2940,6 +2940,11 @@ export default function LandingPage() {
             pointerEvents: windAway ? 'none' : 'auto',
           }}
         >
+          {/* Pensamiento destacado. Va ABSOLUTO sobre el bloque central (bottom: 100%), así
+              que aparezca cuando aparezca NO desplaza nada: el título y los botones quedan
+              clavados en su sitio desde el primer pintado. */}
+          <FeaturedThought windAway={windAway} />
+
           <div
             className="inline-block px-4 py-1.5 mb-6 text-accent-glow border-2 border-accent/40 bg-accent/10"
             style={{
@@ -3082,9 +3087,6 @@ export default function LandingPage() {
             </button>
             </div>
 
-            {/* Pensamiento elegido por el administrador (Pensamientos → publicar).
-                Si no hay ninguno publicado, no renderiza nada. */}
-            <FeaturedThought windAway={windAway} />
           </div>
         </div>
       </section>

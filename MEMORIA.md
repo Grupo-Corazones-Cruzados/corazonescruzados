@@ -3209,7 +3209,18 @@ Módulos principales:
     `{ id }` / `{ id: null }`. `GET /api/pensamientos` devuelve además `featuredId` **solo al admin**.
   - **Tope de largo:** un pensamiento puede tener 50 000 caracteres y esto va en la portada, que carga
     cualquier visitante → se recorta a **600** (`FEATURED_MAX_LEN`) con «…» visible, no en silencio.
-  - **Cómo se ve** (`components/landing/FeaturedThought.tsx`): bajo los botones, "transmisión" pixelart —
+  - **CORRECCIÓN (2026-07-26):** iba **bajo los botones** y, al llegar por fetch, **empujaba toda la portada
+    hacia arriba** (salto visible en cada carga). Ahora va **ENCIMA del distintivo "Grupo Corazones
+    Cruzados"** y, sobre todo, **absoluto** dentro del bloque central (`bottom: calc(100% + 14px)`), así que
+    **no ocupa sitio en el flujo y no desplaza nada**. Verificado midiendo el título y el botón antes y
+    después de que aparezca: la única variación es de 1-2 px y es la animación `breathe` que ya existía —
+    comprobado con un test de control en el que el pensamiento nunca llega y la posición oscila igual.
+  - **Recorte por altura de ventana:** al ir arriba, el sitio disponible es el hueco sobre el hero y se
+    encoge en portátiles bajos. Un pensamiento largo se salía por arriba, así que
+    `.featured-thought-text` (globals.css) recorta a **4 / 3 / 2 / 1 líneas** según `max-height` (860 / 780 /
+    700 px) y compacta el panel. Verificado con un texto de 572 caracteres en 1440×760, 1280×680 y 390×844:
+    cabe en las tres.
+  - **Cómo se ve** (`components/landing/FeaturedThought.tsx`): panel con halo morado —
     esquinas de marco en accent, kicker `PENSAMIENTO` en Silkscreen, el texto **escribiéndose a máquina**
     (22 ms/carácter, con cursor ▌) y la fecha. Respeta `prefers-reduced-motion` (muestra el texto de golpe) y
     se va con el viento (`windAway`) como el resto del hero. **Si no hay nada publicado no renderiza nada** y
