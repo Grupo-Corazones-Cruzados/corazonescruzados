@@ -109,6 +109,14 @@ async function vestirPersonaje(instance: GodotEngineInstance) {
     const datos = new Uint8Array(await r.arrayBuffer());
     // `/userfs` es lo que Godot ve como `user://` en el export web.
     instance.copyToFS('/userfs/personaje.png', datos);
+
+    // Y el RIG, que no puede ser fijo: depende de lo que lleve puesto. Va en la
+    // misma tanda para que el motor tenga las dos piezas antes de montar nada.
+    const rig = await fetch('/api/character/rig', { cache: 'no-store' });
+    if (rig.ok) {
+      const texto = new TextEncoder().encode(await rig.text());
+      instance.copyToFS('/userfs/personaje-rig.json', texto);
+    }
   } catch (e) {
     console.info('No se pudo preparar el personaje:', e);
   }

@@ -2324,3 +2324,27 @@ lo que se lleva puesto, anclajes para lo que se sujeta.
      export lo deja fuera. Son dos caminos distintos y el motor avisa.
 - **Hoja de prueba** (`godot/assets/personaje-prueba.png`): una chica CON FALDA, que es el caso que
   más exige al rig. Permite trabajar la animación sin levantar la web.
+
+#### P38 — ⚠️ EL ERROR DE FONDO: recortar un dibujo plano no sirve · ✅ Corregido con DESPIECE
+- **Corrección del usuario:** *"lo que estás intentando hacer con un solo dibujo no tiene sentido"*.
+  Tenía razón. En un dibujo plano **el brazo no existe como pieza**: son unos píxeles pegados al torso.
+  Al recortarlo y girarlo, el hombro se abre y quedan manos sueltas — que es justo lo que se veía.
+- **Comprobado lo de la librería, y NO era como se recordaba:** una hoja LPC del cuerpo es
+  **832×2944 = 13 columnas × 46 filas** de 64 px, y **en cada fotograma el cuerpo está dibujado
+  entero**. LPC separa **capas de ropa** (cuerpo, pelo, camisa, pantalón, zapatos), no partes del
+  cuerpo. Son ~600 fotogramas a mano por capa: ese camino no lo podemos recorrer.
+- **La solución: pedirle al modelo el DESPIECE.** `scripts/despiezar.mjs` pide el personaje
+  desmontado en piezas de marioneta: cabeza con cuello, torso sin brazos, brazos enteros, piernas
+  enteras, faldón suelto — **con el extremo de la articulación redondeado y material de sobra en la
+  unión**. Funciona a la primera y en las 4 vistas.
+- `scripts/armar-piezas.mjs` las detecta como **manchas conectadas** (cada pieza es una isla), las
+  **clasifica por posición y tamaño** (cabeza arriba, torso al centro, brazos a los lados…), calcula
+  el **pivote** de cada una y las empaqueta en un atlas + JSON para Godot.
+- ⚠️ **Los pivotes no son todos iguales, y confundirlos rompe el montaje:** lo que CUELGA (brazos,
+  piernas, faldón) pivota por su **borde superior**; lo que se APOYA (cabeza sobre el cuello, torso
+  sobre la cadera) pivota por el **inferior**. Con el faldón mal puesto, colgaba hacia arriba y tapaba
+  el torso entero.
+- **Los puntos de unión se calculan de las proporciones del torso**, no se escriben a mano: cada
+  prenda da un torso de otro tamaño (una túnica es más ancha que una camisa).
+- **Montado y ejecutado en Godot**: 7 piezas, jerarquía con el torso como raíz (inclinarlo arrastra
+  cabeza y brazos), caminata por rotación. **La materia prima ya es la correcta.**

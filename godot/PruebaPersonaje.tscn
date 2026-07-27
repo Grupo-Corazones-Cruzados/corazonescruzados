@@ -12,7 +12,7 @@ offset_bottom = 540.0
 color = Color(0.051, 0.043, 0.078, 1)
 
 [node name="Articulado" type="Node2D" parent="."]
-position = Vector2(480, 130)
+position = Vector2(480, 330)
 scale = Vector2(3, 3)
 script = ExtResource("2_articulado")
 

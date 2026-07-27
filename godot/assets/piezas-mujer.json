@@ -1,0 +1,458 @@
+{
+  "version": 3,
+  "alto_personaje": 112,
+  "vistas": [
+    {
+      "cabeza": {
+        "region": {
+          "x": 0,
+          "y": 0,
+          "w": 31,
+          "h": 36
+        },
+        "pivote": {
+          "x": 16,
+          "y": 35
+        }
+      },
+      "torso": {
+        "region": {
+          "x": 32,
+          "y": 0,
+          "w": 31,
+          "h": 41
+        },
+        "pivote": {
+          "x": 16,
+          "y": 40
+        }
+      },
+      "faldon": {
+        "region": {
+          "x": 64,
+          "y": 0,
+          "w": 40,
+          "h": 40
+        },
+        "pivote": {
+          "x": 20,
+          "y": 1
+        }
+      },
+      "brazoLejano": {
+        "region": {
+          "x": 105,
+          "y": 0,
+          "w": 14,
+          "h": 39
+        },
+        "pivote": {
+          "x": 7,
+          "y": 1
+        }
+      },
+      "brazoCercano": {
+        "region": {
+          "x": 120,
+          "y": 0,
+          "w": 14,
+          "h": 39
+        },
+        "pivote": {
+          "x": 7,
+          "y": 1
+        }
+      },
+      "piernaIzq": {
+        "region": {
+          "x": 135,
+          "y": 0,
+          "w": 15,
+          "h": 52
+        },
+        "pivote": {
+          "x": 8,
+          "y": 1
+        }
+      },
+      "piernaDer": {
+        "region": {
+          "x": 151,
+          "y": 0,
+          "w": 15,
+          "h": 52
+        },
+        "pivote": {
+          "x": 8,
+          "y": 1
+        }
+      },
+      "_union": {
+        "cuello": {
+          "x": 16,
+          "y": 1
+        },
+        "hombroLejano": {
+          "x": 4,
+          "y": 6
+        },
+        "hombroCercano": {
+          "x": 27,
+          "y": 6
+        },
+        "caderaIzq": {
+          "x": 10,
+          "y": 39
+        },
+        "caderaDer": {
+          "x": 21,
+          "y": 39
+        },
+        "cadera": {
+          "x": 16,
+          "y": 39
+        },
+        "mano": {
+          "x": 7,
+          "y": 37
+        }
+      }
+    },
+    {
+      "cabeza": {
+        "region": {
+          "x": 167,
+          "y": 0,
+          "w": 31,
+          "h": 34
+        },
+        "pivote": {
+          "x": 16,
+          "y": 33
+        }
+      },
+      "torso": {
+        "region": {
+          "x": 199,
+          "y": 0,
+          "w": 30,
+          "h": 43
+        },
+        "pivote": {
+          "x": 15,
+          "y": 42
+        }
+      },
+      "faldon": {
+        "region": {
+          "x": 230,
+          "y": 0,
+          "w": 42,
+          "h": 45
+        },
+        "pivote": {
+          "x": 21,
+          "y": 1
+        }
+      },
+      "brazoLejano": {
+        "region": {
+          "x": 273,
+          "y": 0,
+          "w": 18,
+          "h": 42
+        },
+        "pivote": {
+          "x": 9,
+          "y": 1
+        }
+      },
+      "brazoCercano": {
+        "region": {
+          "x": 292,
+          "y": 0,
+          "w": 18,
+          "h": 42
+        },
+        "pivote": {
+          "x": 9,
+          "y": 1
+        }
+      },
+      "piernaIzq": {
+        "region": {
+          "x": 311,
+          "y": 0,
+          "w": 19,
+          "h": 52
+        },
+        "pivote": {
+          "x": 10,
+          "y": 1
+        }
+      },
+      "piernaDer": {
+        "region": {
+          "x": 331,
+          "y": 0,
+          "w": 19,
+          "h": 52
+        },
+        "pivote": {
+          "x": 10,
+          "y": 1
+        }
+      },
+      "_union": {
+        "cuello": {
+          "x": 15,
+          "y": 1
+        },
+        "hombroLejano": {
+          "x": 4,
+          "y": 6
+        },
+        "hombroCercano": {
+          "x": 26,
+          "y": 6
+        },
+        "caderaIzq": {
+          "x": 10,
+          "y": 41
+        },
+        "caderaDer": {
+          "x": 20,
+          "y": 41
+        },
+        "cadera": {
+          "x": 15,
+          "y": 41
+        },
+        "mano": {
+          "x": 9,
+          "y": 40
+        }
+      }
+    },
+    {
+      "cabeza": {
+        "region": {
+          "x": 351,
+          "y": 0,
+          "w": 28,
+          "h": 35
+        },
+        "pivote": {
+          "x": 14,
+          "y": 34
+        }
+      },
+      "torso": {
+        "region": {
+          "x": 380,
+          "y": 0,
+          "w": 15,
+          "h": 51
+        },
+        "pivote": {
+          "x": 8,
+          "y": 50
+        }
+      },
+      "faldon": {
+        "region": {
+          "x": 396,
+          "y": 0,
+          "w": 31,
+          "h": 37
+        },
+        "pivote": {
+          "x": 16,
+          "y": 1
+        }
+      },
+      "brazoLejano": {
+        "region": {
+          "x": 428,
+          "y": 0,
+          "w": 21,
+          "h": 33
+        },
+        "pivote": {
+          "x": 11,
+          "y": 1
+        }
+      },
+      "brazoCercano": {
+        "region": {
+          "x": 450,
+          "y": 0,
+          "w": 15,
+          "h": 51
+        },
+        "pivote": {
+          "x": 8,
+          "y": 1
+        }
+      },
+      "piernaIzq": {
+        "region": {
+          "x": 466,
+          "y": 0,
+          "w": 17,
+          "h": 42
+        },
+        "pivote": {
+          "x": 9,
+          "y": 1
+        }
+      },
+      "piernaDer": {
+        "region": {
+          "x": 484,
+          "y": 0,
+          "w": 17,
+          "h": 42
+        },
+        "pivote": {
+          "x": 9,
+          "y": 1
+        }
+      },
+      "_union": {
+        "cuello": {
+          "x": 8,
+          "y": 1
+        },
+        "hombroLejano": {
+          "x": 2,
+          "y": 7
+        },
+        "hombroCercano": {
+          "x": 13,
+          "y": 7
+        },
+        "caderaIzq": {
+          "x": 5,
+          "y": 49
+        },
+        "caderaDer": {
+          "x": 10,
+          "y": 49
+        },
+        "cadera": {
+          "x": 8,
+          "y": 49
+        },
+        "mano": {
+          "x": 8,
+          "y": 49
+        }
+      }
+    },
+    {
+      "cabeza": {
+        "region": {
+          "x": 502,
+          "y": 0,
+          "w": 31,
+          "h": 37
+        },
+        "pivote": {
+          "x": 16,
+          "y": 36
+        }
+      },
+      "torso": {
+        "region": {
+          "x": 534,
+          "y": 0,
+          "w": 59,
+          "h": 33
+        },
+        "pivote": {
+          "x": 30,
+          "y": 32
+        }
+      },
+      "faldon": {
+        "region": {
+          "x": 594,
+          "y": 0,
+          "w": 36,
+          "h": 46
+        },
+        "pivote": {
+          "x": 18,
+          "y": 1
+        }
+      },
+      "brazoLejano": {
+        "region": {
+          "x": 631,
+          "y": 0,
+          "w": 20,
+          "h": 59
+        },
+        "pivote": {
+          "x": 10,
+          "y": 1
+        }
+      },
+      "brazoCercano": {
+        "region": {
+          "x": 652,
+          "y": 0,
+          "w": 36,
+          "h": 32
+        },
+        "pivote": {
+          "x": 18,
+          "y": 1
+        }
+      },
+      "piernaIzq": {
+        "region": {
+          "x": 689,
+          "y": 0,
+          "w": 20,
+          "h": 59
+        },
+        "pivote": {
+          "x": 10,
+          "y": 1
+        }
+      },
+      "_union": {
+        "cuello": {
+          "x": 30,
+          "y": 1
+        },
+        "hombroLejano": {
+          "x": 8,
+          "y": 5
+        },
+        "hombroCercano": {
+          "x": 51,
+          "y": 5
+        },
+        "caderaIzq": {
+          "x": 19,
+          "y": 31
+        },
+        "caderaDer": {
+          "x": 40,
+          "y": 31
+        },
+        "cadera": {
+          "x": 30,
+          "y": 31
+        },
+        "mano": {
+          "x": 18,
+          "y": 30
+        }
+      }
+    }
+  ]
+}

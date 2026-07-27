@@ -1,24 +1,26 @@
 #!/usr/bin/env node
 /**
- * Escribe el rig en `godot/assets/rig-personaje.json`.
+ * Mide el rig de la hoja de PRUEBA y lo deja en `godot/assets/rig-prueba.json`.
  *
- * Godot y la web deben cortar el personaje EXACTAMENTE por los mismos sitios, o
- * el muñeco se descoyunta. En vez de copiar los números a mano en GDScript —que
- * es como se desincronizan las cosas— se exportan del módulo que ya los tiene.
- * Al tocar `lib/game/esqueleto.js`, se relanza esto y Godot se entera.
+ * Ojo: esto es solo para el banco de pruebas del escritorio. El rig del jugador
+ * NO puede ser fijo, porque depende de lo que lleve puesto —una túnica no ocupa
+ * lo mismo que una camisa—, así que en el juego real lo calcula el servidor con
+ * la misma función y viaja junto a la hoja (ver /api/character/rig).
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { ESQUELETO, ORDEN } from '../lib/game/esqueleto.js';
+import sharp from 'sharp';
+import { medirEsqueleto, ORDEN } from '../lib/game/esqueleto.js';
 
-const salida = path.join(process.cwd(), 'godot', 'assets', 'rig-personaje.json');
-await fs.mkdir(path.dirname(salida), { recursive: true });
-await fs.writeFile(salida, JSON.stringify({
-  version: 1,
-  celda: { ancho: 96, alto: 128 },
-  orden: ORDEN,
-  esqueleto: ESQUELETO,
-}, null, 2));
+const hoja = path.join(process.cwd(), 'godot', 'assets', 'personaje-prueba.png');
+const { data, info } = await sharp(hoja).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+const px = new Uint8ClampedArray(data);
 
-const n = Object.values(ESQUELETO).reduce((s, e) => s + Object.keys(e).length, 0);
-console.log(`✔ godot/assets/rig-personaje.json — ${n} definiciones`);
+const vistas = [];
+for (let v = 0; v < 4; v++) {
+  vistas.push(medirEsqueleto(px, info.width, v, { esFalda: true }));
+}
+
+const salida = path.join(process.cwd(), 'godot', 'assets', 'rig-prueba.json');
+await fs.writeFile(salida, JSON.stringify({ version: 2, celda: { ancho: 96, alto: 128 }, orden: ORDEN, vistas }, null, 2));
+console.log(`✔ ${path.relative(process.cwd(), salida)} — rig medido de las 4 vistas`);
