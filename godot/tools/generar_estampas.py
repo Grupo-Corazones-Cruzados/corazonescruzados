@@ -94,6 +94,7 @@ INSERTADAS = {
     76: 7,   # inauguración de la fábrica: aquí entra la industria → tono de Acto 2
     77: 7,   # POV del joven leyendo la noticia de la fábrica en el periódico
     78: 7,   # los jóvenes se van del pueblo hacia la fábrica; otros se quedan
+    79: 7,   # la 78 corregida por edición (letrero y chimenea)
 }
 
 
@@ -709,16 +710,28 @@ ESCENAS = [
         "visibles, formando una Y: "
         "(a) el RAMAL DERECHO se aleja recto hacia el HORIZONTE y se va haciendo fino hasta "
         "perderse; al final de él, MUY LEJOS, sube una ÚNICA COLUMNA DE HUMO grisácea, fina y "
-        "alta. PROHIBIDO que se vea la fábrica, ni su chimenea, ni ningún edificio ahí: SOLO el "
-        "humo en la lejanía. "
+        "alta. ⚠ EL HUMO NACE DETRÁS DE UNA COLINA: la columna empieza justo por encima de la "
+        "loma, de modo que su origen queda OCULTO tras el relieve. PROHIBIDO ABSOLUTAMENTE que "
+        "se vea la fábrica ni NINGUNA parte de ella: ni el edificio, ni la chimenea, ni una "
+        "línea o palo vertical, ni una silueta, ni un tejado, ni nada construido en el "
+        "horizonte. En el horizonte SOLO se ve el humo saliendo de detrás de la colina. "
+        "⚠ EL HORIZONTE Y EL FONDO TIENEN QUE ESTAR VIVOS, NO VACÍOS — esto es importante: "
+        "PROHIBIDO dejar el fondo como una franja de hierba lisa y desierta. Rellénalo con "
+        "PAISAJE en varios planos de profundidad: COLINAS suaves solapadas que se van aclarando "
+        "con la distancia, MANCHAS DE ARBOLEDA y bosquetes de copas oscuras repartidos por las "
+        "lomas, SETOS y lindes de piedra o matorral separando campos lejanos, FRANJAS de cultivo "
+        "distantes de tonos distintos, algún ÁRBOL GRANDE solitario junto al camino, matorrales "
+        "y hierba alta a los bordes del camino, y unos pocos pájaros pequeños en el cielo. "
         "(b) el RAMAL IZQUIERDO gira y baja hacia los HUERTOS y las CASAS del pueblo, que "
         "ocupan el TERCIO IZQUIERDO de la imagen: tres o cuatro parcelas de cultivo en bancales "
         "con sus acequias, y detrás cuatro o cinco casitas rústicas de una planta con su "
         "arboleda. Los huertos NO deben llenar la imagen: son el lado al que se vuelve. "
         "PROHIBIDO que aparezca la plaza empedrada ni las casas urbanas de varios pisos de la "
         "primera referencia: ese es OTRO pueblo. "
-        "En la horquilla misma de la bifurcación, un POSTE de madera torcido con una tablilla "
-        "clavada (SIN texto). "
+        "En la horquilla misma de la bifurcación, un POSTE de madera torcido con una TABLILLA "
+        "clavada en la que está escrito a mano, en letras oscuras, MAYÚSCULAS, claras y bien "
+        "LEGIBLES, el nombre del pueblo: \"PUEBLO VIOLETA\". Es el ÚNICO texto de toda la "
+        "imagen: nada más debe llevar letras. "
         "LA GENTE — LA SEPARACIÓN, repartida a lo largo del camino: "
         "(1) LOS QUE SE VAN, por el ramal DERECHO: SEIS JÓVENES en fila suelta, todos DE "
         "ESPALDAS y en PLENO PASO (una pierna adelantada y otra atrasada, bien separadas), "
@@ -740,6 +753,27 @@ ESCENAS = [
         "cosa de nuestra época; y PROHIBIDO cualquier arma. "
         "SENSACIÓN: el pueblo se parte en dos en una horquilla del camino. Unos se van detrás "
         "del humo y otros se quedan con la tierra; nadie sabe todavía quién eligió bien."),
+    # --- 79 = la 78 CORREGIDA por edición: letrero bien escrito y sin chimenea ---
+    # (Editar la propia imagen es lo único que conserva la composición; una
+    # regeneración volvería a mover todo.)
+    (79, ["assets/Prologo/escenas/escena_78.png"],
+        "EDITA la imagen de referencia. CONSERVA ABSOLUTAMENTE TODO IDÉNTICO: el mismo encuadre, "
+        "la misma bifurcación del camino, las mismas personas en las mismas posturas y "
+        "posiciones, los mismos huertos y casas, el mismo árbol grande, las mismas colinas, "
+        "arboledas, setos y campos del fondo, el mismo cielo con las mismas nubes, la misma "
+        "columna de humo, la misma paleta y el mismo estilo. NO muevas, NO quites y NO añadas "
+        "NINGUNA otra cosa. Haz SOLO estos DOS cambios: "
+        "(1) EL LETRERO: la tablilla de madera clavada en el poste está mal escrita. Reescribe "
+        "su texto para que diga EXACTAMENTE, sin ninguna letra de más ni de menos: PUEBLO "
+        "VIOLETA. Dos palabras, en MAYÚSCULAS, en letras oscuras bien dibujadas y CLARAMENTE "
+        "LEGIBLES; agranda un poco la tablilla si hace falta para que quepan bien. Es el único "
+        "texto de la imagen. "
+        "(2) LA CHIMENEA DEL HORIZONTE: en el fondo, debajo de la columna de humo, hay una "
+        "CHIMENEA (una línea o torre vertical fina). BÓRRALA POR COMPLETO y tapa ese hueco con "
+        "la MISMA colina, arboleda y cielo que hay a su alrededor, como si nunca hubiera estado. "
+        "La columna de humo se queda EXACTAMENTE donde está, pero ahora tiene que nacer DETRÁS "
+        "de la loma, sin que se vea de dónde sale. Que NO quede ninguna estructura, torre, palo, "
+        "tejado ni silueta construida en todo el horizonte."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "

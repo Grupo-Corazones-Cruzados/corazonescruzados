@@ -335,12 +335,33 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     prohibir lo que arrastraría (allí: el camino de tierra, las casas y la arboleda).
     Recortes guardados en `assets/Prologo/referencias/`: `casas_horizonte.png` (poblado lejano
     en silueta) y `caminando_izquierda.png` (posturas de caminar de noche).
+27. **⭐ EL TEXTO DENTRO DE UNA ESTAMPA NO SE PUEDE ARREGLAR DESPUÉS.** En la 78 el cartel
+    salió como "PUEBLO VIGLEETA" en vez de "PUEBLO VIOLETA", y NADA lo corrigió: (a) pedir la
+    corrección editando la imagen completa **se llevó también el humo y el cartel entero**
+    (confirma la regla 5: editar para QUITAR arrastra lo que no debe); (b) mandar solo un
+    **recorte ampliado del cartel** con el cambio pedido devolvió la imagen **idéntica**: el
+    modelo no reescribe texto pequeño; (c) repintarlo por código con la fuente Silkscreen sale
+    legible, pero **no hay madera limpia de donde clonar** (las letras ocupan toda la tabla),
+    así que la reparación deja parches planos o restos de las letras viejas.
+    **Regla: el texto hay que acertarlo EN LA GENERACIÓN.** Si hace falta que salga bien,
+    pedirlo en **letras GRANDES** (cartel grande, o el texto en DOS LÍNEAS) y regenerar hasta
+    que salga; los textos cortos y grandes sí salen (regla 13). Y avisar a Fernando de que
+    cambiar el texto después implica regenerar la escena entera.
+28. **Borrar un objeto pequeño sobre un cielo degradado SÍ se puede por código:** para quitar
+    la chimenea del horizonte, promediar los lados deja una **banda visible** (el cielo tiene
+    tramado). Lo que funciona es **copiar la textura real** de un tramo de cielo desplazado un
+    **múltiplo del periodo del tramado (2 px)**, eligiendo para cada fila el lado (izquierda o
+    derecha) cuya media se parece más a la de los píxeles vecinos. Queda invisible.
+29. **Truco de guion para que algo NO se vea:** si el modelo insiste en dibujar un elemento
+    prohibido (la fábrica en el horizonte), no basta prohibirlo — hay que hacerlo
+    **geométricamente imposible**: "el humo NACE DETRÁS de una colina, su origen queda oculto
+    tras el relieve".
 26. **El escenario NO admite elementos nuevos sin permiso:** al decir "se van a sus casas", el
     modelo **inventó casas en el horizonte**; Fernando lo rechazó ("en la zona del Hoyo no hay
     casas ni nada nuevo"). Regla: prohibir explícitamente **construcciones, luces, caminos,
     vallas y carteles**, "ni siquiera pequeños o lejanos", y repetir que el horizonte queda
     LIMPIO igual que en la referencia.
-27. **Órbita de correcciones típicas de Fernando (Acto 4):** cuenta y alturas exactas
+30. **Órbita de correcciones típicas de Fernando (Acto 4):** cuenta y alturas exactas
     (papá≈mamá≈hermano mayor altos; niña y niño MUCHO más pequeños; el mayor **andrógino**);
     dirección de carrera consistente entre escenas seguidas; silueta del jugador **negra
     sólida y plana** (sin sombreado que revele forma); el Hoyo **NO frontal** (hueco en el
