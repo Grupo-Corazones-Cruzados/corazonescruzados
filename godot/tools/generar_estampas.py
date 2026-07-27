@@ -90,6 +90,7 @@ INSERTADAS = {
     72: 3,   # los padres abrazados en su cuarto ("TE AMO"), justo tras la 71
     73: 3,   # el Hoyo solo, con una lucecita violeta dentro, justo tras la 72
     74: 3,   # los canales de riego del pueblo con brillos violetas, tras la 73
+    75: 3,   # los MISMOS huertos pero SIN los brillos violetas (gemela de la 74)
 }
 
 
@@ -546,6 +547,26 @@ ESCENAS = [
         "NI postes, NI máquinas, NI tuberías modernas. Todo es tierra, madera, cuerda y agua. "
         "SENSACIÓN: el secreto de por qué a este pueblo nunca le faltó comida; algo bueno viaja "
         "por el agua hasta lo que da de comer."),
+    # --- GEMELA de la 74: los MISMOS huertos pero SIN los brillos violetas ---
+    # Se hace EDITANDO la 74 (referenciar la propia imagen), que es lo único que
+    # conserva la composición exacta. Sirve para el "después", cuando la luz ya no está.
+    (75, ["assets/Prologo/escenas/escena_74.png"],
+        "EDITA la imagen de referencia. CONSERVA ABSOLUTAMENTE TODO IDÉNTICO, píxel por píxel: "
+        "el MISMO encuadre y la MISMA composición, las MISMAS parcelas de huerto en los mismos "
+        "sitios, los MISMOS surcos y las mismas plantas (las mismas matas, las mismas calabazas, "
+        "el mismo maíz al fondo), los MISMOS canales de riego con el mismo recorrido y la misma "
+        "anchura, la MISMA compuerta de madera, la MISMA noria, los MISMOS cestos, el MISMO "
+        "espantapájaros, la MISMA cerca de palos, el MISMO poblado al fondo con sus mismas "
+        "ventanitas encendidas, el MISMO cielo con las mismas estrellas y la misma luna, la "
+        "misma paleta y el mismo estilo de dibujo. NO muevas, NO quites y NO añadas NINGÚN "
+        "objeto, planta ni elemento. "
+        "ÚNICO CAMBIO: QUITA POR COMPLETO todos los BRILLOS y CHISPITAS VIOLETAS y todo el "
+        "RESPLANDOR morado. El agua de los canales pasa a ser AGUA NORMAL de noche: superficie "
+        "azul oscura y grisácea con algún reflejo plateado de la luna, SIN ningún punto de luz, "
+        "SIN chispas, SIN halo. Los bordes de tierra de los canales y las plantas de al lado "
+        "pierden el tinte morado y vuelven a los mismos tonos azulados y fríos de la noche que "
+        "tiene el resto del campo. Que NO quede NI UN solo píxel violeta, morado, lila o rosado "
+        "en toda la imagen."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "
