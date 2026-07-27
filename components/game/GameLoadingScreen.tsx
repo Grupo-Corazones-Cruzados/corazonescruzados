@@ -38,12 +38,15 @@ export default function GameLoadingScreen({
   phase,
   loaded,
   total,
+  stalled = false,
 }: {
   phase: LoadingPhase;
   /** Bytes descargados hasta ahora. */
   loaded: number;
   /** Bytes totales a descargar. 0 = desconocido → barra indeterminada. */
   total: number;
+  /** El arranque se está eternizando: se avisa y se ofrece reintentar. */
+  stalled?: boolean;
 }) {
   const conocido = total > 0;
   // Se reserva el último 1 % para el arranque del motor: llegar a 100 % y
@@ -91,9 +94,27 @@ export default function GameLoadingScreen({
         )}
       </div>
 
-      <p className="max-w-[320px] text-[10px] leading-relaxed text-white/25" style={{ fontFamily: 'var(--font-display)' }}>
-        La primera vez tarda más: el mundo se guarda en tu navegador.
-      </p>
+      {stalled ? (
+        // Se recupera el puntero SOLO para el botón: el resto de la pantalla
+        // sigue sin capturar clics.
+        <div className="pointer-events-auto flex max-w-[320px] flex-col items-center gap-3">
+          <p className="text-[10px] leading-relaxed text-white/45" style={{ fontFamily: 'var(--font-display)' }}>
+            Esto está tardando más de lo normal. Suele pasar si el juego se
+            actualizó mientras cargaba.
+          </p>
+          <button
+            type="button"
+            className="pixel-btn pixel-btn-secondary"
+            onClick={() => window.location.reload()}
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : (
+        <p className="max-w-[320px] text-[10px] leading-relaxed text-white/25" style={{ fontFamily: 'var(--font-display)' }}>
+          La primera vez tarda más: el mundo se guarda en tu navegador.
+        </p>
+      )}
     </div>
   );
 }

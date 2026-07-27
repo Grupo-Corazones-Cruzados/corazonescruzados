@@ -291,6 +291,23 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Diseño:** componente único `components/game/GameLoadingScreen.tsx` con `BrandLoader`, Silkscreen
     y barra `.pixel-progress`; detalle y desviaciones corregidas en `Diseño.md`.
   - **Verificado con Chrome/puppeteer** en local: 34 % → 95 % → 100 % → el juego arranca.
+  - ⚠️ **BUG "Encendiendo el motor… 100 %" congelado (2026-07-27):** publicar el juego **mientras
+    alguien lo está cargando** desincroniza los tamaños. Si el `index.html` que se leyó anuncia un
+    `.pck` MÁS PEQUEÑO que el que se está bajando (caché, o el otro contenedor durante el deploy de
+    Railway), el contador supera el total anunciado y la pantalla daba por terminada la descarga
+    cuando seguía bajando: 100 % clavado y sin avanzar.
+    - **Arreglo (el total es una ESTIMACIÓN, no un dogma):** `setTotal(max(totalAnunciado, bytes,
+      totalPrevio))` sube el techo si llegan más bytes, y la fase pasa a `iniciando` **cuando el
+      contador deja de moverse 1,2 s** (el motor deja de llamar a `onProgress`), no al alcanzar una
+      cifra. Reproducido con puppeteer falseando el html (anuncia 4 MB, el real pesa 13 MB): el
+      total se autocorrige 41,5 → 46,4 → 50,3 MB y no salta de fase antes de tiempo.
+    - **Redes de seguridad añadidas:** (1) `onPrint` del motor → si Godot ya habla, está vivo: a los
+      8 s se retira la cortina aunque `startGame` no haya resuelto; (2) a los **30 s** en `iniciando`
+      aparece "Esto está tardando más de lo normal" + botón **Reintentar**; (3) `onPrintError` se
+      guarda y se muestra junto al error, en vez del genérico "No se pudo iniciar el juego"; (4) la
+      pantalla de error también tiene **Reintentar**.
+    - **Regla práctica:** evitar publicar el juego mientras alguien lo está cargando; si pasa, basta
+      recargar.
 - **JUEGO PUBLICADO EN PRODUCCIÓN — prólogo con 68 estampas (2026-07-26).** Primera publicación del
   juego real (antes producción servía la prueba de humo del 2026-07-20, `index.pck` de 207 KB).
   - **`godot/export_presets.cfg` RECREADO** (estaba borrado; era el pendiente anotado abajo). Preset

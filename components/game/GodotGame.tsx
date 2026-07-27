@@ -96,11 +96,19 @@ export default function GodotGame() {
   const [phase, setPhase] = useState<LoadingPhase | null>('preparando');
   const [loaded, setLoaded] = useState(0);
   const [total, setTotal] = useState(0);
+  /** El arranque se está eternizando → se avisa y se ofrece reintentar. */
+  const [stalled, setStalled] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (instanceRef.current || !canvasRef.current) return;
     let disposed = false;
+    /** Temporizador que detecta que los bytes dejaron de llegar. */
+    let quietTimer: number | null = null;
+    /** ¿El motor ya escribió algo? Entonces está vivo, aunque tarde en resolver. */
+    let engineSpoke = false;
+    /** Errores que suelta el motor al arrancar, para poder enseñarlos. */
+    const engineErrors: string[] = [];
 
     (async () => {
       // Aviso temprano y claro: sin contexto seguro Godot no arranca, y su
@@ -136,10 +144,35 @@ export default function GodotGame() {
           onProgress: (current: number, totalBytes: number) => {
             if (disposed) return;
             setLoaded(current);
-            setTotal(totalBytes);
-            // Descarga terminada: lo que queda (compilar el wasm y arrancar
-            // Godot) no se puede medir, así que se dice con palabras.
-            setPhase(totalBytes > 0 && current >= totalBytes ? 'iniciando' : 'descargando');
+            // El total anunciado es una ESTIMACIÓN, no un dogma: si llegan más
+            // bytes de los que decía `index.html` (porque se publicó una versión
+            // nueva a mitad de descarga, o porque el html venía de caché y el
+            // .pck no), se sube el techo. Antes se daba por terminada la descarga
+            // al pasar del total y la pantalla se quedaba en "Encendiendo el
+            // motor… 100 %" mientras en realidad seguía bajando.
+            setTotal((t) => Math.max(totalBytes, current, t));
+            setPhase('descargando');
+            // La descarga acaba cuando el contador DEJA DE MOVERSE (el motor
+            // deja de llamar aquí), no cuando alcanza una cifra anunciada.
+            if (quietTimer !== null) window.clearTimeout(quietTimer);
+            quietTimer = window.setTimeout(() => {
+              if (!disposed) setPhase('iniciando');
+            }, 1200);
+          },
+          // Salida del motor. Sirve para dos cosas: enterarnos de que Godot ya
+          // arrancó (aunque `startGame` tarde en resolver) y poder enseñar sus
+          // errores en vez de dejar la pantalla de carga girando para siempre.
+          onPrint: () => {
+            if (disposed || engineSpoke) return;
+            engineSpoke = true;
+            // Si el motor ya habla, está vivo y pintando: si en unos segundos
+            // `startGame` sigue sin resolver, se retira la cortina igualmente.
+            window.setTimeout(() => {
+              if (!disposed) setPhase(null);
+            }, 8000);
+          },
+          onPrintError: (...args: unknown[]) => {
+            engineErrors.push(args.map(String).join(' '));
           },
         });
         instanceRef.current = instance;
@@ -154,13 +187,16 @@ export default function GodotGame() {
         }
       } catch (err) {
         if (!disposed) {
-          setError(err instanceof Error ? err.message : 'No se pudo iniciar el juego');
+          const motivo = err instanceof Error ? err.message : 'No se pudo iniciar el juego';
+          // El mensaje del motor explica MUCHO mejor qué pasó que el genérico.
+          setError(engineErrors.length ? `${motivo} · ${engineErrors[engineErrors.length - 1]}` : motivo);
         }
       }
     })();
 
     return () => {
       disposed = true;
+      if (quietTimer !== null) window.clearTimeout(quietTimer);
       // Sin esto, entrar y salir de la ruta filtra una instancia de wasm por
       // visita — y cada una son decenas de MB de memoria.
       try {
@@ -171,6 +207,19 @@ export default function GodotGame() {
       instanceRef.current = null;
     };
   }, []);
+
+  // Red de seguridad: si el arranque del motor se eterniza (una publicación a
+  // mitad de descarga, una conexión que se cae, un navegador que no puede con el
+  // wasm), se avisa y se ofrece reintentar en vez de dejar una pantalla que
+  // parece viva pero no avanza.
+  useEffect(() => {
+    if (phase !== 'iniciando') {
+      setStalled(false);
+      return;
+    }
+    const t = window.setTimeout(() => setStalled(true), 30000);
+    return () => window.clearTimeout(t);
+  }, [phase]);
 
   const loading = !error && phase !== null;
 
@@ -188,14 +237,24 @@ export default function GodotGame() {
       */}
       <canvas id="canvas" ref={canvasRef} className="block h-full w-full" tabIndex={0} />
 
-      {loading && <GameLoadingScreen phase={phase} loaded={loaded} total={total} />}
+      {loading && (
+        <GameLoadingScreen phase={phase} loaded={loaded} total={total} stalled={stalled} />
+      )}
 
       {error && (
         <div
-          className="absolute inset-0 grid place-items-center px-8"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8"
           style={{ background: 'var(--color-void)' }}
         >
           <p className="max-w-sm text-center text-sm text-red-300">{error}</p>
+          {/* Un error sin salida es un callejón: casi siempre basta recargar. */}
+          <button
+            type="button"
+            className="pixel-btn pixel-btn-secondary"
+            onClick={() => window.location.reload()}
+          >
+            Reintentar
+          </button>
         </div>
       )}
     </div>
