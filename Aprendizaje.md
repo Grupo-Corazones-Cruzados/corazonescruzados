@@ -2170,11 +2170,19 @@ la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas mir
   mancha de piel (islas rodeadas de cara). El pelo que baja por la sien se le parece en color pero
   nunca está cerrado —viene de fuera—, así que se descarta solo. Mismo criterio que arregló el color:
   no *qué eres*, sino *a qué tocas*.
-- **Estado real:** ✅ chica, en sus tres vistas con cara (de espaldas no toca nada, correcto);
-  ❌ **chico**: su pelo **toca los ojos**, así que no quedan cerrados y la detección falla. Para él hay
-  que **fijar los anclajes en el catálogo** (medidos: ojos y 23–27 en x≈42-45 y x≈52-55, boca y≈33).
-  Es lo que hacen los creadores de verdad: los anclajes son parte del *rig* del personaje, no algo que
-  se adivine en cada hoja.
+- **Estado real:** ✅ **chica** por detección automática, en sus tres vistas con cara (de espaldas no
+  toca nada, correcto). ✅ **chico** con **anclajes fijos** en el catálogo: su pelo llega a tocarle el
+  ojo, y por ese puente de un píxel deja de estar cerrado. Se probó sellar el puente con un **cierre
+  morfológico y NO vale**: esa operación *borra los huecos pequeños*, que son justo los rasgos.
+  ⇒ `ANCLAJES` en `lib/game/sellos.js`, que además es como se hace en los creadores de verdad: los
+  anclajes son parte del **rig** del personaje, no algo que se adivine en cada hoja.
+- ⚠️ **Medir importa hasta en 3 píxeles:** los primeros anclajes del chico (y 24–26) caían sobre el
+  **párpado**, no sobre el ojo, y el sello no se notaba. Leyendo la luminancia píxel a píxel se vio la
+  anatomía: ceja en y=23, párpado claro en y=24, **ojo en y 25–27**. Con eso corregido, funciona.
+- **7 tipos de ojo** (normales, grandes, rasgados, caídos, despiertos, dormilones, redondos) + **5
+  colores de iris**. A 3×3 px las diferencias son sutiles por naturaleza: lo que cambia es la
+  silueta (pupila arriba/abajo, párpado marcado, ancho), no el detalle. Para variedad facial mucho
+  mayor habría que **doblar la resolución** de todo el catálogo.
 - ⚠️ **Calidad:** el mecanismo está probado (5 variantes de ojos/boca/color renderizadas), pero **los
   patrones que dibujé son más toscos que el arte original**: son rejillas de 3×3 hechas de una
   sentada. Los sellos son trabajo de dibujo y hay que darles otra vuelta.
