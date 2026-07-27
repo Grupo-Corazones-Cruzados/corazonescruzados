@@ -2071,3 +2071,27 @@ de **17 años**. Estilos de vestimenta: rústica ahora; moderna / futurista / ca
 - **Respuesta:** `gemini-3-pro-image` devuelve **503 "high demand"** con frecuencia, y una tanda de
   14 prendas se topa con ello casi seguro. `generar()` reintenta con espera creciente (15 s, 30 s,
   60 s…) y cubre también caídas de red (`fetch failed`), porque la petición lleva la plantilla entera.
+
+#### P21 — Peinados, tocados y barba: ¿tercera banda? · ✅ Resuelta (con un límite medido)
+- **Sí para pelo y tocado.** Se generan igual que las prendas y se recortan por la banda de la
+  **cabeza**. Medido: un peinado o un tocado cambia **230–250 px** dentro de y 0–42, mientras que
+  torso y piernas se mueven 30–80, que es la deriva normal entre tiradas.
+- **NO para la barba.** La barba incipiente cambia solo **64 px** en la cabeza y **100 en el torso**:
+  es decir, el cambio real es *menor que la deriva*, así que resulta indistinguible del ruido. ⇒ La
+  barba no puede ser una banda propia; hay que **hornearla en las piezas de pelo** (generar cada
+  peinado con y sin barba) o tratarla como otra opción de la misma banda de cabeza.
+- **Composición final: TRES bandas** — cabeza (0–42, la pone el peinado o el tocado), torso (42–80,
+  la prenda de arriba con sus brazos) y piernas (80–128, la prenda de abajo con el calzado). El corte
+  del cuello se puso en **42 y no en 44** para que el **cuello de la prenda** lo ponga entero la pieza
+  de arriba; si no, dos filas del cuello de la base se colaban desde la pieza de cabeza.
+
+#### P22 — Color de pelo y piel sin gastar generaciones · ✅ Resuelta (funciona)
+- **Se puede porque están muy separados en la plantilla:** el pelo vive en luminancia **19–42** y la
+  piel en **153–159**, y la piel es mucho más **saturada** (R−B ≈ 134) que la ropa cruda (R−B ≈ 41).
+  La duda que yo había planteado —que un castaño y un tono de piel se confunden— no aplica aquí
+  porque este pelo es oscuro.
+- **Cómo:** no se sustituye el color, se le cambia **tono y saturación** y se **escala** el brillo,
+  conservando el claroscuro. Por eso sigue leyéndose como pixel art. 6 colores de pelo × 5 tonos de
+  piel sobre cualquier combinación de ropa, calculado en el navegador.
+- ⚠️ **Límite:** el pelo se detecta por estar en la banda de la cabeza, así que **una melena larga
+  que caiga sobre los hombros** quedaría fuera. Por eso esta tanda son cortes que no pasan del cuello.

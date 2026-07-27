@@ -428,6 +428,51 @@ TODO LO DEMÁS QUEDA EXACTAMENTE IGUAL: ${intacto}. No muevas ni redibujes las f
 Las cuatro vistas (frente, espalda y los dos perfiles) deben llevar la prenda nueva, coherente entre ellas.`;
 }
 
+/**
+ * Piezas de la CABEZA: peinado, vello facial y accesorios.
+ *
+ * Se generan igual que las prendas —editando la plantilla— pero se recortan por
+ * la banda de la cabeza (`CUELLO`), no por la cintura. Limitación conocida: un
+ * peinado largo que caiga sobre los hombros se saldría de esa banda, así que
+ * esta tanda se queda en cortes que no pasan del cuello.
+ */
+function promptCabeza(descripcion) {
+  return `Toma esta hoja de sprites y cambia UNA SOLA COSA: ${descripcion}.
+
+TODO LO DEMÁS QUEDA EXACTAMENTE IGUAL: la cara, el cuerpo, la ropa, los brazos, las manos y el calzado. No muevas ni redibujes las figuras, no cambies su tamaño ni su postura, no cambies la línea de suelo, no cambies el fondo. Mantén el mismo estilo pixel art, el mismo grosor de píxel y el mismo contorno oscuro.
+
+Las cuatro vistas (frente, espalda y los dos perfiles) deben ser coherentes entre ellas.`;
+}
+
+const CABEZA = {
+  mujer: {
+    pelo: {
+      'melena-corta': 'el peinado pasa a ser una melena corta y lisa a la altura de la mandíbula',
+      'recogido': 'el peinado pasa a ser el pelo recogido en un moño bajo, con la frente despejada',
+      'trenza-corta': 'el peinado pasa a ser el pelo recogido en una trenza corta pegada a la cabeza',
+    },
+    tocado: {
+      'panuelo-verde': 'se le añade un pañuelo de tela verde oliva atado a la cabeza, que cubre el pelo como el de una aldeana',
+      'capucha-parda': 'se le añade una capucha de lana parda puesta sobre la cabeza',
+    },
+  },
+  hombre: {
+    pelo: {
+      'corto-revuelto': 'el peinado pasa a ser el pelo corto y revuelto',
+      'rapado': 'el peinado pasa a ser el pelo muy corto, casi rapado',
+      'flequillo': 'el peinado pasa a ser el pelo corto con flequillo sobre la frente',
+    },
+    barba: {
+      'sin-barba': 'la cara queda completamente afeitada, sin nada de vello facial',
+      'incipiente': 'se le añade barba incipiente, muy corta, apenas una sombra en la mandíbula',
+    },
+    tocado: {
+      'gorra-parda': 'se le añade una gorra de tela parda puesta en la cabeza',
+      'capucha-parda': 'se le añade una capucha de lana parda puesta sobre la cabeza',
+    },
+  },
+};
+
 /** Primera tanda rústica. Ampliable: añadir aquí y volver a lanzar el script. */
 const PRENDAS = {
   mujer: {
@@ -483,6 +528,7 @@ async function main() {
     console.error('Uso:');
     console.error('  node scripts/generar-personaje.mjs base <hombre|mujer> [--forzar] [--reprocesar]');
     console.error('  node scripts/generar-personaje.mjs prenda <hombre|mujer> <superior|inferior> [id|--todas]');
+    console.error('  node scripts/generar-personaje.mjs cabeza <hombre|mujer> <pelo|barba|tocado> [id|--todas]');
     console.error('');
     for (const s of Object.keys(PRENDAS)) {
       for (const p of Object.keys(PRENDAS[s])) {
@@ -503,6 +549,24 @@ async function main() {
       ],
       forzar, reprocesar,
     });
+    return;
+  }
+
+  if (pieza === 'cabeza') {
+    const catalogo = CABEZA[sexo]?.[parte];
+    if (!catalogo) ayuda();
+    const ids = (id === '--todas' || !id) ? Object.keys(catalogo) : [id];
+    for (const uno of ids) {
+      if (!catalogo[uno]) { console.error(`✖ no existe "${uno}"`); continue; }
+      const plantilla = path.join(RAIZ, SALIDA, 'base', `${sexo}.crudo.png`);
+      await generarPieza({
+        carpeta: path.join(SALIDA, sexo, parte),
+        nombre: uno,
+        prompt: promptCabeza(catalogo[uno]),
+        entradas: async () => [await fs.readFile(plantilla)],
+        forzar, reprocesar,
+      });
+    }
     return;
   }
 

@@ -1,0 +1,5 @@
+Toma esta hoja de sprites y cambia UNA SOLA COSA: el peinado pasa a ser el pelo muy corto, casi rapado.
+
+TODO LO DEMÁS QUEDA EXACTAMENTE IGUAL: la cara, el cuerpo, la ropa, los brazos, las manos y el calzado. No muevas ni redibujes las figuras, no cambies su tamaño ni su postura, no cambies la línea de suelo, no cambies el fondo. Mantén el mismo estilo pixel art, el mismo grosor de píxel y el mismo contorno oscuro.
+
+Las cuatro vistas (frente, espalda y los dos perfiles) deben ser coherentes entre ellas.
