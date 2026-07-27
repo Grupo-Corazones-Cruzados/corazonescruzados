@@ -2095,3 +2095,20 @@ de **17 años**. Estilos de vestimenta: rústica ahora; moderna / futurista / ca
   piel sobre cualquier combinación de ropa, calculado en el navegador.
 - ⚠️ **Límite:** el pelo se detecta por estar en la banda de la cabeza, así que **una melena larga
   que caiga sobre los hombros** quedaría fuera. Por eso esta tanda son cortes que no pasan del cuello.
+
+#### P23 — El recoloreado manchaba la ropa y la cara · ✅ Resuelta (3 fallos, 3 causas distintas)
+El usuario detectó tres cosas: piel oscura fea, rubio plano y **puntos en el cuerpo que cambiaban con
+el color del pelo**, incluso estropeando una túnica que se veía bien con piel clara. Al medir:
+1. **La ropa entraba en la mancha de piel.** Mi test era `luz>95 && r−b>70`, y la **túnica parda está
+   en luz 95–107 con r−b 70–73** — justo dentro. La piel real está en **luz 153–159, r−b ≈ 130**.
+   ⇒ Umbral **estricto para sembrar** (`luz>128 && r−b>105`) y **crecimiento por vecindad** con uno
+   flojo. La vecindad es lo que de verdad lo arregla: la ropa no toca la cara, así que no entra
+   aunque se le parezca; y los brillos y sombras de la piel sí entran, que sueltos salían como puntitos.
+2. **Rotar el tono revienta en los extremos** (de ahí el rubio plano). ⇒ Cada color es una **rampa de
+   cuatro tonos** y cada píxel se coloca en ella según su claroscuro relativo. Es cambiar la paleta,
+   como haría un dibujante, en vez de empujar el color.
+3. ⚠️ **Orden de aplicación:** teñir la piel primero hacía que el pelo se encontrara **una cara ya
+   oscurecida**, la confundiera con pelo y la pintara de gris (con piel oscura la cara salía gris).
+   ⇒ **Las dos manchas se calculan ANTES de teñir ninguna**, y además el pelo nunca pisa lo que ya es
+   piel. Lección general: dos transformaciones que leen el mismo lienzo **no se pueden encadenar**.
+- **Módulo reutilizable:** `lib/game/recolor.js` (lo usa el probador y lo usará el creador).
