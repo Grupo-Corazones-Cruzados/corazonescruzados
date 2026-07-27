@@ -7,6 +7,107 @@
 
 ---
 
+## Objetivo ACTUAL (declarado 2026-07-26) — CÍRCULO DEL TALENTO: requerimientos con talento + filtro + el agente eligiendo
+
+**Rol asumido:** *arquitecto de datos + integrador de agentes de IA* (Postgres/pgvector, embeddings, Agent SDK
+sobre worker aislado, y el filtrado en las dos superficies donde la gente busca trabajo).
+
+### Necesidad (resumen del usuario, 2026-07-26)
+Que se pueda **encontrar proyectos por talento** en Marketplace y en Proyectos. El problema de partida: los
+proyectos nunca pedían talentos a nivel del trabajo real. Solución acordada: **cada REQUERIMIENTO declara sus
+talentos (obligatorio) y sus plazas**; el proyecto "pide" la unión de los talentos de sus requerimientos, y el
+filtro se basa en eso. Además, el **agente de cotizaciones** debe elegir el talento de cada requerimiento
+consultando la lista real, y **dejar las plazas vacías** (las pone una persona). El **GCC Bot** hereda ese
+comportamiento por reanudar la misma sesión.
+
+### Preguntas y respuestas
+
+#### P1 — ¿Dónde vive el talento hoy y por qué no servía? · ✅ Resuelta
+- **Por qué importa:** si ya existiera, no habría que crear nada.
+- **Respuesta:** existía `projects.required_talents` (nivel PROYECTO, para *liderar*, junto a `open_for_talent`)
+  y `tickets.required_talents`. No servía para el objetivo: describe quién lidera, no el trabajo a repartir.
+  Se añadió el talento **a nivel de requerimiento**. (Fuente: `app/api/projects/route.ts`, esquema real de
+  `project_requirements`.)
+
+#### P2 — ¿Búsqueda por texto o embeddings para que el agente elija talento? · ✅ Resuelta — **MEDIDA, no opinada**
+- **Por qué importa:** decide infraestructura, coste y calidad. Era la duda explícita del usuario.
+- **Respuesta:** **embeddings**. Se probó primero lo barato (`pg_trgm`, ya disponible) y **falla justo en el caso
+  real**: el agente describe el trabajo con sus palabras y no comparte términos con el nombre del talento.
+  Medición (2026-07-26): `"app movil"`, `"pantallas bonitas"`, `"automatizar tareas repetitivas"` → **CERO
+  resultados** con trigramas; con embeddings → *Desarrollo móvil*, *Diseño UX/UI*, *Automatización de procesos
+  (0.74)*. **Tercera opción evaluada y descartada:** meter los 525 talentos en el prompt (9 358 caracteres ≈
+  **2 600 tokens**) — funciona, pero es coste en CADA turno y la lista es editable y crece.
+- **Elección concreta:** `text-embedding-3-small` (1536 dim; la clave de OpenAI ya estaba) + **pgvector**
+  (extensión `vector` disponible, se habilitó; índice `hnsw`). Columna `embedding` en la propia `gd_talentos`.
+  Indexar 525 talentos: ~2 min y centavos.
+
+#### P3 — ¿El agente puede quedarse con el top-1 automático? · ✅ Resuelta — NO
+- **Por qué importa:** determina si la herramienta decide o solo propone.
+- **Respuesta:** **NO**. La herramienta devuelve **top-k con score** y el agente elige. Evidencia: `"guardar y
+  consultar informacion"` devuelve como primero *"Conservas y encurtidos"* (falso amigo de "conservar") y como
+  segundo el correcto, *"Administración de bases de datos"*. El prompt le exige **copiar el nombre exacto**
+  devuelto por la herramienta (si no vino de ahí, no vale).
+
+#### P4 — ¿Dónde se ejecuta la búsqueda: worker o app? · ✅ Resuelta
+- **Por qué importa:** decide dónde viven las claves de IA y qué se rompe si algo cae.
+- **Respuesta:** en la **app** (`POST /api/talentos/buscar`, autenticada con el token del worker). El worker
+  llama por HTTP con `APP_URL`. Así **las claves de IA se quedan en un solo sitio** y el indexado/mantenimiento
+  también. Si falta `APP_URL`, la herramienta **degrada a búsqueda por texto** en vez de romperse.
+
+#### P5 — Renombrar un talento, ¿obliga a recalcular el embedding? · ✅ Resuelta — SÍ (duda del usuario)
+- **Por qué importa:** un vector obsoleto envenena las búsquedas en silencio, sin error visible.
+- **Respuesta:** **sí**, el vector representa el TEXTO. Y había un **hueco real**: la invalidación estaba solo en
+  `updateListOption`, pero la pestaña **Fuentes edita `gd_talentos` directamente** y por ahí nadie se enteraba.
+  Se cerró con la columna **`embedded_text`** (el texto exacto con el que se calculó el vector); lo pendiente es
+  `embedding IS NULL OR embedded_text IS DISTINCT FROM nombre` → **detecta el cambio venga por donde venga**.
+
+#### P6 — ¿Todas las vías de alta de requerimientos pueden exigir talento? · ✅ Resuelta — NO, y se decidió a conciencia
+- **Por qué importa:** una validación ciega habría roto la generación de cotizaciones.
+- **Respuesta:** hay **5 sitios** que insertan requerimientos (`/api/projects/[id]/requirements`,
+  `/api/quotes/generate`, `/api/quotes/[id]/chat`, `lib/cotizaciones/data.ts`, compra de plantilla del
+  marketplace). El talento es **obligatorio en el formulario manual**; las vías del agente lo rellenan ahora con
+  la herramienta. **Queda pendiente**: la compra de plantilla del marketplace sigue insertando sin talentos.
+
+#### P7 — ¿Cómo se despliega el worker del agente? · ✅ Resuelta — el README estaba equivocado
+- **Por qué importa:** se creía que un push a `main` lo actualizaba; **no lo hace** y el cambio no llegaba nunca.
+- **Respuesta:** el servicio `cotizador-worker` figura en Railway como **subida por CLI** (`source.repo = null`),
+  a diferencia de `corazonescruzados` y `nightly-cron`, que sí salen del repo. Se despliega a mano:
+  `cd services/cotizador-worker && railway up --service cotizador-worker --detach`. **`--detach` es obligatorio**:
+  sin él la subida se cuelga y expira (probado con y sin sandbox; ni conectividad ni tamaño —84 KB— eran la causa).
+  Para poder comprobar la versión viva sin gastar una cotización, `/health` ahora devuelve
+  `{ ok, tools, talentSearch, model }`.
+
+### Decisiones de diseño / arquitectura (firmes)
+- **El talento vive en el REQUERIMIENTO**, no en el proyecto. El proyecto "pide" la unión de los de sus
+  requerimientos (`talents && ARRAY[...]`, con índice GIN).
+- **Las opciones del filtro las calcula el servidor** con los talentos que de verdad piden los proyectos
+  visibles para ese usuario (respetando su control de acceso). Nunca se ofrecen los 525: así no existe una
+  opción que devuelva cero resultados.
+- **Las plazas admiten NULL** = "sin definir". El agente no las decide; la UI lo marca en ámbar.
+- **La herramienta es la frontera**: si mañana se cambia el motor de búsqueda (otro modelo, otra base), solo
+  cambia su interior; ni el agente ni el esquema se enteran.
+
+### Riesgos y cómo se mitigan
+- **Vector obsoleto en silencio** → `embedded_text` + trabajo nocturno *"Talentos · embeddings al día"*
+  (`POST /api/talentos/cron/reindexar`, idempotente: sin pendientes no gasta API) + reindexado perezoso en la
+  propia búsqueda.
+- **El agente inventa un talento** → el prompt exige copiar el nombre exacto de la herramienta y el servidor
+  normaliza; si aun así no coincide, el requerimiento simplemente no sale en el filtro (no rompe nada).
+- **La app no responde** → la herramienta cae a búsqueda por texto en vez de fallar.
+- **Coste** → indexar es una vez y unos centavos; el cron no gasta si no hay cambios.
+
+### Estado
+- **Implementado y verificado end-to-end** (2026-07-26): crear sin talentos se rechaza; con talento y 3 plazas
+  se crea; el filtro devuelve 1 de 18 en Proyectos y 10 en Marketplace (0 con un talento inexistente); el
+  worker en producción responde `{"tools":[...,"buscar_talentos"],"talentSearch":"app"}`.
+- **PENDIENTE (no hecho):** generar una **cotización real** para ver al agente eligiendo talentos de punta a
+  punta — consume una llamada a Opus y crea un proyecto, así que lo dispara el usuario. Y **quitar el dominio
+  público** que se creó por error al worker (`cotizador-worker-production.up.railway.app`): el CLI no borra
+  dominios, hay que hacerlo desde el panel. El worker es fail-closed (401 sin token), así que el riesgo está
+  acotado.
+
+---
+
 ## Objetivo ACTUAL (declarado 2026-07-22) — MÓDULO DE COTIZACIONES con Agente SDK de Claude (Opus)
 
 **Rol asumido:** *arquitecto full-stack + integrador de agentes de IA* (Next.js/Postgres + Agent SDK de

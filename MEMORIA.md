@@ -3024,6 +3024,13 @@ Módulos principales:
   `components/razones/RazonesPanel.tsx`, montada como 3ª pestaña del panel admin (Mundo · Sprites · Razones).
   La "intensidad" (Breve/Media/Extensa) es solo por longitud del texto, no clasificación.
 
+- **`PALETA.html` — muestrario de color de la organización (2026-07-25):** archivo en la raíz (abrir en el
+  navegador) con TODOS los colores agrupados por lenguaje visual: marca, dashboard claro/oscuro, landing
+  pixelart, editor del mundo, correos y la paleta semántica remapeada. Cada muestra lleva su **token**, para
+  qué se usa y el **ratio de contraste calculado en el navegador**; clic copia el hex y hay alternador
+  claro/oscuro. Generado desde el código real (`app/globals.css`, `editorUi.tsx`,
+  `lib/integrations/email.ts`) → **si cambia un token hay que actualizarlo**. Enlazado desde `Diseño.md`.
+
 - **Tutoriales por módulo (botón ⓘ) + pestañas de utilidades del admin (2026-07-25):** cada módulo del
   dashboard lleva un **botón de información al borde derecho de su botón del sidebar** que abre un modal con
   los **videos de YouTube incrustados** de ese módulo. Decisión del usuario: los videos son de acceso solo por
