@@ -98,6 +98,7 @@ INSERTADAS = {
     80: 58,  # la 58 un instante después: caja cerrada y forcejeo en la puerta
     81: 58,  # la salida por la ventana (separada de la 58 por el filtro)
     82: 58,  # las dos acciones en una sola estampa: padres + huida
+    83: 58,  # los padres caen: forcejeo con los perseguidores
 }
 
 
@@ -1851,6 +1852,54 @@ ESCENAS = [
         "rojas, cuchillos, machetes, hojas blancas, armas de ningún tipo, sangre o heridos. Por "
         "la puerta solo se ve el exterior gris y vacío. "
         "Ambiente desolado y silencioso. NADA de texto."),
+    # --- Los padres caen: forcejeo con los perseguidores (adulto contra adulto) ---
+    (83, ["assets/Prologo/escenas/escena_58.png",
+          "assets/Prologo/escenas/escena_54.png"],
+        "MISMO CUARTO y MISMO ENCUADRE que la primera referencia: el interior de la casa en "
+        "ruinas visto de frente, las mismas paredes grises agrietadas, el mismo suelo "
+        "resquebrajado, el mismo VANO DE LA PUERTA al fondo con la luz gris entrando, la misma "
+        "paleta fría y el mismo estilo pixel-art 2D de siluetas planas. "
+        "⚠ LA VENTANA DE LA PARED DERECHA VA COMPLETAMENTE VACÍA: es SOLO EL MARCO DE MADERA, "
+        "un hueco limpio por el que se ve el exterior gris. PROHIBIDO ABSOLUTAMENTE que tenga "
+        "CRISTAL, vidrios, esquirlas, reflejos, cuarterones, y sobre todo PROHIBIDOS los "
+        "TRAVESAÑOS o palos cruzados que la dividan en cuadrantes (nada de una cruz ni de una "
+        "T de madera en medio del hueco): dentro del marco NO hay NADA, igual que en las "
+        "estampas anteriores de esta casa. "
+        "⚠ SOLO HAY ADULTOS EN LA IMAGEN: PROHIBIDO ABSOLUTAMENTE que aparezca ningún niño, "
+        "adolescente ni figura pequeña. Los hijos YA NO ESTÁN en la casa: escaparon por la "
+        "ventana. En el cuadro solo están los dos padres y los perseguidores. "
+        "⚠ TODO PASA EN EL VANO DE LA PUERTA, NO DENTRO DEL CUARTO: la pelea está apelotonada "
+        "EN EL UMBRAL y justo delante de él. Los perseguidores NO han llegado a entrar: "
+        "empujan desde FUERA, metiéndose por el hueco. El interior del cuarto, a los lados y en "
+        "primer plano, queda VACÍO: PROHIBIDO repartir figuras por la habitación o llevar la "
+        "pelea al centro del suelo. Todos los cuerpos, amontonados en el marco de la puerta. "
+        "LA ACCIÓN — LOS PADRES ESTÁN CAYENDO. Describo la postura exacta de cada uno: "
+        "• EL PADRE HERIDO está VENCIDO: tiene UNA RODILLA HINCADA EN EL SUELO, el torso "
+        "DOBLADO hacia delante y la cabeza caída; sus dos brazos están SUJETOS por dos "
+        "perseguidores que se los agarran uno a cada lado y tiran de ellos hacia abajo y hacia "
+        "fuera, manteniéndolo abierto y sin defensa. "
+        "• OTRO PERSEGUIDOR, de pie a su lado, tiene el BRAZO EXTENDIDO hacia él y la HOJA "
+        "BLANCA APOYADA Y HUNDIDA en su COSTADO: la punta ya no se ve porque está dentro; se "
+        "entiende por la línea del brazo y por dónde termina la hoja. "
+        "• LA SANGRE, sobria: una MANCHA ROJO OSCURO extendiéndose alrededor de la hoja en el "
+        "costado del padre, un reguero que le baja por el cuerpo y unas pocas gotas en el suelo "
+        "bajo él. Nada más. "
+        "• EL OTRO PADRE aún resiste de pie en el umbral, junto a él, agarrando con las DOS "
+        "MANOS la muñeca del brazo armado de otro perseguidor para frenarla, con el cuerpo "
+        "echado hacia atrás por el empuje y una pierna atrasada haciendo fuerza. "
+        "• El resto de perseguidores empujan por detrás desde fuera. Todos los cuerpos MUY "
+        "JUNTOS y superpuestos, en desequilibrio: es una pelea perdida. "
+        "CONSISTENCIA DE LOS PERSEGUIDORES: idénticos a la SEGUNDA referencia: siluetas "
+        "ROJO-GRANATE (maroon) PLANAS y SIMPLES, feroces, cada una con UNA hoja BLANCA. Nada de "
+        "figuras enormes ni musculosas ni de otro color. "
+        "LOS PADRES: siluetas NEGRAS SÓLIDAS y PLANAS, del mismo negro azulado de la primera "
+        "referencia, sin rostro ni detalle interior, más altas que los perseguidores. "
+        "CONTENCIÓN: la sangre es la descrita arriba y NADA más. PROHIBIDO el gore: sin heridas "
+        "abiertas, sin cortes detallados, sin salpicaduras por las paredes, sin charcos grandes "
+        "ni vísceras. Es una mancha y un reguero, contados con la misma sobriedad de siluetas "
+        "planas que el resto del prólogo. "
+        "SENSACIÓN: los padres cumplieron su parte y ya no pueden más; el precio de los "
+        "segundos que les dieron a sus hijos. NADA de texto."),
     (59, ["assets/Prologo/escenas/escena_58.png"],
         "PRIMER PLANO / close-up del MISMO GRAN CAJÓN de madera de la referencia (la caja donde "
         "se escondieron los niños), DENTRO de la casa en ruinas en penumbra. La escena es un "

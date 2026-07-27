@@ -259,7 +259,7 @@ const TRAMOS := [
 	# respirando otra vez. La caída (65) y el fondo del Hoyo (66) caen justo en
 	# los dos últimos versos.
 	{ "desde_verso": 9, "escenas": [
-		53, 55, 57, 58
+		53, 55, 57, 82
 	], "seg": 1  },
 	
 	{ "desde_verso": 10, "escenas": [
