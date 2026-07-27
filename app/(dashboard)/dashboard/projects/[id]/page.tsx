@@ -51,7 +51,7 @@ export default function ProjectDetailPage() {
   const { user } = useAuth();
   const [project, setProject] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
-  // Rail derecho como pestañas: Propiedades (default) / Observaciones (cotización) / DigiMundo (solo admin).
+  // Rail derecho como pestañas: Propiedades (default) / Observaciones (cotización).
   const [rightTab, setRightTab] = useState<'propiedades' | 'incidentes'>('propiedades');
   const [showShare, setShowShare] = useState(false);
   // Paneles de acceso rápido desde el header (Progreso / Imágenes).
@@ -59,7 +59,6 @@ export default function ProjectDetailPage() {
   const [showImagesModal, setShowImagesModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
-  const [digiProjects, setDigiProjects] = useState<any[]>([]);
   const [linking, setLinking] = useState(false);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [incidentFilter, setIncidentFilter] = useState('all');
@@ -71,17 +70,13 @@ export default function ProjectDetailPage() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Content (video script + video) states
-  const [showScriptPanel, setShowScriptPanel] = useState(false);
   const [videoScript, setVideoScript] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [generatingVideo, setGeneratingVideo] = useState(false);
   const [videoStep, setVideoStep] = useState('');
-  const [scriptAgentConfig, setScriptAgentConfig] = useState<{ agentId: string; agentName: string; projectPath: string } | null>(null);
   const [showStoryboard, setShowStoryboard] = useState(false);
   const [storyboard, setStoryboard] = useState<any[] | null>(null);
-  const [showPublicDocs, setShowPublicDocs] = useState(false);
   const [publicDocsToken, setPublicDocsToken] = useState<string | null>(null);
-  const [showSocialCopy, setShowSocialCopy] = useState(false);
   const [hasSocialCopy, setHasSocialCopy] = useState(false);
 
   // Withdrawal/exit request states
@@ -153,8 +148,6 @@ export default function ProjectDetailPage() {
   const [submittingBid, setSubmittingBid] = useState(false);
 
   // Proforma states
-  const [showProformaChat, setShowProformaChat] = useState(false);
-  const [proformaAgentConfig, setProformaAgentConfig] = useState<{ agentId: string; agentName: string; projectPath: string } | null>(null);
 
   // Complete + Invoice states
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -303,7 +296,6 @@ export default function ProjectDetailPage() {
   useEffect(() => { fetchProject(); fetchProjectRequests(); fetchProjectImages(); fetchContent(); fetchPublicDocs(); fetchSocialCopy(); }, [fetchProject, fetchProjectRequests, fetchProjectImages, fetchContent, fetchPublicDocs, fetchSocialCopy]);
   useEffect(() => {
     if (!isAdmin) return;
-    fetch('/api/digimundo/projects').then(r => r.json()).then(d => setDigiProjects(d.data || [])).catch(() => {});
     fetch('/api/exchange-rates').then(r => r.json()).then(d => setCurrencies(d.currencies || [])).catch(() => {});
   }, [isAdmin]);
 
@@ -553,13 +545,6 @@ export default function ProjectDetailPage() {
     fetchProject();
   };
 
-  const linkDigimundo = async (digiId: string) => {
-    setLinking(true);
-    await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ digimundo_project_id: digiId || null }) });
-    toast.success(digiId ? 'Vinculado' : 'Desvinculado');
-    fetchProject();
-    setLinking(false);
-  };
 
   // Catálogo de talentos: se pide una sola vez, al abrir el modal por primera vez.
   useEffect(() => {
@@ -829,48 +814,9 @@ export default function ProjectDetailPage() {
     finally { setDeletingImageIdx(null); }
   };
 
-  const openSocialCopyPanel = async () => {
-    if (!project.digimundo_project_id) return;
-    const digiProject = digiProjects.find((d: any) => d.id === project.digimundo_project_id);
-    if (!digiProject) { toast.error('Proyecto DigiMundo no encontrado'); return; }
-    try {
-      const linksRes = await fetch('/api/agent-links');
-      const links = await linksRes.json();
-      const agentConfig = links[digiProject.agentId];
-      if (!agentConfig?.projectPath) { toast.error('Configura el path del proyecto en el chat del agente primero'); return; }
-      setScriptAgentConfig({ agentId: digiProject.agentId, agentName: digiProject.name, projectPath: agentConfig.projectPath });
-      setShowSocialCopy(true);
-    } catch { toast.error('Error cargando configuracion del agente'); }
-  };
 
-  const openPublicDocsPanel = async () => {
-    if (!project.digimundo_project_id) return;
-    const digiProject = digiProjects.find((d: any) => d.id === project.digimundo_project_id);
-    if (!digiProject) { toast.error('Proyecto DigiMundo no encontrado'); return; }
-    try {
-      const linksRes = await fetch('/api/agent-links');
-      const links = await linksRes.json();
-      const agentConfig = links[digiProject.agentId];
-      if (!agentConfig?.projectPath) { toast.error('Configura el path del proyecto en el chat del agente primero'); return; }
-      setScriptAgentConfig({ agentId: digiProject.agentId, agentName: digiProject.name, projectPath: agentConfig.projectPath });
-      setShowPublicDocs(true);
-    } catch { toast.error('Error cargando configuracion del agente'); }
-  };
 
   // --- Content (Script + Video) ---
-  const openScriptPanel = async () => {
-    if (!project.digimundo_project_id) return;
-    const digiProject = digiProjects.find((d: any) => d.id === project.digimundo_project_id);
-    if (!digiProject) { toast.error('Proyecto DigiMundo no encontrado'); return; }
-    try {
-      const linksRes = await fetch('/api/agent-links');
-      const links = await linksRes.json();
-      const agentConfig = links[digiProject.agentId];
-      if (!agentConfig?.projectPath) { toast.error('Configura el path del proyecto en el chat del agente primero'); return; }
-      setScriptAgentConfig({ agentId: digiProject.agentId, agentName: digiProject.name, projectPath: agentConfig.projectPath });
-      setShowScriptPanel(true);
-    } catch { toast.error('Error cargando configuracion del agente'); }
-  };
 
   const handleGenerateVideo = async () => {
     if (!videoScript) { toast.error('Primero genera el guion'); return; }
@@ -915,20 +861,6 @@ export default function ProjectDetailPage() {
   };
 
   // --- Proforma ---
-  const openProformaChat = async () => {
-    if (!project.digimundo_project_id) return;
-    const digiProject = digiProjects.find((d: any) => d.id === project.digimundo_project_id);
-    if (!digiProject) { toast.error('Proyecto DigiMundo no encontrado'); return; }
-
-    try {
-      const linksRes = await fetch('/api/agent-links');
-      const links = await linksRes.json();
-      const agentConfig = links[digiProject.agentId];
-      if (!agentConfig?.projectPath) { toast.error('Configura el path del proyecto en el chat del agente primero'); return; }
-      setProformaAgentConfig({ agentId: digiProject.agentId, agentName: digiProject.name, projectPath: agentConfig.projectPath });
-      setShowProformaChat(true);
-    } catch { toast.error('Error cargando configuracion del agente'); }
-  };
 
   if (loading) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando proyecto..." /></div>;
   if (!project) return <div className="pixel-card text-center py-12"><p className="pixel-heading text-sm text-red-600">Proyecto no encontrado</p></div>;
@@ -937,7 +869,6 @@ export default function ProjectDetailPage() {
   const completedReqs = reqs.filter((r: any) => r.is_completed).length;
   const bids = project.bids || [];
   const incidents = project.incidents || [];
-  const linkedDigiName = digiProjects.find((d: any) => d.id === project.digimundo_project_id)?.name;
   // Can add requirements: not in review/completed/cancelled; in in_progress only creator/admin
   const canAddReqs = isOwner && !['review', 'completed', 'cancelled', 'closed'].includes(project.status);
   // Has unassigned requirements (for invite/visibility controls)

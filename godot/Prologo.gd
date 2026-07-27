@@ -47,7 +47,7 @@ const LETRAS := [
 	{ "t": 28.0,  "texto": "un alma en el suelo y un suelo en el mar." },
 
 	{ "t": 36,  "texto": "Pero basta fue más y lo nuestro fue mío," },
-	{ "t": 40.5,  "texto": "y cambiamos el sol por un brillo más frío." },
+	{ "t": 40.5,  "texto": "y cambiamos el sol, por un brillo más frío." },
 	{ "t": 46,  "texto": "Lo que daba de comer lo dejamos morir," },
 	{ "t": 51.5,  "texto": "y el verde del mundo se hizo gris al partir." },
 	{ "t": 60.5,  "texto": "" },
@@ -79,19 +79,18 @@ const LETRAS := [
 ## Por eso el tramo de la decadencia va como RÁFAGA. Si se quiere que respire,
 ## hay que quitar estampas de esa lista o alargar la canción.
 ## ⏱ DURACIÓN A MANO DE UNA ESTAMPA CONCRETA — { nº de escena: segundos }
-## Aquí se le clava el tiempo a las estampas que quieras que se vean más rato.
-## Lo que sobre del tramo se reparte entre las demás. Ejemplo:
-##     const DURACIONES := { 70: 6.0, 71: 5.0, 73: 7.0 }
-## OJO: el tramo dura lo que dura su trozo de canción, así que alargar una
-## estampa ACORTA a las otras del mismo tramo. Si te quedas sin sitio, mueve el
-## corte del tramo a un verso posterior o quítale estampas.
+## Aquí se le clava el tiempo a una estampa suelta. MANDA SOBRE TODO LO DEMÁS:
+## por encima del "seg" de su tramo y por encima del reparto automático.
+## Ejemplo:  const DURACIONES := { 4: 1.5, 70: 6.0 }
+## OJO: el tramo dura lo que dura su trozo de canción. Si al fijar duraciones la
+## suma del tramo se pasa de su hueco, la consola te avisa y las últimas
+## estampas se solaparían con el tramo siguiente.
 const DURACIONES := {
-	# 70: 6.0,
-	# 70: 6.0,
-	# 70: 6.0,
-	# 70: 6.0,
-	# 70: 6.0,
-	# 70: 6.0,
+	4: 2,
+	75: 1.5,
+	76: 2,
+	77: 2.5
+	
 }
 
 
@@ -113,20 +112,19 @@ const TRAMOS := [
 	{ "desde_verso": 0, "escenas": [2, 3, 67, 68, 69, 70, 73, 75, 74], "seg": 3.0 },
 
 	# Verso 5 ("lo nuestro fue mío") · el Hoyo abandonado y las raíces.
-	{ "desde_verso": 4, "escenas": [76, 77, 78, 4, 5, 6, 7, 8], "seg": 3.0   },
+	{ "desde_verso": 4, "escenas": [76, 77, 4, 78], "seg": 2   },
 
 	# Versos 6-8 + instrumental · LA RÁFAGA: todo lo que el humano rompió.
 	# Van agrupadas por tema (no por número) para que los destellos tengan lógica:
 	# el mundo gris → la codicia → la violencia → los que debían cuidar → la
 	# tierra → la guerra y el gris final.
-	{ "desde_verso": 5, "escenas": [
-		13, 14, 15,
-		39, 36, 35, 30, 31, 29, 23, 45, 46, 44,
-		16, 17, 18, 19, 33, 22, 32, 40, 24,
-		21, 34, 26, 25, 38, 27, 28, 37, 20,
-		41, 42, 43,
-		47, 48, 49, 50, 51, 52,
-	] },
+	{ "desde_verso": 6, "escenas": [
+	 5, 6, 7, 8, 9, 10,11,12
+	], "seg": 1.5  },
+
+{ "desde_verso": 8, "escenas": [
+12
+	], "seg": 1.5  },
 
 	# Verso 10 ("los pequeños corrieron al borde del día") · el Acto 4 entero,
 	# respirando otra vez. La caída (65) y el fondo del Hoyo (66) caen justo en

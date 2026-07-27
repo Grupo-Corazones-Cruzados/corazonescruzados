@@ -1,0 +1,5 @@
+Toma esta hoja de sprites y cambia UNA SOLA COSA: la prenda de la MITAD INFERIOR del cuerpo (de la cintura a los pies, calzado incluido), que pasa a ser un pantalón largo marrón con remiendos y botas oscuras gastadas.
+
+TODO LO DEMÁS QUEDA EXACTAMENTE IGUAL: la cara, el peinado, los brazos, las manos y la prenda de arriba. No muevas ni redibujes las figuras, no cambies su tamaño ni su postura, no cambies la línea de suelo, no cambies el fondo. Mantén el mismo estilo pixel art, el mismo grosor de píxel y el mismo contorno oscuro.
+
+Las cuatro vistas (frente, espalda y los dos perfiles) deben llevar la prenda nueva, coherente entre ellas.

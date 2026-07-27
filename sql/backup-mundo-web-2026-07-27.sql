@@ -38,3 +38,11 @@ INSERT INTO gcc_world.game_action_log (id, client_id, action, payload, accepted,
 INSERT INTO gcc_world.item_placement_syncs (id, scenes, placements, removed, synced_at) VALUES ('1', 1, 3, 0, '2026-07-20T18:15:18.847Z');
 INSERT INTO gcc_world.item_placement_syncs (id, scenes, placements, removed, synced_at) VALUES ('2', 1, 3, 0, '2026-07-20T19:57:51.197Z');
 INSERT INTO gcc_world.item_placement_syncs (id, scenes, placements, removed, synced_at) VALUES ('3', 0, 0, 0, '2026-07-20T21:39:01.050Z');
+
+-- Enlace proyecto ↔ proyecto de agentes, antes de eliminar la columna (2026-07-27)
+-- UPDATE gcc_world.projects SET digimundo_project_id='yj9wymw8' WHERE id='12';
+-- UPDATE gcc_world.projects SET digimundo_project_id='abac2235-4881-4c57-a63c-1cafa112815a' WHERE id='3';
+-- UPDATE gcc_world.projects SET digimundo_project_id='9p7ai4b0' WHERE id='14';
+-- UPDATE gcc_world.projects SET digimundo_project_id='g9e1pjr6' WHERE id='5';
+-- UPDATE gcc_world.projects SET digimundo_project_id='usbi9y17' WHERE id='7';
+-- UPDATE gcc_world.projects SET digimundo_project_id='53b75eb6-f6c1-48b3-8f5e-03e6e105df26' WHERE id='6';

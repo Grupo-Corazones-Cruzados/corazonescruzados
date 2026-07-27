@@ -102,18 +102,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       [id]
     );
 
-    // Get linked DigiMundo incidents if project is linked
-    let incidents: any[] = [];
-    if (rows[0].digimundo_project_id) {
-      const incRes = await pool.query(
-        `SELECT id, title, severity, status, "clientName", "createdAt", "updatedAt"
-         FROM gcc_world."Incident"
-         WHERE "projectId" = $1
-         ORDER BY "createdAt" DESC`,
-        [rows[0].digimundo_project_id]
-      );
-      incidents = incRes.rows;
-    }
+    // (Eliminado 2026-07-27) Aquí se traían las incidencias del proyecto de
+    // agentes enlazado. Ese enlace se fue con DigiMundo.
+    const incidents: any[] = [];
 
     // Miembros del proyecto (responsable + participantes) y estado de la invitación.
     const projectMembers = await getProjectMembers(id);
@@ -201,7 +192,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     let idx = 1;
 
     for (const [key, val] of Object.entries(body)) {
-      if (['title', 'description', 'status', 'budget_min', 'budget_max', 'final_cost', 'deadline', 'is_private', 'assigned_member_id', 'confirmed_at', 'digimundo_project_id', 'proforma', 'client_id', 'client_email'].includes(key)) {
+      if (['title', 'description', 'status', 'budget_min', 'budget_max', 'final_cost', 'deadline', 'is_private', 'assigned_member_id', 'confirmed_at', 'proforma', 'client_id', 'client_email'].includes(key)) {
         fields.push(`${key} = $${idx++}`);
         values.push(val);
       }
