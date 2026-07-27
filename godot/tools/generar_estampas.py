@@ -92,6 +92,7 @@ INSERTADAS = {
     74: 3,   # los canales de riego del pueblo con brillos violetas, tras la 73
     75: 3,   # los MISMOS huertos pero SIN los brillos violetas (gemela de la 74)
     76: 7,   # inauguración de la fábrica: aquí entra la industria → tono de Acto 2
+    77: 7,   # POV del joven leyendo la noticia de la fábrica en el periódico
 }
 
 
@@ -647,6 +648,47 @@ ESCENAS = [
         "PROHIBIDO cualquier arma. Si hace falta un vehículo, un CARRO DE CABALLOS. "
         "SENSACIÓN: la fiesta del progreso. Todos mirando arriba, encantados, sin sospechar que "
         "ese primer humo es el comienzo de todo lo que viene después."),
+    # --- INSERTADA: POV de un joven leyendo la noticia de la fábrica ---
+    # La referencia es el RECORTE de la 76 (la fábrica y la multitud, ya sin los
+    # periodistas ni la cámara): es lo que el fotógrafo captó, y es lo que sale
+    # impreso en el periódico.
+    (77, ["assets/Prologo/referencias/foto_fabrica.png"],
+        "MISMO ESTILO DE DIBUJO que la imagen de referencia: pixel-art 2D dibujado a mano, "
+        "sombreado plano, NUNCA estilo realista ni fotográfico. "
+        "ES UN PLANO SUBJETIVO (POV): vemos lo que ve un JOVEN que está leyendo un PERIÓDICO, "
+        "como si la cámara fueran sus ojos. El PERIÓDICO abierto OCUPA CASI TODA LA IMAGEN, "
+        "visto desde arriba y algo inclinado, un poco escorzado hacia el espectador. "
+        "LA MANO — hazla bien, es lo más delicado del plano: UNA sola MANO entra desde la "
+        "ESQUINA INFERIOR DERECHA, en ESCORZO, AGARRANDO el borde del periódico con el pulgar "
+        "por delante de la página y los otros CUATRO DEDOS por detrás. Dedos BIEN FORMADOS, "
+        "proporcionados y del tamaño correcto respecto al periódico, con la manga de una camisa "
+        "sencilla asomando en la muñeca. PROHIBIDO: manos gigantes, manos deformes, dedos de "
+        "más o de menos, garras, dos manos si no caben bien. El resto del cuerpo NO se ve. "
+        "EL PERIÓDICO: papel de época amarillento y algo arrugado, con su doblez central "
+        "marcado. Estructura de la página: "
+        "(1) ARRIBA, un TITULAR grande en letras negras gruesas y bien legibles que dice "
+        "EXACTAMENTE: \"LA NUEVA FÁBRICA\". Debajo, una línea más pequeña de subtítulo hecha de "
+        "rayitas ilegibles. "
+        "(2) EN EL CENTRO, ocupando la mitad de la página, LA FOTOGRAFÍA de la noticia, metida "
+        "en un marco fino: es EXACTAMENTE la imagen de referencia (la fábrica de ladrillo en "
+        "tres cuartos con su chimenea humeando, el portón con la cinta, las casas del barrio y "
+        "la multitud de espaldas con los brazos en alto), pero impresa en BLANCO Y NEGRO / "
+        "sepia, con el grano y los puntitos de la impresión antigua y un poco de contraste "
+        "duro, como una foto de periódico de la época. IMPORTANTE: en la foto NO deben salir "
+        "los periodistas, ni el fotógrafo, ni la cámara, ni el trípode, ni el flash: es la foto "
+        "que TOMÓ la cámara, así que solo se ve la fábrica, el barrio y el público. "
+        "(3) ALREDEDOR Y DEBAJO de la foto, COLUMNAS de texto de periódico: líneas finas y "
+        "MUY PEQUEÑAS, simuladas como rayitas grises ILEGIBLES (no escribas palabras de "
+        "verdad), separadas en dos o tres columnas por filetes verticales. "
+        "El ÚNICO texto legible de toda la imagen es el titular \"LA NUEVA FÁBRICA\": nada más "
+        "debe poder leerse. "
+        "EL FONDO: apenas se ve, y va DESENFOCADO y oscurecido detrás del periódico, sin "
+        "detalles reconocibles: solo un ambiente en penumbra con algo de luz de día entrando de "
+        "lado. Nada de objetos identificables ni personas. "
+        "COLOR: el papel y la tinta en tonos apagados, grises y ocres desvaídos, sin dorados "
+        "cálidos: ya estamos en el tramo en que el mundo pierde color. "
+        "SENSACIÓN: la noticia del progreso llegando a las casas; alguien joven leyendo, "
+        "impresionado, lo que va a cambiarlo todo."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "

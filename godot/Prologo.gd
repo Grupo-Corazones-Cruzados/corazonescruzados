@@ -113,7 +113,7 @@ const TRAMOS := [
 	{ "desde_verso": 0, "escenas": [2, 3, 67, 68, 69, 70, 73, 75, 74], "seg": 3.0 },
 
 	# Verso 5 ("lo nuestro fue mío") · el Hoyo abandonado y las raíces.
-	{ "desde_verso": 4, "escenas": [76, 7, 8, 9, 11] },
+	{ "desde_verso": 4, "escenas": [76, 77, 8, 9, 11] },
 
 	# Versos 6-8 + instrumental · LA RÁFAGA: todo lo que el humano rompió.
 	# Van agrupadas por tema (no por número) para que los destellos tengan lógica:
