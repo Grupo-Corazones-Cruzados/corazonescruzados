@@ -2160,3 +2160,22 @@ la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas mir
   porque se generó con la instrucción *"cubre el pelo"* y el diff no distingue bien dónde acaba uno y
   empieza el otro. Para la próxima tanda de accesorios, la instrucción debe pedir **añadir el
   accesorio SIN tocar el pelo de debajo**: así el diff es exactamente la pieza.
+
+#### P27 — Rasgos de la cara por SELLOS (ojos, boca, color de ojos) · 🔎 Funciona, falta afinar
+- **Por qué sellos y no IA, con números:** medido en la plantilla, **un ojo son 7 px y una boca 2 px**,
+  mientras que el ruido entre dos tiradas del modelo es de **30–80 px**. Pedirle "otra boca" produce un
+  cambio *por debajo del ruido*: es justo lo que pasó con la barba. Por debajo de ~20 px, el rasgo se
+  dibuja a mano y se coloca por coordenadas. Ésa es la frontera, y ahora está medida.
+- **Los anclajes se detectan solos**, no se escriben a mano: los rasgos son **huecos CERRADOS** de la
+  mancha de piel (islas rodeadas de cara). El pelo que baja por la sien se le parece en color pero
+  nunca está cerrado —viene de fuera—, así que se descarta solo. Mismo criterio que arregló el color:
+  no *qué eres*, sino *a qué tocas*.
+- **Estado real:** ✅ chica, en sus tres vistas con cara (de espaldas no toca nada, correcto);
+  ❌ **chico**: su pelo **toca los ojos**, así que no quedan cerrados y la detección falla. Para él hay
+  que **fijar los anclajes en el catálogo** (medidos: ojos y 23–27 en x≈42-45 y x≈52-55, boca y≈33).
+  Es lo que hacen los creadores de verdad: los anclajes son parte del *rig* del personaje, no algo que
+  se adivine en cada hoja.
+- ⚠️ **Calidad:** el mecanismo está probado (5 variantes de ojos/boca/color renderizadas), pero **los
+  patrones que dibujé son más toscos que el arte original**: son rejillas de 3×3 hechas de una
+  sentada. Los sellos son trabajo de dibujo y hay que darles otra vuelta.
+- **Módulo:** `lib/game/sellos.js` (OJOS, CEJAS, BOCAS, COLOR_OJOS + detección y estampado).
