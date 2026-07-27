@@ -26,7 +26,13 @@
  *  1. **El modelo NO devuelve transparencia**: dibuja un cuadriculado gris
  *     imitándola (alfa 255 en toda la imagen). Se quita rellenando desde los
  *     BORDES por color; nunca desde dentro, o se comería los blancos de la ropa.
- *  2. **No es fiel al píxel entre generaciones**: repite postura, escala y
+ *  2. **Tampoco dibuja bordes duros**: deja 1–2 px de mezcla entre la figura y el
+ *     fondo. Esa mezcla no es solo blanca —el contorno oscuro mezclado con blanco
+ *     da GRISES MEDIOS (77,67,66 · 135,125,123)—, así que ningún umbral de brillo
+ *     la distingue del arte. Se resuelve en dos frentes: reducir **por mayoría de
+ *     color** en vez de muestrear un píxel, y admitir solo colores de la **paleta
+ *     real** del dibujo (la del interior, donde no puede haber mezcla).
+ *  3. **No es fiel al píxel entre generaciones**: repite postura, escala y
  *     posición, pero con derivas de ±1 px. Por eso NO se pueden extraer capas
  *     restando dos imágenes (sale ruido), y por eso cada figura se **recuadra**
  *     a una rejilla fija alineándola por los pies y por su centro. Con eso las
@@ -50,10 +56,10 @@ const SALIDA = 'public/personajes';
  * Rejilla del catálogo: cada vista ocupa una celda de este tamaño.
  *
  * El modelo dibuja a lo grande (la figura sale a ~550 px de alto, con bloques de
- * unos 7 px por "píxel" de arte). Aquí se reduce a una altura fija con vecino
- * más cercano: así el sprite queda a tamaño de juego, los bordes siguen duros y
- * —lo importante— **todas las piezas acaban a la misma escala exacta**, vengan
- * de la tirada que vengan.
+ * unos 5 px por "píxel" de arte). Aquí se reduce a una altura fija **por mayoría
+ * de color** (ver `reducirPorMayoria`): así el sprite queda a tamaño de juego,
+ * los bordes salen duros y sin restos del fondo, y —lo importante— **todas las
+ * piezas acaban a la misma escala exacta**, vengan de la tirada que vengan.
  */
 const CELDA = { ancho: 96, alto: 128 };
 /** Alto al que se lleva TODA figura. Manda sobre lo que haya dibujado el modelo. */
@@ -172,6 +178,107 @@ function quitarHalo({ data, W, H }, pasadas = 4) {
   return total;
 }
 
+/**
+ * La paleta REAL del dibujo: los colores que el personaje usa de verdad.
+ * ---------------------------------------------------------------------
+ * Se toma solo del INTERIOR de la figura —píxeles que no tocan el vacío ni de
+ * lejos—, porque ahí no puede haber mezcla con el fondo. Todo lo que aparezca
+ * únicamente en el borde es, por definición, contaminación del blanco.
+ *
+ * Hace falta porque los restos que sobrevivían no eran claros, sino **grises
+ * medios**: la mezcla del contorno oscuro con el fondo blanco (77,67,66 ·
+ * 135,125,123). Ningún umbral de brillo los distingue del arte; su paleta, sí.
+ */
+function paletaReal(data, W, H, margen = 2) {
+  const vacio = (x, y) => x < 0 || y < 0 || x >= W || y >= H || data[(y * W + x) * 4 + 3] === 0;
+  const cuenta = new Map();
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      if (data[i + 3] === 0) continue;
+      let cerca = false;
+      for (let dy = -margen; dy <= margen && !cerca; dy++) {
+        for (let dx = -margen; dx <= margen; dx++) {
+          if (vacio(x + dx, y + dy)) { cerca = true; break; }
+        }
+      }
+      if (cerca) continue; // borde: no vota para la paleta
+      const cubo = ((data[i] >> 3) << 10) | ((data[i + 1] >> 3) << 5) | (data[i + 2] >> 3);
+      cuenta.set(cubo, (cuenta.get(cubo) ?? 0) + 1);
+    }
+  }
+  // Un color que sale cuatro veces en toda la figura es ruido, no paleta.
+  const paleta = new Set();
+  for (const [cubo, n] of cuenta) if (n >= 5) paleta.add(cubo);
+  return paleta;
+}
+
+/**
+ * Reduce una figura por MAYORÍA, no por muestreo.
+ * ------------------------------------------------
+ * Aquí está la clave de que no queden restos de fondo. El modelo dibuja cada
+ * píxel de arte como un bloque de varios píxeles reales, y entre la figura y el
+ * fondo deja un borde suavizado de 1–2 px. Si al reducir se toma **un** píxel de
+ * cada bloque (que es lo que hace `nearest`), tarde o temprano se toma uno del
+ * borde y ese píxel entra en el sprite ya mezclado con blanco: son los rastros
+ * que se veían.
+ *
+ * Reduciendo por mayoría el problema desaparece **por construcción**: dentro de
+ * cada bloque el suavizado es siempre minoría frente al color macizo, así que
+ * nunca gana. Y un bloque que es mayoritariamente fondo se queda transparente
+ * entero, en vez de dejar flecos.
+ *
+ * Los colores se agrupan en cubos de 8 para contar (dos tonos casi iguales del
+ * mismo marrón deben sumar juntos), pero se devuelve un color REAL de la imagen,
+ * no el promedio: promediar inventa tonos que no están en la paleta.
+ */
+function reducirPorMayoria(data, W, caja, factor, anchoDestino, altoDestino, paleta) {
+  const salida = Buffer.alloc(anchoDestino * altoDestino * 4, 0);
+  for (let oy = 0; oy < altoDestino; oy++) {
+    for (let ox = 0; ox < anchoDestino; ox++) {
+      const x0 = caja.x0 + Math.floor(ox * factor);
+      const x1 = caja.x0 + Math.max(Math.ceil((ox + 1) * factor), Math.floor(ox * factor) + 1);
+      const y0 = caja.y0 + Math.floor(oy * factor);
+      const y1 = caja.y0 + Math.max(Math.ceil((oy + 1) * factor), Math.floor(oy * factor) + 1);
+
+      const votos = new Map();
+      let macizos = 0;
+      let total = 0;
+      for (let y = y0; y < y1; y++) {
+        for (let x = x0; x < x1; x++) {
+          total++;
+          const i = (y * W + x) * 4;
+          if (data[i + 3] === 0) continue; // fondo ya recortado
+          const cubo = ((data[i] >> 3) << 10) | ((data[i + 1] >> 3) << 5) | (data[i + 2] >> 3);
+          // Solo votan los colores de la paleta real: una mezcla con el fondo
+          // no puede ganar un bloque ni aunque sea mayoría en él.
+          if (!paleta.has(cubo)) continue;
+          macizos++;
+          const v = votos.get(cubo);
+          if (v) v.n++;
+          else votos.set(cubo, { n: 1, i });
+        }
+      }
+
+      // Un bloque que apenas toca la figura es fondo: transparente entero. El
+      // 45 % deja el contorno donde lo pondría un dibujante, sin comerse la
+      // silueta ni dejar flecos.
+      if (!total || macizos / total < 0.45) continue;
+
+      let mejor = null;
+      for (const v of votos.values()) if (!mejor || v.n > mejor.n) mejor = v;
+      if (!mejor) continue;
+
+      const d = (oy * anchoDestino + ox) * 4;
+      salida[d] = data[mejor.i];
+      salida[d + 1] = data[mejor.i + 1];
+      salida[d + 2] = data[mejor.i + 2];
+      salida[d + 3] = 255; // alfa binario: en pixel art no hay medias tintas
+    }
+  }
+  return salida;
+}
+
 /** Separa las figuras por los huecos verticales y devuelve su caja. */
 function localizarFiguras({ data, W, H }) {
   const solido = (x, y) => data[(y * W + x) * 4 + 3] > 60;
@@ -205,9 +312,6 @@ async function normalizar(limpio, nombre) {
   if (cajas.length !== VISTAS.length) {
     console.warn(`  ⚠ se esperaban ${VISTAS.length} vistas y se encontraron ${cajas.length}: se guarda el crudo para revisarlo a mano`);
   }
-  const { data, W, H } = limpio;
-  const origen = await sharp(Buffer.from(data), { raw: { width: W, height: H, channels: 4 } }).png().toBuffer();
-
   const lienzo = sharp({
     create: { width: CELDA.ancho * VISTAS.length, height: CELDA.alto, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
   });
@@ -218,6 +322,11 @@ async function normalizar(limpio, nombre) {
   const altoMayor = Math.max(...cajas.map((c) => c.y1 - c.y0 + 1));
   const factor = ALTO_FIGURA / altoMayor;
 
+  // Paleta del dibujo, tomada del interior: lo que no esté aquí es mezcla con
+  // el fondo y no puede acabar en el sprite.
+  const paleta = paletaReal(limpio.data, limpio.W, limpio.H);
+  console.log(`  paleta real: ${paleta.size} colores`);
+
   const capas = [];
   for (let i = 0; i < Math.min(cajas.length, VISTAS.length); i++) {
     const c = cajas[i];
@@ -225,11 +334,14 @@ async function normalizar(limpio, nombre) {
     const alto = c.y1 - c.y0 + 1;
     const anchoFinal = Math.max(1, Math.round(ancho * factor));
     const altoFinal = Math.max(1, Math.round(alto * factor));
-    const recorte = await sharp(origen)
-      .extract({ left: c.x0, top: c.y0, width: ancho, height: alto })
-      // `nearest`: reducir con interpolación suave emborrona el pixel art.
-      .resize({ width: anchoFinal, height: altoFinal, kernel: 'nearest' })
-      .toBuffer();
+    // Reducción por mayoría (NO `nearest`): es lo que impide que el borde
+    // suavizado del modelo se cuele en el sprite. Ver `reducirPorMayoria`.
+    const crudoReducido = reducirPorMayoria(
+      limpio.data, limpio.W, c, 1 / factor, anchoFinal, altoFinal, paleta,
+    );
+    const recorte = await sharp(crudoReducido, {
+      raw: { width: anchoFinal, height: altoFinal, channels: 4 },
+    }).png().toBuffer();
     if (anchoFinal > CELDA.ancho) {
       console.warn(`  ⚠ la vista "${VISTAS[i]}" es más ancha (${anchoFinal}) que la celda (${CELDA.ancho})`);
       continue;
