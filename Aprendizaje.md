@@ -2254,3 +2254,36 @@ la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas mir
   había): traduce lo que **significa lo mismo** —sexo, tono de piel, color de pelo, complexión,
   nombre— y deja el resto por defecto. No se inventan equivalencias de prendas: los catálogos viejo y
   nuevo son dibujos distintos. El original queda guardado en `character_data_v1`.
+
+---
+
+## Tema (2026-07-27) — ANIMACIÓN Y EQUIPO estilo Guardian Tales (esqueleto + anclajes)
+
+**Decisión del usuario:** hacerlo como Guardian Tales ⇒ **camino 2 + 3**: esqueleto para el cuerpo y
+lo que se lleva puesto, anclajes para lo que se sujeta.
+
+#### P32 — ¿Por qué esqueleto y no capas? · ✅ Decidido con el coste, no con el gusto
+- **Capas** (Stardew/LPC): el motor sincroniza el fotograma, pero **el casco hay que dibujarlo en cada
+  fotograma**. Barato de empezar, caro por pieza.
+- **Esqueleto**: el casco se ata al hueso de la cabeza y se dibuja **UNA vez**; sirve para caminar,
+  correr, atacar y para animaciones que aún no existen. Caro de montar, casi gratis por pieza.
+- ⇒ Con un catálogo que va a crecer (armaduras, cascos, botas, collares), **manda el coste por pieza**.
+- Documento con los tres caminos comparados: artifact "Animación y equipo: los tres caminos".
+
+#### P33 — El esqueleto, medido sobre la silueta · ✅ `lib/game/esqueleto.js`
+- Las cajas **no están puestas a ojo**: salen de medir la silueta fila a fila. En la chica el cuello se
+  estrecha a 12 px en y≈39, los hombros abren en y 42, la cadera está en y 80 y las piernas se separan
+  en y 108. Seis piezas: cabeza, torso, dos brazos, dos piernas, más `anclajeMano`.
+- **Las mismas cajas valen para TODAS las piezas del catálogo** —cada prenda, cada peinado— porque todo
+  se generó editando la misma plantilla y quedó recuadrado en la misma rejilla. Cortar una armadura
+  nueva es aplicarle estas cajas, sin medir nada. Ésa es la recompensa de haber normalizado.
+- Los brazos se solapan a propósito con el torso: si no, la manga deja hueco al levantarse.
+
+#### P34 — ¿Aguanta el pixel art las rotaciones? · ✅ Sí, con ángulos cortos (verificado)
+- Se generó una **caminata de 8 fotogramas rotando las piezas** (±11° piernas, ±9° brazos, rebote del
+  torso), con rotación de vecino más cercano, que es lo que hará el motor. **Se lee bien**: a esos
+  ángulos el borde aguanta. Era el riesgo que había que despejar antes de montar nada en Godot.
+- ⚠️ **HALLAZGO — la falda no puede partirse en dos piernas.** Al rotar cada mitad por su lado, la
+  falda se abre como si fueran pantalones: no es un fallo de la técnica, es que **el rig tiene que
+  depender de la PRENDA**. Con pantalón, dos piernas; con falda, la falda debe ser una pieza con las
+  piernas por debajo. Hay que separar `piernas` (cuerpo) de `faldón` (prenda) en el esqueleto.
