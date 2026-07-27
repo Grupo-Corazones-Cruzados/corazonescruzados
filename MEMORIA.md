@@ -275,6 +275,40 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **FUERA EL MUNDO WEB Y SU EDITOR — el mundo es Godot (2026-07-27).** Decisión del usuario: todo lo
+  que hicimos a mano para el mundo del jugador (el que se veía tras crear el personaje) se elimina;
+  Godot lo sustituye.
+  - **Borrado (código):** `components/landing/world/*` (MapEditor, NpcEditor, SceneManagerEditor,
+    CinematicEditor, LightOverlay, InventoryBar, editorUi, items, lights, sheets, sheetLoader),
+    `components/landing/CharacterGameplay.tsx` (el juego viejo embebido, ya huérfano),
+    `components/landing/WorldMap.tsx`, `components/world/CinematicPlayer.tsx`, las rutas
+    `app/api/world/{map,scenes,npcs,lights,position,inventory,validate}`, `lib/game/pickup.ts` y
+    `public/tiles/` (2,7 MB sin una sola referencia). **27 archivos.**
+  - **Borrado (BD, irreversible, decisión explícita del usuario):** `gcc_world.world_maps`, `scenes`,
+    `npcs`, `lights`, `item_placements`, `player_progress`. Apenas se usaron (1 mapa, 1 escena, 1 NPC).
+    ⚠️ **Copia previa en `sql/backup-mundo-web-2026-07-27.sql`** (INSERTs; para restaurar hay que
+    recrear las tablas desde el historial de git).
+  - ⚠️ **OJO — lo que NO es del mundo del juego y se CONSERVA:** `/world` (**DigiMundo**: los agentes
+    trabajando en proyectos) y `/sprites` (editor de sprites de esos agentes) **no tienen nada que ver**
+    con el mundo del jugador, pese al nombre. Con ellos se conservan `app/api/world/route.ts` (config de
+    agentes, la usa `/sprites`), `components/world/ChatPanel.tsx` (lo usan 5 paneles de proyectos),
+    `public/universal_assets/`, y el sistema de etapas/saldo (`lib/game/{stages,ledger}.ts`,
+    `/api/game/stages`) porque **los tickets lo invocan** (`evaluateStages` al completar un ticket).
+  - **Se conserva el creador de personaje** (`CharacterCreator` + `lib/game/lpc-catalog.ts` +
+    `public/character/`, 19 MB) hasta que lo sustituya el catálogo generado con IA.
+- **LA INTRO SE VE UNA SOLA VEZ + MODO PREVISUALIZACIÓN `/?intro` (2026-07-27).** Decisión del usuario:
+  la intro (mensajes → mundo navegable con el ratón → escenas del planeta → "¿seguro que quieres
+  entrar?" → creador) se ve **solo la primera vez**, mientras no tengas personaje; después el login
+  lleva derecho al juego. Es lo que ya hacía el código, así que **no había nada que restaurar**: quien
+  ya creó su personaje no la volvía a ver, y por eso parecía haber desaparecido.
+  - **`/?intro`** hace que la landing se comporte como si no tuvieras personaje, para poder revisarla.
+    Solo cambia lo que se ve: **sigue exigiendo login** y, al llegar al creador, **NO guarda** (si no,
+    machacaría el personaje real). Implementado en `enPrevisualizacionDeIntro()` (`app/page.tsx`),
+    que lee la URL en cada llamada en vez de guardarla en estado (evita desajuste de hidratación).
+  - ⚠️ **BUG encontrado y arreglado:** la **señal del minimapa** que indica a qué mundo ir al terminar
+    el diálogo era `/Icono de Advertencia.png` y **daba 404** — el asset lo borró la limpieza `94cfcee`
+    y quedó la referencia. La intro te pedía ir a un sitio sin poder enseñarte cuál. Ahora es un **SVG
+    en línea** (no se puede volver a perder).
 - **PANTALLA DE CARGA DEL JUEGO — con nuestro estilo y con progreso REAL (2026-07-26).**
   - ⚠️ **Por qué la barra no avanzaba (causa raíz):** el motor solo calcula el porcentaje si le pasan
     **`fileSizes`** (cuánto pesa cada archivo). Su `Preloader` cuenta los bytes que llegan, pero si a

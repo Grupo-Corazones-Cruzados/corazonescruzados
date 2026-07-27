@@ -37,6 +37,30 @@ type EntryPhase =
 
 const REVEAL_TEXT = 'Cambiará tu vida';
 
+/**
+ * Modo previsualización de la intro: `https://…/?intro`.
+ *
+ * La intro (mensajes → mundo navegable → escenas del planeta → "¿seguro que
+ * quieres entrar?" → creador de personaje) se ve **una sola vez**: en cuanto
+ * tienes personaje, iniciar sesión te lleva derecho al juego. Eso deja sin forma
+ * de revisarla a quien ya lo creó, así que con `?intro` la landing hace como si
+ * el personaje no existiera.
+ *
+ * Solo cambia lo que se VE: sigue exigiendo iniciar sesión y **no toca el
+ * personaje guardado** (el creador, en este modo, no guarda nada).
+ *
+ * Se lee de la URL en cada llamada en vez de guardarse en estado para no
+ * arriesgar un desajuste de hidratación: en el servidor no hay `location`.
+ */
+function enPrevisualizacionDeIntro(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return new URLSearchParams(window.location.search).has('intro');
+  } catch {
+    return false;
+  }
+}
+
 type PlanetScene = {
   image: string;
   musicRefKey: 'planet' | 'peligro';
@@ -1083,6 +1107,18 @@ export default function LandingPage() {
         const j = await r.json();
         if (j?.exists && j.characterData) {
           const cfg = j.characterData as CharacterConfig;
+          // Previsualización (`/?intro`): se hace como si no hubiera personaje
+          // para poder ver la intro entera otra vez. Se guarda igualmente el
+          // estado de la cuenta (aprobado/verificado) porque el gate de entrada
+          // lo necesita; lo único que se finge es "aún no tienes personaje".
+          if (enPrevisualizacionDeIntro()) {
+            savedAuthRef.current = {
+              emailVerified: !!j.emailVerified,
+              approved: !!j.approved,
+              pendingEmail: j.pendingEmail ?? null,
+            };
+            return null;
+          }
           setSavedCharacter(cfg);
           savedAuthRef.current = {
             emailVerified: !!j.emailVerified,
@@ -2909,13 +2945,25 @@ export default function LandingPage() {
                 willChange: 'transform, opacity',
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/Icono%20de%20Advertencia.png"
-                alt=""
-                draggable={false}
+              {/*
+                Señal del minimapa: marca el mundo al que hay que ir cuando
+                termina el diálogo de entrada. Era un PNG (`/Icono de
+                Advertencia.png`) que una limpieza antigua de assets borró
+                dejando la referencia: daba 404 y la señal NO se veía, así que
+                la intro te pedía ir a un sitio sin decirte a cuál. Va en SVG
+                dentro del propio componente para que no se pueda volver a
+                perder, y con las esquinas duras del pixelart.
+              */}
+              <svg
+                viewBox="0 0 10 10"
+                aria-hidden="true"
+                shapeRendering="crispEdges"
                 style={{ width: '100%', height: '100%', display: 'block' }}
-              />
+              >
+                <path d="M5 0 L10 9 L0 9 Z" fill="#FFB400" stroke="#3A1F7A" strokeWidth="0.6" />
+                <rect x="4.4" y="3" width="1.2" height="3.2" fill="#3A1F7A" />
+                <rect x="4.4" y="7" width="1.2" height="1.2" fill="#3A1F7A" />
+              </svg>
             </div>
           </div>
         </div>
@@ -3947,6 +3995,17 @@ export default function LandingPage() {
             }
             setCharacterConfig(cfg);
             setCharacterCreatorVisible(false);
+            // Previsualización (`/?intro`): se ha recorrido la intro con un
+            // personaje que YA existe. Guardar aquí lo machacaría, así que no se
+            // guarda nada y se entra al juego con el de siempre.
+            if (enPrevisualizacionDeIntro()) {
+              setBulbOff(true);
+              window.setTimeout(() => {
+                markGameEntry();
+                window.location.href = '/juego';
+              }, 1100);
+              return;
+            }
             // Guardar el personaje ANTES de entrar: el juego (Godot) lo lee del
             // servidor por /api/character/layers, así que debe existir ya.
             try {
