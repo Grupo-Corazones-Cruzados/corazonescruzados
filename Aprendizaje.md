@@ -2129,3 +2129,16 @@ la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas mir
 - ⚠️ **Límite conocido:** en el peinado *flequillo*, las greñas que caen sobre la cara son pelo de
   verdad, así que se tiñen. Con colores de mucho contraste (ceniza sobre piel oscura) eso se lee como
   ruido. No es del recoloreado: es cómo dibujó esa pieza el modelo. Se arregla regenerándola.
+
+#### P25 — Mechones sobre la cara y accesorios teñidos de pelo · ✅ Resuelta
+- **El chico seguía sucio** porque el modelo le dibuja mechones cayendo sobre la sien y la mejilla.
+  Son pelo de verdad, pero teñidos de un color de mucho contraste (rubio sobre piel oscura) gritan.
+  ⇒ **El pelo se aparta un píxel de la piel** (mirando las 8 direcciones): entre pelo y piel queda el
+  contorno oscuro original, que es exactamente lo que dibujaría a mano un pixel artist. La cara queda
+  limpia sin perder la silueta del peinado.
+- **Los accesorios se teñían del color del pelo**, porque la semilla está en la coronilla y con un
+  gorro puesto la coronilla *es el gorro*. ⇒ Si la pieza de cabeza es un **tocado**, no se aplica el
+  color de pelo: gorra, capucha y pañuelo conservan el suyo. (El catálogo ya sabe de qué tipo es cada
+  pieza, así que no hay que adivinarlo por color.)
+- **Pendiente conocido:** con tocado puesto, el pelo que asome tampoco se tiñe. Si se quiere ambas
+  cosas habrá que generar las combinaciones peinado + tocado.
