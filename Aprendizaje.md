@@ -2112,3 +2112,20 @@ el color del pelo**, incluso estropeando una túnica que se veía bien con piel 
    ⇒ **Las dos manchas se calculan ANTES de teñir ninguna**, y además el pelo nunca pisa lo que ya es
    piel. Lección general: dos transformaciones que leen el mismo lienzo **no se pueden encadenar**.
 - **Módulo reutilizable:** `lib/game/recolor.js` (lo usa el probador y lo usará el creador).
+
+#### P24 — Las cejas se pintaban del color del pelo · ✅ Resuelta (4 reglas, todas de vecindad)
+Con piel oscura + rubio, el usuario vio **cejas rubias** y **píxeles sueltos que ensuciaban la cara**.
+Causa: yo sembraba el pelo en **todo píxel oscuro de la banda de la cabeza**, y las cejas, los ojos y
+la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas miran el **entorno**.
+1. **Sembrar solo en la coronilla** (6 filas desde donde empieza la figura) y bajar desde ahí. Una
+   ceja no toca la coronilla; el pelo sí.
+2. **La cara entera como frontera**, no solo la piel: se **rellenan los huecos** de la mancha de piel
+   (ojos, cejas, boca son islas dentro de ella). Sin esto el pelo se colaba por las sombras del
+   rostro, que no llegan a contar como piel.
+3. **Veto ceja/flequillo:** un píxel oscuro con **frente justo encima** es ceja; con **pelo encima**
+   es flequillo. Es lo único que distingue los dos casos, y sin ello no hay umbral que valga.
+4. **Quitar motas** (píxeles de pelo con menos de 2 vecinos) y **tapar huecos de 1–2 px** en la piel
+   (brillos sueltos que se quedaban sin teñir y saltaban como puntitos claros en una cara oscura).
+- ⚠️ **Límite conocido:** en el peinado *flequillo*, las greñas que caen sobre la cara son pelo de
+  verdad, así que se tiñen. Con colores de mucho contraste (ceniza sobre piel oscura) eso se lee como
+  ruido. No es del recoloreado: es cómo dibujó esa pieza el modelo. Se arregla regenerándola.
