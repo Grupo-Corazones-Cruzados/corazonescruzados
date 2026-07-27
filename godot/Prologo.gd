@@ -140,6 +140,50 @@ const NOMBRES := {
 }
 
 
+## --- LA PALABRA DE CADA ESTAMPA ----------------------------------------------
+## Una sola palabra que NOMBRA el problema. Se estampa sobre la imagen durante la
+## ráfaga: es el adelanto de todo aquello a lo que se va a enfrentar el jugador.
+const PALABRAS := {
+	13: "EL MUNDO",
+	16: "VIOLENCIA",
+	17: "TIRANÍA",
+	18: "GUERRA",
+	19: "EXTERMINIO",
+	20: "PESTE",
+	21: "DESPRECIO",
+	22: "MANIPULACIÓN",
+	23: "INDIFERENCIA",
+	24: "FANATISMO",
+	25: "ABUSO",
+	26: "ODIO",
+	27: "DESEMPLEO",
+	28: "MALTRATO",
+	29: "ABANDONO",
+	30: "EXPLOTACIÓN",
+	31: "EXTORSIÓN",
+	32: "ADICCIÓN",
+	33: "SICARIATO",
+	34: "XENOFOBIA",
+	35: "TRATA",
+	36: "AMBICIÓN",
+	37: "EVASIÓN",
+	38: "IRRESPETO",
+	39: "SOBORNO",
+	40: "COMPLICIDAD",
+	41: "TALA",
+	42: "CONTAMINACIÓN",
+	43: "DERROCHE",
+	44: "ESCASEZ",
+	45: "MISERIA",
+	46: "DESIGUALDAD",
+	47: "ANIQUILACIÓN",
+	48: "DEVASTACIÓN",
+	49: "CATÁSTROFE",
+	50: "AGONÍA",
+	52: "OLVIDO",
+}
+
+
 ## --- ⚡ LA RÁFAGA: el mosaico que resume la caída del mundo -------------------
 ## Un tramo especial que mete MUCHAS estampas en poco tiempo SIN que se vuelva
 ## un estrobo ilegible. El truco: la pantalla se SUBDIVIDE en paneles y cada
@@ -156,7 +200,7 @@ const RAFAGA := {
 	# El orden de esta lista es el orden en que aparecen. Reordénala a tu gusto.
 	# (La 51 queda fuera a propósito; la 52 va aparte, como cierre.)
 	"escenas": [
-		13, 15,
+		13,
 		16, 17, 18, 19, 20,
 		21, 34, 26, 25, 38, 27,
 		23, 29, 45, 46, 44,
@@ -695,8 +739,38 @@ func _montar_paneles(n: int) -> void:
 		t.pivot_offset = r.size / 2.0
 		t.modulate.a = 0.0
 		_capa_paneles.add_child(t)
+
+		# La PALABRA del problema, estampada abajo en el propio panel.
+		var etiqueta := Label.new()
+		etiqueta.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		etiqueta.offset_top = -_tam_palabra(n) - 14.0
+		etiqueta.offset_bottom = -6.0
+		etiqueta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		etiqueta.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		etiqueta.autowrap_mode = TextServer.AUTOWRAP_OFF
+		etiqueta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var fuente: FontFile = load("res://assets/Fonts/Silkscreen-Bold.ttf")
+		if fuente != null:
+			etiqueta.add_theme_font_override("font", fuente)
+		etiqueta.add_theme_font_size_override("font_size", _tam_palabra(n))
+		etiqueta.add_theme_color_override("font_color", Color(1, 1, 1))
+		etiqueta.add_theme_constant_override("outline_size", 8)
+		etiqueta.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		etiqueta.modulate.a = 0.0
+		t.add_child(etiqueta)
+
 		_paneles.append(t)
 	_fogonazo(0.5, 0.22)
+
+
+## Tamaño de letra de la palabra según en cuántos paneles esté partida la pantalla.
+func _tam_palabra(paneles: int) -> int:
+	match paneles:
+		1: return 40
+		2: return 28
+		3: return 24
+		4: return 20
+		_: return 15
 
 
 ## Mete una estampa en un panel, con un golpe de escala y una entrada rápida.
@@ -715,6 +789,22 @@ func _poner_en_panel(i: int, escena: int, seg: float) -> void:
 	tw.set_parallel(true)
 	tw.tween_property(t, "modulate:a", 1.0, dur)
 	tw.tween_property(t, "scale", Vector2.ONE, minf(seg * 0.9, 0.35))
+
+	# La palabra entra un pelín después que la imagen, subiendo desde abajo.
+	if t.get_child_count() > 0:
+		var etq := t.get_child(0) as Label
+		if etq != null:
+			etq.text = str(PALABRAS.get(escena, ""))
+			etq.modulate.a = 0.0
+			var y0 := etq.position.y
+			etq.position.y = y0 + 10.0
+			var tw2 := create_tween()
+			tw2.set_parallel(true)
+			tw2.tween_property(etq, "modulate:a", 1.0, minf(seg * 0.30, 0.18)) \
+				.set_delay(minf(seg * 0.20, 0.10))
+			tw2.tween_property(etq, "position:y", y0, minf(seg * 0.45, 0.26)) \
+				.set_delay(minf(seg * 0.20, 0.10)).set_trans(Tween.TRANS_CUBIC) \
+				.set_ease(Tween.EASE_OUT)
 
 
 ## Fogonazo blanco sobre la caja de imagen (para marcar los saltos de fase).
@@ -739,8 +829,39 @@ func _cerrar_rafaga() -> void:
 		_capa_a.texture = tex
 		_capa_a.modulate.a = 1.0
 		_capa_b.modulate.a = 0.0
-	_capa_paneles.visible = false
+	_capa_paneles.visible = true      # sigue viva: aquí va la palabra final
 	_capa_a.visible = true
+
+	# La última palabra, grande y centrada sobre la imagen del mundo gris.
+	var final_txt := str(PALABRAS.get(int(RAFAGA["final"]), ""))
+	if final_txt == "":
+		return
+	var etq := Label.new()
+	etq.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	etq.offset_left = _caja.position.x
+	etq.offset_right = _caja.position.x + _caja.size.x
+	etq.offset_top = _caja.position.y + _caja.size.y * 0.42
+	etq.offset_bottom = _caja.position.y + _caja.size.y * 0.62
+	etq.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	etq.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	etq.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fuente: FontFile = load("res://assets/Fonts/Silkscreen-Bold.ttf")
+	if fuente != null:
+		etq.add_theme_font_override("font", fuente)
+	etq.add_theme_font_size_override("font_size", 56)
+	etq.add_theme_color_override("font_color", Color(1, 1, 1))
+	etq.add_theme_constant_override("outline_size", 10)
+	etq.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	etq.text = final_txt
+	etq.modulate.a = 0.0
+	etq.scale = Vector2(1.15, 1.15)
+	etq.pivot_offset = Vector2(_caja.size.x / 2.0, _caja.size.y * 0.10)
+	_capa_paneles.add_child(etq)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(etq, "modulate:a", 1.0, 0.45)
+	tw.tween_property(etq, "scale", Vector2.ONE, 0.7) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 ## Segundo en que ARRANCA un tramo: el del verso al que está anclado.
