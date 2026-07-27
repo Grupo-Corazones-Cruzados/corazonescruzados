@@ -129,6 +129,49 @@ async function quitarFondo(buffer) {
   return { data, W, H };
 }
 
+/**
+ * Quita el HALO del contorno.
+ *
+ * El modelo no dibuja bordes duros: entre la figura y el fondo deja un par de
+ * píxeles medio blancos (antialias). El relleno por color no los alcanza —no son
+ * blanco puro— y al reducir la imagen quedaban como un punteado blanco alrededor
+ * de todo el personaje.
+ *
+ * Se pelan por capas: en cada pasada se mira solo lo que **toca el vacío** y, si
+ * es claro y sin color (blanco sucio), se corta. Dos condiciones, no una: la
+ * saturación es la que salva la ropa cruda (216,207,175 es clara, pero tiene
+ * color de sobra), mientras que el halo es gris neutro.
+ */
+function quitarHalo({ data, W, H }, pasadas = 4) {
+  const luz = (i) => 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+  const color = (i) => Math.max(data[i], data[i + 1], data[i + 2]) - Math.min(data[i], data[i + 1], data[i + 2]);
+  let total = 0;
+  for (let p = 0; p < pasadas; p++) {
+    const sobran = [];
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4;
+        if (data[i + 3] === 0) continue;
+        const tocaVacio =
+          (x > 0 && data[(y * W + x - 1) * 4 + 3] === 0) ||
+          (x < W - 1 && data[(y * W + x + 1) * 4 + 3] === 0) ||
+          (y > 0 && data[((y - 1) * W + x) * 4 + 3] === 0) ||
+          (y < H - 1 && data[((y + 1) * W + x) * 4 + 3] === 0);
+        if (!tocaVacio) continue;
+        // Umbrales medidos sobre las hojas reales, no a ojo: los restos de halo
+        // salen con saturación 6–13 y luz 171–193; el píxel de ARTE más neutro
+        // (la camisa cruda) tiene saturación 49. Queda margen de sobra entre
+        // ambos, así que se corta por saturación y se es generoso con la luz.
+        if (luz(i) > 165 && color(i) < 32) sobran.push(i);
+      }
+    }
+    if (!sobran.length) break;
+    for (const i of sobran) data[i + 3] = 0;
+    total += sobran.length;
+  }
+  return total;
+}
+
 /** Separa las figuras por los huecos verticales y devuelve su caja. */
 function localizarFiguras({ data, W, H }) {
   const solido = (x, y) => data[(y * W + x) * 4 + 3] > 60;
@@ -199,8 +242,19 @@ async function normalizar(limpio, nombre) {
     });
   }
   const png = await lienzo.composite(capas).png().toBuffer();
-  console.log(`  ${nombre}: ${cajas.length} vistas → rejilla de ${VISTAS.length}×${CELDA.ancho}×${CELDA.alto}`);
-  return png;
+
+  // Segunda pasada de halo, ya sobre la hoja REDUCIDA. Hace falta porque al
+  // reducir con vecino más cercano se toma un píxel de cada bloque: un resto
+  // blanco de 1 px que arriba era invisible puede convertirse aquí en un píxel
+  // de arte entero (se veía como puntitos en la coronilla y en el pelo).
+  const chico = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const pelados = quitarHalo({ data: chico.data, W: chico.info.width, H: chico.info.height });
+  const hojaLimpia = await sharp(chico.data, {
+    raw: { width: chico.info.width, height: chico.info.height, channels: 4 },
+  }).png().toBuffer();
+
+  console.log(`  ${nombre}: ${cajas.length} vistas → rejilla de ${VISTAS.length}×${CELDA.ancho}×${CELDA.alto} · ${pelados} px de halo tras reducir`);
+  return hojaLimpia;
 }
 
 // --- Prompts ---------------------------------------------------------------
@@ -273,6 +327,8 @@ async function main() {
 
   console.log('▸ Quitando el falso transparente y cuadrando las vistas…');
   const limpio = await quitarFondo(crudo);
+  const pelados = quitarHalo(limpio);
+  console.log(`  halo del contorno: ${pelados} píxeles retirados`);
   const hoja = await normalizar(limpio, variante);
   await fs.writeFile(final, hoja);
 
