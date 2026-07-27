@@ -91,6 +91,7 @@ INSERTADAS = {
     73: 3,   # el Hoyo solo, con una lucecita violeta dentro, justo tras la 72
     74: 3,   # los canales de riego del pueblo con brillos violetas, tras la 73
     75: 3,   # los MISMOS huertos pero SIN los brillos violetas (gemela de la 74)
+    76: 7,   # inauguración de la fábrica: aquí entra la industria → tono de Acto 2
 }
 
 
@@ -567,6 +568,44 @@ ESCENAS = [
         "pierden el tinte morado y vuelven a los mismos tonos azulados y fríos de la noche que "
         "tiene el resto del campo. Que NO quede NI UN solo píxel violeta, morado, lila o rosado "
         "en toda la imagen."),
+    # --- INSERTADA: la inauguración de la fábrica (el giro hacia la industria) ---
+    (76, ["assets/Prologo/escenas/escena_03.png"],
+        "MISMO ESTILO DE DIBUJO y MISMO DISEÑO DE PERSONAJES que la imagen de referencia "
+        "(pixel-art 2D dibujado a mano, sombreado plano, figuras sencillas, NUNCA estilo "
+        "realista), y la MISMA ESCALA de figuras: personas PEQUEÑAS y algo distantes, nunca "
+        "primeros planos ni caras muy detalladas. "
+        "ES DE DÍA: luz alta y clara de mediodía, cielo despejado con alguna nube. Pero los "
+        "colores son algo MÁS APAGADOS y grisáceos que en el campo de la referencia: ya no hay "
+        "dorado cálido, empieza a entrar el gris. "
+        "⚠ OTRO LUGAR: PROHIBIDO ABSOLUTAMENTE que aparezca el Hoyo, ni ningún agujero en la "
+        "tierra, ni el campo de hierba con flores, ni gente arrodillada, ni nadie rezando. "
+        "EL LUGAR — UNA ZONA URBANA: una PLAZA amplia y una calle empedrada en un pueblo que ya "
+        "se ha hecho ciudad. A los lados, MUCHAS CASAS PEGADAS UNAS A OTRAS de VARIOS PISOS "
+        "(de DOS y TRES ALTURAS, algunas de una sola), bastante MENOS RÚSTICAS que las cabañas "
+        "del campo: fachadas de ladrillo y revoco pintado, tejados de teja, ventanas alineadas "
+        "con contraventanas de madera, balcones sencillos de hierro, chimeneas domésticas, "
+        "algún toldo y letreros de madera sin texto. Se ve un barrio denso y habitado. "
+        "LO CENTRAL — LA INAUGURACIÓN DE UNA FÁBRICA: al fondo de la plaza, dominando la escena, "
+        "una FÁBRICA NUEVA recién construida: un edificio grande y alargado de LADRILLO ROJO con "
+        "ventanales altos en hilera, un tejado de dos aguas con lucernarios, portones grandes de "
+        "madera y hierro, y sobre todo una CHIMENEA INDUSTRIAL muy ALTA de ladrillo de la que "
+        "sale el PRIMER PENACHO de humo grisáceo hacia el cielo. Junto al portón, una tarima de "
+        "madera con un hombre trajeado de pie, con el brazo levantado, presentándola, y una "
+        "CINTA tendida de lado a lado de la entrada. La fábrica se ve limpia, nueva y "
+        "orgullosa: es la novedad del pueblo. "
+        "LA GENTE — MUCHA, Y ADMIRADA: una MULTITUD DENSA de vecinos (unas VEINTE o TREINTA "
+        "figuras pequeñas) llenando la plaza delante de la fábrica, DE ESPALDAS o de tres "
+        "cuartos al espectador porque están vueltos HACIA la fábrica. POSTURA CLAVE: casi todos "
+        "MIRAN HACIA ARRIBA, con la CABEZA LEVANTADA hacia la chimenea y el edificio; varios "
+        "SEÑALAN con el brazo estirado; alguno se ha quitado el sombrero y lo sostiene en la "
+        "mano; un par de padres llevan a un NIÑO A HOMBROS para que vea; hay corrillos "
+        "comentando. Las caras que se ven muestran ASOMBRO y admiración, no miedo: creen que "
+        "esto es el progreso. Ropa de campo humilde mezclada ya con ropa algo más de ciudad. "
+        "PROHIBIDO: coches, camiones, motos, asfalto, farolas eléctricas, cables, postes de luz, "
+        "antenas, carteles luminosos, grúas modernas o cualquier cosa de nuestra época; y "
+        "PROHIBIDO cualquier arma. Si hace falta un vehículo, un CARRO DE CABALLOS. "
+        "SENSACIÓN: la fiesta del progreso. Todos mirando arriba, encantados, sin sospechar que "
+        "ese primer humo es el comienzo de todo lo que viene después."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "
