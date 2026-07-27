@@ -301,7 +301,29 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     (429/filtro en los 5 reintentos), el `.png` queda con la **última versión que sí pasó**;
     parece que "no cambió". Verificar el log (`⚠️ falló`) o el md5 del archivo antes de asumir
     que el nuevo prompt salió.
-22. **Órbita de correcciones típicas de Fernando (Acto 4):** cuenta y alturas exactas
+22. **⭐ ESTAMPAS NUEVAS = numerar a partir de 67, NUNCA renumerar:** las 66 originales están
+    aprobadas y con su `.import` e historial de git; insertar una escena renumerando rompería
+    todo. Regla: la estampa nueva se guarda como `escena_67`, `escena_68`… y el **ORDEN REAL
+    en que se ve lo manda `TRAMOS` en `Prologo.gd`**, no el número de archivo. En el generador,
+    el diccionario **`INSERTADAS = {67: 3, 68: 3}`** anota detrás de qué escena va cada nueva
+    para que **herede el TONO de color de ese punto del arco** (sin eso, la 67 habría salido
+    gris de Acto 4 en vez de cálida de Acto 1).
+23. **`--force` NO debe tocar las anclas** (bug corregido el 2026-07-26): `generar_estampas.py`
+    pasaba el flag a `asegurar_anclas()`, así que `python … 68 --force` **regeneró las 5 anclas
+    aprobadas**. Se restauraron con `git checkout` (por eso conviene que el arte esté siempre
+    commiteado antes de regenerar). Ahora las anclas solo se rehacen con `--anchors --force`.
+24. **"Gente que se va" no sale sola:** pedir "caminando alejándose" produjo figuras **de pie,
+    de frente y quietas**. Lo que SÍ funciona es describir la MECÁNICA del paso y prohibir lo
+    contrario: "una pierna adelantada y otra atrasada en zancada, vistos de espaldas/tres
+    cuartos, PROHIBIDO figuras quietas, de frente, corrillos, sentadas". Y para la dirección,
+    decir el LADO del encuadre ("salen por la IZQUIERDA, la mitad derecha queda vacía"), no
+    "hacia el fondo".
+25. **El escenario NO admite elementos nuevos sin permiso:** al decir "se van a sus casas", el
+    modelo **inventó casas en el horizonte**; Fernando lo rechazó ("en la zona del Hoyo no hay
+    casas ni nada nuevo"). Regla: prohibir explícitamente **construcciones, luces, caminos,
+    vallas y carteles**, "ni siquiera pequeños o lejanos", y repetir que el horizonte queda
+    LIMPIO igual que en la referencia.
+26. **Órbita de correcciones típicas de Fernando (Acto 4):** cuenta y alturas exactas
     (papá≈mamá≈hermano mayor altos; niña y niño MUCHO más pequeños; el mayor **andrógino**);
     dirección de carrera consistente entre escenas seguidas; silueta del jugador **negra
     sólida y plana** (sin sombreado que revele forma); el Hoyo **NO frontal** (hueco en el

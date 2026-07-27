@@ -83,10 +83,11 @@ const TRAMOS := [
 	{ "desde_verso": -1, "escenas": [1] },
 
 	# Versos 1-3 · la devoción: lo único bonito del prólogo, va lento.
-	# La 67 es la noche de convivencia; va justo detrás de la 3 (mismo escenario).
-	# Las estampas nuevas se numeran a partir de 67 para no renumerar las 66
-	# originales: el ORDEN lo manda esta lista, no el número de archivo.
-	{ "desde_verso": 0, "escenas": [2, 3, 67, 4, 5, 6] },
+	# La 67 (noche de convivencia) y la 68 (la aldea se va) van justo detrás de la
+	# 3, en el mismo escenario. Las estampas nuevas se numeran a partir de 67 para
+	# no renumerar las 66 originales: el ORDEN lo manda esta lista, no el número
+	# de archivo.
+	{ "desde_verso": 0, "escenas": [2, 3, 67, 68, 4, 5, 6] },
 
 	# Verso 4 ("un alma en el suelo y un suelo en el mar") · la isla y el mar.
 	{ "desde_verso": 3, "escenas": [10, 12] },

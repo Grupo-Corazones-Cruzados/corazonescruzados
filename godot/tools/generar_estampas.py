@@ -83,6 +83,7 @@ ESTILO = (
 # El ORDEN REAL en que se ven se decide en Godot (Prologo.gd → TRAMOS), no aquí.
 INSERTADAS = {
     67: 3,   # la noche de convivencia alrededor del Hoyo va justo tras la 3
+    68: 3,   # la aldea se va a dormir a sus casas, justo tras la 67
 }
 
 
@@ -197,6 +198,58 @@ ESCENAS = [
         "SENSACIÓN: comunidad, calor humano, sobremesa tranquila. Nada solemne, nada triste, "
         "nada de ritual. Mantén IDÉNTICOS el trazo, la paleta y el TAMAÑO de las figuras de "
         "la referencia: lo único que cambia es la HORA (noche con fogata) y lo que HACEN."),
+    # --- INSERTADA: va justo DESPUÉS de la 67 (la aldea se va a dormir) ---
+    (68, ["assets/Prologo/escenas/escena_67.png", "hoyo"],
+        "MISMO LUGAR, MISMA ESCALA, MISMA PALETA y MISMO ESTILO DE DIBUJO que la imagen de "
+        "referencia: el MISMO campo de hierba, el MISMO Hoyo (agujero natural oscuro en la "
+        "tierra, SIN muros de piedra, SIN ladrillos, SIN borde construido) en la MISMA "
+        "posición y del MISMO TAMAÑO, y las MISMAS figuras humanas PEQUEÑAS y simples "
+        "(sprites pequeños y distantes como los de la referencia, NUNCA primeros planos ni "
+        "caras detalladas). "
+        "AMBIENTE — ES MÁS TARDE, YA BIEN ENTRADA LA NOCHE: el cielo está MÁS OSCURO que en "
+        "la referencia, azul casi negro, con MUCHAS más estrellas y la luna MÁS ALTA. La luz "
+        "lunar plateada es ahora la luz principal de la escena, fría, con sombras largas y "
+        "azuladas. La fogata ya NO arde: quedan solo BRASAS rojizas y un hilo fino de humo, "
+        "con un halo de luz cálida muy pequeño y débil a su alrededor. "
+        "EL ESCENARIO NO CAMBIA NADA: es EXACTAMENTE la misma zona de la referencia, un campo "
+        "de hierba ABIERTO y VACÍO con el Hoyo. PROHIBIDO ABSOLUTAMENTE añadir NADA nuevo al "
+        "paisaje: NI casas, NI cabañas, NI tejados, NI ventanas encendidas, NI luces, NI "
+        "muros, NI vallas, NI caminos, NI carteles, NI construcciones de ningún tipo, NI "
+        "siquiera muy pequeñas o muy lejanas en el horizonte. En la zona del Hoyo NO HAY NADA "
+        "construido: solo hierba, flores y el cielo. El horizonte debe quedar LIMPIO, igual "
+        "que en la referencia. "
+        "QUÉ PASA — LA ALDEA SE ESTÁ YENDO. Esto es lo MÁS IMPORTANTE de la imagen y tiene "
+        "que leerse de un vistazo: TODAS las personas están CAMINANDO, EN PLENO PASO, "
+        "ALEJÁNDOSE del Hoyo y SALIENDO DEL ENCUADRE HACIA LA IZQUIERDA. "
+        "DIRECCIÓN OBLIGATORIA: todo el mundo avanza HACIA LA IZQUIERDA de la imagen, con el "
+        "cuerpo orientado a la izquierda, vistos de espaldas y de tres cuartos (se les ve más "
+        "la espalda que la cara). El grupo va en fila hacia el lado izquierdo: los primeros ya "
+        "están MUY CERCA del borde izquierdo del cuadro (alguno medio saliendo), y los "
+        "últimos aún a media distancia. La MITAD DERECHA de la imagen queda prácticamente "
+        "vacía de gente. "
+        "OBLIGATORIO en cada figura: una pierna ADELANTADA y otra ATRASADA bien separadas en "
+        "zancada, los brazos en movimiento. PROHIBIDO: figuras de pie quietas, figuras de "
+        "FRENTE mirando al espectador, figuras de perfil paradas, corrillos charlando, gente "
+        "sentada, arrodillada o rezando. Si una figura no está caminando hacia la izquierda, "
+        "está MAL. "
+        "PROHIBIDO que haya NADIE junto al borde del Hoyo: alrededor del agujero debe quedar "
+        "un ANILLO de hierba COMPLETAMENTE VACÍO y solitario. "
+        "(a) TRES grupos familiares, todos caminando hacia la izquierda en zancada: en uno, un "
+        "adulto lleva EN BRAZOS a un niño pequeño dormido apoyado en su hombro; en otro, dos "
+        "adultos cargan entre los dos una cesta y una manta enrollada; en el tercero, una "
+        "persona ANCIANA encorvada camina apoyada en un bastón, sostenida del brazo por "
+        "alguien más joven. "
+        "(b) ÚNICA excepción a la marcha: junto al Hoyo, donde estaba la fogata, quedan unas "
+        "BRASAS rojizas con un hilo fino de humo y UN adulto en cuclillas de espaldas "
+        "recogiendo la olla. Es la ÚNICA figura que no camina, y ya está de salida. "
+        "(c) DOS niños caminando de la mano detrás de sus padres, algo rezagados, también "
+        "hacia la izquierda; UNO de esos dos niños ha GIRADO LA CABEZA hacia atrás (hacia la "
+        "derecha), MIRANDO el Hoyo por encima del hombro mientras SIGUE caminando (es el "
+        "único que todavía lo mira, y aun así se está yendo). "
+        "SENSACIÓN: fin del día, calma, sueño, un lugar que se queda solo. Nada dramático, "
+        "nada triste todavía. Mantén IDÉNTICOS el trazo, la paleta, el escenario y el TAMAÑO "
+        "de las figuras de la referencia: lo que cambia es que es MÁS DE NOCHE, la fogata es "
+        "solo brasas y la gente SE VA caminando hacia la izquierda."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "
@@ -1305,7 +1358,11 @@ def main() -> None:
     client = cliente()
     # --anchors genera solo las que falten (borra una y vuelve a correr para rehacerla).
     # Para rehacer TODAS, usa: --anchors --force
-    anclas = asegurar_anclas(client, forzar)
+    # ⚠ OJO: `forzar` NO puede propagarse aquí a secas. Si se pasa `--force` para
+    # regenerar UNA escena, no debe rehacer las anclas ya aprobadas (pasó el
+    # 2026-07-26: `68 --force` reescribió las 5 anclas y hubo que restaurarlas
+    # con git). Las anclas solo se rehacen con `--anchors --force`.
+    anclas = asegurar_anclas(client, forzar and solo_anclas)
     if solo_anclas:
         print("Anclas listas.")
         return
