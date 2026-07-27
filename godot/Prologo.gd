@@ -7,11 +7,14 @@ extends Control
 ##  reproducción de la música, NO con temporizadores (los temporizadores se
 ##  desfasan poco a poco; la posición de la canción nunca miente).
 ##
-##  Dos relojes independientes, los dos leyendo la misma canción:
+##  Dos relojes, los dos leyendo la misma canción:
 ##    1. LETRAS  → cada verso aparece en el segundo EXACTO en que se canta.
-##    2. TRAMOS  → las estampas van pasando a su propio ritmo (un ritmo por
-##                 acto), porque hay 66 imágenes y la canción es más corta que
-##                 la suma de todos los versos.
+##    2. TRAMOS  → las estampas, ANCLADAS a los versos: cada tramo arranca en un
+##                 verso y reparte sus estampas hasta el tramo siguiente. Si
+##                 mueves un tiempo de LETRAS, las estampas se recolocan solas.
+##
+##  Al arrancar, la consola imprime el reparto real (cuántas estampas y cuántos
+##  segundos cada una en cada tramo) y avisa si alguna baja de 1 s.
 ##
 ##  ⚠ TAMAÑOS FIJOS: todo se mide sobre el lienzo base de 960×540 que define
 ##  `project.godot` (stretch mode = canvas_items, aspect = keep). El motor escala
@@ -38,48 +41,78 @@ const BASE_ALTO := 540.0
 ## ⚠ Los tiempos de abajo son una ESTIMACIÓN (sacada de la envolvente de energía
 ## del mp3). Hay que sustituirlos por los reales usando `calibrar_letras`.
 const LETRAS := [
-	{ "t": 10.5,  "texto": "Antes lo nuestro era simple y sincero," },
-	{ "t": 17.0,  "texto": "gratitud a la tierra, calor verdadero." },
-	{ "t": 23.5,  "texto": "Nos bastaba el abrazo, nos bastaba el hogar," },
-	{ "t": 30.0,  "texto": "un alma en el suelo y un suelo en el mar." },
+	{ "t": 8.5,  "texto": "Antes lo nuestro era simple y sincero," },
+	{ "t": 15.0,  "texto": "gratitud a la tierra, calor verdadero." },
+	{ "t": 20.5,  "texto": "Nos bastaba el abrazo, nos bastaba el hogar," },
+	{ "t": 28.0,  "texto": "un alma en el suelo y un suelo en el mar." },
 
-	{ "t": 36.5,  "texto": "Pero basta fue más y lo nuestro fue mío," },
-	{ "t": 43.0,  "texto": "y cambiamos el sol por un brillo más frío." },
-	{ "t": 49.5,  "texto": "Lo que daba de comer lo dejamos morir," },
-	{ "t": 56.0,  "texto": "y el verde del mundo se hizo gris al partir." },
+	{ "t": 36,  "texto": "Pero basta fue más y lo nuestro fue mío," },
+	{ "t": 40.5,  "texto": "y cambiamos el sol por un brillo más frío." },
+	{ "t": 46,  "texto": "Lo que daba de comer lo dejamos morir," },
+	{ "t": 51.5,  "texto": "y el verde del mundo se hizo gris al partir." },
+	{ "t": 60.5,  "texto": "" },
 
-	{ "t": 62.5,  "texto": "Los pequeños corrieron al borde del día," },
-	{ "t": 69.0,  "texto": "sin más puerta que el hueco, sin más compañía." },
-	{ "t": 75.5,  "texto": "Perseguidos se dieron la mano y saltaron" },
-	{ "t": 82.0,  "texto": "al fondo del mundo, a la noche bajaron." },
+	{ "t": 70.5,  "texto": "Los pequeños corrieron al borde del día," },
+	{ "t": 76.5,  "texto": "sin más puerta que el hueco, sin más compañía." },
+	{ "t": 82.5,  "texto": "Perseguidos se dieron la mano y saltaron" },
+	{ "t": 88.5,  "texto": "al fondo del mundo, a la noche bajaron." },
 
-	{ "t": 88.5,  "texto": "Pero aquellos que olvidamos guardaron la llama," },
-	{ "t": 95.0,  "texto": "la bajaron al fondo en la caída en el drama." },
-	{ "t": 101.5, "texto": "Lo que arriba rompimos sus manos sabrán," },
-	{ "t": 108.0, "texto": "y los niños que fallamos el alba serán." },
+	{ "t": 98.5,  "texto": "Pero aquellos que olvidamos guardaron la llama," },
+	{ "t": 104.0,  "texto": "la bajaron al fondo en la caída en el drama." },
+	{ "t": 109.5, "texto": "Lo que arriba rompimos sus manos sabrán," },
+	{ "t": 115.0, "texto": "y los niños que fallamos..." },
+	{ "t": 119.0, "texto": "el alba serán." },
 ]
 
 
-## --- LAS ESTAMPAS: tramos con su propio ritmo --------------------------------
-## Cada tramo dice QUÉ escenas se ven y CUÁNTOS SEGUNDOS dura cada una. Los
-## tramos se encadenan uno detrás de otro empezando en `inicio_imagenes`.
-## Súmalos para saber cuánto ocupan: hoy = 2 + 18 + 12 + 40.8 + 9.6 + 42 ≈ 124 s
-## (la canción dura 135,6 s, así que la última estampa se queda quieta durante
-## el instrumental final).
+## --- LAS ESTAMPAS: tramos ANCLADOS A LOS VERSOS ------------------------------
+## Cada tramo dice: en qué VERSO empieza (`desde_verso`, el índice dentro de
+## LETRAS; -1 = antes de cantar, en `inicio_imagenes`) y QUÉ estampas se ven.
+## El tramo dura hasta que empieza el tramo siguiente, y sus estampas se
+## reparten SOLAS dentro de ese hueco.
+##
+## ⭐ La gracia: si mueves un tiempo en LETRAS, las estampas se recolocan solas.
+## Para que una estampa caiga en un verso concreto, basta con abrir un tramo ahí.
+##
+## ⚠ AVISO DE REPARTO (lo dice la consola al arrancar): la canción dura 135,6 s y
+## hasta que entra el Acto 4 (verso 9, 70,5 s) solo hay ~68 s para 52 estampas.
+## Por eso el tramo de la decadencia va como RÁFAGA. Si se quiere que respire,
+## hay que quitar estampas de esa lista o alargar la canción.
 const TRAMOS := [
-	# Acto 1 · la devoción — respira, es lo único bonito del prólogo.
-	{ "escenas": [1, 2, 3, 4, 5, 6], "seg": 3.0 },
-	# Acto 2 · el Hoyo se corrompe y el mar se lo traga.
-	{ "escenas": [7, 8, 9, 10, 11, 12], "seg": 2.0 },
-	# Acto 3 · la decadencia social: ráfaga de 34 estampas (es la parte que la
-	# canción menos tiempo le dedica, así que va rápido, como una descarga).
-	{ "escenas": [13, 14, 15, 16, 17, 18, 19, 20, 21, 34, 26, 23, 29, 45, 46, 44,
-				  27, 30, 37, 31, 28, 22, 25, 24, 40, 33, 32, 38, 35, 36, 39,
-				  41, 42, 43], "seg": 1.2 },
-	# Guerra y colapso gris.
-	{ "escenas": [47, 48, 49, 50, 51, 52], "seg": 1.6 },
-	# Acto 4 · el sobreviviente y la caída — vuelve a respirar.
-	{ "escenas": [53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66], "seg": 3.0 },
+	# Antes de que empiece a cantar: una sola estampa, quieta, abriendo el prólogo.
+	{ "desde_verso": -1, "escenas": [1] },
+
+	# Versos 1-3 · la devoción: lo único bonito del prólogo, va lento.
+	# La 67 es la noche de convivencia; va justo detrás de la 3 (mismo escenario).
+	# Las estampas nuevas se numeran a partir de 67 para no renumerar las 66
+	# originales: el ORDEN lo manda esta lista, no el número de archivo.
+	{ "desde_verso": 0, "escenas": [2, 3, 67, 4, 5, 6] },
+
+	# Verso 4 ("un alma en el suelo y un suelo en el mar") · la isla y el mar.
+	{ "desde_verso": 3, "escenas": [10, 12] },
+
+	# Verso 5 ("lo nuestro fue mío") · el Hoyo abandonado y las raíces.
+	{ "desde_verso": 4, "escenas": [7, 8, 9, 11] },
+
+	# Versos 6-8 + instrumental · LA RÁFAGA: todo lo que el humano rompió.
+	# Van agrupadas por tema (no por número) para que los destellos tengan lógica:
+	# el mundo gris → la codicia → la violencia → los que debían cuidar → la
+	# tierra → la guerra y el gris final.
+	{ "desde_verso": 5, "escenas": [
+		13, 14, 15,
+		39, 36, 35, 30, 31, 29, 23, 45, 46, 44,
+		16, 17, 18, 19, 33, 22, 32, 40, 24,
+		21, 34, 26, 25, 38, 27, 28, 37, 20,
+		41, 42, 43,
+		47, 48, 49, 50, 51, 52,
+	] },
+
+	# Verso 10 ("los pequeños corrieron al borde del día") · el Acto 4 entero,
+	# respirando otra vez. La caída (65) y el fondo del Hoyo (66) caen justo en
+	# los dos últimos versos.
+	{ "desde_verso": 9, "escenas": [
+		53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+	] },
 ]
 
 
@@ -94,10 +127,22 @@ const TRAMOS := [
 @export_group("Ritmo")
 ## Segundo de la canción en que aparece la primera estampa.
 @export var inicio_imagenes: float = 2.0
+## Segundo en que se apaga la última estampa. 0 = automático: el ÚLTIMO VERSO
+## más `cola_final`. Así las últimas estampas caen sobre las últimas palabras y
+## no se quedan para el instrumental del final.
+@export var fin_imagenes: float = 0.0
+## Segundos que las estampas siguen después del último verso (solo si
+## `fin_imagenes` = 0).
+@export var cola_final: float = 4.0
 ## Duración del cruce entre estampas (se recorta solo si la estampa dura poco).
 @export var crossfade: float = 0.6
-## Qué parte de la duración de un verso se tarda en teclearlo (0.6 = el 60 %).
-@export_range(0.1, 1.0, 0.05) var proporcion_tecleo: float = 0.6
+## Qué parte del hueco de un verso se tarda en teclearlo (0.35 = el 35 %).
+@export_range(0.1, 1.0, 0.05) var proporcion_tecleo: float = 0.35
+## Tope de segundos para teclear un verso. Es lo que garantiza que la frase
+## TERMINE de escribirse ANTES de que se acabe de cantar: aunque el hueco hasta
+## el verso siguiente sea largo (por un instrumental), el tecleo nunca dura más
+## que esto.
+@export var tecleo_max: float = 1.6
 
 @export_group("Música")
 ## La canción que MARCA EL RITMO de todo el prólogo.
@@ -303,21 +348,58 @@ func _apagar_musica() -> void:
 #  EL PLAN DE IMÁGENES — se calcula una sola vez, al empezar
 # ============================================================================
 
-## Convierte los TRAMOS en una lista plana de { "t": segundo, "escena": nº },
-## saltándose las estampas cuya imagen no exista.
+## Segundo en que ARRANCA un tramo: el del verso al que está anclado.
+func _inicio_tramo(tramo: Dictionary) -> float:
+	var v := int(tramo.get("desde_verso", -1))
+	if v < 0 or v >= LETRAS.size():
+		return inicio_imagenes
+	return float(LETRAS[v]["t"])
+
+
+## Convierte los TRAMOS en una lista plana de { "t": segundo, "escena": nº }.
+## Cada tramo ocupa desde su verso hasta el verso del tramo siguiente, y reparte
+## sus estampas por igual dentro de ese hueco. Se saltan las que no existan.
 func _calcular_plan_imagenes() -> Array:
 	var plan: Array = []
-	var t := inicio_imagenes
-	for tramo in TRAMOS:
-		var seg: float = maxf(0.05, float(tramo["seg"]))
+	var final := fin_imagenes
+	if final <= 0.0:
+		# Automático: un poco después del último verso, para que las últimas
+		# estampas caigan sobre las últimas palabras cantadas.
+		final = float(LETRAS[LETRAS.size() - 1]["t"]) + cola_final
+		var dur := _duracion_musica()
+		if dur > 0.0:
+			final = minf(final, dur - musica_salida)
+
+	for i in TRAMOS.size():
+		var tramo: Dictionary = TRAMOS[i]
+		var desde := _inicio_tramo(tramo)
+		var hasta := _inicio_tramo(TRAMOS[i + 1]) if i + 1 < TRAMOS.size() else final
+
+		# Solo las estampas que de verdad están en disco.
+		var escenas: Array = []
 		for n in tramo["escenas"]:
 			if _existe(n):
-				plan.append({ "t": t, "escena": int(n) })
-				t += seg
-	var dur := _duracion_musica()
-	if dur > 0.0 and t > dur:
-		push_warning("Prólogo: las estampas ocupan %.1f s y la canción dura %.1f s. " % [t, dur]
-			+ "Las últimas se quedarían sin sonar: baja los 'seg' de algún tramo.")
+				escenas.append(int(n))
+			else:
+				push_warning("Prólogo: falta la estampa %d, se salta." % int(n))
+		if escenas.is_empty():
+			continue
+
+		var hueco: float = maxf(0.1, hasta - desde)
+		var seg: float = hueco / float(escenas.size())
+		for j in escenas.size():
+			plan.append({ "t": desde + seg * float(j), "escena": escenas[j] })
+
+		# Aviso honesto: si las estampas van a menos de 1 s se ven como un
+		# destello y no se llegan a leer.
+		if seg < 1.0:
+			push_warning("Prólogo: el tramo que empieza en %.1f s mete %d estampas en %.1f s "
+				% [desde, escenas.size(), hueco]
+				+ "(%.2f s cada una). Quita estampas de ese tramo o alarga la canción." % seg)
+		print("Prólogo · tramo desde %6.2f s → %6.2f s : %2d estampas, %.2f s cada una"
+			% [desde, hasta, escenas.size(), seg])
+
+	plan.sort_custom(func(a, b): return float(a["t"]) < float(b["t"]))
 	return plan
 
 
@@ -366,15 +448,20 @@ func _mostrar_verso(i: int) -> void:
 	_texto.visible_characters = 0
 	_texto.modulate.a = 1.0
 
-	# Cuánto dura este verso: hasta el siguiente (o un margen si es el último).
+	# Cuánto dura el hueco de este verso: hasta el siguiente (o un margen si es
+	# el último).
 	var fin: float = float(LETRAS[i + 1]["t"]) if i + 1 < LETRAS.size() \
 		else float(verso["t"]) + 6.0
-	var dur_verso: float = maxf(0.6, fin - float(verso["t"]))
+	var hueco: float = maxf(0.6, fin - float(verso["t"]))
+
+	# El tecleo ocupa una parte del hueco, PERO nunca más de `tecleo_max`: así la
+	# frase termina de escribirse antes de que se acabe de cantar, aunque después
+	# venga un instrumental largo.
+	var dur_tecleo: float = minf(hueco * proporcion_tecleo, tecleo_max)
 
 	var total := _texto.get_total_character_count()
 	_tween_texto = create_tween()
-	_tween_texto.tween_property(_texto, "visible_characters", total,
-		dur_verso * proporcion_tecleo)
+	_tween_texto.tween_property(_texto, "visible_characters", total, dur_tecleo)
 
 
 ## Cruza a la estampa nueva. Si las estampas van muy seguidas, el cruce se

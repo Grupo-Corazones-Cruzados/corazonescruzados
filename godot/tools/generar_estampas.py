@@ -75,8 +75,20 @@ ESTILO = (
 )
 
 
+# --- Estampas AÑADIDAS después de las 66 originales -------------------------
+# Para NO renumerar 66 archivos ya aprobados (y no romper sus .import ni el
+# historial de git), las estampas nuevas se numeran a partir de 67. Aquí se
+# anota DETRÁS DE QUÉ escena va cada una en el relato: ese número es el que
+# manda para el color/tono del arco de dessaturación.
+# El ORDEN REAL en que se ven se decide en Godot (Prologo.gd → TRAMOS), no aquí.
+INSERTADAS = {
+    67: 3,   # la noche de convivencia alrededor del Hoyo va justo tras la 3
+}
+
+
 def tono(n: int) -> str:
     """Arco de dessaturación: el mundo pierde color según pierde virtud."""
+    n = INSERTADAS.get(n, n)   # una estampa insertada hereda el tono de su sitio
     if n <= 6:      # Acto 1 — devoción
         return " Colores cálidos y vivos, luz dorada, esperanza."
     if n <= 12:     # Acto 2 — abandono
@@ -157,6 +169,34 @@ ESCENAS = [
         "pequeños (de distintas edades) arrodillados junto a sus padres, como familias que "
         "transmiten la costumbre a sus hijos. Mantén IDÉNTICO el estilo de dibujo de "
         "personajes, los colores y el lugar de la referencia."),
+    # --- INSERTADA: va justo DESPUÉS de la 3 (mismo escenario, ahora de noche) ---
+    (67, ["assets/Prologo/escenas/escena_03.png", "hoyo"],
+        "MISMO LUGAR, MISMA ESCALA y MISMO ESTILO DE DIBUJO que la imagen de referencia: el "
+        "MISMO campo verde y florido, el MISMO Hoyo (agujero natural oscuro en la tierra, SIN "
+        "muros de piedra, SIN ladrillos, SIN borde construido) casi CENTRADO y del MISMO "
+        "TAMAÑO, y las MISMAS figuras humanas PEQUEÑAS, simples y algo distantes (sprites "
+        "pequeños como los de la referencia, NUNCA primeros planos ni caras detalladas). "
+        "AMBIENTE — AHORA ES DE NOCHE: cielo nocturno azul oscuro con la luna y estrellas, el "
+        "campo bañado por una luz lunar plateada y fría, sombras largas azuladas. La ÚNICA "
+        "luz cálida de toda la imagen sale de una FOGATA (ya NO hay atardecer dorado). "
+        "QUÉ PASA — MUY IMPORTANTE: NADIE está rezando. NINGUNA figura arrodillada, NINGUNA "
+        "con las manos juntas, NINGUNA inclinada hacia el Hoyo. Es una noche de convivencia "
+        "de la aldea alrededor del Hoyo, gente que vive junto a él con naturalidad: "
+        "(a) una FOGATA encendida a un lado del Hoyo, con llamas naranjas y un halo de luz "
+        "cálida sobre la hierba; junto a ella DOS adultos COCINANDO, uno de pie removiendo "
+        "con un cucharón una olla grande puesta al fuego y otro en cuclillas a su lado "
+        "alcanzándole algo; "
+        "(b) CUATRO NIÑOS pequeños JUGANDO y CORRIENDO alrededor del Hoyo, persiguiéndose "
+        "unos a otros, con los brazos en alto y las piernas en carrera, se les nota el "
+        "movimiento y la alegría; "
+        "(c) TRES adultos DE PIE conversando en corrillo, de cara unos a otros, uno de ellos "
+        "gesticulando con las manos mientras habla; "
+        "(d) DOS adultos ACOSTADOS boca arriba sobre la hierba, con las manos detrás de la "
+        "cabeza, mirando el cielo estrellado; "
+        "(e) alguna manta extendida y una cesta en el suelo cerca de la fogata. "
+        "SENSACIÓN: comunidad, calor humano, sobremesa tranquila. Nada solemne, nada triste, "
+        "nada de ritual. Mantén IDÉNTICOS el trazo, la paleta y el TAMAÑO de las figuras de "
+        "la referencia: lo único que cambia es la HORA (noche con fogata) y lo que HACEN."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "
@@ -1275,7 +1315,7 @@ def main() -> None:
         ruta = DIR_ESCENAS / f"escena_{n:02d}.png"
         if ruta.exists() and not forzar and not numeros:
             continue
-        print(f"[escena {n:02d}/66] {prompt[:60]}...")
+        print(f"[escena {n:02d}/{len(ESCENAS)}] {prompt[:60]}...")
         refs = _cargar_refs(refs_ids, anclas)
         prompt_final = f"Escena {n} del prólogo. {prompt}{tono(n)}{ESTILO}"
         try:
