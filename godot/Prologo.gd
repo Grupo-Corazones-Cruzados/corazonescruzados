@@ -1,48 +1,113 @@
 extends Control
 
 ## ============================================================================
-##  REPRODUCTOR DE ESTAMPAS — el prólogo estilo Undertale (auto + máquina de escribir)
+##  REPRODUCTOR DE ESTAMPAS — el prólogo (estilo Undertale, cantado)
 ## ============================================================================
-##  Reproduce SOLO (sin clic) una serie de BLOQUES. Cada bloque tiene un texto y
-##  un grupo de escenas (imágenes de assets/Prologo/escenas/). Estilo Undertale:
-##  la imagen va CENTRADA en una caja de TAMAÑO FIJO y el texto se va ESCRIBIENDO
-##  DEBAJO, sobre negro. Al terminar, carga la intro del juego.
+##  LA CANCIÓN MANDA. Todo el prólogo va sincronizado con la posición de
+##  reproducción de la música, NO con temporizadores (los temporizadores se
+##  desfasan poco a poco; la posición de la canción nunca miente).
+##
+##  Dos relojes independientes, los dos leyendo la misma canción:
+##    1. LETRAS  → cada verso aparece en el segundo EXACTO en que se canta.
+##    2. TRAMOS  → las estampas van pasando a su propio ritmo (un ritmo por
+##                 acto), porque hay 66 imágenes y la canción es más corta que
+##                 la suma de todos los versos.
 ##
 ##  ⚠ TAMAÑOS FIJOS: todo se mide sobre el lienzo base de 960×540 que define
 ##  `project.godot` (stretch mode = canvas_items, aspect = keep). El motor escala
 ##  ese lienzo completo a la ventana, así que la imagen y las letras conservan
-##  SIEMPRE el mismo tamaño y proporción, sin importar la pantalla o el navegador.
-##  Si algún día cambias el viewport del proyecto, cambia también BASE_ANCHO/ALTO.
+##  SIEMPRE el mismo tamaño, sin importar la pantalla o el navegador.
 ##
-##  Todo es editable: cambia los textos, el orden de las escenas de cada bloque,
-##  o los tiempos y tamaños (abajo, @export en el Inspector).
+##  ⚠ PARA CLAVAR LOS TIEMPOS DE LA LETRA: activa `calibrar_letras` en el
+##  Inspector y ejecuta la escena. Suena la canción, aparece el verso que toca y
+##  tú pulsas ESPACIO justo cuando empieza a cantarse. Al acabar, la consola
+##  imprime el bloque `LETRAS` ya listo para pegar aquí. (BORRAR = deshacer el
+##  último, ESC = terminar antes.)
 ## ============================================================================
 
 ## Lienzo base del proyecto (debe coincidir con display/window/size del project.godot).
 const BASE_ANCHO := 960.0
 const BASE_ALTO := 540.0
 
+
+## --- LA LETRA: cada verso con el segundo en que se canta ---------------------
+## "t" = segundo de la canción en que aparece el verso. Cada verso se queda en
+## pantalla hasta que le toca al siguiente. Un verso con texto "" limpia la
+## pantalla (útil para los tramos instrumentales).
+##
+## ⚠ Los tiempos de abajo son una ESTIMACIÓN (sacada de la envolvente de energía
+## del mp3). Hay que sustituirlos por los reales usando `calibrar_letras`.
+const LETRAS := [
+	{ "t": 10.5,  "texto": "Antes lo nuestro era simple y sincero," },
+	{ "t": 17.0,  "texto": "gratitud a la tierra, calor verdadero." },
+	{ "t": 23.5,  "texto": "Nos bastaba el abrazo, nos bastaba el hogar," },
+	{ "t": 30.0,  "texto": "un alma en el suelo y un suelo en el mar." },
+
+	{ "t": 36.5,  "texto": "Pero basta fue más y lo nuestro fue mío," },
+	{ "t": 43.0,  "texto": "y cambiamos el sol por un brillo más frío." },
+	{ "t": 49.5,  "texto": "Lo que daba de comer lo dejamos morir," },
+	{ "t": 56.0,  "texto": "y el verde del mundo se hizo gris al partir." },
+
+	{ "t": 62.5,  "texto": "Los pequeños corrieron al borde del día," },
+	{ "t": 69.0,  "texto": "sin más puerta que el hueco, sin más compañía." },
+	{ "t": 75.5,  "texto": "Perseguidos se dieron la mano y saltaron" },
+	{ "t": 82.0,  "texto": "al fondo del mundo, a la noche bajaron." },
+
+	{ "t": 88.5,  "texto": "Pero aquellos que olvidamos guardaron la llama," },
+	{ "t": 95.0,  "texto": "la bajaron al fondo en la caída en el drama." },
+	{ "t": 101.5, "texto": "Lo que arriba rompimos sus manos sabrán," },
+	{ "t": 108.0, "texto": "y los niños que fallamos el alba serán." },
+]
+
+
+## --- LAS ESTAMPAS: tramos con su propio ritmo --------------------------------
+## Cada tramo dice QUÉ escenas se ven y CUÁNTOS SEGUNDOS dura cada una. Los
+## tramos se encadenan uno detrás de otro empezando en `inicio_imagenes`.
+## Súmalos para saber cuánto ocupan: hoy = 2 + 18 + 12 + 40.8 + 9.6 + 42 ≈ 124 s
+## (la canción dura 135,6 s, así que la última estampa se queda quieta durante
+## el instrumental final).
+const TRAMOS := [
+	# Acto 1 · la devoción — respira, es lo único bonito del prólogo.
+	{ "escenas": [1, 2, 3, 4, 5, 6], "seg": 3.0 },
+	# Acto 2 · el Hoyo se corrompe y el mar se lo traga.
+	{ "escenas": [7, 8, 9, 10, 11, 12], "seg": 2.0 },
+	# Acto 3 · la decadencia social: ráfaga de 34 estampas (es la parte que la
+	# canción menos tiempo le dedica, así que va rápido, como una descarga).
+	{ "escenas": [13, 14, 15, 16, 17, 18, 19, 20, 21, 34, 26, 23, 29, 45, 46, 44,
+				  27, 30, 37, 31, 28, 22, 25, 24, 40, 33, 32, 38, 35, 36, 39,
+				  41, 42, 43], "seg": 1.2 },
+	# Guerra y colapso gris.
+	{ "escenas": [47, 48, 49, 50, 51, 52], "seg": 1.6 },
+	# Acto 4 · el sobreviviente y la caída — vuelve a respirar.
+	{ "escenas": [53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66], "seg": 3.0 },
+]
+
+
 ## A dónde ir al terminar el prólogo.
 @export_file("*.tscn") var escena_siguiente: String = "res://Intro.tscn"
 
-@export_group("Tiempos")
-## Segundos que dura cada imagen en pantalla.
-@export var seg_por_escena: float = 4.0
-## Velocidad de tecleo del texto (caracteres por segundo).
-@export var velocidad_texto: float = 20.0
-## Duración del cruce (crossfade) entre imágenes.
-@export var crossfade: float = 1.0
+@export_group("Calibración de la letra")
+## Actívalo para MEDIR los tiempos de la letra pulsando ESPACIO al ritmo del canto.
+## Al terminar imprime el bloque LETRAS listo para pegar en este script.
+@export var calibrar_letras: bool = false
+
+@export_group("Ritmo")
+## Segundo de la canción en que aparece la primera estampa.
+@export var inicio_imagenes: float = 2.0
+## Duración del cruce entre estampas (se recorta solo si la estampa dura poco).
+@export var crossfade: float = 0.6
+## Qué parte de la duración de un verso se tarda en teclearlo (0.6 = el 60 %).
+@export_range(0.1, 1.0, 0.05) var proporcion_tecleo: float = 0.6
 
 @export_group("Música")
-## Pista que suena durante todo el prólogo. Dura 2:15 y el prólogo ~4:24, así que
-## se pone en BUCLE automáticamente (se repite una vez).
+## La canción que MARCA EL RITMO de todo el prólogo.
 @export_file("*.mp3", "*.ogg", "*.wav") var musica: String = "res://assets/Audio/Musica/Pixel Heart Quest - AI Music (8).mp3"
 ## Volumen de la música, en decibelios (0 = tal cual viene; negativo = más bajo).
 @export_range(-40.0, 6.0, 0.5) var musica_db: float = -6.0
-## Segundos que tarda la música en entrar al empezar el prólogo.
+## Segundos que tarda la música en entrar.
 @export var musica_entrada: float = 3.0
-## Segundos que tarda en apagarse al terminar (o al saltar el prólogo).
-@export var musica_salida: float = 2.5
+## Segundos de fundido final (imagen y música bajan juntas antes de cambiar de escena).
+@export var musica_salida: float = 4.0
 
 @export_group("Tamaños fijos (en el lienzo de 960×540)")
 ## Caja donde se dibuja la estampa, centrada en pantalla. Las imágenes son 16:9
@@ -56,87 +121,34 @@ const BASE_ALTO := 540.0
 @export var separacion: float = 16.0
 
 
-## --- EL GUION: bloques de (texto + escenas que lo acompañan) -----------------
-## Reorganización temática de las 66 escenas para que cada frase tenga imágenes
-## que de verdad la representen. Puedes reordenar escenas o mover números de un
-## bloque a otro libremente.
-const GUION := [
-	{ "texto": "Hace mucho tiempo, los humanos amaban un lugar.\nLo llamaban el Hoyo, y le daban las gracias,\ncreyendo que en lo hondo alguien los cuidaba.",
-	  "escenas": [1, 2, 3, 4] },
-
-	{ "texto": "Pero dar las gracias se volvió costumbre...\ny la costumbre, olvido.\nHasta que un día, ya nadie volvió.",
-	  "escenas": [5, 6, 7] },
-
-	{ "texto": "Y algo, muy adentro, empezó a marchitarse.",
-	  "escenas": [8, 9] },
-
-	{ "texto": "Lo que se deja de cuidar se pudre;\ny lo podrido, tarde o temprano, se hunde.",
-	  "escenas": [10, 11, 12] },
-
-	{ "texto": "El mundo siguió girando, creyéndose libre,\nsin notar que se apagaba por dentro.",
-	  "escenas": [13, 14, 15] },
-
-	{ "texto": "Donde faltó el cuidado, creció el miedo.\nY el miedo enseñó a los hombres a destruirse.",
-	  "escenas": [16, 17, 18, 19, 20] },
-
-	{ "texto": "Cada quien se creyó mejor que el otro,\ny despreció lo que no quiso entender.",
-	  "escenas": [21, 34, 26] },
-
-	{ "texto": "Cada quien tomó lo que pudo,\nsin mirar a quién dejaba sin nada.",
-	  "escenas": [23, 29, 45, 46, 44] },
-
-	{ "texto": "El trabajo apenas alcanzaba para no morir;\ny muchos, para no ver, prefirieron huir.",
-	  "escenas": [27, 30, 37] },
-
-	{ "texto": "Y hasta en casa, quien debía cuidar, hería.",
-	  "escenas": [31, 28] },
-
-	{ "texto": "Los que debían guiar y proteger...\ncallaron, o enseñaron a hacer el mal.",
-	  "escenas": [22, 25, 24, 40, 33, 32, 38] },
-
-	{ "texto": "Y en las sombras, unos pocos\njugaban con la vida de todos.",
-	  "escenas": [35, 36, 39] },
-
-	{ "texto": "Le cobramos a la tierra hasta su última gota.",
-	  "escenas": [41, 42, 43] },
-
-	{ "texto": "Hasta que la tierra nos cobró a nosotros.",
-	  "escenas": [47, 48, 49] },
-
-	{ "texto": "Y el gris lo cubrió todo.",
-	  "escenas": [50, 51, 52] },
-
-	{ "texto": "Al final quedaron muy pocos.\nY los pocos, huían.",
-	  "escenas": [53, 54] },
-
-	{ "texto": "Uno de ellos, todavía sin nombre,\nreconoció a lo lejos aquel viejo lugar.",
-	  "escenas": [55, 56] },
-
-	{ "texto": "El mundo le quitó casi todo...\nmenos a sus hermanos.",
-	  "escenas": [57, 58, 59, 60] },
-
-	{ "texto": "Corrió, con ellos de la mano,\nhacia lo único que le quedaba.",
-	  "escenas": [61, 62, 63, 64] },
-
-	{ "texto": "No sabía si algo lo esperaba allá abajo.\nSolo saltó.",
-	  "escenas": [65, 66] },
-]
-
-
 # --- Nodos construidos por código -------------------------------------------
 var _capa_a: TextureRect   # imagen visible
 var _capa_b: TextureRect   # imagen entrante (para el crossfade)
-var _texto: Label          # la narración, debajo de la imagen (tamaño fijo)
+var _texto: Label          # la letra, debajo de la imagen (tamaño fijo)
 var _musica: AudioStreamPlayer
 var _velo: ColorRect       # negro por encima de todo, para el cierre
 var _terminado := false
+
+# --- Estado de la reproducción ----------------------------------------------
+## Guion de imágenes ya calculado: [{ "t": segundo, "escena": nº }, ...]
+var _plan_imagenes: Array = []
+var _idx_imagen := 0
+var _idx_verso := -1
+var _tween_texto: Tween = null
+var _cruzando := false
+
+# --- Estado del modo calibración --------------------------------------------
+var _tiempos_medidos: Array[float] = []
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_construir_ui()
 	_construir_musica()
-	_reproducir()
+	if calibrar_letras:
+		_arrancar_calibracion()
+	else:
+		_plan_imagenes = _calcular_plan_imagenes()
 
 
 func _construir_ui() -> void:
@@ -148,7 +160,7 @@ func _construir_ui() -> void:
 	var img_x := (BASE_ANCHO - ancho_img) / 2.0      # centrada horizontalmente
 	var img_y := (BASE_ALTO - alto_total) / 2.0
 	var texto_y := img_y + alto_img + separacion
-	var margen_texto := 60.0                          # aire lateral de la narración
+	var margen_texto := 60.0                          # aire lateral de la letra
 
 	# Fondo negro (también hace de marco alrededor de la estampa).
 	var fondo := ColorRect.new()
@@ -165,7 +177,7 @@ func _construir_ui() -> void:
 	_capa_b.modulate.a = 0.0
 	add_child(_capa_b)
 
-	# La narración: DEBAJO de la imagen, centrada, tamaño de letra FIJO.
+	# La letra: DEBAJO de la imagen, centrada, tamaño de letra FIJO.
 	_texto = Label.new()
 	_texto.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_texto.offset_left = margen_texto
@@ -210,43 +222,6 @@ func _construir_ui() -> void:
 	add_child(_velo)
 
 
-## Arranca la música del prólogo, en bucle y entrando con un fundido suave.
-func _construir_musica() -> void:
-	if musica == "":
-		return
-	var pista: AudioStream = load(musica) as AudioStream
-	if pista == null:
-		push_warning("Prólogo: no se pudo cargar la música '%s'." % musica)
-		return
-	# La pista es más corta que el prólogo → que se repita.
-	if pista is AudioStreamMP3:
-		(pista as AudioStreamMP3).loop = true
-	elif pista is AudioStreamOggVorbis:
-		(pista as AudioStreamOggVorbis).loop = true
-	elif pista is AudioStreamWAV:
-		(pista as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
-
-	_musica = AudioStreamPlayer.new()
-	_musica.stream = pista
-	_musica.bus = &"Master"
-	_musica.volume_db = musica_db - 40.0   # arranca casi en silencio
-	add_child(_musica)
-	_musica.play()
-
-	var t := create_tween()
-	t.tween_property(_musica, "volume_db", musica_db, musica_entrada)
-
-
-## Apaga la música con un fundido y espera a que termine.
-func _apagar_musica() -> void:
-	if _musica == null or not _musica.playing:
-		return
-	var t := create_tween()
-	t.tween_property(_musica, "volume_db", -60.0, musica_salida)
-	await t.finished
-	_musica.stop()
-
-
 ## Una capa de imagen anclada a la caja FIJA (misma posición y tamaño siempre).
 func _nueva_capa_imagen(x: float, y: float, ancho: float, alto: float) -> TextureRect:
 	var t := TextureRect.new()
@@ -266,54 +241,176 @@ func _nueva_capa_imagen(x: float, y: float, ancho: float, alto: float) -> Textur
 
 
 # ============================================================================
-#  REPRODUCCIÓN
+#  MÚSICA — es el reloj de todo el prólogo
 # ============================================================================
 
-func _reproducir() -> void:
-	for bloque in GUION:
-		# Solo las escenas de este bloque cuya imagen ya exista.
-		var escenas: Array = []
-		for n in bloque["escenas"]:
+func _construir_musica() -> void:
+	if musica == "":
+		push_warning("Prólogo: sin música no hay sincronía; solo se verá el texto quieto.")
+		return
+	var pista: AudioStream = load(musica) as AudioStream
+	if pista == null:
+		push_warning("Prólogo: no se pudo cargar la música '%s'." % musica)
+		return
+	# La canción suena UNA vez: el prólogo dura lo que dura la canción.
+	if pista is AudioStreamMP3:
+		(pista as AudioStreamMP3).loop = false
+	elif pista is AudioStreamOggVorbis:
+		(pista as AudioStreamOggVorbis).loop = false
+	elif pista is AudioStreamWAV:
+		(pista as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_DISABLED
+
+	_musica = AudioStreamPlayer.new()
+	_musica.stream = pista
+	_musica.bus = &"Master"
+	_musica.volume_db = musica_db - 40.0   # arranca casi en silencio
+	add_child(_musica)
+	_musica.play()
+
+	var t := create_tween()
+	t.tween_property(_musica, "volume_db", musica_db, musica_entrada)
+
+
+## Segundo EXACTO de la canción, compensando el buffer de audio. Es la receta
+## estándar de Godot para sincronizar cosas con música: `get_playback_position`
+## solo se actualiza cada bloque de mezcla, así que se le suma el tiempo
+## transcurrido desde la última mezcla y se le resta la latencia de salida.
+func _pos_musica() -> float:
+	if _musica == null or not _musica.playing:
+		return 0.0
+	return _musica.get_playback_position() \
+		+ AudioServer.get_time_since_last_mix() \
+		- AudioServer.get_output_latency()
+
+
+func _duracion_musica() -> float:
+	if _musica == null or _musica.stream == null:
+		return 0.0
+	return _musica.stream.get_length()
+
+
+## Apaga la música con un fundido (no espera: se solapa con el fundido a negro).
+func _apagar_musica() -> void:
+	if _musica == null or not _musica.playing:
+		return
+	var t := create_tween()
+	t.tween_property(_musica, "volume_db", -60.0, musica_salida)
+	await t.finished
+	_musica.stop()
+
+
+# ============================================================================
+#  EL PLAN DE IMÁGENES — se calcula una sola vez, al empezar
+# ============================================================================
+
+## Convierte los TRAMOS en una lista plana de { "t": segundo, "escena": nº },
+## saltándose las estampas cuya imagen no exista.
+func _calcular_plan_imagenes() -> Array:
+	var plan: Array = []
+	var t := inicio_imagenes
+	for tramo in TRAMOS:
+		var seg: float = maxf(0.05, float(tramo["seg"]))
+		for n in tramo["escenas"]:
 			if _existe(n):
-				escenas.append(n)
-		if escenas.is_empty():
-			continue
-
-		# 1) Empezar a teclear el texto (dura casi todo el bloque).
-		var dur_bloque := escenas.size() * seg_por_escena
-		_texto.text = str(bloque["texto"])
-		_texto.visible_characters = 0
-		var total := _texto.get_total_character_count()
-		_fundir(_texto, 1.0, 0.4)
-		var dur_texto: float = clampf(float(total) / velocidad_texto, 1.0, dur_bloque - 0.6)
-		var tw := create_tween()
-		tw.tween_property(_texto, "visible_characters", total, dur_texto)
-
-		# 2) Ir cruzando las imágenes del bloque.
-		for n in escenas:
-			await _crossfade(_cargar(n))
-			await get_tree().create_timer(seg_por_escena - crossfade).timeout
-			if _terminado:
-				return
-
-		# 3) Fin del bloque: desvanecer el texto antes del siguiente.
-		await _fundir(_texto, 0.0, 0.5)
-
-	_ir_a_siguiente()
+				plan.append({ "t": t, "escena": int(n) })
+				t += seg
+	var dur := _duracion_musica()
+	if dur > 0.0 and t > dur:
+		push_warning("Prólogo: las estampas ocupan %.1f s y la canción dura %.1f s. " % [t, dur]
+			+ "Las últimas se quedarían sin sonar: baja los 'seg' de algún tramo.")
+	return plan
 
 
-## Cruza la imagen actual con la nueva (crossfade suave, sin tocar el texto).
-func _crossfade(tex: Texture2D) -> void:
+# ============================================================================
+#  REPRODUCCIÓN — un solo _process leyendo el reloj de la canción
+# ============================================================================
+
+func _process(_delta: float) -> void:
+	if _terminado or calibrar_letras:
+		return
+	var pos := _pos_musica()
+
+	# 1) ¿Toca cambiar de verso?
+	var siguiente := _idx_verso + 1
+	while siguiente < LETRAS.size() and pos >= float(LETRAS[siguiente]["t"]):
+		_idx_verso = siguiente
+		_mostrar_verso(_idx_verso)
+		siguiente += 1
+
+	# 2) ¿Toca cambiar de estampa?
+	while _idx_imagen < _plan_imagenes.size() \
+			and pos >= float(_plan_imagenes[_idx_imagen]["t"]):
+		var paso: Dictionary = _plan_imagenes[_idx_imagen]
+		_idx_imagen += 1
+		_cambiar_imagen(int(paso["escena"]))
+
+	# 3) ¿Se acabó la canción? Cerramos con tiempo para el fundido.
+	var dur := _duracion_musica()
+	if dur > 0.0 and pos >= dur - musica_salida:
+		_ir_a_siguiente()
+
+
+## Pone el verso en pantalla y lo teclea al ritmo de lo que dura ese verso.
+func _mostrar_verso(i: int) -> void:
+	var verso: Dictionary = LETRAS[i]
+	var cuerpo := str(verso["texto"])
+
+	if _tween_texto != null and _tween_texto.is_valid():
+		_tween_texto.kill()
+
+	if cuerpo == "":
+		_fundir(_texto, 0.0, 0.5)
+		return
+
+	_texto.text = cuerpo
+	_texto.visible_characters = 0
+	_texto.modulate.a = 1.0
+
+	# Cuánto dura este verso: hasta el siguiente (o un margen si es el último).
+	var fin: float = float(LETRAS[i + 1]["t"]) if i + 1 < LETRAS.size() \
+		else float(verso["t"]) + 6.0
+	var dur_verso: float = maxf(0.6, fin - float(verso["t"]))
+
+	var total := _texto.get_total_character_count()
+	_tween_texto = create_tween()
+	_tween_texto.tween_property(_texto, "visible_characters", total,
+		dur_verso * proporcion_tecleo)
+
+
+## Cruza a la estampa nueva. Si las estampas van muy seguidas, el cruce se
+## acorta solo para que no se solapen tres imágenes a la vez.
+func _cambiar_imagen(n: int) -> void:
+	var tex := _cargar(n)
 	if tex == null:
 		return
+	# Primera imagen del prólogo: entra sin cruce.
+	if _capa_a.texture == null:
+		_capa_a.texture = tex
+		_capa_a.modulate.a = 1.0
+		return
+	# Si veníamos de un cruce a medias, lo damos por terminado.
+	if _cruzando:
+		_capa_a.texture = _capa_b.texture
+		_capa_a.modulate.a = 1.0
+	_cruzando = true
 	_capa_b.texture = tex
 	_capa_b.modulate.a = 0.0
 	var t := create_tween()
-	t.tween_property(_capa_b, "modulate:a", 1.0, crossfade)
+	t.tween_property(_capa_b, "modulate:a", 1.0, _dur_cruce())
 	await t.finished
 	_capa_a.texture = tex
 	_capa_a.modulate.a = 1.0
 	_capa_b.modulate.a = 0.0
+	_cruzando = false
+
+
+## El cruce nunca puede durar más de la mitad de lo que dura la estampa.
+func _dur_cruce() -> float:
+	var seg := 1.2
+	if _idx_imagen > 0 and _idx_imagen < _plan_imagenes.size():
+		seg = float(_plan_imagenes[_idx_imagen]["t"]) \
+			- float(_plan_imagenes[_idx_imagen - 1]["t"])
+	return clampf(crossfade, 0.1, maxf(0.1, seg * 0.5))
 
 
 func _existe(n: int) -> bool:
@@ -344,6 +441,80 @@ func _ir_a_siguiente() -> void:
 
 
 func _input(evento: InputEvent) -> void:
+	if calibrar_letras:
+		_input_calibracion(evento)
+		return
 	# Esc salta todo el prólogo.
-	if evento is InputEventKey and evento.pressed and evento.keycode == KEY_ESCAPE:
+	if evento is InputEventKey and evento.pressed and not evento.is_echo() \
+			and evento.keycode == KEY_ESCAPE:
 		_ir_a_siguiente()
+
+
+# ============================================================================
+#  MODO CALIBRACIÓN — pulsar ESPACIO al ritmo del canto para medir la letra
+# ============================================================================
+
+func _arrancar_calibracion() -> void:
+	_capa_a.modulate.a = 0.0
+	_capa_b.modulate.a = 0.0
+	_texto.modulate.a = 1.0
+	_texto.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Se usa toda la pantalla para las instrucciones.
+	_texto.offset_top = 60.0
+	_texto.offset_bottom = BASE_ALTO - 40.0
+	_pintar_calibracion()
+	print("\n=== CALIBRACIÓN DE LA LETRA ===")
+	print("Pulsa ESPACIO justo cuando empiece a cantarse cada verso.")
+	print("BORRAR = deshacer el último · ESC = terminar antes.\n")
+
+
+func _pintar_calibracion() -> void:
+	var i := _tiempos_medidos.size()
+	if i >= LETRAS.size():
+		_texto.text = "LISTO\n\nMira la consola:\nahí está el bloque LETRAS para pegar."
+		return
+	var anterior := ""
+	if i > 0:
+		anterior = "\n\nanterior: %.2f s  ->  %s" % [
+			_tiempos_medidos[i - 1], str(LETRAS[i - 1]["texto"])]
+	_texto.text = "CALIBRANDO  %d / %d\n\nESPACIO cuando empiece:\n\n%s%s" % [
+		i + 1, LETRAS.size(), str(LETRAS[i]["texto"]), anterior]
+
+
+func _input_calibracion(evento: InputEvent) -> void:
+	if not (evento is InputEventKey) or not evento.pressed or evento.is_echo():
+		return
+	var k := evento as InputEventKey
+	match k.keycode:
+		KEY_SPACE:
+			if _tiempos_medidos.size() < LETRAS.size():
+				_tiempos_medidos.append(_pos_musica())
+				_pintar_calibracion()
+				if _tiempos_medidos.size() == LETRAS.size():
+					_volcar_calibracion()
+		KEY_BACKSPACE:
+			if not _tiempos_medidos.is_empty():
+				_tiempos_medidos.remove_at(_tiempos_medidos.size() - 1)
+				_pintar_calibracion()
+		KEY_ESCAPE:
+			_volcar_calibracion()
+
+
+## Escribe el bloque LETRAS ya formateado, en la consola y en un archivo.
+func _volcar_calibracion() -> void:
+	var lineas := "const LETRAS := [\n"
+	for i in LETRAS.size():
+		var t := _tiempos_medidos[i] if i < _tiempos_medidos.size() \
+			else float(LETRAS[i]["t"])
+		lineas += "\t{ \"t\": %.2f, \"texto\": \"%s\" },\n" % [t, str(LETRAS[i]["texto"])]
+	lineas += "]\n"
+
+	print("\n--- PEGA ESTO EN Prologo.gd -------------------------------------")
+	print(lineas)
+	var ruta := "user://letras_calibradas.txt"
+	var f := FileAccess.open(ruta, FileAccess.WRITE)
+	if f != null:
+		f.store_string(lineas)
+		f.close()
+		print("También guardado en: ", ProjectSettings.globalize_path(ruta))
+	print("-----------------------------------------------------------------\n")

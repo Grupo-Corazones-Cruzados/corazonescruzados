@@ -145,15 +145,27 @@ nueva se mide en el lienzo de 960×540, nunca en píxeles de ventana.**
 **Scripts y qué hace cada uno:**
 - `Prologo.gd` / `Prologo.tscn` — reproductor de estampas del prólogo, **estilo Undertale**:
   la estampa va **centrada en una caja de TAMAÑO FIJO** (por defecto `caja_imagen` =
-  672×384, la mitad exacta de los 1344×768 del arte) y la **narración se teclea DEBAJO**
-  sobre negro, con **letra de tamaño fijo** (`tamano_letra` = 24, `Label` centrado, sin
-  outline). **Auto-avance** con crossfade. `GUION` = 20 bloques de texto ↔ grupos de
-  escenas: cubre **las 66 estampas exactamente una vez** (verificado; 0 duplicadas, 0
-  faltantes) → ≈ **4 min 24 s** a 4 s/escena. **Música:** `Pixel Heart Quest - AI Music
-  (8).mp3` (2:15) en **bucle**, entra con fundido de 3 s a −6 dB. Al terminar (o al saltar),
-  **funde a negro y baja la música a la vez** antes de cambiar de escena. Esc / botón
-  "Saltar" van a `Intro.tscn`. Todo ajustable por Inspector (`@export`: tiempos, música,
-  tamaños fijos).
+  672×384, la mitad exacta de los 1344×768 del arte) y el **texto se teclea DEBAJO** sobre
+  negro, con **letra de tamaño fijo** (`tamano_letra` = 24, `Label` centrado, sin outline).
+  **★ LA CANCIÓN MANDA EL TIEMPO (decisión de Fernando, 2026-07-26):** el texto que se
+  muestra ES **la letra de la canción** y aparece verso a verso en el segundo exacto en que
+  se canta. Nada va por temporizador: todo se compara contra la **posición de reproducción**
+  de la música (los temporizadores se desfasan; la posición de la canción no).
+  - `LETRAS` = 16 versos, cada uno con su `"t"` (segundo en que se canta). Un verso con
+    texto `""` limpia la pantalla (para tramos instrumentales).
+  - `TRAMOS` = las estampas, con **su propio ritmo por acto** (`"seg"` = segundos por
+    estampa). Reloj independiente del de la letra, porque hay 66 imágenes y la letra no las
+    reparte parejo. **Fernando dictará el orden y el reparto definitivos.**
+  - **Música:** `Pixel Heart Quest - AI Music (8).mp3` (2:15, **sin bucle**: el prólogo dura
+    lo que dura la canción), entra con fundido de 3 s a −6 dB.
+  - Al terminar (o al pulsar Esc / "Saltar"), **funde a negro y baja la música a la vez**
+    antes de cambiar a `Intro.tscn`.
+  - **`calibrar_letras` (modo calibración):** suena la canción, sale el verso que toca y
+    Fernando pulsa **ESPACIO** cuando empieza a cantarse; BORRAR deshace, ESC termina antes.
+    Al acabar imprime el bloque `LETRAS` listo para pegar y lo guarda en
+    `user://letras_calibradas.txt`. **Es la única forma fiable de clavar los tiempos**
+    (yo no puedo oír la canción).
+  - Todo ajustable por Inspector (`@export`: ritmo, música, tamaños fijos).
 - `Intro.gd` / `Intro.tscn` — intro cinemática (lluvia CPUParticles2D, descenso de cámara
   por una imagen de fondo, zoom a la cueva, oscurece, `change_scene`). Ajustable por
   `@export`.
@@ -412,14 +424,22 @@ definir; 150+ competitivo.
 - **Prólogo COMPLETO** ✅ (66/66). Opcional: revisar la **42** (industrias contaminando) por si
   se quiere rehacer al estilo actual.
 - **Integrar el prólogo en Godot** ✅ (2026-07-26): 66 estampas reproduciéndose, layout de
-  tamaños fijos, `Prologo.tscn` como escena principal. **Falta afinar con Fernando:**
-  (a) el **texto de los 20 bloques** del `GUION` (¿le gusta como está?);
-  (b) el **ritmo** (4 s/escena → ≈4 min 24 s en total);
-  (c) si quiere poder **avanzar a mano** (Espacio/toque) además del automático;
-  (d) **música** ✅ puesta (ver arriba) — falta que Fernando valide el **volumen** (−6 dB) y
-  si le molesta la **costura del bucle** a los 2:15;
-  (e) probar el flujo completo `Prologo → Intro → Encuentro` (la `Intro.tscn` necesita que
-  Fernando arrastre su imagen de fondo al nodo `Fondo`, hoy está vacío).
+  tamaños fijos, música, y todo **sincronizado con la canción**. `Prologo.tscn` es la escena
+  principal. **Lo que falta, por orden de importancia:**
+  1. **⏳ CALIBRAR LOS 16 TIEMPOS de la letra** — los `"t"` de `LETRAS` son hoy una
+     ESTIMACIÓN sacada de la envolvente de energía del mp3. Fernando tiene que ejecutar el
+     prólogo con `calibrar_letras = true` y pulsar ESPACIO a cada verso; luego se pega el
+     bloque que imprime la consola. **Hasta entonces el texto NO cae donde se canta.**
+  2. **⏳ ORDEN Y REPARTO DE LAS ESCENAS** — Fernando dijo (2026-07-26) que él dirá cómo
+     ordenar y mostrar las estampas. Los `TRAMOS` actuales son un relleno provisional.
+  3. **Tensión real que hay que resolver:** la canción dura **2:15** y hay **66 estampas**
+     (≈1,8 s por estampa de media). Además la letra dedica ~2 versos al Acto 3 (34 estampas)
+     y 8 versos al final (14 estampas). Opciones: (a) aceptar que el Acto 3 sea una ráfaga
+     rápida (así está hoy, 1,2 s); (b) **conseguir una canción más larga** (~4:30) — la
+     recomendada, porque Fernando genera la música con IA; (c) usar menos estampas.
+  4. Validar el **volumen** (−6 dB) y el tamaño de imagen/letra.
+  5. Probar el flujo completo `Prologo → Intro → Encuentro` (la `Intro.tscn` necesita que
+     Fernando arrastre su imagen de fondo al nodo `Fondo`, hoy está vacío).
 - **Limpieza propuesta (pendiente del ok de Fernando):** quitar los 2 mensajes de
   `Intro.gd` (`mensajes` = "Hay alguien aquí, ¿Hola?." / "Tengo miedo...") porque **duplican**
   los diálogos de la niña en `Encuentro.gd`, donde sí tienen sentido (los dice ella).
@@ -429,6 +449,30 @@ definir; 150+ competitivo.
 
 ## 10. Registro de aprendizajes/decisiones
 
+- **2026-07-26 (⭐ el prólogo pasa a ir SINCRONIZADO CON LA CANCIÓN):** Fernando pidió que el
+  texto del prólogo **sea la letra de su canción** y que **se vea al mismo ritmo que canta**;
+  y confirmó: *"haz que el prólogo se base en el tiempo de la canción, luego te diré cómo
+  ordenar y mostrar las escenas"*. Aprendizajes y decisiones:
+  (a) **Nada por temporizador.** El reloj es `AudioStreamPlayer.get_playback_position()`, y
+  para que sea exacto se le **suma `AudioServer.get_time_since_last_mix()` y se le resta
+  `AudioServer.get_output_latency()`** (la posición solo se refresca por bloque de mezcla).
+  Verificado: adelantando la canción con `seek()` a cualquier segundo, el verso y la estampa
+  correctos aparecen al instante.
+  (b) **Dos relojes independientes** leyendo la misma canción: `LETRAS` (verso ↔ segundo) y
+  `TRAMOS` (estampas ↔ segundos por estampa, por acto). Hacía falta separarlos porque la
+  letra no reparte las 66 estampas de forma pareja.
+  (c) **El bucle se quita:** el prólogo dura lo que dura la canción (2:15), no 4:24.
+  (d) **TENSIÓN DE FONDO sin resolver:** 66 estampas en 2:15 = 1,8 s de media, y la letra da
+  ~2 versos al Acto 3 (34 estampas) frente a 8 versos al final (14 estampas). Recomendación
+  dada a Fernando: **generar una canción más larga (~4:30)**, ya que la hace con IA.
+  (e) **Yo no puedo oír el audio** → se construyó el **modo `calibrar_letras`** para que él
+  marque los tiempos con ESPACIO y el juego imprima el bloque `LETRAS`. Regla general: cuando
+  la sincronía dependa de oír algo, la solución es una **herramienta de calibración dentro
+  del juego**, no adivinar.
+  (f) Lo que SÍ se puede sacar sin oír: la **envolvente de energía** del mp3 con `ffmpeg`
+  (→ wav mono 8 kHz, banda 250–3500 Hz) y RMS por tramos en Python puro (`wave` + `array`,
+  no hay numpy en la Mac). Sirve para ver la ESTRUCTURA (intro ~10 s, subidas ~36 s y ~99 s,
+  hueco en ~120 s, cola hasta 135,6 s), no para clavar versos.
 - **2026-07-26 (música del prólogo):** Fernando eligió `Pixel Heart Quest - AI Music (8).mp3`
   y pidió moverla a una carpeta de músicas del juego → se creó la convención
   `assets/Audio/Musica/`. Aprendizajes: (a) la pista dura **2:15** y el prólogo **4:24**, así
