@@ -275,6 +275,30 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **JUEGO PUBLICADO EN PRODUCCIÓN — prólogo con 68 estampas (2026-07-26).** Primera publicación del
+  juego real (antes producción servía la prueba de humo del 2026-07-20, `index.pck` de 207 KB).
+  - **`godot/export_presets.cfg` RECREADO** (estaba borrado; era el pendiente anotado abajo). Preset
+    **"Web"** → `../public/game/index.html`, **`variant/thread_support=false`** (con hilos el navegador
+    exige cabeceras COOP/COEP y `next.config.ts` solo manda `Cache-Control` en `/game/*`; sin ellas el
+    motor no arranca) y **`exclude_filter="assets/Prologo/anclas/*"`** (las anclas son las imágenes de
+    referencia de `tools/generar_estampas.py`, el juego no las abre nunca: **−12 MB**). ⚠️ **Sin este
+    archivo `npm run juego:publicar` falla**; va al repositorio a propósito.
+  - **ESTAMPAS EN WEBP CON PÉRDIDA — decisión del usuario (2026-07-26).** Las 68 estampas son PNG de
+    1344×768 (~1,7 MB cada una) → el `.pck` salía a **82,8 MB** (120 MB de primera carga con el wasm).
+    Se cambió su **importación** a `compress/mode=1` + `compress/lossy_quality=0.85` en los 68
+    `escena_NN.png.import`: **`.pck` 82,8 MB → 12,6 MB** (~50 MB de carga total). **Se comparó la
+    textura importada contra el PNG original: sin diferencia apreciable.** Funciona bien porque el
+    prólogo ya dibuja las estampas con `TEXTURE_FILTER_LINEAR` y reescaladas a 960×540 (`Prologo.gd`,
+    `_nueva_capa_imagen`), así que el arte no se ve al pixel exacto. **NO toca los PNG originales**
+    (siguen intactos en `assets/`); se revierte poniendo `compress/mode=0`.
+  - **Cómo comprimir arte nuevo:** al añadir estampas, sus `.import` nacen con `compress/mode=0`
+    (sin pérdida). Hay que ponerles `mode=1` + `lossy_quality=0.85` o el `.pck` vuelve a dispararse:
+    `sed -i '' 's|^compress/mode=0$|compress/mode=1|; s|^compress/lossy_quality=0.7$|compress/lossy_quality=0.85|' godot/assets/Prologo/escenas/*.png.import`
+  - **Prueba de humo antes de publicar:** `godot --headless --path godot --quit-after 180` corre la
+    escena principal y saca los `SCRIPT ERROR` sin abrir el editor.
+  - ⚠️ **Para VER el juego en producción hay que iniciar sesión**: `/juego` está detrás de
+    `GameEntryGate` (ver decisión de más abajo). Se entra por la portada → "Entrar" → login. Escribir
+    `app.grupocc.org/juego` a pelo devuelve a la portada.
 - **EL PERSONAJE ES DE LA CUENTA, NO DEL DISPOSITIVO (2026-07-26).** Continuación directa de la
   decisión de abajo: si "Entrar" ya no reconoce por cookie/IP, la identidad del jugador tiene que
   salir de la **sesión iniciada**. Regla: `gcc_world.clients` (el personaje) pertenece a
@@ -387,8 +411,8 @@ Stack estándar de la casa, con particularidades de este repo:
     nombre. El usuario primero puso el script en el Node2D raíz por error; se movió al CharacterBody2D.
   - **Ejecutar en Godot:** `F6` (Fn+F6 en Mac) = escena actual; `F5` = proyecto (pide escena principal).
   - ⚠️ **PENDIENTES del proyecto Godot (borrados por el usuario al limpiar):**
-    (1) **`export_presets.cfg` fue borrado** → `npm run juego:publicar` fallará hasta **recrear la
-    configuración de exportación Web** (preset "Web" → `../public/game/index.html`, sin hilos, sin PWA).
+    (1) ✅ **RESUELTO (2026-07-26):** `export_presets.cfg` se recreó y está en el repositorio (ver
+    "JUEGO PUBLICADO EN PRODUCCIÓN" en *Decisiones recientes*).
     (2) Los **assets de prueba** (55 objetos + tiles) fueron **borrados** por el usuario (empezó
     limpio); dibuja los suyos en Pixaki.
 - **JUEGO — DIRECCIÓN DE ARTE fijada (2026-07-20):** el juego será estilo **Guardian Tales**:
