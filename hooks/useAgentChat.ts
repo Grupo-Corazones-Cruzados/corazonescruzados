@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { CitizenDef } from '@/types/world';
-import type { ChatBlock } from '@/components/world/ChatPanel';
+import type { CitizenDef } from '@/types/chat';
+import type { ChatBlock } from '@/components/projects/ChatPanel';
 
 export interface QueuedIncident {
   id: string;

@@ -288,12 +288,29 @@ Stack estándar de la casa, con particularidades de este repo:
     `npcs`, `lights`, `item_placements`, `player_progress`. Apenas se usaron (1 mapa, 1 escena, 1 NPC).
     ⚠️ **Copia previa en `sql/backup-mundo-web-2026-07-27.sql`** (INSERTs; para restaurar hay que
     recrear las tablas desde el historial de git).
-  - ⚠️ **OJO — lo que NO es del mundo del juego y se CONSERVA:** `/world` (**DigiMundo**: los agentes
-    trabajando en proyectos) y `/sprites` (editor de sprites de esos agentes) **no tienen nada que ver**
-    con el mundo del jugador, pese al nombre. Con ellos se conservan `app/api/world/route.ts` (config de
-    agentes, la usa `/sprites`), `components/world/ChatPanel.tsx` (lo usan 5 paneles de proyectos),
-    `public/universal_assets/`, y el sistema de etapas/saldo (`lib/game/{stages,ledger}.ts`,
-    `/api/game/stages`) porque **los tickets lo invocan** (`evaluateStages` al completar un ticket).
+  - **SEGUNDA TANDA — fuera TAMBIÉN DigiMundo (2026-07-27, orden expresa del usuario:** *"tú no tomas
+    la decisión, borra todo, no quiero confusiones a futuro"*). En la primera pasada se habían
+    conservado `/world` y `/sprites` por criterio propio; se eliminan igualmente. **~80 archivos más:**
+    `app/(main)/{world,sprites}`, las pestañas Mundo/Sprites de Admin, `app/api/{world,sprites,
+    digimon-data,assets,game}`, `lib/{fal-ai,sprite-prompts,sprite-processor,validation,world}.ts`,
+    `lib/game/{ledger,stages}.ts`, `components/{world,sprites}`, `components/shared/{DropZone,
+    AnimatedSprite}`, `useDigimonConfigs`, `types/{world,sprites}.ts`, `public/universal_assets/`
+    (7,3 MB), `public/world/`, `data/{worlds,digimon-data.json,sprite-jobs.json}`, y los enlaces del
+    menú lateral. El rótulo "DigiMundo v1.0" de la barra y el menú pasa a **"GCC World"**.
+  - **Tablas eliminadas (2ª tanda):** `game_stages`, `player_stage_unlocks`, `player_flags`,
+    `ledger_entries`, `ledger_balances`, `game_currencies`, `game_action_log`, `item_placement_syncs`
+    (todas respaldadas en el mismo `sql/backup-mundo-web-2026-07-27.sql`).
+  - ⚠️ **Cambio de comportamiento en TICKETS:** completar un ticket ya **no** desbloquea etapas
+    (`evaluateStages` se fue con el sistema de etapas). Cuando el juego vuelva a tener progresión, se
+    decidirá desde Godot qué hechos la desbloquean.
+  - **Lo único rescatado (porque NO es del mundo, solo vivía ahí):** el **chat de proyectos**
+    `components/world/ChatPanel.tsx` → **`components/projects/ChatPanel.tsx`** (lo usan 5 paneles del
+    dashboard: proformas, documentos públicos, guion de vídeo, copys y la ventana flotante) y su tipo
+    `CitizenDef` → **`types/chat.ts`**. Borrarlo habría roto el dashboard.
+  - ⏳ **PENDIENTE DE DECISIÓN (no se tocó):** `/api/digimundo/projects` y la columna
+    `projects.digimundo_project_id`, que **enlazan un proyecto del dashboard con un proyecto de
+    agentes** (pestaña "DigiMundo" en el detalle de proyecto, solo admin). Comparten el nombre pero son
+    una función viva del dashboard, no del mundo del juego.
   - **Se conserva el creador de personaje** (`CharacterCreator` + `lib/game/lpc-catalog.ts` +
     `public/character/`, 19 MB) hasta que lo sustituya el catálogo generado con IA.
 - **LA INTRO SE VE UNA SOLA VEZ + MODO PREVISUALIZACIÓN `/?intro` (2026-07-27).** Decisión del usuario:

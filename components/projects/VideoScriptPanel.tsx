@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
-import type { ChatBlock } from '@/components/world/ChatPanel';
+import type { ChatBlock } from '@/components/projects/ChatPanel';
 
 const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;

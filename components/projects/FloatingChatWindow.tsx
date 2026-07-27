@@ -2,10 +2,10 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import type { CitizenDef } from '@/types/world';
-import type { ChatBlock } from '@/components/world/ChatPanel';
+import type { CitizenDef } from '@/types/chat';
+import type { ChatBlock } from '@/components/projects/ChatPanel';
 
-const ChatPanel = dynamic(() => import('@/components/world/ChatPanel'), { ssr: false });
+const ChatPanel = dynamic(() => import('@/components/projects/ChatPanel'), { ssr: false });
 
 const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;

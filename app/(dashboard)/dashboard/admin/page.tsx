@@ -1,42 +1,32 @@
 'use client';
 
 import { useState } from 'react';
-import dynamic from 'next/dynamic';
 import { useAuth } from '@/components/providers/AuthProvider';
 import PageHeader from '@/components/ui/PageHeader';
-import BrandLoader from '@/components/ui/BrandLoader';
 import RazonesPanel from '@/components/razones/RazonesPanel';
 import FuentesPanel from '@/components/admin/FuentesPanel';
 import TutorialesPanel from '@/components/admin/TutorialesPanel';
 import ListasPanel from '@/components/admin/ListasPanel';
-import { Globe, Image as ImageIcon, Flame, ShieldAlert, Database, Video, ListChecks } from 'lucide-react';
+import { Flame, ShieldAlert, Database, Video, ListChecks } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-// Panel de administración = DigiMundo. Mundo y Sprites del videojuego, "Razones"
-// (cuaderno personal del admin, tipo Pensamientos, sin clasificación por IA), y las
+// Panel de administración: "Razones" (cuaderno personal del admin, tipo
+// Pensamientos, sin clasificación por IA) y las
 // utilidades de administrador: "Fuentes" (tablas de la base), "Tutoriales" (videos
 // que se ven desde el botón ⓘ de cada módulo) y "Listas" (las listas globales del
 // proyecto: talentos, valores, materias… las mismas de Encuadre Condiciológico).
 const TABS = [
-  { value: 'world', label: 'Mundo', Icon: Globe },
-  { value: 'sprites', label: 'Sprites', Icon: ImageIcon },
   { value: 'razones', label: 'Razones', Icon: Flame },
   { value: 'fuentes', label: 'Fuentes', Icon: Database },
   { value: 'tutoriales', label: 'Tutoriales', Icon: Video },
   { value: 'listas', label: 'Listas', Icon: ListChecks },
 ];
 
-const WorldViewer = dynamic(() => import('@/app/(main)/world/page'), {
-  ssr: false, loading: () => <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando mundo..." /></div>,
-});
-const SpritesEditor = dynamic(() => import('@/app/(main)/sprites/page'), {
-  ssr: false, loading: () => <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando sprites..." /></div>,
-});
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('world');
+  const [tab, setTab] = useState('razones');
 
   if (user?.role !== 'admin') {
     return (
@@ -70,13 +60,7 @@ export default function AdminPage() {
 
       {/* ── Contenido ── */}
       <div className="w-full">
-        {tab === 'world' && (
-          <div className="border border-digi-border rounded-lg overflow-hidden relative" style={{ height: 'calc(100vh - 200px)', minHeight: 400 }}>
-            <div className="absolute inset-0 overflow-hidden [&>div]:!m-0 [&>div]:!h-full"><WorldViewer /></div>
-          </div>
-        )}
-        {tab === 'sprites' && <SpritesEditor />}
-        {tab === 'razones' && <RazonesPanel />}
+                {tab === 'razones' && <RazonesPanel />}
         {tab === 'fuentes' && <FuentesPanel />}
         {tab === 'tutoriales' && <TutorialesPanel />}
         {tab === 'listas' && <ListasPanel />}

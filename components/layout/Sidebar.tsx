@@ -2,15 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Globe, FolderTree, ClipboardList, Wand2, X } from 'lucide-react';
+import { LayoutDashboard, FolderTree, ClipboardList, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/world', label: 'DigiMundo', icon: Globe },
   { href: '/projects', label: 'Proyectos', icon: FolderTree },
   { href: '/tasks', label: 'Incidencias', icon: ClipboardList },
-  { href: '/sprites', label: 'Sprites', icon: Wand2 },
 ];
 
 export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
@@ -26,7 +24,7 @@ export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: (
       )}>
         <div className="p-4 border-b border-digi-border flex items-center justify-between">
           <div>
-            <h1 className="font-pixel text-sm text-digi-green tracking-wider">DigiMundo</h1>
+            <h1 className="font-pixel text-sm text-digi-green tracking-wider">GCC World</h1>
             <p className="text-[10px] text-digi-muted font-mono mt-1">v1.0</p>
           </div>
           {open && <button onClick={onClose} className="md:hidden text-digi-muted"><X size={18} /></button>}
@@ -49,7 +47,7 @@ export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: (
           })}
         </nav>
         <div className="p-4 border-t border-digi-border">
-          <p className="text-[10px] text-digi-muted font-mono">DigiMundo</p>
+          <p className="text-[10px] text-digi-muted font-mono">GCC World</p>
         </div>
       </aside>
     </>

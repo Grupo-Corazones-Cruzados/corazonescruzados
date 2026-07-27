@@ -1,5 +1,12 @@
 import { create } from 'zustand';
-import type { WorldConfig } from '@/types/world';
+
+/**
+ * Estado global mínimo de la app.
+ *
+ * Antes guardaba además el mundo web de los agentes ("DigiMundo") y su estado de
+ * carga; ese mundo se eliminó —el mundo del juego es Godot—, así que aquí solo
+ * queda el medidor de memoria que pinta la barra superior.
+ */
 
 export type MemoryLevel = 'ok' | 'warn' | 'critical';
 
@@ -10,19 +17,11 @@ interface MemoryUsage {
 }
 
 interface AppState {
-  world: WorldConfig | null;
-  loading: boolean;
-  error: string | null;
-  serverOnline: boolean;
   memoryUsage: MemoryUsage;
-
-  fetchWorld: () => Promise<void>;
-  setWorld: (world: WorldConfig) => void;
-  fetchServerStatus: () => Promise<void>;
   updateMemoryUsage: (bytes: number, blockCount: number) => void;
 }
 
-// Thresholds (lower on mobile)
+// Umbrales (más bajos en móvil).
 function getLevel(bytes: number, blockCount: number): MemoryLevel {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const byteWarn = isMobile ? 1_500_000 : 3_000_000;
@@ -36,35 +35,7 @@ function getLevel(bytes: number, blockCount: number): MemoryLevel {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  world: null,
-  loading: false,
-  error: null,
-  serverOnline: false,
   memoryUsage: { bytes: 0, blockCount: 0, level: 'ok' },
-
-  fetchServerStatus: async () => {
-    try {
-      const res = await fetch('/api/server-status');
-      set({ serverOnline: res.ok });
-    } catch {
-      set({ serverOnline: false });
-    }
-  },
-
-  fetchWorld: async () => {
-    set({ loading: true, error: null });
-    try {
-      const res = await fetch('/api/world');
-      if (!res.ok) throw new Error('Failed to fetch world');
-      const world = await res.json();
-      set({ world, loading: false });
-    } catch (e: any) {
-      set({ error: e.message, loading: false });
-    }
-  },
-
-  setWorld: (world) => set({ world }),
-
   updateMemoryUsage: (bytes, blockCount) =>
     set({ memoryUsage: { bytes, blockCount, level: getLevel(bytes, blockCount) } }),
 }));

@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
-import type { ChatBlock } from '@/components/world/ChatPanel';
+import type { ChatBlock } from '@/components/projects/ChatPanel';
 
 const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;

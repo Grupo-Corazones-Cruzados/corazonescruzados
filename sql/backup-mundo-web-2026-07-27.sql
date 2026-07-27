@@ -21,3 +21,20 @@ INSERT INTO gcc_world.npcs (id, map_name, name, config, x, y, facing, dialogue, 
 INSERT INTO gcc_world.player_progress (client_id, scene_slug, pos_x, pos_y, facing, updated_at) VALUES (25, 'main', 29, 36, 'n', '2026-07-20T20:23:56.276Z');
 INSERT INTO gcc_world.player_progress (client_id, scene_slug, pos_x, pos_y, facing, updated_at) VALUES (34, 'inicio', 20, 8, 's', '2026-07-20T20:04:02.532Z');
 
+
+-- 2ª tanda: etapas y economía del juego viejo — 2026-07-27
+
+-- game_stages (1 filas)
+INSERT INTO gcc_world.game_stages (slug, name, description, order_idx, unlock_rule, created_at) VALUES ('primer-ticket', 'El primer encargo', 'Se abre cuando se cierra el primer ticket de la cuenta.', 1, '{"kind":"ticket_closed","count":1}'::jsonb, '2026-07-20T11:17:44.996Z');
+-- player_stage_unlocks (0 filas)
+-- player_flags (0 filas)
+-- ledger_entries (0 filas)
+-- ledger_balances (0 filas)
+-- game_currencies (1 filas)
+INSERT INTO gcc_world.game_currencies (code, name, transferable, daily_mint_cap, created_at) VALUES ('ficha', 'Ficha', false, '500', '2026-07-20T11:17:44.996Z');
+-- game_action_log (1 filas)
+INSERT INTO gcc_world.game_action_log (id, client_id, action, payload, accepted, reject_reason, created_at) VALUES ('1', 34, 'pickup', '{"itemId":"coin","cantidad":1,"sceneSlug":"main","placementId":"Objetos/Moneda1"}'::jsonb, true, NULL, '2026-07-20T18:21:32.862Z');
+-- item_placement_syncs (3 filas)
+INSERT INTO gcc_world.item_placement_syncs (id, scenes, placements, removed, synced_at) VALUES ('1', 1, 3, 0, '2026-07-20T18:15:18.847Z');
+INSERT INTO gcc_world.item_placement_syncs (id, scenes, placements, removed, synced_at) VALUES ('2', 1, 3, 0, '2026-07-20T19:57:51.197Z');
+INSERT INTO gcc_world.item_placement_syncs (id, scenes, placements, removed, synced_at) VALUES ('3', 0, 0, 0, '2026-07-20T21:39:01.050Z');

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { CitizenDef } from '@/types/world';
-import AnimatedSprite from '@/components/shared/AnimatedSprite';
+import type { CitizenDef } from '@/types/chat';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 
 function FaceBubble({ sprite, avatarCrop, size = 48 }: { sprite: string; avatarCrop?: { x: number; y: number; size: number }; size?: number }) {

@@ -34,7 +34,7 @@ export default function TopBar({ onMenuToggle }: { onMenuToggle?: () => void }) 
           <Menu size={18} />
         </button>
         <span className="font-pixel text-[9px] md:text-[10px] text-digi-muted uppercase truncate">
-          DigiMundo
+          GCC World
         </span>
       </div>
       <div className="flex items-center gap-2">

@@ -2,7 +2,6 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { addTicketIncomeToFinance } from '@/lib/finance';
-import { evaluateStages } from '@/lib/game/stages';
 import { ensureTicketSlotColumns, ensureTicketActionColumns } from '@/lib/tickets/schema';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 
@@ -83,18 +82,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       } catch (finErr: any) { console.error('Finance ticket registration error:', finErr.message); }
     }
 
-    // Cerrar un ticket puede abrir una etapa del juego (regla 'primer-ticket').
-    // Se reevalúa aquí para que el desbloqueo quede registrado en el momento en
-    // que ocurre el hecho real, y no la próxima vez que el usuario entre a jugar.
-    if (ticket.status === 'completed' && ticket.client_id) {
-      try {
-        await evaluateStages(Number(ticket.client_id));
-      } catch (stageErr: any) {
-        // Nunca debe impedir cerrar el ticket: el desbloqueo se recuperaría
-        // igualmente al consultar /api/game/stages.
-        console.error('Stage evaluation error:', stageErr.message);
-      }
-    }
+    // (Eliminado 2026-07-27) Cerrar un ticket abría una etapa del juego viejo
+    // (`evaluateStages`, regla 'primer-ticket'). Ese sistema de etapas era del
+    // mundo web que sustituye Godot y se fue con él. Cuando el juego vuelva a
+    // tener progresión, se decidirá desde Godot qué hechos la desbloquean.
 
     return NextResponse.json({ data: ticket });
   } catch (err: any) {
