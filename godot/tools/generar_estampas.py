@@ -85,6 +85,7 @@ INSERTADAS = {
     67: 3,   # la noche de convivencia alrededor del Hoyo va justo tras la 3
     68: 3,   # la aldea se va a dormir a sus casas, justo tras la 67
     69: 3,   # ya de camino a casa, lejos del Hoyo, justo tras la 68
+    70: 3,   # interior de la casa: la familia en calma, justo tras la 69
 }
 
 
@@ -344,6 +345,54 @@ ESCENAS = [
         "del brazo por alguien más joven. "
         "SENSACIÓN: el camino de vuelta a casa después de una buena noche, cansancio tranquilo "
         "y las ventanas encendidas esperando al fondo."),
+    # --- INSERTADA: va justo DESPUÉS de la 69 (dentro de una de las casas) ---
+    (70, ["assets/Prologo/escenas/escena_67.png"],
+        "MISMO ESTILO DE DIBUJO y MISMO DISEÑO DE PERSONAJES que la imagen de referencia "
+        "(pixel-art 2D dibujado a mano, sombreado plano, caras sencillas y expresivas, NUNCA "
+        "estilo realista ni fotográfico), y la misma luz CÁLIDA de fuego contra la noche azul. "
+        "ESTA VEZ ES UN INTERIOR: vista de dentro de una de las casitas del poblado, de FRENTE "
+        "(como un escenario 2D en corte), mostrando el suelo, la pared del fondo y el techo con "
+        "VIGAS de madera a la vista. Es UNA SOLA estancia grande que hace de COCINA y SALA a la "
+        "vez. Las figuras son más grandes que en la referencia (es un plano interior), pero con "
+        "el MISMO diseño de personajes: adultos claramente más altos y niños mucho más bajitos. "
+        "LA CASA: rústica y humilde pero LIMPIA y bien cuidada. Paredes de LADRILLO visto de "
+        "tono tierra, suelo de tablones de madera con una alfombra trenzada de trapo. "
+        "(a) CHIMENEA de ladrillo a un lado, con FUEGO encendido y leños apilados al lado; "
+        "sobre la campana, una repisa con un candelabro y un par de tarros. En el hogar, un "
+        "MECANISMO de cocina de la época: unas LLARES (barra de hierro con cadena y gancho "
+        "regulable) de las que cuelga un caldero sobre las llamas, y un ASADOR DE MANIVELA. "
+        "(b) COCINA: un FOGÓN DE LEÑA de hierro fundido con su tubo de humo saliendo hacia el "
+        "techo, con una olla y una tetera encima; una mesa recia de madera para preparar; "
+        "ESTANTES de madera con tarros de cristal, latas esmaltadas, un mortero y un rodillo; "
+        "ristras de ajos y cebollas y manojos de hierbas secas COLGANDO de una viga; cazos y "
+        "sartenes colgados de una barra de hierro; una alacena de madera con puertas; un cesto "
+        "de mimbre con pan; y un fregadero de PIEDRA con una BOMBA DE AGUA MANUAL de palanca. "
+        "(c) SALA: junto a la chimenea, una MECEDORA de madera y una silla de madera con cojín; "
+        "una mesita baja; un banco-arcón de madera. En la pared, un RELOJ DE PARED de cuerda "
+        "(mecánico, con péndulo) y un par de marcos sencillos. "
+        "(d) ILUMINACIÓN SIN ELECTRICIDAD: un QUINQUÉ de aceite con tulipa de cristal sobre la "
+        "mesa, DOS VELAS en candelabros de hierro, y un FAROL colgado de un gancho en una viga "
+        "mediante una POLEA de madera con cuerda para subirlo y bajarlo. Junto con el fuego de "
+        "la chimenea, son la única luz: toda la estancia bañada en luz naranja cálida. "
+        "(e) UNA VENTANA con cortinas sencillas de tela por la que se ve la NOCHE: cielo azul "
+        "muy oscuro con estrellas. Es lo que deja claro que es de noche. "
+        "PROHIBIDO ABSOLUTAMENTE cualquier cosa eléctrica o electrónica: NI televisor, NI "
+        "radio, NI teléfono, NI ordenador, NI pantallas, NI bombillas eléctricas, NI lámparas "
+        "de techo eléctricas, NI cables, NI enchufes, NI interruptores, NI electrodomésticos, "
+        "NI nevera, NI microondas. Nada que necesite corriente. Todo es de leña, aceite, vela, "
+        "cuerda, manivela o fuerza de la mano. "
+        "LA GENTE — cuatro personas, una familia: "
+        "LOS PADRES, un hombre y una mujer adultos, SENTADOS junto a la chimenea, él en la "
+        "MECEDORA y ella en la silla, GIRADOS UNO HACIA EL OTRO, CONVERSANDO y SONRIENDO, "
+        "relajados; ella sostiene una taza con las dos manos, él gesticula con una mano como "
+        "quien está contando algo. Se les ve la cara y la sonrisa. "
+        "LOS DOS NIÑOS pequeños, JUGANDO EN EL SUELO sobre la alfombra, delante de sus padres: "
+        "uno de rodillas y el otro sentado con las piernas cruzadas, cada uno con un MUÑECO DE "
+        "MADERA tallado a mano en las manos, haciéndolos pelear o hablar entre ellos, "
+        "sonriendo; alrededor, por el suelo, DOS o TRES muñequitos de madera más y un "
+        "caballito de madera. Nada de juguetes de plástico ni electrónicos. "
+        "SENSACIÓN: hogar, calor, familia tranquila y segura al final del día. Es el momento "
+        "más apacible del prólogo: todo lo que el mundo va a perder después."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "

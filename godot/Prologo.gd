@@ -87,7 +87,7 @@ const TRAMOS := [
 	# (ya de camino a casa, otra zona) van detrás de la 3. Las estampas nuevas se
 	# numeran a partir de 67 para no renumerar las 66 originales: el ORDEN lo
 	# manda esta lista, no el número de archivo.
-	{ "desde_verso": 0, "escenas": [2, 3, 67, 68, 69, 4, 5, 6] },
+	{ "desde_verso": 0, "escenas": [2, 3, 67, 68, 69, 70, 4, 5, 6] },
 
 	# Verso 4 ("un alma en el suelo y un suelo en el mar") · la isla y el mar.
 	{ "desde_verso": 3, "escenas": [10, 12] },
