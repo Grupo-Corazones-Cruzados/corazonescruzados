@@ -318,12 +318,21 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     cuartos, PROHIBIDO figuras quietas, de frente, corrillos, sentadas". Y para la dirección,
     decir el LADO del encuadre ("salen por la IZQUIERDA, la mitad derecha queda vacía"), no
     "hacia el fondo".
-25. **El escenario NO admite elementos nuevos sin permiso:** al decir "se van a sus casas", el
+25. **⭐ GUARDAR LAS VERSIONES DESCARTADAS: sirven de referencia visual.** Fernando pidió que
+    las casas de la 69 se vieran "como en aquella escena en la que las pusiste y no tocaba" —
+    es decir, como en una versión de la 68 que él mismo había rechazado. Como esa versión se
+    había guardado antes de sobrescribirla, se **recortó la franja del horizonte** y se guardó
+    en **`assets/Prologo/referencias/`** para pasarla como imagen de referencia al generador.
+    Resultado inmediato y exacto. Regla doble: (a) antes de regenerar una escena, **copiar la
+    versión actual** a un lado; (b) **una imagen de referencia gana a cualquier descripción**
+    — para clavar un look concreto, recortar el trozo que lo tiene y adjuntarlo, en vez de
+    describirlo con palabras.
+26. **El escenario NO admite elementos nuevos sin permiso:** al decir "se van a sus casas", el
     modelo **inventó casas en el horizonte**; Fernando lo rechazó ("en la zona del Hoyo no hay
     casas ni nada nuevo"). Regla: prohibir explícitamente **construcciones, luces, caminos,
     vallas y carteles**, "ni siquiera pequeños o lejanos", y repetir que el horizonte queda
     LIMPIO igual que en la referencia.
-26. **Órbita de correcciones típicas de Fernando (Acto 4):** cuenta y alturas exactas
+27. **Órbita de correcciones típicas de Fernando (Acto 4):** cuenta y alturas exactas
     (papá≈mamá≈hermano mayor altos; niña y niño MUCHO más pequeños; el mayor **andrógino**);
     dirección de carrera consistente entre escenas seguidas; silueta del jugador **negra
     sólida y plana** (sin sombreado que revele forma); el Hoyo **NO frontal** (hueco en el
