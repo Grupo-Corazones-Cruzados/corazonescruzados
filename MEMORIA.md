@@ -275,6 +275,22 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **PANTALLA DE CARGA DEL JUEGO — con nuestro estilo y con progreso REAL (2026-07-26).**
+  - ⚠️ **Por qué la barra no avanzaba (causa raíz):** el motor solo calcula el porcentaje si le pasan
+    **`fileSizes`** (cuánto pesa cada archivo). Su `Preloader` cuenta los bytes que llegan, pero si a
+    un archivo le falta el total **descarta el cálculo entero** y llama a `onProgress(loaded, 0)`.
+    La página suelta que genera Godot sí los pasa (`GODOT_CONFIG.fileSizes` en `index.html`); nuestro
+    montaje a mano en `GodotGame.tsx` no → la barra se quedaba clavada en 0.
+  - **Solución:** `leerTamanos()` **lee los tamaños del propio `index.html`** que Godot acaba de
+    generar (regex sobre `"fileSizes"`), así nunca se desincronizan con el export. ⚠️ Las claves
+    deben llevar el prefijo de ruta (`/game/index.wasm`, `/game/index.pck`): el motor busca por
+    `${executable}.wasm` y por la cadena de `mainPack`, y el `index.html` los guarda **sin** prefijo.
+  - **Fases honestas:** `preparando` → `descargando` (la única medible: barra + `17,2 de 50,3 MB`
+    reales) → `iniciando` (compilar el wasm y arrancar Godot no se puede medir; se dice con
+    palabras y la barra se queda en 100 %). Se reserva el último 1 % para que no parezca colgada.
+  - **Diseño:** componente único `components/game/GameLoadingScreen.tsx` con `BrandLoader`, Silkscreen
+    y barra `.pixel-progress`; detalle y desviaciones corregidas en `Diseño.md`.
+  - **Verificado con Chrome/puppeteer** en local: 34 % → 95 % → 100 % → el juego arranca.
 - **JUEGO PUBLICADO EN PRODUCCIÓN — prólogo con 68 estampas (2026-07-26).** Primera publicación del
   juego real (antes producción servía la prueba de humo del 2026-07-20, `index.pck` de 207 KB).
   - **`godot/export_presets.cfg` RECREADO** (estaba borrado; era el pendiente anotado abajo). Preset

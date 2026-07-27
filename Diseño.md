@@ -21,6 +21,43 @@ La app tiene **tres lenguajes visuales** distintos (intencional):
 
 ---
 
+## Landing / juego — pixelart oscuro
+
+### Pantalla de carga del juego — definición ÚNICA (2026-07-26)
+**Componente:** `components/game/GameLoadingScreen.tsx`. Es lo primero que ve el jugador tras
+iniciar sesión (la monta `GodotGame` mientras baja el motor). **Cualquier pantalla de espera del
+juego usa este componente**, no un `<p>Cargando…</p>` suelto.
+
+- **`BrandLoader size="lg"`** arriba. Regla del sistema: **el logo animado va en TODA pantalla de
+  carga** (antes esta pantalla no lo tenía → desviación corregida).
+- Título `GCC World` con `pixel-heading pixel-glow`, `var(--font-display)` (Silkscreen), versalitas
+  y `tracking` ancho.
+- **Barra `.pixel-progress`** (ver abajo) + fila de estado: texto de fase a la izquierda, `%` a la
+  derecha, ambos en Silkscreen 10 px sobre `var(--color-accent-glow)`.
+- **Peso real** debajo (`17,2 de 50,3 MB`) con `fmtNum` (formato es-ES) mientras descarga.
+- Fondo `var(--color-void)`.
+- **Fases con nombre honesto:** `preparando` → `descargando` (única con barra medible) →
+  `iniciando`. Nunca se finge progreso: si no se conoce el total, la barra va indeterminada.
+
+### Barra de progreso pixel — `.pixel-progress` / `.pixel-progress-fill` (`app/globals.css`)
+La del dashboard es la redondeada de Fluent; **esta es la de landing/juego**: borde duro de 3 px
+en `--color-accent-glow`, sin redondeos, relleno a franjas y `transition: width steps(12)` para
+que avance "de píxel en píxel". Modificador `.pixel-progress-fill--idle` = indeterminada
+(reutiliza el keyframe `progressPulse`).
+
+```html
+<div class="pixel-progress"><div class="pixel-progress-fill" style="width:42%"></div></div>
+<div class="pixel-progress"><div class="pixel-progress-fill pixel-progress-fill--idle"></div></div>
+```
+
+### Token `--color-void` (`app/globals.css`, `@theme`)
+`#0D0B14` — el negro del mundo. **Debe coincidir exactamente con
+`environment/defaults/default_clear_color` de `godot/project.godot`**: la pantalla de carga, el
+contenedor del canvas y el motor lo comparten, así al arrancar Godot no se ve un salto de color.
+Antes estaba escrito a mano tres veces en `GodotGame.tsx` (desviación corregida): ahora es token.
+
+---
+
 ## Editor del mundo — Fluent (estandarizado)
 
 ### Stack de estilos
@@ -724,6 +761,12 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   de ayuda `text-[11px] text-digi-muted` con el tipo y si es obligatorio.
 
 ## Desviaciones detectadas y resolución
+- **2026-07-26 — Pantalla de carga del juego, fuera del estándar → CORREGIDA.** `GodotGame.tsx`
+  pintaba su propia espera: texto gris genérico, barra **redondeada** del lenguaje del dashboard,
+  morado `#7c5ad0` **a mano** (ni siquiera el token de marca), fondo `#0d0b14` repetido en tres
+  sitios y **sin `BrandLoader`**, que el sistema exige en toda pantalla de carga. Se extrajo a
+  `GameLoadingScreen` (definición única), la barra pasó a `.pixel-progress` y el negro a
+  `--color-void`. Ver "Landing / juego — pixelart oscuro".
 - **2026-07-25 — Vista "Universo" de Fuentes: construida y RETIRADA por decisión del usuario.**
   Se implementó el esquema de la base como grafo de fuerzas (219 nodos, jerarquía + FKs, filtros por tipo,
   iconos de lucide trazados en canvas) junto a la vista de tabla, con un conmutador segmentado. El usuario

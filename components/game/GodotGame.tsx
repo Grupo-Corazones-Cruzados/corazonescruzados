@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import GameLoadingScreen, { type LoadingPhase } from './GameLoadingScreen';
 
 /**
  * Monta el juego de Godot dentro de una ruta de la app.
@@ -8,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
  * En vez de abrir la página suelta que genera Godot, se arranca el motor a mano
  * sobre NUESTRO canvas. Eso da tres cosas que la página suelta no da: control
  * del tamaño (la suelta dejaba media pantalla en gris en el móvil), una
- * pantalla de carga propia —importante cuando son ~10 MB de descarga— y poder
+ * pantalla de carga propia —importante cuando son ~50 MB de descarga— y poder
  * poner interfaz de React encima.
  *
  * Requisito heredado del motor: **Godot web exige contexto seguro**. En local
@@ -32,6 +33,41 @@ declare global {
 }
 
 const BASE = '/game';
+
+/**
+ * Tamaño en bytes de los archivos pesados del export (wasm + pck).
+ *
+ * **Sin esto la barra de carga no se mueve.** El motor solo sabe calcular un
+ * porcentaje si le dicen cuánto pesa cada archivo: su `Preloader` cuenta los
+ * bytes que van llegando, pero si a alguno le falta el total, descarta el
+ * cálculo entero y llama a `onProgress(loaded, 0)` — un 0 que no sirve para
+ * nada. La página suelta que genera Godot sí los pasa (`GODOT_CONFIG.fileSizes`
+ * en `index.html`); nuestro montaje a mano no lo hacía, y por eso la barra se
+ * quedaba clavada.
+ *
+ * Los números NO se copian aquí: cambian en cada export. Se leen del propio
+ * `index.html` que Godot acaba de generar, así siempre están al día.
+ *
+ * Las claves deben ser las MISMAS cadenas con las que el motor pide los
+ * archivos (`${executable}.wasm` y `mainPack`), es decir con el prefijo
+ * `/game/`; el `index.html` los guarda sin prefijo.
+ */
+async function leerTamanos(): Promise<Record<string, number>> {
+  try {
+    const html = await fetch(`${BASE}/index.html`, { cache: 'no-store' }).then((r) => r.text());
+    const m = html.match(/"fileSizes"\s*:\s*(\{[^}]*\})/);
+    if (!m) return {};
+    const crudo = JSON.parse(m[1]) as Record<string, number>;
+    const conRuta: Record<string, number> = {};
+    for (const [nombre, bytes] of Object.entries(crudo)) {
+      if (typeof bytes === 'number' && bytes > 0) conRuta[`${BASE}/${nombre}`] = bytes;
+    }
+    return conRuta;
+  } catch {
+    // Si falla, el juego carga igual: la barra se muestra indeterminada.
+    return {};
+  }
+}
 
 function loadEngineScript(): Promise<GodotEngine> {
   if (window.Engine) return Promise.resolve(window.Engine);
@@ -57,8 +93,9 @@ function loadEngineScript(): Promise<GodotEngine> {
 export default function GodotGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const instanceRef = useRef<GodotEngineInstance | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState('Preparando…');
+  const [phase, setPhase] = useState<LoadingPhase | null>('preparando');
+  const [loaded, setLoaded] = useState(0);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,11 +113,13 @@ export default function GodotGame() {
       }
 
       try {
-        setStatus('Descargando el motor…');
-        const Engine = await loadEngineScript();
+        // El script del motor y los tamaños del export son independientes: se
+        // piden a la vez para no encadenar dos esperas antes de empezar.
+        const [Engine, fileSizes] = await Promise.all([loadEngineScript(), leerTamanos()]);
         if (disposed || !canvasRef.current) return;
 
         const instance = new Engine({
+          fileSizes,
           canvas: canvasRef.current,
           // 2 = adaptativo: el motor ajusta el búfer de dibujo al tamaño real
           // del elemento.
@@ -92,16 +131,22 @@ export default function GodotGame() {
           canvasResizePolicy: 2,
           executable: `${BASE}/index`,
           mainPack: `${BASE}/index.pck`,
-          onProgress: (current: number, total: number) => {
-            if (total > 0) setProgress(Math.round((current / total) * 100));
+          // El motor lo llama en cada fotograma mientras baja wasm + pck, con
+          // los bytes acumulados de AMBOS archivos.
+          onProgress: (current: number, totalBytes: number) => {
+            if (disposed) return;
+            setLoaded(current);
+            setTotal(totalBytes);
+            // Descarga terminada: lo que queda (compilar el wasm y arrancar
+            // Godot) no se puede medir, así que se dice con palabras.
+            setPhase(totalBytes > 0 && current >= totalBytes ? 'iniciando' : 'descargando');
           },
         });
         instanceRef.current = instance;
 
-        setStatus('Iniciando el mundo…');
         await instance.startGame();
         if (!disposed) {
-          setStatus('');
+          setPhase(null);
           // Godot escucha el teclado en el CANVAS, no en la ventana. Sin foco,
           // las flechas no llegan al juego y el personaje no se mueve hasta que
           // el jugador hace clic — que nadie adivina que hay que hacer.
@@ -127,10 +172,13 @@ export default function GodotGame() {
     };
   }, []);
 
-  const loading = !error && status !== '';
+  const loading = !error && phase !== null;
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#0d0b14]">
+    <div
+      className="relative h-full w-full overflow-hidden"
+      style={{ background: 'var(--color-void)' }}
+    >
       {/*
         El `id` es OBLIGATORIO, aunque le pasemos el elemento al motor: por
         debajo, Emscripten resuelve el canvas por selector de id para enganchar
@@ -140,21 +188,13 @@ export default function GodotGame() {
       */}
       <canvas id="canvas" ref={canvasRef} className="block h-full w-full" tabIndex={0} />
 
-      {loading && (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0d0b14] px-8 text-center">
-          <p className="text-sm text-white/70">{status}</p>
-          <div className="h-1.5 w-56 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full bg-[#7c5ad0] transition-[width] duration-200"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          {progress > 0 && <p className="text-xs text-white/40">{progress}%</p>}
-        </div>
-      )}
+      {loading && <GameLoadingScreen phase={phase} loaded={loaded} total={total} />}
 
       {error && (
-        <div className="absolute inset-0 grid place-items-center bg-[#0d0b14] px-8">
+        <div
+          className="absolute inset-0 grid place-items-center px-8"
+          style={{ background: 'var(--color-void)' }}
+        >
           <p className="max-w-sm text-center text-sm text-red-300">{error}</p>
         </div>
       )}

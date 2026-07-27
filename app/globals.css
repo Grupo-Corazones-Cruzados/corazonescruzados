@@ -16,6 +16,12 @@
   --color-accent-dark: #3A1F7A;
   --color-accent-glow: #7B5FBF;
 
+  /* Negro del mundo. Debe coincidir EXACTAMENTE con el color de fondo del motor
+     (`environment/defaults/default_clear_color` en godot/project.godot, hoy
+     Color(0.051, 0.043, 0.078) = #0D0B14): la pantalla de carga y el canvas del
+     juego lo comparten, así al arrancar Godot no se ve un salto de color. */
+  --color-void: #0D0B14;
+
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-pixel: 'Silkscreen', cursive;
@@ -444,6 +450,44 @@ html {
     0 0 10px rgba(75, 45, 142, 0.6),
     0 0 20px rgba(75, 45, 142, 0.3),
     2px 2px 0 rgba(0, 0, 0, 0.8);
+}
+
+/* --- Pixel progress bar ---
+   Definición ÚNICA de la barra de progreso en lenguaje pixel (la del dashboard
+   es la redondeada de Fluent; esta es para landing/juego). Sin redondeos, borde
+   duro y relleno a saltos de 4 px para que "avance" como en una consola vieja.
+   Colores por token: cambiar --color-accent recolorea la barra.
+
+   Uso:
+     <div class="pixel-progress"><div class="pixel-progress-fill" style="width:42%"/></div>
+   Indeterminada (cuando no se conoce el total):
+     <div class="pixel-progress"><div class="pixel-progress-fill pixel-progress-fill--idle"/></div> */
+.pixel-progress {
+  border: 3px solid var(--color-accent-glow);
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow:
+    4px 4px 0 rgba(0, 0, 0, 0.4),
+    0 0 12px rgba(75, 45, 142, 0.3);
+  image-rendering: pixelated;
+  overflow: hidden;
+  height: 18px;
+  padding: 3px;
+}
+
+.pixel-progress-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-accent-glow) 0 8px,
+    var(--color-accent) 8px 12px
+  );
+  /* A saltos, no continuo: el avance se ve "de píxel en píxel". */
+  transition: width 180ms steps(12, end);
+}
+
+.pixel-progress-fill--idle {
+  width: 40%;
+  animation: progressPulse 1.5s ease-in-out infinite;
 }
 
 /* --- Pixel button --- */
