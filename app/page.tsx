@@ -3955,7 +3955,17 @@ export default function LandingPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ alias: cfg.name, characterData: cfg }),
               });
-              if (r.ok) setSavePointTrigger((n) => n + 1);
+              if (r.ok) {
+                setSavePointTrigger((n) => n + 1);
+              } else if (r.status === 401) {
+                // El personaje se guarda vinculado a la CUENTA: sin sesión no hay
+                // dónde guardarlo. Solo pasa si la sesión caduca mientras se crea el
+                // personaje; en vez de entrar a un juego sin partida, se vuelve a
+                // pedir el ingreso.
+                setEntryDestination('game');
+                setEntryChoiceOpen(true);
+                return;
+              }
             } catch {
               /* si falla el guardado, el juego mostrará el marcador y podrá reintentar */
             }

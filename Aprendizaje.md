@@ -1915,3 +1915,53 @@ igual que ya hace **"Colaborar"**.
 - **% de información para el objetivo: 100%** — atajo eliminado, ruta del juego cerrada y flujos de
   login intactos. Falta solo la comprobación en vivo del usuario (entrar, jugar, volver y confirmar
   que "Entrar" vuelve a pedir sesión).
+
+### Continuación (2026-07-26) — el personaje debe pertenecer a la CUENTA que inicia sesión
+
+**Petición del usuario:** *"el personaje debe ahora estar vinculado al usuario que está iniciando sesión"*
+— consecuencia lógica de quitar el reconocimiento por IP: si la puerta la abre el login, la identidad
+del jugador también tiene que salir de ahí.
+
+#### P7 — ¿A qué estaba atado el personaje? · ✅ Resuelta (código)
+- **Respuesta:** al **dispositivo**. `/api/character/me` buscaba por `client_token` (cookie) → `ip_hash`
+  → y solo como último recurso por la cuenta. Y `/api/character/save`, sin sesión de staff, actualizaba
+  la fila **de la cookie** o creaba un **invitado** con correo `alias-<timestamp>@guest.gcc-world.local`.
+  Resultado: dos personas en la misma red se pisaban, y la misma persona en otro equipo "no existía".
+
+#### P8 — ¿Tienen todos los jugadores una cuenta en `gcc_world.users` a la que vincular? · ✅ Resuelta
+- **Respuesta:** **sí**. Miembro/admin y cliente inician sesión contra `users` (JWT); y al candidato se
+  le crea/enlaza su fila `users` (rol `client`) + JWT en `grantCandidateDashboardSession()`, que corre
+  tanto al **completar cuenta** (`complete-profile`) como al **iniciar sesión** (`recover/verify`).
+  Por eso `user_id` sirve como identidad **única** para los cuatro tipos de jugador.
+
+#### P9 — ¿Por qué el `user_id` del miembro salía NULL? · ✅ Resuelta (bug encontrado)
+- **Respuesta:** `/api/character/save` leía **`user.id`** del payload del JWT, pero `getCurrentUser()`
+  devuelve **`{ userId, email, role }`**. `user.id` era `undefined` → `node-pg` lo manda como NULL →
+  `SET user_id = NULL` y el `WHERE user_id = $1` nunca casaba (solo salvaba el `OR` por correo).
+  **No lo detectaba TypeScript** porque `TokenPayload extends JWTPayload` (jose) tiene índice
+  `[propName: string]: unknown`, así que **cualquier propiedad compila**. **Lección:** con tipos que
+  llevan index signature, un typo de campo pasa el typecheck; conviene leer los campos del token una
+  sola vez en un helper (lo que ahora hace `getPlayerSession()`).
+
+#### P10 — ¿Y el cliente, que no abre sesión de jugador? · ✅ Resuelta (segundo bug)
+- **Respuesta:** el cliente inicia sesión en `/api/auth/login/verify`, que emite **JWT** pero **no**
+  la cookie `gcc_player_auth`. `getAuthedClient()` exigía esa cookie → **todas** las rutas del juego
+  (`/api/world/*`, `/api/game/stages`, `/api/character/layers`) le respondían **401**: entraba al juego
+  y no cargaba ni su personaje. Se le añadió **fallback por JWT**.
+
+#### P11 — ¿Cuánta gente rompe la migración? · ✅ Resuelta (consulta a la BD, 2026-07-26)
+- **Respuesta:** **nadie**. `gcc_world.clients`: 16 filas, **2 con personaje y las 2 con `user_id`**;
+  cero filas con personaje sin vincular y cero invitados. **Lección de proceso:** antes de cambiar el
+  criterio de identidad, **contar en la BD** a cuántos deja fuera; si hubiera habido huérfanos habría
+  hecho falta una migración (vincular por correo) antes de desplegar.
+
+#### P12 — ¿Qué reconocimiento por IP se conserva y por qué? · ✅ Resuelta (decisión)
+- **Respuesta:** solo `GET /api/candidate/proposal` y `/api/client/status`, que pintan las tarjetas
+  informativas del menú ("tu postulación está en revisión"). Es el **único caso sin alternativa**: el
+  postulante todavía **no tiene cuenta** con la que iniciar sesión. **No dan acceso a nada.** Queda
+  anotado el riesgo: en una IP compartida podrían enseñar el correo de otra persona.
+
+#### Solución (implementada, `npx tsc --noEmit` + `npm run build` OK)
+`lib/world/player.ts` (`getPlayerSession()`, fuente única de identidad) · `/api/character/me` resuelve
+por sesión · `/api/character/save` vincula `user_id`, 401 sin sesión y **sin invitados** ·
+`getAuthedClient()` con fallback por JWT · la landing reabre el menú de ingreso si el guardado da 401.

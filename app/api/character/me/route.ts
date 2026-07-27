@@ -1,29 +1,23 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getCurrentUser } from '@/lib/auth/jwt';
-import {
-  AUTH_COOKIE,
-  CLIENT_COOKIE,
-  getClientIp,
-  hashIp,
-} from '@/lib/world/session';
+import { AUTH_COOKIE } from '@/lib/world/session';
+import { getPlayerSession } from '@/lib/world/player';
 
+/**
+ * El personaje del jugador que TIENE LA SESIÓN INICIADA.
+ *
+ * Ya NO reconoce por cookie de dispositivo (`gcc_client_token`) ni por `ip_hash`: el
+ * personaje pertenece a la cuenta, no al aparato (ver `lib/world/player.ts`). Sin
+ * sesión devuelve `{ exists: false }`, así que la landing no puede "reconocer" a nadie
+ * para saltarse el login.
+ */
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get(CLIENT_COOKIE)?.value || null;
-    const ip = await getClientIp();
-    const ipHash = hashIp(ip);
-    // Sesión de staff (JWT): si existe, el jugador ES un usuario de gcc_world.users
-    // (miembro/admin/cliente), aunque la fila de clients que matchee por cookie/IP
-    // no tenga user_id. Se usa para el fallback y para isMember/hasAccount.
-    const staff = await getCurrentUser();
-
-    let row: Record<string, unknown> | null = null;
 
     // approved: aprobación del administrador global (gate de entrada al juego).
-    // user_id: si está enlazado a un usuario staff (miembro/admin).
+    // user_id: enlace con el usuario de gcc_world.users dueño del personaje.
     await pool.query(
       `ALTER TABLE gcc_world.clients
          ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false,
@@ -31,39 +25,22 @@ export async function GET() {
          ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false`,
     );
 
+    // Sesión: JWT de gcc_world.users (miembro/admin/cliente/candidato) o, en su
+    // defecto, sesión de jugador (`gcc_player_auth`). `staff` se sigue usando para
+    // resolver isMember/hasAccount.
+    const { user: staff, clientId } = await getPlayerSession();
+    if (!clientId) {
+      return NextResponse.json({ exists: false });
+    }
+
     const COLS = `id, alias, character_data, password_hash, email_verified, approved,
                   profile_completed, pending_email, email, user_id, full_name, country,
                   address, phone, auth_token, auth_expires, last_seen_at`;
-    if (token) {
-      const r = await pool.query(
-        `SELECT ${COLS} FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
-        [token],
-      );
-      row = r.rows[0] ?? null;
-    }
-
-    if (!row) {
-      const r = await pool.query(
-        `SELECT ${COLS} FROM gcc_world.clients
-          WHERE ip_hash = $1 AND character_data IS NOT NULL
-          ORDER BY last_seen_at DESC NULLS LAST
-          LIMIT 1`,
-        [ipHash],
-      );
-      row = r.rows[0] ?? null;
-    }
-
-    // Fallback robusto: miembro/admin con sesión de staff (JWT) → reconoce su
-    // personaje por user_id o correo aunque la cookie/IP de jugador no coincidan.
-    if (!row && staff) {
-      const r = await pool.query(
-        `SELECT ${COLS} FROM gcc_world.clients
-          WHERE (user_id = $1 OR LOWER(email) = LOWER($2)) AND character_data IS NOT NULL
-          ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
-        [staff.userId, staff.email],
-      );
-      row = r.rows[0] ?? null;
-    }
+    const r = await pool.query(
+      `SELECT ${COLS} FROM gcc_world.clients WHERE id = $1 LIMIT 1`,
+      [clientId],
+    );
+    const row: Record<string, unknown> | null = r.rows[0] ?? null;
 
     if (!row) {
       return NextResponse.json({ exists: false });

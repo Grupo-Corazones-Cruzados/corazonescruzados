@@ -275,6 +275,39 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **EL PERSONAJE ES DE LA CUENTA, NO DEL DISPOSITIVO (2026-07-26).** Continuación directa de la
+  decisión de abajo: si "Entrar" ya no reconoce por cookie/IP, la identidad del jugador tiene que
+  salir de la **sesión iniciada**. Regla: `gcc_world.clients` (el personaje) pertenece a
+  `gcc_world.users` vía **`user_id`**.
+  - **Helper único `lib/world/player.ts` → `getPlayerSession()`**: resuelve al jugador en este orden:
+    (1) **JWT** de `users` → su fila de `clients` por `user_id` **o correo** (y si la halla por correo
+    y no está vinculada, **la vincula**); (2) **sesión de jugador** (`gcc_player_auth` ↔
+    `clients.auth_token` vigente) para el candidato sin JWT; (3) **nada más** — sin sesión, sin
+    personaje. *Todo* jugador logueado acaba teniendo fila en `users`: al candidato se la crea
+    `grantCandidateDashboardSession()`.
+  - **`/api/character/me`**: ya NO busca por `client_token` ni por `ip_hash`; usa `getPlayerSession()`.
+    Sin sesión → `{exists:false}` (la landing no puede "reconocer" a nadie).
+  - **BUG REAL encontrado en `/api/character/save`:** usaba **`user.id`** sobre el payload del JWT,
+    que expone **`user.userId`** → llegaba `undefined` a la query, así que **`user_id` se guardaba
+    NULL** y el personaje del miembro solo se encontraba por correo. TypeScript no lo veía porque
+    `TokenPayload extends JWTPayload` (jose) trae **índice `[k: string]: unknown`**. ⚠️ Ojo con eso al
+    leer campos del token.
+  - **`/api/character/save`** reescrito: identifica por `getPlayerSession()`, vincula `user_id`, y si
+    **no hay sesión responde 401**. Se eliminó la rama que creaba un **invitado**
+    (`alias-<timestamp>@guest.gcc-world.local`) cuando no reconocía la cookie: era un personaje
+    huérfano atado al aparato, irrecuperable desde otro equipo. La landing, ante 401, reabre el menú
+    de ingreso en vez de entrar a un juego sin partida.
+  - **`getAuthedClient()` (`lib/world/auth.ts`, lo usan las 11 rutas de `/api/world`, `/api/game` y
+    `/api/character/layers`)** gana **fallback por JWT**: el **cliente** inicia sesión en
+    `/api/auth/login/verify`, que **no abre sesión de jugador**, así que su personaje existía pero el
+    juego le devolvía **401 en todas las rutas**. Ahora se resuelve por cuenta.
+  - **Impacto en datos (verificado en la BD el 2026-07-26):** 16 filas en `clients`, **2 con personaje
+    y las 2 ya con `user_id`** → **cero huérfanos**, nadie pierde su personaje. No hizo falta migración.
+  - **Sigue reconociendo por IP (a propósito):** `GET /api/candidate/proposal` y `/api/client/status`,
+    que solo pintan las tarjetas informativas del menú de ingreso ("tu postulación está en revisión").
+    Es el único caso sin alternativa: el postulante **aún no tiene cuenta** con la que iniciar sesión.
+    No dan acceso a nada. **Pendiente de decisión:** en una IP compartida podrían mostrar el correo de
+    otra persona.
 - **"ENTRAR" SIEMPRE PIDE INICIAR SESIÓN — se elimina el reconocimiento por cookie/IP (2026-07-26).**
   Decisión del usuario: en la landing, "Entrar" metía **directo al juego** cuando el servidor reconocía
   al visitante (cookie de jugador o `ip_hash`). Eso se **elimina**: "Entrar" se comporta **igual que
