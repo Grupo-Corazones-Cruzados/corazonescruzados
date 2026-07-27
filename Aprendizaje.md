@@ -2308,3 +2308,19 @@ lo que se lleva puesto, anclajes para lo que se sujeta.
   calidad.
 - **Sintaxis validada con Godot 4.7** (`--check-only`). Falta el paso manual: colgar el nodo
   `Articulado` del jugador en la escena.
+
+#### P37 — Montado y EJECUTADO en Godot · ✅ Verificado en el motor
+- `godot/PruebaPersonaje.tscn` + `.gd`: **banco de pruebas**. Se abre y con F6 el personaje camina solo
+  y va girando entre las cuatro vistas cada 3 s. Teclas: espacio para parar, ←→ para girar a mano.
+- **Ejecutado de verdad** (`godot --script` con capturas de pantalla), no solo comprobada la sintaxis:
+  las 9 piezas se montan (`brazoLejano, piernaIzq, piernaDer, faldon, pieIzq, pieDer, torso, cabeza,
+  brazoCercano`) y el ciclo corre. Se ve bien.
+- ⚠️ **Dos cosas que solo aparecen al ejecutar:**
+  1. **La espera de la hoja no debe ser igual en escritorio que en web.** La hoja real la deja la app
+     en `user://`, así que en el escritorio no llega nunca: esperaba 5 s con el personaje invisible.
+     Ahora `OS.has_feature("web")` decide, y en escritorio se va directo a la hoja de prueba.
+  2. **`Image.load()` no vale para `res://`.** Lo que viene de `user://` es un archivo suelto y se lee
+     como imagen; lo que está en `res://` es un recurso importado y hay que pedirlo con `load()`, o el
+     export lo deja fuera. Son dos caminos distintos y el motor avisa.
+- **Hoja de prueba** (`godot/assets/personaje-prueba.png`): una chica CON FALDA, que es el caso que
+  más exige al rig. Permite trabajar la animación sin levantar la web.

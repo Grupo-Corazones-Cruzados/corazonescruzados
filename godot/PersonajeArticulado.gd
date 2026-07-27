@@ -23,6 +23,10 @@ extends Node2D
 ##     web, para que las dos partes corten por idéntico sitio.
 
 const RUTA_HOJA := "user://personaje.png"
+## Hoja de repuesto para probar EN EL EDITOR. En el navegador la hoja de verdad
+## llega a `user://`, pero ahí no existe al abrir el proyecto en el escritorio, y
+## sin esto no habría forma de ver el personaje sin desplegar la web entera.
+const RUTA_HOJA_PRUEBA := "res://assets/personaje-prueba.png"
 const RUTA_RIG := "res://assets/rig-personaje.json"
 
 ## Vista que se está mostrando: 0 frente · 1 espalda · 2 izquierda · 3 derecha.
@@ -54,21 +58,42 @@ func _cargar_rig() -> bool:
 	return true
 
 ## La app copia la hoja justo después de arrancar el motor, así que puede tardar
-## un instante en aparecer. Se espera en vez de dar el personaje por perdido.
+## un instante en aparecer. Se espera en vez de dar el personaje por perdido; y
+## si no llega —caso típico: abrir el proyecto en el escritorio— se usa la de
+## prueba, para poder trabajar el rig sin depender de la web.
 func _esperar_hoja() -> void:
-	for i in 20:
+	# Solo tiene sentido esperar en el navegador: la hoja de verdad la deja ahí
+	# la app. En el escritorio no va a llegar nunca, así que se va directo al
+	# repuesto en vez de tener al personaje invisible cinco segundos.
+	var intentos := 20 if OS.has_feature("web") else 1
+	for i in intentos:
 		if FileAccess.file_exists(RUTA_HOJA):
 			_montar(RUTA_HOJA)
 			return
 		await get_tree().create_timer(0.25).timeout
-	push_warning("No llegó la hoja del personaje")
+	if ResourceLoader.exists(RUTA_HOJA_PRUEBA):
+		print("Sin hoja del jugador; se usa la de prueba.")
+		_montar(RUTA_HOJA_PRUEBA)
+	else:
+		push_warning("No llegó la hoja del personaje")
 
 func _montar(ruta: String) -> void:
-	var imagen := Image.new()
-	if imagen.load(ruta) != OK:
-		push_warning("La hoja no se pudo leer")
+	# Dos formas de cargar, y no son intercambiables: lo que viene de `user://`
+	# es un archivo suelto y hay que leerlo como imagen; lo que está en `res://`
+	# es un recurso ya importado y hay que pedirlo con `load`, o el export lo
+	# deja fuera.
+	var textura: Texture2D
+	if ruta.begins_with("res://"):
+		textura = load(ruta)
+	else:
+		var imagen := Image.new()
+		if imagen.load(ruta) != OK:
+			push_warning("La hoja no se pudo leer")
+			return
+		textura = ImageTexture.create_from_image(imagen)
+	if textura == null:
+		push_warning("La hoja no se pudo cargar: %s" % ruta)
 		return
-	var textura := ImageTexture.create_from_image(imagen)
 	var celda: Dictionary = _rig["celda"]
 	var ancho_celda: int = celda["ancho"]
 
