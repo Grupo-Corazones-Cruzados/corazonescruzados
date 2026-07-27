@@ -2187,3 +2187,20 @@ la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas mir
   patrones que dibujé son más toscos que el arte original**: son rejillas de 3×3 hechas de una
   sentada. Los sellos son trabajo de dibujo y hay que darles otra vuelta.
 - **Módulo:** `lib/game/sellos.js` (OJOS, CEJAS, BOCAS, COLOR_OJOS + detección y estampado).
+
+#### P28 — La falda ocre se teñía con el tono de piel · ✅ Resuelta (y el color NO era el criterio)
+- **El dato que lo explica todo:** la **falda ocre tiene r−b = 140**; la **piel, 130**. Es decir, la
+  prenda es *más "color de piel" que la piel*. Ningún umbral de color puede separarlas — la falda
+  pasaba la semilla directamente, no era una fuga por vecindad.
+- **Lo que sí las separa: posición y tamaño.** `filtrarManchasDePiel` descarta toda mancha que
+  **no toque la banda de la cabeza** y ocupe **más de 90 px**. La cara toca la cabeza; las manos y los
+  antebrazos son manchas pequeñas; una prenda es grande y está abajo.
+- También se le puso **alcance máximo (6 px) al crecimiento**: sin él, la mancha viajaba de la cara al
+  cuello, del cuello al chal granate —cálido también— y de ahí a la falda entera. La piel viene en
+  manchas compactas; una prenda, no.
+- **Verificado con números, no a ojo** (importante: la primera vez di por buena la corrección mirando
+  la imagen y la medición decía que 666 de 1201 px de la falda seguían tiñéndose). Ahora: **10–17 px
+  tocados de ~1.200 en seis conjuntos distintos** — y esos son las manos, que sí son piel.
+- ⚠️ **Lección de proceso:** una de las correcciones "no se aplicó" porque mi reemplazo automático
+  buscaba un comentario que ya había cambiado; el código compilaba y parecía bien. **Sin la medición
+  no me habría enterado.** Comprobar el efecto, no la edición.
