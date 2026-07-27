@@ -119,12 +119,16 @@ const TRAMOS := [
 	# el mundo gris → la codicia → la violencia → los que debían cuidar → la
 	# tierra → la guerra y el gris final.
 	{ "desde_verso": 6, "escenas": [
-	 5, 6, 7, 8, 9, 10,11,12
-	], "seg": 1.5  },
-
-{ "desde_verso": 8, "escenas": [
-12
-	], "seg": 1.5  },
+	 5, 6, 7
+	], "seg": 2  },
+	
+	{ "desde_verso": 7, "escenas": [
+	 14, 42
+	], "seg": 3  },
+	
+	{ "desde_verso": 8, "escenas": [
+	 39
+	], "seg": 3  },
 
 	# Verso 10 ("los pequeños corrieron al borde del día") · el Acto 4 entero,
 	# respirando otra vez. La caída (65) y el fondo del Hoyo (66) caen justo en

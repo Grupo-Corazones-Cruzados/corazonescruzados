@@ -94,7 +94,7 @@ INSERTADAS = {
     76: 7,   # inauguración de la fábrica: aquí entra la industria → tono de Acto 2
     77: 7,   # POV del joven leyendo la noticia de la fábrica en el periódico
     78: 7,   # los jóvenes se van del pueblo hacia la fábrica; otros se quedan
-    79: 7,   # la 78 corregida por edición (letrero y chimenea)
+    79: 7,   # la misma toma de la 7 pero de noche y con las raíces de la 8
 }
 
 
@@ -772,27 +772,39 @@ ESCENAS = [
         "cosa de nuestra época; y PROHIBIDO cualquier arma. "
         "SENSACIÓN: el pueblo se parte en dos en una horquilla del camino. Unos se van detrás "
         "del humo y otros se quedan con la tierra; nadie sabe todavía quién eligió bien."),
-    # --- 79 = la 78 CORREGIDA por edición: letrero bien escrito y sin chimenea ---
-    # (Editar la propia imagen es lo único que conserva la composición; una
-    # regeneración volvería a mover todo.)
-    (79, ["assets/Prologo/escenas/escena_78.png"],
-        "EDITA la imagen de referencia. CONSERVA ABSOLUTAMENTE TODO IDÉNTICO: el mismo encuadre, "
-        "la misma bifurcación del camino, las mismas personas en las mismas posturas y "
-        "posiciones, los mismos huertos y casas, el mismo árbol grande, las mismas colinas, "
-        "arboledas, setos y campos del fondo, el mismo cielo con las mismas nubes, la misma "
-        "columna de humo, la misma paleta y el mismo estilo. NO muevas, NO quites y NO añadas "
-        "NINGUNA otra cosa. Haz SOLO estos DOS cambios: "
-        "(1) EL LETRERO: la tablilla de madera clavada en el poste está mal escrita. Reescribe "
-        "su texto para que diga EXACTAMENTE, sin ninguna letra de más ni de menos: PUEBLO "
-        "VIOLETA. Dos palabras, en MAYÚSCULAS, en letras oscuras bien dibujadas y CLARAMENTE "
-        "LEGIBLES; agranda un poco la tablilla si hace falta para que quepan bien. Es el único "
-        "texto de la imagen. "
-        "(2) LA CHIMENEA DEL HORIZONTE: en el fondo, debajo de la columna de humo, hay una "
-        "CHIMENEA (una línea o torre vertical fina). BÓRRALA POR COMPLETO y tapa ese hueco con "
-        "la MISMA colina, arboleda y cielo que hay a su alrededor, como si nunca hubiera estado. "
-        "La columna de humo se queda EXACTAMENTE donde está, pero ahora tiene que nacer DETRÁS "
-        "de la loma, sin que se vea de dónde sale. Que NO quede ninguna estructura, torre, palo, "
-        "tejado ni silueta construida en todo el horizonte."),
+    # --- INSERTADA: la MISMA toma de la 7, pero de noche y con las raíces de la 8 ---
+    (79, ["assets/Prologo/escenas/escena_07.png",
+          "assets/Prologo/escenas/escena_08.png"],
+        "LA MISMA TOMA EXACTA que la PRIMERA imagen de referencia, cambiando solo la hora y "
+        "añadiendo las raíces. Copia su ENCUADRE al detalle: el mismo punto de vista y la misma "
+        "altura de cámara, el HOYO (agujero natural oscuro en la tierra, SIN muros de piedra, "
+        "SIN ladrillos) del MISMO TAMAÑO GRANDE y en la MISMA POSICIÓN, algo por debajo del "
+        "centro y ligeramente a la izquierda; la misma TIERRA AGRIETADA con la misma red de "
+        "grietas alrededor del agujero; los mismos MATOJOS de hierba seca en las esquinas de "
+        "abajo, a izquierda y derecha; la misma llanura de hierba marchita extendiéndose hasta "
+        "la misma LÍNEA DE HORIZONTE alta y despejada, sin nada construido. Mismo estilo de "
+        "pixel-art 2D de sombreado plano. NO HAY NADIE: ninguna figura humana. "
+        "CAMBIO 1 — AHORA ES DE NOCHE, con la luz y la paleta de la SEGUNDA referencia: cielo "
+        "nocturno azul grisáceo oscuro con ESTRELLAS pequeñas y UNA SOLA LUNA llena y pálida "
+        "alta en el cielo. ⚠ SOLO UNA LUNA: PROHIBIDO ABSOLUTAMENTE que haya un SEGUNDO disco, "
+        "media luna, sol, resplandor circular o cúpula clara asomando por el horizonte. Donde en "
+        "la primera referencia estaba el SOL sobre la línea del horizonte, ahora NO HAY NADA: "
+        "solo cielo nocturno limpio y la línea de horizonte despejada. La "
+        "llanura pasa del ocre y el sepia a los AZULES GRISÁCEOS fríos de la segunda referencia, "
+        "bañada por luz de luna plateada, con las puntas de la hierba seca brillando en gris "
+        "claro y sombras largas y azuladas. PROHIBIDO que quede tono cálido, dorado, ocre o "
+        "sepia en ninguna parte. "
+        "CAMBIO 2 — LAS RAÍCES: del BORDE del Hoyo brotan hacia fuera las MISMAS RAÍCES GRISES "
+        "que en la segunda referencia, con su mismo diseño, color y grosor: raíces retorcidas de "
+        "gris ceniza que se ennegrecen en las puntas, saliendo del labio del agujero y "
+        "extendiéndose por la tierra alrededor en CORONA, como los brazos de algo que empieza a "
+        "salir. Van RASTRERAS, PEGADAS AL SUELO, agarrándose a la tierra agrietada: PROHIBIDO "
+        "que sean ramas de árbol, que se levanten en el aire o que parezcan un arbusto seco. "
+        "Como el Hoyo aquí se ve MÁS GRANDE que en la segunda referencia, las raíces también van "
+        "a escala: DIEZ O DOCE raíces gruesas repartidas por todo el contorno, más largas y "
+        "visibles, pero SIN llegar a cubrir el suelo ni la mitad del cuadro. "
+        "SENSACIÓN: el mismo lugar abandonado que ya vimos de día, ahora de noche, y la "
+        "corrupción ya asomando del agujero."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "
