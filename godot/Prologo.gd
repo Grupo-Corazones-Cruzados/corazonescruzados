@@ -4,23 +4,45 @@ extends Control
 ##  REPRODUCTOR DE ESTAMPAS — el prólogo estilo Undertale (auto + máquina de escribir)
 ## ============================================================================
 ##  Reproduce SOLO (sin clic) una serie de BLOQUES. Cada bloque tiene un texto y
-##  un grupo de escenas (imágenes de assets/Prologo/escenas/). El texto se va
-##  ESCRIBIENDO sobre las imágenes mientras estas se cruzan una tras otra. Al
-##  terminar, carga la intro del juego.
+##  un grupo de escenas (imágenes de assets/Prologo/escenas/). Estilo Undertale:
+##  la imagen va CENTRADA en una caja de TAMAÑO FIJO y el texto se va ESCRIBIENDO
+##  DEBAJO, sobre negro. Al terminar, carga la intro del juego.
+##
+##  ⚠ TAMAÑOS FIJOS: todo se mide sobre el lienzo base de 960×540 que define
+##  `project.godot` (stretch mode = canvas_items, aspect = keep). El motor escala
+##  ese lienzo completo a la ventana, así que la imagen y las letras conservan
+##  SIEMPRE el mismo tamaño y proporción, sin importar la pantalla o el navegador.
+##  Si algún día cambias el viewport del proyecto, cambia también BASE_ANCHO/ALTO.
 ##
 ##  Todo es editable: cambia los textos, el orden de las escenas de cada bloque,
-##  o los tiempos (abajo, @export en el Inspector).
+##  o los tiempos y tamaños (abajo, @export en el Inspector).
 ## ============================================================================
+
+## Lienzo base del proyecto (debe coincidir con display/window/size del project.godot).
+const BASE_ANCHO := 960.0
+const BASE_ALTO := 540.0
 
 ## A dónde ir al terminar el prólogo.
 @export_file("*.tscn") var escena_siguiente: String = "res://Intro.tscn"
 
+@export_group("Tiempos")
 ## Segundos que dura cada imagen en pantalla.
 @export var seg_por_escena: float = 4.0
 ## Velocidad de tecleo del texto (caracteres por segundo).
 @export var velocidad_texto: float = 20.0
 ## Duración del cruce (crossfade) entre imágenes.
 @export var crossfade: float = 1.0
+
+@export_group("Tamaños fijos (en el lienzo de 960×540)")
+## Caja donde se dibuja la estampa, centrada en pantalla. Las imágenes son 16:9
+## (1344×768), así que conviene mantener esa proporción (672×384 = la mitad exacta).
+@export var caja_imagen := Vector2i(672, 384)
+## Tamaño de la letra de la narración (fijo, NO depende de la ventana).
+@export var tamano_letra: int = 24
+## Alto reservado para el texto debajo de la imagen (3–4 líneas).
+@export var alto_texto: float = 118.0
+## Aire entre la imagen y el texto.
+@export var separacion: float = 16.0
 
 
 ## --- EL GUION: bloques de (texto + escenas que lo acompañan) -----------------
@@ -93,7 +115,7 @@ const GUION := [
 # --- Nodos construidos por código -------------------------------------------
 var _capa_a: TextureRect   # imagen visible
 var _capa_b: TextureRect   # imagen entrante (para el crossfade)
-var _texto: RichTextLabel
+var _texto: Label          # la narración, debajo de la imagen (tamaño fijo)
 var _terminado := false
 
 
@@ -104,79 +126,83 @@ func _ready() -> void:
 
 
 func _construir_ui() -> void:
+	# --- Composición (todo en coordenadas fijas del lienzo 960×540) -----------
+	# El bloque "imagen + texto" se centra verticalmente como un conjunto.
+	var ancho_img := float(caja_imagen.x)
+	var alto_img := float(caja_imagen.y)
+	var alto_total := alto_img + separacion + alto_texto
+	var img_x := (BASE_ANCHO - ancho_img) / 2.0      # centrada horizontalmente
+	var img_y := (BASE_ALTO - alto_total) / 2.0
+	var texto_y := img_y + alto_img + separacion
+	var margen_texto := 60.0                          # aire lateral de la narración
+
+	# Fondo negro (también hace de marco alrededor de la estampa).
 	var fondo := ColorRect.new()
 	fondo.color = Color.BLACK
 	fondo.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fondo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(fondo)
 
-	_capa_a = _nueva_capa_imagen()
+	# Las dos capas de imagen, en la MISMA caja fija (una encima de otra para el
+	# crossfade).
+	_capa_a = _nueva_capa_imagen(img_x, img_y, ancho_img, alto_img)
 	add_child(_capa_a)
-	_capa_b = _nueva_capa_imagen()
+	_capa_b = _nueva_capa_imagen(img_x, img_y, ancho_img, alto_img)
 	_capa_b.modulate.a = 0.0
 	add_child(_capa_b)
 
-	# Degradado oscuro abajo, para que el texto se lea sobre la imagen.
-	var band := TextureRect.new()
-	band.texture = _degradado_inferior()
-	band.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	band.offset_top = -220
-	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(band)
-
-	# El texto (se teclea). RichTextLabel permite el efecto máquina de escribir.
-	_texto = RichTextLabel.new()
-	_texto.bbcode_enabled = false
-	_texto.scroll_active = false
-	_texto.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_texto.offset_top = -170
-	_texto.offset_bottom = -28
-	_texto.offset_left = 70
-	_texto.offset_right = -70
+	# La narración: DEBAJO de la imagen, centrada, tamaño de letra FIJO.
+	_texto = Label.new()
+	_texto.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_texto.offset_left = margen_texto
+	_texto.offset_right = BASE_ANCHO - margen_texto
+	_texto.offset_top = texto_y
+	_texto.offset_bottom = texto_y + alto_texto
+	_texto.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_texto.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_texto.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_texto.modulate.a = 0.0
 	var fuente: FontFile = load("res://assets/Fonts/Silkscreen-Regular.ttf")
 	if fuente != null:
-		_texto.add_theme_font_override("normal_font", fuente)
-	_texto.add_theme_font_size_override("normal_font_size", 20)
-	_texto.add_theme_color_override("default_color", Color(0.93, 0.93, 0.98))
-	_texto.add_theme_constant_override("outline_size", 8)
-	_texto.add_theme_color_override("font_outline_color", Color.BLACK)
+		_texto.add_theme_font_override("font", fuente)
+	_texto.add_theme_font_size_override("font_size", tamano_letra)
+	_texto.add_theme_color_override("font_color", Color(0.93, 0.93, 0.98))
 	add_child(_texto)
 
 	# Botón discreto para saltar el prólogo (útil en web/móvil).
 	var saltar := Button.new()
-	saltar.text = "Saltar  ⏭"
+	saltar.text = "Saltar  >>"
 	saltar.flat = true
 	saltar.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	saltar.offset_left = -140
-	saltar.offset_top = 16
-	saltar.offset_right = -16
-	saltar.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85))
+	saltar.offset_left = -150
+	saltar.offset_top = 10
+	saltar.offset_right = -14
+	if fuente != null:
+		saltar.add_theme_font_override("font", fuente)
+	saltar.add_theme_font_size_override("font_size", 14)
+	saltar.add_theme_color_override("font_color", Color(0.55, 0.55, 0.62))
+	saltar.add_theme_color_override("font_hover_color", Color(0.9, 0.9, 0.95))
 	saltar.pressed.connect(_ir_a_siguiente)
 	add_child(saltar)
 
 
-func _nueva_capa_imagen() -> TextureRect:
+## Una capa de imagen anclada a la caja FIJA (misma posición y tamaño siempre).
+func _nueva_capa_imagen(x: float, y: float, ancho: float, alto: float) -> TextureRect:
 	var t := TextureRect.new()
-	t.set_anchors_preset(Control.PRESET_FULL_RECT)
+	t.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	t.offset_left = x
+	t.offset_top = y
+	t.offset_right = x + ancho
+	t.offset_bottom = y + alto
 	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# Las estampas son ilustraciones de 1344×768 que se reducen dentro de la caja:
+	# con filtro LINEAR la reducción sale limpia (el "nearest" del proyecto está
+	# pensado para los sprites de pixel-art, no para estas imágenes grandes).
+	t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return t
-
-
-func _degradado_inferior() -> Texture2D:
-	var grad := Gradient.new()
-	grad.set_color(0, Color(0, 0, 0, 0))
-	grad.set_color(1, Color(0, 0, 0, 0.8))
-	var tex := GradientTexture2D.new()
-	tex.gradient = grad
-	tex.fill_from = Vector2(0, 0)
-	tex.fill_to = Vector2(0, 1)
-	tex.width = 8
-	tex.height = 220
-	return tex
 
 
 # ============================================================================

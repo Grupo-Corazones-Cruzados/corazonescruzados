@@ -11,14 +11,15 @@ config_version=5
 [application]
 
 config/name="GCC World"
-run/main_scene="uid://b2sc1r1ep0bus"
+run/main_scene="res://Prologo.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [display]
 
 window/size/viewport_width=960
 window/size/viewport_height=540
-window/stretch/aspect="expand"
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 
 [rendering]
 
