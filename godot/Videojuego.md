@@ -327,6 +327,14 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     versión actual** a un lado; (b) **una imagen de referencia gana a cualquier descripción**
     — para clavar un look concreto, recortar el trozo que lo tiene y adjuntarlo, en vez de
     describirlo con palabras.
+    **Y también sirve para las POSES:** la 68 no acababa de leerse como "se están yendo"
+    (figuras quietas, alguna mirando atrás) por muchas vueltas que se le diera al texto; se
+    resolvió recortando de la **69** la zona donde la gente SÍ camina bien y pasándola como
+    segunda referencia ("copia EXACTAMENTE estas posturas"). Al hacerlo hay que añadir la
+    contrapartida: **"de esta referencia copia SOLO las posturas, NO su escenario"** y
+    prohibir lo que arrastraría (allí: el camino de tierra, las casas y la arboleda).
+    Recortes guardados en `assets/Prologo/referencias/`: `casas_horizonte.png` (poblado lejano
+    en silueta) y `caminando_izquierda.png` (posturas de caminar de noche).
 26. **El escenario NO admite elementos nuevos sin permiso:** al decir "se van a sus casas", el
     modelo **inventó casas en el horizonte**; Fernando lo rechazó ("en la zona del Hoyo no hay
     casas ni nada nuevo"). Regla: prohibir explícitamente **construcciones, luces, caminos,

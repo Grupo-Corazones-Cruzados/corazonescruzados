@@ -200,7 +200,8 @@ ESCENAS = [
         "nada de ritual. Mantén IDÉNTICOS el trazo, la paleta y el TAMAÑO de las figuras de "
         "la referencia: lo único que cambia es la HORA (noche con fogata) y lo que HACEN."),
     # --- INSERTADA: va justo DESPUÉS de la 67 (la aldea se va a dormir) ---
-    (68, ["assets/Prologo/escenas/escena_67.png", "hoyo"],
+    (68, ["assets/Prologo/escenas/escena_67.png",
+          "assets/Prologo/referencias/caminando_izquierda.png"],
         "MISMO LUGAR, MISMA ESCALA, MISMA PALETA y MISMO ESTILO DE DIBUJO que la imagen de "
         "referencia: el MISMO campo de hierba, el MISMO Hoyo (agujero natural oscuro en la "
         "tierra, SIN muros de piedra, SIN ladrillos, SIN borde construido) en la MISMA "
@@ -247,10 +248,20 @@ ESCENAS = [
         "figura, o solo un brazo y una pierna asomando por el borde); otras van por el medio "
         "del campo; y un par van muy atrás, todavía cerca del Hoyo, a la derecha. "
         "POSTURA OBLIGATORIA EN CADA FIGURA, SIN NINGUNA EXCEPCIÓN (salvo el que recoge la "
-        "olla): PIERNAS ABIERTAS EN PLENO PASO —una pierna claramente ADELANTADA y la otra "
-        "ATRASADA, bien separadas—, el torso GIRADO hacia la izquierda y los brazos en "
-        "movimiento. Deben verse como sprites de CAMINAR de un videojuego, congelados a media "
-        "zancada. "
+        "olla): copia EXACTAMENTE las posturas de caminar de la SEGUNDA IMAGEN DE REFERENCIA "
+        "(el recorte de gente caminando de noche). Es decir: PIERNAS ABIERTAS EN PLENO PASO "
+        "—una pierna claramente ADELANTADA y la otra ATRASADA, bien separadas—, el torso "
+        "GIRADO hacia la izquierda, los brazos sueltos en movimiento y la cabeza mirando "
+        "HACIA LA IZQUIERDA, en la dirección en la que andan. Deben verse como sprites de "
+        "CAMINAR de un videojuego, congelados a media zancada, IGUAL que en esa referencia. "
+        "PROHIBIDO que ninguna figura mire hacia la DERECHA o hacia atrás (salvo el niño que "
+        "se indica más abajo). PROHIBIDO que parezca que están recogiendo, empacando, "
+        "cargando cosas de pie o esperando: la lectura de la imagen tiene que ser MARCHA, "
+        "gente EN MOVIMIENTO que ya se fue. "
+        "⚠ De esa segunda referencia copia SOLO LAS POSTURAS de las figuras: NO copies su "
+        "escenario. PROHIBIDO que aparezca el CAMINO de tierra, ni casas, ni árboles, ni "
+        "arboleda: aquí sigue siendo el campo abierto de hierba con el Hoyo, igual que en la "
+        "primera referencia. "
         "PROHIBIDO TERMINANTEMENTE: figuras de pie con los DOS PIES JUNTOS; figuras quietas; "
         "figuras de FRENTE mirando al espectador; figuras de perfil paradas; corrillos "
         "charlando; gente sentada, arrodillada o rezando; gente mirando al Hoyo de pie. Si una "
