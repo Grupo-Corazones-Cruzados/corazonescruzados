@@ -1,0 +1,12 @@
+Hoja de sprites de un CHICO adolescente para un videojuego 2D.
+
+Estilo: EXACTAMENTE el mismo pixel art de la imagen de referencia (misma paleta cálida y apagada, mismo tamaño de píxel grueso, mismo contorno oscuro, mismo sombreado plano, sin degradados ni brillos).
+
+Personaje: adolescente de 17 años, complexión normal, de cuerpo entero, de pie, brazos relajados a los lados, SIN objetos en las manos.
+
+Composición: las cuatro vistas en UNA SOLA FILA, separadas por espacio vacío, TODAS del mismo alto y con los pies exactamente sobre la misma línea de suelo:
+1) de frente  2) de espaldas  3) de perfil hacia la izquierda  4) de perfil hacia la derecha
+
+Fondo completamente vacío y liso, sin hierba, sin sombra proyectada, sin marco, sin texto, sin cuadrícula y sin ningún otro elemento.
+
+Ropa: prendas base sencillas y neutras (camisa de manga larga color crudo y pantalón largo marrón sencillo, zapatos oscuros bajos). Pelo castaño corto, SIN barba, SIN gorro y SIN accesorios en la cabeza. Sin capa, sin mochila, sin objetos.

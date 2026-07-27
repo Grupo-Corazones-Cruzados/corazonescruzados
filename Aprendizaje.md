@@ -1965,3 +1965,75 @@ del jugador también tiene que salir de ahí.
 `lib/world/player.ts` (`getPlayerSession()`, fuente única de identidad) · `/api/character/me` resuelve
 por sesión · `/api/character/save` vincula `user_id`, 401 sin sesión y **sin invitados** ·
 `getAuthedClient()` con fallback por JWT · la landing reabre el menú de ingreso si el guardado da 401.
+
+---
+
+## Tema (2026-07-27) — CREADOR DE PERSONAJE con assets generados por IA (estilo del prólogo)
+
+**Rol asumido:** *artista técnico / pipeline de arte generativo para sprites 2D*.
+
+### Necesidad (del usuario)
+El creador debe permitir componer un personaje **con el aspecto de la estampa 01** (la aldeana), no
+con una librería descargada (hoy usa LPC y por eso no pega). Rasgos elegibles: **sexo** (hombre/mujer),
+**tono de piel**, **color de cabello**, **tipo de cejas**, **barba** (solo hombre), **grosor del torso**
+(hombre) / **tipo de cuerpo** (mujer), **vestimenta superior e inferior por separado** y según el sexo,
+y **accesorios de cabeza** (gorra, pañuelo…). La **edad NO se elige**: el protagonista es adolescente
+de **17 años**. Estilos de vestimenta: rústica ahora; moderna / futurista / cavernícola más adelante.
+
+### Preguntas y respuestas
+#### P13 — ¿AI Studio o fal.ai? · ✅ Resuelta (pregunta mal planteada)
+- **Respuesta:** **no son rivales**. El generador de sprites que teníamos llamaba a
+  `fal-ai/nano-banana-pro`, y *nano-banana* **es el modelo de imagen de Google**: el mismo que usa
+  `generar_estampas.py` vía AI Studio. fal solo aportaba la tubería (cola de trabajos + un modelo de
+  recorte de fondo). Se elige **AI Studio directo** (`GEMINI_API_KEY`), para tener **una sola
+  tubería de arte** con el prólogo. Con esa clave hay además modelos mejores disponibles:
+  **`gemini-3-pro-image`** (el que se usa) frente al `gemini-2.5-flash-image` de las estampas.
+
+#### P14 — ¿Puede el modelo dar hojas de sprites con NUESTRO estilo? · ✅ Resuelta (sí, verificado)
+- **Respuesta:** sí, anclando con el recorte de la aldeana de `escena_01.png`. Devuelve las 4 vistas
+  (frente, espalda, dos perfiles) en una fila, misma altura, misma línea de suelo, paleta y grosor de
+  contorno correctos. Verificado generando las dos bases (hombre y mujer): `public/personajes/base/`.
+
+#### P15 — ¿Se puede editar UNA sola cosa y conservar el resto? · ✅ Resuelta (sí, pero no al píxel)
+- **Respuesta:** se le pidió a una hoja ya generada *"quítale el pañuelo, no cambies nada más"* y
+  cumplió: misma postura, misma escala, misma ropa, mismos pies. **Pero no es fiel al píxel**: hay
+  derivas de ±1 px y redibujados sutiles. ⇒ **NO se pueden extraer capas restando dos imágenes**
+  (sale ruido). La solución es **normalizar por geometría**, no por resta (ver P17).
+
+#### P16 — ¿Devuelve transparencia? · ✅ Resuelta (NO, y es una trampa)
+- **Respuesta:** **no**. Aunque se pida "fondo transparente", el modelo **dibuja un cuadriculado gris
+  imitándola** y entrega alfa 255 en toda la imagen (medido: 100 % de píxeles opacos). Por eso el
+  flujo viejo de fal tenía un paso de `bria/background/remove`. Aquí se resuelve **sin gastar otra
+  llamada**: relleno por color **desde los bordes** (nunca desde dentro, o se comería los blancos de
+  la ropa). Con `gemini-3-pro-image` el fondo sale blanco liso, aún más fácil de quitar.
+
+#### P17 — Entonces, ¿cómo se garantiza que las piezas encajen? · ✅ Resuelta (decisión de diseño)
+- **Respuesta:** **recuadrando cada figura a una rejilla fija**. Tras quitar el fondo se localizan las
+  4 figuras por sus huecos verticales, se reducen **todas por el mismo factor** (el que lleva la más
+  alta a `ALTO_FIGURA`; si cada una se escalara por su cuenta, el personaje "encogería" al girar) y se
+  pegan centradas y **apoyadas en la misma línea de suelo**. Eso **anula la deriva de ±1 px** y hace
+  que piezas de tiradas distintas vuelvan a encajar. Celda actual: **96×128**, hoja de **384×128**.
+
+### Plan de solución (por fases)
+1. ✅ **Bases** — una hoja por sexo, ropa neutra, sin accesorios. HECHO y verificado.
+2. **Prendas y rasgos** — una tirada por opción, *editando la base* ("ponle esta prenda, no cambies
+   nada más") y pasándola por el mismo recuadrado. Superior e inferior por separado, por sexo.
+3. **Color por código, no por IA** — tono de piel y color de cabello se resuelven **intercambiando
+   paletas** sobre la pieza ya generada: es exacto, gratis y multiplica la variedad sin más tiradas.
+4. **Grosor del torso / tipo de cuerpo** — estirando la banda del torso, como ya se hacía con LPC
+   (que solo trae 3 siluetas para 5 niveles). Sin tiradas nuevas.
+5. **Catálogo y creador** — sustituir `lib/game/lpc-catalog.ts` por el catálogo nuevo y que
+   `CharacterCreator` componga estas hojas.
+6. **Animación de caminar** — pendiente: hoy son poses estáticas. Es lo más delicado (fotogramas
+   coherentes) y se aborda cuando el aspecto esté cerrado.
+
+### Riesgos y cómo se mitigan
+- **Cada tirada es distinta** ⇒ el script guarda el crudo y permite `--reprocesar` (afinar el
+  post-proceso sin gastar generaciones) y `--forzar` (volver a tirar si el estilo no convence).
+- **La coherencia entre piezas** se sostiene porque todas se generan **editando la misma base**, no
+  desde cero.
+- **La animación** puede obligar a repensar el recuadrado; por eso va al final.
+
+### Estado
+- **% de información para el objetivo: 85%** — técnica validada de punta a punta con dos bases reales
+  en el repositorio. Falta acordar el catálogo concreto de prendas y resolver la animación.
