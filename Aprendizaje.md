@@ -2237,3 +2237,20 @@ la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas mir
 - ⚠️ **PENDIENTE en Godot:** hoy el juego pide `/api/character/layers` (formato LPC). Hay que
   cambiarlo para que use `/api/character/hoja`. Los personajes creados con el creador VIEJO devuelven
   **409** en la hoja nueva: hay que volver a crearlos (o escribir una migración).
+
+#### P31 — Llevar el personaje al juego (Godot) · ✅ Construido (falta armar la escena)
+- **Godot NO tenía ninguna integración**: no había una sola llamada HTTP en el proyecto. No era
+  "cambiar una ruta", era construir el puente entero.
+- ⚠️ **La hoja NO la descarga Godot.** El endpoint exige sesión y la sesión vive en una **cookie del
+  navegador**; las peticiones que hace Godot desde el export web **no la arrastran**, así que pedirla
+  desde GDScript daría 401. ⇒ La descarga la app (que sí tiene sesión) y la **inyecta en el sistema de
+  archivos del motor** con `copyToFS('/userfs/personaje.png')`, que Godot ve como `user://personaje.png`.
+  Si falla, el juego arranca igual con el personaje del editor.
+- **`godot/PersonajeJugador.gd`** (va en el AnimatedSprite2D del jugador): espera la hoja, la corta en
+  las 4 vistas y arma el `SpriteFrames` en caliente. Reintenta unas cuantas veces porque la app copia
+  el archivo justo después de arrancar el motor. Constante `FOTOGRAMAS_POR_VISTA = 1` — cuando la hoja
+  traiga fotogramas de caminar, se cambia ese número y ya.
+- **Migración de los personajes viejos** (`scripts/migrar-personajes.mjs`, ya aplicada a los 2 que
+  había): traduce lo que **significa lo mismo** —sexo, tono de piel, color de pelo, complexión,
+  nombre— y deja el resto por defecto. No se inventan equivalencias de prendas: los catálogos viejo y
+  nuevo son dibujos distintos. El original queda guardado en `character_data_v1`.

@@ -24,6 +24,8 @@ type GodotEngine = {
 type GodotEngineInstance = {
   startGame: (cfg?: Record<string, unknown>) => Promise<void>;
   requestQuit?: () => void;
+  /** Deja un archivo dentro del sistema de archivos del motor. */
+  copyToFS?: (ruta: string, datos: ArrayBuffer | Uint8Array) => void;
 };
 
 declare global {
@@ -88,6 +90,28 @@ function loadEngineScript(): Promise<GodotEngine> {
     s.onerror = () => reject(new Error('No se pudo descargar el motor'));
     document.body.appendChild(s);
   });
+}
+
+/**
+ * Baja la hoja de sprites del jugador y la mete en el sistema de archivos del
+ * motor. Si algo falla no se interrumpe la partida: el juego arranca con el
+ * personaje del editor y solo se anota el motivo.
+ */
+async function vestirPersonaje(instance: GodotEngineInstance) {
+  if (!instance.copyToFS) return;
+  try {
+    const r = await fetch('/api/character/hoja', { cache: 'no-store' });
+    if (!r.ok) {
+      // 404 = aún no ha creado personaje · 409 = lo creó con el creador viejo
+      console.info('Sin hoja de personaje que cargar:', r.status);
+      return;
+    }
+    const datos = new Uint8Array(await r.arrayBuffer());
+    // `/userfs` es lo que Godot ve como `user://` en el export web.
+    instance.copyToFS('/userfs/personaje.png', datos);
+  } catch (e) {
+    console.info('No se pudo preparar el personaje:', e);
+  }
 }
 
 export default function GodotGame() {
@@ -178,6 +202,14 @@ export default function GodotGame() {
         instanceRef.current = instance;
 
         await instance.startGame();
+        // El personaje que creó el jugador se le pasa al motor COMO ARCHIVO.
+        //
+        // No lo descarga Godot por su cuenta a propósito: la hoja la sirve una
+        // ruta que exige sesión iniciada, y la sesión vive en una cookie del
+        // navegador que las peticiones del export web no arrastran. Aquí sí la
+        // tenemos, así que se baja desde la app y se deja en `user://` para que
+        // el juego la recoja (ver godot/PersonajeJugador.gd).
+        void vestirPersonaje(instance);
         if (!disposed) {
           setPhase(null);
           // Godot escucha el teclado en el CANVAS, no en la ventana. Sin foco,
