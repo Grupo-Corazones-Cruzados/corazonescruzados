@@ -94,6 +94,88 @@ const DURACIONES := {
 }
 
 
+## --- NOMBRE DE CADA ESTAMPA (para saber qué es cada número al ordenarlas) -----
+## Solo sirve para leer y reordenar cómodo; no afecta a la reproducción. Se
+## imprime junto al reparto cuando `mostrar_reparto` está activado.
+const NOMBRES := {
+	13: "El planeta desde el espacio",
+	14: "El mapa con las manchas grises",
+	15: "Zoom a una zona gris",
+	16: "Balacera entre bandas",
+	17: "Guerra civil",
+	18: "Guerra entre países",
+	19: "La bomba nuclear",
+	20: "La pandemia",
+	21: "La religión que se cree superior",
+	22: "El arma en manos de un niño",
+	23: "La basura y el que pide comida",
+	24: "El líder de la secta",
+	25: "El que debía proteger",
+	26: "El odio en la pantalla",
+	27: "Sin trabajo, y la cola de parados",
+	28: "La violencia dentro de casa",
+	29: "La vejez pidiendo en la calle",
+	30: "Dieciséis horas por unas monedas",
+	31: "La extorsión en la puerta",
+	32: "La droga en el colegio",
+	33: "El sicariato",
+	34: "La xenofobia en el estadio",
+	35: "Los que compran personas",
+	36: "El reparto del mundo a puerta cerrada",
+	37: "La vida encerrada en la pantalla",
+	38: "Contra el que enseña",
+	39: "La coima bajo la ventanilla",
+	40: "El barrio que protege al que hace daño",
+	41: "La tala hasta el desierto",
+	42: "El humo de las fábricas",
+	43: "La sed de las máquinas",
+	44: "El agua que hay que pagar",
+	45: "Las calles de la miseria",
+	46: "El muro entre los que tienen y los que no",
+	47: "La guerra nuclear",
+	48: "El mundo golpeado",
+	49: "El terremoto",
+	50: "El gris se extiende por el mapa",
+	52: "El mundo entero cubierto de gris",
+}
+
+
+## --- ⚡ LA RÁFAGA: el mosaico que resume la caída del mundo -------------------
+## Un tramo especial que mete MUCHAS estampas en poco tiempo SIN que se vuelva
+## un estrobo ilegible. El truco: la pantalla se SUBDIVIDE en paneles y cada
+## panel cambia su estampa de forma ESCALONADA, así se ven varias a la vez y
+## cada una aguanta en pantalla mucho más de lo que duraría a pantalla completa.
+##
+## Las fases van de menos a más paneles, para que la sensación sea de avalancha
+## que crece. Al final, todo colapsa en UNA sola imagen a pantalla completa
+## (`final`), que se queda hasta que entra el verso siguiente.
+const RAFAGA := {
+	"desde_verso": 8,          # arranca con el verso 8 (el instrumental)
+	"final": 52,               # la última, a pantalla completa: el mundo gris
+	"cierre": 1.4,             # segundos que dura ese cierre a pantalla completa
+	# El orden de esta lista es el orden en que aparecen. Reordénala a tu gusto.
+	# (La 51 queda fuera a propósito; la 52 va aparte, como cierre.)
+	"escenas": [
+		13, 15,
+		16, 17, 18, 19, 20,
+		21, 34, 26, 25, 38, 27,
+		23, 29, 45, 46, 44,
+		30, 31, 32, 33, 22, 24, 40,
+		35, 36, 39, 37, 28,
+		41, 42, 43,
+		47, 48, 49, 50,
+	],
+	# Cada fase: en cuántos PANELES se parte la pantalla y qué PESO (porción del
+	# tiempo disponible) ocupa. Más paneles = más estampas a la vez.
+	"fases": [
+		{ "paneles": 1, "peso": 0.22 },
+		{ "paneles": 2, "peso": 0.26 },
+		{ "paneles": 4, "peso": 0.28 },
+		{ "paneles": 6, "peso": 0.24 },
+	],
+}
+
+
 ## --- LAS ESTAMPAS: tramos ANCLADOS A LOS VERSOS ------------------------------
 ## Cada tramo admite:
 ##   "desde_verso": en qué verso arranca (índice de LETRAS; -1 = antes de cantar)
@@ -208,6 +290,16 @@ var _idx_verso := -1
 var _tween_texto: Tween = null
 var _cruzando := false
 
+# --- Estado de la RÁFAGA (el mosaico) ---------------------------------------
+var _caja: Rect2                  # la caja de imagen, en coordenadas del lienzo
+var _capa_paneles: Control        # contenedor de los paneles del mosaico
+var _flash: ColorRect             # fogonazo blanco sobre la caja
+var _paneles: Array = []          # los TextureRect de la fase actual
+var _rafaga: Dictionary = {}      # guion calculado
+var _idx_rafaga := 0
+var _paneles_actuales := 0
+var _rafaga_cerrada := false
+
 # --- Estado del modo calibración --------------------------------------------
 var _tiempos_medidos: Array[float] = []
 
@@ -220,6 +312,9 @@ func _ready() -> void:
 		_arrancar_calibracion()
 	else:
 		_plan_imagenes = _calcular_plan_imagenes()
+		_rafaga = _calcular_rafaga()
+		if mostrar_reparto and not _rafaga.is_empty():
+			_informar_rafaga()
 
 
 func _construir_ui() -> void:
@@ -247,6 +342,28 @@ func _construir_ui() -> void:
 	_capa_b = _nueva_capa_imagen(img_x, img_y, ancho_img, alto_img)
 	_capa_b.modulate.a = 0.0
 	add_child(_capa_b)
+
+	# La caja de imagen, guardada para el mosaico de la ráfaga.
+	_caja = Rect2(img_x, img_y, ancho_img, alto_img)
+
+	# Capa donde vive el mosaico (encima de las estampas normales).
+	_capa_paneles = Control.new()
+	_capa_paneles.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_capa_paneles.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_capa_paneles.visible = false
+	add_child(_capa_paneles)
+
+	# Fogonazo blanco, solo sobre la caja de imagen.
+	_flash = ColorRect.new()
+	_flash.color = Color.WHITE
+	_flash.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_flash.offset_left = img_x
+	_flash.offset_top = img_y
+	_flash.offset_right = img_x + ancho_img
+	_flash.offset_bottom = img_y + alto_img
+	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash.modulate.a = 0.0
+	add_child(_flash)
 
 	# La letra: DEBAJO de la imagen, centrada, tamaño de letra FIJO.
 	_texto = Label.new()
@@ -374,6 +491,258 @@ func _apagar_musica() -> void:
 #  EL PLAN DE IMÁGENES — se calcula una sola vez, al empezar
 # ============================================================================
 
+# ============================================================================
+#  ⚡ LA RÁFAGA — mosaico de paneles escalonados
+# ============================================================================
+
+## Calcula el guion completo de la ráfaga: cuándo cambia de fase, y para cada
+## panel en qué segundo le toca cada estampa.
+## Devuelve { "t0", "t1", "fases": [...], "cambios": [ {t, fase, panel, escena} ] }
+func _calcular_rafaga() -> Dictionary:
+	var v := int(RAFAGA["desde_verso"])
+	if v < 0 or v + 1 >= LETRAS.size():
+		return {}
+	var t0 := float(LETRAS[v]["t"])
+	var t1 := float(LETRAS[v + 1]["t"])
+	var cierre: float = float(RAFAGA["cierre"])
+	var util: float = maxf(0.5, (t1 - t0) - cierre)
+
+	# Solo las estampas que existen en disco.
+	var lista: Array = []
+	for n in RAFAGA["escenas"]:
+		if _existe(int(n)):
+			lista.append(int(n))
+		else:
+			push_warning("Ráfaga: falta la estampa %d, se salta." % int(n))
+	if lista.is_empty():
+		return {}
+
+	# 1) Duración de cada fase y cuántos "huecos de estampa" caben en ella.
+	var fases: Array = []
+	var peso_total := 0.0
+	for f in RAFAGA["fases"]:
+		peso_total += float(f["peso"])
+	var cap_total := 0.0
+	var t_acum := t0
+	for f in RAFAGA["fases"]:
+		var dur: float = util * float(f["peso"]) / peso_total
+		var pan := int(f["paneles"])
+		var cap: float = dur * float(pan)      # más paneles y más tiempo = más sitio
+		fases.append({ "paneles": pan, "desde": t_acum, "dur": dur, "cap": cap })
+		cap_total += cap
+		t_acum += dur
+
+	# 2) Repartir las estampas entre las fases, en proporción a su sitio.
+	var restantes := lista.size()
+	for i in fases.size():
+		var f: Dictionary = fases[i]
+		var n := int(round(float(lista.size()) * f["cap"] / cap_total))
+		n = maxi(int(f["paneles"]), n)               # al menos una vuelta de paneles
+		if i == fases.size() - 1:
+			n = restantes                            # la última se queda con lo que falte
+		n = mini(n, restantes)
+		f["n"] = n
+		restantes -= n
+	# Si sobró alguna por redondeo, se la queda la última fase.
+	if restantes > 0:
+		fases[fases.size() - 1]["n"] = int(fases[fases.size() - 1]["n"]) + restantes
+
+	# 3) Repartir el tiempo dentro de cada fase y asignar las estampas EN ORDEN.
+	var cambios: Array = []
+	var idx := 0
+	for f in fases:
+		var n := int(f["n"])
+		if n <= 0:
+			f["seg"] = f["dur"]
+			continue
+		var pan := int(f["paneles"])
+		var seg: float = float(f["dur"]) * float(pan) / float(n)   # cada panel cambia cada `seg`
+		f["seg"] = seg
+		# Huecos de todos los paneles, ESCALONADOS para que no salten a la vez.
+		var huecos: Array = []
+		for p in pan:
+			var desfase: float = seg * float(p) / float(pan)
+			var t: float = float(f["desde"]) + desfase
+			while t < float(f["desde"]) + float(f["dur"]) - 0.01:
+				huecos.append({ "t": t, "panel": p })
+				t += seg
+		huecos.sort_custom(func(a, b): return float(a["t"]) < float(b["t"]))
+		for h in huecos:
+			if idx >= lista.size():
+				break
+			cambios.append({ "t": float(h["t"]), "paneles": pan,
+				"panel": int(h["panel"]), "escena": lista[idx] })
+			idx += 1
+
+	# Lo que no haya cabido, se cuela al final de la última fase (nunca se pierde).
+	while idx < lista.size():
+		cambios.append({ "t": t1 - cierre - 0.01, "paneles": int(fases[-1]["paneles"]),
+			"panel": idx % int(fases[-1]["paneles"]), "escena": lista[idx] })
+		idx += 1
+
+	return { "t0": t0, "t1": t1, "cierre": t1 - cierre, "fases": fases, "cambios": cambios }
+
+
+## Imprime por consola cómo queda repartida la ráfaga, para poder afinarla.
+func _informar_rafaga() -> void:
+	print("\n⚡ RÁFAGA · del verso %d (%.2f s) al %d (%.2f s) — %d estampas + el cierre (%d)"
+		% [int(RAFAGA["desde_verso"]), float(_rafaga["t0"]),
+			int(RAFAGA["desde_verso"]) + 1, float(_rafaga["t1"]),
+			_rafaga["cambios"].size(), int(RAFAGA["final"])])
+	for f in _rafaga["fases"]:
+		print("   fase de %d panel(es): %5.2f s → %5.2f s · %2d estampas · cada una %.2f s en pantalla"
+			% [int(f["paneles"]), float(f["desde"]), float(f["desde"]) + float(f["dur"]),
+				int(f.get("n", 0)), float(f.get("seg", 0.0))])
+	for c in _rafaga["cambios"]:
+		print("      %6.2f s · panel %d/%d · escena %2d  %s"
+			% [float(c["t"]), int(c["panel"]) + 1, int(c["paneles"]), int(c["escena"]),
+				str(NOMBRES.get(int(c["escena"]), ""))])
+	print("      %6.2f s · CIERRE a pantalla completa · escena %d  %s\n"
+		% [float(_rafaga["cierre"]), int(RAFAGA["final"]),
+			str(NOMBRES.get(int(RAFAGA["final"]), ""))])
+
+
+## Lleva el mosaico segundo a segundo: enciende/apaga la capa, cambia de fase
+## cuando toca, va metiendo estampas en los paneles y hace el cierre final.
+func _procesar_rafaga(pos: float) -> void:
+	if _rafaga.is_empty():
+		return
+	var t0: float = float(_rafaga["t0"])
+	var t1: float = float(_rafaga["t1"])
+
+	# Fuera de su tramo: el mosaico no pinta nada.
+	if pos < t0 or pos >= t1:
+		if _capa_paneles.visible and pos >= t1:
+			_capa_paneles.visible = false
+			_capa_a.visible = true
+		return
+
+	# Al entrar, el mosaico tapa la estampa normal.
+	if not _capa_paneles.visible and not _rafaga_cerrada:
+		_capa_paneles.visible = true
+		_capa_a.visible = false
+		_fogonazo(0.6, 0.25)
+
+	# Cierre: todo colapsa en la estampa final a pantalla completa.
+	if not _rafaga_cerrada and pos >= float(_rafaga["cierre"]):
+		_rafaga_cerrada = true
+		_cerrar_rafaga()
+		return
+	if _rafaga_cerrada:
+		return
+
+	# Cambios que ya tocan (se procesan todos los pendientes, por si hubo un salto).
+	var cambios: Array = _rafaga["cambios"]
+	while _idx_rafaga < cambios.size() and pos >= float(cambios[_idx_rafaga]["t"]):
+		var c: Dictionary = cambios[_idx_rafaga]
+		_idx_rafaga += 1
+		var pan := int(c["paneles"])
+		if pan != _paneles_actuales:
+			_paneles_actuales = pan
+			_montar_paneles(pan)
+		var seg := 0.8
+		for f in _rafaga["fases"]:
+			if int(f["paneles"]) == pan:
+				seg = float(f.get("seg", 0.8))
+				break
+		_poner_en_panel(int(c["panel"]), int(c["escena"]), seg)
+
+
+## Rectángulos (dentro de la caja de imagen) para repartir la pantalla en N paneles.
+func _rejilla(n: int) -> Array:
+	var cols := 1
+	var filas := 1
+	match n:
+		1: cols = 1; filas = 1
+		2: cols = 2; filas = 1
+		3: cols = 3; filas = 1
+		4: cols = 2; filas = 2
+		6: cols = 3; filas = 2
+		8: cols = 4; filas = 2
+		9: cols = 3; filas = 3
+		_: cols = n; filas = 1
+	var hueco := 4.0 if n > 1 else 0.0
+	var ancho: float = (_caja.size.x - hueco * float(cols - 1)) / float(cols)
+	var alto: float = (_caja.size.y - hueco * float(filas - 1)) / float(filas)
+	var rects: Array = []
+	for f in filas:
+		for c in cols:
+			rects.append(Rect2(
+				_caja.position.x + float(c) * (ancho + hueco),
+				_caja.position.y + float(f) * (alto + hueco),
+				ancho, alto))
+	return rects
+
+
+## Rehace los paneles cuando cambia la fase (y da un fogonazo blanco).
+func _montar_paneles(n: int) -> void:
+	for p in _paneles:
+		if is_instance_valid(p):
+			p.queue_free()
+	_paneles.clear()
+	for r in _rejilla(n):
+		var t := TextureRect.new()
+		t.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		t.offset_left = r.position.x
+		t.offset_top = r.position.y
+		t.offset_right = r.position.x + r.size.x
+		t.offset_bottom = r.position.y + r.size.y
+		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED   # llena el panel
+		t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		t.clip_contents = true
+		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		t.pivot_offset = r.size / 2.0
+		t.modulate.a = 0.0
+		_capa_paneles.add_child(t)
+		_paneles.append(t)
+	_fogonazo(0.5, 0.22)
+
+
+## Mete una estampa en un panel, con un golpe de escala y una entrada rápida.
+func _poner_en_panel(i: int, escena: int, seg: float) -> void:
+	if i < 0 or i >= _paneles.size():
+		return
+	var t: TextureRect = _paneles[i]
+	var tex := _cargar(escena)
+	if tex == null:
+		return
+	t.texture = tex
+	t.modulate.a = 0.25
+	t.scale = Vector2(1.06, 1.06)
+	var dur: float = clampf(seg * 0.35, 0.06, 0.16)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(t, "modulate:a", 1.0, dur)
+	tw.tween_property(t, "scale", Vector2.ONE, minf(seg * 0.9, 0.35))
+
+
+## Fogonazo blanco sobre la caja de imagen (para marcar los saltos de fase).
+func _fogonazo(fuerza: float, dur: float) -> void:
+	if _flash == null:
+		return
+	_flash.modulate.a = fuerza
+	var tw := create_tween()
+	tw.tween_property(_flash, "modulate:a", 0.0, dur)
+
+
+## Cierra la ráfaga: se quitan los paneles y entra la estampa final a pantalla
+## completa, que se queda hasta el verso siguiente.
+func _cerrar_rafaga() -> void:
+	for p in _paneles:
+		if is_instance_valid(p):
+			p.queue_free()
+	_paneles.clear()
+	_fogonazo(0.75, 0.35)
+	var tex := _cargar(int(RAFAGA["final"]))
+	if tex != null:
+		_capa_a.texture = tex
+		_capa_a.modulate.a = 1.0
+		_capa_b.modulate.a = 0.0
+	_capa_paneles.visible = false
+	_capa_a.visible = true
+
+
 ## Segundo en que ARRANCA un tramo: el del verso al que está anclado.
 func _inicio_tramo(tramo: Dictionary) -> float:
 	var v := int(tramo.get("desde_verso", -1))
@@ -500,6 +869,9 @@ func _process(_delta: float) -> void:
 		var paso: Dictionary = _plan_imagenes[_idx_imagen]
 		_idx_imagen += 1
 		_cambiar_imagen(int(paso["escena"]))
+
+	# 2-bis) ⚡ LA RÁFAGA: el mosaico manda mientras dura su tramo.
+	_procesar_rafaga(pos)
 
 	# 3) ¿Se acabó la canción? Cerramos con tiempo para el fundido.
 	var dur := _duracion_musica()
