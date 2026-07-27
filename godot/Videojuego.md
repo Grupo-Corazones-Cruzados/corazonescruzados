@@ -430,6 +430,15 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     y "perseguidores feroces que quieren matarlos" por **"tres figuras granate que corren en la
     misma dirección, por detrás y a distancia"**, pasó sin un solo reintento. Regla: describir
     **qué se ve** (color, forma, postura, dirección), nunca **qué significa**.
+36-ter. **⭐ COMBINAR DOS ESTAMPAS APROBADAS: hacerlo por CÓDIGO, no por IA.** La 82 (padres
+    en la puerta + hijos saliendo por la ventana) se intentó SIETE veces por generación y en
+    todas el adolescente salía tan alto como los adultos: están en extremos opuestos del cuarto
+    y el modelo no tiene con qué compararlos. Solución, a propuesta de Fernando: **trasplantar
+    por código** la zona de la ventana de la 81 sobre la habitación de la 58. Como las dos
+    estampas comparten cuarto, luz y encuadre (sus ventanas caían en x≈1060-1160 en ambas), un
+    pegado rectangular con la máscara difuminada ~22 px deja la costura invisible. **Regla: si
+    dos mitades ya están aprobadas por separado, componerlas es más fiable que pedirle a la IA
+    que las rehaga**, porque regenerar siempre reabre lo que ya estaba bien.
 37. **El plano subjetivo (POV) achica todo lo demás y conviene evitarlo.** En la 81, los
     antebrazos en primer plano hacían que los niños parecieran duendes, y hubo que describir la
     anatomía del escorzo ("antebrazos ANCHOS y CORTOS entrando por las esquinas inferiores, no
