@@ -1,0 +1,157 @@
+extends Node2D
+
+## El personaje del jugador, montado por piezas y animado por rotación.
+##
+## Es el camino de Guardian Tales: el cuerpo se corta en piezas (cabeza, torso,
+## brazos, piernas o faldón) y cada una cuelga de un pivote. Caminar, correr y
+## atacar son rotaciones de esas piezas, no dibujos nuevos. Y lo que se lleva
+## puesto —un casco, una armadura— se dibuja UNA vez y sigue a su pieza.
+##
+## CÓMO SE MONTA EN LA ESCENA
+##   Jugador            (CharacterBody2D)
+##     └─ Articulado    (Node2D)  ← este script
+## Nada más. Los sprites de cada parte los crea el propio script al arrancar; no
+## hay que colocarlos a mano, y así el día que cambie el rig no hay que rehacer
+## la escena.
+##
+## DE DÓNDE SALEN LOS DATOS
+##   · `user://personaje.png` — la hoja del personaje, que deja la app (ver
+##     components/game/GodotGame.tsx; no la descarga Godot porque la sesión vive
+##     en una cookie del navegador que sus peticiones no arrastran).
+##   · `res://assets/rig-personaje.json` — dónde cortar y por dónde articula.
+##     Lo exporta `scripts/exportar-rig.mjs` desde el MISMO módulo que usa la
+##     web, para que las dos partes corten por idéntico sitio.
+
+const RUTA_HOJA := "user://personaje.png"
+const RUTA_RIG := "res://assets/rig-personaje.json"
+
+## Vista que se está mostrando: 0 frente · 1 espalda · 2 izquierda · 3 derecha.
+@export var vista: int = 0
+## Velocidad del ciclo de caminar, en pasos por segundo.
+@export var pasos_por_segundo: float = 1.6
+
+var _piezas: Dictionary = {}      ## nombre → Sprite2D
+var _rig: Dictionary = {}         ## nombre → definición (caja, pivote)
+var _sexo := "mujer"
+var _reloj := 0.0
+var _andando := false
+
+func _ready() -> void:
+	if not _cargar_rig():
+		return
+	await _esperar_hoja()
+
+func _cargar_rig() -> bool:
+	if not FileAccess.file_exists(RUTA_RIG):
+		push_warning("Falta %s: lanza `node scripts/exportar-rig.mjs`" % RUTA_RIG)
+		return false
+	var texto := FileAccess.get_file_as_string(RUTA_RIG)
+	var datos: Variant = JSON.parse_string(texto)
+	if typeof(datos) != TYPE_DICTIONARY:
+		push_warning("El rig no se pudo leer")
+		return false
+	_rig = datos
+	return true
+
+## La app copia la hoja justo después de arrancar el motor, así que puede tardar
+## un instante en aparecer. Se espera en vez de dar el personaje por perdido.
+func _esperar_hoja() -> void:
+	for i in 20:
+		if FileAccess.file_exists(RUTA_HOJA):
+			_montar(RUTA_HOJA)
+			return
+		await get_tree().create_timer(0.25).timeout
+	push_warning("No llegó la hoja del personaje")
+
+func _montar(ruta: String) -> void:
+	var imagen := Image.new()
+	if imagen.load(ruta) != OK:
+		push_warning("La hoja no se pudo leer")
+		return
+	var textura := ImageTexture.create_from_image(imagen)
+	var celda: Dictionary = _rig["celda"]
+	var ancho_celda: int = celda["ancho"]
+
+	var esqueleto: Dictionary = _rig["esqueleto"][_sexo]
+	for nombre in _rig["orden"]:
+		if not esqueleto.has(nombre):
+			continue  # la variante de falda y la de pantalón no coexisten
+		var def: Dictionary = esqueleto[nombre]
+		if not def.has("caja"):
+			continue  # el anclaje de la mano no es una pieza dibujada
+		var caja: Dictionary = def["caja"]
+		var pivote: Dictionary = def["pivote"]
+
+		var trozo := AtlasTexture.new()
+		trozo.atlas = textura
+		trozo.region = Rect2(vista * ancho_celda + caja["x"], caja["y"], caja["w"], caja["h"])
+
+		var sp := Sprite2D.new()
+		sp.name = String(nombre)
+		sp.texture = trozo
+		sp.centered = false
+		# La pieza se coloca de modo que su PIVOTE caiga en el punto del rig: así
+		# `rotation` gira por donde tiene que girar (el hombro, la cadera…).
+		sp.offset = Vector2(-(pivote["x"] - caja["x"]), -(pivote["y"] - caja["y"]))
+		sp.position = Vector2(pivote["x"], pivote["y"])
+		sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		add_child(sp)
+		_piezas[nombre] = sp
+
+## Lo llama el controlador del jugador cuando empieza o deja de moverse.
+func andar(activo: bool) -> void:
+	_andando = activo
+	if not activo:
+		_reloj = 0.0
+		_postura(0.0)
+
+func _process(delta: float) -> void:
+	if _piezas.is_empty():
+		return
+	if _andando:
+		_reloj += delta * pasos_por_segundo * TAU
+	_postura(_reloj)
+
+## El ciclo de caminar: todo son rotaciones sobre los pivotes.
+##
+## Los ángulos son CORTOS a propósito. Rotar pixel art ensucia el borde, y
+## midiendo se vio que hasta unos 12° aguanta; más allá empieza a verse el
+## escalonado. Por eso el paso se apoya también en un pequeño rebote vertical,
+## que no cuesta calidad ninguna.
+func _postura(t: float) -> void:
+	var s := sin(t)
+	var rebote := absf(sin(t)) * -1.5
+
+	_girar("piernaIzq", s * 11.0)
+	_girar("piernaDer", -s * 11.0)
+	# Con falda no hay dos piernas: el faldón se mece entero y los pies dan el
+	# paso por debajo. La tela no dobla como una pierna, así que se mueve poco.
+	_girar("faldon", s * 3.0)
+	_girar("pieIzq", s * 9.0)
+	_girar("pieDer", -s * 9.0)
+	_girar("brazoCercano", -s * 9.0)
+	_girar("brazoLejano", s * 9.0)
+	_girar("torso", sin(t * 2.0) * 1.2)
+	_girar("cabeza", -sin(t * 2.0) * 1.2)
+
+	for nombre in ["torso", "cabeza", "brazoCercano", "brazoLejano"]:
+		if _piezas.has(nombre):
+			var sp: Sprite2D = _piezas[nombre]
+			var def: Dictionary = _rig["esqueleto"][_sexo][nombre]
+			sp.position.y = def["pivote"]["y"] + rebote
+
+func _girar(nombre: String, grados: float) -> void:
+	if _piezas.has(nombre):
+		(_piezas[nombre] as Sprite2D).rotation_degrees = grados
+
+## Cambia la vista (al girar el personaje) sin volver a montar nada.
+func mirar(nueva_vista: int) -> void:
+	if nueva_vista == vista or _piezas.is_empty():
+		return
+	vista = nueva_vista
+	var ancho_celda: int = _rig["celda"]["ancho"]
+	var esqueleto: Dictionary = _rig["esqueleto"][_sexo]
+	for nombre in _piezas:
+		var caja: Dictionary = esqueleto[nombre]["caja"]
+		var trozo: AtlasTexture = (_piezas[nombre] as Sprite2D).texture
+		trozo.region = Rect2(vista * ancho_celda + caja["x"], caja["y"], caja["w"], caja["h"])

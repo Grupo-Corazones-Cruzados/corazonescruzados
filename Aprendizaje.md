@@ -2287,3 +2287,24 @@ lo que se lleva puesto, anclajes para lo que se sujeta.
   falda se abre como si fueran pantalones: no es un fallo de la técnica, es que **el rig tiene que
   depender de la PRENDA**. Con pantalón, dos piernas; con falda, la falda debe ser una pieza con las
   piernas por debajo. Hay que separar `piernas` (cuerpo) de `faldón` (prenda) en el esqueleto.
+
+#### P35 — El rig depende de la PRENDA · ✅ Corregido (hallazgo de mover el muñeco)
+- Con dos piernas independientes, **la falda se abre en canal** al rotar cada mitad por su lado. No es
+  un fallo de la técnica: es que el esqueleto no puede ser el mismo con pantalón que con falda.
+- ⇒ `esqueletoPara(sexo, prendaAbajo)` devuelve **dos piernas** con pantalón, y con falda un **faldón
+  entero** (que se mece 3°, porque la tela no dobla como una pierna) más **dos pies sueltos** que dan
+  el paso por debajo. Verificado con las dos caminatas renderizadas.
+- **Lección:** este problema no se ve en una imagen quieta. Montar la animación en Node antes de tocar
+  Godot lo destapó en minutos.
+
+#### P36 — El personaje articulado en Godot · ✅ Escrito (falta armarlo en la escena)
+- `godot/PersonajeArticulado.gd`: **crea los sprites de cada parte al arrancar**, no hay que colocarlos
+  a mano en la escena. Así, el día que cambie el rig no hay que rehacer nada.
+- ⚠️ **El rig NO se copia a GDScript**: se **exporta** (`scripts/exportar-rig.mjs` →
+  `godot/assets/rig-personaje.json`) desde el mismo módulo que usa la web. Copiar los números a mano
+  es exactamente como se desincronizan las dos partes y el muñeco se descoyunta.
+- Los ángulos del ciclo son **cortos a propósito** (≤12°): medido, es donde el pixel art aguanta la
+  rotación sin que se vea el escalonado. El paso se apoya además en un rebote vertical, que no cuesta
+  calidad.
+- **Sintaxis validada con Godot 4.7** (`--check-only`). Falta el paso manual: colgar el nodo
+  `Articulado` del jugador en la escena.
