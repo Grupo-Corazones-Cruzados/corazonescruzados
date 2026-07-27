@@ -80,7 +80,32 @@ async function leerClave() {
   return clave;
 }
 
-async function generar(prompt, imagenes) {
+const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Llama al modelo, reintentando cuando está saturado.
+ *
+ * `gemini-3-pro-image` devuelve 503 con cierta frecuencia ("high demand"), y una
+ * tanda de catorce prendas se topa con ello casi seguro. Se espera cada vez más
+ * (15 s, 30 s, 60 s…) para no insistir sobre un servicio que ya va justo.
+ */
+async function generar(prompt, imagenes, intentos = 5) {
+  for (let n = 1; ; n++) {
+    try {
+      return await pedirImagen(prompt, imagenes);
+    } catch (e) {
+      // Además de la saturación, se reintenta la caída de red: la petición lleva
+      // la plantilla entera (cientos de KB) y a veces se corta por el camino.
+      const pasajero = /\b(429|500|502|503|504)\b|fetch failed|ECONNRESET|ETIMEDOUT|socket hang up/i.test(e.message);
+      if (!pasajero || n >= intentos) throw e;
+      const pausa = 15000 * 2 ** (n - 1);
+      console.log(`  el modelo está saturado; reintento ${n}/${intentos - 1} en ${pausa / 1000} s…`);
+      await espera(pausa);
+    }
+  }
+}
+
+async function pedirImagen(prompt, imagenes) {
   const clave = await leerClave();
   const partes = [{ text: prompt }];
   for (const img of imagenes) {
@@ -380,6 +405,59 @@ Composición: las cuatro vistas en UNA SOLA FILA, separadas por espacio vacío, 
 
 Fondo completamente vacío y liso, sin hierba, sin sombra proyectada, sin marco, sin texto, sin cuadrícula y sin ningún otro elemento.`;
 
+/**
+ * Prendas: se generan EDITANDO la plantilla, nunca desde cero.
+ *
+ * La entrada es la tirada original de la base (`<sexo>.crudo.png`), no la hoja
+ * reducida: al modelo hay que darle la imagen grande o pierde detalle. Se le
+ * pide cambiar una sola prenda y no tocar nada más; luego pasa por el mismo
+ * post-proceso, así la pieza cae en la misma rejilla que la base.
+ */
+function promptPrenda(parte, descripcion) {
+  const zona = parte === 'superior'
+    ? 'la prenda de la MITAD SUPERIOR del cuerpo (del cuello a la cintura)'
+    : 'la prenda de la MITAD INFERIOR del cuerpo (de la cintura a los pies, calzado incluido)';
+  const intacto = parte === 'superior'
+    ? 'la cara, el peinado, los brazos, las manos, la falda o el pantalón y el calzado'
+    : 'la cara, el peinado, los brazos, las manos y la prenda de arriba';
+
+  return `Toma esta hoja de sprites y cambia UNA SOLA COSA: ${zona}, que pasa a ser ${descripcion}.
+
+TODO LO DEMÁS QUEDA EXACTAMENTE IGUAL: ${intacto}. No muevas ni redibujes las figuras, no cambies su tamaño ni su postura, no cambies la línea de suelo, no cambies el fondo. Mantén el mismo estilo pixel art, el mismo grosor de píxel y el mismo contorno oscuro.
+
+Las cuatro vistas (frente, espalda y los dos perfiles) deben llevar la prenda nueva, coherente entre ellas.`;
+}
+
+/** Primera tanda rústica. Ampliable: añadir aquí y volver a lanzar el script. */
+const PRENDAS = {
+  mujer: {
+    superior: {
+      'blusa-cruda': 'una blusa sencilla de lino crudo, manga larga, cuello redondo',
+      'blusa-verde': 'una blusa de lino verde oliva apagado, manga larga, con cordón en el cuello',
+      'corpino-marron': 'un corpiño marrón sobre camisa clara de manga larga',
+      'chal-granate': 'una camisa clara con un chal de lana granate sobre los hombros',
+    },
+    inferior: {
+      'falda-marron': 'una falda larga de lana marrón y zapatos oscuros bajos',
+      'falda-ocre': 'una falda larga ocre con remiendos y zapatos oscuros bajos',
+      'falda-delantal': 'una falda marrón con delantal de lino crudo y zapatos oscuros bajos',
+    },
+  },
+  hombre: {
+    superior: {
+      'camisa-cruda': 'una camisa sencilla de lino crudo, manga larga, cuello abierto',
+      'camisa-verde': 'una camisa de lino verde oliva apagado, manga larga, remangada',
+      'chaleco-cuero': 'un chaleco de cuero marrón sobre camisa clara de manga larga',
+      'tunica-parda': 'una túnica parda de lana ceñida con un cinturón de cuero',
+    },
+    inferior: {
+      'pantalon-marron': 'un pantalón largo de lana marrón y botas oscuras bajas',
+      'pantalon-gris': 'un pantalón largo de lana gris pardo y botas oscuras bajas',
+      'pantalon-remendado': 'un pantalón largo marrón con remiendos y botas oscuras gastadas',
+    },
+  },
+};
+
 const BASES = {
   mujer: `Hoja de sprites de una CHICA adolescente para un videojuego 2D.
 
@@ -397,55 +475,90 @@ Ropa: prendas base sencillas y neutras (camisa de manga larga color crudo y pant
 // --- Programa --------------------------------------------------------------
 
 async function main() {
-  const [pieza, variante] = process.argv.slice(2);
+  const [pieza, sexo, parte, id] = process.argv.slice(2);
   const forzar = process.argv.includes('--forzar');
+  const reprocesar = process.argv.includes('--reprocesar');
 
-  if (pieza !== 'base' || !BASES[variante]) {
-    console.error('Uso: node scripts/generar-personaje.mjs base <hombre|mujer> [--forzar]');
+  const ayuda = () => {
+    console.error('Uso:');
+    console.error('  node scripts/generar-personaje.mjs base <hombre|mujer> [--forzar] [--reprocesar]');
+    console.error('  node scripts/generar-personaje.mjs prenda <hombre|mujer> <superior|inferior> [id|--todas]');
+    console.error('');
+    for (const s of Object.keys(PRENDAS)) {
+      for (const p of Object.keys(PRENDAS[s])) {
+        console.error(`  ${s} ${p}: ${Object.keys(PRENDAS[s][p]).join(', ')}`);
+      }
+    }
     process.exit(1);
-  }
+  };
 
-  const destino = path.join(RAIZ, SALIDA, 'base');
-  await fs.mkdir(destino, { recursive: true });
-  const final = path.join(destino, `${variante}.png`);
-  if (!forzar && await fs.access(final).then(() => true).catch(() => false)) {
-    console.log(`Ya existe ${final} (usa --forzar para regenerarlo).`);
+  if (pieza === 'base') {
+    if (!BASES[sexo]) ayuda();
+    await generarPieza({
+      carpeta: path.join(SALIDA, 'base'),
+      nombre: sexo,
+      prompt: BASES[sexo],
+      entradas: async () => [
+        await sharp(path.join(RAIZ, ANCLA)).extract(ANCLA_RECORTE).resize({ width: 600, kernel: 'nearest' }).png().toBuffer(),
+      ],
+      forzar, reprocesar,
+    });
     return;
   }
 
-  // `--reprocesar`: vuelve a recortar y cuadrar la ÚLTIMA tirada guardada, sin
-  // llamar al modelo. Sirve para afinar el post-proceso sin gastar generaciones.
-  let crudo;
-  const crudoPath = path.join(destino, `${variante}.crudo.png`);
-  if (process.argv.includes('--reprocesar')) {
-    crudo = await fs.readFile(crudoPath);
-    console.log(`▸ Reprocesando la tirada guardada (${crudoPath}), sin llamar al modelo`);
-  } else {
-    console.log(`▸ Anclando el estilo en ${ANCLA}`);
-    const ancla = await sharp(path.join(RAIZ, ANCLA))
-      .extract(ANCLA_RECORTE)
-      .resize({ width: 600, kernel: 'nearest' })
-      .png()
-      .toBuffer();
-
-    console.log(`▸ Generando la base "${variante}" con ${MODELO}…`);
-    const t0 = Date.now();
-    crudo = await generar(BASES[variante], [ancla]);
-    console.log(`  el modelo respondió en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
-
-    await fs.writeFile(crudoPath, crudo);
-    await fs.writeFile(path.join(destino, `${variante}.txt`), BASES[variante]);
+  if (pieza === 'prenda') {
+    const catalogo = PRENDAS[sexo]?.[parte];
+    if (!catalogo) ayuda();
+    const ids = (id === '--todas' || !id) ? Object.keys(catalogo) : [id];
+    for (const uno of ids) {
+      if (!catalogo[uno]) { console.error(`✖ no existe la prenda "${uno}"`); continue; }
+      // La plantilla es la tirada ORIGINAL de la base (grande): al modelo hay que
+      // darle la imagen con detalle, no la hoja ya reducida.
+      const plantilla = path.join(RAIZ, SALIDA, 'base', `${sexo}.crudo.png`);
+      await generarPieza({
+        carpeta: path.join(SALIDA, sexo, parte),
+        nombre: uno,
+        prompt: promptPrenda(parte, catalogo[uno]),
+        entradas: async () => [await fs.readFile(plantilla)],
+        forzar, reprocesar,
+      });
+    }
+    return;
   }
 
-  console.log('▸ Quitando el falso transparente y cuadrando las vistas…');
+  ayuda();
+}
+
+/** Genera (o reprocesa) una pieza y la deja cuadrada en la rejilla del catálogo. */
+async function generarPieza({ carpeta, nombre, prompt, entradas, forzar, reprocesar }) {
+  const destino = path.join(RAIZ, carpeta);
+  await fs.mkdir(destino, { recursive: true });
+  const final = path.join(destino, `${nombre}.png`);
+  const crudoPath = path.join(destino, `${nombre}.crudo.png`);
+
+  if (!forzar && !reprocesar && await fs.access(final).then(() => true).catch(() => false)) {
+    console.log(`= ${nombre}: ya existe (usa --forzar para regenerarla)`);
+    return;
+  }
+
+  console.log(`\n▸ ${carpeta}/${nombre}`);
+  let crudo;
+  if (reprocesar) {
+    crudo = await fs.readFile(crudoPath);
+    console.log('  reprocesando la tirada guardada, sin llamar al modelo');
+  } else {
+    const t0 = Date.now();
+    crudo = await generar(prompt, await entradas());
+    console.log(`  el modelo respondió en ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    await fs.writeFile(crudoPath, crudo);
+    await fs.writeFile(path.join(destino, `${nombre}.txt`), prompt);
+  }
+
   const limpio = await quitarFondo(crudo);
   const pelados = quitarHalo(limpio);
-  console.log(`  halo del contorno: ${pelados} píxeles retirados`);
-  const hoja = await normalizar(limpio, variante);
+  const hoja = await normalizar(limpio, nombre);
   await fs.writeFile(final, hoja);
-
-  console.log(`\n✔ ${final}`);
-  console.log('  Revísala. Si el estilo no convence, vuelve a lanzar con --forzar: cada tirada es distinta.');
+  console.log(`  ✔ ${final} (halo: ${pelados} px)`);
 }
 
 main().catch((e) => {

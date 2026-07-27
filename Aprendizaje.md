@@ -2037,3 +2037,37 @@ de **17 años**. Estilos de vestimenta: rústica ahora; moderna / futurista / ca
 ### Estado
 - **% de información para el objetivo: 85%** — técnica validada de punta a punta con dos bases reales
   en el repositorio. Falta acordar el catálogo concreto de prendas y resolver la animación.
+
+#### P18 — ¿Cómo se eliminan del todo los restos del fondo? · ✅ Resuelta (2026-07-27, tras 3 intentos)
+- **Síntoma:** el usuario seguía viendo rastros blancos en el contorno después de dos rondas de
+  limpieza con umbrales cada vez más finos.
+- **Diagnóstico real:** el problema no era la limpieza sino **la reducción**. El modelo dibuja cada
+  píxel de arte como un bloque de ~5 px y deja 1–2 px de mezcla en el borde; al reducir con `nearest`
+  se toma UN píxel de cada bloque, y cuando caía en el borde entraba ya contaminado. Peor: al medir
+  los píxeles se vio que la mezcla del **contorno oscuro con el blanco da GRISES MEDIOS**
+  (77,67,66 · 135,125,123) — ningún umbral de brillo puede separarlos del arte.
+- **Solución (dos frentes, ambos en `reducirPorMayoria` / `paletaReal`):**
+  1. **Reducir por mayoría de color**: cada bloque se resuelve al color dominante, así la mezcla
+     —siempre minoría— nunca gana; y un bloque mayoritariamente fondo queda transparente entero.
+  2. **Solo colores de la paleta real**, calculada del INTERIOR de la figura (a ≥2 px del vacío),
+     donde por definición no hay contaminación. Lo que solo existe en el borde queda excluido.
+- **Verificado:** 0 grises de mezcla y 0 píxeles semitransparentes en ambas hojas; silueta limpia
+  sobre magenta. **Aprobado por el usuario.**
+- **Lección:** cuando afinar un umbral no acaba de resolver algo, suele ser que el criterio es el
+  equivocado. Aquí no había brillo que separase arte de mezcla, pero la **paleta** sí los separa.
+
+#### P19 — ¿Cómo se eligen arriba y abajo por separado si no hay capas? · ✅ Resuelta (medido)
+- **Respuesta:** **composición por bandas**. Cada prenda se genera editando la plantilla, y al medir
+  una prenda superior contra la base se vio que **el cuerpo no se mueve**: los cambios se concentran
+  entre y=42 e y=80 (el torso), mientras que la cabeza (y 10–30) y las piernas (y 85–118) difieren en
+  ~30 px sobre ~2.000, es decir nada. ⇒ se corta a la altura de la **cintura (y=80** de la celda de
+  128) y se pega la mitad de arriba de una prenda con la mitad de abajo de otra.
+- **Verificado:** blusa verde de una tirada + falda de otra = personaje coherente, **costura
+  invisible**. No hacen falta capas con alfa ni extracción por resta.
+- **Ventaja añadida:** la pieza superior aporta cabeza y brazos, la inferior aporta pies; como todas
+  salen de la misma plantilla, encajan siempre.
+
+#### P20 — El modelo se satura · ✅ Resuelta
+- **Respuesta:** `gemini-3-pro-image` devuelve **503 "high demand"** con frecuencia, y una tanda de
+  14 prendas se topa con ello casi seguro. `generar()` reintenta con espera creciente (15 s, 30 s,
+  60 s…) y cubre también caídas de red (`fetch failed`), porque la petición lleva la plantilla entera.
