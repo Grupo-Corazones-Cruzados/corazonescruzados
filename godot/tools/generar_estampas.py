@@ -86,6 +86,7 @@ INSERTADAS = {
     68: 3,   # la aldea se va a dormir a sus casas, justo tras la 67
     69: 3,   # ya de camino a casa, lejos del Hoyo, justo tras la 68
     70: 3,   # interior de la casa: la familia en calma, justo tras la 69
+    71: 3,   # el padre da el beso de buenas noches a su hija, justo tras la 70
 }
 
 
@@ -393,6 +394,42 @@ ESCENAS = [
         "caballito de madera. Nada de juguetes de plástico ni electrónicos. "
         "SENSACIÓN: hogar, calor, familia tranquila y segura al final del día. Es el momento "
         "más apacible del prólogo: todo lo que el mundo va a perder después."),
+    # --- INSERTADA: va justo DESPUÉS de la 70 (el beso de buenas noches) ---
+    (71, ["assets/Prologo/escenas/escena_70.png"],
+        "MISMA CASA, MISMOS PERSONAJES, MISMO ESTILO DE DIBUJO y MISMA PALETA CÁLIDA que la "
+        "imagen de referencia. Los dos personajes de esta escena son EXACTAMENTE los mismos "
+        "que salen en la referencia: EL PADRE (el hombre adulto de barba corta que estaba en "
+        "la mecedora, con la misma ropa verde y el mismo pelo) y UNA DE LAS DOS NIÑAS que "
+        "jugaban en la alfombra (mismo pelo, misma cara, ahora en camisón de dormir). Conserva "
+        "su diseño de personaje EXACTO: pixel-art 2D de sombreado plano, caras sencillas y "
+        "expresivas, NUNCA estilo realista. "
+        "EL LUGAR: el DORMITORIO pequeño de esa misma casa, de noche. Plano MÁS CERCANO que la "
+        "referencia (se ve solo el rincón de la cama, no toda la casa), pero con los MISMOS "
+        "materiales: pared de LADRILLO visto de tono tierra, VIGAS de madera en el techo, suelo "
+        "de tablones con una alfombrita trenzada de trapo. "
+        "LA ESCENA — EL BESO DE BUENAS NOCHES, y esto es lo que tiene que leerse de un vistazo: "
+        "(a) LA NIÑA está ACOSTADA en una cama pequeña de madera, boca arriba, con la CABEZA "
+        "sobre la almohada y el cuerpo tapado hasta el pecho con una MANTA de lana de retales; "
+        "tiene los OJOS CERRADOS y una sonrisa tranquila, y abraza contra el pecho UNO DE LOS "
+        "MUÑECOS DE MADERA tallados con los que jugaba en la referencia. "
+        "(b) EL PADRE está SENTADO en el BORDE de la cama, INCLINADO SOBRE ELLA: el torso "
+        "doblado hacia delante, la CABEZA BAJADA hasta la frente de la niña y los LABIOS "
+        "TOCÁNDOLE LA FRENTE en un beso, con los ojos cerrados y una expresión de cariño. Una "
+        "de sus manos reposa suavemente sobre la manta y la otra se apoya en el colchón. "
+        "PROHIBIDO que aparezcan de pie uno al lado del otro, ni sentados charlando, ni "
+        "mirándose de frente: el padre TIENE que estar agachado dándole el beso en la frente. "
+        "(c) DETALLES DE LA HABITACIÓN: un taburete de madera junto a la cama con un QUINQUÉ de "
+        "aceite encendido (o una vela en su candelabro) que da la única luz cálida del cuarto; "
+        "una VENTANA pequeña con cortinas de tela por la que se ve la NOCHE azul oscura con la "
+        "luna y estrellas; un arcón de madera a los pies de la cama; un par de perchas de "
+        "madera en la pared con ropa sencilla colgada; y una repisita con otros DOS muñequitos "
+        "de madera. "
+        "PROHIBIDO ABSOLUTAMENTE cualquier cosa eléctrica o electrónica: NI bombillas, NI "
+        "lámparas eléctricas, NI cables, NI enchufes, NI pantallas, NI aparatos. Solo aceite, "
+        "vela y madera. "
+        "AMBIENTE: penumbra cálida y naranja del quinqué contra el azul de la ventana, sombras "
+        "suaves, todo en silencio. "
+        "SENSACIÓN: ternura y protección; el instante de calma de una familia que se quiere."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "
