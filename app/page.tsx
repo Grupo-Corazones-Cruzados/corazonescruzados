@@ -18,6 +18,7 @@ import ClientSignupModal from '@/components/landing/ClientSignupModal';
 import ClientLoginModal from '@/components/landing/ClientLoginModal';
 import MemberLoginModal from '@/components/landing/MemberLoginModal';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { markGameEntry } from '@/lib/world/gameEntry';
 
 const ENTRY_MESSAGES = [
   'Estás por entrar a un lugar en donde los sueños se hacen realidad...',
@@ -283,26 +284,10 @@ type PacienciaParticle = {
 export default function LandingPage() {
   const router = useRouter();
   const { user } = useAuth();
-  // Rol detectado por IP/dispositivo (best-effort): el visitante de esta
-  // red corresponde a un client del mundo cuyo email coincide con un user
-  // de staff. Sólo controla la visibilidad del botón; el acceso real lo
-  // protege el login en /auth.
-  const [ipRole, setIpRole] = useState<'admin' | 'member' | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/auth/landing-role')
-      .then((r) => (r.ok ? r.json() : { role: null }))
-      .then((d) => {
-        if (!cancelled && (d?.role === 'admin' || d?.role === 'member')) {
-          setIpRole(d.role);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // (Eliminado) Detección del rol por IP/dispositivo (`/api/auth/landing-role`):
+  // la landing ya no reconoce a nadie por su red ni por su cookie para ahorrarle
+  // el login. Tanto "Entrar" como "Colaborar" abren el menú de ingreso y exigen
+  // iniciar sesión. El endpoint queda sin usar en la app.
 
   // El botón "Colaborar" usa el rol de sesión para decidir el destino:
   // staff (member/admin) va directo a /dashboard; el resto pasa por /auth.
@@ -385,13 +370,11 @@ export default function LandingPage() {
   const [clientSignupOpen, setClientSignupOpen] = useState(false);
   const [clientLoginOpen, setClientLoginOpen] = useState(false);
   const [memberLoginOpen, setMemberLoginOpen] = useState(false);
-  // El jugador entró como miembro/admin esta sesión → el gameplay no le pide
-  // el formulario "crea tu cuenta" (ya tiene cuenta en gcc_world.users).
-  const [enteredAsMember, setEnteredAsMember] = useState(false);
-  // Se autenticó por un modal en ESTA carga de página (login/passkey) → no se le
-  // vuelve a pedir login al entrar al juego. Se reinicia al recargar (sesión
-  // nueva): así "Entrar" pide loguearse una sola vez por recarga.
-  const [freshAuth, setFreshAuth] = useState(false);
+  // (Eliminados) `enteredAsMember` y `freshAuth`: eran banderas del juego VIEJO
+  // embebido (CharacterGameplay) para no repetirle el login ni el formulario de
+  // cuenta dentro de la misma carga de página. Ya nadie las leía —el juego vive
+  // en /juego (Godot)— y describían justo lo contrario de la regla actual:
+  // entrar al juego SIEMPRE pasa por iniciar sesión en la landing.
   // El gameplay muestra un overlay de auth (login/cuenta/passkey) → cursor normal.
   const [gameAuthOverlay, setGameAuthOverlay] = useState(false);
   const warpRef = useRef<HTMLDivElement | null>(null);
@@ -1148,7 +1131,10 @@ export default function LandingPage() {
     // motor: se navega a /juego, que arranca sobre fondo negro y recupera la
     // partida donde el usuario se quedó. Antes montaba el juego VIEJO
     // (CharacterGameplay); ahora el juego es Godot.
+    // `markGameEntry`: a esta función solo se llega tras iniciar sesión, así que
+    // aquí se acredita la entrada y /juego acepta abrirse.
     window.setTimeout(() => {
+      markGameEntry();
       window.location.href = '/juego';
     }, 2200);
   }, []);
@@ -3012,19 +2998,14 @@ export default function LandingPage() {
               onClick={() => {
                 if (landingLocked || windAway) return;
 
-                // Returning player: solo entra si está aprobado + verificado.
-                if (savedCharacter) {
-                  if (!gateGameEntry()) return;
-                  // "Entrar" SIEMPRE exige validar el login (credenciales + 2FA)
-                  // dentro del juego: descartamos autenticación previa de esta
-                  // misma carga para no entrar directo al reconocer la cuenta.
-                  setFreshAuth(false);
-                  setWindAway(true);
-                  return;
-                }
-
-                // First-time visitor: menú "¿Cómo quieres ingresar?". "Entrar"
-                // lleva al JUEGO (candidato/cliente/miembro crean/usan personaje).
+                // "Entrar" SIEMPRE pide iniciar sesión, igual que "Colaborar":
+                // NUNCA se entra al juego por reconocer la cookie o la IP del
+                // visitante. Antes, si /api/character/me devolvía un personaje
+                // (match por cookie de jugador o por ip_hash) se saltaba el
+                // login y se caía directo a /juego; eso se eliminó.
+                // El menú "¿Cómo quieres ingresar?" enruta a candidato /
+                // cliente / miembro y cada camino valida credenciales (y su
+                // código de verificación) antes de ceder el control al juego.
                 setEntryDestination('game');
                 setEntryChoiceOpen(true);
               }}
@@ -3104,7 +3085,6 @@ export default function LandingPage() {
               window.location.href = '/dashboard';
               return;
             }
-            setFreshAuth(true); // ya validó código en el modal → no re-pedir login
             const found = await refreshSavedCharacter();
             if (found) {
               setSavePointTrigger((n) => n + 1);
@@ -3136,7 +3116,6 @@ export default function LandingPage() {
           onClose={() => setEntryChoiceOpen(false)}
           onCandidate={() => {
             setEntryChoiceOpen(false);
-            setEnteredAsMember(false);
             try {
               window.localStorage.setItem('gcc_account_type', 'candidate');
             } catch {
@@ -3160,13 +3139,11 @@ export default function LandingPage() {
           }}
           onCandidateLogin={() => {
             setEntryChoiceOpen(false);
-            setEnteredAsMember(false);
             // Candidato existente: inicia sesión (credenciales + código) y entra.
             setRecoveryOpen(true);
           }}
           onClient={() => {
             setEntryChoiceOpen(false);
-            setEnteredAsMember(false);
             // Cliente: primero inicia sesión; desde ahí puede crear cuenta.
             setClientLoginOpen(true);
           }}
@@ -3235,10 +3212,9 @@ export default function LandingPage() {
               window.location.href = '/dashboard';
               return;
             }
-            // Entrar → juego. Siembra el auth con la cuenta YA completada para que el
-            // juego NO vuelva a pedir el formulario de creación de cuenta (showSetup=false),
-            // y arranca el intro como el login de candidato sin personaje.
-            setFreshAuth(true);
+            // Entrar → juego. Guarda el estado de la cuenta recién completada
+            // (aprobada, verificada, con perfil) y arranca el intro igual que el
+            // login de un candidato sin personaje.
             setSavedAuth({
               hasPassword: true,
               emailVerified: true,
@@ -3301,10 +3277,8 @@ export default function LandingPage() {
               window.location.href = '/dashboard/marketplace';
               return;
             }
-            // Entrar: el cliente entra al JUEGO. Ya tiene cuenta (no "crea tu
-            // cuenta") y se acaba de autenticar (no re-pedir login).
-            setEnteredAsMember(true);
-            setFreshAuth(true);
+            // Entrar: el cliente entra al JUEGO con la sesión que acaba de
+            // iniciar en este modal.
             const found = await refreshSavedCharacter();
             if (found) {
               setSavePointTrigger((n) => n + 1);
@@ -3336,8 +3310,6 @@ export default function LandingPage() {
               window.location.href = '/dashboard';
               return;
             }
-            setEnteredAsMember(true);
-            setFreshAuth(true); // ya se autenticó en el modal → no re-pedir login
             if (hasCharacter) {
               // Tiene personaje (ya quedó approved): entra directo al juego.
               const found = await refreshSavedCharacter();
@@ -3987,9 +3959,12 @@ export default function LandingPage() {
             } catch {
               /* si falla el guardado, el juego mostrará el marcador y podrá reintentar */
             }
-            // Transición a negro (apagado de TV) y entrar a Godot.
+            // Transición a negro (apagado de TV) y entrar a Godot. El personaje
+            // se acaba de crear dentro de una sesión ya iniciada → se acredita
+            // la entrada para que /juego se abra.
             setBulbOff(true);
             window.setTimeout(() => {
+              markGameEntry();
               window.location.href = '/juego';
             }, 1100);
           }}

@@ -275,6 +275,30 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **"ENTRAR" SIEMPRE PIDE INICIAR SESIÓN — se elimina el reconocimiento por cookie/IP (2026-07-26).**
+  Decisión del usuario: en la landing, "Entrar" metía **directo al juego** cuando el servidor reconocía
+  al visitante (cookie de jugador o `ip_hash`). Eso se **elimina**: "Entrar" se comporta **igual que
+  "Colaborar"** — abre `EntryChoiceModal` ("¿Cómo quieres ingresar?") y cada camino (candidato /
+  cliente / miembro) **valida credenciales + código (o passkey)** antes de ceder el control al juego.
+  - **Qué se quitó (`app/page.tsx`):** la rama `if (savedCharacter) { … setWindAway(true) }` del `onClick`
+    de "Entrar" — era el atajo que saltaba el login. Ahora el handler solo hace
+    `setEntryDestination('game'); setEntryChoiceOpen(true)`.
+  - **Puerta en `/juego` (nuevo):** la ruta del motor estaba **abierta** (quien escribía la URL entraba).
+    `lib/world/gameEntry.ts` (`markGameEntry` / `hasGameEntry`) deja una marca en **`sessionStorage`**
+    (`gcc_game_entry`) justo antes de navegar a `/juego`, y `components/game/GameEntryGate.tsx` monta el
+    juego solo si la marca existe; si no, `location.replace('/')`. **Por qué sessionStorage y no cookie:**
+    sobrevive a **recargar la pestaña** (recargar el juego no expulsa) pero **no** a una pestaña nueva ni
+    a cerrar el navegador → volver al juego pasa siempre por la landing y el login. Es control de flujo,
+    no seguridad: los datos los siguen protegiendo las rutas `/api/character/*`.
+  - **Se acredita la entrada en 2 sitios**, ambos posteriores a un login real: `enterAsReturning()`
+    (jugador recurrente) y `CharacterCreator.onConfirm` (personaje recién creado).
+  - **Código muerto retirado:** `freshAuth`, `enteredAsMember` (banderas del juego viejo embebido, ya
+    nadie las leía y decían justo lo contrario de esta regla) e `ipRole` + su `fetch('/api/auth/landing-role')`
+    (reconocimiento de staff por IP en la landing). El endpoint `/api/auth/landing-role` **queda sin uso**.
+  - **Lo que NO cambió:** el gate de aprobación (`gateGameEntry`: aprobado + correo verificado), los
+    destinos `entryDestination` ('game' | 'dashboard'), ni el reconocimiento por cookie/IP dentro de
+    `/api/character/me` (sigue sirviendo para **recuperar el personaje** tras el login y para no crear
+    duplicados; lo que ya no hace es **abrir la puerta**).
 - **LANDING — los DOS modales de inicio pasan al diseño del dashboard, en MODO OSCURO (2026-07-25).**
   Decisión del usuario: aplicar el diseño de `/dashboard` a `EntryChoiceModal` ("¿Cómo quieres
   ingresar?") y `OnboardingSlidersModal` (los 8 pasos de postulación), y que sea **al estilo del modo
@@ -2360,6 +2384,10 @@ Stack estándar de la casa, con particularidades de este repo:
     "crea tu cuenta" tras login (passkey o contraseña); ahora usa `setAuth(a => ({...a, ...}))`. El
     `save` (staff) además guardaba mal (chocaba con el correo `UNIQUE`): ahora busca por `user_id` **o**
     correo y deja sesión de personaje activa (`AUTH_COOKIE`).
+    - ⚠️ **OBSOLETO (2026-07-26)** — lo que sigue describe el re-login DENTRO del juego viejo embebido
+      (`CharacterGameplay`, ya retirado). **Regla vigente:** "Entrar" **siempre** exige iniciar sesión en
+      la landing (no hay reconocimiento por cookie/IP que abra la puerta) y `freshAuth`/`enteredAsMember`
+      **ya no existen**. Ver "Entrar SIEMPRE pide iniciar sesión" en *Decisiones recientes*.
     - **Login una vez por recarga (2026-06-25):** regla final del re-login del jugador recurrente.
       `CharacterGameplay` recibe **`freshAuth`** (page.tsx). Si el jugador se autenticó por un **modal en
       esta carga** (member-login, candidato/recover, passkey) → `freshAuth=true` → entra **directo** (no

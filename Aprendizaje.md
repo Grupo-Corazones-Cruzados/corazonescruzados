@@ -1846,3 +1846,72 @@ y aun así **conservando la UX** (barra vía sondeo).
 ### Estado
 - **% de información para el objetivo: 100%** — causa raíz identificada (tope de ~300 s) y resuelta con
   optimizaciones dentro de la misma UX; **verificado en producción** por el usuario.
+
+---
+
+## Tema (2026-07-26) — "ENTRAR" debe pedir SIEMPRE iniciar sesión (no reconocer por cookie/IP)
+
+**Rol asumido:** *ingeniero de autenticación y flujos de acceso (Next.js App Router + sesiones propias)*.
+
+### Necesidad
+En la landing, el botón **"Entrar"** metía **directo al juego** cuando el visitante era "reconocido"
+(caché/cookie/IP). El usuario pide **eliminar ese atajo**: "Entrar" debe **exigir login siempre**,
+igual que ya hace **"Colaborar"**.
+
+### Preguntas y respuestas
+#### P1 — ¿Qué reconocía al visitante y dónde se saltaba el login? · ✅ Resuelta (código)
+- **Respuesta:** `GET /api/character/me` busca la fila de `gcc_world.clients` por **cookie
+  `gcc_client_token`**, y si no hay, **por `ip_hash`** (y como último recurso por sesión de staff).
+  Si devolvía personaje, `app/page.tsx` guardaba `savedCharacter`; el `onClick` de "Entrar" tenía la
+  rama `if (savedCharacter) { gateGameEntry(); setWindAway(true) }` → el `useEffect` de retorno llamaba
+  a `enterAsReturning()` → `location.href = '/juego'`. **Ese era el atajo**: cero credenciales.
+- **Por qué importa:** era el comportamiento exacto a eliminar.
+
+#### P2 — ¿Por qué "Colaborar" sí pedía login? · ✅ Resuelta (código)
+- **Respuesta:** su handler no tiene rama de atajo: siempre `setEntryDestination('dashboard')` +
+  `setEntryChoiceOpen(true)`. Los tres caminos del menú (`AccountRecoveryModal`, `ClientLoginModal`,
+  `MemberLoginModal`) piden credenciales + código (o passkey) — **ninguno tiene auto-login**. La
+  corrección es, literalmente, **igualar "Entrar" a "Colaborar"** cambiando solo `entryDestination`.
+
+#### P3 — ¿Bastaba con arreglar el botón? · ✅ Resuelta (no)
+- **Respuesta:** no. **`/juego` estaba abierta**: sin gate en `middleware.ts` (solo protege
+  `/dashboard`) ni en la página. Escribir la URL, un marcador o el historial entraban al juego sin
+  pasar por la landing → el "siempre pide login" se caía por ahí.
+
+#### P4 — ¿Marca de sesión en cookie o en `sessionStorage`? · ✅ Resuelta (decisión de diseño)
+- **Respuesta:** **`sessionStorage`** (`gcc_game_entry`, ver `lib/world/gameEntry.ts`). Una cookie de
+  sesión duraría **todo el navegador** (varias pestañas, mucho tiempo); `sessionStorage` es **por
+  pestaña**: sobrevive a **recargar el juego** (no expulsa a nadie a mitad de partida) pero no a una
+  pestaña nueva ni a cerrar el navegador → volver al juego pasa siempre por la landing y el login.
+  Si el navegador bloquea `sessionStorage`, `hasGameEntry()` devuelve `true` (**no** dejar a nadie
+  fuera del juego por una restricción del navegador). Es **control de flujo, no seguridad**: los datos
+  del jugador los siguen protegiendo las rutas `/api/character/*` con su cookie de sesión.
+
+#### P5 — ¿Qué NO había que tocar? · ✅ Resuelta
+- **Respuesta:** el reconocimiento por cookie/IP de `/api/character/me` **se conserva**: sigue haciendo
+  falta para **recuperar el personaje después del login** y para que `CharacterCreator` no cree
+  duplicados. Lo que se le quitó es el poder de **abrir la puerta**. Tampoco se tocó `gateGameEntry()`
+  (aprobado + correo verificado) ni el enrutado por `entryDestination`.
+
+#### P6 — ¿Había código vivo dependiendo del atajo? · ✅ Resuelta (era código muerto)
+- **Respuesta:** `freshAuth`, `enteredAsMember` (y también `ipRole` con su `fetch('/api/auth/landing-role')`)
+  estaban **declarados y asignados pero nunca leídos** — restos del juego viejo embebido
+  (`CharacterGameplay`), retirado al pasar a Godot en `/juego`. Se eliminaron: describían justo la regla
+  contraria a la nueva. **Lección:** al retirar un componente grande, sus banderas de estado quedan
+  "vivas" en la página y **confunden el diagnóstico**; conviene borrarlas en el momento.
+
+### Solución (implementada y verificada)
+1. `app/page.tsx` — el `onClick` de "Entrar" solo abre el menú (`entryDestination='game'`); fuera la
+   rama `savedCharacter`.
+2. `lib/world/gameEntry.ts` (nuevo) — `markGameEntry()` / `hasGameEntry()` / `clearGameEntry()`.
+3. `components/game/GameEntryGate.tsx` (nuevo) — portero de `/juego`: sin marca → `location.replace('/')`;
+   mientras decide pinta negro (no descarga los ~10 MB del motor).
+4. `app/juego/page.tsx` — envuelve `<GodotGame/>` en `<GameEntryGate>`.
+5. La marca se acredita en los **dos** puntos que navegan al juego, ambos posteriores a un login real:
+   `enterAsReturning()` y `CharacterCreator.onConfirm`.
+- **Verificación:** `npx tsc --noEmit` limpio y `npm run build` OK (`/juego` compila).
+
+### Estado
+- **% de información para el objetivo: 100%** — atajo eliminado, ruta del juego cerrada y flujos de
+  login intactos. Falta solo la comprobación en vivo del usuario (entrar, jugar, volver y confirmar
+  que "Entrar" vuelve a pedir sesión).
