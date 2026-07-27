@@ -2204,3 +2204,17 @@ la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas mir
 - ⚠️ **Lección de proceso:** una de las correcciones "no se aplicó" porque mi reemplazo automático
   buscaba un comentario que ya había cambiado; el código compilaba y parecía bien. **Sin la medición
   no me habría enterado.** Comprobar el efecto, no la edición.
+
+#### P29 — Complexión (grosor del torso / tipo de cuerpo) · ✅ Resuelta, sin generaciones
+- **No se generan siluetas nuevas: se estira la banda del torso en horizontal.** Misma técnica que ya
+  usaba el creador viejo con LPC (que solo trae 3 siluetas para 5 niveles). Dos ventajas: **cero
+  generaciones** y **funciona sobre cualquier prenda**, incluidas las que se generen mañana, porque
+  estira el resultado ya compuesto.
+- **Se estira desde el CENTRO de cada figura, no de la celda:** cada vista tiene la figura ligeramente
+  descentrada y estirar desde el sitio equivocado la desplazaría de lado al engordar.
+- **La cabeza nunca se estira:** una cabeza más ancha no se lee como complexión, se lee como
+  deformidad. En la mujer las caderas acompañan al torso a un 60 % del factor.
+- **Límite honesto:** hasta ±18 % la silueta ensancha de forma creíble; más allá el dibujo se estira
+  de forma visible (las rayas de la ropa se duplican). Por eso hay 5 niveles y no más.
+- **Orden importante:** la complexión se aplica ANTES de teñir, para que el color se calcule sobre la
+  silueta definitiva. `lib/game/complexion.js`.
