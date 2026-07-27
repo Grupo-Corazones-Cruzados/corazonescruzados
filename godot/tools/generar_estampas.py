@@ -89,6 +89,7 @@ INSERTADAS = {
     71: 3,   # el padre da el beso de buenas noches a su hija, justo tras la 70
     72: 3,   # los padres abrazados en su cuarto ("TE AMO"), justo tras la 71
     73: 3,   # el Hoyo solo, con una lucecita violeta dentro, justo tras la 72
+    74: 3,   # los canales de riego del pueblo con brillos violetas, tras la 73
 }
 
 
@@ -507,6 +508,44 @@ ESCENAS = [
         "como una estrellita atrapada en el fondo. Es el ÚNICO color cálido/distinto de la "
         "imagen. "
         "SENSACIÓN: misterio y esperanza secreta. Nadie lo ve, pero ahí abajo hay algo vivo."),
+    # --- INSERTADA: va justo DESPUÉS de la 73 (los canales de riego con violeta) ---
+    (74, ["assets/Prologo/escenas/escena_73.png",
+          "assets/Prologo/escenas/escena_69.png"],
+        "MISMA NOCHE, MISMO ESTILO DE DIBUJO, MISMA ESCALA y MISMA PALETA que las imágenes de "
+        "referencia: cielo azul muy oscuro estrellado con la luna, luz lunar plateada y fría "
+        "como única luz natural, pixel-art 2D de sombreado plano. Las estrellas, en posiciones "
+        "algo distintas a las de las referencias. "
+        "ES OTRA ZONA DEL MISMO PUEBLO — LA ZONA DE CULTIVO: PROHIBIDO ABSOLUTAMENTE que "
+        "aparezca el Hoyo, ni ningún agujero, hueco, boquete ni cráter en la tierra: el suelo "
+        "está entero. Aquí se ven los HUERTOS de la aldea: PARCELAS de tierra cultivada "
+        "ordenadas en BANCALES rectangulares, con SURCOS y HILERAS de plantas (matas de "
+        "hortalizas, plantas de maíz altas al fondo, hojas de calabaza y col), separadas unas "
+        "de otras por caballones de tierra. "
+        "LO PRINCIPAL — LOS CANALES DE RIEGO CON BRILLOS VIOLETAS: entre las parcelas corren "
+        "CANALES DE AGUA estrechos (acequias de tierra), que cruzan la imagen y se ramifican "
+        "hacia los surcos. El AGUA de esos canales LLEVA BRILLITOS VIOLETAS: muchos PUNTOS de "
+        "luz violeta/morada PEQUEÑOS, como chispitas o estrellitas diminutas, flotando en la "
+        "corriente y repartidos a lo largo de TODOS los canales, más juntos en algunos tramos y "
+        "más sueltos en otros. El agua tiene además un RESPLANDOR violeta suave que la hace "
+        "brillar por dentro y que tiñe los bordes de tierra del canal y las plantas más "
+        "cercanas con un halo morado tenue. Los brillos van SOLO en el agua de los canales: "
+        "PROHIBIDO que llenen el cielo, que floten por el aire como luciérnagas por toda la "
+        "imagen, o que salgan rayos o columnas de luz. El violeta es el ÚNICO color distinto de "
+        "una imagen por lo demás azul y fría. "
+        "DETALLES RÚSTICOS, sin nada de tecnología: una COMPUERTA de madera pequeña en un canal "
+        "para desviar el agua (una tablilla con su palanca), una NORIA o rueda de madera "
+        "pequeña de riego, un par de herramientas de mano apoyadas (azada y rastrillo de "
+        "madera), cestos de mimbre en un borde, un espantapájaros sencillo, y una cerca baja de "
+        "palos y cuerda alrededor de los huertos. "
+        "AL FONDO, MUY LEJOS y MUY PEQUEÑAS, las siluetas oscuras del poblado con sus "
+        "ventanitas amarillas encendidas, como en la segunda referencia: la misma escala "
+        "diminuta, y una casa mide al menos tres o cuatro veces la altura de una persona. "
+        "NO HAY NADIE: PROHIBIDO que aparezca ninguna figura humana. Los huertos están solos en "
+        "la noche. "
+        "PROHIBIDO ABSOLUTAMENTE cualquier cosa eléctrica: NI farolas, NI bombillas, NI cables, "
+        "NI postes, NI máquinas, NI tuberías modernas. Todo es tierra, madera, cuerda y agua. "
+        "SENSACIÓN: el secreto de por qué a este pueblo nunca le faltó comida; algo bueno viaja "
+        "por el agua hasta lo que da de comer."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "

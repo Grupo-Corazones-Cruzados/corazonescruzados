@@ -110,7 +110,7 @@ const TRAMOS := [
 	# (ya de camino a casa, otra zona) van detrás de la 3. Las estampas nuevas se
 	# numeran a partir de 67 para no renumerar las 66 originales: el ORDEN lo
 	# manda esta lista, no el número de archivo.
-	{ "desde_verso": 0, "escenas": [2, 3, 67, 68, 69, 70, 71, 72, 73], "seg": 3.0 },
+	{ "desde_verso": 0, "escenas": [2, 3, 67, 68, 69, 70, 73, 74], "seg": 3.0 },
 
 	# Verso 5 ("lo nuestro fue mío") · el Hoyo abandonado y las raíces.
 	{ "desde_verso": 4, "escenas": [7, 8, 9, 11] },
