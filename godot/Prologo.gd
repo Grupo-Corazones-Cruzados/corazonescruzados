@@ -78,6 +78,24 @@ const LETRAS := [
 ## hasta que entra el Acto 4 (verso 9, 70,5 s) solo hay ~68 s para 52 estampas.
 ## Por eso el tramo de la decadencia va como RÁFAGA. Si se quiere que respire,
 ## hay que quitar estampas de esa lista o alargar la canción.
+## ⏱ DURACIÓN A MANO DE UNA ESTAMPA CONCRETA — { nº de escena: segundos }
+## Aquí se le clava el tiempo a las estampas que quieras que se vean más rato.
+## Lo que sobre del tramo se reparte entre las demás. Ejemplo:
+##     const DURACIONES := { 70: 6.0, 71: 5.0, 73: 7.0 }
+## OJO: el tramo dura lo que dura su trozo de canción, así que alargar una
+## estampa ACORTA a las otras del mismo tramo. Si te quedas sin sitio, mueve el
+## corte del tramo a un verso posterior o quítale estampas.
+const DURACIONES := {
+	# 70: 6.0,
+}
+
+
+## --- LAS ESTAMPAS: tramos ANCLADOS A LOS VERSOS ------------------------------
+## Cada tramo admite:
+##   "desde_verso": en qué verso arranca (índice de LETRAS; -1 = antes de cantar)
+##   "escenas":     qué estampas se ven, EN ESE ORDEN
+##   "seg":         (opcional) segundos que dura CADA estampa de este tramo.
+##                  Si no lo pones, se reparte el hueco a partes iguales.
 const TRAMOS := [
 	# Antes de que empiece a cantar: una sola estampa, quieta, abriendo el prólogo.
 	{ "desde_verso": -1, "escenas": [1] },
@@ -137,6 +155,9 @@ const TRAMOS := [
 @export var cola_final: float = 4.0
 ## Duración del cruce entre estampas (se recorta solo si la estampa dura poco).
 @export var crossfade: float = 0.6
+## Imprime en la consola, al arrancar, cuánto dura EXACTAMENTE cada estampa.
+## Úsalo para ajustar DURACIONES y los cortes de TRAMOS.
+@export var mostrar_reparto: bool = true
 ## Qué parte del hueco de un verso se tarda en teclearlo (0.35 = el 35 %).
 @export_range(0.1, 1.0, 0.05) var proporcion_tecleo: float = 0.35
 ## Tope de segundos para teclear un verso. Es lo que garantiza que la frase
@@ -358,8 +379,13 @@ func _inicio_tramo(tramo: Dictionary) -> float:
 
 
 ## Convierte los TRAMOS en una lista plana de { "t": segundo, "escena": nº }.
-## Cada tramo ocupa desde su verso hasta el verso del tramo siguiente, y reparte
-## sus estampas por igual dentro de ese hueco. Se saltan las que no existan.
+##
+## Cómo se decide cuánto dura cada estampa, por orden de prioridad:
+##   1. Si la estampa está en DURACIONES → dura EXACTAMENTE esos segundos.
+##   2. Si su tramo tiene "seg" → dura esos segundos.
+##   3. Si no → se reparte a partes iguales el tiempo que sobre en el tramo.
+## El tramo termina cuando empieza el siguiente (lo marca la canción), así que
+## alargar una estampa acorta a las demás del mismo tramo.
 func _calcular_plan_imagenes() -> Array:
 	var plan: Array = []
 	var final := fin_imagenes
@@ -387,18 +413,62 @@ func _calcular_plan_imagenes() -> Array:
 			continue
 
 		var hueco: float = maxf(0.1, hasta - desde)
-		var seg: float = hueco / float(escenas.size())
-		for j in escenas.size():
-			plan.append({ "t": desde + seg * float(j), "escena": escenas[j] })
+		var seg_tramo: float = float(tramo.get("seg", 0.0))   # 0 = sin ritmo propio
 
-		# Aviso honesto: si las estampas van a menos de 1 s se ven como un
-		# destello y no se llegan a leer.
-		if seg < 1.0:
-			push_warning("Prólogo: el tramo que empieza en %.1f s mete %d estampas en %.1f s "
-				% [desde, escenas.size(), hueco]
-				+ "(%.2f s cada una). Quita estampas de ese tramo o alarga la canción." % seg)
-		print("Prólogo · tramo desde %6.2f s → %6.2f s : %2d estampas, %.2f s cada una"
-			% [desde, hasta, escenas.size(), seg])
+		# 1) Duración fija de cada estampa (si la tiene) y cuánto tiempo queda
+		#    para repartir entre las que no la tienen.
+		var duraciones: Array = []
+		var ocupado := 0.0
+		var libres := 0
+		for n in escenas:
+			var d := 0.0
+			if DURACIONES.has(n):
+				d = float(DURACIONES[n])
+			elif seg_tramo > 0.0:
+				d = seg_tramo
+			if d > 0.0:
+				ocupado += d
+			else:
+				libres += 1
+			duraciones.append(d)
+
+		# 2) Lo que sobra, a partes iguales entre las estampas sin duración fija.
+		var seg_libre := 0.0
+		if libres > 0:
+			seg_libre = maxf(0.15, (hueco - ocupado) / float(libres))
+			for j in duraciones.size():
+				if duraciones[j] <= 0.0:
+					duraciones[j] = seg_libre
+
+		# 3) Colocarlas una detrás de otra desde el inicio del tramo.
+		var t := desde
+		var minimo := 999.0
+		for j in escenas.size():
+			plan.append({ "t": t, "escena": escenas[j] })
+			minimo = minf(minimo, duraciones[j])
+			t += duraciones[j]
+
+		# Avisos honestos.
+		if minimo < 1.0:
+			push_warning("Prólogo: en el tramo que empieza en %.1f s hay estampas de solo %.2f s "
+				% [desde, minimo]
+				+ "(%d estampas en %.1f s). Se ven como un destello: quítale estampas, "
+				% [escenas.size(), hueco]
+				+ "muévele el corte a un verso posterior o alarga la canción.")
+		if t > hasta + 0.05:
+			push_warning("Prólogo: el tramo que empieza en %.1f s se pasa %.1f s de su hueco "
+				% [desde, t - hasta]
+				+ "(las duraciones fijas suman de más). Las siguientes estampas irán tarde.")
+
+		print("Prólogo · tramo %6.2f s → %6.2f s : %2d estampas, %.2f s cada una%s"
+			% [desde, hasta, escenas.size(), hueco / float(escenas.size()),
+				("  (con duraciones fijas)" if ocupado > 0.0 else "")])
+
+		if mostrar_reparto:
+			for j in escenas.size():
+				print("    escena %2d  ->  entra en %6.2f s   dura %5.2f s%s"
+					% [escenas[j], plan[plan.size() - escenas.size() + j]["t"],
+						duraciones[j], ("  [FIJA]" if DURACIONES.has(escenas[j]) else "")])
 
 	plan.sort_custom(func(a, b): return float(a["t"]) < float(b["t"]))
 	return plan
