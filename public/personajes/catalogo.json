@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "celda": {
+    "ancho": 96,
+    "alto": 128
+  },
+  "bandas": {
+    "cuello": 42,
+    "cintura": 80
+  },
+  "sexos": {
+    "mujer": {
+      "base": "/personajes/base/mujer.png",
+      "peinado": [
+        {
+          "id": "base",
+          "nombre": "Base",
+          "ruta": "/personajes/base/mujer.png"
+        },
+        {
+          "id": "melena-corta",
+          "nombre": "Melena corta",
+          "ruta": "/personajes/mujer/pelo/melena-corta.png"
+        },
+        {
+          "id": "recogido",
+          "nombre": "Recogido",
+          "ruta": "/personajes/mujer/pelo/recogido.png"
+        },
+        {
+          "id": "trenza-corta",
+          "nombre": "Trenza corta",
+          "ruta": "/personajes/mujer/pelo/trenza-corta.png"
+        }
+      ],
+      "accesorio": [
+        {
+          "id": "ninguno",
+          "nombre": "Ninguno",
+          "ruta": null
+        },
+        {
+          "id": "capucha-parda",
+          "nombre": "Capucha parda",
+          "ruta": "/personajes/mujer/tocado-capa/capucha-parda.png"
+        },
+        {
+          "id": "panuelo-verde",
+          "nombre": "Panuelo verde",
+          "ruta": "/personajes/mujer/tocado-capa/panuelo-verde.png"
+        }
+      ],
+      "arriba": [
+        {
+          "id": "base",
+          "nombre": "Base",
+          "ruta": "/personajes/base/mujer.png"
+        },
+        {
+          "id": "blusa-cruda",
+          "nombre": "Blusa cruda",
+          "ruta": "/personajes/mujer/superior/blusa-cruda.png"
+        },
+        {
+          "id": "blusa-verde",
+          "nombre": "Blusa verde",
+          "ruta": "/personajes/mujer/superior/blusa-verde.png"
+        },
+        {
+          "id": "chal-granate",
+          "nombre": "Chal granate",
+          "ruta": "/personajes/mujer/superior/chal-granate.png"
+        },
+        {
+          "id": "corpino-marron",
+          "nombre": "Corpino marron",
+          "ruta": "/personajes/mujer/superior/corpino-marron.png"
+        }
+      ],
+      "abajo": [
+        {
+          "id": "base",
+          "nombre": "Base",
+          "ruta": "/personajes/base/mujer.png"
+        },
+        {
+          "id": "falda-delantal",
+          "nombre": "Falda delantal",
+          "ruta": "/personajes/mujer/inferior/falda-delantal.png"
+        },
+        {
+          "id": "falda-marron",
+          "nombre": "Falda marron",
+          "ruta": "/personajes/mujer/inferior/falda-marron.png"
+        },
+        {
+          "id": "falda-ocre",
+          "nombre": "Falda ocre",
+          "ruta": "/personajes/mujer/inferior/falda-ocre.png"
+        }
+      ]
+    },
+    "hombre": {
+      "base": "/personajes/base/hombre.png",
+      "peinado": [
+        {
+          "id": "base",
+          "nombre": "Base",
+          "ruta": "/personajes/base/hombre.png"
+        },
+        {
+          "id": "corto-revuelto",
+          "nombre": "Corto revuelto",
+          "ruta": "/personajes/hombre/pelo/corto-revuelto.png"
+        },
+        {
+          "id": "flequillo",
+          "nombre": "Flequillo",
+          "ruta": "/personajes/hombre/pelo/flequillo.png"
+        },
+        {
+          "id": "rapado",
+          "nombre": "Rapado",
+          "ruta": "/personajes/hombre/pelo/rapado.png"
+        }
+      ],
+      "accesorio": [
+        {
+          "id": "ninguno",
+          "nombre": "Ninguno",
+          "ruta": null
+        },
+        {
+          "id": "capucha-parda",
+          "nombre": "Capucha parda",
+          "ruta": "/personajes/hombre/tocado-capa/capucha-parda.png"
+        },
+        {
+          "id": "gorra-parda",
+          "nombre": "Gorra parda",
+          "ruta": "/personajes/hombre/tocado-capa/gorra-parda.png"
+        }
+      ],
+      "arriba": [
+        {
+          "id": "base",
+          "nombre": "Base",
+          "ruta": "/personajes/base/hombre.png"
+        },
+        {
+          "id": "camisa-cruda",
+          "nombre": "Camisa cruda",
+          "ruta": "/personajes/hombre/superior/camisa-cruda.png"
+        },
+        {
+          "id": "camisa-verde",
+          "nombre": "Camisa verde",
+          "ruta": "/personajes/hombre/superior/camisa-verde.png"
+        },
+        {
+          "id": "chaleco-cuero",
+          "nombre": "Chaleco cuero",
+          "ruta": "/personajes/hombre/superior/chaleco-cuero.png"
+        },
+        {
+          "id": "tunica-parda",
+          "nombre": "Tunica parda",
+          "ruta": "/personajes/hombre/superior/tunica-parda.png"
+        }
+      ],
+      "abajo": [
+        {
+          "id": "base",
+          "nombre": "Base",
+          "ruta": "/personajes/base/hombre.png"
+        },
+        {
+          "id": "pantalon-gris",
+          "nombre": "Pantalon gris",
+          "ruta": "/personajes/hombre/inferior/pantalon-gris.png"
+        },
+        {
+          "id": "pantalon-marron",
+          "nombre": "Pantalon marron",
+          "ruta": "/personajes/hombre/inferior/pantalon-marron.png"
+        },
+        {
+          "id": "pantalon-remendado",
+          "nombre": "Pantalon remendado",
+          "ruta": "/personajes/hombre/inferior/pantalon-remendado.png"
+        }
+      ]
+    }
+  }
+}

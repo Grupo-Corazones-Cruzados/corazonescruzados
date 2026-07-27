@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation';
 import PixelStars from '@/components/landing/PixelStars';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import PointerCursor from '@/components/landing/PointerCursor';
-import CharacterCreator, {
-  type CharacterConfig,
-} from '@/components/landing/CharacterCreator';
+// El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
+// bandas. El viejo (LPC) se retira; su tipo `CharacterConfig` solo se conserva
+// para leer los personajes creados antes.
+import CreadorPersonaje, {
+  type EleccionPersonaje,
+} from '@/components/landing/CreadorPersonaje';
+import { type CharacterConfig } from '@/components/landing/CharacterCreator';
 import SavePointIndicator from '@/components/landing/SavePointIndicator';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 import OnboardingSlidersModal from '@/components/landing/OnboardingSlidersModal';
@@ -358,8 +362,10 @@ export default function LandingPage() {
   const [bulbOff, setBulbOff] = useState(false);
   const [characterCreatorVisible, setCharacterCreatorVisible] =
     useState(false);
+  // Admite los dos formatos: el nuevo (elección del creador propio) y el viejo
+  // (LPC) de los personajes creados antes de la migración.
   const [characterConfig, setCharacterConfig] =
-    useState<CharacterConfig | null>(null);
+    useState<CharacterConfig | EleccionPersonaje | null>(null);
   const [gameplayActive, setGameplayActive] = useState(false);
   const [savedCharacter, setSavedCharacter] =
     useState<CharacterConfig | null>(null);
@@ -3979,8 +3985,8 @@ export default function LandingPage() {
 
       {/* ====== CHARACTER CREATOR ====== */}
       {characterCreatorVisible && (
-        <CharacterCreator
-          onConfirm={async (cfg) => {
+        <CreadorPersonaje
+          onConfirm={async (cfg: EleccionPersonaje) => {
             // Final guard: re-check before persisting a new character.
             // If the network finally surfaces an existing account, route
             // the user into it instead of creating a duplicate.
@@ -4012,7 +4018,7 @@ export default function LandingPage() {
               const r = await fetch('/api/character/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ alias: cfg.name, characterData: cfg }),
+                body: JSON.stringify({ alias: cfg.nombre, characterData: cfg }),
               });
               if (r.ok) {
                 setSavePointTrigger((n) => n + 1);

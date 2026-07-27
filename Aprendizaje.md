@@ -2218,3 +2218,22 @@ la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas mir
   de forma visible (las rayas de la ropa se duplican). Por eso hay 5 niveles y no más.
 - **Orden importante:** la complexión se aplica ANTES de teñir, para que el color se calcule sobre la
   silueta definitiva. `lib/game/complexion.js`.
+
+#### P30 — Del probador a la APP: creador real y hoja para Godot · ✅ Hecho
+- **Un solo módulo de composición** (`lib/game/componer.js`) que usan **las dos partes**: el creador en
+  el navegador y el servidor al generar la hoja para Godot. Así lo que el jugador ve al crearse es
+  exactamente lo que carga el juego, sin dos implementaciones que se desincronicen.
+- **El orden de composición no es arbitrario**, cada paso depende del anterior: bandas → complexión
+  (antes de teñir, para que el color se calcule sobre la silueta definitiva) → color → sellos (sobre
+  la piel ya teñida) → accesorio encima con su color propio.
+- **El catálogo se GENERA** (`scripts/catalogo-personaje.mjs` → `public/personajes/catalogo.json`): al
+  añadir una prenda con el generador basta relanzarlo y aparece en el creador. No se mantiene a mano.
+- **Se guarda la ELECCIÓN, no la imagen**: `{sexo, peinado, accesorio, arriba, abajo, complexion,
+  pelo, piel, ojos, boca, colorOjos, nombre}`. Pesa nada, permite editar el personaje más adelante y
+  —lo importante— **si mañana se corrige una pieza, los personajes existentes mejoran solos**.
+- **`GET /api/character/hoja`** devuelve el PNG de 384×128 ya compuesto. Godot pide una imagen y
+  listo: no tiene que saber de peinados, bandas ni rampas. Se compone al vuelo (unos ms) en vez de
+  guardarse, justo para que la mejora de una pieza llegue sola.
+- ⚠️ **PENDIENTE en Godot:** hoy el juego pide `/api/character/layers` (formato LPC). Hay que
+  cambiarlo para que use `/api/character/hoja`. Los personajes creados con el creador VIEJO devuelven
+  **409** en la hoja nueva: hay que volver a crearlos (o escribir una migración).
