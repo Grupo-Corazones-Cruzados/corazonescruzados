@@ -389,6 +389,15 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     un padre, la cabeza del hermano queda por debajo, con un hueco visible del grosor de media
     cabeza; si quedan a la misma altura, está MAL"*. Convertir la proporción en algo que el
     modelo pueda **comprobar en la imagen** es el escalón siguiente a la regla 33.
+33-ter. **⚠ "EDITA esta imagen CONSERVANDO todo" BLOQUEA cualquier cambio de las figuras.**
+    La 53 llevaba tres intentos sin que cambiaran las alturas: medido, las tres cabezas seguían
+    en y=349/349/353. La causa no era la instrucción, era que **el prompt usaba la propia
+    escena_53 como referencia con la orden de conservarlo todo**. Para cambiar anatomía,
+    proporciones o poses hay que **generar de cero, sin usar la escena como referencia de sí
+    misma**, asumiendo que se rehace la composición (costó 4 tiradas recuperar perseguidores,
+    tallas, dirección y armas). Y las tallas se acertaron dándolas como **porcentajes con
+    recuento**: "adulto 100 % (dos figuras), adolescente 80 % (una), niños 50 % (dos);
+    comprueba que haya dos grandes, una intermedia y dos pequeñas".
 34. **Cada tirada arregla lo pedido y SUELTA lo que ya estaba bien.** Es el comportamiento más
     costoso del pipeline: la 81 llevó **9 generaciones** porque al pedir el gesto se perdía la
     silueta, al pedir la silueta se perdían las poses, y así. Dos consecuencias prácticas:
