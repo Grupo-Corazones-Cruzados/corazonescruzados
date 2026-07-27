@@ -149,8 +149,11 @@ nueva se mide en el lienzo de 960×540, nunca en píxeles de ventana.**
   sobre negro, con **letra de tamaño fijo** (`tamano_letra` = 24, `Label` centrado, sin
   outline). **Auto-avance** con crossfade. `GUION` = 20 bloques de texto ↔ grupos de
   escenas: cubre **las 66 estampas exactamente una vez** (verificado; 0 duplicadas, 0
-  faltantes) → ≈ **4 min 24 s** a 4 s/escena. Esc / botón "Saltar" van a `Intro.tscn`.
-  Todo ajustable por Inspector (`@export`: tiempos + tamaños fijos).
+  faltantes) → ≈ **4 min 24 s** a 4 s/escena. **Música:** `Pixel Heart Quest - AI Music
+  (8).mp3` (2:15) en **bucle**, entra con fundido de 3 s a −6 dB. Al terminar (o al saltar),
+  **funde a negro y baja la música a la vez** antes de cambiar de escena. Esc / botón
+  "Saltar" van a `Intro.tscn`. Todo ajustable por Inspector (`@export`: tiempos, música,
+  tamaños fijos).
 - `Intro.gd` / `Intro.tscn` — intro cinemática (lluvia CPUParticles2D, descenso de cámara
   por una imagen de fondo, zoom a la cueva, oscurece, `change_scene`). Ajustable por
   `@export`.
@@ -332,6 +335,10 @@ definir; 150+ competitivo.
 - Fuente **Silkscreen** (Regular+Bold, OFL) en `assets/Fonts/`.
 - Assets: `Violeta` (spritesheet 384×96, 48×48), `Desconocido` (2º personaje), `Tile 1`
   32×32 (Mundo Interno). Prólogo: 5 anclas + 66 estampas en `assets/Prologo/`.
+- **Audio (convención, 2026-07-26):** la música del juego vive en
+  **`godot/assets/Audio/Musica/`** (los efectos irán en `godot/assets/Audio/Efectos/`).
+  Primera pista: `Pixel Heart Quest - AI Music (8).mp3` (2:15) = música del prólogo, la
+  eligió Fernando.
 - Docs: `HISTORIA.md`, `GUION_VISUAL.md`, este `Videojuego.md`.
 
 ## 8. Estado actual (2026-07-26)
@@ -409,15 +416,30 @@ definir; 150+ competitivo.
   (a) el **texto de los 20 bloques** del `GUION` (¿le gusta como está?);
   (b) el **ritmo** (4 s/escena → ≈4 min 24 s en total);
   (c) si quiere poder **avanzar a mano** (Espacio/toque) además del automático;
-  (d) **música/ambiente** (hoy el prólogo es MUDO — falta el archivo de audio);
+  (d) **música** ✅ puesta (ver arriba) — falta que Fernando valide el **volumen** (−6 dB) y
+  si le molesta la **costura del bucle** a los 2:15;
   (e) probar el flujo completo `Prologo → Intro → Encuentro` (la `Intro.tscn` necesita que
   Fernando arrastre su imagen de fondo al nodo `Fondo`, hoy está vacío).
+- **Limpieza propuesta (pendiente del ok de Fernando):** quitar los 2 mensajes de
+  `Intro.gd` (`mensajes` = "Hay alguien aquí, ¿Hola?." / "Tengo miedo...") porque **duplican**
+  los diálogos de la niña en `Encuentro.gd`, donde sí tienen sentido (los dice ella).
 - **Fase 1 del juego** (ver §5): creador de personaje → lobby de nieve → primer camino
   "perfil cero" (guía plataforma+juego) → tutoriales de controles → caminos con condiciones +
   economía. Fernando aprende Godot guiado en paralelo.
 
 ## 10. Registro de aprendizajes/decisiones
 
+- **2026-07-26 (música del prólogo):** Fernando eligió `Pixel Heart Quest - AI Music (8).mp3`
+  y pidió moverla a una carpeta de músicas del juego → se creó la convención
+  `assets/Audio/Musica/`. Aprendizajes: (a) la pista dura **2:15** y el prólogo **4:24**, así
+  que hay que **poner el `loop` a mano**: el importador de Godot deja los MP3 sin bucle, y se
+  activa en código con `(pista as AudioStreamMP3).loop = true` (equivalentes para
+  `AudioStreamOggVorbis.loop` y `AudioStreamWAV.loop_mode`). (b) Para que la música **entre**
+  suave se arranca en `musica_db - 40` y se hace tween de `volume_db`; para apagarla, tween a
+  −60 dB y `stop()`. (c) El cierre del prólogo cortaba en seco → ahora `_ir_a_siguiente()`
+  **funde a negro (velo) y baja la música en paralelo** antes de `change_scene_to_file`.
+  (d) Para verificar audio sin hacer ruido: `godot --audio-driver Dummy` (el `playing` y la
+  posición de reproducción siguen siendo reales).
 - **2026-07-26 (montaje del prólogo en Godot — TAMAÑOS FIJOS):** Fernando pidió el prólogo
   **como el de Undertale**: imagen **centrada en un tamaño fijo** y letras **grandes y de
   tamaño fijo debajo**, porque "actualmente el tamaño de las letras depende del tamaño de la

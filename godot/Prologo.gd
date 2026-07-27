@@ -33,6 +33,17 @@ const BASE_ALTO := 540.0
 ## Duración del cruce (crossfade) entre imágenes.
 @export var crossfade: float = 1.0
 
+@export_group("Música")
+## Pista que suena durante todo el prólogo. Dura 2:15 y el prólogo ~4:24, así que
+## se pone en BUCLE automáticamente (se repite una vez).
+@export_file("*.mp3", "*.ogg", "*.wav") var musica: String = "res://assets/Audio/Musica/Pixel Heart Quest - AI Music (8).mp3"
+## Volumen de la música, en decibelios (0 = tal cual viene; negativo = más bajo).
+@export_range(-40.0, 6.0, 0.5) var musica_db: float = -6.0
+## Segundos que tarda la música en entrar al empezar el prólogo.
+@export var musica_entrada: float = 3.0
+## Segundos que tarda en apagarse al terminar (o al saltar el prólogo).
+@export var musica_salida: float = 2.5
+
 @export_group("Tamaños fijos (en el lienzo de 960×540)")
 ## Caja donde se dibuja la estampa, centrada en pantalla. Las imágenes son 16:9
 ## (1344×768), así que conviene mantener esa proporción (672×384 = la mitad exacta).
@@ -116,12 +127,15 @@ const GUION := [
 var _capa_a: TextureRect   # imagen visible
 var _capa_b: TextureRect   # imagen entrante (para el crossfade)
 var _texto: Label          # la narración, debajo de la imagen (tamaño fijo)
+var _musica: AudioStreamPlayer
+var _velo: ColorRect       # negro por encima de todo, para el cierre
 var _terminado := false
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_construir_ui()
+	_construir_musica()
 	_reproducir()
 
 
@@ -185,6 +199,52 @@ func _construir_ui() -> void:
 	saltar.add_theme_color_override("font_hover_color", Color(0.9, 0.9, 0.95))
 	saltar.pressed.connect(_ir_a_siguiente)
 	add_child(saltar)
+
+	# Velo negro POR ENCIMA de todo (transparente), para fundir el cierre del
+	# prólogo a la vez que se apaga la música y no cortar de golpe.
+	_velo = ColorRect.new()
+	_velo.color = Color.BLACK
+	_velo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_velo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_velo.modulate.a = 0.0
+	add_child(_velo)
+
+
+## Arranca la música del prólogo, en bucle y entrando con un fundido suave.
+func _construir_musica() -> void:
+	if musica == "":
+		return
+	var pista: AudioStream = load(musica) as AudioStream
+	if pista == null:
+		push_warning("Prólogo: no se pudo cargar la música '%s'." % musica)
+		return
+	# La pista es más corta que el prólogo → que se repita.
+	if pista is AudioStreamMP3:
+		(pista as AudioStreamMP3).loop = true
+	elif pista is AudioStreamOggVorbis:
+		(pista as AudioStreamOggVorbis).loop = true
+	elif pista is AudioStreamWAV:
+		(pista as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
+
+	_musica = AudioStreamPlayer.new()
+	_musica.stream = pista
+	_musica.bus = &"Master"
+	_musica.volume_db = musica_db - 40.0   # arranca casi en silencio
+	add_child(_musica)
+	_musica.play()
+
+	var t := create_tween()
+	t.tween_property(_musica, "volume_db", musica_db, musica_entrada)
+
+
+## Apaga la música con un fundido y espera a que termine.
+func _apagar_musica() -> void:
+	if _musica == null or not _musica.playing:
+		return
+	var t := create_tween()
+	t.tween_property(_musica, "volume_db", -60.0, musica_salida)
+	await t.finished
+	_musica.stop()
 
 
 ## Una capa de imagen anclada a la caja FIJA (misma posición y tamaño siempre).
@@ -270,10 +330,15 @@ func _fundir(nodo: CanvasItem, destino: float, dur: float) -> void:
 	await t.finished
 
 
+## Cierra el prólogo: funde a negro y apaga la música a la vez, y luego cambia de
+## escena (así no se corta en seco ni la imagen ni el sonido).
 func _ir_a_siguiente() -> void:
 	if _terminado:
 		return
 	_terminado = true
+	_apagar_musica()
+	if _velo != null:
+		await _fundir(_velo, 1.0, musica_salida)
 	if escena_siguiente != "":
 		get_tree().change_scene_to_file(escena_siguiente)
 
