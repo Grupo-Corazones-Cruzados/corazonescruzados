@@ -404,6 +404,13 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     (a) **una corrección por tirada** y **repetir en cada prompt las reglas ya conseguidas**
     (sobre todo la de la silueta, que se perdía siempre); (b) **guardar SIEMPRE la versión
     anterior** antes de regenerar (ver regla 25), porque a veces hay que volver.
+34-bis. **⭐ NO REESCRIBIR EL PROMPT: AÑADIR SOBRE EL QUE YA FUNCIONA.** Aviso de Fernando
+    (2026-07-27): *"estás quitando y sacando detalles que ya funcionan"*. Al corregir la 53 se
+    reescribían bloques enteros y cada tirada perdía algo ya conseguido (la dirección de la
+    huida, el caos, la variedad de las figuras). Lo que lo resolvió: **recuperar con `git show`
+    el prompt exacto de la versión buena** y añadirle SOLO un párrafo con lo que faltaba, sin
+    tocar una línea más. Regla operativa: versionar los prompts que funcionan (van en git con
+    su imagen) y corregir por ADICIÓN, nunca por reescritura.
 35. **Quitar un elemento por prompt casi nunca funciona.** Pedir "cierra la caja" borró la caja
     entera (escena 80, 3 intentos, incluso planteándolo como añadido y con la caja de
     referencia); pedir "sin niños" los dejó igual (58); pedir "quita la chimenea" no la quitó
