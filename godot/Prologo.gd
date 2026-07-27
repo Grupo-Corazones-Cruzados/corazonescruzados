@@ -245,7 +245,7 @@ const TRAMOS := [
 	# el mundo gris → la codicia → la violencia → los que debían cuidar → la
 	# tierra → la guerra y el gris final.
 	{ "desde_verso": 6, "escenas": [
-	 5, 6, 7
+	 5, 6
 	], "seg": 2  },
 	
 	{ "desde_verso": 7, "escenas": [
@@ -260,8 +260,8 @@ const TRAMOS := [
 	# respirando otra vez. La caída (65) y el fondo del Hoyo (66) caen justo en
 	# los dos últimos versos.
 	{ "desde_verso": 9, "escenas": [
-		53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
-	] },
+		53, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+	], "seg": 1.5  },
 ]
 
 
@@ -272,6 +272,15 @@ const TRAMOS := [
 ## Actívalo para MEDIR los tiempos de la letra pulsando ESPACIO al ritmo del canto.
 ## Al terminar imprime el bloque LETRAS listo para pegar en este script.
 @export var calibrar_letras: bool = false
+
+@export_group("Pruebas")
+## ⏩ PARA PROBAR UN TROZO SIN VERTE TODO EL PRÓLOGO: pon aquí el segundo de la
+## canción por el que quieres empezar y el prólogo arranca directamente ahí
+## (la música se adelanta y los versos, las estampas y la ráfaga se recolocan
+## solos, porque todo va atado a la posición de la canción).
+## Ejemplos: 60.5 = el verso 8 (la ráfaga) · 70.5 = el verso 9 · 98.5 = el 14.
+## Déjalo en 0 para el prólogo entero. ¡Acuérdate de volver a 0 al terminar!
+@export var empezar_en: float = 0.0
 
 @export_group("Ritmo")
 ## Segundo de la canción en que aparece la primera estampa.
@@ -359,6 +368,11 @@ func _ready() -> void:
 		_rafaga = _calcular_rafaga()
 		if mostrar_reparto and not _rafaga.is_empty():
 			_informar_rafaga()
+		# ⏩ Salto de prueba: adelantar la canción hace que todo lo demás salte con
+		# ella, porque versos, estampas y ráfaga se comparan contra su posición.
+		if empezar_en > 0.0 and _musica != null:
+			_musica.seek(empezar_en)
+			print("⏩ Prólogo arrancando en el segundo %.2f (empezar_en)" % empezar_en)
 
 
 func _construir_ui() -> void:
@@ -749,13 +763,16 @@ func _montar_paneles(n: int) -> void:
 		etiqueta.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		etiqueta.autowrap_mode = TextServer.AUTOWRAP_OFF
 		etiqueta.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var fuente: FontFile = load("res://assets/Fonts/Silkscreen-Bold.ttf")
+		# MISMA tipografía que los subtítulos de la narración: Silkscreen Regular y
+		# el mismo blanco azulado. Solo se le añade un contorno FINO, porque aquí
+		# la palabra va sobre la imagen y no sobre negro como los subtítulos.
+		var fuente: FontFile = load("res://assets/Fonts/Silkscreen-Regular.ttf")
 		if fuente != null:
 			etiqueta.add_theme_font_override("font", fuente)
 		etiqueta.add_theme_font_size_override("font_size", _tam_palabra(n))
-		etiqueta.add_theme_color_override("font_color", Color(1, 1, 1))
-		etiqueta.add_theme_constant_override("outline_size", 8)
-		etiqueta.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		etiqueta.add_theme_color_override("font_color", Color(0.93, 0.93, 0.98))
+		etiqueta.add_theme_constant_override("outline_size", 5)
+		etiqueta.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))
 		etiqueta.modulate.a = 0.0
 		t.add_child(etiqueta)
 
@@ -763,14 +780,16 @@ func _montar_paneles(n: int) -> void:
 	_fogonazo(0.5, 0.22)
 
 
-## Tamaño de letra de la palabra según en cuántos paneles esté partida la pantalla.
+## Tamaño de letra de la palabra, tomando como base el de los subtítulos
+## (`tamano_letra`) para que se lean como la misma voz. Cuantos más paneles,
+## más pequeña, para que quepa en su hueco.
 func _tam_palabra(paneles: int) -> int:
 	match paneles:
-		1: return 40
-		2: return 28
-		3: return 24
-		4: return 20
-		_: return 15
+		1: return tamano_letra + 10
+		2: return tamano_letra + 2
+		3: return tamano_letra - 2
+		4: return tamano_letra - 4
+		_: return tamano_letra - 8
 
 
 ## Mete una estampa en un panel, con un golpe de escala y una entrada rápida.
@@ -845,13 +864,13 @@ func _cerrar_rafaga() -> void:
 	etq.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	etq.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	etq.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var fuente: FontFile = load("res://assets/Fonts/Silkscreen-Bold.ttf")
+	var fuente: FontFile = load("res://assets/Fonts/Silkscreen-Regular.ttf")
 	if fuente != null:
 		etq.add_theme_font_override("font", fuente)
-	etq.add_theme_font_size_override("font_size", 56)
-	etq.add_theme_color_override("font_color", Color(1, 1, 1))
-	etq.add_theme_constant_override("outline_size", 10)
-	etq.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	etq.add_theme_font_size_override("font_size", tamano_letra * 2)
+	etq.add_theme_color_override("font_color", Color(0.93, 0.93, 0.98))
+	etq.add_theme_constant_override("outline_size", 6)
+	etq.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))
 	etq.text = final_txt
 	etq.modulate.a = 0.0
 	etq.scale = Vector2(1.15, 1.15)
