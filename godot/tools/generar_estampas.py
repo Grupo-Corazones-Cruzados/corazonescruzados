@@ -84,6 +84,7 @@ ESTILO = (
 INSERTADAS = {
     67: 3,   # la noche de convivencia alrededor del Hoyo va justo tras la 3
     68: 3,   # la aldea se va a dormir a sus casas, justo tras la 67
+    69: 3,   # ya de camino a casa, lejos del Hoyo, justo tras la 68
 }
 
 
@@ -271,8 +272,46 @@ ESCENAS = [
         "izquierda (es el único que todavía lo mira, y aun así se está yendo). "
         "SENSACIÓN: fin del día, calma, sueño, un lugar que se queda solo. Nada dramático, "
         "nada triste todavía. Mantén IDÉNTICOS el trazo, la paleta, el escenario y el TAMAÑO "
-        "de las figuras de la referencia: lo que cambia es que es MÁS DE NOCHE, la fogata es "
-        "solo brasas y la gente SE VA caminando hacia la derecha."),
+        "de las figuras de la referencia: lo que cambia es que es MÁS DE NOCHE, la fogata está "
+        "APAGADA y la gente SE VA caminando hacia la izquierda."),
+    # --- INSERTADA: va justo DESPUÉS de la 68 (ya de camino a casa, sin el Hoyo) ---
+    (69, ["assets/Prologo/escenas/escena_68.png"],
+        "MISMA NOCHE, MISMO ESTILO DE DIBUJO, MISMA PALETA y MISMA ESCALA de figuras que la "
+        "imagen de referencia: sigue siendo la MISMA noche de luna, con el cielo azul muy "
+        "oscuro estrellado, la luz lunar plateada y fría como única luz del campo, y las "
+        "MISMAS personas PEQUEÑAS y simples (sprites pequeños y distantes, NUNCA primeros "
+        "planos ni caras detalladas). Las estrellas, en posiciones algo distintas a las de la "
+        "referencia. "
+        "ES OTRA ZONA, YA NO ES EL LUGAR DEL HOYO: PROHIBIDO ABSOLUTAMENTE que aparezca el "
+        "Hoyo, ni ningún agujero, hueco, boquete, cráter, grieta ni hendidura en la tierra. "
+        "El suelo está ENTERO, sin ninguna abertura. Tampoco hay fogata, ni brasas, ni humo. "
+        "EL LUGAR: un tramo de campo abierto por el que la aldea vuelve a casa, con un CAMINO "
+        "de tierra que cruza la imagen y se aleja hacia la IZQUIERDA. "
+        "(a) EN LA ZONA IZQUIERDA, AL FONDO Y A LO LEJOS: EL POBLADO. Unas CINCO O SEIS "
+        "casitas humildes de campo, PEQUEÑAS y distantes (tejados a dos aguas, paredes "
+        "sencillas), con VENTANITAS ENCENDIDAS de luz cálida amarilla: son los únicos puntos "
+        "cálidos de toda la imagen. Es adonde va la gente. "
+        "(b) TAMBIÉN EN LA ZONA IZQUIERDA, alrededor y entre las casas: MUCHA MÁS VEGETACIÓN "
+        "que en el resto del cuadro, una arboleda de árboles frondosos de copa oscura con "
+        "arbustos y matorrales, de modo que ese lado se vea verde, vivo y habitado. La zona "
+        "DERECHA, en cambio, queda como campo abierto y despejado, que es de donde vienen. "
+        "(c) LA GENTE, camino a casa: TODAS las personas CAMINAN HACIA LA IZQUIERDA, hacia el "
+        "poblado, vistas de espaldas y de tres cuartos. POSTURA OBLIGATORIA EN CADA FIGURA: "
+        "PIERNAS ABIERTAS EN PLENO PASO, una adelantada y otra atrasada bien separadas, el "
+        "torso girado a la izquierda y los brazos en movimiento, como sprites de CAMINAR "
+        "congelados a media zancada. PROHIBIDO: figuras con los DOS PIES JUNTOS, figuras "
+        "quietas, figuras de FRENTE mirando al espectador, corrillos charlando, gente sentada "
+        "o arrodillada. "
+        "REPARTO: van DISPERSOS y DESORDENADOS, NUNCA en fila ni a la misma altura. DOS O "
+        "TRES figuras ya están LLEGANDO, muy cerca de las primeras casas y muy pequeñas por la "
+        "distancia; otro grupo va por el medio del camino; y un par van rezagados a la "
+        "DERECHA, todavía lejos. Huecos grandes e irregulares entre unos y otros. "
+        "Se reconocen los mismos grupos de la referencia: un adulto que lleva EN BRAZOS a un "
+        "niño pequeño dormido sobre el hombro; dos adultos cargando entre los dos una cesta y "
+        "una manta enrollada; y una persona ANCIANA encorvada apoyada en un bastón, sostenida "
+        "del brazo por alguien más joven. "
+        "SENSACIÓN: el camino de vuelta a casa después de una buena noche, cansancio tranquilo "
+        "y las ventanas encendidas esperando al fondo."),
     (4, ["assets/Prologo/escenas/escena_01.png", "hoyo"],
         "MISMO estilo de dibujo 2D pixel-art de la primera referencia y, MUY IMPORTANTE, la "
         "MISMA ESCALA: las figuras humanas deben ser PEQUEÑAS y algo distantes, del MISMO "
