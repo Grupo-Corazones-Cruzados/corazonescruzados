@@ -383,6 +383,12 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     "PROHIBIDO que parezca un bebé, con cabeza enorme y cuerpo rechoncho". Igual para objetos:
     "una casa mide tres o cuatro veces la altura de una persona" arregló la 69, y "la niña
     sentada ocupa casi todo el alto del hueco" arregló la ventana de la 81.
+33-bis. **Si la comparación no basta, dar una PRUEBA VISUAL VERIFICABLE.** En la 53 el hermano
+    mayor salía casi tan alto como los padres; ni "adolescente" ni "cuatro quintos de su altura"
+    lo corrigieron. Lo que funcionó: *"si trazas una línea horizontal por encima de la cabeza de
+    un padre, la cabeza del hermano queda por debajo, con un hueco visible del grosor de media
+    cabeza; si quedan a la misma altura, está MAL"*. Convertir la proporción en algo que el
+    modelo pueda **comprobar en la imagen** es el escalón siguiente a la regla 33.
 34. **Cada tirada arregla lo pedido y SUELTA lo que ya estaba bien.** Es el comportamiento más
     costoso del pipeline: la 81 llevó **9 generaciones** porque al pedir el gesto se perdía la
     silueta, al pedir la silueta se perdían las poses, y así. Dos consecuencias prácticas:
