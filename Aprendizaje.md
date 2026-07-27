@@ -2142,3 +2142,21 @@ la boca *son exactamente eso*. Cuatro reglas, y ninguna mira el color: todas mir
   pieza, así que no hay que adivinarlo por color.)
 - **Pendiente conocido:** con tocado puesto, el pelo que asome tampoco se tiñe. Si se quiere ambas
   cosas habrá que generar las combinaciones peinado + tocado.
+
+#### P26 — ⚠️ ERROR DE ARQUITECTURA: peinado y accesorio no son la misma ranura · ✅ Corregido
+- **Corrección del usuario (2026-07-27):** *"no podemos suponer que el peinado o un peinado + un
+  accesorio son un mismo objeto, eso lo elige el usuario por separado"*. Tenía razón: yo había metido
+  peinado y tocado en la **misma banda de cabeza**, así que elegir gorra borraba el peinado, y como
+  parche desactivé el color de pelo al llevar tocado. Eso no es personalización de personaje: en un
+  creador, **cada ranura es una capa independiente** y se dibujan por orden.
+- **La pieza que faltaba: extraer el accesorio como CAPA con alfa** (`scripts/extraer-capa.mjs`). El
+  modelo dibuja el personaje entero con el gorro puesto; se compara con la plantilla y **lo que cambió
+  es el accesorio**. La resta cruda no vale (ruido de ±1 px entre tiradas), así que se limpia con lo
+  ya aprendido: solo cambios de color grandes, se conserva **la masa conectada mayor de cada vista**
+  (un accesorio es una mancha, no píxeles sueltos), se tapan sus huecos y se quitan las motas.
+- **Orden de pintado:** bandas del cuerpo → **teñir pelo y piel** → **accesorio encima**, con su color.
+  Así el pelo se tiñe de verdad aunque lleve capucha, y la capucha conserva el suyo.
+- ⚠️ **Calidad desigual de la extracción:** la capucha y la gorra salen bien; el **pañuelo** peor,
+  porque se generó con la instrucción *"cubre el pelo"* y el diff no distingue bien dónde acaba uno y
+  empieza el otro. Para la próxima tanda de accesorios, la instrucción debe pedir **añadir el
+  accesorio SIN tocar el pelo de debajo**: así el diff es exactamente la pieza.
