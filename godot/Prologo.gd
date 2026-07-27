@@ -200,7 +200,6 @@ const RAFAGA := {
 	# El orden de esta lista es el orden en que aparecen. Reordénala a tu gusto.
 	# (La 51 queda fuera a propósito; la 52 va aparte, como cierre.)
 	"escenas": [
-		13,
 		16, 17, 18, 19, 20,
 		21, 34, 26, 25, 38, 27,
 		23, 29, 45, 46, 44,
@@ -260,7 +259,11 @@ const TRAMOS := [
 	# respirando otra vez. La caída (65) y el fondo del Hoyo (66) caen justo en
 	# los dos últimos versos.
 	{ "desde_verso": 9, "escenas": [
-		53, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+		53, 55, 57, 58
+	], "seg": 1  },
+	
+	{ "desde_verso": 10, "escenas": [
+		60, 61, 62, 63, 64, 65, 66,
 	], "seg": 1.5  },
 ]
 

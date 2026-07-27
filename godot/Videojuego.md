@@ -361,6 +361,59 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     casas ni nada nuevo"). Regla: prohibir explícitamente **construcciones, luces, caminos,
     vallas y carteles**, "ni siquiera pequeños o lejanos", y repetir que el horizonte queda
     LIMPIO igual que en la referencia.
+31. **⭐⭐ LA REGLA MADRE DEL PIPELINE: la REFERENCIA VISUAL manda sobre cualquier descripción.**
+    Todo lo que el modelo NO obedece por texto se consigue **encadenando una imagen que ya lo
+    tenga bien** y diciéndole que lo conserve. Casos de la sesión del 2026-07-27: la posición y
+    el tamaño del Hoyo en la 6 (imposible con "centrado", "en el eje vertical", "un tercio del
+    ancho"; resuelto al encadenar la 5); las casas del horizonte de la 69 (recorte de una
+    versión descartada); las posturas de caminar de la 68 (recorte de la 69). **Antes de pelear
+    con palabras, buscar qué imagen ya resuelve eso y encadenarla.** Al hacerlo hay que decir
+    siempre **qué copiar y qué NO** ("copia solo las posturas, NO su escenario"), porque la
+    referencia arrastra todo lo demás.
+32. **El modelo NO CUENTA figuras.** Pedir "exactamente 6 personas", "solo 5 ancianos" o "dos
+    padres" falla aunque se enumeren una a una con su posición ("(1) detrás izquierda, (2)
+    detrás derecha…"). Salieron 14 en vez de 6 (escena 4), 8-9 en vez de 5 (escena 5) y 1 en
+    vez de 2 (escena 58). Lo que SÍ funciona es acotar por **composición** ("muy separadas, con
+    huecos grandes de hierba entre una y otra", "un anillo amplio y ralo"). Si la cantidad
+    exacta importa, **elegir entre generaciones** en vez de insistir.
+33. **Las PROPORCIONES se piden COMPARANDO, nunca con edades ni medidas.** "Niña de 6 años" no
+    sirve y además dispara el filtro (regla §4.22). Lo que acierta a la primera: "casi de la
+    misma estatura que su hermano", "le llegan al mayor POR EL PECHO, dos tercios de su
+    altura", "cabeza pequeña respecto al cuerpo, más o menos una sexta parte de su altura",
+    "PROHIBIDO que parezca un bebé, con cabeza enorme y cuerpo rechoncho". Igual para objetos:
+    "una casa mide tres o cuatro veces la altura de una persona" arregló la 69, y "la niña
+    sentada ocupa casi todo el alto del hueco" arregló la ventana de la 81.
+34. **Cada tirada arregla lo pedido y SUELTA lo que ya estaba bien.** Es el comportamiento más
+    costoso del pipeline: la 81 llevó **9 generaciones** porque al pedir el gesto se perdía la
+    silueta, al pedir la silueta se perdían las poses, y así. Dos consecuencias prácticas:
+    (a) **una corrección por tirada** y **repetir en cada prompt las reglas ya conseguidas**
+    (sobre todo la de la silueta, que se perdía siempre); (b) **guardar SIEMPRE la versión
+    anterior** antes de regenerar (ver regla 25), porque a veces hay que volver.
+35. **Quitar un elemento por prompt casi nunca funciona.** Pedir "cierra la caja" borró la caja
+    entera (escena 80, 3 intentos, incluso planteándolo como añadido y con la caja de
+    referencia); pedir "sin niños" los dejó igual (58); pedir "quita la chimenea" no la quitó
+    (78). Si el elemento estorba, **regenerar desde una imagen que no lo tenga**; si falta,
+    **encadenar la que sí lo tiene**.
+36. **⭐ EL FILTRO Y LOS MENORES — cómo desbloquearlo:** la 58 se bloqueó **5/5 dos veces
+    seguidas** al juntar en un mismo cuadro a los niños escapando y a los perseguidores
+    armados; suavizar la acción NO bastó. **La solución fue PARTIR LA ESCENA EN DOS estampas:**
+    una con los padres y la amenaza (sin niños) y otra con los niños (sin amenaza). Ambas
+    pasaron a la primera. Además: el **contacto físico** con un menor ("agarrarlo por debajo de
+    los brazos", "izarlo") dispara el filtro, pero **darle la mano** pasa sin problema.
+37. **El plano subjetivo (POV) achica todo lo demás y conviene evitarlo.** En la 81, los
+    antebrazos en primer plano hacían que los niños parecieran duendes, y hubo que describir la
+    anatomía del escorzo ("antebrazos ANCHOS y CORTOS entrando por las esquinas inferiores, no
+    palos finos cruzando la pantalla"). **Fernando propuso quitar el POV y fue lo que resolvió
+    las proporciones de golpe.** Regla: si un POV da problemas de escala, pasar a plano normal.
+38. **Fernando quiere REGENERAR, no editar por código.** Lo dijo expresamente el 2026-07-27:
+    *"yo no quiero que edites; cuando quiera que edites te lo pido"*. Los retoques por código
+    (mover el Hoyo, repintar el cartel) los rechaza aunque sean más exactos. **Regenerar por
+    defecto; editar solo si él lo pide.** (Sí aceptó ediciones puntuales de color/limpieza,
+    como borrar la chimenea del cielo o quitar el violeta de la 75.)
+39. **⚠ Distinguir un FALLO de generación de un resultado malo:** si los reintentos se agotan
+    (503 de saturación o bloqueo del filtro), el `.png` **conserva la versión anterior** y
+    parece que "no cambió nada". Pasó con la 4, cuya corrección nunca llegó a probarse.
+    **Comprobar SIEMPRE el md5 antes de juzgar el resultado** (regla §4.21).
 30. **Órbita de correcciones típicas de Fernando (Acto 4):** cuenta y alturas exactas
     (papá≈mamá≈hermano mayor altos; niña y niño MUCHO más pequeños; el mayor **andrógino**);
     dirección de carrera consistente entre escenas seguidas; silueta del jugador **negra
@@ -481,6 +534,18 @@ definir; 150+ competitivo.
 
 ## 9. Pendientes / próximos pasos
 
+**⏳ Lo que quedó a medias el 2026-07-27:**
+- **Escena 4:** la corrección a SEIS figuras **nunca llegó a probarse** (los 5 reintentos se
+  cayeron por 503 y el `.png` conservó la versión anterior). Relanzar.
+- **Escena 5:** salió con 8-9 ancianos en vez de 5 (ver regla §4.32: el modelo no cuenta).
+- **Escena 80:** se quedó SIN el cajón cerrado tras 3 intentos (ver regla §4.35).
+- **Ordenar el prólogo:** Fernando lleva él mismo `TRAMOS`; hay estampas fuera de la
+  secuencia (4, 5, 6, 10, 12, 71, 72 en algún momento) y hay que cuadrar el reparto: el
+  bloque de la devoción va con más estampas que hueco y la consola avisa.
+- **La tensión de fondo:** ~80 estampas para una canción de 2:15. Recomendación dada a
+  Fernando: **generar una versión más larga de la canción (~4:30)**.
+
+
 - **Prólogo COMPLETO** ✅ (66/66). Opcional: revisar la **42** (industrias contaminando) por si
   se quiere rehacer al estilo actual.
 - **Integrar el prólogo en Godot** ✅ (2026-07-26): 66 estampas reproduciéndose, layout de
@@ -508,6 +573,25 @@ definir; 150+ competitivo.
   economía. Fernando aprende Godot guiado en paralelo.
 
 ## 10. Registro de aprendizajes/decisiones
+
+- **2026-07-27 (sesión larga: prólogo cantado, ráfaga y reescritura del Acto 4):** lo hecho:
+  (a) **El prólogo va sincronizado con la canción** (`Pixel Heart Quest`, 2:15): los versos
+  aparecen en el segundo en que se cantan y las estampas se anclan a los versos. Fernando
+  calibró él mismo los 18 tiempos. (b) **Ráfaga del verso 8**: mosaico que se subdivide en
+  1→2→4→6 paneles para meter ~37 estampas en 10 s **sin estrobo** (cada una aguanta ~0,8 s),
+  con la PALABRA del problema estampada sobre cada panel y cierre en el mundo gris (OLVIDO).
+  (c) **17 estampas nuevas (67–82)**: la noche de convivencia junto al Hoyo, la aldea que se
+  retira, el camino a casa, el interior de la casa, el beso de buenas noches, la pareja, la
+  luz violeta del Hoyo, los canales de riego (con y sin brillo), la inauguración de la
+  fábrica, el periódico, la partida de los jóvenes, el Hoyo de noche con raíces, y la
+  reescritura del Acto 4 (los hijos ya no se esconden en una caja: escapan por la ventana).
+  (d) Se **regeneraron 4, 5, 6, 7 y 58**. (e) Herramientas nuevas: `empezar_en` para arrancar
+  el prólogo en cualquier segundo, `DURACIONES` para clavar el tiempo de una estampa,
+  `mostrar_reparto` para ver el reparto por consola, y `NOMBRES`/`PALABRAS` para ordenar.
+  **Las lecciones de arte de esta sesión están en las reglas §4.31–§4.39** y son las más
+  importantes del pipeline: la referencia visual manda sobre el texto, el modelo no cuenta
+  figuras, las proporciones se piden comparando, cada tirada suelta lo ya conseguido, quitar
+  elementos no funciona, y el filtro con menores se desbloquea partiendo la escena en dos.
 
 - **2026-07-26 (⭐ el prólogo pasa a ir SINCRONIZADO CON LA CANCIÓN):** Fernando pidió que el
   texto del prólogo **sea la letra de su canción** y que **se vea al mismo ritmo que canta**;

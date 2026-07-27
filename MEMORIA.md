@@ -465,6 +465,17 @@ Stack estándar de la casa, con particularidades de este repo:
     usó **puppeteer con el Chrome del sistema** (`executablePath: '/Applications/Google
     Chrome.app/Contents/MacOS/Google Chrome'`; el Chrome de puppeteer no está instalado) y `NODE_PATH`
     apuntando a `node_modules` del repo cuando el script vive fuera del proyecto.
+- **★ VIDEOJUEGO — el PRÓLOGO va CANTADO y sincronizado con la canción (2026-07-27).** Todo el
+  prólogo se compara contra la **posición de reproducción del mp3**, nunca contra temporizadores:
+  los versos aparecen en el segundo en que se cantan y las estampas se anclan a los versos. El
+  instrumental es una **ráfaga en mosaico** (la pantalla se subdivide en 1→2→4→6 paneles) para
+  meter ~37 estampas en 10 s sin que sea un estrobo. Lo más transferible de esa sesión son las
+  **reglas del pipeline de arte por IA** (`godot/Videojuego.md` §4.31–39): **la referencia visual
+  manda sobre cualquier descripción**; el modelo **no cuenta figuras**; las **proporciones se
+  piden comparando**, nunca con edades; **cada tirada suelta lo ya conseguido** (una corrección
+  por vez y guardar la versión previa); **quitar elementos por prompt no funciona**; y con
+  **menores + amenaza el filtro bloquea** → hay que **partir la escena en dos**. Fernando
+  **quiere regenerar, no editar por código**.
 - **★ VIDEOJUEGO — fuente de verdad viva: `godot/Videojuego.md` + skill `/videojuegogcc` (2026-07-23).**
   Todo el desarrollo del videojuego (arquitectura Godot, historia/lore, pipeline de arte por IA
   con Gemini/Nano Banana, REGLAS de consistencia del arte, diseño de fases y cómo trabajar con
