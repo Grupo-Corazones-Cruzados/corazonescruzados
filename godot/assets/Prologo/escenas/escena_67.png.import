@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/escena_67.png-1e9e1f3d6d9f8af37ff38b29c943b05
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
