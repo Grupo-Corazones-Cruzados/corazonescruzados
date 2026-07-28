@@ -540,6 +540,46 @@ verificado, el `AudioContext` **nace `running`** (nunca pasa por `suspended`) y 
 desde el primer segundo. **Regla general: en el export web, nada que suene puede arrancar solo;
 tiene que haber un gesto del jugador en la propia página del juego, antes de arrancar el motor.**
 
+### ⭐ LA LETRA IBA MÁS TARDE EN EL NAVEGADOR QUE EN EL EDITOR (2026-07-28)
+
+**Síntoma (Fernando):** *"en producción tarda un segundo aproximado más en mostrarse el texto,
+la canción no es acorde a como se muestra"*.
+
+**Lo que NO era** (descartado midiendo, no opinando): el tecleo va por **tween de tiempo**, no
+por fotogramas, así que un móvil lento no lo alarga (medido: 1,599 s en navegador vs 1,594 s en
+escritorio, previsto 1,60). Y el disparo del verso tampoco se retrasaba respecto al reloj
+interno: **0,007 s en navegador vs 0,008 s en escritorio**.
+
+**La causa: `AudioServer.get_output_latency()`.** `_pos_musica()` seguía la receta estándar de
+Godot para juegos rítmicos, que **resta** la latencia de salida. Restarla hace `pos` más pequeño,
+así que cada verso se dispara **exactamente `latencia` segundos MÁS TARDE** en tiempo real.
+Y ahí está la asimetría entre los dos entornos:
+
+| entorno | latencia medida | efecto sobre la letra |
+|---|---|---|
+| editor de Godot | **0,0000 s** | ninguno — es la referencia que ve Fernando |
+| navegador (Chrome escritorio) | **0,0720 s** | 72 ms tarde |
+| navegador (móvil, más aún por Bluetooth) | décimas de segundo | **el desfase que se nota** |
+
+En el motor web la latencia es `ctx.baseLatency + ctx.outputLatency` y además **solo se refresca
+una vez por segundo** (`setInterval` de 1 s en `index.js`).
+
+**Arreglo:** `_pos_musica()` **ya no resta la latencia** — en el navegador se hace lo mismo que
+en el editor, que es justo lo que pedía Fernando ("que se vea como cuando pruebo en Godot").
+Verificado: el verso pasó a dispararse con la posición cruda en 76,509 en vez de ~76,58 (72 ms
+antes, exactamente la latencia) y en escritorio no cambió nada.
+
+Dos mandos nuevos en el Inspector (grupo *Música ▸ Sincronía de la letra*):
+- **`ajuste_sincronia`** (−2…+2 s, por defecto 0): ajuste fino a mano. **Positivo = el texto sale
+  ANTES**, negativo = después. Mueve el prólogo ENTERO contra la canción (versos, estampas y
+  ráfaga a la vez), así que no descuadra nada entre sí. Es lo que hay que tocar si en algún
+  aparato concreto la letra sigue sin caer donde se canta.
+- **`compensar_latencia`** (por defecto `false`): devuelve el comportamiento anterior.
+
+**Regla:** el reloj del prólogo tiene que comportarse **igual en el editor y en el navegador**;
+cualquier corrección que dependa del aparato (latencia de salida) mete un desfase que solo se ve
+en producción, que es donde peor se diagnostica.
+
 **Prueba de humo antes de publicar** (saca los `SCRIPT ERROR` sin abrir el editor):
 ```bash
 godot --headless --path godot --quit-after 900

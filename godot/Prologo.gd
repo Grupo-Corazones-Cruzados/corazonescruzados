@@ -89,7 +89,8 @@ const DURACIONES := {
 	4: 2,
 	75: 1.5,
 	76: 2,
-	77: 2.5
+	77: 2.5,
+	63: 2.5
 	
 }
 
@@ -283,8 +284,16 @@ const TRAMOS := [
 	], "seg": 1  },
 	
 	{ "desde_verso": 10, "escenas": [
-		83, 61, 62, 63, 64, 65, 66,
+		83, 61, 62, 63
 	], "seg": 1.5  },
+	
+	{ "desde_verso": 11, "escenas": [
+		64
+	], "seg": 6.5  },
+	
+	{ "desde_verso": 12, "escenas": [
+		84
+	], "seg": 3.5  },
 ]
 
 
@@ -337,6 +346,25 @@ const TRAMOS := [
 @export var musica_entrada: float = 3.0
 ## Segundos de fundido final (imagen y música bajan juntas antes de cambiar de escena).
 @export var musica_salida: float = 4.0
+
+@export_subgroup("Sincronía de la letra")
+## ⏱ AJUSTE FINO de la letra respecto al canto, en segundos.
+##
+## Solo hace falta si en algún aparato la letra no cae justo donde se canta:
+##   ·  POSITIVO (p. ej. 0.3) → el texto y las estampas salen ANTES.
+##   ·  NEGATIVO (p. ej. -0.3) → salen DESPUÉS.
+## Afecta a TODO el prólogo a la vez (versos, estampas y ráfaga), así que no
+## descuadra nada entre sí: mueve el prólogo entero contra la canción.
+## Con 0 el navegador va igual que el editor, que es lo que se busca.
+@export_range(-2.0, 2.0, 0.05) var ajuste_sincronia: float = 0.0
+## Restar la latencia de salida del audio (la receta estándar de Godot).
+##
+## ⚠ Apagado a propósito: es lo que hacía que en el navegador el texto saliera
+## MÁS TARDE que en el editor. En el editor la latencia medida es 0 s, así que
+## no corrige nada; en el navegador vale decenas o cientos de milisegundos (más
+## aún por Bluetooth) y retrasa cada verso justo esa cantidad. Encenderlo
+## devuelve el comportamiento anterior.
+@export var compensar_latencia: bool = false
 
 @export_group("Tamaños fijos (en el lienzo de 960×540)")
 ## Caja donde se dibuja la estampa, centrada en pantalla. Las imágenes son 16:9
@@ -555,16 +583,30 @@ func _construir_musica() -> void:
 	t.tween_property(_musica, "volume_db", musica_db, musica_entrada)
 
 
-## Segundo EXACTO de la canción, compensando el buffer de audio. Es la receta
-## estándar de Godot para sincronizar cosas con música: `get_playback_position`
-## solo se actualiza cada bloque de mezcla, así que se le suma el tiempo
-## transcurrido desde la última mezcla y se le resta la latencia de salida.
+## Segundo EXACTO de la canción. `get_playback_position` solo se refresca cada
+## bloque de mezcla, así que se le suma el tiempo transcurrido desde la última.
+##
+## ⭐ POR QUÉ YA NO SE RESTA LA LATENCIA DE SALIDA (2026-07-28):
+## la receta estándar de Godot resta `AudioServer.get_output_latency()`, y ESA
+## era la causa de que en el navegador el texto saliera más tarde que probando
+## en el editor. Restar la latencia hace que `pos` sea menor, así que cada verso
+## se dispara exactamente `latencia` segundos MÁS TARDE en tiempo real.
+##   · En el editor la latencia medida es **0,0000 s** → no corrige nada.
+##   · En el navegador es `baseLatency + outputLatency` (medido 0,072 s en un
+##     Chrome de escritorio, y MUCHO más en un móvil, sobre todo con altavoz
+##     Bluetooth) → el texto se iba hacia atrás y la letra dejaba de caer donde
+##     se canta.
+## Como la referencia es "que se vea igual que probando en Godot", en el
+## navegador se hace lo mismo que en el editor: NO restar. Si algún día hace
+## falta, `compensar_latencia` lo devuelve, y `ajuste_sincronia` permite afinar
+## a mano sin tocar código.
 func _pos_musica() -> float:
 	if _musica == null or not _musica.playing:
 		return 0.0
-	return _musica.get_playback_position() \
-		+ AudioServer.get_time_since_last_mix() \
-		- AudioServer.get_output_latency()
+	var pos := _musica.get_playback_position() + AudioServer.get_time_since_last_mix()
+	if compensar_latencia:
+		pos -= AudioServer.get_output_latency()
+	return pos + ajuste_sincronia
 
 
 func _duracion_musica() -> float:
@@ -1142,6 +1184,12 @@ func _mostrar_verso(i: int) -> void:
 	var total := _texto.get_total_character_count()
 	_tween_texto = create_tween()
 	_tween_texto.tween_property(_texto, "visible_characters", total, dur_tecleo)
+
+	# DIAGNÓSTICO TEMPORAL (se quita tras medir).
+	print("DIAGVERSO i=%d t=%.2f raw=%.3f exceso=%.3f lat=%.4f" % [
+		i, float(verso["t"]), _musica.get_playback_position(),
+		_musica.get_playback_position() - float(verso["t"]),
+		AudioServer.get_output_latency()])
 
 
 ## Cruza a la estampa nueva. Si las estampas van muy seguidas, el cruce se
