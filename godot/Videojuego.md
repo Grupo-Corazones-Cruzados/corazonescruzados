@@ -5,7 +5,7 @@
 > correcciones o temas nuevos, se **actualiza** aquí (sin duplicar; corrigiendo lo viejo
 > si algo cambió; fechas absolutas). Documentos hermanos: [HISTORIA.md](HISTORIA.md)
 > (guion/lore + diseño del juego) y [GUION_VISUAL.md](GUION_VISUAL.md) (las 66 estampas
-> del prólogo). Última actualización: **2026-07-26**.
+> del prólogo). Última actualización: **2026-07-28**.
 >
 > **★ HITO (2026-07-26): el PRÓLOGO ESTÁ COMPLETO — las 66 estampas generadas, afinadas y
 > aprobadas por Fernando** (incluidas las correcciones finales de estilo/contenido de las
@@ -13,6 +13,12 @@
 > contienen TODO el detalle (historia completa en §2, arquitectura §3, pipeline y reglas de
 > arte §4, diseño/roadmap §5, cómo trabajar con Fernando §6, estado §8, aprendizajes §10);
 > no hace falta otra skill para poner al día a un agente nuevo.
+>
+> **★ HITO (2026-07-28): PUBLICADO EN PRODUCCIÓN el prólogo de 83 estampas + el personaje
+> articulado.** Desde el 26-jul el juego creció en tres frentes: 17 estampas nuevas (67–83) con
+> el **Acto 4 reescrito**, el **creador de personaje propio** (piezas generadas con IA en el
+> estilo del prólogo, sustituye a LPC) y el **personaje articulado tipo marioneta** en Godot
+> (camino Guardian Tales: esqueleto + anclajes). Ver §8 y §10.
 
 ---
 
@@ -181,6 +187,14 @@ nueva se mide en el lienzo de 960×540, nunca en píxeles de ventana.**
   sobre `ui_left/right/up/down`, así el jugador no necesita cambios.
 - `Violeta.gd` — movimiento 4 direcciones del personaje (teclado + joystick vía `ui_*`).
   Bandera `control_habilitado` para congelarlo (intro/diálogos). Animaciones por Inspector.
+- `PersonajeArticulado.gd` / `PruebaPersonaje.tscn` (2026-07-28) — **el personaje del jugador
+  montado como marioneta**: lee `assets/piezas-mujer.json` + `piezas-mujer.png` (piezas sueltas
+  con su pivote) y arma el muñeco solo — **el torso es la raíz y todo lo demás cuelga de él**.
+  `PruebaPersonaje.tscn` es el **banco de pruebas**: se abre y con **F6** el personaje camina y
+  gira entre vistas, sin levantar la web. **Regla de los pivotes:** lo que **cuelga** (brazos,
+  piernas, faldón) gira por su borde **superior**; lo que se **apoya** (cabeza sobre el cuello,
+  torso sobre la cadera) por el **inferior**. **Límite medido: rotar pixel-art aguanta ~16°**;
+  más allá se ve el escalonado del borde.
 - `IntroDirector.gd` — versión antigua (intro dentro de Main); **en desuso**.
 
 **Convenciones/gotchas Godot:**
@@ -460,6 +474,53 @@ commitear la key ni ponerla en archivos**. Deps: `pip install google-genai pillo
     suelo/loma), salvo la vista aérea de raíces (escena_51). Evitar mencionar **edades
     explícitas** de menores en el prompt (dispara el filtro): decir "muy pequeños/bajitos".
 
+## 4-bis. PUBLICAR EL JUEGO A PRODUCCIÓN (un solo comando)
+
+```bash
+npm run juego:publicar                 # mensaje de commit automático
+npm run juego:publicar "mi mensaje"    # mensaje propio
+```
+
+`scripts/publicar-juego.sh` hace, en orden: **reimporta** Godot → **exporta a web**
+(`public/game/`) → `git add -A` + commit + `pull --rebase` + **push a `main`**. Railway
+auto-despliega en cada push. Si no hay cambios, sale limpio sin crear un commit vacío.
+
+**⚠ ANTES de publicar, comprobar SIEMPRE dos cosas** (aprendido el 2026-07-28):
+
+1. **Las estampas nuevas nacen SIN comprimir** (`compress/mode=0` en su `.png.import`) y son
+   PNG de ~1,7 MB cada una → el `.pck` se dispara. Hay que ponerlas en **WebP con pérdida**:
+   ```bash
+   sed -i '' 's|^compress/mode=0$|compress/mode=1|; s|^compress/lossy_quality=0.7$|compress/lossy_quality=0.85|' \
+     godot/assets/Prologo/escenas/escena_*.png.import
+   ```
+   Medido el 2026-07-28: 15 estampas nuevas pesaban **26 MB** en crudo y el `.pck` quedó en
+   **14,9 MB** al comprimirlas (sin comprimir habría rondado los 40 MB). **No se tocan los PNG
+   originales**, solo su importación; se revierte con `mode=0`.
+   **NO comprimir con pérdida los sprites del personaje** (`piezas-*.png`): son pixel-art que se
+   dibuja al píxel exacto con `nearest` y la pérdida ensucia bordes y alfa. Las estampas sí,
+   porque el prólogo las reescala con `TEXTURE_FILTER_LINEAR`.
+2. **Lo que el juego no abre, fuera del export.** `export_presets.cfg` → `exclude_filter` ya
+   excluye `assets/Prologo/anclas/*` (referencias del generador, −12 MB),
+   `assets/Prologo/referencias/*` (recortes de la regla §4.25) y
+   `assets/Prologo/escenas/Copia*` (los respaldos de la regla §4.34). El prólogo carga por
+   patrón `escena_%02d.png`, así que **cualquier archivo con otro nombre en `escenas/` es peso
+   muerto** que viajaría al navegador.
+
+**Prueba de humo antes de publicar** (saca los `SCRIPT ERROR` sin abrir el editor):
+```bash
+godot --headless --path godot --quit-after 900
+```
+
+**Cómo confirmar qué versión sirve producción** (Railway tarda unos minutos):
+```bash
+curl -sI https://app.grupocc.org/game/index.pck | grep -i content-length   # producción
+stat -f%z public/game/index.pck                                            # local
+```
+⚠ **Evitar publicar mientras alguien está cargando el juego**: desincroniza los tamaños que lee
+la pantalla de carga (se autocorrige, pero da un salto raro). ⚠ **Para VER el juego en
+producción hay que iniciar sesión**: `/juego` está tras `GameEntryGate` — se entra por la
+portada → "Entrar" → login; escribir la URL a pelo devuelve a la portada.
+
 ## 5. Diseño del juego (Fase 1 y progresión)
 
 **Fase 1 (foco tras el prólogo/intro/encuentro):**
@@ -505,7 +566,46 @@ definir; 150+ competitivo.
   eligió Fernando.
 - Docs: `HISTORIA.md`, `GUION_VISUAL.md`, este `Videojuego.md`.
 
-## 8. Estado actual (2026-07-26)
+## 8. Estado actual (2026-07-28)
+
+**Lo hecho entre el 2026-07-27 y el 2026-07-28** (no estaba recogido aquí; el detalle largo vive
+en `MEMORIA.md` → *Decisiones recientes*):
+
+- ✅✅ **PUBLICADO EN PRODUCCIÓN el 2026-07-28** con `npm run juego:publicar` (ver §4-bis):
+  `.pck` **14,9 MB**, prueba de humo sin errores. Incluye las 83 estampas y el personaje
+  articulado.
+- ✅ **17 estampas nuevas (67–83)** y **Acto 4 reescrito**: los hijos ya **no se esconden en una
+  caja**, escapan por la ventana. Las nuevas cuentan la vida ANTES del colapso (la noche de
+  convivencia junto al Hoyo, la aldea que se retira, el interior de la casa, la pareja, la luz
+  violeta del Hoyo, los canales de riego, la fábrica, el periódico, la partida de los jóvenes).
+  **Se numeran a partir de 67 y NUNCA se renumera** (regla §4.22); el orden real lo manda
+  `TRAMOS` en `Prologo.gd`.
+- ✅ **Prólogo CANTADO**: todo se compara contra la posición de reproducción del mp3, los versos
+  salen en el segundo en que se cantan y Fernando calibró él mismo los 18 tiempos. El
+  instrumental es una **ráfaga en mosaico** (la pantalla se subdivide 1→2→4→6 paneles) que mete
+  ~37 estampas en 10 s sin estrobo.
+- ✅ **CREADOR DE PERSONAJE PROPIO** (vive en la app, no en Godot): se retiró la librería LPC
+  porque el personaje no se parecía a las estampas. Las piezas se generan con el **mismo modelo
+  del prólogo** (`gemini-3-pro-image`) anclando el estilo en la **aldeana de `escena_01`**. La
+  plantilla es la hoja base generada (`public/personajes/base/{mujer,hombre}.png`, 384×128 = 4
+  vistas de 96×128) y todo lo demás se genera **editándola**, por eso todas las piezas encajan.
+  Composición **por bandas** (cabeza 0–42 · torso 42–80 · piernas 80–128), no por capas con alfa.
+  Color de pelo/piel, rasgos de la cara y complexión **no cuestan generaciones**: 26 dibujos dan
+  >2 millones de combinaciones. Se guarda **la elección, no la imagen**.
+  ⚠ **La hoja NO la descarga Godot** (el endpoint exige sesión y la cookie no viaja en el export
+  web): la baja la app y se la **inyecta al motor** con `copyToFS('/userfs/...')`.
+- ✅ **ANIMACIÓN — camino Guardian Tales (esqueleto + anclajes)**, decidido por Fernando. El
+  motivo no fue la calidad sino **el coste por pieza**: con capas sincronizadas un casco hay que
+  dibujarlo en CADA fotograma; con esqueleto se dibuja **una vez**. ⚠ **Las piezas se DIBUJAN,
+  no se recortan**: se intentó recortar el esqueleto de la hoja compuesta y no funciona — en un
+  dibujo plano el brazo no existe como objeto, son píxeles pegados al torso, y al girarlo se abre
+  el hombro. `scripts/despiezar.mjs` le pide al modelo el personaje **desmontado en piezas de
+  marioneta** (articulación redondeada, material de sobra en la unión) y `scripts/armar-piezas.mjs`
+  las detecta, clasifica, calcula pivotes y las empaqueta para Godot.
+- ⏳ **Falta despiezar al chico** (hoy solo está `piezas-mujer`), afinar cuello y hombros, y luego
+  **armas/equipo** (anclaje de la mano) y el **combate**.
+
+**Base anterior (2026-07-26), sigue vigente:**
 
 - ✅ Movimiento de Violeta, cámara, mapa TileMapLayer, joystick táctil.
 - ✅ Intro cinemática, sistema de diálogos, escena del encuentro (esqueleto).
@@ -573,6 +673,14 @@ definir; 150+ competitivo.
 
 ## 9. Pendientes / próximos pasos
 
+**⏳ Foco tras la publicación del 2026-07-28 (por orden):**
+1. **Despiezar al chico** (hoy solo existe `assets/piezas-mujer.png/json`) y **afinar cuello y
+   hombros** de la marioneta.
+2. **Armas y equipo** (anclaje de la mano) y después el **combate**.
+3. **Orden y reparto definitivos de las estampas** en `TRAMOS` — lo lleva Fernando; hay 83
+   estampas para una canción de 2:15 (recomendación abierta: generar una versión de ~4:30).
+4. **Fase 1** del juego (creador → lobby de nieve → caminos con condiciones).
+
 **⏳ Lo que quedó a medias el 2026-07-27:**
 - **Escena 4:** la corrección a SEIS figuras **nunca llegó a probarse** (los 5 reintentos se
   cayeron por 503 y el `.png` conservó la versión anterior). Relanzar.
@@ -612,6 +720,27 @@ definir; 150+ competitivo.
   economía. Fernando aprende Godot guiado en paralelo.
 
 ## 10. Registro de aprendizajes/decisiones
+
+- **2026-07-28 (publicación a producción + puesta al día del documento):** Fernando pidió
+  **publicar todo lo nuevo de Godot aunque el juego no esté completo**. Aprendizajes:
+  (a) **El comando es `npm run juego:publicar`** (`scripts/publicar-juego.sh`): reimporta →
+  exporta a web → commit + `pull --rebase` + push a `main`; Railway despliega solo. Detalle
+  completo en la §4-bis nueva.
+  (b) ⚠ **Las estampas nuevas llegan al export SIN comprimir.** Sus `.png.import` nacen con
+  `compress/mode=0`, así que las 15 añadidas desde la última publicación (69–83) iban a meter
+  **26 MB de PNG** en el `.pck`. Al pasarlas a WebP con pérdida (`mode=1`, `lossy_quality=0.85`)
+  el `.pck` quedó en **14,9 MB**. **Es un paso que hay que hacer a mano cada vez que se añade
+  arte** — no lo hace ni el generador ni el script de publicar.
+  (c) **Lo que el juego no abre no debe viajar al navegador.** Se descubrió que
+  `Copia de escena_53.png` (un respaldo de la regla §4.34) estaba entrando al export: el prólogo
+  carga por patrón `escena_%02d.png`, así que jamás la abre. Se añadió
+  `assets/Prologo/escenas/Copia*` al `exclude_filter`, junto a las anclas y las referencias.
+  **Regla: si guardas una versión descartada dentro de `escenas/`, excluye su patrón del export.**
+  (d) **Este documento se había quedado desfasado** (paró el 26-jul mientras el trabajo de los
+  días 27 y 28 —creador de personaje, personaje articulado, estampas 67–83— solo se registraba en
+  `MEMORIA.md`). Corregido en §3, §8 y aquí. **Lección de proceso: al cerrar un bloque de trabajo
+  del juego hay que actualizar `Videojuego.md`, no solo `MEMORIA.md`** — si no, la "fuente de
+  verdad del videojuego" deja de serlo.
 
 - **2026-07-27 (sesión larga: prólogo cantado, ráfaga y reescritura del Acto 4):** lo hecho:
   (a) **El prólogo va sincronizado con la canción** (`Pixel Heart Quest`, 2:15): los versos
