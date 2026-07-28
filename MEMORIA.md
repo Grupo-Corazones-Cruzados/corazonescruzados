@@ -275,6 +275,60 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **CREADOR DE PERSONAJE PROPIO — catálogo generado con IA, en el estilo del prólogo (2026-07-27/28).**
+  Se retira la librería descargada (LPC): el personaje no se parecía a las estampas. Ahora las piezas
+  se generan con **el mismo modelo de Google que el prólogo** (`gemini-3-pro-image`, clave
+  `GEMINI_API_KEY` en `.env`), anclando el estilo en la **aldeana de `escena_01.png`**.
+  - **La PLANTILLA es la hoja base generada**, no la estampa: `public/personajes/base/{mujer,hombre}.png`
+    (384×128 = 4 vistas de 96×128). Todo lo demás se genera **editándola**, y por eso todas las piezas
+    caen en la misma rejilla y encajan entre sí. Aprobadas por el usuario el 2026-07-27.
+  - **Piezas hoy (26 generaciones):** 14 prendas (7 por sexo, arriba y abajo), 6 peinados, 4 accesorios,
+    2 barbas. Generador: `scripts/generar-personaje.mjs` (`base` · `prenda` · `cabeza`).
+  - **Composición por BANDAS, no por capas con alfa** (`lib/game/componer.js`): cabeza 0–42, torso
+    42–80, piernas 80–128. Medido: al cambiar de prenda **el cuerpo no se mueve** (30 px de deriva
+    sobre 2.000), así que cortar y pegar bandas basta y **no hace falta extraer capas**, que es donde
+    estos modelos fallan. El **accesorio SÍ es capa aparte** (`scripts/extraer-capa.mjs`), porque
+    peinado y accesorio son **ranuras independientes**: el jugador elige las dos.
+  - **Lo que NO cuesta generaciones:** color de pelo y piel (`lib/game/recolor.js`, rampas de 4 tonos),
+    rasgos de la cara (`lib/game/sellos.js`, sellos de 3×3) y complexión (`lib/game/complexion.js`,
+    estirado del torso). Son >2 millones de combinaciones con 26 dibujos.
+  - **Se guarda la ELECCIÓN, no la imagen** (`{sexo, peinado, accesorio, arriba, abajo, complexion,
+    pelo, piel, ojos, boca, colorOjos, nombre}`): permite editar el personaje y hace que **al corregir
+    una pieza mejoren solos todos los personajes ya creados**. Migración de los del creador viejo:
+    `scripts/migrar-personajes.mjs` (aplicada; el original queda en `clients.character_data_v1`).
+  - **Un solo módulo de composición para navegador y servidor.** `GET /api/character/hoja` devuelve el
+    PNG compuesto y `GET /api/character/rig` el esqueleto medido. Así lo que el jugador ve al crearse
+    es exactamente lo que carga el juego.
+  - ⚠️ **La hoja NO la descarga Godot**: el endpoint exige sesión y la cookie no viaja en las
+    peticiones del export web. La baja la app y se la **inyecta al motor** con
+    `copyToFS('/userfs/...')` (`components/game/GodotGame.tsx`).
+  - **Catálogo generado, no mantenido a mano:** `scripts/catalogo-personaje.mjs` →
+    `public/personajes/catalogo.json`. Se añade una prenda, se relanza, aparece en el creador.
+
+- **ANIMACIÓN: camino de Guardian Tales — esqueleto + anclajes (2026-07-28).** Decisión del usuario
+  tras comparar los tres caminos posibles. El motivo decisivo **no es la calidad sino el coste por
+  pieza**: con capas sincronizadas (estilo LPC/Stardew) un casco hay que dibujarlo en **cada
+  fotograma**; con esqueleto se dibuja **una vez** y vale para toda animación futura. Con un catálogo
+  que va a crecer (armaduras, cascos, botas, collares), manda ese coste.
+  - ⚠️ **CORRECCIÓN IMPORTANTE (2026-07-28): las piezas se DIBUJAN, no se recortan.** Se intentó
+    primero recortar el esqueleto de la hoja compuesta y **no funciona**: en un dibujo plano el brazo
+    no existe como objeto, son píxeles pegados al torso; al girarlo se abre el hombro y quedan manos
+    sueltas. ⇒ `scripts/despiezar.mjs` le pide al modelo el personaje **desmontado en piezas de
+    marioneta**, con la articulación redondeada y material de sobra en la unión.
+    `scripts/armar-piezas.mjs` las detecta, clasifica, calcula pivotes y las empaqueta para Godot.
+  - ⚠️ **Comprobado, contra lo que se recordaba: LPC NO separa el cuerpo en partes.** Su hoja es
+    832×2944 (13 columnas × 46 filas de 64 px) con **el cuerpo entero dibujado en cada fotograma**; lo
+    que separa son **capas de ropa**. Son ~600 dibujos por capa: ese camino no es viable para nosotros.
+  - **Regla de los pivotes:** lo que **cuelga** (brazos, piernas, faldón) gira por su borde
+    **superior**; lo que se **apoya** (cabeza sobre el cuello, torso sobre la cadera) por el
+    **inferior**. Confundirlo hace que el faldón cuelgue hacia arriba y tape el torso.
+  - **En Godot:** `PersonajeArticulado.gd` monta las piezas solo (el torso es la raíz y todo cuelga de
+    él) y `PruebaPersonaje.tscn` es el banco de pruebas — se abre y con **F6** el personaje camina y
+    gira entre vistas, sin necesidad de levantar la web.
+  - **Límite medido:** rotar pixel art aguanta hasta **~16°**; más allá se ve el escalonado del borde.
+  - **PENDIENTE:** afinar cuello y hombros, despiezar al chico, y después **armas y equipo** (anclaje
+    de la mano) y el **combate**.
+
 - **FUERA EL MUNDO WEB Y SU EDITOR — el mundo es Godot (2026-07-27).** Decisión del usuario: todo lo
   que hicimos a mano para el mundo del jugador (el que se veía tras crear el personaje) se elimina;
   Godot lo sustituye.
