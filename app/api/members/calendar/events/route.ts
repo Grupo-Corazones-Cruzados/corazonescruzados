@@ -28,7 +28,9 @@ const SELECT_SQL = `
     e.recurrence_type,
     e.recurrence_days,
     e.recurrence_interval,
-    e.recurrence_until,
+    -- La columna date en crudo llega al cliente como timestamp ISO y rompe tanto el cálculo
+    -- de la recurrencia como el input type=date: siempre viaja como 'YYYY-MM-DD'.
+    to_char(e.recurrence_until, 'YYYY-MM-DD') AS recurrence_until,
     e.color,
     e.status,
     e.alternative_id,

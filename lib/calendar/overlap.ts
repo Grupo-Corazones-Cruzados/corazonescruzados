@@ -1,4 +1,4 @@
-import { expandEvents, type CalendarEvent } from './recurrence';
+import { expandEvents, toDateOnly, type CalendarEvent } from './recurrence';
 
 export interface OverlapCandidate {
   start_at: string;
@@ -21,8 +21,12 @@ export function findOverlappingInstances(
   if (Number.isNaN(candStart.getTime()) || Number.isNaN(candEnd.getTime())) return null;
 
   const rangeStart = new Date(Math.min(candStart.getTime(), Date.now()));
-  const candidateUntilMs = candidate.recurrence_until
-    ? new Date(`${candidate.recurrence_until}T23:59:59`).getTime()
+  // Mismo cuidado que en `expandEvents`: `recurrence_until` puede venir como Date de pg o
+  // como ISO completo, y concatenarle la hora a pelo daba Invalid Date (NaN) → el rango de
+  // búsqueda se anulaba y NUNCA se detectaba solape con series con fecha fin.
+  const candidateUntilDay = toDateOnly(candidate.recurrence_until);
+  const candidateUntilMs = candidateUntilDay
+    ? new Date(`${candidateUntilDay}T23:59:59.999`).getTime()
     : candStart.getTime() + SIX_MONTHS_MS;
   const rangeEnd = new Date(Math.max(candEnd.getTime(), candidateUntilMs) + 1000);
 

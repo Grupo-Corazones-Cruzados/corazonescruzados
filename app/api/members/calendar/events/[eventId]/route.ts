@@ -18,7 +18,8 @@ const SELECT_SQL = `
     e.id, e.member_id, e.title, e.description, e.event_type, e.client_id,
     c.name AS client_name,
     e.start_at, e.end_at, e.all_day, e.timezone,
-    e.recurrence_type, e.recurrence_days, e.recurrence_interval, e.recurrence_until,
+    e.recurrence_type, e.recurrence_days, e.recurrence_interval,
+    to_char(e.recurrence_until, 'YYYY-MM-DD') AS recurrence_until,
     e.color, e.status, e.alternative_id, e.created_at, e.updated_at
   FROM gcc_world.member_calendar_events e
   LEFT JOIN gcc_world.clients c ON c.id = e.client_id

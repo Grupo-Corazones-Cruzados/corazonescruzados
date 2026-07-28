@@ -58,7 +58,8 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
          e.id, e.title, e.description, e.event_type, e.client_id,
          NULL::text AS client_name,
          e.start_at, e.end_at, e.all_day, e.timezone,
-         e.recurrence_type, e.recurrence_days, e.recurrence_interval, e.recurrence_until,
+         e.recurrence_type, e.recurrence_days, e.recurrence_interval,
+         to_char(e.recurrence_until, 'YYYY-MM-DD') AS recurrence_until,
          e.color, e.status
        FROM gcc_world.member_calendar_events e
        WHERE e.member_id = $1 AND e.status <> 'cancelled'`,

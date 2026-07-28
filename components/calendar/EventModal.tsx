@@ -8,7 +8,7 @@ import PixelSelect from '@/components/ui/PixelSelect';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import { Save, Trash2, X, AlertTriangle, Video, Copy, Check } from 'lucide-react';
 import type { CalendarEvent, RecurrenceType, EventType } from '@/lib/calendar/recurrence';
-import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES } from '@/lib/calendar/recurrence';
+import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES, toDateOnly } from '@/lib/calendar/recurrence';
 
 const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -124,7 +124,9 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         recurrence_type: event.recurrence_type,
         recurrence_days: event.recurrence_days,
         recurrence_interval: event.recurrence_interval || 1,
-        recurrence_until: event.recurrence_until,
+        // Solo 'YYYY-MM-DD': un timestamp ISO deja el <input type="date"> EN BLANCO, así que
+        // la fecha fin existía pero no se veía (parecía «Siempre» sin serlo).
+        recurrence_until: toDateOnly(event.recurrence_until),
         color: event.color,
         alternative_id: event.alternative_id ?? null,
       });
@@ -246,7 +248,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
       setError('Selecciona al menos un día de la semana');
       return;
     }
-    if (form.recurrence_type !== 'none' && untilMode === 'date' && !form.recurrence_until) {
+    if (form.recurrence_type !== 'none' && untilMode === 'date' && !toDateOnly(form.recurrence_until)) {
       setError('Elige la fecha hasta la que se repite, o selecciona "Siempre"');
       return;
     }
@@ -254,7 +256,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
     try {
       const recurrence_until = form.recurrence_type === 'none' || untilMode === 'forever'
         ? null
-        : form.recurrence_until;
+        : toDateOnly(form.recurrence_until);
       await onSave(
         { ...form, recurrence_until, description: form.description?.trim() || null },
         event?.id,
@@ -507,7 +509,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
               <PixelInput
                 type="date"
                 label="FECHA FINAL"
-                value={form.recurrence_until || ''}
+                value={toDateOnly(form.recurrence_until) || ''}
                 onChange={(e) => update('recurrence_until', e.target.value || null)}
               />
             )}

@@ -3547,3 +3547,28 @@ Módulos principales:
     prueba borrados; la lista sigue en 525 con 525 vectores y 0 pendientes.
   - El reindexado perezoso de `searchTalentos` sigue existiendo: el cron solo evita que lo pague la primera
     cotización de la mañana.
+
+- **Recurrencia del calendario: los eventos con fecha fin NO se pintaban nunca, y los diarios "Siempre"
+  se cortaban a los ~500 días (2026-07-28):** dos fallos distintos en `lib/calendar/recurrence.ts`,
+  detectados al investigar "tengo eventos marcados para que estén siempre y después de julio no aparecen".
+  - **`recurrence_until` llegaba como timestamp ISO.** La columna es `date`; el driver de pg la convierte en
+    `Date` y `NextResponse.json` la serializa como `'2026-07-21T05:00:00.000Z'`. El código hacía
+    ``new Date(`${ev.recurrence_until}T23:59:59`)`` → **Invalid Date** → `stopTs = NaN` → toda comparación
+    falsa → **la serie no generaba NI UNA instancia**: desaparecía del calendario, de "Mi día", del calendario
+    público y de la detección de solapes (`lib/calendar/overlap.ts` tenía el mismo patrón). Efecto real: los dos
+    eventos *Asunto Familiar (Fuera de Casa)* (semanales, `hasta 2026-07-21`) nunca se pintaron.
+  - **Y el `<input type="date">` del EventModal quedaba EN BLANCO** con ese mismo ISO (el input solo acepta
+    `YYYY-MM-DD`), así que la fecha fin existía pero era **invisible**: el evento parecía "Siempre" sin serlo.
+    Ésa es la trampa que hay que recordar — «parece Siempre» ≠ «es Siempre».
+  - **Solución (fuente única):** helper exportado `toDateOnly()` en `recurrence.ts` que normaliza a
+    `'YYYY-MM-DD'` (acepta `Date` de pg, ISO o fecha suelta; **nunca** pasa un `'YYYY-MM-DD'` por `new Date()`,
+    que lo leería como UTC y restaría un día). Lo usan `expandEvents`, `overlap.ts` y el `EventModal` (valor,
+    validación y guardado). Además **todas las rutas devuelven ya `to_char(recurrence_until,'YYYY-MM-DD')`**
+    (`calendar/events`, `events/[eventId]`, `public/[memberId]`, `.../propose`, `proposals`) para que la fecha
+    viaje siempre como día suelto. **Regla:** una columna `date` NUNCA se serializa en crudo hacia el cliente.
+  - **`HARD_LIMIT = 500` se agotaba antes de llegar al rango pedido.** La rama `daily` iteraba día a día
+    **desde `start_at`** contando cada vuelta, así que un diario "Siempre" dejaba de pintarse ~500 días después
+    de su inicio (para *Descanso*, desde ~2027-09-30: 85 instancias/mes → 65 → 9 → 0) aunque la ventana visible
+    fuese de 42 días. Ahora `daily` y `weekly` **saltan directo al inicio del rango** (respetando la fase del
+    intervalo) y el contador solo cuenta instancias emitidas; el límite vuelve a ser lo que decía ser: una red
+    de seguridad. Verificado contra la BD real: *Descanso* mantiene 85/mes en 2027, 2028 y 2030.

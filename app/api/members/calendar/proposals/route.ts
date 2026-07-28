@@ -24,7 +24,8 @@ export async function GET() {
       `SELECT
          e.id, e.title, e.description,
          e.start_at, e.end_at, e.timezone,
-         e.recurrence_type, e.recurrence_days, e.recurrence_interval, e.recurrence_until,
+         e.recurrence_type, e.recurrence_days, e.recurrence_interval,
+         to_char(e.recurrence_until, 'YYYY-MM-DD') AS recurrence_until,
          e.created_at,
          u.id AS proposer_id,
          COALESCE(u.email, e.guest_email) AS proposer_email,

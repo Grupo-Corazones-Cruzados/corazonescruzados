@@ -26,7 +26,8 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
       `SELECT
          e.id,
          e.start_at, e.end_at, e.all_day, e.timezone,
-         e.recurrence_type, e.recurrence_days, e.recurrence_interval, e.recurrence_until,
+         e.recurrence_type, e.recurrence_days, e.recurrence_interval,
+         to_char(e.recurrence_until, 'YYYY-MM-DD') AS recurrence_until,
          e.status
        FROM gcc_world.member_calendar_events e
        WHERE e.member_id = $1 AND e.status <> 'cancelled'
