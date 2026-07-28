@@ -506,6 +506,40 @@ auto-despliega en cada push. Si no hay cambios, sale limpio sin crear un commit 
    patrón `escena_%02d.png`, así que **cualquier archivo con otro nombre en `escenas/` es peso
    muerto** que viajaría al navegador.
 
+### ⭐ EL AUDIO EN WEB EXIGE UN GESTO DEL JUGADOR (2026-07-28)
+
+**Síntoma:** en el móvil el prólogo **se ve pero no suena**. En el escritorio de Fernando sí
+sonaba, lo que despista.
+
+**Causa (medida, no supuesta):** el navegador bloquea el audio hasta que el usuario hace un
+gesto **en esa página**, y `/juego` es una **navegación aparte** — el login de la portada NO
+cuenta. Godot solo despierta su `AudioContext` cuando recibe input **en su canvas**, y el
+prólogo es una cinemática que nadie toca. En escritorio Chrome suele saltarse la política por el
+*Media Engagement Index* (visitas mucho tu propio dominio); **en móvil es estricta siempre**.
+
+Medido con Chrome bajo `--autoplay-policy=document-user-activation-required`:
+
+| | `AudioContext` | reloj del audio |
+|---|---|---|
+| sin tocar | `suspended` | 0 → 0 en 12 s |
+| tocando el canvas | `suspended → running` | +12,13 s en 12 s |
+
+⚠ **El prólogo SÍ avanza aunque el audio esté suspendido** (se comprobó con capturas: cambia de
+estampa y teclea los versos). Por eso el fallo se presenta como "no hay música" y no como
+"se quedó congelado" — pero significa que **la letra se desincroniza del canto**.
+
+**Arreglo (`components/game/GodotGame.tsx`):** se dejó de llamar a `startGame()`, que descarga y
+arranca de un tirón, y se partió en los dos pasos que hace por dentro:
+1. `init(exe)` + `preloadFile(pack, pack)` → baja wasm y pck con su barra de progreso.
+2. La pantalla de carga muestra **"Toca para empezar"** (fase `listo`) y **solo tras el gesto**
+   se llama a `start({ args: ['--main-pack', pack] })` (`start` NO añade el `--main-pack` solo;
+   eso lo hacía `startGame`).
+
+Como el gesto ocurre **antes** de que el motor exista, Godot crea su contexto ya despierto:
+verificado, el `AudioContext` **nace `running`** (nunca pasa por `suspended`) y la canción suena
+desde el primer segundo. **Regla general: en el export web, nada que suene puede arrancar solo;
+tiene que haber un gesto del jugador en la propia página del juego, antes de arrancar el motor.**
+
 **Prueba de humo antes de publicar** (saca los `SCRIPT ERROR` sin abrir el editor):
 ```bash
 godot --headless --path godot --quit-after 900

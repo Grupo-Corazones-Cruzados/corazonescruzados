@@ -37,7 +37,16 @@ juego usa este componente**, no un `<p>Cargando…</p>` suelto.
 - **Peso real** debajo (`17,2 de 50,3 MB`) con `fmtNum` (formato es-ES) mientras descarga.
 - Fondo `var(--color-void)`.
 - **Fases con nombre honesto:** `preparando` → `descargando` (única con barra medible) →
-  `iniciando`. Nunca se finge progreso: si no se conoce el total, la barra va indeterminada.
+  **`listo`** → `iniciando`. Nunca se finge progreso: si no se conoce el total, la barra va
+  indeterminada.
+- **Fase `listo` = botón "Toca para empezar" (2026-07-28).** No es decoración ni una pantalla de
+  bienvenida: **el navegador bloquea el audio hasta que el jugador hace un gesto en esa página**,
+  y `/juego` es una navegación aparte, así que el login de la portada no cuenta. Sin ese toque el
+  prólogo se ve **mudo** (medido: el `AudioContext` nace `suspended` y su reloj se queda en 0).
+  El botón va en `pixel-btn` + Silkscreen, con la nota *"El prólogo va con música: sube el
+  volumen"*, y la cortina recupera `pointer-events` **solo** en él. **Regla del sistema:
+  cualquier pantalla del juego que vaya a sonar debe pedir un gesto ANTES de arrancar el motor**
+  — no vale confiar en que el jugador toque algo por su cuenta, y menos en una cinemática.
 
 ### Barra de progreso pixel — `.pixel-progress` / `.pixel-progress-fill` (`app/globals.css`)
 La del dashboard es la redondeada de Fluent; **esta es la de landing/juego**: borde duro de 3 px

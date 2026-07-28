@@ -22,7 +22,14 @@ type GodotEngine = {
   load?: (path: string) => Promise<void>;
 };
 type GodotEngineInstance = {
+  /** Descarga + arranque de un tirón. Aquí NO se usa: ver el porqué en el efecto. */
   startGame: (cfg?: Record<string, unknown>) => Promise<void>;
+  /** Carga y compila el wasm. Cachea su promesa: llamarlo dos veces no repite trabajo. */
+  init: (basePath?: string) => Promise<void>;
+  /** Descarga un archivo del export (aquí, el .pck) reportando progreso. */
+  preloadFile: (file: string, path?: string) => Promise<void>;
+  /** Arranca el motor con lo ya descargado. Exige `--main-pack` en `args`. */
+  start: (cfg?: Record<string, unknown>) => Promise<void>;
   requestQuit?: () => void;
   /** Deja un archivo dentro del sistema de archivos del motor. */
   copyToFS?: (ruta: string, datos: ArrayBuffer | Uint8Array) => void;
@@ -131,6 +138,11 @@ export default function GodotGame() {
   /** El arranque se está eternizando → se avisa y se ofrece reintentar. */
   const [stalled, setStalled] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Se rellena cuando el juego está descargado y solo falta el toque del
+   * jugador. Llamarlo arranca el motor. Ver `LoadingPhase['listo']`.
+   */
+  const empezarRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (instanceRef.current || !canvasRef.current) return;
@@ -188,7 +200,9 @@ export default function GodotGame() {
             // deja de llamar aquí), no cuando alcanza una cifra anunciada.
             if (quietTimer !== null) window.clearTimeout(quietTimer);
             quietTimer = window.setTimeout(() => {
-              if (!disposed) setPhase('iniciando');
+              // Ojo: solo mientras seguimos descargando. Si ya se pasó a 'listo'
+              // (esperando el toque) o a 'iniciando', no se retrocede de fase.
+              if (!disposed) setPhase((p) => (p === 'descargando' ? 'iniciando' : p));
             }, 1200);
           },
           // Salida del motor. Sirve para dos cosas: enterarnos de que Godot ya
@@ -209,7 +223,36 @@ export default function GodotGame() {
         });
         instanceRef.current = instance;
 
-        await instance.startGame();
+        // ── Descarga y arranque, SEPARADOS a propósito ───────────────────────
+        //
+        // `startGame()` hace las dos cosas de un tirón, y ese era el problema:
+        // el motor arrancaba sin que el jugador hubiera tocado nada en ESTA
+        // página, así que el navegador le daba un `AudioContext` **suspendido**
+        // y el prólogo se veía MUDO (medido: reloj de audio clavado en 0 con la
+        // política de autoplay del móvil). Godot solo despierta el audio cuando
+        // recibe input en su canvas, y una cinemática no se toca.
+        //
+        // Aquí se replica lo que hace `startGame` por dentro, en dos tiempos:
+        //   1. init(exe) + preloadFile(pack) → baja wasm y pck (con su barra).
+        //   2. el jugador toca → start() → Godot nace con el audio despierto.
+        const exe = `${BASE}/index`;
+        const pack = `${BASE}/index.pck`;
+        await Promise.all([instance.init(exe), instance.preloadFile(pack, pack)]);
+        if (disposed) return;
+
+        // Ya está todo en el navegador: solo falta el gesto.
+        await new Promise<void>((resolve) => {
+          empezarRef.current = resolve;
+          setPhase('listo');
+        });
+        if (disposed) return;
+        empezarRef.current = null;
+        setPhase('iniciando');
+
+        // `start` no añade el `--main-pack` por su cuenta (eso lo hacía
+        // `startGame`), así que se pasa aquí. `init` ya está resuelto y cacheado,
+        // de modo que el arranque es inmediato.
+        await instance.start({ args: ['--main-pack', pack] });
         // El personaje que creó el jugador se le pasa al motor COMO ARCHIVO.
         //
         // No lo descarga Godot por su cuenta a propósito: la hoja la sirve una
@@ -278,7 +321,13 @@ export default function GodotGame() {
       <canvas id="canvas" ref={canvasRef} className="block h-full w-full" tabIndex={0} />
 
       {loading && (
-        <GameLoadingScreen phase={phase} loaded={loaded} total={total} stalled={stalled} />
+        <GameLoadingScreen
+          phase={phase}
+          loaded={loaded}
+          total={total}
+          stalled={stalled}
+          onEmpezar={() => empezarRef.current?.()}
+        />
       )}
 
       {error && (

@@ -23,12 +23,24 @@ export type LoadingPhase =
   | 'preparando'
   /** Bajando wasm + pck: aquí la barra avanza de verdad. */
   | 'descargando'
+  /**
+   * Todo descargado, esperando que el jugador TOQUE para entrar.
+   *
+   * No es un adorno: el navegador **bloquea el audio** hasta que el usuario hace
+   * un gesto EN ESTA página, y `/juego` es una navegación aparte, así que el
+   * login de la portada no cuenta. Sin este toque el prólogo se ve **mudo**
+   * (medido: el `AudioContext` nace `suspended` y su reloj se queda en 0).
+   * Como el gesto ocurre ANTES de arrancar el motor, Godot crea su contexto de
+   * audio ya despierto y la canción suena desde el primer segundo.
+   */
+  | 'listo'
   /** Descarga completa; el navegador compila el wasm y Godot arranca. */
   | 'iniciando';
 
 const TEXTO: Record<LoadingPhase, string> = {
   preparando: 'Preparando la entrada…',
   descargando: 'Descargando el mundo…',
+  listo: 'Todo listo',
   iniciando: 'Encendiendo el motor…',
 };
 
@@ -39,6 +51,7 @@ export default function GameLoadingScreen({
   loaded,
   total,
   stalled = false,
+  onEmpezar,
 }: {
   phase: LoadingPhase;
   /** Bytes descargados hasta ahora. */
@@ -47,12 +60,14 @@ export default function GameLoadingScreen({
   total: number;
   /** El arranque se está eternizando: se avisa y se ofrece reintentar. */
   stalled?: boolean;
+  /** Gesto del jugador que arranca el motor (y despierta el audio). */
+  onEmpezar?: () => void;
 }) {
   const conocido = total > 0;
   // Se reserva el último 1 % para el arranque del motor: llegar a 100 % y
   // quedarse ahí un rato es la forma más rápida de que parezca colgado.
   const pct = conocido ? Math.min(99, Math.floor((loaded / total) * 100)) : 0;
-  const mostrado = phase === 'iniciando' ? 100 : pct;
+  const mostrado = phase === 'iniciando' || phase === 'listo' ? 100 : pct;
 
   return (
     <div
@@ -94,7 +109,27 @@ export default function GameLoadingScreen({
         )}
       </div>
 
-      {stalled ? (
+      {phase === 'listo' ? (
+        // El puntero se recupera SOLO aquí: el toque tiene que llegar a este
+        // botón (el resto de la cortina sigue sin capturar clics).
+        <div className="pointer-events-auto flex max-w-[320px] flex-col items-center gap-3">
+          <button
+            type="button"
+            className="pixel-btn"
+            style={{ fontFamily: 'var(--font-display)' }}
+            onClick={onEmpezar}
+            autoFocus
+          >
+            Toca para empezar
+          </button>
+          <p
+            className="text-[10px] leading-relaxed text-white/35"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            El prólogo va con música: sube el volumen.
+          </p>
+        </div>
+      ) : stalled ? (
         // Se recupera el puntero SOLO para el botón: el resto de la pantalla
         // sigue sin capturar clics.
         <div className="pointer-events-auto flex max-w-[320px] flex-col items-center gap-3">
