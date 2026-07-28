@@ -184,6 +184,26 @@ const PALABRAS := {
 }
 
 
+## --- 🎬 CLIPS DE VÍDEO intercalados entre las estampas -----------------------
+## Trozos del prólogo que en vez de estampa fija son un VÍDEO. Se colocan igual
+## que todo lo demás: atados al segundo de la canción. Mientras dura el clip, la
+## estampa se oculta; al acabar, vuelven las estampas donde tocaría.
+##
+## ⚠ FORMATO: Godot solo reproduce **Ogg Theora (.ogv)** de serie. Para convertir
+## un mp4/webm que venga de la IA:
+##     ffmpeg -i clip.mp4 -q:v 8 -an assets/Video/clip.ogv
+## (el `-an` quita su audio: la música del prólogo no se debe pisar).
+##
+## Cada entrada admite:
+##   "desde_verso": en qué verso arranca el clip (índice de LETRAS)
+##   "t":           (alternativa) segundo exacto de la canción en que arranca
+##   "archivo":     ruta al .ogv
+##   "dur":         segundos que ocupa en la línea de tiempo
+const VIDEOS := [
+	# { "desde_verso": 11, "archivo": "res://assets/Video/caida.ogv", "dur": 8.0 },
+]
+
+
 ## --- ⚡ LA RÁFAGA: el mosaico que resume la caída del mundo -------------------
 ## Un tramo especial que mete MUCHAS estampas en poco tiempo SIN que se vuelva
 ## un estrobo ilegible. El truco: la pantalla se SUBDIVIDE en paneles y cada
@@ -336,6 +356,8 @@ var _capa_b: TextureRect   # imagen entrante (para el crossfade)
 var _texto: Label          # la letra, debajo de la imagen (tamaño fijo)
 var _musica: AudioStreamPlayer
 var _velo: ColorRect       # negro por encima de todo, para el cierre
+var _video: VideoStreamPlayer   # los clips intercalados
+var _clip_actual := -1          # índice del clip que se está viendo
 var _terminado := false
 
 # --- Estado de la reproducción ----------------------------------------------
@@ -460,6 +482,19 @@ func _construir_ui() -> void:
 	saltar.add_theme_color_override("font_hover_color", Color(0.9, 0.9, 0.95))
 	saltar.pressed.connect(_ir_a_siguiente)
 	add_child(saltar)
+
+	# Reproductor de los clips de vídeo, en la MISMA caja que las estampas.
+	_video = VideoStreamPlayer.new()
+	_video.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_video.offset_left = img_x
+	_video.offset_top = img_y
+	_video.offset_right = img_x + ancho_img
+	_video.offset_bottom = img_y + alto_img
+	_video.expand = true
+	_video.volume_db = -80.0        # mudo: la canción manda
+	_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_video.visible = false
+	add_child(_video)
 
 	# Velo negro POR ENCIMA de todo (transparente), para fundir el cierre del
 	# prólogo a la vez que se apaga la música y no cortar de golpe.
@@ -661,6 +696,57 @@ func _informar_rafaga() -> void:
 	print("      %6.2f s · CIERRE a pantalla completa · escena %d  %s\n"
 		% [float(_rafaga["cierre"]), int(RAFAGA["final"]),
 			str(NOMBRES.get(int(RAFAGA["final"]), ""))])
+
+
+## Segundo en que arranca un clip (por verso o por "t" explícito).
+func _inicio_clip(clip: Dictionary) -> float:
+	if clip.has("t"):
+		return float(clip["t"])
+	var v := int(clip.get("desde_verso", -1))
+	if v >= 0 and v < LETRAS.size():
+		return float(LETRAS[v]["t"])
+	return -1.0
+
+
+## Enciende o apaga el clip que toque según el segundo de la canción.
+func _procesar_videos(pos: float) -> void:
+	if _video == null:
+		return
+	var toca := -1
+	for i in VIDEOS.size():
+		var t0 := _inicio_clip(VIDEOS[i])
+		if t0 >= 0.0 and pos >= t0 and pos < t0 + float(VIDEOS[i].get("dur", 8.0)):
+			toca = i
+			break
+
+	if toca == _clip_actual:
+		return
+
+	if toca < 0:                      # se acabó el clip: vuelven las estampas
+		_video.stop()
+		_video.visible = false
+		_capa_a.visible = true
+		_clip_actual = -1
+		return
+
+	var ruta := str(VIDEOS[toca].get("archivo", ""))
+	var flujo: VideoStream = load(ruta) as VideoStream if ResourceLoader.exists(ruta) else null
+	if flujo == null:
+		push_warning("Prólogo: no encuentro el clip '%s'; sigo con las estampas." % ruta)
+		_clip_actual = -1
+		return
+
+	_clip_actual = toca
+	_video.stream = flujo
+	_video.visible = true
+	_capa_a.visible = false
+	_capa_paneles.visible = false
+	_video.play()
+	# Si entramos a mitad (por `empezar_en` o por un salto), lo adelantamos.
+	var desfase := pos - _inicio_clip(VIDEOS[toca])
+	if desfase > 0.2:
+		_video.stream_position = desfase
+	print("🎬 clip %s desde %.2f s" % [ruta.get_file(), _inicio_clip(VIDEOS[toca])])
 
 
 ## Lleva el mosaico segundo a segundo: enciende/apaga la capa, cambia de fase
@@ -1013,8 +1099,12 @@ func _process(_delta: float) -> void:
 		_idx_imagen += 1
 		_cambiar_imagen(int(paso["escena"]))
 
-	# 2-bis) ⚡ LA RÁFAGA: el mosaico manda mientras dura su tramo.
-	_procesar_rafaga(pos)
+	# 2-bis) 🎬 LOS CLIPS DE VÍDEO mandan sobre todo lo demás mientras duran.
+	_procesar_videos(pos)
+
+	# 2-ter) ⚡ LA RÁFAGA: el mosaico manda mientras dura su tramo.
+	if _clip_actual < 0:
+		_procesar_rafaga(pos)
 
 	# 3) ¿Se acabó la canción? Cerramos con tiempo para el fundido.
 	var dur := _duracion_musica()
