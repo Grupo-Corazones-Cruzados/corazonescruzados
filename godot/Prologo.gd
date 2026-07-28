@@ -329,7 +329,23 @@ const TRAMOS := [
 ## Imprime en la consola, al arrancar, cuánto dura EXACTAMENTE cada estampa.
 ## Úsalo para ajustar DURACIONES y los cortes de TRAMOS.
 @export var mostrar_reparto: bool = true
+## Cómo APARECE cada verso en pantalla.
+##   · BARRIDO (por defecto) → la frase se revela de un tirón de IZQUIERDA a
+##     DERECHA, con un frente suave. Entra entera en `barrido_dur` segundos, así
+##     que el ojo la ancla al instante y un desfase pequeño con la canción deja
+##     de notarse.
+##   · TECLEO → el efecto antiguo de máquina de escribir, carácter a carácter.
+##     Es bonito pero LENTO (hasta `tecleo_max`), y esa lentitud es justo lo que
+##     hacía visible cualquier retraso.
+enum Aparicion { BARRIDO, TECLEO }
+@export var aparicion: Aparicion = Aparicion.BARRIDO
+## Segundos que tarda el barrido en cruzar la frase. Corto a propósito.
+@export_range(0.1, 1.5, 0.05) var barrido_dur: float = 0.32
+## Anchura del frente difuminado del barrido, en píxeles del lienzo 960×540.
+## 0 = corte seco; más alto = entrada más mullida.
+@export_range(0.0, 200.0, 2.0) var suavizado_barrido: float = 46.0
 ## Qué parte del hueco de un verso se tarda en teclearlo (0.35 = el 35 %).
+## Solo aplica con `aparicion = TECLEO`.
 @export_range(0.1, 1.0, 0.05) var proporcion_tecleo: float = 0.35
 ## Tope de segundos para teclear un verso. Es lo que garantiza que la frase
 ## TERMINE de escribirse ANTES de que se acabe de cantar: aunque el hueco hasta
@@ -493,6 +509,7 @@ func _construir_ui() -> void:
 		_texto.add_theme_font_override("font", fuente)
 	_texto.add_theme_font_size_override("font_size", tamano_letra)
 	_texto.add_theme_color_override("font_color", Color(0.93, 0.93, 0.98))
+	_texto.material = _material_barrido(BASE_ANCHO - margen_texto * 2.0)
 	add_child(_texto)
 
 	# Botón discreto para saltar el prólogo (útil en web/móvil).
@@ -581,6 +598,47 @@ func _construir_musica() -> void:
 
 	var t := create_tween()
 	t.tween_property(_musica, "volume_db", musica_db, musica_entrada)
+
+
+## Material del BARRIDO de la letra: revela el verso de IZQUIERDA a DERECHA con
+## un frente suave, en vez de escribirlo carácter a carácter.
+##
+## ⚠ El truco está en `vertex()`. En un `Label` el `UV` del fragmento es el de la
+## textura de la FUENTE (el atlas de glifos), no el del control, así que con UV
+## el barrido saldría por cada letra en vez de por la frase. Se pasa la posición
+## LOCAL del vértice a un `varying` y se corta contra ella: así el frente avanza
+## por el ancho real del Label, cruzando las letras a su paso.
+func _material_barrido(ancho_control: float) -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = """
+shader_type canvas_item;
+
+// 0 = nada visible · 1 = todo visible.
+uniform float progreso : hint_range(0.0, 1.0) = 1.0;
+// Ancho del control, en píxeles del lienzo.
+uniform float ancho = 1.0;
+// Anchura del frente difuminado, en píxeles. 0 = corte seco.
+uniform float suavizado = 46.0;
+
+varying float x_local;
+
+void vertex() {
+	x_local = VERTEX.x;
+}
+
+void fragment() {
+	// El frente recorre [0 .. ancho+suavizado] para que al final NADA quede a
+	// medio desvanecer.
+	float frente = progreso * (ancho + suavizado);
+	COLOR.a *= smoothstep(frente, frente - suavizado, x_local);
+}
+"""
+	var mat := ShaderMaterial.new()
+	mat.shader = sh
+	mat.set_shader_parameter("progreso", 1.0)
+	mat.set_shader_parameter("ancho", ancho_control)
+	mat.set_shader_parameter("suavizado", suavizado_barrido)
+	return mat
 
 
 ## Segundo EXACTO de la canción. `get_playback_position` solo se refresca cada
@@ -1154,7 +1212,10 @@ func _process(_delta: float) -> void:
 		_ir_a_siguiente()
 
 
-## Pone el verso en pantalla y lo teclea al ritmo de lo que dura ese verso.
+## Pone el verso en pantalla. Según `aparicion`:
+##   · BARRIDO → la frase se revela ENTERA de izquierda a derecha en
+##     `barrido_dur` segundos (rápido: el ojo la ancla al instante).
+##   · TECLEO → se escribe carácter a carácter, al ritmo del hueco del verso.
 func _mostrar_verso(i: int) -> void:
 	var verso: Dictionary = LETRAS[i]
 	var cuerpo := str(verso["texto"])
@@ -1167,8 +1228,30 @@ func _mostrar_verso(i: int) -> void:
 		return
 
 	_texto.text = cuerpo
-	_texto.visible_characters = 0
 	_texto.modulate.a = 1.0
+
+	if aparicion == Aparicion.BARRIDO:
+		# Todas las letras puestas desde el primer fotograma; quien las va
+		# descubriendo es el frente del shader.
+		_texto.visible_ratio = 1.0
+		var mat := _texto.material as ShaderMaterial
+		if mat == null:
+			return
+		mat.set_shader_parameter("suavizado", suavizado_barrido)
+		mat.set_shader_parameter("progreso", 0.0)
+		_tween_texto = create_tween()
+		# EASE_OUT: entra decidido y frena al final, así el arranque de la frase
+		# coincide con el golpe de voz y el remate no se siente brusco.
+		_tween_texto.tween_property(mat, "shader_parameter/progreso", 1.0, barrido_dur) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		return
+
+	# --- TECLEO (el efecto antiguo) ---
+	# El barrido se deja abierto del todo para que no recorte nada.
+	var mat_t := _texto.material as ShaderMaterial
+	if mat_t != null:
+		mat_t.set_shader_parameter("progreso", 1.0)
+	_texto.visible_characters = 0
 
 	# Cuánto dura el hueco de este verso: hasta el siguiente (o un margen si es
 	# el último).
@@ -1184,12 +1267,6 @@ func _mostrar_verso(i: int) -> void:
 	var total := _texto.get_total_character_count()
 	_tween_texto = create_tween()
 	_tween_texto.tween_property(_texto, "visible_characters", total, dur_tecleo)
-
-	# DIAGNÓSTICO TEMPORAL (se quita tras medir).
-	print("DIAGVERSO i=%d t=%.2f raw=%.3f exceso=%.3f lat=%.4f" % [
-		i, float(verso["t"]), _musica.get_playback_position(),
-		_musica.get_playback_position() - float(verso["t"]),
-		AudioServer.get_output_latency()])
 
 
 ## Cruza a la estampa nueva. Si las estampas van muy seguidas, el cruce se

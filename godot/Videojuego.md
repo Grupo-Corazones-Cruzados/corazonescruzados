@@ -580,6 +580,35 @@ Dos mandos nuevos en el Inspector (grupo *Música ▸ Sincronía de la letra*):
 cualquier corrección que dependa del aparato (latencia de salida) mete un desfase que solo se ve
 en producción, que es donde peor se diagnostica.
 
+### ⭐ LA LETRA ENTRA POR BARRIDO, NO TECLEÁNDOSE (2026-07-28)
+
+Idea de Fernando después del arreglo anterior: *"que en vez de que parezca que se va escribiendo,
+mejor que aparezca rápidamente de un tirón, de izquierda a derecha"* — para que un resto de
+latencia **deje de notarse**. Y tiene razón de fondo: el tecleo tardaba hasta `tecleo_max` = 1,6 s
+en completar la frase, y esa lentitud es justo lo que hace VISIBLE cualquier desfase; si la frase
+entra en 0,3 s, el ojo la ancla de golpe al verso cantado.
+
+**Cómo está hecho:** un `ShaderMaterial` sobre el `Label` (`_material_barrido()`) que revela el
+texto de izquierda a derecha con un frente difuminado.
+
+⚠ **El truco está en `vertex()`.** En un `Label` el `UV` del fragmento es el de la **textura de la
+fuente** (el atlas de glifos), NO el del control: cortar por `UV.x` haría el barrido *dentro de
+cada letra*, no a lo largo de la frase. Hay que pasar la posición **local** del vértice a un
+`varying` (`x_local = VERTEX.x`) y cortar contra ella. Vale para cualquier efecto de revelado
+sobre texto en Godot.
+
+Mandos en el Inspector (grupo *Texto*):
+- **`aparicion`**: `BARRIDO` (por defecto) o `TECLEO` (el efecto antiguo, intacto).
+- **`barrido_dur`** (0,32 s por defecto): lo que tarda el frente en cruzar la frase.
+- **`suavizado_barrido`** (46 px): anchura del frente difuminado. 0 = corte seco.
+
+Verificado fotograma a fotograma capturando el viewport desde dentro del juego: en el primer
+fotograma la frase está cortada a media palabra con el borde degradado y dos fotogramas después
+está completa. (Truco de captura: instanciar `Prologo.tscn` desde un `Node` suelto, esperar a que
+el uniform `progreso` esté entre 0 y 1 — con temporizador NO se acierta el instante, porque el
+arranque de la música tiene su propio retardo — y guardar `get_viewport().get_texture()
+.get_image().save_png()` tras `await RenderingServer.frame_post_draw`.)
+
 **Prueba de humo antes de publicar** (saca los `SCRIPT ERROR` sin abrir el editor):
 ```bash
 godot --headless --path godot --quit-after 900
