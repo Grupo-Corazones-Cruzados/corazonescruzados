@@ -295,16 +295,20 @@ const CAIDA := {
 	"escenas": [95, 105, 106, 101, 102, 98, 107, 96, 97, 93],
 
 	# CÓMO SE REPARTEN:
-	#   "corona"  → todas se van colocando EN CORONA alrededor del centro, girando
-	#               en el sentido del reloj y dejando el hueco del medio libre; la
-	#               ÚLTIMA cae en ese hueco, más grande y por encima de las demás.
+	#   Todas se van colocando ALREDEDOR del centro, girando en el sentido del reloj
+	#   y dejando el hueco del medio libre; la ÚLTIMA cae en ese hueco, más grande y
+	#   por encima de las demás.
 	#   "mosaico" → usa la lista "reparto" de huecos fijos (ver más abajo).
-	"forma": "corona",
-	"corona_tam": 0.30,        # ancho de las estampas de la corona (fracción de la caja)
+	#   "marco"   → RECTANGULAR: se reparten por el perímetro de un rectángulo
+	#               (fila arriba, columna derecha, fila abajo, columna izquierda).
+	#   "corona"  → la variante en óvalo.
+	"forma": "marco",
+	"corona_tam": 0.30,        # ancho de las estampas de alrededor (fracción de la caja)
 	"centro_tam": 0.42,        # ancho de la estampa del centro
-	"radio": [0.74, 0.76],     # separación del centro, en fracción de media caja
-	"desde_angulo": -140.0,    # por dónde empieza la corona (grados; -90 = arriba)
-	"giro": 3.5,              # grados de inclinación, alternando lado
+	"radio": [1.0, 1.0],       # cuánto se abre el marco (1 = todo lo que cabe)
+	"desde_borde": 0.0,        # por dónde empieza el recorrido (0 = esquina arriba izq.)
+	"desde_angulo": -140.0,    # solo para "corona"
+	"giro": 2.5,               # grados de inclinación, alternando lado
 
 	# Solo se usa con "forma": "mosaico". Hueco en FRACCIÓN de la caja: [x,y,w,h].
 	"reparto": [
@@ -387,8 +391,8 @@ const TRAMOS := [
 	{ "desde_verso": 12, "escenas": [94] },
 
 	{"desde_verso": 13, "escenas": [
-		92, 93, 111, 112, 113, 114
-	], "seg": 1  },
+		111, 112, 113, 114
+	], "seg": 2  },
 ]
 
 
@@ -1041,8 +1045,54 @@ func _huecos_caida(n_total: int, hueco: float) -> Array:
 	var rects: Array = []
 	var reparto: Array = CAIDA.get("reparto", [])
 
-	# --- CORONA: todas alrededor, la última en el hueco del centro -----------
-	if str(CAIDA.get("forma", "corona")) == "corona" and n_total >= 2:
+	# --- MARCO: todas alrededor en rectángulo, la última en el centro --------
+	# Las estampas se reparten a lo largo del PERÍMETRO de un rectángulo, en el
+	# sentido del reloj y a distancias iguales: forman un marco (fila arriba,
+	# columna a la derecha, fila abajo, columna a la izquierda) con el centro libre.
+	if str(CAIDA.get("forma", "marco")) == "marco" and n_total >= 2:
+		var c_m := _caja.size / 2.0
+		var w_m: float = _caja.size.x * float(CAIDA.get("corona_tam", 0.30))
+		var h_m: float = w_m * _caja.size.y / _caja.size.x
+		var w_c: float = _caja.size.x * float(CAIDA.get("centro_tam", 0.42))
+		var h_c: float = w_c * _caja.size.y / _caja.size.x
+		var rad: Array = CAIDA.get("radio", [1.0, 1.0])
+		# Medio rectángulo por el que pasan los CENTROS de las estampas: lo más
+		# grande que cabe sin salirse de la caja.
+		var mx: float = (_caja.size.x / 2.0 - w_m / 2.0 - hueco) * float(rad[0])
+		var my: float = (_caja.size.y / 2.0 - h_m / 2.0 - hueco) * float(rad[1])
+		# ...y sin pisar la estampa del centro.
+		mx = maxf(mx, (w_c + w_m) / 2.0 * 0.80)
+		my = maxf(my, (h_c + h_m) / 2.0 * 0.80)
+
+		var n_m := n_total - 1
+		var lado_x: float = 2.0 * mx
+		var lado_y: float = 2.0 * my
+		var per: float = 2.0 * (lado_x + lado_y)
+		# Se arranca en la esquina de arriba a la izquierda y se recorre el marco.
+		var salida: float = per * clampf(float(CAIDA.get("desde_borde", 0.0)), 0.0, 1.0)
+		for i in n_m:
+			var d: float = fmod(salida + per * float(i) / float(n_m), per)
+			var px := 0.0
+			var py := 0.0
+			if d < lado_x:                                  # borde de arriba →
+				px = -mx + d
+				py = -my
+			elif d < lado_x + lado_y:                        # borde derecho ↓
+				px = mx
+				py = -my + (d - lado_x)
+			elif d < 2.0 * lado_x + lado_y:                  # borde de abajo ←
+				px = mx - (d - lado_x - lado_y)
+				py = my
+			else:                                            # borde izquierdo ↑
+				px = -mx
+				py = my - (d - 2.0 * lado_x - lado_y)
+			rects.append(Rect2(c_m.x + px - w_m / 2.0, c_m.y + py - h_m / 2.0,
+				w_m, h_m))
+		rects.append(Rect2(c_m.x - w_c / 2.0, c_m.y - h_c / 2.0, w_c, h_c))
+		return rects
+
+	# --- CORONA: igual pero en óvalo -----------------------------------------
+	if str(CAIDA.get("forma", "marco")) == "corona" and n_total >= 2:
 		var centro := _caja.size / 2.0
 		var w_anillo: float = _caja.size.x * float(CAIDA.get("corona_tam", 0.30))
 		var h_anillo: float = w_anillo * _caja.size.y / _caja.size.x
