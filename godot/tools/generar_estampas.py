@@ -105,6 +105,31 @@ INSERTADAS = {
     87: 64,  # POV del mayor asomado al fondo del Hoyo, dudando
     88: 64,  # como la 87, con el niño a la izquierda y la niña a la derecha
     89: 65,  # los tres ya en el aire, saltando al Hoyo (parte de la 86)
+    90: 66,  # plano cercano dentro del Hoyo: los tres abrazados cayendo
+    91: 66,  # primer plano de la niña llorando mientras caen
+    92: 66,  # los tres llorando; al mayor no se le ve la cara
+    93: 66,  # siguen cayendo, más abajo, con un aura de llama
+    94: 66,  # como la 66 pero con otras grietas y luz gris neutra
+    95: 66,  # como la 94 pero abrazados y con el lugar más gris
+    96: 66,  # siguen cayendo: abrazo más cerrado y otras grietas
+    97: 66,  # secuencia de la 96: más velocidad de caída
+    98: 66,  # secuencia de caída
+    99: 66,  # secuencia de caída
+    100: 66,  # secuencia de caída
+    101: 66,  # secuencia de caída
+    102: 66,  # secuencia de caída
+    103: 66,  # secuencia de caída
+    104: 66,  # secuencia de caída
+    105: 66,  # corrige la 103
+    106: 66,  # corrige la 104
+    107: 66,  # secuencia de caída
+    108: 66,  # secuencia de caída
+    109: 66,  # la caída con el abrazo cerrado de la escena 90
+    110: 66,  # como la 90 pero llorando y más al fondo
+    111: 66,  # como la 101 + aura azul en la niña
+    112: 66,  # como la 102 + auras azul y roja
+    113: 66,  # como la 105 + aura violeta de corazones cruzados
+    114: 66,  # picado desde arriba: caen dejando estela violeta
 }
 
 
@@ -165,6 +190,86 @@ ANCLAS = {
 
 
 # --- Las 66 escenas: (nº, [anclas], prompt) ---------------------------------
+# Reglas ya aprobadas de la secuencia de caída dentro del Hoyo (escenas 95-100).
+# Se repiten en cada estampa de la secuencia: cada generación tiende a perder lo que ya
+# funcionaba, así que las reglas ganadas se vuelven a decir enteras.
+REPARTO = (
+    "⚠⚠ LO PRIMERO Y MÁS IMPORTANTE — QUIÉN ES CADA UNA DE LAS TRES SILUETAS. Dibuja "
+    "EXACTAMENTE estas tres formas y ninguna otra: "
+    "(1) FIGURA DEL CENTRO, la más alta: cabeza = un CÍRCULO LISO Y CERRADO, sin nada que "
+    "sobresalga de su borde; torso = un RECTÁNGULO estrecho; de la cintura hacia abajo = "
+    "DOS RECTÁNGULOS SEPARADOS (las dos piernas del pantalón). "
+    "(2) FIGURA PEQUEÑA DE LA IZQUIERDA, la NIÑA: cabeza = un círculo CON DOS BULTOS "
+    "alargados a los lados (las coletas); de la cintura hacia abajo = un TRIÁNGULO ancho "
+    "(la falda) del que salen dos piernas finas. "
+    "(3) FIGURA PEQUEÑA DE LA DERECHA, el NIÑO: cabeza = un CÍRCULO LISO Y CERRADO, "
+    "IGUAL que el de la figura del centro, SIN bultos a los lados, SIN mechones, SIN "
+    "puntas y SIN nada que sobresalga; torso = un rectángulo estrecho; de la cintura "
+    "hacia abajo = DOS RECTÁNGULOS SEPARADOS (las dos piernas del pantalón), NUNCA un "
+    "triángulo. "
+    "COMPRUÉBALO ANTES DE TERMINAR, contando sobre tu propio dibujo: en todo el cuadro "
+    "hay UNA SOLA forma triangular de falda y UNA SOLA cabeza con bultos a los lados, y "
+    "las DOS son de la figura de la IZQUIERDA. Las otras dos figuras, la del CENTRO y la "
+    "de la DERECHA, tienen las dos la cabeza redonda y lisa y las dos piernas separadas. "
+    "Si la figura de la DERECHA te ha quedado con falda, con coletas o con cualquier pelo "
+    "que sobresalga, ESTÁ MAL: vuélvela a dibujar con la cabeza lisa y las dos piernas. "
+)
+
+CAIDA = (
+    "Vuelve a dibujar la escena de la imagen de referencia un instante DESPUÉS: es otro "
+    "fotograma de la misma caída dentro del Hoyo. "
+    "CONSERVA TODO IGUAL: el estilo PIXEL ART 2D de 16 bits con sombreado plano y dithering, "
+    "el encuadre horizontal 16:9, la vista cenital del interior del Hoyo, el halo de luz "
+    "redondo en el centro, la penumbra que oscurece hacia las esquinas y la pared de roca "
+    "cuarteada cubriendo todo el cuadro. Monocroma: solo grises, blancos y negros, sin "
+    "ningún tinte cálido ni ningún otro color. "
+    "⚠ LA CÁMARA NO SE MUEVE Y LAS FIGURAS SIGUEN SIENDO SILUETAS LEJANAS: mantén "
+    "EXACTAMENTE el mismo plano general y lejano. El grupo entero ocupa apenas una QUINTA "
+    "PARTE del alto del cuadro, igual que en la referencia, en el centro del halo. "
+    "PROHIBIDO ABSOLUTAMENTE acercar la cámara, hacer un primer plano o agrandar a los "
+    "personajes. Son SILUETAS NEGRAS MACIZAS Y PLANAS, sin ningún detalle interior: "
+    "PROHIBIDO dibujarles cara, ojos, boca, manos, pliegues ni sombreado. "
+    "⚠ LA SILUETA DEL CENTRO ES UN PERSONAJE NEUTRO, NI HOMBRE NI MUJER: es la regla más "
+    "importante de todo el juego. Su ropa y su contorno NO deben indicar ningún sexo. "
+    "Mantén EXACTAMENTE la silueta que tiene en la referencia: cuerpo RECTO y estrecho, "
+    "hombros rectos, camiseta suelta que cae recta, PANTALÓN con las DOS PIERNAS SEPARADAS y "
+    "bien visibles, y PELO CORTO pegado a la cabeza. PROHIBIDO ABSOLUTAMENTE dibujarle "
+    "FALDA, VESTIDO, ropa acampanada, PELO LARGO, melena, coletas, cintura estrechada, "
+    "caderas anchas o pecho. "
+    "SU CABEZA ES UN CÍRCULO LISO: una forma REDONDA y limpia de pelo muy corto pegado al cráneo, con el contorno cerrado. PROHIBIDO ABSOLUTAMENTE dibujarle mechones que sobresalgan, pelo ondeando o volando por el aire, picos, puntas, flequillo suelto, melena o coletas: cualquier pelo al viento le da aspecto de mujer y no puede aparecer. "
+    "En todo el cuadro solo hay UNA falda y UNAS coletas, y son las "
+    "de la figura pequeña de la IZQUIERDA; la figura pequeña de la DERECHA sigue con silueta "
+    "RECTA de PANTALÓN y PELO CORTO. "
+    "⚠ LA FIGURA PEQUEÑA DE LA DERECHA ES UN NIÑO Y SU SILUETA LO TIENE QUE DEJAR "
+    "CLARO: su contorno de la cintura para abajo es RECTO y se divide directamente en "
+    "DOS PIERNAS SEPARADAS de pantalón, como dos palitos. PROHIBIDO ABSOLUTAMENTE que "
+    "se le ensanche el contorno por abajo en forma de triángulo o de campana, porque "
+    "entonces parece una falda y se lee como niña. Su cabeza es una forma REDONDA y "
+    "LISA de PELO CORTO pegado al cráneo: PROHIBIDO dibujarle mechones que sobresalgan, "
+    "coletas, melena o pelo largo ondeando. Su cuerpo es estrecho y recto, sin cintura "
+    "marcada. En todo el cuadro hay UNA SOLA silueta con falda acampanada y UNAS SOLAS "
+    "coletas, y son las de la figura pequeña de la IZQUIERDA. "
+    "LAS TRES SILUETAS SON DE UN NEGRO MACIZO Y UNIFORME, cabeza incluida: la cabeza se "
+    "dibuja del MISMO negro que el cuerpo. PROHIBIDO que la cabeza salga gris, más clara "
+    "que el cuerpo o con relleno distinto. "
+    "⚠ SON EXACTAMENTE TRES PERSONAS, NI UNA MÁS: una figura alta en el centro y DOS "
+    "pequeñas, una a cada lado. Antes de terminar, CUENTA lo que has dibujado y comprueba "
+    "que hay 3 CABEZAS, 6 BRAZOS y 6 PIERNAS en total, y ni uno más. PROHIBIDO dibujar "
+    "brazos, piernas, cabezas o cuerpos de sobra, miembros duplicados o miembros sueltos. "
+    "Los brazos y las piernas quedan RECOGIDOS y pegados al bulto: PROHIBIDO que salgan "
+    "estirados hacia los lados como patas. El contorno del grupo debe leerse claramente como "
+    "TRES PERSONAS ABRAZADAS cayendo. "
+    "EL ABRAZO: mantén la MISMA POSTURA BASE (la silueta alta de frente en el centro y las "
+    "dos pequeñas inclinadas hacia ella, una a cada lado, con las cabezas contra su pecho y "
+    "los bracitos rodeándola, formando un bulto negro compacto). Solo cambia un poco el "
+    "gesto, como en el fotograma siguiente de una animación. PROHIBIDO deshacer el abrazo, "
+    "cambiar quién está en cada lado o dejar brazos estirados y sueltos. "
+    "OTRO CUARTEADO: dibuja un patrón de grietas COMPLETAMENTE DISTINTO y ALEATORIO, en "
+    "otras posiciones, sin copiar el trazado de la referencia. "
+    "No hay suelo. PROHIBIDO añadir más figuras o elementos nuevos y PROHIBIDO cualquier "
+    "texto. "
+)
+
 ESCENAS = [
     # ACTO 1 — La devoción
     (1, ["hoyo"], "Una mujer campesina camina llevando una cesta de frutos hacia el Hoyo (un agujero natural oscuro en la tierra, SIN muros de piedra), para dejarlos como ofrenda. Campo fértil y verde, luz dorada del atardecer, ambiente de gratitud y respeto."),
@@ -2152,6 +2257,652 @@ ESCENAS = [
         "PROHIBIDO el punto de vista desde dentro del pozo mirando hacia arriba: la cámara está "
         "FUERA, a ras de tierra, mirando el agujero de frente. NADA de texto. "
         "SENSACIÓN: el instante del salto, los tres juntos, sin vuelta atrás."),
+    # --- INSERTADA: plano CERCANO dentro del Hoyo, los tres abrazados ---
+    #     Generada de cero a propósito (sin referencias) para poder cambiar la
+    #     distancia de cámara: encadenar dejaba el plano general de la 66.
+    (90, [],
+        "ILUSTRACIÓN EN PIXEL ART 2D dibujada a mano, estilo de videojuego de 16 bits: "
+        "SOMBREADO PLANO por zonas, contornos definidos, píxeles visibles, dithering sutil, "
+        "grano fino. NADA de render 3D ni aspecto fotorrealista. Encuadre horizontal 16:9. "
+        "PALETA monocroma y fría de GRISES CENIZA y negros: gris piedra medio, gris claro "
+        "polvoriento y negro profundo. Ningún otro color. Atmósfera de fábula oscura. "
+        "EL LUGAR: están DENTRO del Hoyo, cayendo por el interior de un pozo natural de roca "
+        "gris agrietada, cuarteada en placas irregulares, con alguna raíz seca asomando entre "
+        "las grietas. La roca rodea el encuadre por los cuatro lados, iluminada débilmente por "
+        "una luz gris pálida que baja desde muy arriba, y se hunde en penumbra hacia los "
+        "bordes. Polvo y motas en suspensión flotando en esa luz. Es el mismo interior de "
+        "piedra por el que descienden. "
+        "⚠ LA CÁMARA ESTÁ MUY CERCA DE ELLOS — es lo que define esta estampa: NO es un plano "
+        "general del pozo. Es un plano CERCANO, casi a su altura, en el que los tres hermanos "
+        "OCUPAN LA MAYOR PARTE DEL CUADRO, de la cintura para arriba y bien grandes. La roca "
+        "queda como fondo desenfocado por la penumbra, detrás de ellos. PROHIBIDO que salgan "
+        "pequeños, lejanos o perdidos en medio del pozo. "
+        "LOS TRES HERMANOS, ABRAZADOS: caen JUNTOS, apretados en un solo bulto, agarrados unos "
+        "a otros con fuerza. En el CENTRO el HERMANO MAYOR, un adolescente más alto, que los "
+        "rodea a los dos con los brazos y los aprieta contra su pecho; a cada lado un "
+        "hermanito MUCHO más pequeño, con los brazos rodeándole el cuerpo y la CABEZA hundida "
+        "contra él, escondiendo la cara. A un lado la NIÑA, reconocible por su vestidito y sus "
+        "dos coletas; al otro el NIÑO, de silueta recta, con pantalón y pelo corto. "
+        "SON SILUETAS OSCURAS: figuras negras planas recortadas contra la roca gris, sin "
+        "rostro, sin rasgos, sin ropa de color. Del HERMANO MAYOR no puede reconocerse NADA. "
+        "ESTÁN CAYENDO: los cuerpos algo inclinados y sueltos, las piernas colgando sin apoyo "
+        "por debajo del encuadre, el pelo y el vestido de la niña levantados hacia arriba por "
+        "el aire, y motas de polvo y piedrecitas subiendo por el cuadro mientras ellos bajan. "
+        "PROHIBIDO que aparezca suelo bajo ellos o que parezcan de pie. "
+        "PROHIBIDO que aparezca ninguna otra figura y PROHIBIDO cualquier texto. "
+        "SENSACIÓN: los tres solos, agarrados entre sí, cayendo hacia lo desconocido."),
+    # --- INSERTADA: primer plano de la niña llorando durante la caída ---
+    #     De cero, como la 90: encadenar mantiene el plano general y aquí hay
+    #     que acercar mucho la cámara.
+    (91, [],
+        "ILUSTRACIÓN EN PIXEL ART 2D dibujada a mano, estilo de videojuego de 16 bits: "
+        "SOMBREADO PLANO por zonas, contornos definidos, píxeles visibles, dithering sutil. "
+        "NADA de render 3D ni aspecto fotorrealista. Encuadre horizontal 16:9. "
+        "PALETA monocroma y fría de GRISES CENIZA y negros, sin ningún otro color. "
+        "EL LUGAR: siguen DENTRO del Hoyo, cayendo por el interior de un pozo natural de roca "
+        "gris agrietada y cuarteada, con alguna raíz seca asomando entre las grietas y una luz "
+        "gris pálida que baja desde muy arriba. En este plano la roca queda MUY DESENFOCADA y "
+        "en penumbra, como un fondo borroso detrás de ella; se intuye la piedra y el polvo en "
+        "suspensión, nada más. "
+        "⚠ PRIMER PLANO DE LA NIÑA — es lo que define esta estampa: la cámara está MUY CERCA "
+        "de ella, y su CARA y sus hombros OCUPAN CASI TODO EL CUADRO. PROHIBIDO que salga "
+        "pequeña, de cuerpo entero o acompañada de las otras dos figuras: aquí SOLO está ella. "
+        "QUIÉN ES: una NIÑA pequeña, con el pelo recogido en DOS COLETAS que se levantan hacia "
+        "arriba por el aire de la caída, y el cuello de su vestidito asomando abajo. Dibujada "
+        "en el mismo estilo pixel-art plano del resto, con la piel y la ropa en grises. "
+        "SU GESTO — ESTÁ LLORANDO CON TODA SU ALMA, y tiene que leerse de un vistazo: los OJOS "
+        "MUY APRETADOS, cerrados con fuerza, con las cejas caídas hacia dentro y arrugadas; la "
+        "BOCA MUY ABIERTA en un gemido, con la mandíbula tensa; las mejillas contraídas. Por "
+        "las mejillas le corren LÁGRIMAS gruesas y brillantes que, por la caída, se despegan de "
+        "su cara y salen volando HACIA ARRIBA en gotitas claras. Es un llanto desconsolado, de "
+        "puro desahogo. "
+        "ESTÁ CAYENDO: el pelo y las coletas levantados hacia arriba, la ropa agitada, y motas "
+        "de polvo y piedrecitas subiendo por el cuadro mientras ella baja. PROHIBIDO que "
+        "aparezca suelo o que parezca de pie. "
+        "PROHIBIDO que aparezca ninguna otra figura y PROHIBIDO cualquier texto. "
+        "SENSACIÓN: el dolor de una niña muy pequeña, sola en el aire."),
+    # --- INSERTADA: los tres llorando; el mayor sigue sin rostro ---
+    (92, [],
+        "ILUSTRACIÓN EN PIXEL ART 2D dibujada a mano, estilo de videojuego de 16 bits: "
+        "SOMBREADO PLANO por zonas, contornos definidos, píxeles visibles, dithering sutil. "
+        "NADA de render 3D ni aspecto fotorrealista. Encuadre horizontal 16:9. "
+        "PALETA monocroma y fría de GRISES CENIZA y negros, sin ningún otro color. "
+        "EL LUGAR: DENTRO del Hoyo, cayendo por el interior de un pozo natural de roca gris "
+        "agrietada y cuarteada, con alguna raíz seca entre las grietas y una luz gris pálida "
+        "que baja desde muy arriba. La roca queda DESENFOCADA y en penumbra detrás de ellos, "
+        "con polvo y motas en suspensión. "
+        "ENCUADRE: plano CERCANO, casi a su altura. Los TRES hermanos ocupan la mayor parte del "
+        "cuadro, de la cintura para arriba, abrazados en un solo bulto mientras caen. "
+        "PROHIBIDO que salgan pequeños o lejanos. "
+        "⚠ EL HERMANO MAYOR — SIN ROSTRO, ES LA REGLA MÁS IMPORTANTE: va en el CENTRO, es el "
+        "más alto y rodea a los otros dos con los brazos. Su cabeza está INCLINADA HACIA ABAJO "
+        "y su cara queda COMPLETAMENTE EN SOMBRA: una silueta NEGRA MACIZA sin un solo rasgo "
+        "dentro. PROHIBIDO ABSOLUTAMENTE dibujarle ojos, boca, nariz, cejas o cualquier "
+        "facción; prohibido que se le vea la piel de la cara. Que él también está llorando se "
+        "entiende por el CUERPO: los hombros encogidos y temblando, la cabeza hundida entre los "
+        "dos pequeños, los brazos apretándolos con fuerza. "
+        "LOS DOS HERMANITOS — A ELLOS SÍ SE LES VE LA CARA, y están llorando: uno a cada lado, "
+        "MUCHO más pequeños, agarrados a él. Sus caras se ven de frente o de tres cuartos, con "
+        "los OJOS APRETADOS, las cejas caídas hacia dentro y la BOCA ABIERTA en un gemido; por "
+        "las mejillas les corren LÁGRIMAS gruesas que se despegan y salen volando hacia arriba "
+        "por la caída. A un lado la NIÑA, con dos coletas levantadas por el aire y su "
+        "vestidito; al otro el NIÑO, de pelo corto y silueta recta. "
+        "ESTÁN CAYENDO: cuerpos algo inclinados y sueltos, las piernas colgando por debajo del "
+        "encuadre, el pelo y la ropa levantados hacia arriba, y motas de polvo y piedrecitas "
+        "subiendo por el cuadro. PROHIBIDO que aparezca suelo o que parezcan de pie. "
+        "PROHIBIDO que aparezca ninguna otra figura y PROHIBIDO cualquier texto. "
+        "SENSACIÓN: los tres juntos, deshechos, cayendo hacia lo desconocido."),
+    # --- INSERTADA: más abajo en la caída, con aura de llama ---
+    (93, ["assets/Prologo/escenas/escena_92.png"],
+        "Toma la imagen de referencia y vuelve a dibujar ESA MISMA ESCENA, un instante "
+        "DESPUÉS, mientras siguen cayendo. "
+        "CONSERVA EXACTAMENTE IGUAL: el estilo PIXEL ART 2D de 16 bits con SOMBREADO PLANO y "
+        "contornos definidos, la paleta monocroma de GRISES CENIZA, el encuadre horizontal "
+        "16:9, el plano cercano, y los TRES hermanos abrazados en el centro ocupando la mayor "
+        "parte del cuadro, con la misma postura, la misma ropa y los mismos peinados. "
+        "⚠ EL HERMANO MAYOR SIGUE SIN ROSTRO: su cabeza es una SILUETA NEGRA MACIZA, inclinada "
+        "hacia abajo, sin un solo rasgo dentro. PROHIBIDO dibujarle ojos, boca, nariz o "
+        "cualquier facción. Los dos hermanitos siguen con la cara visible llorando: ojos "
+        "apretados, cejas caídas, boca abierta en un gemido y lágrimas por las mejillas. "
+        "CAMBIO 1 — EL AURA: alrededor de los tres aparece un AURA DE LLAMA muy TENUE y "
+        "DELGADA, como un fuego pálido que lame sus contornos: lenguas de llama finas y "
+        "puntiagudas que salen del borde de sus cuerpos y ondean hacia arriba, más claras que "
+        "el fondo, con el borde interior casi blanco. Es SOLO UN POCO: un halo estrecho pegado "
+        "a la silueta, PROHIBIDO que las envuelva del todo, que las tape, que llene el cuadro "
+        "ni que oculte sus caras ni el negro de la cabeza del mayor. Suéltale unas chispitas "
+        "pequeñas que suben. "
+        "CAMBIO 2 — ESTÁN MÁS ABAJO: el pozo de roca se ha vuelto MÁS ESTRECHO y MUCHO MÁS "
+        "OSCURO. La luz gris que bajaba desde arriba queda ahora MUY LEJOS y PEQUEÑA, apenas "
+        "un resplandor diminuto en el borde superior del cuadro, y casi toda la piedra está en "
+        "PENUMBRA, con las esquinas del encuadre ya casi negras. Las paredes de roca se ven "
+        "DESENFOCADAS y ESTIRADAS EN VERTICAL, con rayas y arrastre de movimiento hacia arriba "
+        "que dan la sensación de VELOCIDAD de caída, y raíces secas que pasan borrosas. Sube "
+        "por el cuadro un reguero de polvo, chispas y piedrecitas. "
+        "Sus cuerpos van algo inclinados y sueltos, las piernas colgando hacia abajo, el pelo y "
+        "la ropa levantados hacia arriba. PROHIBIDO que aparezca suelo o que parezcan de pie. "
+        "PROHIBIDO que aparezca ninguna otra figura y PROHIBIDO cualquier texto."),
+    # --- INSERTADA: variante de la 66 (otras grietas, luz gris neutra) ---
+    (94, ["assets/Prologo/escenas/escena_66.png",
+          "assets/Prologo/escenas/escena_92.png"],
+        "La PRIMERA imagen de referencia es la escena que hay que volver a dibujar. "
+        "La SEGUNDA imagen se te da ÚNICAMENTE como MUESTRA DE COLOR: copia de ella SOLO su "
+        "tonalidad de GRISES NEUTROS y FRÍOS. PROHIBIDO copiar de la segunda imagen su "
+        "composición, su encuadre, sus personajes o cualquier elemento suyo. "
+        "REDIBUJA LA PRIMERA IMAGEN CONSERVÁNDOLO TODO: el mismo estilo PIXEL ART 2D de 16 "
+        "bits con sombreado plano y dithering, el mismo encuadre horizontal 16:9, la misma "
+        "vista cenital del fondo del Hoyo, el mismo halo de luz redondo en el centro que se "
+        "va oscureciendo hacia las esquinas hasta quedar casi negras, la misma pared de roca "
+        "cuarteada cubriendo todo el cuadro, y LAS MISMAS TRES SILUETAS pequeñas en el centro: "
+        "figuras NEGRAS MACIZAS SIN NINGÚN RASGO, la más alta en medio y las dos pequeñas a "
+        "los lados cogidas de su mano, en el mismo sitio, del mismo tamaño y con la misma "
+        "postura de caída. PROHIBIDO dibujarles cara, ojos, boca o cualquier facción. "
+        "CAMBIO 1 — LAS GRIETAS: dibuja un patrón de grietas COMPLETAMENTE DISTINTO y "
+        "ALEATORIO. No copies el trazado de las grietas de la referencia: cambia por dónde "
+        "pasan, cómo se ramifican y el tamaño y la forma de las placas de roca que quedan "
+        "entre ellas (unas más grandes y otras más pequeñas, repartidas de otra manera). "
+        "Debe seguir siendo la misma clase de roca cuarteada, con el mismo grosor y estilo de "
+        "línea; lo único que cambia es el DIBUJO del cuarteado. "
+        "CAMBIO 2 — LA LUZ: la luz del centro y toda la imagen deben ser de un GRIS NEUTRO y "
+        "FRÍO, como el de la segunda referencia. QUITA cualquier tinte cálido, sepia, marrón "
+        "o amarillento que tenga la primera imagen. Sigue siendo monocroma: solo grises, "
+        "blancos y negros, sin ningún otro color. "
+        "PROHIBIDO añadir más figuras, criaturas o elementos nuevos, y PROHIBIDO cualquier "
+        "texto."),
+    # --- INSERTADA: los tres abrazados cayendo, el lugar más gris ---
+    (95, ["assets/Prologo/escenas/escena_94.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia cambiando SOLO la postura de "
+        "las tres figuras y el dibujo de las grietas. "
+        "CONSERVA TODO LO DEMÁS EXACTAMENTE IGUAL: el estilo PIXEL ART 2D de 16 bits con "
+        "sombreado plano y dithering, el encuadre horizontal 16:9, la vista cenital del "
+        "interior del Hoyo, el halo de luz redondo en el centro, la penumbra que oscurece "
+        "hacia las esquinas, la pared de roca cuarteada cubriendo todo el cuadro y la misma "
+        "iluminación gris apagada (ni más clara ni más blanca que la referencia; si acaso, un "
+        "poco más oscura y más gris). Monocroma: solo grises, blancos y negros. "
+        "⚠ LO MÁS IMPORTANTE — LA CÁMARA NO SE MUEVE Y LAS FIGURAS SIGUEN SIENDO SILUETAS "
+        "LEJANAS: mantén EXACTAMENTE el mismo plano general y lejano de la referencia. Las "
+        "tres figuras son DIMINUTAS en el centro del halo: el grupo entero ocupa apenas una "
+        "QUINTA PARTE del alto del cuadro y una quinta parte de su ancho, igual que en la "
+        "referencia. PROHIBIDO ABSOLUTAMENTE acercar la cámara, hacer un primer plano o "
+        "agrandar a los personajes. Son SILUETAS NEGRAS MACIZAS Y PLANAS, recortadas contra "
+        "la luz, SIN NINGÚN DETALLE INTERIOR: PROHIBIDO dibujarles cara, ojos, boca, nariz, "
+        "manos, pliegues de ropa, sombreado o cualquier rasgo; a esa distancia solo se ve su "
+        "contorno negro. "
+        "EL CAMBIO — EL ABRAZO: en la referencia van SEPARADAS y COGIDAS DE LA MANO con los "
+        "brazos estirados; eso desaparece. Ahora la silueta ALTA sigue en el CENTRO, de "
+        "frente, y las DOS SILUETAS PEQUEÑAS se INCLINAN HACIA ELLA y la ABRAZAN, una a cada "
+        "lado: sus cuerpecitos quedan ladeados y PEGADOS a su torso, sus cabezas apoyadas "
+        "contra su pecho y sus bracitos rodeándola por delante, mientras la alta las rodea a "
+        "las dos por la espalda. PROHIBIDO que queden brazos abiertos, estirados o manos "
+        "sueltas. Aun estando pegadas, se deben distinguir LAS TRES siluetas: la alta entera "
+        "en medio y una pequeña asomando a cada lado. "
+        "⚠ LA CABEZA DE LA SILUETA ALTA ES UN CÍRCULO LISO: una forma REDONDA y limpia de "
+        "pelo muy corto pegado al cráneo, con el contorno cerrado. PROHIBIDO ABSOLUTAMENTE "
+        "dibujarle mechones que sobresalgan, pelo ondeando o volando por el aire, picos, "
+        "puntas, flequillo suelto, melena o coletas: cualquier pelo al viento le da aspecto "
+        "de mujer y no puede aparecer. Tampoco falda, vestido, ropa acampanada, cintura "
+        "estrechada, caderas ni pecho: es un personaje NEUTRO, ni hombre ni mujer, con el "
+        "cuerpo recto y las dos piernas de pantalón bien separadas. "
+        "LAS DOS PEQUEÑAS SON UNA NIÑA Y UN NIÑO, y se diferencian solo por el CONTORNO: la "
+        "de la IZQUIERDA es la NIÑA, con FALDA acampanada y DOS COLETAS levantadas; la de la "
+        "DERECHA es el NIÑO, de silueta RECTA, con PANTALÓN de dos piernas separadas y PELO "
+        "CORTO pegado a la cabeza. PROHIBIDO dibujarle al de la derecha falda, vestido o "
+        "coletas: en todo el cuadro debe haber UNA SOLA falda y UNAS SOLAS coletas. "
+        "Las piernas de los tres cuelgan sueltas hacia abajo y el pelo y la ropa van "
+        "levantados, porque siguen cayendo; no hay suelo bajo ellos. "
+        "OTRO CUARTEADO: dibuja un patrón de grietas COMPLETAMENTE DISTINTO y ALEATORIO, sin "
+        "copiar el trazado de la referencia (otras ramificaciones y placas de roca de otros "
+        "tamaños y formas). "
+        "PROHIBIDO añadir más figuras o elementos nuevos y PROHIBIDO cualquier texto."),
+    # --- INSERTADA: un instante después, con más sensación de caída ---
+    (96, ["assets/Prologo/escenas/escena_95.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia un instante DESPUÉS, mientras "
+        "siguen cayendo. "
+        "CONSERVA TODO IGUAL: el estilo PIXEL ART 2D de 16 bits con sombreado plano y "
+        "dithering, el encuadre horizontal 16:9, la vista cenital del interior del Hoyo, el "
+        "halo de luz redondo en el centro, la penumbra que oscurece hacia las esquinas, la "
+        "pared de roca cuarteada cubriendo todo el cuadro y la MISMA iluminación gris apagada "
+        "(ni más clara ni más blanca que la referencia). Monocroma: solo grises, blancos y "
+        "negros. "
+        "⚠ LA CÁMARA NO SE MUEVE Y LAS FIGURAS SIGUEN SIENDO SILUETAS LEJANAS: mantén "
+        "EXACTAMENTE el mismo plano general y lejano. El grupo entero ocupa apenas una QUINTA "
+        "PARTE del alto del cuadro, igual que en la referencia, en el centro del halo. "
+        "PROHIBIDO ABSOLUTAMENTE acercar la cámara, hacer un primer plano o agrandar a los "
+        "personajes. Son SILUETAS NEGRAS MACIZAS Y PLANAS, sin ningún detalle interior: "
+        "PROHIBIDO dibujarles cara, ojos, boca, manos, pliegues ni sombreado. "
+        "⚠ LA SILUETA DEL CENTRO ES UN PERSONAJE NEUTRO, NI HOMBRE NI MUJER: es la regla más "
+        "importante de todo el juego. Su ropa y su contorno NO deben indicar ningún sexo. "
+        "Dibújala EXACTAMENTE con la misma silueta que tiene la figura alta en la escena de "
+        "referencia anterior de este mismo lugar: cuerpo RECTO y estrecho, hombros rectos, "
+        "camiseta suelta que cae recta, PANTALÓN con las DOS PIERNAS SEPARADAS y bien "
+        "visibles, y PELO CORTO pegado a la cabeza. PROHIBIDO ABSOLUTAMENTE dibujarle FALDA, "
+        "VESTIDO, ropa acampanada o que se abra hacia abajo, PELO LARGO, melena, coletas, "
+        "cintura estrechada, caderas anchas o pecho. "
+        "SU CABEZA ES UN CÍRCULO LISO: una forma REDONDA y limpia de pelo muy corto pegado al cráneo, con el contorno cerrado. PROHIBIDO ABSOLUTAMENTE dibujarle mechones que sobresalgan, pelo ondeando o volando por el aire, picos, puntas, flequillo suelto, melena o coletas: cualquier pelo al viento le da aspecto de mujer y no puede aparecer. "
+        "Si al cerrarse el abrazo el contorno de "
+        "los tres se ensancha por abajo, deben seguir viéndose CLARAMENTE las DOS PIERNAS "
+        "SEPARADAS de la figura del centro para que nunca parezca una falda. En todo el "
+        "cuadro solo hay UNA falda y UNAS coletas, y son las de la figura pequeña de la "
+        "IZQUIERDA. "
+        "CAMBIO 1 — EL ABRAZO SE CIERRA UN POCO MÁS: mantén la MISMA POSTURA BASE que ya "
+        "tienen (la silueta alta de frente en el centro y las dos pequeñas inclinadas hacia "
+        "ella, una a cada lado, abrazándola). Solo se APRIETA: los tres cuerpos quedan aún "
+        "más juntos y hundidos unos en otros, las cabezas de los pequeños más metidas contra "
+        "el pecho de la alta y los brazos de ella cerrándose más sobre sus espaldas, de modo "
+        "que el contorno de los tres forme un BULTO NEGRO más compacto y redondeado, sin "
+        "huecos de luz entre los cuerpos. PROHIBIDO cambiar quién está en cada sitio: la "
+        "silueta con FALDA y COLETAS sigue a la IZQUIERDA y la silueta RECTA de PANTALÓN y "
+        "PELO CORTO sigue a la DERECHA. "
+        "CAMBIO 2 — MÁS SENSACIÓN DE CAÍDA: el bulto va un poco INCLINADO y ladeado, las "
+        "piernas de los tres colgando y arrastradas hacia arriba, y el pelo, las coletas y la "
+        "ropa MUY levantados por el aire. La roca del fondo se ve ESTIRADA EN VERTICAL, con "
+        "RAYAS FINAS de arrastre de movimiento subiendo por todo el cuadro y las zonas más "
+        "alejadas algo DESENFOCADAS, como si el pozo pasara a toda velocidad. Añade motas de "
+        "polvo, chispitas de piedra y piedrecitas pequeñas SUBIENDO por el encuadre, "
+        "dejando estelas cortas. No hay suelo. "
+        "CAMBIO 3 — OTRO CUARTEADO: dibuja un patrón de grietas COMPLETAMENTE DISTINTO y "
+        "ALEATORIO, en otras posiciones, sin copiar el trazado de la referencia (otras "
+        "ramificaciones y placas de roca de otros tamaños y formas). "
+        "PROHIBIDO añadir más figuras o elementos nuevos y PROHIBIDO cualquier texto."),
+    # --- INSERTADA: secuencia de la 96, cayendo más rápido ---
+    (97, ["assets/Prologo/escenas/escena_96.png"],
+        CAIDA +
+        "ESTA ESTAMPA — EMPIEZAN A CAER MÁS RÁPIDO: el bulto gira ligeramente sobre sí mismo "
+        "y va un poco MÁS INCLINADO en el aire, con las piernas arrastradas hacia arriba y "
+        "los brazos reacomodándose apretando algo más. Las coletas, el pelo y la ropa van muy "
+        "levantados. La roca del fondo se ve MÁS ESTIRADA EN VERTICAL y más DESENFOCADA que "
+        "en la referencia, con más rayas finas de arrastre subiendo por todo el cuadro y "
+        "estelas más largas, y bastantes motas de polvo y piedrecitas SUBIENDO con estela. "
+        "La iluminación gris apagada sigue igual que en la referencia."),
+
+    # --- INSERTADAS: la secuencia de caída continúa (cada una encadena a la anterior) ---
+    (98, ["assets/Prologo/escenas/escena_97.png"],
+        CAIDA +
+        "ESTA ESTAMPA — CAEN MÁS RÁPIDO: el bulto gira un poco más y va MÁS INCLINADO en el "
+        "aire, con las piernas arrastradas hacia arriba. Las coletas, el pelo y la ropa van "
+        "estirados hacia arriba casi horizontales. La roca del fondo está MÁS ESTIRADA EN "
+        "VERTICAL y más DESENFOCADA que en la referencia, con más rayas finas de arrastre "
+        "subiendo por todo el cuadro y estelas más largas, y muchas motas de polvo y "
+        "piedrecitas SUBIENDO con estela. La iluminación gris apagada sigue igual que en la "
+        "referencia."),
+
+    (99, ["assets/Prologo/escenas/escena_98.png"],
+        CAIDA +
+        "ESTA ESTAMPA — EL POZO SE ESTRECHA: siguen cayendo y el hueco se ha vuelto MÁS "
+        "ANGOSTO. El halo de luz del centro es ahora MÁS PEQUEÑO y la pared de roca "
+        "cuarteada ocupa más cuadro y se cierra alrededor de ellos, dejando solo un círculo "
+        "de claridad justo detrás del grupo. Toda la imagen queda UN POCO MÁS OSCURA y más "
+        "gris que la referencia, con la penumbra de las esquinas comiendo más encuadre. "
+        "Aparecen algunas RAÍCES SECAS Y GRISES asomando entre las grietas de la pared, "
+        "pasando borrosas por el movimiento. Las rayas de arrastre y las piedrecitas siguen "
+        "subiendo por todo el cuadro."),
+
+    (100, ["assets/Prologo/escenas/escena_99.png"],
+        CAIDA +
+        "ESTA ESTAMPA — MÁS ABAJO Y MÁS OSCURO: están mucho más hondo. Casi toda la roca ha "
+        "quedado en PENUMBRA GRIS OSCURA y las esquinas están ya casi negras; el halo de luz "
+        "se ha reducido a un resplandor GRIS TENUE y pequeño alrededor del grupo, lo justo "
+        "para que sus siluetas negras se sigan recortando con claridad. Sigue habiendo "
+        "MUCHAS raíces secas y grises entre las grietas, pasando borrosas. La velocidad es la "
+        "máxima: la roca muy estirada en vertical y desenfocada, rayas largas de arrastre "
+        "subiendo por todo el cuadro y un reguero de polvo y piedrecitas con estela. "
+        "PROHIBIDO que la imagen se quede completamente negra o que el grupo deje de verse."),
+
+    # --- INSERTADAS: continúa la caída a partir de la 95 (encadenadas) ---
+    (101, ["assets/Prologo/escenas/escena_95.png"],
+        CAIDA +
+        "ESTA ESTAMPA — CASI EL MISMO INSTANTE, SOLO UN GESTO: es el fotograma siguiente de la "
+        "misma caída, así que el grupo se mueve MUY POCO. Los tres siguen ABRAZADOS y "
+        "COMPACTOS, con los brazos de los pequeños PEGADOS al cuerpo del mayor (PROHIBIDO que "
+        "los abran hacia afuera). Lo único que cambia: los PIES de los tres se balancean un "
+        "poco hacia un lado y la cabecita de la NIÑA se hunde un poco más contra el pecho del "
+        "mayor. La roca del fondo se ve un poco más estirada en vertical, con rayas finas de "
+        "arrastre subiendo y motas de polvo con estela. La iluminación gris apagada y el "
+        "tamaño del halo siguen igual que en la referencia."),
+
+    (102, ["assets/Prologo/escenas/escena_101.png"],
+        CAIDA +
+        "ESTA ESTAMPA — OTRO GESTO PEQUEÑO: los tres siguen ABRAZADOS y COMPACTOS, con los "
+        "brazos de los pequeños PEGADOS al cuerpo del mayor. Lo único que cambia: los pies se "
+        "balancean ahora hacia el otro lado, las piernas quedan algo más recogidas y la cabeza "
+        "del MAYOR se inclina un poco hacia la niña. La ropa y las coletas de la niña van más "
+        "levantadas. Las rayas de arrastre y las piedrecitas suben con estelas algo más "
+        "largas. La iluminación gris apagada sigue igual."),
+
+    (103, ["assets/Prologo/escenas/escena_102.png"],
+        CAIDA +
+        "ESTA ESTAMPA — OTRO GESTO PEQUEÑO: los tres siguen ABRAZADOS y COMPACTOS, con los "
+        "brazos de los pequeños PEGADOS al cuerpo del mayor. Lo único que cambia: el bulto "
+        "entero se ladea muy ligeramente, los pies del NIÑO de la derecha se estiran hacia "
+        "abajo y la cabecita del NIÑO se hunde más contra el mayor. El fondo está algo más "
+        "desenfocado y estirado, con más rayas de arrastre y más piedrecitas subiendo. La "
+        "iluminación gris apagada sigue igual."),
+
+    (104, ["assets/Prologo/escenas/escena_103.png"],
+        CAIDA +
+        "ESTA ESTAMPA — ÚLTIMO GESTO PEQUEÑO: los tres siguen ABRAZADOS y COMPACTOS, con los "
+        "brazos de los pequeños PEGADOS al cuerpo del mayor. Lo único que cambia: las piernas "
+        "de los tres se recogen un poco más y quedan algo arrastradas hacia arriba, y la "
+        "cabeza del mayor vuelve a quedar recta. La caída es más rápida: la roca más estirada "
+        "en vertical y desenfocada, rayas de arrastre más largas por todo el cuadro y un "
+        "reguero de polvo y piedrecitas con estela. La iluminación gris apagada sigue igual."),
+
+    # --- INSERTADAS: corrigen la 103 y la 104 (el niño se volvía niña) ---
+    (105, ["assets/Prologo/escenas/escena_102.png"],
+        "⚠⚠ LO PRIMERO Y MÁS IMPORTANTE — QUIÉN ES CADA UNA DE LAS TRES SILUETAS. Dibuja "
+        "EXACTAMENTE estas tres formas y ninguna otra: "
+        "(1) FIGURA DEL CENTRO, la más alta: cabeza = un CÍRCULO LISO Y CERRADO, sin nada que "
+        "sobresalga de su borde; torso = un RECTÁNGULO estrecho; de la cintura hacia abajo = "
+        "DOS RECTÁNGULOS SEPARADOS (las dos piernas del pantalón). "
+        "(2) FIGURA PEQUEÑA DE LA IZQUIERDA, la NIÑA: cabeza = un círculo CON DOS BULTOS "
+        "alargados a los lados (las coletas); de la cintura hacia abajo = un TRIÁNGULO ancho "
+        "(la falda) del que salen dos piernas finas. "
+        "(3) FIGURA PEQUEÑA DE LA DERECHA, el NIÑO: cabeza = un CÍRCULO LISO Y CERRADO, "
+        "IGUAL que el de la figura del centro, SIN bultos a los lados, SIN mechones, SIN "
+        "puntas y SIN nada que sobresalga; torso = un rectángulo estrecho; de la cintura "
+        "hacia abajo = DOS RECTÁNGULOS SEPARADOS (las dos piernas del pantalón), NUNCA un "
+        "triángulo. "
+        "COMPRUÉBALO ANTES DE TERMINAR, contando sobre tu propio dibujo: en todo el cuadro "
+        "hay UNA SOLA forma triangular de falda y UNA SOLA cabeza con bultos a los lados, y "
+        "las DOS son de la figura de la IZQUIERDA. Las otras dos figuras, la del CENTRO y la "
+        "de la DERECHA, tienen las dos la cabeza redonda y lisa y las dos piernas separadas. "
+        "Si la figura de la DERECHA te ha quedado con falda, con coletas o con cualquier pelo "
+        "que sobresalga, ESTÁ MAL: vuélvela a dibujar con la cabeza lisa y las dos piernas. "
+        + CAIDA +
+        "ESTA ESTAMPA — UN GESTO PEQUEÑO: los tres siguen ABRAZADOS y COMPACTOS, con los "
+        "brazos de los pequeños PEGADOS al cuerpo del mayor. Lo único que cambia respecto a "
+        "la referencia: el bulto entero se ladea muy ligeramente, los pies del NIÑO de la "
+        "derecha se estiran hacia abajo y su cabecita se hunde más contra el mayor. El fondo "
+        "está algo más desenfocado y estirado, con más rayas de arrastre y más piedrecitas "
+        "subiendo. La iluminación gris apagada sigue igual."),
+
+    (106, ["assets/Prologo/escenas/escena_105.png"],
+        "⚠⚠ LO PRIMERO Y MÁS IMPORTANTE — QUIÉN ES CADA UNA DE LAS TRES SILUETAS. Dibuja "
+        "EXACTAMENTE estas tres formas y ninguna otra: "
+        "(1) FIGURA DEL CENTRO, la más alta: cabeza = un CÍRCULO LISO Y CERRADO, sin nada que "
+        "sobresalga de su borde; torso = un RECTÁNGULO estrecho; de la cintura hacia abajo = "
+        "DOS RECTÁNGULOS SEPARADOS (las dos piernas del pantalón). "
+        "(2) FIGURA PEQUEÑA DE LA IZQUIERDA, la NIÑA: cabeza = un círculo CON DOS BULTOS "
+        "alargados a los lados (las coletas); de la cintura hacia abajo = un TRIÁNGULO ancho "
+        "(la falda) del que salen dos piernas finas. "
+        "(3) FIGURA PEQUEÑA DE LA DERECHA, el NIÑO: cabeza = un CÍRCULO LISO Y CERRADO, "
+        "IGUAL que el de la figura del centro, SIN bultos a los lados, SIN mechones, SIN "
+        "puntas y SIN nada que sobresalga; torso = un rectángulo estrecho; de la cintura "
+        "hacia abajo = DOS RECTÁNGULOS SEPARADOS (las dos piernas del pantalón), NUNCA un "
+        "triángulo. "
+        "COMPRUÉBALO ANTES DE TERMINAR, contando sobre tu propio dibujo: en todo el cuadro "
+        "hay UNA SOLA forma triangular de falda y UNA SOLA cabeza con bultos a los lados, y "
+        "las DOS son de la figura de la IZQUIERDA. Las otras dos figuras, la del CENTRO y la "
+        "de la DERECHA, tienen las dos la cabeza redonda y lisa y las dos piernas separadas. "
+        "Si la figura de la DERECHA te ha quedado con falda, con coletas o con cualquier pelo "
+        "que sobresalga, ESTÁ MAL: vuélvela a dibujar con la cabeza lisa y las dos piernas. "
+        + CAIDA +
+        "ESTA ESTAMPA — ÚLTIMO GESTO PEQUEÑO: los tres siguen ABRAZADOS y COMPACTOS, con los "
+        "brazos de los pequeños PEGADOS al cuerpo del mayor. Lo único que cambia: las piernas "
+        "de los tres se recogen un poco más y quedan algo arrastradas hacia arriba, y la "
+        "cabeza del mayor queda recta. La caída es más rápida: la roca más estirada en "
+        "vertical y desenfocada, rayas de arrastre más largas por todo el cuadro y un reguero "
+        "de polvo y piedrecitas con estela. La iluminación gris apagada sigue igual."),
+
+    # --- INSERTADA: la caída sigue después de la 106 ---
+    (107, ["assets/Prologo/escenas/escena_106.png"],
+        REPARTO + CAIDA +
+        "ESTA ESTAMPA — SIGUE LA CAÍDA CON UN GESTO PEQUEÑO: los tres siguen ABRAZADOS y "
+        "COMPACTOS, con los brazos de los pequeños PEGADOS al cuerpo del mayor y sus cabecitas "
+        "apoyadas contra él. Lo único que cambia respecto a la referencia: el bulto se ladea "
+        "un poco hacia el otro lado, las piernas de la NIÑA se estiran hacia abajo mientras "
+        "las del NIÑO se recogen, y la cabeza del mayor se inclina levemente. Las coletas de "
+        "la niña y la ropa de los tres van más levantadas por el aire. "
+        "LA CAÍDA SE NOTA MÁS: la roca del fondo algo más estirada en vertical y desenfocada, "
+        "con rayas finas de arrastre subiendo por todo el cuadro y estelas más largas. Las "
+        "motas de polvo y las piedrecitas que suben deben ser PEQUEÑAS y CLARAS, apenas "
+        "puntitos: PROHIBIDO que salgan manchas negras grandes alrededor del grupo. "
+        "La iluminación gris apagada, el tamaño del halo y la penumbra de las esquinas siguen "
+        "igual que en la referencia."),
+
+    # --- INSERTADA: la caída sigue después de la 107 ---
+    (108, ["assets/Prologo/escenas/escena_107.png"],
+        REPARTO + CAIDA +
+        "ESTA ESTAMPA — SIGUE LA CAÍDA CON UN GESTO PEQUEÑO: los tres siguen ABRAZADOS y "
+        "COMPACTOS, con los brazos de los pequeños PEGADOS al cuerpo del mayor y sus "
+        "cabecitas apoyadas contra él. Lo único que cambia respecto a la referencia: el bulto "
+        "se endereza un poco, las piernas de la NIÑA se recogen mientras las del NIÑO se "
+        "estiran hacia abajo, y la cabeza del mayor queda recta mirando al frente. Las "
+        "coletas de la niña y la ropa de los tres siguen levantadas por el aire. "
+        "LA CAÍDA SE NOTA MÁS: la roca del fondo un poco más estirada en vertical y "
+        "desenfocada, con rayas finas de arrastre subiendo por todo el cuadro y estelas algo "
+        "más largas. "
+        "⚠ LAS PARTÍCULAS: las motas de polvo y las piedrecitas que suben deben ser PUNTITOS "
+        "MINÚSCULOS Y CLAROS, más claros que la roca, apenas visibles. PROHIBIDO "
+        "ABSOLUTAMENTE dibujar manchas, borrones o puntos NEGROS grandes flotando alrededor "
+        "del grupo: en el cuadro lo único negro son las tres siluetas. "
+        "⚠ LA ILUMINACIÓN NO PUEDE SUBIR: la imagen debe quedar IGUAL DE OSCURA o un poco más "
+        "oscura que la referencia. La roca en gris medio apagado, el halo del centro solo un "
+        "poco más claro que la piedra, y las esquinas cerrándose en penumbra gris oscura. "
+        "PROHIBIDO que la piedra salga clara, luminosa o casi blanca, y PROHIBIDO que "
+        "desaparezca la penumbra de las esquinas."),
+
+    # --- INSERTADA: la caída adoptando el abrazo cerrado de la escena 90 ---
+    (109, ["assets/Prologo/escenas/escena_108.png"],
+        REPARTO + CAIDA +
+        "ESTA ESTAMPA — EL ABRAZO SE CIERRA DEL TODO, ES UN CAMBIO GRANDE Y TIENE QUE NOTARSE: "
+        "en la referencia los dos pequeños están ladeados con los bracitos algo abiertos hacia "
+        "afuera; ESO DESAPARECE POR COMPLETO. Ahora los tres adoptan un abrazo cerrado, "
+        "montado así, paso por paso: "
+        "(a) la figura ALTA sigue de frente en el centro, recta y vertical; "
+        "(b) los DOS PEQUEÑOS giran hacia ella hasta quedar de PERFIL, mirándola, con el pecho "
+        "pegado a su costado; "
+        "(c) los BRACITOS de los dos pequeños SUBEN y le rodean los HOMBROS y el CUELLO por "
+        "delante, y sus manos se juntan sobre el pecho de la figura alta, formando una banda "
+        "negra continua a la altura de sus hombros; "
+        "(d) la figura ALTA cruza sus DOS BRAZOS POR DELANTE, por debajo de los brazos de "
+        "ellos, sujetándolos a los dos contra su cuerpo; "
+        "(e) las CABEZAS de los dos pequeños quedan a la altura del pecho y el hombro de la "
+        "alta, apoyadas contra ella, y sus CUERPOS quedan colgando en diagonal hacia afuera y "
+        "hacia abajo, con las piernas sueltas separándose del cuerpo de la alta. "
+        "El contorno resultante debe ser un BLOQUE NEGRO COMPACTO y ancho por arriba, sin "
+        "ningún hueco de luz entre los tres cuerpos, y las piernas abriéndose por abajo. "
+        "PROHIBIDO que quede algún brazo abierto o estirado hacia afuera y PROHIBIDO que los "
+        "pequeños queden de frente. "
+        "SIGUEN CAYENDO: las coletas de la niña y la ropa de los tres van levantadas por el "
+        "aire, la roca del fondo estirada en vertical y desenfocada, con rayas finas de "
+        "arrastre subiendo por todo el cuadro. "
+        "⚠ LAS PARTÍCULAS: las motas de polvo y las piedrecitas que suben deben ser PUNTITOS "
+        "MINÚSCULOS Y CLAROS, más claros que la roca. PROHIBIDO ABSOLUTAMENTE dibujar "
+        "manchas, borrones o puntos NEGROS grandes flotando alrededor del grupo: en el cuadro "
+        "lo único negro son las tres siluetas. "
+        "⚠ LA ILUMINACIÓN NO PUEDE SUBIR: la imagen debe quedar IGUAL DE OSCURA o un poco más "
+        "oscura que la referencia, con la roca en gris medio apagado y las esquinas "
+        "cerrándose en penumbra gris oscura. PROHIBIDO que la piedra salga clara, luminosa o "
+        "casi blanca."),
+
+    # --- INSERTADA: la 90 pero llorando y más al fondo del pozo ---
+    (110, ["assets/Prologo/escenas/escena_90.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia un rato DESPUÉS, más abajo en "
+        "la caída, con DOS CAMBIOS: los pequeños ahora lloran y el pozo se ha hecho más "
+        "profundo. "
+        "CONSERVA EXACTAMENTE IGUAL, sin tocar nada: el estilo PIXEL ART 2D de 16 bits con "
+        "SOMBREADO PLANO, contornos definidos y dithering; el encuadre horizontal 16:9; la "
+        "MISMA distancia de cámara y el MISMO tamaño de los personajes (plano medio, los tres "
+        "ocupando el centro del cuadro de la cabeza a los pies); la paleta monocroma de "
+        "GRISES CENIZA; y EL MISMO ABRAZO: la figura ALTA de frente en el centro, con los dos "
+        "brazos cruzados por delante sujetando a los dos pequeños, y los DOS PEQUEÑOS "
+        "colgando en diagonal a los lados, girados hacia ella, con los bracitos rodeándole "
+        "los hombros y el cuello y las manos juntas sobre su pecho, las cabezas apoyadas "
+        "contra ella y las piernas sueltas hacia afuera. La NIÑA sigue a la IZQUIERDA, con su "
+        "falda y su coleta; el NIÑO sigue a la DERECHA, con pelo corto y pantalón. "
+        "⚠ EL HERMANO MAYOR SIGUE SIN ROSTRO: su cara queda completamente OSCURA, sin un solo "
+        "rasgo dentro. PROHIBIDO ABSOLUTAMENTE dibujarle ojos, boca, nariz, cejas o cualquier "
+        "facción. "
+        "CAMBIO 1 — LOS DOS PEQUEÑOS ESTÁN LLORANDO, Y SE TIENE QUE VER: a los dos se les ve "
+        "la carita de perfil o de tres cuartos apoyada contra el mayor, con los OJOS "
+        "APRETADOS y las cejas caídas hacia dentro. Por cada mejilla les baja un REGUERO de "
+        "LÁGRIMAS gruesas y CLARAS, casi blancas, que se recorta bien sobre la piel gris; de "
+        "la punta de la barbilla y del borde de la cara se les DESPRENDEN GOTAS que salen "
+        "volando HACIA ARRIBA por la caída, dejando una estela corta. Las lágrimas deben ser "
+        "el detalle más claro y visible de sus caras. "
+        "CAMBIO 2 — HAN CAÍDO MUCHO MÁS AL FONDO: el pozo se ha vuelto MÁS ESTRECHO y MÁS "
+        "OSCURO. Las dos paredes de roca agrietada se cierran más hacia el centro y ocupan "
+        "más cuadro que en la referencia, dejando un hueco de luz más angosto detrás de "
+        "ellos. La claridad que bajaba de arriba está ahora MUY LEJOS y PEQUEÑA, apenas un "
+        "resplandor gris tenue en el borde superior, y toda la piedra queda en PENUMBRA GRIS "
+        "OSCURA, con las esquinas del encuadre casi negras. En las grietas asoman MUCHAS "
+        "RAÍCES SECAS Y GRISES, más que en la referencia, colgando y pasando borrosas. La "
+        "roca se ve ESTIRADA EN VERTICAL y DESENFOCADA, con rayas finas de arrastre subiendo "
+        "por los lados del cuadro, y suben motas de polvo y piedrecitas pequeñas con estela. "
+        "Los tres siguen recortándose con claridad sobre el fondo: PROHIBIDO que la imagen se "
+        "quede tan oscura que no se distingan. No hay suelo. "
+        "PROHIBIDO añadir ninguna otra figura y PROHIBIDO cualquier texto."),
+
+    # --- INSERTADAS: la caída con las auras de color ---
+    (111, ["assets/Prologo/escenas/escena_101.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia EXACTAMENTE IGUAL, con UN SOLO "
+        "AÑADIDO: un aura de llama alrededor de la niña. "
+        "CONSERVA TODO SIN TOCAR NADA: el estilo PIXEL ART 2D de 16 bits con sombreado plano y "
+        "dithering, el encuadre horizontal 16:9, la vista cenital del interior del Hoyo, el "
+        "halo de luz del centro, la penumbra de las esquinas, el mismo patrón de roca "
+        "cuarteada, la MISMA iluminación gris apagada (ni más clara ni más blanca) y las TRES "
+        "SILUETAS NEGRAS MACIZAS en el centro, con el mismo tamaño, la misma postura de abrazo "
+        "y el mismo plano lejano. PROHIBIDO acercar la cámara, mover a los personajes o "
+        "cambiar el fondo. Las siluetas siguen sin ningún rasgo: la del centro con la cabeza "
+        "redonda y lisa y las dos piernas de pantalón, la NIÑA a la IZQUIERDA con falda y "
+        "coletas, el NIÑO a la DERECHA con cabeza lisa y dos piernas. "
+        "EL AÑADIDO — EL AURA DE LA NIÑA: alrededor de la silueta de la NIÑA de la IZQUIERDA, "
+        "y SOLO de ella, aparece un aura de LLAMA de color AZUL ACERO OSCURO, exactamente el "
+        "color hexadecimal #2e6498 (un azul medio, apagado y frío). Es un halo ESTRECHO y "
+        "pegado a su contorno, con lenguas de llama finas y puntiagudas que salen del borde de "
+        "su cuerpo y ondean hacia arriba, con el interior más claro y el exterior "
+        "difuminándose; suéltale unas chispitas azules pequeñas que suben. El aura NO la tapa: "
+        "su silueta negra se sigue viendo entera por dentro. "
+        "⚠ EL AZUL ES EL ÚNICO COLOR DE TODA LA IMAGEN: el resto de la estampa sigue siendo "
+        "MONOCROMA en grises, blancos y negros. PROHIBIDO ABSOLUTAMENTE poner aura, brillo o "
+        "cualquier color en la figura del CENTRO o en el NIÑO de la derecha: esos dos siguen "
+        "siendo siluetas negras limpias, sin ningún resplandor. PROHIBIDO teñir de azul la "
+        "roca, el halo del fondo o las partículas."),
+
+    (112, ["assets/Prologo/escenas/escena_102.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia EXACTAMENTE IGUAL, con UN SOLO "
+        "AÑADIDO: un aura de llama alrededor de los DOS pequeños, cada uno de su color. "
+        "CONSERVA TODO SIN TOCAR NADA: el estilo PIXEL ART 2D de 16 bits con sombreado plano y "
+        "dithering, el encuadre horizontal 16:9, la vista cenital del interior del Hoyo, el "
+        "halo de luz del centro, la penumbra de las esquinas, el mismo patrón de roca "
+        "cuarteada, la MISMA iluminación gris apagada (ni más clara ni más blanca) y las TRES "
+        "SILUETAS NEGRAS MACIZAS en el centro, con el mismo tamaño, la misma postura de abrazo "
+        "y el mismo plano lejano. PROHIBIDO acercar la cámara, mover a los personajes o "
+        "cambiar el fondo. Las siluetas siguen sin ningún rasgo: la del centro con la cabeza "
+        "redonda y lisa y las dos piernas de pantalón, la NIÑA a la IZQUIERDA con falda y "
+        "coletas, el NIÑO a la DERECHA con cabeza lisa y dos piernas. "
+        "⚠ LA POSTURA NO SE TOCA, ES LO MÁS IMPORTANTE: los tres siguen CAYENDO y ABRAZADOS "
+        "exactamente como en la referencia. La figura ALTA va en el centro y los DOS "
+        "PEQUEÑOS están LADEADOS e INCLINADOS hacia ella, PEGADOS a su cuerpo, uno a cada "
+        "lado, agarrados a ella, con las cabecitas a la altura de su pecho y las piernas "
+        "colgando sueltas en el aire. PROHIBIDO ABSOLUTAMENTE ponerlos DE PIE, rectos, de "
+        "frente, separados unos de otros o alineados como en una fila: si los separas o los "
+        "pones de pie, la estampa está MAL. No se están quietos: están cayendo por el pozo, "
+        "con la ropa y las coletas levantadas hacia arriba y las rayas de arrastre subiendo "
+        "por el fondo. El aura es SOLO UN AÑADIDO encima del dibujo que ya existe: no puede "
+        "cambiar ni la postura, ni el tamaño, ni la posición de nadie. "
+        "AÑADIDO 1 — EL AURA DE LA NIÑA: alrededor de la silueta de la NIÑA de la IZQUIERDA, "
+        "un aura de LLAMA de AZUL LUMINOSO Y CLARO, como una llama de gas: el color exacto es "
+        "el hexadecimal #659df1 (un azul brillante y saturado), con el interior de la llama "
+        "casi blanco azulado y el borde exterior difuminándose. PROHIBIDO que salga azul "
+        "marino, azul oscuro o apagado: tiene que brillar y verse claramente sobre el gris. "
+        "Es un halo ESTRECHO y pegado a su contorno, con lenguas de llama finas y "
+        "puntiagudas que ondean hacia arriba y unas chispitas azules que suben. "
+        "AÑADIDO 2 — EL AURA DEL NIÑO: alrededor de la silueta del NIÑO de la DERECHA, un aura "
+        "de LLAMA igual de estrecha pero de color ROJO CARMESÍ, exactamente el hexadecimal "
+        "#c62f30 (un rojo intenso, ligeramente oscuro), con sus lenguas de llama y sus "
+        "chispitas rojas subiendo. "
+        "Ninguna de las dos auras tapa a su personaje: las siluetas negras se siguen viendo "
+        "enteras por dentro, y las dos auras no se mezclan entre sí. "
+        "⚠ ESOS DOS SON LOS ÚNICOS COLORES DE TODA LA IMAGEN: el resto de la estampa sigue "
+        "siendo MONOCROMA en grises, blancos y negros. PROHIBIDO ABSOLUTAMENTE poner aura, "
+        "brillo o cualquier color en la figura ALTA DEL CENTRO: sigue siendo una silueta negra "
+        "limpia, sin ningún resplandor. PROHIBIDO teñir de azul o de rojo la roca, el halo del "
+        "fondo o las partículas."),
+
+    # --- INSERTADA: el aura violeta de corazones cruzados envuelve a los tres ---
+    (113, ["assets/Prologo/escenas/escena_105.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia EXACTAMENTE IGUAL, con UN SOLO "
+        "AÑADIDO: un aura de llama violeta que rodea a los TRES personajes. "
+        "CONSERVA TODO SIN TOCAR NADA: el estilo PIXEL ART 2D de 16 bits con sombreado plano y "
+        "dithering, el encuadre horizontal 16:9, la vista cenital del interior del Hoyo, el "
+        "halo de luz del centro, la penumbra de las esquinas, el mismo patrón de roca "
+        "cuarteada, la MISMA iluminación gris apagada (ni más clara ni más blanca) y las TRES "
+        "SILUETAS NEGRAS MACIZAS en el centro, con el mismo tamaño y el mismo plano lejano. "
+        "PROHIBIDO acercar la cámara o cambiar el fondo. Las siluetas siguen sin ningún rasgo: "
+        "la del CENTRO con la cabeza redonda y lisa y las dos piernas de pantalón, la NIÑA a "
+        "la IZQUIERDA con falda y coletas, el NIÑO a la DERECHA con cabeza lisa y dos piernas. "
+        "⚠ LA POSTURA NO SE TOCA, ES LO MÁS IMPORTANTE: los tres siguen CAYENDO y ABRAZADOS "
+        "exactamente como en la referencia. La figura ALTA va en el centro y los DOS PEQUEÑOS "
+        "están LADEADOS e INCLINADOS hacia ella, PEGADOS a su cuerpo, uno a cada lado, "
+        "agarrados a ella, con las cabecitas a la altura de su pecho y las piernas colgando "
+        "sueltas en el aire. PROHIBIDO ABSOLUTAMENTE ponerlos DE PIE, rectos, de frente, "
+        "separados unos de otros o alineados en fila. Siguen cayendo, con la ropa y las "
+        "coletas levantadas y las rayas de arrastre subiendo por el fondo. El aura es SOLO UN "
+        "AÑADIDO encima del dibujo que ya existe: no puede cambiar ni la postura, ni el "
+        "tamaño, ni la posición de nadie. "
+        "EL AÑADIDO — UN AURA VIOLETA PARA LOS TRES: un aura de LLAMA de color VIOLETA "
+        "INTENSO, exactamente el hexadecimal #6216a1 (un morado profundo y saturado), con el "
+        "interior de la llama más claro, en lila luminoso, y el borde exterior difuminándose "
+        "en la penumbra. PROHIBIDO que salga azul, rosa, magenta o rojo: tiene que leerse "
+        "claramente como MORADO. "
+        "El aura envuelve a LOS TRES A LA VEZ, incluido el HERMANO MAYOR del centro: no son "
+        "tres auras separadas, sino UN SOLO contorno de llama continuo que rodea al grupo "
+        "entero siguiendo su silueta común, con lenguas de llama finas y puntiagudas que salen "
+        "del borde del bloque y ondean hacia arriba, y unas chispitas moradas que suben. Es un "
+        "halo ESTRECHO y pegado al contorno: PROHIBIDO que se haga enorme, que tape a los "
+        "personajes o que invada el resto del cuadro. Las tres siluetas negras se siguen "
+        "viendo enteras por dentro. "
+        "⚠ NO QUEDA NADA DE AZUL NI DE ROJO: en esta estampa la niña YA NO tiene aura azul y "
+        "el niño YA NO tiene aura roja. PROHIBIDO ABSOLUTAMENTE que aparezca ninguna llama, "
+        "brillo o chispa azul ni roja. "
+        "⚠ EL MORADO ES EL ÚNICO COLOR DE TODA LA IMAGEN: el resto de la estampa sigue siendo "
+        "MONOCROMA en grises, blancos y negros. PROHIBIDO teñir de morado la roca, el halo del "
+        "fondo o las partículas."),
+
+    # --- INSERTADA: picado desde arriba, con la estela del aura violeta ---
+    (114, [],
+        "ILUSTRACIÓN EN PIXEL ART 2D dibujada a mano, estilo de videojuego de 16 bits: "
+        "SOMBREADO PLANO por zonas, contornos definidos, píxeles visibles, dithering sutil. "
+        "NADA de render 3D ni aspecto fotorrealista. Encuadre horizontal 16:9. "
+        "PALETA monocroma de GRISES CENIZA, blancos y negros, con UN ÚNICO COLOR: el morado "
+        "tenue del aura. "
+        "⚠ LA CÁMARA ESTÁ EN LO ALTO DEL AGUJERO MIRANDO VERTICALMENTE HACIA ABAJO, hacia el "
+        "fondo del pozo. La perspectiva es la parte más importante y ya funcionaba: se ve la "
+        "BOCA del agujero por los bordes del cuadro y, hacia el centro, la garganta de roca "
+        "gris agrietada que se va CERRANDO en perspectiva y se hunde en una OSCURIDAD "
+        "PROFUNDA. "
+        "EL BORDE DEL AGUJERO: alrededor de la boca, en los bordes del encuadre, se ve el "
+        "terreno de arriba, ÁRIDO Y DESÉRTICO: tierra seca, agrietada y polvorienta, piedras "
+        "sueltas, sin nada de hierba, y RAMAS Y RAÍCES GRISES, secas y retorcidas, que rodean "
+        "el borde y se asoman al vacío colgando hacia dentro. "
+        "⚠ DE LOS PERSONAJES CASI NO SE VE NADA, SOLO SUS CABEZAS DESDE ARRIBA: están muy "
+        "abajo, cayendo, y los miramos desde encima, así que de cada uno se distingue "
+        "únicamente la CORONILLA —una forma negra redondeada— y, como mucho, la insinuación de "
+        "los hombros justo debajo. PROHIBIDO ABSOLUTAMENTE dibujarlos de frente, de pie o de "
+        "perfil; PROHIBIDO que se les vea la cara, los ojos, el torso entero o el cuerpo "
+        "completo. Son manchas NEGRAS MACIZAS, planas y pequeñísimas, todas juntas en un solo "
+        "grupo compacto: ocupan apenas una DÉCIMA PARTE del alto del cuadro, hundidas en la "
+        "penumbra del fondo. Son TRES cabezas y ninguna más: la del centro es un CÍRCULO LISO "
+        "y algo mayor (el hermano mayor, personaje neutro: PROHIBIDO melenas, coletas o "
+        "mechones), a un lado una cabecita con DOS BULTOS a los lados (las coletas de la niña) "
+        "y al otro otro CÍRCULO LISO más pequeño (el niño). "
+        "LA ESTELA DE LA LLAMA — TIENES LIBERTAD PARA RESOLVERLA: los tres caen envueltos en "
+        "una llama MORADA (violeta, hexadecimal #6216a1, con el interior algo más claro) y "
+        "van dejando tras de sí el rastro de ese fuego. Tú decides su forma, su grosor, su "
+        "recorrido, cuánto ondula y cómo se deshace: dibújala como mejor sepas para que "
+        "resulte creíble. Lo ÚNICO que debe cumplir es ser COHERENTE CON LA PROFUNDIDAD de "
+        "esta perspectiva en picado: la estela nace abajo, en el fondo del pozo, donde ellos "
+        "están, y asciende hacia la cámara, de modo que la parte más lejana se ve diminuta, "
+        "apretada y perdida en la penumbra, y a medida que se acerca al espectador se ve "
+        "mayor, más suelta y más difusa, hasta disiparse. Debe leerse como algo que atraviesa "
+        "el interior del pozo en profundidad, no como una forma pegada plana sobre la imagen. "
+        "Es un rastro TENUE, no una hoguera: no debe robarle protagonismo al agujero ni "
+        "llenar el encuadre. "
+        "El resplandor morado apenas tiñe la roca. PROHIBIDO cualquier otro color: nada de "
+        "azul, rojo ni naranja. PROHIBIDO que aparezca ninguna otra figura y PROHIBIDO "
+        "cualquier texto."),
+
     # --- INSERTADA: el cráter después del salto, solo con las figuras granate ---
     (84, ["assets/Prologo/escenas/escena_63.png", "assets/Prologo/escenas/escena_54.png"],
         "MISMO LUGAR y MISMO ENCUADRE que la PRIMERA imagen de referencia: la vista elevada del "

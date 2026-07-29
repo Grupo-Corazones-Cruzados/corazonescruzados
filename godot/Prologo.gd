@@ -91,7 +91,14 @@ const DURACIONES := {
 	76: 2,
 	77: 2.5,
 	63: 2.5,
-	65: 2
+	65: 2,
+	84: 3,
+	95: 0.5,
+	105:0.2,
+	106: 0.2,
+	98: 0.2,
+	107: 0.2,
+	99: 0.2
 	
 }
 
@@ -241,6 +248,29 @@ const RAFAGA := {
 }
 
 
+## --- 🕳 LA CAÍDA: cinta vertical continua ------------------------------------
+## El problema del verso "a la noche bajaron": todas las estampas de la caída son
+## el MISMO plano (las siluetas en el pozo), así que puestas una detrás de otra se
+## ven como cortes secos y no como una caída.
+##
+## La solución es no cortar: las estampas se APILAN una debajo de otra formando
+## una cinta y la cinta SUBE por la caja de imagen. Como todas comparten encuadre,
+## el ojo no lee ocho fotos, lee un único descenso continuo; cada estampa aparece
+## por abajo mientras la anterior sale por arriba.
+##
+## Además la cinta ACELERA (van cayendo cada vez más rápido) y el encuadre se
+## balancea un poco, para que no sea un desplazamiento mecánico.
+const CAIDA := {
+	"desde_verso": 12,         # "al fondo del mundo, a la noche bajaron."
+	# El orden es el orden en que se atraviesan, de arriba abajo.
+	"escenas": [94, 95, 105, 106, 101, 102, 98, 107],
+	"acelera": 1.35,           # 1 = velocidad constante; >1 = se va acelerando
+	"vaiven": 5.0,             # píxeles de balanceo lateral (0 = ninguno)
+	"remate": 0.9,             # segundos finales en los que la cinta frena y para
+	"zoom": 1.05,              # empuje de escala durante el descenso
+}
+
+
 ## --- LAS ESTAMPAS: tramos ANCLADOS A LOS VERSOS ------------------------------
 ## Cada tramo admite:
 ##   "desde_verso": en qué verso arranca (índice de LETRAS; -1 = antes de cantar)
@@ -289,12 +319,17 @@ const TRAMOS := [
 	], "seg": 1.5  },
 	
 	{ "desde_verso": 11, "escenas": [
-		64, 86, 89
+		64, 86, 89, 84, 65
 	], "seg": 2  },
 	
-	{ "desde_verso": 12, "escenas": [
-		84, 65, 66
-	], "seg": 3.5  },
+	# Verso 12 ("a la noche bajaron") · manda la CAÍDA (la cinta vertical continua).
+	# Este tramo existe solo para MARCAR el corte con el verso anterior; su estampa
+	# queda debajo de la cinta, que la tapa mientras dura el descenso.
+	{ "desde_verso": 12, "escenas": [94] },
+
+	{"desde_verso": 13, "escenas": [
+		92, 93, 111, 112, 113, 114
+	], "seg": 1  },
 ]
 
 
@@ -423,6 +458,15 @@ var _idx_rafaga := 0
 var _paneles_actuales := 0
 var _rafaga_cerrada := false
 
+# --- Estado de la CAÍDA (la cinta vertical) ---------------------------------
+var _ventana_caida: Control       # recorta la cinta al tamaño de la caja
+var _cinta: Control               # las estampas apiladas; es lo que se mueve
+var _caida_t0 := -1.0             # segundo en que arranca (calculado en _ready)
+var _caida_t1 := -1.0             # y en que termina
+var _caida_alto := 0.0            # alto de cada estampa dentro de la cinta
+var _caida_n := 0                 # cuántas estampas tiene la cinta
+var _caida_activa := false
+
 # --- Estado del modo calibración --------------------------------------------
 var _tiempos_medidos: Array[float] = []
 
@@ -436,6 +480,7 @@ func _ready() -> void:
 	else:
 		_plan_imagenes = _calcular_plan_imagenes()
 		_rafaga = _calcular_rafaga()
+		_montar_caida()
 		if mostrar_reparto and not _rafaga.is_empty():
 			_informar_rafaga()
 		# ⏩ Salto de prueba: adelantar la canción hace que todo lo demás salte con
@@ -480,6 +525,25 @@ func _construir_ui() -> void:
 	_capa_paneles.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_capa_paneles.visible = false
 	add_child(_capa_paneles)
+
+	# 🕳 La ventana de la CAÍDA: mismo hueco que la estampa, pero recortando, para
+	# que la cinta que pasa por dentro no se salga de la caja.
+	_ventana_caida = Control.new()
+	_ventana_caida.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_ventana_caida.offset_left = img_x
+	_ventana_caida.offset_top = img_y
+	_ventana_caida.offset_right = img_x + ancho_img
+	_ventana_caida.offset_bottom = img_y + alto_img
+	_ventana_caida.clip_contents = true
+	_ventana_caida.pivot_offset = Vector2(ancho_img, alto_img) / 2.0
+	_ventana_caida.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ventana_caida.visible = false
+	add_child(_ventana_caida)
+
+	_cinta = Control.new()
+	_cinta.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_cinta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ventana_caida.add_child(_cinta)
 
 	# Fogonazo blanco, solo sobre la caja de imagen.
 	_flash = ColorRect.new()
@@ -797,6 +861,100 @@ func _informar_rafaga() -> void:
 	print("      %6.2f s · CIERRE a pantalla completa · escena %d  %s\n"
 		% [float(_rafaga["cierre"]), int(RAFAGA["final"]),
 			str(NOMBRES.get(int(RAFAGA["final"]), ""))])
+
+
+# ============================================================================
+#  🕳 LA CAÍDA — cinta vertical continua
+# ============================================================================
+
+## Apila las estampas de la caída en una sola cinta, de arriba abajo, y calcula
+## en qué trozo de canción tiene que pasar. Se hace una vez, al arrancar.
+func _montar_caida() -> void:
+	var v := int(CAIDA["desde_verso"])
+	if v < 0 or v >= LETRAS.size():
+		return
+	_caida_t0 = float(LETRAS[v]["t"])
+	_caida_t1 = float(LETRAS[v + 1]["t"]) if v + 1 < LETRAS.size() \
+		else _caida_t0 + 8.0
+
+	_caida_alto = _caja.size.y
+	var y := 0.0
+	for n in CAIDA["escenas"]:
+		var escena := int(n)
+		if not _existe(escena):
+			push_warning("Caída: falta la estampa %d, se salta." % escena)
+			continue
+		var t := TextureRect.new()
+		t.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		t.offset_left = 0.0
+		t.offset_top = y
+		t.offset_right = _caja.size.x
+		t.offset_bottom = y + _caida_alto
+		t.texture = _cargar(escena)
+		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		# COVERED (y no CENTERED) para que cada estampa llene su hueco de la cinta:
+		# si quedara franja negra entre una y otra se verían los cortes.
+		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_cinta.add_child(t)
+		y += _caida_alto
+		_caida_n += 1
+
+	if _caida_n > 0 and mostrar_reparto:
+		print("\n🕳 CAÍDA · del verso %d (%.2f s) al %d (%.2f s) — %d estampas en cinta continua"
+			% [v, _caida_t0, v + 1, _caida_t1, _caida_n])
+		print("   orden: %s" % str(CAIDA["escenas"]))
+		print("   %.2f s de descenso · %.2f s por estampa de media (acelerando)\n"
+			% [_caida_t1 - _caida_t0, (_caida_t1 - _caida_t0) / float(_caida_n)])
+
+
+## Lleva la cinta segundo a segundo: la enciende al entrar en su verso, la
+## desplaza hacia arriba acelerando y la apaga al salir.
+func _procesar_caida(pos: float) -> void:
+	if _caida_n <= 0:
+		return
+
+	# Fuera de su verso: la cinta no pinta nada y manda la estampa normal.
+	if pos < _caida_t0 or pos >= _caida_t1:
+		if _caida_activa:
+			_caida_activa = false
+			_ventana_caida.visible = false
+			_ventana_caida.scale = Vector2.ONE
+			_capa_a.visible = true
+		return
+
+	# Al entrar, la cinta tapa la estampa normal.
+	if not _caida_activa:
+		_caida_activa = true
+		_ventana_caida.visible = true
+		_capa_a.visible = false
+		_fogonazo(0.45, 0.3)
+
+	var total: float = maxf(0.1, _caida_t1 - _caida_t0)
+	var remate: float = clampf(float(CAIDA.get("remate", 0.0)), 0.0, total * 0.5)
+	var p: float = clampf((pos - _caida_t0) / maxf(0.1, total - remate), 0.0, 1.0)
+
+	# Acelerón: el recorrido no avanza lineal, sino que se va comiendo la cinta
+	# cada vez más rápido (caen con más velocidad según bajan).
+	var avance: float = pow(p, float(CAIDA.get("acelera", 1.0)))
+
+	# La cinta se mueve hacia ARRIBA: cada estampa nueva entra por abajo.
+	var recorrido: float = float(_caida_n - 1) * _caida_alto
+	_cinta.position.y = -avance * recorrido
+
+	# Balanceo lateral: al caer no bajan a plomo. Va creciendo con la velocidad.
+	var vaiven: float = float(CAIDA.get("vaiven", 0.0))
+	if vaiven > 0.0:
+		_cinta.position.x = sin(pos * 3.7) * vaiven * (0.35 + avance)
+	else:
+		_cinta.position.x = 0.0
+
+	# Y un empuje de escala, para que el pozo parezca venirse encima.
+	var zoom: float = float(CAIDA.get("zoom", 1.0))
+	if zoom != 1.0:
+		var z: float = 1.0 + (zoom - 1.0) * avance
+		_ventana_caida.scale = Vector2(z, z)
 
 
 ## Segundo en que arranca un clip (por verso o por "t" explícito).
@@ -1206,6 +1364,8 @@ func _process(_delta: float) -> void:
 	# 2-ter) ⚡ LA RÁFAGA: el mosaico manda mientras dura su tramo.
 	if _clip_actual < 0:
 		_procesar_rafaga(pos)
+		# 2-quáter) 🕳 LA CAÍDA: la cinta manda mientras dura su verso.
+		_procesar_caida(pos)
 
 	# 3) ¿Se acabó la canción? Cerramos con tiempo para el fundido.
 	var dur := _duracion_musica()
