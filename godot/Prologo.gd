@@ -266,7 +266,7 @@ const RAFAGA := {
 ## leen como el registro de un mismo descenso.
 const CAIDA := {
 	"desde_verso": 12,         # "al fondo del mundo, a la noche bajaron."
-	"portada": 90,             # estampa de la primera mitad del verso
+	"portada": 65,             # estampa de la primera mitad del verso
 	"t_montaje": 92.6,         # segundo en que entra "a la noche bajaron"
 	# El orden es el orden en que se van colocando. La PRIMERA es la que entra a
 	# pantalla completa y luego se encoge hasta su hueco.
