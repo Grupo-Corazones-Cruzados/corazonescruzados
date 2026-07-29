@@ -287,32 +287,46 @@ const CAIDA := {
 	# Estampas de la primera mitad del verso, a pantalla completa y en este orden.
 	# "seg" es lo que dura cada una; la ÚLTIMA se queda hasta que entra el montaje.
 	"portadas": [
-		{ "escena": 89, "seg": 2.0 },
+		{ "escena": 84, "seg": 2.0 },
 		{ "escena": 65 },
 	],
 	"t_montaje": 92.6,         # segundo en que entra "a la noche bajaron"
-	# El orden es el orden en que se van colocando, y casa con el reparto de abajo.
-	"escenas": [95, 105, 106, 101, 102, 98, 107],
-	# Hueco de cada estampa, en FRACCIÓN de la caja: [x, y, ancho, alto].
-	# Si esta lista no cuadra con el número de estampas, se cae a una rejilla.
+	# El orden es el orden en que se van colocando. La ÚLTIMA es la del centro.
+	"escenas": [95, 105, 106, 101, 102, 98, 107, 96, 97, 93],
+
+	# CÓMO SE REPARTEN:
+	#   "corona"  → todas se van colocando EN CORONA alrededor del centro, girando
+	#               en el sentido del reloj y dejando el hueco del medio libre; la
+	#               ÚLTIMA cae en ese hueco, más grande y por encima de las demás.
+	#   "mosaico" → usa la lista "reparto" de huecos fijos (ver más abajo).
+	"forma": "corona",
+	"corona_tam": 0.30,        # ancho de las estampas de la corona (fracción de la caja)
+	"centro_tam": 0.42,        # ancho de la estampa del centro
+	"radio": [0.74, 0.76],     # separación del centro, en fracción de media caja
+	"desde_angulo": -140.0,    # por dónde empieza la corona (grados; -90 = arriba)
+	"giro": 3.5,              # grados de inclinación, alternando lado
+
+	# Solo se usa con "forma": "mosaico". Hueco en FRACCIÓN de la caja: [x,y,w,h].
 	"reparto": [
-		[0.00, 0.00, 0.50, 0.50],   # 1 · la grande que abre
-		[0.50, 0.00, 0.25, 0.25],   # 2
-		[0.75, 0.00, 0.25, 0.25],   # 3
-		[0.50, 0.25, 0.25, 0.25],   # 4
-		[0.75, 0.25, 0.25, 0.25],   # 5
-		[0.00, 0.50, 0.50, 0.50],   # 6 · remate
-		[0.50, 0.50, 0.50, 0.50],   # 7 · remate
+		[0.00, 0.00, 0.50, 0.50],
+		[0.50, 0.00, 0.25, 0.25],
+		[0.75, 0.00, 0.25, 0.25],
+		[0.50, 0.25, 0.25, 0.25],
+		[0.75, 0.25, 0.25, 0.25],
+		[0.00, 0.50, 0.50, 0.50],
+		[0.50, 0.50, 0.50, 0.50],
 	],
-	"entra": ["abre", "pop", "pop", "pop", "pop", "sube", "sube"],
-	# Peso de cada estampa en el reparto del tiempo: las pequeñas van en ráfaga,
-	# las grandes respiran.
-	"ritmo": [2.6, 0.7, 0.7, 0.7, 0.7, 1.4, 1.6],
+	# Cómo entra cada una: "abre" (completa y se encoge), "pop" (golpe de escala),
+	# "sube" (desde abajo) y "cierra" (la del centro: se cierne y remata).
+	"entra": ["abre", "pop", "pop", "pop", "pop", "pop", "pop", "sube", "sube", "cierra"],
+	# Peso de cada estampa en el reparto del tiempo: las de la ráfaga van seguidas,
+	# la que abre y la que cierra respiran.
+	"ritmo": [2.4, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 1.0, 1.0, 1.8],
 	"hueco": 6.0,              # separación entre estampas, en píxeles
 	"entrada": 0.26,           # segundos que tarda en entrar cada estampa
 	"borde": 2.0,              # grosor del marco claro (0 = sin marco)
 	"atenuar": 0.72,           # cuánto se apagan las estampas ya colocadas
-	"columnas": 3,             # solo se usa si no hay "reparto"
+	"columnas": 3,             # solo se usa si no hay reparto válido
 }
 
 
@@ -982,6 +996,7 @@ func _montar_caida() -> void:
 		# demás escalan desde su centro (el golpecito de entrada).
 		marco.pivot_offset = Vector2.ZERO if i == 0 \
 			else Vector2(r.size.x + borde * 2.0, r.size.y + borde * 2.0) / 2.0
+		marco.rotation = _giro_caida(i, n_total)
 		marco.modulate.a = 0.0
 		_ventana_caida.add_child(marco)
 
@@ -1026,6 +1041,33 @@ func _huecos_caida(n_total: int, hueco: float) -> Array:
 	var rects: Array = []
 	var reparto: Array = CAIDA.get("reparto", [])
 
+	# --- CORONA: todas alrededor, la última en el hueco del centro -----------
+	if str(CAIDA.get("forma", "corona")) == "corona" and n_total >= 2:
+		var centro := _caja.size / 2.0
+		var w_anillo: float = _caja.size.x * float(CAIDA.get("corona_tam", 0.30))
+		var h_anillo: float = w_anillo * _caja.size.y / _caja.size.x
+		var w_centro: float = _caja.size.x * float(CAIDA.get("centro_tam", 0.42))
+		var h_centro: float = w_centro * _caja.size.y / _caja.size.x
+		var radios: Array = CAIDA.get("radio", [0.74, 0.76])
+		# Radio máximo que cabe sin que la corona se salga de la caja.
+		var rx: float = (_caja.size.x / 2.0 - w_anillo / 2.0 - hueco) * float(radios[0])
+		var ry: float = (_caja.size.y / 2.0 - h_anillo / 2.0 - hueco) * float(radios[1])
+		# ...y mínimo que hace falta para no pisar la estampa del centro.
+		rx = maxf(rx, (w_centro + w_anillo) / 2.0 * 0.72)
+		ry = maxf(ry, (h_centro + h_anillo) / 2.0 * 0.72)
+
+		var n_anillo := n_total - 1
+		var a0: float = deg_to_rad(float(CAIDA.get("desde_angulo", -140.0)))
+		for i in n_anillo:
+			var a: float = a0 + TAU * float(i) / float(n_anillo)
+			var cx: float = centro.x + cos(a) * rx
+			var cy: float = centro.y + sin(a) * ry
+			rects.append(Rect2(cx - w_anillo / 2.0, cy - h_anillo / 2.0,
+				w_anillo, h_anillo))
+		rects.append(Rect2(centro.x - w_centro / 2.0, centro.y - h_centro / 2.0,
+			w_centro, h_centro))
+		return rects
+
 	if reparto.size() == n_total:
 		for f in reparto:
 			var x: float = float(f[0]) * _caja.size.x
@@ -1053,7 +1095,17 @@ func _huecos_caida(n_total: int, hueco: float) -> Array:
 	return rects
 
 
-## Cómo entra la estampa i ("abre", "pop" o "sube").
+## Inclinación de la estampa i, en radianes: alterna lado para que la corona no
+## parezca pegada con escuadra. La que abre y la del centro van rectas.
+func _giro_caida(i: int, n_total: int) -> float:
+	var g: float = float(CAIDA.get("giro", 0.0))
+	if g == 0.0 or i == 0 or i == n_total - 1:
+		return 0.0
+	var lado: float = 1.0 if i % 2 == 0 else -1.0
+	return deg_to_rad(g * lado)
+
+
+## Cómo entra la estampa i ("abre", "pop", "sube" o "cierra").
 func _modo_entrada(i: int) -> String:
 	var modos: Array = CAIDA.get("entra", [])
 	if i < modos.size():
@@ -1185,6 +1237,16 @@ func _aparecer_cuadro(i: int) -> void:
 			tw.tween_property(c, "modulate:a", 1.0, dur * 0.8)
 			tw.tween_property(c, "position", destino, dur * 1.3) \
 				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		"cierra":
+			# La del centro: se cierne desde arriba, grande, y encaja en el hueco
+			# que las demás le han dejado. Es el remate del verso.
+			c.position = destino
+			c.scale = Vector2(1.55, 1.55)
+			c.modulate.a = 0.0
+			tw.tween_property(c, "modulate:a", 1.0, dur * 1.2)
+			tw.tween_property(c, "scale", Vector2.ONE, dur * 2.4) \
+				.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+			_fogonazo(0.32, 0.4)
 		_:
 			# "pop": golpe seco, que es lo que pide la ráfaga de las pequeñas.
 			c.position = destino
