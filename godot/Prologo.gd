@@ -248,23 +248,34 @@ const RAFAGA := {
 }
 
 
-## --- 🕳 LA CAÍDA: cuadritos que se van quedando en pantalla -------------------
-## El verso "a la noche bajaron" no puede ir a estampa completa: todas las
-## estampas de la caída son el MISMO plano (las siluetas en el pozo), así que una
-## detrás de otra se leen como cortes secos.
+## --- 🕳 LA CAÍDA: la contact-sheet que se va llenando ------------------------
+## El verso 12 se parte en dos mitades, cada una con su forma:
 ##
-## Aquí van como CUADROS PEQUEÑOS: aparece uno, y se QUEDA; luego aparece el
-## siguiente, y se queda también, y así hasta tener los ocho a la vez. Cada nuevo
-## cuadro cae un poco MÁS ABAJO que el anterior, en zigzag, de modo que el propio
-## reparto de los cuadros por la pantalla va dibujando el descenso.
+##   "al fondo del mundo,"  → la PORTADA: una sola estampa a pantalla completa
+##                            (la 90, los tres abrazados cayendo).
+##   "a la noche bajaron."  → el MONTAJE: entra la primera estampa a pantalla
+##                            completa, se ENCOGE y se va a colocar arriba a la
+##                            izquierda; a partir de ahí cada estampa aparece ya
+##                            pequeña, a la derecha de la anterior, hasta acabar
+##                            la línea, y sigue en la línea de abajo. Ninguna se
+##                            borra: la pantalla se va llenando como una hoja de
+##                            contactos.
+##
+## Todas las estampas de la caída son el MISMO plano, así que a pantalla completa
+## una detrás de otra se leerían como cortes secos; puestas así, en cambio, se
+## leen como el registro de un mismo descenso.
 const CAIDA := {
 	"desde_verso": 12,         # "al fondo del mundo, a la noche bajaron."
-	# El orden es el orden en que van apareciendo.
-	"escenas": [94, 95, 105, 106, 101, 102, 98, 107],
-	"tam": 0.34,               # ancho de cada cuadro, en fracción de la caja
-	"entrada": 0.22,           # segundos que tarda un cuadro en aparecer
-	"zigzag": true,            # true = alternan izquierda/derecha al bajar
-	"borde": 2.0,              # grosor del marco claro de cada cuadro (0 = sin marco)
+	"portada": 90,             # estampa de la primera mitad del verso
+	"t_montaje": 92.6,         # segundo en que entra "a la noche bajaron"
+	# El orden es el orden en que se van colocando. La PRIMERA es la que entra a
+	# pantalla completa y luego se encoge hasta su hueco.
+	"escenas": [95, 105, 106, 101, 102, 98, 107],
+	"columnas": 3,             # cuántas estampas caben por línea
+	"hueco": 8.0,              # separación entre estampas, en píxeles
+	"abre": 1.7,               # segundos de la apertura (completa → encogida)
+	"entrada": 0.30,           # segundos que tarda en entrar cada estampa
+	"borde": 2.0,              # grosor del marco claro (0 = sin marco)
 }
 
 
@@ -455,14 +466,17 @@ var _idx_rafaga := 0
 var _paneles_actuales := 0
 var _rafaga_cerrada := false
 
-# --- Estado de la CAÍDA (los cuadritos que se acumulan) ---------------------
-var _ventana_caida: Control       # capa donde viven los cuadros, sobre la caja
+# --- Estado de la CAÍDA (la hoja de contactos que se va llenando) -----------
+var _ventana_caida: Control       # capa donde viven las estampas, sobre la caja
+var _portada: TextureRect         # la estampa grande de la primera mitad
 var _cuadros: Array = []          # un nodo por estampa, ya colocado y oculto
 var _caida_t0 := -1.0             # segundo en que arranca (calculado en _ready)
 var _caida_t1 := -1.0             # y en que termina
-var _caida_n := 0                 # cuántos cuadros hay
-var _idx_caida := 0               # cuántos han aparecido ya
+var _caida_tm := -1.0             # segundo en que empieza el montaje
+var _caida_n := 0                 # cuántas estampas hay
+var _idx_caida := 0               # cuántas han aparecido ya
 var _caida_activa := false
+var _portada_fuera := false
 
 # --- Estado del modo calibración --------------------------------------------
 var _tiempos_medidos: Array[float] = []
@@ -857,12 +871,13 @@ func _informar_rafaga() -> void:
 #  🕳 LA CAÍDA — cinta vertical continua
 # ============================================================================
 
-## Prepara los cuadritos de la caída: cada estampa en su sitio, ya colocada pero
-## invisible, esperando su turno. Se hace una vez, al arrancar.
+## Prepara la caída: la portada a pantalla completa y la rejilla de estampas ya
+## colocadas en su hueco pero invisibles, esperando turno. Se hace al arrancar.
 ##
-## El reparto: cada cuadro baja un escalón respecto al anterior y, si `zigzag`
-## está puesto, va alternando lado. Así los ocho cuadros terminan trazando una
-## diagonal descendente por la caja de imagen.
+## La rejilla se llena como se lee: de izquierda a derecha, y al acabar la línea
+## se sigue en la de abajo. El tamaño del hueco sale de las columnas pedidas,
+## respetando el 16:9 de las estampas y sin salirse de la caja ni a lo ancho ni a
+## lo alto.
 func _montar_caida() -> void:
 	var v := int(CAIDA["desde_verso"])
 	if v < 0 or v >= LETRAS.size():
@@ -870,6 +885,10 @@ func _montar_caida() -> void:
 	_caida_t0 = float(LETRAS[v]["t"])
 	_caida_t1 = float(LETRAS[v + 1]["t"]) if v + 1 < LETRAS.size() \
 		else _caida_t0 + 8.0
+	_caida_tm = clampf(float(CAIDA.get("t_montaje", 0.0)),
+		_caida_t0, _caida_t1 - 1.0)
+	if _caida_tm <= _caida_t0:
+		_caida_tm = _caida_t0 + (_caida_t1 - _caida_t0) * 0.4
 
 	# Solo las que existen en disco.
 	var lista: Array = []
@@ -881,25 +900,45 @@ func _montar_caida() -> void:
 	if lista.is_empty():
 		return
 
-	# Tamaño del cuadro: se mantiene el 16:9 de las estampas.
-	var ancho: float = _caja.size.x * clampf(float(CAIDA.get("tam", 0.4)), 0.15, 0.9)
-	var alto: float = ancho * _caja.size.y / _caja.size.x
+	# --- La portada de la primera mitad del verso ---------------------------
+	var portada := int(CAIDA.get("portada", 0))
+	if portada > 0 and _existe(portada):
+		_portada = TextureRect.new()
+		_portada.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_portada.texture = _cargar(portada)
+		_portada.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_portada.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_portada.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_portada.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_ventana_caida.add_child(_portada)
+
+	# --- La rejilla ---------------------------------------------------------
+	var cols: int = maxi(1, int(CAIDA.get("columnas", 3)))
+	var hueco: float = float(CAIDA.get("hueco", 8.0))
 	var borde: float = float(CAIDA.get("borde", 0.0))
-	var zigzag: bool = bool(CAIDA.get("zigzag", true))
 	var n_total := lista.size()
+	var filas: int = int(ceil(float(n_total) / float(cols)))
+
+	# El hueco más grande que cabe, mirando a la vez el ancho y el alto.
+	var por_ancho: float = (_caja.size.x - hueco * float(cols - 1)) / float(cols)
+	var por_alto: float = ((_caja.size.y - hueco * float(filas - 1)) / float(filas)) \
+		* _caja.size.x / _caja.size.y
+	var ancho: float = minf(por_ancho, por_alto)
+	var alto: float = ancho * _caja.size.y / _caja.size.x
+
+	# La rejilla, centrada en la caja.
+	var rej_ancho: float = float(cols) * ancho + float(cols - 1) * hueco
+	var rej_alto: float = float(filas) * alto + float(filas - 1) * hueco
+	var x0: float = (_caja.size.x - rej_ancho) / 2.0
+	var y0: float = (_caja.size.y - rej_alto) / 2.0
 
 	for i in n_total:
-		var t: float = 0.0 if n_total <= 1 else float(i) / float(n_total - 1)
-		# Baja un escalón por cuadro, de arriba del todo a abajo del todo.
-		var y: float = (_caja.size.y - alto) * t
-		# Y alterna lado, acercándose al centro según baja (así no queda un
-		# zigzag mecánico y el último cae casi en medio).
-		var x: float = (_caja.size.x - ancho) * 0.5
-		if zigzag:
-			var lado: float = 1.0 if i % 2 == 0 else -1.0
-			x += lado * (_caja.size.x - ancho) * 0.5 * (1.0 - t * 0.55)
+		var col := i % cols
+		var fila := i / cols
+		var x: float = x0 + float(col) * (ancho + hueco)
+		var y: float = y0 + float(fila) * (alto + hueco)
 
-		# Marco claro detrás (el cuadro se despega del negro del fondo).
+		# Marco claro detrás (la estampa se despega del negro del fondo).
 		var marco := ColorRect.new()
 		marco.set_anchors_preset(Control.PRESET_TOP_LEFT)
 		marco.offset_left = x - borde
@@ -908,7 +947,7 @@ func _montar_caida() -> void:
 		marco.offset_bottom = y + alto + borde
 		marco.color = Color(0.75, 0.75, 0.82, 0.9) if borde > 0.0 else Color(0, 0, 0, 0)
 		marco.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		marco.pivot_offset = Vector2(ancho + borde * 2.0, alto + borde * 2.0) / 2.0
+		marco.pivot_offset = Vector2.ZERO      # escala desde su esquina superior izquierda
 		marco.modulate.a = 0.0
 		_ventana_caida.add_child(marco)
 
@@ -930,15 +969,18 @@ func _montar_caida() -> void:
 		_caida_n += 1
 
 	if _caida_n > 0 and mostrar_reparto:
-		print("\n🕳 CAÍDA · del verso %d (%.2f s) al %d (%.2f s) — %d cuadros que se van quedando"
-			% [v, _caida_t0, v + 1, _caida_t1, _caida_n])
-		print("   orden: %s" % str(lista))
-		print("   aparece uno cada %.2f s · cuadro de %d×%d px\n"
-			% [(_caida_t1 - _caida_t0) / float(_caida_n), int(ancho), int(alto)])
+		var abre: float = float(CAIDA.get("abre", 1.7))
+		print("\n🕳 CAÍDA · verso %d (%.2f s → %.2f s)" % [v, _caida_t0, _caida_t1])
+		print("   %.2f s → %.2f s  portada a pantalla completa: escena %d"
+			% [_caida_t0, _caida_tm, portada])
+		print("   %.2f s → %.2f s  montaje de %d estampas en %d columnas · %d×%d px cada una"
+			% [_caida_tm, _caida_t1, _caida_n, cols, int(ancho), int(alto)])
+		print("   orden: %s  (la primera abre a pantalla completa y se encoge en %.1f s)\n"
+			% [str(lista), abre])
 
 
-## Lleva la caída segundo a segundo: enciende la capa al entrar en su verso y va
-## soltando un cuadro cada vez que toca. Los que ya salieron NO se quitan.
+## Lleva la caída segundo a segundo: primero la portada, luego el montaje, que va
+## soltando una estampa cada vez que toca. Las que ya salieron NO se quitan.
 func _procesar_caida(pos: float) -> void:
 	if _caida_n <= 0:
 		return
@@ -960,34 +1002,86 @@ func _procesar_caida(pos: float) -> void:
 		_capa_b.visible = false      # la capa del crossfade también, o se asoma debajo
 		for c in _cuadros:
 			c.modulate.a = 0.0
+			c.scale = Vector2.ONE
 		_idx_caida = 0
+		_portada_fuera = false
+		if _portada != null:
+			_portada.modulate.a = 1.0
 
-	# ¿Toca soltar cuadro? (se sueltan todos los pendientes, por si hubo un salto)
-	var paso: float = maxf(0.05, (_caida_t1 - _caida_t0) / float(_caida_n))
-	while _idx_caida < _caida_n and pos >= _caida_t0 + paso * float(_idx_caida):
-		_aparecer_cuadro(_idx_caida)
+	# Primera mitad del verso: solo la portada.
+	if pos < _caida_tm:
+		return
+
+	# Al empezar la segunda mitad, la portada se retira.
+	if not _portada_fuera:
+		_portada_fuera = true
+		if _portada != null:
+			var tw := create_tween()
+			tw.tween_property(_portada, "modulate:a", 0.0, 0.35)
+
+	# Reparto del tiempo: la primera estampa se lleva la apertura, y el resto se
+	# reparten lo que queda hasta el final del verso.
+	var abre: float = clampf(float(CAIDA.get("abre", 1.7)), 0.3,
+		maxf(0.4, (_caida_t1 - _caida_tm) * 0.6))
+	var paso: float = 0.0
+	if _caida_n > 1:
+		paso = maxf(0.12, (_caida_t1 - _caida_tm - abre) / float(_caida_n - 1))
+
+	while _idx_caida < _caida_n:
+		var t_i: float = _caida_tm if _idx_caida == 0 \
+			else _caida_tm + abre + paso * float(_idx_caida - 1)
+		if pos < t_i:
+			break
+		if _idx_caida == 0:
+			_abrir_primera(abre)
+		else:
+			_aparecer_cuadro(_idx_caida)
 		_idx_caida += 1
 
 
-## Un cuadro entra: cae un poco desde arriba, con un golpecito de escala.
+## La primera estampa entra a PANTALLA COMPLETA, se queda un momento y luego se
+## encoge y viaja hasta su hueco de arriba a la izquierda.
+func _abrir_primera(abre: float) -> void:
+	if _cuadros.is_empty():
+		return
+	var c: Control = _cuadros[0]
+	if not is_instance_valid(c):
+		return
+	var destino := c.position
+	var escala: float = _caja.size.x / maxf(1.0, c.size.x)
+
+	c.scale = Vector2(escala, escala)
+	c.position = Vector2.ZERO          # ocupando toda la caja
+	c.modulate.a = 0.0
+
+	var espera: float = abre * 0.45     # lo que aguanta a pantalla completa
+	var viaje: float = abre * 0.5
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(c, "modulate:a", 1.0, 0.25)
+	tw.tween_property(c, "scale", Vector2.ONE, viaje).set_delay(espera) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(c, "position", destino, viaje).set_delay(espera) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+
+
+## Las demás entran ya pequeñas, deslizándose desde la derecha hasta su hueco:
+## se colocan a continuación de la anterior, como quien va pegando fotos.
 func _aparecer_cuadro(i: int) -> void:
 	if i < 0 or i >= _cuadros.size():
 		return
 	var c: Control = _cuadros[i]
 	if not is_instance_valid(c):
 		return
-	var y_final := c.position.y
-	c.position.y = y_final - 14.0
-	c.scale = Vector2(1.12, 1.12)
+	var destino := c.position
+	c.position = destino + Vector2(22.0, 0.0)
 	c.modulate.a = 0.0
-	var dur: float = maxf(0.06, float(CAIDA.get("entrada", 0.22)))
+	var dur: float = maxf(0.08, float(CAIDA.get("entrada", 0.30)))
 	var tw := create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(c, "modulate:a", 1.0, dur * 0.7)
-	tw.tween_property(c, "position:y", y_final, dur) \
+	tw.tween_property(c, "modulate:a", 1.0, dur * 0.8)
+	tw.tween_property(c, "position", destino, dur) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_property(c, "scale", Vector2.ONE, dur) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 ## Segundo en que arranca un clip (por verso o por "t" explícito).
