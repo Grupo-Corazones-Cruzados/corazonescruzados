@@ -669,6 +669,30 @@ definir; 150+ competitivo.
   eligió Fernando.
 - Docs: `HISTORIA.md`, `GUION_VISUAL.md`, este `Videojuego.md`.
 
+## 7-bis. 🎬 VÍDEO GENERADO (Veo) — decisión del 2026-07-28
+
+Fernando quiere que **algunos tramos del final del prólogo sean VÍDEO** intercalado entre
+estampas (no todo el final: un clip, luego imágenes, luego otro clip).
+
+- **Modelos disponibles con su clave:** `veo-3.1-generate-preview`,
+  `veo-3.1-fast-generate-preview` y `veo-3.1-lite-generate-preview` (acción
+  `predictLongRunning`). Se usa **imagen→vídeo** partiendo de una estampa ya aprobada, que
+  es lo que mejor conserva el estilo.
+- **Límite: 8 s por clip.** El hueco que pidió (del verso 13 al 15) son **11 s exactos**, así
+  que necesita DOS clips. Cada clip se genera por separado, así que **la continuidad entre
+  clips es mala**: por eso funciona intercalando estampas entre ellos, no encadenando vídeo.
+- **Script:** `scratchpad/generar_video.py` (imagen + prompt → mp4). Salida: 1280×720, 24 fps,
+  ~6 MB por clip, **con pista de audio que hay que quitar**.
+- **Godot solo reproduce Ogg Theora:** convertir con
+  `ffmpeg -i clip.mp4 -q:v 8 -an assets/Video/clip.ogv` (el `-an` quita el audio para no
+  pisar la canción).
+- **Soporte ya montado en `Prologo.gd`:** la lista `VIDEOS` ata cada clip a un verso o a un
+  segundo; mientras dura, la estampa se oculta; al acabar vuelven las estampas. El clip va
+  mudo y se adelanta solo si se entra a mitad con `empezar_en`.
+- **Aviso de estilo:** el vídeo suaviza el pixel-art. El primer clip salió con el zoom, el
+  aura de fuego creciendo y el fondo oscureciéndose bien, pero con un dibujo más blando y
+  más saturado que las estampas.
+
 ## 8. Estado actual (2026-07-28)
 
 **Lo hecho entre el 2026-07-27 y el 2026-07-28** (no estaba recogido aquí; el detalle largo vive
@@ -823,6 +847,24 @@ en `MEMORIA.md` → *Decisiones recientes*):
   economía. Fernando aprende Godot guiado en paralelo.
 
 ## 10. Registro de aprendizajes/decisiones
+
+- **2026-07-28 (Acto 4 rehecho a fondo + primer vídeo):** se regeneraron/crearon la **53**
+  (familia de 5 huyendo, caótica, con las tres tallas y las figuras granate distintas), la
+  **62** (piernas en fases distintas de la zancada), y las nuevas **84** (el cráter solo con
+  los perseguidores asomados al hueco), **85/86** (los pequeños abrazados al mayor, que se
+  dispone a saltar; la 86 corrige que son niño y niña), **87/88** (POV mirando al fondo del
+  Hoyo, con el Hoyo ya enorme y solo pies y piernas) y **89** (los tres ya en el aire). Se
+  generó el **primer clip de vídeo** con Veo a partir de la 66.
+  **Reglas nuevas y confirmadas (§4.31–39 y siguientes):** la referencia visual manda sobre
+  el texto; el modelo NO cuenta figuras; las proporciones se piden COMPARANDO y con pruebas
+  verificables en la imagen; cada tirada suelta lo ya conseguido, así que **se corrige por
+  ADICIÓN sobre el prompt que funcionó, nunca reescribiendo**; **"EDITA conservando todo"
+  bloquea cualquier cambio de las figuras** → generar de cero; **si el filtro bloquea,
+  reescribir en clave de FORMAS Y MOVIMIENTO**; y **componer por código dos mitades ya
+  aprobadas** es más fiable que pedirle a la IA que las rehaga.
+  **Método de trabajo (2026-07-28):** Fernando pidió expresamente **no hacer regeneraciones
+  que él no haya pedido**: yo genero, él revisa y decide. Mi criterio visual no sustituye al
+  suyo — varias veces di por mala una imagen que él dio por buena.
 
 - **2026-07-28 (publicación a producción + puesta al día del documento):** Fernando pidió
   **publicar todo lo nuevo de Godot aunque el juego no esté completo**. Aprendizajes:

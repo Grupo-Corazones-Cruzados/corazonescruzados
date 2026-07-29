@@ -519,6 +519,14 @@ Stack estándar de la casa, con particularidades de este repo:
     usó **puppeteer con el Chrome del sistema** (`executablePath: '/Applications/Google
     Chrome.app/Contents/MacOS/Google Chrome'`; el Chrome de puppeteer no está instalado) y `NODE_PATH`
     apuntando a `node_modules` del repo cuando el script vive fuera del proyecto.
+- **★ VIDEOJUEGO — el prólogo admite VÍDEO generado y cambia el método de trabajo (2026-07-28).**
+  Fernando quiere tramos de VÍDEO intercalados entre estampas al final del prólogo; su clave
+  tiene **Veo 3.1** (normal, fast y lite) y se usa **imagen→vídeo** desde una estampa aprobada.
+  **Máximo 8 s por clip**, sin continuidad entre clips, así que se intercalan imágenes. Godot
+  solo reproduce **Ogg Theora** (`ffmpeg -i clip.mp4 -q:v 8 -an salida.ogv`); `Prologo.gd` ya
+  tiene la lista `VIDEOS`. **Método:** él pidió que NO se hagan regeneraciones que no haya
+  pedido — yo genero, él revisa y decide; y las correcciones se hacen **añadiendo** sobre el
+  prompt que funcionó, nunca reescribiéndolo.
 - **★ VIDEOJUEGO — el PRÓLOGO va CANTADO y sincronizado con la canción (2026-07-27).** Todo el
   prólogo se compara contra la **posición de reproducción del mp3**, nunca contra temporizadores:
   los versos aparecen en el segundo en que se cantan y las estampas se anclan a los versos. El
