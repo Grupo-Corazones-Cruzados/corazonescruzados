@@ -284,7 +284,12 @@ const RAFAGA := {
 ## ojo siempre sepa cuál es la última.
 const CAIDA := {
 	"desde_verso": 12,         # "al fondo del mundo, a la noche bajaron."
-	"portada": 65,             # estampa de la primera mitad del verso
+	# Estampas de la primera mitad del verso, a pantalla completa y en este orden.
+	# "seg" es lo que dura cada una; la ÚLTIMA se queda hasta que entra el montaje.
+	"portadas": [
+		{ "escena": 89, "seg": 2.0 },
+		{ "escena": 65 },
+	],
 	"t_montaje": 92.6,         # segundo en que entra "a la noche bajaron"
 	# El orden es el orden en que se van colocando, y casa con el reparto de abajo.
 	"escenas": [95, 105, 106, 101, 102, 98, 107],
@@ -500,7 +505,8 @@ var _rafaga_cerrada := false
 
 # --- Estado de la CAÍDA (la hoja de contactos que se va llenando) -----------
 var _ventana_caida: Control       # capa donde viven las estampas, sobre la caja
-var _portada: TextureRect         # la estampa grande de la primera mitad
+var _portadas: Array = []         # estampas grandes de la primera mitad
+var _idx_portada := -1            # cuál se está viendo
 var _cuadros: Array = []          # un nodo por estampa, ya colocado y oculto
 var _caida_t0 := -1.0             # segundo en que arranca (calculado en _ready)
 var _caida_t1 := -1.0             # y en que termina
@@ -932,17 +938,27 @@ func _montar_caida() -> void:
 	if lista.is_empty():
 		return
 
-	# --- La portada de la primera mitad del verso ---------------------------
-	var portada := int(CAIDA.get("portada", 0))
-	if portada > 0 and _existe(portada):
-		_portada = TextureRect.new()
-		_portada.set_anchors_preset(Control.PRESET_FULL_RECT)
-		_portada.texture = _cargar(portada)
-		_portada.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		_portada.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		_portada.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		_portada.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_ventana_caida.add_child(_portada)
+	# --- Las portadas de la primera mitad del verso -------------------------
+	# Se encadenan a pantalla completa hasta que arranca el montaje; la última se
+	# queda con todo el tiempo que sobre.
+	var t_portada := _caida_t0
+	for p in CAIDA.get("portadas", []):
+		var escena := int(p.get("escena", 0))
+		if escena <= 0 or not _existe(escena):
+			push_warning("Caída: falta la portada %d, se salta." % escena)
+			continue
+		var img_p := TextureRect.new()
+		img_p.set_anchors_preset(Control.PRESET_FULL_RECT)
+		img_p.texture = _cargar(escena)
+		img_p.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		img_p.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		img_p.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		img_p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		img_p.modulate.a = 0.0
+		_ventana_caida.add_child(img_p)
+		_portadas.append({ "nodo": img_p, "escena": escena, "t": t_portada })
+		var seg := float(p.get("seg", 0.0))
+		t_portada += seg if seg > 0.0 else maxf(0.1, _caida_tm - t_portada)
 
 	# --- Los huecos: el mosaico compuesto, o una rejilla si no cuadra --------
 	var hueco: float = float(CAIDA.get("hueco", 6.0))
@@ -988,8 +1004,11 @@ func _montar_caida() -> void:
 
 	if _caida_n > 0 and mostrar_reparto:
 		print("\n🕳 CAÍDA · verso %d (%.2f s → %.2f s)" % [v, _caida_t0, _caida_t1])
-		print("   %.2f s → %.2f s  portada a pantalla completa: escena %d"
-			% [_caida_t0, _caida_tm, portada])
+		for i in _portadas.size():
+			var hasta: float = float(_portadas[i + 1]["t"]) if i + 1 < _portadas.size() \
+				else _caida_tm
+			print("   %.2f s → %.2f s  portada a pantalla completa: escena %d"
+				% [float(_portadas[i]["t"]), hasta, int(_portadas[i]["escena"])])
 		print("   %.2f s → %.2f s  mosaico de %d estampas"
 			% [_caida_tm, _caida_t1, _caida_n])
 		for i in _caida_n:
@@ -1068,19 +1087,32 @@ func _procesar_caida(pos: float) -> void:
 			c.scale = Vector2.ONE
 		_idx_caida = 0
 		_portada_fuera = false
-		if _portada != null:
-			_portada.modulate.a = 1.0
+		_idx_portada = -1
+		for p in _portadas:
+			(p["nodo"] as CanvasItem).modulate.a = 0.0
 
-	# Primera mitad del verso: solo la portada.
+	# Primera mitad del verso: se van encadenando las portadas.
 	if pos < _caida_tm:
+		var toca := -1
+		for i in _portadas.size():
+			if pos >= float(_portadas[i]["t"]):
+				toca = i
+		if toca >= 0 and toca != _idx_portada:
+			if _idx_portada >= 0:
+				var vieja: CanvasItem = _portadas[_idx_portada]["nodo"]
+				create_tween().tween_property(vieja, "modulate:a", 0.0, 0.3)
+			_idx_portada = toca
+			var nueva: CanvasItem = _portadas[toca]["nodo"]
+			nueva.modulate.a = 0.0
+			create_tween().tween_property(nueva, "modulate:a", 1.0, 0.3)
 		return
 
-	# Al empezar la segunda mitad, la portada se retira.
+	# Al empezar la segunda mitad, la portada que quede se retira.
 	if not _portada_fuera:
 		_portada_fuera = true
-		if _portada != null:
-			var tw := create_tween()
-			tw.tween_property(_portada, "modulate:a", 0.0, 0.35)
+		if _idx_portada >= 0:
+			var fuera: CanvasItem = _portadas[_idx_portada]["nodo"]
+			create_tween().tween_property(fuera, "modulate:a", 0.0, 0.35)
 
 	# ¿Toca soltar estampa? El reparto del tiempo no es plano: cada una pesa lo
 	# que diga "ritmo" (las pequeñas van en ráfaga, las grandes respiran).
