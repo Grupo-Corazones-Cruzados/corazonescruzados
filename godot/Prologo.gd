@@ -248,26 +248,23 @@ const RAFAGA := {
 }
 
 
-## --- 🕳 LA CAÍDA: cinta vertical continua ------------------------------------
-## El problema del verso "a la noche bajaron": todas las estampas de la caída son
-## el MISMO plano (las siluetas en el pozo), así que puestas una detrás de otra se
-## ven como cortes secos y no como una caída.
+## --- 🕳 LA CAÍDA: cuadritos que se van quedando en pantalla -------------------
+## El verso "a la noche bajaron" no puede ir a estampa completa: todas las
+## estampas de la caída son el MISMO plano (las siluetas en el pozo), así que una
+## detrás de otra se leen como cortes secos.
 ##
-## La solución es no cortar: las estampas se APILAN una debajo de otra formando
-## una cinta y la cinta SUBE por la caja de imagen. Como todas comparten encuadre,
-## el ojo no lee ocho fotos, lee un único descenso continuo; cada estampa aparece
-## por abajo mientras la anterior sale por arriba.
-##
-## Además la cinta ACELERA (van cayendo cada vez más rápido) y el encuadre se
-## balancea un poco, para que no sea un desplazamiento mecánico.
+## Aquí van como CUADROS PEQUEÑOS: aparece uno, y se QUEDA; luego aparece el
+## siguiente, y se queda también, y así hasta tener los ocho a la vez. Cada nuevo
+## cuadro cae un poco MÁS ABAJO que el anterior, en zigzag, de modo que el propio
+## reparto de los cuadros por la pantalla va dibujando el descenso.
 const CAIDA := {
 	"desde_verso": 12,         # "al fondo del mundo, a la noche bajaron."
-	# El orden es el orden en que se atraviesan, de arriba abajo.
+	# El orden es el orden en que van apareciendo.
 	"escenas": [94, 95, 105, 106, 101, 102, 98, 107],
-	"acelera": 1.35,           # 1 = velocidad constante; >1 = se va acelerando
-	"vaiven": 5.0,             # píxeles de balanceo lateral (0 = ninguno)
-	"remate": 0.9,             # segundos finales en los que la cinta frena y para
-	"zoom": 1.05,              # empuje de escala durante el descenso
+	"tam": 0.34,               # ancho de cada cuadro, en fracción de la caja
+	"entrada": 0.22,           # segundos que tarda un cuadro en aparecer
+	"zigzag": true,            # true = alternan izquierda/derecha al bajar
+	"borde": 2.0,              # grosor del marco claro de cada cuadro (0 = sin marco)
 }
 
 
@@ -458,13 +455,13 @@ var _idx_rafaga := 0
 var _paneles_actuales := 0
 var _rafaga_cerrada := false
 
-# --- Estado de la CAÍDA (la cinta vertical) ---------------------------------
-var _ventana_caida: Control       # recorta la cinta al tamaño de la caja
-var _cinta: Control               # las estampas apiladas; es lo que se mueve
+# --- Estado de la CAÍDA (los cuadritos que se acumulan) ---------------------
+var _ventana_caida: Control       # capa donde viven los cuadros, sobre la caja
+var _cuadros: Array = []          # un nodo por estampa, ya colocado y oculto
 var _caida_t0 := -1.0             # segundo en que arranca (calculado en _ready)
 var _caida_t1 := -1.0             # y en que termina
-var _caida_alto := 0.0            # alto de cada estampa dentro de la cinta
-var _caida_n := 0                 # cuántas estampas tiene la cinta
+var _caida_n := 0                 # cuántos cuadros hay
+var _idx_caida := 0               # cuántos han aparecido ya
 var _caida_activa := false
 
 # --- Estado del modo calibración --------------------------------------------
@@ -526,24 +523,17 @@ func _construir_ui() -> void:
 	_capa_paneles.visible = false
 	add_child(_capa_paneles)
 
-	# 🕳 La ventana de la CAÍDA: mismo hueco que la estampa, pero recortando, para
-	# que la cinta que pasa por dentro no se salga de la caja.
+	# 🕳 La capa de la CAÍDA: ocupa la caja de imagen y dentro se van quedando los
+	# cuadritos, uno tras otro.
 	_ventana_caida = Control.new()
 	_ventana_caida.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_ventana_caida.offset_left = img_x
 	_ventana_caida.offset_top = img_y
 	_ventana_caida.offset_right = img_x + ancho_img
 	_ventana_caida.offset_bottom = img_y + alto_img
-	_ventana_caida.clip_contents = true
-	_ventana_caida.pivot_offset = Vector2(ancho_img, alto_img) / 2.0
 	_ventana_caida.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ventana_caida.visible = false
 	add_child(_ventana_caida)
-
-	_cinta = Control.new()
-	_cinta.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	_cinta.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ventana_caida.add_child(_cinta)
 
 	# Fogonazo blanco, solo sobre la caja de imagen.
 	_flash = ColorRect.new()
@@ -867,8 +857,12 @@ func _informar_rafaga() -> void:
 #  🕳 LA CAÍDA — cinta vertical continua
 # ============================================================================
 
-## Apila las estampas de la caída en una sola cinta, de arriba abajo, y calcula
-## en qué trozo de canción tiene que pasar. Se hace una vez, al arrancar.
+## Prepara los cuadritos de la caída: cada estampa en su sitio, ya colocada pero
+## invisible, esperando su turno. Se hace una vez, al arrancar.
+##
+## El reparto: cada cuadro baja un escalón respecto al anterior y, si `zigzag`
+## está puesto, va alternando lado. Así los ocho cuadros terminan trazando una
+## diagonal descendente por la caja de imagen.
 func _montar_caida() -> void:
 	var v := int(CAIDA["desde_verso"])
 	if v < 0 or v >= LETRAS.size():
@@ -877,84 +871,123 @@ func _montar_caida() -> void:
 	_caida_t1 = float(LETRAS[v + 1]["t"]) if v + 1 < LETRAS.size() \
 		else _caida_t0 + 8.0
 
-	_caida_alto = _caja.size.y
-	var y := 0.0
+	# Solo las que existen en disco.
+	var lista: Array = []
 	for n in CAIDA["escenas"]:
-		var escena := int(n)
-		if not _existe(escena):
-			push_warning("Caída: falta la estampa %d, se salta." % escena)
-			continue
-		var t := TextureRect.new()
-		t.set_anchors_preset(Control.PRESET_TOP_LEFT)
-		t.offset_left = 0.0
-		t.offset_top = y
-		t.offset_right = _caja.size.x
-		t.offset_bottom = y + _caida_alto
-		t.texture = _cargar(escena)
-		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		# COVERED (y no CENTERED) para que cada estampa llene su hueco de la cinta:
-		# si quedara franja negra entre una y otra se verían los cortes.
-		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_cinta.add_child(t)
-		y += _caida_alto
+		if _existe(int(n)):
+			lista.append(int(n))
+		else:
+			push_warning("Caída: falta la estampa %d, se salta." % int(n))
+	if lista.is_empty():
+		return
+
+	# Tamaño del cuadro: se mantiene el 16:9 de las estampas.
+	var ancho: float = _caja.size.x * clampf(float(CAIDA.get("tam", 0.4)), 0.15, 0.9)
+	var alto: float = ancho * _caja.size.y / _caja.size.x
+	var borde: float = float(CAIDA.get("borde", 0.0))
+	var zigzag: bool = bool(CAIDA.get("zigzag", true))
+	var n_total := lista.size()
+
+	for i in n_total:
+		var t: float = 0.0 if n_total <= 1 else float(i) / float(n_total - 1)
+		# Baja un escalón por cuadro, de arriba del todo a abajo del todo.
+		var y: float = (_caja.size.y - alto) * t
+		# Y alterna lado, acercándose al centro según baja (así no queda un
+		# zigzag mecánico y el último cae casi en medio).
+		var x: float = (_caja.size.x - ancho) * 0.5
+		if zigzag:
+			var lado: float = 1.0 if i % 2 == 0 else -1.0
+			x += lado * (_caja.size.x - ancho) * 0.5 * (1.0 - t * 0.55)
+
+		# Marco claro detrás (el cuadro se despega del negro del fondo).
+		var marco := ColorRect.new()
+		marco.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		marco.offset_left = x - borde
+		marco.offset_top = y - borde
+		marco.offset_right = x + ancho + borde
+		marco.offset_bottom = y + alto + borde
+		marco.color = Color(0.75, 0.75, 0.82, 0.9) if borde > 0.0 else Color(0, 0, 0, 0)
+		marco.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		marco.pivot_offset = Vector2(ancho + borde * 2.0, alto + borde * 2.0) / 2.0
+		marco.modulate.a = 0.0
+		_ventana_caida.add_child(marco)
+
+		var img := TextureRect.new()
+		img.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		img.offset_left = borde
+		img.offset_top = borde
+		img.offset_right = borde + ancho
+		img.offset_bottom = borde + alto
+		img.texture = _cargar(lista[i])
+		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		img.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		img.clip_contents = true
+		img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		marco.add_child(img)
+
+		_cuadros.append(marco)
 		_caida_n += 1
 
 	if _caida_n > 0 and mostrar_reparto:
-		print("\n🕳 CAÍDA · del verso %d (%.2f s) al %d (%.2f s) — %d estampas en cinta continua"
+		print("\n🕳 CAÍDA · del verso %d (%.2f s) al %d (%.2f s) — %d cuadros que se van quedando"
 			% [v, _caida_t0, v + 1, _caida_t1, _caida_n])
-		print("   orden: %s" % str(CAIDA["escenas"]))
-		print("   %.2f s de descenso · %.2f s por estampa de media (acelerando)\n"
-			% [_caida_t1 - _caida_t0, (_caida_t1 - _caida_t0) / float(_caida_n)])
+		print("   orden: %s" % str(lista))
+		print("   aparece uno cada %.2f s · cuadro de %d×%d px\n"
+			% [(_caida_t1 - _caida_t0) / float(_caida_n), int(ancho), int(alto)])
 
 
-## Lleva la cinta segundo a segundo: la enciende al entrar en su verso, la
-## desplaza hacia arriba acelerando y la apaga al salir.
+## Lleva la caída segundo a segundo: enciende la capa al entrar en su verso y va
+## soltando un cuadro cada vez que toca. Los que ya salieron NO se quitan.
 func _procesar_caida(pos: float) -> void:
 	if _caida_n <= 0:
 		return
 
-	# Fuera de su verso: la cinta no pinta nada y manda la estampa normal.
+	# Fuera de su verso: la capa no pinta nada y manda la estampa normal.
 	if pos < _caida_t0 or pos >= _caida_t1:
 		if _caida_activa:
 			_caida_activa = false
 			_ventana_caida.visible = false
-			_ventana_caida.scale = Vector2.ONE
 			_capa_a.visible = true
+			_capa_b.visible = true
 		return
 
-	# Al entrar, la cinta tapa la estampa normal.
+	# Al entrar, la caída tapa la estampa normal y se parte de cero.
 	if not _caida_activa:
 		_caida_activa = true
 		_ventana_caida.visible = true
 		_capa_a.visible = false
-		_fogonazo(0.45, 0.3)
+		_capa_b.visible = false      # la capa del crossfade también, o se asoma debajo
+		for c in _cuadros:
+			c.modulate.a = 0.0
+		_idx_caida = 0
 
-	var total: float = maxf(0.1, _caida_t1 - _caida_t0)
-	var remate: float = clampf(float(CAIDA.get("remate", 0.0)), 0.0, total * 0.5)
-	var p: float = clampf((pos - _caida_t0) / maxf(0.1, total - remate), 0.0, 1.0)
+	# ¿Toca soltar cuadro? (se sueltan todos los pendientes, por si hubo un salto)
+	var paso: float = maxf(0.05, (_caida_t1 - _caida_t0) / float(_caida_n))
+	while _idx_caida < _caida_n and pos >= _caida_t0 + paso * float(_idx_caida):
+		_aparecer_cuadro(_idx_caida)
+		_idx_caida += 1
 
-	# Acelerón: el recorrido no avanza lineal, sino que se va comiendo la cinta
-	# cada vez más rápido (caen con más velocidad según bajan).
-	var avance: float = pow(p, float(CAIDA.get("acelera", 1.0)))
 
-	# La cinta se mueve hacia ARRIBA: cada estampa nueva entra por abajo.
-	var recorrido: float = float(_caida_n - 1) * _caida_alto
-	_cinta.position.y = -avance * recorrido
-
-	# Balanceo lateral: al caer no bajan a plomo. Va creciendo con la velocidad.
-	var vaiven: float = float(CAIDA.get("vaiven", 0.0))
-	if vaiven > 0.0:
-		_cinta.position.x = sin(pos * 3.7) * vaiven * (0.35 + avance)
-	else:
-		_cinta.position.x = 0.0
-
-	# Y un empuje de escala, para que el pozo parezca venirse encima.
-	var zoom: float = float(CAIDA.get("zoom", 1.0))
-	if zoom != 1.0:
-		var z: float = 1.0 + (zoom - 1.0) * avance
-		_ventana_caida.scale = Vector2(z, z)
+## Un cuadro entra: cae un poco desde arriba, con un golpecito de escala.
+func _aparecer_cuadro(i: int) -> void:
+	if i < 0 or i >= _cuadros.size():
+		return
+	var c: Control = _cuadros[i]
+	if not is_instance_valid(c):
+		return
+	var y_final := c.position.y
+	c.position.y = y_final - 14.0
+	c.scale = Vector2(1.12, 1.12)
+	c.modulate.a = 0.0
+	var dur: float = maxf(0.06, float(CAIDA.get("entrada", 0.22)))
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(c, "modulate:a", 1.0, dur * 0.7)
+	tw.tween_property(c, "position:y", y_final, dur) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(c, "scale", Vector2.ONE, dur) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 ## Segundo en que arranca un clip (por verso o por "t" explícito).
