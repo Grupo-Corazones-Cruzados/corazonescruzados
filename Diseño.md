@@ -884,6 +884,12 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   de ayuda `text-[11px] text-digi-muted` con el tipo y si es obligatorio.
 
 ## Desviaciones detectadas y resolución
+- **2026-07-30 — Automatizaciones: borrar un flujo usaba `confirm()` del navegador → CORREGIDO.**
+  `FlowsTable.handleDelete` abría el diálogo nativo, que el sistema prohíbe explícitamente
+  (fila "Confirmar" del catálogo). Y el texto se había quedado corto: desde la relación N:M,
+  borrar un flujo **arrastra sus campañas, listas de contactos y contactos**, y el aviso no lo
+  decía. Sustituido por `PixelConfirm` en rojo, con el alcance real del borrado — el mismo
+  mensaje que ya usa la página de detalle del flujo.
 - **2026-07-30 — Automatizaciones: los TRES editores de flujo seguían en pixel antiguo → CORREGIDOS.**
   `FlowsTable` se migró a Fluent el 2026-07-05, pero los paneles que abre con "Configurar"
   (`FlowSidePanel` email masivo · `WhatsAppFlowPanel` · `ChatbotFlowPanel`, ~2.750 líneas) se

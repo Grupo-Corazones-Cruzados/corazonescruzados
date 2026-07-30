@@ -12,6 +12,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -67,6 +68,7 @@ export default function FlowsTable() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [form, setForm] = useState({ name: '', type: 'email', description: '' });
+  const [confirmDelete, setConfirmDelete] = useState<Flow | null>(null);
 
   const fetchFlows = useCallback(async () => {
     try {
@@ -143,7 +145,7 @@ export default function FlowsTable() {
   };
 
   const handleDelete = async (flow: Flow) => {
-    if (!window.confirm(`¿Eliminar el flujo "${flow.name}"? Esta acción no se puede deshacer.`)) return;
+    setConfirmDelete(null);
     try {
       await fetch(`/api/admin/flows/${flow.id}`, { method: 'DELETE' });
       if (selected?.id === flow.id) setSelected(null);
@@ -287,7 +289,7 @@ export default function FlowsTable() {
                         className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
                         {selected.status === 'active' ? <><Pause className="w-3.5 h-3.5" /> Pausar</> : <><Play className="w-3.5 h-3.5" /> Activar</>}
                       </button>
-                      <button onClick={() => handleDelete(selected)}
+                      <button onClick={() => setConfirmDelete(selected)}
                         className="col-span-2 inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-red-500/30 rounded text-[12px] text-red-500 hover:bg-red-50 transition-colors" style={mf}>
                         <Trash2 className="w-3.5 h-3.5" /> Eliminar
                       </button>
@@ -306,6 +308,16 @@ export default function FlowsTable() {
           </div>
         </div>
       </div>
+
+      <PixelConfirm
+        open={confirmDelete !== null}
+        title="Eliminar flujo"
+        message={`¿Eliminar "${confirmDelete?.name ?? ''}"? Se borran también sus campañas, listas de contactos y contactos. No se puede deshacer.`}
+        confirmLabel="Sí, eliminar"
+        danger
+        onConfirm={() => { if (confirmDelete) handleDelete(confirmDelete); }}
+        onCancel={() => setConfirmDelete(null)}
+      />
 
       {/* Create / edit modal */}
       <PixelModal open={modalOpen} onClose={() => !saving && setModalOpen(false)} title={editing ? 'Editar flujo' : 'Nuevo flujo'}>

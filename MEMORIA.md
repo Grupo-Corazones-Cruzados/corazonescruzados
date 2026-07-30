@@ -237,11 +237,11 @@ Stack estándar de la casa, con particularidades de este repo:
     (`app/(dashboard)/dashboard/projects/[id]/page.tsx`) se agregó **"Cliente previo"** —
     selector que autocompleta los datos del adquiriente (tipo id, identificación, razón
     social, dirección, email, teléfono) desde clientes ya facturados. Verificado (tsc OK),
-    **sin commitear aún**. Ver `Aprendizaje.md`.
+    ya commiteado (verificado el 2026-07-30: árbol limpio). Ver `Aprendizaje.md`.
   - **Rediseño visual del dashboard: pixelart → corporativo (Microsoft/SharePoint, Fluent).**
     Tema **light** (fondo `#faf9f8`, texto `#242424`), acento morado de marca `#4B2D8E`, fuente
     **Segoe UI**. **Solo `/dashboard/`** (landing/auth/portal/mundo conservan pixelart). Trabajo grande,
-    **TODO sin commitear** (un solo bloque, ~60+ archivos). Fases:
+    ya commiteado (verificado el 2026-07-30). Fases:
     1. Recoloreo por tokens scoped `.corp`.
     2. Rediseño de la forma de todos los controles y modales a Fluent (campos, selects, tabs, tabla, diálogos).
     3. Formularios como **panel lateral derecho** (md/lg) vs diálogo centrado (sm).
@@ -260,7 +260,7 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_type='subscription'`, `source_id='<subId>-<YYYY-MM>'`). Ingreso vía
   `addSubscriptionIncomeToFinance` (`lib/finance.ts`). UI `app/(dashboard)/dashboard/subscriptions/page.tsx`
   (tabla + panel lateral de meses, estilo `.corp` calcado de projects/invoices). Verificado: tsc + `next build` OK.
-  **Sin commitear.** Ver `Aprendizaje.md` (objetivo actual).
+  Ya commiteado (verificado el 2026-07-30). Ver `Aprendizaje.md`.
 
 - **2026-06-11:** Nuevo módulo **Clientes** (de facturación), en el sidebar **debajo de Marketplace**
   (`roles:['member','admin']`). Identidad de cliente centrada en `client_ruc` de las facturas (la tabla
@@ -2674,7 +2674,7 @@ Stack estándar de la casa, con particularidades de este repo:
     (`onAuthOverlayChange` incluye `editorOpen/npcEditorOpen`).
   - **Slider 1 con pestañas (2026-06-23):** las secciones "Los 4 Pisos" y "Los 4 Pasos" son ahora
     **dos pestañas** (`ModeloTabs`, estado `tab: 'pisos' | 'pasos'`) que alternan el contenido.
-  - Verificado: `tsc --noEmit` OK. **Sin commitear.**
+  - Verificado: `tsc --noEmit` OK. Ya commiteado (2026-07-30).
 - **Portal de incidencias — descripción por texto o por voz (2026-06-18):** en el portal del cliente
   (`app/portal/[projectId]/page.tsx`) el cliente puede **elegir cómo ingresar la descripción**: escribir texto
   (modo por defecto) o **dictar por voz**. Decisión del usuario: **dictado voz→texto** (NO se guarda el audio,
@@ -2684,7 +2684,7 @@ Stack estándar de la casa, con particularidades de este repo:
   textarea; botón Grabar/Detener con estado "Transcribiendo…" y errores en línea (`micError`). Requiere
   contexto seguro (HTTPS/localhost) para `getUserMedia` — prod (Railway) es HTTPS. El mismo patrón de grabación
   vive inline en `components/world/ChatPanel.tsx` (`toggleMic`); no hay hook compartido aún. Verificado tsc OK.
-  **Sin commitear.**
+  Ya commiteado (2026-07-30).
 
 ## Arquitectura y módulos
 Rutas en `app/`, agrupadas por layout: `(auth)`, `(dashboard)`, `(main)`, `(public)`.
@@ -3000,7 +3000,7 @@ Módulos principales:
   client_name_sri/...` tomados del cliente seleccionado y `client_id: null` (el `client_name` de la tabla cae a
   `client_name_sri`). **Se eliminó la función "Cliente previo"** (botón + buscador de historial de adquirentes
   vía `/api/invoices/clients-history`) del modal. **Campos editables por el usuario: solo cliente, razón/título
-  del cobro, costo mensual y fecha de inicio.** Verificado tsc OK. **Sin commitear.**
+  del cobro, costo mensual y fecha de inicio.** Verificado tsc OK. Ya commiteado (2026-07-30).
 - **Suscripciones (reglas, 2026-06-11):** cobro **por mes calendario** (una fila por mes desde el mes de
   inicio hasta hoy; vencimiento = día de corte = día de `start_date`, clamp al último día en meses cortos;
   un mes aparece al iniciar el mes calendario). **IVA: SIN IVA (0%)** — corregido el 2026-06-11: el costo
@@ -3057,6 +3057,55 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Verificar la UI de verdad, no solo que compile (2026-07-30).** Durante meses la memoria decía
+  "el dashboard requiere login, así que solo se verifica con `tsc`". **No hace falta**: el proyecto
+  ya trae `puppeteer`, y aunque su Chrome no está descargado, sirve el del sistema con
+  `executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'`. Con un JWT
+  firmado con `JWT_SECRET` puesto como cookie `auth_token` (dominio `localhost`) se entra al
+  dashboard sin login, y con `localStorage.gcc_dash_theme='dark'` se ve en el tema del usuario.
+  Así se detectaron cosas que `tsc` jamás habría visto: el listado de campañas devolviendo medio
+  MB de adjuntos y dejando la pantalla en "Cargando…", los nombres de campaña cortados a
+  "Docente ...", y la tabla terminando **por debajo** del pie fijo.
+  - **Medir, no mirar:** `getBoundingClientRect()` sobre los elementos y comparar posiciones
+    (¿la tabla acaba antes del pie?, ¿las columnas arrancan a la misma altura?) da una
+    verificación objetiva, y repetirla a 700/900/1200 px prueba el comportamiento responsivo.
+  - ⚠️ **Dos trampas propias del método:** (1) las aserciones de texto fallan con `text-transform:
+    uppercase` (innerText devuelve MAYÚSCULAS) y con acentos en distinta normalización Unicode →
+    comparar con `.normalize('NFC')` y evitar acentos en los selectores; (2) el servidor de
+    desarrollo compila la ruta al primer acceso, así que la primera visita puede medir una
+    pantalla a medio pintar → esperar a que desaparezca "Cargando" antes de medir.
+  - ⚠️ **Las pruebas van contra la BD de PRODUCCIÓN** (`DATABASE_URL` apunta a Railway). Crear un
+    flujo temporal y **borrarlo al final** (el CASCADE limpia todo lo suyo); para lo que no se
+    puede crear aparte, usar transacción con `ROLLBACK`. Para probar envíos sin molestar a nadie,
+    un contacto con dominio `.test` (TLD reservado, no resuelve).
+- **CRON de Railway — cómo se rompió y cómo se diagnostica (2026-07-29/30, CERRADO).** Durante
+  una semana no salieron los correos de recordatorios ni se generaron los de reunión. Hubo
+  **tres causas apiladas**, y las tres se descubrieron mirando sitios distintos:
+  1. **El servicio corría el script equivocado.** `railway logs --service nightly-cron` mostraba
+     pases limpios… pero diarios y de `nightly-cron.mjs`. `frequent-cron.mjs` (cada 10 min) no se
+     ejecutaba nunca. **Desde la BD esto es indistinguible de "el cron no corre"** — solo los logs
+     del servicio lo separan. El diagnóstico del 2026-07-29 acertó el efecto y falló la causa.
+  2. 🐛 **`frequent-cron.mjs` no compilaba desde que se escribió:** la expresión `*/10 * * * *`
+     iba dentro de un comentario `/* … */` y ese `*/` **cierra el comentario**, dejando el resto
+     como código. Si solo se hubiera cambiado la config de Railway, el servicio habría
+     crash-looped. **Regla: nunca una expresión de cron dentro de un comentario de bloque**; en
+     ese archivo la cabecera va con `//`.
+  3. 🐛 **Al script nuevo le faltaba un trabajo** que el viejo sí hacía (`Talentos · embeddings`).
+     Cambiar el arranque sin añadirlo lo habría apagado en silencio. **Antes de sustituir un
+     runner, comparar las listas de trabajos de los dos.**
+  - **Resuelto el 2026-07-30:** el usuario puso `Start command: node scripts/frequent-cron.mjs` y
+    horario cada 10 min. Verificado: pases 14:00/14:10/14:20/14:30 UTC, `Fallidos: 0/3`, y el
+    recordatorio #4 recibió su correo de vencido — el primero desde que existe el módulo.
+  - **Qué NO se puede tocar por repo:** el comando de arranque y el horario del servicio. La CLI
+    no los expone (`railway service` solo hace link/status/logs/redeploy/restart/scale) y un
+    `railway.json` en la raíz lo heredaría también el servicio web, convirtiéndolo en cron y
+    tumbando la app. Son dos campos del panel.
+  - `scripts/nightly-cron.mjs` queda marcado **OBSOLETO — NO DESPLEGAR** en su cabecera.
+  - **Método para "no se ejecutó X automáticamente":** (1) ¿corrió el pase? → mirar los campos que
+    el trabajo escribe SIEMPRE (`reminders.email_stage/last_email_at`,
+    `member_calendar_events.reminder_status`), no solo si el resultado existe; (2) si no hay
+    rastro, **ir a los logs del servicio de cron**, que es lo único que distingue "no corre" de
+    "corre otra cosa".
 - **Google Meet API v2 — lo que hay que saber para leer reuniones (2026-07-29):**
   - **Un `conferenceRecord` por CADA entrada a la sala**, no uno por reunión. Una reunión normal deja
     2-3 grabaciones: la de segundos (se entró y se salió) y la real. Al listar reuniones hay que
@@ -3410,72 +3459,8 @@ Módulos principales:
     verificando cada candidato a mano. Ver `Estado actual`.
 
 ## Pendientes / preguntas abiertas
-- ✅ **CRON RESUELTO Y FUNCIONANDO (2026-07-30).** El usuario cambió en Railway el `Start command`
-  a `node scripts/frequent-cron.mjs` y el horario a cada 10 min. Comprobado en los logs del
-  servicio: pases a las 14:00, 14:10, 14:20 y 14:30 UTC con los **3 trabajos frecuentes** y
-  `Fallidos: 0/3`. Efecto real en la BD: el recordatorio **#4 recibió su correo de vencido** a
-  las 14:00 (`expired_email_sent=true`, `status='expired'`) — el primero que sale desde que se
-  creó el módulo.
-  - `email_stage` sigue en NULL y **está bien**: la rama de "vencido" no usa etapa, y los
-    recordatorios #7/#8 vencen el 2026-08-01, aún fuera de la ventana de avisos (>5 h).
-  - `member_calendar_events.reminder_status` de "Seguimiento app facturas" (27-jul) se queda en
-    NULL para siempre: el pase solo mira los eventos de las **últimas 48 h**. Es por diseño.
-  - **Logs legibles:** el runner interpolaba los valores tal cual y salían `instant=[object
-    Object]` y `skippedPaused=` (vacío). Ahora `formatDetail()` pone los objetos en JSON, anida
-    los sub-objetos y **omite lo que está a cero**, así que una línea sin novedad dice
-    "sin novedades" en vez de una ristra de ceros.
-- 🔴 **CRON: CAUSA REAL ENCONTRADA (2026-07-30) — corrige el diagnóstico del 2026-07-29.**
-  Lo de ayer ("el cron no está corriendo") era cierto en el efecto pero **falso en la causa**. Con
-  la CLI de Railway (`railway logs --service nightly-cron`) se ve que el servicio **sí corre**,
-  todos los días ~06:00 UTC, sin fallos. Lo que pasa es que ejecuta **el script equivocado**:
-  - El servicio arranca **`scripts/nightly-cron.mjs`** (3 trabajos: Pensamientos, Chat, Talentos)
-    con horario **diario**, no `frequent-cron.mjs` cada 10 min. Por eso los trabajos frecuentes
-    (correos de recordatorios, recordatorios desde Meet y ahora campañas) **nunca** corrieron.
-  - 🐛 **Y `frequent-cron.mjs` estaba ROTO desde que se escribió:** la expresión `*/10 * * * *`
-    de la cabecera estaba dentro de un comentario `/* … */`, y ese `*/` **cierra el comentario**,
-    con lo que el resto del texto pasaba a ser código → `node --check` fallaba. Es decir: aunque
-    se hubiera cambiado la configuración de Railway, el servicio habría caído al arrancar.
-    Nadie lo notó porque el archivo no se ejecutaba nunca. **Arreglado**: la cabecera pasó a
-    comentarios de línea (`//`), donde la expresión de cron es inofensiva. Lección: **nunca
-    poner una expresión de cron dentro de un comentario de bloque.**
-  - 🐛 **`frequent-cron.mjs` no incluía `Talentos · embeddings al día`**, que el script desplegado
-    sí ejecuta. Cambiar el comando de arranque sin más habría **matado ese trabajo en silencio**.
-    Añadido a sus `NIGHTLY_JOBS`.
-  - **Variables:** están bien. `CRON_TOKEN` y `APP_URL` en `nightly-cron`, y `CRON_TOKEN` +
-    `NEXT_PUBLIC_APP_URL` en `corazonescruzados`. No era eso.
-  - **Lo que FALTA (solo desde el panel de Railway, servicio `nightly-cron`):**
-    `Start command` → `node scripts/frequent-cron.mjs` · `Cron schedule` → cada 10 minutos.
-    La CLI **no** expone esos dos campos (`railway service` solo hace link/status/logs/redeploy/
-    restart/scale) y **no se pueden poner por repo**: un `railway.json` en la raíz lo heredaría
-    también el servicio web y lo convertiría en cron, tumbando la app.
-  - Verificado en seco tras el arreglo: pase normal → 3 trabajos; con la hora forzada a 06:05 UTC
-    → 6 trabajos (incluye los nocturnos). `node --check` pasa en los dos scripts.
-  - `nightly-cron.mjs` queda marcado **OBSOLETO — NO DESPLEGAR** en su propia cabecera.
-- 🔴 **Consecuencias mientras no se cambien esos dos campos (diagnóstico del 2026-07-29, sigue vigente).**
-  La maquinaria (Google Meet API + IA + BD) funciona; **el disparador no ejecuta los trabajos frecuentes**. Consecuencias:
-  **no salen los correos escalados de recordatorios** ni se generan recordatorios de reunión solos.
-  Evidencia recogida contra la BD de producción:
-  - Recordatorios **#3** (venció 2026-07-27) y **#4** (venció 2026-07-28) siguen `status='active'`
-    con `email_stage=NULL`, `last_email_at=NULL`, `expired_email_sent=false` → `/api/reminders/cron/notify`
-    nunca corrió sobre ellos (los habría marcado `expired` y enviado correo).
-  - `member_calendar_events.reminder_status` seguía **NULL** en eventos terminados el 2026-07-27 y el
-    2026-07-29 → el pase de reuniones agendadas nunca los tocó.
-  - `meet_orphan_records` tenía **una sola fila, del 2026-07-23** (el día en que se implementó y se
-    disparó a mano), pese a existir reuniones instantáneas con transcripción lista del 2026-07-24 y
-    del 2026-07-29.
-  - Los únicos 2 recordatorios `source='meeting'` se crearon el 2026-07-22 y el 2026-07-23 — los días
-    de desarrollo, con disparo manual.
-  - Contraprueba: impersonando `lfgonzalezm0@grupocc.org` la Meet API devuelve **11 conferenceRecords
-    en 14 días, 6 con transcripción `FILE_GENERATED`**. El scope y la delegación están bien.
-  **Acción (infra, la hace el usuario en Railway):** el servicio `nightly-cron` debe tener
-  `Start command: node scripts/frequent-cron.mjs`, `Cron schedule: */10 * * * *` y las variables
-  `CRON_TOKEN` (igual que en el web) + `APP_URL`. Revisar sus logs: `frequent-cron.mjs` imprime
-  `[cron] ✓/✗ <trabajo>` por pase. Mientras no se arregle, el módulo Recordatorios **funciona igual**
-  para generar desde reuniones (botón manual, Fase 3c) pero **no manda correos**.
-- **Commit del rediseño corporativo (fases 1–7):** TODO sin commitear; es un bloque grande (~60+ archivos).
-  Falta la luz verde del usuario tras revisión visual.
-- **Confirmación visual del usuario:** el dashboard requiere login; las verificaciones de la sesión fueron
-  `tsc`/compilación, no visuales. Hay que validar en vivo cada cambio.
+- **Confirmación visual del usuario:** sigue siendo suya la última palabra, pero desde el 2026-07-30
+  la verificación visual **ya no depende de él**: ver la lección "Verificar la UI de verdad".
 - `ModuleToolbar` en los **3 módulos restantes**: `admin` (sub-tabs anidados), `admin/incidents`, `centralized`.
 - **¿Restaurar el título de registro en páginas de detalle** (`projects/[id]`, `tickets/[id]`, `support/[id]`)?
   Hoy se quitó junto con el resto vía `PageHeader`.
