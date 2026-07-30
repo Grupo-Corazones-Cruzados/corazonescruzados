@@ -9,7 +9,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const { listId } = await params;
     const { rows } = await pool.query(
-      `SELECT * FROM gcc_world.flow_contacts WHERE list_id = $1 ORDER BY created_at DESC`,
+      `SELECT id, list_id, name, email, phone, position, added_via_share, created_at
+         FROM gcc_world.flow_contacts WHERE list_id = $1 ORDER BY created_at DESC, id DESC`,
       [listId]
     );
 
@@ -29,26 +30,29 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = await req.json();
 
     // Support both single contact and batch
-    const contacts: { name: string; email?: string; phone?: string }[] = Array.isArray(body) ? body : [body];
+    const contacts: { name: string; email?: string; phone?: string; position?: string }[] = Array.isArray(body) ? body : [body];
 
     if (contacts.some(c => !c.name?.trim())) {
-      return NextResponse.json({ error: 'Nombre es requerido para cada contacto' }, { status: 400 });
+      return NextResponse.json({ error: 'El nombre es requerido para cada contacto' }, { status: 400 });
     }
     // At least email or phone required
     if (contacts.some(c => !c.email?.trim() && !c.phone?.trim())) {
-      return NextResponse.json({ error: 'Email o telefono es requerido para cada contacto' }, { status: 400 });
+      return NextResponse.json({ error: 'El correo o el teléfono es requerido para cada contacto' }, { status: 400 });
     }
 
+    // `position` = puesto/cargo; junto con nombre, correo y teléfono es lo que se puede
+    // insertar como variable en el correo de la campaña.
     const values: any[] = [];
     const placeholders: string[] = [];
     contacts.forEach((c, i) => {
-      const offset = i * 4;
-      placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4})`);
-      values.push(listId, c.name.trim(), (c.email || '').trim().toLowerCase(), (c.phone || '').trim());
+      const offset = i * 5;
+      placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5})`);
+      values.push(listId, c.name.trim(), (c.email || '').trim().toLowerCase(), (c.phone || '').trim(), (c.position || '').trim() || null);
     });
 
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.flow_contacts (list_id, name, email, phone) VALUES ${placeholders.join(', ')} RETURNING *`,
+      `INSERT INTO gcc_world.flow_contacts (list_id, name, email, phone, position) VALUES ${placeholders.join(', ')}
+       RETURNING id, list_id, name, email, phone, position, added_via_share, created_at`,
       values
     );
 

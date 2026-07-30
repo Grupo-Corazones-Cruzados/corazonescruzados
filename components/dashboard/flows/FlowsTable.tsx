@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelBadge from '@/components/ui/PixelBadge';
@@ -14,9 +15,6 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import BrandLoader from '@/components/ui/BrandLoader';
-import FlowSidePanel from '@/components/dashboard/flows/FlowSidePanel';
-import WhatsAppFlowPanel from '@/components/dashboard/flows/WhatsAppFlowPanel';
-import ChatbotFlowPanel from '@/components/dashboard/flows/ChatbotFlowPanel';
 import {
   Workflow, Mail, MessageCircle, Bot, Sparkles, Puzzle, Search, Plus,
   Settings2, Pencil, Trash2, Play, Pause, X, ArrowRight,
@@ -53,6 +51,7 @@ interface Flow {
 }
 
 export default function FlowsTable() {
+  const router = useRouter();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,7 +60,6 @@ export default function FlowsTable() {
   const [statusFilter, setStatusFilter] = useState('all'); // command-bar filter
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Flow | null>(null); // detail panel
-  const [configuring, setConfiguring] = useState<Flow | null>(null); // big editor panel
 
   // Create / edit modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -274,7 +272,7 @@ export default function FlowsTable() {
 
                   <div className="p-4 pt-0 space-y-2">
                     <button
-                      onClick={() => setConfiguring(selected)}
+                      onClick={() => router.push(`/dashboard/automatizaciones/${selected.id}`)}
                       className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors"
                       style={mf}
                     >
@@ -308,17 +306,6 @@ export default function FlowsTable() {
           </div>
         </div>
       </div>
-
-      {/* Big editor side panels (drill-in) */}
-      {configuring && configuring.type === 'whatsapp' && (
-        <WhatsAppFlowPanel flow={configuring} onClose={() => { setConfiguring(null); fetchFlows(); }} />
-      )}
-      {configuring && configuring.type === 'chatbot' && (
-        <ChatbotFlowPanel flow={configuring} onClose={() => { setConfiguring(null); fetchFlows(); }} />
-      )}
-      {configuring && configuring.type !== 'whatsapp' && configuring.type !== 'chatbot' && (
-        <FlowSidePanel flow={configuring} onClose={() => { setConfiguring(null); fetchFlows(); }} />
-      )}
 
       {/* Create / edit modal */}
       <PixelModal open={modalOpen} onClose={() => !saving && setModalOpen(false)} title={editing ? 'Editar flujo' : 'Nuevo flujo'}>

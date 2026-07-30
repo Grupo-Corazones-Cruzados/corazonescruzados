@@ -45,14 +45,21 @@ export const BTN_ROW_DANGER =
  * en el top layer del navegador, así que siguen quedando por encima de este panel.
  */
 export function FlowPanelShell({
-  Icon, title, subtitle, onClose, children,
+  Icon, title, subtitle, onClose, variant = 'overlay', children,
 }: {
   Icon: any;
   title: string;
   subtitle: string;
   onClose: () => void;
+  /**
+   * `page` = el panel se monta dentro de una página que ya tiene su `DetailHeader`
+   * (el detalle del flujo): no pinta overlay ni cabecera propia, solo su contenido.
+   */
+  variant?: 'overlay' | 'page';
   children: React.ReactNode;
 }) {
+  if (variant === 'page') return <div>{children}</div>;
+
   return (
     <div className="fixed inset-0 z-[70] flex">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />

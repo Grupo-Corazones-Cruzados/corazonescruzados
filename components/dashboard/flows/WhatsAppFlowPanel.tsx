@@ -53,7 +53,7 @@ const COUNTRY_CODES = [
 ];
 
 /* ─── Main Panel ─── */
-export default function WhatsAppFlowPanel({ flow, onClose }: { flow: Flow; onClose: () => void }) {
+export default function WhatsAppFlowPanel({ flow, onClose, variant = 'overlay' }: { flow: Flow; onClose: () => void; variant?: 'overlay' | 'page' }) {
   const [waConfig, setWaConfig] = useState(flow.config || {});
   const [configSaved, setConfigSaved] = useState(!!(flow.config?.phone_number_id && flow.config?.access_token));
   const [savingConfig, setSavingConfig] = useState(false);
@@ -140,7 +140,7 @@ export default function WhatsAppFlowPanel({ flow, onClose }: { flow: Flow; onClo
   };
 
   return (
-    <FlowPanelShell Icon={MessageCircle} title={flow.name} subtitle="WhatsApp Business" onClose={onClose}>
+    <FlowPanelShell Icon={MessageCircle} title={flow.name} subtitle="WhatsApp Business" onClose={onClose} variant={variant}>
       {!configSaved ? (
         <WaConfigForm config={waConfig} onChange={setWaConfig} onSave={handleSaveConfig} saving={savingConfig} />
       ) : (

@@ -40,7 +40,7 @@ const AI_PROVIDERS = [
   { value: 'anthropic', label: 'Anthropic (Claude)', models: ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001', 'claude-opus-4-20250514'] },
 ];
 
-export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClose: () => void }) {
+export default function ChatbotFlowPanel({ flow, onClose, variant = 'overlay' }: { flow: Flow; onClose: () => void; variant?: 'overlay' | 'page' }) {
   const [yCloudKey, setYCloudKey] = useState(flow.config?.ycloud_api_key || '');
   const [configSaved, setConfigSaved] = useState(!!flow.config?.ycloud_api_key);
   const [savingConfig, setSavingConfig] = useState(false);
@@ -95,7 +95,7 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
   const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
   return (
-    <FlowPanelShell Icon={Bot} title={flow.name} subtitle="Chatbot vía YCloud" onClose={onClose}>
+    <FlowPanelShell Icon={Bot} title={flow.name} subtitle="Chatbot vía YCloud" onClose={onClose} variant={variant}>
       {!configSaved ? (
         <div>
           <SectionBar

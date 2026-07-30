@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { sendViaGmail, workspaceSenderWithName } from '@/lib/integrations/google-workspace';
+import { renderTemplate } from '@/lib/flows/variables';
 
 
 function buildEmailHtml(bodyHtml: string, footerHtml: string): string {
@@ -53,13 +54,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // puede firmar Gmail → o lo rechaza o llega como suplantación y cae en spam.
     const sender = workspaceSenderWithName(campaign.from_email);
 
-    // Fetch contacts from the linked list
+    // Destinatarios = unión de TODAS las listas asociadas a la campaña, sin repetir correo
+    // (un mismo contacto puede estar en dos listas y no debe recibir el correo dos veces).
+    // `contact_list_id` es el respaldo de las campañas anteriores a la relación N:M.
     const { rows: contacts } = await pool.query(
-      `SELECT name, email FROM gcc_world.flow_contacts WHERE list_id = $1`,
-      [campaign.contact_list_id]
+      `SELECT DISTINCT ON (LOWER(ct.email)) ct.name, ct.email, ct.phone, ct.position
+         FROM gcc_world.flow_contacts ct
+        WHERE ct.list_id IN (
+                SELECT list_id FROM gcc_world.flow_campaign_lists WHERE campaign_id = $1
+                UNION
+                SELECT $2::int WHERE $2::int IS NOT NULL
+              )
+          AND ct.email IS NOT NULL AND ct.email <> ''
+        ORDER BY LOWER(ct.email), ct.id`,
+      [campaignId, campaign.contact_list_id]
     );
     if (contacts.length === 0) {
-      return NextResponse.json({ error: 'La lista de contactos está vacía' }, { status: 400 });
+      return NextResponse.json({ error: 'La campaña no tiene contactos con correo en sus listas' }, { status: 400 });
     }
 
     // Mark as sending
@@ -67,8 +78,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       `UPDATE gcc_world.flow_campaigns SET status = 'sending', updated_at = NOW() WHERE id = $1`,
       [campaignId]
     );
-
-    const html = buildEmailHtml(campaign.body_html, campaign.footer_html);
 
     // Parse attachments
     const attachments = (campaign.attachments || []).map((a: any) => {
@@ -84,10 +93,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Send emails one by one to track individual results
     for (const contact of contacts) {
       try {
+        // Las VARIABLES ({{nombre}}, {{correo}}, {{telefono}}, {{puesto}}) se resuelven por
+        // contacto: cada correo sale personalizado. En cuerpo y pie el valor va escapado
+        // (son HTML); en el asunto, sin escapar pero sin saltos de línea.
+        const html = buildEmailHtml(
+          renderTemplate(campaign.body_html, contact),
+          renderTemplate(campaign.footer_html, contact),
+        );
         const result = await sendViaGmail({
           from: sender,
           to: contact.email,
-          subject: campaign.subject,
+          subject: renderTemplate(campaign.subject, contact, { html: false }),
           html,
           ...(attachments.length > 0 ? { attachments } : {}),
         });

@@ -737,6 +737,29 @@ periodo, ve una lista de candidatos con su **estado** y acciona **fila por fila*
 - El escaneo se lanza **al abrir** (una sola vez, `meetScanned`) y a demanda con Actualizar; tras
   accionar se actualiza la fila **en memoria** y se refresca la lista del módulo.
 
+### Detalle de flujo — página completa con rail + listas + contactos (2026-07-30)
+`/dashboard/automatizaciones/[id]` (`FlowDetail.tsx` + `EmailFlowWorkspace.tsx`). Decisión del
+usuario: **"Configurar" abre una PÁGINA**, no un panel deslizante — mismo criterio que el
+detalle de un ticket. Es la variante de **tres columnas** del patrón "Explorador Azure":
+- **Cabecera:** `DetailHeader` (breadcrumb "Automatizaciones" → nombre del flujo, badge de
+  estado, chip de tipo con su icono, Activar/Pausar, y "Eliminar flujo" en el menú ⋯).
+- **Columna 1 — rail de registros con acciones:** `FilterRail` con **`wrapLabels`** (nuevo) y
+  ancho propio vía `className="w-full"` sobre un contenedor de 268px. Regla aprendida: un rail
+  cuyos ítems son **nombres largos** (el asunto de una campaña) necesita 2 líneas y **sin
+  burbuja de conteo** — con 220px + burbuja + 2 iconos el título se quedaba en "Docente ...".
+  El dato numérico se baja al `hint` ("Enviada · 24 destinatario(s)").
+  `FilterRailItem.actions` (nuevo) pinta lápiz/tacho a la derecha, **fuera** del botón de
+  selección para que no se traguen el clic; aparecen al hover o cuando el ítem está activo.
+- **Barra del registro seleccionado:** tarjeta a lo ancho de las dos columnas restantes con
+  título + subtítulo, badge de estado y las acciones (Editar · Estadísticas · Enviar).
+- **Columna 2 — lista con casilla + selección (dos gestos en la misma fila):** la **casilla**
+  asocia/desasocia; el **clic en el resto de la fila** selecciona (y resalta con
+  `bg-accent-light` + `border-l-2 border-accent`). Son botones **hermanos**, nunca anidados.
+  Dos grupos con encabezado en mayúsculas: los asociados arriba, el resto abajo, con frase
+  suave cuando un grupo queda vacío.
+- **Columna 3 — detalle de la selección:** `SectionBar` (título + conteo + acción primaria),
+  fila de acciones secundarias en `BTN_ROW`, y `PixelDataTable` con lápiz/tacho por fila.
+
 ### Editores de Automatizaciones — panel drill-in "extra grande" (`FlowPanelUI`, 2026-07-30)
 `components/dashboard/flows/FlowPanelUI.tsx` es la **definición única** del lenguaje de los tres
 editores grandes de Automatizaciones (Email masivo, WhatsApp, Chatbot). Antes cada panel traía su

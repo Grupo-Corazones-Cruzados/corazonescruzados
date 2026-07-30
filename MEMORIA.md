@@ -2703,6 +2703,63 @@ Módulos principales:
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
 ## Decisiones y reglas de negocio
+- **AUTOMATIZACIONES — "Configurar" es una PÁGINA, y Email masivo se rediseña a 3 paneles
+  (2026-07-30).** Decisión del usuario: la configuración de un flujo no cabe en un panel
+  deslizante; pasa a **página de detalle** como el detalle de un ticket.
+  - **Ruta nueva `/dashboard/automatizaciones/[id]`** (`FlowDetail.tsx`): `DetailHeader` con
+    breadcrumb + nombre + tipo + estado, Activar/Pausar y "Eliminar flujo" en el menú ⋯.
+    `FlowsTable` ya no abre overlays: el botón **Configurar** navega. Nuevo
+    `GET /api/admin/flows/[id]` (no existía; sin él la página no podía cargar).
+    - **WhatsApp y Chatbot** se montan en la misma página con `variant="page"` en
+      `FlowPanelShell` (sin overlay ni cabecera propia). `email`, `ai_agent` y `custom` van al
+      espacio de trabajo de correo — **el mismo reparto por tipo que antes**, para no quitarle
+      capacidades a ningún flujo existente.
+  - **`EmailFlowWorkspace`** — tres zonas: rail de **campañas** (`FilterRail`, con lápiz y
+    tacho por ítem) · panel de **listas del flujo** (arriba "EN ESTA CAMPAÑA", abajo "OTRAS
+    LISTAS DEL FLUJO", **casilla** para asociar/desasociar y **clic en la fila** para
+    seleccionar y ver sus contactos) · panel de **contactos** de la lista (tabla con Nombre /
+    Correo / Puesto / Teléfono, lápiz y tacho por fila, y **Importar Excel · Descargar
+    plantilla · Exportar Excel · Compartir**).
+    - Se **eliminó `FlowSidePanel`** (1.200 líneas): el asistente de 2 pasos que tenía ya no
+      hace falta, porque las listas se asocian con casillas y el correo se edita desde el
+      lápiz de la campaña.
+    - `FilterRail` gana `wrapLabels` (etiqueta en 2 líneas en vez de cortarse) porque un
+      asunto de correo no se reconoce en 12 caracteres; el rail de campañas mide 268px y el
+      conteo de destinatarios va en la 2ª línea junto al estado, no en burbuja.
+  - **Una campaña puede usar VARIAS listas** (`flow_campaign_lists`, migración 024). Los
+    destinatarios son la **unión de sus listas sin repetir correo** (`DISTINCT ON` por correo
+    en minúsculas): un contacto que está en dos listas recibe **un solo** correo. Medido:
+    "Lista de Escuelas" tiene 25 contactos pero 24 correos distintos.
+    - `flow_campaigns.contact_list_id` **se conserva** como respaldo de las campañas viejas y
+      se suma a la unión; al desasociar esa lista se limpia la columna.
+  - **VARIABLES del contacto en el correo** (`lib/flows/variables.ts`, módulo **puro**, sin
+    `pg` ni `googleapis`, para que el navegador y el endpoint de envío compartan la MISMA
+    sustitución): `{{nombre}}` `{{correo}}` `{{telefono}}` `{{puesto}}`. Selector estilo Power
+    Automate (`VariablePicker` en `EmailEditor.tsx`) en **asunto, cuerpo y pie**; la vista
+    previa las resuelve con datos de ejemplo. Al enviar se resuelven **por destinatario**.
+    - **En cuerpo y pie el valor va ESCAPADO** (son HTML: un contacto llamado
+      `María <b>López</b>` rompería el marcado o inyectaría etiquetas); en el asunto no se
+      escapa pero se quitan los saltos de línea (no valen en una cabecera).
+    - Tolerante con espacios, mayúsculas y `{{teléfono}}` con tilde. Dato ausente → cadena
+      vacía (se avisa en el editor de qué variables usa el correo).
+    - Verificado con 10 pruebas sobre el módulo real (`node --experimental-strip-types`).
+  - **`flow_contacts.position`** = el "puesto". Junto con nombre, correo y teléfono son los 4
+    campos editables del contacto y las 4 variables. La plantilla de Excel y el exportador
+    usan esas 4 columnas.
+  - ⚠️ **El listado de campañas NO devuelve `body_html`/`footer_html`/`attachments`.** Los
+    adjuntos se guardan en base64 en la fila, así que el `SELECT *` de antes devolvía **medio
+    megabyte por campaña** y la pantalla se quedaba colgada en "Cargando…" (encontrado al
+    probar la página con Chrome headless). El listado va con columnas explícitas +
+    `attachment_count`; el contenido completo lo da el GET de UNA campaña. **Regla: nunca
+    `SELECT *` en una tabla que guarda archivos en base64.**
+  - **Borrado en cascada COMPROBADO (no supuesto):** en una transacción con ROLLBACK se creó
+    un flujo con lista + contacto + campaña + vínculo campaña-lista + envío + plantilla WA, se
+    borró el flujo y las 6 filas desaparecieron. Todo lo del flujo cuelga de
+    `flows(id) ON DELETE CASCADE`, incluidas las tablas `flow_chatbot_*`.
+  - **Scoping por flujo en toda la API** (antes faltaba): campaña, lista y contacto se
+    resuelven filtrando también por `flow_id`/`list_id`, así que con ids de otro flujo se
+    responde 404 en vez de escribir donde no toca. Probado: asociar una lista de otro flujo
+    → 400; editar un contacto desde otra lista → 404; renombrar la lista de otro flujo → 404.
 - **AUTOMATIZACIONES · EMAIL MASIVO — remitente y enlace público de listas (2026-07-30).**
   - 🔒 **Todo el correo sale SIEMPRE de `lfgonzalezm0@grupocc.org`** (decisión del usuario). Del
     remitente el usuario elige **solo el NOMBRE visible** ("Helen Cárdenas"); la **dirección la
