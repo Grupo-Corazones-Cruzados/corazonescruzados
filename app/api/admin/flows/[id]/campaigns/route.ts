@@ -65,7 +65,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
        -- dejaba la pantalla colgada del "Cargando...". El contenido completo lo da el GET de
        -- UNA campana, que es cuando de verdad se necesita (editar / previsualizar).
        SELECT c.id, c.flow_id, c.contact_list_id, c.from_email, c.subject, c.status,
-              c.wa_template_id, c.sent_at, c.created_at, c.updated_at,
+              c.wa_template_id, c.sent_at, c.scheduled_at, c.send_started_at, c.created_at, c.updated_at,
               COALESCE(jsonb_array_length(c.attachments), 0) AS attachment_count,
               wt.name as wa_template_name,
               -- list_name se conserva para el panel de WhatsApp, que usa una sola lista.

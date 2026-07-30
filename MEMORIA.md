@@ -2703,6 +2703,49 @@ Módulos principales:
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
 ## Decisiones y reglas de negocio
+- **CAMPAÑAS PROGRAMADAS + ENVÍO POR LOTES (2026-07-30).** Antes una campaña solo salía si
+  alguien pulsaba "Enviar", y el envío recorría TODOS los contactos dentro de la misma petición
+  HTTP. Ahora se puede programar por fecha y hora, y el envío se reparte en lotes.
+  - **Migración `025_campaign_scheduling.sql`** (aplicada): `scheduled_at` (cuándo debe salir) y
+    `send_started_at` (arranque del envío EN CURSO) en `flow_campaigns`, más índices para el
+    cron y para la consulta de pendientes. Estado nuevo **`scheduled`** (la columna `status` no
+    tiene CHECK, así que no hubo que ampliar nada). Backfill: a las campañas ya enviadas se les
+    puso `send_started_at = sent_at`.
+  - **Reanudación sin duplicados (el corazón del diseño):** los pendientes de una campaña son
+    los contactos que **no** tienen fila en `flow_campaign_sends` con
+    `sent_at >= send_started_at`. Cada pase sigue donde quedó el anterior y **nadie recibe el
+    correo dos veces**; un **reenvío** solo fija un `send_started_at` nuevo y vuelve a escribir
+    a todos. Como cada intento —enviado **o fallido**— deja su fila, un contacto se intenta
+    **una vez por run**: el proceso siempre termina, nunca reintenta en bucle.
+  - ⚠️ **`clock_timestamp()`, NO `now()`.** `now()` devuelve la hora de INICIO DE LA TRANSACCIÓN,
+    así que si el arranque y los envíos caen en la misma transacción comparten instante y un
+    reenvío ve sus propios envíos como "ya hechos" → no manda nada. Se detectó con una prueba
+    que hacía exactamente eso. Todas las marcas del envío usan el reloj real.
+  - **Lotes:** `lib/flows/campaign-send.ts` (definición única, la usan el botón y el cron).
+    `BATCH_LIMIT = 120` correos y `BATCH_MAX_MS = 100 s` por lote — manda el que se cumpla
+    primero. El pase del cron tiene además su propio presupuesto (`PASS_BUDGET_MS = 200 s`),
+    todo por debajo del tope duro de ~300 s por petición de Railway/Cloudflare.
+  - **El botón "Enviar ahora" manda el PRIMER lote** y, si quedan destinatarios, lo dice en
+    pantalla y el cron continúa. Así una lista chica termina al instante (como antes) y una
+    grande ya no se corta a medias.
+  - **Cron:** `POST /api/admin/flows/cron/send-scheduled`, registrado en
+    `scripts/frequent-cron.mjs` (cada ~10 min). Hace dos cosas: arranca las `scheduled` cuya
+    hora pasó y continúa las `sending` con pendientes.
+  - 🔑 **Activar/Pausar el flujo por fin SIGNIFICA algo:** el cron **solo** dispara campañas de
+    flujos con `status='active'`. Antes ese estado solo filtraba el listado y nada más. Para que
+    no falle en silencio: el modal de programar avisa si el flujo está pausado, la barra de la
+    campaña lo repite en ámbar ("NO se enviará: actívalo"), y el cron devuelve `skippedPaused`
+    con las que dejó fuera y por qué.
+  - **Hora de Ecuador** en la interfaz (`datetime-local` → offset fijo `-05:00`, igual que en
+    Tickets); se guarda como instante. Se avisa que el envío arranca en el primer pase posterior
+    a esa hora, no al segundo exacto.
+  - **Verificado:** 9 pruebas del mecanismo de lotes contra la BD real en transacción con
+    ROLLBACK (unión de listas sin repetir correo, correo vacío descartado, dedupe
+    insensible a mayúsculas, el fallido consume su intento, run nuevo = todos otra vez). Y de
+    punta a punta con un flujo temporal: programar (200), en el pasado (400), fecha inválida
+    (400), campaña de otro flujo (404), cron con flujo en borrador → **no envía** y lo reporta,
+    cron con flujo activo → `started:1 finished:1 sent:1`, segundo pase → no reenvía nada,
+    cancelar programación (200) y cancelar lo no programado (404). El flujo temporal se borró.
 - **AUTOMATIZACIONES — "Configurar" es una PÁGINA, y Email masivo se rediseña a 3 paneles
   (2026-07-30).** Decisión del usuario: la configuración de un flujo no cabe en un panel
   deslizante; pasa a **página de detalle** como el detalle de un ticket.

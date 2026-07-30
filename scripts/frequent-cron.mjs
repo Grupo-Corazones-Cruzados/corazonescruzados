@@ -20,6 +20,9 @@
 const FREQUENT_JOBS = [
   { name: 'Recordatorios · correos escalados',   path: '/api/reminders/cron/notify' },
   { name: 'Recordatorios · generar desde Meet',  path: '/api/reminders/cron/generate-from-meetings' },
+  // Campañas de email masivo: arranca las programadas cuya hora llegó y continúa por lotes
+  // las que quedaron a medias (una lista grande se completa en varios pases).
+  { name: 'Campañas · programadas y por lotes',  path: '/api/admin/flows/cron/send-scheduled' },
 ];
 
 const NIGHTLY_JOBS = [

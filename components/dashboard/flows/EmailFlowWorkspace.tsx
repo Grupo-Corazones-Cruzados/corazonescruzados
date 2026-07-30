@@ -36,13 +36,14 @@ import { CONTACT_VARIABLES, usedVariables, previewTemplate } from '@/lib/flows/v
 import {
   Mail, Plus, Send, BarChart3, Users, Trash2, Pencil, Check, Eye, Share2, Copy,
   Download, FileSpreadsheet, Upload, Link2, RefreshCw, ShieldOff, ExternalLink,
-  FileEdit, CheckCircle2, AlertTriangle, XCircle, User,
+  FileEdit, CheckCircle2, AlertTriangle, XCircle, User, CalendarClock, CalendarX, Pause,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 /* ─── Tipos ─── */
 interface Flow { id: number; name: string; type: string; description: string; status: string; config: Record<string, any>; }
+
 interface ListRef { id: number; name: string }
 interface ContactList { id: number; name: string; contact_count: number; share_token?: string | null }
 interface Contact { id: number; name: string; email: string; phone: string | null; position: string | null; added_via_share: boolean }
@@ -55,6 +56,10 @@ interface Campaign {
   id: number; subject: string; from_email: string; status: string;
   lists: ListRef[]; total_contacts: number; attachment_count: number;
   sent_count: number; failed_count: number; created_at: string;
+  /** Cuándo debe salir (estado 'scheduled'). */
+  scheduled_at: string | null;
+  /** Arranque del envío en curso; con él se calcula lo que queda por enviar. */
+  send_started_at: string | null;
 }
 interface CampaignStats {
   campaign: any;
@@ -63,14 +68,44 @@ interface CampaignStats {
 }
 
 const CAMP_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  draft: 'default', sending: 'info', sent: 'success', failed: 'error',
+  draft: 'default', scheduled: 'warning', sending: 'info', sent: 'success', failed: 'error',
 };
 const CAMP_STATUS_L: Record<string, string> = {
-  draft: 'Borrador', sending: 'Enviando…', sent: 'Enviada', failed: 'Fallida',
+  draft: 'Borrador', scheduled: 'Programada', sending: 'Enviando…', sent: 'Enviada', failed: 'Fallida',
 };
 const CAMP_STATUS_ICON: Record<string, any> = {
-  draft: FileEdit, sending: RefreshCw, sent: CheckCircle2, failed: XCircle,
+  draft: FileEdit, scheduled: CalendarClock, sending: RefreshCw, sent: CheckCircle2, failed: XCircle,
 };
+
+const ECUADOR_TZ = 'America/Guayaquil';
+
+/** "5 ago 2026 09:00" en hora de Ecuador, sin depender de la zona del navegador. */
+function fmtEcuador(iso?: string | null): string {
+  if (!iso) return '—';
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ECUADOR_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(iso));
+  const g = (t: string) => p.find((x) => x.type === t)?.value ?? '';
+  return `${Number(g('day'))} ${months[Number(g('month')) - 1]} ${g('year')} ${g('hour')}:${g('minute')}`;
+}
+
+/** Fecha/hora de Ecuador (yyyy-MM-ddTHH:mm) → instante ISO. */
+function ecuadorInputToISO(local: string): string {
+  return new Date(`${local}:00-05:00`).toISOString();
+}
+
+/** Valor inicial del datetime-local: dentro de una hora, en hora de Ecuador. */
+function defaultScheduleInput(): string {
+  const inOneHour = new Date(Date.now() + 3600_000);
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ECUADOR_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(inOneHour);
+  const g = (t: string) => p.find((x) => x.type === t)?.value ?? '';
+  return `${g('year')}-${g('month')}-${g('day')}T${g('hour')}:${g('minute')}`;
+}
 const SEND_STATUS_L: Record<string, string> = {
   pending: 'Pendiente', sent: 'Enviado', delivered: 'Entregado', bounced: 'Rebotado', failed: 'Fallido',
 };
@@ -104,6 +139,7 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
   const [editContact, setEditContact] = useState<Contact | 'new' | null>(null);
   const [stats, setStats] = useState<CampaignStats | null>(null);
   const [sendFor, setSendFor] = useState<Campaign | null>(null);
+  const [scheduleFor, setScheduleFor] = useState<Campaign | null>(null);
 
   // Confirmaciones
   const [delCampaign, setDelCampaign] = useState<Campaign | null>(null);
@@ -111,6 +147,8 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
   const [delContact, setDelContact] = useState<Contact | null>(null);
 
   const base = `/api/admin/flows/${flow.id}`;
+  /** El cron solo dispara campañas de flujos activos: se avisa en pantalla si no lo está. */
+  const flowActive = flow.status === 'active';
 
   /* ── Carga ── */
   const loadCampaigns = useCallback(async () => {
@@ -149,6 +187,15 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
     loadContacts(listId);
   }, [listId, loadContacts]);
 
+  // Mientras algo se está enviando, el cron avanza por detrás: se refresca solo para que el
+  // progreso no se quede congelado en la pantalla.
+  const anySending = campaigns.some((c) => c.status === 'sending');
+  useEffect(() => {
+    if (!anySending) return;
+    const t = setInterval(() => { loadCampaigns(); }, 15_000);
+    return () => clearInterval(t);
+  }, [anySending, loadCampaigns]);
+
   const campaign = useMemo(() => campaigns.find((c) => c.id === campaignId) || null, [campaigns, campaignId]);
   const list = useMemo(() => lists.find((l) => l.id === listId) || null, [lists, listId]);
 
@@ -178,6 +225,15 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
       if (campaignId === c.id) setCampaignId(null);
       await loadCampaigns();
       toast.success('Campaña eliminada');
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const cancelSchedule = async (c: Campaign) => {
+    try {
+      const res = await fetch(`${base}/campaigns/${c.id}/schedule`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Error al cancelar');
+      await loadCampaigns();
+      toast.success('Programación cancelada');
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -309,29 +365,71 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
       <div className="flex-1 min-w-0 w-full space-y-3">
         {/* Barra de la campaña seleccionada */}
         {campaign && (
-          <div className="bg-digi-card border border-digi-border rounded-lg p-3 flex flex-wrap items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-semibold text-digi-text truncate" style={mf}>{campaign.subject || 'Sin asunto'}</p>
-              <p className="text-[11.5px] text-digi-muted truncate" style={mf}>
-                {displayNameOf(campaign.from_email) || 'GCC World'} · {campaign.total_contacts} destinatario(s) en {campaign.lists.length} lista(s)
-              </p>
-            </div>
-            <PixelBadge variant={CAMP_STATUS_V[campaign.status] || 'default'}>
-              {CAMP_STATUS_L[campaign.status] || campaign.status}
-            </PixelBadge>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setEditCampaign(campaign)} className={BTN_SECONDARY}>
-                <Pencil className="w-4 h-4" /> Editar correo
-              </button>
-              {campaign.status === 'sent' && (
-                <button onClick={() => openStats(campaign)} className={BTN_SECONDARY}>
-                  <BarChart3 className="w-4 h-4" /> Estadísticas
+          <div className="bg-digi-card border border-digi-border rounded-lg p-3 space-y-2.5">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-digi-text truncate" style={mf}>{campaign.subject || 'Sin asunto'}</p>
+                <p className="text-[11.5px] text-digi-muted truncate" style={mf}>
+                  {displayNameOf(campaign.from_email) || 'GCC World'} · {campaign.total_contacts} destinatario(s) en {campaign.lists.length} lista(s)
+                </p>
+              </div>
+              <PixelBadge variant={CAMP_STATUS_V[campaign.status] || 'default'}>
+                {CAMP_STATUS_L[campaign.status] || campaign.status}
+              </PixelBadge>
+              <div className="flex flex-wrap items-center gap-2">
+                <button onClick={() => setEditCampaign(campaign)} className={BTN_SECONDARY}>
+                  <Pencil className="w-4 h-4" /> Editar correo
                 </button>
-              )}
-              <button onClick={() => setSendFor(campaign)} className={BTN_PRIMARY} disabled={campaign.total_contacts === 0}>
-                <Send className="w-4 h-4" /> {campaign.status === 'sent' ? 'Reenviar' : 'Enviar'}
-              </button>
+                {campaign.status === 'sent' && (
+                  <button onClick={() => openStats(campaign)} className={BTN_SECONDARY}>
+                    <BarChart3 className="w-4 h-4" /> Estadísticas
+                  </button>
+                )}
+                {campaign.status === 'scheduled' ? (
+                  <button onClick={() => cancelSchedule(campaign)} className={BTN_SECONDARY}>
+                    <CalendarX className="w-4 h-4" /> Cancelar programación
+                  </button>
+                ) : campaign.status !== 'sending' && (
+                  <button onClick={() => setScheduleFor(campaign)} className={BTN_SECONDARY} disabled={campaign.total_contacts === 0}>
+                    <CalendarClock className="w-4 h-4" /> Programar
+                  </button>
+                )}
+                <button onClick={() => setSendFor(campaign)} className={BTN_PRIMARY}
+                  disabled={campaign.total_contacts === 0 || campaign.status === 'sending'}>
+                  <Send className="w-4 h-4" /> {campaign.status === 'sent' ? 'Reenviar' : 'Enviar ahora'}
+                </button>
+              </div>
             </div>
+
+            {/* Programada: cuándo sale, y aviso si el flujo está pausado (no saldría) */}
+            {campaign.status === 'scheduled' && (
+              <div className={`flex items-start gap-2 px-3 py-2 rounded-md border ${
+                flowActive ? 'border-accent/30 bg-accent-light/40' : 'border-amber-500/40 bg-amber-500/10'
+              }`}>
+                {flowActive
+                  ? <CalendarClock className="w-4 h-4 text-accent shrink-0 mt-px" />
+                  : <Pause className="w-4 h-4 text-amber-400 shrink-0 mt-px" />}
+                <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>
+                  Sale el <span className="font-medium">{fmtEcuador(campaign.scheduled_at)}</span> (hora de Ecuador).
+                  {flowActive
+                    ? ' El envío arranca en el siguiente pase del sistema, dentro de los 10 minutos siguientes.'
+                    : ' ⚠️ El flujo está pausado, así que NO se enviará: actívalo desde el botón de arriba.'}
+                </p>
+              </div>
+            )}
+
+            {/* En curso: progreso del envío por lotes */}
+            {campaign.status === 'sending' && (
+              <div className="flex items-start gap-2 px-3 py-2 rounded-md border border-accent/30 bg-accent-light/40">
+                <RefreshCw className="w-4 h-4 text-accent shrink-0 mt-px animate-spin" />
+                <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>
+                  Enviando por lotes: <span className="font-medium tabular-nums">
+                    {campaign.sent_count + campaign.failed_count} de {campaign.total_contacts}
+                  </span>. El resto continúa solo cada 10 minutos; puedes cerrar esta página.
+                  {campaign.failed_count > 0 && <span className="text-red-400"> · {campaign.failed_count} fallido(s)</span>}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -490,6 +588,14 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
       />
 
       <ShareListModal base={base} list={shareList} onClose={() => setShareList(null)} onChanged={loadLists} />
+
+      <ScheduleCampaignModal
+        base={base}
+        campaign={scheduleFor}
+        flowActive={flowActive}
+        onClose={() => setScheduleFor(null)}
+        onSaved={loadCampaigns}
+      />
 
       <SendCampaignModal
         base={base}
@@ -955,6 +1061,95 @@ function ShareListModal({
   );
 }
 
+/* ─── Programar el envío ─── */
+/**
+ * Fecha y hora **de Ecuador** (el `datetime-local` del navegador usa la zona del equipo, así
+ * que se convierte a propósito con el offset fijo -05:00, igual que en Tickets). El cron corre
+ * cada 10 minutos, así que el envío arranca en el primer pase posterior a esa hora.
+ */
+function ScheduleCampaignModal({
+  base, campaign, flowActive, onClose, onSaved,
+}: {
+  base: string; campaign: Campaign | null; flowActive: boolean;
+  onClose: () => void; onSaved: () => Promise<void> | void;
+}) {
+  const [when, setWhen] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!campaign) return;
+    setWhen(defaultScheduleInput());
+  }, [campaign]);
+
+  const save = async () => {
+    if (!campaign) return;
+    if (!when) { toast.error('Elige la fecha y la hora'); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`${base}/campaigns/${campaign.id}/schedule`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduled_at: ecuadorInputToISO(when) }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Error al programar');
+      await onSaved();
+      toast.success(d.data?.flowActive === false
+        ? 'Campaña programada, pero el flujo está pausado'
+        : 'Campaña programada');
+      onClose();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <PixelModal open={!!campaign} onClose={() => !saving && onClose()} title="Programar el envío" size="md" busy={saving}>
+      <div className="space-y-4">
+        <div>
+          <p className="text-[13px] text-digi-text" style={mf}>{campaign?.subject}</p>
+          <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>
+            {campaign?.total_contacts} destinatario(s) en {campaign?.lists.length} lista(s)
+          </p>
+        </div>
+
+        <div>
+          <label className={LABEL}>Fecha y hora (Ecuador)</label>
+          <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
+            className={FIELD} style={mf} />
+          <p className="text-[11px] text-digi-muted mt-1" style={mf}>
+            El sistema revisa cada 10 minutos, así que el envío arranca en el primer pase
+            después de esa hora, no al segundo exacto.
+          </p>
+        </div>
+
+        {!flowActive && (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-md border border-amber-500/40 bg-amber-500/10">
+            <Pause className="w-4 h-4 text-amber-400 shrink-0 mt-px" />
+            <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>
+              Este flujo está <span className="font-medium">pausado</span> y solo se envían las campañas de
+              flujos activos. Puedes programarla igual, pero <span className="font-medium">no saldrá</span> hasta que actives el flujo con el botón Activar de arriba.
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-start gap-2 px-3 py-2 rounded-md border border-digi-border bg-digi-darker/40">
+          <Send className="w-4 h-4 text-accent shrink-0 mt-px" />
+          <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
+            El envío va <span className="text-digi-text">por lotes</span>: si la lista es grande se reparte
+            en varios pases hasta terminar, sin repetirle el correo a nadie.
+          </p>
+        </div>
+
+        <PanelFooter align="end">
+          <button onClick={onClose} className={BTN_SECONDARY}>Cancelar</button>
+          <button onClick={save} disabled={saving} className={BTN_PRIMARY}>
+            <CalendarClock className="w-4 h-4" /> {saving ? 'Programando…' : 'Programar'}
+          </button>
+        </PanelFooter>
+      </div>
+    </PixelModal>
+  );
+}
+
 /* ─── Previsualizar y enviar ─── */
 function SendCampaignModal({
   base, campaign, senderAddress, onClose, onSent,
@@ -965,7 +1160,7 @@ function SendCampaignModal({
   const [full, setFull] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
+  const [result, setResult] = useState<{ sent: number; failed: number; total: number; remaining: number; done: boolean } | null>(null);
 
   useEffect(() => {
     if (!campaign) { setFull(null); setResult(null); return; }
@@ -988,7 +1183,7 @@ function SendCampaignModal({
       const res = await fetch(`${base}/campaigns/${campaign.id}/send`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Error al enviar');
-      setResult({ sent: d.sent, failed: d.failed, total: d.total });
+      setResult({ sent: d.sent, failed: d.failed, total: d.total, remaining: d.remaining ?? 0, done: d.done !== false });
       await onSent();
     } catch (e: any) { toast.error(e.message); }
     finally { setSending(false); }
@@ -1008,6 +1203,12 @@ function SendCampaignModal({
               <p className="text-[26px] font-semibold text-digi-text tabular-nums" style={mf}>{result.sent}/{result.total}</p>
               <p className="text-[12px] text-digi-muted mt-1" style={mf}>correos enviados correctamente</p>
               {result.failed > 0 && <p className="text-[13px] text-red-400 mt-2" style={mf}>{result.failed} fallidos</p>}
+              {!result.done && result.remaining > 0 && (
+                <p className="text-[12.5px] text-digi-text mt-3 max-w-sm mx-auto leading-relaxed" style={mf}>
+                  Quedan <span className="font-medium tabular-nums">{result.remaining}</span> por enviar: el
+                  sistema los manda solo en los próximos minutos, por lotes. Puedes cerrar esta página.
+                </p>
+              )}
             </div>
             <PanelFooter align="end">
               <button onClick={onClose} className={BTN_PRIMARY}>Cerrar</button>
