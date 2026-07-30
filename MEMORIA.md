@@ -3372,8 +3372,35 @@ Módulos principales:
     verificando cada candidato a mano. Ver `Estado actual`.
 
 ## Pendientes / preguntas abiertas
-- 🔴 **EL CRON DE RAILWAY NO ESTÁ CORRIENDO (diagnosticado 2026-07-29).** No es un bug de código: la
-  maquinaria (Google Meet API + IA + BD) funciona; **el disparador no se ejecuta**. Consecuencias:
+- 🔴 **CRON: CAUSA REAL ENCONTRADA (2026-07-30) — corrige el diagnóstico del 2026-07-29.**
+  Lo de ayer ("el cron no está corriendo") era cierto en el efecto pero **falso en la causa**. Con
+  la CLI de Railway (`railway logs --service nightly-cron`) se ve que el servicio **sí corre**,
+  todos los días ~06:00 UTC, sin fallos. Lo que pasa es que ejecuta **el script equivocado**:
+  - El servicio arranca **`scripts/nightly-cron.mjs`** (3 trabajos: Pensamientos, Chat, Talentos)
+    con horario **diario**, no `frequent-cron.mjs` cada 10 min. Por eso los trabajos frecuentes
+    (correos de recordatorios, recordatorios desde Meet y ahora campañas) **nunca** corrieron.
+  - 🐛 **Y `frequent-cron.mjs` estaba ROTO desde que se escribió:** la expresión `*/10 * * * *`
+    de la cabecera estaba dentro de un comentario `/* … */`, y ese `*/` **cierra el comentario**,
+    con lo que el resto del texto pasaba a ser código → `node --check` fallaba. Es decir: aunque
+    se hubiera cambiado la configuración de Railway, el servicio habría caído al arrancar.
+    Nadie lo notó porque el archivo no se ejecutaba nunca. **Arreglado**: la cabecera pasó a
+    comentarios de línea (`//`), donde la expresión de cron es inofensiva. Lección: **nunca
+    poner una expresión de cron dentro de un comentario de bloque.**
+  - 🐛 **`frequent-cron.mjs` no incluía `Talentos · embeddings al día`**, que el script desplegado
+    sí ejecuta. Cambiar el comando de arranque sin más habría **matado ese trabajo en silencio**.
+    Añadido a sus `NIGHTLY_JOBS`.
+  - **Variables:** están bien. `CRON_TOKEN` y `APP_URL` en `nightly-cron`, y `CRON_TOKEN` +
+    `NEXT_PUBLIC_APP_URL` en `corazonescruzados`. No era eso.
+  - **Lo que FALTA (solo desde el panel de Railway, servicio `nightly-cron`):**
+    `Start command` → `node scripts/frequent-cron.mjs` · `Cron schedule` → cada 10 minutos.
+    La CLI **no** expone esos dos campos (`railway service` solo hace link/status/logs/redeploy/
+    restart/scale) y **no se pueden poner por repo**: un `railway.json` en la raíz lo heredaría
+    también el servicio web y lo convertiría en cron, tumbando la app.
+  - Verificado en seco tras el arreglo: pase normal → 3 trabajos; con la hora forzada a 06:05 UTC
+    → 6 trabajos (incluye los nocturnos). `node --check` pasa en los dos scripts.
+  - `nightly-cron.mjs` queda marcado **OBSOLETO — NO DESPLEGAR** en su propia cabecera.
+- 🔴 **Consecuencias mientras no se cambien esos dos campos (diagnóstico del 2026-07-29, sigue vigente).**
+  La maquinaria (Google Meet API + IA + BD) funciona; **el disparador no ejecuta los trabajos frecuentes**. Consecuencias:
   **no salen los correos escalados de recordatorios** ni se generan recordatorios de reunión solos.
   Evidencia recogida contra la BD de producción:
   - Recordatorios **#3** (venció 2026-07-27) y **#4** (venció 2026-07-28) siguen `status='active'`

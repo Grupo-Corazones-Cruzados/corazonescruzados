@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * ⚠️ OBSOLETO — NO DESPLEGAR. Lo sustituye `scripts/frequent-cron.mjs`, que corre cada 10 min
+ * y hace TODO: los trabajos frecuentes siempre y estos nocturnos en la ventana 06:00–06:09 UTC.
+ *
+ * Se conserva solo como referencia histórica. Hasta el 2026-07-30 el servicio `nightly-cron`
+ * de Railway seguía ejecutando ESTE script una vez al día, y por eso los trabajos frecuentes
+ * (correos de recordatorios, recordatorios desde Meet, campañas programadas) nunca corrieron.
+ *
  * Disparador NOCTURNO de la app (01:00 America/Guayaquil = 06:00 UTC).
  *
  * Next.js en Railway solo atiende peticiones; no ejecuta nada por su cuenta a una hora fija.

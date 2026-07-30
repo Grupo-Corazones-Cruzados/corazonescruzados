@@ -1,21 +1,33 @@
-#!/usr/bin/env node
-/**
- * Disparador ÚNICO de la app (corre cada ~10 min). Ejecuta:
- *  - SIEMPRE: los trabajos frecuentes (recordatorios: correos escalados + generación desde Meet).
- *  - UNA VEZ AL DÍA: los trabajos nocturnos, solo en la ventana 06:00–06:09 UTC (= 01:00 Ecuador).
- *    Como el cron corre cada 10 min, exactamente un disparo al día cae en esa ventana.
- *
- * Reemplaza a nightly-cron.mjs: un solo servicio Cron de Railway hace todo.
- *
- * ── Configuración en Railway (servicio "nightly-cron", mismo repo) ───────────────
- *     Start command : node scripts/frequent-cron.mjs
- *     Cron schedule : */10 * * * *      (cada 10 minutos)
- *   Variables (ya deberían estar):
- *     CRON_TOKEN  (requerido) el MISMO valor que en el servicio web
- *     APP_URL     (requerido) https://<tu-app>.up.railway.app
- *
- * Todos los trabajos son IDEMPOTENTES: repetirlos no duplica y una corrida perdida se recupera.
- */
+// Disparador ÚNICO de la app (corre cada ~10 min). Ejecuta:
+//  - SIEMPRE: los trabajos frecuentes (correos de recordatorios, recordatorios desde Meet y
+//    campañas de email masivo programadas / por lotes).
+//  - UNA VEZ AL DÍA: los nocturnos, solo en la ventana 06:00-06:09 UTC (= 01:00 Ecuador).
+//    Como el cron corre cada 10 min, exactamente un disparo al día cae en esa ventana.
+//
+// Reemplaza a nightly-cron.mjs: un solo servicio Cron de Railway hace todo.
+//
+// ⚠️ OJO CON LOS COMENTARIOS DE BLOQUE. Este archivo estuvo ROTO desde que se creó: la
+// expresión de cron "*/10 * * * *" iba dentro de un comentario /* ... */, y ese "*/" CIERRA
+// el comentario, así que el resto del texto pasaba a ser código y el script no compilaba
+// (`node --check` fallaba). Nunca se notó porque Railway tampoco lo estaba ejecutando.
+// Por eso la cabecera va con comentarios de línea: aquí la expresión es inofensiva.
+//
+// ⚠️ ESTADO EN RAILWAY (comprobado por CLI el 2026-07-30): el servicio `nightly-cron` seguía
+// ejecutando `scripts/nightly-cron.mjs` UNA VEZ AL DÍA (~06:00 UTC), así que este script no
+// se ejecutaba y sus trabajos frecuentes no corrían desde que se escribió.
+//
+// ── Configuración del servicio "nightly-cron" en Railway (mismo repo) ────────────────
+//     Start command : node scripts/frequent-cron.mjs
+//     Cron schedule : */10 * * * *      (cada 10 minutos)
+//   Variables (ya están puestas):
+//     CRON_TOKEN  (requerido) el MISMO valor que en el servicio web
+//     APP_URL     (requerido) https://app.grupocc.org
+//
+// El comando de arranque y el horario se cambian SOLO desde el panel de Railway: la CLI no los
+// expone, y un railway.json en la raíz afectaría también al servicio web (lo convertiría en
+// cron y tumbaría la app), así que no se hace por repo.
+//
+// Todos los trabajos son IDEMPOTENTES: repetirlos no duplica y una corrida perdida se recupera.
 
 const FREQUENT_JOBS = [
   { name: 'Recordatorios · correos escalados',   path: '/api/reminders/cron/notify' },
@@ -28,6 +40,9 @@ const FREQUENT_JOBS = [
 const NIGHTLY_JOBS = [
   { name: 'Pensamientos · etiquetado IA', path: '/api/pensamientos/cron/etiquetar' },
   { name: 'Chat · purga por retención',   path: '/api/chat/cron/purgar' },
+  // Estaba solo en nightly-cron.mjs: al cambiar el servicio a este script se habría dejado
+  // de reindexar los talentos sin que nadie se enterara. Ver la nota de arriba.
+  { name: 'Talentos · embeddings al día', path: '/api/talentos/cron/reindexar' },
 ];
 
 const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002').replace(/\/+$/, '');
