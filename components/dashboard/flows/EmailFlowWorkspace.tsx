@@ -366,7 +366,7 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
                   />
                 )}
                 <ListGroup
-                  title={campaign ? 'Otras listas del flujo' : 'Listas del flujo'}
+                  title={campaign ? 'Otras listas del flujo' : undefined}
                   lists={campaign ? others : lists}
                   emptyText={campaign ? 'Todas las listas están en la campaña.' : undefined}
                   checked={false}
@@ -534,7 +534,8 @@ function ListGroup({
   title, lists, emptyText, checked, showCheckbox = true, selectedId,
   onSelect, onToggle, onRename, onShare, onDelete,
 }: {
-  title: string;
+  /** Sin título cuando no hay campaña elegida: el panel ya se llama "Listas de contactos". */
+  title?: string;
   lists: ContactList[];
   emptyText?: string;
   checked: boolean;
@@ -548,7 +549,9 @@ function ListGroup({
 }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-1 pb-1" style={mf}>{title}</p>
+      {title && (
+        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-1 pb-1" style={mf}>{title}</p>
+      )}
       {lists.length === 0 ? (
         emptyText ? <p className="text-[11.5px] text-digi-muted/80 px-1 pb-1.5" style={mf}>{emptyText}</p> : null
       ) : (

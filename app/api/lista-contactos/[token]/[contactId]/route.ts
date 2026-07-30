@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ to
     const { list, id } = await resolve(token, contactId);
 
     const body = await req.json().catch(() => ({}));
-    const { name, email } = validateContactInput(body);
+    const { name, email, phone, position } = validateContactInput(body);
 
     if (await emailExistsInList(list.id, email, id)) {
       return NextResponse.json({ error: 'Ese correo ya está en la lista' }, { status: 409 });
@@ -38,10 +38,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ to
 
     const { rows: [row] } = await pool.query(
       `UPDATE gcc_world.flow_contacts
-          SET name = $1, email = $2
-        WHERE id = $3 AND list_id = $4
-        RETURNING id, name, email, added_via_share, created_at`,
-      [name, email, id, list.id],
+          SET name = $1, email = $2, phone = $3, position = $4
+        WHERE id = $5 AND list_id = $6
+        RETURNING id, name, email, phone, position, added_via_share, created_at`,
+      [name, email, phone, position, id, list.id],
     );
     if (!row) return NextResponse.json({ error: 'El contacto no existe en esta lista' }, { status: 404 });
 
@@ -50,6 +50,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ to
         id: Number(row.id),
         name: row.name,
         email: row.email || '',
+        phone: row.phone || '',
+        position: row.position || '',
         addedViaShare: !!row.added_via_share,
         createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
       },

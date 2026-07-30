@@ -20,6 +20,8 @@ import { pool } from '@/lib/db';
 export const MAX_CONTACTS_PER_SHARED_LIST = 2000;
 const MAX_NAME_LEN = 120;
 const MAX_EMAIL_LEN = 180;
+const MAX_POSITION_LEN = 160;
+const MAX_PHONE_LEN = 30;   // el ancho de la columna `phone`
 
 /** Flujos cuyas listas se pueden compartir. Hoy solo email masivo (se pide correo). */
 const SHAREABLE_FLOW_TYPES = new Set(['email']);
@@ -107,16 +109,37 @@ function isEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
 }
 
-/** Normaliza y valida lo que manda la página pública. Lanza `ShareError` si no sirve. */
-export function validateContactInput(raw: any): { name: string; email: string } {
+/**
+ * Normaliza y valida lo que manda la página pública. Lanza `ShareError` si no sirve.
+ *
+ * Los CUATRO campos son obligatorios (decisión del usuario, 2026-07-30): son justo los que
+ * alimentan las variables del correo (`{{nombre}}` `{{correo}}` `{{telefono}}` `{{puesto}}`),
+ * y si quien llena la lista se deja uno vacío, ese hueco aparece en el correo enviado.
+ */
+export function validateContactInput(raw: any): { name: string; email: string; phone: string; position: string } {
   const name = String(raw?.name ?? '').trim().replace(/\s+/g, ' ');
   const email = String(raw?.email ?? '').trim().toLowerCase();
+  const phone = String(raw?.phone ?? '').trim().replace(/\s+/g, ' ');
+  const position = String(raw?.position ?? '').trim().replace(/\s+/g, ' ');
+
   if (!name) throw new ShareError('El nombre es requerido');
   if (name.length > MAX_NAME_LEN) throw new ShareError(`El nombre no puede pasar de ${MAX_NAME_LEN} caracteres`);
+
   if (!email) throw new ShareError('El correo es requerido');
   if (email.length > MAX_EMAIL_LEN) throw new ShareError(`El correo no puede pasar de ${MAX_EMAIL_LEN} caracteres`);
   if (!isEmail(email)) throw new ShareError('El correo no tiene un formato válido');
-  return { name, email };
+
+  if (!position) throw new ShareError('El puesto es requerido');
+  if (position.length > MAX_POSITION_LEN) throw new ShareError(`El puesto no puede pasar de ${MAX_POSITION_LEN} caracteres`);
+
+  if (!phone) throw new ShareError('El teléfono es requerido');
+  if (phone.length > MAX_PHONE_LEN) throw new ShareError(`El teléfono no puede pasar de ${MAX_PHONE_LEN} caracteres`);
+  // Se acepta cualquier formato razonable (con o sin prefijo, con espacios o guiones), pero
+  // tiene que tener dígitos suficientes para ser un teléfono.
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 7) throw new ShareError('El teléfono no parece válido');
+
+  return { name, email, phone, position };
 }
 
 /** Frena el crecimiento de una lista abierta al público. */
@@ -132,7 +155,7 @@ export async function assertRoomInList(listId: number): Promise<void> {
 /** Contactos de la lista, tal como los ve la página pública. */
 export async function listSharedContacts(listId: number) {
   const { rows } = await pool.query(
-    `SELECT id, name, email, added_via_share, created_at
+    `SELECT id, name, email, phone, position, added_via_share, created_at
        FROM gcc_world.flow_contacts
       WHERE list_id = $1
       ORDER BY created_at DESC, id DESC`,
@@ -142,6 +165,8 @@ export async function listSharedContacts(listId: number) {
     id: Number(r.id),
     name: r.name,
     email: r.email || '',
+    phone: r.phone || '',
+    position: r.position || '',
     addedViaShare: !!r.added_via_share,
     createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
   }));

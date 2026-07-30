@@ -2799,6 +2799,13 @@ Módulos principales:
     - **Nota de privacidad (dicha al usuario):** quien tenga el enlace ve los contactos que ya
       están en la lista (es lo que permite editarlos/quitarlos). Compartirlo solo con quien deba
       llenarla y revocarlo al terminar.
+    - **Los CUATRO datos son obligatorios en la página pública (2026-07-30):** nombre, correo,
+      **puesto** y **teléfono**. Motivo: son exactamente los que el correo puede usar como
+      variables, y un campo vacío se ve como un hueco en el mensaje enviado. El teléfono acepta
+      cualquier formato (con prefijo, espacios o guiones) pero exige **≥7 dígitos**. En el
+      dashboard siguen siendo opcionales: ahí el miembro sabe lo que hace.
+      ⚠️ Los contactos que entraron por el enlace **antes** de este cambio no tienen puesto ni
+      teléfono; se ven con "—" y al editarlos habrá que rellenarlos.
 - **Módulo RECORDATORIOS (confirmado 2026-07-22).** Nuevo módulo (sidebar debajo de Pensamientos)
   con recordatorios que tienen título, fecha/hora, lista de tareas y adjuntos; envían correos al
   dueño (miembro/candidato asociado) con frecuencia escalada. Fases:

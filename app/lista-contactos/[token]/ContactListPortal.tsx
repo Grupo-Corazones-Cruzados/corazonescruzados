@@ -21,8 +21,9 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const FIELD =
   'field-control w-full px-3 py-2 bg-digi-darker border border-digi-border rounded text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none';
+const LABEL = 'block text-[12px] font-semibold text-digi-text mb-1';
 
-type Contact = { id: number; name: string; email: string; addedViaShare: boolean; createdAt: string | null };
+type Contact = { id: number; name: string; email: string; phone: string; position: string; addedViaShare: boolean; createdAt: string | null };
 
 export default function ContactListPortal({ token }: { token: string }) {
   const [listName, setListName] = useState('');
@@ -31,15 +32,19 @@ export default function ContactListPortal({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Alta
+  // Alta — los cuatro campos son obligatorios: son los que usa el correo.
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [position, setPosition] = useState('');
+  const [phone, setPhone] = useState('');
   const [adding, setAdding] = useState(false);
 
   // Edición en línea
   const [editId, setEditId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editPosition, setEditPosition] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Confirmación de borrado
@@ -62,24 +67,31 @@ export default function ContactListPortal({ token }: { token: string }) {
   useEffect(() => { load(); }, [load]);
 
   const add = async () => {
-    if (!name.trim() || !email.trim()) { toast.error('Escribe el nombre y el correo'); return; }
+    if (!name.trim() || !email.trim() || !position.trim() || !phone.trim()) {
+      toast.error('Completa los cuatro datos del contacto'); return;
+    }
     setAdding(true);
     try {
       const res = await fetch(`/api/lista-contactos/${token}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name, email, position, phone }),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Error al agregar');
       setContacts(prev => [d.data, ...prev]);
-      setName(''); setEmail('');
+      setName(''); setEmail(''); setPosition(''); setPhone('');
       toast.success('Contacto agregado');
     } catch (e: any) { toast.error(e.message || 'Error al agregar'); }
     finally { setAdding(false); }
   };
 
-  const startEdit = (c: Contact) => { setEditId(c.id); setEditName(c.name); setEditEmail(c.email); };
-  const cancelEdit = () => { setEditId(null); setEditName(''); setEditEmail(''); };
+  const startEdit = (c: Contact) => {
+    setEditId(c.id); setEditName(c.name); setEditEmail(c.email);
+    setEditPosition(c.position || ''); setEditPhone(c.phone || '');
+  };
+  const cancelEdit = () => {
+    setEditId(null); setEditName(''); setEditEmail(''); setEditPosition(''); setEditPhone('');
+  };
 
   const saveEdit = async () => {
     if (editId == null) return;
@@ -87,7 +99,7 @@ export default function ContactListPortal({ token }: { token: string }) {
     try {
       const res = await fetch(`/api/lista-contactos/${token}/${editId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editName, email: editEmail }),
+        body: JSON.stringify({ name: editName, email: editEmail, position: editPosition, phone: editPhone }),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Error al guardar');
@@ -161,8 +173,9 @@ export default function ContactListPortal({ token }: { token: string }) {
             </div>
           </div>
           <p className="text-[12.5px] text-digi-muted leading-relaxed mt-3" style={mf}>
-            Agrega aquí los contactos que deben recibir el correo. Puedes editarlos o quitarlos
-            mientras el enlace siga activo; lo que guardes se ve al instante en GCC World.
+            Agrega aquí los contactos que deben recibir el correo, con sus cuatro datos: nombre,
+            correo, puesto y teléfono. Puedes editarlos o quitarlos mientras el enlace siga
+            activo; lo que guardes se ve al instante en GCC World.
           </p>
         </div>
 
@@ -177,29 +190,43 @@ export default function ContactListPortal({ token }: { token: string }) {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Nombre y apellido"
-                className={`${FIELD} sm:flex-1`}
-                style={mf}
-                onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
-              />
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="correo@ejemplo.com"
-                type="email"
-                inputMode="email"
-                className={`${FIELD} sm:flex-1`}
-                style={mf}
-                onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
-              />
-              <button onClick={add} disabled={adding} className={`${BTN_PRIMARY} shrink-0`}>
-                <Plus className="w-4 h-4" /> {adding ? 'Agregando…' : 'Agregar'}
-              </button>
-            </div>
+            <>
+              {/* Los cuatro datos son obligatorios: el correo que se envía puede usarlos
+                  todos como variables, y un campo vacío se ve como un hueco en el mensaje. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className={LABEL} htmlFor="c-nombre">Nombre y apellido *</label>
+                  <input id="c-nombre" value={name} onChange={(e) => setName(e.target.value)}
+                    placeholder="Ej: María López" className={FIELD} style={mf}
+                    onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
+                </div>
+                <div>
+                  <label className={LABEL} htmlFor="c-correo">Correo *</label>
+                  <input id="c-correo" value={email} onChange={(e) => setEmail(e.target.value)}
+                    placeholder="maria@ejemplo.com" type="email" inputMode="email"
+                    className={FIELD} style={mf}
+                    onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
+                </div>
+                <div>
+                  <label className={LABEL} htmlFor="c-puesto">Puesto *</label>
+                  <input id="c-puesto" value={position} onChange={(e) => setPosition(e.target.value)}
+                    placeholder="Ej: Directora" className={FIELD} style={mf}
+                    onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
+                </div>
+                <div>
+                  <label className={LABEL} htmlFor="c-telefono">Teléfono *</label>
+                  <input id="c-telefono" value={phone} onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+593 99 888 1234" type="tel" inputMode="tel"
+                    className={FIELD} style={mf}
+                    onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
+                </div>
+              </div>
+              <div className="flex justify-end mt-3">
+                <button onClick={add} disabled={adding} className={BTN_PRIMARY}>
+                  <Plus className="w-4 h-4" /> {adding ? 'Agregando…' : 'Agregar contacto'}
+                </button>
+              </div>
+            </>
           )}
         </div>
 
@@ -222,27 +249,53 @@ export default function ContactListPortal({ token }: { token: string }) {
               {contacts.map((c) => (
                 <div key={c.id} className="rounded-lg border border-digi-border bg-digi-darker/40 px-3 py-2.5">
                   {editId === c.id ? (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input value={editName} onChange={(e) => setEditName(e.target.value)}
-                        placeholder="Nombre y apellido" className={`${FIELD} sm:flex-1`} style={mf} />
-                      <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)}
-                        placeholder="correo@ejemplo.com" type="email" inputMode="email"
-                        className={`${FIELD} sm:flex-1`} style={mf}
-                        onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); }} />
-                      <div className="flex gap-2 shrink-0">
+                    <div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className={LABEL}>Nombre y apellido *</label>
+                          <input value={editName} onChange={(e) => setEditName(e.target.value)}
+                            placeholder="Ej: María López" className={FIELD} style={mf} />
+                        </div>
+                        <div>
+                          <label className={LABEL}>Correo *</label>
+                          <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)}
+                            placeholder="maria@ejemplo.com" type="email" inputMode="email"
+                            className={FIELD} style={mf}
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); }} />
+                        </div>
+                        <div>
+                          <label className={LABEL}>Puesto *</label>
+                          <input value={editPosition} onChange={(e) => setEditPosition(e.target.value)}
+                            placeholder="Ej: Directora" className={FIELD} style={mf} />
+                        </div>
+                        <div>
+                          <label className={LABEL}>Teléfono *</label>
+                          <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)}
+                            placeholder="+593 99 888 1234" type="tel" inputMode="tel"
+                            className={FIELD} style={mf}
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); }} />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2 mt-3">
+                        <button onClick={cancelEdit} className={BTN_SECONDARY}>
+                          <X className="w-4 h-4" /> Cancelar
+                        </button>
                         <button onClick={saveEdit} disabled={savingEdit} className={BTN_PRIMARY}>
                           <Check className="w-4 h-4" /> {savingEdit ? 'Guardando…' : 'Guardar'}
-                        </button>
-                        <button onClick={cancelEdit} className={BTN_SECONDARY} aria-label="Cancelar">
-                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-medium text-digi-text truncate" style={mf}>{c.name}</p>
-                        <p className="text-[12px] text-digi-muted truncate" style={mf}>{c.email}</p>
+                      <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium text-digi-text truncate" style={mf}>{c.name}</p>
+                          <p className="text-[12px] text-digi-muted truncate" style={mf}>{c.email}</p>
+                        </div>
+                        <div className="min-w-0 sm:text-right">
+                          <p className="text-[12.5px] text-digi-text truncate" style={mf}>{c.position || '—'}</p>
+                          <p className="text-[12px] text-digi-muted truncate tabular-nums" style={mf}>{c.phone || '—'}</p>
+                        </div>
                       </div>
                       <div className="flex gap-1.5 shrink-0">
                         <button onClick={() => startEdit(c)}

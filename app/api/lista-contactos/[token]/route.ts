@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     if (!list) return NextResponse.json({ error: 'Este enlace no es válido o fue revocado' }, { status: 404 });
 
     const body = await req.json().catch(() => ({}));
-    const { name, email } = validateContactInput(body);
+    const { name, email, phone, position } = validateContactInput(body);
 
     await assertRoomInList(list.id);
     if (await emailExistsInList(list.id, email)) {
@@ -53,10 +53,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     }
 
     const { rows: [row] } = await pool.query(
-      `INSERT INTO gcc_world.flow_contacts (list_id, name, email, added_via_share)
-       VALUES ($1, $2, $3, TRUE)
-       RETURNING id, name, email, added_via_share, created_at`,
-      [list.id, name, email],
+      `INSERT INTO gcc_world.flow_contacts (list_id, name, email, phone, position, added_via_share)
+       VALUES ($1, $2, $3, $4, $5, TRUE)
+       RETURNING id, name, email, phone, position, added_via_share, created_at`,
+      [list.id, name, email, phone, position],
     );
 
     return NextResponse.json({
@@ -64,6 +64,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
         id: Number(row.id),
         name: row.name,
         email: row.email || '',
+        phone: row.phone || '',
+        position: row.position || '',
         addedViaShare: true,
         createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
       },
