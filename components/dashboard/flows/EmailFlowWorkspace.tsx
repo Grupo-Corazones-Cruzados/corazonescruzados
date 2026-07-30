@@ -454,9 +454,7 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
                   )}
                   {campaign.recur_until && <> · hasta el {fmtEcuador(campaign.recur_until)}</>}
                   {campaign.run_count > 0 && <> · ya salió {campaign.run_count} {campaign.run_count === 1 ? 'vez' : 'veces'}</>}
-                  {flowActive
-                    ? ' · arranca en el siguiente pase del sistema, dentro de los 10 minutos siguientes.'
-                    : ' · ⚠️ el flujo está pausado, así que NO se enviará: actívalo desde el botón de arriba.'}
+                  {!flowActive && ' · ⚠️ el flujo está pausado, así que NO se enviará: actívalo desde el botón de arriba.'}
                 </p>
               </div>
             )}
