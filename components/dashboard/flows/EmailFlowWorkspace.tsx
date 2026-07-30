@@ -47,10 +47,10 @@ import {
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 /**
- * Espacio a dejar bajo la tabla de contactos: el pie con la ruta (`DashboardBreadcrumb`) es
- * `fixed bottom-0 h-9` → 36 px, más el padding inferior de la tarjeta que la envuelve.
+ * Espacio extra bajo la tabla de contactos: solo el padding inferior de la tarjeta que la
+ * envuelve. El pie con la ruta ya lo descuenta `PixelDataTable` por su cuenta (lo mide).
  */
-const FOOTER_RESERVE = 36 + 16;
+const FOOTER_RESERVE = 16;
 
 /* ─── Tipos ─── */
 interface Flow { id: number; name: string; type: string; description: string; status: string; config: Record<string, any>; }
@@ -594,10 +594,8 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
                       ) },
                     ]}
                     data={contacts}
-                    /* La tabla se estira hasta el borde inferior de la ventana, pero el pie
-                       de la ruta es `fixed h-9` (36 px) y por defecto sólo se reservaban 16:
-                       la tabla terminaba DEBAJO del pie. Se reserva el alto del pie más el
-                       padding de la tarjeta. */
+                    /* Solo el padding de la tarjeta: el pie de la ruta lo descuenta ya la
+                       propia tabla. */
                     bottomReserve={FOOTER_RESERVE}
                     emptyTitle="Sin contactos"
                     emptyDesc="Agrega el primero o importa un Excel."

@@ -249,7 +249,9 @@ export default function ClientsPage() {
             <div className="min-w-0">
               <PixelDataTable
                 singleLine
-                bottomReserve={52}
+                /* Alto de la fila de totales que va justo debajo (29 px + su margen). El pie
+                   de la ruta NO se cuenta aquí: lo descuenta la propia tabla. */
+                bottomReserve={39}
                 sortBy={sortBy} sortDir={sortDir} onSort={onSort}
                 data={sortedClients}
                 onRowClick={(c: any) => openDetail(c)}

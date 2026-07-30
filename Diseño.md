@@ -112,7 +112,22 @@ estilos ad-hoc por archivo.
 - **Íconos:** SVG de línea de `EditorIcons.tsx` (`IconScenes/Npcs/Layers/Map/Film/Add/Edit/Up/Down/
   Delete/Close/Location/Bolt/Warning`), grosor 1.6, `currentColor`. **NO emojis.**
 
-### Reglas clave (do / don't)
+### Tablas a pantalla completa y el pie de la ruta
+`PixelDataTable` se estira desde su borde superior hasta abajo de la ventana y **scrollea por
+dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
+`fixed bottom-0 h-9`, así que hasta el 2026-07-30 **todas** las tablas del dashboard terminaban
+36 px POR DEBAJO del pie y sus últimas filas quedaban tapadas.
+- La tabla **mide el pie** (`document.querySelector('[data-app-footer]')`) y lo descuenta. Se
+  mide en vez de codificar los 36 px por dos razones: si el pie cambia de alto sigue saliendo
+  bien, y en las páginas que **no** lo tienen (`members/[id]`, fuera del dashboard) no sobra
+  hueco. El atributo `data-app-footer` vive en `DashboardBreadcrumb`.
+- **`bottomReserve` es para lo que TÚ pongas debajo de la tabla** (una fila de totales, el
+  padding de una tarjeta), nunca para el pie de la app. Si alguna pantalla lo estaba usando
+  para compensar el pie, hay que restarle esos 36 px o quedará hueco muerto.
+- Comprobado el 2026-07-30 a 700 y 1000 px de alto en tickets, proyectos, facturas,
+  recordatorios y clientes: **todas cierran 16 px por encima del pie** (el `BOTTOM_GAP` de aire).
+
+## Reglas clave (do / don't)
 - **NO** emojis como íconos → usar `EditorIcons` (SVG).
 - **NO** hex crudos en componentes del editor → usar tokens `E.*`.
 - **NO** recomponer botones/headers ad-hoc → usar `editorUi`.
@@ -764,11 +779,9 @@ detalle de un ticket. Es la variante de **tres columnas** del patrón "Explorado
 - **Las tres columnas arrancan a la MISMA altura** (2026-07-30): la barra del registro
   seleccionado ocupa solo la 3ª columna, encima de su detalle, no el ancho de las dos. Antes
   empujaba hacia abajo la columna 2, que quedaba desalineada del rail sin motivo.
-- ⚠️ **El pie con la ruta (`DashboardBreadcrumb`) es `fixed bottom-0 h-9`**, y
-  `PixelDataTable` solo reserva `BOTTOM_GAP = 16px` bajo la tabla: una tabla a pantalla
-  completa **termina por debajo del pie**. Donde importe, pásale
-  `bottomReserve={36 + padding de la tarjeta}` (en Automatizaciones, `FOOTER_RESERVE = 52`).
-  Comprobado a 700/900/1200 px de alto: la tarjeta cierra 15 px por encima del pie en los tres.
+- **El pie con la ruta ya lo descuenta la tabla sola** (2026-07-30): ver "Tablas a pantalla
+  completa" en las reglas clave. En esta pantalla `bottomReserve` solo cubre el padding de la
+  tarjeta.
 - **Columna 2 — lista con casilla + selección (dos gestos en la misma fila):** la **casilla**
   asocia/desasocia; el **clic en el resto de la fila** selecciona (y resalta con
   `bg-accent-light` + `border-l-2 border-accent`). Son botones **hermanos**, nunca anidados.

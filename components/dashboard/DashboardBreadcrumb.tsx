@@ -35,6 +35,10 @@ export default function DashboardBreadcrumb({ collapsed = false }: { collapsed?:
   return (
     <nav
       aria-label="Ruta"
+      /* Marca para que quien se estire hasta abajo (p. ej. `PixelDataTable`) MIDA este pie y
+         no termine por debajo. Se mide en vez de codificar los 36 px: si el pie cambia de
+         alto o no existe (páginas fuera del dashboard), el cálculo sigue siendo correcto. */
+      data-app-footer=""
       className={`fixed bottom-0 right-0 left-0 z-20 h-9 flex items-center gap-1 px-4 border-t border-digi-border bg-digi-card/95 backdrop-blur overflow-x-auto whitespace-nowrap transition-[left] duration-200 ${
         collapsed ? 'lg:left-16' : 'lg:left-56'
       }`}

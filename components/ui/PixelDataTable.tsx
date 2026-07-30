@@ -36,6 +36,21 @@ interface PixelDataTableProps<T> {
 }
 
 const BOTTOM_GAP = 16; // breathing room below the table
+
+/**
+ * Alto del pie fijo de la app (`DashboardBreadcrumb`, la barra con la ruta). La tabla se
+ * estira hasta el borde inferior de la ventana, así que sin descontarlo TERMINA POR DEBAJO
+ * del pie y las últimas filas quedan tapadas.
+ *
+ * Se MIDE en vez de codificar los 36 px: si el pie cambia de alto, o la página no lo tiene
+ * (p. ej. `members/[id]`, fuera del dashboard), el cálculo sigue saliendo bien y no sobra
+ * hueco donde no hay pie.
+ */
+function appFooterHeight(): number {
+  if (typeof document === 'undefined') return 0;
+  const el = document.querySelector('[data-app-footer]');
+  return el ? Math.round(el.getBoundingClientRect().height) : 0;
+}
 const MIN_HEIGHT = 220;
 
 export default function PixelDataTable<T>({
@@ -65,7 +80,7 @@ export default function PixelDataTable<T>({
       const el = wrapRef.current;
       if (!el) return;
       const top = el.getBoundingClientRect().top;
-      const h = Math.max(window.innerHeight - top - BOTTOM_GAP - bottomReserve, MIN_HEIGHT);
+      const h = Math.max(window.innerHeight - top - BOTTOM_GAP - appFooterHeight() - bottomReserve, MIN_HEIGHT);
       setFillH((prev) => (prev === undefined || Math.abs(prev - h) > 1 ? h : prev));
     };
     // run after layout settles (content above may still be rendering)
