@@ -2703,6 +2703,44 @@ Módulos principales:
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
 ## Decisiones y reglas de negocio
+- **CAMPAÑAS RECURRENTES: frecuencia, intervalo y fecha de fin (2026-07-30).** Amplía la
+  programación de una sola fecha a una serie. Decisión del usuario.
+  - **Modelo** (migración `026_campaign_recurrence.sql`, aplicada): `schedule_kind`
+    (`once`|`recurring`), `freq_unit` (`second`|`minute`|`hour`|`day`|`month`|`year`),
+    `freq_interval` (la "distancia": cada 1, 2, 3…), `recur_until` (fin **inclusive**, NULL =
+    sin fin), **`next_run_at`** (única condición del disparador; NULL = nada pendiente) y
+    `run_count`. `scheduled_at` pasa a significar el **inicio de la serie**.
+  - 🔑 **Sin deriva: cada ocurrencia se calcula desde el INICIO, no desde la anterior.** Ir
+    sumando sobre la última arrastra el recorte de los meses cortos y la serie se desplaza sola
+    (31 ene → 28 feb → 28 **mar** → …). Con `run_count` como contador, "cada mes" desde el 31 de
+    enero da 28 feb, **31 mar**, 30 abr… Probado, incluido el 29 de febrero → 28 en año normal.
+  - **`lib/flows/campaign-schedule.ts`** es un módulo **puro** (sin `pg` ni red): lo usan el
+    endpoint, el cron y el navegador, así que la vista previa de "próximas salidas" sale del
+    MISMO cálculo que el disparador y no puede desviarse. 32 pruebas con
+    `node --experimental-strip-types`.
+  - **Si se perdieron pases** (cron caído), `nextRunAfter` **salta a la primera ocurrencia
+    futura** en vez de disparar una ráfaga de atrasados. Con tope de iteraciones para que
+    "cada segundo" + meses caído no se vuelva un bucle eterno.
+  - ⚠️ **Suelo real de 10 minutos.** El cron revisa cada ~10 min, así que segundos o "cada 2
+    minutos" **no pueden** cumplirse: saldrá como máximo una vez por pase. Se permite
+    configurarlo (la aritmética es la misma) pero el formulario lo **advierte** con
+    `belowCronResolution()` en vez de prometer algo que la plataforma no da. Se avisa también
+    del tope diario de Gmail. *(El usuario confirmó que el tope no preocupa: a futuro entra un
+    proveedor de envío masivo; por ahora Gmail.)*
+  - **Al terminar la serie el flujo se PAUSA solo**, como se pidió — pero solo si al flujo **no
+    le queda ninguna otra campaña pendiente ni enviándose** (`pauseFlowIfIdle`). Sin ese
+    resguardo, terminar UNA campaña apagaría las demás del mismo flujo sin que nadie lo pidiera.
+  - **`startCampaignRun` ya NO borra la programación** (antes hacía `scheduled_at = NULL`), que
+    en una recurrente la habría matado en su primera salida. Quien avanza o cierra la serie es
+    el cron.
+  - **Reprogramar reinicia la serie** (`run_count = 0`): el inicio elegido vuelve a ser la
+    primera salida.
+  - **Verificado de punta a punta** con un flujo temporal: "cada 2 horas con fin en 5 h" lanzó
+    exactamente 3 veces (14:12, 16:12, 18:12), la 4ª (20:12) quedó fuera del fin →
+    `seriesEnded`, `next_run_at=NULL` y **flujo pasado a `paused`**; un pase posterior no hizo
+    nada; 3 envíos registrados, sin duplicados. Y la salvaguarda: con otra campaña pendiente en
+    el mismo flujo, la serie terminó pero **el flujo siguió activo**. Validaciones: sin unidad
+    (400), intervalo 0 (400), fin anterior al inicio (400).
 - **CAMPAÑAS PROGRAMADAS + ENVÍO POR LOTES (2026-07-30).** Antes una campaña solo salía si
   alguien pulsaba "Enviar", y el envío recorría TODOS los contactos dentro de la misma petición
   HTTP. Ahora se puede programar por fecha y hora, y el envío se reparte en lotes.

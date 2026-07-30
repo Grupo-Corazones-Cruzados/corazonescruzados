@@ -109,8 +109,11 @@ export async function pendingRecipients(
  */
 export async function startCampaignRun(campaignId: number | string): Promise<Date> {
   const { rows: [r] } = await pool.query(
+    // OJO: aquí NO se toca la programación. Antes ponía `scheduled_at = NULL` y eso mataría la
+    // serie de una campaña recurrente en su primera salida. Quién avanza (o cierra) la
+    // programación es el cron, con `nextRunAfter`.
     `UPDATE gcc_world.flow_campaigns
-        SET status = 'sending', send_started_at = clock_timestamp(), scheduled_at = NULL, updated_at = NOW()
+        SET status = 'sending', send_started_at = clock_timestamp(), updated_at = NOW()
       WHERE id = $1
       RETURNING send_started_at`,
     [campaignId],

@@ -34,9 +34,13 @@ import {
 } from '@/components/dashboard/flows/EmailEditor';
 import { CONTACT_VARIABLES, usedVariables, previewTemplate } from '@/lib/flows/variables';
 import {
+  FREQ_UNITS, MAX_INTERVAL, describeSchedule, upcomingRuns, belowCronResolution,
+  type FreqUnit, type ScheduleKind,
+} from '@/lib/flows/campaign-schedule';
+import {
   Mail, Plus, Send, BarChart3, Users, Trash2, Pencil, Check, Eye, Share2, Copy,
   Download, FileSpreadsheet, Upload, Link2, RefreshCw, ShieldOff, ExternalLink,
-  FileEdit, CheckCircle2, AlertTriangle, XCircle, User, CalendarClock, CalendarX, Pause,
+  FileEdit, CheckCircle2, AlertTriangle, XCircle, User, CalendarClock, CalendarX, Pause, Repeat,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -56,10 +60,18 @@ interface Campaign {
   id: number; subject: string; from_email: string; status: string;
   lists: ListRef[]; total_contacts: number; attachment_count: number;
   sent_count: number; failed_count: number; created_at: string;
-  /** Cuándo debe salir (estado 'scheduled'). */
+  /** Inicio de la serie (antes: la única salida). */
   scheduled_at: string | null;
   /** Arranque del envío en curso; con él se calcula lo que queda por enviar. */
   send_started_at: string | null;
+  /** Programación: 'once' | 'recurring' | null. */
+  schedule_kind: 'once' | 'recurring' | null;
+  freq_unit: FreqUnit | null;
+  freq_interval: number | null;
+  recur_until: string | null;
+  /** Próxima salida. null = nada pendiente. */
+  next_run_at: string | null;
+  run_count: number;
 }
 interface CampaignStats {
   campaign: any;
@@ -94,6 +106,16 @@ function fmtEcuador(iso?: string | null): string {
 /** Fecha/hora de Ecuador (yyyy-MM-ddTHH:mm) → instante ISO. */
 function ecuadorInputToISO(local: string): string {
   return new Date(`${local}:00-05:00`).toISOString();
+}
+
+/** Instante ISO → valor de `datetime-local` en hora de Ecuador. */
+function isoToEcuadorInput(iso: string): string {
+  const p = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ECUADOR_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(iso));
+  const g = (t: string) => p.find((x) => x.type === t)?.value ?? '';
+  return `${g('year')}-${g('month')}-${g('day')}T${g('hour')}:${g('minute')}`;
 }
 
 /** Valor inicial del datetime-local: dentro de una hora, en hora de Ecuador. */
@@ -326,7 +348,9 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
     Icon: CAMP_STATUS_ICON[c.status] || Mail,
     // Sin burbuja de conteo: el asunto necesita todo el ancho. El número de
     // destinatarios va en la segunda línea, junto al estado.
-    hint: `${CAMP_STATUS_L[c.status] || c.status} · ${c.total_contacts} destinatario(s)`,
+    hint: c.next_run_at
+      ? `${c.schedule_kind === 'recurring' ? describeSchedule({ kind: 'recurring', unit: c.freq_unit, interval: c.freq_interval }) : 'una vez'} · ${fmtEcuador(c.next_run_at)}`
+      : `${CAMP_STATUS_L[c.status] || c.status} · ${c.total_contacts} destinatario(s)`,
     actions: (
       <>
         <button onClick={() => setEditCampaign(c)} title="Editar el correo"
@@ -385,13 +409,14 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
                     <BarChart3 className="w-4 h-4" /> Estadísticas
                   </button>
                 )}
-                {campaign.status === 'scheduled' ? (
+                {campaign.status !== 'sending' && (
+                  <button onClick={() => setScheduleFor(campaign)} className={BTN_SECONDARY} disabled={campaign.total_contacts === 0}>
+                    <CalendarClock className="w-4 h-4" /> {campaign.next_run_at ? 'Cambiar programación' : 'Programar'}
+                  </button>
+                )}
+                {campaign.next_run_at && campaign.status !== 'sending' && (
                   <button onClick={() => cancelSchedule(campaign)} className={BTN_SECONDARY}>
                     <CalendarX className="w-4 h-4" /> Cancelar programación
-                  </button>
-                ) : campaign.status !== 'sending' && (
-                  <button onClick={() => setScheduleFor(campaign)} className={BTN_SECONDARY} disabled={campaign.total_contacts === 0}>
-                    <CalendarClock className="w-4 h-4" /> Programar
                   </button>
                 )}
                 <button onClick={() => setSendFor(campaign)} className={BTN_PRIMARY}
@@ -401,8 +426,8 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
               </div>
             </div>
 
-            {/* Programada: cuándo sale, y aviso si el flujo está pausado (no saldría) */}
-            {campaign.status === 'scheduled' && (
+            {/* Programación: próxima salida, recurrencia y aviso si el flujo está pausado */}
+            {campaign.next_run_at && campaign.status !== 'sending' && (
               <div className={`flex items-start gap-2 px-3 py-2 rounded-md border ${
                 flowActive ? 'border-accent/30 bg-accent-light/40' : 'border-amber-500/40 bg-amber-500/10'
               }`}>
@@ -410,10 +435,15 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
                   ? <CalendarClock className="w-4 h-4 text-accent shrink-0 mt-px" />
                   : <Pause className="w-4 h-4 text-amber-400 shrink-0 mt-px" />}
                 <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>
-                  Sale el <span className="font-medium">{fmtEcuador(campaign.scheduled_at)}</span> (hora de Ecuador).
+                  Próxima salida: <span className="font-medium">{fmtEcuador(campaign.next_run_at)}</span> (hora de Ecuador)
+                  {campaign.schedule_kind === 'recurring' && (
+                    <> · se repite <span className="font-medium">{describeSchedule({ kind: 'recurring', unit: campaign.freq_unit, interval: campaign.freq_interval })}</span></>
+                  )}
+                  {campaign.recur_until && <> · hasta el {fmtEcuador(campaign.recur_until)}</>}
+                  {campaign.run_count > 0 && <> · ya salió {campaign.run_count} {campaign.run_count === 1 ? 'vez' : 'veces'}</>}
                   {flowActive
-                    ? ' El envío arranca en el siguiente pase del sistema, dentro de los 10 minutos siguientes.'
-                    : ' ⚠️ El flujo está pausado, así que NO se enviará: actívalo desde el botón de arriba.'}
+                    ? ' · arranca en el siguiente pase del sistema, dentro de los 10 minutos siguientes.'
+                    : ' · ⚠️ el flujo está pausado, así que NO se enviará: actívalo desde el botón de arriba.'}
                 </p>
               </div>
             )}
@@ -1063,9 +1093,10 @@ function ShareListModal({
 
 /* ─── Programar el envío ─── */
 /**
- * Fecha y hora **de Ecuador** (el `datetime-local` del navegador usa la zona del equipo, así
- * que se convierte a propósito con el offset fijo -05:00, igual que en Tickets). El cron corre
- * cada 10 minutos, así que el envío arranca en el primer pase posterior a esa hora.
+ * Una sola vez o con frecuencia. La **fecha y hora son de Ecuador** (el `datetime-local` del
+ * navegador usa la zona del equipo, así que se convierte con el offset fijo -05:00, igual que
+ * en Tickets). La vista previa de próximas salidas sale del MISMO módulo que usa el cron
+ * (`lib/flows/campaign-schedule.ts`), así que no puede desviarse del comportamiento real.
  */
 function ScheduleCampaignModal({
   base, campaign, flowActive, onClose, onSaved,
@@ -1073,22 +1104,52 @@ function ScheduleCampaignModal({
   base: string; campaign: Campaign | null; flowActive: boolean;
   onClose: () => void; onSaved: () => Promise<void> | void;
 }) {
+  const [kind, setKind] = useState<ScheduleKind>('once');
   const [when, setWhen] = useState('');
+  const [unit, setUnit] = useState<FreqUnit>('day');
+  const [interval, setIntervalValue] = useState('1');
+  const [hasEnd, setHasEnd] = useState(false);
+  const [endWhen, setEndWhen] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Al abrir se precarga lo que ya tuviera la campaña; si no tenía nada, valores por defecto.
   useEffect(() => {
     if (!campaign) return;
-    setWhen(defaultScheduleInput());
+    setKind(campaign.schedule_kind === 'recurring' ? 'recurring' : 'once');
+    setWhen(campaign.scheduled_at ? isoToEcuadorInput(campaign.scheduled_at) : defaultScheduleInput());
+    setUnit(campaign.freq_unit || 'day');
+    setIntervalValue(String(campaign.freq_interval || 1));
+    setHasEnd(!!campaign.recur_until);
+    setEndWhen(campaign.recur_until ? isoToEcuadorInput(campaign.recur_until) : '');
+    setSaving(false);
   }, [campaign]);
 
+  const intervalNum = Math.max(1, Math.floor(Number(interval) || 1));
+  const spec = {
+    kind,
+    start: when ? ecuadorInputToISO(when) : new Date().toISOString(),
+    unit: kind === 'recurring' ? unit : null,
+    interval: kind === 'recurring' ? intervalNum : null,
+    until: hasEnd && endWhen ? ecuadorInputToISO(endWhen) : null,
+  };
+  const preview = when ? upcomingRuns(spec, 4) : [];
+  const tooFine = kind === 'recurring' && belowCronResolution(unit, intervalNum);
+  const unitInfo = FREQ_UNITS.find((u) => u.value === unit)!;
+
   const save = async () => {
-    if (!campaign) return;
-    if (!when) { toast.error('Elige la fecha y la hora'); return; }
+    if (!when) { toast.error('Elige la fecha y la hora de inicio'); return; }
+    if (hasEnd && !endWhen) { toast.error('Elige la fecha y la hora de fin, o desactiva el fin'); return; }
     setSaving(true);
     try {
-      const res = await fetch(`${base}/campaigns/${campaign.id}/schedule`, {
+      const res = await fetch(`${base}/campaigns/${campaign!.id}/schedule`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduled_at: ecuadorInputToISO(when) }),
+        body: JSON.stringify({
+          kind,
+          scheduled_at: ecuadorInputToISO(when),
+          freq_unit: kind === 'recurring' ? unit : null,
+          freq_interval: kind === 'recurring' ? intervalNum : null,
+          recur_until: hasEnd && endWhen ? ecuadorInputToISO(endWhen) : null,
+        }),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Error al programar');
@@ -1102,7 +1163,7 @@ function ScheduleCampaignModal({
   };
 
   return (
-    <PixelModal open={!!campaign} onClose={() => !saving && onClose()} title="Programar el envío" size="md" busy={saving}>
+    <PixelModal open={!!campaign} onClose={() => !saving && onClose()} title="Programar el envío" size="lg" busy={saving}>
       <div className="space-y-4">
         <div>
           <p className="text-[13px] text-digi-text" style={mf}>{campaign?.subject}</p>
@@ -1111,14 +1172,105 @@ function ScheduleCampaignModal({
           </p>
         </div>
 
+        {/* Tipo */}
         <div>
-          <label className={LABEL}>Fecha y hora (Ecuador)</label>
+          <label className={LABEL}>Tipo de programación</label>
+          <div className="grid grid-cols-2 gap-2.5">
+            {([
+              { v: 'once' as ScheduleKind, Icon: CalendarClock, t: 'Una sola vez', d: 'Sale una vez y ya' },
+              { v: 'recurring' as ScheduleKind, Icon: Repeat, t: 'Con frecuencia', d: 'Se repite cada cierto tiempo' },
+            ]).map((o) => (
+              <button key={o.v} type="button" onClick={() => setKind(o.v)}
+                className={`rounded-lg border px-3 py-3 text-left transition-colors ${
+                  kind === o.v ? 'border-accent bg-accent-light/40' : 'border-digi-border hover:border-accent/50'
+                }`}>
+                <o.Icon className={`w-4 h-4 mb-1.5 ${kind === o.v ? 'text-accent' : 'text-digi-muted'}`} />
+                <p className="text-[13px] font-medium text-digi-text" style={mf}>{o.t}</p>
+                <p className="text-[11px] text-digi-muted" style={mf}>{o.d}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Inicio */}
+        <div>
+          <label className={LABEL}>{kind === 'recurring' ? 'Primera salida (Ecuador)' : 'Fecha y hora (Ecuador)'}</label>
           <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
             className={FIELD} style={mf} />
-          <p className="text-[11px] text-digi-muted mt-1" style={mf}>
-            El sistema revisa cada 10 minutos, así que el envío arranca en el primer pase
-            después de esa hora, no al segundo exacto.
+        </div>
+
+        {/* Frecuencia + intervalo */}
+        {kind === 'recurring' && (
+          <div className="rounded-lg border border-digi-border bg-digi-darker/40 p-3 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL}>Frecuencia</label>
+                <select value={unit} onChange={(e) => setUnit(e.target.value as FreqUnit)}
+                  className={`${FIELD} field-select appearance-none pr-8`} style={mf}>
+                  {FREQ_UNITS.map((u) => <option key={u.value} value={u.value}>{u.many}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={LABEL}>Intervalo</label>
+                <input type="number" min={1} max={MAX_INTERVAL} value={interval}
+                  onChange={(e) => setIntervalValue(e.target.value)} className={FIELD} style={mf} />
+              </div>
+            </div>
+            <p className="text-[12px] text-digi-muted" style={mf}>
+              Se enviará <span className="text-digi-text font-medium">
+                {intervalNum === 1 ? `cada ${unitInfo.one}` : `cada ${intervalNum} ${unitInfo.many}`}
+              </span>.
+            </p>
+
+            {tooFine && (
+              <div className="flex items-start gap-2 px-3 py-2 rounded-md border border-amber-500/40 bg-amber-500/10">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-px" />
+                <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>
+                  El sistema revisa <span className="font-medium">cada 10 minutos</span>, así que un intervalo
+                  más corto que eso no puede cumplirse: saldrá como máximo una vez cada 10 minutos. Ten en
+                  cuenta además el límite diario de correos de Gmail.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Fin opcional */}
+        <div>
+          <label className="flex items-start gap-2 px-3 py-2 rounded-md border border-digi-border cursor-pointer hover:bg-black/[0.03] transition-colors" style={mf}>
+            <input type="checkbox" checked={hasEnd} onChange={(e) => setHasEnd(e.target.checked)} className="mt-0.5 accent-accent" />
+            <span className="min-w-0">
+              <span className="text-[12.5px] font-medium text-digi-text">Tiene fecha y hora de fin</span>
+              <span className="block text-[11px] text-digi-muted">
+                Al pasar esa fecha deja de lanzarse, y si al flujo no le queda nada pendiente se pausa solo.
+              </span>
+            </span>
+          </label>
+          {hasEnd && (
+            <input type="datetime-local" value={endWhen} onChange={(e) => setEndWhen(e.target.value)}
+              className={`${FIELD} mt-2`} style={mf} />
+          )}
+        </div>
+
+        {/* Vista previa */}
+        <div className="rounded-lg border border-digi-border bg-digi-darker/40 p-3">
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>
+            Próximas salidas
           </p>
+          {preview.length === 0 ? (
+            <p className="text-[12px] text-digi-muted" style={mf}>Elige la fecha de inicio para verlas.</p>
+          ) : (
+            <ul className="space-y-0.5">
+              {preview.map((d, i) => (
+                <li key={i} className="text-[12.5px] text-digi-text tabular-nums" style={mf}>
+                  {i + 1}. {fmtEcuador(d.toISOString())}
+                </li>
+              ))}
+              {kind === 'recurring' && !hasEnd && (
+                <li className="text-[12px] text-digi-muted" style={mf}>…y así indefinidamente</li>
+              )}
+            </ul>
+          )}
         </div>
 
         {!flowActive && (
@@ -1126,7 +1278,8 @@ function ScheduleCampaignModal({
             <Pause className="w-4 h-4 text-amber-400 shrink-0 mt-px" />
             <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>
               Este flujo está <span className="font-medium">pausado</span> y solo se envían las campañas de
-              flujos activos. Puedes programarla igual, pero <span className="font-medium">no saldrá</span> hasta que actives el flujo con el botón Activar de arriba.
+              flujos activos. Puedes programarla igual, pero <span className="font-medium">no saldrá</span> hasta
+              que actives el flujo con el botón Activar de arriba.
             </p>
           </div>
         )}
@@ -1135,7 +1288,7 @@ function ScheduleCampaignModal({
           <Send className="w-4 h-4 text-accent shrink-0 mt-px" />
           <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
             El envío va <span className="text-digi-text">por lotes</span>: si la lista es grande se reparte
-            en varios pases hasta terminar, sin repetirle el correo a nadie.
+            en varios pases hasta terminar, sin repetirle el correo a nadie en la misma salida.
           </p>
         </div>
 
