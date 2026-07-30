@@ -24,6 +24,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import FilterRail from '@/components/ui/FilterRail';
+import ActionsMenu from '@/components/centralized/ActionsMenu';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import {
@@ -409,30 +410,33 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
               <PixelBadge variant={CAMP_STATUS_V[campaign.status] || 'default'}>
                 {CAMP_STATUS_L[campaign.status] || campaign.status}
               </PixelBadge>
-              <div className="flex flex-wrap items-center gap-2">
-                <button onClick={() => setEditCampaign(campaign)} className={BTN_SECONDARY}>
-                  <Pencil className="w-4 h-4" /> Editar correo
-                </button>
-                {campaign.status === 'sent' && (
-                  <button onClick={() => openStats(campaign)} className={BTN_SECONDARY}>
-                    <BarChart3 className="w-4 h-4" /> Estadísticas
-                  </button>
-                )}
-                {campaign.status !== 'sending' && (
-                  <button onClick={() => setScheduleFor(campaign)} className={BTN_SECONDARY} disabled={campaign.total_contacts === 0}>
-                    <CalendarClock className="w-4 h-4" /> {campaign.next_run_at ? 'Cambiar programación' : 'Programar'}
-                  </button>
-                )}
-                {campaign.next_run_at && campaign.status !== 'sending' && (
-                  <button onClick={() => cancelSchedule(campaign)} className={BTN_SECONDARY}>
-                    <CalendarX className="w-4 h-4" /> Cancelar programación
-                  </button>
-                )}
-                <button onClick={() => setSendFor(campaign)} className={BTN_PRIMARY}
-                  disabled={campaign.total_contacts === 0 || campaign.status === 'sending'}>
-                  <Send className="w-4 h-4" /> {campaign.status === 'sent' ? 'Reenviar' : 'Enviar ahora'}
-                </button>
-              </div>
+              {/* Todas las acciones van en el menú ⋯: en fila ocupaban el ancho entero de la
+                  barra (decisión del usuario). `ActionsMenu` es el control estándar del
+                  dashboard para esto. */}
+              <ActionsMenu
+                label="Acciones de la campaña"
+                items={[
+                  { label: campaign.status === 'sent' ? 'Reenviar ahora' : 'Enviar ahora', icon: Send,
+                    onClick: () => setSendFor(campaign),
+                    disabled: campaign.total_contacts === 0 || campaign.status === 'sending' },
+                  { label: 'Editar correo', icon: Pencil, onClick: () => setEditCampaign(campaign) },
+                  ...(campaign.status !== 'sending' ? [{
+                    label: campaign.next_run_at ? 'Cambiar programación' : 'Programar',
+                    icon: CalendarClock,
+                    onClick: () => setScheduleFor(campaign),
+                    disabled: campaign.total_contacts === 0,
+                  }] : []),
+                  ...(campaign.next_run_at && campaign.status !== 'sending' ? [{
+                    label: 'Cancelar programación', icon: CalendarX,
+                    onClick: () => cancelSchedule(campaign),
+                  }] : []),
+                  ...(campaign.status === 'sent' ? [{
+                    label: 'Estadísticas', icon: BarChart3, onClick: () => openStats(campaign),
+                  }] : []),
+                  { label: 'Eliminar campaña', icon: Trash2, danger: true,
+                    onClick: () => setDelCampaign(campaign) },
+                ]}
+              />
             </div>
 
             {/* Programación: próxima salida, recurrencia y aviso si el flujo está pausado */}
@@ -490,7 +494,6 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
               <div className="space-y-2">
                 {campaign && (
                   <ListGroup
-                    title="En esta campaña"
                     lists={attached}
                     emptyText="Marca abajo las listas que entran en la campaña."
                     checked
@@ -505,7 +508,6 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
                 <ListGroup
                   title={campaign ? 'Otras listas del flujo' : undefined}
                   lists={campaign ? others : lists}
-                  emptyText={campaign ? 'Todas las listas están en la campaña.' : undefined}
                   checked={false}
                   showCheckbox={!!campaign}
                   selectedId={listId}
@@ -692,6 +694,10 @@ function ListGroup({
   onShare: (l: ContactList) => void;
   onDelete: (l: ContactList) => void;
 }) {
+  // Grupo vacío y sin texto que mostrar: no se pinta ni el encabezado. Si no, quedaría un
+  // "OTRAS LISTAS DEL FLUJO" suelto sin nada debajo.
+  if (lists.length === 0 && !emptyText) return null;
+
   return (
     <div>
       {title && (

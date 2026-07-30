@@ -757,12 +757,16 @@ detalle de un ticket. Es la variante de **tres columnas** del patrón "Explorado
   `FilterRailItem.actions` (nuevo) pinta lápiz/tacho a la derecha, **fuera** del botón de
   selección para que no se traguen el clic; aparecen al hover o cuando el ítem está activo.
 - **Barra del registro seleccionado:** tarjeta a lo ancho de las dos columnas restantes con
-  título + subtítulo, badge de estado y las acciones (Editar · Estadísticas · Enviar).
+  título + subtítulo, badge de estado y **un menú ⋯** (`components/centralized/ActionsMenu`)
+  con TODAS las acciones. En fila ocupaban el ancho entero de la barra (5 botones), así que
+  desde 2026-07-30 van al menú — es justo el uso para el que existe ese control. Debajo, una
+  línea informativa (p. ej. la próxima salida programada).
 - **Columna 2 — lista con casilla + selección (dos gestos en la misma fila):** la **casilla**
   asocia/desasocia; el **clic en el resto de la fila** selecciona (y resalta con
   `bg-accent-light` + `border-l-2 border-accent`). Son botones **hermanos**, nunca anidados.
-  Dos grupos con encabezado en mayúsculas: los asociados arriba, el resto abajo, con frase
-  suave cuando un grupo queda vacío.
+  Dos grupos: los asociados arriba **sin encabezado** (van justo bajo el título del panel, no
+  hace falta repetirlo) y el resto bajo "Otras listas del flujo". **Un grupo vacío no pinta ni
+  su encabezado**: un título suelto sin nada debajo es ruido.
 - **Columna 3 — detalle de la selección:** `SectionBar` (título + conteo + acción primaria),
   fila de acciones secundarias en `BTN_ROW`, y `PixelDataTable` con lápiz/tacho por fila.
 
