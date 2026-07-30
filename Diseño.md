@@ -761,6 +761,14 @@ detalle de un ticket. Es la variante de **tres columnas** del patrón "Explorado
   con TODAS las acciones. En fila ocupaban el ancho entero de la barra (5 botones), así que
   desde 2026-07-30 van al menú — es justo el uso para el que existe ese control. Debajo, una
   línea informativa (p. ej. la próxima salida programada).
+- **Las tres columnas arrancan a la MISMA altura** (2026-07-30): la barra del registro
+  seleccionado ocupa solo la 3ª columna, encima de su detalle, no el ancho de las dos. Antes
+  empujaba hacia abajo la columna 2, que quedaba desalineada del rail sin motivo.
+- ⚠️ **El pie con la ruta (`DashboardBreadcrumb`) es `fixed bottom-0 h-9`**, y
+  `PixelDataTable` solo reserva `BOTTOM_GAP = 16px` bajo la tabla: una tabla a pantalla
+  completa **termina por debajo del pie**. Donde importe, pásale
+  `bottomReserve={36 + padding de la tarjeta}` (en Automatizaciones, `FOOTER_RESERVE = 52`).
+  Comprobado a 700/900/1200 px de alto: la tarjeta cierra 15 px por encima del pie en los tres.
 - **Columna 2 — lista con casilla + selección (dos gestos en la misma fila):** la **casilla**
   asocia/desasocia; el **clic en el resto de la fila** selecciona (y resalta con
   `bg-accent-light` + `border-l-2 border-accent`). Son botones **hermanos**, nunca anidados.

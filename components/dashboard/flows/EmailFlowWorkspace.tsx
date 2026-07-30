@@ -46,6 +46,12 @@ import {
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
+/**
+ * Espacio a dejar bajo la tabla de contactos: el pie con la ruta (`DashboardBreadcrumb`) es
+ * `fixed bottom-0 h-9` → 36 px, más el padding inferior de la tarjeta que la envuelve.
+ */
+const FOOTER_RESERVE = 36 + 16;
+
 /* ─── Tipos ─── */
 interface Flow { id: number; name: string; type: string; description: string; status: string; config: Record<string, any>; }
 
@@ -396,6 +402,54 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
         )}
       </div>
 
+      {/* ── 2. Listas del flujo — columna propia, para que NO baje con la barra de la
+             campaña y se quede alineada arriba con el rail (pedido del usuario). ── */}
+      <div className="w-full xl:w-[270px] shrink-0">
+        <div className="bg-digi-card border border-digi-border rounded-lg p-3">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={mf}>
+              Listas de contactos
+            </p>
+            <button onClick={() => setNewList(true)} className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-accent-light transition-colors" title="Nueva lista">
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+
+          {lists.length === 0 ? (
+            <PanelEmpty Icon={Users} title="Sin listas" desc="Crea una lista de contactos." />
+          ) : (
+            <div className="space-y-2">
+              {campaign && (
+                <ListGroup
+                  lists={attached}
+                  emptyText="Marca abajo las listas que entran en la campaña."
+                  checked
+                  selectedId={listId}
+                  onSelect={setListId}
+                  onToggle={(l) => toggleList(l, false)}
+                  onRename={setRenameList}
+                  onShare={setShareList}
+                  onDelete={setDelList}
+                />
+              )}
+              <ListGroup
+                title={campaign ? 'Otras listas del flujo' : undefined}
+                lists={campaign ? others : lists}
+                checked={false}
+                showCheckbox={!!campaign}
+                selectedId={listId}
+                onSelect={setListId}
+                onToggle={(l) => toggleList(l, true)}
+                onRename={setRenameList}
+                onShare={setShareList}
+                onDelete={setDelList}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 3. La campaña y sus contactos: la barra va SOLO sobre esta columna ── */}
       <div className="flex-1 min-w-0 w-full space-y-3">
         {/* Barra de la campaña seleccionada */}
         {campaign && (
@@ -474,51 +528,6 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
           </div>
         )}
 
-        <div className="grid grid-cols-1 xl:grid-cols-[270px_minmax(0,1fr)] gap-4 items-start">
-          {/* ── 2. Listas del flujo ── */}
-          <div className="bg-digi-card border border-digi-border rounded-lg p-3">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={mf}>
-                Listas de contactos
-              </p>
-              <button onClick={() => setNewList(true)} className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-accent-light transition-colors" title="Nueva lista">
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-
-            {lists.length === 0 ? (
-              <PanelEmpty Icon={Users} title="Sin listas" desc="Crea una lista de contactos." />
-            ) : (
-              <div className="space-y-2">
-                {campaign && (
-                  <ListGroup
-                    lists={attached}
-                    emptyText="Marca abajo las listas que entran en la campaña."
-                    checked
-                    selectedId={listId}
-                    onSelect={setListId}
-                    onToggle={(l) => toggleList(l, false)}
-                    onRename={setRenameList}
-                    onShare={setShareList}
-                    onDelete={setDelList}
-                  />
-                )}
-                <ListGroup
-                  title={campaign ? 'Otras listas del flujo' : undefined}
-                  lists={campaign ? others : lists}
-                  checked={false}
-                  showCheckbox={!!campaign}
-                  selectedId={listId}
-                  onSelect={setListId}
-                  onToggle={(l) => toggleList(l, true)}
-                  onRename={setRenameList}
-                  onShare={setShareList}
-                  onDelete={setDelList}
-                />
-              </div>
-            )}
-          </div>
-
           {/* ── 3. Contactos de la lista ── */}
           <div className="min-w-0">
             {!list ? (
@@ -585,6 +594,11 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
                       ) },
                     ]}
                     data={contacts}
+                    /* La tabla se estira hasta el borde inferior de la ventana, pero el pie
+                       de la ruta es `fixed h-9` (36 px) y por defecto sólo se reservaban 16:
+                       la tabla terminaba DEBAJO del pie. Se reserva el alto del pie más el
+                       padding de la tarjeta. */
+                    bottomReserve={FOOTER_RESERVE}
                     emptyTitle="Sin contactos"
                     emptyDesc="Agrega el primero o importa un Excel."
                   />
@@ -592,7 +606,6 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
               </div>
             )}
           </div>
-        </div>
       </div>
 
       {/* ── Modales ── */}
