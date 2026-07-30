@@ -737,6 +737,46 @@ periodo, ve una lista de candidatos con su **estado** y acciona **fila por fila*
 - El escaneo se lanza **al abrir** (una sola vez, `meetScanned`) y a demanda con Actualizar; tras
   accionar se actualiza la fila **en memoria** y se refresca la lista del módulo.
 
+### Editores de Automatizaciones — panel drill-in "extra grande" (`FlowPanelUI`, 2026-07-30)
+`components/dashboard/flows/FlowPanelUI.tsx` es la **definición única** del lenguaje de los tres
+editores grandes de Automatizaciones (Email masivo, WhatsApp, Chatbot). Antes cada panel traía su
+propio overlay, cabecera, pasos y botones **en pixel antiguo** (bordes 2px, textos de 8-9px,
+`pixel-btn-*`, siglas de texto en vez de iconos) → los tres se veían distinto entre sí y distinto
+del resto del dashboard. Ahora los tres importan de aquí.
+- **`FlowPanelShell`** — overlay + panel deslizante desde la derecha. Es la variante
+  **extra-grande** del panel lateral estándar (`.corp .modal-surface[data-size=lg]` mide 840px):
+  estos editores llevan tablas y asistentes, así que usan **1040px**. Superficie `bg-digi-card`,
+  `border-l` de 1px, animación `panelSlideInRight` (la misma del panel estándar).
+  - **`z-[70]` a propósito:** el banner de Comandos Violeta es `fixed z-[60]` y **se comía la
+    cabecera** del panel (la pestañita del megáfono se superponía a "Volver"). Los `PixelModal` que
+    se abren desde dentro siguen quedando encima porque `<dialog showModal>` vive en el *top layer*
+    del navegador, que gana a cualquier z-index. **Regla:** un overlay a pantalla completa del
+    dashboard va por encima de `z-[60]`, o el banner lo tapa.
+  - **Cabecera:** botón volver 32×32 (`ArrowLeft`) · tile de icono 36×36 `bg-accent-light` · título
+    17px/600 + subtítulo 12px · cerrar (X) 32×32. Mismo patrón que el resto de cabeceras de detalle.
+- **`PanelSubHeader`** — volver + título + subtítulo + acciones (los pasos, un badge…). Sustituye
+  los `< Campanas` sueltos que había repetidos 8 veces.
+- **`SectionBar`** — título de sección (15px/600) + hint opcional a la izquierda, **acciones a la
+  derecha** (secundarias antes de la primaria).
+- **`PanelFooter`** — pie de formulario con `border-t` de 1px; `between` (volver ← → guardar) o `end`.
+- **`Steps`** — indicador de pasos ÚNICO para los tres asistentes (antes: `StepIndicator` +
+  dos `StepDot` distintos). Círculo 24px: activo `bg-accent` blanco · hecho `bg-accent-light` con
+  check · pendiente borde neutro; etiqueta 12px al lado (no debajo).
+- **`StatCards`** — las 5 tarjetas de resumen de estadísticas, con tonos semánticos.
+- **`FileRow`** / **`PanelEmpty`** / **`formatSize`** — fila de archivo con `Paperclip` + tacho,
+  estado vacío con el cuadrito estándar, y formato de bytes consistente.
+- **Clases compartidas:** `FIELD` (campo estándar), `FIELD_SM` (campo compacto de filas
+  "agregar"), `LABEL`, **`BTN_ROW`** y **`BTN_ROW_DANGER`** (botón pequeño de acción **dentro de una
+  fila de tabla**: 1px de borde, radio, 12px, icono lucide de 14px). Los botones grandes salen de
+  `components/ui/Button` (`BTN_PRIMARY`/`BTN_SECONDARY`).
+- **Reglas que se aplicaron al migrar:** nada de `text-[8px]`/`text-[9px]` (mínimo **11px**, cuerpo
+  12-13px) · nada de `border-2` (1px) · **iconos lucide en vez de siglas** (la barra del editor HTML
+  pasó de `B I U H1 H2 P <> IMG HR BTN` a `Bold/Italic/Underline/Heading1/Heading2/Pilcrow/Link2/
+  Image/Minus/MousePointerClick`) · `X` de borrar → `Trash2` · `v`/`>` de expandir →
+  `ChevronDown`/`ChevronRight` · selects a `PixelSelect` e inputs a `PixelInput` · pestañas a
+  `PixelTabs` · y **acentos y ñ en toda la copia** (Campañas, Estadísticas, Reenvío, Configuración,
+  Previsualización, conexión, Tamaño…), que faltaban en los tres archivos.
+
 ### Utilidades de administrador — pestañas del módulo Admin (2026-07-25)
 Las pestañas horizontales de `admin/page.tsx` son el sitio donde viven las **funciones de administrador**
 (no un módulo nuevo por cada una). Se añadieron **Fuentes** (`Database`) y **Tutoriales** (`Video`) tras
@@ -803,6 +843,17 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   de ayuda `text-[11px] text-digi-muted` con el tipo y si es obligatorio.
 
 ## Desviaciones detectadas y resolución
+- **2026-07-30 — Automatizaciones: los TRES editores de flujo seguían en pixel antiguo → CORREGIDOS.**
+  `FlowsTable` se migró a Fluent el 2026-07-05, pero los paneles que abre con "Configurar"
+  (`FlowSidePanel` email masivo · `WhatsAppFlowPanel` · `ChatbotFlowPanel`, ~2.750 líneas) se
+  quedaron fuera: bordes de 2px, textos de **8-9px**, `pixel-btn-*`, botones de tabla como cajitas
+  de color, siglas de texto en lugar de iconos, `X` para borrar, y **cada archivo con su propio
+  overlay, cabecera y pasos** (tres versiones distintas del mismo control). Además el banner de
+  Comandos Violeta (`z-[60]`) se superponía a la cabecera del panel (`z-40`).
+  **Resuelto:** se extrajo `FlowPanelUI` como definición única (shell, sub-cabecera, sección, pie,
+  pasos, tarjetas de resumen, fila de archivo, estado vacío y clases de campo/botón-de-fila) y los
+  tres paneles se reescribieron sobre ella; el overlay subió a `z-[70]`. Verificado `tsc` +
+  `next build`. **Pendiente de revisión visual del usuario** en los tres tipos de flujo.
 - **2026-07-29 — Recordatorios: el botón "Nuevo recordatorio" recomponía las clases de `BTN_PRIMARY`
   a mano → CORREGIDO.** `recordatorios/page.tsx` tenía la cadena completa (`inline-flex … bg-accent
   text-white … hover:bg-accent-hover …`) escrita inline en vez de usar la constante, aunque el mismo

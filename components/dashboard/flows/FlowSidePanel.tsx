@@ -1,14 +1,30 @@
 'use client';
 
+/**
+ * FlowSidePanel — editor del flujo de EMAIL MASIVO (campañas, listas de contactos,
+ * redacción del correo, envío y estadísticas). Estilo Fluent `.corp` del dashboard;
+ * el overlay, la cabecera, los pasos y los controles compartidos viven en `FlowPanelUI`.
+ */
+
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelInput from '@/components/ui/PixelInput';
 import BrandLoader from '@/components/ui/BrandLoader';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import {
+  FlowPanelShell, PanelSubHeader, SectionBar, PanelFooter, Steps, StatCards, FileRow,
+  PanelEmpty, FIELD, FIELD_SM, LABEL, BTN_ROW, BTN_ROW_DANGER, formatSize,
+} from '@/components/dashboard/flows/FlowPanelUI';
+import {
+  Mail, Plus, Send, BarChart3, RotateCcw, Users, ChevronRight, ChevronDown, Trash2,
+  FileSpreadsheet, Download, Paperclip, Eye, Code2, Check, X, Bold, Italic, Underline,
+  Heading1, Heading2, Pilcrow, Link2, Image as ImageIcon, Minus, MousePointerClick,
+} from 'lucide-react';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 /* ─── Types ─── */
@@ -64,7 +80,10 @@ const CAMP_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' |
   draft: 'default', sending: 'info', sent: 'success', failed: 'error',
 };
 const CAMP_STATUS_L: Record<string, string> = {
-  draft: 'Borrador', sending: 'Enviando...', sent: 'Enviada', failed: 'Fallida',
+  draft: 'Borrador', sending: 'Enviando…', sent: 'Enviada', failed: 'Fallida',
+};
+const SEND_STATUS_L: Record<string, string> = {
+  pending: 'Pendiente', sent: 'Enviado', delivered: 'Entregado', bounced: 'Rebotado', failed: 'Fallido',
 };
 
 /* ─── Build preview HTML (neutral, no branding) ─── */
@@ -90,7 +109,6 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
   const [view, setView] = useState<'campaigns' | 'create-campaign' | 'stats' | 'resend-edit'>('campaigns');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [statsData, setStatsData] = useState<CampaignStats | null>(null);
   const [confirmSend, setConfirmSend] = useState<Campaign | null>(null);
   const [confirmSendFull, setConfirmSendFull] = useState<Campaign | null>(null);
@@ -136,7 +154,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
         toast.error(data.error || 'Error al enviar');
       }
     } catch {
-      toast.error('Error de conexion');
+      toast.error('Error de conexión');
     } finally {
       setSending(false);
     }
@@ -149,236 +167,195 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
       setStatsData(data);
       setView('stats');
     } catch {
-      toast.error('Error al cargar estadisticas');
+      toast.error('Error al cargar las estadísticas');
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-40 flex">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+  const closeSendModal = () => {
+    setConfirmSend(null); setConfirmSendFull(null); setSendResult(null); setResendEditing(false);
+  };
 
-      {/* Panel */}
-      <div className="relative ml-auto w-full max-w-4xl bg-digi-darker border-l-2 border-digi-border overflow-y-auto animate-[slideInRight_0.3s_ease-out]">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-digi-darker border-b-2 border-digi-border px-6 py-4 flex items-center gap-4">
-          <button onClick={onClose} className="text-digi-muted hover:text-digi-text transition-colors" style={pf}>
-            &lt; Volver
-          </button>
-          <div className="flex-1">
-            <h2 className="pixel-heading text-sm text-digi-text">{flow.name}</h2>
-            <p className="text-[10px] text-digi-muted mt-0.5" style={mf}>{flow.description || 'Email masivo'}</p>
+  const loadPreviewFor = async (c: Campaign) => {
+    setConfirmSend(c);
+    setConfirmSendFull(null);
+    setSendResult(null);
+    setLoadingPreview(true);
+    try {
+      const res = await fetch(`/api/admin/flows/${flow.id}/campaigns/${c.id}`);
+      const data = await res.json();
+      setConfirmSendFull(data.data);
+    } catch { /* ignore */ }
+    finally { setLoadingPreview(false); }
+  };
+
+  return (
+    <FlowPanelShell Icon={Mail} title={flow.name} subtitle={flow.description || 'Email masivo'} onClose={onClose}>
+      {view === 'campaigns' && (
+        <CampaignsView
+          campaigns={campaigns}
+          loading={loading}
+          onCreateNew={() => setView('create-campaign')}
+          onSend={(c) => { setResendEditing(false); loadPreviewFor(c); }}
+          onViewStats={handleViewStats}
+          onResend={(c) => setResendChoice(c)}
+        />
+      )}
+
+      {view === 'create-campaign' && (
+        <CreateCampaignWizard
+          flowId={flow.id}
+          onDone={() => { setView('campaigns'); fetchCampaigns(); }}
+          onCancel={() => setView('campaigns')}
+        />
+      )}
+
+      {view === 'resend-edit' && resendCampaign && (
+        <div>
+          <PanelSubHeader
+            onBack={() => { setView('campaigns'); setResendEditing(false); setResendCampaign(null); }}
+            backLabel="Campañas"
+            title="Editar el correo para reenviarlo"
+            subtitle={resendCampaign.subject}
+          />
+
+          <div className="space-y-4">
+            <PixelInput label="Correo remitente" value={resendOverrides.from_email}
+              onChange={(e) => setResendOverrides((p) => ({ ...p, from_email: e.target.value }))} />
+            <PixelInput label="Asunto" value={resendOverrides.subject}
+              onChange={(e) => setResendOverrides((p) => ({ ...p, subject: e.target.value }))} />
+            <div>
+              <label className={LABEL}>Cuerpo del correo</label>
+              <HtmlEditor value={resendOverrides.body_html} onChange={(v) => setResendOverrides((p) => ({ ...p, body_html: v }))} rows={10} />
+            </div>
+            <div>
+              <label className={LABEL}>Pie de página</label>
+              <HtmlEditor value={resendOverrides.footer_html} onChange={(v) => setResendOverrides((p) => ({ ...p, footer_html: v }))} rows={4} />
+            </div>
+
+            <AttachmentsManager attachments={resendOverrides.attachments} onChange={(a) => setResendOverrides((p) => ({ ...p, attachments: a }))} />
+
+            <PanelFooter>
+              <button onClick={() => { setView('campaigns'); setResendEditing(false); setResendCampaign(null); }} className={BTN_SECONDARY}>
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const previewCampaign = { ...resendCampaign, ...resendOverrides };
+                  setConfirmSend(resendCampaign);
+                  setConfirmSendFull(previewCampaign as Campaign);
+                  setSendResult(null);
+                }}
+                className={BTN_PRIMARY}
+              >
+                <Eye className="w-4 h-4" /> Previsualizar y enviar
+              </button>
+            </PanelFooter>
           </div>
         </div>
+      )}
 
-        <div className="p-6">
-          {view === 'campaigns' && (
-            <CampaignsView
-              campaigns={campaigns}
-              loading={loading}
-              onCreateNew={() => setView('create-campaign')}
-              onSend={async (c) => {
-                setConfirmSend(c);
-                setConfirmSendFull(null);
-                setSendResult(null);
-                setLoadingPreview(true);
-                try {
-                  const res = await fetch(`/api/admin/flows/${flow.id}/campaigns/${c.id}`);
-                  const data = await res.json();
-                  setConfirmSendFull(data.data);
-                } catch { /* ignore */ }
-                finally { setLoadingPreview(false); }
-              }}
-              onViewStats={handleViewStats}
-              onResend={(c) => setResendChoice(c)}
-            />
-          )}
-
-          {view === 'create-campaign' && (
-            <CreateCampaignWizard
-              flowId={flow.id}
-              onDone={() => { setView('campaigns'); fetchCampaigns(); }}
-              onCancel={() => setView('campaigns')}
-            />
-          )}
-
-          {view === 'resend-edit' && resendCampaign && (
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => { setView('campaigns'); setResendEditing(false); setResendCampaign(null); }} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>
-                  &lt; Campanas
-                </button>
-                <h3 className="pixel-heading text-xs text-digi-text">Editar correo para reenvio</h3>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Correo Remitente</label>
-                  <input
-                    value={resendOverrides.from_email}
-                    onChange={e => setResendOverrides(p => ({ ...p, from_email: e.target.value }))}
-                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
-                    style={mf}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Asunto</label>
-                  <input
-                    value={resendOverrides.subject}
-                    onChange={e => setResendOverrides(p => ({ ...p, subject: e.target.value }))}
-                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
-                    style={mf}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Cuerpo del Correo</label>
-                  <HtmlEditor value={resendOverrides.body_html} onChange={v => setResendOverrides(p => ({ ...p, body_html: v }))} rows={10} />
-                </div>
-                <div>
-                  <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Pie de Pagina</label>
-                  <HtmlEditor value={resendOverrides.footer_html} onChange={v => setResendOverrides(p => ({ ...p, footer_html: v }))} rows={4} />
-                </div>
-
-                <AttachmentsManager attachments={resendOverrides.attachments} onChange={a => setResendOverrides(p => ({ ...p, attachments: a }))} />
-
-                <div className="flex justify-between pt-4 border-t-2 border-digi-border">
-                  <button onClick={() => { setView('campaigns'); setResendEditing(false); setResendCampaign(null); }} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={() => {
-                      const previewCampaign = { ...resendCampaign, ...resendOverrides };
-                      setConfirmSend(resendCampaign);
-                      setConfirmSendFull(previewCampaign as Campaign);
-                      setSendResult(null);
-                    }}
-                    className="pixel-btn-primary px-4 py-2 text-[9px]"
-                    style={pf}
-                  >
-                    Previsualizar y Enviar &gt;
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {view === 'stats' && statsData && (
-            <StatsView
-              stats={statsData}
-              onBack={() => { setView('campaigns'); setStatsData(null); }}
-            />
-          )}
-        </div>
-      </div>
+      {view === 'stats' && statsData && (
+        <StatsView stats={statsData} onBack={() => { setView('campaigns'); setStatsData(null); }} />
+      )}
 
       {/* Send Confirmation + Preview Modal */}
-      <PixelModal open={!!confirmSend} onClose={() => { setConfirmSend(null); setConfirmSendFull(null); setSendResult(null); setResendEditing(false); }} title="Previsualizar y Enviar" size="lg">
+      <PixelModal open={!!confirmSend} onClose={closeSendModal} title="Previsualizar y enviar" size="lg" busy={sending}>
         <div className="space-y-4">
           {!sendResult ? (
             <>
               {/* Campaign info */}
-              <div className="grid grid-cols-2 gap-3 text-xs" style={mf}>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-digi-muted block text-[9px] mb-0.5" style={pf}>Remitente</span>
-                  <span className="text-digi-text">{resendEditing ? resendOverrides.from_email : (confirmSendFull?.from_email || confirmSend?.from_email)}</span>
+                  <span className="block text-[11px] text-digi-muted mb-0.5" style={mf}>Remitente</span>
+                  <span className="text-[13px] text-digi-text" style={mf}>{resendEditing ? resendOverrides.from_email : (confirmSendFull?.from_email || confirmSend?.from_email)}</span>
                 </div>
                 <div>
-                  <span className="text-digi-muted block text-[9px] mb-0.5" style={pf}>Lista</span>
-                  <span className="text-accent-glow">{confirmSend?.list_name}</span>
-                  <span className="text-digi-muted ml-1">({confirmSend?.total_contacts} contactos)</span>
+                  <span className="block text-[11px] text-digi-muted mb-0.5" style={mf}>Lista</span>
+                  <span className="text-[13px] text-digi-text" style={mf}>
+                    {confirmSend?.list_name}
+                    <span className="text-digi-muted"> · {confirmSend?.total_contacts} contactos</span>
+                  </span>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-digi-muted block text-[9px] mb-0.5" style={pf}>Asunto</span>
-                  <span className="text-digi-text font-medium">{resendEditing ? resendOverrides.subject : confirmSend?.subject}</span>
+                  <span className="block text-[11px] text-digi-muted mb-0.5" style={mf}>Asunto</span>
+                  <span className="text-[13px] font-medium text-digi-text" style={mf}>{resendEditing ? resendOverrides.subject : confirmSend?.subject}</span>
                 </div>
                 {confirmSend?.status === 'sent' && (
-                  <div className="col-span-2">
-                    <PixelBadge variant="warning">Reenvio</PixelBadge>
-                  </div>
+                  <div className="col-span-2"><PixelBadge variant="warning">Reenvío</PixelBadge></div>
                 )}
               </div>
 
               {/* Email preview */}
               <div>
-                <span className="text-digi-muted block text-[9px] mb-1" style={pf}>Previsualizacion del correo</span>
+                <span className="block text-[11px] text-digi-muted mb-1.5" style={mf}>Previsualización del correo</span>
                 {loadingPreview ? (
-                  <div className="flex justify-center py-8"><BrandLoader size="sm" label="Cargando preview..." /></div>
+                  <div className="flex justify-center py-8"><BrandLoader size="sm" label="Cargando previsualización…" /></div>
                 ) : confirmSendFull ? (
-                  <div className="border-2 border-digi-border rounded overflow-hidden">
+                  <div className="border border-digi-border rounded-lg overflow-hidden">
                     <iframe
                       srcDoc={buildPreviewHtml(confirmSendFull.body_html, confirmSendFull.footer_html)}
                       className="w-full bg-white"
                       style={{ height: '350px', border: 'none' }}
                       sandbox="allow-same-origin"
-                      title="Preview del correo"
+                      title="Previsualización del correo"
                     />
                   </div>
                 ) : (
-                  <div className="pixel-card text-center py-6">
-                    <p className="text-xs text-digi-muted" style={mf}>No se pudo cargar la previsualizacion</p>
-                  </div>
+                  <PanelEmpty Icon={Mail} title="No se pudo cargar la previsualización" />
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t-2 border-digi-border">
-                <button onClick={() => { setConfirmSend(null); setConfirmSendFull(null); setResendEditing(false); }} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
-                <button onClick={handleSendCampaign} disabled={sending || loadingPreview} className="pixel-btn-primary px-4 py-2 text-[9px]" style={pf}>
-                  {sending ? 'Enviando...' : `Enviar a ${confirmSend?.total_contacts} contactos`}
+              <PanelFooter align="end">
+                <button onClick={closeSendModal} className={BTN_SECONDARY}>Cancelar</button>
+                <button onClick={handleSendCampaign} disabled={sending || loadingPreview} className={BTN_PRIMARY}>
+                  <Send className="w-4 h-4" />
+                  {sending ? 'Enviando…' : `Enviar a ${confirmSend?.total_contacts} contactos`}
                 </button>
-              </div>
+              </PanelFooter>
             </>
           ) : (
             <>
               <div className="text-center py-6">
-                <p className="text-2xl font-bold text-green-400" style={mf}>{sendResult.sent}/{sendResult.total}</p>
-                <p className="text-[9px] text-digi-muted mt-1" style={pf}>Correos enviados exitosamente</p>
+                <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-6 h-6 text-green-400" strokeWidth={3} />
+                </div>
+                <p className="text-[26px] font-semibold text-digi-text tabular-nums" style={mf}>{sendResult.sent}/{sendResult.total}</p>
+                <p className="text-[12px] text-digi-muted mt-1" style={mf}>correos enviados correctamente</p>
                 {sendResult.failed > 0 && (
-                  <p className="text-xs text-red-400 mt-2" style={mf}>{sendResult.failed} fallidos</p>
+                  <p className="text-[13px] text-red-400 mt-2" style={mf}>{sendResult.failed} fallidos</p>
                 )}
               </div>
-              <div className="flex justify-end pt-2 border-t-2 border-digi-border">
-                <button onClick={() => { setConfirmSend(null); setConfirmSendFull(null); setSendResult(null); setResendEditing(false); }} className="pixel-btn-primary px-4 py-2 text-[9px]" style={pf}>
-                  Cerrar
-                </button>
-              </div>
+              <PanelFooter align="end">
+                <button onClick={closeSendModal} className={BTN_PRIMARY}>Cerrar</button>
+              </PanelFooter>
             </>
           )}
         </div>
       </PixelModal>
 
       {/* Resend Choice Modal — same or different */}
-      <PixelModal open={!!resendChoice && !resendEditing && !confirmSend} onClose={() => setResendChoice(null)} title="Reenviar Campana" size="sm">
+      <PixelModal open={!!resendChoice && !resendEditing && !confirmSend} onClose={() => setResendChoice(null)} title="Reenviar campaña" size="sm">
         <div className="space-y-4">
-          <p className="text-xs text-digi-muted" style={mf}>
-            Como deseas reenviar <span className="text-digi-text">{resendChoice?.subject}</span>?
+          <p className="text-[13px] text-digi-muted" style={mf}>
+            ¿Cómo quieres reenviar <span className="text-digi-text font-medium">{resendChoice?.subject}</span>?
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <button
               onClick={async () => {
                 if (!resendChoice) return;
-                // Same email → go to preview
-                setConfirmSend(resendChoice);
-                setConfirmSendFull(null);
-                setSendResult(null);
                 setResendEditing(false);
-                setLoadingPreview(true);
-                try {
-                  const res = await fetch(`/api/admin/flows/${flow.id}/campaigns/${resendChoice.id}`);
-                  const data = await res.json();
-                  setConfirmSendFull(data.data);
-                } catch { /* ignore */ }
-                finally { setLoadingPreview(false); }
+                await loadPreviewFor(resendChoice);
                 setResendChoice(null);
               }}
-              className="pixel-card py-6 text-center hover:border-accent transition-colors cursor-pointer"
+              className="rounded-lg border border-digi-border bg-digi-darker/40 px-3 py-4 text-center hover:border-accent transition-colors"
             >
-              <p className="text-sm text-digi-text mb-1" style={pf}>Mismo correo</p>
-              <p className="text-[9px] text-digi-muted" style={mf}>Reenviar con el mismo contenido</p>
+              <Send className="w-4 h-4 text-accent mx-auto mb-1.5" />
+              <p className="text-[13px] font-medium text-digi-text" style={mf}>Mismo correo</p>
+              <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Reenviar con el mismo contenido</p>
             </button>
             <button
               onClick={async () => {
                 if (!resendChoice) return;
-                // Different email → load data and switch to edit view
                 try {
                   const res = await fetch(`/api/admin/flows/${flow.id}/campaigns/${resendChoice.id}`);
                   const data = await res.json();
@@ -396,19 +373,19 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
                 setView('resend-edit');
                 setResendChoice(null);
               }}
-              className="pixel-card py-6 text-center hover:border-accent transition-colors cursor-pointer"
+              className="rounded-lg border border-digi-border bg-digi-darker/40 px-3 py-4 text-center hover:border-accent transition-colors"
             >
-              <p className="text-sm text-digi-text mb-1" style={pf}>Correo diferente</p>
-              <p className="text-[9px] text-digi-muted" style={mf}>Editar el contenido antes de enviar</p>
+              <Code2 className="w-4 h-4 text-accent mx-auto mb-1.5" />
+              <p className="text-[13px] font-medium text-digi-text" style={mf}>Correo diferente</p>
+              <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Editar el contenido antes de enviar</p>
             </button>
           </div>
-          <div className="flex justify-end pt-2 border-t-2 border-digi-border">
-            <button onClick={() => setResendChoice(null)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>Cancelar</button>
-          </div>
+          <PanelFooter align="end">
+            <button onClick={() => setResendChoice(null)} className={BTN_SECONDARY}>Cancelar</button>
+          </PanelFooter>
         </div>
       </PixelModal>
-
-    </div>
+    </FlowPanelShell>
   );
 }
 
@@ -423,52 +400,57 @@ function CampaignsView({
   onViewStats: (c: Campaign) => void;
   onResend: (c: Campaign) => void;
 }) {
-  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando campanas..." /></div>;
+  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando campañas…" /></div>;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="pixel-heading text-xs text-digi-text">Campanas</h3>
-        <button onClick={onCreateNew} className="pixel-btn-primary px-3 py-1.5 text-[9px]" style={pf}>
-          + Nueva Campana
+      <SectionBar title="Campañas" hint={campaigns.length ? `${campaigns.length} en total` : undefined}>
+        <button onClick={onCreateNew} className={BTN_PRIMARY}>
+          <Plus className="w-4 h-4" /> Nueva campaña
         </button>
-      </div>
+      </SectionBar>
 
       <PixelDataTable
+        singleLine
         columns={[
-          { key: 'subject', header: 'Asunto', render: (c: Campaign) => <span className="text-digi-text">{c.subject}</span> },
-          { key: 'list', header: 'Lista', render: (c: Campaign) => <span className="text-accent-glow">{c.list_name || '-'}</span> },
-          { key: 'contacts', header: 'Contactos', render: (c: Campaign) => String(c.total_contacts || 0) },
-          { key: 'status', header: 'Estado', render: (c: Campaign) => (
-            <PixelBadge variant={CAMP_STATUS_V[c.status] || 'default'}>
-              {CAMP_STATUS_L[c.status] || c.status}
-            </PixelBadge>
-          )},
-          { key: 'sent', header: 'Enviados', render: (c: Campaign) => c.status === 'sent' ? `${c.sent_count}/${c.total_contacts}` : '-' },
-          { key: 'date', header: 'Fecha', render: (c: Campaign) => new Date(c.created_at).toLocaleDateString() },
-          { key: 'actions', header: '', width: '140px', render: (c: Campaign) => (
-            <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+          { key: 'subject', header: 'Asunto', render: (c: Campaign) => (
+            <span className="block text-[13px] font-medium text-digi-text truncate max-w-[280px]" style={mf}>{c.subject}</span>
+          ) },
+          { key: 'list', header: 'Lista', width: '150px', render: (c: Campaign) => (
+            <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-text" style={mf}>
+              <Users className="w-3.5 h-3.5 text-digi-muted shrink-0" />
+              <span className="truncate">{c.list_name || '—'}</span>
+            </span>
+          ) },
+          { key: 'contacts', header: 'Contactos', width: '90px', hideOnMobile: true, render: (c: Campaign) => (
+            <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{c.total_contacts || 0}</span>
+          ) },
+          { key: 'status', header: 'Estado', width: '110px', render: (c: Campaign) => (
+            <PixelBadge variant={CAMP_STATUS_V[c.status] || 'default'}>{CAMP_STATUS_L[c.status] || c.status}</PixelBadge>
+          ) },
+          { key: 'sent', header: 'Enviados', width: '90px', hideOnMobile: true, render: (c: Campaign) => (
+            <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{c.status === 'sent' ? `${c.sent_count}/${c.total_contacts}` : '—'}</span>
+          ) },
+          { key: 'date', header: 'Fecha', width: '100px', hideOnMobile: true, render: (c: Campaign) => (
+            <span className="text-[12px] text-digi-muted" style={mf}>{new Date(c.created_at).toLocaleDateString('es-EC')}</span>
+          ) },
+          { key: 'actions', header: '', width: '190px', render: (c: Campaign) => (
+            <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
               {c.status === 'draft' && (
-                <button onClick={() => onSend(c)} className="px-2 py-0.5 text-[8px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>
-                  Enviar
-                </button>
+                <button onClick={() => onSend(c)} className={BTN_ROW}><Send className="w-3.5 h-3.5" /> Enviar</button>
               )}
               {c.status === 'sent' && (
                 <>
-                  <button onClick={() => onResend(c)} className="px-2 py-0.5 text-[8px] border border-green-700/50 text-green-400 hover:bg-green-900/20 transition-colors" style={pf}>
-                    Reenviar
-                  </button>
-                  <button onClick={() => onViewStats(c)} className="px-2 py-0.5 text-[8px] border border-accent/50 text-accent-glow hover:bg-accent/10 transition-colors" style={pf}>
-                    Estadisticas
-                  </button>
+                  <button onClick={() => onResend(c)} className={BTN_ROW}><RotateCcw className="w-3.5 h-3.5" /> Reenviar</button>
+                  <button onClick={() => onViewStats(c)} className={BTN_ROW}><BarChart3 className="w-3.5 h-3.5" /> Estadísticas</button>
                 </>
               )}
             </div>
-          )},
+          ) },
         ]}
         data={campaigns}
-        emptyTitle="Sin campanas"
-        emptyDesc="Crea tu primera campana de email masivo."
+        emptyTitle="Sin campañas"
+        emptyDesc="Crea tu primera campaña de email masivo."
       />
     </div>
   );
@@ -591,8 +573,8 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([
       ['nombre', 'correo'],
-      ['Juan Perez', 'juan@ejemplo.com'],
-      ['Maria Lopez', 'maria@ejemplo.com'],
+      ['Juan Pérez', 'juan@ejemplo.com'],
+      ['María López', 'maria@ejemplo.com'],
     ]);
     ws['!cols'] = [{ wch: 25 }, { wch: 30 }];
     XLSX.utils.book_append_sheet(wb, ws, 'Contactos');
@@ -617,7 +599,7 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
         .filter(c => c.name && c.email);
 
       if (contacts.length === 0) {
-        toast.error('No se encontraron contactos validos. Asegurate de que el archivo tenga columnas "nombre" y "correo".');
+        toast.error('No se encontraron contactos válidos. El archivo debe tener columnas "nombre" y "correo".');
         return;
       }
 
@@ -668,7 +650,7 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
         setError(data.error || 'Error al guardar');
       }
     } catch {
-      setError('Error de conexion');
+      setError('Error de conexión');
     } finally {
       setSaving(false);
     }
@@ -676,45 +658,36 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
 
   return (
     <div>
-      {/* Steps indicator */}
-      <div className="flex items-center gap-2 mb-6">
-        <button onClick={onCancel} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>
-          &lt; Campanas
-        </button>
-        <div className="flex-1 flex items-center gap-2 justify-center">
-          <StepIndicator num={1} active={step === 1} done={step > 1} label="Contactos" onClick={() => setStep(1)} />
-          <div className={`w-8 h-0.5 ${step > 1 ? 'bg-accent' : 'bg-digi-border'}`} />
-          <StepIndicator num={2} active={step === 2} done={false} label="Email" onClick={() => step > 1 && setStep(2)} />
-        </div>
-      </div>
+      <PanelSubHeader onBack={onCancel} backLabel="Campañas" title="Nueva campaña">
+        <Steps items={['Contactos', 'Correo']} current={step} onGo={setStep} />
+      </PanelSubHeader>
 
       {step === 1 && (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="pixel-heading text-xs text-digi-text">Listas de Contactos</h3>
-            <button onClick={() => setShowCreateList(true)} className="pixel-btn-primary px-3 py-1.5 text-[9px]" style={pf}>
-              + Nueva Lista
+          <SectionBar title="Listas de contactos" hint="Elige la lista a la que se enviará la campaña.">
+            <button onClick={() => setShowCreateList(true)} className={BTN_SECONDARY}>
+              <Plus className="w-4 h-4" /> Nueva lista
             </button>
-          </div>
+          </SectionBar>
 
           {/* Create list form */}
           {showCreateList && (
-            <div className="pixel-card mb-4 p-4">
-              <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Nombre de la lista</label>
+            <div className="rounded-lg border border-digi-border bg-digi-darker/40 p-3 mb-3">
+              <label className={LABEL}>Nombre de la lista</label>
               <div className="flex gap-2">
                 <input
                   value={newListName}
                   onChange={e => setNewListName(e.target.value)}
                   placeholder="Ej: Clientes VIP"
-                  className="flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
+                  className={`${FIELD} flex-1`}
                   style={mf}
                   onKeyDown={e => e.key === 'Enter' && handleCreateList()}
                 />
-                <button onClick={handleCreateList} disabled={creatingList} className="pixel-btn-primary px-3 py-2 text-[9px]" style={pf}>
-                  {creatingList ? '...' : 'Crear'}
+                <button onClick={handleCreateList} disabled={creatingList} className={BTN_PRIMARY}>
+                  {creatingList ? 'Creando…' : 'Crear'}
                 </button>
-                <button onClick={() => setShowCreateList(false)} className="pixel-btn px-3 py-2 text-[9px]" style={pf}>
-                  X
+                <button onClick={() => setShowCreateList(false)} className={BTN_SECONDARY} aria-label="Cancelar">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -724,195 +697,148 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
           {loadingLists ? (
             <div className="flex justify-center py-8"><BrandLoader size="sm" /></div>
           ) : contactLists.length === 0 ? (
-            <div className="pixel-card text-center py-8">
-              <p className="text-[9px] text-digi-muted" style={pf}>No hay listas de contactos</p>
-              <p className="text-xs text-digi-muted/60 mt-1" style={mf}>Crea una lista para continuar</p>
-            </div>
+            <PanelEmpty Icon={Users} title="No hay listas de contactos" desc="Crea una lista para continuar." />
           ) : (
             <div className="space-y-2">
-              {contactLists.map(list => (
-                <div key={list.id} className={`border-2 transition-colors ${
-                  selectedListId === list.id ? 'border-accent bg-accent/5' : 'border-digi-border'
-                }`}>
-                  {/* List header */}
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <button onClick={() => toggleExpand(list.id)} className="text-digi-muted hover:text-digi-text transition-colors text-xs" style={pf}>
-                      {expandedListId === list.id ? 'v' : '>'}
-                    </button>
-                    <div className="flex-1">
-                      <span className="text-sm text-digi-text" style={mf}>{list.name}</span>
-                      <span className="text-[9px] text-digi-muted ml-2" style={pf}>{list.contact_count} contactos</span>
+              {contactLists.map(list => {
+                const selected = selectedListId === list.id;
+                const expanded = expandedListId === list.id;
+                return (
+                  <div key={list.id} className={`rounded-lg border transition-colors overflow-hidden ${selected ? 'border-accent bg-accent-light/40' : 'border-digi-border'}`}>
+                    {/* List header */}
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <button onClick={() => toggleExpand(list.id)}
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-digi-muted hover:bg-black/[0.04] hover:text-digi-text transition-colors shrink-0"
+                        aria-label={expanded ? 'Contraer' : 'Ver contactos'}>
+                        {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-medium text-digi-text truncate" style={mf}>{list.name}</span>
+                        <span className="block text-[11px] text-digi-muted" style={mf}>{list.contact_count} contactos</span>
+                      </div>
+                      <button
+                        onClick={() => setSelectedListId(selected ? null : list.id)}
+                        className={selected
+                          ? 'inline-flex items-center gap-1 px-2 py-1 rounded border border-accent bg-accent text-white text-[12px] font-medium transition-colors'
+                          : BTN_ROW}
+                      >
+                        {selected ? <><Check className="w-3.5 h-3.5" strokeWidth={3} /> Seleccionada</> : 'Seleccionar'}
+                      </button>
+                      <button onClick={() => handleDeleteList(list.id)} className={BTN_ROW_DANGER} aria-label="Eliminar lista">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setSelectedListId(selectedListId === list.id ? null : list.id)}
-                      className={`px-3 py-1 text-[8px] border transition-colors ${
-                        selectedListId === list.id
-                          ? 'border-accent bg-accent/20 text-accent-glow'
-                          : 'border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow'
-                      }`}
-                      style={pf}
-                    >
-                      {selectedListId === list.id ? 'Seleccionada' : 'Seleccionar'}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteList(list.id)}
-                      className="px-2 py-1 text-[8px] border border-red-700/50 text-red-400 hover:bg-red-900/20 transition-colors"
-                      style={pf}
-                    >
-                      X
-                    </button>
-                  </div>
 
-                  {/* Expanded contacts */}
-                  {expandedListId === list.id && (
-                    <div className="border-t-2 border-digi-border px-4 py-3 bg-digi-dark/50">
-                      {/* Add contact form */}
-                      <div className="flex gap-2 mb-3">
-                        <input
-                          value={newContactName}
-                          onChange={e => setNewContactName(e.target.value)}
-                          placeholder="Nombre"
-                          className="flex-1 px-2 py-1.5 bg-digi-darker border border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none"
-                          style={mf}
-                        />
-                        <input
-                          value={newContactEmail}
-                          onChange={e => setNewContactEmail(e.target.value)}
-                          placeholder="correo@ejemplo.com"
-                          className="flex-1 px-2 py-1.5 bg-digi-darker border border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none"
-                          style={mf}
-                          onKeyDown={e => e.key === 'Enter' && handleAddContact()}
-                        />
-                        <button onClick={handleAddContact} disabled={addingContact} className="pixel-btn-primary px-2 py-1.5 text-[8px]" style={pf}>
-                          {addingContact ? '...' : '+ Agregar'}
-                        </button>
-                      </div>
-
-                      {/* Import / Download template */}
-                      <div className="flex gap-2 mb-3">
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept=".xlsx,.xls,.csv"
-                          onChange={handleImportExcel}
-                          className="hidden"
-                        />
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={importingContacts}
-                          className="px-2 py-1 text-[8px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow transition-colors"
-                          style={pf}
-                        >
-                          {importingContacts ? 'Importando...' : 'Importar Excel'}
-                        </button>
-                        <button
-                          onClick={handleDownloadTemplate}
-                          className="px-2 py-1 text-[8px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow transition-colors"
-                          style={pf}
-                        >
-                          Descargar Plantilla
-                        </button>
-                      </div>
-
-                      {/* Contacts list */}
-                      {loadingContacts ? (
-                        <div className="flex justify-center py-4"><BrandLoader size="sm" /></div>
-                      ) : contacts.length === 0 ? (
-                        <p className="text-center text-[9px] text-digi-muted py-2" style={pf}>Sin contactos</p>
-                      ) : (
-                        <div className="max-h-48 overflow-y-auto space-y-1">
-                          {contacts.map(c => (
-                            <div key={c.id} className="flex items-center gap-2 px-2 py-1 border border-digi-border/50 text-xs" style={mf}>
-                              <span className="text-digi-text flex-1">{c.name}</span>
-                              <span className="text-digi-muted flex-1">{c.email}</span>
-                              <button
-                                onClick={() => handleDeleteContact(c.id)}
-                                className="text-red-400/60 hover:text-red-400 text-[8px] transition-colors"
-                                style={pf}
-                              >
-                                X
-                              </button>
-                            </div>
-                          ))}
+                    {/* Expanded contacts */}
+                    {expanded && (
+                      <div className="border-t border-digi-border px-3 py-3 bg-digi-darker/40">
+                        {/* Add contact form */}
+                        <div className="flex flex-wrap gap-2 mb-2.5">
+                          <input
+                            value={newContactName}
+                            onChange={e => setNewContactName(e.target.value)}
+                            placeholder="Nombre"
+                            className={`${FIELD_SM} flex-1 min-w-[120px]`}
+                            style={mf}
+                          />
+                          <input
+                            value={newContactEmail}
+                            onChange={e => setNewContactEmail(e.target.value)}
+                            placeholder="correo@ejemplo.com"
+                            className={`${FIELD_SM} flex-1 min-w-[160px]`}
+                            style={mf}
+                            onKeyDown={e => e.key === 'Enter' && handleAddContact()}
+                          />
+                          <button onClick={handleAddContact} disabled={addingContact} className={BTN_SECONDARY}>
+                            <Plus className="w-4 h-4" /> {addingContact ? 'Agregando…' : 'Agregar'}
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
+
+                        {/* Import / Download template */}
+                        <div className="flex flex-wrap gap-2 mb-2.5">
+                          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImportExcel} className="hidden" />
+                          <button onClick={() => fileInputRef.current?.click()} disabled={importingContacts} className={BTN_ROW}>
+                            <FileSpreadsheet className="w-3.5 h-3.5" /> {importingContacts ? 'Importando…' : 'Importar Excel'}
+                          </button>
+                          <button onClick={handleDownloadTemplate} className={BTN_ROW}>
+                            <Download className="w-3.5 h-3.5" /> Descargar plantilla
+                          </button>
+                        </div>
+
+                        {/* Contacts list */}
+                        {loadingContacts ? (
+                          <div className="flex justify-center py-4"><BrandLoader size="sm" /></div>
+                        ) : contacts.length === 0 ? (
+                          <p className="text-center text-[12px] text-digi-muted py-3" style={mf}>Sin contactos en esta lista.</p>
+                        ) : (
+                          <div className="max-h-52 overflow-y-auto space-y-1">
+                            {contacts.map(c => (
+                              <div key={c.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-digi-border bg-digi-card">
+                                <span className="flex-1 min-w-0 text-[12.5px] text-digi-text truncate" style={mf}>{c.name}</span>
+                                <span className="flex-1 min-w-0 text-[12px] text-digi-muted truncate" style={mf}>{c.email}</span>
+                                <button onClick={() => handleDeleteContact(c.id)} className="text-digi-muted/70 hover:text-red-500 transition-colors shrink-0" aria-label="Quitar contacto">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          {/* Next button */}
-          <div className="flex justify-end mt-6 pt-4 border-t-2 border-digi-border">
-            <button
-              onClick={() => { if (selectedListId) setStep(2); else setError('Selecciona una lista'); }}
-              className="pixel-btn-primary px-6 py-2 text-[9px]"
-              style={pf}
-              disabled={!selectedListId}
-            >
-              Siguiente &gt;
-            </button>
+          {error && !selectedListId && <p className="text-[12px] text-red-400 mt-2 text-right" style={mf}>{error}</p>}
+
+          <div className="mt-4">
+            <PanelFooter align="end">
+              <button
+                onClick={() => { if (selectedListId) setStep(2); else setError('Selecciona una lista'); }}
+                className={BTN_PRIMARY}
+                disabled={!selectedListId}
+              >
+                Siguiente <ChevronRight className="w-4 h-4" />
+              </button>
+            </PanelFooter>
           </div>
-          {error && !selectedListId && <p className="text-xs text-red-400 mt-2 text-right" style={mf}>{error}</p>}
         </div>
       )}
 
       {step === 2 && (
         <div>
-          <h3 className="pixel-heading text-xs text-digi-text mb-4">Configuracion del Correo</h3>
+          <SectionBar title="Configuración del correo" />
 
           <div className="space-y-4">
-            {/* From email */}
+            <PixelInput label="Correo remitente" value={fromEmail} onChange={e => setFromEmail(e.target.value)}
+              placeholder="Nombre <correo@dominio.com>" />
+            <PixelInput label="Asunto" value={subject} onChange={e => setSubject(e.target.value)}
+              placeholder="Asunto del correo" />
+
             <div>
-              <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Correo Remitente</label>
-              <input
-                value={fromEmail}
-                onChange={e => setFromEmail(e.target.value)}
-                placeholder="Nombre <correo@dominio.com>"
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
-                style={mf}
-              />
+              <label className={LABEL}>Cuerpo del correo</label>
+              <HtmlEditor value={bodyHtml} onChange={setBodyHtml} placeholder="Escribe el contenido del correo…" rows={10} />
             </div>
 
-            {/* Subject */}
             <div>
-              <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Asunto</label>
-              <input
-                value={subject}
-                onChange={e => setSubject(e.target.value)}
-                placeholder="Asunto del correo"
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
-                style={mf}
-              />
+              <label className={LABEL}>Pie de página</label>
+              <HtmlEditor value={footerHtml} onChange={setFooterHtml} placeholder="Pie de página del correo…" rows={4} />
             </div>
 
-            {/* Body HTML Editor */}
-            <div>
-              <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Cuerpo del Correo</label>
-              <HtmlEditor value={bodyHtml} onChange={setBodyHtml} placeholder="Escribe el contenido del correo..." rows={10} />
-            </div>
-
-            {/* Footer HTML Editor */}
-            <div>
-              <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Pie de Pagina</label>
-              <HtmlEditor value={footerHtml} onChange={setFooterHtml} placeholder="Pie de pagina del correo..." rows={4} />
-            </div>
-
-            {/* Attachments */}
             <AttachmentsManager attachments={attachments} onChange={setAttachments} />
 
-            {error && <p className="text-xs text-red-400" style={mf}>{error}</p>}
+            {error && <p className="text-[12px] text-red-400" style={mf}>{error}</p>}
 
-            {/* Actions */}
-            <div className="flex justify-between pt-4 border-t-2 border-digi-border">
-              <button onClick={() => setStep(1)} className="px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors" style={pf}>
-                &lt; Anterior
+            <PanelFooter>
+              <button onClick={() => setStep(1)} className={BTN_SECONDARY}>
+                <ChevronRight className="w-4 h-4 rotate-180" /> Anterior
               </button>
-              <button onClick={handleSaveCampaign} disabled={saving} className="pixel-btn-primary px-6 py-2 text-[9px]" style={pf}>
-                {saving ? 'Guardando...' : 'Crear Campana'}
+              <button onClick={handleSaveCampaign} disabled={saving} className={BTN_PRIMARY}>
+                {saving ? 'Guardando…' : 'Crear campaña'}
               </button>
-            </div>
+            </PanelFooter>
           </div>
         </div>
       )}
@@ -940,7 +866,7 @@ function AttachmentsManager({
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (file.size > 10 * 1024 * 1024) {
-          toast.error(`${file.name} supera el limite de 10MB`);
+          toast.error(`${file.name} supera el límite de 10MB`);
           continue;
         }
         const buffer = await file.arrayBuffer();
@@ -951,42 +877,23 @@ function AttachmentsManager({
       }
       onChange([...attachments, ...newAttachments]);
     } catch {
-      toast.error('Error al leer archivos');
+      toast.error('Error al leer los archivos');
     } finally {
       setAdding(false);
       if (inputRef.current) inputRef.current.value = '';
     }
   };
 
-  const removeAttachment = (index: number) => {
-    onChange(attachments.filter((_, i) => i !== index));
-  };
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  const totalSize = attachments.reduce((s, a) => s + a.size, 0);
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <label className="block text-[9px] text-digi-muted" style={pf}>Archivos Adjuntos</label>
+      <div className="flex items-center justify-between gap-3 mb-1.5">
+        <label className={`${LABEL} mb-0`}>Archivos adjuntos</label>
         <div>
-          <input
-            ref={inputRef}
-            type="file"
-            multiple
-            onChange={handleFiles}
-            className="hidden"
-          />
-          <button
-            onClick={() => inputRef.current?.click()}
-            disabled={adding}
-            className="px-2 py-1 text-[8px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow transition-colors"
-            style={pf}
-          >
-            {adding ? 'Cargando...' : '+ Adjuntar archivo'}
+          <input ref={inputRef} type="file" multiple onChange={handleFiles} className="hidden" />
+          <button onClick={() => inputRef.current?.click()} disabled={adding} className={BTN_ROW}>
+            <Paperclip className="w-3.5 h-3.5" /> {adding ? 'Cargando…' : 'Adjuntar archivo'}
           </button>
         </div>
       </div>
@@ -994,21 +901,11 @@ function AttachmentsManager({
       {attachments.length > 0 && (
         <div className="space-y-1">
           {attachments.map((a, i) => (
-            <div key={i} className="flex items-center gap-2 px-3 py-1.5 border border-digi-border/50 text-xs" style={mf}>
-              <span className="text-accent-glow text-[9px]" style={pf}>FILE</span>
-              <span className="text-digi-text flex-1 truncate">{a.filename}</span>
-              <span className="text-digi-muted text-[9px]">{formatSize(a.size)}</span>
-              <button
-                onClick={() => removeAttachment(i)}
-                className="text-red-400/60 hover:text-red-400 text-[8px] transition-colors"
-                style={pf}
-              >
-                X
-              </button>
-            </div>
+            <FileRow key={i} name={a.filename} meta={formatSize(a.size)}
+              onRemove={() => onChange(attachments.filter((_, idx) => idx !== i))} />
           ))}
-          <p className="text-[8px] text-digi-muted mt-1" style={mf}>
-            {attachments.length} archivo{attachments.length > 1 ? 's' : ''} — {formatSize(attachments.reduce((s, a) => s + a.size, 0))} total
+          <p className="text-[11px] text-digi-muted pt-0.5" style={mf}>
+            {attachments.length} archivo{attachments.length > 1 ? 's' : ''} · {formatSize(totalSize)} en total
           </p>
         </div>
       )}
@@ -1061,7 +958,7 @@ function HtmlEditor({
   const handleInsertLink = () => {
     const url = prompt('URL del enlace:');
     if (!url) return;
-    const text = prompt('Texto del enlace:', 'Click aqui') || 'Click aqui';
+    const text = prompt('Texto del enlace:', 'Clic aquí') || 'Clic aquí';
     insertAtCursor(`<a href="${url}" style="color:#7B5FBF;text-decoration:underline;">${text}</a>`);
   };
 
@@ -1072,56 +969,59 @@ function HtmlEditor({
     insertAtCursor(`<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;" />`);
   };
 
-  const toolbarBtns: { label: string; title: string; action: () => void }[] = [
-    { label: 'B', title: 'Negrita', action: () => insertTag('<strong>', '</strong>') },
-    { label: 'I', title: 'Cursiva', action: () => insertTag('<em>', '</em>') },
-    { label: 'U', title: 'Subrayado', action: () => insertTag('<u>', '</u>') },
-    { label: 'H1', title: 'Titulo 1', action: () => insertTag('<h1 style="color:#e5e5e5;font-size:22px;font-weight:600;margin:0 0 12px;">', '</h1>') },
-    { label: 'H2', title: 'Titulo 2', action: () => insertTag('<h2 style="color:#e5e5e5;font-size:18px;font-weight:600;margin:0 0 10px;">', '</h2>') },
-    { label: 'P', title: 'Parrafo', action: () => insertTag('<p style="color:#CBD5E1;font-size:15px;line-height:1.6;margin:0 0 12px;">', '</p>') },
-    { label: '<>', title: 'Enlace', action: handleInsertLink },
-    { label: 'IMG', title: 'Imagen', action: handleInsertImage },
-    { label: 'HR', title: 'Linea separadora', action: () => insertAtCursor('<hr style="border:none;border-top:1px solid #2a2a3a;margin:16px 0;" />') },
-    { label: 'BTN', title: 'Boton', action: () => {
-      const url = prompt('URL del boton:') || '#';
-      const text = prompt('Texto del boton:', 'Click aqui') || 'Click aqui';
-      insertAtCursor(`<div style="text-align:center;margin:20px 0;"><a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:12px 32px;font-weight:600;font-size:14px;border:2px solid #7B5FBF;">${text}</a></div>`);
-    }},
+  // Barra de formato: iconos lucide (el estándar del dashboard), no siglas de texto.
+  const toolbarBtns: { Icon: any; title: string; action: () => void }[] = [
+    { Icon: Bold, title: 'Negrita', action: () => insertTag('<strong>', '</strong>') },
+    { Icon: Italic, title: 'Cursiva', action: () => insertTag('<em>', '</em>') },
+    { Icon: Underline, title: 'Subrayado', action: () => insertTag('<u>', '</u>') },
+    { Icon: Heading1, title: 'Título 1', action: () => insertTag('<h1 style="color:#222222;font-size:22px;font-weight:600;margin:0 0 12px;">', '</h1>') },
+    { Icon: Heading2, title: 'Título 2', action: () => insertTag('<h2 style="color:#222222;font-size:18px;font-weight:600;margin:0 0 10px;">', '</h2>') },
+    { Icon: Pilcrow, title: 'Párrafo', action: () => insertTag('<p style="color:#333333;font-size:15px;line-height:1.6;margin:0 0 12px;">', '</p>') },
+    { Icon: Link2, title: 'Enlace', action: handleInsertLink },
+    { Icon: ImageIcon, title: 'Imagen', action: handleInsertImage },
+    { Icon: Minus, title: 'Línea separadora', action: () => insertAtCursor('<hr style="border:none;border-top:1px solid #e0e0e0;margin:16px 0;" />') },
+    { Icon: MousePointerClick, title: 'Botón', action: () => {
+      const url = prompt('URL del botón:') || '#';
+      const text = prompt('Texto del botón:', 'Clic aquí') || 'Clic aquí';
+      insertAtCursor(`<div style="text-align:center;margin:20px 0;"><a href="${url}" style="display:inline-block;background:#4B2D8E;color:#fff;text-decoration:none;padding:12px 32px;font-weight:600;font-size:14px;border-radius:4px;">${text}</a></div>`);
+    } },
   ];
 
   return (
-    <div className="border-2 border-digi-border">
+    <div className="border border-digi-border rounded-lg overflow-hidden">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-digi-card border-b-2 border-digi-border">
+      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-digi-card border-b border-digi-border">
         {toolbarBtns.map(btn => (
           <button
-            key={btn.label}
+            key={btn.title}
+            type="button"
             onClick={btn.action}
             title={btn.title}
-            className="px-2 py-1 text-[8px] text-digi-muted hover:text-digi-text hover:bg-accent/10 border border-transparent hover:border-digi-border transition-colors"
-            style={pf}
+            aria-label={btn.title}
+            className="w-7 h-7 flex items-center justify-center rounded-md text-digi-muted hover:bg-accent-light hover:text-accent transition-colors"
           >
-            {btn.label}
+            <btn.Icon className="w-4 h-4" />
           </button>
         ))}
         <div className="flex-1" />
         <button
+          type="button"
           onClick={() => setPreview(!preview)}
-          className={`px-2 py-1 text-[8px] border transition-colors ${
-            preview ? 'border-accent text-accent-glow bg-accent/10' : 'border-transparent text-digi-muted hover:text-digi-text'
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[12px] font-medium transition-colors ${
+            preview ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'
           }`}
-          style={pf}
+          style={mf}
         >
-          {preview ? 'Editor' : 'Preview'}
+          {preview ? <><Code2 className="w-3.5 h-3.5" /> Código</> : <><Eye className="w-3.5 h-3.5" /> Vista previa</>}
         </button>
       </div>
 
       {/* Editor or Preview */}
       {preview ? (
         <div
-          className="px-4 py-3 bg-digi-darker text-sm text-digi-text min-h-[120px] overflow-auto"
+          className="px-3 py-2.5 bg-digi-darker text-sm text-digi-text min-h-[120px] overflow-auto"
           style={{ ...mf, maxHeight: rows * 24 }}
-          dangerouslySetInnerHTML={{ __html: value || '<span style="color:#737373;">Sin contenido</span>' }}
+          dangerouslySetInnerHTML={{ __html: value || '<span style="opacity:.6;">Sin contenido</span>' }}
         />
       ) : (
         <textarea
@@ -1130,29 +1030,11 @@ function HtmlEditor({
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          className="w-full px-3 py-2 bg-digi-darker text-sm text-digi-text focus:outline-none resize-none"
+          className="w-full px-3 py-2.5 bg-digi-darker text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none resize-none border-0"
           style={mf}
         />
       )}
     </div>
-  );
-}
-
-/* ─── Step Indicator ─── */
-function StepIndicator({ num, active, done, label, onClick }: {
-  num: number; active: boolean; done: boolean; label: string; onClick: () => void;
-}) {
-  return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1">
-      <div className={`w-7 h-7 flex items-center justify-center text-[10px] border-2 transition-colors ${
-        active ? 'border-accent bg-accent/20 text-accent-glow' :
-        done ? 'border-green-600 bg-green-900/20 text-green-400' :
-        'border-digi-border text-digi-muted'
-      }`} style={pf}>
-        {done ? '✓' : num}
-      </div>
-      <span className={`text-[8px] ${active ? 'text-accent-glow' : 'text-digi-muted'}`} style={pf}>{label}</span>
-    </button>
   );
 }
 
@@ -1164,45 +1046,38 @@ function StatsView({ stats, onBack }: { stats: CampaignStats; onBack: () => void
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={onBack} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>
-          &lt; Campanas
-        </button>
-        <h3 className="pixel-heading text-xs text-digi-text">Estadisticas: {stats.campaign.subject}</h3>
-      </div>
+      <PanelSubHeader onBack={onBack} backLabel="Campañas" title="Estadísticas" subtitle={stats.campaign.subject} />
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-        {[
-          { label: 'Total', value: stats.summary.total, color: 'text-digi-text' },
-          { label: 'Enviados', value: stats.summary.sent, color: 'text-green-400' },
-          { label: 'Entregados', value: stats.summary.delivered, color: 'text-blue-400' },
-          { label: 'Rebotados', value: stats.summary.bounced, color: 'text-yellow-400' },
-          { label: 'Fallidos', value: stats.summary.failed, color: 'text-red-400' },
-        ].map(s => (
-          <div key={s.label} className="pixel-card py-3 text-center">
-            <p className="text-[8px] text-digi-muted mb-1" style={pf}>{s.label}</p>
-            <p className={`text-xl font-bold ${s.color}`} style={mf}>{s.value}</p>
-          </div>
-        ))}
-      </div>
+      <StatCards items={[
+        { label: 'Total', value: stats.summary.total },
+        { label: 'Enviados', value: stats.summary.sent, tone: 'success' },
+        { label: 'Entregados', value: stats.summary.delivered, tone: 'info' },
+        { label: 'Rebotados', value: stats.summary.bounced, tone: 'warning' },
+        { label: 'Fallidos', value: stats.summary.failed, tone: 'danger' },
+      ]} />
 
-      {/* Sends table */}
       <PixelDataTable
+        singleLine
         columns={[
-          { key: 'name', header: 'Contacto', render: (s: any) => s.contact_name },
-          { key: 'email', header: 'Email', render: (s: any) => s.contact_email },
-          { key: 'status', header: 'Estado', render: (s: any) => (
-            <PixelBadge variant={SEND_STATUS_V[s.status] || 'default'}>{s.status}</PixelBadge>
-          )},
-          { key: 'error', header: 'Error', render: (s: any) => (
-            <span className="text-red-400/80 truncate max-w-[200px] inline-block">{s.error_message || '-'}</span>
-          )},
-          { key: 'date', header: 'Fecha', render: (s: any) => s.sent_at ? new Date(s.sent_at).toLocaleString() : '-' },
+          { key: 'name', header: 'Contacto', render: (s: any) => (
+            <span className="text-[13px] text-digi-text" style={mf}>{s.contact_name}</span>
+          ) },
+          { key: 'email', header: 'Correo', render: (s: any) => (
+            <span className="text-[12px] text-digi-muted" style={mf}>{s.contact_email}</span>
+          ) },
+          { key: 'status', header: 'Estado', width: '110px', render: (s: any) => (
+            <PixelBadge variant={SEND_STATUS_V[s.status] || 'default'}>{SEND_STATUS_L[s.status] || s.status}</PixelBadge>
+          ) },
+          { key: 'error', header: 'Error', hideOnMobile: true, render: (s: any) => (
+            <span className="text-[12px] text-red-400 truncate max-w-[200px] inline-block" style={mf}>{s.error_message || '—'}</span>
+          ) },
+          { key: 'date', header: 'Fecha', width: '140px', hideOnMobile: true, render: (s: any) => (
+            <span className="text-[12px] text-digi-muted" style={mf}>{s.sent_at ? new Date(s.sent_at).toLocaleString('es-EC') : '—'}</span>
+          ) },
         ]}
         data={stats.sends}
-        emptyTitle="Sin envios"
-        emptyDesc="No hay registros de envio para esta campana."
+        emptyTitle="Sin envíos"
+        emptyDesc="No hay registros de envío para esta campaña."
       />
     </div>
   );

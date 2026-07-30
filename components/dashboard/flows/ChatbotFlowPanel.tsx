@@ -1,22 +1,38 @@
 'use client';
 
+/**
+ * ChatbotFlowPanel — editor del flujo de CHATBOT (agentes de IA sobre YCloud/WhatsApp:
+ * configuración, archivos de conocimiento, listas de preguntas y respuestas, y las
+ * conversaciones). Estilo Fluent `.corp`; overlay, cabecera, pasos y controles
+ * compartidos en `FlowPanelUI`.
+ */
+
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
+import PixelInput from '@/components/ui/PixelInput';
+import PixelSelect from '@/components/ui/PixelSelect';
+import PixelTabs from '@/components/ui/PixelTabs';
 import BrandLoader from '@/components/ui/BrandLoader';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import {
+  FlowPanelShell, PanelSubHeader, SectionBar, PanelFooter, Steps, FileRow,
+  PanelEmpty, FIELD, FIELD_SM, LABEL, BTN_ROW, BTN_ROW_DANGER, formatSize,
+} from '@/components/dashboard/flows/FlowPanelUI';
+import {
+  Bot, Plus, Play, Pause, Trash2, KeyRound, Upload, MessageSquare, Check, Copy,
+  ChevronRight, Eye, HelpCircle, FileText, BookOpen,
+} from 'lucide-react';
 
-const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const CANCEL_CLS = 'px-4 py-2 text-[9px] border-2 border-digi-border text-digi-muted hover:border-digi-muted hover:text-digi-text transition-colors';
 
 interface Flow { id: number; name: string; type: string; description: string; config: Record<string, any>; }
 interface Agent { id: number; flow_id: number; name: string; description: string; ai_provider: string; ai_model: string; wait_seconds: number; status: string; knowledge_count: number; conversation_count: number; created_at: string; }
 interface KnowledgeFile { id: number; filename: string; file_type: string; file_size: number; created_at: string; }
 interface QaList { id: number; name: string; selected: boolean; item_count: number; created_at: string; }
-interface QaItem { id: number; question: string; answer: string; }
 interface Conversation { id: number; contact_phone: string; contact_name: string; paused: boolean; message_count: number; last_message_at: string; }
 
 const AI_PROVIDERS = [
@@ -79,98 +95,111 @@ export default function ChatbotFlowPanel({ flow, onClose }: { flow: Flow; onClos
   const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
   return (
-    <div className="fixed inset-0 z-40 flex">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative ml-auto w-full max-w-4xl bg-digi-darker border-l-2 border-digi-border overflow-y-auto animate-[slideInRight_0.3s_ease-out]">
-        <div className="sticky top-0 z-10 bg-digi-darker border-b-2 border-digi-border px-6 py-4 flex items-center gap-4">
-          <button onClick={onClose} className="text-digi-muted hover:text-digi-text transition-colors" style={pf}>&lt; Volver</button>
-          <div className="flex-1">
-            <h2 className="pixel-heading text-sm text-digi-text">{flow.name}</h2>
-            <p className="text-[10px] text-digi-muted mt-0.5" style={mf}>Chatbot via YCloud</p>
+    <FlowPanelShell Icon={Bot} title={flow.name} subtitle="Chatbot vía YCloud" onClose={onClose}>
+      {!configSaved ? (
+        <div>
+          <SectionBar
+            title="Configurar YCloud API"
+            hint="Ingresa tu API key de YCloud para conectarte a WhatsApp Business."
+          />
+          <div className="rounded-lg border border-digi-border bg-digi-darker/40 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <KeyRound className="w-4 h-4 text-accent" />
+              <span className="text-[12px] text-digi-muted" style={mf}>Credenciales de YCloud</span>
+            </div>
+            <PixelInput label="YCloud API Key *" value={yCloudKey} onChange={e => setYCloudKey(e.target.value)}
+              type="password" placeholder="Tu API key de YCloud" />
+          </div>
+          <div className="mt-4">
+            <PanelFooter align="end">
+              <button onClick={handleSaveConfig} disabled={savingConfig || !yCloudKey.trim()} className={BTN_PRIMARY}>
+                {savingConfig ? 'Guardando…' : 'Guardar configuración'}
+              </button>
+            </PanelFooter>
           </div>
         </div>
+      ) : view === 'agents' ? (
+        <div>
+          <SectionBar title="Agentes" hint={agents.length ? `${agents.length} en total` : undefined}>
+            <button onClick={() => setConfigSaved(false)} className={BTN_SECONDARY}>
+              <KeyRound className="w-4 h-4" /> Credenciales
+            </button>
+            <button onClick={() => setView('create-agent')} className={BTN_PRIMARY}>
+              <Plus className="w-4 h-4" /> Crear agente
+            </button>
+          </SectionBar>
 
-        <div className="p-6">
-          {!configSaved ? (
-            <div>
-              <h3 className="pixel-heading text-xs text-digi-text mb-1">Configurar YCloud API</h3>
-              <p className="text-[9px] text-digi-muted mb-4" style={mf}>Ingresa tu API key de YCloud para conectarte a WhatsApp Business.</p>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[9px] text-digi-muted mb-1" style={pf}>YCloud API Key <span className="text-red-400">*</span></label>
-                  <input value={yCloudKey} onChange={e => setYCloudKey(e.target.value)} type="password" placeholder="Tu API key de YCloud"
-                    className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                </div>
-                <div className="flex justify-end pt-4 border-t-2 border-digi-border">
-                  <button onClick={handleSaveConfig} disabled={savingConfig || !yCloudKey.trim()} className="pixel-btn-primary px-6 py-2 text-[9px]" style={pf}>
-                    {savingConfig ? 'Guardando...' : 'Guardar'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : view === 'agents' ? (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="pixel-heading text-xs text-digi-text">Agentes</h3>
-                <div className="flex gap-2">
-                  <button onClick={() => setConfigSaved(false)} className="px-3 py-1.5 text-[9px] border border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Config API</button>
-                  <button onClick={() => setView('create-agent')} className="pixel-btn-primary px-3 py-1.5 text-[9px]" style={pf}>+ Crear Agente</button>
-                </div>
-              </div>
-
-              {loading ? <div className="flex justify-center py-12"><BrandLoader size="md" /></div> : (
-                <PixelDataTable
-                  columns={[
-                    { key: 'name', header: 'Nombre', render: (a: Agent) => <span className="text-digi-text">{a.name}</span> },
-                    { key: 'provider', header: 'IA', render: (a: Agent) => <span className="text-accent-glow">{a.ai_provider}</span> },
-                    { key: 'knowledge', header: 'Archivos', render: (a: Agent) => String(a.knowledge_count) },
-                    { key: 'convs', header: 'Chats', render: (a: Agent) => String(a.conversation_count) },
-                    { key: 'wait', header: 'Espera', render: (a: Agent) => (
-                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                        <input type="number" min={1} max={60} value={a.wait_seconds}
-                          onChange={e => handleUpdateWaitSeconds(a, parseInt(e.target.value) || 8)}
-                          className="w-12 px-1 py-0.5 bg-digi-darker border border-digi-border text-xs text-digi-text text-center focus:border-accent focus:outline-none" style={mf} />
-                        <span className="text-[8px] text-digi-muted" style={pf}>seg</span>
-                      </div>
-                    )},
-                    { key: 'status', header: 'Estado', render: (a: Agent) => (
-                      <PixelBadge variant={a.status === 'active' ? 'success' : 'warning'}>{a.status === 'active' ? 'Activo' : 'Pausado'}</PixelBadge>
-                    )},
-                    { key: 'actions', header: '', width: '180px', render: (a: Agent) => (
-                      <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => handleToggleAgent(a)} className={`px-2 py-0.5 text-[8px] border transition-colors ${a.status === 'active' ? 'border-yellow-700/50 text-yellow-400 hover:bg-yellow-900/20' : 'border-green-700/50 text-green-400 hover:bg-green-900/20'}`} style={pf}>
-                          {a.status === 'active' ? 'Pausar' : 'Activar'}
-                        </button>
-                        <button onClick={() => { setSelectedAgent(a); setView('agent-detail'); }} className="px-2 py-0.5 text-[8px] border border-accent/50 text-accent-glow hover:bg-accent/10 transition-colors" style={pf}>Ver</button>
-                        <button onClick={() => setConfirmDeleteAgent(a)} className="px-2 py-0.5 text-[8px] border border-red-700/50 text-red-400 hover:bg-red-900/20 transition-colors" style={pf}>X</button>
-                      </div>
-                    )},
-                  ]}
-                  data={agents}
-                  onRowClick={(a) => { setSelectedAgent(a as Agent); setView('agent-detail'); }}
-                  emptyTitle="Sin agentes"
-                  emptyDesc="Crea tu primer agente chatbot."
-                />
-              )}
-            </div>
-          ) : view === 'create-agent' ? (
-            <CreateAgentWizard flowId={flow.id} onDone={() => { setView('agents'); fetchAgents(); }} onCancel={() => setView('agents')} />
-          ) : view === 'agent-detail' && selectedAgent ? (
-            <AgentDetail flowId={flow.id} agent={selectedAgent} appUrl={appUrl} onBack={() => { setView('agents'); setSelectedAgent(null); fetchAgents(); }} />
-          ) : null}
+          {loading ? <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando agentes…" /></div> : (
+            <PixelDataTable
+              singleLine
+              columns={[
+                { key: 'name', header: 'Nombre', render: (a: Agent) => (
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="w-7 h-7 rounded-md bg-accent-light border border-accent/15 flex items-center justify-center shrink-0">
+                      <Bot className="w-3.5 h-3.5 text-accent" />
+                    </span>
+                    <span className="block text-[13px] font-medium text-digi-text truncate" style={mf}>{a.name}</span>
+                  </span>
+                ) },
+                { key: 'provider', header: 'IA', width: '150px', hideOnMobile: true, render: (a: Agent) => (
+                  <span className="text-[12px] text-digi-text" style={mf}>
+                    {AI_PROVIDERS.find(p => p.value === a.ai_provider)?.label || a.ai_provider}
+                  </span>
+                ) },
+                { key: 'knowledge', header: 'Archivos', width: '80px', hideOnMobile: true, render: (a: Agent) => (
+                  <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{a.knowledge_count}</span>
+                ) },
+                { key: 'convs', header: 'Chats', width: '70px', hideOnMobile: true, render: (a: Agent) => (
+                  <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{a.conversation_count}</span>
+                ) },
+                { key: 'wait', header: 'Espera', width: '110px', render: (a: Agent) => (
+                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                    <input type="number" min={1} max={60} value={a.wait_seconds}
+                      onChange={e => handleUpdateWaitSeconds(a, parseInt(e.target.value) || 8)}
+                      className={`${FIELD_SM} w-14 text-center tabular-nums`} style={mf} />
+                    <span className="text-[11px] text-digi-muted" style={mf}>seg</span>
+                  </div>
+                ) },
+                { key: 'status', header: 'Estado', width: '100px', render: (a: Agent) => (
+                  <PixelBadge variant={a.status === 'active' ? 'success' : 'warning'}>{a.status === 'active' ? 'Activo' : 'Pausado'}</PixelBadge>
+                ) },
+                { key: 'actions', header: '', width: '190px', render: (a: Agent) => (
+                  <div className="flex justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => handleToggleAgent(a)} className={BTN_ROW}>
+                      {a.status === 'active' ? <><Pause className="w-3.5 h-3.5" /> Pausar</> : <><Play className="w-3.5 h-3.5" /> Activar</>}
+                    </button>
+                    <button onClick={() => { setSelectedAgent(a); setView('agent-detail'); }} className={BTN_ROW}>
+                      <Eye className="w-3.5 h-3.5" /> Ver
+                    </button>
+                    <button onClick={() => setConfirmDeleteAgent(a)} className={BTN_ROW_DANGER} aria-label="Eliminar agente">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) },
+              ]}
+              data={agents}
+              onRowClick={(a) => { setSelectedAgent(a as Agent); setView('agent-detail'); }}
+              emptyTitle="Sin agentes"
+              emptyDesc="Crea tu primer agente de chatbot."
+            />
+          )}
         </div>
-      </div>
+      ) : view === 'create-agent' ? (
+        <CreateAgentWizard flowId={flow.id} onDone={() => { setView('agents'); fetchAgents(); }} onCancel={() => setView('agents')} />
+      ) : view === 'agent-detail' && selectedAgent ? (
+        <AgentDetail flowId={flow.id} agent={selectedAgent} appUrl={appUrl} onBack={() => { setView('agents'); setSelectedAgent(null); fetchAgents(); }} />
+      ) : null}
 
       <PixelConfirm
         open={confirmDeleteAgent !== null}
         title="Eliminar agente"
-        message={`¿Eliminar agente "${confirmDeleteAgent?.name ?? ''}"?`}
+        message={`¿Eliminar el agente "${confirmDeleteAgent?.name ?? ''}"?`}
         confirmLabel="Sí, eliminar"
         danger
         onConfirm={() => { if (confirmDeleteAgent) handleDeleteAgent(confirmDeleteAgent); }}
         onCancel={() => setConfirmDeleteAgent(null)}
       />
-    </div>
+    </FlowPanelShell>
   );
 }
 
@@ -212,13 +241,13 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
         const text = await file.text();
         setKnowledgeFiles(prev => [...prev, { filename: file.name, content: text, file_type: file.type || 'text/plain', file_size: file.size }]);
       }
-    } catch { toast.error('Error al leer archivo'); }
+    } catch { toast.error('Error al leer el archivo'); }
     finally { setUploadingFile(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
   };
 
   const handleSaveStep1 = async () => {
-    if (!name.trim()) { setError('Nombre requerido'); return; }
-    if (!aiApiKey.trim()) { setError('API key de IA requerida'); return; }
+    if (!name.trim()) { setError('El nombre es requerido'); return; }
+    if (!aiApiKey.trim()) { setError('La API key de IA es requerida'); return; }
     setSaving(true); setError('');
     try {
       // Create agent
@@ -226,7 +255,7 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), description: description.trim(), ai_provider: aiProvider, ai_api_key: aiApiKey.trim(), ai_model: aiModel, wait_seconds: waitSeconds }),
       });
-      if (!res.ok) { const d = await res.json(); setError(d.error || 'Error'); return; }
+      if (!res.ok) { const d = await res.json(); setError(d.error || 'Error al guardar'); return; }
       const { data: agent } = await res.json();
       setAgentId(agent.id);
 
@@ -238,7 +267,7 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
         });
       }
       setStep(2);
-    } catch { setError('Error de conexion'); }
+    } catch { setError('Error de conexión'); }
     finally { setSaving(false); }
   };
 
@@ -250,7 +279,7 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
 
   const handleSaveStep2 = async () => {
     if (!agentId) return;
-    if (qaItems.length > 0 && !qaListName.trim()) { setError('Nombre de lista requerido'); return; }
+    if (qaItems.length > 0 && !qaListName.trim()) { setError('El nombre de la lista es requerido'); return; }
     setSaving(true); setError('');
     try {
       if (qaItems.length > 0) {
@@ -274,156 +303,133 @@ function CreateAgentWizard({ flowId, onDone, onCancel }: { flowId: number; onDon
         }
       }
       onDone();
-    } catch { setError('Error'); }
+    } catch { setError('Error al guardar'); }
     finally { setSaving(false); }
   };
 
-  const formatSize = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-
   return (
     <div>
-      <div className="flex items-center gap-2 mb-6">
-        <button onClick={onCancel} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>&lt; Agentes</button>
-        <div className="flex-1 flex items-center gap-2 justify-center">
-          <StepDot num={1} active={step === 1} done={step > 1} label="Config" />
-          <div className={`w-8 h-0.5 ${step > 1 ? 'bg-accent' : 'bg-digi-border'}`} />
-          <StepDot num={2} active={step === 2} done={false} label="Q&A" />
-        </div>
-      </div>
+      <PanelSubHeader onBack={onCancel} backLabel="Agentes" title="Nuevo agente">
+        <Steps items={['Configuración', 'Preguntas']} current={step} />
+      </PanelSubHeader>
 
       {step === 1 && (
         <div className="space-y-4">
-          <h3 className="pixel-heading text-xs text-digi-text">Configuracion del Agente</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Nombre <span className="text-red-400">*</span></label>
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Soporte Ventas"
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
-            </div>
-            <div>
-              <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Espera (seg)</label>
-              <input type="number" min={1} max={60} value={waitSeconds} onChange={e => setWaitSeconds(parseInt(e.target.value) || 8)}
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
-            </div>
+          <SectionBar title="Configuración del agente" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_140px] gap-3">
+            <PixelInput label="Nombre *" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Soporte Ventas" />
+            <PixelInput label="Espera (seg)" type="number" min={1} max={60} value={waitSeconds}
+              onChange={e => setWaitSeconds(parseInt(e.target.value) || 8)} />
           </div>
+
           <div>
-            <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Descripcion / Proposito del chatbot</label>
+            <label className={LABEL}>Descripción / propósito del chatbot</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
               placeholder="Ej: Asistente de ventas para una tienda de ropa. Ayuda a los clientes con precios, tallas y disponibilidad."
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
+              className={`${FIELD} resize-none`} style={mf} />
           </div>
 
-          <div className="border-t-2 border-digi-border pt-4">
-            <h4 className="pixel-heading text-[10px] text-digi-text mb-3">Proveedor de IA</h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Proveedor</label>
-                <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(AI_PROVIDERS.find(p => p.value === e.target.value)?.models[0] || ''); }}
-                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                  {AI_PROVIDERS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Modelo</label>
-                <select value={aiModel} onChange={e => setAiModel(e.target.value)}
-                  className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                  {currentProvider?.models.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
+          <div className="pt-4 border-t border-digi-border">
+            <SectionBar title="Proveedor de IA" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <PixelSelect label="Proveedor" value={aiProvider}
+                onChange={e => { setAiProvider(e.target.value); setAiModel(AI_PROVIDERS.find(p => p.value === e.target.value)?.models[0] || ''); }}
+                options={AI_PROVIDERS.map(p => ({ value: p.value, label: p.label }))} />
+              <PixelSelect label="Modelo" value={aiModel} onChange={e => setAiModel(e.target.value)}
+                options={(currentProvider?.models || []).map(m => ({ value: m, label: m }))} />
             </div>
             <div className="mt-3">
-              <label className="block text-[9px] text-digi-muted mb-1" style={pf}>API Key de IA <span className="text-red-400">*</span></label>
-              <input value={aiApiKey} onChange={e => setAiApiKey(e.target.value)} type="password" placeholder="sk-..."
-                className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              <PixelInput label="API Key de IA *" value={aiApiKey} onChange={e => setAiApiKey(e.target.value)}
+                type="password" placeholder="sk-…" />
             </div>
           </div>
 
-          <div className="border-t-2 border-digi-border pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="pixel-heading text-[10px] text-digi-text">Archivos de Conocimiento</h4>
-              <div>
-                <input ref={fileInputRef} type="file" multiple accept=".txt,.csv,.json,.md,.pdf,.docx" onChange={handleUploadKnowledge} className="hidden" />
-                <button onClick={() => fileInputRef.current?.click()} disabled={uploadingFile}
-                  className="px-3 py-1.5 text-[8px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow transition-colors" style={pf}>
-                  {uploadingFile ? 'Cargando...' : '+ Subir archivo'}
-                </button>
-              </div>
-            </div>
+          <div className="pt-4 border-t border-digi-border">
+            <SectionBar title="Archivos de conocimiento" hint="Información del negocio que el agente podrá consultar.">
+              <input ref={fileInputRef} type="file" multiple accept=".txt,.csv,.json,.md,.pdf,.docx" onChange={handleUploadKnowledge} className="hidden" />
+              <button onClick={() => fileInputRef.current?.click()} disabled={uploadingFile} className={BTN_SECONDARY}>
+                <Upload className="w-4 h-4" /> {uploadingFile ? 'Cargando…' : 'Subir archivo'}
+              </button>
+            </SectionBar>
             {knowledgeFiles.length > 0 ? (
               <div className="space-y-1">
                 {knowledgeFiles.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-1.5 border border-digi-border/50 text-xs" style={mf}>
-                    <span className="text-accent-glow text-[9px]" style={pf}>FILE</span>
-                    <span className="text-digi-text flex-1 truncate">{f.filename}</span>
-                    <span className="text-digi-muted text-[9px]">{formatSize(f.file_size)}</span>
-                    <button onClick={() => setKnowledgeFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-red-400/60 hover:text-red-400 text-[8px]" style={pf}>X</button>
-                  </div>
+                  <FileRow key={i} name={f.filename} meta={formatSize(f.file_size)}
+                    onRemove={() => setKnowledgeFiles(prev => prev.filter((_, idx) => idx !== i))} />
                 ))}
               </div>
             ) : (
-              <p className="text-[9px] text-digi-muted text-center py-3" style={mf}>Sube archivos con informacion del negocio (.txt, .csv, .json, .md, .pdf)</p>
+              <PanelEmpty Icon={BookOpen} title="Sin archivos de conocimiento"
+                desc="Formatos admitidos: .txt, .csv, .json, .md, .pdf, .docx" />
             )}
           </div>
 
-          {error && <p className="text-xs text-red-400" style={mf}>{error}</p>}
-          <div className="flex justify-end pt-4 border-t-2 border-digi-border">
-            <button onClick={handleSaveStep1} disabled={saving} className="pixel-btn-primary px-6 py-2 text-[9px]" style={pf}>
-              {saving ? 'Guardando...' : 'Siguiente >'}
+          {error && <p className="text-[12px] text-red-400" style={mf}>{error}</p>}
+          <PanelFooter align="end">
+            <button onClick={handleSaveStep1} disabled={saving} className={BTN_PRIMARY}>
+              {saving ? 'Guardando…' : <>Siguiente <ChevronRight className="w-4 h-4" /></>}
             </button>
-          </div>
+          </PanelFooter>
         </div>
       )}
 
       {step === 2 && (
         <div className="space-y-4">
-          <h3 className="pixel-heading text-xs text-digi-text">Preguntas y Respuestas</h3>
-          <p className="text-[9px] text-digi-muted" style={mf}>Define como debe responder el chatbot segun el contexto. Puedes omitir este paso si prefieres.</p>
+          <SectionBar title="Preguntas y respuestas"
+            hint="Define cómo debe responder el chatbot según el contexto. Puedes omitir este paso." />
 
-          <div>
-            <label className="block text-[9px] text-digi-muted mb-1" style={pf}>Nombre de la lista Q&A</label>
-            <input value={qaListName} onChange={e => setQaListName(e.target.value)} placeholder="Ej: FAQ General"
-              className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
-          </div>
+          <PixelInput label="Nombre de la lista" value={qaListName} onChange={e => setQaListName(e.target.value)}
+            placeholder="Ej: Preguntas frecuentes" />
 
           {/* Add Q&A */}
-          <div className="pixel-card p-3 space-y-2">
+          <div className="rounded-lg border border-digi-border bg-digi-darker/40 p-3 space-y-2.5">
             <div>
-              <label className="block text-[8px] text-digi-muted mb-0.5" style={pf}>Pregunta</label>
-              <input value={newQ} onChange={e => setNewQ(e.target.value)} placeholder="Ej: Cual es el horario de atencion?"
-                className="w-full px-2 py-1.5 bg-digi-darker border border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none" style={mf} />
+              <label className={LABEL}>Pregunta</label>
+              <input value={newQ} onChange={e => setNewQ(e.target.value)} placeholder="Ej: ¿Cuál es el horario de atención?"
+                className={FIELD} style={mf} />
             </div>
             <div>
-              <label className="block text-[8px] text-digi-muted mb-0.5" style={pf}>Respuesta</label>
-              <textarea value={newA} onChange={e => setNewA(e.target.value)} rows={2} placeholder="Ej: Nuestro horario es de lunes a viernes de 8am a 5pm."
-                className="w-full px-2 py-1.5 bg-digi-darker border border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
+              <label className={LABEL}>Respuesta</label>
+              <textarea value={newA} onChange={e => setNewA(e.target.value)} rows={2}
+                placeholder="Ej: Nuestro horario es de lunes a viernes de 8:00 a 17:00."
+                className={`${FIELD} resize-none`} style={mf} />
             </div>
-            <button onClick={handleAddQa} className="pixel-btn-primary px-3 py-1.5 text-[8px]" style={pf}>+ Agregar</button>
+            <button onClick={handleAddQa} disabled={!newQ.trim() || !newA.trim()} className={BTN_SECONDARY}>
+              <Plus className="w-4 h-4" /> Agregar
+            </button>
           </div>
 
           {/* List */}
-          {qaItems.length > 0 && (
-            <div className="space-y-1 max-h-64 overflow-y-auto">
+          {qaItems.length > 0 ? (
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
               {qaItems.map((item, i) => (
-                <div key={i} className="px-3 py-2 border border-digi-border/50 text-xs" style={mf}>
-                  <div className="flex justify-between">
-                    <span className="text-accent-glow font-medium">P:</span>
-                    <button onClick={() => setQaItems(prev => prev.filter((_, idx) => idx !== i))} className="text-red-400/60 hover:text-red-400 text-[8px]" style={pf}>X</button>
+                <div key={i} className="rounded-lg border border-digi-border px-3 py-2.5">
+                  <div className="flex items-start gap-2">
+                    <HelpCircle className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                    <p className="flex-1 text-[12.5px] font-medium text-digi-text" style={mf}>{item.question}</p>
+                    <button onClick={() => setQaItems(prev => prev.filter((_, idx) => idx !== i))}
+                      className="text-digi-muted/70 hover:text-red-500 transition-colors shrink-0" aria-label="Quitar">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <p className="text-digi-text mb-1">{item.question}</p>
-                  <span className="text-green-400 font-medium">R:</span>
-                  <p className="text-digi-muted">{item.answer}</p>
+                  <p className="text-[12px] text-digi-muted mt-1 pl-[22px]" style={mf}>{item.answer}</p>
                 </div>
               ))}
             </div>
+          ) : (
+            <PanelEmpty Icon={HelpCircle} title="Sin preguntas" desc="Puedes finalizar sin agregar ninguna." />
           )}
 
-          {error && <p className="text-xs text-red-400" style={mf}>{error}</p>}
-          <div className="flex justify-between pt-4 border-t-2 border-digi-border">
-            <button onClick={() => setStep(1)} className={CANCEL_CLS} style={pf}>&lt; Anterior</button>
-            <button onClick={handleSaveStep2} disabled={saving} className="pixel-btn-primary px-6 py-2 text-[9px]" style={pf}>
-              {saving ? 'Guardando...' : qaItems.length > 0 ? 'Guardar Agente' : 'Omitir y Finalizar'}
+          {error && <p className="text-[12px] text-red-400" style={mf}>{error}</p>}
+          <PanelFooter>
+            <button onClick={() => setStep(1)} className={BTN_SECONDARY}>
+              <ChevronRight className="w-4 h-4 rotate-180" /> Anterior
             </button>
-          </div>
+            <button onClick={handleSaveStep2} disabled={saving} className={BTN_PRIMARY}>
+              {saving ? 'Guardando…' : qaItems.length > 0 ? 'Guardar agente' : 'Omitir y finalizar'}
+            </button>
+          </PanelFooter>
         </div>
       )}
     </div>
@@ -438,6 +444,7 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
   const [qaLists, setQaLists] = useState<QaList[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConv, setSelectedConv] = useState<{ conversation: any; messages: any[] } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const webhookUrl = `${appUrl}/api/webhooks/chatbot/${agent.id}`;
 
@@ -479,81 +486,94 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
     fetchData();
   };
 
-  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" /></div>;
+  const copyWebhook = async () => {
+    try {
+      await navigator.clipboard.writeText(webhookUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { toast.error('No se pudo copiar'); }
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando agente…" /></div>;
 
   const TABS = [
-    { value: 'conversations', label: `Conversaciones (${conversations.length})` },
-    { value: 'knowledge', label: `Conocimiento (${knowledge.length})` },
-    { value: 'qa', label: `Q&A (${qaLists.length})` },
+    { value: 'conversations', label: 'Conversaciones', count: conversations.length },
+    { value: 'knowledge', label: 'Conocimiento', count: knowledge.length },
+    { value: 'qa', label: 'Preguntas', count: qaLists.length },
   ];
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
-        <button onClick={onBack} className="text-digi-muted hover:text-digi-text text-[9px] transition-colors" style={pf}>&lt; Agentes</button>
-        <div className="flex-1">
-          <h3 className="pixel-heading text-xs text-digi-text">{agent.name}</h3>
-          <p className="text-[9px] text-digi-muted" style={mf}>{agent.description || 'Sin descripcion'}</p>
-        </div>
-        <PixelBadge variant={agent.status === 'active' ? 'success' : 'warning'}>{agent.status}</PixelBadge>
-      </div>
+      <PanelSubHeader onBack={onBack} backLabel="Agentes" title={agent.name}
+        subtitle={agent.description || 'Sin descripción'}>
+        <PixelBadge variant={agent.status === 'active' ? 'success' : 'warning'}>
+          {agent.status === 'active' ? 'Activo' : 'Pausado'}
+        </PixelBadge>
+      </PanelSubHeader>
 
       {/* Webhook URL */}
-      <div className="pixel-card p-3 mb-4">
-        <label className="block text-[8px] text-digi-muted mb-1" style={pf}>Webhook URL (configurar en YCloud)</label>
+      <div className="rounded-lg border border-digi-border bg-digi-darker/40 p-3 mb-4">
+        <label className={LABEL}>Webhook URL (configurar en YCloud)</label>
         <div className="flex gap-2">
-          <input value={webhookUrl} readOnly className="flex-1 px-2 py-1.5 bg-digi-darker border border-digi-border text-[10px] text-accent-glow focus:outline-none" style={mf} />
-          <button onClick={() => navigator.clipboard.writeText(webhookUrl)} className="px-2 py-1 text-[8px] border border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>Copiar</button>
+          <input value={webhookUrl} readOnly className={`${FIELD_SM} flex-1 text-accent`} style={mf} />
+          <button onClick={copyWebhook} className={BTN_ROW}>
+            {copied ? <><Check className="w-3.5 h-3.5" /> Copiado</> : <><Copy className="w-3.5 h-3.5" /> Copiar</>}
+          </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 overflow-x-auto">
-        {TABS.map(t => (
-          <button key={t.value} onClick={() => setTab(t.value as any)}
-            className={`px-3 py-1.5 text-[9px] border whitespace-nowrap transition-colors ${tab === t.value ? 'border-accent bg-accent/15 text-accent-glow' : 'border-digi-border text-digi-muted hover:text-digi-text'}`} style={pf}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PixelTabs tabs={TABS} active={tab} onChange={(v) => setTab(v as any)} />
 
       {/* Conversations */}
       {tab === 'conversations' && (
         <>
           <PixelDataTable
+            singleLine
             columns={[
-              { key: 'name', header: 'Contacto', render: (c: Conversation) => <span className="text-digi-text">{c.contact_name || c.contact_phone}</span> },
-              { key: 'phone', header: 'Telefono', render: (c: Conversation) => <span className="text-green-400">{c.contact_phone}</span> },
-              { key: 'msgs', header: 'Mensajes', render: (c: Conversation) => String(c.message_count) },
-              { key: 'last', header: 'Ultimo', render: (c: Conversation) => c.last_message_at ? new Date(c.last_message_at).toLocaleString() : '-' },
-              { key: 'paused', header: 'Estado', render: (c: Conversation) => (
+              { key: 'name', header: 'Contacto', render: (c: Conversation) => (
+                <span className="text-[13px] font-medium text-digi-text" style={mf}>{c.contact_name || c.contact_phone}</span>
+              ) },
+              { key: 'phone', header: 'Teléfono', width: '150px', render: (c: Conversation) => (
+                <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{c.contact_phone}</span>
+              ) },
+              { key: 'msgs', header: 'Mensajes', width: '90px', hideOnMobile: true, render: (c: Conversation) => (
+                <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{c.message_count}</span>
+              ) },
+              { key: 'last', header: 'Último', width: '150px', hideOnMobile: true, render: (c: Conversation) => (
+                <span className="text-[12px] text-digi-muted" style={mf}>{c.last_message_at ? new Date(c.last_message_at).toLocaleString('es-EC') : '—'}</span>
+              ) },
+              { key: 'paused', header: 'Estado', width: '100px', render: (c: Conversation) => (
                 <PixelBadge variant={c.paused ? 'warning' : 'success'}>{c.paused ? 'Pausado' : 'Activo'}</PixelBadge>
-              )},
-              { key: 'actions', header: '', width: '120px', render: (c: Conversation) => (
-                <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => handleTogglePause(c)}
-                    className={`px-2 py-0.5 text-[8px] border transition-colors ${c.paused ? 'border-green-700/50 text-green-400 hover:bg-green-900/20' : 'border-yellow-700/50 text-yellow-400 hover:bg-yellow-900/20'}`} style={pf}>
-                    {c.paused ? 'Reanudar' : 'Pausar'}
+              ) },
+              { key: 'actions', header: '', width: '170px', render: (c: Conversation) => (
+                <div className="flex justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => handleTogglePause(c)} className={BTN_ROW}>
+                    {c.paused ? <><Play className="w-3.5 h-3.5" /> Reanudar</> : <><Pause className="w-3.5 h-3.5" /> Pausar</>}
                   </button>
-                  <button onClick={() => handleViewMessages(c)} className="px-2 py-0.5 text-[8px] border border-accent/50 text-accent-glow hover:bg-accent/10 transition-colors" style={pf}>Chat</button>
+                  <button onClick={() => handleViewMessages(c)} className={BTN_ROW}>
+                    <MessageSquare className="w-3.5 h-3.5" /> Chat
+                  </button>
                 </div>
-              )},
+              ) },
             ]}
             data={conversations}
             emptyTitle="Sin conversaciones"
-            emptyDesc="Las conversaciones aparecen cuando los clientes envian mensajes."
+            emptyDesc="Las conversaciones aparecen cuando los clientes envían mensajes."
           />
 
           {/* Message viewer modal */}
-          <PixelModal open={!!selectedConv} onClose={() => setSelectedConv(null)} title={`Chat: ${selectedConv?.conversation?.contact_name || selectedConv?.conversation?.contact_phone}`} size="lg">
-            <div className="pixel-scope space-y-2 max-h-96 overflow-y-auto p-2" style={{ background: '#0b141a' }}>
+          <PixelModal open={!!selectedConv} onClose={() => setSelectedConv(null)}
+            title={`Chat con ${selectedConv?.conversation?.contact_name || selectedConv?.conversation?.contact_phone || ''}`} size="lg">
+            <div className="space-y-2 max-h-96 overflow-y-auto p-3 rounded-lg" style={{ background: '#0b141a' }}>
               {selectedConv?.messages?.length === 0 ? (
-                <p className="text-center text-[9px] text-digi-muted py-4" style={pf}>Sin mensajes</p>
+                <p className="text-center text-[12px] text-gray-400 py-4" style={mf}>Sin mensajes</p>
               ) : selectedConv?.messages?.map((m: any, i: number) => (
                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
-                  <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${m.role === 'user' ? 'bg-[#1f2c34] text-gray-200' : 'bg-[#005c4b] text-digi-text'}`} style={{ fontFamily: 'sans-serif' }}>
+                  <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${m.role === 'user' ? 'text-gray-200' : 'text-gray-100'}`}
+                    style={{ background: m.role === 'user' ? '#1f2c34' : '#005c4b', fontFamily: 'sans-serif' }}>
                     <p className="whitespace-pre-wrap">{m.content}</p>
-                    <p className="text-[9px] text-gray-500 mt-1 text-right">{new Date(m.created_at).toLocaleTimeString()}</p>
+                    <p className="text-[10px] text-gray-400 mt-1 text-right">{new Date(m.created_at).toLocaleTimeString('es-EC')}</p>
                   </div>
                 </div>
               ))}
@@ -565,11 +585,23 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
       {/* Knowledge */}
       {tab === 'knowledge' && (
         <PixelDataTable
+          singleLine
           columns={[
-            { key: 'name', header: 'Archivo', render: (k: KnowledgeFile) => <span className="text-digi-text">{k.filename}</span> },
-            { key: 'type', header: 'Tipo', render: (k: KnowledgeFile) => k.file_type },
-            { key: 'size', header: 'Tamano', render: (k: KnowledgeFile) => k.file_size < 1024 ? `${k.file_size} B` : `${(k.file_size / 1024).toFixed(1)} KB` },
-            { key: 'date', header: 'Fecha', render: (k: KnowledgeFile) => new Date(k.created_at).toLocaleDateString() },
+            { key: 'name', header: 'Archivo', render: (k: KnowledgeFile) => (
+              <span className="flex items-center gap-2 min-w-0">
+                <FileText className="w-3.5 h-3.5 text-digi-muted shrink-0" />
+                <span className="block text-[13px] text-digi-text truncate" style={mf}>{k.filename}</span>
+              </span>
+            ) },
+            { key: 'type', header: 'Tipo', width: '150px', hideOnMobile: true, render: (k: KnowledgeFile) => (
+              <span className="text-[12px] text-digi-muted" style={mf}>{k.file_type}</span>
+            ) },
+            { key: 'size', header: 'Tamaño', width: '100px', render: (k: KnowledgeFile) => (
+              <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{formatSize(k.file_size)}</span>
+            ) },
+            { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (k: KnowledgeFile) => (
+              <span className="text-[12px] text-digi-muted" style={mf}>{new Date(k.created_at).toLocaleDateString('es-EC')}</span>
+            ) },
           ]}
           data={knowledge}
           emptyTitle="Sin archivos"
@@ -581,35 +613,24 @@ function AgentDetail({ flowId, agent, appUrl, onBack }: { flowId: number; agent:
       {tab === 'qa' && (
         <div className="space-y-2">
           {qaLists.length === 0 ? (
-            <div className="pixel-card text-center py-8">
-              <p className="text-[9px] text-digi-muted" style={pf}>Sin listas Q&A</p>
-            </div>
+            <PanelEmpty Icon={HelpCircle} title="Sin listas de preguntas" desc="Se crean al configurar el agente." />
           ) : qaLists.map(list => (
-            <div key={list.id} className={`border-2 px-4 py-3 flex items-center gap-3 ${list.selected ? 'border-accent bg-accent/5' : 'border-digi-border'}`}>
-              <div className="flex-1">
-                <span className="text-sm text-digi-text" style={mf}>{list.name}</span>
-                <span className="text-[9px] text-digi-muted ml-2" style={pf}>{list.item_count} preguntas</span>
+            <div key={list.id} className={`rounded-lg border px-3 py-2.5 flex items-center gap-3 ${list.selected ? 'border-accent bg-accent-light/40' : 'border-digi-border'}`}>
+              <HelpCircle className="w-4 h-4 text-accent shrink-0" />
+              <div className="min-w-0 flex-1">
+                <span className="block text-[13px] font-medium text-digi-text truncate" style={mf}>{list.name}</span>
+                <span className="block text-[11px] text-digi-muted" style={mf}>{list.item_count} preguntas</span>
               </div>
               <button onClick={() => handleSelectQaList(list)}
-                className={`px-3 py-1 text-[8px] border transition-colors ${list.selected ? 'border-accent bg-accent/20 text-accent-glow' : 'border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow'}`} style={pf}>
-                {list.selected ? 'Activa' : 'Seleccionar'}
+                className={list.selected
+                  ? 'inline-flex items-center gap-1 px-2 py-1 rounded border border-accent bg-accent text-white text-[12px] font-medium transition-colors'
+                  : BTN_ROW}>
+                {list.selected ? <><Check className="w-3.5 h-3.5" strokeWidth={3} /> Activa</> : 'Seleccionar'}
               </button>
             </div>
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/* ─── Step Dot ─── */
-function StepDot({ num, active, done, label }: { num: number; active: boolean; done: boolean; label: string }) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className={`w-7 h-7 flex items-center justify-center text-[10px] border-2 transition-colors ${active ? 'border-accent bg-accent/20 text-accent-glow' : done ? 'border-green-600 bg-green-900/20 text-green-400' : 'border-digi-border text-digi-muted'}`} style={pf}>
-        {done ? '✓' : num}
-      </div>
-      <span className={`text-[8px] ${active ? 'text-accent-glow' : 'text-digi-muted'}`} style={pf}>{label}</span>
     </div>
   );
 }
