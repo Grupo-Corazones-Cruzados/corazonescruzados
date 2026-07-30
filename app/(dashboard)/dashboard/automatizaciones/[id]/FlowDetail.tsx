@@ -9,19 +9,19 @@
  * (2026-07-30): página aparte, porque la configuración de una campaña no cabe en un panel.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import DetailHeader from '@/components/ui/DetailHeader';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { BTN_SECONDARY } from '@/components/ui/Button';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
-import EmailFlowWorkspace from '@/components/dashboard/flows/EmailFlowWorkspace';
+import EmailFlowWorkspace, { type EmailWorkspaceHandle } from '@/components/dashboard/flows/EmailFlowWorkspace';
 import WhatsAppFlowPanel from '@/components/dashboard/flows/WhatsAppFlowPanel';
 import ChatbotFlowPanel from '@/components/dashboard/flows/ChatbotFlowPanel';
-import { Mail, MessageCircle, Bot, Sparkles, Puzzle, Play, Pause, AlertTriangle } from 'lucide-react';
+import { Mail, MessageCircle, Bot, Sparkles, Puzzle, Play, Pause, AlertTriangle, Plus } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -50,6 +50,8 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  /** Acciones del espacio de trabajo que se disparan desde la cabecera de la página. */
+  const emailRef = useRef<EmailWorkspaceHandle | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -100,6 +102,7 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
   }
 
   const type = FLOW_TYPES[flow.type] || FLOW_TYPES.custom;
+  const isEmailWorkspace = flow.type !== 'whatsapp' && flow.type !== 'chatbot';
 
   return (
     <div>
@@ -113,9 +116,16 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
           </span>
         }
         actions={
-          <button onClick={toggleStatus} className={BTN_SECONDARY}>
-            {flow.status === 'active' ? <><Pause className="w-4 h-4" /> Pausar</> : <><Play className="w-4 h-4" /> Activar</>}
-          </button>
+          <>
+            <button onClick={toggleStatus} className={BTN_SECONDARY}>
+              {flow.status === 'active' ? <><Pause className="w-4 h-4" /> Pausar</> : <><Play className="w-4 h-4" /> Activar</>}
+            </button>
+            {isEmailWorkspace && (
+              <button onClick={() => emailRef.current?.openNewCampaign()} className={BTN_PRIMARY}>
+                <Plus className="w-4 h-4" /> Nueva campaña
+              </button>
+            )}
+          </>
         }
         overflow={[{ label: 'Eliminar flujo', onClick: () => setConfirmDelete(true), danger: true }]}
       />
@@ -132,7 +142,7 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
         <ChatbotFlowPanel flow={flow} variant="page" onClose={() => router.push('/dashboard/automatizaciones')} />
       ) : (
         // email · ai_agent · custom → campañas de correo (igual que antes del rediseño).
-        <EmailFlowWorkspace flow={flow} />
+        <EmailFlowWorkspace flow={flow} controlRef={emailRef} />
       )}
 
       <PixelConfirm

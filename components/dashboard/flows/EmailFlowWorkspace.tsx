@@ -15,7 +15,7 @@
  * esas listas. Borrar el flujo se lo lleva todo (ON DELETE CASCADE, comprobado).
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -140,7 +140,17 @@ function displayNameOf(rawFrom?: string | null): string {
   return name.replace(/["<>]/g, '').trim();
 }
 
-export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
+/**
+ * Lo que la PÁGINA puede accionar desde su cabecera. "Nueva campaña" vive arriba, junto a
+ * Pausar/Activar (decisión del usuario), pero el estado del modal es de este componente: se
+ * expone por ref en vez de duplicar el modal fuera.
+ */
+export interface EmailWorkspaceHandle { openNewCampaign: () => void }
+
+export default function EmailFlowWorkspace({ flow, controlRef }: {
+  flow: Flow;
+  controlRef?: React.MutableRefObject<EmailWorkspaceHandle | null>;
+}) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [lists, setLists] = useState<ContactList[]>([]);
   const [senderAddress, setSenderAddress] = useState('');
@@ -167,6 +177,8 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
   const [delCampaign, setDelCampaign] = useState<Campaign | null>(null);
   const [delList, setDelList] = useState<ContactList | null>(null);
   const [delContact, setDelContact] = useState<Contact | null>(null);
+
+  useImperativeHandle(controlRef, () => ({ openNewCampaign: () => setNewCampaign(true) }), []);
 
   const base = `/api/admin/flows/${flow.id}`;
   /** El cron solo dispara campañas de flujos activos: se avisa en pantalla si no lo está. */
@@ -369,11 +381,8 @@ export default function EmailFlowWorkspace({ flow }: { flow: Flow }) {
     <div className="flex flex-col xl:flex-row gap-4 items-start">
       {/* ── 1. Campañas ── */}
       <div className="w-full xl:w-[268px] shrink-0 space-y-2">
-        <button onClick={() => setNewCampaign(true)} className={`${BTN_PRIMARY} w-full`}>
-          <Plus className="w-4 h-4" /> Nueva campaña
-        </button>
         {campaigns.length === 0 ? (
-          <PanelEmpty Icon={Mail} title="Sin campañas" desc="Crea la primera para empezar." />
+          <PanelEmpty Icon={Mail} title="Sin campañas" desc={'Crea la primera con "Nueva campaña", arriba.'} />
         ) : (
           <FilterRail
             className="w-full"

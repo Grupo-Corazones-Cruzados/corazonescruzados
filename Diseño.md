@@ -742,7 +742,13 @@ periodo, ve una lista de candidatos con su **estado** y acciona **fila por fila*
 usuario: **"Configurar" abre una PÁGINA**, no un panel deslizante — mismo criterio que el
 detalle de un ticket. Es la variante de **tres columnas** del patrón "Explorador Azure":
 - **Cabecera:** `DetailHeader` (breadcrumb "Automatizaciones" → nombre del flujo, badge de
-  estado, chip de tipo con su icono, Activar/Pausar, y "Eliminar flujo" en el menú ⋯).
+  estado, chip de tipo con su icono, Activar/Pausar, **la acción primaria del módulo a su
+  derecha** —"Nueva campaña"— y "Eliminar flujo" en el menú ⋯). La primaria vive arriba, no
+  sobre el rail (decisión del usuario, 2026-07-30): el rail se queda solo con la lista.
+  - **Cómo se acciona algo del contenido desde la cabecera:** el estado del modal pertenece al
+    espacio de trabajo, así que este expone un `controlRef`
+    (`EmailWorkspaceHandle { openNewCampaign }`) con `useImperativeHandle` y la página lo
+    dispara. Se evita duplicar el modal fuera o subir estado que no le toca a la página.
 - **Columna 1 — rail de registros con acciones:** `FilterRail` con **`wrapLabels`** (nuevo) y
   ancho propio vía `className="w-full"` sobre un contenedor de 268px. Regla aprendida: un rail
   cuyos ítems son **nombres largos** (el asunto de una campaña) necesita 2 líneas y **sin
