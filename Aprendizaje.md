@@ -7,7 +7,100 @@
 
 ---
 
-## Objetivo ACTUAL (declarado 2026-07-26) — CÍRCULO DEL TALENTO: requerimientos con talento + filtro + el agente eligiendo
+## Objetivo ACTUAL (declarado 2026-07-29) — RECORDATORIOS DE REUNIÓN: por qué no salen solos + botón manual · ✅ RESUELTO 100%
+
+**Rol asumido:** *integrador de sistemas (Google Workspace / Meet API v2) + backend*. El objetivo era mitad
+**diagnóstico** (¿por qué no se generan?) y mitad **producto** (dar control manual al usuario).
+
+### Necesidad (palabras del usuario, 2026-07-29)
+Las reuniones **iniciadas desde `lfgonzalezm0@grupocc.org`** no generan recordatorio al terminar la sesión.
+Pide (1) revisar por qué, y (2) un **botón en el módulo Recordatorios** que busque las reuniones **iniciadas
+no agendadas** y permita **generar el recordatorio a mano** de las recientes que falten — explícitamente **no
+automático**, "porque la forma automática para reuniones iniciadas no funciona".
+
+### Preguntas y respuestas
+
+#### P1 — ¿Falla el código del pase de reuniones instantáneas (Fase 3b)? · ✅ Resuelta — NO
+- **Por qué importa:** si el bug estuviera en `runInstantMeetingReminderGeneration()`, el botón manual
+  heredaría el mismo fallo y no resolvería nada.
+- **Respuesta:** el código está bien y **ya funcionó una vez**: el recordatorio **#2** se creó el 2026-07-23
+  desde la grabación huérfana `conferenceRecords/X1JTE3K9…` (`meet_orphan_records` lo registra como `done`).
+  Lo que no se ejecuta es el **disparador**. (Fuente: `lib/reminders/meeting-gen.ts` + tablas `reminders`,
+  `meet_orphan_records` de producción.)
+
+#### P2 — ¿Está corriendo el cron de Railway? · ✅ Resuelta — NO, y es la causa raíz
+- **Por qué importa:** los DOS pases automáticos y los correos escalados cuelgan del mismo runner
+  (`scripts/frequent-cron.mjs`, cada 10 min).
+- **Respuesta:** no corre. Tres pruebas independientes contra la BD de producción:
+  1. Recordatorios **#3** (venció 2026-07-27) y **#4** (venció 2026-07-28) siguen `active` con
+     `email_stage=NULL`, `last_email_at=NULL`, `expired_email_sent=false`. `/api/reminders/cron/notify` los
+     habría marcado `expired` y enviado correo.
+  2. `member_calendar_events.reminder_status` seguía **NULL** en eventos terminados el 27 y el 29 de julio —
+     ese campo se escribe **en cada pase** aunque no haya transcripción (`'pending'`/`'skip'`), así que su
+     `NULL` prueba que el pase no corrió.
+  3. `meet_orphan_records` tenía **una sola fila, del 2026-07-23** (día de desarrollo, disparo manual), pese a
+     existir reuniones instantáneas con transcripción lista del 24 y del 29.
+- **Lección de método:** para "no se generó X automáticamente", primero comprobar si el cron corrió mirando
+  los campos que el pase escribe SIEMPRE, no solo si el resultado existe.
+
+#### P3 — ¿Google entrega bien las transcripciones de las reuniones de esa cuenta? · ✅ Resuelta — SÍ
+- **Por qué importa:** descarta que el problema sea de scopes, delegación de dominio o impersonación.
+- **Respuesta:** impersonando `lfgonzalezm0@grupocc.org` con la service account, la Meet API v2 devolvió
+  **11 `conferenceRecords` en 14 días**, de los cuales **6 con transcripción `FILE_GENERATED`** (la de hoy,
+  47 min, con 224 entradas / 29.995 caracteres). Scope `meetings.space.readonly` y delegación **correctos**.
+  (Fuente: sonda directa contra la API con `data/google-sa.json`.)
+
+#### P4 — ¿Por qué algunas reuniones no tienen transcripción? · ✅ Resuelta
+- **Por qué importa:** determina si el botón manual podrá generar algo o no, y qué hay que explicarle al usuario.
+- **Respuesta:** **la transcripción solo existe si estaba activada.** Los espacios que crea la app
+  (`meet.spaces.create` con `artifactConfig`) auto-transcriben; una reunión abierta a mano en meet.google.com
+  **no**, salvo que se active dentro de la reunión. Medido: 5 de 11 grabaciones **sin ninguna** transcripción
+  → para esas **nunca** habrá recordatorio, ni manual ni automático. La UI lo dice explícitamente
+  ("Sin transcripción") con el motivo en el pie del modal.
+
+#### P5 — ¿Cómo se identifica una reunión sin duplicar ni ensuciar el listado? · ✅ Resuelta
+- **Por qué importa:** es la clave de idempotencia del botón (no gastar IA dos veces, no crear duplicados).
+- **Respuesta:** Meet crea **un `conferenceRecord` por CADA entrada a la sala**, y varias comparten el mismo
+  `meetingCode`. Conclusiones: (a) la clave única es `conferenceRecords/<id>` → es lo que se guarda en
+  `reminders.source_event_id`; (b) el `meetingCode` solo sirve para **emparejar con el evento del calendario**;
+  (c) las grabaciones de **<1 min sin transcripción y sin recordatorio propio** son "falsos arranques" y se
+  **descartan del listado** (11 grabaciones reales → 8 útiles).
+
+#### P6 — ¿Cómo se garantiza que un miembro solo genere sobre SUS reuniones? · ✅ Resuelta
+- **Por qué importa:** el endpoint recibe un `recordName` del cliente; sin control, se podría pedir el de otro.
+- **Respuesta:** **la impersonación ES el permiso.** `getAuth(scopes, subject)` con el `workspace_email` del
+  usuario que llama hace que `conferenceRecords.get` de una reunión ajena falle con 403/404 en Google. Se suma
+  validación de formato del `recordName` (bloquea path traversal) y la idempotencia por `source_event_id`
+  filtrada por `user_id`. Probado: 401 sin cookie · 400 formato inválido · 409 sin transcripción · idempotente.
+
+#### P7 — ¿Botón manual en vez del pase automático, o los dos? · ✅ Resuelta — los dos
+- **Por qué importa:** el usuario dijo "que no sea automático".
+- **Respuesta:** se entiende como *"el botón debe ser manual"*, no *"borra el pase automático"*. El pase
+  automático **se conserva** (es idempotente, y si algún día se arregla el cron sirve gratis) y se le suma el
+  botón, que es el camino en el que el usuario **no depende de nada**. Ambos comparten la misma función
+  `createMeetingReminder()` → el recordatorio sale idéntico por cualquier camino.
+
+### Solución construida
+- `lib/reminders/meeting-scan.ts` — `scanUserMeetings()` + `generateReminderFromRecord()` (nuevo).
+- `lib/reminders/meeting-gen.ts` — extraída `createMeetingReminder()` como **definición única** (cron + manual).
+- `lib/integrations/google-workspace.ts` — `withText` en `fetchRecentMeetTranscripts` (listar rápido),
+  `fetchMeetRecord()`, `fetchMeetTranscriptText()`.
+- `app/api/reminders/meetings/route.ts` — `GET` escanear · `POST` generar (auth de sesión).
+- `recordatorios/page.tsx` — botón **"Buscar reuniones"** + modal con estados y acción por fila.
+
+### Verificación en vivo (2026-07-29)
+Generados de verdad contra la cuenta real: **#5** "Seguimiento a implementación de chatbot y página de
+reservas" (instantánea, 47 min, 4 tareas, transcripción de 30.947 bytes adjunta) y **#6** "Seguimiento
+configuración inicial de SharePoint" (agendada → marcó el evento `reminder_status='done'` y le añadió el
+enlace en la descripción). `tsc` + `next build` OK.
+
+### Riesgo abierto (no de código)
+🔴 **El cron de Railway sigue apagado** → **los correos escalados de recordatorios no se envían**. Es
+configuración del servicio `nightly-cron`, la aplica el usuario. Detalle en `MEMORIA.md` → Pendientes.
+
+---
+
+## Objetivo ANTERIOR (declarado 2026-07-26) — CÍRCULO DEL TALENTO: requerimientos con talento + filtro + el agente eligiendo
 
 **Rol asumido:** *arquitecto de datos + integrador de agentes de IA* (Postgres/pgvector, embeddings, Agent SDK
 sobre worker aislado, y el filtrado en las dos superficies donde la gente busca trabajo).

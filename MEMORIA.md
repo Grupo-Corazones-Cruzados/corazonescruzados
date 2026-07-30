@@ -2749,6 +2749,36 @@ Módulos principales:
     `gcc_world.meet_orphan_records` (PK `record_name`; estados pending/done/skip; descarta sin
     transcripción tras 6h). Requiere que la reunión se inicie desde la cuenta @grupocc.org del
     miembro y que Google haya liberado la transcripción por API (puede tardar >15 min).
+  - **Fase 3c — generación MANUAL desde el módulo (HECHA 2026-07-29).** Decisión del usuario: los
+    pases automáticos **no se pueden dar por hechos** (dependen del cron y de cuándo Google libera
+    la transcripción), así que el miembro necesita poder **generar el recordatorio cuando quiera**.
+    Botón **"Buscar reuniones"** (secundario, junto a "Nuevo recordatorio") en
+    `/dashboard/recordatorios` → modal con SUS reuniones de Meet de los últimos 2/7/30 días y un
+    botón **Generar** por reunión.
+    - `lib/reminders/meeting-scan.ts`: `scanUserMeetings(userId, days)` impersona
+      `users.workspace_email` del **propio usuario** (cada uno solo ve SUS reuniones) y marca cada
+      grabación como **`ready`** (transcripción lista) · **`no-transcript`** · **`generated`**
+      (ya tiene recordatorio). `generateReminderFromRecord(userId, recordName)` la genera;
+      es **idempotente** (si ya existe devuelve el mismo recordatorio, sin gastar IA).
+    - API `GET|POST /api/reminders/meetings` (auth de sesión, NO cron). El `POST` valida el formato
+      de `recordName` y hace `conferenceRecords.get` **impersonando al usuario**: si la reunión no
+      es suya, Google responde 403/404 → no se puede generar sobre reuniones de otro.
+    - **Definición ÚNICA compartida:** se extrajo `createMeetingReminder()` en
+      `lib/reminders/meeting-gen.ts` (IA + insert + adjunto `.txt` + marcado del origen +
+      notificación). La usan los **dos pases del cron Y el botón manual** → el recordatorio sale
+      idéntico por cualquier camino.
+    - `fetchRecentMeetTranscripts(since, subject, { withText: false })` (nuevo flag) lista sin bajar
+      las entradas (rápido, solo disponibilidad); el texto de la elegida se baja con
+      `fetchMeetTranscriptText(recordName, subject)`. Nuevo `fetchMeetRecord()` para metadatos de una.
+    - **Filtro de "falsos arranques":** Meet crea un `conferenceRecord` por **cada entrada a la
+      sala**, así que una reunión normal deja 2-3 grabaciones de segundos. Se descartan las de
+      **<1 min sin transcripción y sin recordatorio propio** (si no, el listado se ensucia: 11
+      grabaciones reales → 8 útiles en la prueba del 2026-07-29).
+    - Verificado en vivo el 2026-07-29 contra la cuenta real: se generaron los recordatorios **#5**
+      (reunión instantánea `gro-ptaz-smc`, 47 min, 30.947 chars) y **#6** (agendada `eqr-dtfp-kvx`,
+      rama de evento de calendario: marcó `reminder_status='done'` y añadió el enlace en la
+      descripción). Probados 401 sin cookie, 400 `recordName` inválido, 409 sin transcripción y la
+      idempotencia (devuelve el #2 existente). tsc + `next build` OK.
 - **Modelo de CLIENTES y FACTURACIÓN (confirmado 2026-07-21).** Mapa detallado en el artefacto HTML
   "Asociación de clientes" (auditoría del código). Reglas acordadas para el rediseño:
   - **Tablas separadas** `clients` (identidad app) y `billing_clients` (facturación) — un cliente podrá
@@ -2843,6 +2873,29 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Google Meet API v2 — lo que hay que saber para leer reuniones (2026-07-29):**
+  - **Un `conferenceRecord` por CADA entrada a la sala**, no uno por reunión. Una reunión normal deja
+    2-3 grabaciones: la de segundos (se entró y se salió) y la real. Al listar reuniones hay que
+    **descartar las de <1 min sin transcripción**, o el listado se vuelve basura.
+  - **Varias grabaciones comparten el mismo `meetingCode`** (misma sala reusada) → emparejar con el
+    evento del calendario por código funciona, pero **el código NO identifica una reunión**: la clave
+    única es `conferenceRecords/<id>` (`recordName`). Es la que se guarda en `reminders.source_event_id`.
+  - **La transcripción solo existe si estaba activada.** Los espacios que crea la app
+    (`meet.spaces.create` con `artifactConfig`) auto-transcriben; una reunión abierta a mano en
+    meet.google.com **no**, salvo que se active en la propia reunión. Medido el 2026-07-29: de 11
+    grabaciones, 6 con transcripción y 5 sin ninguna — y las 5 nunca podrán generar recordatorio.
+  - **Estados de transcripción:** `STARTED` = en curso (no leer); `ENDED`/`FILE_GENERATED` = archivo
+    disponible. Puede tardar **>15 min** tras terminar la reunión.
+  - **Listar es caro si se bajan las entradas** (`transcripts.entries.list` pagina de 1000). Para
+    listar candidatas basta `transcripts.list` (da el `state`); el texto se baja solo de la elegida.
+    De ahí el flag `withText` en `fetchRecentMeetTranscripts`.
+  - **Impersonación = permiso.** `getAuth(scopes, subject)` con el `workspace_email` del usuario hace
+    que Google devuelva **solo SUS** grabaciones, y que un `conferenceRecords.get` de una reunión
+    ajena falle con 403/404. Eso **sustituye a un chequeo de autorización propio** y es más fiable.
+  - **Diagnóstico de "no se generó el recordatorio":** el orden correcto es (1) ¿corrió el cron?
+    → mirar `reminders.email_stage/last_email_at` y `member_calendar_events.reminder_status`, que se
+    escriben en CADA pase aunque no se cree nada; (2) ¿hay transcripción? → listar la Meet API
+    impersonando al usuario. Casi siempre el fallo es (1), no el código.
 - **Tickets: días "Evento" (Meet) + sesiones en vivo "inicio ahora" con cobro por tiempo (2026-07-21):**
   En el detalle del ticket, los **días de trabajo** (`ticket_time_slots`) ahora pueden marcarse como
   **Evento** (columnas nuevas `is_event`, `meeting_url`, `meeting_event_id`): al guardarlos con hora de
@@ -3173,6 +3226,27 @@ Módulos principales:
     verificando cada candidato a mano. Ver `Estado actual`.
 
 ## Pendientes / preguntas abiertas
+- 🔴 **EL CRON DE RAILWAY NO ESTÁ CORRIENDO (diagnosticado 2026-07-29).** No es un bug de código: la
+  maquinaria (Google Meet API + IA + BD) funciona; **el disparador no se ejecuta**. Consecuencias:
+  **no salen los correos escalados de recordatorios** ni se generan recordatorios de reunión solos.
+  Evidencia recogida contra la BD de producción:
+  - Recordatorios **#3** (venció 2026-07-27) y **#4** (venció 2026-07-28) siguen `status='active'`
+    con `email_stage=NULL`, `last_email_at=NULL`, `expired_email_sent=false` → `/api/reminders/cron/notify`
+    nunca corrió sobre ellos (los habría marcado `expired` y enviado correo).
+  - `member_calendar_events.reminder_status` seguía **NULL** en eventos terminados el 2026-07-27 y el
+    2026-07-29 → el pase de reuniones agendadas nunca los tocó.
+  - `meet_orphan_records` tenía **una sola fila, del 2026-07-23** (el día en que se implementó y se
+    disparó a mano), pese a existir reuniones instantáneas con transcripción lista del 2026-07-24 y
+    del 2026-07-29.
+  - Los únicos 2 recordatorios `source='meeting'` se crearon el 2026-07-22 y el 2026-07-23 — los días
+    de desarrollo, con disparo manual.
+  - Contraprueba: impersonando `lfgonzalezm0@grupocc.org` la Meet API devuelve **11 conferenceRecords
+    en 14 días, 6 con transcripción `FILE_GENERATED`**. El scope y la delegación están bien.
+  **Acción (infra, la hace el usuario en Railway):** el servicio `nightly-cron` debe tener
+  `Start command: node scripts/frequent-cron.mjs`, `Cron schedule: */10 * * * *` y las variables
+  `CRON_TOKEN` (igual que en el web) + `APP_URL`. Revisar sus logs: `frequent-cron.mjs` imprime
+  `[cron] ✓/✗ <trabajo>` por pase. Mientras no se arregle, el módulo Recordatorios **funciona igual**
+  para generar desde reuniones (botón manual, Fase 3c) pero **no manda correos**.
 - **Commit del rediseño corporativo (fases 1–7):** TODO sin commitear; es un bloque grande (~60+ archivos).
   Falta la luz verde del usuario tras revisión visual.
 - **Confirmación visual del usuario:** el dashboard requiere login; las verificaciones de la sesión fueron

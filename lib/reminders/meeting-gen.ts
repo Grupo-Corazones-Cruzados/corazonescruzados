@@ -10,14 +10,14 @@ const WINDOW_MS = 48 * 3600 * 1000;
 const ORPHAN_STALE_MS = 6 * 3600 * 1000; // sin transcripción tras 6h → se descarta
 const MAX_SUBJECTS = 300;               // tope de miembros a escanear por corrida
 
-async function ensureCalReminderColumns() {
+export async function ensureCalReminderColumns() {
   await pool.query(`ALTER TABLE gcc_world.member_calendar_events
     ADD COLUMN IF NOT EXISTS reminder_status VARCHAR(12),
     ADD COLUMN IF NOT EXISTS reminder_id BIGINT`);
 }
 
 /** Idempotencia del pase de reuniones INSTANTÁNEAS: una fila por grabación de Meet procesada. */
-async function ensureMeetOrphanTable() {
+export async function ensureMeetOrphanTable() {
   await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.meet_orphan_records (
     record_name TEXT PRIMARY KEY,
     owner_user_id TEXT,
@@ -30,8 +30,95 @@ async function ensureMeetOrphanTable() {
   )`);
 }
 
-function normalizeMeetCode(url: string): string {
+export function normalizeMeetCode(url: string): string {
   return (String(url || '').replace(/\/+$/, '').split('/').pop() || '').replace(/-/g, '').toLowerCase();
+}
+
+/**
+ * DEFINICIÓN ÚNICA de "crear un recordatorio a partir de una reunión": analiza la
+ * transcripción con IA, inserta el recordatorio (`source='meeting'`), le adjunta la
+ * transcripción `.txt`, marca el origen como procesado (evento del calendario u
+ * `meet_orphan_records`) y notifica al dueño.
+ *
+ * La usan los dos pases automáticos del cron Y la generación MANUAL desde el módulo
+ * Recordatorios (`lib/reminders/meeting-scan.ts`): así el recordatorio sale idéntico y
+ * cualquier mejora aquí llega a todos los caminos.
+ */
+export async function createMeetingReminder(opts: {
+  /** Usuario dueño del recordatorio (el miembro, no el cliente). */
+  ownerUserId: string;
+  transcript: string;
+  meetingTitle: string;
+  meetingEndISO: string;
+  /** Trazabilidad: id del evento del calendario o `conferenceRecords/...`. */
+  sourceEventId: string;
+  attachmentName: string;
+  /** Si la reunión ES un evento del calendario, se enlaza y se marca como procesado. */
+  calendarEvent?: { id: string; description: string | null; meeting_event_id: string | null } | null;
+  /** Si es una grabación suelta (reunión instantánea), se marca en `meet_orphan_records`. */
+  orphanRecord?: { recordName: string; meetingCode: string | null; endTime: string | null } | null;
+  /** Texto del "message" de la notificación. */
+  notifyMessage: string;
+}): Promise<{ reminderId: number; title: string }> {
+  const analysis = await analyzeMeetingTranscript(opts.transcript, {
+    meetingTitle: opts.meetingTitle,
+    meetingEndISO: opts.meetingEndISO,
+  });
+
+  const { rows: [r] } = await pool.query(
+    `INSERT INTO gcc_world.reminders (user_id, title, notes, remind_at, tasks, status, source, source_event_id, created_by)
+     VALUES ($1, $2, $3, $4, $5, 'active', 'meeting', $6, $1) RETURNING id`,
+    [opts.ownerUserId, analysis.title, analysis.notes || null, analysis.remind_at, JSON.stringify(analysis.tasks), opts.sourceEventId],
+  );
+  const reminderId = Number(r.id);
+
+  const txtData = 'data:text/plain;base64,' + Buffer.from(opts.transcript, 'utf8').toString('base64');
+  await pool.query(
+    `INSERT INTO gcc_world.reminder_attachments (reminder_id, filename, content_type, kind, data, size)
+     VALUES ($1, $2, 'text/plain', 'transcript', $3, $4)`,
+    [reminderId, opts.attachmentName, txtData, Buffer.byteLength(opts.transcript, 'utf8')],
+  );
+
+  const link = `${APP_URL}/dashboard/recordatorios?open=${reminderId}`;
+
+  // Reunión agendada: enlaza el recordatorio en la descripción del evento (Mi día + Google).
+  if (opts.calendarEvent) {
+    const ev = opts.calendarEvent;
+    const desc = String(ev.description || '');
+    const newDesc = desc.includes('/dashboard/recordatorios?open=')
+      ? desc
+      : `${desc}${desc ? '\n\n' : ''}📌 Recordatorio de esta reunión: ${link}`;
+    await pool.query(
+      `UPDATE gcc_world.member_calendar_events SET description = $1, reminder_status = 'done', reminder_id = $2 WHERE id = $3`,
+      [newDesc, reminderId, ev.id],
+    );
+    if (ev.meeting_event_id) {
+      try { await patchCalendarEventDescription(ev.meeting_event_id, newDesc); }
+      catch (e: any) { console.error('[meeting-gen] cal patch', e.message); }
+    }
+  }
+
+  // Reunión instantánea: una fila por grabación → no se vuelve a generar.
+  if (opts.orphanRecord) {
+    const o = opts.orphanRecord;
+    await pool.query(
+      `INSERT INTO gcc_world.meet_orphan_records (record_name, owner_user_id, reminder_id, status, meeting_code, end_time)
+       VALUES ($1, $2, $3, 'done', $4, $5)
+       ON CONFLICT (record_name) DO UPDATE SET status = 'done', reminder_id = EXCLUDED.reminder_id, updated_at = NOW()`,
+      [o.recordName, opts.ownerUserId, reminderId, o.meetingCode || null, o.endTime || null],
+    );
+  }
+
+  try {
+    await createNotification(opts.ownerUserId, {
+      type: 'reminder',
+      title: `Recordatorio de reunión: ${analysis.title}`,
+      message: opts.notifyMessage,
+      link,
+    });
+  } catch { /* no bloquea */ }
+
+  return { reminderId, title: analysis.title };
 }
 
 /**
@@ -88,37 +175,21 @@ export async function runMeetingReminderGeneration(): Promise<{ processed: numbe
     );
     if (!u?.id) { await pool.query(`UPDATE gcc_world.member_calendar_events SET reminder_status='skip' WHERE id=$1`, [ev.id]); continue; }
 
-    let analysis;
     try {
-      analysis = await analyzeMeetingTranscript(tr.text, { meetingTitle: ev.title, meetingEndISO: new Date(ev.end_at).toISOString() });
+      await createMeetingReminder({
+        ownerUserId: u.id,
+        transcript: tr.text,
+        meetingTitle: ev.title,
+        meetingEndISO: new Date(ev.end_at).toISOString(),
+        sourceEventId: String(ev.id),
+        attachmentName: `transcripcion-reunion-${ev.id}.txt`,
+        calendarEvent: { id: ev.id, description: ev.description, meeting_event_id: ev.meeting_event_id },
+        notifyMessage: `Generado de "${ev.title}"`,
+      });
     } catch (e: any) {
-      console.error('[meeting-gen] IA error', ev.id, e.message);
+      console.error('[meeting-gen] error', ev.id, e.message);
       continue; // se reintenta en la próxima corrida (queda 'pending')
     }
-
-    const { rows: [r] } = await pool.query(
-      `INSERT INTO gcc_world.reminders (user_id, title, notes, remind_at, tasks, status, source, source_event_id, created_by)
-       VALUES ($1, $2, $3, $4, $5, 'active', 'meeting', $6, $1) RETURNING id`,
-      [u.id, analysis.title, analysis.notes || null, analysis.remind_at, JSON.stringify(analysis.tasks), String(ev.id)],
-    );
-
-    const txtData = 'data:text/plain;base64,' + Buffer.from(tr.text, 'utf8').toString('base64');
-    await pool.query(
-      `INSERT INTO gcc_world.reminder_attachments (reminder_id, filename, content_type, kind, data, size)
-       VALUES ($1, $2, 'text/plain', 'transcript', $3, $4)`,
-      [r.id, `transcripcion-reunion-${ev.id}.txt`, txtData, Buffer.byteLength(tr.text, 'utf8')],
-    );
-
-    // Enlace al recordatorio en la descripción del evento (Mi día) + Google Calendar (best-effort).
-    const link = `${APP_URL}/dashboard/recordatorios?open=${r.id}`;
-    const desc = String(ev.description || '');
-    const newDesc = desc.includes('/dashboard/recordatorios?open=') ? desc : `${desc}${desc ? '\n\n' : ''}📌 Recordatorio de esta reunión: ${link}`;
-    await pool.query(`UPDATE gcc_world.member_calendar_events SET description = $1, reminder_status = 'done', reminder_id = $2 WHERE id = $3`, [newDesc, r.id, ev.id]);
-    if (ev.meeting_event_id) { try { await patchCalendarEventDescription(ev.meeting_event_id, newDesc); } catch (e: any) { console.error('[meeting-gen] cal patch', e.message); } }
-
-    try {
-      await createNotification(u.id, { type: 'reminder', title: `Recordatorio de reunión: ${analysis.title}`, message: `Generado de "${ev.title}"`, link });
-    } catch { /* no bloquea */ }
 
     created++;
   }
@@ -194,41 +265,21 @@ export async function runInstantMeetingReminderGeneration(): Promise<{ subjects:
         continue;
       }
 
-      let analysis;
       try {
-        analysis = await analyzeMeetingTranscript(tr.text, {
+        await createMeetingReminder({
+          ownerUserId: s.id,
+          transcript: tr.text,
           meetingTitle: 'Reunión de Meet',
           meetingEndISO: (tr.endTime ? new Date(tr.endTime) : new Date()).toISOString(),
+          sourceEventId: tr.recordName,
+          attachmentName: 'transcripcion-reunion.txt',
+          orphanRecord: { recordName: tr.recordName, meetingCode: code || null, endTime: tr.endTime },
+          notifyMessage: 'Generado de una reunión de Meet',
         });
       } catch (e: any) {
-        console.error('[instant-gen] IA error', tr.recordName, e.message);
+        console.error('[instant-gen] error', tr.recordName, e.message);
         continue; // se reintenta en la próxima corrida (queda 'pending' si ya existe la fila)
       }
-
-      const { rows: [r] } = await pool.query(
-        `INSERT INTO gcc_world.reminders (user_id, title, notes, remind_at, tasks, status, source, source_event_id, created_by)
-         VALUES ($1, $2, $3, $4, $5, 'active', 'meeting', $6, $1) RETURNING id`,
-        [s.id, analysis.title, analysis.notes || null, analysis.remind_at, JSON.stringify(analysis.tasks), tr.recordName],
-      );
-
-      const txtData = 'data:text/plain;base64,' + Buffer.from(tr.text, 'utf8').toString('base64');
-      await pool.query(
-        `INSERT INTO gcc_world.reminder_attachments (reminder_id, filename, content_type, kind, data, size)
-         VALUES ($1, 'transcripcion-reunion.txt', 'text/plain', 'transcript', $2, $3)`,
-        [r.id, txtData, Buffer.byteLength(tr.text, 'utf8')],
-      );
-
-      await pool.query(
-        `INSERT INTO gcc_world.meet_orphan_records (record_name, owner_user_id, reminder_id, status, meeting_code, end_time)
-         VALUES ($1, $2, $3, 'done', $4, $5)
-         ON CONFLICT (record_name) DO UPDATE SET status = 'done', reminder_id = EXCLUDED.reminder_id, updated_at = NOW()`,
-        [tr.recordName, s.id, r.id, code || null, tr.endTime || null],
-      );
-
-      const link = `${APP_URL}/dashboard/recordatorios?open=${r.id}`;
-      try {
-        await createNotification(s.id, { type: 'reminder', title: `Recordatorio de reunión: ${analysis.title}`, message: 'Generado de una reunión de Meet', link });
-      } catch { /* no bloquea */ }
 
       created++;
     }

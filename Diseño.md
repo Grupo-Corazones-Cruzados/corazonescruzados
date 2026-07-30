@@ -704,6 +704,39 @@ top-1/2 -translate-y-1/2 w-7 h-7 rounded-md` con el icono lucide `Info` (15px). 
   contenedor `aspect-video rounded-lg border border-digi-border bg-black`. Miniaturas de lista:
   `https://i.ytimg.com/vi/<id>/mqdefault.jpg`.
 
+### Lista de candidatos con acción por fila (modal "Buscar reuniones") — patrón reusable (2026-07-29)
+Estándar para **"buscar algo fuera de la app y traerlo dentro"**: el usuario abre un modal, elige el
+periodo, ve una lista de candidatos con su **estado** y acciona **fila por fila**. Implementado en
+`app/(dashboard)/dashboard/recordatorios/page.tsx` (reuniones de Meet → recordatorio).
+- **Disparador:** botón **secundario** (`BTN_SECONDARY`) en la barra de comandos del módulo, **a la
+  izquierda del primario**. Regla de distribución: buscador a la izquierda (`flex-1`), luego
+  secundarias, y la **acción primaria siempre al final** (más a la derecha).
+- **Modal `PixelModal size="lg"`** (→ panel lateral derecho) con `busy` atado a la acción en curso,
+  para que no se cierre mientras se genera. Dentro, en este orden:
+  1. **Párrafo de intención** `text-[12px] text-digi-muted leading-relaxed` (qué hace y qué se obtiene).
+  2. **Fila de control:** `PixelSelect` de periodo envuelto en `<div className="w-48 shrink-0">`
+     (**nunca** pasarle `w-auto` por `className`: pelea con su `w-full` y el resultado depende del orden
+     del CSS) + botón `Actualizar` con `RefreshCw` que gira (`animate-spin`) mientras carga.
+  3. **Aviso** de configuración faltante: `border-amber-500/40 bg-amber-500/10` + `AlertTriangle`.
+  4. **Filas** (patrón `ItemRow`): `flex items-center gap-3 px-3 py-2 rounded-lg border border-digi-border
+     bg-digi-darker/40`; título `text-[13px] font-medium` con **icono de tipo** delante y subtítulo
+     `text-[11px] text-digi-muted` (fecha · duración · identificador).
+  5. **Pie explicativo** `pt-2 border-t` que aclara el estado "no accionable" (aquí, por qué una reunión
+     puede no tener transcripción). Evita que el usuario crea que es un error de la app.
+- **Un estado ⇒ un control a la derecha** (nunca los tres a la vez):
+  | Estado | Control |
+  |---|---|
+  | accionable | botón primario compacto `${BTN_PRIMARY} px-2.5 py-1.5 text-[12px]` con `Sparkles`; mientras corre, `RefreshCw animate-spin` + "Generando…" |
+  | ya traído | **enlace** `text-accent hover:underline` con `CheckCircle2` + `ArrowRight` que cierra el modal y **selecciona el registro** en el panel de detalle |
+  | no accionable | `PixelBadge variant="default"` con el motivo ("Sin transcripción") |
+- **Icono de tipo por fila** envuelto en `<span title="…">`: **no** pasar `title` a un icono de
+  lucide (no es atributo válido de `<svg>` en los tipos de React). Aquí `CalendarDays` = agendada ·
+  `Radio` = iniciada sin agendar.
+- **Estado vacío** dentro del modal: cuadrito `w-10 h-10 rounded-lg bg-black/[0.03]` + icono
+  `text-digi-muted` + frase; el texto distingue "no hay resultados" de "aún no se ha buscado".
+- El escaneo se lanza **al abrir** (una sola vez, `meetScanned`) y a demanda con Actualizar; tras
+  accionar se actualiza la fila **en memoria** y se refresca la lista del módulo.
+
 ### Utilidades de administrador — pestañas del módulo Admin (2026-07-25)
 Las pestañas horizontales de `admin/page.tsx` son el sitio donde viven las **funciones de administrador**
 (no un módulo nuevo por cada una). Se añadieron **Fuentes** (`Database`) y **Tutoriales** (`Video`) tras
@@ -770,6 +803,13 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   de ayuda `text-[11px] text-digi-muted` con el tipo y si es obligatorio.
 
 ## Desviaciones detectadas y resolución
+- **2026-07-29 — Recordatorios: el botón "Nuevo recordatorio" recomponía las clases de `BTN_PRIMARY`
+  a mano → CORREGIDO.** `recordatorios/page.tsx` tenía la cadena completa (`inline-flex … bg-accent
+  text-white … hover:bg-accent-hover …`) escrita inline en vez de usar la constante, aunque el mismo
+  archivo ya importaba `BTN_PRIMARY`/`BTN_SECONDARY` y los usaba en el panel de detalle. Es
+  exactamente lo que rompe el diseño vinculado: un cambio en `components/ui/Button.tsx` no habría
+  llegado a ese botón. Sustituido por `${BTN_PRIMARY} shrink-0`. **Regla:** nunca recomponer las
+  clases de un botón — usar la constante y añadir solo modificadores de layout.
 - **2026-07-26 — Pantalla de carga del juego, fuera del estándar → CORREGIDA.** `GodotGame.tsx`
   pintaba su propia espera: texto gris genérico, barra **redondeada** del lenguaje del dashboard,
   morado `#7c5ad0` **a mano** (ni siquiera el token de marca), fondo `#0d0b14` repetido en tres

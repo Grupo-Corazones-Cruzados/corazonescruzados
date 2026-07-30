@@ -6,6 +6,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
+import PixelSelect from '@/components/ui/PixelSelect';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -13,6 +14,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import {
   Inbox, Clock, CheckCircle2, AlertTriangle, Search, Plus, X, Paperclip, Trash2,
   Check, Download, ListChecks, Video, AlarmClock, Pencil, RotateCcw,
+  RefreshCw, Sparkles, CalendarDays, Radio, ArrowRight,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -23,6 +25,25 @@ type Attach = { id?: number; filename: string; content_type?: string | null; kin
 type Reminder = {
   id: number; title: string; notes?: string; remind_at?: string | null; tasks: Task[];
   status: string; source: string; source_event_id?: string | null; attachment_count?: number; attachments?: Attach[];
+};
+
+/** Reunión de Meet candidata a generar recordatorio (GET /api/reminders/meetings). */
+type MeetCandidate = {
+  recordName: string; meetingCode: string | null; meetingUrl: string | null;
+  startTime: string | null; endTime: string | null; minutes: number | null;
+  title: string; kind: 'scheduled' | 'instant'; calendarEventId: string | null;
+  state: 'ready' | 'no-transcript' | 'generated'; reminderId: number | null;
+};
+
+const DAY_OPTIONS = [
+  { value: '2', label: 'Últimos 2 días' },
+  { value: '7', label: 'Últimos 7 días' },
+  { value: '30', label: 'Últimos 30 días' },
+];
+
+const SCAN_NOTE: Record<string, string> = {
+  'google-not-configured': 'Google Workspace no está configurado en el servidor, no se pueden leer las reuniones.',
+  'no-workspace-email': 'Tu usuario no tiene una cuenta corporativa @grupocc.org vinculada, que es la que guarda las reuniones de Meet.',
 };
 
 const STATUS_TABS = [
@@ -63,6 +84,12 @@ function fmtShort(iso?: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
 }
+/** "29 jul, 17:59 · 47 min" para una reunión de Meet. */
+function fmtMeetingWhen(c: { endTime: string | null; minutes: number | null }): string {
+  if (!c.endTime) return '—';
+  const when = new Date(c.endTime).toLocaleString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+  return c.minutes != null ? `${when} · ${c.minutes} min` : when;
+}
 function relative(iso?: string | null): string {
   if (!iso) return '';
   const ms = new Date(iso).getTime() - Date.now();
@@ -96,6 +123,15 @@ export default function RecordatoriosPage() {
   const [newTask, setNewTask] = useState('');
   const [markDoneForm, setMarkDoneForm] = useState(false);
   const [attachments, setAttachments] = useState<Attach[]>([]);
+
+  // Modal "Buscar reuniones" (generación MANUAL desde una reunión de Meet).
+  const [meetModal, setMeetModal] = useState(false);
+  const [meetDays, setMeetDays] = useState('7');
+  const [meetLoading, setMeetLoading] = useState(false);
+  const [meetList, setMeetList] = useState<MeetCandidate[]>([]);
+  const [meetNote, setMeetNote] = useState<string | null>(null);
+  const [meetScanned, setMeetScanned] = useState(false);
+  const [generating, setGenerating] = useState<string | null>(null);
 
   const fetchList = useCallback(async () => {
     try {
@@ -235,6 +271,52 @@ export default function RecordatoriosPage() {
     } catch { toast.error('Error'); }
   };
 
+  // ── Buscar reuniones de Meet y generar el recordatorio a mano ──
+  const loadMeetings = useCallback(async (days: string) => {
+    setMeetLoading(true);
+    try {
+      const r = await fetch(`/api/reminders/meetings?days=${days}`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Error al buscar reuniones');
+      setMeetList(d.data || []);
+      setMeetNote(d.note || null);
+      setMeetScanned(true);
+    } catch (e: any) {
+      toast.error(e.message || 'Error al buscar reuniones');
+    } finally { setMeetLoading(false); }
+  }, []);
+
+  const openMeetings = () => {
+    setMeetModal(true);
+    if (!meetScanned) loadMeetings(meetDays);
+  };
+
+  const changeMeetDays = (days: string) => { setMeetDays(days); loadMeetings(days); };
+
+  const generateFromMeeting = async (c: MeetCandidate) => {
+    setGenerating(c.recordName);
+    try {
+      const r = await fetch('/api/reminders/meetings', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordName: c.recordName }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Error al generar el recordatorio');
+      toast.success(d.data.alreadyExisted ? 'Esa reunión ya tenía recordatorio' : `Recordatorio creado: ${d.data.title}`);
+      setMeetList(prev => prev.map(m => m.recordName === c.recordName
+        ? { ...m, state: 'generated', reminderId: d.data.reminderId } : m));
+      await fetchList();
+    } catch (e: any) {
+      toast.error(e.message || 'Error al generar el recordatorio');
+    } finally { setGenerating(null); }
+  };
+
+  // Abre el recordatorio ya generado de una reunión (cierra el modal y lo selecciona).
+  const openGenerated = (reminderId: number) => {
+    setMeetModal(false);
+    setPendingOpen(reminderId);
+  };
+
   // Marca/desmarca una tarea desde el panel de detalle (persiste).
   const toggleDetailTask = async (taskId: string) => {
     if (!selDetail) return;
@@ -276,9 +358,10 @@ export default function RecordatoriosPage() {
                 style={mf}
               />
             </div>
-            <button onClick={openCreate}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
-              style={mf}>
+            <button onClick={openMeetings} className={`${BTN_SECONDARY} shrink-0`} title="Buscar reuniones de Meet y generar su recordatorio">
+              <Video className="w-4 h-4" /> Buscar reuniones
+            </button>
+            <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0`}>
               <Plus className="w-4 h-4" /> Nuevo recordatorio
             </button>
           </div>
@@ -424,6 +507,94 @@ export default function RecordatoriosPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal: reuniones de Meet → generar recordatorio a mano */}
+      <PixelModal open={meetModal} onClose={() => setMeetModal(false)} title="Reuniones recientes de Meet" size="lg" busy={!!generating}>
+        <div className="space-y-3">
+          <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
+            Tus reuniones de Google Meet, incluidas las <span className="text-digi-text font-medium">iniciadas sin agendar</span>.
+            Genera el recordatorio con su transcripción cuando quieras: la IA saca el título, las tareas y la fecha de seguimiento.
+          </p>
+
+          <div className="flex items-center gap-2">
+            <div className="w-48 shrink-0">
+              <PixelSelect
+                options={DAY_OPTIONS}
+                value={meetDays}
+                onChange={(e) => changeMeetDays(e.target.value)}
+                disabled={meetLoading || !!generating}
+              />
+            </div>
+            <button onClick={() => loadMeetings(meetDays)} disabled={meetLoading || !!generating} className={BTN_SECONDARY}>
+              <RefreshCw className={`w-4 h-4 ${meetLoading ? 'animate-spin' : ''}`} /> Actualizar
+            </button>
+          </div>
+
+          {meetNote && (
+            <div className="flex items-start gap-2 px-3 py-2 rounded-md border border-amber-500/40 bg-amber-500/10">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-px" />
+              <p className="text-[12px] text-digi-text" style={mf}>{SCAN_NOTE[meetNote] || meetNote}</p>
+            </div>
+          )}
+
+          {meetLoading ? (
+            <div className="flex justify-center py-10"><BrandLoader size="lg" label="Buscando reuniones…" /></div>
+          ) : meetList.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
+                <Video className="w-5 h-5 text-digi-muted" />
+              </div>
+              <p className="text-[12px] text-digi-muted" style={mf}>
+                {meetScanned && !meetNote ? 'No se encontraron reuniones en este periodo.' : 'Sin reuniones para mostrar.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {meetList.map((c) => (
+                <div key={c.recordName} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-digi-border bg-digi-darker/40">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium text-digi-text truncate flex items-center gap-1.5" style={mf}>
+                      <span className="shrink-0 inline-flex" title={c.kind === 'scheduled' ? 'Agendada en Mi día' : 'Iniciada sin agendar'}>
+                        {c.kind === 'scheduled'
+                          ? <CalendarDays className="w-3.5 h-3.5 text-accent" />
+                          : <Radio className="w-3.5 h-3.5 text-accent" />}
+                      </span>
+                      {c.title}
+                    </p>
+                    <p className="text-[11px] text-digi-muted truncate" style={mf}>
+                      {fmtMeetingWhen(c)}{c.meetingCode ? ` · ${c.meetingCode}` : ''}
+                    </p>
+                  </div>
+
+                  <div className="shrink-0">
+                    {c.state === 'generated' ? (
+                      <button onClick={() => c.reminderId && openGenerated(c.reminderId)} disabled={!c.reminderId}
+                        className="inline-flex items-center gap-1 text-[12px] font-medium text-accent hover:underline disabled:opacity-50" style={mf}>
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Ya generado <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    ) : c.state === 'no-transcript' ? (
+                      <PixelBadge variant="default">Sin transcripción</PixelBadge>
+                    ) : (
+                      <button onClick={() => generateFromMeeting(c)} disabled={!!generating}
+                        className={`${BTN_PRIMARY} px-2.5 py-1.5 text-[12px]`}>
+                        {generating === c.recordName
+                          ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Generando…</>
+                          : <><Sparkles className="w-3.5 h-3.5" /> Generar</>}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-[11px] text-digi-muted leading-relaxed pt-2 border-t border-digi-border" style={mf}>
+            <span className="text-digi-text font-medium">Sin transcripción</span> = la reunión se hizo con la
+            transcripción desactivada, o Google todavía no la ha liberado (puede tardar más de 15 minutos
+            después de terminar). Vuelve a Actualizar más tarde.
+          </p>
+        </div>
+      </PixelModal>
 
       {/* Modal crear / editar */}
       <PixelModal open={modal} onClose={() => setModal(false)} title={editId ? 'Editar recordatorio' : 'Nuevo recordatorio'} size="lg">

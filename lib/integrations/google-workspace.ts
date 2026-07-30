@@ -248,18 +248,55 @@ export async function createMeetEvent(opts: {
   };
 }
 
+export interface MeetRecordInfo {
+  recordName: string | null;
+  meetingUri: string | null;
+  meetingCode: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  /** True si la reunión tiene una transcripción en estado terminal (archivo disponible). */
+  hasTranscript: boolean;
+  /** Texto completo; vacío si aún no está lista o si se pidió `withText: false`. */
+  text: string;
+}
+
+/** Descarga y concatena las entradas de todas las transcripciones terminadas de una grabación. */
+async function readTranscriptText(meet: any, recordName: string): Promise<string> {
+  let text = '';
+  const trRes: any = await meet.conferenceRecords.transcripts.list({ parent: recordName });
+  for (const tr of (trRes.data.transcripts || [])) {
+    // Estados terminales con archivo disponible: ENDED / FILE_GENERATED. Solo se
+    // omite STARTED (transcripción aún en curso).
+    if (tr.state === 'STARTED') continue;
+    let etoken: string | undefined;
+    do {
+      const eRes: any = await meet.conferenceRecords.transcripts.entries.list({ parent: tr.name, pageSize: 1000, pageToken: etoken });
+      for (const e of (eRes.data.transcriptEntries || [])) if (e.text) text += `${e.text}\n`;
+      etoken = eRes.data.nextPageToken;
+    } while (etoken);
+  }
+  return text.trim();
+}
+
 /**
  * Trae las TRANSCRIPCIONES de las reuniones de Meet terminadas desde `sinceMs`. Devuelve por
  * cada conferenceRecord su meetingUri/meetingCode (para emparejar con el evento) y el texto
  * completo de la transcripción (vacío si aún no está lista). Requiere el scope
  * `meetings.space.readonly` en la delegación de dominio. Best-effort: si la API falla,
  * devuelve lo que pudo (o []).
+ *
+ * Con `withText: false` NO descarga las entradas (mucho más rápido): solo informa en
+ * `hasTranscript` si el archivo ya existe. Se usa para LISTAR reuniones candidatas; el texto
+ * de la elegida se baja después con `fetchMeetTranscriptText`.
  */
-export async function fetchRecentMeetTranscripts(sinceMs: number, subject?: string): Promise<
-  { recordName: string | null; meetingUri: string | null; meetingCode: string | null; endTime: string | null; text: string }[]
-> {
+export async function fetchRecentMeetTranscripts(
+  sinceMs: number,
+  subject?: string,
+  opts?: { withText?: boolean },
+): Promise<MeetRecordInfo[]> {
+  const withText = opts?.withText !== false;
   const meet: any = google.meet({ version: 'v2', auth: getAuth([SCOPE_MEET_READONLY], subject) });
-  const out: { recordName: string | null; meetingUri: string | null; meetingCode: string | null; endTime: string | null; text: string }[] = [];
+  const out: MeetRecordInfo[] = [];
   const sinceIso = new Date(sinceMs).toISOString();
 
   const records: any[] = [];
@@ -284,24 +321,72 @@ export async function fetchRecentMeetTranscripts(sinceMs: number, subject?: stri
     } catch { /* sin acceso al space */ }
 
     let text = '';
+    let hasTranscript = false;
     try {
-      const trRes: any = await meet.conferenceRecords.transcripts.list({ parent: rec.name });
-      for (const tr of (trRes.data.transcripts || [])) {
-        // Estados terminales con archivo disponible: ENDED / FILE_GENERATED. Solo se
-        // omite STARTED (transcripción aún en curso).
-        if (tr.state === 'STARTED') continue;
-        let etoken: string | undefined;
-        do {
-          const eRes: any = await meet.conferenceRecords.transcripts.entries.list({ parent: tr.name, pageSize: 1000, pageToken: etoken });
-          for (const e of (eRes.data.transcriptEntries || [])) if (e.text) text += `${e.text}\n`;
-          etoken = eRes.data.nextPageToken;
-        } while (etoken);
+      if (withText) {
+        text = await readTranscriptText(meet, rec.name);
+        hasTranscript = !!text;
+      } else {
+        const trRes: any = await meet.conferenceRecords.transcripts.list({ parent: rec.name });
+        hasTranscript = (trRes.data.transcripts || []).some((tr: any) => tr.state && tr.state !== 'STARTED');
       }
     } catch { /* transcripción aún no lista */ }
 
-    out.push({ recordName: rec.name || null, meetingUri, meetingCode, endTime: rec.endTime || null, text: text.trim() });
+    out.push({
+      recordName: rec.name || null,
+      meetingUri,
+      meetingCode,
+      startTime: rec.startTime || null,
+      endTime: rec.endTime || null,
+      hasTranscript,
+      text,
+    });
   }
   return out;
+}
+
+/**
+ * Metadatos de UNA grabación concreta (`conferenceRecords/...`) impersonando a `subject`.
+ * Devuelve `null` si la grabación no existe o el usuario no tiene acceso a ella — eso es lo
+ * que garantiza que un miembro solo pueda generar recordatorios de SUS propias reuniones.
+ */
+export async function fetchMeetRecord(recordName: string, subject?: string): Promise<
+  { recordName: string; meetingUri: string | null; meetingCode: string | null; startTime: string | null; endTime: string | null } | null
+> {
+  const meet: any = google.meet({ version: 'v2', auth: getAuth([SCOPE_MEET_READONLY], subject) });
+  try {
+    const res: any = await meet.conferenceRecords.get({ name: recordName });
+    let meetingUri: string | null = null, meetingCode: string | null = null;
+    try {
+      const sp: any = await meet.spaces.get({ name: res.data.space });
+      meetingUri = sp.data.meetingUri || null;
+      meetingCode = sp.data.meetingCode || null;
+    } catch { /* sin acceso al space */ }
+    return {
+      recordName: res.data.name || recordName,
+      meetingUri,
+      meetingCode,
+      startTime: res.data.startTime || null,
+      endTime: res.data.endTime || null,
+    };
+  } catch (e: any) {
+    console.error('[meet] conferenceRecords.get error:', e?.response?.data ? JSON.stringify(e.response.data) : e.message);
+    return null;
+  }
+}
+
+/**
+ * Texto de la transcripción de UNA grabación concreta (`conferenceRecords/...`). Se usa en la
+ * generación MANUAL de recordatorios, donde ya se sabe qué reunión eligió el usuario.
+ */
+export async function fetchMeetTranscriptText(recordName: string, subject?: string): Promise<string> {
+  const meet: any = google.meet({ version: 'v2', auth: getAuth([SCOPE_MEET_READONLY], subject) });
+  try {
+    return await readTranscriptText(meet, recordName);
+  } catch (e: any) {
+    console.error('[meet] transcripts error:', e?.response?.data ? JSON.stringify(e.response.data) : e.message);
+    return '';
+  }
 }
 
 /** Actualiza la descripción de un evento de Google Calendar (best-effort). */
