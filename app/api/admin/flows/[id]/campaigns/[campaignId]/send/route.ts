@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
-import { sendViaGmail } from '@/lib/integrations/google-workspace';
+import { sendViaGmail, workspaceSenderWithName } from '@/lib/integrations/google-workspace';
 
 
 function buildEmailHtml(bodyHtml: string, footerHtml: string): string {
@@ -42,8 +42,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (body.body_html !== undefined) campaign.body_html = body.body_html;
     if (body.footer_html !== undefined) campaign.footer_html = body.footer_html;
     if (body.subject !== undefined) campaign.subject = body.subject;
-    if (body.from_email !== undefined) campaign.from_email = body.from_email;
     if (body.attachments !== undefined) campaign.attachments = body.attachments;
+    // Del remitente solo se acepta el NOMBRE (`from_name`); `from_email` se sigue leyendo
+    // por compatibilidad, pero de él también se toma únicamente el nombre.
+    if (body.from_name !== undefined) campaign.from_email = String(body.from_name);
+    else if (body.from_email !== undefined) campaign.from_email = String(body.from_email);
+
+    // Del remitente se respeta el NOMBRE, nunca la dirección: el correo sale siempre de la
+    // cuenta corporativa que impersona la service account. Un `From` de otro dominio no lo
+    // puede firmar Gmail → o lo rechaza o llega como suplantación y cae en spam.
+    const sender = workspaceSenderWithName(campaign.from_email);
 
     // Fetch contacts from the linked list
     const { rows: contacts } = await pool.query(
@@ -77,7 +85,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     for (const contact of contacts) {
       try {
         const result = await sendViaGmail({
-          from: campaign.from_email,
+          from: sender,
           to: contact.email,
           subject: campaign.subject,
           html,

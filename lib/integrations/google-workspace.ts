@@ -68,6 +68,57 @@ export function isGoogleWorkspaceConfigured(): boolean {
   return !!ORGANIZER && !!loadKey();
 }
 
+/** La cuenta corporativa que envía TODO el correo saliente (`GOOGLE_WORKSPACE_ORGANIZER`). */
+export function workspaceOrganizer(): string {
+  return ORGANIZER;
+}
+
+/**
+ * Remitente canónico de la organización: `Nombre <organizador@grupocc.org>`.
+ *
+ * Todo el correo sale de la cuenta que impersona la service account, así que un `From`
+ * distinto (p. ej. un `noreply@` de otro dominio) o lo rechaza Gmail o llega como
+ * suplantación y acaba en spam. Decisión del usuario (2026-07-30): **siempre** se envía
+ * desde esta cuenta, y el remitente **no se edita** desde la interfaz.
+ */
+export function workspaceSender(displayName = 'GCC World'): string {
+  const name = sanitizeSenderName(displayName) || 'GCC World';
+  if (!ORGANIZER) return name;
+  return `${name} <${ORGANIZER}>`;
+}
+
+/** Limpia un nombre para usarlo en la cabecera `From` (sin `<>`, comillas ni saltos). */
+function sanitizeSenderName(raw: string): string {
+  return String(raw || '')
+    .replace(/[<>"\r\n]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 78);
+}
+
+/**
+ * Toma lo que venga como remitente (`"Nombre <lo-que-sea@dominio>"` o solo un nombre) y
+ * devuelve el `From` definitivo: **se conserva el nombre y se impone la dirección de la
+ * cuenta corporativa**. Así una campaña puede firmar como "Helen Cárdenas" pero el correo
+ * sale —y se puede firmar— desde la cuenta real.
+ */
+export function workspaceSenderWithName(rawFrom?: string | null, fallbackName = 'GCC World'): string {
+  const raw = String(rawFrom || '').trim();
+  // "Nombre <correo>" → Nombre · "correo@x" suelto → sin nombre · "Nombre" → Nombre
+  const angled = raw.match(/^\s*(.*?)\s*<[^>]*>\s*$/);
+  let name = angled ? angled[1] : raw;
+  if (!angled && /@/.test(name)) name = '';
+  return workspaceSender(sanitizeSenderName(name) || fallbackName);
+}
+
+/** Solo el nombre visible de un `From` guardado (para prellenar el formulario). */
+export function senderDisplayName(rawFrom?: string | null): string {
+  const raw = String(rawFrom || '').trim();
+  const angled = raw.match(/^\s*(.*?)\s*<[^>]*>\s*$/);
+  const name = angled ? angled[1] : (/@/.test(raw) ? '' : raw);
+  return sanitizeSenderName(name);
+}
+
 const _jwtCache = new Map<string, JwtClient>();
 
 function getAuth(scopes: string[], subject?: string): JwtClient {

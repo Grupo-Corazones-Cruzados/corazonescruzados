@@ -2703,6 +2703,45 @@ Módulos principales:
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
 ## Decisiones y reglas de negocio
+- **AUTOMATIZACIONES · EMAIL MASIVO — remitente y enlace público de listas (2026-07-30).**
+  - 🔒 **Todo el correo sale SIEMPRE de `lfgonzalezm0@grupocc.org`** (decisión del usuario). Del
+    remitente el usuario elige **solo el NOMBRE visible** ("Helen Cárdenas"); la **dirección la
+    impone el servidor** y no se puede cambiar desde la interfaz. Motivo: el envío va por la Gmail
+    API impersonando esa cuenta, así que un `From` de otro dominio (había campañas con
+    `noreply@gccworld.com` por defecto) o lo rechaza Gmail o llega como suplantación y cae en spam.
+    - Helpers en `lib/integrations/google-workspace.ts`: `workspaceOrganizer()`,
+      `workspaceSender(nombre)`, **`workspaceSenderWithName(raw)`** (extrae el nombre de
+      `"Nombre <x@y>"` y le pega la dirección corporativa) y `senderDisplayName(raw)`.
+    - Se aplica en el **alta** de la campaña (`POST /api/admin/flows/[id]/campaigns`, guarda ya el
+      `From` correcto) y en el **envío** (`.../campaigns/[campaignId]/send`, recalcula por si la
+      campaña es vieja). Probado: `from_name: "Malo <hacker@evil.com>"` → se guarda
+      `Malo <lfgonzalezm0@grupocc.org>`; un `from_email` de otro dominio pierde el nombre y cae a
+      `GCC World <lfgonzalezm0@grupocc.org>`.
+    - La API de campañas devuelve `senderAddress` para que el panel muestre la dirección fija.
+    - El nombre por defecto de una campaña nueva es **el nombre del flujo** (los flujos se llaman
+      por la persona: "Helen Cárdenas", "Elkin Cárdenas").
+  - **Enlace público para llenar una lista de contactos.** Cada lista de un flujo de email masivo
+    puede tener un **enlace con token**; se comparte con alguien **sin cuenta** y esa persona
+    **agrega, edita y quita** contactos de ESA lista desde `/lista-contactos/<token>`.
+    - **A propósito la página pública NO trae importar Excel ni descargar plantilla** (decisión del
+      usuario): solo alta manual + editar + quitar. Esas dos funciones se quedan en el dashboard.
+    - Migración **`sql/migrations/023_flow_contact_list_share.sql`** (aplicada): `share_token` +
+      `share_created_at` en `flow_contact_lists` (índice único parcial sobre el token) y
+      `added_via_share` en `flow_contacts` (distingue lo que entró por el enlace).
+    - Lógica en **`lib/flows/contact-share.ts`** (única puerta token → lista): token de 32 bytes
+      base64url, valida que el flujo sea de tipo `email`, tope de **2.000 contactos** por lista,
+      valida formato de correo, largos máximos y **duplicados dentro de la lista**.
+    - API admin `POST|GET|DELETE /api/admin/flows/[id]/contact-lists/[listId]/share`
+      (generar/regenerar · consultar · revocar). **Regenerar mata el token anterior**; revocar
+      deja la lista y sus contactos intactos.
+    - API pública `GET|POST /api/lista-contactos/[token]` y `PATCH|DELETE
+      /api/lista-contactos/[token]/[contactId]`. Toda consulta filtra **también por `list_id`**, así
+      que con el token de una lista no se toca un contacto de otra aunque se adivine su id.
+      Verificado: 404 con token inválido/revocado · 404 al editar o borrar un contacto de otra lista
+      · 409 duplicado · 400 correo mal formado y nombre > 120 caracteres.
+    - **Nota de privacidad (dicha al usuario):** quien tenga el enlace ve los contactos que ya
+      están en la lista (es lo que permite editarlos/quitarlos). Compartirlo solo con quien deba
+      llenarla y revocarlo al terminar.
 - **Módulo RECORDATORIOS (confirmado 2026-07-22).** Nuevo módulo (sidebar debajo de Pensamientos)
   con recordatorios que tienen título, fecha/hora, lista de tareas y adjuntos; envían correos al
   dueño (miembro/candidato asociado) con frecuencia escalada. Fases:

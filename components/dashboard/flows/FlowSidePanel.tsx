@@ -23,9 +23,22 @@ import {
   Mail, Plus, Send, BarChart3, RotateCcw, Users, ChevronRight, ChevronDown, Trash2,
   FileSpreadsheet, Download, Paperclip, Eye, Code2, Check, X, Bold, Italic, Underline,
   Heading1, Heading2, Pilcrow, Link2, Image as ImageIcon, Minus, MousePointerClick,
+  Share2, Copy, RefreshCw, ShieldOff, ExternalLink,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
+
+/**
+ * Nombre visible de un `From` guardado (`"Helen Cárdenas <x@y>"` → `Helen Cárdenas`).
+ * Se duplica aquí a propósito: el helper del servidor vive en el módulo de Google
+ * Workspace, que arrastra `googleapis`/`fs` y no puede entrar en un componente cliente.
+ */
+function displayNameOf(rawFrom?: string | null): string {
+  const raw = String(rawFrom || '').trim();
+  const angled = raw.match(/^\s*(.*?)\s*<[^>]*>\s*$/);
+  const name = angled ? angled[1] : (/@/.test(raw) ? '' : raw);
+  return name.replace(/["<>]/g, '').trim();
+}
 
 /* ─── Types ─── */
 interface Flow {
@@ -43,6 +56,9 @@ interface ContactList {
   name: string;
   contact_count: number;
   created_at: string;
+  /** Token del enlace público de la lista (null = sin enlace). */
+  share_token?: string | null;
+  share_created_at?: string | null;
 }
 
 interface Contact {
@@ -120,13 +136,18 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
   const [resendChoice, setResendChoice] = useState<Campaign | null>(null); // modal to pick same/different
   const [resendCampaign, setResendCampaign] = useState<Campaign | null>(null); // campaign being resent
   const [resendEditing, setResendEditing] = useState(false); // editing email for resend
-  const [resendOverrides, setResendOverrides] = useState<{ from_email: string; subject: string; body_html: string; footer_html: string; attachments: { filename: string; content: string; size: number }[] }>({ from_email: '', subject: '', body_html: '', footer_html: '', attachments: [] });
+  // Del remitente solo viaja el NOMBRE: la dirección la impone el servidor.
+  const [resendOverrides, setResendOverrides] = useState<{ from_name: string; subject: string; body_html: string; footer_html: string; attachments: { filename: string; content: string; size: number }[] }>({ from_name: '', subject: '', body_html: '', footer_html: '', attachments: [] });
+
+  /** Dirección desde la que sale TODO el correo (informativa: no se puede cambiar). */
+  const [senderAddress, setSenderAddress] = useState('');
 
   const fetchCampaigns = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/flows/${flow.id}/campaigns`);
       const data = await res.json();
       setCampaigns(data.data || []);
+      if (data.senderAddress) setSenderAddress(data.senderAddress);
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, [flow.id]);
@@ -204,6 +225,8 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
       {view === 'create-campaign' && (
         <CreateCampaignWizard
           flowId={flow.id}
+          senderAddress={senderAddress}
+          defaultSenderName={flow.name}
           onDone={() => { setView('campaigns'); fetchCampaigns(); }}
           onCancel={() => setView('campaigns')}
         />
@@ -219,8 +242,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
           />
 
           <div className="space-y-4">
-            <PixelInput label="Correo remitente" value={resendOverrides.from_email}
-              onChange={(e) => setResendOverrides((p) => ({ ...p, from_email: e.target.value }))} />
+            <SenderFields name={resendOverrides.from_name} onName={(v) => setResendOverrides((p) => ({ ...p, from_name: v }))} address={senderAddress} />
             <PixelInput label="Asunto" value={resendOverrides.subject}
               onChange={(e) => setResendOverrides((p) => ({ ...p, subject: e.target.value }))} />
             <div>
@@ -267,7 +289,10 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <span className="block text-[11px] text-digi-muted mb-0.5" style={mf}>Remitente</span>
-                  <span className="text-[13px] text-digi-text" style={mf}>{resendEditing ? resendOverrides.from_email : (confirmSendFull?.from_email || confirmSend?.from_email)}</span>
+                  <span className="text-[13px] text-digi-text" style={mf}>
+                    {resendEditing && resendOverrides.from_name ? resendOverrides.from_name : displayNameOf(confirmSendFull?.from_email || confirmSend?.from_email)}
+                    <span className="text-digi-muted"> &lt;{senderAddress}&gt;</span>
+                  </span>
                 </div>
                 <div>
                   <span className="block text-[11px] text-digi-muted mb-0.5" style={mf}>Lista</span>
@@ -361,7 +386,7 @@ export default function FlowSidePanel({ flow, onClose }: { flow: Flow; onClose: 
                   const data = await res.json();
                   const c = data.data;
                   setResendOverrides({
-                    from_email: c.from_email,
+                    from_name: displayNameOf(c.from_email),
                     subject: c.subject,
                     body_html: c.body_html,
                     footer_html: c.footer_html,
@@ -456,8 +481,34 @@ function CampaignsView({
   );
 }
 
+/* ─── Remitente: nombre editable + dirección fija ─── */
+/**
+ * El nombre visible sí se elige (las campañas se firman a nombre de la persona: "Helen
+ * Cárdenas"), pero **la dirección siempre es la cuenta corporativa** que impersona la
+ * service account. Un `From` de otro dominio no lo puede firmar Gmail → rechazo o spam.
+ * El servidor lo impone igual, aunque llegue otra cosa desde el cliente.
+ */
+function SenderFields({ name, onName, address }: { name: string; onName: (v: string) => void; address: string }) {
+  return (
+    <div>
+      <PixelInput
+        label="Nombre del remitente"
+        value={name}
+        onChange={(e) => onName(e.target.value)}
+        placeholder="Ej: Helen Cárdenas"
+      />
+      <div className="flex items-center gap-2 mt-1.5 px-2.5 py-1.5 rounded-md border border-digi-border bg-digi-darker/40">
+        <Mail className="w-3.5 h-3.5 text-accent shrink-0" />
+        <span className="text-[12px] text-digi-muted" style={mf}>
+          Se envía desde <span className="text-digi-text">{address || 'la cuenta corporativa de GCC'}</span> · la dirección no se puede cambiar
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Create Campaign Wizard ─── */
-function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; onDone: () => void; onCancel: () => void }) {
+function CreateCampaignWizard({ flowId, senderAddress, defaultSenderName, onDone, onCancel }: { flowId: number; senderAddress: string; defaultSenderName: string; onDone: () => void; onCancel: () => void }) {
   const [step, setStep] = useState(1); // 1 = contact list, 2 = email config
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
   const [selectedListId, setSelectedListId] = useState<number | null>(null);
@@ -467,6 +518,9 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
   const [showCreateList, setShowCreateList] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [creatingList, setCreatingList] = useState(false);
+
+  // Enlace público de una lista
+  const [shareList, setShareList] = useState<ContactList | null>(null);
 
   // Contacts management
   const [expandedListId, setExpandedListId] = useState<number | null>(null);
@@ -478,8 +532,8 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
   const [importingContacts, setImportingContacts] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Email config
-  const [fromEmail, setFromEmail] = useState('GCC World <noreply@gccworld.com>');
+  // Email config (del remitente solo se elige el NOMBRE; la dirección la fija el servidor)
+  const [fromName, setFromName] = useState(defaultSenderName || 'GCC World');
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('');
   const [footerHtml, setFooterHtml] = useState('');
@@ -636,7 +690,7 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contact_list_id: selectedListId,
-          from_email: fromEmail,
+          from_name: fromName,
           subject: subject.trim(),
           body_html: bodyHtml,
           footer_html: footerHtml,
@@ -713,9 +767,20 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
                         {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                       </button>
                       <div className="min-w-0 flex-1">
-                        <span className="block text-[13px] font-medium text-digi-text truncate" style={mf}>{list.name}</span>
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[13px] font-medium text-digi-text truncate" style={mf}>{list.name}</span>
+                          {list.share_token && (
+                            <span className="inline-flex items-center shrink-0" title="Tiene un enlace público activo">
+                              <Link2 className="w-3.5 h-3.5 text-accent" />
+                            </span>
+                          )}
+                        </span>
                         <span className="block text-[11px] text-digi-muted" style={mf}>{list.contact_count} contactos</span>
                       </div>
+                      <button onClick={() => setShareList(list)} className={BTN_ROW}
+                        title="Compartir un enlace para que alguien externo llene esta lista">
+                        <Share2 className="w-3.5 h-3.5" /> Compartir
+                      </button>
                       <button
                         onClick={() => setSelectedListId(selected ? null : list.id)}
                         className={selected
@@ -812,8 +877,7 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
           <SectionBar title="Configuración del correo" />
 
           <div className="space-y-4">
-            <PixelInput label="Correo remitente" value={fromEmail} onChange={e => setFromEmail(e.target.value)}
-              placeholder="Nombre <correo@dominio.com>" />
+            <SenderFields name={fromName} onName={setFromName} address={senderAddress} />
             <PixelInput label="Asunto" value={subject} onChange={e => setSubject(e.target.value)}
               placeholder="Asunto del correo" />
 
@@ -842,7 +906,158 @@ function CreateCampaignWizard({ flowId, onDone, onCancel }: { flowId: number; on
           </div>
         </div>
       )}
+
+      <ShareListModal
+        flowId={flowId}
+        list={shareList}
+        onClose={() => setShareList(null)}
+        onChanged={fetchLists}
+      />
     </div>
+  );
+}
+
+/* ─── Compartir una lista por enlace público ─── */
+/**
+ * Genera / copia / revoca el enlace con token de una lista de contactos. Quien lo recibe
+ * entra sin cuenta a `/lista-contactos/<token>` y puede agregar, editar y quitar contactos
+ * de ESA lista (sin importar Excel ni descargar plantilla — eso se queda en el dashboard).
+ */
+function ShareListModal({
+  flowId, list, onClose, onChanged,
+}: {
+  flowId: number;
+  list: ContactList | null;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+
+  // El token ya viene en la lista, así que el enlace se arma sin pedir nada al servidor.
+  useEffect(() => {
+    if (!list) { setUrl(null); setCopied(false); setConfirmRevoke(false); return; }
+    setUrl(list.share_token ? `${window.location.origin}/lista-contactos/${list.share_token}` : null);
+    setCopied(false);
+    setConfirmRevoke(false);
+  }, [list]);
+
+  const generate = async () => {
+    if (!list) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/flows/${flowId}/contact-lists/${list.id}/share`, { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Error al generar el enlace');
+      setUrl(d.data.token ? `${window.location.origin}/lista-contactos/${d.data.token}` : d.data.url);
+      setConfirmRevoke(false);
+      onChanged();
+      toast.success('Enlace listo para compartir');
+    } catch (e: any) { toast.error(e.message || 'Error al generar el enlace'); }
+    finally { setBusy(false); }
+  };
+
+  const revoke = async () => {
+    if (!list) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/flows/${flowId}/contact-lists/${list.id}/share`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Error al revocar');
+      setUrl(null);
+      setConfirmRevoke(false);
+      onChanged();
+      toast.success('Enlace revocado');
+    } catch (e: any) { toast.error(e.message || 'Error al revocar'); }
+    finally { setBusy(false); }
+  };
+
+  const copy = async () => {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { toast.error('No se pudo copiar'); }
+  };
+
+  return (
+    <PixelModal open={!!list} onClose={onClose} title="Compartir la lista" size="md" busy={busy}>
+      <div className="space-y-4">
+        <div>
+          <p className="text-[13px] text-digi-text" style={mf}>
+            Lista <span className="font-medium">{list?.name}</span>
+          </p>
+          <p className="text-[12.5px] text-digi-muted leading-relaxed mt-1" style={mf}>
+            Con este enlace una persona <span className="text-digi-text font-medium">sin cuenta</span> puede
+            agregar, editar y quitar contactos de esta lista. No verá el flujo, las campañas ni las demás listas,
+            y no podrá importar archivos: solo los agrega a mano.
+          </p>
+        </div>
+
+        {!url ? (
+          <div className="rounded-lg border border-digi-border bg-digi-darker/40 px-3 py-4 text-center">
+            <Share2 className="w-5 h-5 text-digi-muted mx-auto mb-2" />
+            <p className="text-[12.5px] text-digi-muted mb-3" style={mf}>Esta lista todavía no tiene enlace público.</p>
+            <button onClick={generate} disabled={busy} className={BTN_PRIMARY}>
+              <Link2 className="w-4 h-4" /> {busy ? 'Generando…' : 'Generar enlace'}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className={LABEL}>Enlace para compartir</label>
+              <div className="flex gap-2">
+                <input value={url} readOnly onFocus={(e) => e.currentTarget.select()}
+                  className={`${FIELD} flex-1 text-accent`} style={mf} />
+                <button onClick={copy} className={BTN_PRIMARY}>
+                  {copied ? <><Check className="w-4 h-4" /> Copiado</> : <><Copy className="w-4 h-4" /> Copiar</>}
+                </button>
+              </div>
+              <a href={url} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mt-1.5" style={mf}>
+                <ExternalLink className="w-3.5 h-3.5" /> Abrir la página como la verá esa persona
+              </a>
+            </div>
+
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-md border border-amber-500/40 bg-amber-500/10">
+              <ShieldOff className="w-4 h-4 text-amber-400 shrink-0 mt-px" />
+              <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>
+                Cualquiera con el enlace entra sin identificarse, así que <span className="font-medium">solo compártelo
+                con quien deba llenar la lista</span> y revócalo cuando termine.
+              </p>
+            </div>
+
+            {confirmRevoke ? (
+              <div className="rounded-lg border border-red-500/40 bg-red-500/5 px-3 py-3">
+                <p className="text-[12.5px] text-digi-text" style={mf}>
+                  Al revocar, el enlace deja de funcionar de inmediato. Los contactos ya agregados se quedan en la lista.
+                </p>
+                <div className="flex gap-2 mt-2.5">
+                  <button onClick={revoke} disabled={busy}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-red-500/40 rounded text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50">
+                    <ShieldOff className="w-4 h-4" /> {busy ? 'Revocando…' : 'Sí, revocar'}
+                  </button>
+                  <button onClick={() => setConfirmRevoke(false)} className={BTN_SECONDARY}>Cancelar</button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-digi-border">
+                <button onClick={generate} disabled={busy} className={BTN_SECONDARY}
+                  title="Genera otro enlace; el actual deja de servir">
+                  <RefreshCw className="w-4 h-4" /> Generar uno nuevo
+                </button>
+                <button onClick={() => setConfirmRevoke(true)} disabled={busy}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-red-500/40 rounded text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50">
+                  <ShieldOff className="w-4 h-4" /> Revocar enlace
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </PixelModal>
   );
 }
 

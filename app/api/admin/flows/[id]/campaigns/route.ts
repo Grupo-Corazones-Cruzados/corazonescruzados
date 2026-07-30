@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { workspaceOrganizer, workspaceSenderWithName } from '@/lib/integrations/google-workspace';
 
 async function ensureTables() {
   await pool.query(`
@@ -58,7 +59,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       [id]
     );
 
-    return NextResponse.json({ data: rows });
+    // `senderAddress` = la dirección desde la que sale TODO el correo. Va en la respuesta
+    // para que el panel la muestre: el usuario elige el nombre visible, no la dirección.
+    return NextResponse.json({ data: rows, senderAddress: workspaceOrganizer() });
   } catch (err: any) {
     console.error('Campaigns GET error:', err.message);
     return NextResponse.json({ data: [] });
@@ -73,18 +76,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await ensureTables();
     const { id } = await params;
     const body = await req.json();
-    const { contact_list_id, from_email, subject, body_html, footer_html, attachments, wa_template_id } = body;
+    const { contact_list_id, from_name, from_email, subject, body_html, footer_html, attachments, wa_template_id } = body;
 
-    // For email campaigns, require from_email and subject
-    if (!wa_template_id && (!from_email || !subject)) {
-      return NextResponse.json({ error: 'Email remitente y asunto son requeridos' }, { status: 400 });
+    if (!wa_template_id && !subject) {
+      return NextResponse.json({ error: 'El asunto es requerido' }, { status: 400 });
     }
 
+    // Del remitente se guarda el nombre que puso el usuario, pero con la DIRECCIÓN de la
+    // cuenta corporativa: nunca se persiste un correo de otro dominio.
     const { rows } = await pool.query(
       `INSERT INTO gcc_world.flow_campaigns (flow_id, contact_list_id, from_email, subject, body_html, footer_html, attachments, wa_template_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [id, contact_list_id, from_email || '', subject || '', body_html || '', footer_html || '', JSON.stringify(attachments || []), wa_template_id || null]
+      [id, contact_list_id, wa_template_id ? '' : workspaceSenderWithName(from_name ?? from_email), subject || '', body_html || '', footer_html || '', JSON.stringify(attachments || []), wa_template_id || null]
     );
 
     return NextResponse.json({ data: rows[0] }, { status: 201 });
