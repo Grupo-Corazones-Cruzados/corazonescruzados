@@ -53,6 +53,30 @@ if (!TOKEN) {
   process.exit(1);
 }
 
+/**
+ * Resumen legible de la respuesta de un trabajo. Antes se interpolaba el valor tal cual y los
+ * campos que no eran texto salían como `instant=[object Object]` o `skippedPaused=` (vacío),
+ * que en los logs de Railway no dicen nada. Ahora los objetos van en JSON y lo que está vacío
+ * (0, [], null) se omite, para que la línea muestre solo lo que pasó de verdad.
+ */
+function formatDetail(body) {
+  const parts = [];
+  for (const [k, v] of Object.entries(body)) {
+    if (k === 'ok') continue;
+    if (v === null || v === undefined || v === 0) continue;
+    if (Array.isArray(v)) {
+      if (v.length === 0) continue;
+      parts.push(`${k}=${JSON.stringify(v)}`);
+    } else if (typeof v === 'object') {
+      const inner = formatDetail(v);
+      if (inner) parts.push(`${k}(${inner})`);
+    } else {
+      parts.push(`${k}=${v}`);
+    }
+  }
+  return parts.join(' ') || 'sin novedades';
+}
+
 const now = new Date();
 const nightlyWindow = now.getUTCHours() === 6 && now.getUTCMinutes() < 10;
 const jobs = nightlyWindow ? [...FREQUENT_JOBS, ...NIGHTLY_JOBS] : FREQUENT_JOBS;
@@ -72,8 +96,7 @@ for (const job of jobs) {
       console.error(`[cron] ✗ ${job.name} → HTTP ${res.status}: ${body.error || '(sin detalle)'}`);
       continue;
     }
-    const detail = Object.entries(body).filter(([k]) => k !== 'ok').map(([k, v]) => `${k}=${v}`).join(' ');
-    console.log(`[cron] ✓ ${job.name} ${detail}`);
+    console.log(`[cron] ✓ ${job.name} ${formatDetail(body)}`);
   } catch (e) {
     failed++;
     console.error(`[cron] ✗ ${job.name} → ${e.message}`);

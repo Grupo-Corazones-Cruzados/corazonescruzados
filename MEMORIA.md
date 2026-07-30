@@ -3410,6 +3410,20 @@ Módulos principales:
     verificando cada candidato a mano. Ver `Estado actual`.
 
 ## Pendientes / preguntas abiertas
+- ✅ **CRON RESUELTO Y FUNCIONANDO (2026-07-30).** El usuario cambió en Railway el `Start command`
+  a `node scripts/frequent-cron.mjs` y el horario a cada 10 min. Comprobado en los logs del
+  servicio: pases a las 14:00, 14:10, 14:20 y 14:30 UTC con los **3 trabajos frecuentes** y
+  `Fallidos: 0/3`. Efecto real en la BD: el recordatorio **#4 recibió su correo de vencido** a
+  las 14:00 (`expired_email_sent=true`, `status='expired'`) — el primero que sale desde que se
+  creó el módulo.
+  - `email_stage` sigue en NULL y **está bien**: la rama de "vencido" no usa etapa, y los
+    recordatorios #7/#8 vencen el 2026-08-01, aún fuera de la ventana de avisos (>5 h).
+  - `member_calendar_events.reminder_status` de "Seguimiento app facturas" (27-jul) se queda en
+    NULL para siempre: el pase solo mira los eventos de las **últimas 48 h**. Es por diseño.
+  - **Logs legibles:** el runner interpolaba los valores tal cual y salían `instant=[object
+    Object]` y `skippedPaused=` (vacío). Ahora `formatDetail()` pone los objetos en JSON, anida
+    los sub-objetos y **omite lo que está a cero**, así que una línea sin novedad dice
+    "sin novedades" en vez de una ristra de ceros.
 - 🔴 **CRON: CAUSA REAL ENCONTRADA (2026-07-30) — corrige el diagnóstico del 2026-07-29.**
   Lo de ayer ("el cron no está corriendo") era cierto en el efecto pero **falso en la causa**. Con
   la CLI de Railway (`railway logs --service nightly-cron`) se ve que el servicio **sí corre**,
