@@ -63,10 +63,22 @@
   *top layer* del navegador gana a cualquier `z-index`, así que la segunda queda encima. Ya estaba
   documentado en `Diseño.md` para los `PixelModal` abiertos desde `FlowPanelShell`.
 
-### Estado
-Detalle de proyecto **cerrado y verificado** (`tsc` + `next build`). **Pendiente de migrar** el mismo
-defecto en `tickets/[id]` (`editingSlots`), `components/projects/IncidentDetailPanel.tsx`,
-`app/(main)/tasks/page.tsx` y `app/(public)/panel/tasks/page.tsx`.
+#### P6 — ¿Cómo se monta el panel estándar en una página que NO es del dashboard? · ✅ Resuelta
+- **Por qué importa:** el portal del cliente y las páginas de tareas tienen su propio tema oscuro
+  (`#1a1a1a`/`#2a2a2a`), y el panel derecho solo existe dentro del ámbito `.corp`.
+- **Respuesta:** envolver el `EditPanel` en `<div className="corp dark corp-overlay contents">`.
+  `corp-overlay` (ya existía para los modales de la landing) evita que la isla imponga fondo y
+  `min-height`, y **`contents`** la saca del flujo para no romper el `space-y-*` del contenedor. El
+  selector `.corp .modal-surface` sigue casando: el *top layer* cambia dónde se **pinta** el
+  `<dialog>`, no dónde **vive** en el árbol DOM.
+
+### Estado — ✅ barrido COMPLETO (2026-07-31)
+Migrados y verificados (`tsc` + `next build`): `projects/[id]` (6 ediciones), `tickets/[id]` (días de
+trabajo), `IncidentDetailPanel`, `app/portal/[projectId]` (portal del cliente, con gestión de
+imágenes dentro del panel) y `(main)/tasks` = `(public)/panel/tasks` (archivos **idénticos**: se edita
+uno y se copia). Única edición "en sitio" que queda, a propósito: el selector de premisas del panel
+*glass* de `GestionDeDatosSystem` — es una selección dentro de la superficie de detalle, no un
+formulario que tape lo que se está leyendo.
 
 ---
 

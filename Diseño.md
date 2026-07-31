@@ -939,6 +939,15 @@ Detalles aprendidos al aplicarla:
   el contenido, la lista queda recortada.
 - Una ventanita **sobre** un panel abierto funciona (editar una subtarea desde el panel "Subtareas"):
   `<dialog showModal>` vive en el *top layer* del navegador.
+- **Fuera de `/dashboard`** (portal del cliente, páginas `(main)`/`(public)` con su propio tema
+  oscuro) el panel se monta como **isla corp**: envolverlo en
+  `<div className="corp dark corp-overlay contents">`. `corp-overlay` evita que la isla imponga el
+  fondo y el `min-height` de `.corp`, y **`contents`** (display:contents) la saca del flujo para que
+  no altere el `space-y-*` del contenedor — el `<div>` es solo el **ámbito CSS** del diálogo, y el
+  selector `.corp .modal-surface` sigue casando porque `<dialog>` permanece en el árbol DOM aunque
+  se pinte en el *top layer*.
+- **Formularios largos**: dentro del panel no hacen falta límites de ancho (`max-w-sm`) heredados de
+  cuando el editor vivía en una tarjeta estrecha — el panel ya acota a 644 px.
 
 ## Desviaciones detectadas y resolución
 - **2026-07-31 — Detalle de proyecto: SEIS ediciones inline ("por encima") → CORREGIDAS.**
@@ -951,9 +960,26 @@ Detalles aprendidos al aplicarla:
   requerimiento gana **Talentos** y **Plazas**, que solo se podían fijar al crearlo — por eso salían
   requerimientos con "plazas sin definir" imposibles de arreglar desde la UI. Verificado `tsc` +
   `next build`.
-  **PENDIENTE (mismo defecto, otros archivos):** `tickets/[id]` (días/`editingSlots`),
-  `components/projects/IncidentDetailPanel.tsx`, `app/(main)/tasks/page.tsx` y
-  `app/(public)/panel/tasks/page.tsx`.
+- **2026-07-31 — Barrido del resto de ediciones inline de la app → CORREGIDAS.** Mismo defecto en
+  cinco archivos más, todos migrados a `EditPanel`:
+  - **`tickets/[id]`** — el editor de **días de trabajo** sustituía la tarjeta de 300 px del panel
+    izquierdo y, mientras editaba, **escondía las acciones de la cabecera** y el banner de solicitud
+    (`!editingSlots` repartido por el archivo). Ahora es panel derecho; el título y el botón primario
+    cambian según el caso (`Aceptar (N días)` cuando es una solicitud del cliente, `Guardar (N días)`
+    si no). Se quitaron los `max-w-sm` que venían de la tarjeta estrecha.
+  - **`components/projects/IncidentDetailPanel.tsx`** (pestaña Incidentes del detalle de proyecto) —
+    el modo edición reemplazaba la vista completa; además sus campos y botones estaban en pixel
+    antiguo (`text-[8px]`/`text-[9px]`). Panel derecho con `EditField`, severidad como grupo de 4
+    botones con **etiquetas en español** (Baja/Media/Alta/Crítica, antes `low`/`medium`/…).
+  - **`app/portal/[projectId]`** (portal del cliente) — al editar una incidencia, el acordeón
+    desplegado se convertía en el formulario (título, criticidad, descripción y **gestión de
+    imágenes**). Ahora abre el panel como **isla `corp dark`**; el acordeón se queda en modo vista.
+  - **`app/(main)/tasks` y `app/(public)/panel/tasks`** (son el **mismo archivo duplicado**) — el
+    título y la descripción se editaban sobre la tarjeta. Panel derecho, también como isla corp.
+  Verificado `tsc` + `next build`. **Ya no queda edición inline en la app**, con una excepción
+  consciente: en `GestionDeDatosSystem` el selector de premisas de un código se despliega dentro del
+  panel *glass* del grafo — es una **selección** dentro de la superficie de detalle, no un formulario
+  que tape contenido.
 - **2026-07-30 — Automatizaciones: borrar un flujo usaba `confirm()` del navegador → CORREGIDO.**
   `FlowsTable.handleDelete` abría el diálogo nativo, que el sistema prohíbe explícitamente
   (fila "Confirmar" del catálogo). Y el texto se había quedado corto: desde la relación N:M,

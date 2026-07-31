@@ -8,6 +8,7 @@ import {
   Image as ImageIcon, Mic, Square, Keyboard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import type { Incident, IncidentStatus, IncidentSeverity } from '@/types/incidents';
 import type { ProjectStructure, Module, Section } from '@/types/projects';
 
@@ -686,7 +687,6 @@ export default function PortalPage() {
               const Icon = cfg.icon;
               const sevCfg = SEVERITY_CONFIG[(inc.severity as IncidentSeverity) || 'medium'] || SEVERITY_CONFIG.medium;
               const isOpen = expanded === inc.id;
-              const isEditing = editingId === inc.id;
 
               return (
                 <div key={inc.id} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-hidden">
@@ -718,230 +718,103 @@ export default function PortalPage() {
                     const imgCount = inc.imageCount ?? inc.images?.length ?? 0;
                     return (
                     <div className="px-4 pb-4 border-t border-[#2a2a2a] pt-3 space-y-3">
-                      {isEditing ? (
-                        /* ─── EDIT MODE ─── */
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-[11px] text-[#737373] mb-1">Titulo</label>
-                            <input
-                              value={editTitle}
-                              onChange={e => setEditTitle(e.target.value)}
-                              className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a]"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] text-[#737373] mb-1">Criticidad</label>
-                            <div className="grid grid-cols-4 gap-1.5">
-                              {(Object.entries(SEVERITY_CONFIG) as [IncidentSeverity, { label: string; color: string }][]).map(([key, scfg]) => (
-                                <button
-                                  key={key}
-                                  type="button"
-                                  onClick={() => setEditSeverity(key)}
-                                  className={cn(
-                                    'py-1.5 rounded border text-xs font-medium transition-all',
-                                    editSeverity === key
-                                      ? scfg.color
-                                      : 'text-[#737373] bg-[#111] border-[#2a2a2a] hover:border-[#4a4a4a]'
-                                  )}
-                                >
-                                  {scfg.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-[11px] text-[#737373] mb-1">Descripcion</label>
-                            <textarea
-                              value={editDescription}
-                              onChange={e => setEditDescription(e.target.value)}
-                              rows={5}
-                              className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] resize-none"
-                            />
-                          </div>
-
-                          {/* Image editing */}
-                          <div>
-                            <label className="block text-[11px] text-[#737373] mb-1">Imágenes</label>
-                            {loadingEditImages ? (
-                              <div className="flex items-center gap-2 py-2 text-[10px] text-[#737373]">
-                                <Loader2 size={12} className="animate-spin" /> Cargando imágenes...
-                              </div>
-                            ) : (
-                              <>
-                                {editImages.length > 0 && (
-                                  <div className="flex flex-wrap gap-2 mb-2">
-                                    {editImages.map((img, i) => (
-                                      <div key={i} className="relative group">
-                                        <img src={img} alt="" className="w-20 h-20 object-cover rounded border border-[#2a2a2a]" />
-                                        <button
-                                          type="button"
-                                          onClick={() => removeEditImage(i)}
-                                          disabled={savingImage}
-                                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                                        >
-                                          {savingImage ? <Loader2 size={8} className="animate-spin text-white" /> : <X size={10} className="text-white" />}
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                {editNewFiles.length > 0 && (
-                                  <div className="flex flex-wrap gap-2 mb-2">
-                                    {editNewFiles.map((f, i) => (
-                                      <div key={`new-${i}`} className="relative group">
-                                        <img src={URL.createObjectURL(f)} alt="" className="w-20 h-20 object-cover rounded border border-dashed border-[#4a4a4a]" />
-                                        <button
-                                          type="button"
-                                          onClick={() => setEditNewFiles(prev => prev.filter((_, idx) => idx !== i))}
-                                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                          <X size={10} className="text-white" />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                <input
-                                  ref={editFileRef}
-                                  type="file"
-                                  accept="image/*"
-                                  multiple
-                                  className="hidden"
-                                  onChange={e => {
-                                    if (e.target.files) setEditNewFiles(prev => [...prev, ...Array.from(e.target.files!)]);
-                                    e.target.value = '';
-                                  }}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => editFileRef.current?.click()}
-                                  disabled={savingImage}
-                                  className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-dashed border-[#2a2a2a] rounded text-xs text-[#737373] hover:text-white hover:border-[#4a4a4a] transition-colors w-full justify-center disabled:opacity-50"
-                                >
-                                  <ImagePlus size={14} /> Agregar imágenes
-                                </button>
-                              </>
-                            )}
-                          </div>
-
+                      {/* La edición NO es inline: el botón "Editar" abre el panel lateral derecho. */}
+                      <p className="text-sm text-[#e5e5e5] whitespace-pre-wrap">{inc.description}</p>
+                      {/* Images — show placeholder button, load on click */}
+                      {imgCount > 0 && !fullInc && (
+                        <button
+                          onClick={() => expandIncident(inc.id)}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-[#111] border border-[#2a2a2a] rounded hover:bg-white/5 hover:border-[#4a4a4a] transition-colors"
+                        >
+                          {!fullInc ? (
+                            <Loader2 size={14} className="animate-spin text-[#737373]" />
+                          ) : (
+                            <ImageIcon size={14} className="text-[#737373]" />
+                          )}
+                          <span className="text-[11px] text-[#8b949e]">
+                            Cargando {imgCount} {imgCount === 1 ? 'imagen' : 'imágenes'}...
+                          </span>
+                        </button>
+                      )}
+                      {displayImages.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {displayImages.map((img, i) => (
+                            <a
+                              key={i}
+                              href={`${img}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img
+                                src={`${img}`}
+                                alt=""
+                                className="w-24 h-24 object-cover rounded border border-[#2a2a2a] hover:border-white/30 transition-colors cursor-pointer"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {/* Unresolved comment form */}
+                      {unresolvedId === inc.id && (
+                        <div className="space-y-2 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded">
+                          <label className="block text-[11px] text-yellow-400 font-medium">¿Qué no se resolvió?</label>
+                          <textarea
+                            value={unresolvedComment}
+                            onChange={e => setUnresolvedComment(e.target.value)}
+                            placeholder="Describe qué parte del problema no fue resuelta..."
+                            rows={4}
+                            autoFocus
+                            className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-yellow-500/40 resize-none placeholder:text-[#484848]"
+                          />
                           <div className="flex gap-2">
                             <button
-                              onClick={saveEdit}
-                              disabled={saving || savingImage || !editTitle.trim() || !editDescription.trim()}
-                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white text-black rounded text-xs font-medium hover:bg-white/90 disabled:opacity-40 transition-colors"
+                              onClick={saveUnresolvedComment}
+                              disabled={savingUnresolved || !unresolvedComment.trim()}
+                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-500/15 border border-yellow-500/30 rounded text-xs font-medium text-yellow-400 hover:bg-yellow-500/25 disabled:opacity-40 transition-colors"
                             >
-                              {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                              Guardar
+                              {savingUnresolved ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                              Guardar comentario
                             </button>
                             <button
-                              onClick={cancelEditing}
+                              onClick={cancelUnresolved}
                               className="px-3 py-2 bg-[#2a2a2a] text-[#737373] rounded text-xs font-medium hover:text-white transition-colors"
                             >
                               Cancelar
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        /* ─── VIEW MODE ─── */
-                        <>
-                          <p className="text-sm text-[#e5e5e5] whitespace-pre-wrap">{inc.description}</p>
-                          {/* Images — show placeholder button, load on click */}
-                          {imgCount > 0 && !fullInc && (
-                            <button
-                              onClick={() => expandIncident(inc.id)}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-[#111] border border-[#2a2a2a] rounded hover:bg-white/5 hover:border-[#4a4a4a] transition-colors"
-                            >
-                              {!fullInc ? (
-                                <Loader2 size={14} className="animate-spin text-[#737373]" />
-                              ) : (
-                                <ImageIcon size={14} className="text-[#737373]" />
-                              )}
-                              <span className="text-[11px] text-[#8b949e]">
-                                Cargando {imgCount} {imgCount === 1 ? 'imagen' : 'imágenes'}...
-                              </span>
-                            </button>
-                          )}
-                          {displayImages.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {displayImages.map((img, i) => (
-                                <a
-                                  key={i}
-                                  href={`${img}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <img
-                                    src={`${img}`}
-                                    alt=""
-                                    className="w-24 h-24 object-cover rounded border border-[#2a2a2a] hover:border-white/30 transition-colors cursor-pointer"
-                                  />
-                                </a>
-                              ))}
-                            </div>
-                          )}
-                          {/* Unresolved comment form */}
-                          {unresolvedId === inc.id && (
-                            <div className="space-y-2 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded">
-                              <label className="block text-[11px] text-yellow-400 font-medium">¿Qué no se resolvió?</label>
-                              <textarea
-                                value={unresolvedComment}
-                                onChange={e => setUnresolvedComment(e.target.value)}
-                                placeholder="Describe qué parte del problema no fue resuelta..."
-                                rows={4}
-                                autoFocus
-                                className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-yellow-500/40 resize-none placeholder:text-[#484848]"
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={saveUnresolvedComment}
-                                  disabled={savingUnresolved || !unresolvedComment.trim()}
-                                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-500/15 border border-yellow-500/30 rounded text-xs font-medium text-yellow-400 hover:bg-yellow-500/25 disabled:opacity-40 transition-colors"
-                                >
-                                  {savingUnresolved ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                                  Guardar comentario
-                                </button>
-                                <button
-                                  onClick={cancelUnresolved}
-                                  className="px-3 py-2 bg-[#2a2a2a] text-[#737373] rounded text-xs font-medium hover:text-white transition-colors"
-                                >
-                                  Cancelar
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                      )}
 
-                          {/* Action buttons */}
-                          {unresolvedId !== inc.id && (
-                          <div className="flex gap-2 pt-1">
-                            {inc.status === 'pending' && (
-                              <button
-                                onClick={() => startEditing(inc)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-[#2a2a2a] rounded text-xs text-[#e5e5e5] hover:bg-white/10 hover:border-[#4a4a4a] transition-colors"
-                              >
-                                <Pencil size={11} /> Editar
-                              </button>
-                            )}
-                            {inc.status === 'reviewing' && (
-                              <>
-                                <button
-                                  onClick={() => markUnresolved(inc.id)}
-                                  disabled={savingUnresolved}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs text-yellow-400 hover:bg-yellow-500/20 transition-colors disabled:opacity-50"
-                                >
-                                  {savingUnresolved ? <Loader2 size={11} className="animate-spin" /> : <AlertTriangle size={11} />}
-                                  No Resuelto
-                                </button>
-                                <button
-                                  onClick={() => markCompleted(inc.id)}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400 hover:bg-green-500/20 transition-colors"
-                                >
-                                  <CheckCircle size={11} /> Marcar como completada
-                                </button>
-                              </>
-                            )}
-                          </div>
-                          )}
-                        </>
+                      {/* Action buttons */}
+                      {unresolvedId !== inc.id && (
+                      <div className="flex gap-2 pt-1">
+                        {inc.status === 'pending' && (
+                          <button
+                            onClick={() => startEditing(inc)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-[#2a2a2a] rounded text-xs text-[#e5e5e5] hover:bg-white/10 hover:border-[#4a4a4a] transition-colors"
+                          >
+                            <Pencil size={11} /> Editar
+                          </button>
+                        )}
+                        {inc.status === 'reviewing' && (
+                          <>
+                            <button
+                              onClick={() => markUnresolved(inc.id)}
+                              disabled={savingUnresolved}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs text-yellow-400 hover:bg-yellow-500/20 transition-colors disabled:opacity-50"
+                            >
+                              {savingUnresolved ? <Loader2 size={11} className="animate-spin" /> : <AlertTriangle size={11} />}
+                              No Resuelto
+                            </button>
+                            <button
+                              onClick={() => markCompleted(inc.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400 hover:bg-green-500/20 transition-colors"
+                            >
+                              <CheckCircle size={11} /> Marcar como completada
+                            </button>
+                          </>
+                        )}
+                      </div>
                       )}
                     </div>
                     );
@@ -951,6 +824,107 @@ export default function PortalPage() {
             })}
           </div>
         )}
+      </div>
+
+      {/* Editar incidencia — PANEL LATERAL DERECHO con overlay (isla `.corp dark`,
+          `contents` para que el envoltorio no ocupe sitio). Nunca edición inline. */}
+      <div className="corp dark corp-overlay contents">
+        <EditPanel
+          open={editingId != null}
+          title="Editar incidencia"
+          onClose={cancelEditing}
+          onSave={saveEdit}
+          saving={saving || savingImage}
+          canSave={!!editTitle.trim() && !!editDescription.trim()}
+        >
+          <EditField label="Título">
+            <input value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus className={EDIT_INPUT} />
+          </EditField>
+          <EditField label="Criticidad">
+            <div className="grid grid-cols-4 gap-1.5">
+              {(Object.entries(SEVERITY_CONFIG) as [IncidentSeverity, { label: string; color: string }][]).map(([key, scfg]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setEditSeverity(key)}
+                  className={cn(
+                    'py-1.5 rounded border text-xs font-medium transition-all',
+                    editSeverity === key ? scfg.color : 'text-[#737373] bg-[#111] border-[#2a2a2a] hover:border-[#4a4a4a]'
+                  )}
+                >
+                  {scfg.label}
+                </button>
+              ))}
+            </div>
+          </EditField>
+          <EditField label="Descripción">
+            <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={6} className={`${EDIT_INPUT} resize-y`} />
+          </EditField>
+          <EditField label="Imágenes">
+            <div>
+              {loadingEditImages ? (
+                <div className="flex items-center gap-2 py-2 text-[10px] text-[#737373]">
+                  <Loader2 size={12} className="animate-spin" /> Cargando imágenes...
+                </div>
+              ) : (
+                <>
+                  {editImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {editImages.map((img, i) => (
+                        <div key={i} className="relative group">
+                          <img src={img} alt="" className="w-20 h-20 object-cover rounded border border-[#2a2a2a]" />
+                          <button
+                            type="button"
+                            onClick={() => removeEditImage(i)}
+                            disabled={savingImage}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                          >
+                            {savingImage ? <Loader2 size={8} className="animate-spin text-white" /> : <X size={10} className="text-white" />}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {editNewFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {editNewFiles.map((f, i) => (
+                        <div key={`new-${i}`} className="relative group">
+                          <img src={URL.createObjectURL(f)} alt="" className="w-20 h-20 object-cover rounded border border-dashed border-[#4a4a4a]" />
+                          <button
+                            type="button"
+                            onClick={() => setEditNewFiles(prev => prev.filter((_, idx) => idx !== i))}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X size={10} className="text-white" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    ref={editFileRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={e => {
+                      if (e.target.files) setEditNewFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => editFileRef.current?.click()}
+                    disabled={savingImage}
+                    className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-dashed border-[#2a2a2a] rounded text-xs text-[#737373] hover:text-white hover:border-[#4a4a4a] transition-colors w-full justify-center disabled:opacity-50"
+                  >
+                    <ImagePlus size={14} /> Agregar imágenes
+                  </button>
+                </>
+              )}
+            </div>
+          </EditField>
+        </EditPanel>
       </div>
     </div>
   );

@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Clock, CheckCircle, XCircle, ChevronDown,
-  Loader2, Filter, Eye, Edit3, Save,
+  Loader2, Filter, Eye, Edit3,
   Image as ImageIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import type { Incident, IncidentStatus } from '@/types/incidents';
 
 const STATUS_CFG: Record<IncidentStatus, { label: string; color: string; bg: string; icon: typeof Clock }> = {
@@ -139,42 +140,35 @@ export default function TasksPage() {
             </span>
           </div>
 
-          {/* content */}
-          {editing ? (
-            <div className="space-y-2">
-              <input
-                value={editTitle}
-                onChange={e => setEditTitle(e.target.value)}
-                className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none"
-              />
-              <textarea
-                value={editDesc}
-                onChange={e => setEditDesc(e.target.value)}
-                rows={5}
-                className="w-full bg-[#111] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none resize-none"
-              />
-              <div className="flex gap-2">
-                <button onClick={saveEdit} disabled={saving}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-400 hover:bg-blue-500/30 disabled:opacity-50">
-                  {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Guardar
-                </button>
-                <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-xs text-[#737373] hover:text-white">
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-base font-semibold">{detail.title}</h3>
-                <button onClick={() => { setEditing(true); setEditTitle(detail.title); setEditDesc(detail.description); }}
-                  className="text-[#737373] hover:text-white shrink-0">
-                  <Edit3 size={14} />
-                </button>
-              </div>
-              <p className="text-sm text-[#c9d1d9] whitespace-pre-wrap leading-relaxed">{detail.description}</p>
-            </>
-          )}
+          {/* content — la edición NUNCA es inline: abre el panel lateral derecho */}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-base font-semibold">{detail.title}</h3>
+            <button onClick={() => { setEditing(true); setEditTitle(detail.title); setEditDesc(detail.description); }}
+              className="text-[#737373] hover:text-white shrink-0">
+              <Edit3 size={14} />
+            </button>
+          </div>
+          <p className="text-sm text-[#c9d1d9] whitespace-pre-wrap leading-relaxed">{detail.description}</p>
+
+          {/* Isla `.corp dark` para reusar el panel estándar fuera del dashboard.
+              `contents` la saca del flujo: es solo el ámbito CSS del diálogo. */}
+          <div className="corp dark corp-overlay contents">
+            <EditPanel
+              open={editing}
+              title="Editar incidencia"
+              onClose={() => setEditing(false)}
+              onSave={saveEdit}
+              saving={saving}
+              canSave={!!editTitle.trim()}
+            >
+              <EditField label="Título">
+                <input value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus className={EDIT_INPUT} />
+              </EditField>
+              <EditField label="Descripción">
+                <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={8} className={`${EDIT_INPUT} resize-y`} />
+              </EditField>
+            </EditPanel>
+          </div>
 
           {/* images — lazy loaded */}
           {imgCount > 0 && !imagesVisible && (

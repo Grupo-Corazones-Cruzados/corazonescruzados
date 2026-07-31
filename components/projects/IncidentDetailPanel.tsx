@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import PixelBadge from '@/components/ui/PixelBadge';
 import BrandLoader from '@/components/ui/BrandLoader';
+import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 
 const pf = { fontFamily: 'var(--font-display)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -14,6 +15,7 @@ const INC_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'
   pending: 'warning', proposal: 'default', approved: 'info', reviewing: 'info', completed: 'success', rejected: 'error',
 };
 const SEVERITIES = ['low', 'medium', 'high', 'critical'];
+const SEVERITY_LABEL: Record<string, string> = { low: 'Baja', medium: 'Media', high: 'Alta', critical: 'Crítica' };
 
 interface IncidentDetailPanelProps {
   incidentId: string;
@@ -143,223 +145,177 @@ export default function IncidentDetailPanel({ incidentId, onClose, onApprove, on
         <button onClick={onClose} className="text-[9px] text-accent-glow opacity-60 hover:opacity-100" style={pf}>
           &lt; Volver a lista
         </button>
-        {!editing && (
-          <button
-            onClick={() => setEditing(true)}
-            className="text-[8px] text-digi-muted border border-digi-border px-2 py-0.5 hover:border-accent hover:text-accent-glow transition-colors"
-            style={pf}
-          >
-            Editar
-          </button>
-        )}
+        <button
+          onClick={() => setEditing(true)}
+          className="text-[11px] text-digi-muted border border-digi-border rounded px-2 py-1 hover:border-accent hover:text-accent transition-colors"
+          style={mf}
+        >
+          Editar
+        </button>
       </div>
 
-      {editing ? (
-        /* ─── EDIT MODE ─── */
-        <div className="space-y-2.5">
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] text-accent-glow opacity-70" style={pf}>Titulo</label>
-            <input
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none"
-              style={mf}
-            />
-          </div>
+      {/* ─── VISTA (la edición va en el panel lateral derecho, más abajo) ─── */}
+      <div>
+        <h4 className="text-xs text-white mb-1.5" style={pf}>{incident.title}</h4>
+        <div className="flex gap-1.5 flex-wrap">
+          <PixelBadge variant={SEV_V[incident.severity] || 'default'}>{incident.severity}</PixelBadge>
+          <PixelBadge variant={INC_V[incident.status] || 'default'}>{incident.status}</PixelBadge>
+        </div>
+      </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] text-accent-glow opacity-70" style={pf}>Descripcion</label>
-            <textarea
-              value={editDesc}
-              onChange={(e) => setEditDesc(e.target.value)}
-              rows={4}
-              className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none resize-none"
-              style={mf}
-            />
-          </div>
+      <div className="text-[9px] text-digi-muted" style={mf}>
+        {incident.clientName} &middot; {new Date(incident.createdAt).toLocaleDateString()}
+      </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] text-accent-glow opacity-70" style={pf}>Cliente</label>
-            <input
-              value={editClient}
-              onChange={(e) => setEditClient(e.target.value)}
-              className="w-full px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-xs text-digi-text focus:border-accent focus:outline-none"
-              style={mf}
-            />
-          </div>
+      <div className="px-2 py-2 bg-digi-darker border border-digi-border/50">
+        <p className="text-[10px] text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{incident.description}</p>
+      </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] text-accent-glow opacity-70" style={pf}>Severidad</label>
-            <div className="flex gap-1">
-              {SEVERITIES.map(s => (
-                <button
-                  key={s}
-                  onClick={() => setEditSeverity(s)}
-                  className={`flex-1 py-1 text-[8px] border transition-colors ${
-                    editSeverity === s
-                      ? 'border-accent text-accent-glow bg-accent/10'
-                      : 'border-digi-border text-digi-muted'
-                  }`}
-                  style={pf}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={handleSave}
-              disabled={updating || !editTitle.trim()}
-              className="flex-1 py-1.5 text-[9px] text-accent-glow border-2 border-accent/40 bg-accent/10 hover:bg-accent/20 disabled:opacity-40 transition-colors"
-              style={pf}
-            >
-              {updating ? '...' : 'Guardar'}
-            </button>
-            <button
-              onClick={() => {
-                setEditTitle(incident.title);
-                setEditDesc(incident.description);
-                setEditSeverity(incident.severity);
-                setEditClient(incident.clientName);
-                setEditing(false);
-              }}
-              className="flex-1 py-1.5 text-[9px] text-digi-muted border-2 border-digi-border hover:border-digi-muted transition-colors"
-              style={pf}
-            >
-              Cancelar
-            </button>
+      {images.length > 0 && (
+        <div>
+          <p className="text-[9px] text-accent-glow mb-1.5" style={pf}>Imagenes ({images.length})</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {images.map((img: string, i: number) => (
+              <img
+                key={i}
+                src={img}
+                alt={`Imagen ${i + 1}`}
+                className="w-full border border-digi-border cursor-pointer hover:border-accent transition-colors"
+                style={{ maxHeight: 120, objectFit: 'cover' }}
+                onClick={() => setPreviewImg(img)}
+              />
+            ))}
           </div>
         </div>
-      ) : (
-        /* ─── VIEW MODE ─── */
-        <>
-          <div>
-            <h4 className="text-xs text-white mb-1.5" style={pf}>{incident.title}</h4>
-            <div className="flex gap-1.5 flex-wrap">
-              <PixelBadge variant={SEV_V[incident.severity] || 'default'}>{incident.severity}</PixelBadge>
-              <PixelBadge variant={INC_V[incident.status] || 'default'}>{incident.status}</PixelBadge>
-            </div>
-          </div>
-
-          <div className="text-[9px] text-digi-muted" style={mf}>
-            {incident.clientName} &middot; {new Date(incident.createdAt).toLocaleDateString()}
-          </div>
-
-          <div className="px-2 py-2 bg-digi-darker border border-digi-border/50">
-            <p className="text-[10px] text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{incident.description}</p>
-          </div>
-
-          {images.length > 0 && (
-            <div>
-              <p className="text-[9px] text-accent-glow mb-1.5" style={pf}>Imagenes ({images.length})</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {images.map((img: string, i: number) => (
-                  <img
-                    key={i}
-                    src={img}
-                    alt={`Imagen ${i + 1}`}
-                    className="w-full border border-digi-border cursor-pointer hover:border-accent transition-colors"
-                    style={{ maxHeight: 120, objectFit: 'cover' }}
-                    onClick={() => setPreviewImg(img)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          {incident.status !== 'completed' && (
-            <div className="space-y-2 pt-1">
-              {/* Primary actions */}
-              <div className="flex gap-2">
-                {(incident.status === 'pending' || incident.status === 'proposal') && (
-                  <button
-                    onClick={handleApprove}
-                    disabled={updating || !isLocalhost}
-                    className="flex-1 py-2 text-[9px] text-green-400 border-2 border-green-500/40 bg-green-900/10 hover:bg-green-900/20 disabled:opacity-40 transition-colors"
-                    style={pf}
-                    title={!isLocalhost ? 'Solo disponible en localhost' : undefined}
-                  >
-                    {updating ? '...' : 'Aprobar y Enviar'}
-                  </button>
-                )}
-                {incident.status !== 'pending' && incident.status !== 'proposal' && incident.status !== 'rejected' && (
-                  <button
-                    onClick={handleApprove}
-                    disabled={updating || !isLocalhost}
-                    className="flex-1 py-2 text-[9px] text-accent-glow border-2 border-accent/40 bg-accent/10 hover:bg-accent/20 disabled:opacity-40 transition-colors"
-                    style={pf}
-                  >
-                    {updating ? '...' : 'Reenviar al Agente'}
-                  </button>
-                )}
-                {incident.status === 'pending' && (
-                  <button
-                    onClick={handleReject}
-                    disabled={updating}
-                    className="flex-1 py-2 text-[9px] text-red-400 border-2 border-red-500/40 bg-red-900/10 hover:bg-red-900/20 disabled:opacity-40 transition-colors"
-                    style={pf}
-                  >
-                    {updating ? '...' : 'Rechazar'}
-                  </button>
-                )}
-              </div>
-
-              {/* Secondary: status changes */}
-              <div className="flex gap-1.5 flex-wrap">
-                {incident.status !== 'proposal' && (
-                  <button
-                    onClick={() => handleSetStatus('proposal')}
-                    disabled={updating}
-                    className="px-2 py-1 text-[8px] text-digi-muted border border-digi-border hover:border-digi-muted hover:text-digi-text disabled:opacity-40 transition-colors"
-                    style={pf}
-                  >
-                    Propuesta
-                  </button>
-                )}
-                {incident.status !== 'pending' && (
-                  <button
-                    onClick={() => handleSetStatus('pending')}
-                    disabled={updating}
-                    className="px-2 py-1 text-[8px] text-yellow-400/70 border border-yellow-500/30 hover:border-yellow-500/50 disabled:opacity-40 transition-colors"
-                    style={pf}
-                  >
-                    Pendiente
-                  </button>
-                )}
-                {incident.status !== 'reviewing' && incident.status !== 'pending' && incident.status !== 'proposal' && (
-                  <button
-                    onClick={() => handleSetStatus('reviewing')}
-                    disabled={updating}
-                    className="px-2 py-1 text-[8px] text-accent-glow/70 border border-accent/30 hover:border-accent/50 disabled:opacity-40 transition-colors"
-                    style={pf}
-                  >
-                    En Revision
-                  </button>
-                )}
-                {incident.status !== 'completed' && (
-                  <button
-                    onClick={() => handleSetStatus('completed')}
-                    disabled={updating}
-                    className="px-2 py-1 text-[8px] text-green-400/70 border border-green-500/30 hover:border-green-500/50 disabled:opacity-40 transition-colors"
-                    style={pf}
-                  >
-                    Completada
-                  </button>
-                )}
-              </div>
-
-              {!isLocalhost && (incident.status === 'pending' || incident.status === 'proposal') && (
-                <p className="text-[8px] text-red-400/60" style={pf}>
-                  Aprobar y enviar solo disponible en localhost
-                </p>
-              )}
-            </div>
-          )}
-        </>
       )}
+
+      {/* Actions */}
+      {incident.status !== 'completed' && (
+        <div className="space-y-2 pt-1">
+          {/* Primary actions */}
+          <div className="flex gap-2">
+            {(incident.status === 'pending' || incident.status === 'proposal') && (
+              <button
+                onClick={handleApprove}
+                disabled={updating || !isLocalhost}
+                className="flex-1 py-2 text-[9px] text-green-400 border-2 border-green-500/40 bg-green-900/10 hover:bg-green-900/20 disabled:opacity-40 transition-colors"
+                style={pf}
+                title={!isLocalhost ? 'Solo disponible en localhost' : undefined}
+              >
+                {updating ? '...' : 'Aprobar y Enviar'}
+              </button>
+            )}
+            {incident.status !== 'pending' && incident.status !== 'proposal' && incident.status !== 'rejected' && (
+              <button
+                onClick={handleApprove}
+                disabled={updating || !isLocalhost}
+                className="flex-1 py-2 text-[9px] text-accent-glow border-2 border-accent/40 bg-accent/10 hover:bg-accent/20 disabled:opacity-40 transition-colors"
+                style={pf}
+              >
+                {updating ? '...' : 'Reenviar al Agente'}
+              </button>
+            )}
+            {incident.status === 'pending' && (
+              <button
+                onClick={handleReject}
+                disabled={updating}
+                className="flex-1 py-2 text-[9px] text-red-400 border-2 border-red-500/40 bg-red-900/10 hover:bg-red-900/20 disabled:opacity-40 transition-colors"
+                style={pf}
+              >
+                {updating ? '...' : 'Rechazar'}
+              </button>
+            )}
+          </div>
+
+          {/* Secondary: status changes */}
+          <div className="flex gap-1.5 flex-wrap">
+            {incident.status !== 'proposal' && (
+              <button
+                onClick={() => handleSetStatus('proposal')}
+                disabled={updating}
+                className="px-2 py-1 text-[8px] text-digi-muted border border-digi-border hover:border-digi-muted hover:text-digi-text disabled:opacity-40 transition-colors"
+                style={pf}
+              >
+                Propuesta
+              </button>
+            )}
+            {incident.status !== 'pending' && (
+              <button
+                onClick={() => handleSetStatus('pending')}
+                disabled={updating}
+                className="px-2 py-1 text-[8px] text-yellow-400/70 border border-yellow-500/30 hover:border-yellow-500/50 disabled:opacity-40 transition-colors"
+                style={pf}
+              >
+                Pendiente
+              </button>
+            )}
+            {incident.status !== 'reviewing' && incident.status !== 'pending' && incident.status !== 'proposal' && (
+              <button
+                onClick={() => handleSetStatus('reviewing')}
+                disabled={updating}
+                className="px-2 py-1 text-[8px] text-accent-glow/70 border border-accent/30 hover:border-accent/50 disabled:opacity-40 transition-colors"
+                style={pf}
+              >
+                En Revision
+              </button>
+            )}
+            {incident.status !== 'completed' && (
+              <button
+                onClick={() => handleSetStatus('completed')}
+                disabled={updating}
+                className="px-2 py-1 text-[8px] text-green-400/70 border border-green-500/30 hover:border-green-500/50 disabled:opacity-40 transition-colors"
+                style={pf}
+              >
+                Completada
+              </button>
+            )}
+          </div>
+
+          {!isLocalhost && (incident.status === 'pending' || incident.status === 'proposal') && (
+            <p className="text-[8px] text-red-400/60" style={pf}>
+              Aprobar y enviar solo disponible en localhost
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Editar incidencia — panel lateral derecho con overlay (nunca sobre la vista). */}
+      <EditPanel
+        open={editing}
+        title="Editar incidencia"
+        onClose={() => {
+          setEditTitle(incident.title || '');
+          setEditDesc(incident.description || '');
+          setEditSeverity(incident.severity || 'medium');
+          setEditClient(incident.clientName || '');
+          setEditing(false);
+        }}
+        onSave={handleSave}
+        saving={updating}
+        canSave={!!editTitle.trim()}
+      >
+        <EditField label="Título">
+          <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus className={EDIT_INPUT} style={mf} />
+        </EditField>
+        <EditField label="Descripción">
+          <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={6} className={`${EDIT_INPUT} resize-y`} style={mf} />
+        </EditField>
+        <EditField label="Cliente">
+          <input value={editClient} onChange={(e) => setEditClient(e.target.value)} className={EDIT_INPUT} style={mf} />
+        </EditField>
+        <EditField label="Severidad">
+          <div className="flex gap-1.5">
+            {SEVERITIES.map(s => (
+              <button key={s} type="button" onClick={() => setEditSeverity(s)}
+                className={`flex-1 py-1.5 text-[12px] font-medium rounded border transition-colors ${
+                  editSeverity === s ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent'
+                }`} style={mf}>
+                {SEVERITY_LABEL[s] || s}
+              </button>
+            ))}
+          </div>
+        </EditField>
+      </EditPanel>
 
       {/* Image preview modal */}
       {previewImg && (

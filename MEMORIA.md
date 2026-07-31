@@ -281,9 +281,12 @@ Stack estándar de la casa, con particularidades de este repo:
   **panel lateral derecho** si es un **formulario** (3+ campos o campos ricos), o **ventanita
   centrada** si son **uno o dos campos** sueltos que no forman formulario. Definición única:
   `components/ui/EditDialog.tsx` (`EditPanel`, `QuickEditDialog`, `EditField`, `EDIT_INPUT`);
-  detalle y catálogo en `Diseño.md` → "DÓNDE SE EDITA". Aplicada a `projects/[id]`
-  (requerimiento, descripción, cliente, presupuesto, límite, nombre, subtarea); quedan por migrar
-  `tickets/[id]`, `IncidentDetailPanel` y las dos páginas de tareas.
+  detalle y catálogo en `Diseño.md` → "DÓNDE SE EDITA". **Barrido completo el mismo día:**
+  `projects/[id]` (requerimiento, descripción, cliente, presupuesto, límite, nombre, subtarea),
+  `tickets/[id]` (días de trabajo), `IncidentDetailPanel`, el **portal del cliente**
+  (`app/portal/[projectId]`) y las dos páginas de tareas (`(main)/tasks` = `(public)/panel/tasks`,
+  archivos idénticos). Fuera del dashboard el panel se monta como **isla** `corp dark corp-overlay
+  contents`.
 - **El requerimiento se edita completo, incluidas PLAZAS y TALENTOS (2026-07-31).** Antes solo se
   podían fijar al crearlo, así que los requerimientos que crea el agente de cotizaciones quedaban
   con `slots = NULL` ("plazas sin definir") y sin forma de corregirlos desde la UI. El `PATCH` de

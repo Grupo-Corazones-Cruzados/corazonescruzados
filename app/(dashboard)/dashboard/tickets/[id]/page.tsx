@@ -10,6 +10,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
+import { EditPanel } from '@/components/ui/EditDialog';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
@@ -550,7 +551,8 @@ export default function TicketDetailPage() {
     </div>
   );
 
-  // Editor de días de trabajo, INLINE dentro de la tarjeta "Días de trabajo" (no cambia de página).
+  // Cuerpo del editor de días de trabajo. Va dentro del PANEL LATERAL DERECHO
+  // (`EditPanel`, al final del archivo): nunca sustituyendo la tarjeta que se está viendo.
   const renderSlotEditor = () => {
     const { year, month } = calMonth;
     const firstDay = new Date(year, month, 1).getDay();
@@ -575,7 +577,7 @@ export default function TicketDetailPage() {
 
     return (
       <div>
-        <div className="max-w-sm">
+        <div>
           <div className="flex items-center justify-between mb-2">
             <button onClick={prevMonth} className="p-1.5 text-digi-muted hover:text-accent border border-digi-border rounded hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
             <span className="text-[13px] font-semibold text-digi-text" style={mf}>{monthNames[month]} {year}</span>
@@ -599,7 +601,7 @@ export default function TicketDetailPage() {
           </div>
         </div>
         {selectedDates.length > 0 && (
-          <div className="border-t border-digi-border pt-3 mb-3 space-y-2">
+          <div className="border-t border-digi-border pt-3 space-y-2">
             {selectedDates.map(d => {
               const cfg = slotCfg[d] || { is_event: false, start_time: '', end_time: '' };
               const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return (h || 0) * 60 + (m || 0); };
@@ -639,13 +641,6 @@ export default function TicketDetailPage() {
             })}
           </div>
         )}
-        <div className="flex gap-2 max-w-sm">
-          <button onClick={() => setEditingSlots(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
-          <button onClick={isRequestForMe ? handleAcceptWithSlots : handleSaveSlots} disabled={savingSlots || selectedDates.length === 0}
-            className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
-            {savingSlots ? 'Guardando...' : isRequestForMe ? `Aceptar (${selectedDates.length} días)` : `Guardar (${selectedDates.length} días)`}
-          </button>
-        </div>
       </div>
     );
   };
@@ -663,7 +658,7 @@ export default function TicketDetailPage() {
             {ticket.deadline && <HeaderChip>Límite {new Date(ticket.deadline).toLocaleDateString()}</HeaderChip>}
           </>
         )}
-        actions={!editingSlots ? (
+        actions={(
           <>
             {(ticket.status === 'pending' || ticket.status === 'withdrawn') && canEdit && !isRequestForMe && (
               <button onClick={() => updateStatus('confirmed')} className={BTN_PRIMARY}><Check className="w-4 h-4" /> Confirmar</button>
@@ -673,15 +668,15 @@ export default function TicketDetailPage() {
             )}
             {canEdit && <button onClick={startEdit} className={BTN_SECONDARY}><Pencil className="w-3.5 h-3.5" /> Editar</button>}
           </>
-        ) : undefined}
-        overflow={!editingSlots ? [
+        )}
+        overflow={[
           ...(isAdmin && ticket.status !== 'cancelled' ? [{ label: 'Cancelar ticket', onClick: () => updateStatus('cancelled'), danger: true }] : []),
           ...(isAdmin ? [{ label: 'Eliminar ticket', onClick: () => setDeleteModal(true), danger: true }] : []),
-        ] : []}
+        ]}
       />
 
       {/* ========== PENDING REQUEST BANNER ========== */}
-      {isRequestForMe && !editingSlots && (
+      {isRequestForMe && (
         <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
           <p className="text-[13px] font-semibold text-amber-800 mb-1" style={mf}>Solicitud pendiente de un cliente</p>
           <p className="text-[12px] text-digi-muted mb-3" style={mf}>
@@ -710,13 +705,11 @@ export default function TicketDetailPage() {
                   <CalendarDays className="w-4 h-4 text-accent" /> Días de trabajo
                   {timeSlots.length > 0 && <span className="text-digi-muted font-normal">({timeSlots.length})</span>}
                 </h3>
-                {canEdit && !isClosed && !editingSlots && (
+                {canEdit && !isClosed && (
                   <button onClick={startEditSlots} className="shrink-0 text-[11px] text-accent border border-digi-border rounded px-2 py-1 hover:bg-accent/5 transition-colors" style={pf}>Editar</button>
                 )}
               </div>
-              {editingSlots ? (
-                renderSlotEditor()
-              ) : timeSlots.length > 0 ? (
+              {timeSlots.length > 0 ? (
                 <div className="space-y-2">
                   {timeSlots.map((slot: any, i: number) => (
                     <div key={i} className={`px-2.5 py-2 border rounded ${slot.is_event ? 'border-accent/40 bg-accent-light' : 'border-digi-border bg-[#faf9f8]'}`}>
@@ -1346,6 +1339,19 @@ export default function TicketDetailPage() {
           </div>
         </div>
       </PixelModal>
+
+      {/* Días de trabajo — panel lateral derecho (la edición nunca sustituye la tarjeta). */}
+      <EditPanel
+        open={editingSlots}
+        title={isRequestForMe ? 'Aceptar e indicar días de trabajo' : 'Días de trabajo'}
+        onClose={() => setEditingSlots(false)}
+        onSave={isRequestForMe ? handleAcceptWithSlots : handleSaveSlots}
+        saving={savingSlots}
+        canSave={selectedDates.length > 0}
+        saveLabel={isRequestForMe ? `Aceptar (${selectedDates.length} días)` : `Guardar (${selectedDates.length} días)`}
+      >
+        {renderSlotEditor()}
+      </EditPanel>
     </div>
   );
 }
