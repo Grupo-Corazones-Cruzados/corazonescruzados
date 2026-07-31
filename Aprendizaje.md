@@ -7,7 +7,70 @@
 
 ---
 
-## Objetivo ACTUAL (declarado 2026-07-29) — RECORDATORIOS DE REUNIÓN: por qué no salen solos + botón manual · ✅ RESUELTO 100%
+## Objetivo ACTUAL (declarado 2026-07-31) — DÓNDE SE EDITA: se acaba la edición "por encima" · ✅ RESUELTO 100% (detalle de proyecto)
+
+**Rol asumido:** *diseñador de interacción del dashboard + frontend Next.js*.
+
+### Necesidad (palabras del usuario, 2026-07-31)
+> "En el detalle del proyecto, al editar un requerimiento que aparezca un **panel derecho con
+> overlay**. Y que la edición **no sea por encima, no quiero más ediciones por encima**: guárdalo en
+> aprendizaje, que siempre sea por **panel lateral derecho**, o **ventanita que aparezca en el centro
+> solo cuando el campo a rellenar no sea un formulario y sean solo uno o dos campos**. Por ejemplo,
+> al editar el cliente en la misma ventana de detalles de proyecto pasa lo mismo."
+> Y a continuación: "asegúrate de que al editar los requerimientos se pueda editar también el campo
+> de **plazas**."
+
+### La regla (permanente, aplica a TODA la app)
+1. **Prohibida la edición inline.** "Por encima" = sustituir el contenido que el usuario está mirando
+   por sus inputs (la fila del requerimiento, el valor del rail, el título del `DetailHeader`).
+2. **Formulario → panel lateral derecho con overlay.** Formulario = 3+ campos, o campos ricos
+   (descripción larga, multi-select de talentos, listas).
+3. **Uno o dos campos sueltos → ventanita centrada.** Es la excepción, no el caso general.
+4. **Una sola definición** para las dos superficies, o la regla se vuelve a romper archivo por
+   archivo: `components/ui/EditDialog.tsx`.
+
+### Preguntas y respuestas
+
+#### P1 — ¿Hace falta CSS nuevo para el panel derecho? · ✅ Resuelta — NO
+- **Por qué importa:** un drawer a medida por pantalla es justo lo que produce diseños divergentes.
+- **Respuesta:** `app/globals.css` ya convierte `PixelModal size="md"|"lg"` en panel deslizante desde
+  la derecha dentro de `.corp` (644 px / 840 px, `panelSlideInRight`), y deja `size="sm"` como
+  diálogo centrado. La regla del usuario **coincide exactamente** con esa distinción de tamaños, así
+  que `EditDialog` solo envuelve `PixelModal` y añade el pie estándar.
+
+#### P2 — ¿Qué se editaba "por encima" en el detalle de proyecto? · ✅ Resuelta — seis sitios
+- **Respuesta:** requerimiento (la captura del usuario), **cliente**, **presupuesto** y **fecha
+  límite** en el rail de propiedades (con botoncitos `OK`/`X` de 11 px), el **nombre** del proyecto
+  (reemplazaba el `DetailHeader` entero) y la **subtarea** dentro del panel de Subtareas. Todas
+  migradas.
+
+#### P3 — ¿Se pueden editar talentos y plazas de un requerimiento? · ✅ Resuelta — el backend ya podía
+- **Por qué importa:** el usuario lo pidió expresamente, y en la lista aparecía el aviso ámbar
+  "plazas sin definir" sin ninguna forma de arreglarlo.
+- **Respuesta:** el `PATCH` de `app/api/projects/[id]/requirements/route.ts` ya aceptaba `talents`
+  (con `normalizeTalents`, exigiendo ≥1) y `slots` (`normalizeSlots`); lo que faltaba era el
+  formulario. El panel de edición ahora tiene los cinco campos del alta (título, descripción, costo,
+  talentos, plazas) y el catálogo de talentos se pide también al abrir la **edición**, no solo el
+  alta (`useEffect` con `showReqModal || editingReqId != null`).
+
+#### P4 — ¿Un desplegable dentro de la ventanita centrada se ve entero? · ✅ Resuelta — no, sin ayuda
+- **Respuesta:** el cuerpo del diálogo es `overflow-y-auto`, así que si el alto lo pone el contenido
+  (un solo campo), la lista del `ClientPicker` queda recortada. Se reserva alto con
+  `min-h-[260px]`. Regla general: **ventanita centrada + selector con desplegable ⇒ reservar alto.**
+
+#### P5 — ¿Se puede abrir una ventanita SOBRE un panel ya abierto? · ✅ Resuelta — sí
+- **Respuesta:** editar una subtarea desde el panel "Subtareas" apila dos `<dialog showModal>`; el
+  *top layer* del navegador gana a cualquier `z-index`, así que la segunda queda encima. Ya estaba
+  documentado en `Diseño.md` para los `PixelModal` abiertos desde `FlowPanelShell`.
+
+### Estado
+Detalle de proyecto **cerrado y verificado** (`tsc` + `next build`). **Pendiente de migrar** el mismo
+defecto en `tickets/[id]` (`editingSlots`), `components/projects/IncidentDetailPanel.tsx`,
+`app/(main)/tasks/page.tsx` y `app/(public)/panel/tasks/page.tsx`.
+
+---
+
+## Objetivo ANTERIOR (declarado 2026-07-29) — RECORDATORIOS DE REUNIÓN: por qué no salen solos + botón manual · ✅ RESUELTO 100%
 
 **Rol asumido:** *integrador de sistemas (Google Workspace / Meet API v2) + backend*. El objetivo era mitad
 **diagnóstico** (¿por qué no se generan?) y mitad **producto** (dar control manual al usuario).

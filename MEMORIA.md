@@ -275,6 +275,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **NUNCA SE EDITA "POR ENCIMA" — regla de interfaz permanente (2026-07-31).** Decisión del usuario:
+  se prohíbe la **edición inline** (sustituir lo que se está mirando —una fila, un valor del rail, el
+  título de la cabecera— por sus inputs). Toda edición aparece sobre un overlay:
+  **panel lateral derecho** si es un **formulario** (3+ campos o campos ricos), o **ventanita
+  centrada** si son **uno o dos campos** sueltos que no forman formulario. Definición única:
+  `components/ui/EditDialog.tsx` (`EditPanel`, `QuickEditDialog`, `EditField`, `EDIT_INPUT`);
+  detalle y catálogo en `Diseño.md` → "DÓNDE SE EDITA". Aplicada a `projects/[id]`
+  (requerimiento, descripción, cliente, presupuesto, límite, nombre, subtarea); quedan por migrar
+  `tickets/[id]`, `IncidentDetailPanel` y las dos páginas de tareas.
+- **El requerimiento se edita completo, incluidas PLAZAS y TALENTOS (2026-07-31).** Antes solo se
+  podían fijar al crearlo, así que los requerimientos que crea el agente de cotizaciones quedaban
+  con `slots = NULL` ("plazas sin definir") y sin forma de corregirlos desde la UI. El `PATCH` de
+  `/api/projects/[id]/requirements` ya los aceptaba; lo que faltaba era el formulario.
 - **CREADOR DE PERSONAJE PROPIO — catálogo generado con IA, en el estilo del prólogo (2026-07-27/28).**
   Se retira la librería descargada (LPC): el personaje no se parecía a las estampas. Ahora las piezas
   se generan con **el mismo modelo de Google que el prólogo** (`gemini-3-pro-image`, clave

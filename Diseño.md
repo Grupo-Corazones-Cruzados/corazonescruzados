@@ -617,7 +617,10 @@ soportan variables CSS ni `<style>`).
 ### Módulo Cotizaciones — patrones nuevos (2026-07-22)
 Estándares introducidos con el módulo de Cotizaciones (proyectos en estado `cotizacion`). Reusar en otros módulos.
 
-- **Formularios = panel lateral DERECHO con overlay (reforzado como regla firme).** El usuario pidió que
+- **Formularios = panel lateral DERECHO con overlay (reforzado como regla firme).**
+  > Ampliado el 2026-07-31 con la ventanita centrada para 1-2 campos y con la definición única
+  > `components/ui/EditDialog.tsx` → ver **"DÓNDE SE EDITA"** más abajo, que es hoy la regla vigente.
+  El usuario pidió que
   **nunca** se edite inline: todo formulario (crear cotización, editar descripción, costos adicionales, compartir)
   se abre como **panel lateral derecho con overlay** — `PixelModal size="md"` (que en `.corp` se renderiza como
   panel derecho). Para un **drawer a medida** (p. ej. "Nueva cotización"): `fixed inset-0 flex justify-end` +
@@ -896,7 +899,61 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
   booleanos, `textarea` para texto largo/JSON/arreglos e `input` para el resto; cada campo lleva una línea
   de ayuda `text-[11px] text-digi-muted` con el tipo y si es obligatorio.
 
+### DÓNDE SE EDITA — regla firme del sistema (2026-07-31)
+> **Nunca se edita "por encima".** Está prohibida la edición **inline**: sustituir el contenido que
+> el usuario está mirando (una fila, un valor del rail, el título de la cabecera) por sus inputs.
+> Toda edición aparece en una **superficie propia sobre un overlay**. Decisión del usuario, sin
+> excepciones nuevas.
+
+| Qué se edita | Superficie | Componente |
+|---|---|---|
+| Un **formulario** (3+ campos, o campos ricos: descripción larga, multi-select, listas) | **Panel lateral DERECHO** con overlay | `EditPanel` (`PixelModal size="md"`) |
+| **Uno o dos campos** sueltos que no forman un formulario (cliente, fecha límite, presupuesto min/max, un nombre) | **Ventanita centrada** | `QuickEditDialog` (`PixelModal size="sm"`) |
+| Confirmar una acción | Ventanita centrada | `PixelConfirm` |
+
+**Definición única: `components/ui/EditDialog.tsx`.** Exporta `EditPanel`, `QuickEditDialog`,
+`EditField` (label + control + ayuda) y `EDIT_INPUT` (clase del campo). Ambas superficies comparten
+el **mismo pie**: acción destructiva opcional a la izquierda, `Cancelar` (secundario) + primaria a la
+derecha; `Enter` en un `input` guarda (en un `textarea` no, ahí Enter es salto de línea); `busy`
+bloquea el cierre mientras guarda. **No** recomponer un panel/modal de edición a mano ni volver a
+inputs inline.
+
+```tsx
+<EditPanel open={editing} title="Editar requerimiento" onClose={close} onSave={save}
+           saving={saving} canSave={!!form.title.trim()}>
+  <EditField label="Título"><input className={EDIT_INPUT} … /></EditField>
+</EditPanel>
+
+<QuickEditDialog open={editingDeadline} title="Editar fecha límite" onClose={close} onSave={save}>
+  <EditField label="Fecha límite" hint="Déjala vacía para quitar el límite.">
+    <input type="date" className={EDIT_INPUT} … />
+  </EditField>
+</QuickEditDialog>
+```
+
+Detalles aprendidos al aplicarla:
+- El **valor del rail de propiedades** sigue siendo clicable (`cursor-pointer hover:text-accent`); lo
+  que cambia es que el clic **abre la ventanita**, no convierte el valor en un input.
+- Un **selector con desplegable** (p. ej. `ClientPicker`) dentro de una ventanita centrada necesita
+  `min-h-[260px]` en su contenedor: el cuerpo del diálogo es `overflow-y-auto` y, si el alto lo pone
+  el contenido, la lista queda recortada.
+- Una ventanita **sobre** un panel abierto funciona (editar una subtarea desde el panel "Subtareas"):
+  `<dialog showModal>` vive en el *top layer* del navegador.
+
 ## Desviaciones detectadas y resolución
+- **2026-07-31 — Detalle de proyecto: SEIS ediciones inline ("por encima") → CORREGIDAS.**
+  `projects/[id]` editaba el **requerimiento** sustituyendo la fila por tres inputs (captura del
+  usuario), el **cliente**/**presupuesto**/**fecha límite** convirtiendo el valor del rail en campos
+  con botones `OK`/`X` de 11px, el **nombre** reemplazando el `DetailHeader` entero, y la
+  **subtarea** dentro del panel de Subtareas. **Resuelto:** se creó la definición única
+  `components/ui/EditDialog.tsx` y las seis pasaron a panel derecho (requerimiento y descripción) o
+  ventanita centrada (cliente, presupuesto, límite, nombre, subtarea). De paso, el panel del
+  requerimiento gana **Talentos** y **Plazas**, que solo se podían fijar al crearlo — por eso salían
+  requerimientos con "plazas sin definir" imposibles de arreglar desde la UI. Verificado `tsc` +
+  `next build`.
+  **PENDIENTE (mismo defecto, otros archivos):** `tickets/[id]` (días/`editingSlots`),
+  `components/projects/IncidentDetailPanel.tsx`, `app/(main)/tasks/page.tsx` y
+  `app/(public)/panel/tasks/page.tsx`.
 - **2026-07-30 — Automatizaciones: borrar un flujo usaba `confirm()` del navegador → CORREGIDO.**
   `FlowsTable.handleDelete` abría el diálogo nativo, que el sistema prohíbe explícitamente
   (fila "Confirmar" del catálogo). Y el texto se había quedado corto: desde la relación N:M,

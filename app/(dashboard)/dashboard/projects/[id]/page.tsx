@@ -11,6 +11,7 @@ import ClientPicker from '@/components/clients/ClientPicker';
 import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
+import { EditPanel, QuickEditDialog, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
 import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, BarChart3, Pencil } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
@@ -103,7 +104,8 @@ export default function ProjectDetailPage() {
   const [expandedReqs, setExpandedReqs] = useState<Set<number>>(new Set());
   const toggleReqExpand = (rid: number) => setExpandedReqs((s) => { const n = new Set(s); n.has(rid) ? n.delete(rid) : n.add(rid); return n; });
 
-  // Inline edit states
+  // Edición: SIEMPRE en panel derecho (formularios) o ventanita centrada (1-2 campos).
+  // Nunca inline "por encima" del contenido (regla del sistema, ver Diseño.md).
   const [editingTitle, setEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editingDesc, setEditingDesc] = useState(false);
@@ -116,12 +118,14 @@ export default function ProjectDetailPage() {
   const [editBudgetMax, setEditBudgetMax] = useState('');
   const [editingDeadline, setEditingDeadline] = useState(false);
   const [editDeadline, setEditDeadline] = useState('');
-  // Edición inline de requerimientos y subtareas
+  // Edición de requerimientos (panel derecho) y de subtareas (ventanita centrada).
   const [editingReqId, setEditingReqId] = useState<number | null>(null);
-  const [editReqData, setEditReqData] = useState<{ title: string; description: string; cost: string }>({ title: '', description: '', cost: '' });
+  const [editReqData, setEditReqData] = useState<{ title: string; description: string; cost: string; talents: string[]; slots: string }>({ title: '', description: '', cost: '', talents: [], slots: '1' });
   const [savingReqEdit, setSavingReqEdit] = useState(false);
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editItemText, setEditItemText] = useState('');
+  const [savingItemEdit, setSavingItemEdit] = useState(false);
+  const [savingClient, setSavingClient] = useState(false);
 
   // Assignment states
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -315,7 +319,7 @@ export default function ProjectDetailPage() {
     }).catch(() => {});
   }, [id, project]);
 
-  // --- Inline save helpers ---
+  // --- Guardado de los campos sueltos (se editan en ventanita centrada) ---
   const saveField = async (fields: Record<string, any>) => {
     await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) });
     fetchProject();
@@ -546,9 +550,10 @@ export default function ProjectDetailPage() {
   };
 
 
-  // Catálogo de talentos: se pide una sola vez, al abrir el modal por primera vez.
+  // Catálogo de talentos: se pide una sola vez, al abrir por primera vez el panel de
+  // alta o el de edición de un requerimiento (ambos ofrecen el campo Talentos).
   useEffect(() => {
-    if (!showReqModal || talentOptions.length) return;
+    if ((!showReqModal && editingReqId == null) || talentOptions.length) return;
     fetch('/api/centralized/encuadre/listas?list=talentos')
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
@@ -556,7 +561,7 @@ export default function ProjectDetailPage() {
         if (opts.length) setTalentOptions(opts);
       })
       .catch(() => {});
-  }, [showReqModal, talentOptions.length]);
+  }, [showReqModal, editingReqId, talentOptions.length]);
 
   const addRequirement = async () => {
     if (!reqTitle.trim()) return;
@@ -660,7 +665,14 @@ export default function ProjectDetailPage() {
 
   const startEditReq = (r: any) => {
     setEditingReqId(r.id);
-    setEditReqData({ title: r.title || '', description: r.description || '', cost: r.cost != null ? String(r.cost) : '' });
+    setEditReqData({
+      title: r.title || '',
+      description: r.description || '',
+      cost: r.cost != null ? String(r.cost) : '',
+      talents: Array.isArray(r.talents) ? r.talents : [],
+      // `slots` sin definir (requerimientos que vienen del agente de cotizaciones) → 1.
+      slots: r.slots != null ? String(r.slots) : '1',
+    });
   };
   const saveReqEdit = async () => {
     if (editingReqId == null) return;
@@ -670,16 +682,19 @@ export default function ProjectDetailPage() {
     const costStr = editReqData.cost.trim();
     const cost = costStr === '' ? null : Number(costStr);
     if (cost != null && !Number.isFinite(cost)) { toast.error('El costo no es válido'); return; }
+    if (editReqData.talents.length === 0) { toast.error('Elige al menos un talento para el requerimiento.'); return; }
+    const slots = Math.max(1, Math.round(Number(editReqData.slots) || 1));
     const description = editReqData.description.trim() || null;
+    const talents = editReqData.talents;
     setSavingReqEdit(true);
     try {
       const res = await fetch(`/api/projects/${id}/requirements`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requirement_id: reqId, title, description, cost }),
+        body: JSON.stringify({ requirement_id: reqId, title, description, cost, talents, slots }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || 'No se pudo actualizar');
-      setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => r.id === reqId ? { ...r, title, description, cost } : r) } : p);
+      setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => r.id === reqId ? { ...r, title, description, cost, talents, slots } : r) } : p);
       setEditingReqId(null);
       toast.success('Requerimiento actualizado');
     } catch (e: any) { toast.error(e.message || 'Error'); }
@@ -692,15 +707,17 @@ export default function ProjectDetailPage() {
     const itemId = editingItemId;
     const title = editItemText.trim();
     if (!title) { toast.error('La subtarea no puede quedar vacía'); return; }
-    setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => ({ ...r, items: (r.items || []).map((it: any) => it.id === itemId ? { ...it, title } : it) })) } : p);
-    setEditingItemId(null);
+    setSavingItemEdit(true);
     try {
       const res = await fetch(`/api/projects/${id}/requirements/items`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ item_id: itemId, title }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'No se pudo actualizar'); }
+      setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => ({ ...r, items: (r.items || []).map((it: any) => it.id === itemId ? { ...it, title } : it) })) } : p);
+      setEditingItemId(null);
     } catch (e: any) { toast.error(e.message || 'Error'); fetchProject(); }
+    finally { setSavingItemEdit(false); }
   };
 
   const openAssignModal = (reqId: number) => {
@@ -1123,21 +1140,8 @@ export default function ProjectDetailPage() {
 
   return (
     <div>
-      {editingTitle ? (
-        <div className="mb-5 flex items-center gap-2">
-          <input
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
-            autoFocus
-            className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-accent text-lg text-digi-text focus:outline-none"
-            style={pf}
-          />
-          <button onClick={saveTitle} className={BTN_PRIMARY}>Guardar</button>
-          <button onClick={() => setEditingTitle(false)} className={BTN_SECONDARY}>Cancelar</button>
-        </div>
-      ) : (
-        <DetailHeader
+      {/* El nombre se edita en una ventanita centrada (un campo), no sustituyendo la cabecera. */}
+      <DetailHeader
           breadcrumb={{ label: 'Proyectos', href: '/dashboard/projects' }}
           title={project.title}
           status={
@@ -1209,8 +1213,7 @@ export default function ProjectDetailPage() {
               <Share2 className="w-4 h-4" /> Compartir acceso
             </button>
           ) : undefined}
-        />
-      )}
+      />
 
       {/* Invitación a tomar el liderazgo (responsable) del proyecto */}
       {myResponsibleInvite && (
@@ -1333,44 +1336,8 @@ export default function ProjectDetailPage() {
                   return (
                     <div key={r.id} className={`rounded-lg border border-digi-border bg-white overflow-hidden`}>
                       <div className={`p-2.5 border-l-[3px] ${r.is_completed ? 'border-l-green-500' : 'border-l-accent'}`}>
-                        {editingReqId === r.id ? (
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5 w-[18px] h-[18px] rounded-[5px] border border-accent bg-accent-light flex items-center justify-center shrink-0"><Pencil className="w-2.5 h-2.5 text-accent" /></div>
-                            <div className="min-w-0 flex-1 space-y-2">
-                              <input
-                                value={editReqData.title}
-                                onChange={(e) => setEditReqData((d) => ({ ...d, title: e.target.value }))}
-                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveReqEdit(); } if (e.key === 'Escape') setEditingReqId(null); }}
-                                autoFocus placeholder="Título del requerimiento"
-                                className="field-control w-full px-2.5 py-1.5 bg-digi-darker border-2 border-accent text-[13px] font-medium text-digi-text focus:outline-none" style={mf}
-                              />
-                              <textarea
-                                value={editReqData.description}
-                                onChange={(e) => setEditReqData((d) => ({ ...d, description: e.target.value }))}
-                                onKeyDown={(e) => { if (e.key === 'Escape') setEditingReqId(null); }}
-                                rows={2} placeholder="Descripción (opcional)"
-                                className="field-control w-full px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf}
-                              />
-                              <div className="flex items-center gap-2">
-                                <div className="relative">
-                                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[12px] text-digi-muted pointer-events-none">$</span>
-                                  <input
-                                    value={editReqData.cost}
-                                    onChange={(e) => setEditReqData((d) => ({ ...d, cost: e.target.value }))}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveReqEdit(); } if (e.key === 'Escape') setEditingReqId(null); }}
-                                    type="number" placeholder="0.00"
-                                    className="field-control w-28 pl-5 pr-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text tabular-nums focus:border-accent focus:outline-none" style={mf}
-                                  />
-                                </div>
-                                <div className="ml-auto flex items-center gap-2">
-                                  <button onClick={() => setEditingReqId(null)} className="text-[12px] font-medium text-digi-muted border border-digi-border rounded px-3 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}>Cancelar</button>
-                                  <button onClick={saveReqEdit} disabled={savingReqEdit} className="text-[12px] font-medium text-white bg-accent rounded px-3 py-1 hover:opacity-90 transition-colors disabled:opacity-50" style={mf}>{savingReqEdit ? 'Guardando…' : 'Guardar'}</button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                        <div className="flex items-start gap-3">
+                        {/* La edición NUNCA es inline: el lápiz abre el panel lateral derecho. */}
+                        <div className={`flex items-start gap-3 ${editingReqId === r.id ? 'opacity-60' : ''}`}>
                           <button
                             onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
                             disabled={!canEditThis}
@@ -1417,7 +1384,6 @@ export default function ProjectDetailPage() {
                             </button>
                           </div>
                         </div>
-                        )}
 
                         {/* Detalle desplegable: botones + miembros + subtareas */}
                         {expanded && (<>
@@ -2063,56 +2029,25 @@ export default function ProjectDetailPage() {
               <div className="flex items-start justify-between gap-3">
                 <dt className="text-digi-muted shrink-0">Cliente</dt>
                 <dd className="text-right min-w-0">
-                  {editingClient ? (
-                    <div className="w-56 max-w-full text-left">
-                      <ClientPicker clientId={editClient.clientId} clientEmail={editClient.clientEmail} onChange={setEditClient} label="" />
-                      <div className="flex gap-1 justify-end mt-1">
-                        <button onClick={async () => {
-                          if (!editClient.clientId && !editClient.clientEmail) { toast.error('Elige un cliente o escribe un correo'); return; }
-                          await saveField(editClient.clientId ? { client_id: Number(editClient.clientId) } : { client_email: editClient.clientEmail });
-                          setEditingClient(false); toast.success('Cliente actualizado');
-                        }} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
-                        <button onClick={() => setEditingClient(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <span className={`text-digi-text break-words ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`}
-                      onClick={() => { if (isOwner && !isTerminal) { setEditClient({ clientId: project.client_id ? String(project.client_id) : '', clientEmail: '' }); setEditingClient(true); } }}>
-                      {project.client_name || '-'}
-                    </span>
-                  )}
+                  {/* Se edita en una ventanita centrada (un solo campo), nunca aquí encima. */}
+                  <span className={`text-digi-text break-words ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`}
+                    onClick={() => { if (isOwner && !isTerminal) { setEditClient({ clientId: project.client_id ? String(project.client_id) : '', clientEmail: '' }); setEditingClient(true); } }}>
+                    {project.client_name || '-'}
+                  </span>
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Miembro</dt><dd className="text-digi-text text-right break-words min-w-0">{project.assigned_member_name || '-'}</dd></div>
               <div className="flex items-start justify-between gap-3">
                 <dt className="text-digi-muted shrink-0">Presupuesto</dt>
                 <dd className="text-right min-w-0">
-                  {editingBudget ? (
-                    <div className="flex items-center gap-1 justify-end flex-wrap">
-                      <input value={editBudgetMin} onChange={(e) => setEditBudgetMin(e.target.value)} type="number" placeholder="Min" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
-                      <span className="text-digi-muted">-</span>
-                      <input value={editBudgetMax} onChange={(e) => setEditBudgetMax(e.target.value)} type="number" placeholder="Max" className="w-16 px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none text-right" style={mf} />
-                      <button onClick={saveBudget} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
-                      <button onClick={() => setEditingBudget(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
-                    </div>
-                  ) : (
-                    <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditBudgetMin(project.budget_min || ''); setEditBudgetMax(project.budget_max || ''); setEditingBudget(true); } }}>{project.budget_min ? `$${project.budget_min}${project.budget_max ? ` - $${project.budget_max}` : ''}` : '-'}</span>
-                  )}
+                  <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditBudgetMin(project.budget_min || ''); setEditBudgetMax(project.budget_max || ''); setEditingBudget(true); } }}>{project.budget_min ? `$${project.budget_min}${project.budget_max ? ` - $${project.budget_max}` : ''}` : '-'}</span>
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Costo final</dt><dd className="text-digi-text text-right">{totalAcceptedCost > 0 ? `$${fmt2(totalAcceptedCost)}` : '$0.00'}</dd></div>
               <div className="flex items-start justify-between gap-3">
                 <dt className="text-digi-muted shrink-0">Límite</dt>
                 <dd className="text-right min-w-0">
-                  {editingDeadline ? (
-                    <div className="flex items-center gap-1 justify-end flex-wrap">
-                      <input value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} type="date" className="px-1 py-0.5 bg-digi-darker border border-accent text-[11px] text-digi-text focus:outline-none" style={mf} />
-                      <button onClick={saveDeadline} className="text-[11px] text-green-600 border border-green-300 px-1 hover:bg-green-50" style={pf}>OK</button>
-                      <button onClick={() => setEditingDeadline(false)} className="text-[11px] text-digi-muted border border-digi-border px-1" style={pf}>X</button>
-                    </div>
-                  ) : (
-                    <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditDeadline(project.deadline?.split('T')[0] || ''); setEditingDeadline(true); } }}>{project.deadline ? new Date(project.deadline).toLocaleDateString() : '-'}</span>
-                  )}
+                  <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditDeadline(project.deadline?.split('T')[0] || ''); setEditingDeadline(true); } }}>{project.deadline ? new Date(project.deadline).toLocaleDateString() : '-'}</span>
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-3">
@@ -2286,27 +2221,12 @@ export default function ProjectDetailPage() {
                     <button onClick={() => canEditThis && toggleSubItem(item.id, !item.is_completed)} disabled={!canEditThis || editingItemId === item.id} aria-label={item.is_completed ? 'Marcar incompleto' : 'Marcar completo'} className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${item.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis && editingItemId !== item.id ? 'cursor-pointer hover:border-accent' : ''}`}>
                       {item.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
                     </button>
-                    {editingItemId === item.id ? (
+                    {/* La subtarea se edita en una ventanita centrada (un campo), no aquí encima. */}
+                    <span className={`text-[13px] flex-1 break-words ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
+                    {canEditThis && (
                       <>
-                        <input
-                          value={editItemText}
-                          onChange={(e) => setEditItemText(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveItemEdit(); } if (e.key === 'Escape') setEditingItemId(null); }}
-                          autoFocus
-                          className="field-control flex-1 min-w-0 px-2 py-1 bg-white border-2 border-accent text-[13px] text-digi-text focus:outline-none" style={mf}
-                        />
-                        <button onClick={saveItemEdit} aria-label="Guardar subtarea" title="Guardar" className="text-accent hover:opacity-80 transition-opacity shrink-0"><Check className="w-4 h-4" strokeWidth={3} /></button>
-                        <button onClick={() => setEditingItemId(null)} aria-label="Cancelar" title="Cancelar" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
-                      </>
-                    ) : (
-                      <>
-                        <span onDoubleClick={() => canEditThis && startEditItem(item)} className={`text-[13px] flex-1 break-words ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
-                        {canEditThis && (
-                          <>
-                            <button onClick={() => startEditItem(item)} aria-label="Editar subtarea" title="Editar" className="text-digi-muted/50 hover:text-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
-                          </>
-                        )}
+                        <button onClick={() => startEditItem(item)} aria-label="Editar subtarea" title="Editar" className="text-digi-muted/50 hover:text-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
                       </>
                     )}
                   </div>
@@ -2469,28 +2389,147 @@ export default function ProjectDetailPage() {
       {/* Modal de compartir acceso (se abre desde el header). */}
       {project.status === 'cotizacion' && isOwner && <QuoteShareButton projectId={project.id} open={showShare} onClose={() => setShowShare(false)} />}
 
-      {/* Editar descripción — panel lateral derecho (overlay). */}
-      <PixelModal open={editingDesc} onClose={() => setEditingDesc(false)} title="Editar descripción" size="md">
-        <div className="space-y-3">
-          <div className="flex flex-col gap-1">
-            <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Descripción del proyecto</label>
-            <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={8} placeholder="Descripción del proyecto…"
-              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-y" style={mf} />
-          </div>
-          <div className="flex gap-2 pt-2 border-t border-digi-border">
-            <button onClick={() => setEditingDesc(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
-            <button onClick={async () => {
-              setSavingDesc(true);
-              try {
-                const res = await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description: editDesc }) });
-                if (!res.ok) throw new Error((await res.json()).error || 'Error');
-                setEditingDesc(false); await fetchProject(); toast.success('Descripción actualizada');
-              } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
-              finally { setSavingDesc(false); }
-            }} disabled={savingDesc} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>{savingDesc ? 'Guardando…' : 'Guardar'}</button>
-          </div>
+      {/* ============================================================================
+          EDICIÓN — nunca inline. Formularios → panel lateral derecho (`EditPanel`);
+          uno o dos campos sueltos → ventanita centrada (`QuickEditDialog`).
+          ============================================================================ */}
+
+      {/* Requerimiento (formulario) — panel lateral derecho */}
+      <EditPanel
+        open={editingReqId != null}
+        title="Editar requerimiento"
+        onClose={() => setEditingReqId(null)}
+        onSave={saveReqEdit}
+        saving={savingReqEdit}
+        canSave={!!editReqData.title.trim() && editReqData.talents.length > 0}
+      >
+        <EditField label="Título">
+          <input value={editReqData.title} onChange={(e) => setEditReqData((d) => ({ ...d, title: e.target.value }))}
+            autoFocus placeholder="Título del requerimiento" className={EDIT_INPUT} style={mf} />
+        </EditField>
+        <EditField label="Descripción">
+          <textarea value={editReqData.description} onChange={(e) => setEditReqData((d) => ({ ...d, description: e.target.value }))}
+            rows={4} placeholder="Descripción detallada… (opcional)" className={`${EDIT_INPUT} resize-y`} style={mf} />
+        </EditField>
+        <EditField label="Costo ($)">
+          <input value={editReqData.cost} onChange={(e) => setEditReqData((d) => ({ ...d, cost: e.target.value }))}
+            type="number" placeholder="0.00 (opcional)" className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+        </EditField>
+        <EditField label="Talentos requeridos *" hint="Con esto el requerimiento aparece a quien busque por ese talento.">
+          <MultiSelectSearch
+            options={talentOptions}
+            selected={editReqData.talents}
+            onChange={(v: string[]) => setEditReqData((d) => ({ ...d, talents: v }))}
+            placeholder="Busca el talento que necesita este requerimiento…"
+          />
+        </EditField>
+        <EditField label="Plazas" hint="Cuántas personas se necesitan para este requerimiento.">
+          <input value={editReqData.slots} onChange={(e) => setEditReqData((d) => ({ ...d, slots: e.target.value }))}
+            type="number" min={1} placeholder="1" className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+        </EditField>
+      </EditPanel>
+
+      {/* Descripción del proyecto (campo rico) — panel lateral derecho */}
+      <EditPanel
+        open={editingDesc}
+        title="Editar descripción"
+        onClose={() => setEditingDesc(false)}
+        saving={savingDesc}
+        onSave={async () => {
+          setSavingDesc(true);
+          try {
+            const res = await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description: editDesc }) });
+            if (!res.ok) throw new Error((await res.json()).error || 'Error');
+            setEditingDesc(false); await fetchProject(); toast.success('Descripción actualizada');
+          } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
+          finally { setSavingDesc(false); }
+        }}
+      >
+        <EditField label="Descripción del proyecto">
+          <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={12} placeholder="Descripción del proyecto…"
+            className={`${EDIT_INPUT} resize-y`} style={mf} />
+        </EditField>
+      </EditPanel>
+
+      {/* Nombre del proyecto (un campo) — ventanita centrada */}
+      <QuickEditDialog
+        open={editingTitle}
+        title="Editar nombre"
+        onClose={() => setEditingTitle(false)}
+        onSave={saveTitle}
+        canSave={!!editTitle.trim()}
+      >
+        <EditField label="Nombre del proyecto">
+          <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus className={EDIT_INPUT} style={mf} />
+        </EditField>
+      </QuickEditDialog>
+
+      {/* Cliente (un campo) — ventanita centrada */}
+      <QuickEditDialog
+        open={editingClient}
+        title="Cambiar cliente"
+        onClose={() => setEditingClient(false)}
+        saving={savingClient}
+        canSave={!!(editClient.clientId || editClient.clientEmail)}
+        onSave={async () => {
+          setSavingClient(true);
+          try {
+            await saveField(editClient.clientId ? { client_id: Number(editClient.clientId) } : { client_email: editClient.clientEmail });
+            setEditingClient(false); toast.success('Cliente actualizado');
+          } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
+          finally { setSavingClient(false); }
+        }}
+      >
+        {/* Alto mínimo para que el desplegable del buscador quepa sin recortarse. */}
+        <div className="min-h-[260px]">
+          <EditField label="Cliente" hint="Si el correo no tiene cuenta, se registra y se le invita a crearla.">
+            <ClientPicker clientId={editClient.clientId} clientEmail={editClient.clientEmail} onChange={setEditClient} label="" />
+          </EditField>
         </div>
-      </PixelModal>
+      </QuickEditDialog>
+
+      {/* Presupuesto (dos campos) — ventanita centrada */}
+      <QuickEditDialog
+        open={editingBudget}
+        title="Editar presupuesto"
+        onClose={() => setEditingBudget(false)}
+        onSave={saveBudget}
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <EditField label="Mínimo ($)">
+            <input value={editBudgetMin} onChange={(e) => setEditBudgetMin(e.target.value)} type="number" placeholder="0.00" autoFocus className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+          </EditField>
+          <EditField label="Máximo ($)">
+            <input value={editBudgetMax} onChange={(e) => setEditBudgetMax(e.target.value)} type="number" placeholder="0.00" className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+          </EditField>
+        </div>
+      </QuickEditDialog>
+
+      {/* Fecha límite (un campo) — ventanita centrada */}
+      <QuickEditDialog
+        open={editingDeadline}
+        title="Editar fecha límite"
+        onClose={() => setEditingDeadline(false)}
+        onSave={saveDeadline}
+      >
+        <EditField label="Fecha límite" hint="Déjala vacía para quitar el límite.">
+          <input value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)} type="date" autoFocus className={EDIT_INPUT} style={mf} />
+        </EditField>
+      </QuickEditDialog>
+
+      {/* Subtarea (un campo) — ventanita centrada, sobre el panel de Subtareas */}
+      <QuickEditDialog
+        open={editingItemId != null}
+        title="Editar subtarea"
+        onClose={() => setEditingItemId(null)}
+        onSave={saveItemEdit}
+        saving={savingItemEdit}
+        canSave={!!editItemText.trim()}
+      >
+        <EditField label="Subtarea">
+          <input value={editItemText} onChange={(e) => setEditItemText(e.target.value)} autoFocus className={EDIT_INPUT} style={mf} />
+        </EditField>
+      </QuickEditDialog>
     </div>
   );
 }
