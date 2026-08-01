@@ -7,7 +7,205 @@
 
 ---
 
-## Objetivo ACTUAL (declarado 2026-07-31) — DÓNDE SE EDITA: se acaba la edición "por encima" · ✅ RESUELTO 100% (detalle de proyecto)
+## Objetivo ACTUAL (declarado 2026-08-01) — FLUJO "AGENTE IA": GCC como PROVEEDOR DE TECNOLOGÍA de WhatsApp (coexistencia, multi-tenant) · 🔎 EN APRENDIZAJE
+
+**Rol asumido:** *arquitecto de integraciones + backend multi-tenant* — el problema no es "hacer un
+bot", es montar la **infraestructura de proveedor ante Meta** y el aislamiento por cliente. La parte
+de IA ya está resuelta en otro proyecto; lo que no está resuelto es la plataforma.
+
+### Necesidad (palabras del usuario, 2026-08-01)
+> "Necesito que en el módulo de automatizaciones empecemos a trabajar en el **tipo de flujo de agente
+> IA**. Este flujo va a requerir una **infraestructura de Meta previa** para que el Grupo Corazones
+> Cruzados sea un **proveedor de tecnología**. He llegado a esta conclusión debido al caso que estuve
+> desarrollando de un proyecto. Ya quiero dar el servicio para los clientes y así **no tengo que crear
+> un servicio web por cliente**: que el mismo GCC ofrezca el servicio y los clientes usen **nuestra
+> app** para conectar sus números de WhatsApp Business y tener el agente IA funcionando **con
+> coexistencia**."
+
+### Fuente principal recibida
+- **`guia-coexistencia-proveedor.html`** (raíz del repo, 2026-08-01). Traspaso técnico completo del
+  agente de WhatsApp **que ya funciona en producción** dentro del sistema contable de **Peters Tours
+  S.A.** (otro repo: `Grupo-Corazones-Cruzados/GCC---Sistema-de-Facturaci-n`, Railway proyecto
+  `Servidor-Diego`). Contiene arquitectura medida, identificadores de Meta, el paso a paso del alta en
+  coexistencia, y las lecciones/errores de dos días de puesta en marcha.
+  **No es teoría: es un sistema verificado el 2026-08-01** (18 trabajos en cola, 0 errores; respuesta
+  en 2–3 s; ~0,2 ¢ por mensaje).
+
+### Lo que el documento deja CERRADO (no re-litigar)
+1. **La app de Meta pertenece al portafolio de GCC** (`1000698870638078`), no al del cliente.
+   Un portafolio **no puede darse de alta a sí mismo** por Embedded Signup ("This business portfolio
+   owns [app]. You can only select other business portfolios"). Proveedor y cliente **tienen que ser
+   portafolios distintos**. Esto se decide **al crear la app** y no se cambia después.
+2. **Coexistencia** = el número vive **a la vez** en la app de WhatsApp Business del teléfono y en la
+   Cloud API. Es la propuesta de valor ("no pierdes tu número ni tu WhatsApp de siempre"). **Solo se
+   activa por Embedded Signup**, flujo *onboarding business app users*. No hay botón ni endpoint.
+   ⚠️ `platform_type: CLOUD_API` **no** prueba coexistencia: eso se comprueba abriendo WhatsApp Web.
+3. **API oficial de Meta, NO un BSP.** Reafirmado por el cliente el 2026-08-01, "ni como plan B".
+   → **Consecuencia para este repo:** el tipo `chatbot` actual va por **YCloud** (BSP). Ver P3.
+4. **Un solo nodo de IA con TRES herramientas** (`responder` / `no_responder` / `escalar_a_humano`),
+   `tool_choice: "any"`, **sin bucle de tool-use**. Las cadenas de clasificadores dieron falsos
+   positivos. Las herramientas **son** la decisión, no devuelven información.
+5. **El conocimiento entra COMPLETO en el prompt cacheado**, nada de embeddings ni recuperación.
+   Con 28.405 caracteres el prefijo cacheado son ~8.241 tokens > mínimo de caché de Haiku (4.096).
+6. **El webhook no piensa:** persiste (idempotente por `wa_message_id`), encola con debounce y
+   devuelve **200 siempre**. Un 500 hace que Meta reintente y acabe **deshabilitando el webhook**.
+7. **Acceso estándar vs avanzado:** el estándar solo sirve con usuarios que **tienen rol en la app**.
+   Para dar de alta **clientes** hace falta **acceso avanzado** ⇒ **App Review** + **verificación de
+   proveedor de tecnología**. Con GCC como proveedor real eso deja de ser un obstáculo forzado.
+8. **Los tokens pasan a la base cifrados.** Cada alta por Embedded Signup devuelve **un token por
+   cliente**; la regla "los secretos solo viven en variables de entorno" **no escala a N clientes**.
+   Es una decisión de arquitectura consciente, no un atajo.
+
+### El estado REAL de este repo (investigado 2026-08-01, §6 de la skill)
+| Pieza | Hoy en GCC World | Veredicto |
+|---|---|---|
+| Tipo `ai_agent` | **Solo una etiqueta.** `FlowDetail.tsx:144` lo manda al *workspace de correo* (`email · ai_agent · custom`) | **Todo por construir** |
+| Tipo `chatbot` | `flow_chatbot_agents/knowledge/qa_lists/qa_items/conversations/messages` + `app/api/webhooks/chatbot/[agentId]/route.ts` | **Es el modelo VIEJO**: BSP YCloud, sin firma, sin cola |
+| Tipo `whatsapp` | `WhatsAppFlowPanel` guarda `phone_number_id` + `access_token` **en claro** en `flows.config` (JSONB) | Campañas de plantillas, no conversacional |
+| Cifrado de secretos | **No existe** ningún helper (`createCipheriv`/`ENCRYPTION_KEY` → 0 resultados) | **Hay que crearlo** |
+| Cron / trabajo diferido | `lib/cron-auth.ts` + `scripts/frequent-cron.mjs` (cada ~10 min) → `/api/admin/flows/cron/send-scheduled` | Sirve de patrón; **10 min es demasiado lento** para chat |
+| Migraciones | `sql/migrations/` restaurado, va por **026** | Las nuevas van aquí, numeradas |
+| Acceso al dashboard | `middleware.ts` exige JWT staff para `/dashboard`; el cliente **aún no entra** | Bloquea la "bandeja del cliente" |
+
+### Los 4 problemas que el modelo viejo (`chatbot`/YCloud) tiene y el nuevo NO puede heredar
+1. **`setTimeout` en memoria del proceso** como debounce (`pendingTimers`, línea 5 del webhook): en
+   Railway, un redeploy o un segundo contenedor **pierde el mensaje sin dejar rastro**. El modelo
+   probado usa **una tabla `cola`** con índice único parcial + `ON CONFLICT` y `SKIP LOCKED`.
+2. **Sin verificación de firma HMAC** (`X-Hub-Signature-256`): cualquiera con la URL puede inyectar
+   conversaciones. El modelo probado **rechaza con 403** sin firma.
+3. **`ai_api_key TEXT NOT NULL` por agente, en claro.** Guardar claves de terceros en la fila.
+4. **Sin idempotencia por `wa_message_id`**: Meta reintenta y el mismo mensaje se procesa dos veces.
+
+### Decisión de arquitectura que se propone (a confirmar con el usuario)
+**Un flujo de tipo `ai_agent` = un canal = un número de un cliente.** Es exactamente el "canal" del
+sistema probado, y el hallazgo del documento aplica igual aquí: *"un canal = un número y resulta que
+un canal es exactamente un tenant"*. Así el aislamiento por cliente sale del modelo de datos, no de
+un filtro en cada consulta.
+
+### Preguntas y respuestas
+
+#### P1 — ¿Se reescribe el agente desde cero o se porta el de Peters Tours? · ✅ Resuelta — SE PORTA LA ARQUITECTURA
+- **Por qué importa:** define semanas de trabajo. El otro repo **no usa el mismo stack**: allí es
+  CSS Modules + `pg` directo + `iron-session`; aquí es Tailwind v4 + Prisma/`pg` + `jose`.
+- **Respuesta (usuario, 2026-08-01):** *"debemos mantener una sola arquitectura, que sería la
+  indicada en el mismo documento, y los mismos parámetros que esperen todos los chatbots que se
+  creen a futuro."* ⇒ **la arquitectura del documento es la norma del producto**, no una referencia.
+  Se porta la **lógica** (esquema, runner de 3 herramientas, cola, HMAC, ensamblaje del prompt) y se
+  reescribe solo la **UI**, que aquí es Tailwind `.corp` y allí CSS Modules.
+
+#### P2 — ¿Qué es el "cliente" de un agente dentro de GCC World? · ✅ Resuelta — v1: SOLO GCC opera
+- **Respuesta (usuario, 2026-08-01):** **solo GCC** configura el agente y atiende la bandeja por
+  cuenta del cliente. El cliente participa **una sola vez**: cuando conecta su número.
+- **Consecuencia buena:** no se toca `middleware.ts` ni la autenticación de cliente al `/dashboard`
+  (el pendiente de 2026-06-23 sigue pendiente, pero **deja de bloquear** esta entrega).
+- **Consecuencia a no olvidar:** el aislamiento por `flow_id` hay que construirlo **igual de bien
+  desde el día uno** — cuando el cliente entre, el modelo de datos ya tiene que estar listo.
+
+#### P3 — ¿El nuevo `ai_agent` reemplaza al tipo `chatbot` (YCloud) o conviven? · ✅ Resuelta — SE ELIMINA
+- **Respuesta (usuario, 2026-08-01):** *"no existe chatbot actualmente usado dentro de ese tipo de
+  flujo, deberás eliminar el chatbot que está deprecado, y usar solo el agente IA."*
+- **Alcance del borrado:** `ChatbotFlowPanel.tsx` · `app/api/webhooks/chatbot/[agentId]/route.ts` ·
+  `app/api/admin/flows/[id]/agents/**` · el tipo `chatbot` del selector y de los mapas de tipos ·
+  las tablas `flow_chatbot_*`. ⚠️ **Verificar filas en producción antes de soltar nada** (regla de
+  oro del documento: inventario antes y después, migración en `BEGIN … ROLLBACK`).
+
+#### P4 — ¿Quién paga la IA: la clave de GCC o la de cada cliente? · ✅ Resuelta — CADA CLIENTE LA SUYA
+- **Respuesta (usuario, 2026-08-01):** cada cliente pone su propia clave.
+- **Consecuencias de diseño:**
+  1. La clave **se guarda cifrada** (AES-256-GCM con clave maestra en el entorno). El modelo viejo la
+     tenía en `ai_api_key TEXT NOT NULL` **en claro**: eso no se repite.
+  2. El alta del cliente tiene **dos credenciales**, no una: su número (Embedded Signup) y su clave
+     de IA. La pantalla debe dejar claro cuál falta.
+  3. **Un fallo de la clave del cliente no puede dejar al agente mudo en silencio**: si la API
+     rechaza la clave hay que **escalar a humano y avisar en el panel**, no tragarse el error.
+  4. `uso_modelo` sigue registrándose (es la traza del consumo y sirve para explicarle su gasto al
+     cliente), pero **ya no es la base de la facturación de la IA**.
+
+#### P5 — ¿La app de Meta de GCC ya está creada? · ✅ Resuelta — CREADA, todo lo demás pendiente
+- **Respuesta (usuario, 2026-08-01):** *"recién creé la app, todo lo demás después de crearla no
+  está hecho."* ⇒ **falta**: producto WhatsApp · configuración básica (+ Agregar plataforma → Sitio
+  web) · configuración de Embedded Signup (plantilla de **token de 60 días**, no la de "Socio de
+  medición") · **activar el JSSDK** (viene apagado) + dominios + OAuth · usuario del sistema con
+  token de caducidad **Nunca** y solo `whatsapp_business_messaging` + `whatsapp_business_management`
+  · webhook + **suscripción al campo `messages`**.
+- ⚠️ **Comprobar que la app quedó en el portafolio de GCC** (`1000698870638078`): se elige al crear
+  y **no se cambia después**. Si quedó en otro, hay que rehacerla ahora, no más tarde.
+
+#### P6 — ¿Cómo corre el worker en este repo? · 🔎 Investigando (propuesta lista)
+- **Por qué importa:** el chat necesita responder en 2–3 s. El cron actual pasa **cada ~10 minutos**:
+  serviría para campañas, **no para conversar**.
+- **Opciones:** (a) servicio worker aparte en Railway con bucle de 5 s, como en Peters Tours;
+  (b) `scripts/frequent-cron.mjs` con un pase corto adicional; (c) procesar en el propio webhook tras
+  responder 200 (**descartado**: en serverless el proceso puede morir al devolver la respuesta).
+- **Respuesta:** _(pendiente de confirmar (a))_
+
+### La ARQUITECTURA ESTÁNDAR del agente (documento actualizado 2026-08-01, sección 6)
+El usuario amplió `guia-coexistencia-proveedor.html` con «El agente por dentro»: es **la norma que
+esperan todos los agentes que se creen a futuro**, no un ejemplo.
+
+**Parámetros de ejecución (valores por defecto de todo agente nuevo):**
+| Parámetro | Valor |
+|---|---|
+| Modelo | `claude-haiku-4-5` |
+| `max_tokens` | 4096 — acota razonamiento **+** respuesta juntos |
+| Esfuerzo | `medium` (**no se envía en Haiku**: el parámetro da 400) |
+| Debounce | **8 s** — agrupa ráfagas en una sola corrida |
+| Ventana de historial | **40 mensajes** + el resumen acumulado |
+
+**Las tres herramientas** (`tool_choice: "any"`, `strict: true`, `additionalProperties: false`):
+- `responder(texto)` — el mensaje al contacto. Breve (2–4 líneas), sin emojis.
+- `no_responder(motivo)` — solo publicidad, cadenas, estafas, ofensas o mensajes sin intención.
+  **En duda, RESPONDE**: callarse con un cliente real es peor error que contestar a un mensaje tonto.
+- `escalar_a_humano(motivo, aviso)` — apaga el bot en ese chat. `aviso` es lo que ve el contacto;
+  **cadena vacía = no enviar nada**.
+
+**Los tres prompts, versionados por canal** (`perfil_agente` · `reglas_negocio` ·
+`resumen_conversacion`): quién es el agente y cómo habla · cuándo usa cada herramienta · cómo
+comprime la memoria larga.
+
+**Ensamblaje del prompt — el orden IMPORTA:**
+```
+system: [ perfil_agente (cache) · CONOCIMIENTO completo (cache) · reglas_negocio ]
+messages: [ ventana de 40 mensajes · resumen acumulado · mensaje entrante ]
+tools: [ responder, no_responder, escalar_a_humano ]   tool_choice: "any"
+```
+Lo **estable va primero** para que el caché lo cubra; lo que cambia en cada llamada —el historial—
+va al final. **Una sola función arma el bloque de conocimiento**, y la usan tanto el runner como la
+pantalla de edición: si divergieran, lo que se ve no sería lo que recibe el modelo.
+
+**El conocimiento** son bloques con clave + título + texto **descriptivo** (no pares
+pregunta→respuesta: un carácter distinto rompía la coincidencia). Se marcan `[PENDIENTE]` los que el
+cliente aún no rellenó.
+
+**Respaldo del servidor:** bandera beta `server-side-fallback-2026-07-01` — si el modelo está
+saturado, Anthropic reintenta con el recomendado dentro de la misma llamada. Se apaga con
+`AGENTE_SIN_RESPALDO=1` y **se autodesactiva si la API rechaza la bandera**, para que un cambio de
+contrato no deje al agente mudo.
+
+#### P7 — El fallo del prompt desincronizado del conocimiento · ✅ Resuelta — se corrige por diseño
+- **El fallo real (activo en Peters Tours):** `reglas_negocio` dice que escale porque el conocimiento
+  está `[PENDIENTE]` en pagos y horario de atención — **pero el cliente ya los rellenó**. Resultado:
+  el agente pasa a una persona preguntas que ya sabe contestar.
+- **Lección del propio documento:** *"el prompt y el conocimiento se editan por separado y nada
+  comprueba que sigan de acuerdo. En un sistema multi-tenant esto se multiplica por cada cliente."*
+- **Decisión para GCC World:** la lista de bloques pendientes **se calcula del conocimiento** (los
+  que contienen `[PENDIENTE]`) y se **inyecta** en el prompt al ensamblarlo. Nadie la escribe a mano.
+  Es una línea de código que evita el fallo en los N clientes que vengan.
+
+### Riesgos identificados
+- **Paso irreversible:** en el Embedded Signup, elegir "dar de alta un número nuevo" en vez de
+  **"conectar cuenta existente"** saca el número del teléfono y **el equipo del cliente pierde
+  WhatsApp Web en el acto**. La pantalla propia debe hacer esa distinción imposible de confundir.
+- **WABA de tipo SMB:** la del cliente puede haber nacido en la app del móvil ⇒ **cero socios**, sin
+  `register` por API. Ante el primer síntoma raro, **comprobar el tipo de cuenta antes de seguir
+  probando cosas** (esto costó una noche entera en Peters Tours).
+- **Legal:** con GCC como proveedor, GCC pasa a ser **encargado del tratamiento** y el cliente el
+  **responsable**. Hoy las políticas del repo están escritas al revés. Es el cambio conceptual más
+  importante y condiciona el App Review.
+
+---
+
+## Objetivo ANTERIOR (declarado 2026-07-31) — DÓNDE SE EDITA: se acaba la edición "por encima" · ✅ RESUELTO 100% (detalle de proyecto)
 
 **Rol asumido:** *diseñador de interacción del dashboard + frontend Next.js*.
 

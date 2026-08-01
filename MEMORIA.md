@@ -275,6 +275,59 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **GCC ES PROVEEDOR DE TECNOLOGÍA DE WHATSAPP ANTE META — dirección de producto (2026-08-01).**
+  Decisión del usuario tras la puesta en marcha del agente de **Peters Tours S.A.** (otro repo:
+  `GCC---Sistema-de-Facturaci-n`). **GCC no crea un servicio web por cliente**: monta **una sola app
+  de Meta bajo el portafolio de Grupo Corazones Cruzados** (`1000698870638078`) y los clientes
+  conectan **su propio número de WhatsApp Business** desde **nuestra app**, con **coexistencia** (el
+  equipo del cliente sigue usando WhatsApp Web y el agente responde en paralelo).
+  - **Se materializa en el módulo Automatizaciones, tipo de flujo `ai_agent`** — que hoy es **solo
+    una etiqueta**: `FlowDetail.tsx` lo manda al espacio de trabajo de correo. Todo por construir.
+  - **Por qué el portafolio importa:** un portafolio **no puede darse de alta a sí mismo** por
+    Embedded Signup. Proveedor y cliente tienen que ser portafolios distintos, y **el portafolio de
+    una app se elige al crearla y no se cambia**. Intentar operar como "una empresa que se sirve a sí
+    misma" generó fricción en cada paso.
+  - **Coexistencia solo se activa por Embedded Signup** (flujo *onboarding business app users*): no
+    hay botón en el panel ni endpoint de API. `platform_type: CLOUD_API` **no** la demuestra.
+  - **API oficial de Meta, NO un BSP** (reafirmado por el cliente, "ni como plan B"). ⇒ el tipo de
+    flujo `chatbot` actual, que va por **YCloud**, queda **fuera del estándar**.
+  - **Dar de alta clientes exige acceso avanzado** ⇒ App Review + **verificación de proveedor de
+    tecnología**, y **políticas legales con GCC como encargado del tratamiento** y el cliente como
+    responsable (hoy el repo lo tiene al revés).
+  - **Los tokens de WhatsApp pasan a la base CIFRADOS**: cada alta devuelve un token por cliente, así
+    que "los secretos solo viven en variables de entorno" ya no escala. Hoy **no existe** ningún
+    helper de cifrado en el repo.
+  - **Decisiones del usuario (2026-08-01), ya cerradas:**
+    1. **UNA SOLA ARQUITECTURA: la del documento.** Sus parámetros son la **norma que esperan todos
+       los agentes que se creen a futuro** — `claude-haiku-4-5`, `max_tokens` 4096, debounce 8 s,
+       ventana 40 mensajes + resumen, tres herramientas (`responder`/`no_responder`/
+       `escalar_a_humano`) con `tool_choice: "any"`, y el prompt ensamblado como
+       `[perfil (cache) · conocimiento completo (cache) · reglas]`. **El orden importa**: lo estable
+       primero para que el caché lo cubra.
+    2. **Se ELIMINA el tipo de flujo `chatbot`** (YCloud, deprecado). Solo queda `ai_agent`.
+       ✅ Verificado contra la BD de producción el 2026-08-01: **las tablas `flow_chatbot_*` ni
+       siquiera existen** (se creaban con `ensureTables()` bajo demanda y nunca se llamó) ⇒ el
+       borrado es solo de código, **sin riesgo de datos**.
+    3. **v1: la bandeja la opera SOLO GCC** por cuenta del cliente. El cliente participa una única
+       vez, al conectar su número. ⇒ **no bloquea** con la autenticación de cliente al `/dashboard`
+       (que sigue pendiente desde 2026-06-23), pero el aislamiento por flujo se construye bien
+       desde el día uno.
+    4. **Cada cliente pone SU PROPIA clave de IA**, guardada **cifrada** (el modelo viejo la tenía
+       en claro en `ai_api_key TEXT`). Un fallo de esa clave **escala a humano y se avisa en el
+       panel**: nunca deja al agente mudo en silencio.
+  - **Estado en Meta (2026-08-01):** la app está **recién creada**; falta todo lo demás (producto
+    WhatsApp, configuración básica, config de Embedded Signup con token de 60 días, activar el
+    JSSDK, usuario del sistema con token "Nunca", webhook + **suscripción al campo `messages`**).
+  - **Primer tenant:** el flujo `ai_agent` id **10, "Diego Castillo"** (el contacto de Peters Tours).
+  - **📋 TABLERO DEL PROYECTO: `plan-agente-ia.html`** (raíz, creado 2026-08-01). Documento **vivo**
+    con los dos carriles de trabajo —**F1–F11** los pasos de Fernando en Meta, **C1–C9** los de
+    desarrollo—, sus dependencias, **en qué paso vamos** (banner arriba, hay que actualizarlo en cada
+    avance) y un **registro de los datos que va pidiendo Meta**. Regla: cuando un formulario de Meta
+    pida algo no previsto, **se añade la fila en el momento** en su §5. Ningún valor secreto se
+    escribe ahí — solo que existe, dónde vive y desde cuándo.
+  - **Contexto completo y errores a no repetir:** `guia-coexistencia-proveedor.html` (raíz) —
+    incluye la sección «El agente por dentro» con los prompts y el conocimiento reales.
+    Preguntas abiertas y plan: `Aprendizaje.md` → objetivo del 2026-08-01.
 - **NUNCA SE EDITA "POR ENCIMA" — regla de interfaz permanente (2026-07-31).** Decisión del usuario:
   se prohíbe la **edición inline** (sustituir lo que se está mirando —una fila, un valor del rail, el
   título de la cabecera— por sus inputs). Toda edición aparece sobre un overlay:

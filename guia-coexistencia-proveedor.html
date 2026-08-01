@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traspaso técnico · Plataforma de agentes de WhatsApp — Grupo Corazones Cruzados</title>
+<style>
+  :root{
+    --accent:#F08D00; --accent-texto:#A35E00; --accent-bg:#FFF6E9; --accent-borde:#F7D9A8;
+    --error:#C4232B; --error-bg:#FEF3F2; --error-borde:#F2B8B5;
+    --exito:#15803D; --exito-bg:#ECFDF3; --exito-borde:#A7E4C0;
+    --info:#1D4ED8; --info-bg:#EFF5FF; --info-borde:#BBD3F7;
+    --fondo:#F4F6F9; --superficie:#fff; --superficie-2:#F7F9FB;
+    --texto:#334155; --texto-fuerte:#0F172A; --texto-suave:#64748B; --borde:#E2E8F0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 16px 64px;background:var(--fondo);color:var(--texto);
+    font:15px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .marco{max-width:940px;margin:0 auto}
+  header.portada{background:var(--superficie);border:1px solid var(--borde);border-radius:16px;
+    padding:32px;margin-bottom:24px;box-shadow:0 4px 12px rgba(15,23,42,.06)}
+  h1{margin:0 0 8px;font-size:27px;line-height:1.25;color:var(--texto-fuerte);letter-spacing:-.02em}
+  .sub{color:var(--texto-suave);margin:0}
+  .bloque{background:var(--superficie);border:1px solid var(--borde);border-radius:16px;
+    padding:8px 28px 28px;margin-bottom:24px;box-shadow:0 4px 12px rgba(15,23,42,.06)}
+  h2{font-size:20px;color:var(--texto-fuerte);margin:36px 0 4px;letter-spacing:-.01em;
+    padding-bottom:8px;border-bottom:2px solid var(--accent)}
+  h3{font-size:16px;color:var(--texto-fuerte);margin:26px 0 8px}
+  h4{font-size:14px;color:var(--texto-fuerte);margin:20px 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  ol.pasos{padding-left:0;counter-reset:paso;list-style:none;margin:16px 0 0}
+  ol.pasos>li{counter-increment:paso;position:relative;padding:0 0 24px 44px;margin:0;border-left:2px solid var(--borde)}
+  ol.pasos>li:last-child{border-left-color:transparent;padding-bottom:0}
+  ol.pasos>li::before{content:counter(paso);position:absolute;left:-15px;top:-2px;width:28px;height:28px;
+    border-radius:50%;background:var(--accent);color:#fff;font-weight:600;font-size:13px;
+    display:flex;align-items:center;justify-content:center}
+  ol.pasos>li>.t{font-weight:600;color:var(--texto-fuerte);display:block;margin-bottom:6px}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin:12px 0;font-size:14px}
+  th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--borde)}
+  th{background:var(--superficie-2);color:var(--texto-fuerte);font-weight:600}
+  table.def th{width:34%}
+  code,.val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--superficie-2);
+    border:1px solid var(--borde);border-radius:5px;padding:1px 6px;word-break:break-all}
+  .caja{border-radius:10px;padding:14px 16px;margin:14px 0;border:1px solid;font-size:14px}
+  .caja p{margin:0 0 8px} .caja p:last-child{margin:0}
+  .peligro{background:var(--error-bg);border-color:var(--error-borde)} .peligro .et{color:var(--error);font-weight:600}
+  .ojo{background:var(--accent-bg);border-color:var(--accent-borde)} .ojo .et{color:var(--accent-texto);font-weight:600}
+  .nota{background:var(--info-bg);border-color:var(--info-borde)} .nota .et{color:var(--info);font-weight:600}
+  .bien{background:var(--exito-bg);border-color:var(--exito-borde)} .bien .et{color:var(--exito);font-weight:600}
+  ul.chk{list-style:none;padding:0;margin:12px 0}
+  ul.chk li{padding:7px 0 7px 30px;position:relative;border-bottom:1px solid var(--borde)}
+  ul.chk li::before{content:"";position:absolute;left:0;top:10px;width:16px;height:16px;
+    border:2px solid var(--texto-suave);border-radius:4px}
+  pre{background:#0F172A;color:#E2E8F0;padding:14px 16px;border-radius:10px;overflow-x:auto;
+    font-size:13px;line-height:1.55;margin:12px 0}
+  pre code{background:none;border:none;padding:0;color:inherit}
+  nav.indice{background:var(--superficie-2);border:1px solid var(--borde);border-radius:12px;padding:18px 24px;margin:20px 0}
+  nav.indice ol{margin:0;padding-left:20px;columns:2;column-gap:32px}
+  nav.indice li{margin:4px 0;break-inside:avoid}
+  nav.indice a{color:var(--accent-texto);text-decoration:none}
+  nav.indice a:hover{text-decoration:underline}
+  .leccion{border-left:3px solid var(--accent);padding:2px 0 2px 16px;margin:18px 0}
+  .leccion .titulo{font-weight:600;color:var(--texto-fuerte);display:block;margin-bottom:4px}
+  footer{color:var(--texto-suave);font-size:13px;text-align:center;margin-top:32px}
+  @media print{body{background:#fff;padding:0}.bloque,header.portada{box-shadow:none;border:none;padding-left:0;padding-right:0}
+    nav.indice ol{columns:1}}
+</style>
+</head>
+<body>
+<div class="marco">
+
+<header class="portada">
+  <h1>Plataforma de agentes de WhatsApp — traspaso técnico completo</h1>
+  <p class="sub">Grupo Corazones Cruzados · 1 de agosto de 2026 · Todo el contexto para arrancar el proyecto desde cero</p>
+</header>
+
+<div class="bloque">
+  <h2 id="para-que">0 · Para qué sirve este documento</h2>
+  <p>Es el <strong>traspaso completo</strong> de un módulo de agente conversacional de WhatsApp que
+  <strong>ya funciona en producción</strong> dentro del sistema contable de Peters Tours S.A., y que se va a
+  convertir en un <strong>producto multi-tenant</strong> operado por Grupo Corazones Cruzados.</p>
+  <p>Está escrito para que alguien —persona o agente— que no ha vivido este proceso pueda continuarlo sin
+  volver a descubrir lo que costó dos días descubrir. Contiene la arquitectura, todos los identificadores,
+  el modelo mental de la plataforma de Meta, el paso a paso de la puesta en marcha, y sobre todo
+  <strong>los errores cometidos y por qué no hay que repetirlos</strong>.</p>
+
+  <nav class="indice">
+    <ol>
+      <li><a href="#objetivo">El objetivo de negocio</a></li>
+      <li><a href="#estado">Qué existe hoy y funciona</a></li>
+      <li><a href="#meta">Modelo mental de Meta</a></li>
+      <li><a href="#datos">Identificadores y accesos</a></li>
+      <li><a href="#arquitectura">Arquitectura del agente</a></li>
+      <li><a href="#agente">El agente por dentro</a></li>
+      <li><a href="#bd">Base de datos</a></li>
+      <li><a href="#coexistencia">El alta en coexistencia</a></li>
+      <li><a href="#multitenant">El camino a multi-tenant</a></li>
+      <li><a href="#lecciones">Lecciones y errores a no repetir</a></li>
+      <li><a href="#cerradas">Decisiones cerradas</a></li>
+      <li><a href="#pendientes">Pendientes</a></li>
+    </ol>
+  </nav>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="objetivo">1 · El objetivo de negocio</h2>
+
+  <h3>Dónde estamos</h3>
+  <p>Peters Tours S.A. es una empresa de transporte y turismo en Ecuador (Quito, Otavalo, Cotacachi,
+  Atuntaqui, Ibarra). Se le construyó una plataforma interna con dos módulos: un <strong>sistema contable</strong>
+  por conductor —en producción real, con datos que no se pueden perder— y un <strong>Agente IA</strong> que
+  atiende WhatsApp: responde consultas automáticamente y permite que una persona tome la conversación.</p>
+  <p>El agente funciona hoy contra el número de pruebas de Meta. Falta conectarlo al número real del negocio.</p>
+
+  <h3>A dónde va</h3>
+  <p>Grupo Corazones Cruzados —empresa propia, con sitio y proyecto aparte— pasa a ser el
+  <strong>proveedor tecnológico</strong> que ofrece este servicio a varias empresas: cada cliente tiene su
+  bandeja de conversaciones, su agente de IA con su propio conocimiento, y su número de WhatsApp conectado.</p>
+  <p>Peters Tours es el <strong>primer tenant</strong>: valida el producto antes de venderlo.</p>
+
+  <div class="bien">
+    <p><span class="et">Por qué esto ordena todo:</span> durante la puesta en marcha se chocó una y otra vez con
+    que la plataforma de Meta está diseñada para que <strong>un proveedor dé servicio a otras empresas</strong>.
+    Intentar operar como «una empresa que se sirve a sí misma» generó fricción en cada paso. Con GCC como
+    proveedor real, cada pieza encaja donde Meta espera: la app pertenece al proveedor, los clientes se dan de
+    alta por Embedded Signup, y la verificación de proveedor de tecnología pasa a ser lo que corresponde en
+    lugar de un trámite forzado.</p>
+  </div>
+
+  <h3>La propuesta de valor, en una frase</h3>
+  <p><em>«No pierdes tu número ni tu WhatsApp de siempre: le sumas un agente que responde solo y una bandeja
+  donde tu equipo ve quién contestó qué.»</em></p>
+  <p>Eso es posible gracias a la <strong>coexistencia</strong>, que es la pieza técnica central de este
+  documento y la que más trabajo costó entender.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="estado">2 · Qué existe hoy y funciona</h2>
+  <p>Todo lo siguiente está <strong>medido</strong>, no supuesto (verificación completa del 2026-08-01):</p>
+  <table>
+    <tr><th>Pieza</th><th>Estado</th></tr>
+    <tr><td>Webhook de Meta con verificación de firma HMAC</td><td>✅ en producción, rechaza sin firma con 403</td></tr>
+    <tr><td>Cola de trabajos con debounce e idempotencia</td><td>✅ 18 trabajos hechos, 0 errores</td></tr>
+    <tr><td>Agente de IA (Claude Haiku 4.5) con 3 herramientas</td><td>✅ responde en 2–3 s, ~0,2 ¢ por mensaje</td></tr>
+    <tr><td>Bandeja de conversaciones con toma humana</td><td>✅ probada en video</td></tr>
+    <tr><td>Conocimiento del cliente</td><td>✅ 14 bloques, 28.405 caracteres, 0 pendientes</td></tr>
+    <tr><td>Resolución de ubicaciones compartidas</td><td>✅ enlaces de Maps y ubicación nativa</td></tr>
+    <tr><td>Envío por Cloud API</td><td>✅ operativo contra el número de pruebas</td></tr>
+    <tr><td>Token permanente de usuario del sistema</td><td>✅ sin caducidad</td></tr>
+    <tr><td>Páginas legales públicas</td><td>✅ privacidad, términos, eliminación de datos</td></tr>
+    <tr><td>Número real conectado</td><td>❌ <strong>lo único que falta</strong></td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="meta">3 · Modelo mental de Meta (léelo antes de tocar nada)</h2>
+  <p>La mayor parte del tiempo perdido vino de no tener claro este modelo. Son cinco conceptos y se anidan así:</p>
+
+  <pre><code>Portafolio comercial  (la empresa en Meta — business portfolio)
+  └── App               (la aplicación de developers.facebook.com)
+  └── WABA              (WhatsApp Business Account)
+        └── Número      (phone number, con su phone_number_id)</code></pre>
+
+  <h3>Portafolio comercial</h3>
+  <p>Representa a una empresa. Tiene verificación de negocio propia (documentos legales). <strong>Una app
+  pertenece a un portafolio y eso se decide al crearla</strong>; cambiarlo después es doloroso y hace perder
+  estados de verificación.</p>
+
+  <h3>App</h3>
+  <p>Es quien habla con la API. Tiene su <code>app_id</code> (público) y su <code>app_secret</code> (secreto,
+  se usa para validar la firma de los webhooks). Se suscribe a los webhooks de una o varias WABAs.</p>
+
+  <h3>WABA y los dos tipos que lo cambian todo</h3>
+  <table class="def">
+    <tr><th>WABA normal</th><td>Creada desde la plataforma. Admite socios, permite registrar números por API,
+      se puede compartir. Es el caso cómodo.</td></tr>
+    <tr><th>WABA de tipo <strong>SMB</strong></th><td>Creada desde la <strong>app de WhatsApp Business</strong>
+      del teléfono. El panel la etiqueta «App de WhatsApp Business». <strong>Admite máximo CERO socios</strong>,
+      <strong>no permite <code>register</code> por API</strong>, y solo se puede conectar mediante Embedded
+      Signup desde la app de <em>otro</em> portafolio.</td></tr>
+  </table>
+  <div class="peligro">
+    <p><span class="et">Esta distinción costó una noche entera.</span> La WABA de Peters Tours es SMB, y eso
+    produjo tres errores aparentemente inconexos que en realidad eran el mismo. Ver la sección de lecciones.</p>
+  </div>
+
+  <h3>Coexistencia</h3>
+  <p>Es el modo en que un número vive <strong>a la vez</strong> en la app de WhatsApp Business del teléfono y en
+  la Cloud API. El equipo sigue usando WhatsApp Web y la plataforma también recibe y envía; el historial se
+  sincroniza. Límite: 20 mensajes por segundo, irrelevante para una PYME.</p>
+  <table class="def">
+    <tr><th>Requisito</th><td>El número debe estar en la app de <strong>WhatsApp Business</strong> (no la
+      normal), versión 2.24.17 o superior.</td></tr>
+    <tr><th>Cómo se activa</th><td>Solo por <strong>Embedded Signup</strong>, con el flujo «onboarding business
+      app users». No hay botón en el panel ni endpoint de API.</td></tr>
+    <tr><th>Trampa</th><td><code>platform_type: CLOUD_API</code> <strong>no</strong> significa que el número
+      salió del teléfono. Ese campo describe el lado API. La coexistencia se comprueba abriendo WhatsApp Web.</td></tr>
+  </table>
+
+  <h3>Tokens</h3>
+  <table class="def">
+    <tr><th>Token de «Configuración de la API»</th><td><strong>Caduca en 24 horas.</strong> Solo para probar.
+      No trae <code>business_management</code>, así que no puede ni enumerar cuentas.</td></tr>
+    <tr><th>Token de usuario del sistema</th><td>El de producción. Se genera desde el portafolio, se le asignan
+      activos (la app y las WABAs) y se elige caducidad <strong>Nunca</strong>. Es el que usa la plataforma.</td></tr>
+    <tr><th>Token del canje de Embedded Signup</th><td>Sale al cerrar el alta de un cliente. En un modelo
+      multi-tenant <strong>este es el que hay que guardar por cliente</strong>.</td></tr>
+  </table>
+
+  <h3>Acceso estándar frente a acceso avanzado</h3>
+  <p>Un permiso con <strong>acceso estándar</strong> solo se puede pedir a usuarios que <strong>tienen un rol en
+  la app</strong>. Con <strong>acceso avanzado</strong> se puede pedir a cualquiera — y eso exige App Review.</p>
+  <div class="nota">
+    <p><span class="et">Consecuencia directa para el producto:</span> mientras GCC opere su propio número, el
+    acceso estándar basta. En cuanto den de alta a <strong>clientes</strong> —cuyos usuarios no tienen rol en la
+    app— hace falta <strong>acceso avanzado</strong> y por tanto <strong>App Review</strong> y
+    <strong>verificación de proveedor de tecnología</strong>. Con GCC como proveedor real, eso deja de ser un
+    obstáculo y pasa a ser el trámite que corresponde.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="datos">4 · Identificadores y accesos</h2>
+
+  <h3>Portafolios comerciales</h3>
+  <table class="def">
+    <tr><th>Grupo Corazones Cruzados</th><td><span class="val">1000698870638078</span> — el <strong>proveedor</strong>. Aquí va la app nueva.</td></tr>
+    <tr><th>Peter's tour</th><td><span class="val">168607894321219</span> — el <strong>cliente</strong>. Verificado el 8 de enero de 2026.</td></tr>
+    <tr><th>Imadexa - Teleradiologia</th><td><span class="val">778219818713269</span> — otro cliente, verificado. No interviene aquí.</td></tr>
+  </table>
+
+  <h3>Datos legales de Peters Tours (el cliente)</h3>
+  <table class="def">
+    <tr><th>Razón social verificada por Meta</th><td><strong>Peters Tours S.A.</strong> ⚠️ Su sistema de facturación lo tiene como «PETER TOURS S.A.», sin la «s». Para Meta manda el verificado.</td></tr>
+    <tr><th>RUC</th><td><span class="val">1793203098001</span></td></tr>
+    <tr><th>Domicilio</th><td>Isidro Ayora y Guayaquil, Quito, Ecuador</td></tr>
+    <tr><th>Sitio web</th><td><span class="val">https://transpeters.com/</span> (no tenemos acceso para editarlo)</td></tr>
+    <tr><th>Contacto en Meta</th><td>dcastillowork@outlook.com · +593 98 409 9442</td></tr>
+  </table>
+
+  <h3>App actual (la que NO hay que usar como proveedor)</h3>
+  <table class="def">
+    <tr><th>Nombre</th><td><code>PETERS-TOUR</code></td></tr>
+    <tr><th>App ID</th><td><span class="val">1533509441589296</span></td></tr>
+    <tr><th>Portafolio</th><td>Peter's tour ← <strong>el problema</strong>: el dueño de la app no puede darse de alta a sí mismo</td></tr>
+    <tr><th>Config de Embedded Signup</th><td><span class="val">1338847997949733</span></td></tr>
+    <tr><th>Estado</th><td>Con revisión de app enviada el 2026-08-01 y verificación de proveedor en curso. <strong>No borrarla ni moverla</strong> mientras eso siga abierto.</td></tr>
+  </table>
+
+  <h3>Cuentas de WhatsApp del cliente</h3>
+  <table>
+    <tr><th>Cuenta</th><th>WABA ID</th><th>Número</th><th>phone_number_id</th><th>Estado</th></tr>
+    <tr><td>Peter Tours (SMB) ← <strong>la buena</strong></td><td><span class="val">927412411056551</span></td><td>+593 99 595 1038</td><td><span class="val">264283935000334</span></td><td><code>ON_PREMISE</code> · <code>DISCONNECTED</code></td></tr>
+    <tr><td>Peter Tours (alta abandonada)</td><td><span class="val">107110199083805</span></td><td>+593 98 479 1085</td><td><span class="val">108155052311664</span></td><td><code>PENDING</code> · verificación <code>EXPIRED</code></td></tr>
+    <tr><td>Test WhatsApp Business Account</td><td><span class="val">1565112308582923</span></td><td>+1 555 638 7318</td><td><span class="val">1245728048622766</span></td><td><code>CLOUD_API</code> · <code>CONNECTED</code></td></tr>
+  </table>
+  <div class="ojo">
+    <p><span class="et">Las dos primeras se llaman igual en el panel.</span> Confundirlas fue un error real de
+    esta puesta en marcha. La buena es la que tiene el número terminado en <strong>1038</strong>.</p>
+  </div>
+
+  <h3>Infraestructura</h3>
+  <table class="def">
+    <tr><th>Repositorio</th><td><span class="val">github.com/Grupo-Corazones-Cruzados/GCC---Sistema-de-Facturaci-n</span> (privado)</td></tr>
+    <tr><th>Railway — proyecto</th><td><code>Servidor-Diego</code> · <span class="val">2aed5d25-5143-4044-9548-6a1bb86d4643</span></td></tr>
+    <tr><th>Servicio web</th><td><code>GCC - Sistema Facturación</code></td></tr>
+    <tr><th>Servicio worker</th><td><code>Agente-IA-Worker</code> (creado, aún sin repositorio conectado)</td></tr>
+    <tr><th>Región</th><td><strong><code>us-west2</code></strong> — Estados Unidos, los cinco servicios</td></tr>
+    <tr><th>URL pública</th><td><span class="val">https://gcc-sistema-facturacion-production.up.railway.app</span></td></tr>
+    <tr><th>Base de datos</th><td>PostgreSQL en Railway. Dos esquemas: <code>contable</code> y <code>agente</code></td></tr>
+  </table>
+
+  <h3>Credenciales</h3>
+  <p>Estas son las que existen. <strong>Todas viven en Railway</strong> y se leen con:</p>
+  <pre><code>railway variables --service "GCC - Sistema Facturación" --json</code></pre>
+  <table>
+    <tr><th>Variable</th><th>Para qué</th></tr>
+    <tr><td><code>WHATSAPP_TOKEN</code></td><td>Token permanente del usuario del sistema «Agente Peter». Envía los mensajes.</td></tr>
+    <tr><td><code>WHATSAPP_APP_SECRET</code></td><td>Valida la firma <code>X-Hub-Signature-256</code> de los webhooks.</td></tr>
+    <tr><td><code>WHATSAPP_VERIFY_TOKEN</code></td><td>Se escribe igual en Meta al dar de alta el webhook.</td></tr>
+    <tr><td><code>WHATSAPP_APP_ID</code></td><td><span class="val">1533509441589296</span> (público)</td></tr>
+    <tr><td><code>WHATSAPP_ES_CONFIG_ID</code></td><td><span class="val">1338847997949733</span> (público)</td></tr>
+    <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Ejecuta el modelo.</td></tr>
+    <tr><td><code>DATABASE_URL</code></td><td>Postgres de producción.</td></tr>
+    <tr><td><code>SESSION_SECRET</code></td><td>Sella las cookies de <code>iron-session</code>.</td></tr>
+    <tr><td><code>WORKER_SECRET</code></td><td>Autentica al worker contra <code>/api/agente/procesar</code>.</td></tr>
+    <tr><td><code>GOOGLE_MAPS_API_KEY</code></td><td>Opcional. Traduce coordenadas a nombre de calle.</td></tr>
+    <tr><td><code>CLOUDINARY_*</code></td><td>Comprobantes del módulo contable. <strong>No toca datos de WhatsApp.</strong></td></tr>
+  </table>
+  <div class="nota">
+    <p><span class="et">Los valores no se copian aquí a propósito, y no es por prudencia abstracta:</span>
+    el proyecto de GCC va a tener <strong>su propia app, su propio usuario del sistema y su propio token</strong>.
+    Los de Peters Tours no le sirven de nada, y su <code>DATABASE_URL</code> da acceso a la contabilidad real de
+    un tercero (1.219 reportes, 29 usuarios). El comando de arriba los saca en un segundo cuando de verdad
+    hagan falta.</p>
+  </div>
+
+  <h4>Credenciales que sí van aquí porque hacen falta</h4>
+  <table class="def">
+    <tr><th>Usuario de prueba (revisor de Meta)</th><td><code>meta.review</code> / <code>MetaReview2026!</code> — rol <code>asesor</code>. <strong>No borrar hasta agosto de 2027</strong>: se declaró en la solicitud que seguiría activo un año.</td></tr>
+    <tr><th>PIN de verificación en dos pasos</th><td><span class="val">122022</span> — elegido para el número real. <strong>Todavía NO aplicado</strong>: el <code>register</code> falló, el número sigue con <code>is_pin_enabled: false</code>. Usar este mismo cuando el alta se complete.</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="arquitectura">5 · Arquitectura del agente</h2>
+
+  <h3>Stack</h3>
+  <table class="def">
+    <tr><th>Framework</th><td>Next.js 15 (App Router) + TypeScript + React 19</td></tr>
+    <tr><th>Estilos</th><td>CSS Modules + design system propio en <code>components/ds</code>. <strong>No Tailwind.</strong> Iconos <code>lucide-react</code> envueltos en <code>components/ds/iconos.tsx</code></td></tr>
+    <tr><th>Base de datos</th><td>PostgreSQL con <code>pg</code> directo. <strong>No Prisma.</strong> Migraciones SQL numeradas en <code>db/migrations/</code></td></tr>
+    <tr><th>Sesiones</th><td><code>iron-session</code> + <code>bcryptjs</code>. No JWT/jose</td></tr>
+    <tr><th>IA</th><td><code>@anthropic-ai/sdk</code>, modelo <code>claude-haiku-4-5</code> configurable</td></tr>
+    <tr><th>Dependencias del agente</th><td><strong>Ninguna nueva</strong> salvo el SDK de Anthropic. Meta se llama con <code>fetch</code></td></tr>
+  </table>
+
+  <h3>El flujo, de punta a punta</h3>
+  <pre><code>Cliente escribe por WhatsApp
+   ↓
+Meta → POST /api/agente/webhook
+   · valida firma HMAC (X-Hub-Signature-256)
+   · persiste el mensaje (idempotente por wa_message_id)
+   · encola un trabajo (debounce)
+   · devuelve 200 SIEMPRE
+   ↓
+Servicio worker (cada 5 s) → POST /api/agente/procesar  [WORKER_SECRET]
+   ↓
+lib/agente/runner.ts · procesarConversacion()
+   · resuelve ubicaciones pendientes (una sola vez por mensaje)
+   · construye el historial (ventana configurable + resumen acumulado)
+   · llama a Anthropic con el conocimiento COMPLETO en el prompt cacheado
+   ↓
+El modelo elige UNA de tres herramientas (tool_choice: "any")
+   · responder            → envía el texto por Cloud API
+   · no_responder         → calla (spam, ruido)
+   · escalar_a_humano     → apaga el bot en esa conversación y avisa
+   ↓
+Se guarda el mensaje saliente y se registra el uso de tokens</code></pre>
+
+  <h3>Los ficheros</h3>
+  <table>
+    <tr><th>Fichero</th><th>Líneas</th><th>Qué hace</th></tr>
+    <tr><td><code>lib/agente/runner.ts</code></td><td>521</td><td>El cerebro: orquesta la decisión, el envío, el resumen</td></tr>
+    <tr><td><code>lib/agente/anthropic.ts</code></td><td>412</td><td>Llamada al modelo, tabla <code>CAPACIDADES</code>, las 3 herramientas</td></tr>
+    <tr><td><code>lib/agente/whatsapp.ts</code></td><td>310</td><td>Envío y utilidades de la Cloud API</td></tr>
+    <tr><td><code>lib/agente/ubicacion.ts</code></td><td>300</td><td>Resuelve enlaces de Maps y zonas de cobertura</td></tr>
+    <tr><td><code>lib/agente/conocimiento.ts</code></td><td>196</td><td>Arma el bloque de conocimiento del prompt</td></tr>
+    <tr><td><code>lib/agente/config.ts</code></td><td>180</td><td>Canal y credenciales. <strong>Aquí está el acoplamiento a un solo tenant</strong></td></tr>
+    <tr><td><code>lib/agente/cola.ts</code></td><td>147</td><td>Encolar, reclamar con <code>SKIP LOCKED</code>, recuperar colgados</td></tr>
+    <tr><td><code>lib/agente/ingesta.ts</code></td><td>145</td><td>Persistencia del mensaje entrante, upsert de contacto y conversación</td></tr>
+  </table>
+
+  <h3>Decisiones de diseño que conviene entender antes de cambiarlas</h3>
+  <div class="leccion">
+    <span class="titulo">Un solo nodo de IA con tres herramientas, no una cadena de clasificadores</span>
+    Se probó la cadena y producía falsos positivos. Las tres herramientas no devuelven información: <em>son</em>
+    la decisión. Por eso tampoco hay bucle de tool-use — un bucle solo sumaría turnos, latencia y costo.
+  </div>
+  <div class="leccion">
+    <span class="titulo">El webhook no piensa</span>
+    Persiste, encola y devuelve 200. Todo el trabajo es del worker. Un 500 haría que Meta reintente y acabe
+    <strong>deshabilitando el webhook</strong>, y ahí se pierden mensajes de clientes reales.
+  </div>
+  <div class="leccion">
+    <span class="titulo">El conocimiento entra COMPLETO en el prompt cacheado, no se busca</span>
+    Nada de embeddings ni recuperación. Con 28.405 caracteres el prefijo cacheado son ~8.241 tokens, por encima
+    del mínimo de caché de Haiku (4.096), así que sí cachea: ~0,2 céntimos por mensaje y 2–3 s de latencia.
+  </div>
+  <div class="leccion">
+    <span class="titulo">La sesión es una fila de la base, no un objeto del proveedor</span>
+    Una conversación permanente por contacto, sin expiración. La memoria larga es el campo <code>resumen</code>,
+    que se recalcula cuando la conversación crece.
+  </div>
+  <div class="leccion">
+    <span class="titulo">La ubicación se resuelve en el runner, una sola vez por mensaje</span>
+    <code>ubicacion_resuelta_en</code> marca el <strong>intento</strong>, no el éxito. Si marcara el éxito, un
+    enlace roto se reintentaría en cada corrida para siempre.
+  </div>
+
+  <h3>Gotchas del API de Anthropic que ya se pagaron</h3>
+  <ul>
+    <li><strong>No todos los modelos aceptan los mismos parámetros.</strong> <code>output_config.effort</code>
+      da 400 en Haiku 4.5; <code>thinking: {type:"adaptive"}</code> solo existe desde la generación 4.6;
+      <code>temperature</code>, <code>top_p</code> y <code>top_k</code> los rechaza toda la familia Claude 5.
+      Por eso <code>anthropic.ts</code> arma la petición desde una tabla <code>CAPACIDADES</code>, con perfil
+      conservador para modelos desconocidos.</li>
+    <li><strong>El mínimo de caché depende del modelo</strong> (Haiku 4.5: 4.096 tokens; Sonnet 5: 1.024;
+      Opus 5: 512). Por debajo no cachea <em>y no avisa</em>. Se comprueba mirando
+      <code>tokens_cache_lectura</code> en <code>agente.uso_modelo</code>.</li>
+    <li><strong>Con el razonamiento apagado, la familia Claude 5 puede escribir la llamada a herramienta como
+      texto visible</strong> y esa llamada nunca se ejecuta. Fallo silencioso. Donde el parámetro existe, se
+      deja encendido.</li>
+    <li><code>max_tokens</code> acota razonamiento <strong>+</strong> respuesta juntos.</li>
+    <li>Hay que comprobar <code>stop_reason === "refusal"</code> <strong>antes</strong> de leer
+      <code>content</code>.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="agente">6 · El agente por dentro</h2>
+
+  <p>Todo lo que sigue es el contenido <strong>real y actual</strong> del agente de Peters Tours, leído de
+  la base de producción. Es a la vez la referencia del cliente y la plantilla de lo que habrá que replicar
+  por cada tenant del producto.</p>
+
+  <h3>Parámetros de ejecución</h3>
+  <table class="def">
+    <tr><th>Modelo</th><td><code>claude-haiku-4-5</code></td></tr>
+    <tr><th><code>max_tokens</code></th><td>4096 — acota razonamiento <strong>+</strong> respuesta juntos</td></tr>
+    <tr><th>Esfuerzo</th><td><code>medium</code> (no se envía en Haiku: el parámetro da 400)</td></tr>
+    <tr><th>Debounce</th><td>8 segundos — agrupa ráfagas de mensajes en una sola corrida</td></tr>
+    <tr><th>Ventana de historial</th><td>40 mensajes + el resumen acumulado</td></tr>
+  </table>
+
+
+  <h3>Las tres herramientas</h3>
+  <p>Se llaman con <code>tool_choice: "any"</code>, así que el modelo <strong>siempre</strong> ejecuta
+  exactamente una. No devuelven información: <em>son</em> la decisión. Por eso no hay bucle de tool-use.</p>
+
+  <h4>responder</h4>
+  <p><em>«Envía una respuesta al contacto por WhatsApp. Úsala cuando puedas contestar con el conocimiento
+  disponible.»</em></p>
+  <table class="def">
+    <tr><th><code>texto</code> (string, obligatorio)</th><td>El mensaje que se le envía al contacto. Español de
+      Ecuador, breve (2 a 4 líneas), sin emojis.</td></tr>
+  </table>
+
+  <h4>no_responder</h4>
+  <p><em>«No contesta nada. Úsala solo con publicidad, cadenas, estafas, contenido ofensivo o mensajes sin
+  ninguna intención.»</em></p>
+  <table class="def">
+    <tr><th><code>motivo</code> (string, obligatorio)</th><td>Por qué no se responde. Nota interna, no la ve el contacto.</td></tr>
+  </table>
+
+  <h4>escalar_a_humano</h4>
+  <p><em>«Pasa la conversación a una persona del equipo y apaga el bot en este chat. Úsala si falta el dato, si
+  el conocimiento está [PENDIENTE], si hay un reclamo o si el contacto pide hablar con alguien.»</em></p>
+  <table class="def">
+    <tr><th><code>motivo</code> (string, obligatorio)</th><td>Por qué se escala. Nota interna para el operador.</td></tr>
+    <tr><th><code>aviso</code> (string, obligatorio)</th><td>Mensaje breve avisando al contacto de que un compañero
+      le escribirá. <strong>Cadena vacía para no enviar nada.</strong></td></tr>
+  </table>
+  <p>Las tres usan <code>strict: true</code> y <code>additionalProperties: false</code>: el esquema se valida
+  y el modelo no puede inventar campos.</p>
+
+  <div class="nota">
+    <p><span class="et">Respaldo del lado del servidor:</span> se envía la bandera beta
+    <code>server-side-fallback-2026-07-01</code>. Si el modelo elegido está saturado, Anthropic reintenta con el
+    recomendado dentro de la misma llamada. Se apaga con <code>AGENTE_SIN_RESPALDO=1</code>, y se autodesactiva
+    si la API rechaza la bandera — así un cambio de contrato no deja al agente mudo.</p>
+  </div>
+
+
+  <h3>Los tres prompts</h3>
+  <p>Versionados en <code>agente.prompts</code>, editables desde el Estudio. Al guardar se conserva la versión anterior.</p>
+
+  <h4>perfil_agente <span style="font-weight:400;color:var(--texto-suave)">· v2 · 1634 caracteres</span></h4>
+  <p>Quién es el agente, qué hace la empresa, cómo habla y qué no hace nunca.</p>
+  <pre><code>Eres el asistente virtual de atención al cliente de PETER TOURS, empresa ecuatoriana con 8 años en el mercado. Atiendes por WhatsApp.
+
+QUÉ HACE LA EMPRESA
+Transporte de pasajeros y encomiendas PUERTA A PUERTA en el corredor Quito / aeropuerto ↔ Otavalo, Cotacachi, Atuntaqui e Ibarra, en ambos sentidos. Tres servicios:
+- Viaje compartido: se vende por asiento, desde $18. Máximo 3 pasajeros por vehículo SUV.
+- Viaje exclusivo: se vende el vehículo completo, desde $60. Hasta 4 pasajeros.
+- Encomiendas: desde $9.99, retiro y entrega el mismo día.
+
+CÓMO HABLAS
+- Español de Ecuador, trato de «usted», cordial y directo. Sin tecnicismos.
+- Mensajes CORTOS: esto es WhatsApp, no un correo. Idealmente 2 a 4 líneas.
+- Sin emojis decorativos. Sin saludos interminables ni frases de relleno.
+- Nunca digas que eres una inteligencia artificial a menos que te lo pregunten directamente.
+- Solo texto y enlaces. No puedes enviar ni recibir imágenes, audios ni documentos.
+
+QUÉ HACES
+- Respondes preguntas sobre rutas, horarios, precios, encomiendas y políticas usando
+  ÚNICAMENTE la información del bloque CONOCIMIENTO.
+- Este chat es informativo: NO tomas reservas. Todas las reservas se hacen por la
+  aplicación «viajes Quito Ibarra»; cuando alguien quiera reservar, le entregas el
+  enlace de descarga y le explicas en una línea qué hacer ahí.
+
+QUÉ NO HACES NUNCA
+- No inventas horarios, precios, direcciones ni políticas. Si el dato no está en el
+  conocimiento, no lo adivinas: usas escalar_a_humano.
+- No prometes cupos, descuentos ni excepciones.
+- No pides ni registras datos del cliente (nombres, direcciones, cédulas, teléfonos).</code></pre>
+
+  <h4>reglas_negocio <span style="font-weight:400;color:var(--texto-suave)">· v2 · 2304 caracteres</span></h4>
+  <p>Cuándo usar cada herramienta. Es el que gobierna la decisión.</p>
+  <pre><code>Decide con estas reglas y ejecuta SIEMPRE exactamente una herramienta.
+
+LÍMITES QUE PIDIÓ EXPRESAMENTE EL CLIENTE
+- Tu objetivo es RESPONDER e INFORMAR con el conocimiento que se te entrega. Nada más.
+- NO agregues información que no esté en el bloque CONOCIMIENTO. Ni la deduzcas, ni la
+  completes con lo que te parezca razonable.
+- NO recopiles datos del contacto: ni ubicaciones, ni nombres, ni fechas de viaje, ni
+  ningún otro dato. No los pidas y no los registres. Si el contacto quiere reservar o
+  cotizar con sus direcciones exactas, lo diriges a la aplicación «viajes Quito Ibarra».
+- Cuando el conocimiento traiga varias respuestas alternativas para una misma pregunta,
+  elige UNA y adáptala; no las encadenes todas.
+
+USA responder CUANDO
+- La pregunta se contesta con el CONOCIMIENTO disponible.
+- Es un saludo, un agradecimiento o una despedida: contesta breve y ofrece ayuda.
+- Preguntan por reservar o por un precio exacto según su dirección: entrega el enlace
+  de la aplicación.
+
+USA no_responder CUANDO
+- Es publicidad, cadena, estafa, contenido ofensivo o un mensaje sin ninguna intención
+  (un sticker suelto, un «.», un número de teléfono sin contexto).
+- El contacto escribió sobre un tema totalmente ajeno a la empresa y no pregunta nada.
+En duda entre no_responder y responder, RESPONDE: quedarse callado con un cliente real
+es peor error que contestar a un mensaje irrelevante.
+
+USA escalar_a_humano CUANDO
+- Falta el dato en el conocimiento o el bloque correspondiente está marcado [PENDIENTE]
+  (hoy: formas de pago, cambios y reclamos, y horario de atención humana).
+- El contacto pregunta por un viaje YA reservado: estado, datos del vehículo o del
+  conductor, o que nadie se ha comunicado con él.
+- Hay un reclamo, un objeto perdido, un accidente o un cobro mal hecho.
+- El contacto pide hablar con una persona.
+- Pide algo que necesita autorización: cambios, devoluciones, cupos, destinos fuera de
+  las rutas establecidas con condiciones especiales.
+Al escalar, envías al contacto un mensaje breve avisando que un compañero le escribe en
+seguida, y explicas el motivo en el campo interno.
+
+CONTEXTO DE LA CONVERSACIÓN
+Recibes el historial completo de este contacto, incluso de semanas anteriores. Úsalo: si
+ya te dijo qué ruta le interesa, no se lo vuelvas a preguntar.</code></pre>
+
+  <h4>resumen_conversacion <span style="font-weight:400;color:var(--texto-suave)">· v1 · 405 caracteres</span></h4>
+  <p>Cómo comprimir la conversación en la memoria larga.</p>
+  <pre><code>Resume la conversación para que otro asistente pueda continuarla sin haber leído el
+historial. Máximo 200 palabras, en español, en viñetas.
+
+Conserva sí o sí: nombre del contacto, ruta/destinos que le interesan, fechas mencionadas,
+datos que ya entregó, compromisos que se le hicieron y temas que quedaron abiertos.
+Descarta saludos, cortesías y repeticiones. No inventes nada que no esté en el historial.</code></pre>
+
+  <div class="peligro">
+    <p><span class="et">FALLO ACTIVO EN PRODUCCIÓN — detectado el 2026-08-01, sin corregir:</span></p>
+    <p>El prompt <code>reglas_negocio</code> le dice al agente que escale porque el conocimiento está
+    <code>[PENDIENTE]</code> en <em>«formas de pago, cambios y reclamos, y horario de atención humana»</em>.
+    Pero el cliente ya rellenó <strong>pagos</strong> (datos de la cuenta del Banco Pichincha) y
+    <strong>horario de atención</strong> (07h00–21h00 todos los días).</p>
+    <p><strong>Consecuencia:</strong> el agente pasa a una persona preguntas que ya sabe contestar. Cada
+    consulta de horario o de forma de pago genera una escalada innecesaria.</p>
+    <p><strong>Arreglo:</strong> editar <code>reglas_negocio</code> en el Estudio y dejar como pendiente
+    únicamente <em>cambios y reclamos</em>, que es el único bloque que conserva la marca.</p>
+    <p><strong>Lección para el producto:</strong> el prompt y el conocimiento se editan por separado y nada
+    comprueba que sigan de acuerdo. En un sistema multi-tenant esto se multiplica por cada cliente. Conviene
+    que la lista de bloques pendientes se <strong>calcule</strong> del conocimiento en vez de escribirse a
+    mano en el prompt.</p>
+  </div>
+
+
+  <h3>El conocimiento</h3>
+  <p><strong>14 bloques · 28.405 caracteres</strong>. Entra <strong>completo</strong> en el prompt
+  cacheado en cada llamada — no hay búsqueda ni embeddings. Son ~8.241 tokens. por encima del mínimo de caché
+  de Haiku 4.5 (4.096). así que el prefijo sí se cachea.</p>
+
+  <div class="ojo">
+    <p><span class="et">Se redacta descriptivo. NO como pares pregunta→respuesta.</span> Fue una lección del
+    cliente anterior: con pares. un carácter distinto en la pregunta rompía la coincidencia. En bloques
+    descriptivos el modelo interpreta y adapta.</p>
+    <p>Se nota en el estilo: varios bloques empiezan con «Si te pregunta sobre… tú debes responder:». que es
+    una instrucción de comportamiento. no una entrada de índice.</p>
+  </div>
+
+  <table>
+    <tr><th>Clave</th><th>Título</th><th>Tamaño</th></tr>
+
+    <tr><td><code>empresa</code></td><td>La empresa y las rutas</td><td>1431 car.</td></tr>
+    <tr><td><code>encomiendas</code></td><td>Encomiendas</td><td>1567 car.</td></tr>
+    <tr><td><code>reservas</code></td><td>Cómo se reserva</td><td>922 car.</td></tr>
+    <tr><td><code>pagos</code></td><td>Pagos</td><td>457 car.</td></tr>
+    <tr><td><code>cambios_reclamos</code> ⚠️</td><td>Cambios, devoluciones y reclamos</td><td>221 car.</td></tr>
+    <tr><td><code>enlaces</code></td><td>Enlaces oficiales</td><td>493 car.</td></tr>
+    <tr><td><code>horario_atencion</code></td><td>Horario de atención humana</td><td>246 car.</td></tr>
+    <tr><td><code>viaje_compartido</code></td><td>Viaje compartido</td><td>7217 car.</td></tr>
+    <tr><td><code>faq_destinos</code></td><td>¿Llegan a…? (destinos)</td><td>3366 car.</td></tr>
+    <tr><td><code>faq_tiempos</code></td><td>¿Cuánto se demora? (duraciones)</td><td>3742 car.</td></tr>
+    <tr><td><code>faq_objeciones</code></td><td>Objeciones de precio, horarios y mascotas</td><td>3726 car.</td></tr>
+    <tr><td><code>viaje_exclusivo</code></td><td>Viaje exclusivo</td><td>3124 car.</td></tr>
+    <tr><td><code>faq_generales</code></td><td>Preguntas frecuentes generales</td><td>1679 car.</td></tr>
+    <tr><td><code>terminos</code></td><td>Términos y condiciones</td><td>214 car.</td></tr>
+  </table>
+
+  <h4>Contenido íntegro</h4>
+  <p>Desplegable para no romper la lectura. Es el texto exacto que recibe el modelo.</p>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">La empresa y las rutas <span style="font-weight:400;color:var(--texto-suave)">· <code>empresa</code> · 1431 car.</span></summary>
+    <pre><code>Información de la empresa: Peter Tours es una empresa de transporte ejecutivo puerta a puerta. Peter Tours realiza transporte de pasajeros y encomiendas. Peter Tours oferta sus servicios de transporte de pasajeros en dos modalidades: viaje compartido y viaje exclusivo. Las rutas de transporte son: Desde Quito o el aeropuerto hacia Tabacundo y viceversa por ejemplo desde Tabacundo hacia Quito o el aeropuerto, Desde Quito o el aeropuerto hacia Cayambe y viceversa por ejemplo desde Cayambe hacia Quito o el aeropuerto, Desde Quito o el aeropuerto hacia Otavalo y viceversa por ejemplo desde Otavalo hacia Quito o el aeropuerto, Desde Quito o el aeropuerto hacia Cotacachi y viceversa por ejemplo desde Cotacachi hacia Quito o el aeropuerto, Desde Quito o el aeropuerto hacia Quiroga y viceversa por ejemplo desde Quiroga hacia Quito o el aeropuerto, Desde Quito o el aeropuerto hacia Atuntaqui y viceversa por ejemplo desde Atuntaqui hacia Quito o el aeropuerto, Desde Quito o el aeropuerto hacia Andrade Marín y viceversa por ejemplo desde Andrade Marín hacia Quito o el aeropuerto, Desde Quito o el aeropuerto hacia Chaltura y viceversa por ejemplo desde Chaltura hacia Quito o el aeropuerto, Desde Quito o el aeropuerto hacia Ibarra y viceversa por ejemplo desde Ibarra hacia Quito o el aeropuerto, Desde Quito o el aeropuerto hacia Cuartel Yahuachi y viceversa por ejemplo desde Cuartel Yahuachi hacia Quito o el aeropuerto.</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Encomiendas <span style="font-weight:400;color:var(--texto-suave)">· <code>encomiendas</code> · 1567 car.</span></summary>
+    <pre><code>Información de encomiendas
+
+Nuestro servicio de envíos o encomiendas es especial y diferente a los demás servicios que encuentran el cliente en el mercado porque nosotros retiramos y hacemos la entrega el mismo día.
+Nuestro servicio de envíos o encomiendas está dirigido a clientes que necesitan un servicio de inmediato y personalizado. Por ejemplo: hacer gestiones de entrega o retiro como presentarnos con identificación, esperar y retirar o entregar.
+Nuestro servicio es seguro y confiable porque trabajamos con un equipo propio y de confianza a diferencia de otras empresas con buscan terceros proveedores. 
+La duración de entrega es de tres horas.
+Nuestro servicio de envíos o encomiendas llevamos mercadería liviana, artículos de alto valor como laptops o celulares, llaves, mochilas, fundas y hasta costales. No llevamos maquinaria pesada, electrodomésticos, colchones, muebles y artículos voluminosos. 
+El precio de la encomienda es de 9.99 dólares pueden existir recargos si desea que realicemos gestiones personalizadas para el retiro o entrega. Por ejemplo: si desea que ingresemos a un edificio o oficina hacer la entrega o retiro. 
+Los beneficios de nuestras encomiendas son: 
+Retiro y entrega personalizada con gestiones, ingreso a oficinas, entrega en laboratorios, gestiones dentro de instituciones y espera para recibir el paquete. Todos los requerimientos que tenga el cliente para retirar o realizar su encomienda.
+Le proporcionamos los datos del encargado de realizar el retiro y también la entrega del envío para su mayor seguridad y confianza.</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Cómo se reserva <span style="font-weight:400;color:var(--texto-suave)">· <code>reservas</code> · 922 car.</span></summary>
+    <pre><code>Cuando te pregunten ¿Cómo reservar? o soliciten un viaje o envío tu debes responder: Encantados de poder ayudarte. Por favor para realizar tu reserva debes hacerla directamente a través de nuestra aplicación, se denomina viajes quito Ibarra si no la tienes te comparto los enlaces de descarga para Android play.google.com/store/apps/details?id=com.qds.petertours y IOS (Iphone) apps.apple.com/us/app/viajes-quito-ibarra/id1619444731
+
+Qué decir cuanto te preguntan: ¿Cómo hago para reservar un asiento? O ¿Cómo puedo realizar un envío? Las reservas de todos nuestros servicios son a través de nuestra aplicación de reservas denominada “viajes Quito Ibarra”. A continuación, encuentra los enlaces de descarga de la aplicación para que pueda realizar su reserva directamente.
+Appstore: https://apps.apple.com/ec/app/viajes-quito-ibarra/id1619444731
+Playstore: https://play.google.com/store/apps/details?id=com.qds.petertours</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Pagos <span style="font-weight:400;color:var(--texto-suave)">· <code>pagos</code> · 457 car.</span></summary>
+    <pre><code>Si te pregunta sobre un tema relacionado a pagos por ejemplo ¿Cómo se debe realizar el pago? ¿Qué tipos de pagos aceptan? ¿Debo pagar antes? Tu debes responder: “El pago lo puedes realizar en efectivo o transferencia hasta finalizar el viaje. Solo recibimos transferencia directa de banco pichincha a banco pichincha. Los datos para realizar su pago son: 
+Banco Pichincha
+Cuenta corriente 
+Número de cuenta: 2100288297
+Cuanta a nombre de: PETERS TOURS S.A.</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Cambios, devoluciones y reclamos <span style="font-weight:400;color:var(--texto-suave)">· <code>cambios_reclamos</code> · 221 car.</span></summary>
+    <pre><code>Cualquier cambio, devolución, reclamo u objeto perdido se pasa a una persona del equipo con escalar_a_humano. No prometas soluciones ni plazos. [PENDIENTE: política oficial si el cliente quiere que el agente la explique.]</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Enlaces oficiales <span style="font-weight:400;color:var(--texto-suave)">· <code>enlaces</code> · 493 car.</span></summary>
+    <pre><code>Envía estos enlaces tal cual, sin acortarlos ni modificarlos. Nunca inventes un enlace que no esté en esta lista.
+
+Precios del viaje compartido: https://transpeters.com/precios
+Aplicación de reservas «viajes Quito Ibarra» para iPhone: https://apps.apple.com/ec/app/viajes-quito-ibarra/id1619444731
+Aplicación de reservas «viajes Quito Ibarra» para Android: https://play.google.com/store/apps/details?id=com.qds.petertours
+Términos y condiciones: https://transpeters.com/terminos-y-condiciones/</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Horario de atención humana <span style="font-weight:400;color:var(--texto-suave)">· <code>horario_atencion</code> · 246 car.</span></summary>
+    <pre><code>Si el cliente pregunta ¿Cuáles son los horarios de atención? O alguna otra pregunta relacionada con la atención al cliente o soporte personalizado tu debes responder: Tenemos atención y soporte desde las 07h00am hasta las 21h00pm todos los días.</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Viaje compartido <span style="font-weight:400;color:var(--texto-suave)">· <code>viaje_compartido</code> · 7217 car.</span></summary>
+    <pre><code>Información de viaje compartido.
+El viaje lo realizamos en vehículos ejecutivos modernos, amplios y confortables y aunque tienen capacidad para 4 pasajeros, Peter Tours únicamente viaja con 3 pasajeros así podemos garantizarle comodidad absoluta a cada pasajero; Cada pasajero evita el contacto físico con el compañero de viaje y disfruta de viajar junto a la ventana. 
+Este servicio lo vendemos por asiento, el cliente puede reservar uno, dos o hasta tres asientos. 
+El precio por asiento es desde 19.99 desde el sector centro norte de Quito hasta Tabacundo, Cayambe, Otavalo, Atuntaqui, Cotacachi e Ibarra; Este precio es solo por un viaje o ruta de viaje, por ejemplo: desde Quito a Ibarra, si el cliente quiere viajar de regreso desde Ibarra hacia Quito tendría que comprar otro asiento. 
+Este precio podría estar sujeto a modificaciones si el retiro o destino es en el sur de Quito, extremo norte de Quito, Valles o sectores muy alejados del centro de las ciudades. El cliente puede revisar el precio desde su sector o localidad en el siguiente enlace: https://transpeters.com/precios
+Nuestro servicio transporte de pasajeros es puerta a puerta en la modalidad viaje compartido al cliente podemos recogerle en su casa, oficina, centro médico o donde quiera que el cliente se encuentre para llevarlo directamente al destino que necesita llegar. 
+Esta modalidad de viaje compartido tiene horarios específicos de salida. Los horarios de salida del viaje desde Quito o el aeropuerto hacia Tabacundo, Cayambe, Otavalo, Cotacachi, Atuntaqui o Ibarra son a partir de las 05h00 cada dos horas en adelantes hasta las 21h00 como se indica a continuación: 05h00 – 07h00 – 09h00 – 11h00 – 13h00 – 15h00 – 17h00 – 19h00 – 21h00. 
+Los horarios de salida del viaje desde Ibarra hacia Quito o el aeropuerto son a partir de las 05h00 cada dos horas en adelantes hasta las 21h00 como se indica a continuación: 05h00 – 07h00 – 09h00 – 11h00 – 13h00 – 15h00 – 17h00 – 19h00 – 21h00. 
+Los horarios de salida del viaje desde Atuntaqui hacia Quito o el aeropuerto son a partir de las 05h15 cada dos horas en adelantes hasta las 21h15 como se indica a continuación: 05h15 – 07h15 – 09h15 – 11h15 – 13h15 – 15h15 – 17h15 – 19h15 – 21h15. 
+Los horarios de salida del viaje desde Cotacachi o Otavalo hacia Quito o el aeropuerto son a partir de las 05h30 cada dos horas en adelantes hasta las 21h30 como se indica a continuación: 05h30 – 07h30 – 09h30 – 11h30 – 13h30 – 15h30 – 17h30 – 19h30 – 21h30. 
+Los horarios de salida del viaje desde Cayambe o Tabacundo hacia Quito o el aeropuerto son a partir de las 06h00 cada dos horas en adelantes hasta las 22h00 como se indica a continuación: 06h00 – 08h00 – 10h00 – 12h00 – 14h00 – 16h00 – 18h00 – 20h00 – 22h00. 
+El horario que selecciones al realizar tu reserva corresponde a la hora de salida del viaje, no al horario exacto de retiro. El cliente debe tener presente que podemos recogerle 30 minutos antes o inclusive con mayor anticipación, según su ubicación exacta de retiro. 
+El viaje desde la salida de Quito hasta el ingreso a Atuntaqui o Ibarra tiene una duración de dos horas. Nos toma unos minutos más en lo que le recogemos y dejamos en sus ubicaciones en cada ciudad. El mismo tiempo en sentido contrario, por ejemplo: desde la salida de la ciudad de Ibarra o Atuntaqui hasta el ingreso a la ciudad de Quito.
+El viaje desde el aeropuerto hasta Atuntaqui o Ibarra tiene una duración de dos horas. El mismo tiempo en sentido contrario, por ejemplo: desde Ibarra hacia el aeropuerto.
+El viaje desde el aeropuerto hasta Cotacachi o Otavalo tiene una duración de una hora con treinta minutos. El mismo tiempo en sentido contrario, por ejemplo: desde Cotacachi o Otavalo hasta el aeropuerto.
+La duración estimada de viaje desde el centro de Ibarra hasta el sector centro norte de Quito en condiciones normales es de dos horas con treinta minutos (2h30), contadas a partir del momento en que el pasajero es recogido y hasta la llegada a su destino en las ubicaciones previamente acordadas.
+El espacio permitido para llevar equipaje por cada pasajero es un tercio (1/3) de la cajuela del vehículo. En este espacio cabe una maleta grande de viaje, si se excede del espacio permitido se aplicará un recargo en el precio por exceso de equipaje. Por ejemplo: si su maleta ocupa la mitad (1/2) de la cajuela. El recargo por exceso de equipaje sería a partir de 5 dólares. 
+Los niños menores a dos años no pagan asiento y pueden ir en brazos de sus padres. Niños mayores a dos años hasta los ocho años pagan la mitad del precio del asiento. Niños mayores de ocho años deben pagar el total del asiento.
+Los beneficios de la modalidad del viaje compartido son: 
+Disponemos de un kit de viaje que incluye una cobija mediana y almohada de cuello para descansar con comodidad durante el viaje. La cobija es perfecta para viajar en las madrugadas y abrigarte. La almohada de cuello la puedes usar siempre que busques dormir descansar durante el viaje o simplemente para tener mejor comodidad.
+Somos los únicos en garantizar tu llegada en el menor tiempo porque disponemos un sistema de transbordos para pasajeros que tienen un destino alejado al tuyo. Con nuestro sistema de transbordo cada pasajero llega en menos tiempo y así su viaje es directo sin desviarse, ni alejarse de su destino. Por ejemplo, si tú te diriges a Quito y tenemos un pasajero que se dirige al aeropuerto, vamos a hacer un transbordo al pasajero del aeropuerto y te llevaremos a ti directamente a Quito. Con esto te ahorramos por lo menos 25 minutos de tiempo al no haber ingresado al aeropuerto. 
+Todos nuestros vehículos son categoría SUV. Son vehículos modernos, grandes y cómodos para viajes largos. 
+Viajamos únicamente con tres (3) pasajeros por vehículo.
+Nuestro equipo de conductores es profesional y conocen cada ciudad evitando perder el tiempo por vías congestionadas y desviándose por rutas alternas para ganar tiempo valioso para cada pasajero. 
+Nuestro equipo de conductores se capacita continuamente en relaciones sociales y comunicación efectiva para brindarle una mejor atención, comprender sus necesidades y hacerle sentir bien en todo momento. 
+Recibirá siempre un trato con respeto y amabilidad en todo momento.
+Tendrá comunicación previa a su viaje. Nos comunicaremos con al menos una hora de anticipación a su viaje enviándole la información del vehículo y del conductor para su mayor seguridad y confianza. Además, el conductor designado para su viaje se comunicará directamente con usted. 
+Te garantizamos tener buenos compañeros de viaje. Peter Tours califica el comportamiento y conducta de todos los pasajeros para garantizar la mejor experiencia de viaje y nos reservamos el derecho a negar nuestros servicios a quienes no respeten e incumplan nuestra política de requisitos y conducta del usuario.
+Garantizamos que viajará siempre en un vehículo limpio y que el ambiente será aseado y agradable. 
+Garantizamos que nuestro equipo de conductores se presentará siempre de manera formal, aseados y con buena presencia al momento de realizar el viaje.
+Disponemos de una aplicación de reservas segura para evitar errores humanos y garantizar el cumplimiento de su viaje en la fecha y hora seleccionada.</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">¿Llegan a…? (destinos) <span style="font-weight:400;color:var(--texto-suave)">· <code>faq_destinos</code> · 3366 car.</span></summary>
+    <pre><code>Si la pregunta es: ¿Llegan a Otavalo?, ¿Su servicio de transporte cubre la ruta hasta Otavalo?, ¿También hacen viajes hacia Otavalo? La respuesta es: Sí, por supuesto. Viajamos desde Quito o el aeropuerto hacia Otavalo y viceversa todos los días. Te podemos ayudar con transporte puerta a puerta en viaje compartido o viaje exclusivo. Te garantizamos una experiencia premium desde la comunicación hasta después de haberte dejado en tu destino. Somos Peter Tours seguridad y confianza.
+Si la pregunta es: ¿Llegan a Cotacachi? ¿Ustedes pasan por Cotacachi?, ¿Es posible viajar con su servicio hasta Cotacachi?, ¿ Cotacachi está dentro de su recorrido?, ¿Hacen traslados puerta a puerta hasta Cotacachi? La respuesta es: Sí, por supuesto. Viajamos desde Quito o el aeropuerto hacia Cotacachi y viceversa todos los días. Te podemos ayudar con transporte puerta a puerta en viaje compartido o viaje exclusivo. Te garantizamos una experiencia premium desde la comunicación hasta después de haberte dejado en tu destino. Somos Peter Tours seguridad y confianza.
+Si la pregunta es: ¿Su servicio de transporte cubre la ruta hasta Atuntaqui?, ¿También hacen viajes hacia Atuntaqui?, ¿Puedo solicitar transporte con ustedes hasta Atuntaqui? ¿Hacen traslados puerta a puerta hasta Atuntaqui? La respuesta es: Sí, por supuesto. Viajamos desde Quito o el aeropuerto hacia Atuntaqui y viceversa todos los días. Te podemos ayudar con transporte puerta a puerta en viaje compartido o viaje exclusivo. Te garantizamos una experiencia premium desde la comunicación hasta después de haberte dejado en tu destino. Somos Peter Tours seguridad y confianza.
+Si la pregunta es: ¿Su servicio de transporte cubre la ruta hasta Ibarra?, ¿También hacen viajes hacia Ibarra?, ¿Puedo solicitar transporte con ustedes hasta Ibarra? ¿Hacen traslados puerta a puerta hasta Ibarra? La respuesta es: Sí, por supuesto. Viajamos desde Quito o el aeropuerto hacia Ibarra y viceversa todos los días. Te podemos ayudar con transporte puerta a puerta en viaje compartido o viaje exclusivo. Te garantizamos una experiencia premium desde la comunicación hasta después de haberte dejado en tu destino. Somos Peter Tours seguridad y confianza.
+Si la pregunta es: ¿Su servicio de transporte cubre la ruta hasta Cayambe?, ¿También hacen viajes hacia Cayambe?, ¿Puedo solicitar transporte con ustedes hasta Cayambe? ¿Hacen traslados puerta a puerta hasta Cayambe? La respuesta es: Sí, por supuesto. Viajamos desde Quito o el aeropuerto hacia Cayambe y viceversa todos los días. Te podemos ayudar con transporte puerta a puerta en viaje compartido o viaje exclusivo. Te garantizamos una experiencia premium desde la comunicación hasta después de haberte dejado en tu destino. Somos Peter Tours seguridad y confianza.
+Si la pregunta es: ¿Llegan a Quito?, ¿Su servicio de transporte cubre la ruta hasta Quito?, ¿También hacen viajes hacia Quito?, ¿Puedo solicitar transporte con ustedes hasta Quito?, ¿Incluyen a Quito dentro de sus destinos? La respuesta es: Sí, por supuesto. Viajamos desde Ibarra, Atuntaqui, Otavalo, Cotacachi, Cayambe hacia Quito y viceversa todos los días. Te podemos ayudar con transporte puerta a puerta en viaje compartido o viaje exclusivo. Te garantizamos una experiencia premium desde la comunicación hasta después de haberte dejado en tu destino. Somos Peter Tours seguridad y confianza.</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">¿Cuánto se demora? (duraciones) <span style="font-weight:400;color:var(--texto-suave)">· <code>faq_tiempos</code> · 3742 car.</span></summary>
+    <pre><code>Si te hace una de las siguientes preguntas: ¿Cuánto tiempo se demora de Quito o el aeropuerto hacia Ibarra?, ¿Cuál es la duración aproximada del viaje desde Quito o el aeropuerto hacia Ibarra?, ¿En cuánto tiempo se llega de Quito o el aeropuerto a Ibarra?, ¿Qué tiempo toma trasladarse desde Quito o el aeropuerto hasta Ibarra?, ¿Cuántas horas se hacen desde Quito o el aeropuerto a Ibarra?, ¿Cuál es el tiempo estimado de recorrido entre Quito o el aeropuerto hasta Ibarra? Puedes darle la siguiente respuesta: Desde la salida de Quito o el aeropuerto hasta el ingreso a Ibarra tiene un tiempo estimado de 2 horas, nos tomara unos minutos más en recogerle y dejarle exactamente en su destino. En promedio nos toma dos horas con treinta minutos desde que le retiramos hasta dejarle en su destino exacto. Si te pregunta del viaje en sentido contrario. Por ejemplo, desde Ibarra a Quito o el aeropuerto es el mismo tiempo.
+
+Si te hace una de las siguientes preguntas: ¿Cuánto tiempo se demora de Quito o el aeropuerto a Otavalo?, ¿Cuál es la duración aproximada del viaje de Quito o el aeropuerto a Otavalo?, ¿En cuánto tiempo se llega de Quito o el aeropuerto a Otavalo?, ¿Qué tiempo toma trasladarse desde Quito o el aeropuerto hasta Otavalo?, ¿Cuántas horas se hacen de Quito o el aeropuerto a Otavalo?, ¿Cuál es el tiempo estimado de recorrido entre Quito o el aeropuerto hasta Otavalo? Puedes darle la siguiente respuesta: Desde la salida de Quito hasta el ingreso a Otavalo tiene un tiempo estimado de una hora con treinta minutos (1h30min), nos tomara unos minutos más en recogerle y dejarle exactamente en su destino. En promedio nos toma dos horas desde que le retiramos hasta dejarle en su destino exacto. Si te pregunta del viaje en sentido contrario. Por ejemplo, desde Otavalo a Quito o el aeropuerto es el mismo tiempo.
+
+Si te hace una de las siguientes preguntas: ¿Cuánto tiempo se demora de Quito o el aeropuerto a Cotacachi?, ¿Cuál es la duración aproximada del viaje de Quito o el aeropuerto a Cotacachi?, ¿En cuánto tiempo se llega de Quito o el aeropuerto a Cotacachi?, ¿Qué tiempo toma trasladarse desde Quito o el aeropuerto hasta Cotacachi?, ¿Cuántas horas se hacen de Quito o el aeropuerto a Cotacachi?, ¿Cuál es el tiempo estimado de recorrido entre Quito o el aeropuerto hasta Cotacachi? Puedes darle la siguiente respuesta: Desde la salida de Quito hasta Cotacachi tiene un tiempo estimado de una hora con treinta minutos (1h30min), nos tomara unos minutos más en recogerle y dejarle exactamente en su destino. En promedio nos toma dos horas desde que le retiramos hasta dejarle en su destino exacto. Si te pregunta del viaje en sentido contrario. Por ejemplo, desde Cotacachi hasta Quito o el aeropuerto es el mismo tiempo.
+
+Si te hace una de las siguientes preguntas: ¿Cuánto tiempo se demora de Quito o el aeropuerto a Cayambe o Tabacundo?, ¿Cuál es la duración aproximada del viaje de Quito o el aeropuerto a Cayambe o Tabacundo?, ¿En cuánto tiempo se llega de Quito o el aeropuerto a Cayambe o Tabacundo?, ¿Qué tiempo toma trasladarse desde Quito o el aeropuerto hasta Cayambe o Tabacundo?, ¿Cuántas horas se hacen de Quito o el aeropuerto a Cayambe o Tabacundo?, ¿Cuál es el tiempo estimado de recorrido entre Quito o el aeropuerto hasta Cayambe o Tabacundo? Puedes darle la siguiente respuesta: Desde la salida de Quito hasta Cayambe o Tabacundo tiene un tiempo estimado de una hora (1h), nos tomara unos minutos más en recogerle y dejarle exactamente en su destino. En promedio nos toma una hora con treinta minutos desde que le retiramos hasta dejarle en su destino exacto. Si te pregunta del viaje en sentido contrario. Por ejemplo, desde Cayambe o Tabacundo hasta Quito o el aeropuerto es el mismo tiempo.</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Objeciones de precio, horarios y mascotas <span style="font-weight:400;color:var(--texto-suave)">· <code>faq_objeciones</code> · 3726 car.</span></summary>
+    <pre><code>Cuando te pregunten ¿se puede viajar con mascota? Debes responder: “Sí viajamos junto a mascotas. En viaje compartido no porque puede molestar o no ser de agrado para otros compañeros de viaje, pero podemos trasladarte a ti junto a tu mascota en un viaje exclusivo donde el vehículo estará completamente a tu disposición y de tu mascota. Inclusive podemos hacer una parada si se marea tu mascota.”
+
+Cuando te pregunten ¿Por qué a Otavalo o Atuntaqui cuesta lo mismo que a Ibarra si es más cerca? Debes responder: “Nuestro viaje compartido cubre el trayecto completo desde Quito hasta Ibarra. La tarifa se cobra por asiento y, si tu destino está antes de llegar a Ibarra, podemos dejarte donde lo necesites. Con el pago de tu asiento disfrutarás de los mismos beneficios durante el viaje: comodidad, seguridad y servicio puerta a puerta.”
+
+Cuando te pregunten ¿Por qué al aeropuerto es más caro si es antes de llegar a Quito? Debes responder: “Nuestro viaje compartido es hacia Quito. El aeropuerto está fuera de la ruta habitual y es un destino al que vamos a ir exclusivamente por ti, lo que te permite llegar primero. Toma en cuenta que el servicio es más personalizado y debido a eso inclusive podríamos requerir de un transbordo para no afectar el tiempo de los demás compañeros de viaje.”
+
+Cuando te pregunten ¿Por qué cuesta más si el retiro o destino es en el sector de Cumbayá, Tumbaco o Sangolquí? Debes responder: &quot;La tarifa básica del viaje compartido cubre la ruta desde Ibarra hasta el centro norte de Quito. Los sectores Cumbayá, Tumbaco o Sangolquí están fuera del perímetro de la tarifa básica y es un destino al que vamos a ir exclusivamente por ti. El servicio es más personalizado y podríamos inclusive requerir de otro vehículo que te recoja y te lleve exactamente a tu destino, evitándote perder el tiempo en ir al centro norte de Quito, con eso te ahorramos por lo menos 20 minutos.&quot;
+
+Cuando te pregunten o soliciten un viaje compartido en un horario que no disponemos tu debes responder: “En viaje compartido tenemos horarios específicos de salida 05h00 07h00 09h00 11h00 13h00 15h00 17h00 19h00 21h00. Si deseas viajar en un horario diferente podemos ayudarte en viaje exclusivo que es un servicio diseñado precisamente para ajustarnos a tu necesidad. Te esperaremos a la hora que nos indiques, te garantizamos llegar a la hora que necesites y el vehículo estará completamente a tu disposición por lo que no será necesario hacer paradas o recoger a otros pasajeros.”
+
+Cuando te pregunten o soliciten un viaje compartido en un horario que sí disponemos tu debes responder: Encantados de poder ayudarte. Por favor para realizar tu reserva debes hacerla directamente a través de nuestra aplicación, se denomina viajes quito Ibarra si no la tienes te comparto los enlaces de descarga para Android play.google.com/store/apps/details?id=com.qds.petertours y IOS (Iphone) apps.apple.com/us/app/viajes-quito-ibarra/id1619444731
+
+Cuando alguien te reclama diciendo “Yo reserve a una hora exacta”. Tu debes responder: La hora que ingresaste es la hora de salida del viaje. En nuestro términos y condiciones del servicio te indicamos que debes estar listo al menos 30 minutos antes del horario seleccionado para poder salir de viaje acorde al horario seleccionado. Con nuestra experiencia en logística y coordinación de los viajes ten la seguridad que organizamos el mejor tiempo y ruta de viaje para ti.
+
+Cuando te dicen ¿Son taxis lagos? Debes responder: “Nosotros somos Peter Tours, hacemos lo mismo que taxis lagos, pero mejor. Te brindamos el mejor servicio de transporte de pasajeros o encomiendas puerta a puerta. Disfruta de una experiencia premium con nosotros. ¿Te gustaría viajar o realizar un envió?”</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Viaje exclusivo <span style="font-weight:400;color:var(--texto-suave)">· <code>viaje_exclusivo</code> · 3124 car.</span></summary>
+    <pre><code>Información de viaje exclusivo.
+
+El servicio de transporte de pasajeros puerta a puerta modalidad viaje exclusivo lo realizamos en nuestros mejores vehículos ejecutivos tipo SUV que son modernos, amplios y brindan confort para viajes largos, los vehículos tienen capacidad para 4 pasajeros.
+En la modalidad de viaje exclusivo podemos retirarles en diferentes ubicaciones y llegar a diferentes destinos.
+En la modalidad de viaje exclusivo puede viajar con mascotas.
+La modalidad de viaje exclusivo es ideal cuando se tiene requerimientos especiales como: viajar a una hora específica diferente de los horarios de viaje compartido, viajes en la noche y madrugada, viajar de modo que se pueda llegar a una hora específica al destino, brindar un servicio premium y más personalizado, hacer un recorrido de viaje con paradas puntuales, hacer un viaje de turismo, hacer un viaje con destino diferente a las rutas establecidas del viaje compartido, hacer un viaje más despacio por ejemplo: cuando una persona tiene que viajar después de una cirugía. 
+La modalidad de viaje exclusivo se vende la disponibilidad completa del vehículo, el cliente puede ocupar todos los asientos y toda la cajuela.
+La modalidad de viaje exclusivo tiene un precio de 60 dólares que puede estar sujeto a cambios según las necesidades específicas y el tiempo que necesite disponer del vehículo.
+Los beneficios de la modalidad de viaje exclusivo son: 
+Viajar en los mejores vehículos o seleccionar uno a su preferencia. Puede seleccionar una hora especifica de salida del viaje o que el vehículo lo esté esperando a una hora específica. Puede hacer paradas durante el trayecto de viaje. Pueden viajar cuatro (4) pasajeros. Puede ocupar toda la capacidad del vehículo para llevar mucho equipaje. Le incluye un kit de viaje una cobija mediana y almohada de cuello, la cobija es perfecta para viajar en las madrugadas y abrigarte, la almohada de cuello la puedes usar siempre que busques dormir durante el viaje y tener mejor comodidad. Nuestro equipo de conductores es profesional y conocen cada ciudad evitando perder el tiempo por vías congestionadas y desviándose por rutas alternas para ganar tiempo valioso para cada pasajero. Nuestro equipo de conductores se capacita continuamente en relaciones sociales y comunicación efectiva para brindarle una mejor atención, comprender sus necesidades y hacerle sentir bien en todo momento. Recibirá siempre un trato con respeto y amabilidad en todo momento. Tendrá comunicación previa a su viaje. Nos comunicaremos con una hora de anticipación a su viaje enviándole la información del vehículo y del conductor para su mayor seguridad y confianza. Además, el conductor designado para su viaje se comunicará directamente con usted. Garantizamos que viajará siempre en un vehículo limpio y que el ambiente será aseado y agradable. Garantizamos que nuestro equipo de conductores se presentará siempre de manera formal, aseados y con buena presencia al momento de realizar el viaje. A través de nuestra aplicación de reservar evitamos errores humanos y garantizamos realizar su viaje en la fecha y hora selecionada.</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Preguntas frecuentes generales <span style="font-weight:400;color:var(--texto-suave)">· <code>faq_generales</code> · 1679 car.</span></summary>
+    <pre><code>Qué decir cuando te dicen: me recomendaron su servicio. Debes responder: “Eso es increíble. Si le recomendaron nuestro servicio en primer lugar es porque le aprecian y saben que es un servicio excelente que le va a beneficiar y en segundo lugar porque confían en la garantía de nuestra marca para poder recomendarnos. ¿Cómo podemos ayudarle? 
+
+Cuándo te pregunten ¿precio? Debes responder: Tenemos transporte puerta a puerta de pasajeros en dos modalidades: viaje compartido y viaje exclusivo. En viaje compartido puedes comprar por asientos, la tarifa es desde 19.99 dólares. En viaje exclusivo compras el espacio completo de un vehículo (Todos los asientos y cajuela) tiene un precio desde 60 dólares y también tenemos el transporte puerta a puerta de encomiendas que tiene un precio de 9.99 con entrega el mismo día. 
+
+Qué decir si te preguntan si llegamos a otro destino diferente de Quito, Aeropuerto, Cayambe, Tabacundo, San Pablo, Otavalo, Cotacachi, Atuntaqui o Ibarra. Tu debes responder: “Gracias por preferir a Peter Tours para tu viaje, por el momento no disponemos de una ruta en viaje compartido hacia el destino que requieres. Podríamos ayudarte con un servicio de viaje exclusivo ¿Te interesa?”
+
+Qué decir cuando te dicen “me ayuda con información” tu debes responder: Bienvenido a Peter Tours. Estamos encantados de comunicarnos contigo, te ofrecemos servicio de transporte de pasajeros y encomiendas puerta a puerta desde Quito o el aeropuerto hacia Otavalo, Cotacachi, Atuntaqui o Ibarra. Y también viceversa. Nuestro servicio es premium lo mejor de lo mejor en comodidad, ambiente, seguridad y confianza. ¿Estás interesado en un viaje o en realizar un envio?</code></pre>
+  </details>
+  <details style="margin:8px 0;border:1px solid var(--borde);border-radius:8px;padding:10px 14px;background:var(--superficie-2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--texto-fuerte)">Términos y condiciones <span style="font-weight:400;color:var(--texto-suave)">· <code>terminos</code> · 214 car.</span></summary>
+    <pre><code>Qué decir si te preguntan “sobre las políticas, términos y condiciones de nuestros servicios”
+
+Todos los términos y condiciones de nuestro servicio los encuentras en: https://transpeters.com/terminos-y-condiciones/</code></pre>
+  </details>
+
+  <h3>Cómo se ensambla el prompt</h3>
+  <pre><code>system: [
+  { text: perfil_agente,                    cache_control: ephemeral }
+  { text: CONOCIMIENTO (14 bloques),        cache_control: ephemeral }   ← el prefijo cacheado
+  { text: reglas_negocio }
+]
+messages: [ …ventana de 40 mensajes…, resumen acumulado, mensaje entrante + notas ]
+tools: [ responder, no_responder, escalar_a_humano ]
+tool_choice: "any"</code></pre>
+  <p>El orden importa: lo estable va primero para que el caché lo cubra. Lo que cambia en cada llamada —el
+  historial— va al final.</p>
+  <p><code>lib/agente/conocimiento.ts</code> es la <strong>única</strong> función que arma ese bloque, y la usan
+  tanto el runner como el Estudio. Si divergieran, lo que se ve en pantalla no sería lo que recibe el modelo:
+  es un bug por construcción evitado.</p>
+
+</div>
+<div class="bloque">
+  <h2 id="bd">7 · Base de datos</h2>
+  <p>Dos esquemas en la <strong>misma</strong> <code>DATABASE_URL</code>. Todas las consultas califican el
+  esquema explícitamente; no dependen del <code>search_path</code>.</p>
+  <table>
+    <tr><th>Tabla de <code>agente</code></th><th>Multi-tenant</th><th>Notas</th></tr>
+    <tr><td><code>canales</code></td><td>es la tabla de tenants</td><td>waba_id, phone_number_id, modelo, bot_activo, debounce, ventana</td></tr>
+    <tr><td><code>contactos</code></td><td>✅ <code>canal_id</code></td><td>wa_id y nombre de perfil</td></tr>
+    <tr><td><code>conversaciones</code></td><td>✅ <code>canal_id</code></td><td><code>bot_activo</code> por conversación = la toma humana; <code>resumen</code> = memoria larga</td></tr>
+    <tr><td><code>mensajes</code></td><td>vía <code>conversacion_id</code></td><td><code>wa_message_id</code> único ⇒ idempotencia</td></tr>
+    <tr><td><code>conocimiento</code></td><td>✅ <code>canal_id</code></td><td>bloques de texto descriptivo</td></tr>
+    <tr><td><code>prompts</code></td><td>✅ <code>canal_id</code></td><td>versionados: perfil_agente, reglas_negocio, resumen_conversacion</td></tr>
+    <tr><td><code>cola</code></td><td>vía <code>conversacion_id</code></td><td>índice único parcial + <code>ON CONFLICT</code> = debounce</td></tr>
+    <tr><td><code>eventos_webhook</code></td><td>✅ <code>canal_id</code></td><td>traza cruda</td></tr>
+    <tr><td><code>uso_modelo</code></td><td>vía <code>conversacion_id</code></td><td>tokens y costo — <strong>base de la facturación futura</strong></td></tr>
+  </table>
+
+  <div class="bien">
+    <p><span class="et">Hallazgo importante para el producto:</span> <strong>el modelo de datos ya es
+    multi-tenant.</strong> Salió así porque «un canal = un número» y resulta que un canal es exactamente un
+    tenant. La parte que suele doler en estas migraciones ya está hecha.</p>
+  </div>
+
+  <h3>Migraciones</h3>
+  <p>Se aplican de una en una, en transacción: <code>npm run db:migrate &lt;archivo.sql&gt;</code></p>
+  <table>
+    <tr><td><code>0001</code>–<code>0004</code></td><td>Sistema contable</td></tr>
+    <tr><td><code>0005_agente_ia.sql</code></td><td>Esquema <code>agente</code> completo</td></tr>
+    <tr><td><code>0006_rol_vendedor.sql</code></td><td>Rol para operar la bandeja</td></tr>
+    <tr><td><code>0007_ubicaciones.sql</code></td><td>Columnas de ubicación</td></tr>
+    <tr><td><code>0008_rol_asesor.sql</code></td><td>Renombra <code>vendedor</code> → <code>asesor</code></td></tr>
+  </table>
+  <div class="ojo">
+    <p><span class="et">Regla de oro con la base de producción:</span> validar toda migración con
+    <code>BEGIN … ROLLBACK</code> contra la base <strong>real</strong> antes de aplicarla, y verificar el
+    inventario (tablas, filas) antes y después. Se hizo con todas y por eso no se perdió nada nunca.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="coexistencia">8 · El alta en coexistencia — paso a paso</h2>
+  <p>Esto es lo que hay que ejecutar para conectar el número de Peters Tours, y es <strong>exactamente el mismo
+  proceso que se repetirá con cada cliente</strong> del producto.</p>
+
+  <h3>Por qué esta ruta y no otra</h3>
+  <table>
+    <tr><th>Lo que se intentó</th><th>Qué respondió Meta</th></tr>
+    <tr><td>Asignar la cuenta al usuario del sistema</td><td>«No se pueden asignar activos»</td></tr>
+    <tr><td>Asignar un socio</td><td>«Ya tiene el número máximo de socios» — con <strong>cero</strong></td></tr>
+    <tr><td>Registrar el número por API</td><td><em>«Register endpoint is not available for SMB businesses»</em></td></tr>
+    <tr><td>Embedded Signup desde la app de Peters Tours</td><td>El portafolio dueño de la app no es seleccionable</td></tr>
+  </table>
+  <p><strong>Los cuatro son el mismo problema:</strong> la WABA es de tipo SMB. Queda un único camino — dar de
+  alta el número desde la app de <strong>otro portafolio</strong>.</p>
+
+  <h3>Fase A · Crear la app del proveedor</h3>
+  <ol class="pasos">
+    <li>
+      <span class="t">Crear la app en Grupo Corazones Cruzados</span>
+      <p><code>developers.facebook.com</code> → Mis apps → Crear app. Caso de uso <strong>Otro → Empresa</strong>.</p>
+      <div class="peligro">
+        <p><span class="et">Dos errores que obligan a empezar de nuevo:</span></p>
+        <p>1. <strong>El nombre no puede contener «WhatsApp», «Facebook», «Insta» ni «Meta».</strong> Meta lo rechaza sin explicar bien.</p>
+        <p>2. <strong>El portafolio se elige al crear y no se cambia después.</strong> Tiene que ser
+        <strong>Grupo Corazones Cruzados</strong>. Si se elige el del cliente, se vuelve al bloqueo de siempre.</p>
+      </div>
+    </li>
+    <li><span class="t">Añadir el producto WhatsApp</span><p>Agregar producto → WhatsApp → Configurar, asociado al portafolio de GCC.</p></li>
+    <li>
+      <span class="t">Configuración básica</span>
+      <p>Ícono, política de privacidad, condiciones, eliminación de datos, dominios, categoría «Negocios y
+      páginas», correo de contacto. Y abajo <strong>«+ Agregar plataforma» → Sitio web</strong>, sin lo cual
+      otros formularios se bloquean. El bloque de <strong>delegado de protección de datos se deja vacío</strong>:
+      solo aplica con actividad en la Unión Europea.</p>
+      <p>Anotar <strong>App ID</strong> y <strong>App secret</strong>.</p>
+    </li>
+    <li>
+      <span class="t">Configuración de Embedded Signup</span>
+      <p>Inicio de sesión con Facebook para empresas → Configuraciones → Crear desde plantilla →
+      <strong>«Configuración de registro insertado de WhatsApp con un token que caduca en 60 días»</strong>.
+      Anotar el identificador.</p>
+      <p>La plantilla «Socio de medición» <strong>no sirve</strong>: es de solo lectura y está atada a la
+      versión 2, que Meta retira el 15 de octubre de 2026.</p>
+    </li>
+    <li>
+      <span class="t">Habilitar el SDK de JavaScript</span>
+      <p>Misma sección → <strong>Configurar</strong>:</p>
+      <table class="def">
+        <tr><th>Inicio de sesión con el SDK para JavaScript</th><td><strong>Sí</strong> (viene apagado)</td></tr>
+        <tr><th>Dominios permitidos para el SDK</th><td>La URL de la aplicación</td></tr>
+        <tr><th>OAuth del cliente / OAuth web</th><td>Sí</td></tr>
+      </table>
+      <p>Sin lo primero: <em>«La opción de JSSDK está desactivada»</em>. Sin lo segundo, un error posterior mucho más opaco.</p>
+    </li>
+    <li>
+      <span class="t">Usuario del sistema del proveedor</span>
+      <p>En el portafolio de GCC → Usuarios del sistema → Agregar, rol <strong>Administrador</strong>.
+      Asignarle la app con control total. Generar token con caducidad <strong>Nunca</strong> y solo dos
+      permisos: <code>whatsapp_business_messaging</code> y <code>whatsapp_business_management</code>.</p>
+      <p><strong>Meta lo muestra una sola vez.</strong></p>
+    </li>
+    <li>
+      <span class="t">Webhook</span>
+      <p>WhatsApp → Configuración → Webhooks: URL <code>…/api/agente/webhook</code> y el mismo
+      <code>WHATSAPP_VERIFY_TOKEN</code>. Después <strong>suscribirse al campo <code>messages</code></strong>.</p>
+      <div class="ojo">
+        <p><span class="et">Sin la suscripción a <code>messages</code> no llega ni un mensaje</span> y todo
+        parece correcto. Es el despiste más caro de esta integración: pasó dos veces.</p>
+      </div>
+    </li>
+  </ol>
+
+  <h3>Fase B · Apuntar la plataforma a la app nueva</h3>
+  <p>Railway → <code>GCC - Sistema Facturación</code> → Variables:</p>
+  <table class="def">
+    <tr><th><code>WHATSAPP_APP_ID</code></th><td>El de la app nueva</td></tr>
+    <tr><th><code>WHATSAPP_APP_SECRET</code></th><td>El de la app nueva</td></tr>
+    <tr><th><code>WHATSAPP_TOKEN</code></th><td>Token permanente del usuario del sistema de GCC</td></tr>
+    <tr><th><code>WHATSAPP_ES_CONFIG_ID</code></th><td>La configuración del paso 4</td></tr>
+    <tr><th><code>WHATSAPP_VERIFY_TOKEN</code></th><td>No se toca, pero debe coincidir con el del webhook</td></tr>
+  </table>
+
+  <h3>Fase C · El alta</h3>
+  <ol class="pasos">
+    <li><span class="t">Abrir la pantalla</span><pre><code>/agente/conectar</code></pre><p>Solo gerente, fuera del menú a propósito: es una acción que se hace una vez por número.</p></li>
+    <li><span class="t">Lanzar el flujo</span><p>Iniciar sesión con la cuenta que administra los dos portafolios.</p></li>
+    <li>
+      <span class="t">Seleccionar Peter's tour</span>
+      <div class="bien"><p><span class="et">Aquí se comprueba que el montaje sirvió:</span> si aparece
+      seleccionable y no en gris, la app está en el portafolio correcto.</p></div>
+    </li>
+    <li>
+      <span class="t">Conectar la cuenta existente</span>
+      <div class="peligro"><p><span class="et">El único paso sin vuelta atrás.</span> Si se elige «dar de alta
+      un número nuevo» en vez de «conectar cuenta existente», el número sale del teléfono y
+      <strong>el equipo pierde WhatsApp Web en el acto</strong>.</p></div>
+    </li>
+    <li><span class="t">Confirmar desde el teléfono</span><p>Aceptar la conexión en la app de WhatsApp Business y escribir el código. Si pide PIN: <span class="val">122022</span>.</p></li>
+  </ol>
+
+  <h3>Fase D · Verificar</h3>
+  <pre><code>npm run meta:conectar -- --estado     # debe decir CLOUD_API + CONNECTED
+npm run meta:diag -- 927412411056551  # token, números, apps suscritas</code></pre>
+  <ul class="chk">
+    <li>Número en <code>CLOUD_API</code> + <code>CONNECTED</code></li>
+    <li><strong>WhatsApp Web sigue funcionando para el equipo</strong> ← la comprobación que de verdad importa</li>
+    <li>Un mensaje de prueba entra en <code>/agente/conversaciones</code></li>
+    <li>Agente encendido desde el Estudio (no se enciende solo)</li>
+  </ul>
+
+  <h3>Herramientas de línea de comandos ya construidas</h3>
+  <table class="def">
+    <tr><th><code>npm run meta:diag [waba_id]</code></th><td>Token, caducidad, permisos, WABAs, números, apps suscritas. Nunca imprime secretos</td></tr>
+    <tr><th><code>npm run meta:conectar -- --estado</code></th><td>Estado del número real</td></tr>
+    <tr><th><code>npm run meta:conectar -- --codigo sms|voice</code></th><td>Pide código de verificación</td></tr>
+    <tr><th><code>npm run meta:conectar -- --registrar &lt;PIN&gt;</code></th><td>Registra (falla en cuentas SMB)</td></tr>
+    <tr><th><code>npm run meta:plantilla -- &lt;nombre&gt;</code></th><td>Crea plantilla por API. Pensado para grabar evidencia en video</td></tr>
+    <tr><th><code>npm run probar-agente ["pregunta"]</code></th><td>Prueba el agente en seco, sin WhatsApp</td></tr>
+    <tr><th><code>npm run db:migrate &lt;archivo.sql&gt;</code></th><td>Migración en transacción</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="multitenant">9 · El camino a multi-tenant</h2>
+
+  <h3>Lo que ya está</h3>
+  <p>El esquema. Cinco tablas llevan <code>canal_id</code> y las demás cuelgan de <code>conversacion_id</code>.
+  <code>uso_modelo</code> registra tokens y costo por conversación, que es la base para facturar.</p>
+
+  <h3>Los dos acoplamientos a un solo cliente</h3>
+  <table>
+    <tr><th>Dónde</th><th>Qué hace hoy</th><th>Qué debe hacer</th></tr>
+    <tr><td><code>app/api/agente/webhook/route.ts:61</code></td><td><code>canalPorSlug(CANAL_POR_DEFECTO)</code></td><td>Resolver el canal por el <code>phone_number_id</code> que Meta manda en <code>metadata</code></td></tr>
+    <tr><td><code>lib/agente/whatsapp.ts:42,81</code></td><td><code>tokenWhatsapp()</code> lee del entorno</td><td>Leer el token <strong>del canal</strong></td></tr>
+  </table>
+
+  <div class="ojo">
+    <p><span class="et">El segundo rompe una regla del proyecto.</span> Hoy: «los secretos viven SOLO en
+    variables de entorno, la base guarda identificadores públicos pero nunca el token». Con N clientes eso no
+    escala: cada alta por Embedded Signup devuelve un token por cliente. Hay que guardarlos
+    <strong>cifrados en la base</strong>, y es una decisión de arquitectura consciente, no un ajuste.</p>
+  </div>
+
+  <h3>Lo que falta a nivel de producto</h3>
+  <ul>
+    <li><strong>Usuarios acotados a su tenant.</strong> Hoy los roles son globales (<code>gerente</code>,
+      <code>contador</code>, <code>asesor</code>, <code>conductor</code>, <code>inversionista</code>). Hace falta
+      que un usuario pertenezca a un cliente y no vea los demás.</li>
+    <li><strong>Alta autoservicio.</strong> La pantalla <code>/agente/conectar</code> es ~80% de esto; falta que
+      cree el canal en vez de actualizar el único que hay.</li>
+    <li><strong>Gestión del conocimiento y prompts por cliente.</strong> Ya está por <code>canal_id</code>; falta
+      la interfaz.</li>
+    <li><strong>Facturación.</strong> Meta cobra por conversación y Anthropic por token. Ambos se registran ya.</li>
+    <li><strong>Acceso avanzado + verificación de proveedor</strong> para GCC, que ahora sí corresponde.</li>
+    <li><strong>Políticas legales en el dominio de GCC</strong>, describiendo a GCC como <strong>encargado del
+      tratamiento</strong> por cuenta de sus clientes, que pasan a ser los <strong>responsables</strong>. Hoy es
+      al revés y ese es el cambio conceptual más importante.</li>
+  </ul>
+
+  <h3>La decisión de producto que más condiciona todo</h3>
+  <p><strong>¿El cliente trae su número o se lo damos?</strong> Si lo trae, el alta es Embedded Signup con
+  coexistencia —lo que ya está construido— y conserva su WhatsApp de siempre. Si se lo damos, entramos en
+  gestión de números, verificaciones y facturación por cliente. <strong>Recomendación: empezar solo con el
+  primer caso.</strong></p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="lecciones">10 · Lecciones y errores a no repetir</h2>
+
+  <h4>Sobre la plataforma de Meta</h4>
+  <div class="leccion">
+    <span class="titulo">Una WABA de tipo SMB bloquea todos los atajos, y los síntomas parecen inconexos</span>
+    «No se pueden asignar activos», «máximo de socios» con cero asignados, <code>register</code> rechazado y el
+    portafolio en gris son <strong>el mismo problema</strong>. Ante el primer síntoma raro, comprobar el tipo de
+    cuenta antes de seguir probando cosas.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Un portafolio no puede darse de alta a sí mismo por Embedded Signup</span>
+    «This business portfolio owns [app]. You can only select other business portfolios.» El proveedor y el
+    cliente <strong>tienen que ser portafolios distintos</strong>. Decidir esto <em>antes</em> de crear la app.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Proteger las páginas de un módulo NO protege sus APIs</span>
+    Los layouts rebotaban a un rol, pero <code>/api/reportes</code> le respondía 200. Cada restricción necesita
+    guarda en <strong>páginas Y rutas de API</strong>. Se descubrió al verificar una credencial antes de
+    entregarla — verificar credenciales ajenas antes de darlas vale la pena.
+  </div>
+  <div class="leccion">
+    <span class="titulo">El token de «Configuración de la API» caduca en 24 h y el agente falla en silencio</span>
+    Caducó y el agente siguió encendido recibiendo, pero sin poder enviar. No hay alerta. Se comprueba con
+    <code>npm run meta:diag</code>. Para producción, siempre token de usuario del sistema.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Un webhook falsificado prueba la recepción pero no el envío</span>
+    Al simular un mensaje entrante, Meta responde <code>Re-engagement message</code>: no hay ventana de 24 h
+    abierta porque nunca recibió nada de ese número.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Cómo probar el envío sin escribirle a nadie</span>
+    Mandar una plantilla a un número que <strong>no</strong> está en la lista de destinatarios de prueba. Si
+    responde <code>#131030 Recipient phone number not in allowed list</code>, el token, los permisos y el número
+    están bien. Verifica el camino completo sin molestar.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Coexistencia NO es convivir con otro proveedor de API</span>
+    Es entre la app del teléfono y la Cloud API. No se puede correr en paralelo con ManyChat: sigue siendo un
+    reemplazo.
+  </div>
+
+  <h4>Sobre el método de trabajo</h4>
+  <div class="leccion">
+    <span class="titulo">Antes de implementar el flujo de un proveedor, comprobar si el proveedor ya lo aloja</span>
+    Se construyó una pantalla completa de Embedded Signup con el SDK… y Meta ofrece «Hosted Embedded Signup»,
+    que aloja el flujo entero. Costó una noche. (Al final la pantalla propia sí se usa, porque el flujo alojado
+    exige ser proveedor verificado.)
+  </div>
+  <div class="leccion">
+    <span class="titulo">Antes de copiar una solución de otro proyecto, comparar el punto de partida</span>
+    En un proyecto anterior la coexistencia se activó sola al registrar el número. Se intentó replicar y falló:
+    allí la WABA nunca fue SMB, aquí nació SMB. <strong>Mismo destino, punto de partida distinto.</strong>
+  </div>
+  <div class="leccion">
+    <span class="titulo">Preguntar por la experiencia previa del cliente antes de leer documentación durante horas</span>
+    Todo el desvío por «verificación de proveedor de tecnología» arrancó de <strong>una sola frase</strong> de la
+    documentación. La persona que lo había hecho antes estaba al otro lado del chat.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Medir, no razonar, ante un bug de UI</span>
+    Un bug de scroll se persiguió tres veces «a ojo» y solo cayó al medir <code>scrollHeight</code> frente a
+    <code>clientHeight</code> en Chrome headless por CDP. Sin instalar nada.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Aislar el paso irreversible en un comando aparte</span>
+    <code>meta:conectar</code> tiene los pasos separados a propósito. Cuando <code>register</code> falló, no se
+    había roto nada: el número siguió en el teléfono. Los pasos que no se pueden deshacer no se encadenan.
+  </div>
+  <div class="leccion">
+    <span class="titulo">No aceptar «supongo» en un paso irreversible</span>
+    Antes de registrar el número hacía falta saber si estaba en WhatsApp Business o en WhatsApp normal. La
+    respuesta fue «supongo que Business». Se paró y se pidió confirmación. Con la otra respuesta, el equipo se
+    habría quedado sin canal de atención sin previo aviso.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Validar toda migración con BEGIN … ROLLBACK contra la base real</span>
+    Y verificar el inventario antes y después. Se hizo con las cuatro migraciones aplicadas en producción y
+    nunca se perdió un dato.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Nunca pasar por <code>head</code> o <code>grep</code> un <code>next build</code></span>
+    El SIGPIPE mata el proceso a medias y deja el <code>.next</code> corrupto, con errores fantasma tipo
+    <code>Cannot find module './5611.js'</code>. Si aparecen: <code>rm -rf .next && npm run build</code>.
+  </div>
+
+  <h4>Sobre la solicitud de revisión de Meta</h4>
+  <div class="leccion">
+    <span class="titulo">NO usar el texto que sugiere la IA del formulario</span>
+    El borrador que generó describía un producto inexistente: clientes dados de alta, reservas por WhatsApp,
+    listas con consentimiento y cumplimiento de GDPR y CCPA. Nada era cierto y el video enseñaba lo contrario.
+    <strong>El texto y el video tienen que contar la misma historia.</strong>
+  </div>
+  <div class="leccion">
+    <span class="titulo">Las llamadas de prueba obligatorias son reales</span>
+    Meta comprueba que la app ya haya usado cada permiso. Un error de «destinatario no autorizado» acredita el
+    camino pero <strong>no cuenta como llamada exitosa</strong>.
+  </div>
+  <div class="leccion">
+    <span class="titulo">Primero asumir el compromiso, después declararlo</span>
+    El formulario pregunta qué políticas se aplican ante solicitudes de autoridades. Se añadieron esos cuatro
+    compromisos a la política de privacidad <em>publicada</em> y solo entonces se marcaron las casillas. Al revés
+    habría sido declarar políticas inexistentes.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="cerradas">11 · Decisiones cerradas — no re-litigar</h2>
+  <table>
+    <tr><th>Decisión</th><th>Por qué</th></tr>
+    <tr><td><strong>API oficial de Meta, no un BSP</strong></td><td>Los límites de tiempo de respuesta de los proveedores obligaban a inventar parches. Reafirmado por el cliente el 2026-08-01: ni siquiera como plan B.</td></tr>
+    <tr><td><strong>El chat es informativo: NO toma reservas</strong></td><td>Cuando preguntan por reservar, entrega el enlace o escala a una persona.</td></tr>
+    <tr><td><strong>Solo texto</strong></td><td>Los enlaces sí. Imágenes y video fuera por los cambios frecuentes de Meta.</td></tr>
+    <tr><td><strong>El agente no recopila ningún dato</strong></td><td>Petición expresa del cliente: no pide nombres, ni documentos, ni ubicaciones.</td></tr>
+    <tr><td><strong>Las sesiones no se cierran</strong></td><td>Una conversación permanente por contacto.</td></tr>
+    <tr><td><strong>Un solo nodo de IA con tres herramientas</strong></td><td>Las cadenas de clasificadores producían falsos positivos.</td></tr>
+    <tr><td><strong>El conocimiento no se busca: entra completo en el prompt cacheado</strong></td><td>Se redacta descriptivo, no como pares pregunta→respuesta: un carácter distinto rompía la coincidencia.</td></tr>
+    <tr><td><strong>Coexistencia obligatoria</strong></td><td>El equipo del cliente necesita seguir en WhatsApp Web. Se descartó la Cloud API pura aunque la bandeja ya lo cubriera.</td></tr>
+    <tr><td><strong>Modelo por defecto <code>claude-haiku-4-5</code></strong></td><td>Elección del cliente por costo. Se cambia desde el Estudio sin tocar código.</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="pendientes">12 · Pendientes</h2>
+  <h3>Bloqueantes para Peters Tours</h3>
+  <ul class="chk">
+    <li>Crear la app bajo Grupo Corazones Cruzados y ejecutar el alta en coexistencia (sección 7)</li>
+    <li>Devolver el canal al número real — hoy apunta al de pruebas para la revisión de Meta</li>
+    <li>Conectar el repositorio al servicio <code>Agente-IA-Worker</code> de Railway con <code>npm run worker</code></li>
+  </ul>
+  <h3>Del cliente</h3>
+  <ul class="chk">
+    <li>Apagar el interruptor de uso compartido de datos para marketing en el portafolio — contradice lo declarado</li>
+    <li>Cargar método de pago en la WABA</li>
+    <li>Decidir si se publica un correo de contacto en la política de privacidad</li>
+    <li>Confirmar qué nombre legal es el correcto: «Peters Tours S.A.» (Meta) o «PETER TOURS S.A.» (su facturación)</li>
+  </ul>
+  <h3>Deuda técnica</h3>
+  <ul class="chk">
+    <li>Rotar el <code>WHATSAPP_TOKEN</code>: quedó escrito en un historial de chat (el cliente lo aceptó conscientemente)</li>
+    <li>Los <code>comprobante_url</code> de Cloudinary son URLs públicas: cualquiera con el enlace ve un comprobante financiero</li>
+    <li>Revisión visual del módulo contable con usuarios reales de cada rol</li>
+  </ul>
+</div>
+
+<footer>
+  Documento generado el 1 de agosto de 2026.<br>
+  El contexto vivo y el porqué de cada decisión están en <code>MEMORIA.md</code>,
+  <code>docs/MODULO_AGENTE_IA.md</code>, <code>docs/DESIGN_SYSTEM.md</code> y <code>docs/REVISION_META.md</code>
+  del repositorio del sistema contable.
+</footer>
+
+</div>
+</body>
+</html>

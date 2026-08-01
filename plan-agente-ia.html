@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan de trabajo · Agente IA de WhatsApp — Grupo Corazones Cruzados</title>
+<style>
+  :root{
+    --accent:#F08D00; --accent-texto:#A35E00; --accent-bg:#FFF6E9; --accent-borde:#F7D9A8;
+    --error:#C4232B; --error-bg:#FEF3F2; --error-borde:#F2B8B5;
+    --exito:#15803D; --exito-bg:#ECFDF3; --exito-borde:#A7E4C0;
+    --info:#1D4ED8; --info-bg:#EFF5FF; --info-borde:#BBD3F7;
+    --fondo:#F4F6F9; --superficie:#fff; --superficie-2:#F7F9FB;
+    --texto:#334155; --texto-fuerte:#0F172A; --texto-suave:#64748B; --borde:#E2E8F0;
+    --morado:#4B2D8E; --morado-bg:#F3EFFB; --morado-borde:#D6C9F0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 16px 64px;background:var(--fondo);color:var(--texto);
+    font:15px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .marco{max-width:940px;margin:0 auto}
+  header.portada{background:var(--superficie);border:1px solid var(--borde);border-radius:16px;
+    padding:32px;margin-bottom:24px;box-shadow:0 4px 12px rgba(15,23,42,.06)}
+  h1{margin:0 0 8px;font-size:27px;line-height:1.25;color:var(--texto-fuerte);letter-spacing:-.02em}
+  .sub{color:var(--texto-suave);margin:0}
+  .bloque{background:var(--superficie);border:1px solid var(--borde);border-radius:16px;
+    padding:8px 28px 28px;margin-bottom:24px;box-shadow:0 4px 12px rgba(15,23,42,.06)}
+  h2{font-size:20px;color:var(--texto-fuerte);margin:36px 0 4px;letter-spacing:-.01em;
+    padding-bottom:8px;border-bottom:2px solid var(--accent)}
+  h3{font-size:16px;color:var(--texto-fuerte);margin:26px 0 8px}
+  h4{font-size:14px;color:var(--texto-fuerte);margin:20px 0 6px;text-transform:uppercase;letter-spacing:.05em}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin:12px 0;font-size:14px}
+  th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--borde)}
+  th{background:var(--superficie-2);color:var(--texto-fuerte);font-weight:600}
+  table.def th{width:34%}
+  code,.val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--superficie-2);
+    border:1px solid var(--borde);border-radius:5px;padding:1px 6px;word-break:break-all}
+  .caja{border-radius:10px;padding:14px 16px;margin:14px 0;border:1px solid;font-size:14px}
+  .caja p{margin:0 0 8px} .caja p:last-child{margin:0}
+  .peligro{background:var(--error-bg);border-color:var(--error-borde)} .peligro .et{color:var(--error);font-weight:600}
+  .ojo{background:var(--accent-bg);border-color:var(--accent-borde)} .ojo .et{color:var(--accent-texto);font-weight:600}
+  .nota{background:var(--info-bg);border-color:var(--info-borde)} .nota .et{color:var(--info);font-weight:600}
+  .bien{background:var(--exito-bg);border-color:var(--exito-borde)} .bien .et{color:var(--exito);font-weight:600}
+  pre{background:#0F172A;color:#E2E8F0;padding:14px 16px;border-radius:10px;overflow-x:auto;
+    font-size:13px;line-height:1.55;margin:12px 0}
+  pre code{background:none;border:none;padding:0;color:inherit}
+  footer{color:var(--texto-suave);font-size:13px;text-align:center;margin-top:32px}
+
+  /* ── Estado del plan ─────────────────────────────────────────── */
+  .tablero{background:var(--morado-bg);border:1px solid var(--morado-borde);border-radius:14px;
+    padding:20px 24px;margin:20px 0 4px}
+  .tablero .et{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--morado);font-weight:700}
+  .tablero .paso{font-size:21px;font-weight:600;color:var(--texto-fuerte);margin:6px 0 2px;line-height:1.3}
+  .tablero .quien{font-size:14px;color:var(--texto-suave);margin:0 0 14px}
+  .barra{height:10px;background:#fff;border:1px solid var(--morado-borde);border-radius:999px;overflow:hidden}
+  .barra span{display:block;height:100%;background:var(--morado);border-radius:999px}
+  .barra-pie{display:flex;justify-content:space-between;font-size:12px;color:var(--texto-suave);margin-top:6px}
+
+  .est{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:2px 8px;
+    border-radius:999px;border:1px solid;white-space:nowrap;text-transform:uppercase}
+  .e-hecho{background:var(--exito-bg);border-color:var(--exito-borde);color:var(--exito)}
+  .e-curso{background:var(--accent-bg);border-color:var(--accent-borde);color:var(--accent-texto)}
+  .e-pend{background:var(--superficie-2);border-color:var(--borde);color:var(--texto-suave)}
+  .e-bloq{background:var(--error-bg);border-color:var(--error-borde);color:var(--error)}
+
+  .duenio{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;
+    border:1px solid;white-space:nowrap}
+  .d-f{background:var(--info-bg);border-color:var(--info-borde);color:var(--info)}
+  .d-c{background:var(--morado-bg);border-color:var(--morado-borde);color:var(--morado)}
+
+  table.pasos th:nth-child(1){width:56px} table.pasos th:nth-child(2){width:96px}
+  table.pasos th:nth-child(4){width:108px}
+  table.pasos td:first-child{font-family:ui-monospace,Menlo,monospace;font-weight:600;color:var(--texto-fuerte)}
+  table.pasos tr.actual td{background:var(--accent-bg)}
+  table.pasos .t{font-weight:600;color:var(--texto-fuerte);display:block;margin-bottom:3px}
+  table.pasos .d{font-size:13px;color:var(--texto-suave)}
+
+  table.datos th:nth-child(3){width:34%}
+  .vacio{color:var(--texto-suave);font-style:italic}
+
+  nav.indice{background:var(--superficie-2);border:1px solid var(--borde);border-radius:12px;padding:18px 24px;margin:20px 0}
+  nav.indice ol{margin:0;padding-left:20px;columns:2;column-gap:32px}
+  nav.indice li{margin:4px 0;break-inside:avoid}
+  nav.indice a{color:var(--accent-texto);text-decoration:none}
+  nav.indice a:hover{text-decoration:underline}
+  ul.chk{list-style:none;padding:0;margin:12px 0}
+  ul.chk li{padding:7px 0 7px 30px;position:relative;border-bottom:1px solid var(--borde)}
+  ul.chk li::before{content:"";position:absolute;left:0;top:10px;width:16px;height:16px;
+    border:2px solid var(--texto-suave);border-radius:4px}
+  .bitacora td:first-child{white-space:nowrap;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  @media print{body{background:#fff;padding:0}.bloque,header.portada{box-shadow:none;border:none;padding-left:0;padding-right:0}
+    nav.indice ol{columns:1}}
+  @media (max-width:640px){
+    table.pasos th:nth-child(2),table.pasos td:nth-child(2){display:none}
+    .bloque{padding:8px 16px 20px}
+  }
+</style>
+</head>
+<body>
+<div class="marco">
+
+<header class="portada">
+  <h1>Plan de trabajo · Agente IA de WhatsApp</h1>
+  <p class="sub">Grupo Corazones Cruzados como proveedor de tecnología · Documento vivo, se actualiza en cada avance</p>
+
+  <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
+  <div class="tablero">
+    <div class="et">En qué paso vamos</div>
+    <p class="paso">F2 · Verificar el portafolio de la app &nbsp;·&nbsp; C1 · Esquema de datos y limpieza</p>
+    <p class="quien">Dos carriles a la vez: <strong>F2</strong> lo haces tú en Meta, <strong>C1</strong> lo hago yo en el repo. Ninguno espera al otro.</p>
+    <div class="barra"><span style="width:5%"></span></div>
+    <div class="barra-pie"><span>1 de 20 pasos terminados</span><span>5%</span></div>
+  </div>
+  <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
+    Última actualización: <strong>1 de agosto de 2026</strong> ·
+    Contexto y arquitectura: <code>guia-coexistencia-proveedor.html</code> ·
+    Decisiones: <code>MEMORIA.md</code> · Preguntas abiertas: <code>Aprendizaje.md</code>
+  </p>
+</header>
+
+<div class="bloque">
+  <h2 id="como">0 · Cómo se usa este documento</h2>
+  <p>Es el <strong>tablero del proyecto</strong>: quién hace qué, en qué orden, y dónde quedan grabados los
+  datos que Meta vaya pidiendo. La guía técnica explica el <em>porqué</em>; este documento dice el
+  <em>qué sigue</em>.</p>
+
+  <table class="def">
+    <tr><th><span class="duenio d-f">FERNANDO</span></th><td>Pasos en la plataforma de Meta y decisiones de negocio. Son trámites y formularios: no hay código.</td></tr>
+    <tr><th><span class="duenio d-c">CLAUDE</span></th><td>Pasos de desarrollo en el repositorio de GCC World. Cada uno se entrega verificado.</td></tr>
+  </table>
+  <table class="def">
+    <tr><th><span class="est e-hecho">Hecho</span></th><td>Terminado y comprobado.</td></tr>
+    <tr><th><span class="est e-curso">En curso</span></th><td>Es el paso actual.</td></tr>
+    <tr><th><span class="est e-pend">Pendiente</span></th><td>Aún no se empieza.</td></tr>
+    <tr><th><span class="est e-bloq">Bloqueado</span></th><td>Espera a que termine otro paso; la columna «Depende de» dice cuál.</td></tr>
+  </table>
+
+  <div class="nota">
+    <p><span class="et">La sección que más importa a futuro:</span> <a href="#datos-meta">6 · Datos que pide
+    Meta</a>. Cada vez que un formulario pida algo que aquí no está previsto —una URL, un texto legal, un
+    identificador— <strong>se anota ahí en el momento</strong>. Meta pide cosas distintas según cómo avanza
+    la revisión, y lo que no se anota se vuelve a buscar dentro de tres semanas.</p>
+  </div>
+
+  <nav class="indice">
+    <ol>
+      <li><a href="#resumen">A dónde vamos</a></li>
+      <li><a href="#carril-f">Tus pasos en Meta</a></li>
+      <li><a href="#carril-c">Mis pasos en el código</a></li>
+      <li><a href="#orden">El orden y las dependencias</a></li>
+      <li><a href="#datos-meta">Datos que pide Meta</a></li>
+      <li><a href="#decisiones">Decisiones ya cerradas</a></li>
+      <li><a href="#abierto">Lo que falta decidir</a></li>
+      <li><a href="#bitacora">Bitácora de cambios</a></li>
+    </ol>
+  </nav>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="resumen">1 · A dónde vamos, en una frase</h2>
+  <p>Que <strong>una sola app de Meta</strong>, propiedad de Grupo Corazones Cruzados, dé servicio a
+  <strong>varios clientes</strong>: cada uno conecta <em>su propio</em> número de WhatsApp Business desde
+  nuestra plataforma, conserva su WhatsApp de siempre (coexistencia) y obtiene un agente que responde solo,
+  con su propio conocimiento y su propia bandeja.</p>
+  <p>Sin esto habría que montar un servicio web por cliente. Con esto, el alta de un cliente nuevo es
+  <strong>una pantalla</strong>.</p>
+
+  <div class="bien">
+    <p><span class="et">Ya está resuelto lo más caro:</span> la arquitectura no se inventa aquí. Está
+    funcionando en producción en Peters Tours y documentada entera en
+    <code>guia-coexistencia-proveedor.html</code> — incluidos los parámetros, los esquemas de las tres
+    herramientas y cómo se ensambla el prompt. <strong>Esa arquitectura es la norma</strong>: todos los
+    agentes que se creen a futuro esperan esos mismos parámetros.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="carril-f">2 · Tus pasos <span class="duenio d-f">FERNANDO</span></h2>
+  <p>Todo esto ocurre en <code>developers.facebook.com</code> y en el portafolio comercial. Nada de código.</p>
+
+  <table class="pasos">
+    <tr><th>#</th><th>Estado</th><th>Paso</th><th>Depende de</th></tr>
+
+    <tr>
+      <td>F1</td><td><span class="est e-hecho">Hecho</span></td>
+      <td>
+        <span class="t">Crear la app del proveedor</span>
+        <span class="d">Mis apps → Crear app, caso de uso <em>Otro → Empresa</em>. Creada el 2026-08-01.</span>
+      </td>
+      <td>—</td>
+    </tr>
+
+    <tr class="actual">
+      <td>F2</td><td><span class="est e-curso">En curso</span></td>
+      <td>
+        <span class="t">Verificar que la app quedó en el portafolio de GCC</span>
+        <span class="d">Debe ser <code>1000698870638078</code> — Grupo Corazones Cruzados. <strong>El portafolio
+        se elige al crear y no se cambia después.</strong> Si quedó en otro, hay que rehacer la app ahora,
+        no más tarde: con el portafolio equivocado se vuelve al bloqueo de siempre, porque un portafolio
+        no puede darse de alta a sí mismo por Embedded Signup.</span>
+      </td>
+      <td>F1</td>
+    </tr>
+
+    <tr>
+      <td>F3</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Agregar el producto WhatsApp</span>
+        <span class="d">Agregar producto → WhatsApp → Configurar, asociado al portafolio de GCC.</span>
+      </td>
+      <td>F2</td>
+    </tr>
+
+    <tr>
+      <td>F4</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Configuración básica de la app</span>
+        <span class="d">Ícono, política de privacidad, condiciones, eliminación de datos, dominios,
+        categoría «Negocios y páginas» y correo de contacto. Abajo del todo:
+        <strong>«+ Agregar plataforma» → Sitio web</strong> — sin eso otros formularios se bloquean sin
+        explicar por qué. El bloque de <strong>delegado de protección de datos se deja vacío</strong>
+        (solo aplica con actividad en la Unión Europea).<br>
+        <strong>Resultado a anotar en §6:</strong> App ID y App secret.</span>
+      </td>
+      <td>F3</td>
+    </tr>
+
+    <tr>
+      <td>F5</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Crear la configuración de Embedded Signup</span>
+        <span class="d">Inicio de sesión con Facebook para empresas → Configuraciones → Crear desde plantilla
+        → <strong>«Configuración de registro insertado de WhatsApp con un token que caduca en 60 días»</strong>.<br>
+        La plantilla <em>«Socio de medición»</em> <strong>no sirve</strong>: es de solo lectura y está atada a
+        la versión 2, que Meta retira el 15 de octubre de 2026.<br>
+        <strong>Resultado a anotar en §6:</strong> el identificador de la configuración.</span>
+      </td>
+      <td>F3</td>
+    </tr>
+
+    <tr>
+      <td>F6</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Habilitar el SDK de JavaScript</span>
+        <span class="d">Misma sección → Configurar:
+        <em>Inicio de sesión con el SDK para JavaScript</em> = <strong>Sí</strong> (viene apagado) ·
+        <em>Dominios permitidos para el SDK</em> = la URL de GCC World ·
+        <em>OAuth del cliente</em> y <em>OAuth web</em> = Sí.<br>
+        Sin lo primero sale «La opción de JSSDK está desactivada». Sin lo segundo, un error posterior
+        mucho más opaco.</span>
+      </td>
+      <td>F5</td>
+    </tr>
+
+    <tr>
+      <td>F7</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Usuario del sistema del proveedor y su token</span>
+        <span class="d">Portafolio de GCC → Usuarios del sistema → Agregar, rol <strong>Administrador</strong>.
+        Asignarle la app con control total. Generar token con caducidad <strong>Nunca</strong> y
+        <strong>solo dos permisos</strong>: <code>whatsapp_business_messaging</code> y
+        <code>whatsapp_business_management</code>.<br>
+        ⚠️ <strong>Meta lo muestra una sola vez.</strong> Va directo a las variables de Railway.</span>
+      </td>
+      <td>F3</td>
+    </tr>
+
+    <tr>
+      <td>F8</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Dar de alta el webhook y suscribirlo a <code>messages</code></span>
+        <span class="d">WhatsApp → Configuración → Webhooks: la URL del webhook de GCC World y el token de
+        verificación. Después, y esto es lo que se olvida: <strong>suscribirse al campo
+        <code>messages</code></strong>.<br>
+        Sin esa suscripción <strong>no llega ni un mensaje</strong> y todo parece correcto. Es el despiste
+        más caro de esta integración: pasó dos veces en Peters Tours.</span>
+      </td>
+      <td>F4, C3</td>
+    </tr>
+
+    <tr>
+      <td>F9</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Cargar las variables en Railway</span>
+        <span class="d">App ID, App secret, token del usuario del sistema, identificador de Embedded Signup,
+        token de verificación del webhook y la clave maestra de cifrado.
+        Los valores <strong>no se pegan en ningún chat ni en ningún documento</strong>.</span>
+      </td>
+      <td>F4, F5, F7</td>
+    </tr>
+
+    <tr>
+      <td>F10</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Publicar las páginas legales en el dominio de GCC</span>
+        <span class="d">Privacidad, términos y eliminación de datos, describiendo a <strong>GCC como
+        encargado del tratamiento</strong> y al cliente como <strong>responsable</strong>. Hoy el repo lo
+        tiene al revés y ese es el cambio conceptual más importante del proyecto.<br>
+        <strong>Regla aprendida:</strong> primero se asume el compromiso en la política <em>publicada</em>,
+        y solo entonces se marcan las casillas del formulario. Al revés sería declarar políticas
+        inexistentes.</span>
+      </td>
+      <td>F4</td>
+    </tr>
+
+    <tr>
+      <td>F11</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Solicitar acceso avanzado: App Review y verificación de proveedor</span>
+        <span class="d">Mientras GCC opere su propio número basta el acceso estándar. En cuanto se dé de
+        alta a un <strong>cliente</strong> —cuyos usuarios no tienen rol en la app— hace falta
+        <strong>acceso avanzado</strong>, y eso exige App Review más verificación de proveedor de tecnología.<br>
+        ⚠️ <strong>No usar el texto que sugiere la IA del formulario:</strong> en Peters Tours generó un
+        borrador que describía un producto inexistente. El texto y el video tienen que contar la misma
+        historia. Y las llamadas de prueba son reales: Meta comprueba que la app ya haya usado cada permiso
+        con éxito.</span>
+      </td>
+      <td>F10, C7</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="carril-c">3 · Mis pasos <span class="duenio d-c">CLAUDE</span></h2>
+  <p>Desarrollo en el repositorio de GCC World. <strong>C1 a C6 no dependen de Meta</strong>: son el grueso
+  del trabajo y avanzan mientras tú haces los trámites.</p>
+
+  <table class="pasos">
+    <tr><th>#</th><th>Estado</th><th>Paso</th><th>Depende de</th></tr>
+
+    <tr class="actual">
+      <td>C1</td><td><span class="est e-curso">En curso</span></td>
+      <td>
+        <span class="t">Esquema de datos del agente y limpieza del chatbot viejo</span>
+        <span class="d">Migración <code>027</code>: canales (sobre el flujo), contactos, conversaciones,
+        mensajes, conocimiento, prompts, cola, eventos de webhook y uso del modelo. El modelo de datos ya
+        nace multi-tenant porque <strong>un canal es un número y un número es un cliente</strong>.<br>
+        Se elimina a la vez el tipo de flujo <strong>Chatbot</strong> (iba por YCloud, un intermediario, y
+        la decisión cerrada es API oficial de Meta). ✅ Comprobado contra la base de producción: sus tablas
+        <strong>ni siquiera existen</strong>, así que el borrado es solo de código.<br>
+        <strong>Verificación:</strong> la migración se prueba con <code>BEGIN … ROLLBACK</code> contra la
+        base real y se compara el inventario antes y después.</span>
+      </td>
+      <td>—</td>
+    </tr>
+
+    <tr>
+      <td>C2</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Cifrado de secretos por cliente</span>
+        <span class="d">Cada alta devuelve un token de WhatsApp propio del cliente, y además cada cliente
+        pone su propia clave de IA. La regla vieja —«los secretos solo viven en variables de entorno»— no
+        escala a N clientes: pasan a la base <strong>cifrados</strong> (AES-256-GCM con clave maestra en el
+        entorno). Es una decisión consciente, no un atajo.</span>
+      </td>
+      <td>C1</td>
+    </tr>
+
+    <tr>
+      <td>C3</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Webhook de Meta y cola de trabajos</span>
+        <span class="d">El webhook <strong>no piensa</strong>: valida la firma HMAC, persiste el mensaje de
+        forma idempotente, encola con debounce de 8 segundos y devuelve 200 <em>siempre</em>. Un 500 hace
+        que Meta reintente y acabe <strong>deshabilitando el webhook</strong>, y ahí se pierden mensajes de
+        clientes reales.<br>
+        La cola vive <strong>en la base</strong>, no en memoria del proceso: en Railway un redeploy se
+        llevaría por delante cualquier temporizador en memoria — que es justo el fallo que tenía el chatbot
+        viejo.</span>
+      </td>
+      <td>C1, C2</td>
+    </tr>
+
+    <tr>
+      <td>C4</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">El runner: un nodo de IA con tres herramientas</span>
+        <span class="d">El modelo elige siempre exactamente una: <code>responder</code>,
+        <code>no_responder</code> o <code>escalar_a_humano</code>. No devuelven información:
+        <em>son</em> la decisión, y por eso no hay bucle.<br>
+        El conocimiento entra <strong>completo</strong> en el prompt cacheado —nada de búsquedas ni
+        embeddings— y el orden importa: lo estable primero para que el caché lo cubra.<br>
+        <strong>Mejora sobre Peters Tours:</strong> la lista de bloques <code>[PENDIENTE]</code> se
+        <strong>calcula</strong> del conocimiento en vez de escribirse a mano en el prompt. Allí eso está
+        desincronizado y el agente escala preguntas que ya sabe contestar.</span>
+      </td>
+      <td>C3</td>
+    </tr>
+
+    <tr>
+      <td>C5</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">El Estudio del agente</span>
+        <span class="d">La pantalla donde se edita el conocimiento por bloques, los tres prompts
+        versionados y los parámetros (modelo, debounce, ventana de historial). Una <strong>sola</strong>
+        función arma el bloque de conocimiento y la usan el runner y esta pantalla: si divergieran, lo que
+        se ve no sería lo que recibe el modelo.</span>
+      </td>
+      <td>C4</td>
+    </tr>
+
+    <tr>
+      <td>C6</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
+        <span class="t">Bandeja de conversaciones con toma humana</span>
+        <span class="d">Ver los chats, y que una persona pueda tomar la conversación —apagando el bot solo
+        en ese chat— y devolvérsela después. En la versión 1 la opera <strong>solo el equipo de GCC</strong>
+        por cuenta del cliente.</span>
+      </td>
+      <td>C4</td>
+    </tr>
+
+    <tr>
+      <td>C7</td><td><span class="est e-bloq">Bloqueado</span></td>
+      <td>
+        <span class="t">Pantalla de conexión del cliente (Embedded Signup)</span>
+        <span class="d">Donde el cliente conecta su número. Es la pieza que convierte esto en un producto:
+        el alta deja de ser un proyecto y pasa a ser una pantalla.<br>
+        ⚠️ <strong>Tiene un paso sin vuelta atrás.</strong> Si el cliente elige «dar de alta un número
+        nuevo» en vez de <strong>«conectar cuenta existente»</strong>, el número sale del teléfono y su
+        equipo <strong>pierde WhatsApp Web en el acto</strong>. La pantalla tiene que hacer esa confusión
+        imposible.</span>
+      </td>
+      <td>F5, F6</td>
+    </tr>
+
+    <tr>
+      <td>C8</td><td><span class="est e-bloq">Bloqueado</span></td>
+      <td>
+        <span class="t">Worker en Railway</span>
+        <span class="d">Un servicio aparte que consume la cola cada pocos segundos. El cron que ya existe
+        pasa cada 10 minutos: sirve para campañas de correo, <strong>no para conversar</strong>.<br>
+        <em>Pendiente de tu confirmación — ver §7.</em></span>
+      </td>
+      <td>C3</td>
+    </tr>
+
+    <tr>
+      <td>C9</td><td><span class="est e-bloq">Bloqueado</span></td>
+      <td>
+        <span class="t">Alta del primer número real y verificación de punta a punta</span>
+        <span class="d">Con el primer cliente. Las comprobaciones que de verdad importan:<br>
+        · el número queda en <code>CLOUD_API</code> + <code>CONNECTED</code>;<br>
+        · <strong>WhatsApp Web sigue funcionando para el equipo del cliente</strong> ← esta es la que vale;<br>
+        · un mensaje de prueba entra en la bandeja;<br>
+        · el agente se enciende a mano desde el Estudio (no se enciende solo, a propósito).</span>
+      </td>
+      <td>C7, C8, F8, F9</td>
+    </tr>
+  </table>
+
+  <div class="ojo">
+    <p><span class="et">Por qué los pasos irreversibles van aislados:</span> en Peters Tours el comando de
+    conexión se partió en trozos a propósito, y cuando el registro del número falló <strong>no se había
+    roto nada</strong>: el número siguió en el teléfono. Los pasos que no se pueden deshacer no se
+    encadenan con los que sí.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="orden">4 · El orden, de un vistazo</h2>
+  <pre><code>TÚ (Meta)                          YO (código)
+─────────────────────────          ─────────────────────────
+F1  crear la app          ✅
+F2  verificar portafolio  ◀ AQUÍ   C1  esquema + limpieza   ◀ AQUÍ
+F3  producto WhatsApp              C2  cifrado
+F4  configuración básica           C3  webhook + cola
+F5  config Embedded Signup         C4  runner (3 herramientas)
+F6  habilitar el JSSDK             C5  Estudio del agente
+F7  usuario del sistema            C6  bandeja + toma humana
+                    └──────┬──────────┘
+                           ▼
+                    C7  pantalla de conexión
+                    C8  worker en Railway
+F8  webhook + messages     │
+F9  variables en Railway   │
+                           ▼
+                    C9  alta del número real  ← WhatsApp Web sigue vivo
+                           │
+F10 páginas legales        │
+F11 App Review + proveedor ┘
+                           ▼
+                    Cliente nuevo = una pantalla</code></pre>
+  <p>Los dos carriles solo se tocan en tres sitios: <strong>F5/F6 → C7</strong> (sin la configuración de
+  Embedded Signup la pantalla no puede ni renderizarse), <strong>C3 → F8</strong> (el webhook necesita
+  existir antes de darlo de alta) y <strong>todo → C9</strong>.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="datos-meta">5 · Datos que pide Meta <span style="font-size:13px;font-weight:400;color:var(--texto-suave)">— registro vivo</span></h2>
+
+  <div class="ojo">
+    <p><span class="et">Esta es la sección que hay que alimentar sobre la marcha.</span> Meta pide cosas
+    distintas según cómo avanza la revisión, y muchas no están previstas aquí. Cuando un formulario pida
+    algo que no aparece en esta tabla, <strong>se añade una fila en el momento</strong> con lo que pidió,
+    dónde lo pidió y qué se respondió. Lo que no se anota se vuelve a buscar dentro de tres semanas.</p>
+  </div>
+
+  <h3>Identificadores del proveedor (GCC)</h3>
+  <table class="datos">
+    <tr><th>Dato</th><th>Dónde se usa</th><th>Valor / estado</th><th>Fecha</th></tr>
+    <tr>
+      <td>Portafolio comercial de GCC</td>
+      <td>Dueño de la app. Se elige al crearla y no se cambia.</td>
+      <td><span class="val">1000698870638078</span></td>
+      <td>2026-08-01</td>
+    </tr>
+    <tr>
+      <td>Nombre de la app</td>
+      <td>Identidad ante el cliente en el alta.</td>
+      <td class="vacio">por anotar (F1)</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code>WHATSAPP_APP_ID</code></td>
+      <td>Público. Lo usa el SDK en la pantalla de conexión.</td>
+      <td class="vacio">por anotar (F4)</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code>WHATSAPP_APP_SECRET</code></td>
+      <td>Valida la firma <code>X-Hub-Signature-256</code> del webhook. <strong>Secreto → solo Railway.</strong></td>
+      <td class="vacio">por generar (F4)</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code>WHATSAPP_ES_CONFIG_ID</code></td>
+      <td>Público. La configuración de Embedded Signup que abre el alta.</td>
+      <td class="vacio">por anotar (F5)</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code>WHATSAPP_TOKEN</code></td>
+      <td>Token del usuario del sistema, caducidad <em>Nunca</em>. <strong>Meta lo muestra una sola vez.</strong></td>
+      <td class="vacio">por generar (F7)</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code>WHATSAPP_VERIFY_TOKEN</code></td>
+      <td>Se escribe igual aquí y en el panel de Meta al dar de alta el webhook.</td>
+      <td class="vacio">por elegir (F8)</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>URL del webhook</td>
+      <td>La que se pega en Meta. La define C3.</td>
+      <td class="vacio">por definir (C3)</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>Clave maestra de cifrado</td>
+      <td>Cifra los tokens y las claves de IA de los clientes en la base. <strong>Secreto → solo Railway.</strong></td>
+      <td class="vacio">por generar (C2)</td>
+      <td>—</td>
+    </tr>
+  </table>
+
+  <h3>Datos legales y de contacto que Meta suele pedir</h3>
+  <table class="datos">
+    <tr><th>Dato</th><th>Dónde lo pide</th><th>Valor / estado</th><th>Fecha</th></tr>
+    <tr><td>URL de política de privacidad</td><td>Configuración básica de la app</td><td class="vacio">por definir (F10)</td><td>—</td></tr>
+    <tr><td>URL de términos y condiciones</td><td>Configuración básica de la app</td><td class="vacio">por definir (F10)</td><td>—</td></tr>
+    <tr><td>URL de eliminación de datos</td><td>Configuración básica de la app</td><td class="vacio">por definir (F10)</td><td>—</td></tr>
+    <tr><td>Dominio del sitio web</td><td>«+ Agregar plataforma» → Sitio web</td><td class="vacio">por definir (F4)</td><td>—</td></tr>
+    <tr><td>Correo de contacto de la app</td><td>Configuración básica</td><td class="vacio">por definir (F4)</td><td>—</td></tr>
+    <tr><td>Categoría de la app</td><td>Configuración básica</td><td>«Negocios y páginas»</td><td>2026-08-01</td></tr>
+    <tr><td>Delegado de protección de datos</td><td>Configuración básica</td><td>Se deja <strong>vacío</strong> — solo aplica con actividad en la UE</td><td>2026-08-01</td></tr>
+    <tr><td>Usuario de prueba para el revisor</td><td>App Review</td><td class="vacio">por crear (F11) — debe seguir activo un año</td><td>—</td></tr>
+    <tr><td>Video de demostración</td><td>App Review</td><td class="vacio">por grabar (F11)</td><td>—</td></tr>
+  </table>
+
+  <h3>Por cada cliente que se dé de alta</h3>
+  <p>Esto <strong>no se anota a mano</strong>: lo guarda la plataforma al cerrar el Embedded Signup. Queda
+  aquí para saber qué se espera de cada alta.</p>
+  <table class="datos">
+    <tr><th>Dato</th><th>De dónde sale</th><th>Dónde vive</th></tr>
+    <tr><td>WABA ID del cliente</td><td>Canje del Embedded Signup</td><td>Base de datos, en claro (es un identificador)</td></tr>
+    <tr><td><code>phone_number_id</code></td><td>Canje del Embedded Signup</td><td>Base de datos — <strong>es la clave que resuelve a qué cliente pertenece cada mensaje entrante</strong></td></tr>
+    <tr><td>Token del cliente</td><td>Canje del Embedded Signup</td><td>Base de datos, <strong>cifrado</strong></td></tr>
+    <tr><td>Clave de IA del cliente</td><td>La entrega el cliente</td><td>Base de datos, <strong>cifrada</strong></td></tr>
+    <tr><td>PIN de verificación en dos pasos</td><td>Se elige en el alta</td><td>Base de datos, <strong>cifrado</strong></td></tr>
+  </table>
+
+  <div class="peligro">
+    <p><span class="et">Ningún valor secreto se pega en este documento.</span> Los secretos viven en las
+    variables de Railway y en la base cifrados. Aquí solo se anota <strong>que existen</strong>, dónde y
+    desde cuándo. Un token que acaba escrito en un chat hay que rotarlo, y eso ya pasó una vez.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="decisiones">6 · Decisiones ya cerradas — no re-litigar</h2>
+  <table>
+    <tr><th>Decisión</th><th>Por qué</th></tr>
+    <tr><td><strong>La app pertenece al portafolio de GCC, no al del cliente</strong></td>
+        <td>Un portafolio no puede darse de alta a sí mismo por Embedded Signup. Proveedor y cliente tienen que ser portafolios distintos.</td></tr>
+    <tr><td><strong>API oficial de Meta, no un intermediario (BSP)</strong></td>
+        <td>Los límites de tiempo de respuesta de los proveedores obligaban a inventar parches. Reafirmado el 2026-08-01: ni como plan B.</td></tr>
+    <tr><td><strong>Coexistencia obligatoria</strong></td>
+        <td>El equipo del cliente necesita seguir en WhatsApp Web. Es la propuesta de valor entera.</td></tr>
+    <tr><td><strong>Una sola arquitectura: la de la guía</strong></td>
+        <td>Sus parámetros son la norma que esperan todos los agentes futuros: modelo, <code>max_tokens</code>, debounce de 8 s, ventana de 40 mensajes y las tres herramientas.</td></tr>
+    <tr><td><strong>Se elimina el tipo de flujo Chatbot</strong></td>
+        <td>Iba por YCloud. Verificado el 2026-08-01: sus tablas ni siquiera existen en producción, así que el borrado no toca datos.</td></tr>
+    <tr><td><strong>Versión 1: la bandeja la opera solo GCC</strong></td>
+        <td>El cliente participa una única vez, al conectar su número. Evita meter la autenticación de clientes al dashboard dentro de esta entrega.</td></tr>
+    <tr><td><strong>Cada cliente pone su propia clave de IA</strong></td>
+        <td>Se guarda cifrada. Si esa clave falla, la conversación <strong>escala a una persona</strong> y se avisa en el panel: nunca deja al agente mudo en silencio.</td></tr>
+    <tr><td><strong>El agente no recopila datos del contacto</strong></td>
+        <td>Petición expresa del primer cliente: ni nombres, ni documentos, ni ubicaciones.</td></tr>
+    <tr><td><strong>El conocimiento entra completo en el prompt cacheado</strong></td>
+        <td>Nada de embeddings. Y se redacta descriptivo, no como pares pregunta→respuesta: un carácter distinto rompía la coincidencia.</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="abierto">7 · Lo que falta decidir</h2>
+  <ul class="chk">
+    <li><strong>El worker.</strong> Propuesta: un servicio aparte en Railway con un bucle de pocos segundos,
+      como en Peters Tours. El cron actual pasa cada 10 minutos y no sirve para conversar.
+      <em>Espera tu confirmación (bloquea C8).</em></li>
+    <li><strong>Qué se le pide al cliente en el alta y en qué orden.</strong> Son dos credenciales, no una:
+      su número (por Embedded Signup) y su clave de IA. La pantalla tiene que dejar claro cuál falta.
+      <em>Se concreta al llegar a C7.</em></li>
+    <li><strong>Cómo se cobra el servicio.</strong> Meta cobra por conversación y la IA la paga el cliente
+      con su clave. Queda por definir qué cobra GCC y sobre qué base. <em>No bloquea nada todavía.</em></li>
+    <li><strong>Cuándo entra el cliente al dashboard.</strong> Hoy el acceso exige sesión de equipo. Es un
+      pendiente anotado desde junio de 2026; la versión 1 lo esquiva a propósito, pero el modelo de datos
+      se construye desde ya para que encaje sin rehacerlo.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bloque">
+  <h2 id="bitacora">8 · Bitácora</h2>
+  <p>Cada avance deja una línea aquí. Es lo que permite reconstruir por qué algo quedó como quedó.</p>
+  <table class="bitacora">
+    <tr><th>Fecha</th><th>Qué pasó</th></tr>
+    <tr><td>2026-08-01</td><td>Se crea este plan. Estado inicial: F1 hecho, arrancan F2 y C1 en paralelo.</td></tr>
+    <tr><td>2026-08-01</td><td>Cerradas cuatro decisiones: una sola arquitectura (la de la guía), se elimina el Chatbot, la versión 1 la opera solo GCC, y cada cliente pone su clave de IA.</td></tr>
+    <tr><td>2026-08-01</td><td>Verificado contra la base de producción: las tablas del chatbot viejo no existen. El borrado no toca datos.</td></tr>
+    <tr><td>2026-08-01</td><td>Creada la app del proveedor en Meta (F1). Falta comprobar que quedó en el portafolio de GCC.</td></tr>
+  </table>
+</div>
+
+<footer>
+  Documento vivo · Grupo Corazones Cruzados · Iniciado el 1 de agosto de 2026.<br>
+  Arquitectura y errores a no repetir: <code>guia-coexistencia-proveedor.html</code> ·
+  Contexto del proyecto: <code>MEMORIA.md</code> · Preguntas abiertas: <code>Aprendizaje.md</code>
+</footer>
+
+</div>
+</body>
+</html>
