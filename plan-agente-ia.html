@@ -105,10 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">C3 · Webhook y cola &nbsp;·&nbsp; luego F8</p>
-    <p class="quien">Las seis variables están cargadas y producción responde. <strong>F8 depende de C3</strong>: el webhook tiene que existir antes de darlo de alta en Meta, así que ahora me toca a mí.</p>
-    <div class="barra"><span style="width:48%"></span></div>
-    <div class="barra-pie"><span>10 de 21 pasos terminados</span><span>48%</span></div>
+    <p class="paso">F8 · Dar de alta el webhook &nbsp;·&nbsp; C4 · El runner</p>
+    <p class="quien"><strong>C3 hecho.</strong> El webhook ya existe, así que F8 queda desbloqueado. La URL y el paso a paso, en <a href="#f8" style="color:var(--morado)">§5.6</a>.</p>
+    <div class="barra"><span style="width:52%"></span></div>
+    <div class="barra-pie"><span>11 de 21 pasos terminados</span><span>52%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -266,7 +266,7 @@
     </tr>
 
     <tr>
-      <td>F8</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>F8</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">Dar de alta el webhook y suscribirlo a <code>messages</code></span>
         <span class="d">WhatsApp → Configuración → Webhooks: la URL del webhook de GCC World y el token de
@@ -377,7 +377,7 @@
     </tr>
 
     <tr>
-      <td>C3</td><td><span class="est e-curso">En curso</span></td>
+      <td>C3</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Webhook de Meta y cola de trabajos</span>
         <span class="d">El webhook <strong>no piensa</strong>: valida la firma HMAC, persiste el mensaje de
@@ -386,13 +386,18 @@
         clientes reales.<br>
         La cola vive <strong>en la base</strong>, no en memoria del proceso: en Railway un redeploy se
         llevaría por delante cualquier temporizador en memoria — que es justo el fallo que tenía el chatbot
-        viejo.</span>
+        viejo.<br>
+        <strong>Hecho el 2026-08-01.</strong> <code>app/api/agente/webhook/route.ts</code> +
+        <code>lib/agente/{firma,entrante,ingesta,cola,canales}.ts</code>. 33 pruebas, 0 fallos.
+        La validación destapó un fallo real que habría roto la ingesta en producción: el índice de
+        <code>wa_message_id</code> es <strong>parcial</strong> y Postgres exige repetir su condición en
+        el <code>ON CONFLICT</code>.</span>
       </td>
       <td>C1, C2</td>
     </tr>
 
     <tr>
-      <td>C4</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>C4</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">El runner: un nodo de IA con tres herramientas</span>
         <span class="d">El modelo elige siempre exactamente una: <code>responder</code>,
@@ -881,6 +886,29 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     conversación, hay que darlo por quemado y generarlo de nuevo.</p>
   </div>
 
+  <h3 id="f8">5.6 · Alta del webhook en Meta (F8)</h3>
+  <table class="datos">
+    <tr><th>Campo</th><th>Valor</th></tr>
+    <tr><td><strong>URL de devolución de llamada</strong></td>
+        <td><span class="val">https://app.grupocc.org/api/agente/webhook</span></td></tr>
+    <tr><td><strong>Token de verificación</strong></td>
+        <td>El valor de <code>WHATSAPP_VERIFY_TOKEN</code>, <strong>copiado del panel de Railway</strong>. No está escrito en ningún otro sitio a propósito.</td></tr>
+  </table>
+  <div class="peligro">
+    <p><span class="et">Y DESPUÉS, suscribirse al campo <code>messages</code>.</span> Guardar la URL no
+    basta: hay que entrar en la lista de campos y activar <code>messages</code>. Sin eso
+    <strong>no llega ni un mensaje</strong> y todo <em>parece</em> correcto — es el despiste más caro
+    de esta integración y en el proyecto anterior pasó dos veces.</p>
+  </div>
+  <div class="nota">
+    <p><span class="et">Qué va a pasar al guardar:</span> Meta llamará una vez con
+    <code>hub.verify_token</code> y espera de vuelta el <code>hub.challenge</code>. Si el token
+    coincide, valida; si no, no. Después, cualquier petición sin la firma
+    <code>X-Hub-Signature-256</code> correcta recibe <strong>403</strong>, y todo lo demás
+    <strong>200</strong> — incluso si algo falla por dentro. Un 500 haría que Meta reintente y acabe
+    deshabilitando el webhook, y ahí se pierden mensajes de clientes reales.</p>
+  </div>
+
   <h3>Por cada cliente que se dé de alta</h3>
   <p>Esto <strong>no se anota a mano</strong>: lo guarda la plataforma al cerrar el Embedded Signup. Queda
   aquí para saber qué se espera de cada alta.</p>
@@ -964,6 +992,7 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>C3 hecho.</strong> Webhook con firma HMAC, lectura de la carga de Meta, ingesta idempotente y cola con debounce. 33 pruebas, 0 fallos. <strong>Fallo real corregido:</strong> el <code>ON CONFLICT</code> sobre <code>wa_message_id</code> necesitaba repetir la condición del índice parcial; sin eso la ingesta fallaba entera. <strong>F8 desbloqueado</strong>, con la URL en §5.6.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F9 hecho.</strong> Fernando pegó el App Secret y el token; se comprobó su <em>forma</em> sin exponerlos (32 hex y prefijo <code>EAA</code>). El despliegue terminó bien y producción responde 200. De paso salió a producción la página legal corregida: <code>/legal#eliminar-datos</code> ya resuelve de verdad, así que la URL declarada en Meta es válida.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F9 (primera tanda).</strong> Cargadas en <code>Servidor-GCC → corazonescruzados</code> cuatro de las seis variables, con <code>--skip-deploys</code> para no reiniciar producción. Las dos generadas fueron por stdin, sin pasar por la terminal. Quedan <code>WHATSAPP_APP_SECRET</code> y <code>WHATSAPP_TOKEN</code> con marcador.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F7 hecho.</strong> Usuario del sistema creado en el portafolio de GCC y token permanente generado.</td></tr>
