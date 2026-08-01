@@ -73,7 +73,35 @@ establecimientos no aparece en este documento de 2 páginas — solo su conteo.
 descargar del SRI en línea el reporte de **«Establecimientos registrados»**, que sí lista cada
 establecimiento con su nombre comercial.
 
-- [ ] **Pendiente:** descargar ese reporte y guardarlo aquí junto a este certificado.
+### El establecimiento YA existe — no hay que crear ninguno
+
+El certificado dice **«Establecimientos: Abiertos 1»**, y está verificado en producción: hay
+**30 facturas autorizadas por el SRI** con numeración **`001-001-000000024`** a
+**`001-001-000000073`**. Ese primer `001` **es el código del establecimiento**; el segundo es el
+punto de emisión. Sin un establecimiento abierto no se puede emitir ni una factura electrónica.
+
+El establecimiento **001 (matriz)** se crea solo al inscribir el RUC. Coincide con
+`SRI_CONFIG.establecimiento = '001'` en `lib/integrations/sri/config.ts`.
+
+> ⛔ **NO crear un establecimiento nuevo.** Un `002` es para un **local físico distinto**: arrastra
+> sus propios puntos de emisión y su propia secuencia de numeración. Si se emitiera desde él, la
+> numeración de las facturas se rompería y habría que reconfigurar la facturación electrónica que
+> hoy funciona. No hay ningún motivo para hacerlo.
+
+### Lo único por confirmar: si el establecimiento 001 tiene el nombre comercial asignado
+
+El nombre comercial es un dato **opcional** del establecimiento. `config.ts` lo declara y viaja en el
+XML de cada factura, **pero eso no prueba que esté registrado**: en el esquema del SRI
+`<nombreComercial>` es informativo y no consta que se coteje contra el registro al autorizar.
+
+- [ ] **Comprobar** en *SRI en línea → RUC → Establecimientos* si el 001 tiene «GRUPO CORAZONES
+      CRUZADOS» como nombre comercial.
+      - **Si lo tiene:** descargar el reporte de establecimientos y guardarlo en esta carpeta. Con eso
+        queda probado el nombre comercial ante quien lo pida.
+      - **Si no lo tiene:** es una **actualización de datos del establecimiento existente**, no un
+        establecimiento nuevo.
+- **No bloquea nada hasta F11** (verificación del negocio en Meta). Para el resto de pasos basta el
+  nombre legal, que sí está certificado.
 
 ## Dónde se usan estos datos en el código
 

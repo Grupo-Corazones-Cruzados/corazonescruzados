@@ -797,6 +797,26 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     su nombre comercial. <strong>Conviene tenerlo listo antes de empezar F11.</strong></p>
   </div>
 
+  <div class="bien">
+    <p><span class="et">El establecimiento ya existe: no hay que crear ninguno.</span> El certificado
+    dice «Establecimientos: Abiertos 1», y está comprobado en producción — hay <strong>30 facturas
+    autorizadas por el SRI</strong> numeradas <code>001-001-000000024</code> a
+    <code>001-001-000000073</code>. Ese primer <code>001</code> <strong>es el establecimiento</strong>
+    (el segundo es el punto de emisión). Sin un establecimiento abierto no se emite ni una factura.</p>
+    <p><strong>Lo único por confirmar</strong> es si ese establecimiento tiene asignado el
+    <em>nombre comercial</em>, que es un dato opcional: se mira en <em>SRI en línea → RUC →
+    Establecimientos</em>. Si no lo tiene, es una <strong>actualización del establecimiento que ya
+    existe</strong>.</p>
+  </div>
+
+  <div class="peligro">
+    <p><span class="et">No crear un establecimiento nuevo.</span> Un <code>002</code> es para un
+    <strong>local físico distinto</strong>: arrastra sus propios puntos de emisión y su propia
+    secuencia de numeración. Si se emitiera desde él, <strong>la numeración de las facturas se
+    rompería</strong> y habría que reconfigurar la facturación electrónica que hoy funciona y está
+    autorizada. No hay ningún motivo para hacerlo.</p>
+  </div>
+
   <div class="ojo">
     <p><span class="et">«Tabacundo» es la calle, no la ciudad.</span> La ciudad es
     <strong>Guayaquil</strong>. Ese malentendido estaba metido en <code>app/legal/page.tsx</code>, que
