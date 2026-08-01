@@ -2,7 +2,7 @@
 
 /**
  * FlowPanelUI — definición ÚNICA del lenguaje visual de los editores grandes de
- * Automatizaciones (Email masivo, WhatsApp, Chatbot). Antes cada panel traía su propio
+ * Automatizaciones (Email masivo, WhatsApp, agente IA). Antes cada panel traía su propio
  * overlay, su cabecera, sus pasos y sus botones a mano (y los tres se veían distinto y
  * seguían el lenguaje pixel antiguo: bordes de 2px, textos de 8-9px).
  *

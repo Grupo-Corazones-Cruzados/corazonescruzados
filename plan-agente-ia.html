@@ -105,10 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">F5 · Configuración de Embedded Signup &nbsp;·&nbsp; C1 · Esquema de datos y limpieza</p>
-    <p class="quien">Dos carriles a la vez: <strong>F5</strong> y <strong>F6</strong> los haces tú en Meta; <strong>C1</strong> lo hago yo en el repo. F4 quedó hecho salvo las instrucciones de prueba, aplazadas a propósito hasta F12.</p>
-    <div class="barra"><span style="width:19%"></span></div>
-    <div class="barra-pie"><span>4 de 21 pasos terminados</span><span>19%</span></div>
+    <p class="paso">F7 · Usuario del sistema y su token &nbsp;·&nbsp; C2 · Cifrado de secretos</p>
+    <p class="quien"><strong>C1 terminado y aplicado en producción.</strong> Con F5 y F6 hechos, <strong>C7 queda desbloqueado</strong>: ya se puede construir la pantalla de conexión del cliente.</p>
+    <div class="barra"><span style="width:33%"></span></div>
+    <div class="barra-pie"><span>7 de 21 pasos terminados</span><span>33%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -225,21 +225,21 @@
       <td>F3</td>
     </tr>
 
-    <tr class="actual">
-      <td>F5</td><td><span class="est e-curso">En curso</span></td>
+    <tr>
+      <td>F5</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Crear la configuración de Embedded Signup</span>
         <span class="d">Inicio de sesión con Facebook para empresas → Configuraciones → Crear desde plantilla
         → <strong>«Configuración de registro insertado de WhatsApp con un token que caduca en 60 días»</strong>.<br>
         La plantilla <em>«Socio de medición»</em> <strong>no sirve</strong>: es de solo lectura y está atada a
         la versión 2, que Meta retira el 15 de octubre de 2026.<br>
-        <strong>Resultado a anotar en §5:</strong> el identificador de la configuración.</span>
+        <strong>Hecho el 2026-08-01.</strong> Identificador: <code>1070995845869940</code>.</span>
       </td>
       <td>F3</td>
     </tr>
 
     <tr>
-      <td>F6</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>F6</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Habilitar el SDK de JavaScript</span>
         <span class="d">Misma sección → Configurar:
@@ -253,7 +253,7 @@
     </tr>
 
     <tr>
-      <td>F7</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>F7</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">Usuario del sistema del proveedor y su token</span>
         <span class="d">Portafolio de GCC → Usuarios del sistema → Agregar, rol <strong>Administrador</strong>.
@@ -345,8 +345,8 @@
   <table class="pasos">
     <tr><th>#</th><th>Estado</th><th>Paso</th><th>Depende de</th></tr>
 
-    <tr class="actual">
-      <td>C1</td><td><span class="est e-curso">En curso</span></td>
+    <tr>
+      <td>C1</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Esquema de datos del agente y limpieza del chatbot viejo</span>
         <span class="d">Migración <code>027</code>: canales (sobre el flujo), contactos, conversaciones,
@@ -355,14 +355,17 @@
         Se elimina a la vez el tipo de flujo <strong>Chatbot</strong> (iba por YCloud, un intermediario, y
         la decisión cerrada es API oficial de Meta). ✅ Comprobado contra la base de producción: sus tablas
         <strong>ni siquiera existen</strong>, así que el borrado es solo de código.<br>
-        <strong>Verificación:</strong> la migración se prueba con <code>BEGIN … ROLLBACK</code> contra la
-        base real y se compara el inventario antes y después.</span>
+        <strong>Hecho y aplicado el 2026-08-01</strong> (<code>sql/migrations/027_agente_ia.sql</code>).
+        Validada antes con <code>BEGIN … ROLLBACK</code> contra la base real: <strong>19 comprobaciones,
+        0 fallos</strong>, y el inventario quedó idéntico (166 tablas, 1.838 filas). Se comprobaron el
+        debounce (ráfaga de 6 mensajes ⇒ una sola corrida), la idempotencia por <code>wa_message_id</code>,
+        el borrado en cascada y que dos canales no puedan compartir número.</span>
       </td>
       <td>—</td>
     </tr>
 
     <tr>
-      <td>C2</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>C2</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">Cifrado de secretos por cliente</span>
         <span class="d">Cada alta devuelve un token de WhatsApp propio del cliente, y además cada cliente
@@ -428,7 +431,7 @@
     </tr>
 
     <tr>
-      <td>C7</td><td><span class="est e-bloq">Bloqueado</span></td>
+      <td>C7</td><td><span class="est e-pend">Pendiente</span></td>
       <td>
         <span class="t">Pantalla de conexión del cliente (Embedded Signup)</span>
         <span class="d">Donde el cliente conecta su número. Es la pieza que convierte esto en un producto:
@@ -552,8 +555,8 @@ F12 App Review + proveedor ┘
     <tr>
       <td><code>WHATSAPP_ES_CONFIG_ID</code></td>
       <td>Público. La configuración de Embedded Signup que abre el alta.</td>
-      <td class="vacio">por anotar (F5)</td>
-      <td>—</td>
+      <td><span class="val">1070995845869940</span> — plantilla de token de 60 días</td>
+      <td>2026-08-01</td>
     </tr>
     <tr>
       <td><code>WHATSAPP_TOKEN</code></td>
@@ -910,6 +913,8 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>F5 y F6 hechos.</strong> Configuración de Embedded Signup creada con la plantilla de 60 días — identificador <code>1070995845869940</code> — y SDK de JavaScript habilitado. <strong>C7 deja de estar bloqueado.</strong></td></tr>
+    <tr><td>2026-08-01</td><td><strong>C1 hecho y aplicado en producción.</strong> Migración <code>027_agente_ia.sql</code>: 9 tablas del agente, con el tenant siendo el flujo. Validada antes con ROLLBACK — 19 comprobaciones, 0 fallos, inventario idéntico. Eliminado el chatbot de YCloud (código y rutas); sus tablas no existían. <code>tsc</code> y <code>next build</code> OK.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F4 hecho.</strong> Configuración básica completa. Las <strong>instrucciones de prueba se dejan vacías a propósito</strong> —decisión del usuario— hasta F12: hoy describirían una pantalla que no existe. Arrancan F5 y F6.</td></tr>
   </table>
 </div>

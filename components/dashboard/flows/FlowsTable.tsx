@@ -17,7 +17,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import BrandLoader from '@/components/ui/BrandLoader';
 import {
-  Workflow, Mail, MessageCircle, Bot, Sparkles, Puzzle, Search, Plus,
+  Workflow, Mail, MessageCircle, Sparkles, Puzzle, Search, Plus,
   Settings2, Pencil, Trash2, Play, Pause, X, ArrowRight,
 } from 'lucide-react';
 
@@ -27,11 +27,10 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 const FLOW_TYPES: Record<string, { label: string; Icon: any }> = {
   email: { label: 'Email Masivo', Icon: Mail },
   whatsapp: { label: 'WhatsApp', Icon: MessageCircle },
-  chatbot: { label: 'Chatbot', Icon: Bot },
   ai_agent: { label: 'Agente IA', Icon: Sparkles },
   custom: { label: 'Personalizado', Icon: Puzzle },
 };
-const TYPE_ORDER = ['email', 'whatsapp', 'chatbot', 'ai_agent', 'custom'];
+const TYPE_ORDER = ['email', 'whatsapp', 'ai_agent', 'custom'];
 
 const FLOW_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   draft: 'default', active: 'success', paused: 'warning', archived: 'error',

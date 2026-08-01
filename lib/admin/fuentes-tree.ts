@@ -82,7 +82,7 @@ export const FUENTES_TAXONOMY: TreeSpec[] = [
     ],
   },
   {
-    name: 'Automatizaciones', kind: 'module', hint: 'Flujos de email, WhatsApp y chatbot',
+    name: 'Automatizaciones', kind: 'module', hint: 'Flujos de email, WhatsApp y agentes IA',
     tables: ['flows'],
     children: [
       { name: 'Campañas y contactos', kind: 'subsystem',

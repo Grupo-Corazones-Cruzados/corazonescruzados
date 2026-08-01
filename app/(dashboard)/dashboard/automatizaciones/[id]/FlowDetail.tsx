@@ -20,8 +20,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
 import EmailFlowWorkspace, { type EmailWorkspaceHandle } from '@/components/dashboard/flows/EmailFlowWorkspace';
 import WhatsAppFlowPanel from '@/components/dashboard/flows/WhatsAppFlowPanel';
-import ChatbotFlowPanel from '@/components/dashboard/flows/ChatbotFlowPanel';
-import { Mail, MessageCircle, Bot, Sparkles, Puzzle, Play, Pause, AlertTriangle, Plus } from 'lucide-react';
+import { Mail, MessageCircle, Sparkles, Puzzle, Play, Pause, AlertTriangle, Plus } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -33,7 +32,6 @@ interface Flow {
 const FLOW_TYPES: Record<string, { label: string; Icon: any }> = {
   email: { label: 'Email masivo', Icon: Mail },
   whatsapp: { label: 'WhatsApp', Icon: MessageCircle },
-  chatbot: { label: 'Chatbot', Icon: Bot },
   ai_agent: { label: 'Agente IA', Icon: Sparkles },
   custom: { label: 'Personalizado', Icon: Puzzle },
 };
@@ -102,7 +100,7 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
   }
 
   const type = FLOW_TYPES[flow.type] || FLOW_TYPES.custom;
-  const isEmailWorkspace = flow.type !== 'whatsapp' && flow.type !== 'chatbot';
+  const isEmailWorkspace = flow.type !== 'whatsapp' && flow.type !== 'ai_agent';
 
   return (
     <div>
@@ -134,14 +132,18 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
         <p className="text-[13px] text-digi-muted -mt-2 mb-4 max-w-3xl leading-relaxed" style={mf}>{flow.description}</p>
       )}
 
-      {/* El espacio de trabajo depende del tipo. Los paneles de WhatsApp y Chatbot se
-          montan en modo página (sin su overlay), con `onClose` volviendo al listado. */}
+      {/* El espacio de trabajo depende del tipo. El panel de WhatsApp se monta en modo
+          página (sin su overlay), con `onClose` volviendo al listado. */}
       {flow.type === 'whatsapp' ? (
         <WhatsAppFlowPanel flow={flow} variant="page" onClose={() => router.push('/dashboard/automatizaciones')} />
-      ) : flow.type === 'chatbot' ? (
-        <ChatbotFlowPanel flow={flow} variant="page" onClose={() => router.push('/dashboard/automatizaciones')} />
+      ) : flow.type === 'ai_agent' ? (
+        <PanelEmpty
+          Icon={Sparkles}
+          title="Estudio del agente — en construcción"
+          desc="Aquí van el conocimiento, los prompts, los parámetros y la bandeja de conversaciones. El esquema de datos ya está: falta la interfaz."
+        />
       ) : (
-        // email · ai_agent · custom → campañas de correo (igual que antes del rediseño).
+        // email · custom → campañas de correo (igual que antes del rediseño).
         <EmailFlowWorkspace flow={flow} controlRef={emailRef} />
       )}
 

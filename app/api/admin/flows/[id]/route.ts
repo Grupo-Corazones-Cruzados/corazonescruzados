@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * Un flujo. Lo consume la página de detalle `/dashboard/automatizaciones/[id]`, que necesita
- * el tipo para decidir qué espacio de trabajo montar (email masivo / WhatsApp / chatbot).
+ * el tipo para decidir qué espacio de trabajo montar (email masivo / WhatsApp / agente IA).
  */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

@@ -1182,7 +1182,7 @@ html {
 
 /* Dark "island" inside the corporate dashboard: re-establishes the original
    dark/pixel tokens locally. Use on subtrees that must stay dark regardless of
-   the corporate theme — e.g. the WhatsApp / chatbot message previews, which
+   the corporate theme — e.g. the WhatsApp message previews, which
    hardcode dark chat backgrounds but color their text via `digi-*` tokens. */
 .pixel-scope {
   --color-digi-green: #ffffff;
