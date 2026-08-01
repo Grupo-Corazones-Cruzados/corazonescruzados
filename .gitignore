@@ -6,6 +6,13 @@ data/uploads/
 data/*.p12
 data/google-sa.json
 certificates/
+
+# Documentos legales del negocio (RUC, certificados). Llevan datos personales y el
+# historial de git es permanente: solo se versiona documentos-negocio/DATOS-NEGOCIO.md,
+# que es el resumen que se consulta a diario.
+documentos-negocio/*.pdf
+documentos-negocio/*.jpg
+documentos-negocio/*.png
 /lib/generated/prisma
 
 # Claude Code local tooling state (no es parte de la app)

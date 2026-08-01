@@ -21,7 +21,12 @@ export const metadata = {
 const ULTIMA_ACTUALIZACION = '23 de junio de 2026';
 const RESPONSABLE = 'Luis Fernando González Muyulema';
 const RUC = '0930095922001';
-const DIRECCION = 'Tabacundo, código postal 090102, Ecuador';
+// Dirección del domicilio tributario, tal como consta en el certificado de RUC del SRI
+// (ver documentos-negocio/DATOS-NEGOCIO.md). Ojo: «Tabacundo» es la CALLE, no la ciudad —
+// antes decía «Tabacundo, código postal 090102», que confundía la calle con un cantón de
+// Pichincha e inventaba un código postal que no consta en ningún documento.
+const DIRECCION =
+  'Barrio 7 Lagos, calle Tabacundo #12 e intersección Guasmo Central, parroquia Ximena, Guayaquil, Ecuador';
 const CONTACTO = 'lfgonzalezm0@grupocc.org';
 
 export default function LegalPage() {

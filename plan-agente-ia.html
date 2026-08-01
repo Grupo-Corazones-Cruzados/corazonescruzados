@@ -108,8 +108,8 @@
     <p class="paso">F4 · Configuración básica de la app &nbsp;·&nbsp; C1 · Esquema de datos y limpieza</p>
     <p class="quien">Dos carriles a la vez: <strong>F4</strong> lo haces tú en Meta —los valores exactos están en
       <a href="#f4" style="color:var(--morado)">§5.1</a>— y <strong>C1</strong> lo hago yo en el repo.</p>
-    <div class="barra"><span style="width:15%"></span></div>
-    <div class="barra-pie"><span>3 de 20 pasos terminados</span><span>15%</span></div>
+    <div class="barra"><span style="width:14%"></span></div>
+    <div class="barra-pie"><span>3 de 21 pasos terminados</span><span>14%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -308,6 +308,22 @@
     <tr>
       <td>F11</td><td><span class="est e-pend">Pendiente</span></td>
       <td>
+        <span class="t">Verificar el negocio del portafolio de GCC</span>
+        <span class="d">Portafolio <code>1000698870638078</code> → Centro de seguridad → Verificación
+        del negocio. Es <strong>requisito previo</strong> de la verificación de proveedor de
+        tecnología, y faltaba en este plan: en la guía constan verificados los portafolios de
+        Peter's tour e Imadexa, pero <strong>no el de GCC</strong>.<br>
+        Los datos exactos —nombre legal, dirección y teléfono— salen de
+        <a href="#identidad" style="color:var(--accent-texto)">§5.4</a> y del certificado de RUC.
+        <strong>El nombre legal es «GONZALEZ MUYULEMA LUIS FERNANDO»</strong>, no «Grupo Corazones
+        Cruzados»: ese es el nombre comercial y va en el campo de nombre visible.</span>
+      </td>
+      <td>F2</td>
+    </tr>
+
+    <tr>
+      <td>F12</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>
         <span class="t">Solicitar acceso avanzado: App Review y verificación de proveedor</span>
         <span class="d">Mientras GCC opere su propio número basta el acceso estándar. En cuanto se dé de
         alta a un <strong>cliente</strong> —cuyos usuarios no tienen rol en la app— hace falta
@@ -317,7 +333,7 @@
         historia. Y las llamadas de prueba son reales: Meta comprueba que la app ya haya usado cada permiso
         con éxito.</span>
       </td>
-      <td>F10, C7</td>
+      <td>F10, F11, C7</td>
     </tr>
   </table>
 </div>
@@ -482,7 +498,8 @@ F9  variables en Railway   │
                     C9  alta del número real  ← WhatsApp Web sigue vivo
                            │
 F10 páginas legales        │
-F11 App Review + proveedor ┘
+F11 verificar el negocio  │
+F12 App Review + proveedor ┘
                            ▼
                     Cliente nuevo = una pantalla</code></pre>
   <p>Los dos carriles solo se tocan en tres sitios: <strong>F5/F6 → C7</strong> (sin la configuración de
@@ -656,7 +673,7 @@ F11 App Review + proveedor ┘
     <p><span class="et">Aquí hay un problema de tiempo que conviene ver ahora:</span> estas
     instrucciones describen <strong>lo que el revisor puede probar hoy</strong>, y hoy la pantalla de
     conexión del cliente (C7) todavía no existe. Así que se rellenan con lo que hay de verdad, y
-    <strong>se reescriben en F11</strong>, cuando exista la pantalla y un usuario de prueba.
+    <strong>se reescriben en F12</strong>, cuando exista la pantalla y un usuario de prueba.
     La lección más cara de la revisión anterior fue exactamente esta: <em>el texto y el video tienen
     que contar la misma historia</em>. Un texto que promete lo que no se ve, la hunde.</p>
   </div>
@@ -685,7 +702,7 @@ F11 App Review + proveedor ┘
     <tr>
       <td>Códigos o credenciales si hay pago o membresía</td>
       <td>Aquí va el <strong>usuario de prueba del revisor</strong>, con la advertencia de que
-        <strong>debe seguir activo un año</strong> desde la solicitud. Se crea en F11 con un rol de solo
+        <strong>debe seguir activo un año</strong> desde la solicitud. Se crea en F12 con un rol de solo
         lectura; hoy se puede dejar en blanco.</td>
     </tr>
     <tr>
@@ -719,13 +736,13 @@ Como probarlo: [pendiente de completar cuando exista la pantalla de conexion —
 usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
   <p style="font-size:13px;color:var(--texto-suave)">
     Sin tildes ni «ñ» a propósito: estos formularios de Meta han mostrado problemas de codificación
-    con caracteres acentuados en el pasado. El último párrafo se completa en F11.</p>
+    con caracteres acentuados en el pasado. El último párrafo se completa en F12.</p>
 
   <h3>5.3 · Otros datos legales y de contacto</h3>
   <table class="datos">
     <tr><th>Dato</th><th>Dónde lo pide</th><th>Valor / estado</th><th>Fecha</th></tr>
-    <tr><td>Usuario de prueba para el revisor</td><td>App Review</td><td class="vacio">por crear (F11) — debe seguir activo un año</td><td>—</td></tr>
-    <tr><td>Video de demostración</td><td>App Review</td><td class="vacio">por grabar (F11)</td><td>—</td></tr>
+    <tr><td>Usuario de prueba para el revisor</td><td>App Review</td><td class="vacio">por crear (F12) — debe seguir activo un año</td><td>—</td></tr>
+    <tr><td>Video de demostración</td><td>App Review</td><td class="vacio">por grabar (F12)</td><td>—</td></tr>
     <tr><td>Compromisos ante solicitudes de autoridades</td><td>App Review</td><td class="vacio">por añadir a la política <strong>antes</strong> de marcar las casillas (F10)</td><td>—</td></tr>
   </table>
 
@@ -736,6 +753,56 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     tratamiento por cuenta de empresas clientes</strong>. Con esos textos F4 se completa sin problema,
     pero <strong>F10 sigue siendo obligatorio antes del App Review</strong>: es el cambio conceptual
     más importante de todo el proyecto.</p>
+  </div>
+
+  <h3 id="identidad">5.4 · Identidad legal del proveedor</h3>
+  <p>Fuente de verdad: <code>documentos-negocio/DATOS-NEGOCIO.md</code>, extraído del certificado de
+  RUC del SRI emitido el <strong>1 de agosto de 2026</strong>.</p>
+
+  <div class="bien">
+    <p><span class="et">El nombre del proyecto no coincide con el nombre legal, y eso NO es un
+    problema.</span> Meta separa el <strong>nombre legal</strong> —el que verifica contra un
+    documento oficial— del <strong>nombre visible</strong>, que puede ser el comercial. El negocio es
+    una <strong>persona natural</strong> con RUC, régimen RIMPE Negocio Popular, y Meta verifica
+    negocios de propietario único sin ningún inconveniente.</p>
+    <p><strong>El error sería al revés:</strong> declarar «Grupo Corazones Cruzados» como nombre
+    <em>legal</em>. Ahí sí falla, porque ningún documento lo respalda como razón social.</p>
+  </div>
+
+  <table class="datos">
+    <tr><th>Campo del portafolio</th><th>Qué poner</th></tr>
+    <tr><td><strong>Nombre legal del negocio</strong></td>
+        <td><span class="val">GONZALEZ MUYULEMA LUIS FERNANDO</span> — exacto como en el RUC, sin tilde en «GONZALEZ» porque así consta</td></tr>
+    <tr><td><strong>Nombre visible / público</strong></td>
+        <td><strong>Grupo Corazones Cruzados</strong></td></tr>
+    <tr><td><strong>Identificación fiscal</strong></td>
+        <td>RUC <span class="val">0930095922001</span></td></tr>
+    <tr><td><strong>Dirección</strong></td>
+        <td>Barrio 7 Lagos, calle Tabacundo #12 e intersección Guasmo Central, parroquia Ximena,<br><strong>Guayaquil</strong>, Guayas, Ecuador</td></tr>
+    <tr><td><strong>Teléfono</strong></td>
+        <td><span class="val">+593 99 270 6933</span> — el registrado en el SRI</td></tr>
+    <tr><td><strong>Documento a subir</strong></td>
+        <td>El certificado de RUC del SRI. Código de verificación <span class="val">RCR1785623856514981</span>, comprobable en SRI en línea.</td></tr>
+  </table>
+
+  <div class="peligro">
+    <p><span class="et">Cuidado con el nombre comercial: el certificado de RUC NO lo muestra.</span>
+    Solo trae «Apellidos y nombres». En Ecuador el nombre comercial se registra <strong>por
+    establecimiento</strong>, y el detalle de establecimientos no sale en ese documento de dos
+    páginas — solo su conteo.</p>
+    <p><strong>Qué significa:</strong> para la verificación del negocio (F11) el certificado basta,
+    porque ahí lo que se verifica es el <em>nombre legal</em>. Pero si en algún momento Meta pide
+    probar que «Grupo Corazones Cruzados» pertenece a este RUC, hay que descargar del SRI en línea el
+    reporte de <strong>«Establecimientos registrados»</strong>, que sí lista cada establecimiento con
+    su nombre comercial. <strong>Conviene tenerlo listo antes de empezar F11.</strong></p>
+  </div>
+
+  <div class="ojo">
+    <p><span class="et">«Tabacundo» es la calle, no la ciudad.</span> La ciudad es
+    <strong>Guayaquil</strong>. Ese malentendido estaba metido en <code>app/legal/page.tsx</code>, que
+    decía «Tabacundo, código postal 090102» — confundía la calle con el cantón de Pichincha e
+    inventaba un código postal que no consta en ningún documento. Corregido el 2026-08-01. Si
+    reaparece en algún formulario, es el mismo error.</p>
   </div>
 
   <h3>Por cada cliente que se dé de alta</h3>
@@ -815,6 +882,10 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     <tr><td>2026-08-01</td><td>Arranca F4. Se documentan en §5.1 los valores exactos de los 13 campos del formulario y en §5.2 las instrucciones de prueba. Detectados <strong>tres campos con <code>https://www.facebook.com/</code> de relleno</strong> que había que cambiar.</td></tr>
     <tr><td>2026-08-01</td><td>Comprobado que <code>https://app.grupocc.org/legal</code> responde y es público. Se le añadió la <strong>sección 21 «Cómo eliminar tus datos»</strong> con pasos concretos, porque Meta pide <em>instrucciones</em> de eliminación, no una política genérica. Ancla: <code>#eliminar-datos</code>.</td></tr>
     <tr><td>2026-08-01</td><td>Aclarado que la <strong>dirección postal del formulario pertenece al bloque del delegado de protección de datos</strong>, así que se deja vacía junto con el resto del bloque. El «United States» por defecto no se usa.</td></tr>
+    <tr><td>2026-08-01</td><td>Recibido el <strong>certificado de RUC del SRI</strong>. Se crea <code>documentos-negocio/</code> con <code>DATOS-NEGOCIO.md</code> como fuente de verdad de los datos del negocio; los PDF quedan fuera del repositorio por <code>.gitignore</code>.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>Corrección:</strong> se había dado por hecho que el certificado de RUC mostraba el nombre comercial. <strong>No lo muestra</strong> — en Ecuador va por establecimiento. Para el nombre legal basta; para probar el comercial hace falta el reporte de «Establecimientos registrados». Ver §5.4.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>Nuevo paso F11: verificar el negocio del portafolio de GCC</strong>, que faltaba y es requisito previo del App Review. El antiguo F11 pasa a ser F12. El plan sube de 20 a 21 pasos.</td></tr>
+    <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
   </table>
 </div>
 

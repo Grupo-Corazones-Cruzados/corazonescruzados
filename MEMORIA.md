@@ -319,6 +319,22 @@ Stack estándar de la casa, con particularidades de este repo:
     WhatsApp, configuración básica, config de Embedded Signup con token de 60 días, activar el
     JSSDK, usuario del sistema con token "Nunca", webhook + **suscripción al campo `messages`**).
   - **Primer tenant:** el flujo `ai_agent` id **10, "Diego Castillo"** (el contacto de Peters Tours).
+  - **📇 DATOS REALES DEL NEGOCIO: `documentos-negocio/DATOS-NEGOCIO.md`** (creado 2026-08-01 a
+    partir del certificado de RUC del SRI). **Fuente de verdad** para cualquier trámite, contrato o
+    formulario. Lo esencial:
+    - **Nombre legal ≠ nombre del proyecto, y no es problema.** Razón social
+      **`GONZALEZ MUYULEMA LUIS FERNANDO`** (persona natural, RIMPE Negocio Popular, RUC
+      `0930095922001`); nombre comercial **`GRUPO CORAZONES CRUZADOS`**. En Meta el **nombre legal**
+      va como legal y el comercial como **nombre visible** — al revés es lo que hace fallar la
+      verificación.
+    - ⚠️ **El certificado de RUC NO muestra el nombre comercial** (en Ecuador va por
+      establecimiento). Si hace falta probarlo, se descarga el reporte de **«Establecimientos
+      registrados»** del SRI en línea.
+    - ⚠️ **«Tabacundo» es la CALLE, no la ciudad. La ciudad es GUAYAQUIL** (parroquia Ximena).
+      `app/legal/page.tsx` tenía metido ese error —decía «Tabacundo, código postal 090102», con un
+      código postal que no consta en ningún documento— y se corrigió el 2026-08-01.
+    - Los **PDF de `documentos-negocio/` están en `.gitignore`** (datos personales, historial de git
+      permanente); solo se versiona el `DATOS-NEGOCIO.md`.
   - **📋 TABLERO DEL PROYECTO: `plan-agente-ia.html`** (raíz, creado 2026-08-01). Documento **vivo**
     con los dos carriles de trabajo —**F1–F11** los pasos de Fernando en Meta, **C1–C9** los de
     desarrollo—, sus dependencias, **en qué paso vamos** (banner arriba, hay que actualizarlo en cada
