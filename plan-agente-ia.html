@@ -105,11 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">F4 · Configuración básica de la app &nbsp;·&nbsp; C1 · Esquema de datos y limpieza</p>
-    <p class="quien">Dos carriles a la vez: <strong>F4</strong> lo haces tú en Meta —los valores exactos están en
-      <a href="#f4" style="color:var(--morado)">§5.1</a>— y <strong>C1</strong> lo hago yo en el repo.</p>
-    <div class="barra"><span style="width:14%"></span></div>
-    <div class="barra-pie"><span>3 de 21 pasos terminados</span><span>14%</span></div>
+    <p class="paso">F5 · Configuración de Embedded Signup &nbsp;·&nbsp; C1 · Esquema de datos y limpieza</p>
+    <p class="quien">Dos carriles a la vez: <strong>F5</strong> y <strong>F6</strong> los haces tú en Meta; <strong>C1</strong> lo hago yo en el repo. F4 quedó hecho salvo las instrucciones de prueba, aplazadas a propósito hasta F12.</p>
+    <div class="barra"><span style="width:19%"></span></div>
+    <div class="barra-pie"><span>4 de 21 pasos terminados</span><span>19%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -211,24 +210,23 @@
       <td>F2</td>
     </tr>
 
-    <tr class="actual">
-      <td>F4</td><td><span class="est e-curso">En curso</span></td>
+    <tr>
+      <td>F4</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Configuración básica de la app</span>
-        <span class="d"><strong>Los valores exactos, campo por campo, están en
-        <a href="#f4" style="color:var(--accent-texto)">§5.1</a>.</strong> Ícono, política de
-        privacidad, condiciones, eliminación de datos, dominios, categoría «Negocios y páginas» y
-        correo de contacto. Abajo del todo: <strong>«+ Agregar plataforma» → Sitio web</strong> — sin
-        eso otros formularios se bloquean sin explicar por qué. El bloque de <strong>delegado de
-        protección de datos se deja vacío</strong> (solo aplica con actividad en la Unión Europea), y
-        con él la dirección postal, que pertenece a ese bloque.<br>
-        <strong>Resultado a anotar en §5:</strong> App secret (a Railway, nunca al chat).</span>
+        <span class="d"><strong>Completada el 2026-08-01</strong> con los valores de
+        <a href="#f4" style="color:var(--accent-texto)">§5.1</a>.<br>
+        <strong>Las instrucciones de prueba se dejaron VACÍAS a propósito</strong> (decisión del
+        usuario, 2026-08-01): describirían una pantalla de conexión que aún no existe, y la lección
+        más cara de la revisión anterior fue que el texto y lo que se ve tienen que contar la misma
+        historia. Se rellenan en <strong>F12</strong>, con la pantalla hecha y el usuario de prueba
+        creado. El borrador está listo en §5.2.</span>
       </td>
       <td>F3</td>
     </tr>
 
-    <tr>
-      <td>F5</td><td><span class="est e-pend">Pendiente</span></td>
+    <tr class="actual">
+      <td>F5</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">Crear la configuración de Embedded Signup</span>
         <span class="d">Inicio de sesión con Facebook para empresas → Configuraciones → Crear desde plantilla
@@ -911,6 +909,8 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     <tr><td>2026-08-01</td><td><strong>Nuevo paso F11: verificar el negocio del portafolio de GCC</strong>, que faltaba y es requisito previo del App Review. El antiguo F11 pasa a ser F12. El plan sube de 20 a 21 pasos.</td></tr>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
+    <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>F4 hecho.</strong> Configuración básica completa. Las <strong>instrucciones de prueba se dejan vacías a propósito</strong> —decisión del usuario— hasta F12: hoy describirían una pantalla que no existe. Arrancan F5 y F6.</td></tr>
   </table>
 </div>
 
