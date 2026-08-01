@@ -12,7 +12,7 @@
 | Dato | Valor |
 |---|---|
 | **Razón social / nombre legal** | `GONZALEZ MUYULEMA LUIS FERNANDO` |
-| **Nombre comercial** | `GRUPO CORAZONES CRUZADOS` — ⚠️ ver la advertencia de abajo |
+| **Nombre comercial** | `GRUPO CORAZONES CRUZADOS` — ⚠️ **de uso propio, NO registrado en el SRI** (comprobado 2026-08-01). Ver abajo. |
 | **RUC** | `0930095922001` |
 | **Tipo de contribuyente** | PERSONAS NATURALES |
 | **Régimen** | RIMPE — NEGOCIO POPULAR |
@@ -88,20 +88,35 @@ El establecimiento **001 (matriz)** se crea solo al inscribir el RUC. Coincide c
 > numeración de las facturas se rompería y habría que reconfigurar la facturación electrónica que
 > hoy funciona. No hay ningún motivo para hacerlo.
 
-### Lo único por confirmar: si el establecimiento 001 tiene el nombre comercial asignado
+### ⚠️ El nombre comercial NO está registrado en el SRI (comprobado 2026-08-01)
 
-El nombre comercial es un dato **opcional** del establecimiento. `config.ts` lo declara y viaja en el
-XML de cada factura, **pero eso no prueba que esté registrado**: en el esquema del SRI
-`<nombreComercial>` es informativo y no consta que se coteje contra el registro al autorizar.
+Consultado en *sri.gob.ec → Consultas → Consulta de RUC*, el establecimiento sale así:
 
-- [ ] **Comprobar** en *SRI en línea → RUC → Establecimientos* si el 001 tiene «GRUPO CORAZONES
-      CRUZADOS» como nombre comercial.
-      - **Si lo tiene:** descargar el reporte de establecimientos y guardarlo en esta carpeta. Con eso
-        queda probado el nombre comercial ante quien lo pida.
-      - **Si no lo tiene:** es una **actualización de datos del establecimiento existente**, no un
-        establecimiento nuevo.
-- **No bloquea nada hasta F11** (verificación del negocio en Meta). Para el resto de pasos basta el
-  nombre legal, que sí está certificado.
+| No. establecimiento | Nombre comercial | Ubicación | Estado |
+|---|---|---|---|
+| `001` | *(vacío)* | GUAYAS / GUAYAQUIL / XIMENA / TABACUNDO 12 Y GUASMO CENTRAL | ABIERTO |
+
+**La columna «Nombre comercial» está vacía.** El nombre comercial es un dato **opcional** del
+establecimiento, y este nunca se llenó.
+
+Esto tiene dos consecuencias, y la segunda importa más que la primera:
+
+1. **No existe ningún documento oficial que ligue «GRUPO CORAZONES CRUZADOS» a este RUC.** Ante Meta
+   no es bloqueante —lo que se verifica es el nombre legal—, pero si alguna vez piden probar el
+   nombre comercial, hoy no hay con qué.
+2. **Las facturas electrónicas declaran un nombre comercial que no está registrado.**
+   `lib/integrations/sri/config.ts` pone `nombreComercial: 'GRUPO CORAZONES CRUZADOS'` en el XML de
+   cada comprobante. No ha causado rechazos —las 30 autorizadas lo demuestran, porque en el esquema
+   del SRI ese campo es informativo— pero es un dato inexacto en un documento fiscal.
+
+**Recomendado: registrar el nombre comercial en el establecimiento 001.** No es obligatorio y no
+bloquea nada, pero resuelve las dos cosas de una vez y es gratis.
+
+- [ ] **Actualizar el establecimiento 001** en *SRI en línea → RUC → actualización de datos /
+      establecimientos*, poniendo `GRUPO CORAZONES CRUZADOS` como nombre comercial.
+      **Es una actualización del establecimiento que ya existe, NO uno nuevo.**
+- [ ] Después, volver a la Consulta de RUC, comprobar que la columna ya lo muestra y **guardar ese
+      documento en esta carpeta** como prueba del nombre comercial.
 
 ## Dónde se usan estos datos en el código
 

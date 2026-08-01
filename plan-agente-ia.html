@@ -790,11 +790,15 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     Solo trae «Apellidos y nombres». En Ecuador el nombre comercial se registra <strong>por
     establecimiento</strong>, y el detalle de establecimientos no sale en ese documento de dos
     páginas — solo su conteo.</p>
-    <p><strong>Qué significa:</strong> para la verificación del negocio (F11) el certificado basta,
-    porque ahí lo que se verifica es el <em>nombre legal</em>. Pero si en algún momento Meta pide
-    probar que «Grupo Corazones Cruzados» pertenece a este RUC, hay que descargar del SRI en línea el
-    reporte de <strong>«Establecimientos registrados»</strong>, que sí lista cada establecimiento con
-    su nombre comercial. <strong>Conviene tenerlo listo antes de empezar F11.</strong></p>
+    <p><strong>Y comprobado el 2026-08-01: tampoco está registrado en el SRI.</strong> En la Consulta
+    de RUC, el establecimiento <code>001</code> aparece ABIERTO pero con la columna
+    <strong>«Nombre comercial» vacía</strong>. Es un dato opcional que nunca se llenó.</p>
+    <p><strong>Qué significa:</strong> para la verificación del negocio (F11) da igual — ahí se
+    verifica el <em>nombre legal</em>, que sí está certificado. Pero hoy <strong>no existe ningún
+    documento oficial que ligue «Grupo Corazones Cruzados» a este RUC</strong>, y las facturas
+    electrónicas declaran ese nombre comercial en el XML sin que conste registrado.
+    <strong>Recomendado registrarlo</strong> actualizando el establecimiento 001: no es obligatorio,
+    no bloquea nada y arregla las dos cosas a la vez.</p>
   </div>
 
   <div class="bien">
@@ -905,6 +909,7 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     <tr><td>2026-08-01</td><td>Recibido el <strong>certificado de RUC del SRI</strong>. Se crea <code>documentos-negocio/</code> con <code>DATOS-NEGOCIO.md</code> como fuente de verdad de los datos del negocio; los PDF quedan fuera del repositorio por <code>.gitignore</code>.</td></tr>
     <tr><td>2026-08-01</td><td><strong>Corrección:</strong> se había dado por hecho que el certificado de RUC mostraba el nombre comercial. <strong>No lo muestra</strong> — en Ecuador va por establecimiento. Para el nombre legal basta; para probar el comercial hace falta el reporte de «Establecimientos registrados». Ver §5.4.</td></tr>
     <tr><td>2026-08-01</td><td><strong>Nuevo paso F11: verificar el negocio del portafolio de GCC</strong>, que faltaba y es requisito previo del App Review. El antiguo F11 pasa a ser F12. El plan sube de 20 a 21 pasos.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
   </table>
 </div>
