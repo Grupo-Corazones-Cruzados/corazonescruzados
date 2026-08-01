@@ -279,7 +279,7 @@
     </tr>
 
     <tr>
-      <td>F9</td><td><span class="est e-curso">En curso</span></td>
+      <td>F9</td><td><span class="est e-curso">Casi</span></td>
       <td>
         <span class="t">Cargar las variables en Railway</span>
         <span class="d">App ID, App secret, token del usuario del sistema, identificador de Embedded Signup,
@@ -848,9 +848,32 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     <tr><td><code>AGENTE_CLAVE_MAESTRA</code></td><td><em>32 bytes en base64, generados por ti</em></td>
         <td><strong>Secreto.</strong> Cifra los tokens y las claves de IA de los clientes. <strong>Si se pierde, los secretos guardados no se recuperan</strong> y hay que rehacer el alta de cada cliente.</td></tr>
   </table>
-  <pre><code># Genera el token de verificación y la clave maestra (en tu máquina, no en un chat)
-node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"    # WHATSAPP_VERIFY_TOKEN
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))" # AGENTE_CLAVE_MAESTRA</code></pre>
+  <div class="bien">
+    <p><span class="et">Cargadas en Railway el 2026-08-01</span> — proyecto <code>Servidor-GCC</code>,
+    servicio <strong><code>corazonescruzados</code></strong>, entorno <code>production</code>.
+    Se usó <code>--skip-deploys</code>: <strong>no se reinició la app</strong>, porque todavía no hay
+    código que lea estas variables. Las tomará el próximo despliegue.</p>
+    <p>Las dos generadas se crearon <strong>canalizadas por stdin</strong>, así que su valor no pasó
+    por la terminal ni por ninguna conversación: existe solo dentro de Railway.</p>
+    <table class="datos" style="margin-top:8px">
+      <tr><th>Variable</th><th>Estado</th></tr>
+      <tr><td><code>WHATSAPP_APP_ID</code></td><td>✅ <span class="val">1426486649348985</span></td></tr>
+      <tr><td><code>WHATSAPP_ES_CONFIG_ID</code></td><td>✅ <span class="val">1070995845869940</span></td></tr>
+      <tr><td><code>WHATSAPP_VERIFY_TOKEN</code></td><td>✅ generado — 48 caracteres hexadecimales</td></tr>
+      <tr><td><code>AGENTE_CLAVE_MAESTRA</code></td><td>✅ generada — 32 bytes, base64 válido</td></tr>
+      <tr><td><code>WHATSAPP_APP_SECRET</code></td><td>⏳ marcador <code>PENDIENTE_…</code> — lo pega Fernando</td></tr>
+      <tr><td><code>WHATSAPP_TOKEN</code></td><td>⏳ marcador <code>PENDIENTE_…</code> — lo pega Fernando</td></tr>
+    </table>
+  </div>
+  <div class="ojo">
+    <p><span class="et">Para F8, el token de verificación se copia DESDE Railway.</span> No está escrito
+    en ningún otro sitio a propósito: se abre la variable <code>WHATSAPP_VERIFY_TOKEN</code> en el panel
+    de Railway y se pega tal cual en el formulario del webhook de Meta. Los dos valores tienen que ser
+    idénticos o Meta no valida la URL.</p>
+    <p><strong>Copia la <code>AGENTE_CLAVE_MAESTRA</code> a un gestor de contraseñas.</strong> Railway
+    la guarda, pero si el servicio se recrea sin ella, los secretos cifrados de los clientes
+    <strong>no se recuperan</strong> y hay que rehacer cada alta.</p>
+  </div>
   <div class="peligro">
     <p><span class="et">Ningún secreto se pega en un chat, ni en este documento.</span> Se genera y se
     pega directo en Railway. La deuda técnica que arrastra el proyecto anterior es exactamente esa:
@@ -941,6 +964,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))" # AG
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>F9 casi hecho.</strong> Cargadas en <code>Servidor-GCC → corazonescruzados</code> cuatro de las seis variables, con <code>--skip-deploys</code> para no reiniciar producción. Las dos generadas fueron por stdin, sin pasar por la terminal. Quedan <code>WHATSAPP_APP_SECRET</code> y <code>WHATSAPP_TOKEN</code> con marcador.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F7 hecho.</strong> Usuario del sistema creado en el portafolio de GCC y token permanente generado.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C2 hecho.</strong> <code>lib/agente/cifrado.ts</code> — AES-256-GCM con la clave maestra en el entorno y cada secreto atado a su canal y campo. 23 pruebas, 0 fallos. Arranca F9 con la lista de variables en §5.5.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F5 y F6 hechos.</strong> Configuración de Embedded Signup creada con la plantilla de 60 días — identificador <code>1070995845869940</code> — y SDK de JavaScript habilitado. <strong>C7 deja de estar bloqueado.</strong></td></tr>
