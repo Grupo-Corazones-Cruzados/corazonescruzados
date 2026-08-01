@@ -105,10 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">F7 · Usuario del sistema y su token &nbsp;·&nbsp; C2 · Cifrado de secretos</p>
-    <p class="quien"><strong>C1 terminado y aplicado en producción.</strong> Con F5 y F6 hechos, <strong>C7 queda desbloqueado</strong>: ya se puede construir la pantalla de conexión del cliente.</p>
-    <div class="barra"><span style="width:33%"></span></div>
-    <div class="barra-pie"><span>7 de 21 pasos terminados</span><span>33%</span></div>
+    <p class="paso">F9 · Variables en Railway &nbsp;·&nbsp; C3 · Webhook y cola</p>
+    <p class="quien">F7 hecho: ya hay usuario del sistema y token permanente. <strong>C2 terminado</strong>, así que la clave maestra de cifrado entra en la misma tanda de variables. Los valores exactos, en <a href="#railway" style="color:var(--morado)">§5.5</a>.</p>
+    <div class="barra"><span style="width:43%"></span></div>
+    <div class="barra-pie"><span>9 de 21 pasos terminados</span><span>43%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -253,7 +253,7 @@
     </tr>
 
     <tr>
-      <td>F7</td><td><span class="est e-curso">En curso</span></td>
+      <td>F7</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Usuario del sistema del proveedor y su token</span>
         <span class="d">Portafolio de GCC → Usuarios del sistema → Agregar, rol <strong>Administrador</strong>.
@@ -279,7 +279,7 @@
     </tr>
 
     <tr>
-      <td>F9</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>F9</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">Cargar las variables en Railway</span>
         <span class="d">App ID, App secret, token del usuario del sistema, identificador de Embedded Signup,
@@ -365,7 +365,7 @@
     </tr>
 
     <tr>
-      <td>C2</td><td><span class="est e-curso">En curso</span></td>
+      <td>C2</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Cifrado de secretos por cliente</span>
         <span class="d">Cada alta devuelve un token de WhatsApp propio del cliente, y además cada cliente
@@ -377,7 +377,7 @@
     </tr>
 
     <tr>
-      <td>C3</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>C3</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">Webhook de Meta y cola de trabajos</span>
         <span class="d">El webhook <strong>no piensa</strong>: valida la firma HMAC, persiste el mensaje de
@@ -830,6 +830,34 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     reaparece en algún formulario, es el mismo error.</p>
   </div>
 
+  <h3 id="railway">5.5 · Variables de Railway (F9)</h3>
+  <p>Todas van en el <strong>servicio web de GCC World</strong>. Cuando exista el worker (C8) necesitará
+  las mismas menos las públicas del navegador.</p>
+  <table class="datos">
+    <tr><th>Variable</th><th>Valor</th><th>Para qué</th></tr>
+    <tr><td><code>WHATSAPP_APP_ID</code></td><td><span class="val">1426486649348985</span></td>
+        <td>Público. Lo usa el SDK en la pantalla de conexión.</td></tr>
+    <tr><td><code>WHATSAPP_ES_CONFIG_ID</code></td><td><span class="val">1070995845869940</span></td>
+        <td>Público. La configuración de Embedded Signup que abre el alta.</td></tr>
+    <tr><td><code>WHATSAPP_APP_SECRET</code></td><td><em>La clave secreta de la app</em> (Configuración básica → Mostrar)</td>
+        <td><strong>Secreto.</strong> Valida la firma <code>X-Hub-Signature-256</code> de cada webhook. Sin ella no se puede distinguir un mensaje de Meta de uno inventado.</td></tr>
+    <tr><td><code>WHATSAPP_TOKEN</code></td><td><em>El token permanente del usuario del sistema</em></td>
+        <td><strong>Secreto.</strong> Es el token del <strong>proveedor</strong>: operaciones sobre la app y las WABAs. Los tokens de cada cliente NO van aquí — viven cifrados en <code>agente_canales</code>.</td></tr>
+    <tr><td><code>WHATSAPP_VERIFY_TOKEN</code></td><td><em>Una cadena aleatoria que eliges tú</em></td>
+        <td><strong>Secreto.</strong> Se escribe IGUAL aquí y en Meta al dar de alta el webhook (F8). Si no coinciden, Meta no valida la URL.</td></tr>
+    <tr><td><code>AGENTE_CLAVE_MAESTRA</code></td><td><em>32 bytes en base64, generados por ti</em></td>
+        <td><strong>Secreto.</strong> Cifra los tokens y las claves de IA de los clientes. <strong>Si se pierde, los secretos guardados no se recuperan</strong> y hay que rehacer el alta de cada cliente.</td></tr>
+  </table>
+  <pre><code># Genera el token de verificación y la clave maestra (en tu máquina, no en un chat)
+node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"    # WHATSAPP_VERIFY_TOKEN
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))" # AGENTE_CLAVE_MAESTRA</code></pre>
+  <div class="peligro">
+    <p><span class="et">Ningún secreto se pega en un chat, ni en este documento.</span> Se genera y se
+    pega directo en Railway. La deuda técnica que arrastra el proyecto anterior es exactamente esa:
+    <em>«rotar el WHATSAPP_TOKEN: quedó escrito en un historial de chat»</em>. Si un valor pasa por una
+    conversación, hay que darlo por quemado y generarlo de nuevo.</p>
+  </div>
+
   <h3>Por cada cliente que se dé de alta</h3>
   <p>Esto <strong>no se anota a mano</strong>: lo guarda la plataforma al cerrar el Embedded Signup. Queda
   aquí para saber qué se espera de cada alta.</p>
@@ -913,6 +941,8 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>F7 hecho.</strong> Usuario del sistema creado en el portafolio de GCC y token permanente generado.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>C2 hecho.</strong> <code>lib/agente/cifrado.ts</code> — AES-256-GCM con la clave maestra en el entorno y cada secreto atado a su canal y campo. 23 pruebas, 0 fallos. Arranca F9 con la lista de variables en §5.5.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F5 y F6 hechos.</strong> Configuración de Embedded Signup creada con la plantilla de 60 días — identificador <code>1070995845869940</code> — y SDK de JavaScript habilitado. <strong>C7 deja de estar bloqueado.</strong></td></tr>
     <tr><td>2026-08-01</td><td><strong>C1 hecho y aplicado en producción.</strong> Migración <code>027_agente_ia.sql</code>: 9 tablas del agente, con el tenant siendo el flujo. Validada antes con ROLLBACK — 19 comprobaciones, 0 fallos, inventario idéntico. Eliminado el chatbot de YCloud (código y rutas); sus tablas no existían. <code>tsc</code> y <code>next build</code> OK.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F4 hecho.</strong> Configuración básica completa. Las <strong>instrucciones de prueba se dejan vacías a propósito</strong> —decisión del usuario— hasta F12: hoy describirían una pantalla que no existe. Arrancan F5 y F6.</td></tr>
