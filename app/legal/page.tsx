@@ -297,7 +297,41 @@ export default function LegalPage() {
           continuado del sitio tras una actualización implica la aceptación de la versión vigente.
         </p>
 
-        <h2 style={h2}>21. Contacto y autoridad de control</h2>
+        <h2 style={h2} id="eliminar-datos">
+          21. Cómo eliminar tus datos
+        </h2>
+        <p>
+          El Titular puede solicitar la <strong style={b}>eliminación de sus datos personales</strong>{' '}
+          en cualquier momento y de forma gratuita, siguiendo estos pasos:
+        </p>
+        <ol style={ul}>
+          <li>
+            Escribir a{' '}
+            <a href={`mailto:${CONTACTO}`} style={link}>
+              {CONTACTO}
+            </a>{' '}
+            desde el correo asociado a su cuenta, con el asunto{' '}
+            <strong style={b}>«Eliminación de datos»</strong>.
+          </li>
+          <li>
+            Indicar el nombre completo y, si aplica, el alias de usuario, para poder localizar la
+            cuenta. Podremos solicitar información adicional únicamente para{' '}
+            <strong style={b}>verificar la identidad</strong> del solicitante.
+          </li>
+          <li>
+            Recibirá confirmación y respuesta dentro de los plazos legales (por regla general,{' '}
+            <strong style={b}>quince (15) días</strong>).
+          </li>
+        </ol>
+        <p>
+          Una vez atendida la solicitud, los datos se <strong style={b}>eliminan o anonimizan</strong>{' '}
+          de forma segura, salvo aquellos que debamos conservar por obligación legal durante los
+          plazos aplicables (ver sección 13). La eliminación de los datos implica la{' '}
+          <strong style={b}>cancelación de la cuenta</strong> y el cese del tratamiento descrito en
+          esta Política.
+        </p>
+
+        <h2 style={h2}>22. Contacto y autoridad de control</h2>
         <p>
           Para cualquier consulta sobre esta Política o sobre el tratamiento de tus datos, escríbenos
           a{' '}
