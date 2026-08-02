@@ -135,6 +135,7 @@ INSERTADAS = {
     117: 66,  # sigue a la 116: el polvo se dispersa y una mano se enciende de azul
     118: 66,  # sigue a la 117: se enciende tambien la otra mano, en rojo
     119: 66,  # como la 118 pero el brazo derecho PINTADO de rojo, no con aura
+    120: 66,  # todo lo que quedaba de los tres se pinta de VIOLETA
 }
 
 
@@ -3525,6 +3526,76 @@ ESCENAS = [
         "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier color que no sea "
         "gris, blanco, negro, el azul del brazo izquierdo y el rojo #c62f30 del derecho. "
         "PROHIBIDO cualquier texto, letra, número o marca de agua."),
+
+    # ── 120 · TODO LO QUE QUEDA DE LOS TRES SE PINTA DE VIOLETA ────────────────
+    # Encadena la 119 (aprobada). Ya no hay azul ni rojo: los dos brazos, los
+    # trozos sueltos y el polvo pasan a VIOLETA #6216a1, que es el que ya usan
+    # las escenas 113 y 114 para el aura de los corazones cruzados (no se inventa
+    # un color nuevo). El escenario sigue gris.
+    # Se pide como RELLENO, nunca como aura (regla §4.40).
+    (120, ["assets/Prologo/escenas/escena_119.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia un instante DESPUÉS. Es LA MISMA "
+        "ESCENA, EL MISMO SITIO y EL MISMO DIBUJO: solo cambian las cosas que se dicen abajo. "
+
+        "══ BLOQUE 1 · LO QUE SE COPIA SIN CAMBIAR NADA ══ "
+        "Copia EXACTAMENTE de la imagen de referencia: el estilo PIXEL ART 2D de 16 bits "
+        "dibujado a mano, con sombreado plano, contornos definidos, píxeles visibles y dithering "
+        "sutil. El encuadre horizontal 16:9, la MISMA POSICIÓN DE CÁMARA y el MISMO PLANO "
+        "GENERAL Y LEJANO. El interior del Hoyo con la pared de roca cuarteada oscura, el halo "
+        "de luz redondo del centro y la penumbra de las esquinas. No hay suelo. "
+        "SIGUE SIN HABER CUERPOS: ni torsos, ni cabezas, ni siluetas de persona. Solo el polvo, "
+        "los trozos sueltos y los dos agarres de manos. PROHIBIDO ABSOLUTAMENTE volver a dibujar "
+        "figuras humanas. PROHIBIDO cambiar la vista, el ángulo, el encuadre o el estilo, "
+        "aclarar el fondo o acercar la cámara. "
+
+        "══ BLOQUE 2 · PRIMER CAMBIO: EL POLVO Y LOS TROZOS SE ABREN UN POCO MÁS ══ "
+        "Todo lo que flota se ha separado un poco más, como si siguiera abriéndose despacio en "
+        "el aire. Las manchas de polvo están algo MÁS EXTENDIDAS y MÁS RALAS que en la "
+        "referencia, con los puntitos más separados y los bordes deshilachándose más lejos. Los "
+        "trozos sueltos se han alejado un poco más unos de otros y del centro, y cada uno ha "
+        "girado un poco. "
+        "⚠ ES UN CAMBIO SUAVE, NO UNA ESCENA NUEVA. PROHIBIDO dispersarlo todo hasta vaciar el "
+        "cuadro, PROHIBIDO cambiar el número de trozos y PROHIBIDO moverlos a sitios "
+        "completamente distintos. Sigue habiendo más polvo que trozos, y el polvo sigue QUIETO: "
+        "nada de estelas de movimiento ni de partículas saliendo disparadas. "
+
+        "══ BLOQUE 3 · SEGUNDO CAMBIO: LAS MANOS SIGUEN AGARRADAS ══ "
+        "Los DOS agarres de manos siguen exactamente donde estaban y SIGUEN UNIDOS: brazo, mano "
+        "agarrando otra mano, y el otro brazo. Contorno limpio y cerrado, sin boquetes y sin "
+        "motas sueltas, y sin cuerpo detrás. Solo se han MOVIDO UN POQUITO, como en el "
+        "fotograma siguiente de una animación. PROHIBIDO ABSOLUTAMENTE que se suelten, se "
+        "separen o se rompan. PROHIBIDO dibujar una barra, un palo o una franja recta. "
+
+        "══ BLOQUE 4 · TERCER CAMBIO, Y ES EL PRINCIPAL: TODO SE VUELVE VIOLETA ══ "
+        "⚠ ESTO NO ES UN AURA NI UN HALO: es el COLOR PROPIO de cada cosa, RELLENA por dentro. "
+        "En la imagen de referencia, el brazo de la izquierda es AZUL, el de la derecha es ROJO "
+        "y los trozos sueltos y el polvo son NEGROS. En esta estampa YA NO HAY NI AZUL NI ROJO "
+        "NI NEGRO en ellos: TODO LO QUE QUEDA DE LOS TRES pasa a estar pintado de VIOLETA, "
+        "exactamente el color hexadecimal #6216a1 (un morado profundo y saturado). "
+        "Se pintan de violeta, con relleno SÓLIDO Y PLANO que ocupa toda su forma: "
+        "· LOS DOS BRAZOS con sus manos, de punta a punta (el que era azul y el que era rojo). "
+        "· TODOS los trozos sueltos desperdigados por el cuadro: cada esquirla, el antebrazo, "
+        "la pierna con su zapato, el piececito, el trozo de tela. Ninguno se queda negro. "
+        "· TODAS las manchas de polvo, incluida la mancha oscura del centro de donde parece "
+        "salir el polvo: sus puntitos y cuadraditos dejan de ser negros y son VIOLETAS, unos "
+        "más claros y otros más oscuros, pero todos del mismo morado. "
+        "La impresión tiene que ser que TODO lo que fue de esas tres personas —los brazos, los "
+        "restos y hasta el polvo en que se convirtieron— es ahora de un mismo violeta, como si "
+        "los hubiera prendido una sola luz. "
+        "⚠ PROHIBIDO ABSOLUTAMENTE dibujar auras, halos, resplandores, contornos de luz, "
+        "lenguas de llama o chispas alrededor de nada. Nada de siluetas negras rodeadas de "
+        "violeta: las siluetas SON violetas por dentro. PROHIBIDO dejar restos de azul o de "
+        "rojo en ninguna parte. "
+        "⚠ EL VIOLETA ES EL ÚNICO COLOR DE TODA LA IMAGEN: el ESCENARIO NO se tiñe. La pared de "
+        "roca cuarteada, el halo de luz del centro y la penumbra de las esquinas siguen siendo "
+        "GRISES, blancos y negros exactamente como en la referencia. PROHIBIDO pintar de "
+        "violeta la roca, el halo o el fondo. "
+
+        "══ BLOQUE 5 · PROHIBICIONES ══ "
+        "PROHIBIDO dibujar figuras humanas, caras u ojos. PROHIBIDO añadir elementos nuevos. "
+        "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier color que no sea "
+        "gris, blanco, negro y el violeta #6216a1. PROHIBIDO cualquier texto, letra, número o "
+        "marca de agua."),
 ]
 
 
