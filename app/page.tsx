@@ -2985,20 +2985,9 @@ export default function LandingPage() {
             pointerEvents: windAway ? 'none' : 'auto',
           }}
         >
-          <div
-            className="inline-block px-4 py-1.5 mb-6 text-accent-glow border-2 border-accent/40 bg-accent/10"
-            style={{
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.65rem',
-              letterSpacing: '0.15em',
-              animation: windAway
-                ? 'windBlowAway 0.95s ease-in 0s forwards'
-                : 'glitchFlicker 4s ease-in-out infinite, breathe 5s ease-in-out infinite',
-              willChange: 'transform, opacity, filter',
-            }}
-          >
-            Grupo Corazones Cruzados
-          </div>
+          {/* Aquí había una etiqueta «Grupo Corazones Cruzados» sobre el titular. Se quitó:
+              el nombre ya preside la cabecera del sitio, a treinta píxeles por encima, y
+              repetirlo restaba fuerza al titular en vez de dársela. */}
 
           <h1
             className="pixel-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white leading-tight"
@@ -4122,7 +4111,10 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {worldChatVisible ? (
+        {/* El copyright pixel se quitó: el pie compartido del sitio ya lo trae, y tenerlo
+            dos veces seguidas se leía como un error. Lo que se queda es el altavoz del chat
+            del mundo, que es parte de la escena. */}
+        {worldChatVisible && (
           <p
             style={{
               fontFamily: "'Silkscreen', cursive",
@@ -4161,21 +4153,7 @@ export default function LandingPage() {
               />
             )}
           </p>
-        ) : (
-          <p
-            style={{
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.65rem',
-              color: '#cfc9e2',
-              opacity: windAway ? 0 : 0.75,
-              filter: windAway ? 'blur(3px)' : undefined,
-              transition: 'opacity 1.1s ease-out, filter 1.1s ease-out',
-            }}
-          >
-            &copy; 2026 GCC World &mdash; Todos los derechos reservados
-          </p>
         )}
-
       </footer>
 
       {/* El MISMO pie que el resto del sitio (decisión de Fernando, 2026-08-02). Va DESPUÉS

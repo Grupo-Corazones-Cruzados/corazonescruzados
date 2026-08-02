@@ -83,8 +83,11 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
             fontFamily: "'Silkscreen', cursive",
             fontSize: '0.55rem',
             letterSpacing: '0.22em',
-            color: 'var(--color-accent-glow)',
-            opacity: 0.85,
+            // Antes era el morado de marca al 85 %: sobre el fondo negro quedaba apagado y
+            // la etiqueta se perdía. Este lila claro ya se usa en el resto de la portada
+            // para texto secundario, así que sube el contraste sin salirse de la paleta.
+            color: '#cfc9e2',
+            opacity: 1,
           }}
         >
           PENSAMIENTO

@@ -130,6 +130,7 @@ INSERTADAS = {
     112: 66,  # como la 102 + auras azul y roja
     113: 66,  # como la 105 + aura violeta de corazones cruzados
     114: 66,  # picado desde arriba: caen dejando estela violeta
+    115: 66,  # las siluetas se deshacen en polvo; solo aguantan las manos unidas
 }
 
 
@@ -3139,6 +3140,83 @@ ESCENAS = [
         "luz de fondo. Caen envueltos por la penumbra gris del pozo. Proporciones coherentes. "
         "Tono de caída y terror. Paleta muy oscura en GRISES fríos. Nada explícito, NADA de "
         "texto. Estilo pixel-art."),
+
+    # ── 115 · LAS SILUETAS SE DESHACEN, LAS MANOS AGUANTAN ─────────────────────
+    # Va justo ANTES de la 111 (la de las auras). Encadena la 97 porque es la
+    # regla madre del pipeline: la referencia visual manda sobre cualquier
+    # descripción, y la 97 ya tiene el encuadre, la escala y las siluetas bien.
+    #
+    # ⚠ Escrito EN CLAVE DE FORMAS (regla §4.36-bis). El contenido —los cuerpos
+    # rotos de dos menores— se bloquea si se nombra: aquí no hay cuerpos, hay
+    # SILUETAS PLANAS que se desgranan en polvo y trozos geométricos. Es además
+    # lo que pide la escena: lo único que queda entero son las manos unidas.
+    # ⚠ SIN referencia encadenada, a propósito (regla §4.33-ter): dar la 97 con
+    # un "conserva todo igual" BLOQUEA cualquier cambio de anatomía, y aquí lo
+    # que se pide es justo eso: romper las figuras. Se probó 3 veces encadenando
+    # la 97 y las tres salieron con los cuerpos enteros. Se describe de cero.
+    (115, [],
+        "ILUSTRACIÓN EN PIXEL ART 2D dibujada a mano, estilo de videojuego de 16 bits "
+        "(referencias: Undertale, Sea of Stars): sombreado plano por zonas, contornos "
+        "definidos, píxeles visibles, dithering sutil. NADA de render 3D. Encuadre horizontal "
+        "16:9. Monocroma: solo GRISES fríos, blancos y negros, sin ningún otro color. "
+        "EL LUGAR: el interior de un pozo de roca, visto de frente. Un halo de luz redondo y "
+        "grisáceo en el centro del cuadro, la penumbra oscureciendo hacia las esquinas y la "
+        "pared de roca cuarteada cubriendo todo el fondo, con rayas finas de arrastre subiendo "
+        "en vertical y motas de polvo y piedrecitas subiendo con estela. No hay suelo. "
+        "EN EL CENTRO DEL HALO, PEQUEÑAS Y LEJANAS: los RESTOS DE TRES FIGURAS, en SILUETA "
+        "NEGRA MACIZA Y PLANA, sin ningún detalle interior (ni cara, ni ojos, ni pliegues). "
+        "Ocupan apenas una QUINTA PARTE del alto del cuadro: son siluetas lejanas, PROHIBIDO "
+        "acercar la cámara o hacer un primer plano. Una figura más alta en el centro y dos más "
+        "pequeñas, una a cada lado. "
+        "⚠⚠ EL CAMBIO DE ESTA ESTAMPA, Y ES LO PRINCIPAL — LAS TRES SILUETAS ESTÁN ROTAS Y "
+        "DESHECHAS EN POLVO. En la imagen de referencia las tres figuras están ENTERAS; aquí "
+        "NO PUEDEN ESTARLO. PROHIBIDO ABSOLUTAMENTE dibujar las tres siluetas completas o de "
+        "una pieza: si al terminar se ven tres cuerpos enteros, está MAL y hay que rehacerlo. "
+        "Cómo se comprueba: de cada figura debe FALTAR más o menos LA MITAD de su silueta. Las "
+        "CABEZAS ya no están; los torsos tienen HUECOS y MORDIDAS que dejan ver la roca del "
+        "fondo a través de ellos; las piernas están partidas y algunos trozos flotan sueltos, "
+        "separados del cuerpo y girados. Los bordes que quedan no son línea limpia: son un "
+        "ENJAMBRE DE MOTAS Y CUADRADITOS NEGROS de unos pocos píxeles que se desprenden y "
+        "suben dejando estelas finas, como ceniza arrastrada por el aire. Alrededor de cada "
+        "figura hay una NUBE GRANULADA de puntos negros que conserva vagamente la forma que "
+        "había, más densa cerca del cuerpo y más rala según se aleja. "
+        "El desgrane es MAYOR cuanto más lejos de las manos: arriba es ya casi solo polvo "
+        "suspendido, y solo hacia los brazos unidos la silueta vuelve a ser maciza. "
+        "⚠ LO ÚNICO QUE SIGUE ENTERO SON LOS DOS BRAZOS QUE SE DAN LA MANO, Y ES LO MÁS "
+        "IMPORTANTE DE LA IMAGEN: el brazo que baja del hombro de la silueta del centro hasta "
+        "la manita de la figura pequeña de la izquierda, y el que baja hasta la manita de la "
+        "de la derecha. Esos dos brazos conservan su FORMA NATURAL DE BRAZO —salen del hombro, "
+        "se doblan un poco y bajan en diagonal hasta la mano—, con el contorno limpio y "
+        "cerrado, sin una sola mota suelta. PROHIBIDO ABSOLUTAMENTE dibujar una BARRA, un "
+        "PALO, una franja recta, una línea horizontal rígida o cualquier forma geométrica que "
+        "cruce el cuadro: son BRAZOS, y se leen como brazos. PROHIBIDO que se rompan, se "
+        "corten o se desgranen: son la única parte nítida de toda la imagen. "
+        "⚠ SIGUEN SIENDO EXACTAMENTE TRES FORMAS, NI UNA MÁS: la alta en el centro y DOS "
+        "pequeñas, una a cada lado, en las mismas posiciones que en la referencia. La figura "
+        "pequeña de la IZQUIERDA es la única con falda acampanada y coletas; la de la DERECHA "
+        "sigue con silueta RECTA de pantalón y pelo corto. "
+        "⚠ LA SILUETA DEL CENTRO ES UN PERSONAJE NEUTRO, NI HOMBRE NI MUJER: es la regla más "
+        "importante de todo el juego. Cuerpo RECTO y estrecho, hombros rectos, camiseta suelta "
+        "que cae recta, PANTALÓN con las dos piernas separadas y PELO CORTO pegado a la "
+        "cabeza. PROHIBIDO ABSOLUTAMENTE dibujarle falda, vestido, pelo largo, melena, "
+        "coletas, cintura estrechada, caderas anchas o pecho. "
+        "El polvo negro que se desprende sube por todo el cuadro mezclado con las motas y "
+        "piedrecitas que ya subían en la referencia, con estelas más largas. Dibuja un patrón "
+        "de grietas de la roca COMPLETAMENTE DISTINTO y ALEATORIO, sin copiar el de la "
+        "referencia. No hay suelo. La iluminación gris apagada sigue igual. "
+        "PROHIBIDO añadir figuras o elementos nuevos, PROHIBIDO cualquier líquido, mancha o "
+        "salpicadura de color, y PROHIBIDO cualquier texto. "
+        "⚠⚠ COMPROBACIÓN FINAL ANTES DE DAR LA IMAGEN POR BUENA. Míralas una a una: "
+        "(1) ¿Se ve la CABEZA de alguna de las tres? Si se ve, está MAL: las tres cabezas se "
+        "han deshecho y en su lugar solo hay una nube de motas negras dispersándose. "
+        "(2) ¿Se ve la ROCA DEL FONDO A TRAVÉS de los torsos? Tiene que verse: cada torso está "
+        "AGUJEREADO, comido por dentro, con boquetes por los que se ve la pared de piedra. "
+        "(3) ¿Hay trozos sueltos flotando SEPARADOS de las figuras, girados en el aire? Tiene "
+        "que haberlos. "
+        "(4) ¿Siguen enteros y limpios los dos brazos que se dan la mano, con forma de brazo y "
+        "sin barras rectas? Tienen que seguir así: son lo único intacto. "
+        "Si cualquiera de las cuatro respuestas falla, rehaz la imagen. La lectura correcta es "
+        "'de las tres figuras ya casi no queda nada, solo las manos siguen agarradas'."),
 ]
 
 
