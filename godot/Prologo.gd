@@ -93,7 +93,12 @@ const DURACIONES := {
 	63: 2.5,
 	65: 2,
 	84: 3,
-	95: 0.5,
+	# El adelanto de la caída, antes de la ráfaga: un segundo clavado cada una.
+	# (La 95 estaba en 0,5 s, que no llegaba a leerse ahora que entra en un tramo.)
+	94: 1,
+	95: 1,
+	96: 1,
+	97: 1,
 	105:0.2,
 	106: 0.2,
 	98: 0.2,
@@ -362,9 +367,17 @@ const TRAMOS := [
 	 5, 6
 	], "seg": 2  },
 	
+	# Verso 7 · la antesala de la ráfaga. Las cuatro últimas (94-97) son el
+	# ADELANTO de la caída, a un segundo cada una, y rematan justo cuando arranca
+	# la ráfaga en el instrumental (60,5 s).
+	#
+	# ⚠ El hueco de este tramo es FIJO: 51,5 s → 60,5 s = 9 s, y lo marca la
+	# canción. Meter 4 s de adelanto obliga a que algo ceda, así que la 14 y la 42
+	# pasan de 3 s a 2,5 s (5 s entre las dos). 5 + 4 = 9 s exactos: la 97 termina
+	# en el fotograma en que entra la ráfaga, sin comerse su arranque.
 	{ "desde_verso": 7, "escenas": [
-	 14, 42
-	], "seg": 3  },
+	 14, 42, 94, 95, 96, 97
+	], "seg": 2.5  },
 	
 	{ "desde_verso": 8, "escenas": [
 	 39
