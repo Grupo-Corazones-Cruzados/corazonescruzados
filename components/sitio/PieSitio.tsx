@@ -2,19 +2,19 @@
  * PIE DEL SITIO PÚBLICO.
  *
  * ── QUÉ LLEVA Y QUÉ NO, Y POR QUÉ ──────────────────────────────────────────────
- * Lleva lo que **identifica** al negocio —razón social, RUC, ciudad y contacto— y NO la
- * dirección postal completa.
+ * Lleva la navegación, los enlaces legales y el copyright. **NO lleva la identidad legal.**
  *
- * La primera versión la llevaba, puesta a raíz del rechazo de Meta. Fue pasarse, y lo
- * preguntó Fernando: **esa dirección es su casa**. Al ser persona natural, el domicilio
- * tributario es el particular, y el pie aparece en todas las páginas — incluida la portada,
- * que abre cualquiera que llegue al juego.
+ * La llevó durante un tiempo, puesta a raíz del rechazo de Meta: razón social, RUC,
+ * dirección y contacto en el pie de todas las páginas. Fue pasarse por dos motivos que
+ * salieron de preguntas de Fernando: **esa dirección es su casa** —al ser persona natural,
+ * el domicilio tributario es el particular—, y **Meta no la busca en el pie**, la busca en
+ * la página que se le declara.
  *
- * Dónde sí va completa, porque hace falta:
+ * Dónde sí va, porque hace falta:
  *   · `/legal` — la **LOPDP exige** que el responsable del tratamiento sea identificable
  *     con su dirección. Ahí no es opcional.
  *   · `/negocio` y `/contacto` — son las páginas que se declaran a Meta y las que abre
- *     quien quiere contratar. Un clic desde aquí.
+ *     quien quiere contratar. Desde aquí se llega con un clic.
  *
  * Los datos salen de `lib/sitio/contenido.ts`, que viene del certificado del SRI.
  */
@@ -73,35 +73,29 @@ export default function PieSitio() {
         </div>
 
         {/* La identidad verificable. En todas las páginas, a propósito. */}
-        <div className="mt-12 pt-8 border-t border-white/[0.07] flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
-          <div className="text-[12.5px] leading-relaxed text-white/40">
-            <p>
-              <span itemProp="legalName">{SITIO.razonSocial}</span> · RUC{' '}
-              <span itemProp="taxID">{SITIO.ruc}</span>
-            </p>
-            {/* Solo la ciudad. La dirección completa vive en /contacto y en /legal. */}
-            <p itemProp="address" itemScope itemType="https://schema.org/PostalAddress">
-              <span itemProp="addressLocality">{SITIO.ciudad}</span>,{' '}
-              <span itemProp="addressCountry">{SITIO.pais}</span>
-              {' · '}
-              <Link href="/contacto" className="hover:text-white transition-colors underline underline-offset-2">
-                Dirección y contacto
-              </Link>
-            </p>
-            <p className="mt-1">
-              <a href={`mailto:${SITIO.correo}`} itemProp="email" className="hover:text-white transition-colors">
-                {SITIO.correo}
-              </a>
-            </p>
-          </div>
+        <div className="mt-12 pt-8 border-t border-white/[0.07] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/*
-            `itemProp="name"` vivía en el bloque de marca que se quitó. Sin él, el
-            microdato de Organization se queda sin nombre (lo leen Google y Meta),
-            así que viaja aquí: mismo texto visible, marcado conservado.
+            ── AQUÍ YA NO VA LA IDENTIDAD LEGAL, Y ES DELIBERADO ────────────────────
+            Estuvo aquí a raíz del rechazo de Meta —razón social, RUC, ciudad y correo en
+            todas las páginas— y no hacía falta: Meta no la busca en el pie, la busca en la
+            página que se le declara. Sigue completa donde sí cuenta:
+
+              · /negocio y /contacto  — las que se declaran a Meta y las que abre un cliente
+              · /legal y /legal/whatsapp — donde la LOPDP EXIGE que el responsable del
+                tratamiento sea identificable con su dirección
+
+            Lo que sí se queda es el `itemProp="name"` del microdato de Organization: sin él
+            el marcado se queda sin nombre, y eso lo leen los buscadores.
           */}
           <p className="text-[12.5px] text-white/30">
             © {new Date().getFullYear()} <span itemProp="name">{SITIO.nombre}</span>
           </p>
+          <Link
+            href="/contacto"
+            className="text-[12.5px] text-white/30 hover:text-white transition-colors"
+          >
+            Datos del negocio y contacto
+          </Link>
         </div>
       </Contenedor>
     </footer>
