@@ -81,8 +81,26 @@ export default function NegocioPage() {
           </div>
         ))}
 
-        {/* La invitación va DESPUÉS de los servicios: primero se dice qué se hace y
-            luego se invita. Es una isla de cliente dentro de una página de servidor. */}
+        {/* Precios ANTES de la invitación: quien llega hasta aquí quiere saber cuánto
+            cuesta, y encontrarse un botón de alta sin haber respondido a eso se lee como
+            una evasiva. Se dice que no hay tarifa publicada y por qué. */}
+        <h2 style={h2}>Precios</h2>
+        <p>
+          <strong style={b}>No publicamos tarifas.</strong> Cada trabajo se cotiza según la
+          necesidad concreta: no cuesta lo mismo conectar un número de WhatsApp con su
+          conocimiento cargado que desarrollar un sistema de gestión a medida, y una tarifa
+          fija para las dos cosas sería falsa en alguna de ellas.
+        </p>
+        <p>
+          La cotización se pide y se resuelve <strong style={b}>dentro de la plataforma</strong>,
+          en tu espacio de cliente, una vez creada la cuenta: se describe lo que se necesita,
+          se recibe la propuesta con su alcance y su precio, y queda ahí registrada para
+          consultarla o revisarla cuando haga falta.
+        </p>
+
+        {/* La invitación va DESPUÉS de los servicios y del precio: primero se dice qué se
+            hace y cuánto cuesta, y luego se invita. Es una isla de cliente dentro de una
+            página de servidor. */}
         <AltaCliente />
 
         {/* ── Lo que interesa a un revisor de WhatsApp ──────────────────────────── */}

@@ -37,9 +37,13 @@ export default function AltaCliente() {
           ¿Quieres trabajar con nosotros?
         </p>
         <p style={{ margin: '6px 0 0', color: '#9b95b3', lineHeight: 1.65 }}>
-          Crea una cuenta de cliente y tendrás acceso a tu espacio: el estado de tus
-          proyectos, tus cotizaciones, tus tickets de soporte y tus facturas. Sin coste por
-          abrirla.
+          Crea una cuenta de cliente y tendrás acceso a tu espacio: <strong style={{ color: '#d9d4ea' }}>
+          pedir una cotización</strong> y ver su alcance y su precio, el estado de tus proyectos,
+          tus tickets de soporte y tus facturas.
+        </p>
+        <p style={{ margin: '6px 0 0', color: '#9b95b3', lineHeight: 1.65 }}>
+          Abrir la cuenta <strong style={{ color: '#d9d4ea' }}>no cuesta nada y no compromete a
+          nada</strong>: el precio sale después, cotizado según lo que necesites.
         </p>
         <button
           type="button"
