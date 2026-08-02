@@ -24,7 +24,7 @@
 
 import type { Metadata } from 'next';
 import DocumentoLegal, {
-  Titulo, h2, ul, b, link, p as pp, sutil, recuadro, tabla, th, td,
+  Titulo, ul, b, link, p as pp, sutil, recuadro, tabla, th, td, type GrupoIndice,
 } from '@/components/sitio/documento';
 import { RESPONSABLE, NOMBRE_COMERCIAL, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
 
@@ -37,36 +37,41 @@ export const metadata: Metadata = {
 
 const ULTIMA_ACTUALIZACION = '1 de agosto de 2026';
 
-/** El índice lateral. Las anclas que Meta declara están marcadas en su sitio. */
-const INDICE = [
-  { id: 'que-es', label: 'Qué es este documento' },
-  { id: 'quienes', label: 'Quiénes somos' },
-  { id: 'parte-a', label: 'Parte A · Privacidad', parte: true },
-  { id: 'a1', label: 'A.1 Quién decide y quién ejecuta' },
-  { id: 'a2', label: 'A.2 Qué datos se tratan' },
-  { id: 'a3', label: 'A.3 Para qué se usan' },
-  { id: 'a4', label: 'A.4 Base de licitud' },
-  { id: 'a5', label: 'A.5 Respuestas automatizadas' },
-  { id: 'a6', label: 'A.6 Con quién se comparten' },
-  { id: 'a7', label: 'A.7 Seguridad' },
-  { id: 'a8', label: 'A.8 Conservación' },
-  { id: 'a9', label: 'A.9 Vulneraciones' },
-  { id: 'a10', label: 'A.10 Derechos' },
-  { id: 'autoridades', label: 'A.11 Solicitudes de autoridades' },
-  { id: 'eliminar-datos', label: 'A.12 Cómo eliminar tus datos' },
-  { id: 'condiciones', label: 'Parte B · Condiciones', parte: true },
-  { id: 'b1', label: 'B.1 Objeto' },
-  { id: 'b2', label: 'B.2 Qué pone cada parte' },
-  { id: 'b3', label: 'B.3 Coexistencia' },
-  { id: 'b4', label: 'B.4 Quién atiende' },
-  { id: 'b5', label: 'B.5 Uso aceptable' },
-  { id: 'b6', label: 'B.6 Límites del servicio' },
-  { id: 'b7', label: 'B.7 Terminación' },
-  { id: 'encargo', label: 'Parte C · Anexo de encargo', parte: true },
-  { id: 'c1', label: 'C.1 Alcance del encargo' },
-  { id: 'c2', label: 'C.2 Nuestras obligaciones' },
-  { id: 'c3', label: 'C.3 Obligaciones del responsable' },
-  { id: 'c4', label: 'C.4 Aceptación' },
+/** Las tres partes del documento son sus categorías naturales. */
+const INDICE: GrupoIndice[] = [
+  { label: 'Antes de empezar', entradas: [
+    { id: 'que-es', label: 'Qué es este documento' },
+    { id: 'quienes', label: 'Quiénes somos' },
+  ] },
+  { label: 'A · Privacidad', entradas: [
+    { id: 'a1', label: 'Quién decide y quién ejecuta' },
+    { id: 'a2', label: 'Qué datos se tratan' },
+    { id: 'a3', label: 'Para qué se usan' },
+    { id: 'a4', label: 'Base de licitud' },
+    { id: 'a5', label: 'Respuestas automatizadas' },
+    { id: 'a6', label: 'Con quién se comparten' },
+    { id: 'a7', label: 'Seguridad' },
+    { id: 'a8', label: 'Conservación' },
+    { id: 'a9', label: 'Vulneraciones' },
+    { id: 'a10', label: 'Derechos' },
+    { id: 'autoridades', label: 'Solicitudes de autoridades' },
+    { id: 'eliminar-datos', label: 'Cómo eliminar tus datos' },
+  ] },
+  { label: 'B · Condiciones del servicio', entradas: [
+    { id: 'b1', label: 'Objeto' },
+    { id: 'b2', label: 'Qué pone cada parte' },
+    { id: 'b3', label: 'Coexistencia' },
+    { id: 'b4', label: 'Quién atiende' },
+    { id: 'b5', label: 'Uso aceptable' },
+    { id: 'b6', label: 'Límites del servicio' },
+    { id: 'b7', label: 'Terminación' },
+  ] },
+  { label: 'C · Anexo de encargo', entradas: [
+    { id: 'c1', label: 'Alcance del encargo' },
+    { id: 'c2', label: 'Nuestras obligaciones' },
+    { id: 'c3', label: 'Obligaciones del responsable' },
+    { id: 'c4', label: 'Aceptación' },
+  ] },
 ];
 
 export default function LegalWhatsAppPage() {

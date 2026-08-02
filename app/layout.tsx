@@ -25,8 +25,11 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // `scroll-smooth`: al pulsar un tema del índice de un documento legal, la página se
+  // desliza hasta él en vez de saltar de golpe. Con veintidós secciones, el salto seco
+  // desorienta — no se sabe si te has movido tres párrafos o veinte.
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className="dark scroll-smooth">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

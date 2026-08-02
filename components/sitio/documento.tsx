@@ -62,15 +62,39 @@ export function recuadro(tono: 'aviso' | 'nota' = 'nota'): string {
 export interface EntradaIndice {
   id: string;
   label: string;
-  /** `true` para las cabeceras de PARTE, que se pintan destacadas. */
-  parte?: boolean;
 }
 
 /**
- * El armazón de un documento legal: portada, índice fijo y columna de lectura.
+ * El índice va **agrupado por categorías**, no como una lista de veintidós enlaces.
+ * Veintidós entradas seguidas no son un índice: son un muro. Agrupadas, se localiza el
+ * tema primero y la sección después.
+ */
+export interface GrupoIndice {
+  label: string;
+  entradas: EntradaIndice[];
+}
+
+/**
+ * El armazón de un documento legal: portada + **tres columnas**.
  *
- * El índice se pasa a mano en vez de deducirlo del DOM: deducirlo obligaría a que la
- * página fuese de cliente, y estas tienen que estar enteras en el HTML crudo.
+ *   ┌──────────┬────────────────────────┬──────────┐
+ *   │ Documentos│      el documento      │ Contenido│
+ *   │  (fijo)  │   (ancho de lectura)   │  (fijo)  │
+ *   └──────────┴────────────────────────┴──────────┘
+ *
+ * Los dos paneles **flotan pegados** con `position: sticky` y **no invaden el centro**:
+ * son columnas de la retícula, no capas superpuestas. El texto nunca queda tapado.
+ *
+ * ── POR QUÉ TRES Y NO DOS ──────────────────────────────────────────────────────
+ * Antes los dos índices —el de documentos y el de secciones— compartían la columna
+ * izquierda, uno debajo del otro. Con veintidós secciones, la lista de documentos quedaba
+ * arriba del todo y desaparecía al desplazarse. Separados, cada uno tiene su sitio y los
+ * dos están siempre visibles: **a la izquierda dónde estoy, a la derecha qué hay dentro.**
+ *
+ * ── POR DEBAJO DE `xl` ─────────────────────────────────────────────────────────
+ * No hay sitio para tres columnas, así que los dos paneles se funden en un desplegable
+ * **`<details>` nativo** justo bajo la portada: sin JavaScript, funciona en el HTML crudo y
+ * el navegador se encarga de abrirlo y cerrarlo.
  */
 export default function DocumentoLegal({
   id, titulo, subtitulo, actualizado, indice, aviso, children,
@@ -80,91 +104,134 @@ export default function DocumentoLegal({
   titulo: string;
   subtitulo?: string;
   actualizado: string;
-  indice: EntradaIndice[];
-  /** Nota breve bajo la portada: a quién le aplica este documento. */
+  indice: GrupoIndice[];
+  /** Nota breve bajo la portada. Opcional: no todos los documentos necesitan una. */
   aviso?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <>
       <section className="border-b border-white/[0.07]">
-        <Contenedor className="py-16 sm:py-20">
+        <Contenedor className="py-14 sm:py-18">
           <h1 className={h1}>{titulo}</h1>
           {subtitulo && <p className="mt-4 text-[16.5px] leading-relaxed text-white/50 max-w-2xl">{subtitulo}</p>}
-          <p className="mt-6 text-[13.5px] text-white/35">Última actualización: {actualizado}</p>
-          {aviso && (
-            <div className={`${recuadro('nota')} max-w-2xl`}>{aviso}</div>
-          )}
+          <p className="mt-5 text-[13.5px] text-white/35">Última actualización: {actualizado}</p>
+          {aviso && <div className={`${recuadro('nota')} max-w-2xl`}>{aviso}</div>}
         </Contenedor>
       </section>
 
-      <Contenedor className="py-14 sm:py-16">
-        <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-14">
-          {/* Índice fijo. Oculto por debajo de `lg`: en móvil una columna lateral de
-              veinte enlaces empuja el documento hasta el olvido. */}
-          <nav className="hidden lg:block" aria-label="Documentación legal">
-            <div className="sticky top-24 max-h-[calc(100vh-140px)] overflow-y-auto pr-2">
-              {/* ── LOS DOCUMENTOS ─────────────────────────────────────────────
-                  Va ARRIBA del índice de secciones a propósito: se navega entre
-                  documentos como en una documentación, sin tener que volver atrás.
-                  Sale del registro, así que un servicio nuevo aparece aquí solo. */}
-              <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-white/30 mb-3">
-                Documentos
-              </p>
-              <ul className="space-y-1 mb-8">
-                {DOCUMENTOS_LEGALES.map((d) => {
-                  const activo = d.id === id;
-                  return (
-                    <li key={d.id}>
-                      <Link
-                        href={d.ruta}
-                        aria-current={activo ? 'page' : undefined}
-                        className={`block rounded-md px-2.5 py-2 text-[12.5px] leading-snug transition-colors ${
-                          activo
-                            ? 'bg-[#7B5FBF]/12 text-white border-l-2 border-[#7B5FBF] rounded-l-none'
-                            : 'text-white/45 hover:text-white hover:bg-white/[0.04]'
-                        }`}
-                      >
-                        {d.corto}
-                        <span className={`block mt-0.5 text-[11px] ${activo ? 'text-[#a78bfa]' : 'text-white/25'}`}>
-                          {d.papel === 'encargado' ? 'Somos encargados' : 'Somos responsables'}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+      {/* ── Navegación compacta por debajo de `xl` ─────────────────────────────── */}
+      <div className="xl:hidden border-b border-white/[0.07] bg-white/[0.02]">
+        <Contenedor className="py-3">
+          <details className="group">
+            <summary className="flex items-center justify-between gap-3 cursor-pointer list-none py-1.5">
+              <span className="text-[13px] font-semibold text-white/80">Documentos y contenido</span>
+              <span aria-hidden className="text-white/35 text-[12px] transition-transform group-open:rotate-180">▾</span>
+            </summary>
+            <div className="pt-4 pb-2 space-y-6">
+              <ListaDocumentos activo={id} />
+              <IndiceSecciones grupos={indice} />
+            </div>
+          </details>
+        </Contenedor>
+      </div>
 
-              <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-white/30 mb-3">
-                En este documento
-              </p>
-              <ul className="space-y-1.5">
-                {indice.map((e) => (
-                  <li key={e.id}>
-                    <a
-                      href={`#${e.id}`}
-                      className={`block text-[13px] leading-snug transition-colors ${
-                        e.parte
-                          ? 'mt-3 font-semibold text-white/70 hover:text-white'
-                          : 'text-white/40 hover:text-white'
-                      }`}
-                    >
-                      {e.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+      <Contenedor className="py-12 sm:py-14">
+        <div className="xl:grid xl:grid-cols-[212px_minmax(0,1fr)_236px] xl:gap-10">
+          {/* ── Izquierda: los documentos ── */}
+          <nav className="hidden xl:block" aria-label="Documentos legales">
+            <div className="sticky top-24 max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
+              <ListaDocumentos activo={id} />
             </div>
           </nav>
 
-          {/* Ancho de lectura acotado a propósito. */}
-          <article className="max-w-[68ch]">{children}</article>
+          {/* ── Centro: el documento. Ancho de lectura acotado a propósito. ── */}
+          <article className="max-w-[68ch] mx-auto xl:mx-0">{children}</article>
+
+          {/* ── Derecha: el contenido de este documento ── */}
+          <nav className="hidden xl:block" aria-label="Contenido del documento">
+            <div className="sticky top-24 max-h-[calc(100vh-140px)] overflow-y-auto pl-1">
+              <IndiceSecciones grupos={indice} />
+            </div>
+          </nav>
         </div>
       </Contenedor>
     </>
   );
 }
 
+/** La lista de documentos. Sale del registro: un servicio nuevo aparece aquí solo. */
+function ListaDocumentos({ activo }: { activo: string }) {
+  return (
+    <>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-white/30 mb-2.5">
+        Documentos
+      </p>
+      <ul className="space-y-1">
+        {DOCUMENTOS_LEGALES.map((d) => {
+          const esActivo = d.id === activo;
+          return (
+            <li key={d.id}>
+              <Link
+                href={d.ruta}
+                aria-current={esActivo ? 'page' : undefined}
+                className={`block rounded-md px-2.5 py-2 text-[12.5px] leading-snug transition-colors border-l-2 ${
+                  esActivo
+                    ? 'border-[#7B5FBF] bg-[#7B5FBF]/[0.12] text-white'
+                    : 'border-transparent text-white/45 hover:text-white hover:bg-white/[0.04]'
+                }`}
+              >
+                {d.corto}
+                <span className={`block mt-0.5 text-[10.5px] ${esActivo ? 'text-[#a78bfa]' : 'text-white/25'}`}>
+                  {d.papel === 'encargado' ? 'Somos encargados' : 'Somos responsables'}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+/**
+ * El índice del documento, por categorías y **desplegado**.
+ *
+ * Sin plegar a propósito: en un documento legal la gente no explora, busca. Un acordeón
+ * cerrado obliga a abrir tres cajas para encontrar «cómo elimino mis datos».
+ *
+ * El salto es suave gracias a `scroll-smooth` en `<html>`, y las secciones llevan
+ * `scroll-mt-24` para no quedar debajo de la cabecera fija.
+ */
+function IndiceSecciones({ grupos }: { grupos: GrupoIndice[] }) {
+  return (
+    <>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-white/30 mb-2.5">
+        En este documento
+      </p>
+      <div className="space-y-5">
+        {grupos.map((g) => (
+          <div key={g.label}>
+            <p className="text-[12px] font-semibold text-white/70 mb-1.5">{g.label}</p>
+            {/* La línea vertical hace de agrupador sin gastar una caja ni un borde. */}
+            <ul className="space-y-0.5 border-l border-white/[0.09] pl-3">
+              {g.entradas.map((e) => (
+                <li key={e.id}>
+                  <a
+                    href={`#${e.id}`}
+                    className="block py-0.5 text-[12.5px] leading-snug text-white/40 hover:text-white transition-colors"
+                  >
+                    {e.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 /** Título de sección con ancla enlazable. El `#` aparece al pasar por encima. */
 export function Titulo({
   id, children, parte = false,

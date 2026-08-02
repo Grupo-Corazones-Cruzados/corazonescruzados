@@ -21,8 +21,7 @@
  */
 
 import type { Metadata } from 'next';
-import DocumentoLegal, { Titulo, h2, ul, b, link, p as pp, recuadro } from '@/components/sitio/documento';
-import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
+import DocumentoLegal, { Titulo, ul, b, link, p as pp, type GrupoIndice } from '@/components/sitio/documento';
 import { RESPONSABLE, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
 
 export const metadata: Metadata = {
@@ -32,30 +31,43 @@ export const metadata: Metadata = {
   alternates: { canonical: '/legal' },
 };
 
-/** El índice lateral. Se pasa a mano porque la página es de servidor a propósito. */
-const INDICE = [
-  { id: 's1', label: '1. Antecedentes y objeto' },
-  { id: 's2', label: '2. Responsable y contacto' },
-  { id: 's3', label: '3. Definiciones' },
-  { id: 's4', label: '4. Principios' },
-  { id: 's5', label: '5. Datos que tratamos' },
-  { id: 's6', label: '6. Momento de la recolección' },
-  { id: 's7', label: '7. Finalidades' },
-  { id: 's8', label: '8. Base de licitud' },
-  { id: 's9', label: '9. Control Psicosocial' },
-  { id: 's10', label: '10. Cookies' },
-  { id: 's11', label: '11. Decisiones automatizadas' },
-  { id: 's12', label: '12. Encargados y transferencias' },
-  { id: 's13', label: '13. Conservación' },
-  { id: 's14', label: '14. Derechos del Titular' },
-  { id: 's15', label: '15. Seguridad' },
-  { id: 's16', label: '16. Vulneraciones' },
-  { id: 's17', label: '17. Permisos y desafiliación' },
-  { id: 's18', label: '18. Menores de edad' },
-  { id: 's19', label: '19. Términos de uso' },
-  { id: 's20', label: '20. Modificaciones' },
-  { id: 'eliminar-datos', label: '21. Cómo eliminar tus datos' },
-  { id: 's22', label: '22. Contacto y autoridad' },
+/**
+ * El índice, **por categorías**. Veintidós secciones seguidas no son un índice: son un
+ * muro. Agrupadas, se localiza el tema primero y la sección después.
+ */
+const INDICE: GrupoIndice[] = [
+  { label: 'Lo básico', entradas: [
+    { id: 's1', label: 'Antecedentes y objeto' },
+    { id: 's2', label: 'Responsable y contacto' },
+    { id: 's3', label: 'Definiciones' },
+    { id: 's4', label: 'Principios' },
+  ] },
+  { label: 'Qué datos y para qué', entradas: [
+    { id: 's5', label: 'Datos que tratamos' },
+    { id: 's6', label: 'Momento de la recolección' },
+    { id: 's7', label: 'Finalidades' },
+    { id: 's8', label: 'Base de licitud' },
+    { id: 's9', label: 'Control Psicosocial' },
+    { id: 's10', label: 'Cookies' },
+    { id: 's11', label: 'Decisiones automatizadas' },
+  ] },
+  { label: 'Con quién y cuánto tiempo', entradas: [
+    { id: 's12', label: 'Encargados y transferencias' },
+    { id: 's13', label: 'Conservación' },
+    { id: 's15', label: 'Seguridad' },
+    { id: 's16', label: 'Vulneraciones' },
+  ] },
+  { label: 'Tus derechos', entradas: [
+    { id: 's14', label: 'Derechos del titular' },
+    { id: 'eliminar-datos', label: 'Cómo eliminar tus datos' },
+    { id: 's17', label: 'Permisos y desafiliación' },
+    { id: 's18', label: 'Menores de edad' },
+  ] },
+  { label: 'El sitio', entradas: [
+    { id: 's19', label: 'Términos de uso' },
+    { id: 's20', label: 'Modificaciones' },
+    { id: 's22', label: 'Contacto y autoridad' },
+  ] },
 ];
 
 const ULTIMA_ACTUALIZACION = '1 de agosto de 2026';
@@ -68,39 +80,6 @@ export default function LegalPage() {
       subtitulo="Cómo tratamos los datos de las personas candidatas y miembros del proyecto, y las condiciones de uso de este sitio."
       actualizado={ULTIMA_ACTUALIZACION}
       indice={INDICE}
-      aviso={
-        <>
-          {/* El índice sale del REGISTRO, no escrito a mano: al añadir el documento de un
-              servicio nuevo aparece aquí, en la barra lateral de todos los documentos y en
-              el mapa del sitio, sin tocar esta página. Ver `lib/negocio/legal.ts`. */}
-          <strong className={b}>Centro de documentación legal</strong>
-          <p className="mt-1.5 text-white/50">
-            Todos los documentos de todo lo que ofrecemos, en un solo sitio.
-          </p>
-
-          <ul className="mt-4 space-y-4">
-            {DOCUMENTOS_LEGALES.map((d) => (
-              <li key={d.id}>
-                <a href={d.ruta} className={`${link} font-semibold`}>{d.titulo}</a>
-                <span className="ml-2 inline-flex items-center rounded-full border border-white/[0.14] px-2 py-0.5 text-[11px] text-white/45 align-middle">
-                  {d.papel === 'encargado' ? 'Somos encargados' : 'Somos responsables'}
-                </span>
-                <span className="block mt-1 text-[14px] text-white/50">{d.para}</span>
-                {/* Los puntos destacados: son los que la gente busca de verdad y los que se
-                    piden desde fuera —Meta pide la URL de la eliminación de datos, no la de
-                    la política entera—. */}
-                <span className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
-                  {d.puntos.filter((x) => x.destacado).map((x) => (
-                    <a key={x.id} href={`${d.ruta}#${x.id}`} className={`${link} text-[13.5px]`}>
-                      {x.label}
-                    </a>
-                  ))}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
-      }
     >
 
         <Titulo id="s1">1. Antecedentes y objeto</Titulo>
