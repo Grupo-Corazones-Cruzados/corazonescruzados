@@ -134,6 +134,7 @@ INSERTADAS = {
     116: 66,  # segundo intento: los cuerpos YA SON polvo + partes sueltas
     117: 66,  # sigue a la 116: el polvo se dispersa y una mano se enciende de azul
     118: 66,  # sigue a la 117: se enciende tambien la otra mano, en rojo
+    119: 66,  # como la 118 pero el brazo derecho PINTADO de rojo, no con aura
 }
 
 
@@ -3455,6 +3456,75 @@ ESCENAS = [
         "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier color que no sea "
         "gris, blanco, negro, el azul #7BA1EF y el rojo #c62f30 de las auras. PROHIBIDO "
         "cualquier texto, letra, número o marca de agua."),
+
+    # ── 119 · COMO LA 118 PERO EL BRAZO DERECHO **PINTADO** DE ROJO ────────────
+    # ⚠ LECCIÓN DE ESTA TIRADA: pedir "un AURA de color alrededor" da un HALO que
+    # rodea la silueta. Lo que Fernando quiere —y lo que salió por su cuenta en la
+    # 117 con el azul— es que la SILUETA DEL BRAZO ESTÉ RELLENA de ese color: el
+    # brazo deja de ser negro y pasa a ser azul/rojo macizo. La 118 se pidió como
+    # aura y por eso salió mal. Aquí se pide como RELLENO, y se prohíbe el halo.
+    # Se encadena la 117 (la aprobada), no la 118.
+    (119, ["assets/Prologo/escenas/escena_117.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia un instante DESPUÉS. Es LA MISMA "
+        "ESCENA, EL MISMO SITIO y EL MISMO DIBUJO: solo cambian las cosas que se dicen abajo. "
+
+        "══ BLOQUE 1 · LO QUE SE COPIA SIN CAMBIAR NADA ══ "
+        "Copia EXACTAMENTE de la imagen de referencia: el estilo PIXEL ART 2D de 16 bits "
+        "dibujado a mano, con sombreado plano, contornos definidos, píxeles visibles y dithering "
+        "sutil. El encuadre horizontal 16:9, la MISMA POSICIÓN DE CÁMARA y el MISMO PLANO "
+        "GENERAL Y LEJANO. El interior del Hoyo con la pared de roca cuarteada oscura, el halo "
+        "de luz redondo del centro y la penumbra de las esquinas. La paleta monocroma de grises "
+        "fríos, blancos y negros. No hay suelo. "
+        "SIGUE SIN HABER CUERPOS: ni torsos, ni cabezas, ni siluetas de persona. Solo el polvo, "
+        "los trozos sueltos y los dos agarres de manos. PROHIBIDO ABSOLUTAMENTE volver a dibujar "
+        "figuras humanas. PROHIBIDO cambiar la vista, el ángulo, el encuadre o el estilo, "
+        "aclarar el fondo o acercar la cámara. "
+
+        "══ BLOQUE 2 · PRIMER CAMBIO: EL POLVO Y LOS TROZOS SE ABREN UN POCO MÁS ══ "
+        "Todo lo que flota se ha separado un poco más, como si siguiera abriéndose despacio en "
+        "el aire. Las manchas de polvo están algo MÁS EXTENDIDAS y MÁS RALAS que en la "
+        "referencia: ocupan un poco más de sitio, sus puntitos están más separados entre sí y "
+        "los bordes se deshilachan más lejos. Los trozos sueltos se han alejado un poco más unos "
+        "de otros y del centro, y cada uno ha girado un poco respecto a la referencia. "
+        "⚠ ES UN CAMBIO SUAVE, NO UNA ESCENA NUEVA: se tiene que reconocer que es el mismo "
+        "momento un poco después. PROHIBIDO dispersarlo todo hasta vaciar el cuadro, PROHIBIDO "
+        "cambiar el número de trozos y PROHIBIDO moverlos a sitios completamente distintos. "
+        "Sigue habiendo más polvo que trozos, y el polvo sigue QUIETO y asentado: nada de "
+        "estelas de movimiento ni de partículas saliendo disparadas. "
+
+        "══ BLOQUE 3 · SEGUNDO CAMBIO: LAS MANOS SIGUEN AGARRADAS ══ "
+        "Los DOS agarres de manos siguen exactamente donde estaban y SIGUEN UNIDOS: brazo, mano "
+        "agarrando otra mano, y el otro brazo. Contorno limpio y cerrado, sin un solo boquete y "
+        "sin motas sueltas, y sin cuerpo detrás (los brazos se acaban en el aire por el lado del "
+        "hombro). Solo se han MOVIDO UN POQUITO, como en el fotograma siguiente de una "
+        "animación: el conjunto se inclina un pelín y los brazos se reacomodan apenas. "
+        "PROHIBIDO ABSOLUTAMENTE que se suelten, se separen, se rompan o se desgranen. "
+        "PROHIBIDO dibujar una barra, un palo o una franja recta en su lugar. "
+
+        "══ BLOQUE 4 · TERCER CAMBIO: EL BRAZO DERECHO SE PINTA DE ROJO ══ "
+        "⚠ ESTO NO ES UN AURA NI UN HALO: es el COLOR DEL PROPIO BRAZO. "
+        "· EL BRAZO IZQUIERDO (el agarre del lado IZQUIERDO DEL CUADRO, con su mano): se queda "
+        "EXACTAMENTE COMO ESTÁ EN LA IMAGEN DE REFERENCIA, es decir, con toda su silueta "
+        "RELLENA DE AZUL. No lo cambies, no lo apagues, no le cambies el tono ni la forma. "
+        "· EL BRAZO DERECHO (el agarre del lado DERECHO DEL CUADRO, con su mano): en la "
+        "referencia es NEGRO. En esta estampa pasa a estar PINTADO ENTERO de ROJO CARMESÍ, "
+        "exactamente el color hexadecimal #c62f30. El relleno es SÓLIDO Y PLANO y ocupa TODA la "
+        "silueta del brazo y de la mano, de punta a punta, igual que el azul llena todo el brazo "
+        "izquierdo en la referencia. Es el color del brazo, no algo que lo rodee. "
+        "⚠ PROHIBIDO ABSOLUTAMENTE dibujar un aura, un halo, un resplandor, un contorno de luz, "
+        "lenguas de llama o chispas alrededor del brazo derecho. Nada de un brazo negro rodeado "
+        "de rojo: el brazo ES rojo por dentro. Que se lea como una silueta roja maciza, con el "
+        "mismo sombreado plano que el resto del dibujo. "
+        "⚠ EL AZUL Y EL ROJO SON LOS ÚNICOS COLORES DE TODA LA IMAGEN, y cada uno se queda en SU "
+        "brazo: azul el de la izquierda, rojo el de la derecha. PROHIBIDO mezclarlos, "
+        "cambiarlos de sitio, o teñir de azul o de rojo el polvo, los trozos sueltos, la roca o "
+        "el halo del fondo: todo lo demás sigue siendo MONOCROMO en grises, blancos y negros. "
+
+        "══ BLOQUE 5 · PROHIBICIONES ══ "
+        "PROHIBIDO dibujar figuras humanas, caras u ojos. PROHIBIDO añadir elementos nuevos. "
+        "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier color que no sea "
+        "gris, blanco, negro, el azul del brazo izquierdo y el rojo #c62f30 del derecho. "
+        "PROHIBIDO cualquier texto, letra, número o marca de agua."),
 ]
 
 

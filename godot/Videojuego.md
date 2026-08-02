@@ -624,6 +624,18 @@ la pantalla de carga (se autocorrige, pero da un salto raro). ⚠ **Para VER el 
 producción hay que iniciar sesión**: `/juego` está tras `GameEntryGate` — se entra por la
 portada → "Entrar" → login; escribir la URL a pelo devuelve a la portada.
 
+40. **⭐ "AURA" ≠ "PINTADO": son dos cosas distintas y hay que pedir la que se quiere.**
+    Pedir *"un AURA de color alrededor de X"* da un **HALO que rodea** la silueta, dejándola
+    negra por dentro (así están las auras de las escenas 111-113, y así se pidió la 117). Si lo
+    que se quiere es que **la silueta ESTÉ RELLENA** de ese color, hay que decirlo con esas
+    palabras: *"toda la silueta PINTADA ENTERA de rojo, relleno SÓLIDO Y PLANO, es el color del
+    propio brazo, NO algo que lo rodee"*, y **prohibir explícitamente** el aura, el halo, el
+    resplandor, las lenguas de llama y las chispas.
+    Pasó el 2026-08-02: la 117 salió con el brazo izquierdo pintado entero de azul y a Fernando
+    le gustó así; al pedir el rojo de la 118 como "aura", salió el halo y hubo que rehacerlo en
+    la 119 pidiéndolo como relleno. **Antes de pedir un color, mirar cómo está el que ya está
+    aprobado y copiar esa forma de decirlo.**
+
 ## 5. Diseño del juego (Fase 1 y progresión)
 
 **Fase 1 (foco tras el prólogo/intro/encuentro):**
