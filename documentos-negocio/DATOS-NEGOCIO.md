@@ -115,6 +115,31 @@ Esto cierra las dos cosas que quedaban abiertas:
 - [ ] Guardar en esta carpeta el PDF de la Consulta de RUC como prueba archivada. *(Opcional: la
       consulta es pública y se puede repetir en cualquier momento.)*
 
+## ⛔ La ficha del negocio en Meta — rechazo del 2026-08-02 y qué lo causó
+
+Meta **rechazó la verificación** del portafolio. Dos mensajes distintos, **una sola causa raíz**:
+la ficha del negocio declaraba `Grupo Corazones Cruzados` como **nombre legal**.
+
+| Campo | Estaba | Debe estar | Por qué |
+|---|---|---|---|
+| **Nombre legal** | `Grupo Corazones Cruzados` | `GONZALEZ MUYULEMA LUIS FERNANDO` | Es el comercial, no el legal. Meta lo coteja contra el registro del SRI |
+| **Identificación fiscal (EIN)** | *(vacío)* | `0930095922001` | El propio campo dice que sirve «para encontrar registros comerciales coincidentes». Vacío, no hay con qué casar |
+| **Sitio web** | `https://www.grupocc.org/` | `https://app.grupocc.org` | ⚠️ **`www.grupocc.org` NO RESPONDE** y `grupocc.org` da 404. Solo `app.` está en pie |
+| **Dirección postal** | `Guayaquil, Ximena, 090102, EC` | `Tabacundo 12 y Guasmo Central` | Repetía ciudad, provincia y código postal en el campo de la calle |
+| **Código postal** | `090102` | *(vacío)* | No consta en ningún documento. Es el mismo inventado que se quitó de la página legal |
+
+**Por qué también rechazaron la cédula:** el documento estaba perfectamente escaneado y era el
+correcto. Pero **no acreditaba el nombre declarado**: la cédula dice `GONZALEZ MUYULEMA LUIS
+FERNANDO` y el negocio se llamaba `Grupo Corazones Cruzados`. Un documento solo vale si coincide con
+lo que se declaró.
+
+> **La lección:** el nombre comercial y el legal son **campos distintos y no intercambiables**. En
+> cuanto uno ocupa el sitio del otro, todo lo demás falla en cascada — y los mensajes de error no
+> señalan la causa, señalan el síntoma («hay un problema con el documento»).
+
+**Documento a enviar:** el **certificado de RUC del SRI**, no la cédula. Es un documento *del
+negocio*, lleva el nombre legal exacto y lleva el RUC: los dos datos que Meta intenta casar.
+
 ## Cómo se clasifica el negocio en formularios extranjeros
 
 Los formularios de plataformas de EE. UU. (Meta, pasarelas de pago, proveedores cloud) no tienen la

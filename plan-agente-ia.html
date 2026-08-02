@@ -105,8 +105,8 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">F11 · Verificación del negocio ENVIADA — esperando a Meta</p>
-    <p class="quien"><strong>Enviada a revisión el 2026-08-02.</strong> Meta encontró el negocio en el registro público del SRI a la primera. Mientras revisan, <strong>C9 está bloqueado pero F12 no</strong>: se puede preparar entero el App Review, que es la siguiente puerta y la más lenta. Ver <a href="#c9" style="color:var(--morado)">§5.7</a>.</p>
+    <p class="paso">F11 · Verificación RECHAZADA — corregir la ficha y reenviar</p>
+    <p class="quien"><strong>Rechazada el 2026-08-02, y la causa está localizada:</strong> la ficha del negocio en Meta declaraba «Grupo Corazones Cruzados» como <strong>nombre legal</strong> —es el comercial—, la identificación fiscal estaba <strong>vacía</strong> y el sitio web declarado <strong>no responde</strong>. Los cinco arreglos, en <code>documentos-negocio/DATOS-NEGOCIO.md</code>.</p>
     <div class="barra"><span style="width:87%"></span></div>
     <div class="barra-pie"><span>20 de 23 pasos terminados</span><span>87%</span></div>
   </div>
@@ -333,7 +333,7 @@
     </tr>
 
     <tr>
-      <td>F11</td><td><span class="est e-curso">En revisión</span></td>
+      <td>F11</td><td><span class="est e-bloq">Rechazada</span></td>
       <td>
         <span class="t">Verificar el negocio del portafolio de GCC ← BLOQUEA EL ALTA</span>
         <span class="d" style="color:var(--rojo)"><strong>Comprobado el 2026-08-02: sin esto no se
@@ -1212,6 +1212,7 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-02</td><td>🐛 <strong>El botón del alta no abría nada, y la causa era un callback <code>async</code>.</strong> <code>FB.login</code> valida el tipo del argumento y lanza <em>«Expression is of type asyncfunction, not function»</em> ANTES de abrir la ventana — excepción del propio SDK, invisible salvo en consola. Corregido pasando una función normal que dispara aparte el trabajo asíncrono. De camino se arreglaron dos <code>return</code> mudos y se retiró una sonda de emergentes que <strong>causaba</strong> el bloqueo que pretendía detectar: los navegadores permiten una sola emergente por gesto y la sonda se la gastaba. También quedó publicada la app de Meta, que estaba en modo desarrollo.</td></tr>
     <tr><td>2026-08-02</td><td>🚧 <strong>La ventana del alta ABRE, y Meta la corta: «Grupo Corazones Cruzados no puede registrar clientes en este momento».</strong> <strong>Cae una suposición del plan:</strong> se daba por hecho que con acceso estándar bastaba tener un rol en la app. No basta — el rol da acceso al diálogo, no al alta. Para registrar cualquier número la app debe pertenecer a un <strong>negocio verificado</strong>. <strong>F11 deja de ser «para después» y pasa a ser el bloqueante de C9.</strong> Lo bueno: el camino técnico quedó entero y comprobado —ventana, <code>config_id</code>, dominios y app publicada—; solo falta el trámite.</td></tr>
     <tr><td>2026-08-02</td><td><strong>F11 enviada a revisión.</strong> Meta encontró el negocio en los registros públicos <strong>a la primera</strong> —«mejor coincidencia», con nombre legal, Guayaquil y CRN terminado en <code>01</code> cuadrando con el RUC—, así que no hizo falta la vía lenta de subir documentos a mano. Tipo de negocio: <strong>«sociedad unipersonal»</strong> (<em>sole proprietorship / DBA</em>), la equivalencia correcta de «persona natural con RUC»; queda registrada en <code>DATOS-NEGOCIO.md</code> porque vuelve a preguntarse en el App Review. El nombre comercial registrado el día anterior sirvió justo aquí, en el campo de «nombre alternativo».</td></tr>
+    <tr><td>2026-08-02</td><td>⛔ <strong>Verificación del negocio RECHAZADA, y los dos mensajes tenían una sola causa.</strong> La ficha del negocio en Meta llevaba <code>Grupo Corazones Cruzados</code> en <strong>nombre legal</strong> —que es el comercial—, con la <strong>identificación fiscal vacía</strong> y el sitio web en <code>www.grupocc.org</code>, que <strong>no responde</strong> (comprobado: sin respuesta; <code>grupocc.org</code> da 404; solo <code>app.grupocc.org</code> responde 200). <strong>Por eso rechazaron también la cédula:</strong> estaba perfecta, pero no acreditaba el nombre declarado. La lección: nombre comercial y legal son campos distintos y no intercambiables, y cuando uno ocupa el sitio del otro los errores señalan el síntoma, no la causa. Se reenvía con el <strong>certificado de RUC</strong>, no con la cédula.</td></tr>
   </table>
 </div>
 
