@@ -23,9 +23,15 @@
 //     CRON_TOKEN  (requerido) el MISMO valor que en el servicio web
 //     APP_URL     (requerido) https://app.grupocc.org
 //
-// El comando de arranque y el horario se cambian SOLO desde el panel de Railway: la CLI no los
-// expone, y un railway.json en la raíz afectaría también al servicio web (lo convertiría en
-// cron y tumbaría la app), así que no se hace por repo.
+// El comando de arranque y el horario NO los expone la CLI, y un railway.json en la raíz
+// afectaría también al servicio web (lo convertiría en cron y tumbaría la app), así que no se
+// hace por repo.
+//
+// ⚠️ CORRECCIÓN (2026-08-01): decir «solo desde el panel» era falso. La API pública de Railway
+// SÍ los expone — `serviceInstanceUpdate` acepta `startCommand` y `cronSchedule`, y se llama
+// con el mismo token que ya guarda la CLI en ~/.railway/config.json. Así se creó y configuró
+// entero el servicio `agente-worker` sin tocar el panel. Lo que no se puede es hacerlo por
+// railway.json, que sigue siendo cierto.
 //
 // Todos los trabajos son IDEMPOTENTES: repetirlos no duplica y una corrida perdida se recupera.
 

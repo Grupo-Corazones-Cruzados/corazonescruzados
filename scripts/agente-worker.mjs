@@ -4,13 +4,19 @@
 // distintos: aquel corre cada 10 minutos y sirve para campañas de correo; una persona
 // que escribe por WhatsApp espera respuesta en segundos, no en un cuarto de hora.
 //
-// ── Configuración del servicio en Railway (mismo repositorio) ──────────────────────
+// ── Servicio en Railway — YA CREADO Y FUNCIONANDO (2026-08-01) ─────────────────────
+//   Proyecto Servidor-GCC · servicio `agente-worker` · 912996d5-e2d9-4ae6-8f83-b9b41e2b0285
 //     Start command : node scripts/agente-worker.mjs
-//     Sin cron schedule: es un proceso que no termina.
-//   Variables:
-//     CRON_TOKEN  (requerido) el MISMO valor que en el servicio web
-//     APP_URL     (requerido) https://app.grupocc.org
-//     AGENTE_INTERVALO_MS (opcional) por defecto 5000
+//     Sin cron schedule (es un proceso que no termina) · 1 réplica · reinicio ALWAYS
+//     Sin healthcheck: no escucha en ningún puerto, y con uno Railway lo daría por caído.
+//   Variables: CRON_TOKEN (el mismo que el servicio web), APP_URL, AGENTE_INTERVALO_MS=5000
+//
+//   Se creó ENTERO por CLI + API, sin tocar el panel: `railway add --service --repo` para el
+//   servicio, y la mutación `serviceInstanceUpdate` de la API pública para el comando de
+//   arranque, que la CLI no expone. Ver la nota en frequent-cron.mjs.
+//
+//   ⚠️ UNA SOLA RÉPLICA a propósito: dos worker reclamarían en paralelo y doblarían las
+//   llamadas al modelo con la clave del cliente.
 //
 // Todo el trabajo lo hace la app en /api/agente/procesar. Aquí no hay lógica de negocio
 // a propósito: si la hubiera, habría que mantenerla en dos sitios y acabarían divergiendo.
