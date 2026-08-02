@@ -38,7 +38,7 @@ interface EditSurfaceProps {
 function EditSurface({
   size, open, title, onClose, onSave, saving = false, canSave = true,
   saveLabel = 'Guardar', danger, children,
-}: EditSurfaceProps & { size: 'sm' | 'md' }) {
+}: EditSurfaceProps & { size: 'sm' | 'md' | 'lg' }) {
   // Enter guarda cuando el foco está en un input simple (no en textarea, donde Enter
   // debe seguir insertando un salto de línea).
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -79,6 +79,22 @@ export function EditPanel(props: EditSurfaceProps) {
 /** **Ventanita centrada** para uno o dos campos sueltos (no un formulario). */
 export function QuickEditDialog(props: EditSurfaceProps) {
   return <EditSurface size="sm" {...props} />;
+}
+
+/**
+ * **Ventanita centrada ANCHA** para UN solo campo de texto largo: un prompt, una plantilla,
+ * un fragmento de código.
+ *
+ * Variante nombrada de `QuickEditDialog`, no una excepción. Sigue siendo centrada porque lo
+ * que se rellena **no es un formulario**, que es lo que decide la superficie; pero
+ * `max-w-sm` (384 px) es inservible para un texto de miles de caracteres — con esa anchura
+ * cada línea se parte tres veces y no se puede leer lo que se está escribiendo.
+ *
+ * Si lo que vas a poner dentro tiene **más de un campo**, esta no es tu superficie: usa
+ * `EditPanel` (panel lateral).
+ */
+export function LongTextDialog(props: EditSurfaceProps) {
+  return <EditSurface size="lg" {...props} />;
 }
 
 /** Campo con etiqueta + ayuda opcional, con las clases estándar de `.corp`. */

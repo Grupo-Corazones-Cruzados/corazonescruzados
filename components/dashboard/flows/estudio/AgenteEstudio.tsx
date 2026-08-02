@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { FlowPanelShell, PanelEmpty, SectionBar } from '@/components/dashboard/flows/FlowPanelUI';
+import { LongTextDialog } from '@/components/ui/EditDialog';
 import { TONO } from '@/components/ui/tonos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import {
@@ -54,6 +55,8 @@ const ETIQUETA_ORIGEN = { bd: 'Base de datos', codigo: 'Código', runtime: 'En v
 
 interface Props {
   flowId: number;
+  /** El conmutador Bandeja/Estudio, que se pinta a la altura del título. */
+  acciones?: React.ReactNode;
   /** Se llama al guardar algo, para que el resto de la pantalla se entere. */
   recargar: () => void;
   /** Formularios reales que se abren en el panel lateral. */
@@ -64,7 +67,7 @@ interface Props {
   };
 }
 
-export default function AgenteEstudio({ flowId, recargar, editores }: Props) {
+export default function AgenteEstudio({ flowId, recargar, editores, acciones }: Props) {
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [cargando, setCargando] = useState(true);
   // Solo dos piezas de estado. Todo lo demás se deriva.
@@ -102,6 +105,13 @@ export default function AgenteEstudio({ flowId, recargar, editores }: Props) {
 
   return (
     <div className="space-y-3">
+      <SectionBar
+        title="Estudio del agente"
+        hint={`${pipeline.nodos.length} pasos del pipeline real · ${Object.keys(pipeline.fuentes).length} recursos`}
+      >
+        {acciones}
+      </SectionBar>
+
       <BarraDeControl estado={pipeline.estado} />
 
       {/* Tres columnas. El lienzo manda: los paneles no crecen. */}
@@ -131,22 +141,32 @@ export default function AgenteEstudio({ flowId, recargar, editores }: Props) {
         />
       </div>
 
-      {editando && (
+      {/* Conocimiento va al PANEL LATERAL: es un formulario con lista, y esa es la
+          superficie estándar para formularios (Diseño.md → «Dónde se edita»).
+          Parámetros y Conexión no llegan aquí: se editan en el propio panel derecho. */}
+      {editando?.tipo === 'conocimiento' && (
         <FlowPanelShell
           Icon={Pencil}
           title={contenido?.meta.label ?? 'Editar'}
           subtitle={contenido?.meta.detalle ?? ''}
           onClose={cerrarEditor}
         >
-          <div className="p-6">
-            {/* Parámetros y Conexión NO llegan aquí: se editan en el propio panel derecho.
-                Solo pasan por el overlay los que necesitan sitio de verdad. */}
-            {editando.tipo === 'conocimiento' && editores.conocimiento(cerrarEditor)}
-            {editando.tipo === 'prompt' && (
-              <EditorPrompt flowId={flowId} clave={editando.clave} inicial={contenido?.texto ?? ''} alGuardar={cerrarEditor} />
-            )}
-          </div>
+          <div className="p-6">{editores.conocimiento(cerrarEditor)}</div>
         </FlowPanelShell>
+      )}
+
+      {/* Un prompt es UN campo —un texto largo—, no un formulario. Por eso va en
+          VENTANITA CENTRADA y no en el panel lateral: la regla del proyecto reserva la
+          centrada justo para uno o dos campos sueltos. Y centrada se lee mejor un texto
+          largo que en una columna estrecha. */}
+      {editando?.tipo === 'prompt' && (
+        <EditorPrompt
+          flowId={flowId}
+          clave={editando.clave}
+          titulo={contenido?.meta.label ?? 'Prompt'}
+          inicial={contenido?.texto ?? ''}
+          alCerrar={cerrarEditor}
+        />
       )}
     </div>
   );
@@ -429,8 +449,8 @@ function Atajos({ pipeline, alAbrirFuente, activa }: {
 
 /* ═══════════════════════ EDITOR DE PROMPT ═══════════════════════ */
 
-function EditorPrompt({ flowId, clave, inicial, alGuardar }: {
-  flowId: number; clave: string; inicial: string; alGuardar: () => void;
+function EditorPrompt({ flowId, clave, titulo, inicial, alCerrar }: {
+  flowId: number; clave: string; titulo: string; inicial: string; alCerrar: () => void;
 }) {
   const [texto, setTexto] = useState(inicial);
   const [guardando, setGuardando] = useState(false);
@@ -445,26 +465,33 @@ function EditorPrompt({ flowId, clave, inicial, alGuardar }: {
       const d = await r.json();
       if (!r.ok) { toast.error(d.error ?? 'No se pudo guardar'); return; }
       toast.success('Guardado. La versión anterior se conserva.');
-      alGuardar();
+      alCerrar();
     } finally { setGuardando(false); }
   };
 
   return (
-    <div className="space-y-3">
-      <SectionBar title="Contenido">
-        <button className={BTN_PRIMARY} onClick={guardar} disabled={guardando}>
-          {guardando ? 'Guardando…' : 'Guardar'}
-        </button>
-      </SectionBar>
-      <textarea
-        value={texto}
-        onChange={(e) => setTexto(e.target.value)}
-        rows={26}
-        className="field-control w-full px-3 py-2 bg-digi-darker border border-digi-border rounded text-[12.5px] font-mono text-digi-text focus:border-accent focus:outline-none leading-relaxed"
-      />
-      <p className="text-[11.5px] text-digi-muted" style={mf}>
-        {texto.length.toLocaleString('es-ES')} caracteres. Al guardar se conserva la versión anterior.
-      </p>
-    </div>
+    <LongTextDialog
+      open
+      title={titulo}
+      onClose={alCerrar}
+      onSave={guardar}
+      saving={guardando}
+      canSave={texto !== inicial}
+      saveLabel="Guardar"
+    >
+      <div className="space-y-2">
+        <textarea
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          rows={22}
+          spellCheck={false}
+          className="field-control w-full px-3 py-2 bg-digi-darker border border-digi-border rounded
+                     text-[12.5px] font-mono text-digi-text focus:border-accent focus:outline-none leading-relaxed"
+        />
+        <p className="text-[11.5px] text-digi-muted" style={mf}>
+          {texto.length.toLocaleString('es-ES')} caracteres. Al guardar <strong className="text-digi-text">se conserva la versión anterior</strong>.
+        </p>
+      </div>
+    </LongTextDialog>
   );
 }

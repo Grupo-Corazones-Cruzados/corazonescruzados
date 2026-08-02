@@ -41,7 +41,7 @@ const FILTROS = [
   { valor: 'bot', texto: 'Con el agente' },
 ] as const;
 
-export default function AgenteBandeja({ flowId }: { flowId: number }) {
+export default function AgenteBandeja({ flowId, acciones }: { flowId: number; acciones?: React.ReactNode }) {
   const [filas, setFilas] = useState<Fila[]>([]);
   const [conteo, setConteo] = useState({ bot: 0, humanas: 0 });
   const [filtro, setFiltro] = useState<string>('todas');
@@ -68,7 +68,9 @@ export default function AgenteBandeja({ flowId }: { flowId: number }) {
       <SectionBar
         title="Conversaciones"
         hint={`${conteo.bot} con el agente · ${conteo.humanas} con una persona`}
-      />
+      >
+        {acciones}
+      </SectionBar>
 
       <div className="flex flex-wrap gap-2 items-center mb-3">
         {FILTROS.map((f) => (

@@ -1243,6 +1243,44 @@ pasar por encima y cuando está abierto. La etiqueta se esconde por debajo de `s
 una posición flotante: un botón que asoma un instante en una esquina y salta al pie se ve peor que uno
 que aparece ya en su sitio.
 
+### Detalle del agente IA — dos vistas, sin rail (2026-08-02)
+
+**Fuera el rail lateral.** Tenía cuatro secciones —Bandeja, Conocimiento, Prompts, Estudio— y tres
+de ellas **ya se alcanzaban desde el Estudio**, donde conocimiento, prompts, parámetros y conexión
+son recursos del propio grafo. El rail se había convertido en un índice de cosas que ya estaban
+dentro, y se comía 240 px de ancho en todas las pantallas.
+
+Quedan **dos vistas** y un conmutador:
+
+| | |
+|---|---|
+| **Bandeja** | Lo que se ve al abrir. Es donde se trabaja a diario |
+| **Estudio del agente** | El pipeline, y desde ahí todos los recursos |
+
+**El conmutador va a la altura del título de cada vista**, dentro de su `SectionBar` —no en una
+barra propia: una franja más solo para dos botones es alto que se le quita al contenido. Cada vista
+pone su propio título y su propio resumen, así que al cambiar cambia todo el encabezado, no solo el
+cuerpo.
+
+```tsx
+<SectionBar title="Conversaciones" hint="…">{conmutador}</SectionBar>
+<SectionBar title="Estudio del agente" hint="18 pasos · 12 recursos">{conmutador}</SectionBar>
+```
+
+### `LongTextDialog` — ventanita centrada ANCHA (2026-08-02)
+
+Variante nombrada de `QuickEditDialog` para **un solo campo de texto largo**: un prompt, una
+plantilla, un fragmento de código.
+
+**Sigue siendo centrada** porque lo que decide la superficie es *si es un formulario*, y un prompt no
+lo es: es un campo. Pero `max-w-sm` (384 px) es inservible para un texto de miles de caracteres —
+cada línea se parte tres veces y no se puede leer lo que se escribe. Usa `max-w-2xl`.
+
+> **Si dentro va más de un campo, esta no es la superficie:** `EditPanel` (panel lateral).
+
+Los prompts del agente se editan así desde el Estudio. El conocimiento, que sí es un formulario con
+lista, sigue yendo al panel lateral.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-01 — AUDITORÍA DE COLOR del ámbito `.corp`: 117 usos fuera de paleta en 26 archivos.**
   La disparó Fernando al ver los avisos del detalle de flujo. El barrido completo se hizo con un

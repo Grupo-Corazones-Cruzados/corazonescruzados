@@ -13,7 +13,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
@@ -29,21 +28,19 @@ import type { Aviso } from '@/components/ui/BotonAvisos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import AgenteEstudio from '@/components/dashboard/flows/estudio/AgenteEstudio';
 import {
-  BookText, ScrollText, SlidersHorizontal, Plug, Inbox, Pencil, Trash2, Plus,
-  AlertTriangle, Workflow,
+  BookText, Inbox, Pencil, Trash2, Plus, AlertTriangle, Workflow,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-type Seccion = 'bandeja' | 'conocimiento' | 'prompts' | 'estudio';
+/**
+ * Solo dos vistas. Antes había un rail de cuatro secciones a la izquierda; se quitó
+ * (decisión de Fernando, 2026-08-02) porque tres de las cuatro ya se alcanzan desde el
+ * Estudio —conocimiento, prompts, parámetros y conexión son recursos del propio grafo— y
+ * el rail se había convertido en un índice de cosas que ya estaban dentro.
+ */
+type Vista = 'bandeja' | 'estudio';
 
-interface Bloque {
-  id: number; clave: string; titulo: string; contenido: string;
-  orden: number; activo: boolean; caracteres: number; pendiente: boolean;
-}
-interface Prompt {
-  tipo: string; version: number; contenido: string; caracteres: number; versiones: number;
-}
 interface Estudio {
   canal: any;
   capacidades: { effort: boolean; minimoCache: number; maxSalida: number };
@@ -55,33 +52,30 @@ interface Estudio {
   configId: string | null;
 }
 
-const NOMBRE_PROMPT: Record<string, { titulo: string; para: string }> = {
-  perfil_agente: { titulo: 'Perfil del agente', para: 'Quién es, qué hace la empresa, cómo habla y qué no hace nunca.' },
-  reglas_negocio: { titulo: 'Reglas de negocio', para: 'Cuándo usa cada herramienta. Es el que gobierna la decisión.' },
-  resumen_conversacion: { titulo: 'Resumen de conversación', para: 'Cómo comprime la conversación en la memoria larga.' },
-};
-
+interface Bloque {
+  id: number; clave: string; titulo: string; contenido: string;
+  orden: number; activo: boolean; caracteres: number; pendiente: boolean;
+}
 export default function AgenteFlowWorkspace({ flow, onAvisos }: {
   flow: { id: number; name: string };
   /** Los avisos suben a la cabecera de la página: allí viven junto a «Activar». */
   onAvisos?: (avisos: Aviso[]) => void;
 }) {
-  const [seccion, setSeccion] = useState<Seccion>('bandeja');
+  // La Bandeja es lo que se ve al abrir: es donde se trabaja a diario.
+  const [vista, setVista] = useState<Vista>('bandeja');
   const [estudio, setEstudio] = useState<Estudio | null>(null);
   const [bloques, setBloques] = useState<Bloque[]>([]);
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [cargando, setCargando] = useState(true);
 
   const cargar = useCallback(async () => {
     try {
-      const [e, c, p] = await Promise.all([
+      // Los prompts ya NO se piden aquí: los carga el Estudio, que es quien los muestra.
+      const [e, c] = await Promise.all([
         fetch(`/api/admin/flows/${flow.id}/agente`).then((r) => r.json()),
         fetch(`/api/admin/flows/${flow.id}/agente/conocimiento`).then((r) => r.json()),
-        fetch(`/api/admin/flows/${flow.id}/agente/prompts`).then((r) => r.json()),
       ]);
       if (e.data) setEstudio(e.data);
       setBloques(c.data ?? []);
-      setPrompts(p.data ?? []);
     } catch { toast.error('No se pudo cargar el estudio'); }
     finally { setCargando(false); }
   }, [flow.id]);
@@ -96,40 +90,47 @@ export default function AgenteFlowWorkspace({ flow, onAvisos }: {
   if (cargando) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando el estudio…" /></div>;
   if (!estudio) return <PanelEmpty Icon={AlertTriangle} title="No se pudo cargar el estudio" desc="Vuelve a intentarlo en un momento." />;
 
-  const rail = [
-    { value: 'bandeja' as const, label: 'Bandeja', Icon: Inbox },
-    { value: 'conocimiento' as const, label: 'Conocimiento', Icon: BookText, count: bloques.length,
-      hint: estudio.pendientes.length ? `${estudio.pendientes.length} sin rellenar` : undefined },
-    { value: 'prompts' as const, label: 'Prompts', Icon: ScrollText, count: prompts.filter((p) => p.caracteres > 0).length },
-    // Parámetros y Conexión YA NO son secciones: viven dentro del Estudio como fuentes
-    // del propio grafo, en el paso donde intervienen. Ver AgenteEstudio.
-    { value: 'estudio' as const, label: 'Estudio del agente', Icon: Workflow },
-  ];
+  // El conmutador va a la altura del título de cada vista, no en una barra propia: una
+  // franja más solo para dos botones es alto que se le quita al contenido.
+  const conmutador = (
+    <div className="inline-flex items-center rounded-md border border-digi-border overflow-hidden shrink-0">
+      {([
+        { v: 'bandeja' as const, label: 'Bandeja', Icon: Inbox },
+        { v: 'estudio' as const, label: 'Estudio del agente', Icon: Workflow },
+      ]).map(({ v, label, Icon }) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => setVista(v)}
+          aria-pressed={vista === v}
+          className={`inline-flex items-center gap-1.5 px-3 h-[30px] text-[12.5px] font-medium transition-colors
+            ${vista === v ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-accent hover:bg-black/[0.03]'}`}
+          style={mf}
+        >
+          <Icon className="w-3.5 h-3.5" />{label}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
-    <div className="flex gap-4 items-start">
-      <div className="w-[240px] shrink-0">
-        <FilterRail title="Estudio" items={rail} value={seccion} onChange={(v) => setSeccion(v as Seccion)} wrapLabels />
-      </div>
-      <div className="flex-1 min-w-0 space-y-4">
-        {seccion === 'bandeja' && <AgenteBandeja flowId={flow.id} />}
-        {seccion === 'conocimiento' && <Conocimiento flowId={flow.id} bloques={bloques} recargar={cargar} />}
-        {seccion === 'prompts' && <Prompts flowId={flow.id} prompts={prompts} recargar={cargar} />}
-        {seccion === 'estudio' && (
-          <AgenteEstudio
-            flowId={flow.id}
-            recargar={cargar}
-            editores={{
-              parametros: () => <Parametros flowId={flow.id} estudio={estudio} recargar={cargar} />,
-              conexion: () => (
-                <AgenteConexion flowId={flow.id} canal={estudio.canal}
-                  appId={estudio.appId} configId={estudio.configId} recargar={cargar} />
-              ),
-              conocimiento: () => <Conocimiento flowId={flow.id} bloques={bloques} recargar={cargar} />,
-            }}
-          />
-        )}
-      </div>
+    <div>
+      {vista === 'bandeja' && <AgenteBandeja flowId={flow.id} acciones={conmutador} />}
+      {vista === 'estudio' && (
+        <AgenteEstudio
+          flowId={flow.id}
+          recargar={cargar}
+          acciones={conmutador}
+          editores={{
+            parametros: () => <Parametros flowId={flow.id} estudio={estudio} recargar={cargar} />,
+            conexion: () => (
+              <AgenteConexion flowId={flow.id} canal={estudio.canal}
+                appId={estudio.appId} configId={estudio.configId} recargar={cargar} />
+            ),
+            conocimiento: () => <Conocimiento flowId={flow.id} bloques={bloques} recargar={cargar} />,
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -282,81 +283,6 @@ function Conocimiento({ flowId, bloques, recargar }: { flowId: number; bloques: 
 
 /* ── Prompts ────────────────────────────────────────────────────────────────── */
 
-function Prompts({ flowId, prompts, recargar }: {
-  flowId: number; prompts: Prompt[]; recargar: () => void;
-}) {
-  const [editando, setEditando] = useState<Prompt | null>(null);
-  const [guardando, setGuardando] = useState(false);
-
-  const guardar = async () => {
-    if (!editando) return;
-    setGuardando(true);
-    try {
-      const res = await fetch(`/api/admin/flows/${flowId}/agente/prompts`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: editando.tipo, contenido: editando.contenido }),
-      });
-      if (!res.ok) { toast.error('No se pudo guardar el prompt'); return; }
-      setEditando(null); recargar();
-    } finally { setGuardando(false); }
-  };
-
-  return (
-    <div>
-      <SectionBar title="Prompts del agente">
-        <BotonAyuda titulo="Prompts del agente">
-          <p className="mb-2">Al guardar <strong>se conserva la versión anterior</strong>: nada se pierde al editar.</p>
-          <p>Los bloques de conocimiento sin rellenar se añaden solos a las reglas al hablar con el
-          modelo. <strong>No hace falta escribir aquí cuáles faltan</strong> — se calcula.</p>
-        </BotonAyuda>
-      </SectionBar>
-
-      <div className="grid gap-3">
-        {prompts.map((p) => {
-          const meta = NOMBRE_PROMPT[p.tipo];
-          return (
-            <div key={p.tipo} className="rounded-lg border border-digi-border bg-digi-card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-semibold text-digi-text" style={mf}>{meta.titulo}</span>
-                    {p.version > 0
-                      ? <PixelBadge variant="info">v{p.version}</PixelBadge>
-                      : <PixelBadge variant="warning">Sin escribir</PixelBadge>}
-                  </div>
-                  <p className="text-[12.5px] text-digi-muted mt-0.5" style={mf}>{meta.para}</p>
-                </div>
-                <button className={BTN_ROW} onClick={() => setEditando(p)}>
-                  <Pencil className="w-3.5 h-3.5" /> Editar
-                </button>
-              </div>
-              {p.caracteres > 0 && (
-                <p className="text-[12px] text-digi-muted mt-2 line-clamp-2" style={mf}>{p.contenido}</p>
-              )}
-              <p className="text-[11px] text-digi-muted mt-2" style={mf}>
-                {p.caracteres.toLocaleString('es-ES')} caracteres · {p.versiones} versión(es) guardada(s)
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      <EditPanel
-        open={!!editando}
-        title={editando ? NOMBRE_PROMPT[editando.tipo].titulo : ''}
-        onClose={() => setEditando(null)} onSave={guardar} saving={guardando}
-        saveLabel="Guardar nueva versión"
-      >
-        <EditField label="Contenido" hint={editando ? NOMBRE_PROMPT[editando.tipo].para : ''}>
-          <textarea className={EDIT_INPUT} rows={20} value={editando?.contenido ?? ''}
-            onChange={(e) => setEditando(editando ? { ...editando, contenido: e.target.value } : null)} />
-        </EditField>
-      </EditPanel>
-    </div>
-  );
-}
-
-/* ── Parámetros ─────────────────────────────────────────────────────────────── */
 
 function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Estudio; recargar: () => void }) {
   const c = estudio.canal;
