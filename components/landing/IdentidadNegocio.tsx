@@ -24,7 +24,7 @@
  * Debe verse **sin JavaScript y sin iniciar sesión**: es contenido estático a propósito.
  */
 
-import { RAZON_SOCIAL, NOMBRE_COMERCIAL, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
+import { RAZON_SOCIAL, NOMBRE_COMERCIAL, RUC, CONTACTO } from '@/lib/negocio/datos';
 
 export default function IdentidadNegocio() {
   return (
@@ -52,13 +52,12 @@ export default function IdentidadNegocio() {
         <span itemProp="legalName">{RAZON_SOCIAL}</span> · RUC{' '}
         <span itemProp="taxID">{RUC}</span>
       </p>
-      <p
-        style={{ margin: '2px 0 0' }}
-        itemProp="address"
-        itemScope
-        itemType="https://schema.org/PostalAddress"
-      >
-        <span itemProp="streetAddress">{DIRECCION}</span>
+      {/* Solo la ciudad: la dirección completa es el domicilio particular del titular, y
+          esta portada la abre cualquiera. Está entera en /contacto y en /legal, donde la
+          LOPDP la exige. */}
+      <p style={{ margin: '2px 0 0' }} itemProp="address" itemScope itemType="https://schema.org/PostalAddress">
+        <span itemProp="addressLocality">Guayaquil</span>,{' '}
+        <span itemProp="addressCountry">Ecuador</span>
       </p>
       <p style={{ margin: '2px 0 0' }}>
         <a href={`mailto:${CONTACTO}`} itemProp="email" style={{ color: '#7B5FBF', textDecoration: 'none' }}>

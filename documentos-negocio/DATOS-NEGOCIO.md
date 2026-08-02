@@ -140,6 +140,20 @@ lo que se declaró.
 **Documento a enviar:** el **certificado de RUC del SRI**, no la cédula. Es un documento *del
 negocio*, lleva el nombre legal exacto y lleva el RUC: los dos datos que Meta intenta casar.
 
+## ⚠️ La dirección del RUC es el domicilio PARTICULAR
+
+Al ser persona natural, el domicilio tributario del RUC es **donde vive Fernando**. Eso decide dónde
+se publica y dónde no:
+
+| Dónde | Qué se muestra | Por qué |
+|---|---|---|
+| `/legal` y `/legal/whatsapp` | **Dirección completa** | La **LOPDP exige** que el responsable del tratamiento sea identificable con su dirección. No es opcional. |
+| `/negocio` y `/contacto` | **Dirección completa** | Son las que se declaran a Meta y las que abre quien quiere contratar. |
+| **Pie de todas las páginas** | Solo `Guayaquil, Ecuador` + enlace | Aparece en la portada, que abre cualquiera. No hace falta el domicilio particular ahí. |
+
+> Corregido el 2026-08-02: la primera versión lo ponía en el pie de todas las páginas, a raíz del
+> rechazo de Meta. Lo preguntó Fernando y tenía razón — era exponer su casa sin necesidad.
+
 ## Cómo se clasifica el negocio en formularios extranjeros
 
 Los formularios de plataformas de EE. UU. (Meta, pasarelas de pago, proveedores cloud) no tienen la

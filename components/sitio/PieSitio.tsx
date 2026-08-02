@@ -1,11 +1,22 @@
 /**
- * PIE DEL SITIO PÚBLICO — la identidad legal, en todas las páginas.
+ * PIE DEL SITIO PÚBLICO.
  *
- * Va en todas a propósito. Meta rechazó la verificación del negocio porque «no puede
- * determinar que pertenezca a un negocio real», y un revisor puede aterrizar en cualquier
- * página: si la identidad solo estuviera en una, depende de la suerte que la encuentre.
+ * ── QUÉ LLEVA Y QUÉ NO, Y POR QUÉ ──────────────────────────────────────────────
+ * Lleva lo que **identifica** al negocio —razón social, RUC, ciudad y contacto— y NO la
+ * dirección postal completa.
  *
- * Los datos salen de `lib/sitio/contenido.ts`, que a su vez viene del certificado del SRI.
+ * La primera versión la llevaba, puesta a raíz del rechazo de Meta. Fue pasarse, y lo
+ * preguntó Fernando: **esa dirección es su casa**. Al ser persona natural, el domicilio
+ * tributario es el particular, y el pie aparece en todas las páginas — incluida la portada,
+ * que abre cualquiera que llegue al juego.
+ *
+ * Dónde sí va completa, porque hace falta:
+ *   · `/legal` — la **LOPDP exige** que el responsable del tratamiento sea identificable
+ *     con su dirección. Ahí no es opcional.
+ *   · `/negocio` y `/contacto` — son las páginas que se declaran a Meta y las que abre
+ *     quien quiere contratar. Un clic desde aquí.
+ *
+ * Los datos salen de `lib/sitio/contenido.ts`, que viene del certificado del SRI.
  */
 
 import Link from 'next/link';
@@ -24,8 +35,7 @@ export default function PieSitio() {
           <div className="lg:col-span-2">
             <p className="text-[15px] font-semibold text-white" itemProp="name">{SITIO.nombre}</p>
             <p className="mt-2 text-[13.5px] leading-relaxed text-white/45 max-w-sm">
-              Un proyecto de desarrollo humano. De ahí nacen los sistemas que desarrollamos
-              y operamos para nuestros clientes. {SITIO.ciudad}, {SITIO.pais}.
+              Proyecto de desarrollo humano.
             </p>
           </div>
 
@@ -71,16 +81,18 @@ export default function PieSitio() {
               <span itemProp="legalName">{SITIO.razonSocial}</span> · RUC{' '}
               <span itemProp="taxID">{SITIO.ruc}</span>
             </p>
+            {/* Solo la ciudad. La dirección completa vive en /contacto y en /legal. */}
             <p itemProp="address" itemScope itemType="https://schema.org/PostalAddress">
-              <span itemProp="streetAddress">{SITIO.direccion}</span>
+              <span itemProp="addressLocality">{SITIO.ciudad}</span>,{' '}
+              <span itemProp="addressCountry">{SITIO.pais}</span>
+              {' · '}
+              <Link href="/contacto" className="hover:text-white transition-colors underline underline-offset-2">
+                Dirección y contacto
+              </Link>
             </p>
             <p className="mt-1">
               <a href={`mailto:${SITIO.correo}`} itemProp="email" className="hover:text-white transition-colors">
                 {SITIO.correo}
-              </a>
-              {' · '}
-              <a href={`tel:${SITIO.telefonoPlano}`} itemProp="telephone" className="hover:text-white transition-colors">
-                {SITIO.telefono}
               </a>
             </p>
           </div>
