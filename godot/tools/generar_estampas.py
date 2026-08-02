@@ -132,6 +132,7 @@ INSERTADAS = {
     114: 66,  # picado desde arriba: caen dejando estela violeta
     115: 66,  # las siluetas se deshacen en polvo; solo aguantan las manos unidas
     116: 66,  # segundo intento: los cuerpos YA SON polvo + partes sueltas
+    117: 66,  # sigue a la 116: el polvo se dispersa y una mano se enciende de azul
 }
 
 
@@ -3318,6 +3319,71 @@ ESCENAS = [
         "PROHIBIDO cualquier color que no sea gris, blanco o negro. PROHIBIDO cualquier texto, "
         "letra, número o marca de agua. Dibuja un patrón de grietas de la roca COMPLETAMENTE "
         "DISTINTO y ALEATORIO, sin copiar el trazado de la referencia."),
+
+    # ── 117 · SIGUE A LA 116 · EL POLVO SE ABRE Y UNA MANO SE ENCIENDE ─────────
+    # Fernando aprobó la 116; esta es su continuación directa, así que la 116 va
+    # como referencia encadenada (regla §4.4: encadenar conserva sitio, luz y
+    # composición, que es justo lo que se quiere aquí).
+    # El aura reusa la redacción que ya funcionó en la 111, cambiando el color
+    # por el que él pasó como muestra: #7BA1EF.
+    (117, ["assets/Prologo/escenas/escena_116.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia un instante DESPUÉS. Es LA MISMA "
+        "ESCENA, EL MISMO SITIO y EL MISMO DIBUJO: solo cambian las tres cosas que se dicen "
+        "abajo. "
+
+        "══ BLOQUE 1 · LO QUE SE COPIA SIN CAMBIAR NADA ══ "
+        "Copia EXACTAMENTE de la imagen de referencia: el estilo PIXEL ART 2D de 16 bits "
+        "dibujado a mano, con sombreado plano, contornos definidos, píxeles visibles y dithering "
+        "sutil. El encuadre horizontal 16:9, la MISMA POSICIÓN DE CÁMARA y el MISMO PLANO "
+        "GENERAL Y LEJANO. El interior del Hoyo con la pared de roca cuarteada oscura, el halo "
+        "de luz redondo del centro y la penumbra de las esquinas. La paleta monocroma de grises "
+        "fríos, blancos y negros. No hay suelo. "
+        "SIGUE SIN HABER CUERPOS: ni torsos, ni cabezas, ni siluetas de persona. Solo el polvo, "
+        "los trozos sueltos y los dos agarres de manos, igual que en la referencia. PROHIBIDO "
+        "ABSOLUTAMENTE volver a dibujar figuras humanas. PROHIBIDO cambiar la vista, el ángulo, "
+        "el encuadre o el estilo, aclarar el fondo o acercar la cámara. "
+
+        "══ BLOQUE 2 · PRIMER CAMBIO: EL POLVO Y LOS TROZOS SE ABREN UN POCO MÁS ══ "
+        "Todo lo que flota se ha separado un poco más, como si siguiera abriéndose despacio en "
+        "el aire. Las manchas de polvo están algo MÁS EXTENDIDAS y MÁS RALAS que en la "
+        "referencia: ocupan un poco más de sitio, sus puntitos están más separados entre sí y "
+        "los bordes se deshilachan más lejos. Los trozos sueltos se han alejado un poco unos de "
+        "otros y del centro, y cada uno ha girado un poco respecto a la referencia. "
+        "⚠ ES UN CAMBIO SUAVE, NO UNA ESCENA NUEVA: se tiene que reconocer que es el mismo "
+        "momento un poco después. PROHIBIDO dispersarlo todo hasta vaciar el cuadro, PROHIBIDO "
+        "cambiar el número de trozos y PROHIBIDO moverlos a sitios completamente distintos. "
+        "Sigue habiendo más polvo que trozos, y el polvo sigue QUIETO y asentado: nada de "
+        "estelas de movimiento ni de partículas saliendo disparadas. "
+
+        "══ BLOQUE 3 · SEGUNDO CAMBIO: LAS MANOS SIGUEN AGARRADAS ══ "
+        "Los DOS agarres de manos siguen exactamente donde estaban y SIGUEN UNIDOS: brazo, mano "
+        "agarrando otra mano, y el otro brazo. Negro macizo, contorno limpio y cerrado, sin un "
+        "solo boquete y sin motas sueltas, y sin cuerpo detrás (los brazos se acaban en el aire "
+        "por el lado del hombro). Solo se han MOVIDO UN POQUITO, como en el fotograma siguiente "
+        "de una animación: el conjunto se inclina un pelín y los brazos se reacomodan apenas. "
+        "PROHIBIDO ABSOLUTAMENTE que se suelten, se separen, se rompan o se desgranen: siguen "
+        "agarrados. PROHIBIDO dibujar una barra, un palo o una franja recta en su lugar: son "
+        "brazos y manos. "
+
+        "══ BLOQUE 4 · TERCER CAMBIO: EL AURA AZUL, SOLO EN UNA MANO ══ "
+        "Alrededor del agarre de manos que está a la IZQUIERDA DEL CUADRO —el de ese lado y "
+        "SOLO ese—, junto con el brazo que sale de él, aparece un AURA de color AZUL CLARO, "
+        "exactamente el color hexadecimal #7BA1EF (un azul suave, luminoso, algo lavanda). "
+        "Es un halo ESTRECHO y pegado al contorno de esa mano y ese brazo, con el interior más "
+        "claro y el exterior difuminándose en el gris, y unas chispitas azules pequeñas "
+        "alrededor. El aura NO tapa nada: la silueta negra de la mano y el brazo se sigue "
+        "viendo entera por dentro. "
+        "⚠ EL AZUL ES EL ÚNICO COLOR DE TODA LA IMAGEN: el resto sigue siendo MONOCROMO en "
+        "grises, blancos y negros. PROHIBIDO ABSOLUTAMENTE poner aura, brillo o cualquier color "
+        "en el agarre del lado DERECHO del cuadro, que sigue siendo silueta negra limpia y sin "
+        "ningún resplandor. PROHIBIDO teñir de azul el polvo, los trozos sueltos, la roca o el "
+        "halo del fondo. "
+
+        "══ BLOQUE 5 · PROHIBICIONES ══ "
+        "PROHIBIDO dibujar figuras humanas, caras u ojos. PROHIBIDO añadir elementos nuevos. "
+        "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier color que no sea "
+        "gris, blanco, negro o el azul #7BA1EF del aura. PROHIBIDO cualquier texto, letra, "
+        "número o marca de agua."),
 ]
 
 
