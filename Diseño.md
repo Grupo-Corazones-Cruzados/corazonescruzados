@@ -1313,6 +1313,36 @@ nunca un spinner pixel) · `EnlaceAuth` · `INPUT`.
 - Los `autoComplete` correctos (`name`, `email`, `tel`, `street-address`, `new-password`), que el
   pixel art no tenía y hacen que el gestor de contraseñas funcione.
 
+### Centro de documentación legal — un registro, no páginas sueltas (2026-08-02)
+
+Cada servicio nuevo trae su parte legal. Sin un registro, eso acaba en páginas repartidas por el
+sitio, enlazadas de formas distintas desde sitios distintos, y con la navegación de cada una escrita
+a mano. A los tres servicios ya nadie sabe qué documentos existen ni si el enlace que se puso en un
+formulario sigue siendo el bueno.
+
+**`lib/negocio/legal.ts`** declara cada documento una vez: ruta, a quién habla, **qué papel jugamos**
+—responsable o encargado, que es lo que más confunde— y **qué puntos se enlazan desde fuera**.
+
+De ese registro salen los tres sitios, así que **añadir un servicio es tocar un solo archivo**:
+
+| Sale del registro | Qué muestra |
+|---|---|
+| El índice de `/legal` | Todos los documentos, con su público y sus puntos destacados |
+| La barra lateral de **todos** los documentos | La lista completa, con el actual marcado — se navega entre documentos como en una documentación, sin volver atrás |
+| `sitemap.xml` | Las URLs, sin escribirlas a mano |
+
+**Cómo se añade un servicio:** crear `app/(sitio)/legal/<id>/page.tsx` con `DocumentoLegal` y añadir
+su entrada al registro. **No hay un tercer sitio que tocar** — comprobado metiendo un documento de
+prueba y verificando que los tres lo recogen sin editarlos.
+
+**`enlaceLegal(documento, punto?)`** da la URL estandarizada para enlazar desde donde sea —un
+formulario de alta, el aviso de cookies, el panel de Meta, un contrato—: el enlace sale de una
+función y no de la memoria de quien escribe.
+
+> ⚠️ **Una URL publicada no se cambia.** `/legal` y `/legal/whatsapp` con sus anclas están declaradas
+> en la app de Meta y enlazadas desde formularios. Reorganizar la navegación **añade puertas, no
+> mueve habitaciones**.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-01 — AUDITORÍA DE COLOR del ámbito `.corp`: 117 usos fuera de paleta en 26 archivos.**
   La disparó Fernando al ver los avisos del detalle de flujo. El barrido completo se hizo con un

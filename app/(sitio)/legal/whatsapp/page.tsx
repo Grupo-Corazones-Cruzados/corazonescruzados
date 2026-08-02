@@ -72,6 +72,7 @@ const INDICE = [
 export default function LegalWhatsAppPage() {
   return (
     <DocumentoLegal
+      id="whatsapp"
       titulo="Servicio de Agente IA en WhatsApp"
       subtitulo="Privacidad, condiciones del servicio y anexo de encargo del tratamiento. Para quien escribe por WhatsApp, para la empresa que contrata y para quien revise cómo se tratan los datos."
       actualizado={ULTIMA_ACTUALIZACION}

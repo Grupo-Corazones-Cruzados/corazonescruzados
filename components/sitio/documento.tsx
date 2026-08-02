@@ -23,7 +23,9 @@
  */
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { Contenedor } from './piezas';
+import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
 
 /* ═══════════════ CLASES DEL DOCUMENTO ═══════════════ */
 
@@ -71,8 +73,10 @@ export interface EntradaIndice {
  * página fuese de cliente, y estas tienen que estar enteras en el HTML crudo.
  */
 export default function DocumentoLegal({
-  titulo, subtitulo, actualizado, indice, aviso, children,
+  id, titulo, subtitulo, actualizado, indice, aviso, children,
 }: {
+  /** El `id` de este documento en `DOCUMENTOS_LEGALES`. Marca cuál está activo. */
+  id: string;
   titulo: string;
   subtitulo?: string;
   actualizado: string;
@@ -98,10 +102,41 @@ export default function DocumentoLegal({
         <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-14">
           {/* Índice fijo. Oculto por debajo de `lg`: en móvil una columna lateral de
               veinte enlaces empuja el documento hasta el olvido. */}
-          <nav className="hidden lg:block" aria-label="Contenido del documento">
+          <nav className="hidden lg:block" aria-label="Documentación legal">
             <div className="sticky top-24 max-h-[calc(100vh-140px)] overflow-y-auto pr-2">
+              {/* ── LOS DOCUMENTOS ─────────────────────────────────────────────
+                  Va ARRIBA del índice de secciones a propósito: se navega entre
+                  documentos como en una documentación, sin tener que volver atrás.
+                  Sale del registro, así que un servicio nuevo aparece aquí solo. */}
               <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-white/30 mb-3">
-                Contenido
+                Documentos
+              </p>
+              <ul className="space-y-1 mb-8">
+                {DOCUMENTOS_LEGALES.map((d) => {
+                  const activo = d.id === id;
+                  return (
+                    <li key={d.id}>
+                      <Link
+                        href={d.ruta}
+                        aria-current={activo ? 'page' : undefined}
+                        className={`block rounded-md px-2.5 py-2 text-[12.5px] leading-snug transition-colors ${
+                          activo
+                            ? 'bg-[#7B5FBF]/12 text-white border-l-2 border-[#7B5FBF] rounded-l-none'
+                            : 'text-white/45 hover:text-white hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        {d.corto}
+                        <span className={`block mt-0.5 text-[11px] ${activo ? 'text-[#a78bfa]' : 'text-white/25'}`}>
+                          {d.papel === 'encargado' ? 'Somos encargados' : 'Somos responsables'}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-white/30 mb-3">
+                En este documento
               </p>
               <ul className="space-y-1.5">
                 {indice.map((e) => (

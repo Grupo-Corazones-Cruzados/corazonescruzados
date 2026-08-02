@@ -93,12 +93,7 @@ const DURACIONES := {
 	63: 2.5,
 	65: 2,
 	84: 3,
-	# El adelanto de la caída, antes de la ráfaga: un segundo clavado cada una.
-	# (La 95 estaba en 0,5 s, que no llegaba a leerse ahora que entra en un tramo.)
-	94: 1,
-	95: 1,
-	96: 1,
-	97: 1,
+	95: 0.5,
 	105:0.2,
 	106: 0.2,
 	98: 0.2,
@@ -291,11 +286,24 @@ const CAIDA := {
 	"desde_verso": 12,         # "al fondo del mundo, a la noche bajaron."
 	# Estampas de la primera mitad del verso, a pantalla completa y en este orden.
 	# "seg" es lo que dura cada una; la ÚLTIMA se queda hasta que entra el montaje.
+	# ⚠ Todas menos la ÚLTIMA necesitan su "seg": la que no lo lleva se estira
+	#   hasta que entra el montaje, y si no es la última, las de detrás nunca
+	#   llegan a verse. Por eso la 65 pasó a llevarlo cuando se sumaron las
+	#   cuatro de la caída.
 	"portadas": [
 		{ "escena": 84, "seg": 2.0 },
-		{ "escena": 65 },
+		{ "escena": 65, "seg": 2.0 },
+		# Los cuatro fotogramas de la caída, a un segundo cada uno, justo antes
+		# del montaje.
+		{ "escena": 94, "seg": 1.0 },
+		{ "escena": 95, "seg": 1.0 },
+		{ "escena": 96, "seg": 1.0 },
+		{ "escena": 97 },          # se queda hasta que entra el montaje
 	],
-	"t_montaje": 92.6,         # segundo en que entra "a la noche bajaron"
+	# Retrasado de 92,6 a 96,6 para hacer sitio a los cuatro fotogramas de arriba
+	# (decisión de Fernando). ⚠ El montaje ya NO entra con "a la noche bajaron", y
+	# le quedan 1,9 s hasta el verso 13 en vez de 5,9.
+	"t_montaje": 96.6,
 	# El orden es el orden en que se van colocando. La ÚLTIMA es la del centro.
 	"escenas": [95, 105, 106, 101, 102, 98, 107, 96, 97, 93],
 
@@ -367,17 +375,9 @@ const TRAMOS := [
 	 5, 6
 	], "seg": 2  },
 	
-	# Verso 7 · la antesala de la ráfaga. Las cuatro últimas (94-97) son el
-	# ADELANTO de la caída, a un segundo cada una, y rematan justo cuando arranca
-	# la ráfaga en el instrumental (60,5 s).
-	#
-	# ⚠ El hueco de este tramo es FIJO: 51,5 s → 60,5 s = 9 s, y lo marca la
-	# canción. Meter 4 s de adelanto obliga a que algo ceda, así que la 14 y la 42
-	# pasan de 3 s a 2,5 s (5 s entre las dos). 5 + 4 = 9 s exactos: la 97 termina
-	# en el fotograma en que entra la ráfaga, sin comerse su arranque.
 	{ "desde_verso": 7, "escenas": [
-	 14, 42, 94, 95, 96, 97
-	], "seg": 2.5  },
+	 14, 42
+	], "seg": 3  },
 	
 	{ "desde_verso": 8, "escenas": [
 	 39

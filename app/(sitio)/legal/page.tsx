@@ -22,6 +22,7 @@
 
 import type { Metadata } from 'next';
 import DocumentoLegal, { Titulo, h2, ul, b, link, p as pp, recuadro } from '@/components/sitio/documento';
+import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
 import { RESPONSABLE, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
 
 export const metadata: Metadata = {
@@ -62,38 +63,42 @@ const ULTIMA_ACTUALIZACION = '1 de agosto de 2026';
 export default function LegalPage() {
   return (
     <DocumentoLegal
+      id="general"
       titulo="Términos y condiciones y política de privacidad"
       subtitulo="Cómo tratamos los datos de las personas candidatas y miembros del proyecto, y las condiciones de uso de este sitio."
       actualizado={ULTIMA_ACTUALIZACION}
       indice={INDICE}
       aviso={
         <>
-          {/* ÍNDICE de los documentos legales. Desde el pie ahora solo se llega aquí —un
-              enlace en vez de cuatro—, así que esta página tiene que ser la puerta a todo.
-              Los enlaces profundos siguen existiendo y están declarados en Meta; lo que
-              cambia es que se alcanzan desde un único sitio. */}
-          <strong className={b}>Documentos legales</strong>
-          <ul className="mt-3 space-y-2.5">
-            <li>
-              <span className="text-white/70">Esta página</span> — términos de uso del sitio y
-              tratamiento de datos de candidatos y miembros del proyecto.{' '}
-              <a href="#eliminar-datos" className={link}>Cómo eliminar tus datos</a>.
-            </li>
-            <li>
-              <a href="/legal/whatsapp" className={link}>Agente IA en WhatsApp</a> — para quien
-              escribe por WhatsApp a una empresa atendida por nuestro agente, y para la empresa
-              que contrata el servicio. Incluye{' '}
-              <a href="/legal/whatsapp#condiciones" className={link}>las condiciones</a>,{' '}
-              <a href="/legal/whatsapp#eliminar-datos" className={link}>cómo eliminar esos datos</a>{' '}
-              y{' '}
-              <a href="/legal/whatsapp#autoridades" className={link}>qué hacemos ante una solicitud de autoridades</a>.
-            </li>
-          </ul>
-          <p className="mt-3 text-white/50">
-            En el de WhatsApp, {'\u00ab'}Grupo Corazones Cruzados{'\u00bb'} actúa como{' '}
-            <strong className={b}>encargado</strong> del tratamiento por cuenta de la empresa
-            cliente. En esta página, como <strong className={b}>responsable</strong>.
+          {/* El índice sale del REGISTRO, no escrito a mano: al añadir el documento de un
+              servicio nuevo aparece aquí, en la barra lateral de todos los documentos y en
+              el mapa del sitio, sin tocar esta página. Ver `lib/negocio/legal.ts`. */}
+          <strong className={b}>Centro de documentación legal</strong>
+          <p className="mt-1.5 text-white/50">
+            Todos los documentos de todo lo que ofrecemos, en un solo sitio.
           </p>
+
+          <ul className="mt-4 space-y-4">
+            {DOCUMENTOS_LEGALES.map((d) => (
+              <li key={d.id}>
+                <a href={d.ruta} className={`${link} font-semibold`}>{d.titulo}</a>
+                <span className="ml-2 inline-flex items-center rounded-full border border-white/[0.14] px-2 py-0.5 text-[11px] text-white/45 align-middle">
+                  {d.papel === 'encargado' ? 'Somos encargados' : 'Somos responsables'}
+                </span>
+                <span className="block mt-1 text-[14px] text-white/50">{d.para}</span>
+                {/* Los puntos destacados: son los que la gente busca de verdad y los que se
+                    piden desde fuera —Meta pide la URL de la eliminación de datos, no la de
+                    la política entera—. */}
+                <span className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                  {d.puntos.filter((x) => x.destacado).map((x) => (
+                    <a key={x.id} href={`${d.ruta}#${x.id}`} className={`${link} text-[13.5px]`}>
+                      {x.label}
+                    </a>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
         </>
       }
     >
