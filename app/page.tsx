@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import PixelStars from '@/components/landing/PixelStars';
+import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import IdentidadNegocio from '@/components/landing/IdentidadNegocio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import PointerCursor from '@/components/landing/PointerCursor';
@@ -2697,6 +2698,9 @@ export default function LandingPage() {
 
   return (
     <div className={`landing-page${nativeCursor ? ' auth-screen' : ''}`}>
+      {/* La misma cabecera que el resto del sitio, en modo FLOTANTE: la portada es una
+          experiencia a pantalla completa y una barra sólida encima le corta la escena. */}
+      <CabeceraSitio flotante />
       {!nativeCursor && <PointerCursor />}
       <audio
         ref={windAudioRef}

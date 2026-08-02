@@ -1,12 +1,27 @@
 import type { Metadata } from 'next';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { SITIO } from '@/lib/sitio/contenido';
 import './globals.css';
 
+/**
+ * `metadataBase` es lo que convierte las rutas relativas de cada página —`canonical`,
+ * `openGraph.url`— en URLs absolutas. Sin él, Next avisa y las etiquetas salen a medias.
+ *
+ * `title.template` deja que cada página ponga solo su parte y el nombre del negocio se
+ * añada solo, en vez de repetirlo en cada archivo.
+ */
 export const metadata: Metadata = {
-  title: 'GCC World',
-  description: 'Plataforma de desarrollo humano',
+  metadataBase: new URL(SITIO.url),
+  title: {
+    default: `${SITIO.nombre} — Software, automatización y agentes de IA en Ecuador`,
+    template: `%s · ${SITIO.nombre}`,
+  },
+  description:
+    'Agentes de atención con inteligencia artificial en WhatsApp, plataformas de gestión a medida y facturación electrónica ante el SRI. Guayaquil, Ecuador.',
   icons: { icon: '/icon.png' },
+  openGraph: { siteName: SITIO.nombre, locale: 'es_EC', type: 'website' },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
