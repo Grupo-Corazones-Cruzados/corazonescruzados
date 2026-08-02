@@ -24,7 +24,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Contenedor } from './piezas';
+
 import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
 
 /* ═══════════════ CLASES DEL DOCUMENTO ═══════════════ */
@@ -111,18 +111,29 @@ export default function DocumentoLegal({
 }) {
   return (
     <>
-      <section className="border-b border-white/[0.07]">
-        <Contenedor className="py-14 sm:py-18">
-          <h1 className={h1}>{titulo}</h1>
-          {subtitulo && <p className="mt-4 text-[16.5px] leading-relaxed text-white/50 max-w-2xl">{subtitulo}</p>}
-          <p className="mt-5 text-[13.5px] text-white/35">Última actualización: {actualizado}</p>
-          {aviso && <div className={`${recuadro('nota')} max-w-2xl`}>{aviso}</div>}
-        </Contenedor>
+      {/* ── CABECERA DE ALTO FIJO ──────────────────────────────────────────────
+          ⚠️ EL ALTO ES FIJO A PROPÓSITO, y es la corrección de un fallo real: antes la
+          portada crecía o encogía según lo largo que fuese el título y el subtítulo de
+          cada documento, y como los paneles laterales empiezan donde ella acaba, **al
+          cambiar de documento los dos paneles subían o bajaban**. La navegación se sentía
+          inestable sin que se viera por qué.
+          Con `h-[112px]` la geometría es idéntica en todos: se cambia de documento y los
+          paneles no se mueven ni un píxel. El subtítulo se fue al cuerpo, donde puede
+          ocupar lo que necesite sin arrastrar a nadie. */}
+      <section className="border-b border-white/[0.07] bg-white/[0.015]">
+        <ContenedorDoc className="h-[112px] flex items-center justify-between gap-6">
+          <h1 className="text-[23px] sm:text-[27px] font-semibold text-white tracking-tight leading-tight min-w-0">
+            {titulo}
+          </h1>
+          <p className="hidden sm:block text-[12.5px] text-white/30 shrink-0 whitespace-nowrap">
+            Actualizado el {actualizado}
+          </p>
+        </ContenedorDoc>
       </section>
 
-      {/* ── Navegación compacta por debajo de `xl` ─────────────────────────────── */}
+      {/* Navegación compacta por debajo de `xl`, donde no caben tres columnas. */}
       <div className="xl:hidden border-b border-white/[0.07] bg-white/[0.02]">
-        <Contenedor className="py-3">
+        <ContenedorDoc className="py-3">
           <details className="group">
             <summary className="flex items-center justify-between gap-3 cursor-pointer list-none py-1.5">
               <span className="text-[13px] font-semibold text-white/80">Documentos y contenido</span>
@@ -133,31 +144,51 @@ export default function DocumentoLegal({
               <IndiceSecciones grupos={indice} />
             </div>
           </details>
-        </Contenedor>
+        </ContenedorDoc>
       </div>
 
-      <Contenedor className="py-12 sm:py-14">
-        <div className="xl:grid xl:grid-cols-[212px_minmax(0,1fr)_236px] xl:gap-10">
+      <ContenedorDoc className="py-10">
+        <div className="xl:grid xl:grid-cols-[236px_minmax(0,1fr)_260px] xl:gap-12">
           {/* ── Izquierda: los documentos ── */}
           <nav className="hidden xl:block" aria-label="Documentos legales">
-            <div className="sticky top-24 max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
+            <div className="sticky top-24 max-h-[calc(100vh-130px)] overflow-y-auto pr-1">
               <ListaDocumentos activo={id} />
             </div>
           </nav>
 
-          {/* ── Centro: el documento. Ancho de lectura acotado a propósito. ── */}
-          <article className="max-w-[68ch] mx-auto xl:mx-0">{children}</article>
+          {/* ── Centro: el documento ── */}
+          <article className="max-w-[74ch] mx-auto xl:mx-0">
+            {subtitulo && (
+              <p className="text-[16.5px] leading-relaxed text-white/50 pb-7 mb-2 border-b border-white/[0.07]">
+                {subtitulo}
+              </p>
+            )}
+            {aviso && <div className={recuadro('nota')}>{aviso}</div>}
+            {children}
+          </article>
 
           {/* ── Derecha: el contenido de este documento ── */}
           <nav className="hidden xl:block" aria-label="Contenido del documento">
-            <div className="sticky top-24 max-h-[calc(100vh-140px)] overflow-y-auto pl-1">
+            <div className="sticky top-24 max-h-[calc(100vh-130px)] overflow-y-auto pl-1">
               <IndiceSecciones grupos={indice} />
             </div>
           </nav>
         </div>
-      </Contenedor>
+      </ContenedorDoc>
     </>
   );
+}
+
+/**
+ * El contenedor de los documentos legales. **Más ancho que el del resto del sitio.**
+ *
+ * El sitio usa `max-w-6xl` (1152 px), que es lo correcto para una página de marketing de
+ * una sola columna. Aquí hay TRES, y con ese ancho el texto quedaba estrujado en el medio
+ * mientras sobraba media pantalla a los lados. `1560px` reparte: paneles cómodos y una
+ * columna de lectura de ~74 caracteres, que sigue siendo ancho de lectura y no de cartel.
+ */
+function ContenedorDoc({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`mx-auto w-full max-w-[1560px] px-5 sm:px-8 ${className}`}>{children}</div>;
 }
 
 /** La lista de documentos. Sale del registro: un servicio nuevo aparece aquí solo. */
