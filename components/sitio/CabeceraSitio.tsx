@@ -13,6 +13,11 @@
  * ── LO QUE NO HACE ─────────────────────────────────────────────────────────────
  * No lleva buscador ni menús desplegables. Cuatro destinos caben en una fila y un menú que
  * se abre para mostrar dos enlaces es un clic de más.
+ *
+ * Y **no lleva botón de «Crear cuenta»** (decisión de Fernando, 2026-08-02). Lo llevó, y
+ * empujaba a registrarse desde la primera pantalla, antes de haber contado nada. El alta
+ * sigue estando donde tiene sentido: al final de `/negocio`, después de decir qué se hace
+ * y cómo funciona el precio.
  */
 
 import { useEffect, useState } from 'react';
@@ -82,14 +87,6 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           })}
         </nav>
 
-        <Link
-          href="/negocio#crear-cuenta"
-          className="hidden md:inline-flex items-center h-9 px-4 rounded-md bg-[#7B5FBF] hover:bg-[#6b4faf]
-                     text-white text-[13.5px] font-medium transition-colors shrink-0"
-        >
-          Crear cuenta
-        </Link>
-
         <button
           type="button"
           onClick={() => setAbierto((v) => !v)}
@@ -113,13 +110,6 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
               {n.label}
             </Link>
           ))}
-          <Link
-            href="/negocio#crear-cuenta"
-            onClick={() => setAbierto(false)}
-            className="mt-1 px-3 py-2.5 rounded-md bg-[#7B5FBF] text-white text-[14px] font-medium text-center"
-          >
-            Crear cuenta
-          </Link>
         </nav>
       )}
     </header>
