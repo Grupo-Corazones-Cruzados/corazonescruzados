@@ -31,14 +31,12 @@ export default function PieSitio() {
       itemType="https://schema.org/Organization"
     >
       <Contenedor>
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="lg:col-span-2">
-            <p className="text-[15px] font-semibold text-white" itemProp="name">{SITIO.nombre}</p>
-            <p className="mt-2 text-[13.5px] leading-relaxed text-white/45 max-w-sm">
-              Proyecto de desarrollo humano.
-            </p>
-          </div>
-
+        {/*
+          Sin el bloque de marca, las dos listas se colocan seguidas en vez de
+          repartirse en una rejilla de 4: con `grid-cols-4` ocupaban solo las dos
+          últimas columnas y dejaban medio pie vacío a la izquierda.
+        */}
+        <div className="flex flex-wrap gap-x-20 gap-y-8">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/35 mb-3">Sitio</p>
             <ul className="space-y-2">
@@ -96,7 +94,14 @@ export default function PieSitio() {
               </a>
             </p>
           </div>
-          <p className="text-[12.5px] text-white/30">© {new Date().getFullYear()} {SITIO.nombre}</p>
+          {/*
+            `itemProp="name"` vivía en el bloque de marca que se quitó. Sin él, el
+            microdato de Organization se queda sin nombre (lo leen Google y Meta),
+            así que viaja aquí: mismo texto visible, marcado conservado.
+          */}
+          <p className="text-[12.5px] text-white/30">
+            © {new Date().getFullYear()} <span itemProp="name">{SITIO.nombre}</span>
+          </p>
         </div>
       </Contenedor>
     </footer>
