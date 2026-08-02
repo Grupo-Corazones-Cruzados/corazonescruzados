@@ -29,7 +29,7 @@ import type { Aviso } from '@/components/ui/BotonAvisos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import {
   BookText, ScrollText, SlidersHorizontal, Plug, Inbox, Pencil, Trash2, Plus,
-  AlertTriangle, KeyRound,
+  AlertTriangle,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -292,7 +292,13 @@ function Prompts({ flowId, prompts, recargar }: {
 
   return (
     <div>
-      <SectionBar title="Prompts del agente" hint="Al guardar se conserva la versión anterior" />
+      <SectionBar title="Prompts del agente">
+        <BotonAyuda titulo="Prompts del agente">
+          <p className="mb-2">Al guardar <strong>se conserva la versión anterior</strong>: nada se pierde al editar.</p>
+          <p>Los bloques de conocimiento sin rellenar se añaden solos a las reglas al hablar con el
+          modelo. <strong>No hace falta escribir aquí cuáles faltan</strong> — se calcula.</p>
+        </BotonAyuda>
+      </SectionBar>
 
       <div className="grid gap-3">
         {prompts.map((p) => {
@@ -367,7 +373,11 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
 
   return (
     <div>
-      <SectionBar title="Parámetros de ejecución" hint="Los valores por defecto son los medidos en producción">
+      <SectionBar title="Parámetros de ejecución">
+        <BotonAyuda titulo="Parámetros de ejecución">
+          Los valores por defecto son los <strong>medidos en producción</strong>, no estimaciones.
+          Cada campo tiene su propia ayuda: pulsa el (?) que hay junto a su nombre.
+        </BotonAyuda>
         <button className={BTN_PRIMARY} onClick={guardar} disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar cambios'}
         </button>
@@ -376,10 +386,12 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
       <div className="grid md:grid-cols-2 gap-4 max-w-4xl">
         <Campo
           label="Modelo"
-          hint={modeloElegido?.nota}
           ayuda={<>
-            <strong>Mínimo de caché: {estudio.capacidades.minimoCache.toLocaleString('es-ES')} tokens.</strong>{' '}
-            Por debajo de eso el prompt se paga entero en cada mensaje.
+            {modeloElegido?.nota && <p className="mb-2">{modeloElegido.nota}</p>}
+            <p>
+              <strong>Mínimo de caché: {estudio.capacidades.minimoCache.toLocaleString('es-ES')} tokens.</strong>{' '}
+              Por debajo de eso el prompt se paga entero en cada mensaje.
+            </p>
           </>}
         >
           <PixelSelect
@@ -389,40 +401,64 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
           />
         </Campo>
 
-        <Campo label="Espera antes de responder" hint="Agrupa una ráfaga de mensajes en una sola respuesta.">
+        <Campo
+          label="Espera antes de responder"
+          ayuda={<>
+            <p className="mb-2">Agrupa una ráfaga de mensajes en una sola respuesta, en vez de contestar a cada línea suelta.</p>
+            <p><strong>Segundos, de 0 a 120.</strong> Recomendado: 8.</p>
+          </>}
+        >
           <PixelInput type="number" value={String(form.debounce_segundos)}
             onChange={(e: any) => setForm({ ...form, debounce_segundos: Number(e.target.value) })} />
-          <p className="text-[11px] text-digi-muted mt-1" style={mf}>Segundos, de 0 a 120. Recomendado: 8.</p>
         </Campo>
 
-        <Campo label="Mensajes de contexto" hint="Cuántos mensajes anteriores ve el agente, además del resumen.">
+        <Campo
+          label="Mensajes de contexto"
+          ayuda={<>
+            <p className="mb-2">Cuántos mensajes anteriores ve el agente, además del resumen acumulado de la conversación.</p>
+            <p><strong>De 2 a 400.</strong> Recomendado: 40.</p>
+          </>}
+        >
           <PixelInput type="number" value={String(form.ventana_mensajes)}
             onChange={(e: any) => setForm({ ...form, ventana_mensajes: Number(e.target.value) })} />
-          <p className="text-[11px] text-digi-muted mt-1" style={mf}>De 2 a 400. Recomendado: 40.</p>
         </Campo>
 
-        <Campo label="Tokens máximos de respuesta">
+        <Campo
+          label="Tokens máximos de respuesta"
+          ayuda={<>
+            <p className="mb-2">Acota el razonamiento y la respuesta <strong>juntos</strong>, no solo lo que se escribe.</p>
+            <p>Tope de este modelo: <strong>{estudio.capacidades.maxSalida.toLocaleString('es-ES')}</strong>.</p>
+          </>}
+        >
           <PixelInput type="number" value={String(form.max_tokens)}
             onChange={(e: any) => setForm({ ...form, max_tokens: Number(e.target.value) })} />
-          <p className="text-[11px] text-digi-muted mt-1" style={mf}>
-            Acota razonamiento y respuesta juntos. Tope de este modelo: {estudio.capacidades.maxSalida.toLocaleString('es-ES')}.
-          </p>
         </Campo>
 
-        <Campo label="Clave de IA del cliente" hint="La pone el cliente y se guarda cifrada. No se puede volver a leer.">
+        <Campo
+          label="Clave de IA del cliente"
+          ayuda={<>
+            <p className="mb-2">La pone el cliente y se guarda <strong>cifrada</strong>. No se puede volver a leer: para cambiarla se escribe una nueva encima.</p>
+            <p>Sin clave, el agente no puede decidir y cada conversación pasa directamente a una persona.</p>
+          </>}
+        >
+          {/* El marcador de posición YA dice si hay clave guardada: repetirlo debajo en un
+              párrafo era decir dos veces lo mismo. Y el aviso de «sin clave» vive en el
+              botón de advertencias de la cabecera, que es donde se mira. */}
           <PixelInput type="password" placeholder={c.tiene_ia_api_key ? '•••••••• (ya guardada)' : 'sk-ant-…'}
             value={clave} onChange={(e: any) => setClave(e.target.value)} />
-          <p className="text-[11px] text-digi-muted mt-1 flex items-center gap-1" style={mf}>
-            <KeyRound className="w-3 h-3" />
-            {c.tiene_ia_api_key ? 'Hay una clave guardada. Escribe otra para reemplazarla.' : 'Sin clave, el agente no puede decidir.'}
-          </p>
         </Campo>
 
-        <Campo label="Agente encendido" hint="No se enciende solo: es una decisión consciente.">
+        <Campo
+          label="Agente encendido"
+          ayuda={<>
+            <p className="mb-2"><strong>No se enciende solo, a propósito:</strong> es una decisión consciente, después de probar.</p>
+            <p>Apagado, el agente sigue recibiendo y guardando los mensajes en la bandeja — simplemente no responde.</p>
+          </>}
+        >
           <label className="flex items-center gap-2 text-[13px] text-digi-text cursor-pointer" style={mf}>
             <input type="checkbox" checked={form.bot_activo}
               onChange={(e) => setForm({ ...form, bot_activo: e.target.checked })} />
-            {form.bot_activo ? 'Responde automáticamente' : 'Apagado: guarda los mensajes pero no responde'}
+            {form.bot_activo ? 'Responde automáticamente' : 'Apagado'}
           </label>
         </Campo>
       </div>
@@ -430,8 +466,8 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
   );
 }
 
-function Campo({ label, hint, ayuda, children }: {
-  label: string; hint?: string; ayuda?: React.ReactNode; children: React.ReactNode;
+function Campo({ label, ayuda, children }: {
+  label: string; ayuda?: React.ReactNode; children: React.ReactNode;
 }) {
   return (
     <div>
@@ -446,7 +482,6 @@ function Campo({ label, hint, ayuda, children }: {
         {ayuda && <BotonAyuda titulo={label} lado="derecha">{ayuda}</BotonAyuda>}
         <label className="block text-[12px] font-semibold text-digi-text" style={mf}>{label}</label>
       </div>
-      {hint && <p className="text-[11.5px] text-digi-muted mb-1.5" style={mf}>{hint}</p>}
       {children}
     </div>
   );

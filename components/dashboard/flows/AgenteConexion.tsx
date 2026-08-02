@@ -82,14 +82,44 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
   }, []);
 
   const lanzar = useCallback(() => {
-    if (!window.FB || !configId) return;
+    // ⚠️ ESTE BOTÓN FALLABA EN SILENCIO. El `return` de aquí no decía nada: si el SDK no
+    // había cargado o faltaba el identificador, se pulsaba «abrir el alta» y no pasaba
+    // absolutamente nada — ni ventana, ni error, ni pista. Un botón que no hace nada y no
+    // se queja es peor que uno que falla, porque no hay por dónde empezar a mirar.
+    if (!window.FB) {
+      toast.error('El conector de Meta no ha cargado. Recarga la página; si sigue igual, revisa si un bloqueador está frenando connect.facebook.net.');
+      return;
+    }
+    if (!configId) {
+      toast.error('Falta WHATSAPP_ES_CONFIG_ID en el servidor: sin él no se puede abrir el alta.');
+      return;
+    }
     setConfirmar(false);
     datosDelAlta.current = {};
 
+    // La ventana de Meta es un POPUP. Si el navegador lo bloquea, `FB.login` no avisa: su
+    // callback simplemente no se llama nunca. Se abre uno propio primero para detectarlo,
+    // y se cierra en el acto — así el bloqueo se ve como un mensaje y no como un botón muerto.
+    const sonda = window.open('', '_blank', 'width=1,height=1');
+    if (!sonda || sonda.closed) {
+      toast.error('El navegador está bloqueando las ventanas emergentes. Permítelas para este sitio y vuelve a intentarlo: el alta de Meta se abre en una.');
+      return;
+    }
+    sonda.close();
+
+    console.info('[agente] Abriendo el alta de Meta', { configId, appId });
+
     window.FB.login(
       async (respuesta: any) => {
+        // Se registra SIEMPRE: cuando el alta falla dentro de la ventana de Meta, esto es
+        // lo único que dice por qué.
+        console.info('[agente] Respuesta del alta de Meta', respuesta);
         const codigo = respuesta?.authResponse?.code;
-        if (!codigo) { toast.info('El alta no se completó.'); return; }
+        if (!codigo) {
+          const motivo = respuesta?.status ? ` (estado: ${respuesta.status})` : '';
+          toast.info(`El alta no se completó${motivo}. Si cerraste la ventana sin terminar, vuelve a intentarlo.`);
+          return;
+        }
 
         setOcupado(true);
         try {
@@ -111,7 +141,7 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
         extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
       },
     );
-  }, [configId, flowId, recargar]);
+  }, [configId, appId, flowId, recargar]);
 
   const consultarMeta = async () => {
     setOcupado(true);

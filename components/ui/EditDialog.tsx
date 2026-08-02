@@ -3,6 +3,7 @@
 import React from 'react';
 import PixelModal from './PixelModal';
 import { BTN_PRIMARY, BTN_SECONDARY } from './Button';
+import BotonAyuda from './BotonAyuda';
 
 /**
  * Superficies de EDICIÓN del dashboard — definición única.
@@ -81,12 +82,26 @@ export function QuickEditDialog(props: EditSurfaceProps) {
 }
 
 /** Campo con etiqueta + ayuda opcional, con las clases estándar de `.corp`. */
-export function EditField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+/**
+ * Campo de una superficie de edición.
+ *
+ * ⚠️ REGLA DEL PROYECTO (Fernando, 2026-08-01): **en un formulario solo se ve el título del
+ * campo y el campo**. Toda explicación —para qué sirve, rangos, recomendaciones, avisos—
+ * va detrás del (?). Antes `hint` se pintaba como una línea gris debajo del campo; con
+ * cinco o seis campos, eso duplica el alto del formulario con texto que se lee una vez.
+ *
+ * El `hint` NO se ha quitado: se ha movido. Sigue estando a un clic, y quien ya lo sabe
+ * no lo ve. Como esta es la definición única, el cambio llega a los siete sitios que la
+ * usan sin tocar ninguno.
+ */
+export function EditField({ label, hint, children }: { label: string; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[12px] font-semibold text-digi-text opacity-70" style={{ fontFamily: 'var(--font-body)' }}>{label}</label>
+      <div className="flex items-center gap-1 min-h-6">
+        {hint && <BotonAyuda titulo={label} lado="derecha">{hint}</BotonAyuda>}
+        <label className="text-[12px] font-semibold text-digi-text opacity-70" style={{ fontFamily: 'var(--font-body)' }}>{label}</label>
+      </div>
       {children}
-      {hint && <span className="text-[11px] text-digi-muted" style={{ fontFamily: 'var(--font-body)' }}>{hint}</span>}
     </div>
   );
 }
