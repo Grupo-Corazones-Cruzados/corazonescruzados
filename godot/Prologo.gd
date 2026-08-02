@@ -467,6 +467,18 @@ enum Aparicion { BARRIDO, TECLEO }
 ## que esto.
 @export var tecleo_max: float = 1.6
 
+@export_group("Presentación (el cartel del principio)")
+## Rótulo pequeño de arriba. Vacío = no se muestra.
+@export var presentacion_texto: String = "Presentado por:"
+## La marca, grande, debajo del rótulo.
+@export var presentacion_marca: String = "GCC World"
+## Cuánto ANTES del primer verso empieza a irse el cartel. También es lo que dura
+## su desvanecido: arranca aquí y termina justo cuando entra el verso, para que
+## la primera estampa quede limpia en el momento en que empieza a cantarse.
+@export_range(0.0, 5.0, 0.1) var presentacion_margen: float = 1.5
+## Oscurecido del fondo mientras el cartel está en pantalla (0 = sin velo).
+@export_range(0.0, 1.0, 0.05) var presentacion_velo: float = 0.55
+
 @export_group("Música")
 ## La canción que MARCA EL RITMO de todo el prólogo.
 @export_file("*.mp3", "*.ogg", "*.wav") var musica: String = "res://assets/Audio/Musica/Pixel Heart Quest - AI Music (8).mp3"
@@ -514,6 +526,8 @@ var _capa_b: TextureRect   # imagen entrante (para el crossfade)
 var _texto: Label          # la letra, debajo de la imagen (tamaño fijo)
 var _musica: AudioStreamPlayer
 var _velo: ColorRect       # negro por encima de todo, para el cierre
+var _presentacion: Control        # el cartel "Presentado por · GCC World"
+var _presentacion_fuera := false  # ya se ha lanzado su retirada
 var _video: VideoStreamPlayer   # los clips intercalados
 var _clip_actual := -1          # índice del clip que se está viendo
 var _terminado := false
@@ -680,6 +694,55 @@ func _construir_ui() -> void:
 	_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_video.visible = false
 	add_child(_video)
+
+	# --- LA PRESENTACIÓN: "Presentado por · GCC World" -------------------------
+	# Va POR ENCIMA de la estampa (que ya se ve debajo, atenuada por su velo) y
+	# se retira sola justo antes de que entre el primer verso. Todo dentro de un
+	# contenedor para poder fundir cartel y velo a la vez con un solo tween.
+	_presentacion = Control.new()
+	_presentacion.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_presentacion.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_presentacion)
+
+	var velo_pres := ColorRect.new()
+	velo_pres.color = Color(0, 0, 0, presentacion_velo)
+	velo_pres.set_anchors_preset(Control.PRESET_FULL_RECT)
+	velo_pres.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_presentacion.add_child(velo_pres)
+
+	# "Presentado por:" pequeño y encima; la marca, grande, debajo.
+	var pres_y := BASE_ALTO * 0.5 - 46.0
+	var rotulo := Label.new()
+	rotulo.text = presentacion_texto
+	rotulo.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	rotulo.offset_left = 0
+	rotulo.offset_right = BASE_ANCHO
+	rotulo.offset_top = pres_y
+	rotulo.offset_bottom = pres_y + 30
+	rotulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rotulo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if fuente != null:
+		rotulo.add_theme_font_override("font", fuente)
+	rotulo.add_theme_font_size_override("font_size", 15)
+	rotulo.add_theme_color_override("font_color", Color(0.72, 0.72, 0.80))
+	_presentacion.add_child(rotulo)
+
+	var marca := Label.new()
+	marca.text = presentacion_marca
+	marca.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	marca.offset_left = 0
+	marca.offset_right = BASE_ANCHO
+	marca.offset_top = pres_y + 34
+	marca.offset_bottom = pres_y + 34 + 56
+	marca.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	marca.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if fuente != null:
+		marca.add_theme_font_override("font", fuente)
+	marca.add_theme_font_size_override("font_size", 40)
+	marca.add_theme_color_override("font_color", Color(0.95, 0.95, 1.0))
+	marca.add_theme_constant_override("outline_size", 6)
+	marca.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	_presentacion.add_child(marca)
 
 	# Velo negro POR ENCIMA de todo (transparente), para fundir el cierre del
 	# prólogo a la vez que se apaga la música y no cortar de golpe.
@@ -1718,6 +1781,20 @@ func _process(_delta: float) -> void:
 	if _terminado or calibrar_letras:
 		return
 	var pos := _pos_musica()
+
+	# 0) El cartel de presentación se retira ANTES del primer verso, de modo que
+	#    el desvanecido termine justo cuando empieza a cantarse y la estampa
+	#    quede ya limpia. Se compara contra la canción, como todo lo demás.
+	if not _presentacion_fuera and _presentacion != null and LETRAS.size() > 0:
+		var t_fuera := float(LETRAS[0]["t"]) - presentacion_margen
+		if pos >= t_fuera:
+			_presentacion_fuera = true
+			if presentacion_margen <= 0.0:
+				_presentacion.visible = false
+			else:
+				var tw_p := create_tween()
+				tw_p.tween_property(_presentacion, "modulate:a", 0.0, presentacion_margen)
+				tw_p.tween_callback(func () -> void: _presentacion.visible = false)
 
 	# 1) ¿Toca cambiar de verso?
 	var siguiente := _idx_verso + 1
