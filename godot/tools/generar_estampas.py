@@ -139,6 +139,7 @@ INSERTADAS = {
     121: 66,  # corrige la 120: los DOS brazos violeta y el polvo en violeta claro
     122: 66,  # como la 119 pero SIN tocar el brillo de la zona
     123: 66,  # como la 122 pero conservando las bolitas azules y anadiendo las rojas
+    124: 66,  # la escena entera en violeta: fondo, objetos y circulos
 }
 
 
@@ -3809,6 +3810,77 @@ ESCENAS = [
         "de sitio. PROHIBIDO teñir de azul o de rojo el polvo, los trozos sueltos, la roca o el "
         "halo del fondo: todo lo demás sigue siendo MONOCROMO en grises, blancos y negros, y "
         "esos colores NO iluminan ni tiñen lo que tienen alrededor. "
+        "PROHIBIDO dibujar figuras humanas, caras u ojos. PROHIBIDO añadir elementos nuevos. "
+        "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier texto, letra, "
+        "número o marca de agua."),
+
+    # ── 124 · LA ESCENA ENTERA EN VIOLETA ─────────────────────────────────────
+    # Desde la 120. Aquí SÍ se tiñe el fondo (en las anteriores estaba prohibido):
+    # toda la imagen pasa de la escala de grises a una escala de VIOLETAS, con los
+    # tonos de la paleta que pasó Fernando repartidos por profundidad.
+    # Los círculos que sueltan puntitos NO cambian de número ni de sitio; los
+    # trozos sueltos sí se mueven un poco.
+    (124, ["assets/Prologo/escenas/escena_120.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia con LA MISMA COMPOSICIÓN, "
+        "cambiando la escena entera de la escala de GRISES a una escala de VIOLETAS, con los "
+        "matices que se dicen abajo. "
+
+        "══ BLOQUE 1 · LA COMPOSICIÓN NO CAMBIA ══ "
+        "Copia EXACTAMENTE de la referencia: el estilo PIXEL ART 2D de 16 bits dibujado a mano, "
+        "con sombreado plano, contornos definidos, píxeles visibles y dithering sutil. El "
+        "encuadre horizontal 16:9, la MISMA POSICIÓN DE CÁMARA y el MISMO PLANO GENERAL Y "
+        "LEJANO. La pared de roca cuarteada del fondo, el halo de luz redondo del centro, la "
+        "penumbra de las esquinas, los círculos que sueltan puntitos, los trozos sueltos y los "
+        "dos agarres de manos: todo está donde estaba. No hay suelo. "
+        "SIGUE SIN HABER CUERPOS: ni torsos, ni cabezas, ni siluetas de persona. PROHIBIDO "
+        "ABSOLUTAMENTE volver a dibujar figuras humanas. PROHIBIDO cambiar la vista, el ángulo o "
+        "el encuadre. "
+        "⚠ PROHIBIDO AÑADIR NADA: ni un círculo más, ni un trozo más, ni elementos nuevos de "
+        "ningún tipo. Y PROHIBIDO QUITAR nada. Lo que hay es lo que hay. "
+
+        "══ BLOQUE 2 · TODO PASA A VIOLETA ══ "
+        "La imagen sigue siendo MONOCROMA, pero en vez de grises ahora es de VIOLETAS: la misma "
+        "escena, teñida entera. Reparte los tonos así, de más oscuro a más claro: "
+        "· LA PENUMBRA de las esquinas: violeta muy oscuro, casi negro, el hexadecimal #2E1A45. "
+        "· LA PARED DE ROCA CUARTEADA del fondo, con sus grietas: violeta oscuro, entre el "
+        "#4A2661 y el #472A7D, con las grietas marcadas en un tono algo más oscuro o más claro "
+        "para que se sigan leyendo igual de bien que en la referencia. "
+        "· EL HALO DE LUZ del centro: violeta claro y luminoso, el #AD81D7, con el corazón del "
+        "halo aún más claro, el #D9B2FA, difuminándose hacia fuera. "
+        "· LOS CÍRCULOS que sueltan puntitos y TODO su polvo: violeta claro, el #AD81D7, con los "
+        "puntos más brillantes en #D9B2FA. Que se lean CLAROS sobre el fondo. "
+        "· LOS TROZOS SUELTOS desperdigados y LOS DOS BRAZOS con sus manos: violeta profundo y "
+        "saturado, el #6216a1, con relleno SÓLIDO Y PLANO en toda su silueta. Los dos brazos "
+        "iguales entre sí. "
+        "⚠ NO ES UN AURA NI UN HALO alrededor de las cosas: es el COLOR PROPIO de cada una, "
+        "rellena por dentro. PROHIBIDO dibujar resplandores, contornos de luz, lenguas de llama "
+        "o chispas alrededor de los brazos o de los trozos. "
+        "⚠ PROHIBIDO que quede algo en GRIS o en NEGRO neutro: si alguna zona —la roca, el halo, "
+        "la penumbra, el polvo— se sigue viendo gris, está MAL. Toda la imagen es violeta. Y "
+        "PROHIBIDO cualquier color que no sea un violeta: nada de azul, rojo, verde ni tonos "
+        "cálidos. "
+
+        "══ BLOQUE 3 · LA ILUMINACIÓN PUEDE RESPIRAR ══ "
+        "La luz sí puede cambiar un poco respecto a la referencia, para que la escena se sienta "
+        "viva: el halo del centro puede latir levemente —un poco más abierto o un poco más "
+        "recogido, algo más intenso o algo más suave— y las sombras de las esquinas acompañar "
+        "ese cambio. Es un cambio SUTIL de iluminación, no un foco nuevo: la luz sigue viniendo "
+        "del mismo sitio y el centro sigue siendo la zona clara. PROHIBIDO añadir fuentes de luz "
+        "nuevas, destellos, rayos o reflejos. "
+
+        "══ BLOQUE 4 · EL MOVIMIENTO: SÍ EN LOS TROZOS, NO EN LOS CÍRCULOS ══ "
+        "· LOS TROZOS SUELTOS y las partes desperdigadas: se han movido UN POCO. Cada uno se ha "
+        "desplazado ligeramente y ha girado un poco respecto a la referencia, como en el "
+        "fotograma siguiente de una animación. Siguen siendo LOS MISMOS trozos y el MISMO "
+        "número: solo cambian de postura un poquito. "
+        "· LOS DOS AGARRES DE MANOS: siguen UNIDOS y en su sitio, movidos solo un pelín. "
+        "PROHIBIDO ABSOLUTAMENTE que se suelten, se separen o se rompan. "
+        "· ⚠ LOS CÍRCULOS QUE SUELTAN PUNTITOS NO SE TOCAN: ni uno más ni uno menos, y en el "
+        "MISMO SITIO, con el MISMO tamaño y la MISMA forma que en la referencia. No los muevas, "
+        "no los agrandes, no los multipliques y no los quites. Lo único que les cambia es el "
+        "color. "
+
+        "══ BLOQUE 5 · PROHIBICIONES ══ "
         "PROHIBIDO dibujar figuras humanas, caras u ojos. PROHIBIDO añadir elementos nuevos. "
         "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier texto, letra, "
         "número o marca de agua."),
