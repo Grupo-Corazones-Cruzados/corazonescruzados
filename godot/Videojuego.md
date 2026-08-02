@@ -644,6 +644,23 @@ definir; 150+ competitivo.
 ## 6. Cómo trabajar con Fernando (preferencias / método)
 
 - **Idioma: español** siempre.
+- ## ⛔⛔ REGLA Nº 1 DEL ARTE — SOLO FERNANDO EVALÚA LAS IMÁGENES
+  **NUNCA calificar una imagen generada ni decidir regenerarla por criterio propio.**
+  Textual, el 2026-08-02: *"deja para siempre de estar calificando las imágenes, tú tienes
+  mala capacidad para distinguir detalles muy específicos… solo yo decido eso"*.
+  - **Prohibido** decir que una imagen "no es lo que pidió", "salió mal", "sigue sin coger la
+    escala" o cualquier juicio sacado de mirarla. **Prohibido** lanzar otra tirada apoyándose
+    en ese juicio.
+  - **El flujo es: generar UNA vez → entregar y PARAR.** Se corrige solo con una indicación
+    suya, y se aplica lo que él diga, no lo que yo crea ver.
+  - **Por qué importa doble:** (a) distingo mal los detalles finos del pixel-art, así que mi
+    veredicto no vale; (b) cada tirada gasta **créditos de prepago de su cuenta de Gemini** —
+    regenerar por iniciativa propia le cuesta dinero.
+  - **Lo que SÍ debo seguir comprobando** (es objetivo, no opinión): que el `.png` se
+    reescribió de verdad (md5, regla §4.21/§4.39), que no fue un 429/503, que la escena está
+    en `TRAMOS` donde toca y que el reparto de tiempos cuadra.
+  - **Se incumplió el 2026-08-02** con la escena 115: cinco tiradas seguidas juzgando yo cada
+    resultado, sin enseñarle ninguna. La norma ya estaba escrita justo debajo.
 - **Arte del prólogo: una escena por vez.** Genera → revisa → corrige con detalle →
   aprueba explícitamente → siguiente. No avanzar sin su "ok".
 - Le importa **muchísimo**: (a) la **consistencia del estilo de dibujo** de personajes y
@@ -847,6 +864,19 @@ en `MEMORIA.md` → *Decisiones recientes*):
   economía. Fernando aprende Godot guiado en paralelo.
 
 ## 10. Registro de aprendizajes/decisiones
+
+- **2026-08-02 (⛔ CORRECCIÓN DE MÉTODO — solo Fernando evalúa las imágenes):** al generar la
+  estampa 115 encadené **cinco tiradas seguidas** decidiendo yo, mirando cada resultado, que
+  "no era lo pedido" y relanzando. Fernando lo cortó: *"deja para siempre de estar calificando
+  las imágenes, tú tienes mala capacidad para distinguir detalles muy específicos… solo yo
+  decido eso"*. La regla queda en §6 como la **nº 1 del arte** y manda sobre cualquier otra:
+  **generar una vez, entregar y parar**; solo se corrige con su indicación. Dos motivos, y el
+  segundo es el caro: mi lectura de un pixel-art no es fiable, y **cada tirada gasta créditos
+  de prepago de su cuenta de Gemini**. Lo objetivo (md5, 429/503, reparto de tiempos, que la
+  escena esté en `TRAMOS`) sí se sigue comprobando: eso no es opinión.
+  ⚠ Ojo: las reglas §4.34 y §4.34-bis ("una corrección por tirada", "añadir sobre el prompt que
+  funciona") describen **cómo** corregir cuando él pide una corrección — **no** son permiso
+  para iterar solo.
 
 - **2026-07-28 (Acto 4 rehecho a fondo + primer vídeo):** se regeneraron/crearon la **53**
   (familia de 5 huyendo, caótica, con las tres tallas y las figuras granate distintas), la

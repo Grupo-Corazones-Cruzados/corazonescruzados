@@ -7,6 +7,32 @@
 
 ---
 
+## ⛔ REGLA DE MÉTODO, POR ENCIMA DE CUALQUIER OBJETIVO (2026-08-02)
+
+**Las imágenes generadas las evalúa SOLO Fernando. Yo genero, entrego y paro.**
+
+Textual: *"deja para siempre de estar calificando las imágenes, tú tienes mala capacidad para
+distinguir detalles muy específicos… solo yo decido eso"*.
+
+- **Prohibido** emitir un juicio sobre una imagen generada ("no es lo que pediste", "salió mal",
+  "sigue sin coger la escala") y **prohibido regenerar apoyándose en ese juicio**.
+- El ciclo del arte NO es "aprender iterando yo": es **generar una vez → entregar → esperar su
+  veredicto → corregir con lo que él diga**. La iteración autónoma que esta skill fomenta para
+  problemas técnicos **no aplica al arte**.
+- **Dos motivos:** mi lectura de los detalles finos de un pixel-art no es fiable, y **cada tirada
+  gasta créditos de prepago de su cuenta de Gemini** — iterar solo le cuesta dinero.
+- **Sigue siendo válido comprobar lo objetivo** (eso no es opinión): que el `.png` se reescribió
+  (md5), que no fue un 429/503, que la escena entra en `TRAMOS` donde toca, que el reparto de
+  tiempos cuadra, que el `.import` está comprimido antes de publicar.
+- **Origen:** con la estampa 115 encadené **5 tiradas seguidas** juzgando yo cada resultado, sin
+  enseñarle ninguna. La norma ya existía en `godot/Videojuego.md` §6 y la incumplí.
+- **Generalización para cualquier objetivo futuro:** cuando el criterio de aceptación sea
+  **perceptivo** (cómo se ve, cómo suena, cómo se siente), el juez es Fernando y mi trabajo es
+  producir y entregar. Cuando sea **verificable** (compila, cuadra, responde 200, el md5 cambió),
+  el juez soy yo y debo comprobarlo antes de dar nada por hecho.
+
+---
+
 ## Objetivo ACTUAL (declarado 2026-08-01) — FLUJO "AGENTE IA": GCC como PROVEEDOR DE TECNOLOGÍA de WhatsApp (coexistencia, multi-tenant) · ✅ 98% — CÓDIGO COMPLETO Y DESPLEGADO, falta conectar el primer número
 
 **Rol asumido:** *arquitecto de integraciones + backend multi-tenant* — el problema no es "hacer un

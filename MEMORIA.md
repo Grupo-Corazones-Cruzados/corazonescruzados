@@ -275,6 +275,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⛔ MÉTODO — SOLO FERNANDO EVALÚA LAS IMÁGENES GENERADAS (2026-08-02).** Regla de trabajo, no
+  de código, y manda sobre cualquier otra del pipeline de arte. Textual: *"deja para siempre de
+  estar calificando las imágenes, tú tienes mala capacidad para distinguir detalles muy
+  específicos… solo yo decido eso"*.
+  - **Nunca** juzgar una imagen generada ("no es lo que pediste", "salió mal", "sigue sin coger
+    la escala") **ni regenerarla apoyándose en ese juicio**. El flujo es **generar UNA vez,
+    entregar y parar**; se corrige solo con la indicación de Fernando y se aplica lo que él diga.
+  - **Dos motivos:** mi lectura de los detalles finos de un pixel-art no es fiable, y **cada
+    tirada gasta créditos de prepago de su cuenta de Gemini** (regenerar solo = gastarle dinero).
+  - **Sí se sigue comprobando lo objetivo**, que no es opinión: que el `.png` se reescribió
+    (md5), que no fue un 429/503, que la escena esté en `TRAMOS` y que el reparto de tiempos
+    cuadre.
+  - **Origen:** con la estampa 115 se encadenaron **5 tiradas seguidas** sin enseñarle ninguna.
+    Detalle completo en `godot/Videojuego.md` §6 (regla nº 1 del arte) y §10.
 - **GCC ES PROVEEDOR DE TECNOLOGÍA DE WHATSAPP ANTE META — dirección de producto (2026-08-01).**
   Decisión del usuario tras la puesta en marcha del agente de **Peters Tours S.A.** (otro repo:
   `GCC---Sistema-de-Facturaci-n`). **GCC no crea un servicio web por cliente**: monta **una sola app
