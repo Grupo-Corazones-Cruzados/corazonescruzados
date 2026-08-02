@@ -121,11 +121,14 @@ export default function DocumentoLegal({
           paneles no se mueven ni un píxel. El subtítulo se fue al cuerpo, donde puede
           ocupar lo que necesite sin arrastrar a nadie. */}
       <section className="border-b border-white/[0.07] bg-white/[0.015]">
-        <ContenedorDoc className="h-[112px] flex items-center justify-between gap-6">
-          <h1 className="text-[23px] sm:text-[27px] font-semibold text-white tracking-tight leading-tight min-w-0">
+        {/* Título y fecha CENTRADOS, uno sobre otro. El alto sigue siendo fijo —es lo que
+            impide que los paneles laterales suban o bajen al cambiar de documento—, solo
+            cambia cómo se reparte dentro. */}
+        <ContenedorDoc className="h-[112px] flex flex-col items-center justify-center gap-1.5 text-center">
+          <h1 className="text-[23px] sm:text-[27px] font-semibold text-white tracking-tight leading-tight">
             {titulo}
           </h1>
-          <p className="hidden sm:block text-[12.5px] text-white/30 shrink-0 whitespace-nowrap">
+          <p className="text-[12.5px] text-white/30">
             Actualizado el {actualizado}
           </p>
         </ContenedorDoc>
