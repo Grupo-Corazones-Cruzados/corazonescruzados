@@ -105,10 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">C8 · El worker &nbsp;·&nbsp; y luego C9, el alta real</p>
-    <p class="quien"><strong>C7 hecho: la pantalla de alta.</strong> Ya se puede conectar el número de un cliente. Falta el worker que consuma la cola, y con él el sistema queda entero.</p>
-    <div class="barra"><span style="width:76%"></span></div>
-    <div class="barra-pie"><span>16 de 21 pasos terminados</span><span>76%</span></div>
+    <p class="paso">F13 · Crear el servicio worker en Railway</p>
+    <p class="quien"><strong>El código está completo.</strong> Lo único que falta para que el agente responda es crear el servicio worker en Railway — el comando de arranque solo se pone desde el panel, la CLI no lo expone. Después, C9: el alta con el primer cliente.</p>
+    <div class="barra"><span style="width:77%"></span></div>
+    <div class="barra-pie"><span>17 de 22 pasos terminados</span><span>77%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -303,6 +303,23 @@
       <td>F4</td>
     </tr>
 
+    <tr class="actual">
+      <td>F13</td><td><span class="est e-curso">En curso</span></td>
+      <td>
+        <span class="t">Crear el servicio worker en Railway</span>
+        <span class="d">Proyecto <code>Servidor-GCC</code> → <strong>New service → GitHub repo</strong>
+        (el mismo repositorio), y en Settings:<br>
+        · <strong>Start command:</strong> <code>node scripts/agente-worker.mjs</code><br>
+        · <strong>SIN cron schedule</strong> — es un proceso que no termina, no un cron.<br>
+        · Variables: <code>CRON_TOKEN</code> (el mismo valor que el servicio web) y
+        <code>APP_URL=https://app.grupocc.org</code>.<br>
+        El comando de arranque <strong>solo se pone desde el panel</strong>: la CLI no lo expone, y
+        un <code>railway.json</code> en la raíz afectaría también al servicio web y lo convertiría
+        en cron, tumbando la app.</span>
+      </td>
+      <td>C8</td>
+    </tr>
+
     <tr>
       <td>F11</td><td><span class="est e-pend">Pendiente</span></td>
       <td>
@@ -464,18 +481,22 @@
     </tr>
 
     <tr>
-      <td>C8</td><td><span class="est e-curso">En curso</span></td>
+      <td>C8</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Worker en Railway</span>
         <span class="d">Un servicio aparte que consume la cola cada pocos segundos. El cron que ya existe
         pasa cada 10 minutos: sirve para campañas de correo, <strong>no para conversar</strong>.<br>
-        <em>Pendiente de tu confirmación — ver §7.</em></span>
+        <strong>Hecho el 2026-08-01.</strong> <code>/api/agente/procesar</code> +
+        <code>scripts/agente-worker.mjs</code>. Verificado en producción: sin token responde 401 y
+        con el real hace un pase de verdad. Los trabajos se procesan <strong>en serie</strong> —
+        varias llamadas a la vez con la clave del cliente se comen su límite de golpe. 10 pruebas
+        del worker real, 0 fallos. <strong>Falta crear el servicio en Railway → F13.</strong></span>
       </td>
       <td>C3</td>
     </tr>
 
     <tr>
-      <td>C9</td><td><span class="est e-bloq">Bloqueado</span></td>
+      <td>C9</td><td><span class="est e-pend">Pendiente</span></td>
       <td>
         <span class="t">Alta del primer número real y verificación de punta a punta</span>
         <span class="d">Con el primer cliente. Las comprobaciones que de verdad importan:<br>
@@ -484,7 +505,7 @@
         · un mensaje de prueba entra en la bandeja;<br>
         · el agente se enciende a mano desde el Estudio (no se enciende solo, a propósito).</span>
       </td>
-      <td>C7, C8, F8, F9</td>
+      <td>C7, C8, F8, F9, F13</td>
     </tr>
   </table>
 
@@ -1017,6 +1038,7 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>C8 hecho: el worker.</strong> Servicio de larga vida con bucle de 5 s, no un cron: quien escribe por WhatsApp espera segundos. Reutiliza <code>CRON_TOKEN</code> — un secreto menos que rotar. Verificado contra producción: 401 sin token, y con el real un pase real en 82 ms. <strong>Con esto el código está completo</strong>; falta crear el servicio en Railway (F13).</td></tr>
     <tr><td>2026-08-01</td><td><strong>C7 hecho: la pantalla de alta.</strong> Embedded Signup con el aviso del paso irreversible repetido tres veces y casilla obligatoria. El alta suscribe la cuenta del cliente a nuestra app <strong>y lo verifica</strong>: es la versión por cliente del despiste de <code>messages</code>, y por eso se automatiza en vez de dejarlo a mano. Se avisa de que <code>CLOUD_API</code> no demuestra la coexistencia: eso lo comprueba una persona abriendo WhatsApp Web. Un número no puede estar en dos agentes, y desconectar no borra el conocimiento. 14 pruebas, 0 fallos.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C6 hecho: la bandeja.</strong> Lista, hilo y toma humana — tomar un chat apaga el agente <strong>solo ahí</strong>, no en el canal. Devolverlo limpia el trabajo en error de la cola, o el siguiente mensaje no se podría encolar. <strong>Dos fallos reales encontrados por las pruebas:</strong> <code>users</code> no tiene columna <code>name</code>, y el token trae <code>userId</code>, no <code>id</code> — TypeScript no los caza porque <code>JWTPayload</code> lleva índice abierto. Y el ayudante compartido tuvo que salir del <code>route.ts</code>: Next solo deja exportar manejadores desde ahí.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C5 hecho: el Estudio.</strong> Conocimiento por bloques, los tres prompts versionados (guardar conserva la versión anterior) y los parámetros. El estado «sin rellenar» se <strong>calcula</strong> del contenido, así que no puede quedar desfasado. Avisa cuando el prompt no llega al mínimo de caché del modelo: es dinero que se va sin que nadie lo note. 17 pruebas, 0 fallos.</td></tr>
