@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Bell, X, FolderKanban, Crown, Ticket, ChevronRight } from 'lucide-react';
+import { EnElPie, BotonPie } from '@/components/dashboard/PieAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const POLL = 60000;
@@ -107,13 +108,11 @@ export default function NotificationsDock() {
   if (!user) return null;
 
   return (
-    <div
-      ref={boxRef}
-      data-notifications-dock
-      className="fixed bottom-11 right-3 lg:right-4 z-[95] flex flex-col items-end"
-      style={mf}
-    >
+    <div ref={boxRef} data-notifications-dock style={mf}>
+      {/* El panel sigue flotando, anclado JUSTO encima de la barra de ruta. El botón, en
+          cambio, vive dentro de la barra (ver `PieAcciones`). */}
       {open && (
+      <div className="fixed bottom-11 right-3 lg:right-4 z-[95]">
         <div className="mb-2 w-[min(92vw,360px)] rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden">
           <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-digi-border">
             <Bell className="w-4 h-4 text-accent" />
@@ -168,23 +167,13 @@ export default function NotificationsDock() {
             )}
           </div>
         </div>
+      </div>
       )}
 
-      <button
-        onClick={toggle}
-        aria-label={open ? 'Cerrar notificaciones' : `Abrir notificaciones${unread ? `, ${unread} sin leer` : ''}`}
-        className={`relative inline-flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-colors ${
-          open ? 'bg-accent-hover text-white' : 'bg-accent text-white hover:bg-accent-hover'
-        }`}
-      >
-        {open ? <X className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-        {/* El contador solo existe si hay algo sin leer; nunca se muestra un "0". */}
-        {!open && unread > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-semibold tabular-nums border-2 border-digi-card">
-            {unread > 99 ? '99+' : unread}
-          </span>
-        )}
-      </button>
+      {/* El contador solo existe si hay algo sin leer; nunca se muestra un «0». */}
+      <EnElPie orden={30}>
+        <BotonPie Icon={Bell} label="Notificaciones" activo={open} sinLeer={unread} onClick={toggle} />
+      </EnElPie>
     </div>
   );
 }

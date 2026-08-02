@@ -1206,6 +1206,43 @@ borde inferior de su origen y muere en el superior de su destino (es la que caza
 ancestro común), que ningún nodo pisa a otro contando abanicos, y que el hueco declarado a ELK
 coincide con lo dibujado.
 
+### Ranura de acciones del pie (`components/dashboard/PieAcciones.tsx`, 2026-08-02)
+
+Los lanzadores de **chat, mis chats, notificaciones y GCC Bot** ya no flotan: viven **dentro de la
+barra de ruta**, a la derecha. Sus paneles siguen abriéndose flotando justo encima.
+
+**Qué resolvía flotar, y qué costaba:** eran cuatro píldoras de 40 px con sombra ancladas abajo a la
+derecha, **encima del contenido**. Y se colocaban **midiéndose entre ellas**: `NotificationsDock` era
+el ancla y los otros dos leían su `getBoundingClientRect()`, con dos temporizadores de reintento y un
+valor de reserva escrito a mano (`232`) por si el ancla no se pintaba — que no siempre se pinta.
+
+**Ahora:** cada lanzador se **porta** a `#pie-acciones` con `<EnElPie orden={n}>`, y el orden lo da un
+`flex`. **Cero mediciones, cero valores de reserva, cero temporizadores.**
+
+```tsx
+<EnElPie orden={20}>
+  <BotonPie Icon={Inbox} label="Mis chats" activo={abierto} sinLeer={7} onClick={…} />
+</EnElPie>
+```
+
+`orden` fija la posición de izquierda a derecha **independientemente del orden de montaje**, que
+cambia según la página (el bot de cotizaciones solo existe en el detalle de un proyecto).
+
+**El botón del pie (`BotonPie`) no es la píldora de antes.** Alto 26 px para caber en los 36 del pie,
+**sin sombra y sin relleno de color**: aquí ya no flota sobre el contenido, forma parte de la barra, y
+una píldora morada con sombra dentro de una barra fina se lee como un parche. El acento aparece al
+pasar por encima y cuando está abierto. La etiqueta se esconde por debajo de `sm`; el icono basta.
+
+**Dos detalles medidos, no supuestos:**
+- La barra pasó de `overflow-x-auto` a `overflow-visible`, con el desplazamiento movido al contenedor
+  de las migas. Con el anterior, **el contador de sin-leer quedaba recortado** por arriba.
+- Comprobado a 1440, 1024 y 640 px: los cuatro botones caben dentro de los 36 px del pie, el contador
+  no se recorta y el orden se mantiene.
+
+**Si la ranura no existe** —una página fuera del panel— `EnElPie` **no pinta nada**, en vez de caer a
+una posición flotante: un botón que asoma un instante en una esquina y salta al pie se ve peor que uno
+que aparece ya en su sitio.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-01 — AUDITORÍA DE COLOR del ámbito `.corp`: 117 usos fuera de paleta en 26 archivos.**
   La disparó Fernando al ver los avisos del detalle de flujo. El barrido completo se hizo con un

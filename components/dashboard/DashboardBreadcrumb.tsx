@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, ChevronRight } from 'lucide-react';
+import { RanuraAcciones } from './PieAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -39,11 +40,15 @@ export default function DashboardBreadcrumb({ collapsed = false }: { collapsed?:
          no termine por debajo. Se mide en vez de codificar los 36 px: si el pie cambia de
          alto o no existe (páginas fuera del dashboard), el cálculo sigue siendo correcto. */
       data-app-footer=""
-      className={`fixed bottom-0 right-0 left-0 z-20 h-9 flex items-center gap-1 px-4 border-t border-digi-border bg-digi-card/95 backdrop-blur overflow-x-auto whitespace-nowrap transition-[left] duration-200 ${
+      /* `overflow-visible` a propósito: la ranura de acciones lleva un contador que sale
+         un poco por arriba del botón, y con `overflow-x-auto` quedaba recortado. La ruta,
+         que es lo que podía desbordar, se desplaza en su propio contenedor. */
+      className={`fixed bottom-0 right-0 left-0 z-20 h-9 flex items-center gap-1 px-4 border-t border-digi-border bg-digi-card/95 backdrop-blur whitespace-nowrap transition-[left] duration-200 ${
         collapsed ? 'lg:left-16' : 'lg:left-56'
       }`}
       style={mf}
     >
+      <div className="flex items-center gap-1 min-w-0 overflow-x-auto">
       <Home className="w-3.5 h-3.5 text-digi-muted shrink-0" />
       {crumbs.map((c, i) => {
         const last = i === crumbs.length - 1;
@@ -58,6 +63,11 @@ export default function DashboardBreadcrumb({ collapsed = false }: { collapsed?:
           </span>
         );
       })}
+      </div>
+
+      {/* Aquí se portan los lanzadores de chat, notificaciones y el bot de cotizaciones.
+          Antes flotaban sobre el contenido y se colocaban midiéndose entre ellos. */}
+      <RanuraAcciones />
     </nav>
   );
 }

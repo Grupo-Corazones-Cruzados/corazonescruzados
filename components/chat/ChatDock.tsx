@@ -6,6 +6,7 @@ import { accessRoleOf } from '@/lib/dashboard/access';
 import GroupPanel from '@/components/chat/GroupPanel';
 import PersonalPanel, { type ScopeChat } from '@/components/chat/PersonalPanel';
 import { MessageCircle, Inbox, X } from 'lucide-react';
+import { EnElPie, BotonPie } from '@/components/dashboard/PieAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const POLL_IDLE = 30000;
@@ -37,22 +38,6 @@ export default function ChatDock() {
   // El chat grupal es solo de candidatos y miembros; los personales los tiene cualquiera
   // que participe en un ticket/proyecto/evento abierto (un cliente, por ejemplo).
   const canGroup = !!user && (role === 'candidate' || role === 'member' || role === 'admin');
-
-  // Se coloca a la izquierda de la campanita midiéndola (si no estuviera, cae al borde).
-  const [dockRight, setDockRight] = useState<number | null>(null);
-  useEffect(() => {
-    const measure = () => {
-      const el = document.querySelector('[data-notifications-dock]') as HTMLElement | null;
-      if (!el) { setDockRight(null); return; }
-      const r = el.getBoundingClientRect();
-      setDockRight(Math.round(window.innerWidth - r.left + 8));
-    };
-    measure();
-    const t1 = setTimeout(measure, 300);
-    const t2 = setTimeout(measure, 900);
-    window.addEventListener('resize', measure);
-    return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', measure); };
-  }, []);
 
   const [panel, setPanel] = useState<Panel>('none');
   const [groupUnread, setGroupUnread] = useState(0);
@@ -98,33 +83,38 @@ export default function ChatDock() {
   if (!user || (!canGroup && chats.length === 0)) return null;
 
   return (
-    <div
-      className={`fixed bottom-11 z-[90] flex flex-col items-end ${dockRight === null ? 'right-3 lg:right-4' : ''}`}
-      style={dockRight === null ? mf : { ...mf, right: dockRight }}
-    >
+    <div style={mf}>
+      {/* Los paneles siguen flotando, anclados justo encima de la barra de ruta. Los
+          lanzadores, en cambio, viven DENTRO de la barra (ver `PieAcciones`).
+          Con esto desaparece la medición: antes este muelle leía el rectángulo del de
+          notificaciones para colocarse a su izquierda, y si aquel no se pintaba, caía a un
+          valor escrito a mano. Ahora el orden lo da un `flex`. */}
       {panel === 'group' && canGroup && (
-        <div className="mb-2"><GroupPanel onClose={() => open('none')} onRead={() => setGroupUnread(0)} /></div>
+        <div className="fixed bottom-11 right-3 lg:right-4 z-[90]">
+          <GroupPanel onClose={() => open('none')} onRead={() => setGroupUnread(0)} />
+        </div>
       )}
       {panel === 'personal' && (
-        <div className="mb-2">
+        <div className="fixed bottom-11 right-3 lg:right-4 z-[90]">
           <PersonalPanel chats={chats} loading={loadingChats} onClose={() => open('none')} onRefresh={refreshCounts} />
         </div>
       )}
 
-      <div className="flex items-center gap-2" data-chatdock-launchers>
-        {canGroup && (
-          <Launcher
-            active={panel === 'group'} label="Chat" unread={groupUnread}
-            Icon={MessageCircle}
+      {canGroup && (
+        <EnElPie orden={10}>
+          <BotonPie
+            Icon={MessageCircle} label="Chat" activo={panel === 'group'} sinLeer={groupUnread}
             onClick={() => open(panel === 'group' ? 'none' : 'group')}
           />
-        )}
-        <Launcher
-          active={panel === 'personal'} label="Mis chats" unread={personalUnread}
-          Icon={Inbox} count={chats.length}
+        </EnElPie>
+      )}
+      <EnElPie orden={20}>
+        <BotonPie
+          Icon={Inbox} label="Mis chats" activo={panel === 'personal'} sinLeer={personalUnread}
+          cuenta={chats.length}
           onClick={() => open(panel === 'personal' ? 'none' : 'personal')}
         />
-      </div>
+      </EnElPie>
     </div>
   );
 }

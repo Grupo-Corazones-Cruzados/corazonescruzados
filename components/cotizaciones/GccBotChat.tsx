@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Bot, X, Send } from 'lucide-react';
+import { EnElPie, BotonPie } from '@/components/dashboard/PieAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -22,22 +23,11 @@ export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody, s
   /** 'dock' = junto a los botones de chat (a su izquierda, mismo tamaño); 'right' = pill flotante (vista pública). */
   side?: 'right' | 'dock';
 }) {
-  // En 'dock' el launcher se ubica a la IZQUIERDA de los botones Chat/Mis chats del ChatDock,
-  // midiendo su ancho real para dejar la MISMA separación (8px). El panel abierto va abajo-derecha.
-  const [dockRight, setDockRight] = useState<number | null>(null);
-  useEffect(() => {
-    if (side !== 'dock') return;
-    const measure = () => {
-      const el = document.querySelector('[data-chatdock-launchers]') as HTMLElement | null;
-      if (el) { const r = el.getBoundingClientRect(); setDockRight(Math.round(window.innerWidth - r.left + 8)); }
-    };
-    measure();
-    const t1 = setTimeout(measure, 300);
-    const t2 = setTimeout(measure, 900);
-    window.addEventListener('resize', measure);
-    return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', measure); };
-  }, [side]);
-  const dockStyle = side === 'dock' ? { right: dockRight ?? 232 } : undefined;
+  // ⚠️ AQUÍ HABÍA UNA MEDICIÓN Y YA NO HACE FALTA. Este lanzador se colocaba leyendo el
+  // rectángulo de los botones del ChatDock para quedar a su izquierda con 8 px de
+  // separación, con dos temporizadores de reintento y un valor de reserva escrito a mano
+  // (232) por si no lo encontraba. Ahora los tres botones viven en la ranura de la barra
+  // de ruta y el orden lo da un `flex`: cero mediciones, cero valores de reserva.
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([{
     role: 'bot',
@@ -67,12 +57,12 @@ export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody, s
 
   return (
     <>
-      {!open && (
-        <button onClick={() => setOpen(true)} aria-label="Abrir GCC Bot"
-          className={`fixed bottom-11 ${side === 'dock' ? '' : 'right-3'} z-[91] inline-flex items-center gap-2 h-10 pl-3 pr-4 rounded-full shadow-lg bg-accent text-white hover:bg-accent-hover transition-colors`} style={{ ...mf, ...dockStyle }}>
-          <Bot className="w-4 h-4" /> <span className="text-[12.5px] font-medium">GCC Bot</span>
-        </button>
-      )}
+      {/* El lanzador vive en la barra de ruta. `tono="acento"` porque es una acción de
+          marca —el bot de IA— y conviene que se distinga de chat y notificaciones, que son
+          canales. Ya no hace falta medir el muelle de notificaciones para colocarse. */}
+      <EnElPie orden={40}>
+        <BotonPie Icon={Bot} label="GCC Bot" activo={open} tono="acento" onClick={() => setOpen(!open)} />
+      </EnElPie>
       {open && (
         <div className={`fixed bottom-11 right-3 z-[92] w-[92vw] max-w-sm h-[70vh] max-h-[560px] flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-2xl overflow-hidden`}>
           <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-digi-border bg-accent text-white">
