@@ -131,7 +131,7 @@ export default function MarkdownRenderer({ content }: { content: string }) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
+              className="text-blue-400 hover:text-blue-400 underline"
             >
               {children}
             </a>

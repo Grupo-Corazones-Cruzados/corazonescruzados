@@ -12,6 +12,7 @@
  */
 
 import { ArrowLeft, X, Check, Paperclip, Trash2 } from 'lucide-react';
+import { TONO } from '@/components/ui/tonos';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -197,12 +198,14 @@ export function Steps({
 
 export type StatTone = 'neutral' | 'success' | 'info' | 'warning' | 'danger';
 
+// El color sale de la definición ÚNICA de tonos, no se reescribe aquí: si mañana cambia
+// el verde de «éxito», debe cambiar en las tarjetas de resumen igual que en los avisos.
 const STAT_TONE: Record<StatTone, string> = {
   neutral: 'text-digi-text',
-  success: 'text-green-400',
-  info: 'text-blue-400',
-  warning: 'text-amber-400',
-  danger: 'text-red-400',
+  success: TONO.exito.texto,
+  info: TONO.info.texto,
+  warning: TONO.aviso.texto,
+  danger: TONO.error.texto,
 };
 
 export function StatCards({ items }: { items: { label: string; value: number; tone?: StatTone }[] }) {

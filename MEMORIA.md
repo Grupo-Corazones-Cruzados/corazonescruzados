@@ -406,6 +406,21 @@ Stack estándar de la casa, con particularidades de este repo:
       verdad a la API. **Ningún número se conecta sin pasar por aquí.**
     - Confirmado de paso que **el prefijo cachea**: primera llamada escribe 10.401 tokens de
       caché, las cinco siguientes los leen.
+  - **🎨 EL TEMA NO REMAPEA TODA LA PALETA DE TAILWIND** (2026-08-01, lo vio Fernando).
+    `.corp` solo redefine un conjunto concreto de tonos. `text-red-800` o `text-amber-900`
+    compilan y en claro parecen rojo y ámbar, pero **están fuera de la paleta** y en oscuro
+    quedan casi negros sobre fondo oscuro. Los únicos semánticos válidos son los
+    **`-300`/`-400`** de la paleta más unas superficies (`bg-*-50`), bordes (`border-*-300`)
+    y textos (`text-*-600/700`) con override explícito.
+    - **Definición única: `components/ui/tonos.ts`** (`TONO.error|aviso|exito|info` con
+      `texto·icono·punto·caja·control·anillo`). El color de un aviso sale de ahí, nunca a mano.
+    - **`info` es el MORADO de marca, no azul.** Un azul suelto sería otro color fuera de la
+      identidad.
+    - **Auditoría del 2026-08-01:** 117 usos fuera de paleta en 26 archivos. Lo grave se
+      corrigió; los tintes al 10-15 % se dejan (decisión de Fernando). Detalle y clasificación
+      en `Diseño.md` → «Desviaciones detectadas y resolución».
+    - **El peor hallazgo:** `violet-*` y `sky-*` se usaban donde tocaba el `accent` de marca —
+      **un violeta distinto del nuestro**, en la app de un grupo cuya identidad ES el violeta.
   - **🧠 LECCIONES TÉCNICAS de esta construcción (no volver a tropezar):**
     1. **`ON CONFLICT` sobre un índice único PARCIAL exige repetir su condición.**
        `wa_message_id` tiene índice `WHERE wa_message_id IS NOT NULL`; sin ese `WHERE` en el

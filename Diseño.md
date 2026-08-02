@@ -1056,6 +1056,33 @@ en oscuro**, así que el blanco deja de leerse en uno de los dos. Ahora el conta
 `bg-digi-card` con el tono en el texto y el borde — legible en ambos sin excepciones.
 
 ## Desviaciones detectadas y resolución
+- **2026-08-01 — AUDITORÍA DE COLOR del ámbito `.corp`: 117 usos fuera de paleta en 26 archivos.**
+  La disparó Fernando al ver los avisos del detalle de flujo. El barrido completo se hizo con un
+  script que compara cada clase contra los tonos que `globals.css` remapea en claro **y** en oscuro.
+  Clasificación y resolución:
+
+  | Qué | Cuántos | Clasificación | Resolución |
+  |---|---|---|---|
+  | `text-red-800`, `text-amber-900`, `text-amber-500/800`, `text-green-500`, `text-blue-300` | ~15 | **(b) Desviación** — sin override, casi negros sobre fondo oscuro | ✅ **Corregidos** al `-400` remapeado, y extraído `components/ui/tonos.ts` |
+  | `violet-*`, `sky-*`, `emerald-*` | ~12 | **(b) Desviación grave** — son **otros colores**, no versiones de los nuestros | ✅ **Corregidos**: `violet→accent`, `sky→blue-400`, `emerald→green-*` |
+  | `bg-red-500/10`, `bg-amber-500/15`, `bg-green-500` como punto | ~85 | **(c) Ambiguo** — funcionan en ambos temas | ⏸ **Se dejan**, decisión de Fernando (2026-08-01) |
+  | `PixelBadge`, `PixelConfirm` (`-900/20`, `-700/50`) | ~10 | **No es drift** | Los gobierna `.corp .pixel-badge` en CSS; esas clases son el respaldo fuera de `.corp` |
+
+  **El hallazgo que más importa:** `text-violet-400` (#a78bfa) y `text-violet-500` (#8b5cf6) se
+  usaban donde tocaba el **accent de marca** (#4B2D8E claro / #8267d4 oscuro). Es decir, un violeta
+  **distinto del nuestro** en la app de un grupo cuya identidad ES el violeta. No lo caza ningún
+  linter: compila y «se ve morado».
+
+  **Trampa al corregir en masa, y cómo se cazó:** sustituir `border-violet-400/30` por
+  `border-accent/40` deja `border-accent/40/30` — dos opacidades encadenadas, clase inválida que
+  Tailwind ignora en silencio. Salieron 4. Se detectaron **releyendo el resultado**, no confiando en
+  el `subn`. Regla: tras un `sed`/regex masivo sobre clases, **buscar el patrón roto** antes de dar
+  nada por hecho.
+
+- **2026-08-01 — `STAT_TONE` de `FlowPanelUI` duplicaba el vocabulario semántico.** Tenía su propio
+  mapa `success/info/warning/danger` con las clases escritas a mano. **Corregido:** ahora referencia
+  `TONO`, así que el verde de «éxito» es el mismo en las tarjetas de resumen y en los avisos.
+
 - **2026-07-31 — Detalle de proyecto: SEIS ediciones inline ("por encima") → CORREGIDAS.**
   `projects/[id]` editaba el **requerimiento** sustituyendo la fila por tres inputs (captura del
   usuario), el **cliente**/**presupuesto**/**fecha límite** convirtiendo el valor del rail en campos

@@ -357,8 +357,8 @@ export default function MiDiaPage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-[12.5px] font-medium text-digi-text truncate leading-snug inline-flex items-center gap-1" style={mf}>
                             {ev.generated && (ev.taskKind === 'social'
-                              ? <PartyPopper className="w-3 h-3 shrink-0 text-amber-500" />
-                              : <ShieldCheck className="w-3 h-3 shrink-0 text-violet-400" />)}
+                              ? <PartyPopper className="w-3 h-3 shrink-0 text-amber-400" />
+                              : <ShieldCheck className="w-3 h-3 shrink-0 text-accent" />)}
                             <span className="truncate">{ev.title}</span>
                           </p>
                           <p className="text-[10.5px] text-digi-muted mt-0.5" style={mf}>{ev.all_day ? 'Todo el día' : `${fmtTime(ev.instanceStart)}–${fmtTime(ev.instanceEnd)}`}{ev.client_name ? ` · ${ev.client_name}` : ''}{ev.generated ? (ev.taskKind === 'social' ? ' · evento' : ' · política') : ''}</p>
@@ -464,13 +464,13 @@ export default function MiDiaPage() {
                   {g.items.map((it) => {
                     const t = (it.gen || it.social) ? undefined : taskById.get(it.alternativeId);
                     const dims = Array.from(new Set((t?.problems || []).map((p) => p.dimension).filter(Boolean))) as string[];
-                    const borderCls = it.status === 'completed' ? 'border-emerald-400/40' : it.status === 'failed' ? 'border-red-400/40' : (it.gen ? 'border-violet-400/40' : it.social ? 'border-amber-400/40' : 'border-digi-border');
+                    const borderCls = it.status === 'completed' ? 'border-green-300/40' : it.status === 'failed' ? 'border-red-400/40' : (it.gen ? 'border-accent/40' : it.social ? 'border-amber-400/40' : 'border-digi-border');
                     return (
                       <div key={it.key} className={`rounded-lg border p-2.5 bg-digi-darker/40 ${borderCls} ${it.social ? 'border-dashed' : ''}`}>
                         <div className="flex items-center gap-1.5">
-                          {it.gen && <ShieldCheck className="w-3 h-3 shrink-0 text-violet-400" />}
-                          {it.social && <PartyPopper className="w-3 h-3 shrink-0 text-amber-500" />}
-                          {it.auto && <Lock className="w-3 h-3 shrink-0 text-sky-400" />}
+                          {it.gen && <ShieldCheck className="w-3 h-3 shrink-0 text-accent" />}
+                          {it.social && <PartyPopper className="w-3 h-3 shrink-0 text-amber-400" />}
+                          {it.auto && <Lock className="w-3 h-3 shrink-0 text-blue-400" />}
                           {dims.map((dm) => { const DI = DIM_ICON[dm]; return DI ? <span key={dm} title={DIMENSION_LABEL[dm] || dm} className="inline-flex shrink-0"><DI className="w-3.5 h-3.5" style={{ color: DIMENSION_COLOR[dm] || '#888' }} /></span> : null; })}
                           <span className="text-[12.5px] font-medium text-digi-text leading-snug min-w-0 flex-1 truncate" style={mf}>{(it.gen || it.social) ? it.title : (t?.title || 'Tarea')}</span>
                         </div>
@@ -492,12 +492,12 @@ export default function MiDiaPage() {
                           </>
                         )}
                         {it.auto && (
-                          <p className="text-[10.5px] text-sky-500 mt-1 inline-flex items-center gap-1" style={mf}>
+                          <p className="text-[10.5px] text-blue-400 mt-1 inline-flex items-center gap-1" style={mf}>
                             {it.source === 'ticket' ? <Ticket className="w-2.5 h-2.5" /> : <FolderKanban className="w-2.5 h-2.5" />} {it.refTitle}
                           </p>
                         )}
                         {it.gen && (
-                          <p className="text-[10.5px] text-violet-500 mt-1 inline-flex items-center gap-1.5 flex-wrap" style={mf}>
+                          <p className="text-[10.5px] text-accent mt-1 inline-flex items-center gap-1.5 flex-wrap" style={mf}>
                             <span className="inline-flex items-center gap-1"><ShieldCheck className="w-2.5 h-2.5" /> {it.policyName || 'Política'}</span>
                             {it.timeLabel && <span className="inline-flex items-center gap-1 text-digi-muted"><Clock className="w-2.5 h-2.5" /> {it.timeLabel}</span>}
                           </p>
@@ -541,8 +541,8 @@ export default function MiDiaPage() {
             style={{ left: Math.min(Math.max(genPopover.x, 120), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 120), top: genPopover.y + 10 }}>
             <div className="flex items-start gap-1.5 mb-1.5">
               {genPopover.kind === 'social'
-                ? <PartyPopper className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
-                : <ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-violet-400" />}
+                ? <PartyPopper className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-400" />
+                : <ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent" />}
               <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{genPopover.title}</p>
             </div>
             {genPopover.kind === 'social' && genPopover.eventName && (

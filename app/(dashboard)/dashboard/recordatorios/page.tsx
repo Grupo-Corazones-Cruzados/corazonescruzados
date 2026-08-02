@@ -532,7 +532,7 @@ export default function RecordatoriosPage() {
 
           {meetNote && (
             <div className="flex items-start gap-2 px-3 py-2 rounded-md border border-amber-500/40 bg-amber-500/10">
-              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-px" />
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-px" />
               <p className="text-[12px] text-digi-text" style={mf}>{SCAN_NOTE[meetNote] || meetNote}</p>
             </div>
           )}
@@ -655,7 +655,7 @@ export default function RecordatoriosPage() {
             <label className="flex items-start gap-2 px-3 py-2 rounded-md border border-digi-border cursor-pointer hover:bg-black/[0.03] transition-colors" style={mf}>
               <input type="checkbox" checked={markDoneForm} onChange={(e) => setMarkDoneForm(e.target.checked)} className="mt-0.5 accent-accent" />
               <span className="min-w-0">
-                <span className="text-[12.5px] font-medium text-digi-text inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" /> Marcar como completado</span>
+                <span className="text-[12.5px] font-medium text-digi-text inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-400" /> Marcar como completado</span>
                 <span className="block text-[10.5px] text-digi-muted">Deja de enviar correos de recordatorio.</span>
               </span>
             </label>

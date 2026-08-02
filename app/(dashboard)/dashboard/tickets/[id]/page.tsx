@@ -678,7 +678,7 @@ export default function TicketDetailPage() {
       {/* ========== PENDING REQUEST BANNER ========== */}
       {isRequestForMe && (
         <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
-          <p className="text-[13px] font-semibold text-amber-800 mb-1" style={mf}>Solicitud pendiente de un cliente</p>
+          <p className="text-[13px] font-semibold text-amber-400 mb-1" style={mf}>Solicitud pendiente de un cliente</p>
           <p className="text-[12px] text-digi-muted mb-3" style={mf}>
             El cliente {ticket.client_name || ''} te ha solicitado este servicio. Acepta e indica los días de trabajo, o rechaza la solicitud.
           </p>

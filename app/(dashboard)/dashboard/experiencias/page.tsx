@@ -32,8 +32,8 @@ interface SocialEvent {
 const STATUS_META: Record<EventStatus, { label: string; cls: string }> = {
   draft: { label: 'Borrador', cls: 'bg-black/[0.05] text-digi-muted border-digi-border' },
   published: { label: 'Abierto', cls: 'bg-accent-light text-accent border-accent/30' },
-  active: { label: 'En curso', cls: 'bg-emerald-500/15 text-emerald-600 border-emerald-400/40' },
-  finished: { label: 'Finalizado', cls: 'bg-sky-500/15 text-sky-600 border-sky-400/40' },
+  active: { label: 'En curso', cls: 'bg-green-400/15 text-green-400 border-green-300/40' },
+  finished: { label: 'Finalizado', cls: 'bg-blue-400/15 text-blue-400 border-blue-400/40' },
   cancelled: { label: 'Cancelado', cls: 'bg-red-500/15 text-red-600 border-red-400/40' },
 };
 
@@ -264,12 +264,12 @@ function EventDetail({ event, busy, onTake, onRelease }: {
                   </span>
                 )}
                 {t.values.map((v) => (
-                  <span key={v} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-[10.5px] text-violet-500" style={mf}>
+                  <span key={v} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent-light border border-accent/30 text-[10.5px] text-accent" style={mf}>
                     <Gem className="w-3 h-3" /> {VALOR_LABEL[v] || v}
                   </span>
                 ))}
                 {t.talents.map((tal) => (
-                  <span key={tal} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10.5px] text-sky-600" style={mf}>
+                  <span key={tal} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-400/15 border border-blue-400/30 text-[10.5px] text-blue-400" style={mf}>
                     <Sparkles className="w-3 h-3" /> {tal}
                   </span>
                 ))}
