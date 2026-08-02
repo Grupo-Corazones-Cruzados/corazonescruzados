@@ -24,7 +24,7 @@
  * Debe verse **sin JavaScript y sin iniciar sesión**: es contenido estático a propósito.
  */
 
-import { RESPONSABLE, NOMBRE_COMERCIAL, RUC, DIRECCION, CONTACTO } from '@/app/legal/datos';
+import { RAZON_SOCIAL, NOMBRE_COMERCIAL, RUC, DIRECCION, CONTACTO } from '@/app/legal/datos';
 
 export default function IdentidadNegocio() {
   return (
@@ -49,7 +49,7 @@ export default function IdentidadNegocio() {
         <span itemProp="name">{NOMBRE_COMERCIAL}</span>
       </p>
       <p style={{ margin: '2px 0 0' }}>
-        <span itemProp="legalName">{RESPONSABLE}</span> · RUC{' '}
+        <span itemProp="legalName">{RAZON_SOCIAL}</span> · RUC{' '}
         <span itemProp="taxID">{RUC}</span>
       </p>
       <p
@@ -66,6 +66,10 @@ export default function IdentidadNegocio() {
         </a>
       </p>
       <p style={{ margin: '10px 0 0', fontSize: '0.74rem' }}>
+        <a href="/negocio" style={{ color: '#7B5FBF', textDecoration: 'underline' }}>
+          Sobre el negocio
+        </a>
+        {'  ·  '}
         <a href="/legal" style={{ color: '#9b95b3', textDecoration: 'underline' }}>
           Términos y privacidad
         </a>

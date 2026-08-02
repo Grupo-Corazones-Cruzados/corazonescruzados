@@ -10,7 +10,21 @@
  * contradicción publicada — y estas páginas las lee un revisor de Meta.
  */
 
-/** Razón social. NO es «Grupo Corazones Cruzados»: eso es el nombre comercial. */
+/**
+ * Razón social **tal como consta en el registro**: apellidos primero y en mayúsculas.
+ *
+ * ⚠️ Esta es la forma que hay que usar en cualquier sitio donde alguien vaya a
+ * **contrastarla** contra el SRI o contra el certificado de RUC: formularios de
+ * verificación, tablas de identidad legal, trámites. Una diferencia de orden o de
+ * mayúsculas basta para que un revisor no dé el dato por coincidente.
+ */
+export const RAZON_SOCIAL = 'GONZALEZ MUYULEMA LUIS FERNANDO';
+
+/**
+ * La misma persona, escrita para LEERSE dentro de una frase.
+ * NO es «Grupo Corazones Cruzados»: eso es el nombre comercial.
+ * Para cotejar contra un registro, usa `RAZON_SOCIAL`.
+ */
 export const RESPONSABLE = 'Luis Fernando González Muyulema';
 
 /** Nombre comercial del establecimiento 001, registrado en el SRI el 2026-08-01. */
