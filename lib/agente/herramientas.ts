@@ -137,7 +137,7 @@ export function leerDecision(respuesta: any):
   const entrada = uso.input ?? {};
   switch (uso.name) {
     case 'responder': {
-      const texto = String(entrada.texto ?? '').trim();
+      const texto = limpiarTexto(String(entrada.texto ?? ''));
       if (!texto) return { ok: false, motivo: 'La herramienta responder vino sin texto' };
       return { ok: true, decision: { tipo: 'responder', texto } };
     }
@@ -153,10 +153,35 @@ export function leerDecision(respuesta: any):
           tipo: 'escalar_a_humano',
           motivo: String(entrada.motivo ?? 'sin motivo'),
           // Cadena vacía = no se le manda nada al contacto. Es una opción válida.
-          aviso: String(entrada.aviso ?? '').trim(),
+          aviso: limpiarTexto(String(entrada.aviso ?? '')),
         },
       };
     default:
       return { ok: false, motivo: `Herramienta desconocida: ${uso.name}` };
   }
+}
+
+/**
+ * Limpia el texto que el modelo va a mandarle a una persona por WhatsApp.
+ *
+ * ⚠️ NO es paranoia: salió en el ensayo en seco del agente de GCC (2026-08-01). A la
+ * pregunta «¿ya me aceptaron?» el modelo contestó
+ *
+ *     «Un compañero revisará su postulación en seguida.</aniso>»
+ *
+ * — con una etiqueta de cierre inventada pegada al final. Eso habría salido tal cual al
+ * WhatsApp de una persona real. Ocurre de vez en cuando y no hay forma de impedirlo desde
+ * el prompt: la única defensa fiable está aquí, en la salida.
+ *
+ * Se quitan SOLO etiquetas bien formadas (`<algo>`, `</algo>`, `<algo/>`). Un `<` suelto
+ * se respeta a propósito, porque «el precio es < 10» es texto legítimo y romperlo sería
+ * peor que la etiqueta que se intenta limpiar.
+ */
+export function limpiarTexto(texto: string): string {
+  return texto
+    .replace(/<\/?[a-zA-Z][a-zA-Z0-9-]*\s*\/?>/g, '')
+    // Un cierre de etiqueta suele dejar dobles espacios o espacio antes de un punto.
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
