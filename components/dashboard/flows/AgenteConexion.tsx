@@ -84,6 +84,32 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
     return () => window.removeEventListener('message', alMensaje);
   }, []);
 
+  /** El trabajo de después del alta. Separado porque `FB.login` NO acepta un callback async. */
+  const cerrarAlta = useCallback(async (respuesta: any) => {
+    // Se registra SIEMPRE: cuando el alta falla dentro de la ventana de Meta, esto es lo
+    // único que dice por qué.
+    console.info('[agente] Respuesta del alta de Meta', respuesta);
+    const codigo = respuesta?.authResponse?.code;
+    if (!codigo) {
+      const motivo = respuesta?.status ? ` (estado: ${respuesta.status})` : '';
+      toast.info(`El alta no se completó${motivo}. Si cerraste la ventana sin terminar, vuelve a intentarlo.`);
+      return;
+    }
+
+    setOcupado(true);
+    try {
+      const res = await fetch(`/api/admin/flows/${flowId}/agente/conectar`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo, ...datosDelAlta.current }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error ?? 'No se pudo cerrar el alta'); return; }
+      if (!d.suscrita) toast.error('El alta terminó pero la cuenta no quedó suscrita: no llegarán mensajes.');
+      else toast.success('Número conectado. Falta comprobar WhatsApp Web con el cliente.');
+      recargar();
+    } finally { setOcupado(false); }
+  }, [flowId, recargar]);
+
   const lanzar = useCallback(() => {
     // ⚠️ ESTE BOTÓN FALLABA EN SILENCIO. El `return` de aquí no decía nada: si el SDK no
     // había cargado o faltaba el identificador, se pulsaba «abrir el alta» y no pasaba
@@ -111,38 +137,29 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
     console.info('[agente] Abriendo el alta de Meta', { configId, appId });
     abierto.current = false;
 
-    window.FB.login(
-      async (respuesta: any) => {
-        // Se registra SIEMPRE: cuando el alta falla dentro de la ventana de Meta, esto es
-        // lo único que dice por qué.
-        console.info('[agente] Respuesta del alta de Meta', respuesta);
-        const codigo = respuesta?.authResponse?.code;
-        if (!codigo) {
-          const motivo = respuesta?.status ? ` (estado: ${respuesta.status})` : '';
-          toast.info(`El alta no se completó${motivo}. Si cerraste la ventana sin terminar, vuelve a intentarlo.`);
-          return;
-        }
-
-        setOcupado(true);
-        try {
-          const res = await fetch(`/api/admin/flows/${flowId}/agente/conectar`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codigo, ...datosDelAlta.current }),
-          });
-          const d = await res.json();
-          if (!res.ok) { toast.error(d.error ?? 'No se pudo cerrar el alta'); return; }
-          if (!d.suscrita) toast.error('El alta terminó pero la cuenta no quedó suscrita: no llegarán mensajes.');
-          else toast.success('Número conectado. Falta comprobar WhatsApp Web con el cliente.');
-          recargar();
-        } finally { setOcupado(false); }
-      },
-      {
-        config_id: configId,
-        response_type: 'code',
-        override_default_response_type: true,
-        extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
-      },
-    );
+    // ⚠️ EL CALLBACK NO PUEDE SER `async`. AQUÍ ESTABA EL FALLO QUE TENÍA MUERTO EL BOTÓN.
+    // El SDK de Meta valida el tipo del argumento y aborta con
+    //     «Expression is of type asyncfunction, not function»
+    // — una excepción SUYA, lanzada antes de abrir nada. Por eso no salía ninguna ventana
+    // y no había ni un error nuestro: el fallo ocurría dentro del SDK.
+    // Así que la función que se le pasa es normal y el trabajo asíncrono va aparte.
+    try {
+      window.FB.login(
+        (respuesta: any) => { void cerrarAlta(respuesta); },
+        {
+          config_id: configId,
+          response_type: 'code',
+          override_default_response_type: true,
+          extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
+        },
+      );
+    } catch (err: any) {
+      // El SDK lanza SÍNCRONAMENTE cuando no le gusta un argumento, y esa excepción se
+      // perdía en la consola sin llegar a la pantalla. Que no vuelva a pasar.
+      console.error('[agente] El SDK de Meta rechazó la llamada', err);
+      toast.error(`El conector de Meta rechazó la llamada: ${err?.message ?? err}`);
+      return;
+    }
 
     // Detección SIN consumir el permiso de emergentes: si a los 3 segundos la ventana no
     // ha hablado y esta página nunca perdió el foco, es que no llegó a abrirse. No se
@@ -159,7 +176,7 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
       console.warn('[agente] La ventana del alta no dio señales en 3 s. Comprueba en el panel de Meta: ' +
         'Inicio de sesión con Facebook → Configuración → Dominios permitidos para el SDK de JavaScript.');
     }, 3000);
-  }, [configId, appId, flowId, recargar]);
+  }, [configId, appId, cerrarAlta]);
 
   const consultarMeta = async () => {
     setOcupado(true);

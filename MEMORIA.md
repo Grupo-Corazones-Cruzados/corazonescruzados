@@ -480,6 +480,14 @@ Stack estándar de la casa, con particularidades de este repo:
         **`adaptive` sí convive; `budget_tokens` no.** Resuelto en `armarPeticion()`. Y el
         motivo original de encender el razonamiento —que Claude 5 escribiera la llamada como
         texto visible— lo cubre el propio forzado: la sonda muestra `tool_use` limpio.
+    15. **⚠️ `FB.login` NO acepta un callback `async`.** El SDK de Meta valida el tipo del
+        argumento y **lanza una excepción síncrona** antes de abrir nada:
+        *«Expression is of type asyncfunction, not function»*. Síntoma: se pulsa el botón del
+        alta y **no pasa absolutamente nada** — ni ventana, ni error visible. La excepción es
+        del SDK, no del código propio, así que ningún `try` nuestro la veía. Solución: pasar
+        una función normal que dispare aparte el trabajo asíncrono
+        (`(r) => { void cerrarAlta(r); }`), y envolver la llamada en `try/catch` para que la
+        próxima excepción del SDK llegue a la pantalla y no solo a la consola.
     14. **Medir, no razonar, TAMBIÉN en la API.** Las lecciones 5, 6 y 13 salieron todas de
         llamar de verdad. Ante una duda de contrato de la API, se escribe una sonda de 30
         líneas que prueba la matriz y se lee el resultado. Deducirlo del cambio de versión o
