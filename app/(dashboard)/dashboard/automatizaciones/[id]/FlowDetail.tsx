@@ -20,6 +20,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
 import EmailFlowWorkspace, { type EmailWorkspaceHandle } from '@/components/dashboard/flows/EmailFlowWorkspace';
 import WhatsAppFlowPanel from '@/components/dashboard/flows/WhatsAppFlowPanel';
+import AgenteFlowWorkspace from '@/components/dashboard/flows/AgenteFlowWorkspace';
 import { Mail, MessageCircle, Sparkles, Puzzle, Play, Pause, AlertTriangle, Plus } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -137,11 +138,7 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
       {flow.type === 'whatsapp' ? (
         <WhatsAppFlowPanel flow={flow} variant="page" onClose={() => router.push('/dashboard/automatizaciones')} />
       ) : flow.type === 'ai_agent' ? (
-        <PanelEmpty
-          Icon={Sparkles}
-          title="Estudio del agente — en construcción"
-          desc="Aquí van el conocimiento, los prompts, los parámetros y la bandeja de conversaciones. El esquema de datos ya está: falta la interfaz."
-        />
+        <AgenteFlowWorkspace flow={flow} />
       ) : (
         // email · custom → campañas de correo (igual que antes del rediseño).
         <EmailFlowWorkspace flow={flow} controlRef={emailRef} />

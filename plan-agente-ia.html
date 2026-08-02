@@ -105,10 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">C5 · El Estudio del agente &nbsp;·&nbsp; y C7, la pantalla de conexión</p>
-    <p class="quien"><strong>C4 hecho: el agente ya decide.</strong> Falta la interfaz para configurarlo (C5), la bandeja (C6) y la pantalla de conexión (C7). Tu carril sigue terminado hasta F10.</p>
-    <div class="barra"><span style="width:62%"></span></div>
-    <div class="barra-pie"><span>13 de 21 pasos terminados</span><span>62%</span></div>
+    <p class="paso">C6 · Bandeja con toma humana &nbsp;·&nbsp; y C7, la pantalla de conexión</p>
+    <p class="quien"><strong>C5 hecho: el Estudio ya se puede usar.</strong> Un agente nuevo se configura entero desde la pantalla. Faltan la bandeja (C6) y la pantalla de conexión (C7).</p>
+    <div class="barra"><span style="width:67%"></span></div>
+    <div class="barra-pie"><span>14 de 21 pasos terminados</span><span>67%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -418,7 +418,7 @@
     </tr>
 
     <tr>
-      <td>C5</td><td><span class="est e-curso">En curso</span></td>
+      <td>C5</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">El Estudio del agente</span>
         <span class="d">La pantalla donde se edita el conocimiento por bloques, los tres prompts
@@ -430,7 +430,7 @@
     </tr>
 
     <tr>
-      <td>C6</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>C6</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">Bandeja de conversaciones con toma humana</span>
         <span class="d">Ver los chats, y que una persona pueda tomar la conversación —apagando el bot solo
@@ -1008,6 +1008,7 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>C5 hecho: el Estudio.</strong> Conocimiento por bloques, los tres prompts versionados (guardar conserva la versión anterior) y los parámetros. El estado «sin rellenar» se <strong>calcula</strong> del contenido, así que no puede quedar desfasado. Avisa cuando el prompt no llega al mínimo de caché del modelo: es dinero que se va sin que nadie lo note. 17 pruebas, 0 fallos.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C4 hecho: el runner.</strong> Un nodo de IA con las tres herramientas y <code>tool_choice: any</code>; el conocimiento completo en el prompt cacheado, con el perfil y el conocimiento dentro del caché y las reglas fuera. <strong>Los bloques <code>[PENDIENTE]</code> se calculan del conocimiento</strong>, que es el fallo vivo de Peters Tours resuelto por diseño. 49 pruebas, 0 fallos. Instalado <code>@anthropic-ai/sdk</code>, la única dependencia nueva.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F8 hecho y verificado contra Meta.</strong> <code>GET /{app-id}/subscriptions</code> devuelve la URL correcta, <code>active: true</code> y el campo <strong><code>messages</code> suscrito</strong> — que es justo lo que se olvidó dos veces en el proyecto anterior. El endpoint en producción responde 403 sin firma y 200 con firma válida.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C3 hecho.</strong> Webhook con firma HMAC, lectura de la carga de Meta, ingesta idempotente y cola con debounce. 33 pruebas, 0 fallos. <strong>Fallo real corregido:</strong> el <code>ON CONFLICT</code> sobre <code>wa_message_id</code> necesitaba repetir la condición del índice parcial; sin eso la ingesta fallaba entera. <strong>F8 desbloqueado</strong>, con la URL en §5.6.</td></tr>
