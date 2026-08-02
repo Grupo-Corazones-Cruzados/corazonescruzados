@@ -105,10 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">C7 · Pantalla de conexión del cliente</p>
-    <p class="quien"><strong>C6 hecho: la bandeja con toma humana.</strong> Todo lo que no depende de tener un número conectado ya está. Lo que queda es la pantalla de alta y el worker.</p>
-    <div class="barra"><span style="width:71%"></span></div>
-    <div class="barra-pie"><span>15 de 21 pasos terminados</span><span>71%</span></div>
+    <p class="paso">C8 · El worker &nbsp;·&nbsp; y luego C9, el alta real</p>
+    <p class="quien"><strong>C7 hecho: la pantalla de alta.</strong> Ya se puede conectar el número de un cliente. Falta el worker que consuma la cola, y con él el sistema queda entero.</p>
+    <div class="barra"><span style="width:76%"></span></div>
+    <div class="barra-pie"><span>16 de 21 pasos terminados</span><span>76%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -445,7 +445,7 @@
     </tr>
 
     <tr>
-      <td>C7</td><td><span class="est e-curso">En curso</span></td>
+      <td>C7</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Pantalla de conexión del cliente (Embedded Signup)</span>
         <span class="d">Donde el cliente conecta su número. Es la pieza que convierte esto en un producto:
@@ -453,13 +453,18 @@
         ⚠️ <strong>Tiene un paso sin vuelta atrás.</strong> Si el cliente elige «dar de alta un número
         nuevo» en vez de <strong>«conectar cuenta existente»</strong>, el número sale del teléfono y su
         equipo <strong>pierde WhatsApp Web en el acto</strong>. La pantalla tiene que hacer esa confusión
-        imposible.</span>
+        imposible.<br>
+        <strong>Hecho el 2026-08-01.</strong> <code>AgenteConexion.tsx</code> + el canje en el
+        servidor. El aviso del paso irreversible aparece <strong>tres veces</strong>: explicado,
+        con casilla obligatoria, y otra vez al pulsar. El canje usa el <code>app_secret</code>, que
+        no sale del servidor, y el alta <strong>suscribe la cuenta del cliente y lo comprueba</strong>
+        — sin eso no llega ni un mensaje y todo parece correcto. 14 pruebas, 0 fallos.</span>
       </td>
       <td>F5, F6</td>
     </tr>
 
     <tr>
-      <td>C8</td><td><span class="est e-bloq">Bloqueado</span></td>
+      <td>C8</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">Worker en Railway</span>
         <span class="d">Un servicio aparte que consume la cola cada pocos segundos. El cron que ya existe
@@ -1012,6 +1017,7 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>C7 hecho: la pantalla de alta.</strong> Embedded Signup con el aviso del paso irreversible repetido tres veces y casilla obligatoria. El alta suscribe la cuenta del cliente a nuestra app <strong>y lo verifica</strong>: es la versión por cliente del despiste de <code>messages</code>, y por eso se automatiza en vez de dejarlo a mano. Se avisa de que <code>CLOUD_API</code> no demuestra la coexistencia: eso lo comprueba una persona abriendo WhatsApp Web. Un número no puede estar en dos agentes, y desconectar no borra el conocimiento. 14 pruebas, 0 fallos.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C6 hecho: la bandeja.</strong> Lista, hilo y toma humana — tomar un chat apaga el agente <strong>solo ahí</strong>, no en el canal. Devolverlo limpia el trabajo en error de la cola, o el siguiente mensaje no se podría encolar. <strong>Dos fallos reales encontrados por las pruebas:</strong> <code>users</code> no tiene columna <code>name</code>, y el token trae <code>userId</code>, no <code>id</code> — TypeScript no los caza porque <code>JWTPayload</code> lleva índice abierto. Y el ayudante compartido tuvo que salir del <code>route.ts</code>: Next solo deja exportar manejadores desde ahí.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C5 hecho: el Estudio.</strong> Conocimiento por bloques, los tres prompts versionados (guardar conserva la versión anterior) y los parámetros. El estado «sin rellenar» se <strong>calcula</strong> del contenido, así que no puede quedar desfasado. Avisa cuando el prompt no llega al mínimo de caché del modelo: es dinero que se va sin que nadie lo note. 17 pruebas, 0 fallos.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C4 hecho: el runner.</strong> Un nodo de IA con las tres herramientas y <code>tool_choice: any</code>; el conocimiento completo en el prompt cacheado, con el perfil y el conocimiento dentro del caché y las reglas fuera. <strong>Los bloques <code>[PENDIENTE]</code> se calculan del conocimiento</strong>, que es el fallo vivo de Peters Tours resuelto por diseño. 49 pruebas, 0 fallos. Instalado <code>@anthropic-ai/sdk</code>, la única dependencia nueva.</td></tr>

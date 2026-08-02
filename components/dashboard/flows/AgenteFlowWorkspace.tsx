@@ -24,9 +24,10 @@ import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { SectionBar, PanelEmpty, BTN_ROW, BTN_ROW_DANGER } from '@/components/dashboard/flows/FlowPanelUI';
 import AgenteBandeja from '@/components/dashboard/flows/AgenteBandeja';
+import AgenteConexion from '@/components/dashboard/flows/AgenteConexion';
 import {
   BookText, ScrollText, SlidersHorizontal, Plug, Inbox, Pencil, Trash2, Plus,
-  AlertTriangle, KeyRound, Sparkles,
+  AlertTriangle, KeyRound,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -47,6 +48,8 @@ interface Estudio {
   pendientes: string[];
   modelos: readonly { id: string; nombre: string; nota: string }[];
   cifradoListo: boolean;
+  appId: string | null;
+  configId: string | null;
 }
 
 const NOMBRE_PROMPT: Record<string, { titulo: string; para: string }> = {
@@ -101,7 +104,10 @@ export default function AgenteFlowWorkspace({ flow }: { flow: { id: number; name
         {seccion === 'conocimiento' && <Conocimiento flowId={flow.id} bloques={bloques} recargar={cargar} />}
         {seccion === 'prompts' && <Prompts flowId={flow.id} prompts={prompts} pendientes={estudio.pendientes} recargar={cargar} />}
         {seccion === 'parametros' && <Parametros flowId={flow.id} estudio={estudio} recargar={cargar} />}
-        {seccion === 'conexion' && <Conexion estudio={estudio} />}
+        {seccion === 'conexion' && (
+          <AgenteConexion flowId={flow.id} canal={estudio.canal}
+            appId={estudio.appId} configId={estudio.configId} recargar={cargar} />
+        )}
       </div>
     </div>
   );
@@ -438,55 +444,3 @@ function Campo({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-/* ── Conexión ───────────────────────────────────────────────────────────────── */
-
-const ESTADO_L: Record<string, { texto: string; variante: 'default' | 'info' | 'success' | 'warning' | 'error' }> = {
-  sin_conectar: { texto: 'Sin conectar', variante: 'default' },
-  conectando: { texto: 'Conectando…', variante: 'info' },
-  conectado: { texto: 'Conectado', variante: 'success' },
-  error: { texto: 'Con error', variante: 'error' },
-  desconectado: { texto: 'Desconectado', variante: 'warning' },
-};
-
-function Conexion({ estudio }: { estudio: Estudio }) {
-  const c = estudio.canal;
-  const estado = ESTADO_L[c.estado] ?? ESTADO_L.sin_conectar;
-
-  return (
-    <div>
-      <SectionBar title="Conexión con WhatsApp" />
-      {c.estado === 'sin_conectar' ? (
-        <PanelEmpty Icon={Sparkles} title="Este agente aún no tiene número"
-          desc="La pantalla de conexión del cliente llega en el siguiente paso. Mientras, ya puedes dejar listos el conocimiento y los prompts." />
-      ) : null}
-
-      <dl className="grid sm:grid-cols-2 gap-3 mt-3 max-w-3xl">
-        <Dato titulo="Estado"><PixelBadge variant={estado.variante}>{estado.texto}</PixelBadge></Dato>
-        <Dato titulo="Coexistencia verificada">
-          {c.coexistencia_verificada
-            ? <PixelBadge variant="success">Sí — el equipo conserva WhatsApp Web</PixelBadge>
-            : <PixelBadge variant="default">Sin comprobar</PixelBadge>}
-        </Dato>
-        <Dato titulo="Número">{c.numero_visible ?? '—'}</Dato>
-        <Dato titulo="Nombre verificado">{c.nombre_verificado ?? '—'}</Dato>
-        <Dato titulo="Cuenta de WhatsApp (WABA)"><code className="text-[12px]">{c.waba_id ?? '—'}</code></Dato>
-        <Dato titulo="Identificador del número"><code className="text-[12px]">{c.phone_number_id ?? '—'}</code></Dato>
-        <Dato titulo="Token del cliente">
-          {c.tiene_wa_token ? <PixelBadge variant="success">Guardado y cifrado</PixelBadge> : <PixelBadge variant="default">Sin token</PixelBadge>}
-        </Dato>
-        <Dato titulo="Clave de IA">
-          {c.tiene_ia_api_key ? <PixelBadge variant="success">Guardada y cifrada</PixelBadge> : <PixelBadge variant="error">Falta</PixelBadge>}
-        </Dato>
-      </dl>
-    </div>
-  );
-}
-
-function Dato({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-md border border-digi-border bg-digi-card px-3 py-2">
-      <dt className="text-[11px] uppercase tracking-wide text-digi-muted mb-1" style={mf}>{titulo}</dt>
-      <dd className="text-[13px] text-digi-text" style={mf}>{children}</dd>
-    </div>
-  );
-}

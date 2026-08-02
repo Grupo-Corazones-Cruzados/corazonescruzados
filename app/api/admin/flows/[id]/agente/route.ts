@@ -51,6 +51,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       pendientes: clavesPendientes(bloques as BloqueConocimiento[]),
       modelos: MODELOS_OFRECIDOS,
       cifradoListo: claveMaestraConfigurada(),
+      // Públicos los dos: el SDK de Meta los necesita en el navegador para abrir el
+      // alta. El app_secret NO sale de aquí ni aunque quien mire sea admin.
+      appId: process.env.WHATSAPP_APP_ID ?? null,
+      configId: process.env.WHATSAPP_ES_CONFIG_ID ?? null,
     },
   });
 }
