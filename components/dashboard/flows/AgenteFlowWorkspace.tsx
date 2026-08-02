@@ -23,14 +23,15 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { SectionBar, PanelEmpty, BTN_ROW, BTN_ROW_DANGER } from '@/components/dashboard/flows/FlowPanelUI';
+import AgenteBandeja from '@/components/dashboard/flows/AgenteBandeja';
 import {
-  BookText, ScrollText, SlidersHorizontal, Plug, Pencil, Trash2, Plus,
+  BookText, ScrollText, SlidersHorizontal, Plug, Inbox, Pencil, Trash2, Plus,
   AlertTriangle, KeyRound, Sparkles,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-type Seccion = 'conocimiento' | 'prompts' | 'parametros' | 'conexion';
+type Seccion = 'bandeja' | 'conocimiento' | 'prompts' | 'parametros' | 'conexion';
 
 interface Bloque {
   id: number; clave: string; titulo: string; contenido: string;
@@ -55,7 +56,7 @@ const NOMBRE_PROMPT: Record<string, { titulo: string; para: string }> = {
 };
 
 export default function AgenteFlowWorkspace({ flow }: { flow: { id: number; name: string } }) {
-  const [seccion, setSeccion] = useState<Seccion>('conocimiento');
+  const [seccion, setSeccion] = useState<Seccion>('bandeja');
   const [estudio, setEstudio] = useState<Estudio | null>(null);
   const [bloques, setBloques] = useState<Bloque[]>([]);
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -81,6 +82,7 @@ export default function AgenteFlowWorkspace({ flow }: { flow: { id: number; name
   if (!estudio) return <PanelEmpty Icon={AlertTriangle} title="No se pudo cargar el estudio" desc="Vuelve a intentarlo en un momento." />;
 
   const rail = [
+    { value: 'bandeja' as const, label: 'Bandeja', Icon: Inbox },
     { value: 'conocimiento' as const, label: 'Conocimiento', Icon: BookText, count: bloques.length,
       hint: estudio.pendientes.length ? `${estudio.pendientes.length} sin rellenar` : undefined },
     { value: 'prompts' as const, label: 'Prompts', Icon: ScrollText, count: prompts.filter((p) => p.caracteres > 0).length },
@@ -95,6 +97,7 @@ export default function AgenteFlowWorkspace({ flow }: { flow: { id: number; name
       </div>
       <div className="flex-1 min-w-0 space-y-4">
         <Avisos estudio={estudio} />
+        {seccion === 'bandeja' && <AgenteBandeja flowId={flow.id} />}
         {seccion === 'conocimiento' && <Conocimiento flowId={flow.id} bloques={bloques} recargar={cargar} />}
         {seccion === 'prompts' && <Prompts flowId={flow.id} prompts={prompts} pendientes={estudio.pendientes} recargar={cargar} />}
         {seccion === 'parametros' && <Parametros flowId={flow.id} estudio={estudio} recargar={cargar} />}

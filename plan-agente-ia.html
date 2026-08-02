@@ -105,10 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">C6 · Bandeja con toma humana &nbsp;·&nbsp; y C7, la pantalla de conexión</p>
-    <p class="quien"><strong>C5 hecho: el Estudio ya se puede usar.</strong> Un agente nuevo se configura entero desde la pantalla. Faltan la bandeja (C6) y la pantalla de conexión (C7).</p>
-    <div class="barra"><span style="width:67%"></span></div>
-    <div class="barra-pie"><span>14 de 21 pasos terminados</span><span>67%</span></div>
+    <p class="paso">C7 · Pantalla de conexión del cliente</p>
+    <p class="quien"><strong>C6 hecho: la bandeja con toma humana.</strong> Todo lo que no depende de tener un número conectado ya está. Lo que queda es la pantalla de alta y el worker.</p>
+    <div class="barra"><span style="width:71%"></span></div>
+    <div class="barra-pie"><span>15 de 21 pasos terminados</span><span>71%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -430,18 +430,22 @@
     </tr>
 
     <tr>
-      <td>C6</td><td><span class="est e-curso">En curso</span></td>
+      <td>C6</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Bandeja de conversaciones con toma humana</span>
         <span class="d">Ver los chats, y que una persona pueda tomar la conversación —apagando el bot solo
         en ese chat— y devolvérsela después. En la versión 1 la opera <strong>solo el equipo de GCC</strong>
-        por cuenta del cliente.</span>
+        por cuenta del cliente.<br>
+        <strong>Hecho el 2026-08-01.</strong> <code>AgenteBandeja.tsx</code> + cuatro rutas. La lista
+        <strong>no trae los mensajes</strong> —los pide el hilo— y toda consulta filtra también por
+        canal, así que con el id de una conversación de otro cliente se responde 404.
+        14 pruebas, 0 fallos.</span>
       </td>
       <td>C4</td>
     </tr>
 
     <tr>
-      <td>C7</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>C7</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">Pantalla de conexión del cliente (Embedded Signup)</span>
         <span class="d">Donde el cliente conecta su número. Es la pieza que convierte esto en un producto:
@@ -1008,6 +1012,7 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>C6 hecho: la bandeja.</strong> Lista, hilo y toma humana — tomar un chat apaga el agente <strong>solo ahí</strong>, no en el canal. Devolverlo limpia el trabajo en error de la cola, o el siguiente mensaje no se podría encolar. <strong>Dos fallos reales encontrados por las pruebas:</strong> <code>users</code> no tiene columna <code>name</code>, y el token trae <code>userId</code>, no <code>id</code> — TypeScript no los caza porque <code>JWTPayload</code> lleva índice abierto. Y el ayudante compartido tuvo que salir del <code>route.ts</code>: Next solo deja exportar manejadores desde ahí.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C5 hecho: el Estudio.</strong> Conocimiento por bloques, los tres prompts versionados (guardar conserva la versión anterior) y los parámetros. El estado «sin rellenar» se <strong>calcula</strong> del contenido, así que no puede quedar desfasado. Avisa cuando el prompt no llega al mínimo de caché del modelo: es dinero que se va sin que nadie lo note. 17 pruebas, 0 fallos.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C4 hecho: el runner.</strong> Un nodo de IA con las tres herramientas y <code>tool_choice: any</code>; el conocimiento completo en el prompt cacheado, con el perfil y el conocimiento dentro del caché y las reglas fuera. <strong>Los bloques <code>[PENDIENTE]</code> se calculan del conocimiento</strong>, que es el fallo vivo de Peters Tours resuelto por diseño. 49 pruebas, 0 fallos. Instalado <code>@anthropic-ai/sdk</code>, la única dependencia nueva.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F8 hecho y verificado contra Meta.</strong> <code>GET /{app-id}/subscriptions</code> devuelve la URL correcta, <code>active: true</code> y el campo <strong><code>messages</code> suscrito</strong> — que es justo lo que se olvidó dos veces en el proyecto anterior. El endpoint en producción responde 403 sin firma y 200 con firma válida.</td></tr>
