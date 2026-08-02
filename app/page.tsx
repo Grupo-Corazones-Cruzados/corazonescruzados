@@ -3037,11 +3037,19 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col items-center gap-3 mt-10">
-            {/* "Entrar" y "Colaborar" con el MISMO ancho, el del texto más largo
-                ("Colaborar"): en fila son dos columnas `1fr` de un grid ajustado al
-                contenido, así ambas miden lo que la más ancha sin fijar píxeles.
-                Apilados (móvil) el flex-col los estira al mismo ancho por igual. */}
-            <div className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
+            {/* «Aventura» y «Plataforma» con el MISMO ancho, el del texto más largo:
+                en fila son dos columnas `1fr` de un grid ajustado al contenido, así ambas
+                miden lo que la más ancha sin fijar píxeles. Apilados (móvil) el flex-col
+                los estira al mismo ancho por igual.
+
+                ⚠️ `corp dark corp-overlay` convierte esto en una ISLA con el tema del
+                panel. Es el patrón que el proyecto ya usa para los diálogos de la portada
+                (ver `Diseño.md` → «Modales de la landing en tema del dashboard»): dentro de
+                `.corp`, `globals.css` reescribe `pixel-btn` a Fluent, así que estos dos
+                botones se ven como los del panel sin cambiarles una sola clase. Y
+                `corp-overlay` evita que `.corp` imponga su fondo de página y su
+                `min-height`, que aquí destrozarían la escena. */}
+            <div className="corp dark corp-overlay flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
             <button
               onClick={() => {
                 if (landingLocked || windAway) return;
@@ -3076,7 +3084,7 @@ export default function LandingPage() {
                     }),
               }}
             >
-              Entrar
+              Aventura
             </button>
             <button
               type="button"
@@ -3089,7 +3097,7 @@ export default function LandingPage() {
                 setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
-              className="pixel-btn pixel-btn-primary"
+              className="pixel-btn pixel-btn-secondary"
               style={{
                 ...(landingLocked && !windAway
                   ? { opacity: 0.45, cursor: 'not-allowed' }
@@ -3107,7 +3115,7 @@ export default function LandingPage() {
                     }),
               }}
             >
-              Colaborar
+              Plataforma
             </button>
             </div>
 

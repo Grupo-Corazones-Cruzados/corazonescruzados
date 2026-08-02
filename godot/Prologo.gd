@@ -407,7 +407,7 @@ const TRAMOS := [
 	# Verso 13 · la 115 (las siluetas deshechas, solo aguantan las manos) abre el
 	# verso, justo antes de las cuatro de las auras. Mismo ritmo de 1 s.
 	{"desde_verso": 13, "escenas": [
-		115, 111, 112, 113, 114
+		116, 111, 112, 113, 114
 	], "seg": 1  },
 ]
 
