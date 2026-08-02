@@ -26,6 +26,7 @@ import { SectionBar, PanelEmpty, BTN_ROW, BTN_ROW_DANGER } from '@/components/da
 import AgenteBandeja from '@/components/dashboard/flows/AgenteBandeja';
 import AgenteConexion from '@/components/dashboard/flows/AgenteConexion';
 import type { Aviso } from '@/components/ui/BotonAvisos';
+import BotonAyuda from '@/components/ui/BotonAyuda';
 import {
   BookText, ScrollText, SlidersHorizontal, Plug, Inbox, Pencil, Trash2, Plus,
   AlertTriangle, KeyRound,
@@ -111,7 +112,7 @@ export default function AgenteFlowWorkspace({ flow, onAvisos }: {
       <div className="flex-1 min-w-0 space-y-4">
         {seccion === 'bandeja' && <AgenteBandeja flowId={flow.id} />}
         {seccion === 'conocimiento' && <Conocimiento flowId={flow.id} bloques={bloques} recargar={cargar} />}
-        {seccion === 'prompts' && <Prompts flowId={flow.id} prompts={prompts} pendientes={estudio.pendientes} recargar={cargar} />}
+        {seccion === 'prompts' && <Prompts flowId={flow.id} prompts={prompts} recargar={cargar} />}
         {seccion === 'parametros' && <Parametros flowId={flow.id} estudio={estudio} recargar={cargar} />}
         {seccion === 'conexion' && (
           <AgenteConexion flowId={flow.id} canal={estudio.canal}
@@ -192,17 +193,16 @@ function Conocimiento({ flowId, bloques, recargar }: { flowId: number; bloques: 
         title="Bloques de conocimiento"
         hint={`${bloques.length} bloque(s) · ${total.toLocaleString('es-ES')} caracteres`}
       >
+        <BotonAyuda titulo="Cómo escribir los bloques">
+          Entran <strong>completos</strong> en cada consulta: el agente no busca, lo lee todo. Escríbelos
+          de forma descriptiva («Si te preguntan por los horarios, responde: …»), no como una lista de
+          preguntas y respuestas. Un bloque a medias se marca con <code>[PENDIENTE]</code> y el agente
+          pasará esas preguntas a una persona.
+        </BotonAyuda>
         <button onClick={() => setEditando({ titulo: '', clave: '', contenido: '', orden: bloques.length + 1 })} className={BTN_PRIMARY}>
           <Plus className="w-4 h-4" /> Nuevo bloque
         </button>
       </SectionBar>
-
-      <p className="text-[12.5px] text-digi-muted mb-3 max-w-3xl leading-relaxed" style={mf}>
-        Entran <strong>completos</strong> en cada consulta: el agente no busca, lo lee todo. Escríbelos
-        de forma descriptiva («Si te preguntan por los horarios, responde: …»), no como una lista de
-        preguntas y respuestas. Un bloque a medias se marca con <code>[PENDIENTE]</code> y el agente
-        pasará esas preguntas a una persona.
-      </p>
 
       {bloques.length === 0 ? (
         <PanelEmpty Icon={BookText} title="El agente todavía no sabe nada"
@@ -271,8 +271,8 @@ function Conocimiento({ flowId, bloques, recargar }: { flowId: number; bloques: 
 
 /* ── Prompts ────────────────────────────────────────────────────────────────── */
 
-function Prompts({ flowId, prompts, pendientes, recargar }: {
-  flowId: number; prompts: Prompt[]; pendientes: string[]; recargar: () => void;
+function Prompts({ flowId, prompts, recargar }: {
+  flowId: number; prompts: Prompt[]; recargar: () => void;
 }) {
   const [editando, setEditando] = useState<Prompt | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -293,15 +293,6 @@ function Prompts({ flowId, prompts, pendientes, recargar }: {
   return (
     <div>
       <SectionBar title="Prompts del agente" hint="Al guardar se conserva la versión anterior" />
-
-      {pendientes.length > 0 && (
-        <div className="rounded-md border border-digi-border bg-digi-bg px-3 py-2 text-[12.5px] text-digi-muted mb-3" style={mf}>
-          <strong className="text-digi-text">No escribas aquí qué bloques faltan.</strong> Los que están
-          sin rellenar hoy — <code>{pendientes.join('</code>, <code>')}</code> — se añaden solos a las
-          reglas al hablar con el modelo. Si mañana los rellenas, la instrucción de escalar desaparece
-          sola.
-        </div>
-      )}
 
       <div className="grid gap-3">
         {prompts.map((p) => {
@@ -383,16 +374,19 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
       </SectionBar>
 
       <div className="grid md:grid-cols-2 gap-4 max-w-4xl">
-        <Campo label="Modelo" hint={modeloElegido?.nota}>
+        <Campo
+          label="Modelo"
+          hint={modeloElegido?.nota}
+          ayuda={<>
+            <strong>Mínimo de caché: {estudio.capacidades.minimoCache.toLocaleString('es-ES')} tokens.</strong>{' '}
+            Por debajo de eso el prompt se paga entero en cada mensaje.
+          </>}
+        >
           <PixelSelect
             value={form.modelo}
             onChange={(e: any) => setForm({ ...form, modelo: e.target.value })}
             options={estudio.modelos.map((m) => ({ value: m.id, label: m.nombre }))}
           />
-          <p className="text-[11px] text-digi-muted mt-1" style={mf}>
-            Mínimo de caché: {estudio.capacidades.minimoCache.toLocaleString('es-ES')} tokens.
-            Por debajo de eso el prompt se paga entero en cada mensaje.
-          </p>
         </Campo>
 
         <Campo label="Espera antes de responder" hint="Agrupa una ráfaga de mensajes en una sola respuesta.">
@@ -436,10 +430,22 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
   );
 }
 
-function Campo({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Campo({ label, hint, ayuda, children }: {
+  label: string; hint?: string; ayuda?: React.ReactNode; children: React.ReactNode;
+}) {
   return (
     <div>
-      <label className="block text-[12px] font-semibold text-digi-text mb-1" style={mf}>{label}</label>
+      {/* El (?) va a la IZQUIERDA de la etiqueta, en flujo normal.
+          ⚠️ El primer intento lo sacaba fuera con `-ml-[26px]` para que la etiqueta siguiera
+          alineada con su campo. Medido en el navegador, eso deja el botón 2px FUERA de su
+          columna — invisible aquí, pero recortado en cuanto el panel tenga menos margen.
+          Se prefiere que la etiqueta con ayuda quede algo indentada respecto a su campo:
+          se lee como intencional y no puede recortarse. Lo que NO se toca es el campo, que
+          sigue alineado con los demás de la rejilla. */}
+      <div className="flex items-center gap-1 mb-1 min-h-6">
+        {ayuda && <BotonAyuda titulo={label} lado="derecha">{ayuda}</BotonAyuda>}
+        <label className="block text-[12px] font-semibold text-digi-text" style={mf}>{label}</label>
+      </div>
       {hint && <p className="text-[11.5px] text-digi-muted mb-1.5" style={mf}>{hint}</p>}
       {children}
     </div>

@@ -12,17 +12,21 @@
  * visible —el icono cambia de color y lleva el conteo— pero solo ocupa sitio cuando se
  * pide.
  *
- * Sustituye al patrón de burbuja copiado inline en el Horario de Vida y en
- * `GenerateTasksModal`: aquello estaba duplicado y se veía distinto en cada sitio.
+ * Con CERO avisos no se pinta nada, a propósito: un icono permanente en gris se vuelve
+ * invisible y deja de avisar. Esa es la diferencia con `BotonAyuda`, que sí está siempre
+ * porque la ayuda no es una alerta.
+ *
+ * La mecánica de la burbuja vive en `components/ui/burbuja.tsx`, compartida con
+ * `BotonAyuda`.
  *
  * No es una superficie de EDICIÓN, así que no le aplica la regla del panel lateral: solo
  * muestra, no pide datos.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useRef, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { TONO } from './tonos';
+import { usarBurbuja, Burbuja } from './burbuja';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -41,69 +45,13 @@ export default function BotonAvisos({
   titulo?: string;
 }) {
   const [abierto, setAbierto] = useState(false);
-  /** `flechaY` es la altura de la punta DENTRO de la burbuja, en píxeles desde su borde superior. */
-  const [caja, setCaja] = useState<{ top: number; right: number; flechaY: number; listo: boolean } | null>(null);
   const botonRef = useRef<HTMLButtonElement | null>(null);
-  const burbujaRef = useRef<HTMLDivElement | null>(null);
+  const cerrar = useCallback(() => setAbierto(false), []);
+  const { burbujaRef, caja } = usarBurbuja(abierto, cerrar, botonRef, 'izquierda', avisos.length);
 
   const hayError = avisos.some((a) => a.tono === 'error');
   /** El botón toma el tono del aviso MÁS GRAVE: si hay un error, manda el error. */
   const tono = TONO[hayError ? 'error' : 'aviso'];
-
-  /**
-   * Posición, en dos pasadas y antes de pintar.
-   *
-   * ⚠️ Centrar la burbuja en el botón y ya está NO vale, y se vio midiendo en un navegador
-   * de verdad: el botón vive en la cabecera, cerca del borde superior, y con cuatro o
-   * cinco avisos la burbuja es más alta que el hueco que hay encima. Centrada, se salía
-   * por arriba de la pantalla (`top: -41`) y los primeros avisos quedaban fuera.
-   *
-   * Así que se acota al viewport, y la PUNTA se mueve dentro de la burbuja para seguir
-   * señalando al botón aunque el cuerpo ya no esté centrado.
-   */
-  useLayoutEffect(() => {
-    if (!abierto || !botonRef.current) return;
-    const r = botonRef.current.getBoundingClientRect();
-    const centro = r.top + r.height / 2;
-    const derecha = window.innerWidth - r.left + 8; // a la IZQUIERDA del botón
-
-    const alto = burbujaRef.current?.offsetHeight;
-    if (!alto) {
-      // Primera pasada: aún no existe el nodo. Se coloca en su sitio provisional y se
-      // deja invisible para que la segunda pasada no produzca un salto visible.
-      setCaja({ top: centro, right: derecha, flechaY: 0, listo: false });
-      return;
-    }
-
-    const MARGEN = 8;
-    const tope = Math.max(MARGEN, Math.min(centro - alto / 2, window.innerHeight - alto - MARGEN));
-    // La punta se queda a la altura del botón, sin salirse de la burbuja por los bordes.
-    const flechaY = Math.max(12, Math.min(centro - tope, alto - 12));
-    setCaja({ top: tope, right: derecha, flechaY, listo: true });
-  }, [abierto, avisos.length, caja?.listo]);
-
-  useEffect(() => {
-    if (!abierto) return;
-    const fuera = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (burbujaRef.current?.contains(t) || botonRef.current?.contains(t)) return;
-      setAbierto(false);
-    };
-    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbierto(false); };
-    // Al desplazar o redimensionar se cierra en vez de recolocarse: perseguir el botón
-    // mientras la página se mueve se ve peor que cerrar y volver a abrir.
-    const mover = () => { setAbierto(false); setCaja(null); };
-    document.addEventListener('mousedown', fuera);
-    document.addEventListener('keydown', tecla);
-    window.addEventListener('scroll', mover, true);
-    window.addEventListener('resize', mover);
-    return () => {
-      document.removeEventListener('mousedown', fuera);
-      document.removeEventListener('keydown', tecla);
-      window.removeEventListener('scroll', mover, true);
-      window.removeEventListener('resize', mover);
-    };
-  }, [abierto]);
 
   if (avisos.length === 0) return null;
 
@@ -112,7 +60,7 @@ export default function BotonAvisos({
       <button
         ref={botonRef}
         type="button"
-        onClick={() => { setCaja(null); setAbierto((v) => !v); }}
+        onClick={() => setAbierto((v) => !v)}
         aria-label={`${avisos.length} ${avisos.length === 1 ? 'advertencia' : 'advertencias'}`}
         aria-expanded={abierto}
         title={`${avisos.length} ${avisos.length === 1 ? 'advertencia' : 'advertencias'}`}
@@ -133,25 +81,11 @@ export default function BotonAvisos({
         </span>
       </button>
 
-      {abierto && caja && createPortal(
-        <div
-          ref={burbujaRef}
-          role="dialog"
-          aria-label={titulo}
-          // z-[80] para quedar por encima del banner de Comandos Violeta (z-[60]) y de
-          // los paneles deslizantes (z-[70]).
-          className="fixed z-[80] w-[340px] max-w-[calc(100vw-32px)] rounded-lg border border-digi-border
-                     bg-digi-card shadow-xl"
-          style={{
-            top: caja.top,
-            right: caja.right,
-            // Invisible en la primera pasada, pero ocupando sitio para poder medirla.
-            visibility: caja.listo ? 'visible' : 'hidden',
-          }}
-        >
+      {abierto && caja && (
+        <Burbuja caja={caja} burbujaRef={burbujaRef} lado="izquierda" etiqueta={titulo}>
           <div className="flex items-center justify-between px-3 py-2 border-b border-digi-border">
             <span className="text-[12px] font-semibold text-digi-text" style={mf}>{titulo}</span>
-            <button type="button" onClick={() => setAbierto(false)} aria-label="Cerrar"
+            <button type="button" onClick={cerrar} aria-label="Cerrar"
               className="text-digi-muted hover:text-digi-text">
               <X className="w-3.5 h-3.5" />
             </button>
@@ -167,14 +101,7 @@ export default function BotonAvisos({
               </li>
             ))}
           </ul>
-
-          {/* La punta, a la altura del botón — no siempre en el centro de la burbuja. */}
-          <span
-            className="absolute -right-[6px] w-3 h-3 rotate-45 bg-digi-card border-r border-t border-digi-border"
-            style={{ top: caja.flechaY, marginTop: -6 }}
-          />
-        </div>,
-        document.body,
+        </Burbuja>
       )}
     </>
   );

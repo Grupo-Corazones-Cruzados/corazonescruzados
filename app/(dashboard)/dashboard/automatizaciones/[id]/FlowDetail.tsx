@@ -22,6 +22,7 @@ import EmailFlowWorkspace, { type EmailWorkspaceHandle } from '@/components/dash
 import WhatsAppFlowPanel from '@/components/dashboard/flows/WhatsAppFlowPanel';
 import AgenteFlowWorkspace from '@/components/dashboard/flows/AgenteFlowWorkspace';
 import BotonAvisos, { type Aviso } from '@/components/ui/BotonAvisos';
+import BotonAyuda from '@/components/ui/BotonAyuda';
 import { Mail, MessageCircle, Sparkles, Puzzle, Play, Pause, AlertTriangle, Plus } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -118,6 +119,11 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
         chips={
           <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
             <type.Icon className="w-3.5 h-3.5 text-accent" /> {type.label}
+            {flow.description && (
+              <BotonAyuda titulo={`${type.label} — ${flow.name}`} lado="derecha">
+                {flow.description}
+              </BotonAyuda>
+            )}
           </span>
         }
         actions={
@@ -135,10 +141,6 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
         }
         overflow={[{ label: 'Eliminar flujo', onClick: () => setConfirmDelete(true), danger: true }]}
       />
-
-      {flow.description && (
-        <p className="text-[13px] text-digi-muted -mt-2 mb-4 max-w-3xl leading-relaxed" style={mf}>{flow.description}</p>
-      )}
 
       {/* El espacio de trabajo depende del tipo. El panel de WhatsApp se monta en modo
           página (sin su overlay), con `onClose` volviendo al listado. */}

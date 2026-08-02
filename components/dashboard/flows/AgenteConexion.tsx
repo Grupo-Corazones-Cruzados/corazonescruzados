@@ -171,13 +171,6 @@ function SinConectar({ sdkListo, entendido, setEntendido, ocupado, alConectar, c
 }) {
   return (
     <div className="max-w-3xl space-y-4">
-      <p className="text-[13px] text-digi-text leading-relaxed" style={mf}>
-        El cliente conecta <strong>su propio número</strong> y lo conserva: sigue usando WhatsApp
-        Business en el teléfono y WhatsApp Web como siempre. Lo que se le suma es el agente, que
-        responde solo, y esta bandeja, donde su equipo ve quién contestó qué. A eso se le llama
-        <strong> coexistencia</strong>.
-      </p>
-
       <div className={`rounded-lg border ${TONO.error.caja} p-4`}>
         <div className="flex gap-2 items-start">
           <ShieldAlert className={`w-5 h-5 ${TONO.error.icono} shrink-0 mt-0.5`} />

@@ -1055,6 +1055,52 @@ de color con texto blanco. No funciona: el ámbar del tema es **oscuro en claro*
 en oscuro**, así que el blanco deja de leerse en uno de los dos. Ahora el contador va sobre
 `bg-digi-card` con el tono en el texto y el borde — legible en ambos sin excepciones.
 
+### Botón de ayuda (?) y la burbuja compartida (2026-08-01)
+
+**`components/ui/BotonAyuda.tsx`** — definición ÚNICA para las explicaciones que hacen falta *la
+primera vez* y estorban todas las demás. Un párrafo permanente lo lee todo el mundo una vez y nadie
+más, pero sigue empujando hacia abajo lo que se viene a usar. Detrás de un (?) sigue a un clic.
+
+**Hermano de `BotonAvisos`, y la diferencia es deliberada:**
+
+| | `BotonAvisos` | `BotonAyuda` |
+|---|---|---|
+| Propósito | alertar | explicar |
+| Color | del tono más grave (rojo/ámbar) | `digi-muted`, accent al pasar |
+| Contador | sí | no |
+| Sin contenido | **no se pinta** | siempre está |
+
+**`components/ui/burbuja.tsx`** — la mecánica compartida: `usarBurbuja()` (posición en dos pasadas,
+acotado al viewport, cierre por clic fuera / Escape / scroll / resize) y `<Burbuja>` (el contenedor
+en portal, `z-[80]`). Se extrajo al aparecer el segundo botón: copiar cien líneas de medidas
+garantiza que las dos versiones se separen en la primera corrección. Admite `lado`
+(`'izquierda' | 'derecha'`).
+
+**Dos correcciones que solo salieron midiendo en el navegador:**
+
+1. **Acotado horizontal.** El vertical ya estaba (la burbuja se salía por arriba). Al añadir el lado
+   derecho hacía falta el mismo acotado en X: `max-width` **no basta**, porque solo encoge — no
+   reposiciona. Un botón cerca del borde derecho mandaba la burbuja fuera.
+2. **El (?) a la izquierda de una etiqueta de campo.** El primer intento lo sacaba fuera con
+   `-ml-[26px]` para que la etiqueta siguiera alineada con su campo. Medido: eso deja el botón
+   **2px fuera de su columna**, invisible en el ancho de prueba y recortado en cuanto el panel
+   tenga menos margen. Y sin `min-h-6` en la fila de la etiqueta, la fila con (?) es **3px más
+   alta** y **desalinea los campos de la rejilla**. La forma correcta:
+
+```tsx
+<div className="flex items-center gap-1 mb-1 min-h-6">
+  {ayuda && <BotonAyuda titulo={label} lado="derecha">{ayuda}</BotonAyuda>}
+  <label className="block text-[12px] font-semibold text-digi-text">{label}</label>
+</div>
+```
+
+La etiqueta queda indentada 28px respecto a su campo cuando lleva ayuda — se lee como intencional,
+y **el campo no se mueve**, que es lo que no puede pasar en una rejilla de dos columnas.
+
+> **Gotcha de Tailwind v4:** `min-h-[24px]` **no se generó** en el bundle; `min-h-6` sí. Ante una
+> clase que "no hace nada", lo primero es comprobar que existe en el CSS compilado
+> (`grep '\.min-h-6{' .next/static/css/*.css`), no revisar el JSX.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-01 — AUDITORÍA DE COLOR del ámbito `.corp`: 117 usos fuera de paleta en 26 archivos.**
   La disparó Fernando al ver los avisos del detalle de flujo. El barrido completo se hizo con un
