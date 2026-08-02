@@ -68,14 +68,32 @@ export default function LegalPage() {
       indice={INDICE}
       aviso={
         <>
-            <strong className={b}>¿Buscas el servicio de WhatsApp?</strong> Si escribiste por
-            WhatsApp a una empresa atendida por nuestro agente de IA, o si eres una empresa
-            que usa ese servicio, el documento que te aplica es{' '}
-            <a href="/legal/whatsapp" className={link}>
-              Agente IA en WhatsApp — privacidad y condiciones
-            </a>
-          . Allí Grupo Corazones Cruzados actúa como <strong className={b}>encargado</strong>{' '}
-          del tratamiento por cuenta de esa empresa, no como responsable.
+          {/* ÍNDICE de los documentos legales. Desde el pie ahora solo se llega aquí —un
+              enlace en vez de cuatro—, así que esta página tiene que ser la puerta a todo.
+              Los enlaces profundos siguen existiendo y están declarados en Meta; lo que
+              cambia es que se alcanzan desde un único sitio. */}
+          <strong className={b}>Documentos legales</strong>
+          <ul className="mt-3 space-y-2.5">
+            <li>
+              <span className="text-white/70">Esta página</span> — términos de uso del sitio y
+              tratamiento de datos de candidatos y miembros del proyecto.{' '}
+              <a href="#eliminar-datos" className={link}>Cómo eliminar tus datos</a>.
+            </li>
+            <li>
+              <a href="/legal/whatsapp" className={link}>Agente IA en WhatsApp</a> — para quien
+              escribe por WhatsApp a una empresa atendida por nuestro agente, y para la empresa
+              que contrata el servicio. Incluye{' '}
+              <a href="/legal/whatsapp#condiciones" className={link}>las condiciones</a>,{' '}
+              <a href="/legal/whatsapp#eliminar-datos" className={link}>cómo eliminar esos datos</a>{' '}
+              y{' '}
+              <a href="/legal/whatsapp#autoridades" className={link}>qué hacemos ante una solicitud de autoridades</a>.
+            </li>
+          </ul>
+          <p className="mt-3 text-white/50">
+            En el de WhatsApp, {'\u00ab'}Grupo Corazones Cruzados{'\u00bb'} actúa como{' '}
+            <strong className={b}>encargado</strong> del tratamiento por cuenta de la empresa
+            cliente. En esta página, como <strong className={b}>responsable</strong>.
+          </p>
         </>
       }
     >

@@ -31,13 +31,6 @@ import Link from 'next/link';
 import { SITIO } from '@/lib/sitio/contenido';
 import { Contenedor } from './piezas';
 
-const LEGALES = [
-  { href: '/legal', label: 'Términos y privacidad' },
-  { href: '/legal/whatsapp', label: 'Agente IA en WhatsApp' },
-  { href: '/legal/whatsapp#eliminar-datos', label: 'Eliminar mis datos' },
-  { href: '/contacto', label: 'Datos del negocio' },
-];
-
 export default function PieSitio() {
   return (
     <footer
@@ -52,17 +45,19 @@ export default function PieSitio() {
           © {new Date().getFullYear()} <span itemProp="name">{SITIO.nombre}</span>
         </p>
 
-        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label="Enlaces legales">
-          {LEGALES.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="text-[12px] text-white/40 hover:text-white transition-colors whitespace-nowrap"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        {/* UN SOLO enlace, no cuatro (decisión de Fernando, 2026-08-02). Antes había uno
+            por documento —términos, agente de WhatsApp, eliminar datos, datos del negocio—
+            y son cuatro entradas para un mismo tema. `/legal` los indexa todos arriba, así
+            que desde aquí se llega a cualquiera con un clic más.
+            ⚠️ Las URLs concretas NO desaparecen: `/legal/whatsapp#eliminar-datos` y
+            `#condiciones` están declaradas en Meta y siguen funcionando. Lo que cambia es
+            cuántas puertas hay en el pie, no cuántas páginas existen. */}
+        <Link
+          href="/legal"
+          className="text-[12px] text-white/40 hover:text-white transition-colors whitespace-nowrap"
+        >
+          Legal y privacidad
+        </Link>
       </Contenedor>
     </footer>
   );
