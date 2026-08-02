@@ -42,6 +42,15 @@ export async function canalPorNumero(phoneNumberId: string): Promise<Canal | nul
   return rows[0] ?? null;
 }
 
+/** El canal por su id. Lo usa el runner al reclamar un trabajo de la cola. */
+export async function canalPorId(id: number): Promise<Canal | null> {
+  const { rows } = await pool.query<Canal>(
+    `SELECT * FROM gcc_world.agente_canales WHERE id = $1`,
+    [id],
+  );
+  return rows[0] ?? null;
+}
+
 export async function canalPorFlujo(flowId: number): Promise<Canal | null> {
   const { rows } = await pool.query<Canal>(
     `SELECT * FROM gcc_world.agente_canales WHERE flow_id = $1`,

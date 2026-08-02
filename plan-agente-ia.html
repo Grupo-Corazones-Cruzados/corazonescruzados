@@ -105,10 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">C4 · El runner &nbsp;·&nbsp; y después C7, la pantalla de conexión</p>
-    <p class="quien"><strong>Tu carril está terminado hasta F10.</strong> El webhook está verificado por Meta y suscrito a <code>messages</code> — comprobado contra la Graph API, no de palabra. Lo que queda hasta el primer cliente es todo mío.</p>
-    <div class="barra"><span style="width:57%"></span></div>
-    <div class="barra-pie"><span>12 de 21 pasos terminados</span><span>57%</span></div>
+    <p class="paso">C5 · El Estudio del agente &nbsp;·&nbsp; y C7, la pantalla de conexión</p>
+    <p class="quien"><strong>C4 hecho: el agente ya decide.</strong> Falta la interfaz para configurarlo (C5), la bandeja (C6) y la pantalla de conexión (C7). Tu carril sigue terminado hasta F10.</p>
+    <div class="barra"><span style="width:62%"></span></div>
+    <div class="barra-pie"><span>13 de 21 pasos terminados</span><span>62%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -397,7 +397,7 @@
     </tr>
 
     <tr>
-      <td>C4</td><td><span class="est e-curso">En curso</span></td>
+      <td>C4</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">El runner: un nodo de IA con tres herramientas</span>
         <span class="d">El modelo elige siempre exactamente una: <code>responder</code>,
@@ -407,13 +407,18 @@
         embeddings— y el orden importa: lo estable primero para que el caché lo cubra.<br>
         <strong>Mejora sobre Peters Tours:</strong> la lista de bloques <code>[PENDIENTE]</code> se
         <strong>calcula</strong> del conocimiento en vez de escribirse a mano en el prompt. Allí eso está
-        desincronizado y el agente escala preguntas que ya sabe contestar.</span>
+        desincronizado y el agente escala preguntas que ya sabe contestar.<br>
+        <strong>Hecho el 2026-08-01.</strong> <code>lib/agente/{modelos,conocimiento,herramientas,anthropic,whatsapp,runner}.ts</code>.
+        49 pruebas, 0 fallos. La petición se <strong>arma desde una tabla de capacidades</strong>
+        por modelo: <code>effort</code> da 400 en Haiku 4.5, el muestreo lo rechaza toda la familia
+        Claude 5, y el mínimo de caché <strong>no crece con la generación</strong> (4.096 en Haiku,
+        512 en Opus 5). Un modelo desconocido cae a un perfil conservador que no manda nada opcional.</span>
       </td>
       <td>C3</td>
     </tr>
 
     <tr>
-      <td>C5</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>C5</td><td><span class="est e-curso">En curso</span></td>
       <td>
         <span class="t">El Estudio del agente</span>
         <span class="d">La pantalla donde se edita el conocimiento por bloques, los tres prompts
@@ -1003,6 +1008,7 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>C4 hecho: el runner.</strong> Un nodo de IA con las tres herramientas y <code>tool_choice: any</code>; el conocimiento completo en el prompt cacheado, con el perfil y el conocimiento dentro del caché y las reglas fuera. <strong>Los bloques <code>[PENDIENTE]</code> se calculan del conocimiento</strong>, que es el fallo vivo de Peters Tours resuelto por diseño. 49 pruebas, 0 fallos. Instalado <code>@anthropic-ai/sdk</code>, la única dependencia nueva.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F8 hecho y verificado contra Meta.</strong> <code>GET /{app-id}/subscriptions</code> devuelve la URL correcta, <code>active: true</code> y el campo <strong><code>messages</code> suscrito</strong> — que es justo lo que se olvidó dos veces en el proyecto anterior. El endpoint en producción responde 403 sin firma y 200 con firma válida.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C3 hecho.</strong> Webhook con firma HMAC, lectura de la carga de Meta, ingesta idempotente y cola con debounce. 33 pruebas, 0 fallos. <strong>Fallo real corregido:</strong> el <code>ON CONFLICT</code> sobre <code>wa_message_id</code> necesitaba repetir la condición del índice parcial; sin eso la ingesta fallaba entera. <strong>F8 desbloqueado</strong>, con la URL en §5.6.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F9 hecho.</strong> Fernando pegó el App Secret y el token; se comprobó su <em>forma</em> sin exponerlos (32 hex y prefijo <code>EAA</code>). El despliegue terminó bien y producción responde 200. De paso salió a producción la página legal corregida: <code>/legal#eliminar-datos</code> ya resuelve de verdad, así que la URL declarada en Meta es válida.</td></tr>
