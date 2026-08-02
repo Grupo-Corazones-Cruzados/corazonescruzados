@@ -421,6 +421,11 @@ Stack estándar de la casa, con particularidades de este repo:
       en `Diseño.md` → «Desviaciones detectadas y resolución».
     - **El peor hallazgo:** `violet-*` y `sky-*` se usaban donde tocaba el `accent` de marca —
       **un violeta distinto del nuestro**, en la app de un grupo cuya identidad ES el violeta.
+  - **📌 REGLA DE FORMULARIOS (Fernando, 2026-08-01): solo el título del campo y el campo.**
+    Toda explicación va dentro del **botón de ayuda (?)** a la izquierda del título — nunca como
+    párrafo fijo bajo el campo. La información no se pierde, se mueve a un clic. Implementada en
+    `EditField` (definición única de los paneles de edición) y en `Campo` del Estudio del agente.
+    Detalle y excepciones en `Diseño.md`.
   - **🧠 LECCIONES TÉCNICAS de esta construcción (no volver a tropezar):**
     1. **`ON CONFLICT` sobre un índice único PARCIAL exige repetir su condición.**
        `wa_message_id` tiene índice `WHERE wa_message_id IS NOT NULL`; sin ese `WHERE` en el

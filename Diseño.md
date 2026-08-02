@@ -1055,6 +1055,41 @@ de color con texto blanco. No funciona: el ámbar del tema es **oscuro en claro*
 en oscuro**, así que el blanco deja de leerse en uno de los dos. Ahora el contador va sobre
 `bg-digi-card` con el tono en el texto y el borde — legible en ambos sin excepciones.
 
+### 📌 REGLA DE FORMULARIOS: solo el título del campo y el campo (Fernando, 2026-08-01)
+
+> **En un formulario se ve el título del campo y el campo a rellenar. Nada más.** Toda
+> explicación —para qué sirve, rangos, recomendaciones, avisos, estado— va **dentro del botón de
+> ayuda (?)** que se pone a la izquierda del título.
+
+**Por qué.** Un texto de ayuda permanente lo lee todo el mundo una vez y nadie más, pero sigue
+ocupando sitio: con cinco o seis campos duplica el alto del formulario y empuja hacia abajo el
+botón de guardar. La información **no se pierde** — se mueve a un clic de distancia, y quien ya la
+sabe deja de verla.
+
+**Dónde está implementada:** `EditField` (`components/ui/EditDialog.tsx`) y `Campo`
+(`AgenteFlowWorkspace`). `EditField` es la definición única de los paneles de edición, así que el
+cambio llegó a los **siete** archivos que la usan sin tocar ninguno.
+
+```tsx
+// ✅ Así
+<EditField label="Clave" hint={<>Identificador corto y estable, en minúsculas: <code>empresa</code>…</>}>
+  <input className={EDIT_INPUT} … />
+</EditField>
+
+// ❌ Así no
+<label>Clave</label>
+<input … />
+<p className="text-[11px] text-digi-muted">Identificador corto y estable…</p>
+```
+
+**Qué SÍ puede quedarse fuera del (?):**
+- El **marcador de posición** del campo, cuando lleva estado real (`•••••••• (ya guardada)`).
+- Un **contador o dato** en la barra de sección (`14 bloques · 18.396 caracteres`) — es dato, no prosa.
+- Los **avisos**, que van al `BotonAvisos` de la cabecera, no repetidos bajo el campo.
+
+**Aplica igual a las barras de sección:** si el `hint` de un `SectionBar` es una frase explicativa
+y no un dato, va al (?).
+
 ### Botón de ayuda (?) y la burbuja compartida (2026-08-01)
 
 **`components/ui/BotonAyuda.tsx`** — definición ÚNICA para las explicaciones que hacen falta *la
