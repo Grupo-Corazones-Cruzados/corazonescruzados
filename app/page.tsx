@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import PixelStars from '@/components/landing/PixelStars';
+import IdentidadNegocio from '@/components/landing/IdentidadNegocio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
@@ -4170,6 +4171,12 @@ export default function LandingPage() {
             &copy; 2026 GCC World &mdash; Todos los derechos reservados
           </p>
         )}
+
+        {/* Quién está detrás de esto: nombre legal, RUC, dirección y contacto, visibles
+            sin iniciar sesión. Lo pidió indirectamente Meta al rechazar la verificación
+            del negocio porque «no puede determinar que pertenezca a un negocio real».
+            Ver `components/landing/IdentidadNegocio.tsx`. */}
+        <IdentidadNegocio />
       </footer>
 
       {/* ====== MODAL DE ENTRADA ====== */}
