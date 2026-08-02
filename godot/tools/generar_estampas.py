@@ -141,6 +141,7 @@ INSERTADAS = {
     123: 66,  # como la 122 pero conservando las bolitas azules y anadiendo las rojas
     124: 66,  # la escena entera en violeta: fondo, objetos y circulos
     125: 66,  # rehace la 116 sin la bola central de esporas
+    126: 66,  # muchas partes desprendidas y 4 brazos cogidos de dos en dos
 }
 
 
@@ -3973,6 +3974,96 @@ ESCENAS = [
         "PROHIBIDO cualquier color que no sea gris, blanco o negro. PROHIBIDO cualquier texto, "
         "letra, número o marca de agua. Dibuja un patrón de grietas de la roca COMPLETAMENTE "
         "DISTINTO y ALEATORIO, sin copiar el trazado de la referencia."),
+
+    # ── 126 · MUCHAS PARTES DESPRENDIDAS Y CUATRO BRAZOS COGIDOS ──────────────
+    # Evolución de la 125. Dos cambios que pidió Fernando:
+    #  · MUCHAS partes sueltas (zapatos, torsos, cabezas…), no unas pocas.
+    #  · CUATRO brazos exactamente, en DOS agarres: cada brazo largo del hermano
+    #    mayor sujetando el bracito corto de un pequeño.
+    # El bloque de estilo/encuadre se mantiene palabra por palabra: no puede
+    # cambiar el dibujo ni la perspectiva.
+    (126, ["assets/Prologo/escenas/escena_97.png"],
+        "Esta es LA MISMA ESCENA de la imagen de referencia, EL MISMO SITIO y EL MISMO DIBUJO, "
+        "un rato después. Lo único que cambia es que las tres figuras YA NO EXISTEN como "
+        "cuerpos: se han desmembrado. "
+
+        "══ BLOQUE 1 · LO QUE SE COPIA DE LA REFERENCIA SIN CAMBIAR NADA ══ "
+        "Copia EXACTAMENTE, tal cual está en la imagen de referencia: el estilo PIXEL ART 2D de "
+        "16 bits dibujado a mano, con sombreado plano por zonas, contornos definidos, píxeles "
+        "visibles y dithering sutil. El encuadre horizontal 16:9. La MISMA POSICIÓN DE CÁMARA y "
+        "el MISMO PLANO GENERAL Y LEJANO. El interior del Hoyo con la pared de ROCA CUARTEADA "
+        "OSCURA cubriendo todo el cuadro. El halo de luz redondo y grisáceo del centro. La "
+        "penumbra que oscurece hacia las cuatro esquinas. La paleta MONOCROMA de grises fríos, "
+        "blancos y negros, con la misma iluminación gris apagada. No hay suelo. "
+        "⚠ ESTO NO ES UN DISEÑO NUEVO: es la misma escena de la referencia. PROHIBIDO "
+        "ABSOLUTAMENTE cambiar el estilo de dibujo, la perspectiva, el tipo de vista, el ángulo "
+        "de cámara o el encuadre. PROHIBIDO aclarar el fondo, ponerlo liso, o acercar la cámara. "
+        "Todo lo que aparezca son SILUETAS NEGRAS MACIZAS Y PLANAS, sin ningún detalle interior: "
+        "sin caras, sin ojos, sin bocas, sin pliegues, sin sombreado. "
+
+        "══ BLOQUE 2 · NO HAY NINGÚN CUERPO ENTERO ══ "
+        "En la referencia hay tres figuras completas. AQUÍ NINGUNA lo está. PROHIBIDO "
+        "ABSOLUTAMENTE dibujar una persona entera, ni de pie, ni cayendo, ni a medias. Las "
+        "partes están SUELTAS y SEPARADAS unas de otras: ninguna encaja con otra, ninguna forma "
+        "un cuerpo, ninguna está en el sitio que le tocaría en un cuerpo. Si al terminar se "
+        "distingue una figura humana montada, está MAL. "
+        "⚠ NO HAY NINGUNA BOLA: PROHIBIDO dibujar una esfera, un orbe, un círculo o una masa "
+        "compacta en el centro, y PROHIBIDO que algo emita o suelte partículas o esporas desde "
+        "un punto. No hay foco ni emisor. "
+
+        "══ BLOQUE 3 · MUCHAS PARTES DESPRENDIDAS, POR TODA LA ZONA ══ "
+        "Toda la zona que ocupaban las tres personas está llena de PARTES SUELTAS flotando. "
+        "Quiero MUCHAS, bastantes más que unas pocas: la franja donde estaban los tres tiene que "
+        "verse POBLADA de fragmentos. Cada uno es una silueta NEGRA MACIZA de contorno limpio y "
+        "cerrado, plana y sin detalle interior, pequeña —del tamaño de un dedo o dos en la "
+        "escala de la imagen—. "
+        "Dibuja variedad de piezas reconocibles por su forma, repetidas y mezcladas: CABEZAS "
+        "sueltas (bolas lisas de pelo corto, alguna con coletas), TORSOS sueltos (uno con "
+        "camiseta recta, otro con la tela acampanada de la falda), PIERNAS enteras y partidas, "
+        "PIES y ZAPATOS pequeños, MANOS y antebrazos sueltos, y esquirlas sin forma clara. "
+        "⚠ REPÁRTELAS POR TODA LA ANCHURA Y TODA LA ALTURA de la zona donde estaban los tres, "
+        "no las amontones en el medio: unas hacia la izquierda, donde estaba la pequeña de la "
+        "falda; otras hacia la derecha, donde estaba el otro pequeño; otras arriba y otras "
+        "abajo, y alguna ya alejándose hacia el borde del halo. Cada pieza girada en un ángulo "
+        "distinto y a distinta altura, todas SEPARADAS entre sí, sin tocarse, sin amontonarse y "
+        "sin formar filas ni montones. Es un desperdigado desordenado, no una composición. "
+        "Entre las piezas, POLVO: puntitos y cuadraditos negros sueltos de unos pocos píxeles, "
+        "repartidos también por toda esa franja de forma irregular, más denso en unos sitios y "
+        "más ralo en otros, sin ningún centro. El polvo está QUIETO y asentado: nada de estelas "
+        "de movimiento ni de partículas saliendo disparadas. "
+
+        "══ BLOQUE 4 · LOS CUATRO BRAZOS, COGIDOS DE DOS EN DOS ══ "
+        "Es la parte más importante de la imagen y lo único que sigue unido. En medio de todo "
+        "ese desorden hay EXACTAMENTE CUATRO BRAZOS con sus CUATRO MANOS, agarrados de dos en "
+        "dos, formando DOS PAREJAS: "
+        "· PAREJA DE LA IZQUIERDA: un brazo LARGO Y GRANDE, el del hermano mayor, que baja y "
+        "termina en una mano; esa mano agarra la mano de un brazo CORTO Y FINO, el de la "
+        "hermanita pequeña. Las dos manos están cerradas una sobre otra, unidas, sin separación "
+        "entre ellas. "
+        "· PAREJA DE LA DERECHA: igual, otro brazo LARGO Y GRANDE del hermano mayor agarrando "
+        "con su mano la mano de otro brazo CORTO Y FINO, el del hermanito pequeño. "
+        "⚠ CUENTA ANTES DE TERMINAR: dos parejas, cada una con dos brazos y dos manos = CUATRO "
+        "brazos y CUATRO manos en total, formando DOS puntos de agarre. Ni uno más ni uno menos. "
+        "Los brazos del hermano mayor son claramente MÁS LARGOS Y MÁS GRUESOS que los de los "
+        "pequeños, para que se vea de quién es cada uno. "
+        "Estos cuatro brazos están ENTEROS y NÍTIDOS: negro macizo, contorno limpio y cerrado, "
+        "sin boquetes, sin desgranarse y sin motas sueltas. Son lo único que no está roto. "
+        "NO hay cuerpos detrás de ellos: cada brazo se acaba en el aire por el lado del hombro, "
+        "y de ahí para dentro solo hay partes sueltas y polvo. "
+        "PROHIBIDO ABSOLUTAMENTE que las manos se suelten, se separen o queden a medio agarrar. "
+        "PROHIBIDO dibujar una BARRA, un PALO o una franja recta que cruce el cuadro: son brazos "
+        "con manos y se tienen que leer como tales. PROHIBIDO añadir más brazos sueltos aparte "
+        "de esos cuatro (las manos y antebrazos sueltos del bloque anterior son trozos "
+        "pequeños, claramente distintos de estos cuatro brazos enteros y agarrados). "
+        "La lectura de la imagen debe ser: todo se ha deshecho en pedazos, pero los tres siguen "
+        "cogidos de la mano. "
+
+        "══ BLOQUE 5 · PROHIBICIONES ══ "
+        "PROHIBIDO dibujar caras, ojos, bocas o cualquier detalle interior en ninguna pieza. "
+        "PROHIBIDO añadir elementos que no sean partes del cuerpo o polvo. PROHIBIDO cualquier "
+        "líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que no sea gris, blanco o "
+        "negro. PROHIBIDO cualquier texto, letra, número o marca de agua. Dibuja un patrón de "
+        "grietas de la roca COMPLETAMENTE DISTINTO y ALEATORIO, sin copiar el de la referencia."),
 ]
 
 
